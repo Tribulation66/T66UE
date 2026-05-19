@@ -1,0 +1,372 @@
+[
+  {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\BoneWalker_faithful_fix_v02.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "subject_pixels": 188901,
+    "subject_fraction": 0.12012659966575857,
+    "bbox": [
+      266,
+      42,
+      985,
+      1153
+    ],
+    "margins": [
+      266,
+      42,
+      268,
+      100
+    ],
+    "mean_linear_luminance_all_nonwhite": 0.3687272710198189,
+    "mean_linear_luminance_colored_surfaces": 0.4577162799187379,
+    "border_rgb_mean": [
+      254.1400924437299,
+      254.04905546623795,
+      254.19807073954985
+    ],
+    "border_rgb_min": [
+      253,
+      253,
+      253
+    ],
+    "asset": "BoneWalker",
+    "original_mean_linear_luminance_all_nonwhite": 0.36393333011229695,
+    "original_mean_linear_luminance_colored_surfaces": 0.4507258738030626,
+    "gate_assessment": "review"
+  },
+  {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\RatPack_faithful_fix_v02.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "subject_pixels": 650862,
+    "subject_fraction": 0.41389849133490536,
+    "bbox": [
+      57,
+      123,
+      1222,
+      1103
+    ],
+    "margins": [
+      57,
+      123,
+      31,
+      150
+    ],
+    "mean_linear_luminance_all_nonwhite": 0.22684857498311026,
+    "mean_linear_luminance_colored_surfaces": 0.2873017894690856,
+    "border_rgb_mean": [
+      252.21581591639872,
+      251.9601688102894,
+      251.87353295819935
+    ],
+    "border_rgb_min": [
+      250,
+      250,
+      250
+    ],
+    "asset": "RatPack",
+    "original_mean_linear_luminance_all_nonwhite": 0.11963062802651939,
+    "original_mean_linear_luminance_colored_surfaces": 0.1594763872780754,
+    "gate_assessment": "review"
+  },
+  {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\CaveBat_faithful_fix_v02.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "subject_pixels": 546492,
+    "subject_fraction": 0.34752714757751274,
+    "bbox": [
+      63,
+      96,
+      1187,
+      1173
+    ],
+    "margins": [
+      63,
+      96,
+      66,
+      80
+    ],
+    "mean_linear_luminance_all_nonwhite": 0.35503258641392077,
+    "mean_linear_luminance_colored_surfaces": 0.39789258141414746,
+    "border_rgb_mean": [
+      253.39734726688104,
+      252.92270900321543,
+      252.475884244373
+    ],
+    "border_rgb_min": [
+      252,
+      252,
+      251
+    ],
+    "asset": "CaveBat",
+    "original_mean_linear_luminance_all_nonwhite": 0.20902074631391873,
+    "original_mean_linear_luminance_colored_surfaces": 0.23083268746687094,
+    "gate_assessment": "review"
+  },
+  {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\HexSlinger_faithful_fix_v02.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "subject_pixels": 388979,
+    "subject_fraction": 0.24736091715442005,
+    "bbox": [
+      118,
+      60,
+      1134,
+      1192
+    ],
+    "margins": [
+      118,
+      60,
+      119,
+      61
+    ],
+    "mean_linear_luminance_all_nonwhite": 0.26415751336794124,
+    "mean_linear_luminance_colored_surfaces": 0.3805886687001071,
+    "border_rgb_mean": [
+      253.99332797427653,
+      253.86724276527332,
+      253.90765675241158
+    ],
+    "border_rgb_min": [
+      253,
+      252,
+      252
+    ],
+    "asset": "HexSlinger",
+    "original_mean_linear_luminance_all_nonwhite": 0.3172539568013078,
+    "original_mean_linear_luminance_colored_surfaces": 0.4093849350313069,
+    "gate_assessment": "review"
+  },
+  {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\TombSpider_faithful_fix_v02.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "subject_pixels": 512905,
+    "subject_fraction": 0.32616838238847806,
+    "bbox": [
+      41,
+      121,
+      1217,
+      1172
+    ],
+    "margins": [
+      41,
+      121,
+      36,
+      81
+    ],
+    "mean_linear_luminance_all_nonwhite": 0.2989894167672171,
+    "mean_linear_luminance_colored_surfaces": 0.3555135952709222,
+    "border_rgb_mean": [
+      253.07913987138264,
+      252.94987942122185,
+      252.81346463022507
+    ],
+    "border_rgb_min": [
+      252,
+      252,
+      251
+    ],
+    "asset": "TombSpider",
+    "original_mean_linear_luminance_all_nonwhite": 0.12146563740845959,
+    "original_mean_linear_luminance_colored_surfaces": 0.1488809267585436,
+    "gate_assessment": "review"
+  },
+  {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\StoneSentinel_faithful_fix_v02.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "subject_pixels": 608478,
+    "subject_fraction": 0.38694550643681846,
+    "bbox": [
+      224,
+      21,
+      1025,
+      1170
+    ],
+    "margins": [
+      224,
+      21,
+      228,
+      83
+    ],
+    "mean_linear_luminance_all_nonwhite": 0.6355033073474268,
+    "mean_linear_luminance_colored_surfaces": 0.712505995375475,
+    "border_rgb_mean": [
+      254.0622186495177,
+      253.95924437299036,
+      254.11762459807073
+    ],
+    "border_rgb_min": [
+      253,
+      253,
+      253
+    ],
+    "asset": "StoneSentinel",
+    "original_mean_linear_luminance_all_nonwhite": 0.15896716488044482,
+    "original_mean_linear_luminance_colored_surfaces": 0.1872259461633941,
+    "gate_assessment": "pass_colored_surface_luminance"
+  },
+  {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\MimicLure_faithful_fix_v02.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "subject_pixels": 717622,
+    "subject_fraction": 0.4563527493519939,
+    "bbox": [
+      104,
+      79,
+      1161,
+      1234
+    ],
+    "margins": [
+      104,
+      79,
+      92,
+      19
+    ],
+    "mean_linear_luminance_all_nonwhite": 0.23398266494566136,
+    "mean_linear_luminance_colored_surfaces": 0.270992874836577,
+    "border_rgb_mean": [
+      252.90291398713828,
+      252.76834807073956,
+      252.7610731511254
+    ],
+    "border_rgb_min": [
+      252,
+      252,
+      252
+    ],
+    "asset": "MimicLure",
+    "original_mean_linear_luminance_all_nonwhite": 0.127495666134487,
+    "original_mean_linear_luminance_colored_surfaces": 0.15006431822165392,
+    "gate_assessment": "review"
+  },
+  {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\BoneConjurer_faithful_fix_v02.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "subject_pixels": 271339,
+    "subject_fraction": 0.17255086752694407,
+    "bbox": [
+      229,
+      17,
+      1025,
+      1235
+    ],
+    "margins": [
+      229,
+      17,
+      228,
+      18
+    ],
+    "mean_linear_luminance_all_nonwhite": 0.30066316259366144,
+    "mean_linear_luminance_colored_surfaces": 0.35785772443040936,
+    "border_rgb_mean": [
+      253.4073352090032,
+      253.35229099678457,
+      253.27013665594856
+    ],
+    "border_rgb_min": [
+      252,
+      251,
+      251
+    ],
+    "asset": "BoneConjurer",
+    "original_mean_linear_luminance_all_nonwhite": 0.28915432743202263,
+    "original_mean_linear_luminance_colored_surfaces": 0.3577104901401226,
+    "gate_assessment": "review"
+  },
+  {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\CryptWraith_faithful_fix_v02.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "subject_pixels": 375973,
+    "subject_fraction": 0.23909009510873022,
+    "bbox": [
+      227,
+      30,
+      1016,
+      1220
+    ],
+    "margins": [
+      227,
+      30,
+      237,
+      33
+    ],
+    "mean_linear_luminance_all_nonwhite": 0.34384735980553477,
+    "mean_linear_luminance_colored_surfaces": 0.4166174512503173,
+    "border_rgb_mean": [
+      253.91756430868168,
+      253.8032154340836,
+      253.85693327974278
+    ],
+    "border_rgb_min": [
+      247,
+      247,
+      247
+    ],
+    "asset": "CryptWraith",
+    "original_mean_linear_luminance_all_nonwhite": 0.18243229219808885,
+    "original_mean_linear_luminance_colored_surfaces": 0.22627878003166726,
+    "gate_assessment": "review"
+  },
+  {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\LootCrate_faithful_fix_v02.png",
+    "size": [
+      1536,
+      1024
+    ],
+    "subject_pixels": 809647,
+    "subject_fraction": 0.5147596995035807,
+    "bbox": [
+      134,
+      149,
+      1418,
+      840
+    ],
+    "margins": [
+      134,
+      149,
+      117,
+      183
+    ],
+    "mean_linear_luminance_all_nonwhite": 0.18158723083949443,
+    "mean_linear_luminance_colored_surfaces": 0.1924682136469045,
+    "border_rgb_mean": [
+      253.56663385826772,
+      253.48751968503936,
+      253.46594488188975
+    ],
+    "border_rgb_min": [
+      252,
+      252,
+      252
+    ],
+    "asset": "LootCrate",
+    "original_mean_linear_luminance_all_nonwhite": 0.08310565399591538,
+    "original_mean_linear_luminance_colored_surfaces": 0.09017885004148897,
+    "gate_assessment": "review"
+  }
+]

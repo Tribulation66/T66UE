@@ -4,6 +4,7 @@
 
 #include "Core/T66GameInstance.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66Rarity.h"
@@ -15,6 +16,7 @@
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66SessionPlayerState.h"
+#include "UI/Components/T66FlatLeaderboardPanel.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66FlatStyle.h"
@@ -71,6 +73,26 @@ namespace
 			28,
 			Tag);
 	}
+
+	TSharedRef<SWidget> MakePauseMenuCompactButton(
+		const FText& Text,
+		FOnClicked OnClicked,
+		const ET66FlatState State,
+		const FName Tag)
+	{
+		return FT66FlatStyle::MakeFlatButton(
+			State,
+			Text,
+			MoveTemp(OnClicked),
+			nullptr,
+			nullptr,
+			FMargin(18.f, 8.f),
+			200.f,
+			64.f,
+			true,
+			22,
+			Tag);
+	}
 }
 
 UT66PauseMenuScreen::UT66PauseMenuScreen(const FObjectInitializer& ObjectInitializer)
@@ -85,10 +107,19 @@ AT66PlayerController* UT66PauseMenuScreen::GetT66PlayerController() const
 	return Cast<AT66PlayerController>(GetOwningPlayer());
 }
 
+void UT66PauseMenuScreen::OnScreenActivated_Implementation()
+{
+	Super::OnScreenActivated_Implementation();
+
+	bLeaderboardModalOpen = false;
+	FlatLeaderboardPanel.Reset();
+}
+
 TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 {
 	UGameInstance* GameInstance = UGameplayStatics::GetGameInstance(this);
 	UT66LocalizationSubsystem* Loc = GameInstance ? GameInstance->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66LeaderboardSubsystem* Leaderboard = GameInstance ? GameInstance->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 
 	const FText ResumeText = Loc ? Loc->GetText_Resume() : NSLOCTEXT("T66.PauseMenu", "Resume", "RESUME GAME");
 	const FText SaveAndQuitText = Loc ? Loc->GetText_SaveAndQuit() : NSLOCTEXT("T66.PauseMenu", "SaveAndQuit", "SAVE AND QUIT");
@@ -130,6 +161,44 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	AddSlot(712.f, 744.f, 496.f, 95.f, MakePauseMenuButton(AchievementsText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleAchievementsClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.AchievementsButton"))));
 	AddSlot(712.f, 856.f, 496.f, 95.f, MakePauseMenuButton(LeaderboardText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleLeaderboardClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.LeaderboardButton"))));
 
+	if (bLeaderboardModalOpen)
+	{
+		AddSlot(0.f, 0.f, 1920.f, 1080.f,
+			FT66FlatStyle::AttachMetadata(
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.74f))
+				.Padding(0.f),
+				PauseMenuTag(TEXT("PauseMenu.LeaderboardModal.Scrim")),
+				TEXT("Scrim"),
+				ET66FlatState::Default));
+		AddSlot(646.f, 48.f, 628.f, 984.f,
+			FT66FlatStyle::MakeFlatPanel(
+				ET66FlatState::Default,
+				FMargin(0.f),
+				SNullWidget::NullWidget,
+				nullptr,
+				PauseMenuTag(TEXT("PauseMenu.LeaderboardModal.Panel"))));
+		AddSlot(728.f, 78.f, 330.f, 60.f,
+			FT66FlatStyle::MakeFlatLabel(
+				NSLOCTEXT("T66.PauseMenu", "LeaderboardModalTitle", "LEADERBOARD"),
+				ET66FlatLabelRole::Header,
+				ETextJustify::Left,
+				PauseMenuTag(TEXT("PauseMenu.LeaderboardModal.Title"))));
+		AddSlot(1060.f, 72.f, 200.f, 64.f,
+			MakePauseMenuCompactButton(
+				NSLOCTEXT("T66.Common", "Back", "BACK"),
+				FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleLeaderboardBackClicked),
+				ET66FlatState::Default,
+				PauseMenuTag(TEXT("PauseMenu.LeaderboardModal.BackButton"))));
+		AddSlot(722.f, 142.f, 476.f, 884.f,
+			SAssignNew(FlatLeaderboardPanel, ST66FlatLeaderboardPanel)
+			.LocalizationSubsystem(Loc)
+			.LeaderboardSubsystem(Leaderboard)
+			.UIManager(UIManager)
+			.TagPrefix(TEXT("PauseMenu.LeaderboardModal")));
+	}
+
 	const TSharedRef<SWidget> RootContent = SNew(SBox)
 		.WidthOverride(1920.f)
 		.HeightOverride(1080.f)
@@ -163,9 +232,17 @@ FReply UT66PauseMenuScreen::HandleRestartClicked() { OnRestartClicked(); return 
 FReply UT66PauseMenuScreen::HandleSettingsClicked() { OnSettingsClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleAchievementsClicked() { OnAchievementsClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleLeaderboardClicked() { OnLeaderboardClicked(); return FReply::Handled(); }
+FReply UT66PauseMenuScreen::HandleLeaderboardBackClicked()
+{
+	bLeaderboardModalOpen = false;
+	FlatLeaderboardPanel.Reset();
+	ForceRebuildSlate();
+	return FReply::Handled();
+}
 
 void UT66PauseMenuScreen::OnResumeClicked()
 {
+	bLeaderboardModalOpen = false;
 	CloseModal();
 	AT66PlayerController* PC = GetT66PlayerController();
 	if (PC)
@@ -210,21 +287,43 @@ void UT66PauseMenuScreen::OnRestartClicked()
 
 	APlayerController* PC = GetOwningPlayer();
 	if (PC) PC->SetPause(false);
-	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+	{
+		T66GI->TransitionToGameplayLevel();
+		return;
+	}
+
+	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
 }
 
 void UT66PauseMenuScreen::OnSettingsClicked()
 {
+	bLeaderboardModalOpen = false;
 	ShowModal(ET66ScreenType::Settings);
 }
 
 void UT66PauseMenuScreen::OnAchievementsClicked()
 {
+	bLeaderboardModalOpen = false;
 	ShowModal(ET66ScreenType::Achievements);
 }
 
 void UT66PauseMenuScreen::OnLeaderboardClicked()
 {
-	ShowModal(ET66ScreenType::AccountStatus);
+	bLeaderboardModalOpen = true;
+	ForceRebuildSlate();
+}
+
+bool UT66PauseMenuScreen::HandleBackAction()
+{
+	if (bLeaderboardModalOpen)
+	{
+		bLeaderboardModalOpen = false;
+		FlatLeaderboardPanel.Reset();
+		ForceRebuildSlate();
+		return true;
+	}
+
+	return false;
 }
 

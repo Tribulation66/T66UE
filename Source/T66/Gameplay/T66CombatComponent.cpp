@@ -847,6 +847,11 @@ void UT66CombatComponent::TryFire()
 		return;
 	}
 
+	if (!bHasCachedWeaponData)
+	{
+		return;
+	}
+
 	FLagScopedScope LagScope(World, TEXT("CombatComponent::TryFire"));
 	UT66RngSubsystem* RngSub = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RngSubsystem>() : nullptr;
 
@@ -1167,7 +1172,7 @@ void UT66CombatComponent::TryFire()
 			WeaponHitActors.AddUnique(InLine[i]);
 		}
 
-		if (CurrentHeroID == FName(TEXT("Hero_1")))
+		if (CurrentHeroID == FName(TEXT("Hero_5")))
 		{
 			const float FurthestDistance = InLine.Num() > 0
 				? FVector::Dist2D(MyLoc, InLine.Last()->GetActorLocation())

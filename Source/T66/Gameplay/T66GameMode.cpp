@@ -8,262 +8,196 @@ DEFINE_LOG_CATEGORY(LogT66GameMode);
 namespace T66GameModePrivate
 {
 
-	bool T66TryGetNextDifficulty(const ET66Difficulty Current, ET66Difficulty& OutNextDifficulty)
-	{
-		switch (Current)
-		{
-		case ET66Difficulty::Easy: OutNextDifficulty = ET66Difficulty::Medium; return true;
-		case ET66Difficulty::Medium: OutNextDifficulty = ET66Difficulty::Hard; return true;
-		case ET66Difficulty::Hard: OutNextDifficulty = ET66Difficulty::VeryHard; return true;
-		case ET66Difficulty::VeryHard: OutNextDifficulty = ET66Difficulty::Impossible; return true;
-		default: break;
-		}
+constexpr int32 T66LastCompanionUnlockStage = 16;
 
-		OutNextDifficulty = Current;
-		return false;
-	}
+// Helper: avoid PIE warnings ("StaticMeshComponent has to be 'Movable' if you'd like to move")
+// by temporarily setting mobility to Movable while we apply transforms.
+void T66_SetStaticMeshActorMobility(AStaticMeshActor* Actor, EComponentMobility::Type Mobility)
+{
+if (!Actor) return;
+if (UStaticMeshComponent* SMC = Actor->GetStaticMeshComponent())
+{
+if (SMC->Mobility != Mobility)
+{
+SMC->SetMobility(Mobility);
+}
+}
+}
 
-	int32 T66GetDifficultyEndStage(const ET66Difficulty Difficulty)
-	{
-		switch (Difficulty)
-		{
-		case ET66Difficulty::Easy: return 4;
-		case ET66Difficulty::Medium: return 8;
-		case ET66Difficulty::Hard: return 12;
-		case ET66Difficulty::VeryHard: return 16;
-		case ET66Difficulty::Impossible: return 20;
-		default: return 4;
-		}
-	}
+bool T66_IsCompanionUnlockStage(int32 StageNum)
+{
+// Stage clears unlock one companion each through the first four difficulties.
+return StageNum >= 1 && StageNum <= T66LastCompanionUnlockStage;
+}
 
-	bool T66IsReachableProgressionStage(const int32 StageNum)
-	{
-		return StageNum >= 1 && StageNum <= T66MaxGlobalStage;
-	}
+bool T66_IsDifficultyBossStage(int32 StageNum)
+{
+return StageNum == 4 || StageNum == 8 || StageNum == 12 || StageNum == 16 || StageNum == 20;
+}
 
-	// Helper: avoid PIE warnings ("StaticMeshComponent has to be 'Movable' if you'd like to move")
-	// by temporarily setting mobility to Movable while we apply transforms.
-	void T66_SetStaticMeshActorMobility(AStaticMeshActor* Actor, EComponentMobility::Type Mobility)
-	{
-		if (!Actor) return;
-		if (UStaticMeshComponent* SMC = Actor->GetStaticMeshComponent())
-		{
-			if (SMC->Mobility != Mobility)
-			{
-				SMC->SetMobility(Mobility);
-			}
-		}
-	}
+int32 T66_CompanionBaseIndexForStage(int32 StageNum)
+{
+if (!T66_IsCompanionUnlockStage(StageNum))
+{
+return INDEX_NONE;
+}
 
-	bool T66_IsCompanionUnlockStage(int32 StageNum)
-	{
-		// Stage clears unlock companions across the reachable progression stages.
-		return T66IsReachableProgressionStage(StageNum);
-	}
+return StageNum;
+}
 
-	bool T66_IsDifficultyBossStage(int32 StageNum)
-	{
-		return StageNum == 4 || StageNum == 8 || StageNum == 12 || StageNum == 16 || StageNum == 20;
-	}
+void T66_AppendCompanionUnlockIDsForStage(const int32 StageNum, TArray<FName>& OutCompanionIDs)
+{
+const int32 BaseIndex = T66_CompanionBaseIndexForStage(StageNum);
+if (BaseIndex == INDEX_NONE)
+{
+return;
+}
 
-	int32 T66_CountReachableProgressionStagesUpTo(int32 StageNum)
-	{
-		if (StageNum <= 0)
-		{
-			return 0;
-		}
+auto AddCompanionByIndex = [&OutCompanionIDs](const int32 Index)
+{
+if (Index <= 0 || Index > T66LastCompanionUnlockStage)
+{
+return;
+}
 
-		int32 Count = 0;
-		for (int32 S = 1; S <= FMath::Min(StageNum, T66MaxGlobalStage); ++S)
-		{
-			if (T66IsReachableProgressionStage(S))
-			{
-				++Count;
-			}
-		}
-		return Count;
-	}
+OutCompanionIDs.AddUnique(FName(*FString::Printf(TEXT("Companion_%02d"), Index)));
+};
 
-	int32 T66_CountFinaleBonusUnlocksBeforeStage(int32 StageNum)
-	{
-		int32 Count = 0;
-		for (const int32 FinaleStage : { 4, 8, 12, 16 })
-		{
-			if (FinaleStage < StageNum)
-			{
-				++Count;
-			}
-		}
-		return Count;
-	}
+AddCompanionByIndex(BaseIndex);
+}
 
-	int32 T66_CompanionBaseIndexForStage(int32 StageNum)
-	{
-		if (!T66_IsCompanionUnlockStage(StageNum))
-		{
-			return INDEX_NONE;
-		}
+int32 T66ResolveFallbackBossStageNum(const FName BossID, const int32 DefaultStageNum)
+{
+const int32 ClampedDefaultStage = FMath::Clamp(DefaultStageNum, 1, T66MaxGlobalStage);
+const FString BossName = BossID.ToString();
+int32 SeparatorIndex = INDEX_NONE;
+if (!BossName.FindLastChar(TEXT('_'), SeparatorIndex))
+{
+return ClampedDefaultStage;
+}
 
-		return T66_CountReachableProgressionStagesUpTo(StageNum) + T66_CountFinaleBonusUnlocksBeforeStage(StageNum);
-	}
+const FString Suffix = BossName.Mid(SeparatorIndex + 1);
+if (Suffix.IsEmpty())
+{
+return ClampedDefaultStage;
+}
 
-	void T66_AppendCompanionUnlockIDsForStage(const int32 StageNum, TArray<FName>& OutCompanionIDs)
-	{
-		const int32 BaseIndex = T66_CompanionBaseIndexForStage(StageNum);
-		if (BaseIndex == INDEX_NONE)
-		{
-			return;
-		}
+for (const TCHAR Char : Suffix)
+{
+if (!FChar::IsDigit(Char))
+{
+return ClampedDefaultStage;
+}
+}
 
-		auto AddCompanionByIndex = [&OutCompanionIDs](const int32 Index)
-		{
-			if (Index <= 0 || Index > 24)
-			{
-				return;
-			}
+return FMath::Clamp(FCString::Atoi(*Suffix), 1, T66MaxGlobalStage);
+}
 
-			OutCompanionIDs.AddUnique(FName(*FString::Printf(TEXT("Companion_%02d"), Index)));
-		};
+void T66BuildFallbackBossData(const int32 StageNum, const FName BossID, FBossData& OutBossData)
+{
+const int32 S = FMath::Clamp(StageNum, 1, T66MaxGlobalStage);
+const float T = static_cast<float>(S - 1) / static_cast<float>(T66MaxGlobalStage - 1); // 0..1
 
-		AddCompanionByIndex(BaseIndex);
-		if (StageNum == 4 || StageNum == 8 || StageNum == 12 || StageNum == 16 || StageNum == 20)
-		{
-			AddCompanionByIndex(BaseIndex + 1);
-		}
-	}
+OutBossData = FBossData{};
+OutBossData.BossID = BossID.IsNone()
+? FName(*FString::Printf(TEXT("Boss_%02d"), S))
+: BossID;
+OutBossData.MaxHP = 1000 + (S * 250);
+OutBossData.AwakenDistance = 900.f;
+OutBossData.MoveSpeed = 350.f + (S * 2.f);
+OutBossData.FireIntervalSeconds = FMath::Clamp(2.0f - (S * 0.015f), 0.65f, 3.5f);
+OutBossData.ProjectileSpeed = 900.f + (S * 15.f);
+OutBossData.ProjectileDamageHearts = 1 + (S / 20);
 
-	int32 T66ResolveFallbackBossStageNum(const FName BossID, const int32 DefaultStageNum)
-	{
-		const int32 ClampedDefaultStage = FMath::Clamp(DefaultStageNum, 1, T66MaxGlobalStage);
-		const FString BossName = BossID.ToString();
-		int32 SeparatorIndex = INDEX_NONE;
-		if (!BossName.FindLastChar(TEXT('_'), SeparatorIndex))
-		{
-			return ClampedDefaultStage;
-		}
+const float Hue = FMath::Fmod(static_cast<float>(S) * 31.f, 360.f);
+FLinearColor Color = FLinearColor::MakeFromHSV8(static_cast<uint8>(Hue / 360.f * 255.f), 210, 245);
+Color.A = 1.f;
+Color.R = FMath::Lerp(Color.R * 0.85f, Color.R, T);
+Color.G = FMath::Lerp(Color.G * 0.85f, Color.G, T);
+Color.B = FMath::Lerp(Color.B * 0.85f, Color.B, T);
+OutBossData.PlaceholderColor = Color;
+}
 
-		const FString Suffix = BossName.Mid(SeparatorIndex + 1);
-		if (Suffix.IsEmpty())
-		{
-			return ClampedDefaultStage;
-		}
+UClass* T66LoadBossClassSync(const FBossData& BossData)
+{
+UClass* BossClass = AT66BossBase::StaticClass();
+if (!BossData.BossClass.IsNull())
+{
+if (UClass* LoadedClass = BossData.BossClass.LoadSynchronous())
+{
+if (LoadedClass->IsChildOf(AT66BossBase::StaticClass()))
+{
+BossClass = LoadedClass;
+}
+}
+}
+return BossClass;
+}
 
-		for (const TCHAR Char : Suffix)
-		{
-			if (!FChar::IsDigit(Char))
-			{
-				return ClampedDefaultStage;
-			}
-		}
+FVector T66ComputeBossClusterLocation(const FVector& Center, const int32 BossIndex, const int32 BossCount)
+{
+if (BossCount <= 0)
+{
+return Center;
+}
 
-		return FMath::Clamp(FCString::Atoi(*Suffix), 1, T66MaxGlobalStage);
-	}
+const float Radius = 760.f + (90.f * static_cast<float>(FMath::Max(0, BossCount - 1)));
+const float Angle = (BossCount == 1)
+? 0.f
+: (2.f * PI * static_cast<float>(BossIndex) / static_cast<float>(BossCount));
+return Center + FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f);
+}
 
-	void T66BuildFallbackBossData(const int32 StageNum, const FName BossID, FBossData& OutBossData)
-	{
-		const int32 S = FMath::Clamp(StageNum, 1, T66MaxGlobalStage);
-		const float T = static_cast<float>(S - 1) / static_cast<float>(T66MaxGlobalStage - 1); // 0..1
+bool T66_HasAnyFloorTag(const AActor* A)
+{
+if (!A) return false;
+// Covers: T66_Floor_Main/Start/Boss/Conn*, plus tutorial helper floors.
+static const FName Prefix(TEXT("T66_Floor"));
+for (const FName& Tag : A->Tags)
+{
+const FString S = Tag.ToString();
+if (S.StartsWith(Prefix.ToString()))
+{
+return true;
+}
+}
+return false;
+}
 
-		OutBossData = FBossData{};
-		OutBossData.BossID = BossID.IsNone()
-			? FName(*FString::Printf(TEXT("Boss_%02d"), S))
-			: BossID;
-		OutBossData.MaxHP = 1000 + (S * 250);
-		OutBossData.AwakenDistance = 900.f;
-		OutBossData.MoveSpeed = 350.f + (S * 2.f);
-		OutBossData.FireIntervalSeconds = FMath::Clamp(2.0f - (S * 0.015f), 0.65f, 3.5f);
-		OutBossData.ProjectileSpeed = 900.f + (S * 15.f);
-		OutBossData.ProjectileDamageHearts = 1 + (S / 20);
+const FName T66MainMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
+const FName T66MainMapTerrainMaterialsReadyTag(TEXT("T66_MainMapTerrain_MaterialsReady"));
+const FName T66TowerCeilingTag(TEXT("T66_Tower_Ceiling"));
+const FName T66TowerTraceBarrierTag(TEXT("T66_Map_TraversalBarrier"));
+const TCHAR* T66TowerFloorTagPrefix = TEXT("T66_TowerFloor_");
 
-		const float Hue = FMath::Fmod(static_cast<float>(S) * 31.f, 360.f);
-		FLinearColor Color = FLinearColor::MakeFromHSV8(static_cast<uint8>(Hue / 360.f * 255.f), 210, 245);
-		Color.A = 1.f;
-		Color.R = FMath::Lerp(Color.R * 0.85f, Color.R, T);
-		Color.G = FMath::Lerp(Color.G * 0.85f, Color.G, T);
-		Color.B = FMath::Lerp(Color.B * 0.85f, Color.B, T);
-		OutBossData.PlaceholderColor = Color;
-	}
+struct FT66PlayerStartCache
+{
+TWeakObjectPtr<UWorld> World;
+TArray<TWeakObjectPtr<APlayerStart>> Starts;
+bool bScanned = false;
+};
 
-	UClass* T66LoadBossClassSync(const FBossData& BossData)
-	{
-		UClass* BossClass = AT66BossBase::StaticClass();
-		if (!BossData.BossClass.IsNull())
-		{
-			if (UClass* LoadedClass = BossData.BossClass.LoadSynchronous())
-			{
-				if (LoadedClass->IsChildOf(AT66BossBase::StaticClass()))
-				{
-					BossClass = LoadedClass;
-				}
-			}
-		}
-		return BossClass;
-	}
+struct FT66TaggedActorCache
+{
+TWeakObjectPtr<UWorld> World;
+TWeakObjectPtr<AActor> MainMapTerrainVisualActor;
+TMap<FName, TWeakObjectPtr<AActor>> ActorsByTag;
+};
 
-	FVector T66ComputeBossClusterLocation(const FVector& Center, const int32 BossIndex, const int32 BossCount)
-	{
-		if (BossCount <= 0)
-		{
-			return Center;
-		}
+static FT66PlayerStartCache GT66PlayerStartCache;
+static FT66TaggedActorCache GT66TaggedActorCache;
 
-		const float Radius = 760.f + (90.f * static_cast<float>(FMath::Max(0, BossCount - 1)));
-		const float Angle = (BossCount == 1)
-			? 0.f
-			: (2.f * PI * static_cast<float>(BossIndex) / static_cast<float>(BossCount));
-		return Center + FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 0.f);
-	}
+void T66ResetTaggedActorCache(UWorld* World)
+{
+GT66TaggedActorCache.World = World;
+GT66TaggedActorCache.MainMapTerrainVisualActor.Reset();
+GT66TaggedActorCache.ActorsByTag.Reset();
+}
 
-	bool T66_HasAnyFloorTag(const AActor* A)
-	{
-		if (!A) return false;
-		// Covers: T66_Floor_Main/Start/Boss/Conn*, plus catch-up/tutorial helper floors.
-		static const FName Prefix(TEXT("T66_Floor"));
-		for (const FName& Tag : A->Tags)
-		{
-			const FString S = Tag.ToString();
-			if (S.StartsWith(Prefix.ToString()))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	const FName T66MainMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
-	const FName T66MainMapTerrainMaterialsReadyTag(TEXT("T66_MainMapTerrain_MaterialsReady"));
-	const FName T66TowerCeilingTag(TEXT("T66_Tower_Ceiling"));
-	const FName T66TowerTraceBarrierTag(TEXT("T66_Map_TraversalBarrier"));
-	const TCHAR* T66TowerFloorTagPrefix = TEXT("T66_TowerFloor_");
-
-	struct FT66PlayerStartCache
-	{
-		TWeakObjectPtr<UWorld> World;
-		TArray<TWeakObjectPtr<APlayerStart>> Starts;
-		bool bScanned = false;
-	};
-
-	struct FT66TaggedActorCache
-	{
-		TWeakObjectPtr<UWorld> World;
-		TWeakObjectPtr<AActor> MainMapTerrainVisualActor;
-		TMap<FName, TWeakObjectPtr<AActor>> ActorsByTag;
-	};
-
-	static FT66PlayerStartCache GT66PlayerStartCache;
-	static FT66TaggedActorCache GT66TaggedActorCache;
-
-	void T66ResetTaggedActorCache(UWorld* World)
-	{
-		GT66TaggedActorCache.World = World;
-		GT66TaggedActorCache.MainMapTerrainVisualActor.Reset();
-		GT66TaggedActorCache.ActorsByTag.Reset();
-	}
-
-	void T66InvalidatePlayerStartCache(UWorld* World)
-	{
-		if (!World || GT66PlayerStartCache.World.Get() == World)
-		{
+void T66InvalidatePlayerStartCache(UWorld* World)
+{
+if (!World || GT66PlayerStartCache.World.Get() == World)
+{
 			GT66PlayerStartCache.World = World;
 			GT66PlayerStartCache.Starts.Reset();
 			GT66PlayerStartCache.bScanned = false;
@@ -559,8 +493,7 @@ namespace T66GameModePrivate
 
 	bool T66ShouldLogTowerGatePlacement(const AActor* Actor)
 	{
-		return Actor
-			&& (Actor->IsA(AT66StageGate::StaticClass()) || Actor->IsA(AT66StageCatchUpGate::StaticClass()));
+		return Actor && Actor->IsA(AT66StageGate::StaticClass());
 	}
 
 	bool T66TrySnapActorToTowerFloor(UWorld* World, AActor* Actor, const T66TowerMapTerrain::FLayout& Layout, const int32 FloorNumber, const FVector& DesiredLocation)
@@ -678,9 +611,12 @@ namespace T66GameModePrivate
 			return false;
 		}
 
-		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
-		return !MapName.Contains(TEXT("Tutorial"))
-			&& !MapName.Contains(TEXT("Lab"));
+		if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+		{
+			return !T66GI->IsTutorialRun() && !T66GI->IsLabRun() && !T66GI->IsTestRoomRun();
+		}
+
+		return true;
 	}
 
 	void T66DestroyMiasmaBoundaryActors(UWorld* World)
@@ -907,15 +843,15 @@ namespace T66GameModePrivate
 		return 0;
 	}
 
-	bool T66IsStandaloneTutorialMap(const UWorld* World)
+	bool T66IsTutorialRun(const UWorld* World)
 	{
 		if (!World)
 		{
 			return false;
 		}
 
-		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
-		return MapName.Contains(TEXT("Tutorial"));
+		const UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
+		return T66GI && T66GI->IsTutorialRun();
 	}
 
 	bool T66TryGetTaggedActorTransform(const UWorld* World, const FName Tag, FVector& OutLocation, FRotator& OutRotation)
@@ -1005,6 +941,48 @@ AT66GameMode::AT66GameMode()
 	bUseSeamlessTravel = true;
 
 	FT66TerrainThemeAssets::FillDefaultCliffSideMaterials(CliffSideMaterials);
+
+	PixalTestMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTEST/SM_PIXALTEST.SM_PIXALTEST")));
+	PixalTestTexture = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTEST/T_PIXALTEST.T_PIXALTEST")));
+	PixalTest2Mesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTEST2/SM_PIXALTEST2.SM_PIXALTEST2")));
+	PixalTest2Texture = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTEST2/T_PIXALTEST2.T_PIXALTEST2")));
+	PixalSlimeMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALSLIME/SM_PIXALSLIME.SM_PIXALSLIME")));
+	PixalSlimeTexture = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALSLIME/T_PIXALSLIME.T_PIXALSLIME")));
+	PixalSlimeHifiMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALSLIME_HIFIRUSH/SM_PIXALSLIME_HIFIRUSH.SM_PIXALSLIME_HIFIRUSH")));
+	PixalSlimeHifiTexture = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALSLIME_HIFIRUSH/T_PIXALSLIME_HIFIRUSH.T_PIXALSLIME_HIFIRUSH")));
+	PixalStandaloneTestMeshes = {
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTEST3/SM_PIXALTEST3.SM_PIXALTEST3"))),
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTEST4/SM_PIXALTEST4.SM_PIXALTEST4"))),
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTEST5/SM_PIXALTEST5.SM_PIXALTEST5"))),
+	};
+	PixalStandaloneTestTextures = {
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTEST3/T_PIXALTEST3.T_PIXALTEST3"))),
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTEST4/T_PIXALTEST4.T_PIXALTEST4"))),
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTEST5/T_PIXALTEST5.T_PIXALTEST5"))),
+	};
+	PixalEasyDungeonHifiMeshes = {
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALBONEWALKER_HIFIRUSH/SM_PIXALBONEWALKER_HIFIRUSH.SM_PIXALBONEWALKER_HIFIRUSH"))),
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALRATPACK_HIFIRUSH/SM_PIXALRATPACK_HIFIRUSH.SM_PIXALRATPACK_HIFIRUSH"))),
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALCAVEBAT_HIFIRUSH/SM_PIXALCAVEBAT_HIFIRUSH.SM_PIXALCAVEBAT_HIFIRUSH"))),
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALHEXSLINGER_HIFIRUSH/SM_PIXALHEXSLINGER_HIFIRUSH.SM_PIXALHEXSLINGER_HIFIRUSH"))),
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTOMBSPIDER_HIFIRUSH/SM_PIXALTOMBSPIDER_HIFIRUSH.SM_PIXALTOMBSPIDER_HIFIRUSH"))),
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALSTONESENTINEL_HIFIRUSH/SM_PIXALSTONESENTINEL_HIFIRUSH.SM_PIXALSTONESENTINEL_HIFIRUSH"))),
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALMIMICLURE_HIFIRUSH/SM_PIXALMIMICLURE_HIFIRUSH.SM_PIXALMIMICLURE_HIFIRUSH"))),
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALBONECONJURER_HIFIRUSH/SM_PIXALBONECONJURER_HIFIRUSH.SM_PIXALBONECONJURER_HIFIRUSH"))),
+		TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALCRYPTWRAITH_HIFIRUSH/SM_PIXALCRYPTWRAITH_HIFIRUSH.SM_PIXALCRYPTWRAITH_HIFIRUSH"))),
+	};
+	PixalEasyDungeonHifiTextures = {
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALBONEWALKER_HIFIRUSH/T_PIXALBONEWALKER_HIFIRUSH.T_PIXALBONEWALKER_HIFIRUSH"))),
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALRATPACK_HIFIRUSH/T_PIXALRATPACK_HIFIRUSH.T_PIXALRATPACK_HIFIRUSH"))),
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALCAVEBAT_HIFIRUSH/T_PIXALCAVEBAT_HIFIRUSH.T_PIXALCAVEBAT_HIFIRUSH"))),
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALHEXSLINGER_HIFIRUSH/T_PIXALHEXSLINGER_HIFIRUSH.T_PIXALHEXSLINGER_HIFIRUSH"))),
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALTOMBSPIDER_HIFIRUSH/T_PIXALTOMBSPIDER_HIFIRUSH.T_PIXALTOMBSPIDER_HIFIRUSH"))),
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALSTONESENTINEL_HIFIRUSH/T_PIXALSTONESENTINEL_HIFIRUSH.T_PIXALSTONESENTINEL_HIFIRUSH"))),
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALMIMICLURE_HIFIRUSH/T_PIXALMIMICLURE_HIFIRUSH.T_PIXALMIMICLURE_HIFIRUSH"))),
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALBONECONJURER_HIFIRUSH/T_PIXALBONECONJURER_HIFIRUSH.T_PIXALBONECONJURER_HIFIRUSH"))),
+		TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Characters/Mobs/PIXALCRYPTWRAITH_HIFIRUSH/T_PIXALCRYPTWRAITH_HIFIRUSH.T_PIXALCRYPTWRAITH_HIFIRUSH"))),
+	};
+	PixalTestSharedMaterial = TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/Materials/MI_GLB_Unlit_Character_Shared.MI_GLB_Unlit_Character_Shared")));
 }
 
 AT66EnemyDirector* AT66GameMode::FindOrCacheEnemyDirector(UWorld* World)
@@ -1199,7 +1177,7 @@ void AT66GameMode::Tick(float DeltaTime)
 
 			// Robust: if the timer is already active (even if we missed the delegate),
 			// try spawning the LoanShark when pending.
-			if (!IsLabLevel() && RunState->GetStageTimerActive())
+			if (!IsLabRun() && RunState->GetStageTimerActive())
 			{
 				TrySpawnLoanSharkIfNeeded();
 			}
@@ -1239,7 +1217,7 @@ void AT66GameMode::Logout(AController* Exiting)
 
 void AT66GameMode::HandleStageTimerChanged()
 {
-	if (IsLabLevel()) return;
+	if (IsLabRun()) return;
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (!RunState) return;
@@ -1283,7 +1261,7 @@ void AT66GameMode::HandleDifficultyChanged()
 }
 void AT66GameMode::RefreshProgressionDrivenSystems(const bool bRescaleLiveEnemies)
 {
-	if (IsLabLevel())
+	if (IsLabRun())
 	{
 		return;
 	}
@@ -1353,15 +1331,25 @@ void AT66GameMode::RefreshProgressionDrivenSystems(const bool bRescaleLiveEnemie
 void AT66GameMode::ApplyStageProgressionVisuals()
 {
 	UWorld* World = GetWorld();
-	UGameInstance* GI = GetGameInstance();
-	UT66StageProgressionSubsystem* StageProgression = GI ? GI->GetSubsystem<UT66StageProgressionSubsystem>() : nullptr;
-	if (!World || !StageProgression)
+	if (!World)
 	{
 		return;
 	}
 
-	StageProgression->RefreshSnapshot(false);
-	FT66StageProgressionVisuals::ApplyToWorld(World, StageProgression->GetCurrentSnapshot());
+	UGameInstance* GI = GetGameInstance();
+	UT66StageProgressionSubsystem* StageProgression = GI ? GI->GetSubsystem<UT66StageProgressionSubsystem>() : nullptr;
+	if (StageProgression)
+	{
+		StageProgression->RefreshSnapshot(false);
+		FT66StageProgressionVisuals::ApplyToWorld(World, StageProgression->GetCurrentSnapshot());
+	}
+
+	const ET66Difficulty Difficulty = GetT66GameInstance()
+		? GetT66GameInstance()->SelectedDifficulty
+		: ET66Difficulty::Easy;
+	FT66WorldVisualSetup::EnsureAtmosphereForWorld(
+		World,
+		T66TowerMapTerrain::ResolveGameplayLevelThemeForDifficulty(Difficulty));
 }
 
 void AT66GameMode::TrySpawnLoanSharkIfNeeded()
@@ -1458,6 +1446,12 @@ void AT66GameMode::TrySpawnLoanSharkIfNeeded()
 void AT66GameMode::HandleSettingsChanged()
 {
 	FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
+	const UT66GameInstance* T66GI = GetT66GameInstance();
+	const bool bTestRoomRun = T66GI && T66GI->IsTestRoomRun();
+	if (!bTestRoomRun)
+	{
+		ApplyStageProgressionVisuals();
+	}
 
 	if (UGameInstance* GI = GetGameInstance())
 	{
@@ -1465,7 +1459,14 @@ void AT66GameMode::HandleSettingsChanged()
 		{
 			if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 			{
-				RetroFX->ApplySettings(PS->GetRetroFXSettings(), GetWorld());
+				FT66RetroFXSettings RetroSettings = PS->GetRetroFXSettings();
+				if (bTestRoomRun)
+				{
+					RetroSettings.bEnableRetroFXMaster = false;
+					RetroSettings.bUseRealLowResolution = false;
+					RetroSettings.TargetResolutionHeightPercent = 100.0f;
+				}
+				RetroFX->ApplySettings(RetroSettings, GetWorld());
 			}
 			else
 			{
@@ -1570,12 +1571,17 @@ bool AT66GameMode::TrySnapActorToTerrainAtLocation(AActor* Actor, const FVector&
 void AT66GameMode::MaintainPlayerTerrainSafety()
 {
 	UWorld* World = GetWorld();
-	if (!World || IsLabLevel())
+	if (!World || IsLabRun())
 	{
 		return;
 	}
 
 	UT66GameInstance* GI = GetT66GameInstance();
+	if (GI && GI->IsTestRoomRun())
+	{
+		return;
+	}
+
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	const FT66MapPreset Preset = T66BuildMainMapPreset(GI);
 	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);

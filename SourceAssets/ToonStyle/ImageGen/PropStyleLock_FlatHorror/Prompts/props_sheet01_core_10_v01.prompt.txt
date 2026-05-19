@@ -1,0 +1,23 @@
+Create one review contact sheet for T66 prop model source art.
+
+Overall style: match the current T66 DungeonHorror enemy image sheets: clean white background, hard continuous black ink outline, bright saturated flat colors, eerie horror/uncanny mood, model-ready centered silhouettes, no cute mascot styling.
+
+Critical prop caveat: all props must look FLAT. No sculpted ridges, no raised bevels, no panel extrusion, no 3D pedestal bases, no realistic material relief, no glossy highlights, no cast shadows, no contact shadows. The design should come from painted texture shapes, bold color regions, black void accents, and icon-like silhouettes. Use flat cel shading only, with at most one simple shadow color per prop. Keep each prop to two bright bold dominant colors plus small black/white accent details where necessary.
+
+Layout: 5 columns by 2 rows, exactly 10 separate prop drawings, evenly spaced. No text labels inside the image, no watermark, no UI chrome. Thin light gray cell separators are okay. Each prop should be centered in its own cell and fully visible.
+
+Row 1, left to right:
+1. Arcade Machine: one shared arcade cabinet model for all minigames, tall flat cabinet, two bright colors only, huge black screen with one unsettling red eye-like glow shape painted on the screen, no individual game branding.
+2. Vehicle: generic difficulty vehicle, not a tractor, compact cursed dungeon vehicle silhouette with round wheels, huge black windshield shape, two bright colors only, no farm tractor cues, no text.
+3. Chest: loot chest model, flat rectangular treasure chest silhouette, large black keyhole/void shape as the main horror read, painted plank texture only, no raised planks or metal ridges.
+4. Crate: loot crate model, square wooden crate silhouette, large black stamped rune/handprint on the front, painted flat plank marks only, no raised boards.
+5. Fountain: cursed revive fountain, flat stone basin silhouette with a huge black water pool and one bright red reflection mark, no water splashes, no carved ridges.
+
+Row 2, left to right:
+6. Difficulty Totem: tall stacked totem slab, one huge black eye/glyph painted on the front, two bright colors only, flat painted carving shapes, no raised carvings.
+7. Quick Revive Vending Machine: flat vending-machine silhouette, huge black glass panel and one oversized white medical cross icon, eerie but readable, no brand text.
+8. Loot Wheel: flat prize wheel silhouette, circular wheel with bold wedge texture only, huge black pointer/mouth shape at the top, no studs, no bolts, no raised rim.
+9. Loot Bag: one shared model for all loot bag rarities, tied sack silhouette, huge black drawstring-mouth shape, two bright colors only, rarity should feel texture/color driven later, no separate rarity models.
+10. Idol Altar: flat stone altar and idol statue silhouette, one huge black void eye/glyph on the idol, two bright colors only, no carved ridges, no pedestal bevels.
+
+Avoid: realism, painterly rendering, gradients between colors, texture noise, tiny ornaments, readable words, labels, cute faces, rounded toy look, metallic shine, gold-only palette, 3D bevels, physical ridges, heavy perspective.

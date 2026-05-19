@@ -1,0 +1,74 @@
+{
+  "asset_name": "tombspider",
+  "base_color_param": "/Game/ToonStyle/TestAssets/Lineup/Textures/T_tombspider_0.T_tombspider_0",
+  "diffuse_param": "/Game/ToonStyle/TestAssets/Lineup/Textures/T_tombspider_0.T_tombspider_0",
+  "expected_height": 180.0,
+  "height_tolerance": 0.1,
+  "imported_object_paths": [
+    "/Game/ToonStyle/TestAssets/Lineup/SM_tombspider.SM_tombspider"
+  ],
+  "imported_outline_object_paths": [
+    "/Game/ToonStyle/TestAssets/Lineup/SM_tombspider_Outline.SM_tombspider_Outline"
+  ],
+  "manifest_normal_delta_sample": {
+    "distinct": true,
+    "reason": "non_humanoid"
+  },
+  "manifest_normal_transfer": {
+    "applied": false,
+    "reason": "non_humanoid"
+  },
+  "manifest_vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 575190,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "material_instance": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_tombspider",
+  "outline_slot0_material": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_tombspider.MI_tombspider",
+  "outline_static_mesh": "/Game/ToonStyle/TestAssets/Lineup/SM_tombspider_Outline",
+  "outline_static_mesh_bounds": {
+    "extent": [
+      85.458984375,
+      98.29061889648438,
+      90.00000215766931
+    ],
+    "height": 180.00000431533863,
+    "origin": [
+      0.0,
+      -1.52587890625e-05,
+      89.99999784233069
+    ],
+    "size": [
+      170.91796875,
+      196.58123779296875,
+      180.00000431533863
+    ]
+  },
+  "slot0_material": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_tombspider.MI_tombspider",
+  "static_mesh": "/Game/ToonStyle/TestAssets/Lineup/SM_tombspider",
+  "static_mesh_bounds": {
+    "extent": [
+      85.458984375,
+      98.29061889648438,
+      90.00000215766931
+    ],
+    "height": 180.00000431533863,
+    "origin": [
+      0.0,
+      -1.52587890625e-05,
+      89.99999784233069
+    ],
+    "size": [
+      170.91796875,
+      196.58123779296875,
+      180.00000431533863
+    ]
+  },
+  "target_dir": "/Game/ToonStyle/TestAssets/Lineup",
+  "textures": [
+    "/Game/ToonStyle/TestAssets/Lineup/Textures/T_tombspider_0",
+    "/Game/ToonStyle/TestAssets/Lineup/Textures/T_tombspider_1"
+  ]
+}

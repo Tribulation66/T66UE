@@ -22,8 +22,6 @@ public class T66Mini : ModuleRules
 		{
 			"Slate",
 			"ApplicationCore",
-			"EnhancedInput",
-			"Niagara",
 			"HTTP",
 			"Json",
 			"JsonUtilities",

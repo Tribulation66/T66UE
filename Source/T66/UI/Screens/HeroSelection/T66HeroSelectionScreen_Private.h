@@ -453,7 +453,8 @@ namespace T66HeroSelectionPrivate
 
 	inline TSoftObjectPtr<UTexture2D> ResolveHeroSelectionUltimateIcon(const FName HeroID, const ET66UltimateType UltimateType)
 	{
-		if (HeroID == FName(TEXT("Hero_1")) && UltimateType == ET66UltimateType::SpearStorm)
+		static_cast<void>(HeroID);
+		if (UltimateType == ET66UltimateType::SpearStorm)
 		{
 			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Abilities/Hero_1/T_Hero_1_Ultimate.T_Hero_1_Ultimate")));
 		}
@@ -463,7 +464,8 @@ namespace T66HeroSelectionPrivate
 
 	inline TSoftObjectPtr<UTexture2D> ResolveHeroSelectionPassiveIcon(const FName HeroID, const ET66PassiveType PassiveType)
 	{
-		if (HeroID == FName(TEXT("Hero_1")) && PassiveType == ET66PassiveType::IronWill)
+		static_cast<void>(HeroID);
+		if (PassiveType == ET66PassiveType::IronWill)
 		{
 			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Abilities/Hero_1/T_Hero_1_Passive.T_Hero_1_Passive")));
 		}

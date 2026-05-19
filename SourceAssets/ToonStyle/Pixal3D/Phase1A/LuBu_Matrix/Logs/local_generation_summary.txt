@@ -1,0 +1,12 @@
+[start] lubu_r1024_t2048_default.glb res=1024 tex=2048 sampling=default
+{"name":"lubu_r1024_t2048_default.glb","resolution":1024,"texture_size":2048,"sampling":"default","http_status":"200","duration_seconds":64,"bytes":9309176}
+[start] lubu_r1536_t2048_default.glb res=1536 tex=2048 sampling=default
+{"name":"lubu_r1536_t2048_default.glb","resolution":1536,"texture_size":2048,"sampling":"default","http_status":"200","duration_seconds":166,"bytes":9746384}
+[start] lubu_r1024_t4096_default.glb res=1024 tex=4096 sampling=default
+{"name":"lubu_r1024_t4096_default.glb","resolution":1024,"texture_size":4096,"sampling":"default","http_status":"200","duration_seconds":100,"bytes":11742284}
+[start] lubu_r1536_t4096_default.glb res=1536 tex=4096 sampling=default
+{"name":"lubu_r1536_t4096_default.glb","resolution":1536,"texture_size":4096,"sampling":"default","http_status":"200","duration_seconds":149,"bytes":13488068}
+[start] lubu_r1024_t2048_high.glb res=1024 tex=2048 sampling=high
+{"name":"lubu_r1024_t2048_high.glb","resolution":1024,"texture_size":2048,"sampling":"high","http_status":"200","duration_seconds":86,"bytes":9806676}
+[start] lubu_r1536_t4096_high.glb res=1536 tex=4096 sampling=high
+{"name":"lubu_r1536_t4096_high.glb","resolution":1536,"texture_size":4096,"sampling":"high","http_status":"200","duration_seconds":206,"bytes":13649312}

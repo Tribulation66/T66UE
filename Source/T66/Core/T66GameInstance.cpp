@@ -1,11 +1,10 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66GameInstance.h"
+#include "Core/T66DirectEntry.h"
 #include "Core/T66ReleaseVariantSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
-#include "Core/T66PlayerSettingsSubsystem.h"
-#include "Core/T66RetroFXSubsystem.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
@@ -20,7 +19,9 @@
 #include "GameFramework/GameUserSettings.h"
 #include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
 #include "Misc/PackageName.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/Layout/SBorder.h"
@@ -35,7 +36,6 @@ namespace
 	static const FName LongRangeItemID(TEXT("Item_LongRangeDmg"));
 	static const FName SpinWheelItemID(TEXT("Item_SpinWheel"));
 	static const FName MovementSpeedItemID(TEXT("Item_MovementSpeed"));
-	static const TCHAR* KnightPreviewMovieName = TEXT("KnightClip.mp4");
 
 	static FName NormalizeLegacyItemID(FName ItemID)
 	{
@@ -54,24 +54,6 @@ namespace
 			&& ItemID != LongRangeItemID
 			&& ItemID != SpinWheelItemID
 			&& ItemID != MovementSpeedItemID;
-	}
-
-	static FString ResolveKnightPreviewMoviePath()
-	{
-		const TArray<FString> CandidatePaths = {
-			FPaths::ProjectContentDir() / TEXT("Movies") / KnightPreviewMovieName,
-			FPaths::ProjectDir() / TEXT("SourceAssets/Movies") / KnightPreviewMovieName
-		};
-
-		for (const FString& CandidatePath : CandidatePaths)
-		{
-			if (FPaths::FileExists(CandidatePath))
-			{
-				return FPaths::ConvertRelativePathToFull(CandidatePath);
-			}
-		}
-
-		return FString();
 	}
 
 	static FSoftObjectPath NormalizeHeroSelectionAssetPath(const FSoftObjectPath& Path)
@@ -156,11 +138,8 @@ namespace
 		return true;
 	}
 
-	static const bool bAlwaysRouteTribulationToTutorial = false;
 	static const TCHAR* FrontendLevelName = TEXT("/Game/Maps/FrontendLevel");
-	static const TCHAR* LabLevelName = TEXT("/Game/Maps/LabLevel");
 	static const TCHAR* GameplayLevelName = TEXT("/Game/Maps/GameplayLevel");
-	static const TCHAR* TutorialLevelName = TEXT("/Game/Maps/Gameplay_Tutorial");
 
 	// Goal: remove "soft/blurry" presentation caused by resolution scaling / dynamic res.
 	// Do this once on boot (no per-frame work).
@@ -193,9 +172,9 @@ namespace
 		};
 
 		SetCVarFloat(TEXT("r.ScreenPercentage"), 100.f);
-		SetCVarFloat(TEXT("r.SecondaryScreenPercentage.GameViewport"), 100.f);
 		SetCVarInt(TEXT("r.DynamicRes.OperationMode"), 0);
-		SetCVarInt(TEXT("r.TemporalAA.Upsampling"), 0);
+		// AA/upscaler CVars are owned by Config/DefaultEngine.ini [SystemSettings].
+		// Writing them here at SetByGameSetting priority only creates ignored-CVar warnings.
 	}
 }
 
@@ -209,14 +188,15 @@ UT66GameInstance::UT66GameInstance()
 	BossEncountersDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossEncounters.DT_BossEncounters")));
 	BossEncounterMembersDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossEncounterMembers.DT_BossEncounterMembers")));
 	ArcadeInteractablesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables")));
+	NPCsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_NPCs.DT_NPCs")));
 
 	// Default selections
 	SelectedPartySize = ET66PartySize::Solo;
 	SelectedHeroID = NAME_None;
 	SelectedCompanionID = NAME_None;
 	SelectedDifficulty = ET66Difficulty::Easy;
-	bPendingWeaponUpgradeOffer = false;
-	PendingWeaponUpgradeRarity = ET66WeaponRarity::Black;
+	SelectedRunMode = ET66RunMode::Regular;
+	SelectedRunCategory = ET66RunCategory::Tower;
 	SelectedRunModifierKind = ET66RunModifierKind::None;
 	SelectedRunModifierID = NAME_None;
 	MiniSelectedHeroID = NAME_None;
@@ -236,6 +216,19 @@ void UT66GameInstance::Init()
 	ApplyCrispRenderingDefaults();
 	ApplyConfiguredMainMapLayoutVariant();
 	RestoreRememberedSelectionDefaults();
+
+	FT66DirectEntryRequest DirectEntryRequest;
+	FString DirectEntryError;
+	if (T66DirectEntry::TryParseCommandLine(DirectEntryRequest, DirectEntryError))
+	{
+		T66DirectEntry::ApplyRequestToGameInstance(*this, DirectEntryRequest);
+	}
+	else if (!DirectEntryError.IsEmpty())
+	{
+		UE_LOG(LogT66GameInstance, Error, TEXT("Direct entry command line rejected: %s"), *DirectEntryError);
+		FPlatformMisc::RequestExitWithStatus(false, 68, TEXT("T66DirectEntryInvalid"));
+		return;
+	}
 
 	// Preload core DataTables early, asynchronously, so we avoid sync loads later.
 	PrimeCoreDataTablesAsync();
@@ -356,7 +349,7 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	AddDT(StatusEffectsDataTable);
 	AddDT(BossEncountersDataTable);
 	AddDT(BossEncounterMembersDataTable);
-	AddDT(HouseNPCsDataTable);
+	AddDT(NPCsDataTable);
 	AddDT(LoanSharkDataTable);
 	AddDT(CharacterVisualsDataTable);
 	AddDT(ArcadeInteractablesDataTable);
@@ -394,7 +387,7 @@ void UT66GameInstance::HandleCoreDataTablesLoaded()
 	if (!CachedStatusEffectsDataTable) CachedStatusEffectsDataTable = StatusEffectsDataTable.Get();
 	if (!CachedBossEncountersDataTable) CachedBossEncountersDataTable = BossEncountersDataTable.Get();
 	if (!CachedBossEncounterMembersDataTable) CachedBossEncounterMembersDataTable = BossEncounterMembersDataTable.Get();
-	if (!CachedHouseNPCsDataTable) CachedHouseNPCsDataTable = HouseNPCsDataTable.Get();
+	if (!CachedNPCsDataTable) CachedNPCsDataTable = NPCsDataTable.Get();
 	if (!CachedLoanSharkDataTable) CachedLoanSharkDataTable = LoanSharkDataTable.Get();
 	if (!CachedCharacterVisualsDataTable) CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
 	if (!CachedArcadeInteractablesDataTable) CachedArcadeInteractablesDataTable = ArcadeInteractablesDataTable.Get();
@@ -532,11 +525,6 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		AddPath(HeroRow->PortraitStacyFull.ToSoftObjectPath());
 		AddPath(HeroRow->PortraitInvincible.ToSoftObjectPath());
 		AddPath(HeroRow->PortraitStacyInvincible.ToSoftObjectPath());
-		if (HeroRow->HeroID == FName(TEXT("Hero_1")))
-		{
-			AddPath(FSoftObjectPath(TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible.T_Hero_1_Chad_Invincible")));
-			AddPath(FSoftObjectPath(TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible.T_Hero_1_Stacy_Invincible")));
-		}
 	}
 
 	TArray<FCompanionData*> CompanionRows;
@@ -566,11 +554,6 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 	if (!SelectedCompanionID.IsNone())
 	{
 		AddVisualAssets(UT66CharacterVisualSubsystem::GetCompanionVisualID(SelectedCompanionID, FName(TEXT("Default"))));
-	}
-
-	if (!ResolveKnightPreviewMoviePath().IsEmpty())
-	{
-		AddPath(FSoftObjectPath(TEXT("/Game/Characters/Heroes/Knight/KnightClip.KnightClip")));
 	}
 
 	bHeroSelectionAssetsLoadRequested = true;
@@ -884,7 +867,7 @@ UDataTable* UT66GameInstance::GetEnemiesDataTable() { return ResolveCachedDataTa
 UDataTable* UT66GameInstance::GetStatusEffectsDataTable() { return ResolveCachedDataTable(CachedStatusEffectsDataTable, StatusEffectsDataTable); }
 UDataTable* UT66GameInstance::GetBossEncountersDataTable() { return ResolveCachedDataTable(CachedBossEncountersDataTable, BossEncountersDataTable); }
 UDataTable* UT66GameInstance::GetBossEncounterMembersDataTable() { return ResolveCachedDataTable(CachedBossEncounterMembersDataTable, BossEncounterMembersDataTable); }
-UDataTable* UT66GameInstance::GetHouseNPCsDataTable() { return ResolveCachedDataTable(CachedHouseNPCsDataTable, HouseNPCsDataTable); }
+UDataTable* UT66GameInstance::GetNPCsDataTable() { return ResolveCachedDataTable(CachedNPCsDataTable, NPCsDataTable); }
 UDataTable* UT66GameInstance::GetLoanSharkDataTable() { return ResolveCachedDataTable(CachedLoanSharkDataTable, LoanSharkDataTable); }
 UDataTable* UT66GameInstance::GetCharacterVisualsDataTable() { return ResolveCachedDataTable(CachedCharacterVisualsDataTable, CharacterVisualsDataTable); }
 UDataTable* UT66GameInstance::GetArcadeInteractablesDataTable() { return ResolveCachedDataTable(CachedArcadeInteractablesDataTable, ArcadeInteractablesDataTable); }
@@ -976,9 +959,9 @@ void UT66GameInstance::GetBossEncounterMemberData(FName BossEncounterID, TArray<
 	});
 }
 
-bool UT66GameInstance::GetHouseNPCData(FName NPCID, FHouseNPCData& OutNPCData)
+bool UT66GameInstance::GetNPCData(FName NPCID, FHouseNPCData& OutNPCData)
 {
-	return FindDataRow(GetHouseNPCsDataTable(), NPCID, OutNPCData, TEXT("GetHouseNPCData"));
+	return FindDataRow(GetNPCsDataTable(), NPCID, OutNPCData, TEXT("GetNPCData"));
 }
 
 bool UT66GameInstance::GetLoanSharkData(FName LoanSharkID, FLoanSharkData& OutData)
@@ -1124,13 +1107,6 @@ TSoftObjectPtr<UTexture2D> UT66GameInstance::ResolveHeroPortrait(const FHeroData
 
 	case ET66HeroPortraitVariant::Invincible:
 		if (!Invincible.IsNull()) return Invincible;
-		if (HeroData.HeroID == FName(TEXT("Hero_1")))
-		{
-			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(
-				bUseStacyPortrait
-					? TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible.T_Hero_1_Stacy_Invincible")
-					: TEXT("/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible.T_Hero_1_Chad_Invincible")));
-		}
 		if (!Full.IsNull()) return Full;
 		if (!Half.IsNull()) return Half;
 		return Low;
@@ -1149,8 +1125,6 @@ void UT66GameInstance::ClearSelections()
 	SelectedHeroID = NAME_None;
 	SelectedCompanionID = NAME_None;
 	SelectedDifficulty = ET66Difficulty::Easy;
-	bPendingWeaponUpgradeOffer = false;
-	PendingWeaponUpgradeRarity = ET66WeaponRarity::Black;
 	MiniSelectedHeroID = NAME_None;
 	MiniSelectedCompanionID = NAME_None;
 	MiniSelectedDifficultyID = NAME_None;
@@ -1168,8 +1142,9 @@ void UT66GameInstance::BeginDailyClimbRun(const FT66DailyClimbChallengeData& Cha
 {
 	CachedDailyClimbChallenge = Challenge;
 	ActiveDailyClimbChallenge = Challenge;
-	bIsDailyClimbRunActive = Challenge.IsValid();
-	if (!bIsDailyClimbRunActive)
+	SelectedRunMode = Challenge.IsValid() ? ET66RunMode::DailyClimb : ET66RunMode::Regular;
+	SelectedRunCategory = ET66RunCategory::Tower;
+	if (!Challenge.IsValid())
 	{
 		return;
 	}
@@ -1178,8 +1153,6 @@ void UT66GameInstance::BeginDailyClimbRun(const FT66DailyClimbChallengeData& Cha
 	SelectedHeroID = ResolvePlayableHeroID(Challenge.HeroID);
 	SelectedCompanionID = NAME_None;
 	SelectedDifficulty = ResolvePlayableDifficulty(Challenge.Difficulty);
-	bPendingWeaponUpgradeOffer = false;
-	PendingWeaponUpgradeRarity = ET66WeaponRarity::Black;
 	SelectedRunModifierKind = ET66RunModifierKind::None;
 	SelectedRunModifierID = NAME_None;
 	SelectedHeroBodyType = ET66BodyType::Chad;
@@ -1192,20 +1165,23 @@ void UT66GameInstance::BeginDailyClimbRun(const FT66DailyClimbChallengeData& Cha
 
 void UT66GameInstance::ClearActiveDailyClimbRun()
 {
-	bIsDailyClimbRunActive = false;
 	ActiveDailyClimbChallenge = FT66DailyClimbChallengeData{};
+	if (SelectedRunMode == ET66RunMode::DailyClimb)
+	{
+		SelectedRunMode = ET66RunMode::Regular;
+	}
 }
 
 int32 UT66GameInstance::GetDailyClimbIntRuleValue(const ET66DailyClimbRuleType RuleType, const int32 DefaultValue) const
 {
-	return IsDailyClimbRunActive()
+	return IsDailyClimbRun() && ActiveDailyClimbChallenge.IsValid()
 		? ActiveDailyClimbChallenge.FindIntRuleValue(RuleType, DefaultValue)
 		: DefaultValue;
 }
 
 float UT66GameInstance::GetDailyClimbFloatRuleValue(const ET66DailyClimbRuleType RuleType, const float DefaultValue) const
 {
-	return IsDailyClimbRunActive()
+	return IsDailyClimbRun() && ActiveDailyClimbChallenge.IsValid()
 		? ActiveDailyClimbChallenge.FindFloatRuleValue(RuleType, DefaultValue)
 		: DefaultValue;
 }
@@ -1491,7 +1467,7 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	// Main gameplay uses a dedicated terrain asset set. Preload the full terrain contract
 	// before opening the gameplay level so the first entry does not depend on cold material state.
 	AddPath(CharacterVisualsDataTable.ToSoftObjectPath());
-	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit")));
+	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Lit.M_Environment_Lit")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof")));
 	AddCoherentThemeKitAssets();
@@ -1737,11 +1713,6 @@ FName UT66GameInstance::GetFrontendLevelName()
 	return FName(FrontendLevelName);
 }
 
-FName UT66GameInstance::GetLabLevelName()
-{
-	return FName(LabLevelName);
-}
-
 FName UT66GameInstance::GetGameplayLevelName()
 {
 	return FName(GameplayLevelName);
@@ -1749,39 +1720,13 @@ FName UT66GameInstance::GetGameplayLevelName()
 
 FName UT66GameInstance::GetTribulationEntryLevelName()
 {
-	if (bAlwaysRouteTribulationToTutorial)
-	{
-		return GetTutorialLevelName();
-	}
-
 	return GetGameplayLevelName();
-}
-
-FName UT66GameInstance::GetTutorialLevelName()
-{
-	return FName(TutorialLevelName);
 }
 
 void UT66GameInstance::TransitionToGameplayLevel()
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
-
-	{
-		if (UGameInstance* GI = World->GetGameInstance())
-		{
-			if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
-			{
-				FT66RetroFXSettings GameplayRetroSettings;
-				if (UT66PlayerSettingsSubsystem* PlayerSettings = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
-				{
-					GameplayRetroSettings = PlayerSettings->GetRetroFXSettings();
-				}
-
-				RetroFX->ApplySettings(GameplayRetroSettings, World);
-			}
-		}
-	}
 
 	ShowPersistentGameplayTransitionCurtain();
 
@@ -1800,11 +1745,35 @@ void UT66GameInstance::TransitionToGameplayLevel()
 		UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] TransitionToGameplayLevel started pre-open asset preload."));
 		PreloadGameplayAssets([this]()
 		{
-			const FName LevelToOpen = GetTribulationEntryLevelName();
+			const FName LevelToOpen = GetGameplayLevelName();
 			UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] TransitionToGameplayLevel opening %s."), *LevelToOpen.ToString());
 			UGameplayStatics::OpenLevel(this, LevelToOpen);
 		});
 	}), 0.05f, false); // Small delay so the loading widget paints first.
+}
+
+void UT66GameInstance::MarkPendingDirectGameplayEntry(const FString& Source)
+{
+	bPendingDirectGameplayEntry = true;
+	PendingDirectGameplayEntrySource = Source;
+}
+
+bool UT66GameInstance::ConsumePendingDirectGameplayEntry(FString& OutSource)
+{
+	if (!bPendingDirectGameplayEntry)
+	{
+		return false;
+	}
+
+	OutSource = PendingDirectGameplayEntrySource;
+	ClearPendingDirectGameplayEntry();
+	return true;
+}
+
+void UT66GameInstance::ClearPendingDirectGameplayEntry()
+{
+	bPendingDirectGameplayEntry = false;
+	PendingDirectGameplayEntrySource.Reset();
 }
 
 void UT66GameInstance::ShowPersistentGameplayTransitionCurtain()

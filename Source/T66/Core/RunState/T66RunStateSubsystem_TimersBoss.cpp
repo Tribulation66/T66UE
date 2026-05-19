@@ -12,11 +12,11 @@ int32 UT66RunStateSubsystem::GetDifficultyScalarTier() const
 	int32 SkullColorBandSize = 4;
 	if (const UGameInstance* GI = GetGameInstance())
 	{
-		if (const UT66PlayerExperienceSubSystem* PlayerExperience = GI->GetSubsystem<UT66PlayerExperienceSubSystem>())
+		if (const UT66DifficultyTuningSubsystem* DifficultyTuning = GI->GetSubsystem<UT66DifficultyTuningSubsystem>())
 		{
 			const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 			const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
-			SkullColorBandSize = PlayerExperience->GetDifficultySkullColorBandSize(Difficulty);
+			SkullColorBandSize = DifficultyTuning->GetDifficultySkullColorBandSize(Difficulty);
 		}
 	}
 
@@ -54,14 +54,6 @@ int32 UT66RunStateSubsystem::RegisterTotemActivated()
 {
 	TotemsActivatedCount = FMath::Clamp(TotemsActivatedCount + 1, 0, 999);
 	return TotemsActivatedCount;
-}
-
-
-void UT66RunStateSubsystem::SetInStageCatchUp(bool bInCatchUp)
-{
-	if (bInStageCatchUp == bInCatchUp) return;
-	bInStageCatchUp = bInCatchUp;
-	StageChanged.Broadcast();
 }
 
 

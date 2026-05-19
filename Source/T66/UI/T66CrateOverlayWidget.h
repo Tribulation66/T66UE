@@ -23,6 +23,7 @@ public:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeDestruct() override;
 	void SetPresentationHost(UT66GameplayHUDWidget* InPresentationHost);
+	void SetSourceCrateRarity(ET66Rarity InSourceCrateRarity);
 	void RequestSkip();
 
 private:
@@ -38,6 +39,7 @@ private:
 	int32 WinnerIndex = 0;
 	FName WinnerItemID;
 	ET66Rarity WinnerRarity = ET66Rarity::Black;
+	ET66Rarity SourceCrateRarity = ET66Rarity::Black;
 	int32 WinnerRarityDrawIndex = INDEX_NONE;
 	int32 WinnerRarityPreDrawSeed = 0;
 	bool bWinnerRarityHasReplayWeights = false;

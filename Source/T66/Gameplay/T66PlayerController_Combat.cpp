@@ -25,6 +25,7 @@
 #include "UI/T66LabOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
+#include "UI/T66WeaponAltarOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
 #include "Gameplay/T66FountainInteractable.h"
@@ -32,8 +33,7 @@
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66TutorialPortal.h"
+#include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -47,6 +47,7 @@
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
+#include "Gameplay/T66WeaponAltar.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
@@ -438,6 +439,14 @@ namespace
 void AT66PlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
+	if (!IsGameplayLevel())
+	{
+		bGameplayRuntimePresentationInitialized = false;
+	}
+	else if (IsLocalController() && !bGameplayRuntimePresentationInitialized)
+	{
+		EnsureGameplayRuntimePresentation();
+	}
 	SyncLockedCombatTargetFromCombat();
 	UpdateLockedChaseGameplayCamera(DeltaTime);
 	UpdateGameplayCameraWallOcclusion(DeltaTime);
@@ -869,7 +878,8 @@ bool AT66PlayerController::CanUseCombatMouseInput() const
 		&& !(GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
 		&& !IsCasinoOverlayOpen()
 		&& !(CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
-		&& !(IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport());
+		&& !(IdolAltarOverlayWidget && IdolAltarOverlayWidget->IsInViewport())
+		&& !(WeaponAltarOverlayWidget && WeaponAltarOverlayWidget->IsInViewport());
 }
 
 
@@ -1126,6 +1136,10 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			InteractionPrimitive = IdolAltar->InteractTrigger.Get();
 		}
+		else if (const AT66WeaponAltar* WeaponAltar = Cast<AT66WeaponAltar>(Actor))
+		{
+			InteractionPrimitive = WeaponAltar->InteractTrigger.Get();
+		}
 		else if (const AT66LootBagPickup* LootBag = Cast<AT66LootBagPickup>(Actor))
 		{
 			InteractionPrimitive = LootBag->SphereComponent.Get();
@@ -1163,13 +1177,13 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66HouseNPCBase* ClosestNPC = nullptr;
 	AT66RecruitableCompanion* ClosestRecruitableCompanion = nullptr;
 	AT66LootBagPickup* ClosestLootBag = nullptr;
-	AT66TutorialPortal* ClosestTutorialPortal = nullptr;
+	AT66TutorialGate* ClosestTutorialGate = nullptr;
 	AT66IdolAltar* ClosestIdolAltar = nullptr;
+	AT66WeaponAltar* ClosestWeaponAltar = nullptr;
 	AT66PilotableTractor* ClosestTractor = nullptr;
 	AT66FountainInteractable* ClosestFountain = nullptr;
 	AT66ChestInteractable* ClosestChest = nullptr;
 	AT66CrateInteractable* ClosestCrate = nullptr;
-	AT66StageCatchUpGate* ClosestCatchUpGate = nullptr;
 	AT66GalleryDisplayActor* ClosestGalleryDisplay = nullptr;
 	AT66WorldInteractableBase* ClosestWorldInteractable = nullptr;
 	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
@@ -1178,13 +1192,13 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestNPCDistSq = InteractRadius * InteractRadius;
 	float ClosestRecruitableCompanionDistSq = InteractRadius * InteractRadius;
 	float ClosestLootBagDistSq = InteractRadius * InteractRadius;
-	float ClosestTutorialPortalDistSq = InteractRadius * InteractRadius;
+	float ClosestTutorialGateDistSq = InteractRadius * InteractRadius;
 	float ClosestIdolAltarDistSq = InteractRadius * InteractRadius;
+	float ClosestWeaponAltarDistSq = InteractRadius * InteractRadius;
 	float ClosestTractorDistSq = InteractRadius * InteractRadius;
 	float ClosestFountainDistSq = InteractRadius * InteractRadius;
 	float ClosestChestDistSq = InteractRadius * InteractRadius;
 	float ClosestCrateDistSq = InteractRadius * InteractRadius;
-	float ClosestCatchUpGateDistSq = InteractRadius * InteractRadius;
 	float ClosestGalleryDisplayDistSq = InteractRadius * InteractRadius;
 	float ClosestWorldInteractableDistSq = InteractRadius * InteractRadius;
 
@@ -1217,13 +1231,17 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestLootBagDistSq) { ClosestLootBagDistSq = DistSq; ClosestLootBag = Bag; }
 		}
-		else if (AT66TutorialPortal* Portal = Cast<AT66TutorialPortal>(A))
+		else if (AT66TutorialGate* Gate = Cast<AT66TutorialGate>(A))
 		{
-			if (DistSq < ClosestTutorialPortalDistSq) { ClosestTutorialPortalDistSq = DistSq; ClosestTutorialPortal = Portal; }
+			if (DistSq < ClosestTutorialGateDistSq) { ClosestTutorialGateDistSq = DistSq; ClosestTutorialGate = Gate; }
 		}
 		else if (AT66IdolAltar* Altar = Cast<AT66IdolAltar>(A))
 		{
 			if (DistSq < ClosestIdolAltarDistSq) { ClosestIdolAltarDistSq = DistSq; ClosestIdolAltar = Altar; }
+		}
+		else if (AT66WeaponAltar* WeaponAltar = Cast<AT66WeaponAltar>(A))
+		{
+			if (DistSq < ClosestWeaponAltarDistSq) { ClosestWeaponAltarDistSq = DistSq; ClosestWeaponAltar = WeaponAltar; }
 		}
 		else if (AT66PilotableTractor* Tractor = Cast<AT66PilotableTractor>(A))
 		{
@@ -1240,10 +1258,6 @@ void AT66PlayerController::HandleInteractPressed()
 		else if (AT66CrateInteractable* CR = Cast<AT66CrateInteractable>(A))
 		{
 			if (DistSq < ClosestCrateDistSq) { ClosestCrateDistSq = DistSq; ClosestCrate = CR; }
-		}
-		else if (AT66StageCatchUpGate* CUG = Cast<AT66StageCatchUpGate>(A))
-		{
-			if (DistSq < ClosestCatchUpGateDistSq) { ClosestCatchUpGateDistSq = DistSq; ClosestCatchUpGate = CUG; }
 		}
 		else if (AT66GalleryDisplayActor* GalleryDisplay = Cast<AT66GalleryDisplayActor>(A))
 		{
@@ -1282,16 +1296,9 @@ void AT66PlayerController::HandleInteractPressed()
 	}
 
 	// Tutorial portal (teleport within the same map; no load)
-	if (ClosestTutorialPortal && ClosestTutorialPortal->Interact(this))
+	if (ClosestTutorialGate && ClosestTutorialGate->Interact(this))
 	{
-		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestTutorialPortal);
-		return;
-	}
-
-	// Stage Catch Up gate (F) enters the chosen difficulty start stage
-	if (ClosestCatchUpGate && ClosestCatchUpGate->EnterChosenStage())
-	{
-		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestCatchUpGate);
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestTutorialGate);
 		return;
 	}
 
@@ -1327,7 +1334,8 @@ void AT66PlayerController::HandleInteractPressed()
 		LootBag = 0,
 		SpecificWorld = 1,
 		GenericWorld = 2,
-		IdolAltar = 3,
+		WeaponAltar = 3,
+		IdolAltar = 4,
 	};
 
 	struct FSecondaryInteractCandidate
@@ -1369,6 +1377,7 @@ void AT66PlayerController::HandleInteractPressed()
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestChest, ClosestChestDistSq, ComputeActorDistSq(ClosestChest), ESecondaryInteractPriority::SpecificWorld);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestCrate, ClosestCrateDistSq, ComputeActorDistSq(ClosestCrate), ESecondaryInteractPriority::SpecificWorld);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestWorldInteractable, ClosestWorldInteractableDistSq, ComputeActorDistSq(ClosestWorldInteractable), ESecondaryInteractPriority::GenericWorld);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestWeaponAltar, ClosestWeaponAltarDistSq, ComputeActorDistSq(ClosestWeaponAltar), ESecondaryInteractPriority::WeaponAltar);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestIdolAltar, ClosestIdolAltarDistSq, ComputeActorDistSq(ClosestIdolAltar), ESecondaryInteractPriority::IdolAltar);
 	if (AT66LootBagPickup* NearbyBag = NearbyLootBag.Get())
 	{
@@ -1439,6 +1448,27 @@ void AT66PlayerController::HandleInteractPressed()
 			PlayInteractAudio(FName(TEXT("Interact.Crate.Open")), SelectedCrate);
 			return;
 		}
+	}
+	if (AT66WeaponAltar* SelectedWeaponAltar = Cast<AT66WeaponAltar>(SecondaryInteract.Actor))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
+		UT66WeaponAltarOverlayWidget* W = CreateWidget<UT66WeaponAltarOverlayWidget>(this, ResolveWeaponAltarOverlayClass());
+		if (W)
+		{
+			W->SetSourceAltar(SelectedWeaponAltar);
+			WeaponAltarOverlayWidget = W;
+			W->AddToViewport(150);
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			bShowMouseCursor = true;
+		}
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), SelectedWeaponAltar);
+		return;
 	}
 	if (AT66IdolAltar* SelectedIdolAltar = Cast<AT66IdolAltar>(SecondaryInteract.Actor))
 	{

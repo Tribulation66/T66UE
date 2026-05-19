@@ -1,0 +1,24 @@
+{
+  "asset": "idolaltar",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 91875,
+    "count": 149479,
+    "edge_samples": 247008,
+    "max": 1.0,
+    "mean": 0.24186063821878978,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.1679597440417276,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.019268689544652245,
+      "p50": 0.1361732182736106,
+      "p75": 0.36181719623548747,
+      "p90": 0.6851667415837117,
+      "p95": 0.9528170788070303,
+      "p99": 1.0
+    },
+    "std": 0.27996044798383246
+  }
+}

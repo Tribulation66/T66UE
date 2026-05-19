@@ -1,0 +1,409 @@
+{
+  "asset_name": "TombSpider",
+  "base_color_param": "/Game/Characters/Mobs/TombSpider/Textures/T_TombSpider_0.T_TombSpider_0",
+  "diffuse_param": "/Game/Characters/Mobs/TombSpider/Textures/T_TombSpider_0.T_TombSpider_0",
+  "expected_height": 110.0,
+  "flatten_k": 6,
+  "height_tolerance": 0.1,
+  "imported_object_paths": [
+    "/Game/Characters/Mobs/TombSpider/SM_TombSpider.SM_TombSpider"
+  ],
+  "imported_outline_object_paths": [
+    "/Game/Characters/Mobs/TombSpider/SM_TombSpider_Outline.SM_TombSpider_Outline"
+  ],
+  "inner_line_default_black": "/Game/ToonStyle/Textures/T_InnerLines_DefaultBlack",
+  "inner_line_param": "/Game/Characters/Mobs/TombSpider/Textures/T_TombSpider_InnerLines.T_TombSpider_InnerLines",
+  "inner_line_texture": "/Game/Characters/Mobs/TombSpider/Textures/T_TombSpider_InnerLines",
+  "manifest_normal_delta_sample": {
+    "distinct": true,
+    "reason": "non_humanoid"
+  },
+  "manifest_normal_transfer": {
+    "applied": false,
+    "reason": "non_humanoid"
+  },
+  "manifest_outline_winding": {
+    "applied": true,
+    "face_after": [
+      48,
+      47,
+      42
+    ],
+    "face_before": [
+      48,
+      42,
+      47
+    ],
+    "face_order_reversed": true,
+    "inward_normal_samples": 72868,
+    "method": "shade_smooth before bmesh.ops.reverse_faces + restored captured outward vertex normals as custom split normals",
+    "outward_normal_samples": 70995
+  },
+  "manifest_texture_flattening": [
+    {
+      "active_pixels": 16777144,
+      "centers_rgb_255": [
+        [
+          11,
+          6,
+          10
+        ],
+        [
+          94,
+          33,
+          120
+        ],
+        [
+          142,
+          62,
+          177
+        ],
+        [
+          163,
+          73,
+          216
+        ],
+        [
+          172,
+          222,
+          41
+        ],
+        [
+          229,
+          125,
+          251
+        ]
+      ],
+      "final_center_shift": 0.0009867899352684617,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_0_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_0",
+      "iterations": 16,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_0_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_0_flattened.png",
+      "postprocess": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              11,
+              6,
+              10
+            ],
+            [
+              94,
+              33,
+              120
+            ],
+            [
+              142,
+              62,
+              177
+            ],
+            [
+              163,
+              73,
+              216
+            ],
+            [
+              172,
+              222,
+              41
+            ],
+            [
+              229,
+              125,
+              251
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_0_flattened.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_0_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              11,
+              6,
+              10
+            ],
+            [
+              94,
+              33,
+              120
+            ],
+            [
+              142,
+              62,
+              177
+            ],
+            [
+              163,
+              73,
+              216
+            ],
+            [
+              172,
+              222,
+              41
+            ],
+            [
+              229,
+              125,
+              251
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 377764,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[11, 6, 10], [94, 33, 120], [142, 62, 177], [163, 73, 216], [172, 222, 41], [229, 125, 251]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\TombSpider\\\\Working\\\\TombSpider_0_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\TombSpider\\\\Working\\\\TombSpider_0_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[11, 6, 10], [94, 33, 120], [142, 62, 177], [163, 73, 216], [172, 222, 41], [229, 125, 251]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 377764, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": true, \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\TombSpider\\\\Working\\\\TombSpider_Tint.png\", \"saturation_scale\": 1.1, \"value_scale\": 0.6}, \"unique_rgb_after\": 6, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9395947, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7345484, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 190447, \"width\": 4096}",
+        "tint": {
+          "generated": true,
+          "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_Tint.png",
+          "saturation_scale": 1.1,
+          "value_scale": 0.6
+        },
+        "unique_rgb_after": 6,
+        "unique_rgb_before": 6,
+        "uv_mask_pixels": 9395947,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 7345484,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 190447,
+        "width": 4096
+      },
+      "unique_colors_after": 6,
+      "unique_colors_before": 399023,
+      "width": 4096
+    },
+    {
+      "active_pixels": 16777216,
+      "centers_rgb_255": [
+        [
+          0,
+          26,
+          0
+        ],
+        [
+          0,
+          254,
+          0
+        ],
+        [
+          10,
+          254,
+          11
+        ],
+        [
+          3,
+          255,
+          1
+        ],
+        [
+          0,
+          255,
+          1
+        ],
+        [
+          15,
+          229,
+          15
+        ]
+      ],
+      "final_center_shift": 0.0,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_1_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_1",
+      "iterations": 9,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_1_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_1_flattened.png",
+      "postprocess": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              26,
+              0
+            ],
+            [
+              0,
+              254,
+              0
+            ],
+            [
+              10,
+              254,
+              11
+            ],
+            [
+              3,
+              255,
+              1
+            ],
+            [
+              0,
+              255,
+              1
+            ],
+            [
+              15,
+              229,
+              15
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_1_flattened.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\TombSpider\\Working\\TombSpider_1_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              26,
+              0
+            ],
+            [
+              0,
+              254,
+              0
+            ],
+            [
+              10,
+              254,
+              11
+            ],
+            [
+              3,
+              255,
+              1
+            ],
+            [
+              0,
+              255,
+              1
+            ],
+            [
+              15,
+              229,
+              15
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 55,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 26, 0], [0, 254, 0], [10, 254, 11], [3, 255, 1], [0, 255, 1], [15, 229, 15]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\TombSpider\\\\Working\\\\TombSpider_1_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\TombSpider\\\\Working\\\\TombSpider_1_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 26, 0], [0, 254, 0], [10, 254, 11], [3, 255, 1], [0, 255, 1], [15, 229, 15]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 55, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": false}, \"unique_rgb_after\": 2, \"unique_rgb_before\": 2, \"uv_mask_pixels\": 9395947, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7345484, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 190447, \"width\": 4096}",
+        "tint": {
+          "generated": false
+        },
+        "unique_rgb_after": 2,
+        "unique_rgb_before": 2,
+        "uv_mask_pixels": 9395947,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 7345484,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 190447,
+        "width": 4096
+      },
+      "unique_colors_after": 6,
+      "unique_colors_before": 655,
+      "width": 4096
+    }
+  ],
+  "manifest_vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 571341,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "material_instance": "/Game/Characters/Mobs/TombSpider/Materials/MI_TombSpider",
+  "outline_color_after_import": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "outline_color_preserved": null,
+  "outline_material_instance": "/Game/Characters/Mobs/TombSpider/Materials/MI_TombSpider_Outline",
+  "outline_slot0_material": "/Game/Characters/Mobs/TombSpider/Materials/MI_TombSpider_Outline.MI_TombSpider_Outline",
+  "outline_static_mesh": "/Game/Characters/Mobs/TombSpider/SM_TombSpider_Outline",
+  "outline_static_mesh_bounds": {
+    "extent": [
+      69.4110107421875,
+      36.45294380187988,
+      55.00000578892991
+    ],
+    "height": 110.00001157785982,
+    "origin": [
+      0.0,
+      -9.5367431640625e-06,
+      55.00000184046462
+    ],
+    "size": [
+      138.822021484375,
+      72.90588760375977,
+      110.00001157785982
+    ]
+  },
+  "retained_from_phase1a": false,
+  "slot0_material": "/Game/Characters/Mobs/TombSpider/Materials/MI_TombSpider.MI_TombSpider",
+  "static_mesh": "/Game/Characters/Mobs/TombSpider/SM_TombSpider",
+  "static_mesh_bounds": {
+    "extent": [
+      69.4110107421875,
+      36.45294380187988,
+      55.00000578892991
+    ],
+    "height": 110.00001157785982,
+    "origin": [
+      0.0,
+      -9.5367431640625e-06,
+      55.00000184046462
+    ],
+    "size": [
+      138.822021484375,
+      72.90588760375977,
+      110.00001157785982
+    ]
+  },
+  "target_dir": "/Game/Characters/Mobs/TombSpider",
+  "textures": [
+    "/Game/Characters/Mobs/TombSpider/Textures/T_TombSpider_0",
+    "/Game/Characters/Mobs/TombSpider/Textures/T_TombSpider_1"
+  ],
+  "tint_param": "/Game/Characters/Mobs/TombSpider/Textures/T_TombSpider_Tint.T_TombSpider_Tint",
+  "tint_texture": "/Game/Characters/Mobs/TombSpider/Textures/T_TombSpider_Tint"
+}

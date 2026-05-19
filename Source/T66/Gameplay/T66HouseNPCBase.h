@@ -52,7 +52,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	FLinearColor NPCColor = FLinearColor::White;
 
-	/** Row ID in DT_HouseNPCs (e.g. Gambler, Saint, Ouroboros). */
+	/** Row ID in DT_NPCs (e.g. Gambler, Saint, Ouroboros). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	FName NPCID;
 
@@ -70,7 +70,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Visuals")
 	void ApplyVisuals();
 
-	/** Load per-NPC tuning from DT_HouseNPCs if available. */
+	/** Load per-NPC tuning from DT_NPCs if available. */
 	void LoadFromDataTable();
 
 	/** Safe-zone radius in world units (used by enemy avoidance/repulsion). */

@@ -1,0 +1,24 @@
+{
+  "asset": "arcademachine",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 79625,
+    "count": 143857,
+    "edge_samples": 258640,
+    "max": 1.0,
+    "mean": 0.1929126106128101,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.14652708176201149,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.0013667703878965465,
+      "p50": 0.03860473386381893,
+      "p75": 0.28520236707316976,
+      "p90": 0.6610689154641587,
+      "p95": 0.9445424574165734,
+      "p99": 1.0
+    },
+    "std": 0.28458413687143297
+  }
+}

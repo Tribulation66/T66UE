@@ -11,7 +11,7 @@ Read [Instructions/README.md](Instructions/README.md) first. It is the canonical
 - `Instructions/`: current process docs only.
 - `Scripts/`: reusable core helpers, named batch drivers, and clearly marked legacy scripts.
 - `Tools/`: TRELLIS server files, Blender MCP helpers, and local tool launchers.
-- `Pixal3D/`: separate Pixal3D research pipeline, server, bootstrap, and smoke-test tooling.
+- `Pixal3D/`: production-cleared Pixal3D pipeline, server, bootstrap, smoke-test tooling, and ToonStyle production replacement wrapper.
 
 Generated runs, Blender scenes, archives, local access files, and preview outputs do not belong here long-term. Once an asset is imported, verified, or rejected, keep only the durable rule or summary in `Instructions/` or `Scripts/README.md`; delete the generated output folder.
 

@@ -11,7 +11,7 @@
 #include "Styling/CoreStyle.h"
 #include "UI/T66GamblerOverlayWidget.h"
 #include "UI/T66CasinoShopTabWidget.h"
-#include "UI/Style/T66Style.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
@@ -121,7 +121,7 @@ namespace T66CasinoOverlayShared
 			return;
 		}
 
-		Widget->RemoveFromParent();
+		Widget->ReleaseSlateResources(true);
 		Widget = nullptr;
 	}
 
@@ -211,8 +211,8 @@ namespace T66CasinoOverlayShared
 			const FText Fmt = Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}");
 			NetWorthText->SetText(FText::Format(Fmt, FText::AsNumber(NetWorth)));
 			const FLinearColor NetWorthColor = NetWorth > 0
-				? FT66Style::Tokens::Success
-				: (NetWorth < 0 ? FT66Style::Tokens::Danger : FT66Style::Tokens::Text);
+				? FT66FlatStyle::Tokens::Success
+				: (NetWorth < 0 ? FT66FlatStyle::Tokens::Danger : FT66FlatStyle::Tokens::Text);
 			NetWorthText->SetColorAndOpacity(NetWorthColor);
 		}
 
@@ -276,10 +276,12 @@ namespace T66CasinoOverlayShared
 						.WidthOverride(72.f)
 						.HeightOverride(72.f)
 						[
-							FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+							FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 								SNew(SImage)
 								.Image(IconBrush.Get())
-								.ColorAndOpacity(FLinearColor::White)))
+								.ColorAndOpacity(FLinearColor::White)),
+								NAME_None,
+								TEXT("Icon"))
 						]
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
@@ -287,7 +289,7 @@ namespace T66CasinoOverlayShared
 						SNew(STextBlock)
 						.Text(Label)
 						.ColorAndOpacity(FLinearColor::White)
-						.Font(FT66Style::Tokens::FontBold(16))
+						.Font(FT66FlatStyle::Tokens::FontBold(16))
 					]
 				];
 

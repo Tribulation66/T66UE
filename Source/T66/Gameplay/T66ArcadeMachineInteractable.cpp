@@ -28,7 +28,7 @@ namespace
 AT66ArcadeMachineInteractable::AT66ArcadeMachineInteractable()
 {
 	ArcadeData.ArcadeID = FName(TEXT("Arcade_Machine"));
-	ArcadeData.DisplayName = NSLOCTEXT("T66.Arcade", "MachineDisplayName", "Arcade Cabinet");
+	ArcadeData.DisplayName = NSLOCTEXT("T66.Arcade", "MachineDisplayName", "Arcade Machine");
 	ArcadeData.InteractionVerb = NSLOCTEXT("T66.Arcade", "MachineInteractVerb", "play arcade");
 	ArcadeData.ArcadeClass = ET66ArcadeInteractableClass::PopupArcade;
 	ArcadeData.ArcadeGameType = ET66ArcadeGameType::Random;

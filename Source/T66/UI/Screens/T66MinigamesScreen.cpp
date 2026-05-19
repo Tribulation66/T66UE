@@ -246,17 +246,6 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 			true);
 	};
 
-	auto MakeIcon = [&TaggedText](const FSlateBrush* Brush, const FText& FallbackText, const FLinearColor& Tint = FLinearColor::White) -> TSharedRef<SWidget>
-	{
-		return Brush
-			? StaticCastSharedRef<SWidget>(
-				SNew(SImage)
-				.Visibility(EVisibility::HitTestInvisible)
-				.Image(Brush)
-				.ColorAndOpacity(Tint))
-			: StaticCastSharedRef<SWidget>(TaggedText(NAME_None, FallbackText, 28, Tint, true, ETextJustify::Center));
-	};
-
 	auto MakePlayButton = [&TaggedText](const FName ButtonTag, const FName LabelTag, FOnClicked OnClicked, const float Width, const float Height) -> TSharedRef<SWidget>
 	{
 		return FT66FlatStyle::MakeFlatToggleGroupButton(
@@ -275,33 +264,6 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 			ButtonTag);
 	};
 
-	auto MakePaginationDot = [&NoBorderButtonStyle](const FName Tag, const int32 PageIndex, const bool bSelected, TWeakObjectPtr<UT66MinigamesScreen> WeakThis) -> TSharedRef<SWidget>
-	{
-		const FLinearColor DotColor = bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::PurpleAccent();
-		return FT66FlatStyle::AttachMetadata(
-			FT66Style::MakeBareButton(
-				FT66BareButtonParams(
-					FOnClicked::CreateLambda([WeakThis, PageIndex]()
-					{
-						if (UT66MinigamesScreen* Screen = WeakThis.Get())
-						{
-							return Screen->HandleSelectMinigamePageClicked(PageIndex);
-						}
-						return FReply::Handled();
-					}),
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-					.BorderBackgroundColor(DotColor))
-				.SetButtonStyle(&NoBorderButtonStyle)
-				.SetPadding(FMargin(0.f))
-				.SetDebounceClick(false)),
-			Tag,
-			TEXT("Button"),
-			bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
-			DotColor,
-			true);
-	};
-
 	struct FFlatMinigameCard
 	{
 		FText Title;
@@ -311,7 +273,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 	};
 
 	TArray<FFlatMinigameCard> Cards;
-	Cards.Reserve(5);
+	Cards.Reserve(4);
 	Cards.Add({
 		NSLOCTEXT("T66.MiniGames", "FlatMiniTitle", "CHADPOCALYPSE MINI"),
 		NSLOCTEXT("T66.MiniGames", "FlatMiniBody", "A 2D survivor minigame with its own saves, heroes, idols, enemies, and progression."),
@@ -336,41 +298,21 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card04_art.png"),
 		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked)
 	});
-	Cards.Add({
-		NSLOCTEXT("T66.MiniGames", "FlatVersusTitle", "VERSUS"),
-		NSLOCTEXT("T66.MiniGames", "FlatVersusBody", "A 1v1 arcade gauntlet where friends compete across cabinet games like Whack-a-Mole."),
-		TEXT("RuntimeDependencies/T66/Arcade/Selector/arcade_selector_front_cabinet.png"),
-		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenVersusClicked)
-	});
 
 	const int32 TotalPages = FMath::Max(1, FMath::DivideAndRoundUp(Cards.Num(), CardsPerPage));
 	MinigamesPageIndex = FMath::Clamp(MinigamesPageIndex, 0, TotalPages - 1);
-
-	const FSlateBrush* LeftArrowBrush = ResolveMinigamesFlatBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/pagination_left.png"), FVector2D(30.f, 42.f));
-	const FSlateBrush* RightArrowBrush = ResolveMinigamesFlatBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/pagination_right.png"), FVector2D(30.f, 42.f));
 
 	AddN(0.031f, 0.141f, 0.936f, 0.790f, MakeMetadataRegion(DTag(TEXT("Minigames.Root")), TEXT("Root")));
 	AddN(0.381f, 0.141f, 0.237f, 0.071f, TaggedText(DTag(TEXT("Minigames.Title")), NSLOCTEXT("T66.MiniGames", "Title", "MINIGAMES"), 72, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
 	AddN(0.277f, 0.253f, 0.447f, 0.032f, TaggedText(
 		DTag(TEXT("Minigames.DescriptionBand")),
-		NSLOCTEXT("T66.MiniGames", "FlatDescription", "Earn Chad Coupons and compete with friends and the world in the minigames."),
+		NSLOCTEXT("T66.MiniGames", "FlatDescription", "Earn Chad Coupons across Mini, Tower Defense, Deckbuilder, and Idle minigames."),
 		24,
 		FT66FlatStyle::PrimaryText(),
 		false,
 		ETextJustify::Center));
 	AddN(0.031f, 0.307f, 0.936f, 0.624f, MakeMetadataRegion(DTag(TEXT("Minigames.MainOuterContainer")), TEXT("OuterContainer")));
 	AddN(0.033f, 0.307f, 0.934f, 0.624f, MakeMetadataRegion(DTag(TEXT("Minigames.CardsRow")), TEXT("CardRow")));
-
-	AddN(0.010f, 0.570f, 0.018f, 0.045f, MakeBareInteractive(
-		DTag(TEXT("Minigames.Carousel.LeftNavButton")),
-		TEXT("Button"),
-		MakeIcon(LeftArrowBrush, FText::FromString(TEXT("<")), FT66FlatStyle::PurpleAccent()),
-		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandlePrevMinigamePageClicked)));
-	AddN(0.972f, 0.570f, 0.018f, 0.045f, MakeBareInteractive(
-		DTag(TEXT("Minigames.Carousel.RightNavButton")),
-		TEXT("Button"),
-		MakeIcon(RightArrowBrush, FText::FromString(TEXT(">")), FT66FlatStyle::PurpleAccent()),
-		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleNextMinigamePageClicked)));
 
 	constexpr float CardX[4] = { 0.033f, 0.271f, 0.506f, 0.742f };
 	constexpr float CardW[4] = { 0.225f, 0.224f, 0.224f, 0.225f };
@@ -403,10 +345,6 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 			ButtonW[VisibleIndex] * CanvasW,
 			0.069f * CanvasH));
 	}
-
-	AddN(0.471f, 0.948f, 0.020f, 0.018f, MakePaginationDot(DTag(TEXT("Minigames.Pagination.Dot01")), 0, MinigamesPageIndex == 0, this));
-	AddN(0.509f, 0.948f, 0.020f, 0.018f, MakePaginationDot(DTag(TEXT("Minigames.Pagination.Dot02")), 1, MinigamesPageIndex == 1, this));
-	AddN(0.471f, 0.948f, 0.058f, 0.018f, MakeMetadataRegion(DTag(TEXT("Minigames.Pagination")), TEXT("Pagination")));
 
 	const TSharedRef<SWidget> Content = SNew(SBox)
 		[
@@ -496,15 +434,9 @@ FReply UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked()
 	return FReply::Handled();
 }
 
-FReply UT66MinigamesScreen::HandleOpenVersusClicked()
-{
-	NavigateTo(ET66ScreenType::VersusMainMenu);
-	return FReply::Handled();
-}
-
 FReply UT66MinigamesScreen::HandlePrevMinigamePageClicked()
 {
-	constexpr int32 TotalPages = 2;
+	constexpr int32 TotalPages = 1;
 	MinigamesPageIndex = (MinigamesPageIndex + TotalPages - 1) % TotalPages;
 	RequestDeferredSlateRebuild();
 	return FReply::Handled();
@@ -512,7 +444,7 @@ FReply UT66MinigamesScreen::HandlePrevMinigamePageClicked()
 
 FReply UT66MinigamesScreen::HandleNextMinigamePageClicked()
 {
-	constexpr int32 TotalPages = 2;
+	constexpr int32 TotalPages = 1;
 	MinigamesPageIndex = (MinigamesPageIndex + 1) % TotalPages;
 	RequestDeferredSlateRebuild();
 	return FReply::Handled();
@@ -520,7 +452,7 @@ FReply UT66MinigamesScreen::HandleNextMinigamePageClicked()
 
 FReply UT66MinigamesScreen::HandleSelectMinigamePageClicked(const int32 PageIndex)
 {
-	constexpr int32 TotalPages = 2;
+	constexpr int32 TotalPages = 1;
 	MinigamesPageIndex = FMath::Clamp(PageIndex, 0, TotalPages - 1);
 	RequestDeferredSlateRebuild();
 	return FReply::Handled();

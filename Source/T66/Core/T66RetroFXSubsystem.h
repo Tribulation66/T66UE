@@ -86,7 +86,7 @@ public:
 	FT66OnRetroFXSettingsApplied& OnSettingsApplied() { return SettingsApplied; }
 
 private:
-	void QueueRetroAssetPreloads();
+	void QueueRetroAssetPreloads(const FT66RetroFXSettings& Settings);
 	void HandleRetroAssetPreloadComplete();
 	void EnsureBlendablesInWorld(UWorld* World);
 	void EnsurePs1PostProcessDMI(const FT66RetroFXSettings& Settings);
@@ -203,10 +203,5 @@ private:
 	bool bHasOriginalScreenPercentageMinResolutionFraction = false;
 	FString ActivePs1MaterialPath;
 	float OriginalScreenPercentage = 100.0f;
-	float OriginalSecondaryScreenPercentage = 100.0f;
-	float OriginalScreenPercentageMinResolution = 0.0f;
 	float OriginalScreenPercentageMinResolutionFraction = 0.0f;
-	int32 OriginalUpscaleQuality = 0;
-	int32 OriginalAntiAliasingMethod = 0;
-	int32 OriginalTemporalAAUpsampling = 0;
 };

@@ -112,6 +112,7 @@ namespace T66TowerMapTerrain
 		TArray<FBox2D> MazeWallBoxes;
 		TArray<FBox2D> DoorwayHeaderBoxes;
 		TArray<FBox2D> TrapEligibleWallBoxes;
+		TArray<FBox2D> OuterShellWallBoxes;
 		TArray<FVector> CachedWalkableSpawnSlots;
 		TArray<FVector> CachedMainPathSpawnSlots;
 		TArray<FVector> CachedOptionalSpawnSlots;

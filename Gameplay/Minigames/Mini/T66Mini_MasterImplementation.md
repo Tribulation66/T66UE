@@ -1,6 +1,6 @@
 # T66Mini Master Implementation
 
-Last updated: 2026-04-13
+Last updated: 2026-05-15
 
 ## 1. Purpose
 
@@ -9,9 +9,9 @@ This document is the implementation source of truth for Mini Chadpocalypse.
 Mini Chadpocalypse is a Brotato-style 2D mini-game inside T66 with:
 
 - Chadpocalypse heroes, enemies, bosses, NPCs, idols, and items
-- mini-specific UI, save slots, gameplay systems, data tables, VFX, and runtime flow
+- mini-specific UI, save slots, widget gameplay systems, data tables, VFX, and runtime flow
 - no backend work in the first build
-- no playable multiplayer in the first build
+- local-only frontend gameplay, with no multiplayer or replication seam
 - launch from the existing Minigames panel through a dedicated `Mini Chadpocalypse` entry
 
 The primary engineering goal is isolation. Mini-game work must be able to evolve without contaminating the regular game codepath.
@@ -25,7 +25,7 @@ The primary engineering goal is isolation. Mini-game work must be able to evolve
 - Idols replace Brotato weapons.
 - Shop sells items and supports rerolls/locks. Idols are not sold in the shop.
 - Idol selection is its own separate screen using mini-specific logic and data.
-- Movement is Brotato-style mouse-follow with auto-fire.
+- Movement is Brotato-style mouse-follow with auto-fire, handled inside the Mini battle widget.
 - Presentation target is ROTMG-like hard-pixel top-down readability for in-run gameplay, preserving mini chad silhouettes and current gameplay/data.
 - First build ships with all 16 heroes unlocked.
 - First build supports true mid-wave resume using a mini-specific save/profile system.
@@ -61,7 +61,7 @@ That means:
 The base T66 runtime is allowed to do only the following:
 
 - expose a `Mini Chadpocalypse` button/bar in the existing Minigames screen
-- register/open the mini-game entry screen or mini-game map
+- register/open mini-game frontend screens, including the dedicated `MiniBattle` screen
 - provide generic shared engine-level helpers already meant to be shared across the whole project
 - provide shared art/style helpers only when those helpers remain generic and contain no mini-specific branching
 
@@ -105,16 +105,8 @@ Source/T66Mini/
     Data/
     Save/
     Frontend/
-    Gameplay/
-    Gameplay/Actors/
-    Gameplay/Components/
-    Gameplay/Enemies/
-    Gameplay/Bosses/
-    Gameplay/Interactables/
     UI/
     UI/Screens/
-    UI/Components/
-    VFX/
     ArtPipeline/
 ```
 
@@ -128,20 +120,9 @@ Naming rule:
 
 ```text
 Content/Mini/
-  Maps/
   Data/
-  UI/
-  UI/Icons/
-  UI/Screens/
-  Characters/Heroes/
-  Characters/Enemies/
-  Characters/Bosses/
-  Characters/NPCs/
-  Interactables/
-  Projectiles/
-  VFX/
-  Materials/
-  Audio/
+  Sprites/
+  README.md
 ```
 
 ## 4.3 Source Assets and Docs
@@ -186,29 +167,29 @@ Recommended core screens:
 - `UT66MiniMainMenuScreen`
 - `UT66MiniSaveSlotsScreen`
 - `UT66MiniCharacterSelectScreen`
+- `UT66MiniCompanionSelectScreen`
 - `UT66MiniDifficultySelectScreen`
 - `UT66MiniIdolSelectScreen`
+- `UT66MiniBattleScreen`
 - `UT66MiniShopScreen`
-- `UT66MiniPauseScreen`
 - `UT66MiniRunSummaryScreen`
 
 ## 5.2 Gameplay framework
 
 Core runtime classes:
 
-- `AT66MiniGameMode`
-- `AT66MiniGameState`
-- `AT66MiniPlayerController`
-- `AT66MiniPlayerPawn`
+- `UT66MiniBattleScreen`
 - `UT66MiniRunStateSubsystem`
 - `UT66MiniSaveSubsystem`
 - `UT66MiniDataSubsystem`
-- `UT66MiniSpawnSubsystem`
-- `UT66MiniVFXSubsystem`
+- `UT66MiniRuntimeSubsystem`
+- `UT66MiniVisualSubsystem`
+- `UT66MiniFrontendStateSubsystem`
 
 Rules:
 
-- `AT66MiniGameMode` owns only mini gameplay flow.
+- `UT66MiniBattleScreen` owns the active battle simulation while it is on screen.
+- The battle simulation is local-only and must not depend on actor replication, controller RPCs, or separate battle maps.
 - The regular `AT66GameMode` remains untouched except for any minimal launch bridge that is unavoidable.
 - Mini runtime state should be serializable without consulting the main game runtime classes.
 
@@ -217,7 +198,7 @@ Rules:
 Per-wave loop for the first build:
 
 1. Enter from mini idol selection.
-2. Spawn into the battle map with selected hero, difficulty, idol loadout, and carried run state.
+2. Construct the `MiniBattle` frontend screen with selected hero, companion, difficulty, idol loadout, and carried run state.
 3. Mouse-follow movement and idol auto-fire start immediately.
 4. Gain XP/materials during the wave.
 5. Random mini interactables can appear temporarily.
@@ -225,20 +206,20 @@ Per-wave loop for the first build:
 7. On boss defeat, open mini shop.
 8. Shop `Continue` opens mini idol selection.
 9. Next wave starts.
-10. Five waves complete one difficulty block.
+10. Ten configured stages complete one difficulty block, with stage 10 as the boss gate.
 
 Wave duration, spawn pacing, and exact boss timings are intentionally tunable after the first playable version.
 
 ## 5.4 Combat model
 
-Mini combat is its own stack:
+Mini combat is its own widget-owned simulation stack:
 
-- `UT66MiniCombatComponent`
-- `UT66MiniIdolComponent`
-- `UT66MiniAutoFireComponent`
-- `UT66MiniProjectileComponent`
-- `UT66MiniDamageSystem`
-- `UT66MiniPickupMagnetComponent`
+- player state struct
+- enemy state array
+- projectile state array
+- pickup/interactable/trap arrays
+- VFX and combat-text event arrays
+- explicit 2D collision math in the battle tick
 
 Behavior rules:
 
@@ -271,13 +252,12 @@ Principles:
 
 ## 5.6 Enemies and bosses
 
-Mini enemy stack:
+Mini enemy/boss runtime is data-driven inside the battle widget:
 
-- `AT66MiniEnemyBase`
-- `AT66MiniBossBase`
-- `UT66MiniEnemyDirector`
-- `UT66MiniWaveDefinitionSubsystem`
-- `UT66MiniStatusEffectComponent`
+- enemy definitions from mini data
+- boss definitions from mini data
+- wave/stage definitions from mini data
+- local enemy structs for position, health, behavior, status, and presentation
 
 Use 2D mini variants of the regular game enemies and bosses.
 
@@ -292,12 +272,12 @@ Required first-build interactables:
 - `AT66MiniLootCrate`
 - `AT66MiniQuickReviveNPC`
 
-Pickup/runtime objects:
+Pickup/runtime objects are local widget entities:
 
-- `AT66MiniMaterialPickup`
-- `AT66MiniXPOrb`
-- `AT66MiniHealPickup`
-- `AT66MiniTemporaryInteractableSpawner`
+- material pickups
+- XP pickups
+- heal pickups
+- temporary interactable entries
 
 These do not reuse the regular world interactable runtime classes except through generic helper utilities if absolutely necessary.
 
@@ -355,9 +335,10 @@ Recommended snapshot payloads:
 - `FT66MiniEnemySnapshot`
 - `FT66MiniBossSnapshot`
 - `FT66MiniInteractableSnapshot`
-- `FT66MiniProjectileSnapshot`
 - `FT66MiniPickupSnapshot`
 - `FT66MiniWaveSnapshot`
+
+Active projectiles are intentionally not saved across mid-wave snapshots; this preserves current runtime behavior and avoids a save-format expansion.
 
 Autosave strategy:
 
@@ -402,26 +383,21 @@ Target look:
 - clean attack telegraphs
 - bright pickup readability
 
-Camera rules:
+Presentation rules:
 
-- fixed mini-specific battle camera
-- tuned to Brotato-like presentation
-- not shared with regular game cameras
+- no dedicated world camera for Mini battle
+- the `MiniBattle` screen owns board-to-widget coordinate conversion
+- visual framing is controlled by the Slate battle board, not by `CameraComponent`, pawn, or spring-arm state
 
 ## 6.2 Sprite strategy
 
-All first-pass runtime characters are 2D sprite actors or billboard-driven actors.
+All first-pass runtime characters are Slate-painted sprite entities inside `UT66MiniBattleScreen`.
 
-Use mini-specific presentation classes:
-
-- `UT66MiniSpritePresentationComponent`
-- `UT66MiniShadowComponent`
-- `UT66MiniHitFlashComponent`
-- `UT66MiniDirectionResolver`
+Use per-entity position, texture, tint, scale, facing, hit-flash, shadow, and lifetime state. Do not reintroduce billboard actor presentation for frontend Mini battle.
 
 ## 6.3 VFX strategy
 
-Primary VFX stack should stay in Unreal, not Blender.
+Primary VFX stack should stay in Slate/widget runtime, not Blender or world actors.
 
 Use:
 
@@ -430,17 +406,15 @@ Use:
 - sprite-sheet hit sparks
 - sprite-sheet explosions
 - sprite-sheet status ticks
-- mini-specific Niagara only as a 2D particle/sprite carrier when useful
 - mini-specific materials for tint, additive glow, hit flash, spawn/despawn dissolve, and telegraphs
 
 Blender is optional only for exceptional pre-rendered sheets, not the default pipeline.
 
-Recommended runtime classes:
+Recommended runtime path:
 
-- `UT66MiniVFXSubsystem`
-- `AT66MiniProjectileActor`
-- `AT66MiniGroundTelegraphActor`
-- `AT66MiniFlipbookVFXActor`
+- Slate-painted VFX events in `UT66MiniBattleScreen`
+- `AnimatedStyle.Mini.*` tags on sprites, projectiles, hit flashes, telegraphs, combat text, and other animated play-area elements
+- future refinement through the shared AnimatedStyle category once that system is established
 
 ## 7. Art Production Pipeline
 
@@ -497,7 +471,7 @@ The regular T66 codebase may only do the minimum needed to expose and launch the
 Examples of acceptable base-game changes:
 
 - add `Mini Chadpocalypse` entry to the Minigames screen
-- register mini screen types or map launch helpers
+- register mini screen types and frontend launch helpers
 - add build/module registration for `T66Mini`
 
 Examples of forbidden leakage:
@@ -528,10 +502,10 @@ Examples of forbidden leakage:
 
 ### Milestone C: First playable loop
 
-- mouse-follow pawn
+- mouse-follow widget player state
 - idol auto-fire
 - wave director
-- one battle map
+- dedicated `MiniBattle` screen
 - pickups
 - boss end gate
 - shop

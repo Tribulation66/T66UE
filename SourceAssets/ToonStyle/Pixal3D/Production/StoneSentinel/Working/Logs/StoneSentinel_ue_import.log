@@ -1,0 +1,1154 @@
+﻿Log file open, 05/18/26 23:04:56
+LogWindows: Failed to load 'aqProf.dll' (GetLastError=126)
+LogWindows: File 'aqProf.dll' does not exist
+LogProfilingDebugging: Loading WinPixEventRuntime.dll for PIX profiling (from ../../../Engine/Binaries/ThirdParty/Windows/WinPixEventRuntime/x64).
+LogWindows: Failed to load 'VtuneApi.dll' (GetLastError=126)
+LogWindows: File 'VtuneApi.dll' does not exist
+LogWindows: Failed to load 'VtuneApi32e.dll' (GetLastError=126)
+LogWindows: File 'VtuneApi32e.dll' does not exist
+LogWindows: Started CrashReportClient (pid=11876)
+LogWindows: Enabling Tpause support
+LogWindows: Custom abort handler registered for crash reporting.
+LogInit: Display: Running engine for game: T66
+LogCore: UTS: Unreal Trace Server launched successfully
+LogTrace: Initializing trace...
+LogCore: Display: Requested channels: 'cpu,gpu,frame,log,bookmark,screenshot,region'
+LogCore: No trace connection. Tracing to in-memory cache.
+LogTrace: Display: Control listening on port 34335
+LogTrace: Finished trace initialization.
+LogCsvProfiler: Display: Metadata set : platform="Windows"
+LogCsvProfiler: Display: Metadata set : config="Development"
+LogCsvProfiler: Display: Metadata set : buildversion="++UE5+Release-5.7-CL-48512491"
+LogCsvProfiler: Display: Metadata set : engineversion="5.7.1-48512491+++UE5+Release-5.7"
+LogCsvProfiler: Display: Metadata set : enginereleaseversion="5.7.1"
+LogCsvProfiler: Display: Metadata set : os="Windows 11 (25H2) [10.0.26200.8457] "
+LogCsvProfiler: Display: Metadata set : cpu="GenuineIntel|Intel(R) Core(TM) i9-14900HX"
+LogCsvProfiler: Display: Metadata set : pgoenabled="0"
+LogCsvProfiler: Display: Metadata set : pgoprofilingenabled="0"
+LogCsvProfiler: Display: Metadata set : ltoenabled="0"
+LogCsvProfiler: Display: Metadata set : asan="0"
+LogCsvProfiler: Display: Metadata set : mergedmodules="0"
+LogCsvProfiler: Display: Metadata set : commandline="" C:\UE\T66\T66.uproject -ExecutePythonScript=C:\UE\T66\ToonStyle\Source\ImportPixal3DAsset_Phase1C.py -unattended -nop4 -nosplash -NullRHI -abslog=C:\UE\T66\SourceAssets\ToonStyle\Pixal3D\Production\StoneSentinel\Working\Logs\StoneSentinel_ue_import.log -forcelogflush""
+LogCsvProfiler: Display: Metadata set : loginid="6e1893814737cdf6e2edcbb02b9a616f"
+LogCsvProfiler: Display: Metadata set : llm="0"
+LogStats: Stats thread started at 0.508194
+LogCsvProfiler: Display: Metadata set : systemresolution.resx="1280"
+LogCsvProfiler: Display: Metadata set : systemresolution.resy="720"
+LogICUInternationalization: ICU TimeZone Detection - Raw Offset: -3:00, Platform Override: ''
+LogInit: Session CrashGUID >====================================================
+         Session CrashGUID >   UECC-Windows-1FFC482F446B6A39C884A4A835FEDE09
+         Session CrashGUID >====================================================
+LogConfig: No local boot hotfix file found at: [../../../../../../UE/T66/Saved/PersistentDownloadDir/HotfixForNextBoot.txt]
+LogAudio: Display: Pre-Initializing Audio Device Manager...
+LogAudio: Display: AudioInfo: 'OPUS' Registered
+LogAudioDebug: Display: Lib vorbis DLL was dynamically loaded.
+LogAudio: Display: AudioInfo: 'OGG' Registered
+LogConfig: Display: Loading Mac ini files took 0.11 seconds
+LogConfig: Display: Loading VulkanPC ini files took 0.11 seconds
+LogConfig: Display: Loading Android ini files took 0.11 seconds
+LogConfig: Display: Loading IOS ini files took 0.11 seconds
+LogAudio: Display: AudioInfo: 'ADPCM' Registered
+LogConfig: Display: Loading VisionOS ini files took 0.13 seconds
+LogConfig: Display: Loading Windows ini files took 0.13 seconds
+LogConfig: Display: Loading Unix ini files took 0.13 seconds
+LogConfig: Display: Loading TVOS ini files took 0.13 seconds
+LogConfig: Display: Loading Linux ini files took 0.15 seconds
+LogAudio: Display: AudioInfo: 'PCM' Registered
+LogAudio: Display: AudioInfo: 'BINKA' Registered
+LogAudio: Display: AudioInfo: 'RADA' Registered
+LogAudio: Display: Audio Device Manager Pre-Initialized
+LogPluginManager: Looking for build plugins target receipt
+LogPluginManager: Found matching target receipt: ../../../../../../UE/T66/Binaries/Win64/T66Editor.target
+LogPluginManager: Looking for enabled plugins target receipt
+LogAssetRegistry: Display: Asset registry cache read as 76.0 MiB from ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_0.bin.
+LogPluginManager: Found matching target receipt: ../../../../../../UE/T66/Binaries/Win64/T66Editor.target
+LogPluginManager: Mounting Engine plugin BaseMaterial
+LogPluginManager: Mounting Engine plugin Bridge
+LogPluginManager: Mounting Engine plugin ChaosCloth
+LogPluginManager: Mounting Engine plugin AudioInsights
+LogPluginManager: Mounting Engine plugin ChaosInsights
+LogPluginManager: Mounting Engine plugin CmdLinkServer
+LogPluginManager: Mounting Engine plugin ChaosVD
+LogPluginManager: Mounting Engine plugin EnhancedInput
+LogPluginManager: Mounting Engine plugin Fab
+LogPluginManager: Mounting Engine plugin IoStoreInsights
+LogPluginManager: Mounting Engine plugin MassInsights
+LogPluginManager: Mounting Engine plugin MeshPainting
+LogPluginManager: Mounting Engine plugin RenderGraphInsights
+LogPluginManager: Mounting Engine plugin TraceUtilities
+LogPluginManager: Mounting Engine plugin UbaController
+LogPluginManager: Mounting Engine plugin WorldMetrics
+LogPluginManager: Mounting Engine plugin XGEController
+LogPluginManager: Mounting Engine plugin EnvironmentQueryEditor
+LogPluginManager: Mounting Engine plugin AISupport
+LogPluginManager: Mounting Engine plugin OodleNetwork
+LogPluginManager: Mounting Engine plugin AdvancedRenamer
+LogPluginManager: Mounting Engine plugin AutomationUtils
+LogPluginManager: Mounting Engine plugin AnimToTexture
+LogPluginManager: Mounting Engine plugin BackChannel
+LogPluginManager: Mounting Engine plugin ChaosCaching
+LogPluginManager: Mounting Engine plugin ChaosEditor
+LogPluginManager: Mounting Engine plugin ChaosUserDataPT
+LogPluginManager: Mounting Engine plugin ChaosSolverPlugin
+LogPluginManager: Mounting Engine plugin ChaosNiagara
+LogPluginManager: Mounting Engine plugin CharacterAI
+LogPluginManager: Mounting Engine plugin Dataflow
+LogPluginManager: Mounting Engine plugin EditorDataStorage
+LogPluginManager: Mounting Engine plugin EditorTelemetry
+LogPluginManager: Mounting Engine plugin EditorPerformance
+LogPluginManager: Mounting Engine plugin EditorDataStorageFeatures
+LogPluginManager: Mounting Engine plugin Fracture
+LogPluginManager: Mounting Engine plugin FullBodyIK
+LogPluginManager: Mounting Engine plugin GeometryCollectionPlugin
+LogPluginManager: Mounting Engine plugin GeometryFlow
+LogPluginManager: Mounting Engine plugin GlobalConfigurationData
+LogPluginManager: Mounting Engine plugin GeometryDataflow
+LogPluginManager: Mounting Engine plugin LevelSequenceNavigatorBridge
+LogPluginManager: Mounting Engine plugin MeshModelingToolsetExp
+LogPluginManager: Mounting Engine plugin LowLevelNetTrace
+LogPluginManager: Mounting Engine plugin LocalizableMessage
+LogPluginManager: Mounting Engine plugin NFORDenoise
+LogPluginManager: Mounting Engine plugin PlanarCut
+LogPluginManager: Mounting Engine plugin PlatformCrypto
+LogPluginManager: Mounting Engine plugin PythonScriptPlugin
+LogPluginManager: Mounting Engine plugin RuntimeTelemetry
+LogPluginManager: Mounting Engine plugin SequenceNavigator
+LogPluginManager: Mounting Engine plugin SkeletalReduction
+LogPluginManager: Mounting Engine plugin ToolPresets
+LogPluginManager: Mounting Engine plugin NNEDenoiser
+LogPluginManager: Mounting Engine plugin MetaHumanSDK
+LogPluginManager: Mounting Engine plugin NNERuntimeORT
+LogPluginManager: Mounting Engine plugin Takes
+LogPluginManager: Mounting Engine plugin AnimationData
+LogPluginManager: Mounting Engine plugin ACLPlugin
+LogPluginManager: Mounting Engine plugin AnimationModifierLibrary
+LogPluginManager: Mounting Engine plugin BlendSpaceMotionAnalysis
+LogPluginManager: Mounting Engine plugin EaseCurveTool
+LogPluginManager: Mounting Engine plugin ControlRigSpline
+LogPluginManager: Mounting Engine plugin ControlRig
+LogPluginManager: Mounting Engine plugin GameplayInsights
+LogPluginManager: Mounting Engine plugin ControlRigModules
+LogPluginManager: Mounting Engine plugin DeformerGraph
+LogPluginManager: Mounting Engine plugin IKRig
+LogPluginManager: Mounting Engine plugin LiveLink
+LogPluginManager: Mounting Engine plugin RigLogic
+LogPluginManager: Mounting Engine plugin SkeletalMeshModelingTools
+LogPluginManager: Mounting Engine plugin TweeningUtils
+LogPluginManager: Mounting Engine plugin CameraShakePreviewer
+LogPluginManager: Mounting Engine plugin EngineCameras
+LogPluginManager: Mounting Engine plugin DatasmithContent
+LogPluginManager: Mounting Engine plugin GameplayCameras
+LogPluginManager: Mounting Engine plugin VariantManagerContent
+LogPluginManager: Mounting Engine plugin FabLauncher
+LogPluginManager: Mounting Engine plugin VariantManager
+LogPluginManager: Mounting Engine plugin AndroidMedia
+LogPluginManager: Mounting Engine plugin GLTFExporter
+LogPluginManager: Mounting Engine plugin ElectraCodecs
+LogPluginManager: Mounting Engine plugin ElectraCDM
+LogPluginManager: Mounting Engine plugin ElectraPlayer
+LogPluginManager: Mounting Engine plugin ElectraSubtitles
+LogPluginManager: Mounting Engine plugin ElectraUtil
+LogPluginManager: Mounting Engine plugin D3D12VideoDecodersElectra
+LogPluginManager: Mounting Engine plugin AvfMedia
+LogPluginManager: Mounting Engine plugin MediaPlayerEditor
+LogPluginManager: Mounting Engine plugin MediaPlate
+LogPluginManager: Mounting Engine plugin OpusDecoderElectra
+LogPluginManager: Mounting Engine plugin ActorSequence
+LogPluginManager: Mounting Engine plugin WmfMedia
+LogPluginManager: Mounting Engine plugin MediaCompositing
+LogPluginManager: Mounting Engine plugin WebMMedia
+LogPluginManager: Mounting Engine plugin TemplateSequence
+LogPluginManager: Mounting Engine plugin SequencerScripting
+LogPluginManager: Mounting Engine plugin LevelSequenceEditor
+LogPluginManager: Mounting Engine plugin AndroidFileServer
+LogPluginManager: Mounting Engine plugin SequenceValidator
+LogPluginManager: Mounting Engine plugin AndroidPermission
+LogPluginManager: Mounting Engine plugin ActorLayerUtilities
+LogPluginManager: Mounting Engine plugin AndroidMoviePlayer
+LogPluginManager: Mounting Engine plugin ImgMedia
+LogPluginManager: Mounting Engine plugin AppleImageUtils
+LogPluginManager: Mounting Engine plugin ArchVisCharacter
+LogPluginManager: Mounting Engine plugin AndroidDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin AppleMoviePlayer
+LogPluginManager: Mounting Engine plugin AssetTags
+LogPluginManager: Mounting Engine plugin AudioSynesthesia
+LogPluginManager: Mounting Engine plugin AudioCapture
+LogPluginManager: Mounting Engine plugin CustomMeshComponent
+LogPluginManager: Mounting Engine plugin ChunkDownloader
+LogPluginManager: Mounting Engine plugin AudioWidgets
+LogPluginManager: Mounting Engine plugin CableComponent
+LogPluginManager: Mounting Engine plugin ComputeFramework
+LogPluginManager: Mounting Engine plugin ExampleDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin GoogleCloudMessaging
+LogPluginManager: Mounting Engine plugin GeometryCache
+LogPluginManager: Mounting Engine plugin GooglePAD
+LogPluginManager: Mounting Engine plugin GeometryProcessing
+LogPluginManager: Mounting Engine plugin HairStrands
+LogPluginManager: Mounting Engine plugin InputDebugging
+LogPluginManager: Mounting Engine plugin IOSDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin LocationServicesBPLibrary
+LogPluginManager: Mounting Engine plugin LinuxDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin MobilePatchingUtils
+LogPluginManager: Mounting Engine plugin MeshModelingToolset
+LogPluginManager: Mounting Engine plugin MsQuic
+LogPluginManager: Mounting Engine plugin Metasound
+LogPluginManager: Mounting Engine plugin PropertyAccessEditor
+LogPluginManager: Mounting Engine plugin PropertyBindingUtils
+LogPluginManager: Mounting Engine plugin ResonanceAudio
+LogPluginManager: Mounting Engine plugin SignificanceManager
+LogPluginManager: Mounting Engine plugin ProceduralMeshComponent
+LogPluginManager: Mounting Engine plugin SoundFields
+LogPluginManager: Mounting Engine plugin RigVM
+LogPluginManager: Mounting Engine plugin Synthesis
+LogPluginManager: Mounting Engine plugin USDCore
+LogPluginManager: Mounting Engine plugin StateTree
+LogPluginManager: Mounting Engine plugin CLionSourceCodeAccess
+LogPluginManager: Mounting Engine plugin AnimationSharing
+LogPluginManager: Mounting Engine plugin CodeLiteSourceCodeAccess
+LogPluginManager: Mounting Engine plugin WindowsDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin WindowsMoviePlayer
+LogPluginManager: Mounting Engine plugin DumpGPUServices
+LogPluginManager: Mounting Engine plugin WaveTable
+LogPluginManager: Mounting Engine plugin GPUReshape
+LogPluginManager: Mounting Engine plugin GitSourceControl
+LogPluginManager: Mounting Engine plugin NamingTokens
+LogPluginManager: Mounting Engine plugin WebMMoviePlayer
+LogPluginManager: Mounting Engine plugin N10XSourceCodeAccess
+LogPluginManager: Mounting Engine plugin NullSourceCodeAccess
+LogPluginManager: Mounting Engine plugin PixWinPlugin
+LogPluginManager: Mounting Engine plugin KDevelopSourceCodeAccess
+LogPluginManager: Mounting Engine plugin PlasticSourceControl
+LogPluginManager: Mounting Engine plugin RenderDocPlugin
+LogPluginManager: Mounting Engine plugin ProjectLauncher
+LogPluginManager: Mounting Engine plugin PerforceSourceControl
+LogPluginManager: Mounting Engine plugin PropertyAccessNode
+LogPluginManager: Mounting Engine plugin RiderSourceCodeAccess
+LogPluginManager: Mounting Engine plugin PluginUtils
+LogPluginManager: Mounting Engine plugin UObjectPlugin
+LogPluginManager: Mounting Engine plugin VisualStudioCodeSourceCodeAccess
+LogPluginManager: Mounting Engine plugin VisualStudioSourceCodeAccess
+LogPluginManager: Mounting Engine plugin Cascade
+LogPluginManager: Mounting Engine plugin XCodeSourceCodeAccess
+LogPluginManager: Mounting Engine plugin NiagaraPreviewContent
+LogPluginManager: Mounting Engine plugin Niagara
+LogPluginManager: Mounting Engine plugin SubversionSourceControl
+LogPluginManager: Mounting Engine plugin OnlineBase
+LogPluginManager: Mounting Engine plugin EOSShared
+LogPluginManager: Mounting Engine plugin OnlineServices
+LogPluginManager: Mounting Engine plugin OnlineSubsystemSteam
+LogPluginManager: Mounting Engine plugin OnlineSubsystem
+LogPluginManager: Mounting Engine plugin OnlineSubsystemNull
+LogPluginManager: Mounting Engine plugin NiagaraSimCaching
+LogPluginManager: Mounting Engine plugin OnlineSubsystemUtils
+LogPluginManager: Mounting Engine plugin SocketSubsystemSteamIP
+LogPluginManager: Mounting Engine plugin InterchangeTests
+LogPluginManager: Mounting Engine plugin AssetManagerEditor
+LogPluginManager: Mounting Engine plugin BlueprintHeaderView
+LogPluginManager: Mounting Engine plugin ChangelistReview
+LogPluginManager: Mounting Engine plugin ColorGrading
+LogPluginManager: Mounting Engine plugin DataValidation
+LogPluginManager: Mounting Engine plugin EditorScriptingUtilities
+LogPluginManager: Mounting Engine plugin CurveEditorTools
+LogPluginManager: Mounting Engine plugin EditorDebugTools
+LogPluginManager: Mounting Engine plugin TextureFormatOodle
+LogPluginManager: Mounting Engine plugin EngineAssetDefinitions
+LogPluginManager: Mounting Engine plugin FacialAnimation
+LogPluginManager: Mounting Engine plugin GameplayTagsEditor
+LogPluginManager: Mounting Engine plugin MacGraphicsSwitching
+LogPluginManager: Mounting Engine plugin MaterialAnalyzer
+LogPluginManager: Mounting Engine plugin MeshLODToolset
+LogPluginManager: Mounting Engine plugin CryptoKeys
+LogPluginManager: Mounting Engine plugin ProxyLODPlugin
+LogPluginManager: Mounting Engine plugin SequencerAnimTools
+LogPluginManager: Mounting Engine plugin GeometryMode
+LogPluginManager: Mounting Engine plugin ModelingToolsEditorMode
+LogPluginManager: Mounting Engine plugin SpeedTreeImporter
+LogPluginManager: Mounting Engine plugin StylusInput
+LogPluginManager: Mounting Engine plugin UMGWidgetPreview
+LogPluginManager: Mounting Engine plugin InterchangeEditor
+LogPluginManager: Mounting Engine plugin InterchangeAssets
+LogPluginManager: Mounting Engine plugin UVEditor
+LogPluginManager: Mounting Engine plugin Interchange
+LogPluginManager: Mounting Engine plugin LauncherChunkInstaller
+LogPluginManager: Mounting Engine plugin CompositeCore
+LogPluginManager: Mounting Engine plugin Paper2D
+LogPluginManager: Mounting Engine plugin AlembicImporter
+LogPluginManager: Mounting Engine plugin WorldPartitionHLODUtilities
+LogPluginManager: Mounting Engine plugin USDImporter
+LogPluginManager: Mounting Engine plugin UdpMessaging
+LogPluginManager: Mounting Engine plugin TcpMessaging
+LogPluginManager: Mounting Engine plugin PluginBrowser
+LogPluginManager: Mounting Engine plugin MobileLauncherProfileWizard
+LogPluginManager: Mounting Engine plugin ConcertMain
+LogPluginManager: Mounting Engine plugin LightMixer
+LogPluginManager: Mounting Engine plugin BaseCharacterFXEditor
+LogPluginManager: Mounting Engine plugin OnlineSubsystemGooglePlay
+LogPluginManager: Mounting Engine plugin ObjectMixer
+LogPluginManager: Mounting Engine plugin SQLiteCore
+LogPluginManager: Mounting Engine plugin PortableObjectFileDataSource
+LogPluginManager: Mounting Engine plugin SteamShared
+LogPluginManager: Mounting Engine plugin XInputDevice
+LogPluginManager: Mounting Engine plugin AnalyticsBlueprintLibrary
+LogPluginManager: Mounting Engine plugin ContentBrowserClassDataSource
+LogPluginManager: Mounting Engine plugin ContentBrowserFileDataSource
+LogPluginManager: Mounting Engine plugin ContentBrowserAssetDataSource
+LogPluginManager: Mounting Engine plugin OnlineSubsystemIOS
+LogPluginManager: Mounting Engine plugin ConcertSyncClient
+LogPluginManager: Mounting Engine plugin ConcertSyncCore
+SourceControl: Revision control is disabled
+SourceControl: Revision control is disabled
+SourceControl: Revision control is disabled
+LogStudioTelemetry: Started StudioTelemetry Session
+LogNFORDenoise: NFORDenoise function starting up
+LogStudioTelemetry: Started StudioTelemetry Session
+LogWindows: Failed to load 'WinPixGpuCapturer.dll' (GetLastError=126)
+LogWindows: File 'WinPixGpuCapturer.dll' does not exist
+PixWinPlugin: PIX capture plugin failed to initialize! Check that the process is launched from PIX.
+RenderDocPlugin: Display: RenderDoc plugin will not be loaded. Use '-AttachRenderDoc' on the cmd line or enable 'renderdoc.AutoAttach' in the plugin settings.
+LogEOSShared: Loaded "C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/EOSSDK-Win64-Shipping.dll"
+LogEOSShared: FEOSSDKManager::Initialize Initializing EOSSDK Version:1.18.1.2-47370208
+LogInit: Using libcurl 8.12.1
+LogInit:  - built for Windows
+LogInit:  - supports SSL with OpenSSL/1.1.1t
+LogInit:  - supports HTTP deflate (compression) using libz 1.3
+LogInit:  - other features:
+LogInit:      CURL_VERSION_SSL
+LogInit:      CURL_VERSION_LIBZ
+LogInit:      CURL_VERSION_IPV6
+LogInit:      CURL_VERSION_ASYNCHDNS
+LogInit:      CURL_VERSION_LARGEFILE
+LogInit:      CURL_VERSION_TLSAUTH_SRP
+LogInit:      CURL_VERSION_HTTP2
+LogInit:  CurlRequestOptions (configurable via config and command line):
+LogInit:  - bVerifyPeer = true  - Libcurl will verify peer certificate
+LogInit:  - bUseHttpProxy = false  - Libcurl will NOT use HTTP proxy
+LogInit:  - CVarHttpCurlReuseConnectionEnabled = true  - Libcurl will reuse connections
+LogInit:  - MaxHostConnections = 16  - Libcurl will limit the number of connections to a host
+LogInit:  - LocalHostAddr = Default
+LogInit:  - BufferSize = 65536
+LogInit: CreateHttpThread using FCurlMultiPollEventLoopHttpThread
+LogInit: Creating http thread with maximum 256 concurrent requests
+LogSteamShared: Display: Loading Steam SDK 1.61
+LogSteamShared: Steam SDK Loaded!
+LogOnline: Display: STEAM: OnlineSubsystemSteam::Shutdown()
+LogOnline: OSS: Unable to create OnlineSubsystem instance Steam
+LogInit: WinSock: version 1.1 (2.2), MaxSocks=32767, MaxUdp=65467
+LogOnline: OSS: Created online subsystem instance for: NULL
+LogOnline: OSS: TryLoadSubsystemAndSetDefault: Loaded subsystem for type [NULL]
+LogSockets: FSocketSubsystemSteamIPModule: Disabled for editor process.
+LogInit: ExecutableName: UnrealEditor-Cmd.exe
+LogInit: Build: ++UE5+Release-5.7-CL-48512491
+LogInit: Platform=WindowsEditor
+LogInit: MachineId=6e1893814737cdf6e2edcbb02b9a616f
+LogInit: DeviceId=
+LogInit: Engine Version: 5.7.1-48512491+++UE5+Release-5.7
+LogInit: Compatible Engine Version: 5.7.0-47537391+++UE5+Release-5.7
+LogInit: Net CL: 47537391
+LogInit: OS: Windows 11 (25H2) [10.0.26200.8457] (), CPU: Intel(R) Core(TM) i9-14900HX, GPU: Intel(R) UHD Graphics
+LogInit: CPU Model ID: 6b71, microcode revision: 11f
+LogInit: Compiled (64-bit): Nov 20 2025 16:27:58
+LogInit: Architecture: x64
+LogInit: Compiled with Visual C++: 19.44.35220.00
+LogInit: Build Configuration: Development
+LogInit: Branch Name: ++UE5+Release-5.7
+LogInit: Command Line: -ExecutePythonScript=C:\UE\T66\ToonStyle\Source\ImportPixal3DAsset_Phase1C.py -unattended -nop4 -nosplash -NullRHI -abslog=C:\UE\T66\SourceAssets\ToonStyle\Pixal3D\Production\StoneSentinel\Working\Logs\StoneSentinel_ue_import.log -forcelogflush
+LogInit: Base Directory: C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/
+LogInit: Allocator: Mimalloc
+LogInit: Installed Engine Build: 1
+LogInit: This binary is optimized with LTO: no, PGO: no, instrumented for PGO data collection: no
+LogDevObjectVersion: Number of dev versions registered: 36
+LogDevObjectVersion:   Dev-Blueprints (B0D832E4-1F89-4F0D-ACCF-7EB736FD4AA2): 10
+LogDevObjectVersion:   Dev-Build (E1C64328-A22C-4D53-A36C-8E866417BD8C): 0
+LogDevObjectVersion:   Dev-Core (375EC13C-06E4-48FB-B500-84F0262A717E): 4
+LogDevObjectVersion:   Dev-Editor (E4B068ED-F494-42E9-A231-DA0B2E46BB41): 40
+LogDevObjectVersion:   Dev-Framework (CFFC743F-43B0-4480-9391-14DF171D2073): 37
+LogDevObjectVersion:   Dev-Mobile (B02B49B5-BB20-44E9-A304-32B752E40360): 3
+LogDevObjectVersion:   Dev-Networking (A4E4105C-59A1-49B5-A7C5-40C4547EDFEE): 0
+LogDevObjectVersion:   Dev-Online (39C831C9-5AE6-47DC-9A44-9C173E1C8E7C): 0
+LogDevObjectVersion:   Dev-Physics (78F01B33-EBEA-4F98-B9B4-84EACCB95AA2): 20
+LogDevObjectVersion:   Dev-Platform (6631380F-2D4D-43E0-8009-CF276956A95A): 0
+LogDevObjectVersion:   Dev-Rendering (12F88B9F-8875-4AFC-A67C-D90C383ABD29): 49
+LogDevObjectVersion:   Dev-Sequencer (7B5AE74C-D270-4C10-A958-57980B212A5A): 13
+LogDevObjectVersion:   Dev-VR (D7296918-1DD6-4BDD-9DE2-64A83CC13884): 3
+LogDevObjectVersion:   Dev-LoadTimes (C2A15278-BFE7-4AFE-6C17-90FF531DF755): 1
+LogDevObjectVersion:   Private-Geometry (6EACA3D4-40EC-4CC1-B786-8BED09428FC5): 3
+LogDevObjectVersion:   Dev-AnimPhys (29E575DD-E0A3-4627-9D10-D276232CDCEA): 17
+LogDevObjectVersion:   Dev-Anim (AF43A65D-7FD3-4947-9873-3E8ED9C1BB05): 15
+LogDevObjectVersion:   Dev-ReflectionCapture (6B266CEC-1EC7-4B8F-A30B-E4D90942FC07): 1
+LogDevObjectVersion:   Dev-Automation (0DF73D61-A23F-47EA-B727-89E90C41499A): 1
+LogDevObjectVersion:   FortniteMain (601D1886-AC64-4F84-AA16-D3DE0DEAC7D6): 225
+LogDevObjectVersion:   FortniteValkyrie (8DBC2C5B-54A7-43E0-A768-FCBB7DA29060): 8
+LogDevObjectVersion:   FortniteSeason (5B4C06B7-2463-4AF8-805B-BF70CDF5D0DD): 15
+LogDevObjectVersion:   FortniteRelease (E7086368-6B23-4C58-8439-1B7016265E91): 17
+LogDevObjectVersion:   Dev-Enterprise (9DFFBCD6-494F-0158-E221-12823C92A888): 11
+LogDevObjectVersion:   Dev-Niagara (F2AED0AC-9AFE-416F-8664-AA7FFA26D6FC): 1
+LogDevObjectVersion:   Dev-Destruction (174F1F0B-B4C6-45A5-B13F-2EE8D0FB917D): 10
+LogDevObjectVersion:   Dev-Physics-Ext (35F94A83-E258-406C-A318-09F59610247C): 41
+LogDevObjectVersion:   Dev-PhysicsMaterial-Chaos (B68FC16E-8B1B-42E2-B453-215C058844FE): 1
+LogDevObjectVersion:   Dev-CineCamera (B2E18506-4273-CFC2-A54E-F4BB758BBA07): 1
+LogDevObjectVersion:   Dev-VirtualProduction (64F58936-FD1B-42BA-BA96-7289D5D0FA4E): 1
+LogDevObjectVersion:   UE5-Main (697DD581-E64F-41AB-AA4A-51ECBEB7B628): 121
+LogDevObjectVersion:   UE5-Release (D89B5E42-24BD-4D46-8412-ACA8DF641779): 61
+LogDevObjectVersion:   UE5-SpecialProject (59DA5D52-1232-4948-B878-597870B8E98B): 9
+LogDevObjectVersion:   Dev-MediaFramework (6F0ED827-A609-4895-9C91-998D90180EA4): 2
+LogDevObjectVersion:   Dev-NaniteResearch (30D58BE3-95EA-4282-A6E3-B159D8EBB06A): 1
+LogDevObjectVersion:   Dev-ComputeFramework (6304A3E7-0059-4F59-8CFC-21BD7721FD4E): 0
+LogInit: Presizing for max 25165824 objects, including 0 objects not considered by GC.
+LogInit: Object subsystem initialized
+[2026.05.19-02.05.04:169][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.05.19-02.05.04:186][  0]LogInit: Selected Device Profile: [WindowsEditor]
+[2026.05.19-02.05.04:199][  0]LogHAL: Display: Platform has ~ 64 GB [68413153280 / 68719476736 / 64], which maps to Largest [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2026.05.19-02.05.04:212][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.05.19-02.05.04:225][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.05.19-02.05.04:238][  0]LogInit: Computer: DDOS
+[2026.05.19-02.05.04:250][  0]LogInit: User: DoPra
+[2026.05.19-02.05.04:263][  0]LogInit: CPU Page size=4096, Cores=24
+[2026.05.19-02.05.04:276][  0]LogInit: High frequency timer resolution =10.000000 MHz
+[2026.05.19-02.05.04:290][  0]LogInit: Handheld Device: 0
+[2026.05.19-02.05.04:301][  0]LogMemory: Memory total: Physical=63.7GB (64GB approx) Virtual=79.7GB
+[2026.05.19-02.05.04:316][  0]LogMemory: Platform Memory Stats for WindowsEditor
+[2026.05.19-02.05.04:328][  0]LogMemory: Process Physical Memory: 674.44 MB used, 674.44 MB peak
+[2026.05.19-02.05.04:342][  0]LogMemory: Process Virtual Memory: 700.05 MB used, 700.05 MB peak
+[2026.05.19-02.05.04:355][  0]LogMemory: Physical Memory: 22827.00 MB used,  42416.87 MB free, 65243.87 MB total
+[2026.05.19-02.05.04:369][  0]LogMemory: Virtual Memory: 27027.96 MB used,  54599.90 MB free, 81627.87 MB total
+[2026.05.19-02.05.04:381][  0]LogCsvProfiler: Display: Metadata set : extradevelopmentmemorymb="0"
+[2026.05.19-02.05.04:394][  0]LogWindows: WindowsPlatformFeatures enabled
+[2026.05.19-02.05.04:408][  0]LogSpline: Registered spline type: TypeId=0x54E3AD22, Impl=MultiSpline, Value=Vector
+[2026.05.19-02.05.04:421][  0]LogChaosDD: Chaos Debug Draw Startup
+[2026.05.19-02.05.04:437][  0]LogInit: Physics initialised using underlying interface: Chaos
+[2026.05.19-02.05.04:451][  0]LogInit: Using OS detected language (en-US).
+[2026.05.19-02.05.04:464][  0]LogInit: Using OS detected locale (en-US).
+[2026.05.19-02.05.04:478][  0]LogTextLocalizationManager: No specific localization for 'en-US' exists, so 'en' will be used for the language.
+[2026.05.19-02.05.05:008][  0]LogWindowsTextInputMethodSystem: Available input methods:
+[2026.05.19-02.05.05:018][  0]LogWindowsTextInputMethodSystem:   - English (United States) - (Keyboard).
+[2026.05.19-02.05.05:032][  0]LogWindowsTextInputMethodSystem: Activated input method: English (United States) - (Keyboard).
+[2026.05.19-02.05.05:044][  0]LogWindowsTouchpad: Display: CacheForceMaxTouchpadSensitivityMode SetMaxTouchpadSensitivity
+[2026.05.19-02.05.05:058][  0]LogObj: Display: Attempting to load config data for Default__SlateThemeManager before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.05.19-02.05.05:072][  0]LogSlate: New Slate User Created. Platform User Id 0, User Index 0, Is Virtual User: 0
+[2026.05.19-02.05.05:084][  0]LogSlate: Slate User Registered.  User Index 0, Is Virtual User: 0
+[2026.05.19-02.05.05:310][  0]LogVRS: Current RHI does not support Variable Rate Shading
+[2026.05.19-02.05.05:319][  0]LogCsvProfiler: Display: Metadata set : verbatimrhiname="Null"
+[2026.05.19-02.05.05:332][  0]LogCsvProfiler: Display: Metadata set : rhiname="Null"
+[2026.05.19-02.05.05:345][  0]LogCsvProfiler: Display: Metadata set : rhifeaturelevel="SM6"
+[2026.05.19-02.05.05:359][  0]LogCsvProfiler: Display: Metadata set : shaderplatform="PCD3D_SM6"
+[2026.05.19-02.05.05:375][  0]LogInit: Initializing FReadOnlyCVARCache
+[2026.05.19-02.05.05:388][  0]LogTextureFormatASTC: Display: ASTCEnc version 5.0.1 library loaded
+[2026.05.19-02.05.05:401][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatASTC
+[2026.05.19-02.05.05:414][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatDXT
+[2026.05.19-02.05.05:427][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatETC2
+[2026.05.19-02.05.05:440][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatIntelISPCTexComp
+[2026.05.19-02.05.05:453][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatUncompressed
+[2026.05.19-02.05.05:465][  0]LogTextureFormatOodle: Display: Oodle Texture TFO init; latest sdk version = 2.9.14
+[2026.05.19-02.05.05:478][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.14.dll
+[2026.05.19-02.05.05:490][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.5.dll
+[2026.05.19-02.05.05:503][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatOodle
+[2026.05.19-02.05.05:516][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android'
+[2026.05.19-02.05.05:529][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ASTC'
+[2026.05.19-02.05.05:541][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_DXT'
+[2026.05.19-02.05.05:554][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ETC2'
+[2026.05.19-02.05.05:566][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_OpenXR'
+[2026.05.19-02.05.05:579][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'AndroidClient'
+[2026.05.19-02.05.05:592][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ASTCClient'
+[2026.05.19-02.05.05:606][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_DXTClient'
+[2026.05.19-02.05.05:618][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ETC2Client'
+[2026.05.19-02.05.05:631][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_OpenXRClient'
+[2026.05.19-02.05.05:645][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_Multi'
+[2026.05.19-02.05.05:658][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_MultiClient'
+[2026.05.19-02.05.05:672][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'IOS'
+[2026.05.19-02.05.05:686][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'IOSClient'
+[2026.05.19-02.05.05:699][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Linux'
+[2026.05.19-02.05.05:712][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'LinuxEditor'
+[2026.05.19-02.05.05:726][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'LinuxServer'
+[2026.05.19-02.05.05:739][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'LinuxClient'
+[2026.05.19-02.05.05:752][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Mac'
+[2026.05.19-02.05.05:767][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'MacEditor'
+[2026.05.19-02.05.05:781][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'MacServer'
+[2026.05.19-02.05.05:794][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'MacClient'
+[2026.05.19-02.05.05:808][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'TVOS'
+[2026.05.19-02.05.05:821][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'TVOSClient'
+[2026.05.19-02.05.05:833][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Windows'
+[2026.05.19-02.05.05:846][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsEditor'
+[2026.05.19-02.05.05:861][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsServer'
+[2026.05.19-02.05.05:874][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsClient'
+[2026.05.19-02.05.05:887][  0]LogTargetPlatformManager: Display: Building Assets For WindowsEditor
+[2026.05.19-02.05.05:901][  0]LogTargetPlatformManager: Unable to find shader format SF_METAL_ES3_1_IOS from hinted modules, loading all potential format modules to find it
+[2026.05.19-02.05.05:913][  0]LogTargetPlatformManager: Loaded format module MetalShaderFormat
+[2026.05.19-02.05.05:927][  0]LogTargetPlatformManager:   SF_METAL_ES3_1_IOS
+[2026.05.19-02.05.05:939][  0]LogTargetPlatformManager:   SF_METAL_SM5_IOS
+[2026.05.19-02.05.05:952][  0]LogTargetPlatformManager:   SF_METAL_ES3_1_TVOS
+[2026.05.19-02.05.05:965][  0]LogTargetPlatformManager:   SF_METAL_SM5_TVOS
+[2026.05.19-02.05.05:978][  0]LogTargetPlatformManager:   SF_METAL_SM5
+[2026.05.19-02.05.05:991][  0]LogTargetPlatformManager:   SF_METAL_SM6
+[2026.05.19-02.05.06:003][  0]LogTargetPlatformManager:   SF_METAL_SIM
+[2026.05.19-02.05.06:017][  0]LogTargetPlatformManager:   SF_METAL_ES3_1
+[2026.05.19-02.05.06:029][  0]LogTargetPlatformManager: Loaded format module ShaderFormatD3D
+[2026.05.19-02.05.06:047][  0]LogTargetPlatformManager:   PCD3D_SM6
+[2026.05.19-02.05.06:066][  0]LogTargetPlatformManager:   PCD3D_SM5
+[2026.05.19-02.05.06:080][  0]LogTargetPlatformManager:   PCD3D_ES31
+[2026.05.19-02.05.06:092][  0]LogTargetPlatformManager: Loaded format module ShaderFormatOpenGL
+[2026.05.19-02.05.06:106][  0]LogTargetPlatformManager:   GLSL_150_ES31
+[2026.05.19-02.05.06:119][  0]LogTargetPlatformManager:   GLSL_ES3_1_ANDROID
+[2026.05.19-02.05.06:132][  0]LogTargetPlatformManager: Loaded format module ShaderFormatVectorVM
+[2026.05.19-02.05.06:147][  0]LogTargetPlatformManager:   VVM_1_0
+[2026.05.19-02.05.06:160][  0]LogTargetPlatformManager: Loaded format module VulkanShaderFormat
+[2026.05.19-02.05.06:173][  0]LogTargetPlatformManager:   SF_VULKAN_SM5
+[2026.05.19-02.05.06:187][  0]LogTargetPlatformManager:   SF_VULKAN_ES31_ANDROID
+[2026.05.19-02.05.06:202][  0]LogTargetPlatformManager:   SF_VULKAN_ES31
+[2026.05.19-02.05.06:216][  0]LogTargetPlatformManager:   SF_VULKAN_SM5_ANDROID
+[2026.05.19-02.05.06:230][  0]LogTargetPlatformManager:   SF_VULKAN_SM6
+[2026.05.19-02.05.06:243][  0]LogRendererCore: Ray tracing is disabled. Reason: disabled through project setting (r.RayTracing=0).
+[2026.05.19-02.05.06:257][  0]LogDerivedDataCache: Display: Memory: Max Cache Size: -1 MB
+[2026.05.19-02.05.06:273][  0]LogDerivedDataCache: FDerivedDataBackendGraph: Pak pak cache file ../../../../../../UE/T66/DerivedDataCache/DDC.ddp not found, will not use a pak cache.
+[2026.05.19-02.05.06:288][  0]LogDerivedDataCache: Unable to find inner node Pak for hierarchy Hierarchy.
+[2026.05.19-02.05.06:301][  0]LogDerivedDataCache: FDerivedDataBackendGraph: CompressedPak pak cache file ../../../../../../UE/T66/DerivedDataCache/Compressed.ddp not found, will not use a pak cache.
+[2026.05.19-02.05.06:314][  0]LogDerivedDataCache: Unable to find inner node CompressedPak for hierarchy Hierarchy.
+[2026.05.19-02.05.06:328][  0]LogDerivedDataCache: Display: ../../../Engine/DerivedDataCache/Compressed.ddp: Opened pak cache for reading. (1732 MiB)
+[2026.05.19-02.05.06:340][  0]LogDerivedDataCache: FDerivedDataBackendGraph: EnterprisePak pak cache file ../../../Enterprise/DerivedDataCache/Compressed.ddp not found, will not use a pak cache.
+[2026.05.19-02.05.06:353][  0]LogDerivedDataCache: Unable to find inner node EnterprisePak for hierarchy Hierarchy.
+[2026.05.19-02.05.06:366][  0]LogZenServiceInstance: Found Zen config default=C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Data
+[2026.05.19-02.05.06:379][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zen.exe service status'.
+[2026.05.19-02.05.06:698][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zen.exe service status'.
+[2026.05.19-02.05.07:005][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/DoPra/AppData/Local/UnrealEngine/5.7/Saved/Zen/zen.version', version: '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.05.19-02.05.07:012][  0]LogZenServiceInstance: InTree version at 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zenserver.exe' is '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.05.19-02.05.07:024][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zen.version', version: '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.05.19-02.05.07:037][  0]LogZenServiceInstance: Installed version at 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.05.19-02.05.07:050][  0]LogZenServiceInstance: Display: Installed service at 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is up to date
+[2026.05.19-02.05.07:063][  0]LogZenServiceInstance: No current process using the data dir found, launching a new instance
+[2026.05.19-02.05.07:076][  0]LogZenServiceInstance: Display: Launching executable 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe', working dir 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install', data dir 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Data', args '--port 8558 --data-dir C:\Users\DoPra\AppData\Local\UnrealEngine\Common\Zen\Data --http asio --gc-cache-duration-seconds 1209600 --gc-interval-seconds 21600 --gc-low-diskspace-threshold 2147483648 --cache-bucket-limit-overwrites --quiet --http-forceloopback --owner-pid 25136  --child-id Zen_25136_Startup'
+[2026.05.19-02.05.07:242][  0]LogZenServiceInstance: Display: Unreal Zen Storage Server HTTP service at http://[::1]:8558 status: OK!.
+[2026.05.19-02.05.07:248][  0]LogZenServiceInstance: Local ZenServer AutoLaunch initialization completed in 0.239 seconds
+[2026.05.19-02.05.07:263][  0]LogDerivedDataCache: Display: ZenLocal: Using ZenServer HTTP service at [::1] with namespace ue.ddc status: OK!.
+[2026.05.19-02.05.07:276][  0]LogDerivedDataCache: C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: Speed tests took 0.01 seconds.
+[2026.05.19-02.05.07:293][  0]LogDerivedDataCache: Display: C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: Performance: Latency=0.04ms. RandomReadSpeed=833.58MBs, RandomWriteSpeed=71.01MBs. Assigned SpeedClass 'Local'
+[2026.05.19-02.05.07:309][  0]LogDerivedDataCache: Local: Using data cache path C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: DeleteOnly
+[2026.05.19-02.05.07:322][  0]LogDerivedDataCache: ZenShared: Disabled because Host is set to 'None'
+[2026.05.19-02.05.07:335][  0]LogDerivedDataCache: Unable to find inner node ZenShared for hierarchy Hierarchy.
+[2026.05.19-02.05.07:348][  0]LogDerivedDataCache: Shared: Disabled because no path is configured.
+[2026.05.19-02.05.07:364][  0]LogDerivedDataCache: Unable to find inner node Shared for hierarchy Hierarchy.
+[2026.05.19-02.05.07:378][  0]LogDerivedDataCache: Cloud: Disabled because Host is set to 'None'
+[2026.05.19-02.05.07:392][  0]LogDerivedDataCache: Unable to find inner node Cloud for hierarchy Hierarchy.
+[2026.05.19-02.05.07:415][  0]LogShaderCompilers: Guid format shader working directory is 21 characters bigger than the processId version (../../../../../../UE/T66/Intermediate/Shaders/WorkingDirectory/25136/).
+[2026.05.19-02.05.07:437][  0]LogShaderCompilers: Cleaned the shader compiler working directory 'C:/Users/DoPra/AppData/Local/Temp/UnrealShaderWorkingDir/29BCC702464AF58AAD0217807F8A8732/'.
+[2026.05.19-02.05.07:456][  0]LogXGEController: Cannot use XGE Controller as Incredibuild is not installed on this machine.
+[2026.05.19-02.05.07:470][  0]LogUbaHorde: Display: UBA/Horde Configuration [Uba.Provider.Horde]: Not Enabled
+[2026.05.19-02.05.07:484][  0]LogShaderCompilers: Display: No distributed shader compiler controller found
+[2026.05.19-02.05.07:499][  0]LogShaderCompilers: Display: Using 16 local workers for shader compilation
+[2026.05.19-02.05.07:514][  0]LogShaderCompilers: Display: Compiling shader autogen file: ../../../../../../UE/T66/Intermediate/ShaderAutogen/PCD3D_SM6/AutogenShaderHeaders.ush
+[2026.05.19-02.05.07:527][  0]LogShaderCompilers: Display: Autogen file is unchanged, skipping write.
+[2026.05.19-02.05.08:060][  0]LogSlate: Using FreeType 2.10.0
+[2026.05.19-02.05.08:071][  0]LogSlate: SlateFontServices - WITH_FREETYPE: 1, WITH_HARFBUZZ: 1
+[2026.05.19-02.05.08:083][  0]LogAssetRegistry: FAssetRegistry took 0.0069 seconds to start up
+[2026.05.19-02.05.08:099][  0]LogEditorDomain: Display: EditorDomain is Disabled
+[2026.05.19-02.05.08:139][  0]LogAssetRegistry: Display: AssetDataGatherer spent 0.001s loading caches ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_*.bin.
+[2026.05.19-02.05.08:801][  0]LogCsvProfiler: Display: Metadata set : deviceprofile="WindowsEditor"
+[2026.05.19-02.05.08:818][  0]LogStreaming: Display: FlushAsyncLoading(1): 1 QueuedPackages, 0 AsyncPackages
+[2026.05.19-02.05.08:839][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.08:853][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness because of a recursive sync load
+[2026.05.19-02.05.08:867][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.08:880][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.08:893][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec because of a recursive sync load
+[2026.05.19-02.05.08:907][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.08:920][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/WorldGridMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.08:933][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/WorldGridMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.08:946][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.08:959][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultPostProcessMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.08:973][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultLightFunctionMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultPostProcessMaterial because of a recursive sync load
+[2026.05.19-02.05.08:986][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultPostProcessMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.09:000][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultDeferredDecalMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultLightFunctionMaterial because of a recursive sync load
+[2026.05.19-02.05.09:013][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.09:025][  0]LogStreaming: Display: Package /Engine/EngineMaterials/WorldGridMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultDeferredDecalMaterial because of a recursive sync load
+[2026.05.19-02.05.09:040][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/WorldGridMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.09:052][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/EngineMaterials/WorldGridMaterial because of a recursive sync load
+[2026.05.19-02.05.09:066][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/WorldGridMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.19-02.05.09:080][  0]LogTextureEncodingSettings: Display: Texture Encode Speed: FinalIfAvailable (editor).
+[2026.05.19-02.05.09:093][  0]LogTextureEncodingSettings: Display: Oodle Texture Encode Speed settings: Fast: RDO Off Lambda=0, Effort=Normal Final: RDO Off Lambda=0, Effort=Normal
+[2026.05.19-02.05.09:107][  0]LogTextureEncodingSettings: Display: Shared linear texture encoding: Disabled
+[2026.05.19-02.05.09:120][  0]LogMeshReduction: Display: Using QuadricMeshReduction for automatic static mesh reduction
+[2026.05.19-02.05.09:134][  0]LogMeshReduction: Display: Using SkeletalMeshReduction for automatic skeletal mesh reduction
+[2026.05.19-02.05.09:149][  0]LogMeshReduction: Display: Using ProxyLODMeshReduction for automatic mesh merging
+[2026.05.19-02.05.09:165][  0]LogMeshReduction: Display: No distributed automatic mesh merging module available
+[2026.05.19-02.05.09:179][  0]LogMeshMerging: No distributed automatic mesh merging module available
+[2026.05.19-02.05.09:443][  0]LogShaderCompilers: Display: Compiling shader autogen file: ../../../../../../UE/T66/Intermediate/ShaderAutogen/PCD3D_SM5/AutogenShaderHeaders.ush
+[2026.05.19-02.05.09:449][  0]LogShaderCompilers: Display: Autogen file is unchanged, skipping write.
+[2026.05.19-02.05.09:462][  0]LogVirtualization: Display: VirtualizationSystem name found in ini file: None
+[2026.05.19-02.05.09:475][  0]LogVirtualization: Display: FNullVirtualizationSystem mounted, virtualization will be disabled
+[2026.05.19-02.05.09:488][  0]LogSlate: Border
+[2026.05.19-02.05.09:500][  0]LogSlate: BreadcrumbButton
+[2026.05.19-02.05.09:513][  0]LogSlate: Brushes.Title
+[2026.05.19-02.05.09:525][  0]LogSlate: ColorPicker.ColorThemes
+[2026.05.19-02.05.09:538][  0]LogSlate: Default
+[2026.05.19-02.05.09:550][  0]LogSlate: Icons.Save
+[2026.05.19-02.05.09:564][  0]LogSlate: Icons.Toolbar.Settings
+[2026.05.19-02.05.09:577][  0]LogSlate: ListView
+[2026.05.19-02.05.09:591][  0]LogSlate: SoftwareCursor_CardinalCross
+[2026.05.19-02.05.09:604][  0]LogSlate: SoftwareCursor_Grab
+[2026.05.19-02.05.09:617][  0]LogSlate: TableView.DarkRow
+[2026.05.19-02.05.09:631][  0]LogSlate: TableView.Row
+[2026.05.19-02.05.09:643][  0]LogSlate: TreeView
+[2026.05.19-02.05.09:656][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize started...
+[2026.05.19-02.05.09:668][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize took 4.353 ms
+[2026.05.19-02.05.09:681][  0]LogElectraDecoders: No or only dummy dynamic RHI detected, cannot use Electra decoders without RHI.
+[2026.05.19-02.05.09:694][  0]LogElectraPlayerPlugin: Dummy Dynamic RHI detected. Electra Player plugin is not initialized.
+[2026.05.19-02.05.09:707][  0]LogStats: UGameplayTagsManager::InitializeManager -  0.000 s
+[2026.05.19-02.05.09:966][  0]LogPython: Python enabled via IPythonScriptPlugin::ForceEnablePythonAtRuntime: D:\build\++UE5\Sync\Engine\Plugins\Experimental\PythonScriptPlugin\Source\PythonScriptPlugin\Private\EditorUtilities\EditorPythonExecuter.cpp(193:32) void __cdecl FEditorPythonExecuter::OnStartupModule(void)
+[2026.05.19-02.05.10:680][  0]LogMetaSound: Display: MetaSound Page Target Initialized to 'Default'
+[2026.05.19-02.05.10:688][  0]LogAudio: Display: Registering Engine Module Parameter Interfaces...
+[2026.05.19-02.05.10:702][  0]LogMetaSound: MetaSound Engine Initialized
+[2026.05.19-02.05.11:161][  0]LogUdpMessaging: Display: Work queue size set to 1024.
+[2026.05.19-02.05.11:172][  0]LogUdpMessaging: Initializing bridge on interface 0.0.0.0:0 to multicast group 230.0.0.1:6666.
+[2026.05.19-02.05.11:186][  0]LogUdpMessaging: Display: Unicast socket bound to '0.0.0.0:52807'.
+[2026.05.19-02.05.11:202][  0]LogUdpMessaging: Display: Added local interface '192.168.0.4' to multicast group '230.0.0.1:6666'
+[2026.05.19-02.05.11:219][  0]LogUdpMessaging: Display: Added local interface '127.0.0.1' to multicast group '230.0.0.1:6666'
+[2026.05.19-02.05.11:233][  0]LogUdpMessaging: Display: Using asynchronous task graph for message deserialization.
+[2026.05.19-02.05.11:245][  0]LogTcpMessaging: Initializing TcpMessaging bridge
+[2026.05.19-02.05.11:534][  0]LogT66Editor: T66Editor module started
+[2026.05.19-02.05.11:598][  0]LogChaosVDEditor: [FChaosVDExtensionsManager::RegisterExtension] Registering CVD Extension [FChaosVDGenericDebugDrawExtension] ...
+[2026.05.19-02.05.11:606][  0]LogChaosVDEditor: [FChaosVDExtensionsManager::RegisterExtension] Registering CVD Extension [FChaosVDAccelerationStructuresExtension] ...
+[2026.05.19-02.05.11:619][  0]LogTimingProfiler: Initialize
+[2026.05.19-02.05.11:633][  0]LogTimingProfiler: OnSessionChanged
+[2026.05.19-02.05.11:646][  0]LoadingProfiler: Initialize
+[2026.05.19-02.05.11:659][  0]LoadingProfiler: OnSessionChanged
+[2026.05.19-02.05.11:672][  0]LogNetworkingProfiler: Initialize
+[2026.05.19-02.05.11:685][  0]LogNetworkingProfiler: OnSessionChanged
+[2026.05.19-02.05.11:698][  0]LogMemoryProfiler: Initialize
+[2026.05.19-02.05.11:711][  0]LogMemoryProfiler: OnSessionChanged
+[2026.05.19-02.05.12:106][  0]LogAndroidPermission: UAndroidPermissionCallbackProxy::GetInstance
+[2026.05.19-02.05.12:421][  0]SourceControl: Revision control is disabled
+[2026.05.19-02.05.12:505][  0]SourceControl: Revision control is disabled
+[2026.05.19-02.05.12:883][  0]LogCollectionManager: Loaded 0 collections in 0.003831 seconds
+[2026.05.19-02.05.12:895][  0]LogFileCache: Scanning file cache for directory 'C:/UE/T66/Saved/Collections/' took 0.01s
+[2026.05.19-02.05.12:911][  0]LogFileCache: Scanning file cache for directory 'C:/UE/T66/Content/Developers/DoPra/Collections/' took 0.01s
+[2026.05.19-02.05.12:927][  0]LogFileCache: Scanning file cache for directory 'C:/UE/T66/Content/Collections/' took 0.01s
+[2026.05.19-02.05.12:969][  0]LogEOSSDK: LogEOS: [Boot] EOSSDK Version 1.18.1.2-47370208 booting at 2026-05-19T02:05:12.968Z using C
+[2026.05.19-02.05.13:037][  0]LogEOSSDK: LogEOS: [Boot] EOSSDK Platform Configuration win64-dynamic-x86_64
+[2026.05.19-02.05.13:054][  0]LogEOSSDK: LogEOS: [Boot] EOSSDK Platform Properties [OS=Windows/10.0.26100.8328.64bit, ClientId=xyza7891REBVsEqSJRRNXmlS7EQHM459, ProductId=86f32f1151354e7cb39c12f8ab2c22a3, SandboxId=a01927f7421a4d4995673fe30ef46945, DeploymentId=a652a72ea1664dcab3a467891eea5f30, ProductName=T66, ProductVersion=++UE5+Release-5.7-CL-48512491, IsServer=false, Flags=DisableOverlay]
+[2026.05.19-02.05.13:069][  0]LogEOSSDK: LogEOSAnalytics: Start Session (User: ...)
+[2026.05.19-02.05.13:085][  0]LogEOSSDK: LogEOSOverlay: Overlay will not load, because it was explicitly disabled when creating the platform
+[2026.05.19-02.05.13:100][  0]LogEOSSDK: LogEOSAntiCheat: [AntiCheatClient] Anti-cheat client not available. Verify that the game was started using the anti-cheat bootstrapper if you intend to use it.
+[2026.05.19-02.05.13:114][  0]LogEOSSDK: LogEOS: SetApplicationStatus - OldStatus: EOS_AS_Foreground, NewStatus: EOS_AS_Foreground, Current Time: 0001.01.01-00.00.00
+[2026.05.19-02.05.13:129][  0]LogEOSSDK: LogEOS: SetNetworkStatus - OldStatus: EOS_NS_Online, NewStatus: EOS_NS_Online
+[2026.05.19-02.05.13:146][  0]LogEOSSDK: LogEOS: Updating Platform SDK Config, Time: 0.000165
+[2026.05.19-02.05.13:159][  0]LogFab: Plugin initialized. VersionName: 0.0.10 (Version: 10) - Engine Version 5.7.1-48512491+++UE5+Release-5.7
+[2026.05.19-02.05.13:175][  0]LogFabLauncher: Display: FabLauncher (version 0.5.0) active
+[2026.05.19-02.05.13:190][  0]LogWindows: Failed to load 'Wintab32.dll' (GetLastError=126)
+[2026.05.19-02.05.13:206][  0]LogWindows: File 'Wintab32.dll' does not exist
+[2026.05.19-02.05.13:223][  0]LogStylusInput: Wintab driver is not available; Wintab interface will be not be initialized.
+[2026.05.19-02.05.13:242][  0]LogUObjectArray: 48081 objects as part of root set at end of initial load.
+[2026.05.19-02.05.13:264][  0]LogUObjectArray: CloseDisregardForGC: 0/0 objects in disregard for GC pool
+[2026.05.19-02.05.13:573][  0]LogEngine: Initializing Engine...
+[2026.05.19-02.05.13:625][  0]LogT66Editor: T66UISetupSubsystem initialized
+[2026.05.19-02.05.13:633][  0]LogTedsSettings: UTedsSettingsEditorSubsystem::Initialize
+[2026.05.19-02.05.13:746][  0]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.05.19-02.05.13:754][  0]LogNiagara: UAV Float16 is not supported, compressed GPU emitters will be disabled.
+[2026.05.19-02.05.13:767][  0]LogNetVersion: Set ProjectVersion to alpha 0.6. Version Checksum will be recalculated on next use.
+[2026.05.19-02.05.13:780][  0]LogInit: Texture streaming: Disabled
+[2026.05.19-02.05.13:794][  0]LogAnalytics: Display: [UEEditor.Rocket.Release] AnalyticsET::StartSession ( APIServer = https://datarouter.ol.epicgames.com/datarouter/api/v1/public/data. AppVersion = 5.7.1-48512491+++UE5+Release-5.7 )
+[2026.05.19-02.05.13:806][  0]LogAudio: Display: Initializing Audio Device Manager...
+[2026.05.19-02.05.13:820][  0]LogAudio: Display: Loading Default Audio Settings Objects...
+[2026.05.19-02.05.13:834][  0]LogAudio: Display: No default SoundConcurrencyObject specified (or failed to load).
+[2026.05.19-02.05.13:847][  0]LogAudio: Display: Audio Device Manager Initialized
+[2026.05.19-02.05.13:860][  0]LogAudio: Display: Creating Audio Device:                 Id: 1, Scope: Shared, Realtime: True
+[2026.05.19-02.05.13:873][  0]LogAudioMixer: Display: Audio Mixer Platform Settings:
+[2026.05.19-02.05.13:886][  0]LogAudioMixer: Display: 	Sample Rate:						  48000
+[2026.05.19-02.05.13:899][  0]LogAudioMixer: Display: 	Callback Buffer Frame Size Requested: 1024
+[2026.05.19-02.05.13:913][  0]LogAudioMixer: Display: 	Callback Buffer Frame Size To Use:	  1024
+[2026.05.19-02.05.13:925][  0]LogAudioMixer: Display: 	Number of buffers to queue:			  1
+[2026.05.19-02.05.13:939][  0]LogAudioMixer: Display: 	Max Channels (voices):				  32
+[2026.05.19-02.05.13:951][  0]LogAudioMixer: Display: 	Number of Async Source Workers:		  4
+[2026.05.19-02.05.13:966][  0]LogAudio: Display: AudioDevice MaxSources: 32
+[2026.05.19-02.05.13:978][  0]LogAudio: Display: Audio Spatialization Plugin: None (built-in).
+[2026.05.19-02.05.13:992][  0]LogAudio: Display: Audio Reverb Plugin: None (built-in).
+[2026.05.19-02.05.14:068][  0]LogAudio: Display: Audio Occlusion Plugin: None (built-in).
+[2026.05.19-02.05.14:080][  0]LogAudioMixer: Display: Initializing audio mixer using platform API: 'XAudio2'
+[2026.05.19-02.05.14:096][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Render Role='Console', Device='Speakers (Realtek(R) Audio)'
+[2026.05.19-02.05.14:110][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Capture Role='Console', Device='Microphone Array (Realtek(R) Audio)'
+[2026.05.19-02.05.14:123][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Render Role='Multimedia', Device='Speakers (Realtek(R) Audio)'
+[2026.05.19-02.05.14:136][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Capture Role='Multimedia', Device='Microphone Array (Realtek(R) Audio)'
+[2026.05.19-02.05.14:151][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Render Role='Communications', Device='Speakers (Realtek(R) Audio)'
+[2026.05.19-02.05.14:165][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Capture Role='Communications', Device='Microphone Array (Realtek(R) Audio)'
+[2026.05.19-02.05.14:181][  0]LogAudioMixer: Display: Using Audio Hardware Device Speakers (Realtek(R) Audio)
+[2026.05.19-02.05.14:195][  0]LogAudioMixer: Display: Initializing Sound Submixes...
+[2026.05.19-02.05.14:212][  0]LogAudioMixer: Display: Creating Master Submix 'MasterSubmixDefault'
+[2026.05.19-02.05.14:229][  0]LogAudioMixer: Display: Creating Master Submix 'MasterReverbSubmixDefault'
+[2026.05.19-02.05.14:255][  0]LogAudioMixer: FMixerPlatformXAudio2::StartAudioStream() called. InstanceID=1
+[2026.05.19-02.05.14:278][  0]LogAudioMixer: Display: Output buffers initialized: Frames=1024, Channels=2, Samples=2048, InstanceID=1
+[2026.05.19-02.05.14:302][  0]LogAudioMixer: Display: Starting AudioMixerPlatformInterface::RunInternal(), InstanceID=1
+[2026.05.19-02.05.14:316][  0]LogAudioMixer: Display: FMixerPlatformXAudio2::SubmitBuffer() called for the first time. InstanceID=1
+[2026.05.19-02.05.14:330][  0]LogInit: FAudioDevice initialized with ID 1.
+[2026.05.19-02.05.14:342][  0]LogAudio: Display: Audio Device (ID: 1) registered with world 'Untitled'.
+[2026.05.19-02.05.14:355][  0]LogAudioMixer: Initializing Audio Bus Subsystem for audio device with ID 1
+[2026.05.19-02.05.14:369][  0]LogCsvProfiler: Display: Metadata set : largeworldcoordinates="1"
+[2026.05.19-02.05.14:381][  0]LogInit: Undo buffer set to 256 MB
+[2026.05.19-02.05.14:394][  0]LogInit: Transaction tracking system initialized
+[2026.05.19-02.05.14:461][  0]LogSourceControl: Display: Uncontrolled Changelist persistency file loaded ../../../../../../UE/T66/Saved/SourceControl/UncontrolledChangelists.json
+[2026.05.19-02.05.14:532][  0]LocalizationService: Localization service is disabled
+[2026.05.19-02.05.14:680][  0]LogContentValidation: Adding native validator /Script/DataValidation.DirtyFilesChangelistValidator
+[2026.05.19-02.05.14:689][  0]LogContentValidation: Adding native validator /Script/DataValidation.EditorValidator_Localization
+[2026.05.19-02.05.14:703][  0]LogContentValidation: Adding native validator /Script/DataValidation.EditorValidator_Material
+[2026.05.19-02.05.14:717][  0]LogContentValidation: Adding native validator /Script/DataValidation.PackageFileValidator
+[2026.05.19-02.05.14:729][  0]LogContentValidation: Adding native validator /Script/DataValidation.WorldPartitionChangelistValidator
+[2026.05.19-02.05.14:742][  0]LogContentValidation: Adding native validator /Script/InputBlueprintNodes.EnhancedInputUserWidgetValidator
+[2026.05.19-02.05.14:754][  0]LogNNEDenoiser: Ray Tracing is not enabled, therefore NNEDenoiser is not registered!
+[2026.05.19-02.05.14:768][  0]LogPython: Using Python 3.11.8
+[2026.05.19-02.05.14:781][  0]LogPython: Display: No pip-enabled plugins with python dependencies found, skipping
+[2026.05.19-02.05.15:340][  0]LogD3D12VideoDecodersElectra: D3D12 video decoding will not be used since no supported format was found.
+[2026.05.19-02.05.15:377][  0]LogLevelSequenceEditor: LevelSequenceEditor subsystem initialized.
+[2026.05.19-02.05.15:439][  0]LogEditorDataStorage: Initializing
+[2026.05.19-02.05.15:456][  0]LogEditorDataStorage: Initialized
+[2026.05.19-02.05.15:461][  0]LogCore: Display: InsightsEditor module auto-connecting to local trace server...
+[2026.05.19-02.05.15:590][  0]LogInit: Display: Engine is initialized. Leaving FEngineLoop::Init()
+[2026.05.19-02.05.15:603][  0]SourceControl: Revision control is disabled
+[2026.05.19-02.05.15:617][  0]LogUnrealEdMisc: Loading editor; pre map load, took 19.508
+[2026.05.19-02.05.15:630][  0]Cmd: MAP LOAD FILE="../../../../../../UE/T66/Content/Maps/FrontendLevel.umap" TEMPLATE=0 SHOWPROGRESS=1 FEATURELEVEL=4
+[2026.05.19-02.05.15:643][  0]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.05.19-02.05.15:656][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.19-02.05.15:670][  0]LogT66EnemyPool: [GOLD] EnemyPool: shutting down. Total acquired=0, reused=0 (0%)
+[2026.05.19-02.05.15:683][  0]LogAudio: Display: Audio Device unregistered from world 'None'.
+[2026.05.19-02.05.15:696][  0]LogUObjectHash: Compacting FUObjectHashTables data took   0.89ms
+[2026.05.19-02.05.15:709][  0]LogAudio: Display: Audio Device (ID: 1) registered with world 'FrontendLevel'.
+[2026.05.19-02.05.15:722][  0]LogChaosDD: Creating Chaos Debug Draw Scene for world FrontendLevel
+[2026.05.19-02.05.15:736][  0]LogEditorServer: Finished looking for orphan Actors (0.000 secs)
+[2026.05.19-02.05.15:749][  0]LogUObjectHash: Compacting FUObjectHashTables data took   0.99ms
+[2026.05.19-02.05.15:762][  0]Cmd: MAP CHECKDEP NOCLEARLOG
+[2026.05.19-02.05.15:775][  0]MapCheck: Map check complete: 0 Error(s), 0 Warning(s), took 0.108ms to complete.
+[2026.05.19-02.05.15:788][  0]LogUnrealEdMisc: Total Editor Startup Time, took 19.636
+[2026.05.19-02.05.15:802][  0]LogWebBrowser: Loaded CEF3 version 128.4.13.3057 from C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/ThirdParty/CEF3/Win64/128.4.13+ge76af7e+chromium-128.0.6613.138
+[2026.05.19-02.05.15:815][  0]Message dialog closed, result: Ok, title: Message, text: Failed to create the web browser window.
+[2026.05.19-02.05.15:828][  0]LogPlacementMode: Display: The Asset Registry is not yet fully loaded so some placeable classes might be missing.
+[2026.05.19-02.05.15:949][  0]LogSlate: Updating window title bar state: overlay mode, drag disabled, window buttons hidden, title bar hidden
+[2026.05.19-02.05.16:066][  0]LogSlate: Updating window title bar state: overlay mode, drag disabled, window buttons hidden, title bar hidden
+[2026.05.19-02.05.16:182][  0]LogSlate: Updating window title bar state: overlay mode, drag disabled, window buttons hidden, title bar hidden
+[2026.05.19-02.05.16:294][  0]LogSlate: Updating window title bar state: overlay mode, drag disabled, window buttons hidden, title bar hidden
+[2026.05.19-02.05.16:401][  0]LogPakFile: Initializing PakPlatformFile
+[2026.05.19-02.05.16:410][  0]LogPakFile: Display: Mounted Pak file 'C:/Program Files/Epic Games/UE_5.7/FeaturePacks/TP_FirstPerson.upack', mount point: 'root:/'
+[2026.05.19-02.05.16:422][  0]LogPakFile: Initializing PakPlatformFile
+[2026.05.19-02.05.16:435][  0]LogPakFile: Display: Mounted Pak file 'C:/Program Files/Epic Games/UE_5.7/FeaturePacks/TP_FirstPersonBP.upack', mount point: 'root:/'
+[2026.05.19-02.05.16:447][  0]LogPakFile: Initializing PakPlatformFile
+[2026.05.19-02.05.16:461][  0]LogPakFile: Display: Mounted Pak file 'C:/Program Files/Epic Games/UE_5.7/FeaturePacks/TP_HandheldARBP.upack', mount point: 'root:/'
+[2026.05.19-02.05.16:473][  0]LogPakFile: Initializing PakPlatformFile
+[2026.05.19-02.05.16:486][  0]LogPakFile: Display: Mounted Pak file 'C:/Program Files/Epic Games/UE_5.7/FeaturePacks/TP_ThirdPerson.upack', mount point: 'root:/'
+[2026.05.19-02.05.16:498][  0]LogPakFile: Initializing PakPlatformFile
+[2026.05.19-02.05.16:511][  0]LogPakFile: Display: Mounted Pak file 'C:/Program Files/Epic Games/UE_5.7/FeaturePacks/TP_ThirdPersonBP.upack', mount point: 'root:/'
+[2026.05.19-02.05.16:524][  0]LogPakFile: Initializing PakPlatformFile
+[2026.05.19-02.05.16:536][  0]LogPakFile: Display: Mounted Pak file 'C:/Program Files/Epic Games/UE_5.7/FeaturePacks/TP_TopDown.upack', mount point: 'root:/'
+[2026.05.19-02.05.16:549][  0]LogPakFile: Initializing PakPlatformFile
+[2026.05.19-02.05.16:562][  0]LogPakFile: Display: Mounted Pak file 'C:/Program Files/Epic Games/UE_5.7/FeaturePacks/TP_TopDownBP.upack', mount point: 'root:/'
+[2026.05.19-02.05.16:575][  0]LogPakFile: Initializing PakPlatformFile
+[2026.05.19-02.05.16:588][  0]LogPakFile: Display: Mounted Pak file 'C:/Program Files/Epic Games/UE_5.7/FeaturePacks/TP_VehicleAdvBP.upack', mount point: 'root:/'
+[2026.05.19-02.05.16:600][  0]LogPakFile: Initializing PakPlatformFile
+[2026.05.19-02.05.16:613][  0]LogPakFile: Display: Mounted Pak file 'C:/Program Files/Epic Games/UE_5.7/FeaturePacks/TP_VirtualRealityBP.upack', mount point: 'root:/'
+[2026.05.19-02.05.16:837][  0]LogToolMenus: Warning: Menu section not found: 'Compile' for insert: 'EditorPerf'
+[2026.05.19-02.05.16:851][  0]LogStall: Startup...
+[2026.05.19-02.05.16:867][  0]LogStall: Startup complete.
+[2026.05.19-02.05.16:880][  0]LogLoad: (Engine Initialization) Total time: 20.77 seconds
+[2026.05.19-02.05.17:471][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.19-02.05.17:476][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Importers/USDImporter/Content/Python/init_unreal.py... started...
+[2026.05.19-02.05.17:490][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Importers/USDImporter/Content/Python/init_unreal.py... took 361 us
+[2026.05.19-02.05.17:502][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... started...
+[2026.05.19-02.05.17:515][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... took 27.033 ms (total: 27.395 ms)
+[2026.05.19-02.05.17:528][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... started...
+[2026.05.19-02.05.17:541][  0]LogPython: registering <class 'ControlRigWorkflows.workflow_deformation_rig_preset.provider'>
+
+[2026.05.19-02.05.17:564][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... took 64.369 ms (total: 91.764 ms)
+[2026.05.19-02.05.17:982][  1]LogAssetRegistry: AssetRegistryGather time 0.2610s: AssetDataDiscovery 0.0331s, AssetDataGather 0.0736s, StoreResults 0.1543s. Wall time 9.9110s.
+	NumCachedDirectories 2601. NumUncachedDirectories 22. NumCachedFiles 10840. NumUncachedFiles 9.
+	BackgroundTickInterruptions 0.
+[2026.05.19-02.05.18:012][  1]LogAssetRegistry: Display: Starting OnFilesLoaded.Broadcast
+[2026.05.19-02.05.18:040][  1]LogPlacementMode: Display: The Asset Registry is done with its initial scan, the list of placeable classes has been updated.
+[2026.05.19-02.05.18:054][  1]LogCollectionManager: Fixed up redirectors for 0 collections in 0.000001 seconds (updated 0 objects)
+[2026.05.19-02.05.18:067][  1]LogAssetRegistry: Display: Completed OnFilesLoaded.Broadcast: 1.037s
+[2026.05.19-02.05.18:080][  2]LogSourceControl: Uncontrolled asset discovery started...
+[2026.05.19-02.05.18:172][  2]LogEditorAssetSubsystem: Error: LoadAsset failed: The AssetData '/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline.MI_StoneSentinel_Outline' could not be found in the Asset Registry.
+[2026.05.19-02.05.18:180][  2]LogStreaming: Display: FlushAsyncLoading(335): 1 QueuedPackages, 0 AsyncPackages
+[2026.05.19-02.05.18:202][  2]LogUObjectGlobals: Force Deleting 1 Package(s):
+	Asset Name: /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel.SM_StoneSentinel
+	Asset Type: StaticMesh
+[2026.05.19-02.05.18:484][  2]LogObjectTools: Warning: Detected inconsistencies between reference gathering algorithms. Switching 'Editor.UseLegacyGetReferencersForDeletion' on for the remainder of this editor session.
+[2026.05.19-02.05.18:691][  2]LogUObjectHash: Compacting FUObjectHashTables data took   1.08ms
+[2026.05.19-02.05.18:733][  2]LogUObjectHash: Compacting FUObjectHashTables data took   0.80ms
+[2026.05.19-02.05.18:767][  2]LogUObjectHash: Compacting FUObjectHashTables data took   0.51ms
+[2026.05.19-02.05.18:777][  2]LogSlate: Took 0.000239 seconds to synchronously load lazily loaded font '../../../Engine/Content/Slate/Fonts/Roboto-Regular.ttf' (155K)
+[2026.05.19-02.05.18:824][  2]LogSourceControl: Uncontrolled asset discovery finished in 0.768472 seconds (Found 10825 uncontrolled assets)
+[2026.05.19-02.05.19:016][  2]LogInterchangeImport: Translation (FBXSDK) of StoneSentinel.fbx in [0 min 0.190 s]
+[2026.05.19-02.05.19:041][  2]LogAssetRegistry: Display: Asset registry cache written as 76.1 MiB to ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_*.bin
+[2026.05.19-02.05.20:896][  2]LogStaticMesh: Display: Building static mesh SM_StoneSentinel (Required Memory Estimate: 325.757676 MB)...
+[2026.05.19-02.05.22:138][  2]LogStaticMesh: Built static mesh [1.24s] /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel.SM_StoneSentinel
+[2026.05.19-02.05.22:711][  2]LogStaticMesh: Display: SM_StoneSentinel has some nearly zero tangents which can create some issues. (Tolerance of 1E-4)
+[2026.05.19-02.05.22:714][  2]LogStaticMesh: Display: SM_StoneSentinel has some nearly zero bi-normals which can create some issues. (Tolerance of 1E-4)
+[2026.05.19-02.05.22:768][  2]LogInterchangeImport: Imported (FBXSDK) of StoneSentinel.fbx in [0 min 3.941 s]
+[2026.05.19-02.05.22:774][  2]LogInterchangeImport: MeshPayload (FBXSDK) of StoneSentinel.fbx, [1 195956 136218], in [0 min 1.363 s]
+[2026.05.19-02.05.23:004][  2]LogInterchangeImport: Translation (FBXSDK) of StoneSentinel_outline.fbx in [0 min 0.181 s]
+[2026.05.19-02.05.24:599][  2]LogStaticMesh: Display: Building static mesh SM_StoneSentinel_Outline (Required Memory Estimate: 340.147298 MB)...
+[2026.05.19-02.05.25:795][  2]LogStaticMesh: Built static mesh [1.20s] /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline.SM_StoneSentinel_Outline
+[2026.05.19-02.05.26:364][  2]LogStaticMesh: Display: SM_StoneSentinel_Outline has some nearly zero tangents which can create some issues. (Tolerance of 1E-4)
+[2026.05.19-02.05.26:376][  2]LogStaticMesh: Display: SM_StoneSentinel_Outline has some nearly zero bi-normals which can create some issues. (Tolerance of 1E-4)
+[2026.05.19-02.05.26:395][  2]LogInterchangeImport: Imported (FBXSDK) of StoneSentinel_outline.fbx in [0 min 3.573 s]
+[2026.05.19-02.05.26:400][  2]LogInterchangeImport: MeshPayload (FBXSDK) of StoneSentinel_outline.fbx, [1 195956 136218], in [0 min 1.144 s]
+[2026.05.19-02.05.26:717][  2]LogCore: PNG has complex alpha channel, will not fill RGB in transparent background, due to setting PNGInfill == OnlyOnBinaryTransparency
+[2026.05.19-02.05.26:752][  2]LogFileHelpers: InternalPromptForCheckoutAndSave started...
+[2026.05.19-02.05.26:770][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0
+[2026.05.19-02.05.26:782][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0] ([1] browsable assets)...
+[2026.05.19-02.05.26:795][  2]OBJ SavePackage:     Rendered thumbnail for [Texture2D /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0.T_StoneSentinel_0]
+[2026.05.19-02.05.26:808][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0]
+[2026.05.19-02.05.26:877][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0
+[2026.05.19-02.05.26:886][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/T_StoneSentinel_01908FF9446BC21D7FF21118F4727FC0A.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0.uasset'
+[2026.05.19-02.05.26:899][  2]LogFileHelpers: InternalPromptForCheckoutAndSave took 128.064 ms
+[2026.05.19-02.05.27:110][  2]LogFileHelpers: InternalPromptForCheckoutAndSave started...
+[2026.05.19-02.05.27:127][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1
+[2026.05.19-02.05.27:140][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1] ([1] browsable assets)...
+[2026.05.19-02.05.27:152][  2]OBJ SavePackage:     Rendered thumbnail for [Texture2D /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1.T_StoneSentinel_1]
+[2026.05.19-02.05.27:165][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1]
+[2026.05.19-02.05.27:217][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1
+[2026.05.19-02.05.27:223][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/T_StoneSentinel_199CD802D4E43AB9121F4E49AE03E8299.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1.uasset'
+[2026.05.19-02.05.27:236][  2]LogFileHelpers: InternalPromptForCheckoutAndSave took 109.940 ms (total: 238.004 ms)
+[2026.05.19-02.05.27:437][  2]LogCore: PNG has complex alpha channel, will not fill RGB in transparent background, due to setting PNGInfill == OnlyOnBinaryTransparency
+[2026.05.19-02.05.27:469][  2]LogFileHelpers: InternalPromptForCheckoutAndSave started...
+[2026.05.19-02.05.27:485][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint
+[2026.05.19-02.05.27:498][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint] ([1] browsable assets)...
+[2026.05.19-02.05.27:511][  2]OBJ SavePackage:     Rendered thumbnail for [Texture2D /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint.T_StoneSentinel_Tint]
+[2026.05.19-02.05.27:524][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint]
+[2026.05.19-02.05.27:599][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint
+[2026.05.19-02.05.27:611][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/T_StoneSentinel_Tint767CA6204AC6BBBCDD4C5DB80926BF54.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint.uasset'
+[2026.05.19-02.05.27:625][  2]LogFileHelpers: InternalPromptForCheckoutAndSave took 135.117 ms (total: 373.122 ms)
+[2026.05.19-02.05.27:746][  2]LogFileHelpers: InternalPromptForCheckoutAndSave started...
+[2026.05.19-02.05.27:758][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines
+[2026.05.19-02.05.27:776][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines] ([1] browsable assets)...
+[2026.05.19-02.05.27:789][  2]OBJ SavePackage:     Rendered thumbnail for [Texture2D /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines.T_StoneSentinel_InnerLines]
+[2026.05.19-02.05.27:801][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines]
+[2026.05.19-02.05.27:815][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines
+[2026.05.19-02.05.27:827][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/T_StoneSentinel_InnerLines6D77A5274E6788CB53186B935E49D947.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines.uasset'
+[2026.05.19-02.05.27:840][  2]LogFileHelpers: InternalPromptForCheckoutAndSave took 55.909 ms (total: 429.032 ms)
+[2026.05.19-02.05.27:852][  2]LogFileHelpers: InternalPromptForCheckoutAndSave started...
+[2026.05.19-02.05.27:865][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel
+[2026.05.19-02.05.27:878][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel] ([1] browsable assets)...
+[2026.05.19-02.05.27:891][  2]OBJ SavePackage:     Rendered thumbnail for [MaterialInstanceConstant /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel.MI_StoneSentinel]
+[2026.05.19-02.05.27:904][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel]
+[2026.05.19-02.05.27:916][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel
+[2026.05.19-02.05.27:929][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/MI_StoneSentinel64ED8A8A418BF2CB1EA5B9AE9F2154A2.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel.uasset'
+[2026.05.19-02.05.27:941][  2]LogFileHelpers: InternalPromptForCheckoutAndSave took 14.601 ms (total: 443.633 ms)
+[2026.05.19-02.05.27:954][  2]LogFileHelpers: InternalPromptForCheckoutAndSave started...
+[2026.05.19-02.05.27:968][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline
+[2026.05.19-02.05.27:981][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline] ([1] browsable assets)...
+[2026.05.19-02.05.27:994][  2]OBJ SavePackage:     Rendered thumbnail for [MaterialInstanceConstant /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline.MI_StoneSentinel_Outline]
+[2026.05.19-02.05.28:007][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline]
+[2026.05.19-02.05.28:022][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline
+[2026.05.19-02.05.28:034][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/MI_StoneSentinel_OutlineA194A54743930746A309E1ADD21C154A.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline.uasset'
+[2026.05.19-02.05.28:047][  2]LogFileHelpers: InternalPromptForCheckoutAndSave took 13.361 ms (total: 456.994 ms)
+[2026.05.19-02.05.28:073][  2]LogStaticMesh: Display: Waiting for static meshes to be ready 0/1 (/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel) ...
+[2026.05.19-02.05.28:639][  2]LogFileHelpers: InternalPromptForCheckoutAndSave started...
+[2026.05.19-02.05.28:648][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel
+[2026.05.19-02.05.28:660][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel] ([1] browsable assets)...
+[2026.05.19-02.05.28:688][  2]OBJ SavePackage:     Rendered thumbnail for [StaticMesh /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel.SM_StoneSentinel]
+[2026.05.19-02.05.28:700][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel]
+[2026.05.19-02.05.28:713][  2]Cmd: OBJ SAVEPACKAGE PACKAGE="/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel" FILE="../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/SM_StoneSentinel.uasset" SILENT=true
+[2026.05.19-02.05.28:727][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel
+[2026.05.19-02.05.28:740][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/SM_StoneSentinel13B3101344290C6EC17FABB8A6AEBF75.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/SM_StoneSentinel.uasset'
+[2026.05.19-02.05.28:752][  2]LogFileHelpers: InternalPromptForCheckoutAndSave took 86.883 ms (total: 543.877 ms)
+[2026.05.19-02.05.29:002][  2]LogStaticMesh: Display: Waiting for static meshes to be ready 0/1 (/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline) ...
+[2026.05.19-02.05.29:675][  2]LogFileHelpers: InternalPromptForCheckoutAndSave started...
+[2026.05.19-02.05.29:683][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline
+[2026.05.19-02.05.29:696][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline] ([1] browsable assets)...
+[2026.05.19-02.05.29:734][  2]OBJ SavePackage:     Rendered thumbnail for [StaticMesh /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline.SM_StoneSentinel_Outline]
+[2026.05.19-02.05.29:746][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline]
+[2026.05.19-02.05.29:776][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline
+[2026.05.19-02.05.29:783][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/SM_StoneSentinel_Outline262F9C5D40949066CFA1A8AC091CD7C1.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline.uasset'
+[2026.05.19-02.05.29:796][  2]LogFileHelpers: InternalPromptForCheckoutAndSave took 105.178 ms (total: 649.056 ms)
+[2026.05.19-02.05.29:814][  2]LogFileHelpers: InternalPromptForCheckoutAndSave started...
+[2026.05.19-02.05.29:829][  2]LogLinker: Conditionally flushing loading for linker(s) (/Game/Characters/Mobs/StoneSentinel/T_StoneSentinel)
+[2026.05.19-02.05.29:860][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline
+[2026.05.19-02.05.29:874][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline] ([1] browsable assets)...
+[2026.05.19-02.05.29:889][  2]OBJ SavePackage:     Rendered thumbnail for [StaticMesh /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline.SM_StoneSentinel_Outline]
+[2026.05.19-02.05.29:901][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline]
+[2026.05.19-02.05.29:915][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline
+[2026.05.19-02.05.29:943][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/SM_StoneSentinel_Outline4EE1EC2C46659065C93A8B83DA5DEC16.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline.uasset'
+[2026.05.19-02.05.29:958][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel
+[2026.05.19-02.05.29:972][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel] ([1] browsable assets)...
+[2026.05.19-02.05.29:988][  2]OBJ SavePackage:     Rendered thumbnail for [StaticMesh /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel.SM_StoneSentinel]
+[2026.05.19-02.05.30:005][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel]
+[2026.05.19-02.05.30:049][  2]Cmd: OBJ SAVEPACKAGE PACKAGE="/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel" FILE="../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/SM_StoneSentinel.uasset" SILENT=true
+[2026.05.19-02.05.30:063][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel
+[2026.05.19-02.05.30:071][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/SM_StoneSentinel66FBB00642E05D5E076D4E9859E82E0F.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/SM_StoneSentinel.uasset'
+[2026.05.19-02.05.30:084][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0
+[2026.05.19-02.05.30:103][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0] ([1] browsable assets)...
+[2026.05.19-02.05.30:122][  2]OBJ SavePackage:     Rendered thumbnail for [Texture2D /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0.T_StoneSentinel_0]
+[2026.05.19-02.05.30:136][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0]
+[2026.05.19-02.05.30:150][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0
+[2026.05.19-02.05.30:165][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/T_StoneSentinel_0B08DDF2A4794D1A1090493BAE82507A5.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0.uasset'
+[2026.05.19-02.05.30:178][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1
+[2026.05.19-02.05.30:192][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1] ([1] browsable assets)...
+[2026.05.19-02.05.30:206][  2]OBJ SavePackage:     Rendered thumbnail for [Texture2D /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1.T_StoneSentinel_1]
+[2026.05.19-02.05.30:223][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1]
+[2026.05.19-02.05.30:257][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1
+[2026.05.19-02.05.30:270][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/T_StoneSentinel_1914AF09440911C22A9E597AB9CCB6681.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1.uasset'
+[2026.05.19-02.05.30:285][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint
+[2026.05.19-02.05.30:307][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint] ([1] browsable assets)...
+[2026.05.19-02.05.30:320][  2]OBJ SavePackage:     Rendered thumbnail for [Texture2D /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint.T_StoneSentinel_Tint]
+[2026.05.19-02.05.30:334][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint]
+[2026.05.19-02.05.30:347][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint
+[2026.05.19-02.05.30:361][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/T_StoneSentinel_Tint1AECABE24D790E9B1191E2BAC9F47CD6.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint.uasset'
+[2026.05.19-02.05.30:386][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines
+[2026.05.19-02.05.30:398][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines] ([1] browsable assets)...
+[2026.05.19-02.05.30:412][  2]OBJ SavePackage:     Rendered thumbnail for [Texture2D /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines.T_StoneSentinel_InnerLines]
+[2026.05.19-02.05.30:429][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines]
+[2026.05.19-02.05.30:444][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines
+[2026.05.19-02.05.30:456][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/T_StoneSentinel_InnerLinesB103FD2D40D3FEC4603BB89E4170EAFD.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines.uasset'
+[2026.05.19-02.05.30:469][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel
+[2026.05.19-02.05.30:482][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel] ([1] browsable assets)...
+[2026.05.19-02.05.30:499][  2]OBJ SavePackage:     Rendered thumbnail for [MaterialInstanceConstant /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel.MI_StoneSentinel]
+[2026.05.19-02.05.30:514][  2]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel]
+[2026.05.19-02.05.30:527][  2]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel
+[2026.05.19-02.05.30:540][  2]LogSavePackage: Moving '../../../../../../UE/T66/Saved/MI_StoneSentinelE1EE694746D1730AE8AA2489C4CCCE83.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel.uasset'
+[2026.05.19-02.05.30:553][  2]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline
+[2026.05.19-02.05.30:565][  2]OBJ SavePackage: Generating thumbnails for [1] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline] ([1] browsable assets)...
+[2026.05.19-02.05.30:578][  3]OBJ SavePackage:     Rendered thumbnail for [MaterialInstanceConstant /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline.MI_StoneSentinel_Outline]
+[2026.05.19-02.05.30:592][  3]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline]
+[2026.05.19-02.05.30:605][  3]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline
+[2026.05.19-02.05.30:617][  3]LogSavePackage: Moving '../../../../../../UE/T66/Saved/MI_StoneSentinel_Outline3B0E710A4ACC1F956F628FB3F9D6A08F.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline.uasset'
+[2026.05.19-02.05.30:630][  3]LogFileHelpers: Saving Package: /Game/Characters/Mobs/StoneSentinel/T_StoneSentinel
+[2026.05.19-02.05.30:642][  3]OBJ SavePackage: Generating thumbnails for [0] asset(s) in package [/Game/Characters/Mobs/StoneSentinel/T_StoneSentinel] ([1] browsable assets)...
+[2026.05.19-02.05.30:655][  3]OBJ SavePackage: Finished generating thumbnails for package [/Game/Characters/Mobs/StoneSentinel/T_StoneSentinel]
+[2026.05.19-02.05.30:668][  3]Cmd: OBJ SAVEPACKAGE PACKAGE="/Game/Characters/Mobs/StoneSentinel/T_StoneSentinel" FILE="../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/T_StoneSentinel.uasset" SILENT=true
+[2026.05.19-02.05.30:682][  3]LogSavePackage: Moving output files for package: /Game/Characters/Mobs/StoneSentinel/T_StoneSentinel
+[2026.05.19-02.05.30:695][  3]LogSavePackage: Moving '../../../../../../UE/T66/Saved/T_StoneSentinelAF9772BB40C12BB264EF778A5C706ED6.tmp' to '../../../../../../UE/T66/Content/Characters/Mobs/StoneSentinel/T_StoneSentinel.uasset'
+[2026.05.19-02.05.30:707][  3]LogFileHelpers: InternalPromptForCheckoutAndSave took 688.323 ms (total: 1.33 sec)
+[2026.05.19-02.05.30:720][  3]LogPython: [ImportPixal3DAsset] Imported StoneSentinel: {"asset_name": "StoneSentinel", "base_color_param": "/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0.T_StoneSentinel_0", "diffuse_param": "/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0.T_StoneSentinel_0", "expected_height": 220.0, "flatten_k": 6, "height_tolerance": 0.1, "imported_object_paths": ["/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel.SM_StoneSentinel"], "imported_outline_object_paths": ["/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline.SM_StoneSentinel_Outline"], "inner_line_default_black": "/Game/ToonStyle/Textures/T_InnerLines_DefaultBlack", "inner_line_param": "/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines.T_StoneSentinel_InnerLines", "inner_line_texture": "/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_InnerLines", "manifest_normal_delta_sample": {"distinct": true, "reason": "non_humanoid"}, "manifest_normal_transfer": {"applied": false, "reason": "non_humanoid"}, "manifest_outline_winding": {"applied": true, "face_after": [16, 11, 13], "face_before": [16, 13, 11], "face_order_reversed": true, "inward_normal_samples": 69024, "method": "shade_smooth before bmesh.ops.reverse_faces + restored captured outward vertex normals as custom split normals", "outward_normal_samples": 67194}, "manifest_texture_flattening": [{"active_pixels": 16777202, "centers_rgb_255": [[10, 10, 8], [85, 82, 59], [237, 193, 12], [140, 149, 151], [198, 217, 228], [216, 224, 223]], "final_center_shift": 0.00045672469423152506, "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_0_flattened.png", "height": 4096, "highlight_cap": 0.85, "image_name": "Image_0", "iterations": 16, "k": 6, "mode": "blender", "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_0_original.png", "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_0_flattened.png", "postprocess": {"dependency_path": "external_python_pillow_scipy", "final_palette_snap": {"applied": true, "centers_rgb_255": [[10, 10, 8], [85, 82, 59], [237, 193, 12], [140, 149, 151], [198, 217, 228], [216, 224, 223]], "palette_size": 6}, "height": 4096, "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_0_flattened.png", "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_0_flattened.png", "palette_snap": {"applied": true, "centers_rgb_255": [[10, 10, 8], [85, 82, 59], [237, 193, 12], [140, 149, 151], [198, 217, 228], [216, 224, 223]], "palette_size": 6}, "speckle_cleanup": {"applied": true, "changed_pixels": 541217, "diff_threshold": 42.0, "method": "3x3_local_median_high_contrast_pixel_replacement", "prompt_region_threshold_reference": 8}, "stderr": "", "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[10, 10, 8], [85, 82, 59], [237, 193, 12], [140, 149, 151], [198, 217, 228], [216, 224, 223]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\StoneSentinel\\\\Working\\\\StoneSentinel_0_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\StoneSentinel\\\\Working\\\\StoneSentinel_0_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[10, 10, 8], [85, 82, 59], [237, 193, 12], [140, 149, 151], [198, 217, 228], [216, 224, 223]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 541217, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": true, \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\StoneSentinel\\\\Working\\\\StoneSentinel_Tint.png\", \"saturation_scale\": 1.1, \"value_scale\": 0.6}, \"unique_rgb_after\": 4, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9649002, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 6962190, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 195961, \"width\": 4096}", "tint": {"generated": true, "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_Tint.png", "saturation_scale": 1.1, "value_scale": 0.6}, "unique_rgb_after": 4, "unique_rgb_before": 6, "uv_mask_pixels": 9649002, "uv_padding": {"applied": true, "filled_pixels": 6962190, "method": "iterative_frontier_expansion", "padding_pixels": 16}, "uv_triangles": 195961, "width": 4096}, "unique_colors_after": 6, "unique_colors_before": 179308, "width": 4096}, {"active_pixels": 16777216, "centers_rgb_255": [[0, 74, 0], [1, 232, 0], [0, 233, 0], [0, 234, 0], [1, 236, 1], [1, 240, 1]], "final_center_shift": 0.00011230629752390087, "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_1_flattened.png", "height": 4096, "highlight_cap": 0.85, "image_name": "Image_1", "iterations": 5, "k": 6, "mode": "blender", "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_1_original.png", "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_1_flattened.png", "postprocess": {"dependency_path": "external_python_pillow_scipy", "final_palette_snap": {"applied": true, "centers_rgb_255": [[0, 74, 0], [1, 232, 0], [0, 233, 0], [0, 234, 0], [1, 236, 1], [1, 240, 1]], "palette_size": 6}, "height": 4096, "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_1_flattened.png", "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\StoneSentinel\\Working\\StoneSentinel_1_flattened.png", "palette_snap": {"applied": true, "centers_rgb_255": [[0, 74, 0], [1, 232, 0], [0, 233, 0], [0, 234, 0], [1, 236, 1], [1, 240, 1]], "palette_size": 6}, "speckle_cleanup": {"applied": true, "changed_pixels": 11, "diff_threshold": 42.0, "method": "3x3_local_median_high_contrast_pixel_replacement", "prompt_region_threshold_reference": 8}, "stderr": "", "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 74, 0], [1, 232, 0], [0, 233, 0], [0, 234, 0], [1, 236, 1], [1, 240, 1]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\StoneSentinel\\\\Working\\\\StoneSentinel_1_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\StoneSentinel\\\\Working\\\\StoneSentinel_1_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 74, 0], [1, 232, 0], [0, 233, 0], [0, 234, 0], [1, 236, 1], [1, 240, 1]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 11, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": false}, \"unique_rgb_after\": 5, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9649002, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 6962190, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 195961, \"width\": 4096}", "tint": {"generated": false}, "unique_rgb_after": 5, "unique_rgb_before": 6, "uv_mask_pixels": 9649002, "uv_padding": {"applied": true, "filled_pixels": 6962190, "method": "iterative_frontier_expansion", "padding_pixels": 16}, "uv_triangles": 195961, "width": 4096}, "unique_colors_after": 6, "unique_colors_before": 340, "width": 4096}], "manifest_vertex_colors": {"attribute": "Col", "domain": "CORNER", "loop_count": 587883, "mode": "cycles_ao", "type": "BYTE_COLOR"}, "material_instance": "/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel", "outline_color_after_import": [0.0, 0.0, 0.0, 1.0], "outline_color_preserved": null, "outline_material_instance": "/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline", "outline_slot0_material": "/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel_Outline.MI_StoneSentinel_Outline", "outline_static_mesh": "/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel_Outline", "outline_static_mesh_bounds": {"extent": [82.78158569335938, 60.014020919799805, 109.99999938917267], "height": 219.99999877834534, "origin": [0.0, -2.09808349609375e-05, 110.00000061082733], "size": [165.56317138671875, 120.02804183959961, 219.99999877834534]}, "retained_from_phase1a": false, "slot0_material": "/Game/Characters/Mobs/StoneSentinel/Materials/MI_StoneSentinel.MI_StoneSentinel", "static_mesh": "/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel", "static_mesh_bounds": {"extent": [82.78158569335938, 60.014020919799805, 109.99999938917267], "height": 219.99999877834534, "origin": [0.0, -2.09808349609375e-05, 110.00000061082733], "size": [165.56317138671875, 120.02804183959961, 219.99999877834534]}, "target_dir": "/Game/Characters/Mobs/StoneSentinel", "textures": ["/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_0", "/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_1"], "tint_param": "/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint.T_StoneSentinel_Tint", "tint_texture": "/Game/Characters/Mobs/StoneSentinel/Textures/T_StoneSentinel_Tint"}
+[2026.05.19-02.05.30:732][  3]Cmd: QUIT_EDITOR
+[2026.05.19-02.05.30:745][  3]LogCore: Engine exit requested (reason: UUnrealEdEngine::CloseEditor())
+[2026.05.19-02.05.30:758][  3]LogSourceControl: Display: Uncontrolled Changelist persistency file saved ../../../../../../UE/T66/Saved/SourceControl/UncontrolledChangelists.json
+[2026.05.19-02.05.30:772][  3]LogCore: Engine exit requested (reason: EngineExit() was called; note: exit was already requested)
+[2026.05.19-02.05.30:784][  3]LogStaticMesh: Abandoning remaining async distance field tasks for shutdown
+[2026.05.19-02.05.30:797][  3]LogStaticMesh: Abandoning remaining async card representation tasks for shutdown
+[2026.05.19-02.05.30:810][  3]LogStreaming: Display: FlushAsyncLoading(): 0 QueuedPackages, 0 AsyncPackages
+[2026.05.19-02.05.30:823][  3]LogWorld: UWorld::CleanupWorld for FrontendLevel, bSessionEnded=true, bCleanupResources=true
+[2026.05.19-02.05.30:835][  3]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.19-02.05.30:848][  3]LogT66EnemyPool: [GOLD] EnemyPool: shutting down. Total acquired=0, reused=0 (0%)
+[2026.05.19-02.05.30:861][  3]LogT66Editor: T66UISetupSubsystem deinitialized
+[2026.05.19-02.05.30:873][  3]LogTedsSettings: UTedsSettingsEditorSubsystem::Deinitialize
+[2026.05.19-02.05.30:886][  3]LogLevelSequenceEditor: LevelSequenceEditor subsystem deinitialized.
+[2026.05.19-02.05.30:899][  3]LogRuntimeTelemetry: Recording EnginePreExit events
+[2026.05.19-02.05.30:912][  3]LogAnalytics: Display: [UEEditor.Rocket.Release] AnalyticsET::EndSession
+[2026.05.19-02.05.30:925][  3]LogAudio: Display: Beginning Audio Device Manager Shutdown (Module: AudioMixerXAudio2)...
+[2026.05.19-02.05.30:928][  3]LogAudio: Display: Destroying 1 Remaining Audio Device(s)...
+[2026.05.19-02.05.30:940][  3]LogAudio: Display: Audio Device unregistered from world 'FrontendLevel'.
+[2026.05.19-02.05.30:953][  3]LogAudio: Display: Shutting down audio device while 1 references to it are still alive. For more information, compile with INSTRUMENT_AUDIODEVICE_HANDLES.
+[2026.05.19-02.05.30:966][  3]LogAudioMixer: Display: FMixerPlatformXAudio2::StopAudioStream() called. InstanceID=1, StreamState=4
+[2026.05.19-02.05.30:978][  3]LogAudioMixer: Display: FMixerPlatformXAudio2::StopAudioStream() called. InstanceID=1, StreamState=2
+[2026.05.19-02.05.30:991][  3]LogAudioMixer: Deinitializing Audio Bus Subsystem for audio device with ID -1
+[2026.05.19-02.05.31:004][  3]LogAudio: Display: Audio Device Manager Shutdown
+[2026.05.19-02.05.31:017][  3]LogSlate: Window 'T66 - Unreal Editor' being destroyed
+[2026.05.19-02.05.31:030][  3]LogSlate: Slate User Destroyed.  User Index 0, Is Virtual User: 0
+[2026.05.19-02.05.31:042][  3]LogExit: Preparing to exit.
+[2026.05.19-02.05.31:054][  3]LogUObjectHash: Compacting FUObjectHashTables data took   0.92ms
+[2026.05.19-02.05.32:306][  3]LogEditorDataStorage: Deinitializing
+[2026.05.19-02.05.32:383][  3]LogDemo: Cleaned up 0 splitscreen connections, owner deletion: enabled
+[2026.05.19-02.05.32:397][  3]LogExit: Editor shut down
+[2026.05.19-02.05.32:407][  3]LogExit: Transaction tracking system shut down
+[2026.05.19-02.05.32:435][  3]LogStall: Shutdown...
+[2026.05.19-02.05.32:445][  3]LogStall: Shutdown complete.
+[2026.05.19-02.05.32:458][  3]LogOutputDevice: Warning: 
+
+Script Stack (0 frames) :
+
+[2026.05.19-02.05.32:543][  3]LogStats: FPlatformStackWalk::StackWalkAndDump -  0.100 s
+[2026.05.19-02.05.32:556][  3]LogOutputDevice: Error: === Handled ensure: ===
+[2026.05.19-02.05.32:570][  3]LogOutputDevice: Error: 
+[2026.05.19-02.05.32:582][  3]LogOutputDevice: Error: Ensure condition failed: Internal::EditorModeToolsSingleton.IsValid()  [File:D:\build\++UE5\Sync\Engine\Source\Editor\UnrealEd\Private\UnrealEdGlobals.cpp] [Line: 119] 
+[2026.05.19-02.05.32:595][  3]LogOutputDevice: Error: The level editor is not started up yet. If you need to access the global mode manager early in the startup phase, please use FLevelEditorModule::OnLevelEditorCreated to gate the access.
+[2026.05.19-02.05.32:608][  3]LogOutputDevice: Error: Stack: 
+[2026.05.19-02.05.32:622][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb470769eb UnrealEditor-UnrealEd.dll!UnknownFunction []
+[2026.05.19-02.05.32:634][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb46b4da5b UnrealEditor-UnrealEd.dll!UnknownFunction []
+[2026.05.19-02.05.32:647][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb41ff8a37 UnrealEditor-LevelEditor.dll!UnknownFunction []
+[2026.05.19-02.05.32:659][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:673][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:686][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb203 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:698][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:712][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:725][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9d1637 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:739][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9b4985 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:752][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb2a9 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:764][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:777][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:788][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5feb8fca UnrealEditor-Slate.dll!UnknownFunction []
+[2026.05.19-02.05.32:802][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9b49c5 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:815][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb199 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:828][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:839][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:853][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb203 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:866][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:880][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:892][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb601a0003 UnrealEditor-Slate.dll!UnknownFunction []
+[2026.05.19-02.05.32:905][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5fe8f3b5 UnrealEditor-Slate.dll!UnknownFunction []
+[2026.05.19-02.05.32:918][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5feb0e56 UnrealEditor-Slate.dll!UnknownFunction []
+[2026.05.19-02.05.32:930][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:944][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:956][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9d1637 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:969][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9b4985 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:981][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb2a9 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.32:995][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:007][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:020][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5feb8f4a UnrealEditor-Slate.dll!UnknownFunction []
+[2026.05.19-02.05.33:031][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9b49c5 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:045][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb199 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:057][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:068][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:082][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9d1637 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:095][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9b4985 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:107][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb2a9 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:119][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:133][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:149][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb203 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:162][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:175][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:188][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9d1bc7 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:200][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9b49c5 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:213][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb199 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:226][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:239][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:252][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9d1bc7 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:265][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9b49c5 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:280][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb199 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:291][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:304][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:318][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9d1637 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:332][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9b4985 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:345][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cb2a9 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:359][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:371][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:384][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb5f9cbda3 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.33:397][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb3d8516d8 UnrealEditor-StatusBar.dll!UnknownFunction []
+[2026.05.19-02.05.33:411][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb3d8170c8 UnrealEditor-StatusBar.dll!UnknownFunction []
+[2026.05.19-02.05.33:423][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb4a3a37ce UnrealEditor-Engine.dll!UnknownFunction []
+[2026.05.19-02.05.33:439][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb4c16cd2a UnrealEditor-Engine.dll!UnknownFunction []
+[2026.05.19-02.05.33:454][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb4c154858 UnrealEditor-Engine.dll!UnknownFunction []
+[2026.05.19-02.05.33:468][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb4c15a753 UnrealEditor-Engine.dll!UnknownFunction []
+[2026.05.19-02.05.33:480][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb45919498 UnrealEditor-UnrealEd.dll!UnknownFunction []
+[2026.05.19-02.05.33:493][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb45fd6112 UnrealEditor-UnrealEd.dll!UnknownFunction []
+[2026.05.19-02.05.33:506][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb46b106f5 UnrealEditor-UnrealEd.dll!UnknownFunction []
+[2026.05.19-02.05.33:518][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb6517f872 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.33:531][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb651c0505 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.33:544][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb651c0961 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.33:557][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb651eec55 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.33:570][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb652a529a UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.33:582][  3]LogOutputDevice: Error: [Callstack] 0x00007ffb64fa7167 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.33:594][  3]LogOutputDevice: Error: [Callstack] 0x00007ff6f3ad87c1 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.33:607][  3]LogOutputDevice: Error: [Callstack] 0x00007ff6f3ad7a2e UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.33:621][  3]LogOutputDevice: Error: [Callstack] 0x00007ff6f3addc4a UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.33:634][  3]LogOutputDevice: Error: [Callstack] 0x00007ff6f3ae0ca9 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.33:647][  3]LogOutputDevice: Error: [Callstack] 0x00007ff6f3ae0d0a UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.33:660][  3]LogOutputDevice: Error: [Callstack] 0x00007ff6f3ae4590 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.33:672][  3]LogOutputDevice: Error: [Callstack] 0x00007ff6f3af5bd4 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.33:686][  3]LogOutputDevice: Error: [Callstack] 0x00007ff6f3af82e6 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.33:699][  3]LogOutputDevice: Error: [Callstack] 0x00007ffc2051e957 KERNEL32.DLL!UnknownFunction []
+[2026.05.19-02.05.33:712][  3]LogOutputDevice: Error: [Callstack] 0x00007ffc2172427c ntdll.dll!UnknownFunction []
+[2026.05.19-02.05.33:725][  3]LogOutputDevice: Error: 
+[2026.05.19-02.05.33:748][  3]LogStats:                SubmitErrorReport -  0.000 s
+[2026.05.19-02.05.36:788][  3]LogStats:                    SendNewReport -  3.040 s
+[2026.05.19-02.05.36:800][  3]LogOutputDevice: Warning: 
+
+Script Stack (0 frames) :
+
+[2026.05.19-02.05.36:813][  3]LogWindows: Error: appError called: Fatal error: [File:D:\build\++UE5\Sync\Engine\Source\Runtime\CoreUObject\Private\UObject\UObjectGlobals.cpp] [Line: 3456] 
+Object is not packaged: ModeManagerInteractiveToolsContext None
+
+
+
+[2026.05.19-02.05.36:826][  3]LogWindows: Windows GetLastError: The operation completed successfully. (0)
+[2026.05.19-02.05.36:839][  3]LogStats:             FDebug::EnsureFailed -  4.345 s
+[2026.05.19-02.05.46:491][  3]LogWindows: Error: === Critical error: ===
+[2026.05.19-02.05.46:508][  3]LogWindows: Error: 
+[2026.05.19-02.05.46:520][  3]LogWindows: Error: Fatal error: [File:D:\build\++UE5\Sync\Engine\Source\Runtime\CoreUObject\Private\UObject\UObjectGlobals.cpp] [Line: 3456] 
+[2026.05.19-02.05.46:533][  3]LogWindows: Error: Object is not packaged: ModeManagerInteractiveToolsContext None
+[2026.05.19-02.05.46:546][  3]LogWindows: Error: 
+[2026.05.19-02.05.46:559][  3]LogWindows: Error: 
+[2026.05.19-02.05.46:573][  3]LogWindows: Error: [Callstack] 0x00007ffb6547e9e2 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.46:586][  3]LogWindows: Error: [Callstack] 0x00007ffb6547d042 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.46:600][  3]LogWindows: Error: [Callstack] 0x00007ffb6547f67d UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.46:615][  3]LogWindows: Error: [Callstack] 0x00007ffb46058d52 UnrealEditor-UnrealEd.dll!UnknownFunction []
+[2026.05.19-02.05.46:636][  3]LogWindows: Error: [Callstack] 0x00007ffb46b4da9b UnrealEditor-UnrealEd.dll!UnknownFunction []
+[2026.05.19-02.05.46:649][  3]LogWindows: Error: [Callstack] 0x00007ffb41ff8a37 UnrealEditor-LevelEditor.dll!UnknownFunction []
+[2026.05.19-02.05.46:663][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:677][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:690][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb203 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:704][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:716][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:730][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9d1637 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:743][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9b4985 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:755][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb2a9 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:769][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:783][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:801][  3]LogWindows: Error: [Callstack] 0x00007ffb5feb8fca UnrealEditor-Slate.dll!UnknownFunction []
+[2026.05.19-02.05.46:815][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9b49c5 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:828][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb199 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:841][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:856][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:870][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb203 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:885][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:901][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:917][  3]LogWindows: Error: [Callstack] 0x00007ffb601a0003 UnrealEditor-Slate.dll!UnknownFunction []
+[2026.05.19-02.05.46:930][  3]LogWindows: Error: [Callstack] 0x00007ffb5fe8f3b5 UnrealEditor-Slate.dll!UnknownFunction []
+[2026.05.19-02.05.46:949][  3]LogWindows: Error: [Callstack] 0x00007ffb5feb0e56 UnrealEditor-Slate.dll!UnknownFunction []
+[2026.05.19-02.05.46:964][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:978][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.46:996][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9d1637 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:009][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9b4985 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:022][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb2a9 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:036][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:049][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:066][  3]LogWindows: Error: [Callstack] 0x00007ffb5feb8f4a UnrealEditor-Slate.dll!UnknownFunction []
+[2026.05.19-02.05.47:083][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9b49c5 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:100][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb199 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:117][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:134][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:150][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9d1637 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:165][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9b4985 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:181][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb2a9 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:197][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:213][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:229][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb203 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:242][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:256][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:273][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9d1bc7 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:285][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9b49c5 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:302][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb199 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:316][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:332][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:349][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9d1bc7 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:362][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9b49c5 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:379][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb199 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:394][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:406][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:422][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9d1637 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:441][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9b4985 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:454][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cb2a9 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:468][  3]LogWindows: Error: [Callstack] 0x00007ffb5f7bbca8 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:485][  3]LogWindows: Error: [Callstack] 0x00007ffb5f93bc62 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:499][  3]LogWindows: Error: [Callstack] 0x00007ffb5f9cbda3 UnrealEditor-SlateCore.dll!UnknownFunction []
+[2026.05.19-02.05.47:514][  3]LogWindows: Error: [Callstack] 0x00007ffb3d8516d8 UnrealEditor-StatusBar.dll!UnknownFunction []
+[2026.05.19-02.05.47:529][  3]LogWindows: Error: [Callstack] 0x00007ffb3d8170c8 UnrealEditor-StatusBar.dll!UnknownFunction []
+[2026.05.19-02.05.47:543][  3]LogWindows: Error: [Callstack] 0x00007ffb4a3a37ce UnrealEditor-Engine.dll!UnknownFunction []
+[2026.05.19-02.05.47:556][  3]LogWindows: Error: [Callstack] 0x00007ffb4c16cd2a UnrealEditor-Engine.dll!UnknownFunction []
+[2026.05.19-02.05.47:570][  3]LogWindows: Error: [Callstack] 0x00007ffb4c154858 UnrealEditor-Engine.dll!UnknownFunction []
+[2026.05.19-02.05.47:589][  3]LogWindows: Error: [Callstack] 0x00007ffb4c15a753 UnrealEditor-Engine.dll!UnknownFunction []
+[2026.05.19-02.05.47:610][  3]LogWindows: Error: [Callstack] 0x00007ffb45919498 UnrealEditor-UnrealEd.dll!UnknownFunction []
+[2026.05.19-02.05.47:630][  3]LogWindows: Error: [Callstack] 0x00007ffb45fd6112 UnrealEditor-UnrealEd.dll!UnknownFunction []
+[2026.05.19-02.05.47:650][  3]LogWindows: Error: [Callstack] 0x00007ffb46b106f5 UnrealEditor-UnrealEd.dll!UnknownFunction []
+[2026.05.19-02.05.47:676][  3]LogWindows: Error: [Callstack] 0x00007ffb6517f872 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.47:698][  3]LogWindows: Error: [Callstack] 0x00007ffb651c0505 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.47:721][  3]LogWindows: Error: [Callstack] 0x00007ffb651c0961 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.47:735][  3]LogWindows: Error: [Callstack] 0x00007ffb651eec55 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.47:749][  3]LogWindows: Error: [Callstack] 0x00007ffb652a529a UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.47:768][  3]LogWindows: Error: [Callstack] 0x00007ffb64fa7167 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.05.19-02.05.47:782][  3]LogWindows: Error: [Callstack] 0x00007ff6f3ad87c1 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.47:808][  3]LogWindows: Error: [Callstack] 0x00007ff6f3ad7a2e UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.47:831][  3]LogWindows: Error: [Callstack] 0x00007ff6f3addc4a UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.47:848][  3]LogWindows: Error: [Callstack] 0x00007ff6f3ae0ca9 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.47:862][  3]LogWindows: Error: [Callstack] 0x00007ff6f3ae0d0a UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.47:876][  3]LogWindows: Error: [Callstack] 0x00007ff6f3ae4590 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.47:891][  3]LogWindows: Error: [Callstack] 0x00007ff6f3af5bd4 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.47:909][  3]LogWindows: Error: [Callstack] 0x00007ff6f3af82e6 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.05.19-02.05.47:925][  3]LogWindows: Error: [Callstack] 0x00007ffc2051e957 KERNEL32.DLL!UnknownFunction []
+[2026.05.19-02.05.47:938][  3]LogWindows: Error: 
+[2026.05.19-02.05.47:965][  3]LogExit: Executing StaticShutdownAfterError
+[2026.05.19-02.05.47:980][  3]LogWindows: FPlatformMisc::RequestExit(1, LaunchWindowsStartup.ExceptionHandler)
+[2026.05.19-02.05.47:994][  3]LogWindows: FPlatformMisc::RequestExitWithStatus(1, 3, LaunchWindowsStartup.ExceptionHandler)
+[2026.05.19-02.05.48:008][  3]LogCore: Engine exit requested (reason: Win RequestExit; note: exit was already requested)

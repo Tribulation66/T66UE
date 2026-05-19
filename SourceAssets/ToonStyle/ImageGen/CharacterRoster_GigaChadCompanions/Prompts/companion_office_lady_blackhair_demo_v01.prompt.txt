@@ -1,0 +1,9 @@
+Create one full-body single-character source image for T66 model generation.
+
+Character: same original adult black-haired strict office lady companion as the regular version: charcoal/white office outfit, serious disciplined expression, fully clothed, non-explicit.
+
+Demo skin overlay: keep the regular office outfit, but add a small cone birthday hat and a diagonal birthday sash across the torso. The sash must have large readable uppercase text: DEMO. Add a few simple birthday color accents, but do not add logos or redesign the outfit.
+
+Style: same T66 Hi-Fi-Rush/Guilty-Gear-like 2D-in-3D cel shading, hard cel-shadow bands, crisp ink contours, bold flat color zones, clean rim highlights.
+
+Pose/composition: strict front-facing A-pose, full body, white background, one subject only, no crop, no logo, no environment, no contact shadow. Only visible text should be DEMO on the sash. No nudity.

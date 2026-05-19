@@ -11,6 +11,7 @@
 #include "Data/T66MiniDataTypes.h"
 #include "Save/T66MiniRunSaveGame.h"
 #include "Save/T66MiniSaveSubsystem.h"
+#include "Styling/CoreStyle.h"
 #include "UI/T66MiniUIStyle.h"
 #include "UI/T66UITypes.h"
 #include "UI/Style/T66FlatStyle.h"
@@ -101,6 +102,54 @@ namespace
 			Segment.ReplaceInline(Removal, TEXT(""));
 		}
 		return Segment.IsEmpty() ? FString(TEXT("Unnamed")) : Segment;
+	}
+
+	TSharedRef<SWidget> T66MiniMakeShopSafeFrame(
+		const TSharedRef<SWidget>& Content,
+		const FMargin& Padding,
+		const float MaxWidth = 0.f,
+		const float MaxHeight = 0.f,
+		const float AspectRatio = FT66FlatStyle::Tokens::SafeFrameAspectRatio)
+	{
+		const TAttribute<FOptionalSize> WidthAttr = TAttribute<FOptionalSize>::CreateLambda([Padding, MaxWidth, AspectRatio]() -> FOptionalSize
+		{
+			const FVector2D SafeFrame = FT66FlatStyle::GetSafeFrameSize(AspectRatio);
+			float Width = FMath::Max(1.f, SafeFrame.X - (Padding.Left + Padding.Right));
+			if (MaxWidth > 0.f)
+			{
+				Width = FMath::Min(Width, MaxWidth);
+			}
+			return FOptionalSize(Width);
+		});
+
+		const TAttribute<FOptionalSize> HeightAttr = TAttribute<FOptionalSize>::CreateLambda([Padding, MaxHeight, AspectRatio]() -> FOptionalSize
+		{
+			const FVector2D SafeFrame = FT66FlatStyle::GetSafeFrameSize(AspectRatio);
+			float Height = FMath::Max(1.f, SafeFrame.Y - (Padding.Top + Padding.Bottom));
+			if (MaxHeight > 0.f)
+			{
+				Height = FMath::Min(Height, MaxHeight);
+			}
+			return FOptionalSize(Height);
+		});
+
+		return SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SBox)
+				.WidthOverride(WidthAttr)
+				.HeightOverride(HeightAttr)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+					.Padding(Padding)
+					[
+						Content
+					]
+				]
+			];
 	}
 
 	ET66FlatState T66MiniShopFlatState(const ET66ButtonType Type, const bool bEnabled)
@@ -613,8 +662,8 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 		};
 
 		const FText StatusToShow = CurrentStatusText.IsEmpty() ? DefaultStatus : CurrentStatusText;
-		return FT66Style::MakeResponsiveRoot(
-			FT66Style::MakeSafeFrame(
+		return FT66FlatStyle::MakeResponsiveRoot(
+			T66MiniMakeShopSafeFrame(
 				T66MiniMakeShopPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[T66MiniMakeShopPanel(SNew(SHorizontalBox)
@@ -652,8 +701,8 @@ TSharedRef<SWidget> UT66MiniShopScreen::BuildSlateUI()
 			? NSLOCTEXT("T66Mini.Shop", "NoActiveRunStatus", "No active mini run is available. Start or load a run before entering the circus.")
 			: CurrentStatusText;
 
-		return FT66Style::MakeResponsiveRoot(
-			FT66Style::MakeSafeFrame(
+		return FT66FlatStyle::MakeResponsiveRoot(
+			T66MiniMakeShopSafeFrame(
 				T66MiniMakeShopPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)[T66MiniMakeShopPanel(SNew(SHorizontalBox)

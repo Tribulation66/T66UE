@@ -3,6 +3,7 @@
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66CommunityContentSubsystem.h"
+#include "Core/T66DifficultyTuningSubsystem.h"
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -12,15 +13,10 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
-#include "Core/T66PartySubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66BackendSubsystem.h"
-#include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66BuffSubsystem.h"
-#include "Core/T66RunSaveGame.h"
-#include "Core/T66SaveSubsystem.h"
-#include "Core/T66SaveMigration.h"
 #include "Core/T66SteamHelper.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
@@ -79,7 +75,6 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 	Super::OnScreenActivated_Implementation();
 	bLiveRunSubmissionProcessed = false;
 	bLiveRunFinalAccountingProcessed = false;
-	bDifficultyClearSummaryMode = false;
 	bDailyClimbSummaryMode = false;
 	bBackendRankDataReceived = false;
 	bAwaitingBackendRankData = false;
@@ -126,7 +121,7 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 		UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
-		bDailyClimbSummaryMode = T66GI && T66GI->IsDailyClimbRunActive();
+		bDailyClimbSummaryMode = T66GI && T66GI->IsDailyClimbRun();
 		if (UT66BackendSubsystem* Backend = GI ? GI->GetSubsystem<UT66BackendSubsystem>() : nullptr)
 		{
 			Backend->OnSubmitRunDataReady.RemoveAll(this);
@@ -140,28 +135,19 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 				Backend->OnSubmitRunDataReady.AddUObject(this, &UT66RunSummaryScreen::HandleBackendSubmitRunDataReadyForSummary);
 			}
 		}
-		bDifficultyClearSummaryMode = !bDailyClimbSummaryMode && RunState && RunState->HasPendingDifficultyClearSummary();
 		UE_LOG(
 			LogT66RunSummary,
 			Log,
-			TEXT("Run Summary: live activation stage=%d score=%d difficultyClear=%d daily=%d runEnded=%d victory=%d"),
+			TEXT("Run Summary: live activation stage=%d score=%d daily=%d runEnded=%d victory=%d"),
 			RunState ? RunState->GetCurrentStage() : -1,
 			RunState ? RunState->GetCurrentScore() : -1,
-			bDifficultyClearSummaryMode ? 1 : 0,
 			bDailyClimbSummaryMode ? 1 : 0,
 			RunState && RunState->HasRunEnded() ? 1 : 0,
 			RunState && RunState->DidRunEndInVictory() ? 1 : 0);
 		if (HasValidLiveRunSummaryContext())
 		{
 			PrepareChadCouponsPopupForLiveRun();
-			if (bDifficultyClearSummaryMode)
-			{
-				ProcessRunSummaryLeaderboardSubmission(true);
-			}
-			else
-			{
-				ProcessLiveRunFinalSubmission();
-			}
+			ProcessLiveRunFinalSubmission();
 		}
 		else
 		{
@@ -207,7 +193,6 @@ void UT66RunSummaryScreen::OnScreenDeactivated_Implementation()
 	PowerCouponSpriteBrush.Reset();
 	bLiveRunSubmissionProcessed = false;
 	bLiveRunFinalAccountingProcessed = false;
-	bDifficultyClearSummaryMode = false;
 	bDailyClimbSummaryMode = false;
 	bBackendRankDataReceived = false;
 	bAwaitingBackendRankData = false;
@@ -355,7 +340,7 @@ namespace
 
 	FString GetRunSummaryReferencePanelPath()
 	{
-		return T66ScreenSlateHelpers::MakeReferenceSharedAssetPath(TEXT("Panels/Modal/modal_shell_medium.png"));
+		return FT66FlatStyle::GetFlatSharedAssetPath(TEXT("Panels/Modal/modal_shell_medium.png"));
 	}
 
 	FString GetRunSummaryReferenceElementPath(const TCHAR* FileName)
@@ -456,7 +441,7 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal")),
+			FT66FlatStyle::GetFlatLongPanelAssetPath(TEXT("normal")),
 			FVector2D(620.f, 175.f),
 			FMargin(0.055f, 0.210f, 0.055f, 0.210f),
 			ESlateBrushDrawType::Box,
@@ -528,7 +513,7 @@ namespace
 		static FT66RunSummarySpriteBrushEntry Entry;
 		return ResolveRunSummarySpriteBrush(
 			Entry,
-			T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("SquareIcon"), TEXT("normal")),
+			FT66FlatStyle::GetFlatChromeButtonAssetPath(TEXT("SquareIcon"), TEXT("normal")),
 			FVector2D(151.f, 151.f),
 			FMargin(0.f),
 			ESlateBrushDrawType::Image,
@@ -645,9 +630,9 @@ namespace
 		const bool bCta = Family == ET66RunSummaryButtonFamily::CtaGreen || Family == ET66RunSummaryButtonFamily::CtaBlue;
 		if (bCta)
 		{
-			return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("CTA"), Suffix);
+			return FT66FlatStyle::GetFlatChromeButtonAssetPath(TEXT("CTA"), Suffix);
 		}
-		return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(TEXT("Pill"), Suffix);
+		return FT66FlatStyle::GetFlatChromeButtonAssetPath(TEXT("Pill"), Suffix);
 	}
 
 	FVector2D GetRunSummaryButtonSize(const ET66RunSummaryButtonFamily Family, const ET66RunSummaryButtonState State)
@@ -744,7 +729,7 @@ namespace
 		const FSlateBrush* DisabledBrush = GetRunSummaryButtonBrush(Family, ET66RunSummaryButtonState::Disabled);
 		if (!NormalBrush)
 		{
-			return FT66Style::MakeButton(
+			return FT66FlatStyle::MakeButton(
 				FT66ButtonParams(Label, OnClicked, Family == ET66RunSummaryButtonFamily::ToggleOff ? ET66ButtonType::Danger : ET66ButtonType::Primary)
 				.SetMinWidth(MinWidth)
 				.SetHeight(Height)
@@ -752,7 +737,7 @@ namespace
 				.SetPadding(ContentPadding));
 		}
 
-		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+		return FT66FlatStyle::BuildFlatSlicedPlateButton(
 			OnClicked,
 			SNew(SBox)
 			.HAlign(HAlign_Center)
@@ -765,7 +750,7 @@ namespace
 				[
 					SNew(STextBlock)
 					.Text(Label)
-					.Font(FT66Style::Tokens::FontBold(FontSize))
+					.Font(FT66FlatStyle::Tokens::FontBold(FontSize))
 					.ColorAndOpacity(RunSummaryFantasyText)
 					.Justification(ETextJustify::Center)
 					.AutoWrapText(false)
@@ -814,7 +799,7 @@ namespace
 	}
 
 	static int32 GetDisplayedRunSummaryStageNumber(
-		const UT66PlayerExperienceSubSystem* PlayerExperience,
+		const UT66DifficultyTuningSubsystem* DifficultyTuning,
 		const ET66Difficulty Difficulty,
 		const int32 StageReached)
 	{
@@ -824,29 +809,14 @@ namespace
 		}
 
 		const int32 StageCount = 4;
-		if (!PlayerExperience)
+		if (!DifficultyTuning)
 		{
 			return FMath::Clamp(StageReached, 1, StageCount);
 		}
 
-		const int32 StartStage = FMath::Max(1, PlayerExperience->GetDifficultyStartStage(Difficulty));
+		const int32 StartStage = FMath::Max(1, DifficultyTuning->GetDifficultyStartStage(Difficulty));
 		const int32 StageOffset = FMath::Max(0, StageReached - StartStage);
 		return (StageOffset % StageCount) + 1;
-	}
-
-	static bool T66GetNextDifficulty(const ET66Difficulty Current, ET66Difficulty& OutNextDifficulty)
-	{
-		switch (Current)
-		{
-		case ET66Difficulty::Easy: OutNextDifficulty = ET66Difficulty::Medium; return true;
-		case ET66Difficulty::Medium: OutNextDifficulty = ET66Difficulty::Hard; return true;
-		case ET66Difficulty::Hard: OutNextDifficulty = ET66Difficulty::VeryHard; return true;
-		case ET66Difficulty::VeryHard: OutNextDifficulty = ET66Difficulty::Impossible; return true;
-		default: break;
-		}
-
-		OutNextDifficulty = Current;
-		return false;
 	}
 
 	static int32 AdjustRunSummaryFontSize(int32 BaseSize)
@@ -856,31 +826,31 @@ namespace
 
 	static FSlateFontInfo RunSummaryRegularFont(int32 BaseSize)
 	{
-		return FT66Style::Tokens::FontRegular(AdjustRunSummaryFontSize(BaseSize));
+		return FT66FlatStyle::Tokens::FontRegular(AdjustRunSummaryFontSize(BaseSize));
 	}
 
 	static FSlateFontInfo RunSummaryBoldFont(int32 BaseSize)
 	{
-		return FT66Style::Tokens::FontBold(AdjustRunSummaryFontSize(BaseSize));
+		return FT66FlatStyle::Tokens::FontBold(AdjustRunSummaryFontSize(BaseSize));
 	}
 
 	static FSlateFontInfo RunSummaryHeadingFont()
 	{
-		FSlateFontInfo Font = FT66Style::Tokens::FontHeading();
+		FSlateFontInfo Font = FT66FlatStyle::Tokens::FontHeading();
 		Font.Size = AdjustRunSummaryFontSize(Font.Size);
 		return Font;
 	}
 
 	static FSlateFontInfo RunSummaryBodyFont()
 	{
-		FSlateFontInfo Font = FT66Style::Tokens::FontBody();
+		FSlateFontInfo Font = FT66FlatStyle::Tokens::FontBody();
 		Font.Size = AdjustRunSummaryFontSize(Font.Size);
 		return Font;
 	}
 
 	static FT66ButtonParams FlattenRunSummaryButton(FT66ButtonParams Params)
 	{
-		const int32 BaseButtonFontSize = Params.FontSize > 0 ? Params.FontSize : FT66Style::Tokens::FontButton().Size;
+		const int32 BaseButtonFontSize = Params.FontSize > 0 ? Params.FontSize : FT66FlatStyle::Tokens::FontButton().Size;
 		Params.SetFontSize(AdjustRunSummaryFontSize(BaseButtonFontSize));
 		return Params;
 	}
@@ -896,7 +866,7 @@ bool UT66RunSummaryScreen::HasValidLiveRunSummaryContext() const
 
 	const UGameInstance* GI = GetGameInstance();
 	const UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	return RunState && (RunState->HasPendingDifficultyClearSummary() || RunState->HasRunEnded());
+	return RunState && RunState->HasRunEnded();
 }
 
 void UT66RunSummaryScreen::PrepareChadCouponsPopupForLiveRun()
@@ -922,7 +892,7 @@ void UT66RunSummaryScreen::PrepareChadCouponsPopupForLiveRun()
 	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
 	const UT66CommunityContentSubsystem* Community = GI ? GI->GetSubsystem<UT66CommunityContentSubsystem>() : nullptr;
 	const int32 PendingCoupons = RunState->GetPendingPowerCrystalsForWallet();
-	const bool bDailyClimbRun = T66GI && T66GI->IsDailyClimbRunActive();
+	const bool bDailyClimbRun = T66GI && T66GI->IsDailyClimbRun();
 
 	int32 ChallengeRewardCoupons = 0;
 	if (!bDailyClimbRun && Community)
@@ -1243,6 +1213,7 @@ void UT66RunSummaryScreen::ProcessLiveRunFinalAccounting()
 	{
 		Achievements->AddHeroGamesPlayed(T66GI->SelectedHeroID, 1);
 		Achievements->AddHeroCumulativeScore(T66GI->SelectedHeroID, RunState->GetCurrentScore());
+		Achievements->AddHeroMasteryXP(T66GI->SelectedHeroID, 100);
 	}
 	if (!T66GI->SelectedCompanionID.IsNone())
 	{
@@ -1411,13 +1382,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::RebuildWidget()
 	LoadSavedRunSummaryIfRequested();
 	if (!bViewingSavedLeaderboardRunSummary)
 	{
-		UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-		bDifficultyClearSummaryMode = RunState && RunState->HasPendingDifficultyClearSummary();
-	}
-	else
-	{
-		bDifficultyClearSummaryMode = false;
+		// Live run state is resolved in BuildSlateUI; no transition summary mode remains.
 	}
 	MarkSlateUIBuilt();
 	return BuildSlateUI();
@@ -1466,7 +1431,7 @@ TSharedRef<ITableRow> UT66RunSummaryScreen::GenerateLogRow(TSharedPtr<FString> I
 			SNew(STextBlock)
 			.Text(FText::FromString(Line))
 			.Font(RunSummaryRegularFont(12))
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			.AutoWrapText(true)
 			.WrapTextAt(430.f)
 			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
@@ -1486,11 +1451,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	const ET66PartySize SummaryPartySize =
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->PartySize :
 		(T66GIBase ? T66GIBase->SelectedPartySize : ET66PartySize::Solo);
-	const UT66PlayerExperienceSubSystem* PlayerExperience = GIBase ? GIBase->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GIBase ? GIBase->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
 	const int32 StageReached =
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->StageReached :
 		(RunState ? RunState->GetCurrentStage() : 1);
-	const int32 DisplayStageReached = GetDisplayedRunSummaryStageNumber(PlayerExperience, SummaryDifficulty, StageReached);
+	const int32 DisplayStageReached = GetDisplayedRunSummaryStageNumber(DifficultyTuning, SummaryDifficulty, StageReached);
 
 	const int32 DisplayScore =
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->Score :
@@ -1597,6 +1562,8 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		const FString FlatProofUrl = ProofOfRunUrl.IsEmpty()
 			? FString(TEXT("youtube.com/watch?v=run-proof-001"))
 			: ProofOfRunUrl;
+		const bool bShowFlatProofActions = bViewingSavedLeaderboardRunSummary
+			|| (!bDailyClimbSummaryMode && (bAwaitingBackendRankData || bBackendRankDataReceived));
 		const FText FlatScoreRankLabelText = NSLOCTEXT("T66.RunSummary", "ScoreRankLabel", "Score");
 		const FText FlatSpeedRunRankLabelText = NSLOCTEXT("T66.RunSummary", "SpeedRunRankLabel", "Speed Run");
 		FString AutoDumpPathForReferenceFixture;
@@ -1610,6 +1577,55 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		const int32 FlatEvasionStat = bFlatReferenceCapture ? 1 : EvasionStat;
 		const int32 FlatLuckStat = bFlatReferenceCapture ? 1 : LuckStat;
 		const int32 FlatSpeedStat = bFlatReferenceCapture ? 1 : SpeedStat;
+		const FName FlatHeroID =
+			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroID :
+			(GI ? GI->SelectedHeroID : NAME_None);
+		FText FlatHeroNameText = FlatHeroID.IsNone()
+			? NSLOCTEXT("T66.RunSummary", "UnknownHero", "Unknown Hero")
+			: FText::FromName(FlatHeroID);
+		if (GI && !FlatHeroID.IsNone())
+		{
+			FHeroData HeroData;
+			if (GI->GetHeroData(FlatHeroID, HeroData))
+			{
+				FlatHeroNameText = Loc ? Loc->GetHeroDisplayName(HeroData) : HeroData.DisplayName;
+			}
+		}
+		FString FlatPlayerNameString;
+		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
+		{
+			FlatPlayerNameString = !LoadedSavedSummary->OwnerDisplayName.IsEmpty()
+				? LoadedSavedSummary->OwnerDisplayName
+				: LoadedSavedSummary->DisplayName;
+		}
+		else if (GI && !GI->CurrentRunOwnerDisplayName.IsEmpty())
+		{
+			FlatPlayerNameString = GI->CurrentRunOwnerDisplayName;
+		}
+		else if (UT66SteamHelper* SteamHelper = GIBase ? GIBase->GetSubsystem<UT66SteamHelper>() : nullptr)
+		{
+			FlatPlayerNameString = SteamHelper->GetLocalDisplayName();
+		}
+		if (FlatPlayerNameString.IsEmpty())
+		{
+			FlatPlayerNameString = TEXT("Player");
+		}
+		const FText FlatPlayerNameText = FText::FromString(FlatPlayerNameString);
+		const UT66AchievementsSubsystem* Achievements = GIBase ? GIBase->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+		const int32 FlatHeroMasteryLevel =
+			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroMasteryLevel :
+			(Achievements ? Achievements->GetHeroMasteryLevel(FlatHeroID) : 1);
+		const int32 FlatHeroMasteryXP =
+			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroMasteryXP :
+			(Achievements ? Achievements->GetHeroMasteryXP(FlatHeroID) : 0);
+		const int32 FlatDisplayedRank =
+			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->ScoreRankAllTime :
+			(bBackendRankDataReceived ? BackendScoreRankAllTime : 0);
+		const FText FlatMasteryText = FText::Format(
+			NSLOCTEXT("T66.RunSummary", "ProfileMasteryFormat", "LV {0}  {1}/100 XP"),
+			FText::AsNumber(FMath::Max(1, FlatHeroMasteryLevel)),
+			FText::AsNumber(FMath::Max(0, FlatHeroMasteryXP) % 100));
+		const FText FlatRankText = FormatRunSummaryRankText(FlatDisplayedRank);
 
 		auto DTag = [](const TCHAR* Name) -> FName
 		{
@@ -1773,63 +1789,60 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		AddN(0.018f, 0.017f, 0.964f, 0.925f, MakeTaggedBox(DTag(TEXT("RunSummary.Root")), TEXT("ScreenRoot")));
 		AddN(0.025f, 0.036f, 0.166f, 0.049f, MakeLabel(DTag(TEXT("RunSummary.Title")), TitleText, 48, White, true));
 
-		AddTopStatPanel(0.283f, TEXT("RunSummary.TopStats.CouponsPanel"), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png"), NSLOCTEXT("T66.RunSummary", "FlatChagCoupons", "CHAG COUPONS"), FText::AsNumber(FMath::Max(0, SummaryChadCouponsEarned)), FText::FromString(TEXT("#")));
-		AddTopStatPanel(0.430f, TEXT("RunSummary.TopStats.AchievementsPanel"), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/favorite_star_outline.png"), NSLOCTEXT("T66.RunSummary", "FlatAchievements", "ACHIEVEMENTS"), FText::AsNumber(FMath::Max(0, SummaryAchievementsUnlocked)), FText::FromString(TEXT("*")));
-		AddTopStatPanel(0.576f, TEXT("RunSummary.TopStats.SecretAchievementsPanel"), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/skull.png"), NSLOCTEXT("T66.RunSummary", "FlatSecretAchievements", "SECRET ACH."), FText::AsNumber(FMath::Max(0, SummarySecretAchievementsUnlocked)), FText::FromString(TEXT("S")));
-
 		AddN(0.723f, 0.017f, 0.256f, 0.080f, MakeButtonShell(ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleViewLogClicked), DTag(TEXT("RunSummary.EventLogButton"))));
 		AddN(0.741f, 0.033f, 0.031f, 0.050f, MakeIcon(DTag(TEXT("RunSummary.EventLogButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/log_clipboard.png"), FVector2D(58.f, 58.f), Red, FText::FromString(TEXT("L"))));
 		AddN(0.817f, 0.039f, 0.110f, 0.038f, MakeLabel(DTag(TEXT("RunSummary.EventLogButton.Label")), NSLOCTEXT("T66.RunSummary", "FlatEventLog", "EVENT LOG"), 34, Red, true, ETextJustify::Center));
 
-		AddN(0.018f, 0.110f, 0.286f, 0.174f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Left.RunOutcomePanel"))));
-		AddN(0.031f, 0.123f, 0.023f, 0.039f, MakeFlagIcon(DTag(TEXT("RunSummary.Left.RunOutcomePanel.Icon"))));
-		AddN(0.056f, 0.128f, 0.135f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.RunOutcomePanel.Header")), NSLOCTEXT("T66.RunSummary", "RunOutcomeHeader", "RUN OUTCOME"), 26, White, true));
-		AddDivider(0.031f, 0.162f, 0.264f);
-		AddStatRow(0.174f, TEXT("RunSummary.Left.RunOutcomePanel.StageRow"), NSLOCTEXT("T66.RunSummary", "OutcomeStageReached", "Stage Reached"), StageReachedValueText);
-		AddDivider(0.031f, 0.207f, 0.264f);
-		AddStatRow(0.218f, TEXT("RunSummary.Left.RunOutcomePanel.ScoreRow"), NSLOCTEXT("T66.RunSummary", "OutcomeScore", "Score"), ScoreValueText);
-		AddDivider(0.031f, 0.241f, 0.264f);
-		AddStatRow(0.253f, TEXT("RunSummary.Left.RunOutcomePanel.TimeRow"), NSLOCTEXT("T66.RunSummary", "OutcomeTime", "Time"), TimeValueText);
+		AddN(0.018f, 0.110f, 0.286f, 0.120f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Left.ProfilePanel"))));
+		AddN(0.032f, 0.128f, 0.040f, 0.070f, MakeIcon(DTag(TEXT("RunSummary.Left.ProfilePanel.SteamIcon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/steam_placeholder.png"), FVector2D(64.f, 64.f), Purple, FText::FromString(TEXT("S"))));
+		AddN(0.082f, 0.123f, 0.205f, 0.030f, MakeLabel(DTag(TEXT("RunSummary.Left.ProfilePanel.PlayerName")), FlatPlayerNameText, 24, White, true));
+		AddN(0.082f, 0.154f, 0.205f, 0.026f, MakeLabel(DTag(TEXT("RunSummary.Left.ProfilePanel.HeroName")), FlatHeroNameText, 20, White, false));
+		AddN(0.082f, 0.183f, 0.085f, 0.026f, MakeLabel(DTag(TEXT("RunSummary.Left.ProfilePanel.Rank")), FlatRankText, 18, Purple, true));
+		AddN(0.168f, 0.183f, 0.120f, 0.026f, MakeLabel(DTag(TEXT("RunSummary.Left.ProfilePanel.Mastery")), FlatMasteryText, 18, Purple, true, ETextJustify::Right));
 
-		AddN(0.018f, 0.303f, 0.286f, 0.085f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Left.SkullProgressPanel"))));
+		AddN(0.018f, 0.246f, 0.286f, 0.150f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Left.RunOutcomePanel"))));
+		AddN(0.031f, 0.258f, 0.023f, 0.039f, MakeFlagIcon(DTag(TEXT("RunSummary.Left.RunOutcomePanel.Icon"))));
+		AddN(0.056f, 0.263f, 0.135f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.RunOutcomePanel.Header")), NSLOCTEXT("T66.RunSummary", "RunOutcomeHeader", "RUN OUTCOME"), 26, White, true));
+		AddDivider(0.031f, 0.296f, 0.264f);
+		AddStatRow(0.306f, TEXT("RunSummary.Left.RunOutcomePanel.StageRow"), NSLOCTEXT("T66.RunSummary", "OutcomeStageReached", "Stage Reached"), StageReachedValueText);
+		AddDivider(0.031f, 0.337f, 0.264f);
+		AddStatRow(0.346f, TEXT("RunSummary.Left.RunOutcomePanel.ScoreRow"), NSLOCTEXT("T66.RunSummary", "OutcomeScore", "Score"), ScoreValueText);
+		AddDivider(0.031f, 0.373f, 0.264f);
+		AddStatRow(0.380f, TEXT("RunSummary.Left.RunOutcomePanel.TimeRow"), NSLOCTEXT("T66.RunSummary", "OutcomeTime", "Time"), TimeValueText);
+
+		AddN(0.018f, 0.412f, 0.286f, 0.075f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Left.SkullProgressPanel"))));
 		for (int32 SkullIndex = 0; SkullIndex < 5; ++SkullIndex)
 		{
 			const FString SkullTag = FString::Printf(TEXT("RunSummary.Left.SkullProgressPanel.Skull%02d"), SkullIndex + 1);
-			AddN(0.033f + SkullIndex * 0.052f, 0.314f, 0.039f, 0.063f, MakePanel(ET66FlatState::Default, FName(*SkullTag)));
-			AddN(0.041f + SkullIndex * 0.052f, 0.324f, 0.023f, 0.044f, MakeIcon(NAME_None, TEXT("RuntimeDependencies/T66/UI/Icons/Flat/skull.png"), FVector2D(48.f, 48.f), Purple, FText::FromString(TEXT("S"))));
+			AddN(0.033f + SkullIndex * 0.052f, 0.421f, 0.039f, 0.055f, MakePanel(ET66FlatState::Default, FName(*SkullTag)));
+			AddN(0.041f + SkullIndex * 0.052f, 0.428f, 0.023f, 0.040f, MakeIcon(NAME_None, TEXT("RuntimeDependencies/T66/UI/Icons/Flat/skull.png"), FVector2D(48.f, 48.f), Purple, FText::FromString(TEXT("S"))));
 		}
 
-		AddN(0.018f, 0.403f, 0.286f, 0.206f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Left.RankPanel"))));
-		AddN(0.048f, 0.428f, 0.100f, 0.036f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.WeeklyHeader")), NSLOCTEXT("T66.RunSummary", "WeeklyRankHeaderCaps", "WEEKLY RANK"), 25, Purple, true, ETextJustify::Center));
-		AddN(0.187f, 0.428f, 0.115f, 0.036f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.AllTimeHeader")), NSLOCTEXT("T66.RunSummary", "AllTimeRankHeaderCaps", "ALL TIME RANK"), 25, Purple, true, ETextJustify::Center));
-		AddN(0.156f, 0.417f, 0.002f, 0.181f, MakeRect(DimLine, NAME_None, TEXT("Divider")));
-		AddN(0.031f, 0.478f, 0.055f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.WeeklyScoreLabel")), FlatScoreRankLabelText, 20, White, false));
-		AddN(0.124f, 0.478f, 0.035f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.WeeklyScoreValue")), NSLOCTEXT("T66.RunSummary", "RankNAFlat1", "N/A"), 20, White, false));
-		AddN(0.174f, 0.478f, 0.055f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.AllTimeScoreLabel")), FlatScoreRankLabelText, 20, White, false));
-		AddN(0.258f, 0.478f, 0.040f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.AllTimeScoreValue")), NSLOCTEXT("T66.RunSummary", "RankNAFlat2", "N/A"), 20, White, false, ETextJustify::Right));
-		AddN(0.031f, 0.535f, 0.075f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.WeeklySpeedLabel")), FlatSpeedRunRankLabelText, 20, White, false));
-		AddN(0.124f, 0.535f, 0.035f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.WeeklySpeedValue")), NSLOCTEXT("T66.RunSummary", "RankNAFlat3", "N/A"), 20, White, false));
-		AddN(0.174f, 0.535f, 0.075f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.AllTimeSpeedLabel")), FlatSpeedRunRankLabelText, 20, White, false));
-		AddN(0.258f, 0.535f, 0.040f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.AllTimeSpeedValue")), NSLOCTEXT("T66.RunSummary", "RankNAFlat4", "N/A"), 20, White, false, ETextJustify::Right));
+		AddN(0.018f, 0.497f, 0.286f, 0.152f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Left.RankPanel"))));
+		AddN(0.048f, 0.514f, 0.100f, 0.036f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.WeeklyHeader")), NSLOCTEXT("T66.RunSummary", "WeeklyRankHeaderCaps", "WEEKLY RANK"), 23, Purple, true, ETextJustify::Center));
+		AddN(0.187f, 0.514f, 0.115f, 0.036f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.AllTimeHeader")), NSLOCTEXT("T66.RunSummary", "AllTimeRankHeaderCaps", "ALL TIME RANK"), 23, Purple, true, ETextJustify::Center));
+		AddN(0.156f, 0.510f, 0.002f, 0.127f, MakeRect(DimLine, NAME_None, TEXT("Divider")));
+		AddN(0.031f, 0.558f, 0.055f, 0.027f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.WeeklyScoreLabel")), FlatScoreRankLabelText, 18, White, false));
+		AddN(0.124f, 0.558f, 0.035f, 0.027f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.WeeklyScoreValue")), NSLOCTEXT("T66.RunSummary", "RankNAFlat1", "N/A"), 18, White, false));
+		AddN(0.174f, 0.558f, 0.055f, 0.027f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.AllTimeScoreLabel")), FlatScoreRankLabelText, 18, White, false));
+		AddN(0.258f, 0.558f, 0.040f, 0.027f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.AllTimeScoreValue")), NSLOCTEXT("T66.RunSummary", "RankNAFlat2", "N/A"), 18, White, false, ETextJustify::Right));
+		AddN(0.031f, 0.606f, 0.075f, 0.027f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.WeeklySpeedLabel")), FlatSpeedRunRankLabelText, 18, White, false));
+		AddN(0.124f, 0.606f, 0.035f, 0.027f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.WeeklySpeedValue")), NSLOCTEXT("T66.RunSummary", "RankNAFlat3", "N/A"), 18, White, false));
+		AddN(0.174f, 0.606f, 0.075f, 0.027f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.AllTimeSpeedLabel")), FlatSpeedRunRankLabelText, 18, White, false));
+		AddN(0.258f, 0.606f, 0.040f, 0.027f, MakeLabel(DTag(TEXT("RunSummary.Left.RankPanel.AllTimeSpeedValue")), NSLOCTEXT("T66.RunSummary", "RankNAFlat4", "N/A"), 18, White, false, ETextJustify::Right));
 
-		AddN(0.018f, 0.626f, 0.286f, 0.113f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Left.SeedLuckPanel"))));
-		AddN(0.030f, 0.641f, 0.025f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Left.SeedLuckPanel.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/clover.png"), FVector2D(48.f, 48.f), Purple, FText::FromString(TEXT("+"))));
-		AddN(0.057f, 0.647f, 0.115f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.SeedLuckPanel.Header")), NSLOCTEXT("T66.RunSummary", "SeedLuckPanel", "SEED LUCK"), 28, White, true));
-		AddDivider(0.031f, 0.677f, 0.264f);
-		AddN(0.091f, 0.697f, 0.150f, 0.045f, MakeLabel(DTag(TEXT("RunSummary.Left.SeedLuckPanel.Value")), FlatSeedLuckText, 28, White, true, ETextJustify::Center));
+		AddN(0.018f, 0.662f, 0.286f, 0.100f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Left.SeedLuckPanel"))));
+		AddN(0.030f, 0.675f, 0.025f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Left.SeedLuckPanel.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/clover.png"), FVector2D(48.f, 48.f), Purple, FText::FromString(TEXT("+"))));
+		AddN(0.057f, 0.681f, 0.115f, 0.032f, MakeLabel(DTag(TEXT("RunSummary.Left.SeedLuckPanel.Header")), NSLOCTEXT("T66.RunSummary", "SeedLuckPanel", "SEED LUCK"), 26, White, true));
+		AddDivider(0.031f, 0.712f, 0.264f);
+		AddN(0.091f, 0.726f, 0.150f, 0.036f, MakeLabel(DTag(TEXT("RunSummary.Left.SeedLuckPanel.Value")), FlatSeedLuckText, 24, White, true, ETextJustify::Center));
 
-		AddN(0.018f, 0.755f, 0.144f, 0.082f, MakeButtonShell(ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), DTag(TEXT("RunSummary.Actions.GoAgainButton"))));
-		AddN(0.032f, 0.779f, 0.033f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Actions.GoAgainButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/refresh.png"), FVector2D(52.f, 52.f), Red, FText::FromString(TEXT("R"))));
-		AddN(0.071f, 0.785f, 0.080f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Actions.GoAgainButton.Label")), NSLOCTEXT("T66.RunSummary", "GoAgain", "GO AGAIN!"), 28, Red, true, ETextJustify::Center));
-		AddN(0.169f, 0.755f, 0.135f, 0.082f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleContinueDifficultyClicked), DTag(TEXT("RunSummary.Actions.ContinueButton"))));
-		AddN(0.184f, 0.779f, 0.030f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Actions.ContinueButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/play_triangle.png"), FVector2D(52.f, 52.f), Purple, FText::FromString(TEXT(">"))));
-		AddN(0.218f, 0.785f, 0.080f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Actions.ContinueButton.Label")), NSLOCTEXT("T66.RunSummary", "Continue", "CONTINUE"), 28, Purple, true, ETextJustify::Center));
-		AddN(0.018f, 0.849f, 0.144f, 0.085f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), DTag(TEXT("RunSummary.Actions.MainMenuButton"))));
-		AddN(0.032f, 0.874f, 0.033f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Actions.MainMenuButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/home.png"), FVector2D(52.f, 52.f), Purple, FText::FromString(TEXT("H"))));
-		AddN(0.070f, 0.879f, 0.085f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Actions.MainMenuButton.Label")), NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), 27, Purple, true, ETextJustify::Center));
-		AddN(0.169f, 0.849f, 0.135f, 0.085f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleSaveAndQuitClicked), DTag(TEXT("RunSummary.Actions.SaveAndQuitButton"))));
-		AddN(0.181f, 0.874f, 0.033f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Actions.SaveAndQuitButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/save_floppy.png"), FVector2D(52.f, 52.f), Purple, FText::FromString(TEXT("Q"))));
-		AddN(0.209f, 0.879f, 0.090f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Actions.SaveAndQuitButton.Label")), NSLOCTEXT("T66.RunSummary", "FlatSaveAndQuit", "SAVE AND QUIT"), 24, Purple, true, ETextJustify::Center));
+		AddN(0.018f, 0.755f, 0.286f, 0.082f, MakeButtonShell(ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), DTag(TEXT("RunSummary.Actions.GoAgainButton"))));
+		AddN(0.052f, 0.779f, 0.033f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Actions.GoAgainButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/refresh.png"), FVector2D(52.f, 52.f), Red, FText::FromString(TEXT("R"))));
+		AddN(0.095f, 0.785f, 0.130f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Actions.GoAgainButton.Label")), NSLOCTEXT("T66.RunSummary", "GoAgain", "GO AGAIN!"), 28, Red, true, ETextJustify::Center));
+		AddN(0.018f, 0.849f, 0.286f, 0.085f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), DTag(TEXT("RunSummary.Actions.MainMenuButton"))));
+		AddN(0.052f, 0.874f, 0.033f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Actions.MainMenuButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/home.png"), FVector2D(52.f, 52.f), Purple, FText::FromString(TEXT("H"))));
+		AddN(0.095f, 0.879f, 0.130f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Actions.MainMenuButton.Label")), NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), 27, Purple, true, ETextJustify::Center));
 
 		AddN(0.319f, 0.113f, 0.338f, 0.368f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Middle.CharacterPreviewPanel"))));
 		AddN(0.335f, 0.140f, 0.306f, 0.320f,
@@ -1906,16 +1919,28 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			AddN(0.700f, 0.390f, 0.220f, 0.040f, MakeLabel(DTag(TEXT("RunSummary.Right.StatsPanel.DamagePlaceholder")), DamagePlaceholder, 24, White, false, ETextJustify::Center));
 		}
 
-		AddN(0.672f, 0.688f, 0.311f, 0.158f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Right.ProofPanel"))));
-		AddN(0.689f, 0.705f, 0.027f, 0.046f, MakeIcon(DTag(TEXT("RunSummary.Right.ProofPanel.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/link_chain.png"), FVector2D(46.f, 46.f), Purple, FText::FromString(TEXT("C"))));
-		AddN(0.712f, 0.713f, 0.130f, 0.030f, MakeLabel(DTag(TEXT("RunSummary.Right.ProofPanel.Header")), NSLOCTEXT("T66.RunSummary", "ProofOfRunHeader", "PROOF OF RUN"), 27, White, true));
-		AddN(0.681f, 0.755f, 0.241f, 0.071f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Right.ProofUrlField.Panel"))));
-		AddN(0.699f, 0.784f, 0.200f, 0.030f, MakeLabel(DTag(TEXT("RunSummary.Right.ProofUrlField")), FText::FromString(FlatProofUrl), 20, White, false));
-		AddN(0.931f, 0.755f, 0.043f, 0.071f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofCopyClicked), DTag(TEXT("RunSummary.Right.CopyButton"))));
-		AddN(0.943f, 0.779f, 0.024f, 0.041f, MakeIcon(DTag(TEXT("RunSummary.Right.CopyButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/copy_clipboard.png"), FVector2D(46.f, 46.f), Purple, FText::FromString(TEXT("C"))));
-		AddN(0.672f, 0.861f, 0.311f, 0.081f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCheatingClicked), DTag(TEXT("RunSummary.Right.SubmitCheatingButton"))));
-		AddN(0.688f, 0.878f, 0.032f, 0.048f, MakeIcon(DTag(TEXT("RunSummary.Right.SubmitCheatingButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/warning_triangle.png"), FVector2D(52.f, 52.f), Purple, FText::FromString(TEXT("!"))));
-		AddN(0.727f, 0.884f, 0.220f, 0.038f, MakeLabel(DTag(TEXT("RunSummary.Right.SubmitCheatingButton.Label")), NSLOCTEXT("T66.RunSummary", "SubmitSuspicion", "SUBMIT SUSPICION OF CHEATING"), 28, Purple, true, ETextJustify::Center));
+		if (bShowFlatProofActions)
+		{
+			AddN(0.672f, 0.688f, 0.311f, 0.158f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Right.ProofPanel"))));
+			AddN(0.689f, 0.705f, 0.027f, 0.046f, MakeIcon(DTag(TEXT("RunSummary.Right.ProofPanel.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/link_chain.png"), FVector2D(46.f, 46.f), Purple, FText::FromString(TEXT("C"))));
+			AddN(0.712f, 0.713f, 0.130f, 0.030f, MakeLabel(DTag(TEXT("RunSummary.Right.ProofPanel.Header")), NSLOCTEXT("T66.RunSummary", "ProofOfRunHeader", "PROOF OF RUN"), 27, White, true));
+			AddN(0.681f, 0.755f, 0.241f, 0.071f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Right.ProofUrlField.Panel"))));
+			AddN(0.699f, 0.784f, 0.200f, 0.030f, MakeLabel(DTag(TEXT("RunSummary.Right.ProofUrlField")), FText::FromString(FlatProofUrl), 20, White, false));
+			AddN(0.931f, 0.755f, 0.043f, 0.071f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleProofCopyClicked), DTag(TEXT("RunSummary.Right.CopyButton"))));
+			AddN(0.943f, 0.779f, 0.024f, 0.041f, MakeIcon(DTag(TEXT("RunSummary.Right.CopyButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/copy_clipboard.png"), FVector2D(46.f, 46.f), Purple, FText::FromString(TEXT("C"))));
+			AddN(0.672f, 0.861f, 0.311f, 0.081f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleReportCheatingClicked), DTag(TEXT("RunSummary.Right.SubmitCheatingButton"))));
+			AddN(0.688f, 0.878f, 0.032f, 0.048f, MakeIcon(DTag(TEXT("RunSummary.Right.SubmitCheatingButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/warning_triangle.png"), FVector2D(52.f, 52.f), Purple, FText::FromString(TEXT("!"))));
+			AddN(0.727f, 0.884f, 0.220f, 0.038f, MakeLabel(DTag(TEXT("RunSummary.Right.SubmitCheatingButton.Label")), NSLOCTEXT("T66.RunSummary", "SubmitSuspicion", "SUBMIT SUSPICION OF CHEATING"), 28, Purple, true, ETextJustify::Center));
+		}
+		else
+		{
+			AddN(0.672f, 0.688f, 0.311f, 0.113f, MakeButtonShell(ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), DTag(TEXT("RunSummary.Right.GoAgainButton"))));
+			AddN(0.704f, 0.721f, 0.033f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Right.GoAgainButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/refresh.png"), FVector2D(52.f, 52.f), Red, FText::FromString(TEXT("R"))));
+			AddN(0.747f, 0.727f, 0.160f, 0.038f, MakeLabel(DTag(TEXT("RunSummary.Right.GoAgainButton.Label")), NSLOCTEXT("T66.RunSummary", "GoAgain", "GO AGAIN!"), 30, Red, true, ETextJustify::Center));
+			AddN(0.672f, 0.829f, 0.311f, 0.113f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), DTag(TEXT("RunSummary.Right.MainMenuButton"))));
+			AddN(0.704f, 0.862f, 0.033f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Right.MainMenuButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/home.png"), FVector2D(52.f, 52.f), Purple, FText::FromString(TEXT("H"))));
+			AddN(0.747f, 0.868f, 0.160f, 0.038f, MakeLabel(DTag(TEXT("RunSummary.Right.MainMenuButton.Label")), NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), 30, Purple, true, ETextJustify::Center));
+		}
 
 		TSharedRef<SOverlay> RootOverlay = SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -2058,7 +2083,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(Header)
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+				.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading")))
 				.Font(RunSummaryHeadingFont())
 			]
 			+ SVerticalBox::Slot().FillHeight(1.f)
@@ -2066,7 +2091,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				Body
 			],
 			GetRunSummaryGeneratedRankPanelBrush(),
-			FT66Style::Tokens::Space4);
+			FT66FlatStyle::Tokens::Space4);
 	};
 
 	auto ResolveDisplayedRank = [WeakScreen, WeakLB, SummaryDifficulty, SummaryPartySize](bool bScoreRank, bool bWeeklyRank) -> int32
@@ -2148,14 +2173,14 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(STextBlock)
 				.Text(Label)
 				.Font(RunSummaryRegularFont(14))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(6.f, 0.f, 0.f, 0.f)
 			[
 				SNew(STextBlock)
 				.Text(RankText)
 				.Font(RunSummaryBoldFont(14))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			];
 	};
 
@@ -2167,7 +2192,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(Header)
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+				.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading")))
 				.Font(RunSummaryHeadingFont())
 			]
 			+ SVerticalBox::Slot().AutoHeight()
@@ -2199,12 +2224,12 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(NSLOCTEXT("T66.RunSummary", "RanksLoading", "Updating ranks..."))
 						.Font(RunSummaryRegularFont(14))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 					]
 				]
 			],
 			GetRunSummaryGeneratedMetricCardBrush(),
-			FT66Style::Tokens::Space4);
+			FT66FlatStyle::Tokens::Space4);
 	};
 
 	auto MakeRatingSectionPanel = [](const FText& Header, const TSharedRef<SWidget>& Body) -> TSharedRef<SWidget>
@@ -2218,7 +2243,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(Header)
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+				.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading")))
 				.Font(SmallerHeadingFont)
 			]
 			+ SVerticalBox::Slot().FillHeight(1.f)
@@ -2226,7 +2251,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				Body
 			],
 			GetRunSummaryGeneratedRankPanelBrush(),
-			FT66Style::Tokens::Space4);
+			FT66FlatStyle::Tokens::Space4);
 	};
 
 	TSharedRef<SWidget> WeeklyRankPanel = MakeRankSectionPanel(
@@ -2244,7 +2269,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.RunSummary", "DailyRankHeader", "Daily Rank"))
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+				.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading")))
 				.Font(RunSummaryHeadingFont())
 			]
 			+ SVerticalBox::Slot().AutoHeight()
@@ -2302,12 +2327,12 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(NSLOCTEXT("T66.RunSummary", "DailyRanksLoading", "Submitting Daily Descent..."))
 						.Font(RunSummaryRegularFont(14))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 					]
 				]
 			],
 			GetRunSummaryRowShellBrush(),
-			FT66Style::Tokens::Space4);
+			FT66FlatStyle::Tokens::Space4);
 
 	auto MakeOutcomeRow = [](const FText& Label, const FText& Value) -> TSharedRef<SWidget>
 	{
@@ -2317,7 +2342,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(STextBlock)
 				.Text(Label)
 				.Font(RunSummaryRegularFont(15))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(12.f, 0.f, 0.f, 0.f)
@@ -2325,7 +2350,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(STextBlock)
 				.Text(Value)
 				.Font(RunSummaryBoldFont(17))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 				.Justification(ETextJustify::Right)
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 			];
@@ -2365,7 +2390,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.RunSummary", "NoPreview", "No Preview"))
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body")))
 					.Font(RunSummaryBodyFont())
 					.Justification(ETextJustify::Center)
 				]);
@@ -2391,7 +2416,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.RunSummary", "EventLogTitle", "EVENT LOG"))
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+					.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading")))
 					.Font(RunSummaryHeadingFont())
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				]
@@ -2412,11 +2437,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				MakeRunSummarySpritePanel(
 					LogListView.IsValid() ? StaticCastSharedRef<SWidget>(LogListView.ToSharedRef()) : StaticCastSharedRef<SWidget>(SNew(SSpacer)),
 					GetRunSummaryRowShellBrush(),
-					FT66Style::Tokens::Space2
+					FT66FlatStyle::Tokens::Space2
 				)
 			],
 			GetRunSummaryGeneratedDamagePanelBrush(),
-			FT66Style::Tokens::Space4);
+			FT66FlatStyle::Tokens::Space4);
 
 	// Proof of run UI is only editable by the owner of the viewed backend run
 	// or when we are viewing a locally saved snapshot.
@@ -2488,7 +2513,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					})
 					.HintText(NSLOCTEXT("T66.RunSummary", "ProofHint", "Paste YouTube link here..."))
 					.Font(RunSummaryRegularFont(14))
-					.ForegroundColor(FT66Style::Tokens::Text)
+					.ForegroundColor(FT66FlatStyle::Tokens::Text)
 					.MinDesiredWidth(420.f),
 					GetRunSummaryFieldBrush(),
 					FMargin(14.f, 8.f),
@@ -2524,7 +2549,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.RunSummary", "ReportReasonHeader", "REASON"))
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+				.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading")))
 				.Font(RunSummaryHeadingFont())
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
@@ -2537,7 +2562,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						.Style(&GetRunSummaryTextBoxStyle())
 						.HintText(NSLOCTEXT("T66.RunSummary", "ReportReasonHint", "Describe why you believe they're cheating..."))
 						.Font(RunSummaryRegularFont(14))
-						.ForegroundColor(FT66Style::Tokens::Text)
+						.ForegroundColor(FT66FlatStyle::Tokens::Text)
 						.AutoWrapText(true),
 						GetRunSummaryFieldBrush(),
 						FMargin(16.f, 12.f),
@@ -2558,7 +2583,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			]
 		,
 		GetRunSummaryRowShellBrush(),
-		FT66Style::Tokens::Space3);
+		FT66FlatStyle::Tokens::Space3);
 
 	auto MakeEventLogButton = [&](const FText& Text) -> TSharedRef<SWidget>
 	{
@@ -2586,7 +2611,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(Label)
 						.Font(RunSummaryBoldFont(11))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						.Justification(ETextJustify::Center)
 						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					]
@@ -2595,7 +2620,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 						SNew(STextBlock)
 						.Text(Value)
 						.Font(RunSummaryBoldFont(20))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 						.Justification(ETextJustify::Center)
 						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					],
@@ -2658,9 +2683,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::Format(StatFmt, Label, Value))
-				.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+				.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body")))
 				.Font(RunSummaryBodyFont())
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 			];
 		};
@@ -2701,7 +2726,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.RunSummary", "ExtendedStatsHeader", "EXTENDED"))
 				.Font(RunSummaryBoldFont(14))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 			];
 
@@ -2728,7 +2753,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.RunSummary", "NoExtendedStatsSnapshot", "No extended stat snapshot saved."))
 					.Font(RunSummaryRegularFont(13))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 					.AutoWrapText(true)
 				];
 			}
@@ -2743,7 +2768,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.StatsPanel", "Header", "STATS"))
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+					.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading")))
 					.Font(RunSummaryHeadingFont())
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				]
@@ -2968,7 +2993,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			SNew(STextBlock)
 			.Text(NSLOCTEXT("T66.RunSummary", "DrugsUsedTitle", "DRUGS USED"))
 			.Font(RunSummaryBoldFont(14))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			.Justification(ETextJustify::Center)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
@@ -3002,39 +3027,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				]);
 		}
 
-		if (bDifficultyClearSummaryMode)
-		{
-			TSharedRef<SVerticalBox> DifficultyClearButtons = SNew(SVerticalBox);
-
-			if (UGameInstance* LocalGI = GetGameInstance())
-			{
-				if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(LocalGI))
-				{
-					ET66Difficulty NextDifficulty = T66GI->SelectedDifficulty;
-					if (T66GetNextDifficulty(T66GI->SelectedDifficulty, NextDifficulty)
-						&& T66GI->IsDifficultyPlayable(NextDifficulty))
-					{
-						DifficultyClearButtons->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-						[
-							MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "Continue", "CONTINUE"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleContinueDifficultyClicked), ET66RunSummaryButtonFamily::CtaGreen, 342.f, 58.f, 14, FMargin(18.f, 10.f))
-						];
-					}
-				}
-			}
-
-			DifficultyClearButtons->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
-			[
-				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "SaveGame", "SAVE GAME"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleSaveAndQuitClicked), ET66RunSummaryButtonFamily::CompactNeutral, 342.f, 58.f, 14, FMargin(18.f, 10.f))
-			];
-
-			DifficultyClearButtons->AddSlot().AutoHeight()
-			[
-				MakeRunSummarySpriteButton(NSLOCTEXT("T66.RunSummary", "QuitRun", "QUIT"), FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleQuitToMainMenuClicked), ET66RunSummaryButtonFamily::ToggleOff, 342.f, 58.f, 14, FMargin(18.f, 10.f))
-			];
-
-			return StaticCastSharedRef<SWidget>(DifficultyClearButtons);
-		}
-
 		return StaticCastSharedRef<SWidget>(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 14.f)
@@ -3060,7 +3052,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 					SNew(STextBlock)
 					.Text(ValueText)
 					.Font(RunSummaryBoldFont(FontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					.Justification(ETextJustify::Center)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				]
@@ -3123,7 +3115,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			SNew(STextBlock)
 			.Text(IntegrityStatusText)
 			.Font(RunSummaryBoldFont(18))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			.Justification(ETextJustify::Center)
 		]
 	);
@@ -3169,7 +3161,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		DamageReceivedRows = DamageLog->GetDamageReceivedBySourceSorted();
 	}
 
-	const FTextBlockStyle& BodyStyle = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
+	const FTextBlockStyle& BodyStyle = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body"));
 	const FText RankHeader = NSLOCTEXT("T66.RunSummary", "DamageTableRank", "Rank");
 	const FText SourceHeader = NSLOCTEXT("T66.RunSummary", "DamageTableSource", "Source");
 	const FText DamageHeader = NSLOCTEXT("T66.RunSummary", "DamageTableDamage", "Damage");
@@ -3197,11 +3189,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)
-				[SNew(SBox).WidthOverride(DamageRankColumnWidth)[MakeDamageCellText(RankHeader, FT66Style::Tokens::TextMuted, RunSummaryBoldFont(12))]]
+				[SNew(SBox).WidthOverride(DamageRankColumnWidth)[MakeDamageCellText(RankHeader, FT66FlatStyle::Tokens::TextMuted, RunSummaryBoldFont(12))]]
 				+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)
-				[SNew(SBox).WidthOverride(DamageSourceColumnWidth)[MakeDamageCellText(SourceHeader, FT66Style::Tokens::TextMuted, RunSummaryBoldFont(12))]]
+				[SNew(SBox).WidthOverride(DamageSourceColumnWidth)[MakeDamageCellText(SourceHeader, FT66FlatStyle::Tokens::TextMuted, RunSummaryBoldFont(12))]]
 				+ SHorizontalBox::Slot().AutoWidth()
-				[SNew(SBox).WidthOverride(DamageValueColumnWidth)[MakeDamageCellText(DamageHeader, FT66Style::Tokens::TextMuted, RunSummaryBoldFont(12), ETextJustify::Right)]]
+				[SNew(SBox).WidthOverride(DamageValueColumnWidth)[MakeDamageCellText(DamageHeader, FT66FlatStyle::Tokens::TextMuted, RunSummaryBoldFont(12), ETextJustify::Right)]]
 			];
 
 		if (TableRows.Num() <= 0)
@@ -3210,9 +3202,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(EmptyText)
-					.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
+					.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body")))
 					.Font(RunSummaryBodyFont())
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 					.Justification(ETextJustify::Center)
 				];
 			return TableBox;
@@ -3225,11 +3217,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)
-					[SNew(SBox).WidthOverride(DamageRankColumnWidth)[MakeDamageCellText(FText::AsNumber(Rank + 1), FT66Style::Tokens::Text, RunSummaryBodyFont())]]
+					[SNew(SBox).WidthOverride(DamageRankColumnWidth)[MakeDamageCellText(FText::AsNumber(Rank + 1), FT66FlatStyle::Tokens::Text, RunSummaryBodyFont())]]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 10.f, 0.f)
-					[SNew(SBox).WidthOverride(DamageSourceColumnWidth)[MakeDamageCellText(T66ResolveRunSummaryDamageSourceName(GI, Entry.SourceID), FT66Style::Tokens::Text, RunSummaryBodyFont())]]
+					[SNew(SBox).WidthOverride(DamageSourceColumnWidth)[MakeDamageCellText(T66ResolveRunSummaryDamageSourceName(GI, Entry.SourceID), FT66FlatStyle::Tokens::Text, RunSummaryBodyFont())]]
 					+ SHorizontalBox::Slot().AutoWidth()
-					[SNew(SBox).WidthOverride(DamageValueColumnWidth)[MakeDamageCellText(FText::AsNumber(Entry.TotalDamage), FT66Style::Tokens::Text, RunSummaryBodyFont(), ETextJustify::Right)]]
+					[SNew(SBox).WidthOverride(DamageValueColumnWidth)[MakeDamageCellText(FText::AsNumber(Entry.TotalDamage), FT66FlatStyle::Tokens::Text, RunSummaryBodyFont(), ETextJustify::Right)]]
 				];
 		}
 
@@ -3303,7 +3295,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(NSLOCTEXT("T66.RunSummary", "DamageBySourcePanel", "DAMAGE BY SOURCE"))
-			.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading"))
+			.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading")))
 			.Font(RunSummaryHeadingFont())
 		]
 		+ SVerticalBox::Slot().FillHeight(1.f)
@@ -3311,27 +3303,27 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			DamageBySourceBox
 		],
 		GetRunSummaryGeneratedDamagePanelBrush(),
-		FT66Style::Tokens::Space4);
+		FT66FlatStyle::Tokens::Space4);
 
 	const TAttribute<FMargin> SafeBackPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
-		return FT66Style::GetSafePadding(FMargin(20.f, 0.f, 0.f, 20.f));
+		return FT66FlatStyle::GetSafePadding(FMargin(20.f, 0.f, 0.f, 20.f));
 	});
 
 	const TAttribute<FMargin> SafeDrawerPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
-		return FT66Style::GetSafePadding(FMargin(0.f, 70.f, 0.f, 0.f));
+		return FT66FlatStyle::GetSafePadding(FMargin(0.f, 70.f, 0.f, 0.f));
 	});
 
 	const TAttribute<FOptionalSize> EventLogWidthAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
 	{
-		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize();
+		const FVector2D SafeFrame = FT66FlatStyle::GetSafeFrameSize();
 		return FOptionalSize(FMath::Clamp(SafeFrame.X * 0.42f, 420.f, 520.f));
 	});
 
 	const TAttribute<FOptionalSize> EventLogHeightAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
 	{
-		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize();
+		const FVector2D SafeFrame = FT66FlatStyle::GetSafeFrameSize();
 		return FOptionalSize(FMath::Clamp(SafeFrame.Y - 140.f, 420.f, 620.f));
 	});
 
@@ -3342,7 +3334,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	return SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FT66Style::Tokens::Bg)
+		.BorderBackgroundColor(FT66FlatStyle::Tokens::Bg)
 		[
 			SNew(SOverlay)
 			+ SOverlay::Slot()
@@ -3350,7 +3342,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				SNew(SBorder)
 				.Visibility(EVisibility::Collapsed)
 				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FT66Style::Scrim())
+				.BorderBackgroundColor(FT66FlatStyle::Scrim())
 			]
 			// Dossier-style Run Summary canvas: outcome/actions, hero/loadout, stats/damage.
 			+ SOverlay::Slot()
@@ -3377,7 +3369,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 								SNew(STextBlock)
 								.Text(TitleText)
 								.Font(RunSummaryBoldFont(36))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 								.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 							]
 							+ SCanvas::Slot().Position(FVector2D(DossierMidX + 10.f, 43.f)).Size(FVector2D(1010.f, 62.f))
@@ -3512,7 +3504,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 								SNew(STextBlock)
 								.Text(NSLOCTEXT("T66.RunSummary", "PowerCouponsEarnedTitle", "Chad Coupons earned"))
 								.Font(RunSummaryBoldFont(18))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 								.Justification(ETextJustify::Center)
 							]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f)
@@ -3536,7 +3528,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 										return FText::AsNumber(FMath::Max(0, SummaryChadCouponsEarned));
 									})
 									.Font(RunSummaryBoldFont(24))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 								]
 							]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
@@ -3549,7 +3541,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 										: FText::FromString(SummaryChadCouponsSourceLabel);
 								})
 								.Font(RunSummaryRegularFont(12))
-								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+								.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 								.Justification(ETextJustify::Center)
 								.AutoWrapText(true)
 							]
@@ -3573,7 +3565,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 									SNew(STextBlock)
 									.Text(NSLOCTEXT("T66.RunSummary", "PowerCouponsDontShowAgain", "don't show this again"))
 									.Font(RunSummaryRegularFont(13))
-									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+									.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 									.AutoWrapText(true)
 								]
 							]
@@ -3736,211 +3728,6 @@ FReply UT66RunSummaryScreen::HandlePowerCouponsThankYouClicked()
 	return FReply::Handled();
 }
 
-bool UT66RunSummaryScreen::SaveCurrentRunToSlot(const bool bFromDifficultyClearSummary)
-{
-	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
-	APlayerController* PC = GetOwningPlayer();
-	if (!GI || !PC)
-	{
-		return false;
-	}
-
-	UT66SaveSubsystem* SaveSub = GI->GetSubsystem<UT66SaveSubsystem>();
-	if (!SaveSub)
-	{
-		return false;
-	}
-
-	int32 SlotIndex = GI->CurrentSaveSlotIndex;
-	if (SlotIndex < 0 || SlotIndex >= UT66SaveSubsystem::MaxSlots)
-	{
-		SlotIndex = SaveSub->FindFirstEmptySlot();
-		if (SlotIndex == INDEX_NONE)
-		{
-			SlotIndex = SaveSub->FindOldestOccupiedSlot();
-			if (SlotIndex == INDEX_NONE)
-			{
-				return false;
-			}
-		}
-		GI->CurrentSaveSlotIndex = SlotIndex;
-	}
-
-	UT66RunSaveGame* SaveObj = NewObject<UT66RunSaveGame>(this);
-	if (!SaveObj)
-	{
-		return false;
-	}
-
-	SaveObj->HeroID = GI->SelectedHeroID;
-	SaveObj->HeroBodyType = GI->SelectedHeroBodyType;
-	SaveObj->CompanionID = GI->SelectedCompanionID;
-	SaveObj->Difficulty = GI->SelectedDifficulty;
-	SaveObj->PartySize = GI->SelectedPartySize;
-	SaveObj->MapName = GetWorld() ? UWorld::RemovePIEPrefix(GetWorld()->GetMapName()) : FString();
-	SaveObj->LastPlayedUtc = FDateTime::UtcNow().ToIso8601();
-	SaveObj->RunSeed = GI->RunSeed;
-	SaveObj->MainMapLayoutVariant = GI->CurrentMainMapLayoutVariant;
-	SaveObj->bRunIneligibleForLeaderboard = GI->bRunIneligibleForLeaderboard;
-
-	if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-	{
-		SaveObj->StageReached = RunState->GetCurrentStage();
-		RunState->ExportSavedRunSnapshot(SaveObj->RunSnapshot);
-		if (bFromDifficultyClearSummary)
-		{
-			SaveObj->RunSnapshot.bPendingDifficultyClearSummary = true;
-		}
-
-		if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
-		{
-			SaveObj->EquippedIdols = IdolManager->GetEquippedIdols();
-			SaveObj->EquippedIdolTiers = IdolManager->GetEquippedIdolTierValues();
-		}
-		else
-		{
-			SaveObj->EquippedIdols = RunState->GetEquippedIdols();
-			SaveObj->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
-		}
-	}
-
-	if (APawn* Pawn = PC->GetPawn())
-	{
-		SaveObj->PlayerTransform = Pawn->GetActorTransform();
-	}
-
-	const UT66PartySubsystem* PartySubsystem = GI->GetSubsystem<UT66PartySubsystem>();
-	SaveObj->OwnerPlayerId = !GI->CurrentRunOwnerPlayerId.IsEmpty()
-		? GI->CurrentRunOwnerPlayerId
-		: (PartySubsystem ? PartySubsystem->GetLocalPlayerId() : TEXT("local_player"));
-	SaveObj->OwnerDisplayName = !GI->CurrentRunOwnerDisplayName.IsEmpty()
-		? GI->CurrentRunOwnerDisplayName
-		: (PartySubsystem ? PartySubsystem->GetLocalDisplayName() : TEXT("You"));
-	SaveObj->PartyMemberIds = GI->CurrentRunPartyMemberIds.Num() > 0
-		? GI->CurrentRunPartyMemberIds
-		: (PartySubsystem ? PartySubsystem->GetCurrentPartyMemberIds() : TArray<FString>());
-	SaveObj->PartyMemberDisplayNames = GI->CurrentRunPartyMemberDisplayNames.Num() > 0
-		? GI->CurrentRunPartyMemberDisplayNames
-		: (PartySubsystem ? PartySubsystem->GetCurrentPartyMemberDisplayNames() : TArray<FString>());
-	if (SaveObj->PartyMemberIds.Num() == 0 && !SaveObj->OwnerPlayerId.IsEmpty())
-	{
-		SaveObj->PartyMemberIds.Add(SaveObj->OwnerPlayerId);
-	}
-	if (SaveObj->PartyMemberDisplayNames.Num() == 0 && !SaveObj->OwnerDisplayName.IsEmpty())
-	{
-		SaveObj->PartyMemberDisplayNames.Add(SaveObj->OwnerDisplayName);
-	}
-
-	return SaveSub->SaveToSlot(SlotIndex, SaveObj);
-}
-
-FReply UT66RunSummaryScreen::HandleContinueDifficultyClicked()
-{
-	CloseRunSummaryPreviewVideo();
-	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
-	if (!T66GI || !RunState || !PlayerExperience)
-	{
-		return FReply::Handled();
-	}
-
-	ET66Difficulty NextDifficulty = T66GI->SelectedDifficulty;
-	if (!T66GetNextDifficulty(T66GI->SelectedDifficulty, NextDifficulty))
-	{
-		return FReply::Handled();
-	}
-	if (!T66GI->IsDifficultyPlayable(NextDifficulty))
-	{
-		return FReply::Handled();
-	}
-
-	const ET66Difficulty ClearedDifficulty = T66GI->SelectedDifficulty;
-	T66GI->bPendingWeaponUpgradeOffer = true;
-	T66GI->PendingWeaponUpgradeRarity = UT66WeaponManagerSubsystem::GetUpgradeRarityForClearedDifficulty(ClearedDifficulty);
-
-	RunState->SetPendingDifficultyClearSummary(false);
-	RunState->SetSaintBlessingActive(false);
-	RunState->SetFinalSurvivalEnemyScalar(1.f);
-	RunState->SetStageTimerActive(false);
-	RunState->ResetBossState();
-
-	T66GI->SelectedDifficulty = T66GI->ResolvePlayableDifficulty(NextDifficulty);
-	T66GI->bIsStageTransition = true;
-
-	const int32 NextStage = PlayerExperience->GetDifficultyStartStage(NextDifficulty);
-	RunState->SetCurrentStage(NextStage);
-	RunState->ResetDifficultyPacing();
-	RunState->ResetStageTimerToFull();
-
-	APlayerController* PC = GetOwningPlayer();
-	if (PC)
-	{
-		PC->SetPause(false);
-	}
-	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
-	return FReply::Handled();
-}
-
-FReply UT66RunSummaryScreen::HandleSaveAndQuitClicked()
-{
-	if (!SaveCurrentRunToSlot(true))
-	{
-		return FReply::Handled();
-	}
-
-	ProcessLiveRunFinalAccounting();
-
-	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
-	{
-		T66GI->PendingFrontendScreen = ET66ScreenType::MainMenu;
-	}
-
-	APlayerController* PC = GetOwningPlayer();
-	if (PC)
-	{
-		PC->SetPause(false);
-	}
-	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
-	return FReply::Handled();
-}
-
-FReply UT66RunSummaryScreen::HandleQuitToMainMenuClicked()
-{
-	CloseRunSummaryPreviewVideo();
-	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!GI || !RunState)
-	{
-		return FReply::Handled();
-	}
-
-	RunState->SetPendingDifficultyClearSummary(false);
-	RunState->SetSaintBlessingActive(false);
-	RunState->SetFinalSurvivalEnemyScalar(1.f);
-	RunState->MarkRunEnded(true);
-
-	bDifficultyClearSummaryMode = false;
-	ProcessLiveRunFinalAccounting();
-
-	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
-	{
-		if (bDailyClimbSummaryMode)
-		{
-			T66GI->ClearActiveDailyClimbRun();
-		}
-		T66GI->PendingFrontendScreen = ET66ScreenType::MainMenu;
-	}
-
-	if (APlayerController* PC = GetOwningPlayer())
-	{
-		PC->SetPause(false);
-	}
-	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
-	return FReply::Handled();
-}
-
 void UT66RunSummaryScreen::HandleBackendSubmitRunDataReadyForSummary(
 	const FString& RequestKey,
 	bool bSuccess,
@@ -4096,7 +3883,13 @@ void UT66RunSummaryScreen::OnRestartClicked()
 	}
 	APlayerController* PC = GetOwningPlayer();
 	if (PC) PC->SetPause(false);
-	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+	{
+		T66GI->TransitionToGameplayLevel();
+		return;
+	}
+
+	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
 }
 
 void UT66RunSummaryScreen::OnMainMenuClicked()

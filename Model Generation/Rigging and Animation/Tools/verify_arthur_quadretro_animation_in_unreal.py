@@ -21,6 +21,7 @@ PROJECT_DIR = Path(unreal.SystemLibrary.get_project_directory()).resolve()
 CSV_PATH = PROJECT_DIR / "Content" / "Data" / "CharacterVisuals.csv"
 REPORT_PATH = PROJECT_DIR / "Saved" / "ArthurQuadRetroAnimationVerifyReport.json"
 DEST_DIR = os.environ.get("T66_ARTHUR_QUADRETRO_DEST_DIR", "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA")
+# TOOL-ONLY validation row for the Arthur/UAL rigging pipeline. Gameplay uses Hero_1_Chad.
 VISUAL_ID = os.environ.get("T66_ARTHUR_QUADRETRO_VISUAL_ID", "Hero_1_Chad_QuadRetroUALQA")
 SKELETAL_MESH_NAME = os.environ.get("T66_ARTHUR_QUADRETRO_MESH_NAME", "SK_Hero_1_Chad_QuadRetroUALQA")
 SKELETAL_MESH_PATH = f"{DEST_DIR}/{SKELETAL_MESH_NAME}.{SKELETAL_MESH_NAME}"

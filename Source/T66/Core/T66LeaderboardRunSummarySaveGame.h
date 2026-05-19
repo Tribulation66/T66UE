@@ -24,7 +24,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 22;
+	int32 SchemaVersion = 23;
 
 	/** Backend leaderboard entry UUID when this snapshot came from the online service. */
 	UPROPERTY(SaveGame)
@@ -33,6 +33,9 @@ public:
 	/** SteamID that owns this run summary when sourced from the online backend. */
 	UPROPERTY(SaveGame)
 	FString OwnerSteamId;
+
+	UPROPERTY(SaveGame)
+	FString OwnerDisplayName;
 
 	/** What kind of leaderboard this run belongs to (Score or SpeedRun). */
 	UPROPERTY(SaveGame)
@@ -106,6 +109,12 @@ public:
 
 	UPROPERTY(SaveGame)
 	int32 HeroLevel = 1;
+
+	UPROPERTY(SaveGame)
+	int32 HeroMasteryLevel = 1;
+
+	UPROPERTY(SaveGame)
+	int32 HeroMasteryXP = 0;
 
 	UPROPERTY(SaveGame)
 	int32 DamageStat = 1;

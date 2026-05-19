@@ -1,0 +1,24 @@
+{
+  "asset": "slime",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 96415,
+    "count": 155354,
+    "edge_samples": 232500,
+    "max": 1.0,
+    "mean": 0.15369368965553687,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.2667774485148872,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.0,
+      "p50": 0.043737832955413614,
+      "p75": 0.13249820219734812,
+      "p90": 0.5672709849450479,
+      "p95": 0.8898744814745435,
+      "p99": 1.0
+    },
+    "std": 0.2606503276380721
+  }
+}

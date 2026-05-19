@@ -1,0 +1,48 @@
+{
+  "source": {
+    "path": "SourceAssets\\ToonStyle\\ImageGen\\Phase1C\\IdolAltar\\idolaltar_v01.png",
+    "checks": {
+      "readable_png": true,
+      "expected_dimensions": [
+        1024,
+        1024
+      ],
+      "expected_dimensions_pass": true,
+      "corner_luminance_means": [
+        0.9909223318099976,
+        0.9912872314453125,
+        0.990979015827179,
+        0.9910598993301392
+      ],
+      "corners_white_pass": true,
+      "nonwhite_coverage": 0.4917898178100586,
+      "nonwhite_coverage_pass": true,
+      "nonwhite_center_of_mass": {
+        "x": 0.4994152315957723,
+        "y": 0.5552196338649577
+      },
+      "centered_pass": true
+    },
+    "passed": true
+  },
+  "isolated": {
+    "path": "SourceAssets\\ToonStyle\\ImageGen\\Phase1C\\IdolAltar\\idolaltar_v01_isolated.png",
+    "checks": {
+      "readable_png": true,
+      "has_alpha": true,
+      "corner_alpha_max": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "corners_transparent_pass": true,
+      "alpha_positive_coverage": 0.5173721313476562,
+      "alpha_coverage_pass": true,
+      "largest_component_fraction": 0.9949161665167445,
+      "largest_component_pass": true
+    },
+    "passed": true
+  },
+  "passed": true
+}

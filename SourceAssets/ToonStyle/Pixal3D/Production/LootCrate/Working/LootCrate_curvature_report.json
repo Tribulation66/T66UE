@@ -1,0 +1,24 @@
+{
+  "asset": "LootCrate",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 116785,
+    "count": 161737,
+    "edge_samples": 222600,
+    "max": 1.0,
+    "mean": 0.2203455381407625,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.19997523061253755,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.0038126078469067136,
+      "p50": 0.10170870830578832,
+      "p75": 0.33007144502808433,
+      "p90": 0.6650425805025652,
+      "p95": 0.920465025589165,
+      "p99": 1.0
+    },
+    "std": 0.27841809104076964
+  }
+}

@@ -3,7 +3,9 @@
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Algo/Sort.h"
 #include "Containers/Ticker.h"
+#include "Engine/GameInstance.h"
 #include "HAL/IConsoleManager.h"
+#include "PerformanceSystem/T66PerformanceSubsystem.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66LagTracker, Log, All);
 
@@ -172,6 +174,14 @@ void UT66LagTrackerSubsystem::RecordOperation(const FString& Cause, float Durati
 	if (RecentOperations.Num() > MaxRecentOperations)
 	{
 		RecentOperations.RemoveAt(0, RecentOperations.Num() - MaxRecentOperations, EAllowShrinking::No);
+	}
+
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		if (UT66PerformanceSubsystem* PerformanceSubsystem = GameInstance->GetSubsystem<UT66PerformanceSubsystem>())
+		{
+			PerformanceSubsystem->RecordMeasuredOperation(Cause, DurationMs, TEXT("UT66LagTrackerSubsystem"));
+		}
 	}
 }
 

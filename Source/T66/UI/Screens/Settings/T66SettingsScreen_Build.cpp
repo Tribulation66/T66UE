@@ -255,19 +255,40 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildSlateUI()
 		AddN(0.624f, 0.860f, 0.160f, 0.064f, MakeButton(DTag(TEXT("SettingsRetroFX.CancelButton")), NAME_None, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "RetroFXCancelFlat", "CANCEL"), FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleCloseClicked), 0.160f * CanvasW, 0.064f * CanvasH));
 		AddN(0.800f, 0.860f, 0.160f, 0.064f, MakeButton(DTag(TEXT("SettingsRetroFX.ApplyButton")), NAME_None, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "RetroFXApplyFlat", "APPLY"), FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleApplyRetroFXClicked), 0.160f * CanvasW, 0.064f * CanvasH));
 
+		const FVector2D ViewportSize = FT66Style::GetViewportLogicalSize();
+		const float RootW = FMath::Max(CanvasW, ViewportSize.X);
+		const float RootH = FMath::Max(CanvasH, ViewportSize.Y);
+
 		return SNew(SBox)
+			.WidthOverride(RootW)
+			.HeightOverride(RootH)
 			[
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				.StretchDirection(EStretchDirection::Both)
-				.HAlign(HAlign_Center)
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Fill)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor::Black)
+					.Padding(0.f)
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Fill)
 				.VAlign(VAlign_Top)
 				[
-					SNew(SBox)
-					.WidthOverride(CanvasW)
-					.HeightOverride(CanvasH)
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFit)
+					.StretchDirection(EStretchDirection::Both)
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Top)
 					[
-						Canvas
+						SNew(SBox)
+						.WidthOverride(CanvasW)
+						.HeightOverride(CanvasH)
+						[
+							Canvas
+						]
 					]
 				]
 			];

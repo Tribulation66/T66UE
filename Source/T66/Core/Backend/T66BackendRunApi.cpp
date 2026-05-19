@@ -23,6 +23,19 @@ void UT66BackendSubsystem::SubmitRunToBackend(
 	UT66LeaderboardRunSummarySaveGame* Snapshot,
 	const FString& RequestKey)
 {
+	if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		if (T66GI->IsOfflineRun())
+		{
+			LastSubmitRunStatus = TEXT("offline");
+			LastSubmitRunReason = TEXT("offline_run");
+			UE_LOG(LogT66Backend, Log, TEXT("Backend: skipping submit-run because current run is Offline."));
+			OnSubmitRunComplete.Broadcast(false, 0, 0, false);
+			OnSubmitRunDataReady.Broadcast(RequestKey, false, 0, 0, 0, 0, false, false);
+			return;
+		}
+	}
+
 	if (!IsBackendConfigured())
 	{
 		UE_LOG(LogT66Backend, Warning, TEXT("Backend: cannot submit run — no backend URL configured."));
@@ -331,6 +344,17 @@ void UT66BackendSubsystem::SubmitDailyClimbRun(
 	const FString& AttemptId,
 	const FString& RequestKey)
 {
+	if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		if (T66GI->IsOfflineRun())
+		{
+			LastDailyClimbStatus = TEXT("offline");
+			LastDailyClimbMessage = TEXT("Daily Descent submit skipped for Offline run.");
+			OnDailyClimbSubmitDataReady.Broadcast(RequestKey, false, LastDailyClimbStatus, 0, 0);
+			return;
+		}
+	}
+
 	if (!IsBackendConfigured() || !HasSteamTicket() || !Snapshot || ChallengeId.IsEmpty() || AttemptId.IsEmpty())
 	{
 		OnDailyClimbSubmitDataReady.Broadcast(RequestKey, false, TEXT("invalid_daily_submit"), 0, 0);

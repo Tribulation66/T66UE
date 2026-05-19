@@ -49,6 +49,36 @@ namespace
 		return Result;
 	}
 
+	static FT66RarityWeights ApplyInteractableTierBias(const FT66RarityWeights& BaseWeights, ET66Rarity SourceRarity)
+	{
+		FT66RarityWeights Result = BaseWeights;
+		switch (SourceRarity)
+		{
+		case ET66Rarity::Red:
+			Result.Black *= 0.85f;
+			Result.Red *= 1.15f;
+			Result.Yellow *= 1.25f;
+			Result.White *= 1.35f;
+			break;
+		case ET66Rarity::Yellow:
+			Result.Black *= 0.65f;
+			Result.Red *= 1.20f;
+			Result.Yellow *= 1.65f;
+			Result.White *= 2.10f;
+			break;
+		case ET66Rarity::White:
+			Result.Black *= 0.45f;
+			Result.Red *= 1.10f;
+			Result.Yellow *= 2.20f;
+			Result.White *= 3.50f;
+			break;
+		case ET66Rarity::Black:
+		default:
+			break;
+		}
+		return Result;
+	}
+
 	static FText BuildSkipCountdownText(float RemainingSeconds)
 	{
 		return FText::Format(
@@ -64,6 +94,11 @@ namespace
 void UT66CrateOverlayWidget::SetPresentationHost(UT66GameplayHUDWidget* InPresentationHost)
 {
 	PresentationHost = InPresentationHost;
+}
+
+void UT66CrateOverlayWidget::SetSourceCrateRarity(const ET66Rarity InSourceCrateRarity)
+{
+	SourceCrateRarity = InSourceCrateRarity;
 }
 
 void UT66CrateOverlayWidget::RequestSkip()
@@ -111,6 +146,7 @@ void UT66CrateOverlayWidget::GenerateStrip()
 	FT66RarityWeights CrateWeights = PlayerExperience
 		? PlayerExperience->GetDifficultyCrateRarityWeights(Difficulty)
 		: FT66RarityWeights{};
+	CrateWeights = ApplyInteractableTierBias(CrateWeights, SourceCrateRarity);
 	if (RunState)
 	{
 		CrateWeights = ApplyLootCrateBias(CrateWeights, RunState->GetLootCrateRewardMultiplier());
@@ -380,7 +416,7 @@ TSharedRef<SWidget> UT66CrateOverlayWidget::RebuildWidget()
 		World->GetTimerManager().SetTimer(StartHandle, this, &UT66CrateOverlayWidget::StartScrolling, 0.05f, false);
 	}
 
-	return FT66Style::MakeResponsiveRoot(Root);
+	return FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 
 void UT66CrateOverlayWidget::UpdateSkipText()

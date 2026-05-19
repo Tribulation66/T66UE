@@ -10,6 +10,7 @@
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace
 {
@@ -74,11 +75,19 @@ AT66BossGate::AT66BossGate()
 	PoleRight->SetRelativeScale3D(FVector(PoleRadius / 50.f, PoleRadius / 50.f, PoleHeight / 100.f));
 	PoleRight->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	PoleRight->SetupAttachment(RootComponent);
+
+	GateMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GateMesh"));
+	GateMesh->SetupAttachment(RootComponent);
+	GateMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GateMesh->SetVisibility(false, true);
+
+	GateMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Gates/BossGate_Pixal3D.BossGate_Pixal3D")));
 }
 
 void AT66BossGate::BeginPlay()
 {
 	Super::BeginPlay();
+	ApplyImportedGateMesh();
 	TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &AT66BossGate::OnBoxBeginOverlap);
 }
 
@@ -101,6 +110,36 @@ void AT66BossGate::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, A
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	TryTriggerForActor(OtherActor);
+}
+
+void AT66BossGate::ApplyImportedGateMesh()
+{
+	if (!GateMesh || GateMeshOverride.IsNull())
+	{
+		return;
+	}
+
+	if (UStaticMesh* ImportedMesh = GateMeshOverride.LoadSynchronous())
+	{
+		GateMesh->EmptyOverrideMaterials();
+		GateMesh->SetStaticMesh(ImportedMesh);
+		GateMesh->SetRelativeScale3D(FVector::OneVector);
+		GateMesh->SetRelativeRotation(FRotator::ZeroRotator);
+		FT66VisualUtil::GroundMeshToActorOrigin(GateMesh, ImportedMesh);
+		GateMesh->SetVisibility(true, true);
+		GateMesh->SetHiddenInGame(false, true);
+
+		if (PoleLeft)
+		{
+			PoleLeft->SetVisibility(false, true);
+			PoleLeft->SetHiddenInGame(true, true);
+		}
+		if (PoleRight)
+		{
+			PoleRight->SetVisibility(false, true);
+			PoleRight->SetHiddenInGame(true, true);
+		}
+	}
 }
 
 void AT66BossGate::TryTriggerForActor(AActor* OtherActor)

@@ -1,0 +1,9 @@
+Create one full-body single-character source image for T66 model generation.
+
+Character: original adult male heavyweight-boxer-inspired giga chad hero. Use the intimidating champion boxer archetype, not an exact likeness of any living person, no real-person face copy, no face tattoo. Massive neck, huge chest and shoulders, tiny waist, long powerful legs, oversized readable head, focused fighter expression.
+
+Outfit: simplified boxer-warrior gear with black and red as the two dominant colors, small gold accents, armored boxing trunks, boxing gloves, ankle boots, no robe, no brand logos, no text.
+
+Style: same current T66 character source style as the accepted Lu Bu shading pass: Hi-Fi-Rush/Guilty-Gear-like 2D-in-3D cel shading, hard cel-shadow bands, crisp ink contours, bold flat color zones, clean rim highlights.
+
+Pose/composition: strict front-facing A-pose, full body, white background, one subject only, no crop, no text, no logo, no environment, no contact shadow.

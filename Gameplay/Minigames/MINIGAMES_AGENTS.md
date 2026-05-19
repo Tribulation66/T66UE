@@ -2,11 +2,11 @@
 
 ## Owns
 
-Mini, TD, Deck, Idle, Versus, shared minigame process docs, minigame source/content/data isolation, and minigame animation workflows.
+Mini, TD, Deck, Idle, shared minigame process docs, minigame source/content/data isolation, and minigame animation workflows.
 
 ## Trigger Words
 
-Minigame, Mini, Chadpocalypse TD, TD, Deck, Idle, Versus, bob loop, walksheet, animation atlas, tower-defense, deckbuilder, idle mode.
+Minigame, Mini, Chadpocalypse TD, TD, Deck, Idle, bob loop, walksheet, animation atlas, tower-defense, deckbuilder, idle mode.
 
 ## Read First
 

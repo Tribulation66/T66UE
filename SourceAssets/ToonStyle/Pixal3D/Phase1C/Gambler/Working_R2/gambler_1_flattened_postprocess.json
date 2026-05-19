@@ -1,0 +1,119 @@
+{
+  "dependency_path": "external_python_pillow_scipy",
+  "final_palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        0,
+        43,
+        0
+      ],
+      [
+        0,
+        219,
+        0
+      ],
+      [
+        0,
+        228,
+        1
+      ],
+      [
+        0,
+        229,
+        0
+      ],
+      [
+        0,
+        230,
+        0
+      ],
+      [
+        1,
+        232,
+        1
+      ],
+      [
+        1,
+        230,
+        0
+      ],
+      [
+        1,
+        233,
+        0
+      ]
+    ],
+    "palette_size": 8
+  },
+  "height": 4096,
+  "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\Gambler\\Working_R2\\gambler_1_flattened.png",
+  "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\Gambler\\Working_R2\\gambler_1_flattened.png",
+  "palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        0,
+        43,
+        0
+      ],
+      [
+        0,
+        219,
+        0
+      ],
+      [
+        0,
+        228,
+        1
+      ],
+      [
+        0,
+        229,
+        0
+      ],
+      [
+        0,
+        230,
+        0
+      ],
+      [
+        1,
+        232,
+        1
+      ],
+      [
+        1,
+        230,
+        0
+      ],
+      [
+        1,
+        233,
+        0
+      ]
+    ],
+    "palette_size": 8
+  },
+  "speckle_cleanup": {
+    "applied": true,
+    "changed_pixels": 376,
+    "diff_threshold": 42.0,
+    "method": "3x3_local_median_high_contrast_pixel_replacement",
+    "prompt_region_threshold_reference": 8
+  },
+  "tint": {
+    "generated": false
+  },
+  "unique_rgb_after": 3,
+  "unique_rgb_before": 3,
+  "uv_mask_pixels": 10711618,
+  "uv_padding": {
+    "applied": true,
+    "filled_pixels": 6065165,
+    "method": "iterative_frontier_expansion",
+    "padding_pixels": 16
+  },
+  "uv_triangles": 197221,
+  "width": 4096
+}

@@ -11,7 +11,6 @@
 
 struct FSlateBrush;
 class ST66FlatLeaderboardPanel;
-class ST66LeaderboardPanel;
 class SBorder;
 class SBox;
 class SButton;
@@ -85,7 +84,7 @@ private:
 		bool bOnlineGroup = false;
 		TSharedPtr<SBox> RootBox;
 		TSharedPtr<STextBlock> CountText;
-		TSharedPtr<SImage> ExpandArrowImage;
+		TSharedPtr<STextBlock> ExpandArrowText;
 	};
 
 	struct FFriendRowWidgetRefs
@@ -102,85 +101,24 @@ private:
 		TSharedPtr<SButton> ActionButton;
 		TSharedPtr<SBorder> ActionFillBorder;
 		TSharedPtr<STextBlock> ActionText;
-	};
-
-	struct FButtonStateBrushSet
-	{
-		TSharedPtr<FSlateBrush> NormalBrush;
-		TStrongObjectPtr<UTexture2D> NormalTexture;
-		TSharedPtr<FSlateBrush> HoverBrush;
-		TStrongObjectPtr<UTexture2D> HoverTexture;
-		TSharedPtr<FSlateBrush> PressedBrush;
-		TStrongObjectPtr<UTexture2D> PressedTexture;
-		TSharedPtr<FSlateBrush> DisabledBrush;
-		TStrongObjectPtr<UTexture2D> DisabledTexture;
+		TSharedPtr<FSlateBrush> AvatarBrush;
 	};
 
 	uint32 CaptureMenuStateHash() const;
 	bool ShouldRebuildRetainedSlate() const;
 
-	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
 	TSharedPtr<ST66FlatLeaderboardPanel> FlatLeaderboardPanel;
 	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
 	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
 	UPROPERTY(Transient)
 	TObjectPtr<UT66FrontendVideoPlayer> MainMenuBackgroundVideoPlayer;
-	TSharedPtr<FSlateBrush> ForegroundOccluderBrush;
-	TStrongObjectPtr<UTexture2D> ForegroundOccluderTexture;
-	TSharedPtr<FSlateBrush> TitleLockupBrush;
-	TStrongObjectPtr<UTexture2D> TitleLockupTexture;
-	TSharedPtr<FSlateBrush> LeftPanelShellBrush;
-	TStrongObjectPtr<UTexture2D> LeftPanelShellTexture;
-	TSharedPtr<FSlateBrush> RightPanelShellBrush;
-	TStrongObjectPtr<UTexture2D> RightPanelShellTexture;
-	TSharedPtr<FSlateBrush> PaperBackgroundBrush;
-	TStrongObjectPtr<UTexture2D> PaperBackgroundTexture;
-	TSharedPtr<FSlateBrush> SearchFieldShellBrush;
-	TStrongObjectPtr<UTexture2D> SearchFieldShellTexture;
-	TSharedPtr<FSlateBrush> SearchIconBrush;
-	TStrongObjectPtr<UTexture2D> SearchIconTexture;
-	TSharedPtr<FSlateBrush> FriendInviteButtonBrush;
-	TStrongObjectPtr<UTexture2D> FriendInviteButtonTexture;
-	TSharedPtr<FSlateBrush> FriendOfflineButtonBrush;
-	TStrongObjectPtr<UTexture2D> FriendOfflineButtonTexture;
-	TSharedPtr<FSlateBrush> FriendAvatarFrameBrush;
-	TStrongObjectPtr<UTexture2D> FriendAvatarFrameTexture;
-	TSharedPtr<FSlateBrush> PartySlotFrameBrush;
-	TStrongObjectPtr<UTexture2D> PartySlotFrameTexture;
-	TSharedPtr<FSlateBrush> PartyPlusIconBrush;
-	TStrongObjectPtr<UTexture2D> PartyPlusIconTexture;
-	TSharedPtr<FSlateBrush> CloseButtonBrush;
-	TStrongObjectPtr<UTexture2D> CloseButtonTexture;
-	TSharedPtr<FSlateBrush> ProfileAvatarBrush;
-	TSharedPtr<FSlateBrush> ProfileAvatarFrameBrush;
-	TStrongObjectPtr<UTexture2D> ProfileAvatarFrameTexture;
-	TSharedPtr<FSlateBrush> ProgressTrackBrush;
-	TStrongObjectPtr<UTexture2D> ProgressTrackTexture;
-	TSharedPtr<FSlateBrush> ProgressFillBrush;
-	TStrongObjectPtr<UTexture2D> ProgressFillTexture;
-	TSharedPtr<FSlateBrush> LeaderboardFilterButtonBrush;
-	TStrongObjectPtr<UTexture2D> LeaderboardFilterButtonTexture;
-	TSharedPtr<FSlateBrush> LeaderboardFilterButtonSelectedBrush;
-	TStrongObjectPtr<UTexture2D> LeaderboardFilterButtonSelectedTexture;
-	TSharedPtr<FSlateBrush> LeaderboardFilterGlobalIconBrush;
-	TStrongObjectPtr<UTexture2D> LeaderboardFilterGlobalIconTexture;
-	TSharedPtr<FSlateBrush> LeaderboardFilterFriendsIconBrush;
-	TStrongObjectPtr<UTexture2D> LeaderboardFilterFriendsIconTexture;
-	TSharedPtr<FSlateBrush> LeaderboardFilterStreamersIconBrush;
-	TStrongObjectPtr<UTexture2D> LeaderboardFilterStreamersIconTexture;
-	TSharedPtr<FSlateBrush> CenterStackFrameBrush;
-	TStrongObjectPtr<UTexture2D> CenterStackFrameTexture;
-	TSharedPtr<FSlateBrush> EnterTribulationSkullBrush;
-	TStrongObjectPtr<UTexture2D> EnterTribulationSkullTexture;
-	TSharedPtr<FSlateBrush> DailyDescentOneRunBadgeBrush;
-	TStrongObjectPtr<UTexture2D> DailyDescentOneRunBadgeTexture;
-	FButtonStateBrushSet NewGameButtonBrushes;
-	FButtonStateBrushSet LoadGameButtonBrushes;
-	FButtonStateBrushSet DailyChallengeButtonBrushes;
-	FButtonStateBrushSet FriendActionButtonBrushes;
-	TArray<TSharedPtr<FSlateBrush>> FriendPortraitBrushes;
-	TArray<TSharedPtr<FSlateBrush>> PartyPortraitBrushes;
 	TSharedPtr<SVerticalBox> FriendsListContainer;
+	TSharedPtr<FSlateBrush> LocalProfileAvatarBrush;
+	TSharedPtr<FSlateBrush> CtaSkullIconBrush;
+	TStrongObjectPtr<UTexture2D> CtaSkullIconTexture;
+	TSharedPtr<FSlateBrush> DailyDescentIconBrush;
+	TStrongObjectPtr<UTexture2D> DailyDescentIconTexture;
+	TMap<FString, TSharedPtr<FSlateBrush>> FriendAvatarBrushes;
 	TArray<FFriendGroupWidgetRefs> FriendGroupWidgetRefs;
 	TArray<FFriendRowWidgetRefs> FriendRowWidgetRefs;
 	TSharedPtr<SBox> FriendGroupsDividerBox;
@@ -217,8 +155,6 @@ private:
 	void RequestBackgroundTexture();
 	TSharedRef<SWidget> BuildMainMenuBackgroundWidget() const;
 	TSharedRef<SWidget> BuildFlatMainMenuUI();
-	void RequestMainMenuChromeBrushes();
-	void RequestCTAButtonBrushes();
 	void HandlePartyStateChanged();
 	void HandleSessionStateChanged();
 	void SyncToSharedPartyScreen();

@@ -53,9 +53,6 @@ private:
 	FReply HandleReportSubmitClicked();
 	FReply HandleReportCloseClicked();
 	FReply HandlePowerCouponsThankYouClicked();
-	FReply HandleContinueDifficultyClicked();
-	FReply HandleSaveAndQuitClicked();
-	FReply HandleQuitToMainMenuClicked();
 	FReply HandleStatsExpandClicked();
 	bool HasValidLiveRunSummaryContext() const;
 	void PrepareChadCouponsPopupForLiveRun();
@@ -82,7 +79,6 @@ private:
 	void ProcessLiveRunFinalAccounting();
 	void ProcessLiveRunFinalSubmission();
 	void ResetSavedRunSummaryViewerState();
-	bool SaveCurrentRunToSlot(bool bFromDifficultyClearSummary);
 
 	void RebuildLogItems();
 	TSharedRef<ITableRow> GenerateLogRow(TSharedPtr<FString> Item, const TSharedRef<STableViewBase>& OwnerTable);
@@ -100,7 +96,6 @@ private:
 	bool bNewPersonalBestTime = false;
 	bool bLiveRunSubmissionProcessed = false;
 	bool bLiveRunFinalAccountingProcessed = false;
-	bool bDifficultyClearSummaryMode = false;
 	bool bDailyClimbSummaryMode = false;
 	bool bBackendRankDataReceived = false;
 	bool bAwaitingBackendRankData = false;

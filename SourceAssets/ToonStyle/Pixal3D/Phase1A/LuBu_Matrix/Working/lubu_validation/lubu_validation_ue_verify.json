@@ -1,0 +1,100 @@
+{
+  "asset_name": "lubu_validation",
+  "base_color_param": "/Game/ToonStyle/TestAssets/Validation/Textures/T_lubu_validation_0.T_lubu_validation_0",
+  "diffuse_param": "/Game/ToonStyle/TestAssets/Validation/Textures/T_lubu_validation_0.T_lubu_validation_0",
+  "expected_height": 180.0,
+  "height_tolerance": 0.1,
+  "imported_object_paths": [
+    "/Game/ToonStyle/TestAssets/Validation/SM_lubu_validation.SM_lubu_validation"
+  ],
+  "imported_outline_object_paths": [
+    "/Game/ToonStyle/TestAssets/Validation/SM_lubu_validation_Outline.SM_lubu_validation_Outline"
+  ],
+  "manifest_normal_delta_sample": {
+    "delta": 0.6781538855673088,
+    "distinct": true,
+    "loop_index": 1685,
+    "outline_normal": [
+      0.8024089336395264,
+      -0.4612368047237396,
+      0.3786826729774475
+    ],
+    "position": [
+      44.59495544433594,
+      -16.98761749267578,
+      135.21243286132812
+    ],
+    "shading_normal": [
+      0.8736214637756348,
+      -0.38934826850891113,
+      -0.29187941551208496
+    ],
+    "vertex_index": 471
+  },
+  "manifest_normal_transfer": {
+    "applied": true,
+    "changed_loop_count": 170647,
+    "head_threshold_z": 134.9999885559082,
+    "head_vertex_count": 52612,
+    "method": "sphere_proxy_split_normals",
+    "proxy_center": [
+      -3.336773633956909,
+      4.371066570281982,
+      151.22836303710938
+    ],
+    "proxy_radius": 43.89189712022596
+  },
+  "manifest_vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 598935,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "material_instance": "/Game/ToonStyle/TestAssets/Validation/Materials/MI_lubu_validation",
+  "outline_slot0_material": "/Game/ToonStyle/TestAssets/Validation/Materials/MI_lubu_validation.MI_lubu_validation",
+  "outline_static_mesh": "/Game/ToonStyle/TestAssets/Validation/SM_lubu_validation_Outline",
+  "outline_static_mesh_bounds": {
+    "extent": [
+      72.07350158691406,
+      29.74433135986328,
+      89.99998995253259
+    ],
+    "height": 179.99997990506517,
+    "origin": [
+      0.0,
+      -7.62939453125e-06,
+      89.99999478867835
+    ],
+    "size": [
+      144.14700317382812,
+      59.48866271972656,
+      179.99997990506517
+    ]
+  },
+  "slot0_material": "/Game/ToonStyle/TestAssets/Validation/Materials/MI_lubu_validation.MI_lubu_validation",
+  "static_mesh": "/Game/ToonStyle/TestAssets/Validation/SM_lubu_validation",
+  "static_mesh_bounds": {
+    "extent": [
+      72.07350158691406,
+      29.74433135986328,
+      89.99998995253259
+    ],
+    "height": 179.99997990506517,
+    "origin": [
+      0.0,
+      -7.62939453125e-06,
+      89.99999478867835
+    ],
+    "size": [
+      144.14700317382812,
+      59.48866271972656,
+      179.99997990506517
+    ]
+  },
+  "target_dir": "/Game/ToonStyle/TestAssets/Validation",
+  "textures": [
+    "/Game/ToonStyle/TestAssets/Validation/Textures/T_lubu_validation_0",
+    "/Game/ToonStyle/TestAssets/Validation/Textures/T_lubu_validation_1"
+  ]
+}

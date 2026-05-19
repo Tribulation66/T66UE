@@ -4,11 +4,11 @@
 
 using namespace T66GameModePrivate;
 
-bool AT66GameMode::IsLabLevel() const
+bool AT66GameMode::IsLabRun() const
 {
 	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		return GI->bIsLabLevel;
+		return GI->IsLabRun();
 	}
 	return false;
 }
@@ -16,7 +16,7 @@ bool AT66GameMode::IsLabLevel() const
 void AT66GameMode::SpawnLabFloorIfNeeded()
 {
 	UWorld* World = GetWorld();
-	if (!World || !IsLabLevel()) return;
+	if (!World || !IsLabRun()) return;
 
 	// One central floor: ~1/4 of gameplay map (100k: MainHalfExtent 50000 -> Lab half 12500)
 	static const FName LabFloorTag(TEXT("T66_Floor_Lab"));
@@ -64,7 +64,7 @@ void AT66GameMode::SpawnLabFloorIfNeeded()
 void AT66GameMode::SpawnLabCollectorIfNeeded()
 {
 	UWorld* World = GetWorld();
-	if (!World || !IsLabLevel()) return;
+	if (!World || !IsLabRun()) return;
 
 	// Lab setup only: collector is a single practice-room actor and is cached by spawn flow.
 	for (TActorIterator<AT66LabCollector> It(World); It; ++It)
@@ -148,7 +148,7 @@ FVector AT66GameMode::GetLabSpawnLocation() const
 
 AActor* AT66GameMode::SpawnLabMob(FName CharacterVisualID)
 {
-	if (!IsLabLevel()) return nullptr;
+	if (!IsLabRun()) return nullptr;
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
 
@@ -194,7 +194,7 @@ AActor* AT66GameMode::SpawnLabMob(FName CharacterVisualID)
 
 AActor* AT66GameMode::SpawnLabBoss(FName BossID)
 {
-	if (!IsLabLevel()) return nullptr;
+	if (!IsLabRun()) return nullptr;
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
 	UT66GameInstance* GI = GetT66GameInstance();
@@ -226,7 +226,7 @@ AActor* AT66GameMode::SpawnLabBoss(FName BossID)
 
 AActor* AT66GameMode::SpawnLabFountain()
 {
-	if (!IsLabLevel()) return nullptr;
+	if (!IsLabRun()) return nullptr;
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
 
@@ -244,7 +244,7 @@ AActor* AT66GameMode::SpawnLabFountain()
 
 AActor* AT66GameMode::SpawnLabInteractable(FName InteractableID)
 {
-	if (!IsLabLevel()) return nullptr;
+	if (!IsLabRun()) return nullptr;
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
 
@@ -269,6 +269,10 @@ AActor* AT66GameMode::SpawnLabInteractable(FName InteractableID)
 	if (Spawned)
 	{
 		LabSpawnedActors.Add(Spawned);
+		if (AT66IdolAltar* SpawnedIdolAltar = Cast<AT66IdolAltar>(Spawned))
+		{
+			SpawnPixalTestDisplayModelsNearIdolAltar(SpawnedIdolAltar, true);
+		}
 	}
 	return Spawned;
 }

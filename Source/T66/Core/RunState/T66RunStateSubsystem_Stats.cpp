@@ -485,7 +485,7 @@ int32 UT66RunStateSubsystem::GetEvasionStat() const
 
 int32 UT66RunStateSubsystem::GetLuckStat() const
 {
-	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Luck));
+	return ClampHeroStatValue(TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Luck)) + ActiveRunModifiers.HeroLuckFlat);
 }
 
 
@@ -800,7 +800,7 @@ float UT66RunStateSubsystem::GetHeroMoveSpeedMultiplier() const
 float UT66RunStateSubsystem::GetHeroDamageMultiplier() const
 {
 	const float D = TenthsToFloatStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Damage));
-	return 1.f + FMath::Max(0.f, D - 1.f) * 0.015f;
+	return (1.f + FMath::Max(0.f, D - 1.f) * 0.015f) * FMath::Max(0.1f, ActiveRunModifiers.HeroDamageMultiplier);
 }
 
 

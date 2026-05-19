@@ -29,12 +29,12 @@ TARGET_HERO_HEIGHT_CM = 200.0
 
 
 HERO_MAPPINGS = (
-    ("Hero_1", "Royal"),
+    ("Hero_1", "Founding"),
     ("Hero_2", "Chinese"),
     ("Hero_3", "Boxer"),
-    ("Hero_4", "Founding"),
-    ("Hero_5", "Robo"),
-    ("Hero_6", "Billy"),
+    ("Hero_4", "Billy"),
+    ("Hero_5", "Royal"),
+    ("Hero_6", "Robo"),
     ("Hero_7", "Rabbit"),
     ("Hero_8", "CS"),
     ("Hero_9", "Gamba"),

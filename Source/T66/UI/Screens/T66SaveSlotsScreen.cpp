@@ -998,7 +998,8 @@ void UT66SaveSlotsScreen::PrepareGameInstanceForLoadedSave(UT66GameInstance* GI,
 	{
 		GI->CachedDailyClimbChallenge = Loaded->DailyClimbChallenge;
 		GI->ActiveDailyClimbChallenge = Loaded->DailyClimbChallenge;
-		GI->bIsDailyClimbRunActive = true;
+		GI->SelectedRunMode = ET66RunMode::DailyClimb;
+		GI->SelectedRunCategory = ET66RunCategory::Tower;
 		GI->SelectedRunModifierKind = ET66RunModifierKind::None;
 		GI->SelectedRunModifierID = NAME_None;
 		GI->SelectedPartySize = ET66PartySize::Solo;

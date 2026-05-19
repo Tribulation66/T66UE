@@ -475,12 +475,18 @@ def apply_lod_ladder_to_mesh(mesh, subsystem=None):
         )
         return result
 
-    if not subsystem or not hasattr(subsystem, "set_lods"):
-        result["error"] = "StaticMeshEditorSubsystem.set_lods unavailable"
+    set_lods = None
+    if subsystem and hasattr(subsystem, "set_lods"):
+        set_lods = subsystem.set_lods
+    elif hasattr(unreal, "EditorStaticMeshLibrary") and hasattr(unreal.EditorStaticMeshLibrary, "set_lods"):
+        set_lods = unreal.EditorStaticMeshLibrary.set_lods
+
+    if not set_lods:
+        result["error"] = "StaticMesh set_lods API unavailable"
         return result
 
     options = make_lod_options()
-    returned_count = subsystem.set_lods(mesh, options)
+    returned_count = set_lods(mesh, options)
     try:
         mesh.post_edit_change()
     except Exception:

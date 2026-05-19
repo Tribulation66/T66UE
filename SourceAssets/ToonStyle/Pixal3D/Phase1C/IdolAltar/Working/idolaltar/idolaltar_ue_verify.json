@@ -1,0 +1,190 @@
+{
+  "asset_name": "idolaltar",
+  "base_color_param": "/Game/ToonStyle/TestAssets/Lineup/Textures/T_idolaltar_0.T_idolaltar_0",
+  "diffuse_param": "/Game/ToonStyle/TestAssets/Lineup/Textures/T_idolaltar_0.T_idolaltar_0",
+  "expected_height": 180.0,
+  "flatten_k": 6,
+  "height_tolerance": 0.1,
+  "imported_object_paths": [
+    "/Game/ToonStyle/TestAssets/Lineup/SM_idolaltar.SM_idolaltar"
+  ],
+  "imported_outline_object_paths": [
+    "/Game/ToonStyle/TestAssets/Lineup/SM_idolaltar_Outline.SM_idolaltar_Outline"
+  ],
+  "manifest_normal_delta_sample": {
+    "distinct": true,
+    "reason": "non_humanoid"
+  },
+  "manifest_normal_transfer": {
+    "applied": false,
+    "reason": "non_humanoid"
+  },
+  "manifest_outline_winding": {
+    "applied": true,
+    "face_after": [
+      28,
+      34,
+      18
+    ],
+    "face_before": [
+      28,
+      18,
+      34
+    ],
+    "face_order_reversed": true,
+    "method": "bmesh.ops.reverse_faces + restored captured vertex normals as custom split normals"
+  },
+  "manifest_texture_flattening": [
+    {
+      "active_pixels": 16776459,
+      "centers_rgb_255": [
+        [
+          33,
+          13,
+          4
+        ],
+        [
+          87,
+          36,
+          5
+        ],
+        [
+          130,
+          60,
+          7
+        ],
+        [
+          166,
+          86,
+          12
+        ],
+        [
+          200,
+          115,
+          13
+        ],
+        [
+          229,
+          146,
+          20
+        ]
+      ],
+      "final_center_shift": 0.000681780802551657,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\IdolAltar\\Working\\idolaltar\\idolaltar_0_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_0",
+      "iterations": 18,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\IdolAltar\\Working\\idolaltar\\idolaltar_0_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\IdolAltar\\Working\\idolaltar\\idolaltar_0_flattened.png",
+      "unique_colors_after": 6,
+      "unique_colors_before": 127916,
+      "width": 4096
+    },
+    {
+      "active_pixels": 16777216,
+      "centers_rgb_255": [
+        [
+          0,
+          51,
+          0
+        ],
+        [
+          0,
+          254,
+          0
+        ],
+        [
+          4,
+          252,
+          4
+        ],
+        [
+          16,
+          247,
+          17
+        ],
+        [
+          0,
+          255,
+          1
+        ],
+        [
+          33,
+          222,
+          30
+        ]
+      ],
+      "final_center_shift": 1.2250236068211962e-05,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\IdolAltar\\Working\\idolaltar\\idolaltar_1_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_1",
+      "iterations": 17,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\IdolAltar\\Working\\idolaltar\\idolaltar_1_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\IdolAltar\\Working\\idolaltar\\idolaltar_1_flattened.png",
+      "unique_colors_after": 6,
+      "unique_colors_before": 2208,
+      "width": 4096
+    }
+  ],
+  "manifest_vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 586203,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "material_instance": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_idolaltar",
+  "outline_material_instance": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_idolaltar_Outline",
+  "outline_slot0_material": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_idolaltar_Outline.MI_idolaltar_Outline",
+  "outline_static_mesh": "/Game/ToonStyle/TestAssets/Lineup/SM_idolaltar_Outline",
+  "outline_static_mesh_bounds": {
+    "extent": [
+      62.36250686645508,
+      112.36146545410156,
+      89.99998322914598
+    ],
+    "height": 179.99996645829196,
+    "origin": [
+      0.0,
+      0.0,
+      90.00000151206496
+    ],
+    "size": [
+      124.72501373291016,
+      224.72293090820312,
+      179.99996645829196
+    ]
+  },
+  "retained_from_phase1a": false,
+  "slot0_material": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_idolaltar.MI_idolaltar",
+  "static_mesh": "/Game/ToonStyle/TestAssets/Lineup/SM_idolaltar",
+  "static_mesh_bounds": {
+    "extent": [
+      62.36250686645508,
+      112.36146545410156,
+      89.99998322914598
+    ],
+    "height": 179.99996645829196,
+    "origin": [
+      0.0,
+      0.0,
+      90.00000151206496
+    ],
+    "size": [
+      124.72501373291016,
+      224.72293090820312,
+      179.99996645829196
+    ]
+  },
+  "target_dir": "/Game/ToonStyle/TestAssets/Lineup",
+  "textures": [
+    "/Game/ToonStyle/TestAssets/Lineup/Textures/T_idolaltar_0",
+    "/Game/ToonStyle/TestAssets/Lineup/Textures/T_idolaltar_1"
+  ]
+}

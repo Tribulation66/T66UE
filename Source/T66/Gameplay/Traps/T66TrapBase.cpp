@@ -2,6 +2,7 @@
 
 #include "Gameplay/Traps/T66TrapBase.h"
 
+#include "Core/T66RunStateSubsystem.h"
 #include "Core/T66TrapSubsystem.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66EnemyBase.h"
@@ -90,7 +91,16 @@ void AT66TrapBase::ApplyProgressionScalars(const float InDamageScalar, const flo
 
 int32 AT66TrapBase::ScaleTrapDamage(const int32 BaseDamage) const
 {
-	return FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseDamage) * FMath::Max(0.10f, ProgressionDamageScalar)));
+	float RunModifierScalar = 1.0f;
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		if (const UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			RunModifierScalar = RunState->GetRunModifierTrapDamageMultiplier();
+		}
+	}
+
+	return FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseDamage) * FMath::Max(0.10f, ProgressionDamageScalar) * FMath::Max(0.10f, RunModifierScalar)));
 }
 
 float AT66TrapBase::ScaleTrapDuration(const float BaseSeconds) const

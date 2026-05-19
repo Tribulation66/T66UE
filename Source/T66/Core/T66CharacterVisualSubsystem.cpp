@@ -672,6 +672,7 @@ FName UT66CharacterVisualSubsystem::GetFallbackVisualID(FName VisualID)
 			const FString BodyToken = VisualName.Mid(BodyStartIndex, BodyLength);
 			if (BodyToken == TEXT("Stacy"))
 			{
+				// Stacy intentionally reuses the matching Chad skin row when a skin-specific Stacy visual row is not authored.
 				FString FallbackName = VisualName;
 				FallbackName.RemoveAt(BodyStartIndex, BodyLength, EAllowShrinking::No);
 				FallbackName.InsertAt(BodyStartIndex, TEXT("Chad"));

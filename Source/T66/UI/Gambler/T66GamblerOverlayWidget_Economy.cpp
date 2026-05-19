@@ -27,7 +27,7 @@
 #include "Widgets/Images/SImage.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
-#include "UI/Style/T66Style.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
@@ -439,8 +439,8 @@ void UT66GamblerOverlayWidget::RefreshTopBar()
 	{
 		NetWorthText->SetText(FText::Format(NetWorthFmt, FText::AsNumber(NetWorth)));
 		const FLinearColor NetWorthColor = NetWorth > 0
-			? FT66Style::Tokens::Success
-			: (NetWorth < 0 ? FT66Style::Tokens::Danger : FT66Style::Tokens::Text);
+			? FT66FlatStyle::Tokens::Success
+			: (NetWorth < 0 ? FT66FlatStyle::Tokens::Danger : FT66FlatStyle::Tokens::Text);
 		NetWorthText->SetColorAndOpacity(NetWorthColor);
 	}
 	if (GoldText.IsValid())
@@ -517,7 +517,7 @@ void UT66GamblerOverlayWidget::RefreshBuyback()
 		}
 		if (BuybackIconBorders.IsValidIndex(i) && BuybackIconBorders[i].IsValid())
 		{
-			BuybackIconBorders[i]->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(SlotRarity) : FT66Style::Tokens::Panel2);
+			BuybackIconBorders[i]->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(SlotRarity) : FT66FlatStyle::Tokens::Panel2);
 		}
 		if (BuybackIconBrushes.IsValidIndex(i) && BuybackIconBrushes[i].IsValid())
 		{
@@ -538,7 +538,7 @@ void UT66GamblerOverlayWidget::RefreshBuyback()
 		}
 		if (BuybackTileBorders.IsValidIndex(i) && BuybackTileBorders[i].IsValid())
 		{
-			BuybackTileBorders[i]->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
+			BuybackTileBorders[i]->SetBorderBackgroundColor(FT66FlatStyle::Tokens::Panel2);
 		}
 		if (BuybackPriceTexts.IsValidIndex(i) && BuybackPriceTexts[i].IsValid())
 		{
@@ -671,13 +671,13 @@ void UT66GamblerOverlayWidget::RefreshInventory()
 		}
 		if (InventorySlotBorders.IsValidIndex(i) && InventorySlotBorders[i].IsValid())
 		{
-			FLinearColor Fill = FT66Style::Tokens::Panel2;
+			FLinearColor Fill = FT66FlatStyle::Tokens::Panel2;
 			FItemData D;
 			const bool bHasData = bHasItem && T66GI && T66GI->GetItemData(Inv[i], D);
 
 			if (i == SelectedInventoryIndex)
 			{
-				Fill = (Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f);
+				Fill = (Fill * 0.45f + FT66FlatStyle::Tokens::Accent * 0.55f);
 			}
 			InventorySlotBorders[i]->SetBorderBackgroundColor(Fill);
 

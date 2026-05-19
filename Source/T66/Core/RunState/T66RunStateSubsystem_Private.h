@@ -6,6 +6,7 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66CommunityContentSubsystem.h"
+#include "Core/T66DifficultyTuningSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66WeaponManagerSubsystem.h"

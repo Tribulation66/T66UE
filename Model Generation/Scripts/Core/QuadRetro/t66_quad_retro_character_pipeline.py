@@ -433,8 +433,8 @@ def run_quad_remesher(source: bpy.types.Object, args: argparse.Namespace, work_d
                 break
             if value == -2:
                 raise RuntimeError(
-                    "Quad Remesher needs EULA/trial/license activation. "
-                    "Open xrLicenseManager.exe, activate the trial/license, then rerun."
+                    "Quad Remesher needs activation. "
+                    "Open xrLicenseManager.exe, activate the tool, then rerun."
                 )
             if value < 0:
                 raise RuntimeError(f"Quad Remesher failed with progress {value}: {text}")

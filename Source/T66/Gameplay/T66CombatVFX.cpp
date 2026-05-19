@@ -27,7 +27,7 @@ namespace
 	static TAutoConsoleVariable<int32> CVarT66VFXHeroOneVerbose(
 		TEXT("T66.VFX.Hero1Verbose"),
 		0,
-		TEXT("Emit detailed logs for the Hero_1 pierce VFX path."));
+		TEXT("Emit detailed logs for the Hero_5 pierce VFX path."));
 
 	static TAutoConsoleVariable<int32> CVarT66VFXHeroPierceVerbose(
 		TEXT("T66.VFX.HeroPierceVerbose"),
@@ -1000,7 +1000,7 @@ void UT66CombatComponent::SpawnHeroOnePierceVFX(const FVector& Start, const FVec
 		UE_LOG(
 			LogT66Combat,
 			Log,
-			TEXT("[ATTACK VFX][Stage1] Hero_1 Pierce request Req=%d Owner=%s Time=%.3f Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Impact=(%.1f,%.1f,%.1f) Trace2D=%.1f"),
+			TEXT("[ATTACK VFX][Stage1] Hero_5 Pierce request Req=%d Owner=%s Time=%.3f Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Impact=(%.1f,%.1f,%.1f) Trace2D=%.1f"),
 			RequestId,
 			GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
 			World->GetTimeSeconds(),
@@ -1026,16 +1026,16 @@ void UT66CombatComponent::SpawnHeroOnePierceVFX(const FVector& Start, const FVec
 			UE_LOG(
 				LogT66Combat,
 				Log,
-				TEXT("[ATTACK VFX][Stage1] Hero_1 Example actor spawned Req=%d Actor=%s Owner=%s"),
+				TEXT("[ATTACK VFX][Stage1] Hero_5 actor spawned Req=%d Actor=%s Owner=%s"),
 				RequestId,
 				*Effect->GetName(),
 				GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
 		}
-		Effect->InitEffect(Start, End, ImpactLocation, FLinearColor(1.f, 0.97f, 0.88f, 1.f), RequestId, FName(TEXT("Hero_1")));
+		Effect->InitEffect(Start, End, ImpactLocation, FLinearColor(1.f, 0.97f, 0.88f, 1.f), RequestId, FName(TEXT("Hero_5")));
 		return;
 	}
 
-	UE_LOG(LogT66Combat, Warning, TEXT("[ATTACK VFX][Stage1] Hero_1 pierce actor spawn failed Req=%d."), RequestId);
+	UE_LOG(LogT66Combat, Warning, TEXT("[ATTACK VFX][Stage1] Hero_5 pierce actor spawn failed Req=%d."), RequestId);
 }
 
 void UT66CombatComponent::SpawnArthurUltimateSwordVFX(const FVector& Start, const FVector& End)
@@ -1377,7 +1377,7 @@ void UT66CombatComponent::SpawnHeroPierceVFX(const FVector& Start, const FVector
 
 	const FVector4 ColorVec(Color.R, Color.G, Color.B, Color.A);
 
-	if (HeroID == FName(TEXT("Hero_1")))
+	if (HeroID == FName(TEXT("Hero_5")))
 	{
 		SpawnHeroOnePierceVFX(Start, End, ImpactLocation);
 		return;

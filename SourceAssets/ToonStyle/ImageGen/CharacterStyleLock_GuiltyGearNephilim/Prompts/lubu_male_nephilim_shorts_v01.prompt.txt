@@ -1,0 +1,46 @@
+Create one clean single-character concept image for T66 character model reference.
+
+Use the accepted v06 Lu Bu character direction as the style baseline:
+- Premium smooth anime fighting-game cel shading, dimensional armor forms, crimson / purple / black / gold palette.
+- Slightly fair warm skin color: fair peach / light ivory skin with warm shadows, not pure white, not porcelain, not gray, not tan.
+- Towering nephilim "giga chad" body: huge chest and shoulders, tiny waist, long powerful limbs, oversized readable stylized fighting-game head.
+- Simplified armor/clothing with broad color blocks, fewer ridges, and no long center crotch cloth.
+
+Subject:
+- One original adult male warlord inspired by the historical Lu Bu archetype, not a copy of any existing game character.
+- He is alone in the image. Do not include a female character or a second character.
+- Huge adult giant/nephilim proportions, serious intimidating warlord face, large readable head with strong brows and clear face planes.
+
+Outfit change:
+- Give the male armored shorts.
+- The shorts should be visible, clean, and practical: short armored fighting shorts ending above the knee, integrated into the red / black / purple armor design.
+- No long center crotch cloth, no loincloth tab, no hanging middle sash, no fabric strip between the legs.
+- No skirt, no long front apron, no dangling center panel.
+- Side cloth panels or short side cape pieces are okay only if they do not cover the shorts or hang between the legs.
+
+Pose:
+- Strict mannequin A-pose for rigging reference.
+- Full-body front view, torso vertical, hips level, shoulders level, feet shoulder-width apart.
+- Arms angled down and outward about 45 degrees from the torso with visible empty space between arms and torso.
+- Elbows straight or nearly straight. No action pose, no hero bend, no contrapposto.
+
+Weapon:
+- Hold one large simplified Lu Bu-style halberd / fang tian ji vertically beside the body.
+- One visible hand grips the shaft cleanly, with the shaft passing through the center of the closed hand.
+- The weapon must be fully visible and not cropped.
+- Keep the elegant v06 halberd identity, but not too busy: no gems, no tiny prongs, no filigree, no dense cutouts.
+
+Composition:
+- Single full-body character centered on a white or very light neutral background.
+- Generous padding around head plume, weapon, feet, and hands.
+- No environment, no text, no labels, no logo, no watermark, no frame.
+- Pixal3D-friendly: crisp silhouette, readable limbs, clean separation between weapon and body, no smoke, no glow, no heavy cast shadow, no transparent materials.
+
+Negative constraints:
+- Do not include any other character.
+- Do not use small heads, normal heroic heads, realistic head proportions, or pin heads.
+- Do not make the skin pure white, gray, porcelain, chalky, tan, bronze, or brown.
+- Do not add the old center crotch cloth, loincloth, front tab, apron, skirt, or hanging center sash.
+- Do not make the shorts look like underwear.
+- Do not use ornate armor, many thin gold edge lines, layered decorations, busy weapons, gems, or complex prongs.
+- Do not imitate a specific copyrighted character design.

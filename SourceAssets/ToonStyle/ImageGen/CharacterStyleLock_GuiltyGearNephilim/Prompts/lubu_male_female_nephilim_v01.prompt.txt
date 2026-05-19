@@ -1,0 +1,30 @@
+Create one clean two-character concept sheet for T66 character model reference.
+
+Subject:
+- Left character: original adult male warlord inspired by the historical Lu Bu archetype, not a copy of any existing game character.
+- Right character: original adult female warlord inspired by the same Lu Bu archetype, not a copy of any existing game character.
+- Both characters are towering nephilim giants with heroic "giga chad" silhouettes: very broad shoulders and chest, extremely narrow waist, long powerful limbs, small controlled head scale, confident fighter stance.
+- The adult female version must have an exaggerated giant-bust heroic silhouette under a fully clothed simplified armored bodice, with the same narrow waist and giant warrior proportions. No nudity, no lingerie, no pin-up pose.
+
+Weapon requirement:
+- Both characters hold a large simplified halberd / fang tian ji weapon.
+- The weapon must be fully visible and not cropped, held slightly away from the torso so the body silhouette remains readable.
+
+Style:
+- Smooth anime fighting-game cel shading, close to Guilty Gear shading language: clean hard-edged highlight bands, smooth simple forms, bold flat color zones, sharp graphic shadows, no painterly brush texture.
+- Use large simplified shapes and minimal costume detail. The uniforms must be explicitly simplified: broad chest plate shape, simple waist sash, simple shoulder guards, simple boots, simple wrist guards, no dense armor plates, no tiny ornaments, no filigree, no realistic fabric weave.
+- Keep the characters scary and mythic, but not gory: intimidating faces, sharp brows, severe mouths, giant warlord energy.
+- Use two dominant bright bold costume/body colors per character, plus limited skin and metal accents. Suggested shared palette: crimson red, royal purple, black, and warm gold accents. Keep both characters clearly from the same game.
+
+Composition:
+- Full-body front three-quarter view, both characters standing on the same ground line.
+- White or very light neutral background only.
+- No environment, no text, no labels, no logo, no watermark, no frame.
+- Clean asset-reference spacing, generous padding around weapons and feet, no cropped body parts.
+- Pixal3D-friendly: crisp silhouette, readable limbs, clean separation between weapon and body, no smoke, no glow, no heavy cast shadow, no transparent materials.
+
+Negative constraints:
+- Do not make them chibi, cute, soft mascot-like, rubbery, or overly cartoony.
+- Do not add many small armor ridges, scratches, cracks, tassels, chains, coins, skulls, or busy decorations.
+- Do not use black void mouths or black holes.
+- Do not imitate a specific copyrighted character design.

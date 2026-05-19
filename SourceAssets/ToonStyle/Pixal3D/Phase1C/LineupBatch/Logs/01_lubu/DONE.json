@@ -1,0 +1,8 @@
+{
+  "exit_code": 0,
+  "finished_at": "2026-05-17T10:45:48.525228+00:00",
+  "manifest_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CTrackDPart1/01_lubu/manifest.json",
+  "ok": true,
+  "started_at": "2026-05-17T10:43:50.456206+00:00",
+  "status_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CTrackDPart1/01_lubu/Logs/pixal3d_generation_status.jsonl"
+}

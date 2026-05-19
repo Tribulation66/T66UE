@@ -5,6 +5,8 @@
 #include "Core/T66AudioSubsystem.h"
 #include "Gameplay/T66ArcadeInteractableTypes.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66AnimatedStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
@@ -109,8 +111,8 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 				NSLOCTEXT("T66.Arcade", "WhackScoreLabel", "SCORE"),
 				SAssignNew(ScoreTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(28))
-				.ColorAndOpacity(FT66Style::Tokens::Accent))
+				.Font(FT66FlatStyle::Tokens::FontBold(28))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Accent))
 		]
 		+ SConstraintCanvas::Slot()
 		.Alignment(FVector2D(0.f, 0.f))
@@ -121,8 +123,8 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 				NSLOCTEXT("T66.Arcade", "WhackTimerLabel", "TIME"),
 				SAssignNew(TimerTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(30))
-				.ColorAndOpacity(FT66Style::Tokens::Text))
+				.Font(FT66FlatStyle::Tokens::FontBold(30))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text))
 		]
 		+ SConstraintCanvas::Slot()
 		.Alignment(FVector2D(0.f, 0.f))
@@ -137,8 +139,8 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 				[
 					SAssignNew(ComboTextBlock, STextBlock)
 					.Text(FText::GetEmpty())
-					.Font(FT66Style::Tokens::FontBold(24))
-					.ColorAndOpacity(FT66Style::Tokens::Success)
+					.Font(FT66FlatStyle::Tokens::FontBold(24))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Success)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
@@ -157,8 +159,8 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 			[
 				SAssignNew(MultiplierTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(20))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(20))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 				.Justification(ETextJustify::Center)
 			]
 			+ SHorizontalBox::Slot()
@@ -166,8 +168,8 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 			[
 				SAssignNew(BestComboTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(20))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Font(FT66FlatStyle::Tokens::FontBold(20))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 				.Justification(ETextJustify::Center)
 			]
 		]
@@ -177,8 +179,8 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 		[
 			SAssignNew(StatusTextBlock, STextBlock)
 			.Text(FText::GetEmpty())
-			.Font(FT66Style::Tokens::FontBold(22))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.Font(FT66FlatStyle::Tokens::FontBold(22))
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			.Justification(ETextJustify::Center)
 		]
 		+ SConstraintCanvas::Slot()
@@ -187,15 +189,15 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 		[
 			SAssignNew(RewardTextBlock, STextBlock)
 			.Text(FText::GetEmpty())
-			.Font(FT66Style::Tokens::FontRegular(14))
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.Font(FT66FlatStyle::Tokens::FontRegular(14))
+			.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			.AutoWrapText(true)
 		]
 		+ SConstraintCanvas::Slot()
 		.Alignment(FVector2D(0.f, 0.f))
 		.Offset(FMargin(1064.f, 652.f, 176.f, 54.f))
 		[
-			FT66Style::MakeButton(
+			FT66FlatStyle::MakeButton(
 				FT66ButtonParams(
 					NSLOCTEXT("T66.Arcade", "WhackAbort", "Abort"),
 					FOnClicked::CreateUObject(this, &UT66WhackAMoleArcadeWidget::HandlePrimaryActionClicked),
@@ -205,8 +207,8 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 				.SetContent(
 					SAssignNew(PrimaryActionTextBlock, STextBlock)
 					.Text(FText::GetEmpty())
-					.Font(FT66Style::Tokens::FontBold(18))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Font(FT66FlatStyle::Tokens::FontBold(18))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					.Justification(ETextJustify::Center)))
 		];
 
@@ -238,14 +240,17 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 			.WidthOverride(GWhackReferenceWidth)
 			.HeightOverride(GWhackReferenceHeight)
 			[
-				GameCanvas
+				FT66AnimatedStyle::AttachMetadata(
+					GameCanvas,
+					FName(TEXT("Arcade.WhackAMole.PlayArea")),
+					TEXT("ArcadeGameplay"))
 			]
 		];
 
 	RefreshBoardVisuals();
 	RefreshHud();
 
-	return FT66Style::MakeResponsiveRoot(Root);
+	return FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 
 void UT66WhackAMoleArcadeWidget::NativeConstruct()
@@ -542,7 +547,7 @@ void UT66WhackAMoleArcadeWidget::RefreshBoardVisuals()
 		{
 			ScorePopupTextBlocks[SlotIndex]->SetText(BuildSlotScorePopupText(MoleSlot));
 			ScorePopupTextBlocks[SlotIndex]->SetVisibility(bScorePopupVisible ? EVisibility::HitTestInvisible : EVisibility::Hidden);
-			ScorePopupTextBlocks[SlotIndex]->SetColorAndOpacity(MoleSlot.ScorePopupValue < 0 ? FT66Style::Tokens::Danger : FT66Style::Tokens::Text);
+			ScorePopupTextBlocks[SlotIndex]->SetColorAndOpacity(MoleSlot.ScorePopupValue < 0 ? FT66FlatStyle::Tokens::Danger : FT66FlatStyle::Tokens::Text);
 		}
 
 		const bool bShowHitHammer = HammerTimer > KINDA_SMALL_NUMBER && HammerCellIndex == SlotIndex;
@@ -568,7 +573,7 @@ void UT66WhackAMoleArcadeWidget::RefreshHud()
 	if (ScoreTextBlock.IsValid())
 	{
 		ScoreTextBlock->SetText(FText::AsNumber(Score));
-		ScoreTextBlock->SetColorAndOpacity(Score < 0 ? FT66Style::Tokens::Danger : FT66Style::Tokens::Accent);
+		ScoreTextBlock->SetColorAndOpacity(Score < 0 ? FT66FlatStyle::Tokens::Danger : FT66FlatStyle::Tokens::Accent);
 	}
 
 	if (ComboTextBlock.IsValid())
@@ -600,8 +605,8 @@ void UT66WhackAMoleArcadeWidget::RefreshHud()
 	{
 		StatusTextBlock->SetText(BuildStatusText());
 		StatusTextBlock->SetColorAndOpacity(GameState == EWhackAMoleGameState::Finished
-			? (bRoundSucceeded ? FT66Style::Tokens::Success : FT66Style::Tokens::Danger)
-			: FT66Style::Tokens::Text);
+			? (bRoundSucceeded ? FT66FlatStyle::Tokens::Success : FT66FlatStyle::Tokens::Danger)
+			: FT66FlatStyle::Tokens::Text);
 	}
 
 	if (RewardTextBlock.IsValid())
@@ -896,8 +901,8 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::BuildHudPanel(const FName IconSp
 				[
 					SNew(STextBlock)
 					.Text(Label)
-					.Font(FT66Style::Tokens::FontBold(13))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.Font(FT66FlatStyle::Tokens::FontBold(13))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 				]
 				+ SVerticalBox::Slot()
 				.AutoHeight()
@@ -1027,8 +1032,8 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::BuildSlotWidget(const int32 Slot
 					[
 						SAssignNew(ScorePopupText, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(18))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(18))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 						.Justification(ETextJustify::Center)
 						.Visibility(EVisibility::Hidden)
 					]
@@ -1050,7 +1055,7 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::BuildSlotWidget(const int32 Slot
 			]
 		];
 
-	TSharedRef<SWidget> Button = FT66Style::MakeBareButton(
+	TSharedRef<SWidget> Button = FT66FlatStyle::MakeBareButton(
 		FT66BareButtonParams(
 			FOnClicked::CreateUObject(this, &UT66WhackAMoleArcadeWidget::HandleCellClicked, SlotIndex),
 			SlotContent)

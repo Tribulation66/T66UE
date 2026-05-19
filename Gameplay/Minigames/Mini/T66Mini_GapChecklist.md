@@ -1,6 +1,6 @@
 # T66Mini Gap Checklist
 
-Last updated: 2026-04-13
+Last updated: 2026-05-15
 
 ## 1. Purpose
 
@@ -13,7 +13,7 @@ Status key:
 ## 2. Summary
 
 - Core verdict: the mini-game now meets the first-build target described in the master implementation doc.
-- Current practical state: launch flow, dedicated mini battle map, real combat HUD, shop/progression loop, pause/save flow, run summary flow, full mini data ownership, launch-scope enemy/boss coverage, and first-pass VFX/audio readability are now in place in standalone.
+- Current practical state: launch flow, dedicated `MiniBattle` frontend screen, Slate-painted combat HUD, shop/progression loop, pause/save flow, run summary flow, full mini data ownership, launch-scope enemy/boss coverage, and first-pass widget VFX/audio readability are now in place in standalone.
 - Remaining work after this checklist is optional polish, not a blocker to the completed first-build target.
 
 ## 3. Checklist
@@ -21,7 +21,7 @@ Status key:
 ## 3.1 Isolation and Module Ownership
 
 - `Done` Dedicated `T66Mini` module exists.
-- `Done` Mini-specific frontend, save, run-state, data, gameplay, UI, and VFX systems live in `T66Mini`.
+- `Done` Mini-specific frontend, save, run-state, data, widget gameplay, UI, and VFX systems live in `T66Mini`.
 - `Done` Base-game touchpoints remain narrow: launch entry, screen routing, and runtime bridge behavior.
 - `Done` Mini runtime ownership is self-contained enough that the mode no longer reads like borrowed scaffolding.
 
@@ -44,14 +44,14 @@ Status key:
 - `Done` XP/material pickup loop works.
 - `Done` Boss appears and gates shop progression.
 - `Done` Shop continues back into idol selection and the next wave.
-- `Done` Five-wave block structure exists in current battle flow.
-- `Done` Battle now boots on a dedicated mini battle map instead of the borrowed regular gameplay level path.
+- `Done` Ten-stage difficulty block structure exists in current battle flow, with stage 10 as the boss gate.
+- `Done` Battle now runs inside the dedicated `MiniBattle` frontend screen instead of loading any mini-specific `.umap`.
 
 ## 3.4 Player, Combat, and Runtime Systems
 
-- `Done` `AT66MiniGameMode`, `AT66MiniGameState`, `AT66MiniPlayerController`, and `AT66MiniPlayerPawn` exist and are live.
+- `Done` `UT66MiniBattleScreen` owns the local battle simulation and replaces the old Mini game mode, game state, player controller, and pawn path.
 - `Done` Projectile-driven idol attack families exist for pierce, bounce, aoe, and dot categories.
-- `Done` First-build combat helpers are now split into mini-specific presentation, hit-flash, shadow, direction, pickup-magnet, and VFX systems instead of remaining a flat raw billboards-only slice.
+- `Done` First-build combat helpers now run through widget-owned presentation, hit-flash, shadow, direction, pickup-magnet, and VFX state instead of world actor components.
 - `Done` First-pass item stat application exists for the launch-scope mini item pool.
 - `Done` Life steal is hooked into hit resolution.
 - `Done` Combat readability now includes telegraphs, hit pulses, pickup bursts, sprite facing, shadows, and improved battlefield feedback.
@@ -107,17 +107,17 @@ Status key:
 ## 3.9 Rendering, HUD, and Visual Direction
 
 - `Done` Hero, enemy, boss, NPC, interactable, pickup, and projectile sprites render in standalone.
-- `Done` Arena background/floor rendering exists instead of the previous all-black battle presentation.
-- `Done` Mini battle camera is functional and tuned for the current survivor layout.
-- `Done` Brotato-style combat HUD exists in a real gameplay form rather than a debug text overlay.
-- `Done` Arena presentation now has a dedicated mini map path plus first-pass scene treatment.
-- `Done` Shadows, hit pulses, direction resolution, boss telegraphs, and clearer pickup/combat feedback are now present in the runtime.
+- `Done` Arena background/floor rendering exists inside the Slate battle board instead of the previous all-black battle presentation.
+- `Done` Mini battle framing is handled by the widget board transform instead of a pawn camera.
+- `Done` Brotato-style combat HUD exists as Slate chrome rather than a debug text overlay.
+- `Done` Arena presentation now has a dedicated MiniBattle widget path plus first-pass board treatment.
+- `Done` Shadows, hit pulses, direction resolution, boss telegraphs, and clearer pickup/combat feedback are now present in the widget runtime.
 - `Done` Bright pickup readability and cleaner attack/boss telegraphs now meet the first-build baseline.
 
 ## 3.10 VFX and Audio
 
-- `Done` Mini-specific VFX runtime now exists through the mini VFX subsystem and dedicated mini VFX actors.
-- `Done` Ground telegraphs, impact pulses, projectile hit feedback, explosions, pickup bursts, and boss spawn readability are present as a cohesive first-pass system.
+- `Done` Mini-specific VFX runtime now exists through Slate-painted widget events tagged as `AnimatedStyle.Mini.*`.
+- `Done` Ground telegraphs, impact pulses, projectile hit feedback, explosions, pickup bursts, and boss spawn readability are present as a cohesive first-pass widget system.
 - `Done` Mini-specific audio pass now exists at the first-build level through battle music plus mini combat/pickup/boss SFX routing.
 
 ## 3.11 Art Pipeline
@@ -141,8 +141,8 @@ These are no longer checklist blockers for the first-build target:
 
 The first-build completion definition is now satisfied:
 
-- Mini flow from launch through five-wave completion feels self-contained.
-- Battle runs on a dedicated mini map with a real mini HUD.
+- Mini flow from launch through ten-stage completion feels self-contained.
+- Battle runs on the dedicated `MiniBattle` frontend screen with a real mini HUD.
 - Launch-scope enemy and boss coverage is represented in mini runtime data.
 - Required interactables, shop loop, and save/resume behavior hold together in standalone.
 - Presentation reaches a clean, readable survivor-game baseline with visible telegraphs, pickups, and combat feedback.

@@ -359,7 +359,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			{
 				AT66StageGate* A = WeakGate.Get();
 				if (!A) continue;
-				MapCache.Add({ A, EMapCacheMarkerType::Gate, FT66Style::Accent2(), NSLOCTEXT("T66.Map", "Gate", "GATE"), FName(TEXT("Gate")) });
+				MapCache.Add({ A, EMapCacheMarkerType::Gate, FT66FlatStyle::Accent2(), NSLOCTEXT("T66.Map", "Gate", "GATE"), FName(TEXT("Gate")) });
 			}
 			// Miasma boundary uses a dedicated icon marker on the full map.
 			for (const TWeakObjectPtr<AT66MiasmaBoundary>& WeakMiasma : Registry->GetMiasmaBoundaries())
@@ -379,11 +379,11 @@ void UT66GameplayHUDWidget::RefreshMapData()
 
 				if (Cast<AT66ChestInteractable>(Interactable))
 				{
-					MapCache.Add({ Interactable, EMapCacheMarkerType::POI, FT66Style::Accent2(), FText::GetEmpty(), FName(TEXT("Chest")) });
+					MapCache.Add({ Interactable, EMapCacheMarkerType::POI, FT66FlatStyle::Accent2(), FText::GetEmpty(), FName(TEXT("Chest")) });
 				}
 				else if (Cast<AT66CrateInteractable>(Interactable))
 				{
-					MapCache.Add({ Interactable, EMapCacheMarkerType::POI, FT66Style::MinimapNeutral(), FText::GetEmpty(), FName(TEXT("Crate")) });
+					MapCache.Add({ Interactable, EMapCacheMarkerType::POI, FT66FlatStyle::MinimapNeutral(), FText::GetEmpty(), FName(TEXT("Crate")) });
 				}
 			}
 
@@ -395,7 +395,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 					continue;
 				}
 
-				MapCache.Add({ LootBag, EMapCacheMarkerType::POI, FT66Style::Accent2(), FText::GetEmpty(), FName(TEXT("LootBag")) });
+				MapCache.Add({ LootBag, EMapCacheMarkerType::POI, FT66FlatStyle::Accent2(), FText::GetEmpty(), FName(TEXT("LootBag")) });
 			}
 
 			UE_LOG(LogT66HUD, Verbose, TEXT("[GOLD] RefreshMapData: used ActorRegistry (NPCs=%d, Gates=%d, Enemies=%d, Miasma=%d, Interactables=%d, LootBags=%d)"),
@@ -489,7 +489,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 
 			FT66MapMarker EnemyMarker;
 			EnemyMarker.WorldXY = EnemyXY;
-			EnemyMarker.Color = FT66Style::MinimapEnemy();
+			EnemyMarker.Color = FT66FlatStyle::MinimapEnemy();
 			EnemyMarker.Label = FText::GetEmpty();
 			EnemyMarker.Visual = ET66MapMarkerVisual::Dot;
 			EnemyMarker.DrawSize = FVector2D(6.f, 6.f);

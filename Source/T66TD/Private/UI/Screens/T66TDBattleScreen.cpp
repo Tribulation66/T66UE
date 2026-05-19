@@ -19,6 +19,7 @@
 #include "Save/T66TDSaveSubsystem.h"
 #include "Styling/CoreStyle.h"
 #include "UI/T66TDUIStyle.h"
+#include "UI/Style/T66AnimatedStyle.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
@@ -2824,6 +2825,7 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 		.EnemyBrushes(EnemySpriteBrushes)
 		.BossBrushes(BossSpriteBrushes)
 		.OwningGameInstance(TWeakObjectPtr<UGameInstance>(GameInstance));
+	FT66AnimatedStyle::AttachMetadata(BattleBoard.ToSharedRef(), FName(TEXT("TDBattle.Board.PlayArea")), TEXT("TD.Board"));
 	BattleBoardRoot = BattleBoard;
 
 	TSharedRef<SVerticalBox> HeroRoster = SNew(SVerticalBox);

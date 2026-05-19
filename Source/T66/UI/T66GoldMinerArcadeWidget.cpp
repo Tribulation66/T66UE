@@ -4,6 +4,8 @@
 
 #include "Core/T66AudioSubsystem.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66AnimatedStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 
 #include "Styling/CoreStyle.h"
@@ -48,14 +50,14 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 
 	auto BuildStatPanel = [](const FText& Label, const TSharedRef<SWidget>& ValueWidget) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakePanel(
+		return FT66FlatStyle::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
 				.Text(Label)
-				.Font(FT66Style::Tokens::FontBold(16))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Font(FT66FlatStyle::Tokens::FontBold(16))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 			[
@@ -118,8 +120,8 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 					[
 						SAssignNew(TargetText, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(15))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(15))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 						.Justification(ETextJustify::Center)
 					]
 				]
@@ -144,7 +146,7 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 	}
 
 	const TSharedRef<SWidget> BoardButton =
-		FT66Style::MakeBareButton(
+		FT66FlatStyle::MakeBareButton(
 			FT66BareButtonParams(
 				FOnClicked::CreateUObject(this, &UT66GoldMinerArcadeWidget::HandleDropClicked),
 				SNew(SBox)
@@ -177,7 +179,7 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 			.SetToolTipText(NSLOCTEXT("T66.Arcade", "GoldMinerDropToolTip", "Drop claw")));
 
 	const TSharedRef<SWidget> InfoPanel =
-		FT66Style::MakePanel(
+		FT66FlatStyle::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
@@ -185,8 +187,8 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 				.Text(ArcadeData.DisplayName.IsEmpty()
 					? NSLOCTEXT("T66.Arcade", "GoldMinerFallbackTitle", "Gold Miner")
 					: ArcadeData.DisplayName)
-				.Font(FT66Style::Tokens::FontBold(38))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(38))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f)
 			[
@@ -197,8 +199,8 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 						TimerLabel,
 						SAssignNew(TimerTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(30))
-						.ColorAndOpacity(FT66Style::Tokens::Text))
+						.Font(FT66FlatStyle::Tokens::FontBold(30))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text))
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 				[
@@ -206,8 +208,8 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 						ScoreLabel,
 						SAssignNew(ScoreTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(30))
-						.ColorAndOpacity(FT66Style::Tokens::Accent))
+						.Font(FT66FlatStyle::Tokens::FontBold(30))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Accent))
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f)
 				[
@@ -215,21 +217,24 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 						CargoLabel,
 						SAssignNew(CargoTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(30))
-						.ColorAndOpacity(FT66Style::Tokens::Success))
+						.Font(FT66FlatStyle::Tokens::FontBold(30))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Success))
 				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f)
 			[
-				FT66Style::MakePanel(
-					BoardButton,
+				FT66FlatStyle::MakePanel(
+					FT66AnimatedStyle::AttachMetadata(
+						BoardButton,
+						FName(TEXT("Arcade.GoldMiner.PlayArea")),
+						TEXT("ArcadeGameplay")),
 					FT66PanelParams(ET66PanelType::Panel2)
 						.SetPadding(FMargin(0.f))
 						.SetColor(FLinearColor(0.04f, 0.035f, 0.030f, 1.f)))
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 16.f, 0.f, 0.f)
 			[
-				FT66Style::MakeButton(
+				FT66FlatStyle::MakeButton(
 					FT66ButtonParams(
 						NSLOCTEXT("T66.Arcade", "GoldMinerDropButton", "Drop"),
 						FOnClicked::CreateUObject(this, &UT66GoldMinerArcadeWidget::HandleDropClicked),
@@ -239,28 +244,28 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 					.SetContent(
 						SAssignNew(DropActionTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(18))
-						.ColorAndOpacity(FT66Style::Tokens::Text)))
+						.Font(FT66FlatStyle::Tokens::FontBold(18))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)))
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 			[
 				SAssignNew(StatusTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(18))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(18))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 				.AutoWrapText(true)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 			[
 				SAssignNew(RewardTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontRegular(16))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Font(FT66FlatStyle::Tokens::FontRegular(16))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 				.AutoWrapText(true)
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 18.f, 0.f, 0.f)
 			[
-				FT66Style::MakeButton(
+				FT66FlatStyle::MakeButton(
 					FT66ButtonParams(
 						NSLOCTEXT("T66.Arcade", "GoldMinerAbort", "Abort"),
 						FOnClicked::CreateUObject(this, &UT66GoldMinerArcadeWidget::HandlePrimaryActionClicked),
@@ -270,8 +275,8 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 					.SetContent(
 						SAssignNew(PrimaryActionTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(18))
-						.ColorAndOpacity(FT66Style::Tokens::Text)))
+						.Font(FT66FlatStyle::Tokens::FontBold(18))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)))
 			],
 			FT66PanelParams(ET66PanelType::Panel)
 				.SetPadding(FMargin(24.f))
@@ -302,7 +307,7 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 			]
 		];
 
-	return FT66Style::MakeResponsiveRoot(Root);
+	return FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 
 void UT66GoldMinerArcadeWidget::NativeConstruct()
@@ -568,8 +573,8 @@ void UT66GoldMinerArcadeWidget::RefreshHud()
 		StatusTextBlock->SetText(BuildStatusText());
 		StatusTextBlock->SetColorAndOpacity(
 			bRoundEnded
-				? (bRoundSucceeded ? FT66Style::Tokens::Success : FT66Style::Tokens::Danger)
-				: FT66Style::Tokens::Text);
+				? (bRoundSucceeded ? FT66FlatStyle::Tokens::Success : FT66FlatStyle::Tokens::Danger)
+				: FT66FlatStyle::Tokens::Text);
 	}
 
 	if (RewardTextBlock.IsValid())
@@ -687,8 +692,8 @@ FText UT66GoldMinerArcadeWidget::BuildStatusText() const
 	if (bRoundEnded)
 	{
 		return bRoundSucceeded
-			? NSLOCTEXT("T66.Arcade", "GoldMinerStatusWon", "Claim locked. Cabinet paying out...")
-			: NSLOCTEXT("T66.Arcade", "GoldMinerStatusLost", "No haul. Cabinet shutting down.");
+			? NSLOCTEXT("T66.Arcade", "GoldMinerStatusWon", "Claim locked. Arcade machine paying out...")
+			: NSLOCTEXT("T66.Arcade", "GoldMinerStatusLost", "No haul. Arcade machine shutting down.");
 	}
 
 	if (bReeling)
@@ -701,7 +706,7 @@ FText UT66GoldMinerArcadeWidget::BuildStatusText() const
 
 FText UT66GoldMinerArcadeWidget::BuildRewardSummaryText() const
 {
-	return NSLOCTEXT("T66.Arcade", "GoldMinerRewardSummary", "Bigger hauls improve the cabinet payout when the timer hits zero.");
+	return NSLOCTEXT("T66.Arcade", "GoldMinerRewardSummary", "Bigger hauls improve the arcade machine payout when the timer hits zero.");
 }
 
 FText UT66GoldMinerArcadeWidget::BuildPrimaryActionText() const

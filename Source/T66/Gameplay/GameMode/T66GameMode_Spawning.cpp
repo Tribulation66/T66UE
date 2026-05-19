@@ -1,231 +1,224 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/GameMode/T66GameModePrivate.h"
+#include "Gameplay/GameMode/T66GameMode_TestRoom.h"
 
 using namespace T66GameModePrivate;
 
 void AT66GameMode::RestartPlayer(AController* NewPlayer)
 {
-	Super::RestartPlayer(NewPlayer);
-	SpawnCompanionForPlayer(NewPlayer);
-	// Start gate is spawned in SpawnLevelContentAfterLandscapeReady (after floor exists) so its ground trace hits the floor.
+Super::RestartPlayer(NewPlayer);
+SpawnCompanionForPlayer(NewPlayer);
+// Start gate is spawned in SpawnLevelContentAfterLandscapeReady (after floor exists) so its ground trace hits the floor.
 
-	UT66GameInstance* GI = GetT66GameInstance();
-	APawn* Pawn = NewPlayer ? NewPlayer->GetPawn() : nullptr;
-	if (GI && Pawn && GI->bApplyLoadedTransform)
-	{
-		const FRotator LoadedRotation = GI->PendingLoadedTransform.Rotator();
-		Pawn->SetActorTransform(GI->PendingLoadedTransform);
-		T66SyncPawnAndControllerRotation(Pawn, NewPlayer, LoadedRotation);
-		GI->bApplyLoadedTransform = false;
-		GI->PendingLoadedTransform = FTransform();
-	}
+UT66GameInstance* GI = GetT66GameInstance();
+APawn* Pawn = NewPlayer ? NewPlayer->GetPawn() : nullptr;
+if (GI && Pawn && GI->bApplyLoadedTransform)
+{
+const FRotator LoadedRotation = GI->PendingLoadedTransform.Rotator();
+Pawn->SetActorTransform(GI->PendingLoadedTransform);
+T66SyncPawnAndControllerRotation(Pawn, NewPlayer, LoadedRotation);
+GI->bApplyLoadedTransform = false;
+GI->PendingLoadedTransform = FTransform();
+}
 
-	if (GI && NewPlayer)
-	{
-		if (AT66PlayerController* T66PlayerController = Cast<AT66PlayerController>(NewPlayer))
-		{
-			T66PlayerController->ClientApplyGameplayRunSettings(
-				T66EnsureRunSeed(GI),
-				GI->SelectedDifficulty,
-				GI->CurrentMainMapLayoutVariant);
-		}
+if (AT66PlayerController* T66PlayerController = Cast<AT66PlayerController>(NewPlayer))
+{
+T66PlayerController->EnsureGameplayRuntimePresentation();
+}
 
-		if (UGameInstance* GameInstance = GetGameInstance())
-		{
-			if (UT66RunStateSubsystem* RunState = GameInstance->GetSubsystem<UT66RunStateSubsystem>())
-			{
-				if (RunState->HasPendingDifficultyClearSummary())
-				{
-					if (AT66PlayerController* PC = Cast<AT66PlayerController>(NewPlayer))
-					{
-						PC->ShowDifficultyClearSummary();
-					}
-				}
-			}
-		}
-	}
+if (GI && NewPlayer)
+{
+if (AT66PlayerController* T66PlayerController = Cast<AT66PlayerController>(NewPlayer))
+{
+T66PlayerController->ClientApplyGameplayRunSettings(
+T66EnsureRunSeed(GI),
+GI->SelectedDifficulty,
+GI->CurrentMainMapLayoutVariant);
+}
 
-	MaintainPlayerTerrainSafety();
+}
+
+MaintainPlayerTerrainSafety();
 
 }
 
 bool AT66GameMode::SwapCompanionForPlayer(AController* Player, FName NewCompanionID)
 {
-	if (!Player) return false;
-	if (NewCompanionID.IsNone()) return false;
+if (!Player) return false;
+if (NewCompanionID.IsNone()) return false;
 
-	UT66GameInstance* GI = GetT66GameInstance();
-	if (!GI) return false;
+UT66GameInstance* GI = GetT66GameInstance();
+if (!GI) return false;
 
-	// If this companion is already selected, treat as handled (no swap).
-	if (GI->SelectedCompanionID == NewCompanionID)
-	{
-		return true;
-	}
+// If this companion is already selected, treat as handled (no swap).
+if (GI->SelectedCompanionID == NewCompanionID)
+{
+return true;
+}
 
-	// Validate new companion exists in DT_Companions (prevents setting an invalid ID).
-	{
-		FCompanionData NewData;
-		if (!GI->GetCompanionData(NewCompanionID, NewData))
-		{
-			return false;
-		}
-	}
+// Validate new companion exists in DT_Companions (prevents setting an invalid ID).
+{
+FCompanionData NewData;
+if (!GI->GetCompanionData(NewCompanionID, NewData))
+{
+return false;
+}
+}
 
-	UWorld* World = GetWorld();
-	if (!World) return false;
+UWorld* World = GetWorld();
+if (!World) return false;
 
-	// If a companion is currently following, spawn a recruitable version where it currently is.
-	FName OldCompanionID = NAME_None;
-	FVector OldCompanionLoc = FVector::ZeroVector;
-	if (TWeakObjectPtr<AT66CompanionBase>* Existing = PlayerCompanions.Find(Player))
-	{
-		if (AT66CompanionBase* ExistingComp = Existing->Get())
-		{
-			OldCompanionID = ExistingComp->CompanionID;
-			OldCompanionLoc = ExistingComp->GetActorLocation();
-			ExistingComp->Destroy();
-		}
-		PlayerCompanions.Remove(Player);
-	}
+// If a companion is currently following, spawn a recruitable version where it currently is.
+FName OldCompanionID = NAME_None;
+FVector OldCompanionLoc = FVector::ZeroVector;
+if (TWeakObjectPtr<AT66CompanionBase>* Existing = PlayerCompanions.Find(Player))
+{
+if (AT66CompanionBase* ExistingComp = Existing->Get())
+{
+OldCompanionID = ExistingComp->CompanionID;
+OldCompanionLoc = ExistingComp->GetActorLocation();
+ExistingComp->Destroy();
+}
+PlayerCompanions.Remove(Player);
+}
 
-	if (!OldCompanionID.IsNone())
-	{
-		FCompanionData OldData;
-		if (GI->GetCompanionData(OldCompanionID, OldData))
-		{
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			if (AT66RecruitableCompanion* OldRecruit = World->SpawnActor<AT66RecruitableCompanion>(AT66RecruitableCompanion::StaticClass(), OldCompanionLoc, FRotator::ZeroRotator, SpawnParams))
-			{
-				OldRecruit->InitializeRecruit(OldData);
-			}
-		}
-	}
+if (!OldCompanionID.IsNone())
+{
+FCompanionData OldData;
+if (GI->GetCompanionData(OldCompanionID, OldData))
+{
+FActorSpawnParameters SpawnParams;
+SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+if (AT66RecruitableCompanion* OldRecruit = World->SpawnActor<AT66RecruitableCompanion>(AT66RecruitableCompanion::StaticClass(), OldCompanionLoc, FRotator::ZeroRotator, SpawnParams))
+{
+OldRecruit->InitializeRecruit(OldData);
+}
+}
+}
 
-	// Persist for the rest of the run (stage transitions read SelectedCompanionID).
-	GI->SelectedCompanionID = NewCompanionID;
+// Persist for the rest of the run (stage transitions read SelectedCompanionID).
+GI->SelectedCompanionID = NewCompanionID;
 
-	SpawnCompanionForPlayer(Player);
-	return true;
+SpawnCompanionForPlayer(Player);
+return true;
 }
 
 void AT66GameMode::SpawnCompanionForPlayer(AController* Player)
 {
-	UT66GameInstance* GI = GetT66GameInstance();
-	if (!GI) return;
-	if (T66IsStandaloneTutorialMap(GetWorld()))
-	{
-		return;
-	}
+UT66GameInstance* GI = GetT66GameInstance();
+if (!GI) return;
+if (GI->IsTutorialRun() || GI->IsTestRoomRun())
+{
+return;
+}
 
-	const FName SelectedCompanionID = T66GetSelectedCompanionID(GI, Player);
-	if (SelectedCompanionID.IsNone()) return;
+const FName SelectedCompanionID = T66GetSelectedCompanionID(GI, Player);
+if (SelectedCompanionID.IsNone()) return;
 
-	FCompanionData CompanionData;
-	if (!GI->GetCompanionData(SelectedCompanionID, CompanionData)) return;
+FCompanionData CompanionData;
+if (!GI->GetCompanionData(SelectedCompanionID, CompanionData)) return;
 
-	UWorld* World = GetWorld();
-	if (!World) return;
+UWorld* World = GetWorld();
+if (!World) return;
 
-	APawn* HeroPawn = Player ? Player->GetPawn() : nullptr;
-	if (!HeroPawn) return;
+APawn* HeroPawn = Player ? Player->GetPawn() : nullptr;
+if (!HeroPawn) return;
 
-	// Prevent duplicate companions on respawn.
-	if (Player)
-	{
-		if (TWeakObjectPtr<AT66CompanionBase>* Existing = PlayerCompanions.Find(Player))
-		{
-			if (AT66CompanionBase* ExistingComp = Existing->Get())
-			{
-				ExistingComp->Destroy();
-			}
-			PlayerCompanions.Remove(Player);
-		}
-	}
+// Prevent duplicate companions on respawn.
+if (Player)
+{
+if (TWeakObjectPtr<AT66CompanionBase>* Existing = PlayerCompanions.Find(Player))
+{
+if (AT66CompanionBase* ExistingComp = Existing->Get())
+{
+ExistingComp->Destroy();
+}
+PlayerCompanions.Remove(Player);
+}
+}
 
-	UClass* CompanionClass = AT66CompanionBase::StaticClass();
-	const bool bWantsSpecificClass = !CompanionData.CompanionClass.IsNull();
-	const bool bHasLoadedClass = bWantsSpecificClass && (CompanionData.CompanionClass.Get() != nullptr);
-	if (bHasLoadedClass)
-	{
-		if (UClass* Loaded = CompanionData.CompanionClass.Get())
-		{
-			if (Loaded->IsChildOf(AT66CompanionBase::StaticClass()))
-			{
-				CompanionClass = Loaded;
-			}
-		}
-	}
+UClass* CompanionClass = AT66CompanionBase::StaticClass();
+const bool bWantsSpecificClass = !CompanionData.CompanionClass.IsNull();
+const bool bHasLoadedClass = bWantsSpecificClass && (CompanionData.CompanionClass.Get() != nullptr);
+if (bHasLoadedClass)
+{
+if (UClass* Loaded = CompanionData.CompanionClass.Get())
+{
+if (Loaded->IsChildOf(AT66CompanionBase::StaticClass()))
+{
+CompanionClass = Loaded;
+}
+}
+}
 
-	FVector SpawnLoc = HeroPawn->GetActorLocation() + FVector(-150.f, 100.f, 0.f);
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = HeroPawn;
-	SpawnParams.Instigator = HeroPawn;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+FVector SpawnLoc = HeroPawn->GetActorLocation() + FVector(-150.f, 100.f, 0.f);
+FActorSpawnParameters SpawnParams;
+SpawnParams.Owner = HeroPawn;
+SpawnParams.Instigator = HeroPawn;
+SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	FName CompanionSkinID = FName(TEXT("Default"));
-	if (UGameInstance* GII = GetGameInstance())
-	{
-		if (UT66AchievementsSubsystem* Ach = GII->GetSubsystem<UT66AchievementsSubsystem>())
-		{
-			CompanionSkinID = Ach->GetEquippedCompanionSkinID(SelectedCompanionID);
-		}
-	}
+FName CompanionSkinID = FName(TEXT("Default"));
+if (UGameInstance* GII = GetGameInstance())
+{
+if (UT66AchievementsSubsystem* Ach = GII->GetSubsystem<UT66AchievementsSubsystem>())
+{
+CompanionSkinID = Ach->GetEquippedCompanionSkinID(SelectedCompanionID);
+}
+}
 
-	AT66CompanionBase* Companion = World->SpawnActor<AT66CompanionBase>(CompanionClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-	if (Companion)
-	{
-		Companion->InitializeCompanion(CompanionData, CompanionSkinID);
-		Companion->SetPreviewMode(false); // gameplay: follow hero
-		if (Player)
-		{
-			PlayerCompanions.Add(Player, Companion);
-		}
-		// Snap companion to ground so it doesn't float.
-		FHitResult Hit;
-		const FVector Start = Companion->GetActorLocation() + FVector(0.f, 0.f, 2000.f);
-		const FVector End = Companion->GetActorLocation() - FVector(0.f, 0.f, 9000.f);
-		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
-		{
-			Companion->SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
-		}
-		UE_LOG(LogT66GameMode, Log, TEXT("Spawned companion: %s"), *CompanionData.DisplayName.ToString());
-	}
+AT66CompanionBase* Companion = World->SpawnActor<AT66CompanionBase>(CompanionClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+if (Companion)
+{
+Companion->InitializeCompanion(CompanionData, CompanionSkinID);
+Companion->SetPreviewMode(false); // gameplay: follow hero
+if (Player)
+{
+PlayerCompanions.Add(Player, Companion);
+}
+// Snap companion to ground so it doesn't float.
+FHitResult Hit;
+const FVector Start = Companion->GetActorLocation() + FVector(0.f, 0.f, 2000.f);
+const FVector End = Companion->GetActorLocation() - FVector(0.f, 0.f, 9000.f);
+if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+{
+Companion->SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
+}
+UE_LOG(LogT66GameMode, Log, TEXT("Spawned companion: %s"), *CompanionData.DisplayName.ToString());
+}
 
-	// If the companion class is a soft reference and isn't loaded yet, load asynchronously and replace.
-	if (bWantsSpecificClass && !bHasLoadedClass)
-	{
-		const FSoftObjectPath ClassPath = CompanionData.CompanionClass.ToSoftObjectPath();
-		const TWeakObjectPtr<AController> WeakPlayer(Player);
-		const TWeakObjectPtr<AT66CompanionBase> WeakExisting(Companion);
-		const FCompanionData CompanionDataCopy = CompanionData;
+// If the companion class is a soft reference and isn't loaded yet, load asynchronously and replace.
+if (bWantsSpecificClass && !bHasLoadedClass)
+{
+const FSoftObjectPath ClassPath = CompanionData.CompanionClass.ToSoftObjectPath();
+const TWeakObjectPtr<AController> WeakPlayer(Player);
+const TWeakObjectPtr<AT66CompanionBase> WeakExisting(Companion);
+const FCompanionData CompanionDataCopy = CompanionData;
 
-		TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
-			ClassPath,
-			FStreamableDelegate::CreateWeakLambda(this, [this, WeakPlayer, WeakExisting, CompanionDataCopy]()
-			{
-				AController* PlayerCtrl = WeakPlayer.Get();
-				if (!PlayerCtrl) return;
+TSharedPtr<FStreamableHandle> Handle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
+ClassPath,
+FStreamableDelegate::CreateWeakLambda(this, [this, WeakPlayer, WeakExisting, CompanionDataCopy]()
+{
+AController* PlayerCtrl = WeakPlayer.Get();
+if (!PlayerCtrl) return;
 
-				UWorld* World2 = GetWorld();
-				if (!World2) return;
+UWorld* World2 = GetWorld();
+if (!World2) return;
 
-				UClass* Loaded = CompanionDataCopy.CompanionClass.Get();
-				if (!Loaded || !Loaded->IsChildOf(AT66CompanionBase::StaticClass()))
-				{
-					return;
-				}
+UClass* Loaded = CompanionDataCopy.CompanionClass.Get();
+if (!Loaded || !Loaded->IsChildOf(AT66CompanionBase::StaticClass()))
+{
+return;
+}
 
-				AT66CompanionBase* ExistingComp = WeakExisting.Get();
-				// If the existing companion is already the correct class (or was destroyed), do nothing.
-				if (ExistingComp && ExistingComp->GetClass() == Loaded)
-				{
-					return;
-				}
+AT66CompanionBase* ExistingComp = WeakExisting.Get();
+// If the existing companion is already the correct class (or was destroyed), do nothing.
+if (ExistingComp && ExistingComp->GetClass() == Loaded)
+{
+return;
+}
 
-				// Remove the old companion if it's still around.
+	// Remove the old companion if it's still around.
 				if (TWeakObjectPtr<AT66CompanionBase>* Current = PlayerCompanions.Find(PlayerCtrl))
 				{
 					if (AT66CompanionBase* C = Current->Get())
@@ -342,7 +335,15 @@ void AT66GameMode::SpawnPlayerStartIfNeeded()
 
 		// Default spawn: normal stage start area so the timer begins after passing the start pillars.
 		FVector SpawnLoc;
-		if (bUsingMainMapTerrain)
+		if (GI && GI->IsTestRoomRun())
+		{
+			SpawnLoc = T66TestRoom::PlayerStartLocation();
+		}
+		else if (IsLabRun())
+		{
+			SpawnLoc = FVector(0.f, 0.f, 220.f);
+		}
+		else if (bUsingMainMapTerrain)
 		{
 			const FT66MapPreset Preset = T66BuildMainMapPreset(GI);
 			SpawnLoc = T66MainMapTerrain::GetPreferredSpawnLocation(Preset, DefaultSpawnHeight);
@@ -503,9 +504,14 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	}
 
 	// Robust: always ensure Gameplay spawns in the Start Area (scaled for 100k map).
-	if (IsLabLevel())
+	if (CurrentGI && CurrentGI->IsTestRoomRun())
 	{
-		SpawnLocation = FVector(0.f, 0.f, 120.f);
+		SpawnLocation = T66TestRoom::PlayerStartLocation();
+		SpawnRotation = FRotator::ZeroRotator;
+	}
+	else if (IsLabRun())
+	{
+		SpawnLocation = FVector(0.f, 0.f, 220.f);
 		SpawnRotation = FRotator::ZeroRotator;
 	}
 	else if (bUsingMainMapTerrain)
@@ -555,7 +561,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 
 		if (UT66GameInstance* T66GI = GetT66GameInstance())
 		{
-			if (T66IsStandaloneTutorialMap(GetWorld()) || bForceSpawnInTutorialArea)
+			if (T66GI->IsTutorialRun() || bForceSpawnInTutorialArea)
 			{
 				FVector TutorialSpawnLocation = FVector(-3636.f, 56818.f, 200.f);
 				FRotator TutorialSpawnRotation = FRotator::ZeroRotator;
@@ -630,7 +636,7 @@ APawn* AT66GameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, 
 	{
 		T66SyncPawnAndControllerRotation(SpawnedPawn, NewPlayer, SpawnRotation);
 
-		const bool bNeedsProceduralTerrain = !IsLabLevel();
+		const bool bNeedsProceduralTerrain = !IsLabRun() && !(CurrentGI && CurrentGI->IsTestRoomRun());
 		if (bUsingMainMapTerrain && bTerrainCollisionReady)
 		{
 			float HalfHeight = 0.f;
@@ -779,6 +785,10 @@ AT66HeroBase* AT66GameMode::SpawnSelectedHero(AController* Controller)
 	if (SpawnedPawn && Controller)
 	{
 		Controller->Possess(SpawnedPawn);
+		if (AT66PlayerController* T66PlayerController = Cast<AT66PlayerController>(Controller))
+		{
+			T66PlayerController->EnsureGameplayRuntimePresentation();
+		}
 	}
 
 	return Cast<AT66HeroBase>(SpawnedPawn);

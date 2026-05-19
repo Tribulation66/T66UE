@@ -72,7 +72,7 @@ void UT66ActorRegistrySubsystem::UnregisterBoss(AT66BossBase* Boss)
 	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: unregistered boss %s (total: %d)"), *Boss->GetName(), Bosses.Num());
 }
 
-// --------------- House NPCs ---------------
+// --------------- NPCs ---------------
 
 void UT66ActorRegistrySubsystem::RegisterNPC(AT66HouseNPCBase* NPC)
 {

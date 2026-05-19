@@ -23,30 +23,6 @@ void UT66HeroSelectionScreen::GeneratePlaceholderSkins()
 		T66SelectionScreenUtils::PopulateDefaultOwnedSkins(PlaceholderSkins);
 	}
 
-	if (!IsShowingCompanionSkins())
-	{
-		auto EnsureVisualStubSkin = [this](const FName SkinID, const FText DisplayName, const int32 CoinCost)
-		{
-			if (PlaceholderSkins.ContainsByPredicate([SkinID](const FSkinData& Existing) { return Existing.SkinID == SkinID; }))
-			{
-				return;
-			}
-
-			// Stage 1 visual stub: the V3 reference shows these skin rows before backend skin data exists.
-			FSkinData StubSkin;
-			StubSkin.SkinID = SkinID;
-			StubSkin.DisplayName = DisplayName;
-			StubSkin.OwnerID = PreviewedHeroID;
-			StubSkin.CoinCost = CoinCost;
-			StubSkin.bIsOwned = false;
-			StubSkin.bIsEquipped = false;
-			StubSkin.bIsDefault = false;
-			PlaceholderSkins.Add(StubSkin);
-		};
-
-		EnsureVisualStubSkin(FName(TEXT("Crusader")), NSLOCTEXT("T66.HeroSelection", "SkinStubCrusader", "Crusader"), 100);
-		EnsureVisualStubSkin(FName(TEXT("GoldenPaladin")), NSLOCTEXT("T66.HeroSelection", "SkinStubGoldenPaladin", "Golden Paladin"), 150);
-	}
 }
 
 void UT66HeroSelectionScreen::RefreshSkinsList()
@@ -262,16 +238,13 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 		const bool bIsOwned = Skin.bIsOwned;
 		const bool bIsEquipped = Skin.bIsEquipped;
 		const bool bIsBeachgoer = (SkinIDCopy == FName(TEXT("Beachgoer")));
-		const bool bIsVisualStub = (SkinIDCopy == FName(TEXT("Crusader")) || SkinIDCopy == FName(TEXT("GoldenPaladin")));
 
 		const FString SkinInitialText = SkinDisplayName.ToString().Left(2).ToUpper();
 		const FLinearColor SkinThumbnailFill = bIsDefault
 			? FLinearColor(0.16f, 0.08f, 0.05f, 1.0f)
 			: (bIsBeachgoer
 				? FLinearColor(0.07f, 0.18f, 0.25f, 1.0f)
-				: (bIsVisualStub
-					? FLinearColor(0.12f, 0.10f, 0.16f, 1.0f)
-					: FLinearColor(0.09f, 0.08f, 0.12f, 1.0f)));
+				: FLinearColor(0.09f, 0.08f, 0.12f, 1.0f));
 
 		TSharedRef<SHorizontalBox> ButtonRow = SNew(SHorizontalBox);
 		if (bIsDefault)

@@ -216,4 +216,37 @@ namespace T66MiniGeneratedChrome
 	{
 		return MakeButton(MakeButtonParams(Label, OnClicked, Type, MinWidth, Height, FontSize), Tag, ToggleGroup);
 	}
+
+	inline TSharedRef<SWidget> MakeBareContentButton(
+		const FOnClicked& OnClicked,
+		const TSharedRef<SWidget>& Content,
+		const TAttribute<bool>& IsEnabled = true,
+		const FName Tag = NAME_None,
+		const FMargin& ContentPadding = FMargin(0.f))
+	{
+		const FButtonStyle& NoBorderStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
+		TSharedRef<SWidget> Button = SNew(SButton)
+			.Cursor(EMouseCursor::Hand)
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			.OnClicked(OnClicked)
+			.ButtonStyle(&NoBorderStyle)
+			.ButtonColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.01f))
+			.ContentPadding(ContentPadding)
+			.IsEnabled(IsEnabled)
+			[
+				Content
+			];
+
+		return FT66FlatStyle::AttachMetadata(
+			Button,
+			Tag,
+			TEXT("Mini.BareContentButton"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			OnClicked.IsBound(),
+			NAME_None,
+			false,
+			IsEnabled.Get(true));
+	}
 }

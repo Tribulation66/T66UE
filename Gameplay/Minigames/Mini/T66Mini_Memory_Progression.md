@@ -1,6 +1,6 @@
 # T66Mini Memory and Progression
 
-Last updated: 2026-04-13
+Last updated: 2026-05-15
 
 ## 1. Purpose
 
@@ -25,7 +25,7 @@ Update it whenever:
 - Mouse-follow movement should match Brotato-style feel
 - Visual target is Brotato-like chibi readability with mini chad faces and proportions
 - First build ships without backend work
-- First build ships without live multiplayer gameplay
+- Mini battle is local-only frontend gameplay; no multiplayer, replication, controller RPC, or session seam is carried in the widget runtime
 - First build uses all 16 existing heroes as the launch roster
 - First build supports true mid-wave resume
 - First build includes Treasure Chest, Fountain, Loot Crate, and Quick Revive NPC as random interactables
@@ -119,8 +119,20 @@ Update it whenever:
 - Repackaged the standalone runtime with the dedicated mini map, updated mini data tables, HUD, VFX/audio layer, and staged output sync so the pinned `T66 Standalone` shortcut now points at the refreshed packaged build.
 - Updated the gap checklist so it now reflects a completed first-build target rather than a pre-finish delta snapshot.
 
+### 2026-05-15
+
+- Converted Mini battle from the dedicated `/Game/Mini/Maps/T66MiniBattleMap` world route into the dedicated `ET66ScreenType::MiniBattle` frontend screen.
+- Added `UT66MiniBattleScreen`, which owns the local Slate battle board, widget tick, input handling, HUD chrome, entity simulation, projectiles, pickups, interactables, traps, VFX events, combat text, shop transition, run summary handoff, and mid-wave save snapshots.
+- Replaced `UT66MiniRuntimeSubsystem::LaunchMiniBattle()` map travel with validation of active Mini run state plus frontend navigation into `MiniBattle`.
+- Preserved the existing save behavior where active projectiles are not saved in mid-wave snapshots.
+- Removed the world Mini battle map from source and `MapsToCook`.
+- Deleted the old world battle actor stack, old battle HUD canvas class, old pause widget, and world VFX actor/subsystem path after reference search.
+- Tagged animated play-area elements as `AnimatedStyle.Mini.*` for the future AnimatedStyle refinement pass.
+- Refreshed staged standalone and smoke-booted the staged `MiniBattle` route successfully.
+
 ## 4. Optional Next Steps
 
+- Finish an interactive human parity pass through `SaveSlots -> CharacterSelect -> CompanionSelect -> DifficultySelect -> IdolSelect -> Battle -> Shop -> IdolSelect -> Battle -> RunSummary`.
 - Replace shared placeholder boss/enemy visual reuse with more bespoke per-ID mini art over time.
 - Broaden the mini-only audio library beyond the current first-pass SFX routing.
 - Extend the current pulse/telegraph VFX layer into more authored flipbook-sheet effects as new art lands.

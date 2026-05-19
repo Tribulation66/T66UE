@@ -8,6 +8,7 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
+class UStaticMesh;
 
 /** Walk-through pillars that awaken the stage boss. */
 UCLASS(Blueprintable)
@@ -27,6 +28,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh")
 	TObjectPtr<UStaticMeshComponent> PoleRight;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh")
+	TObjectPtr<UStaticMeshComponent> GateMesh;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Mesh")
+	TSoftObjectPtr<UStaticMesh> GateMeshOverride;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "BossGate")
 	float TriggerDistance2D = 90.f;
 
@@ -40,6 +47,7 @@ protected:
 
 private:
 	bool bTriggered = false;
+	void ApplyImportedGateMesh();
 	void TryTriggerForActor(AActor* OtherActor);
 };
 

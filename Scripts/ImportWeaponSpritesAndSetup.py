@@ -15,7 +15,6 @@ import SetupWeaponsDataTable
 
 DEST_ROOT = "/Game/Weapons/Sprites"
 RARITY_FOLDERS = {
-    "Grey": "Grey",
     "Black": "Black",
     "Red": "Red",
     "Yellow": "Yellow",
@@ -130,8 +129,8 @@ def main():
     desired_paths = set()
     for row in rows:
         weapon_id = row["WeaponID"].strip()
-        rarity = row.get("Rarity", "Grey").strip() or "Grey"
-        folder_name = RARITY_FOLDERS.get(rarity, "Grey")
+        rarity = row.get("Rarity", "Black").strip() or "Black"
+        folder_name = RARITY_FOLDERS.get(rarity, "Black")
         dest_dir = f"{DEST_ROOT}/{folder_name}"
         desired_paths.add(f"{dest_dir}/{weapon_id}")
         import_texture(os.path.join(source_dir, f"{weapon_id}.png"), dest_dir, weapon_id)

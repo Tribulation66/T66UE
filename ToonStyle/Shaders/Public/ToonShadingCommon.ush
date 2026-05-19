@@ -1,0 +1,81 @@
+#ifndef T66_TOON_SHADING_COMMON_USH
+#define T66_TOON_SHADING_COMMON_USH
+
+float T66ToonSafeWidth(float Value, float MinimumWidth)
+{
+	float DerivativeWidth = abs(ddx(Value)) + abs(ddy(Value));
+	return max(DerivativeWidth, MinimumWidth);
+}
+
+float ToonCelBand(float NdotL, float Threshold, float Width)
+{
+	const float EffectiveWidth = T66ToonSafeWidth(NdotL, max(Width, 0.02));
+	return smoothstep(Threshold - EffectiveWidth, Threshold + EffectiveWidth, NdotL);
+}
+
+float3 ToonThreeTone(
+	float NdotL,
+	float RampStep1,
+	float RampStep2,
+	float3 ShadeColor,
+	float3 MidtoneColor,
+	float3 LitColor)
+{
+	const float LowBand = ToonCelBand(NdotL, RampStep1, 0.02);
+	const float HighBand = ToonCelBand(NdotL, RampStep2, 0.02);
+	const float3 ShadeToMid = lerp(ShadeColor, MidtoneColor, LowBand);
+	return lerp(ShadeToMid, LitColor, HighBand);
+}
+
+float ToonRim(float3 N, float3 V, float Power, float Strength)
+{
+	const float RimBase = saturate(1.0 - dot(normalize(N), normalize(V)));
+	return pow(RimBase, max(Power, 0.001)) * Strength;
+}
+
+float3 ToonCharacterShade(
+	float3 BaseColor,
+	float3 TintColor,
+	float InnerLineMask,
+	float3 InnerLineColor,
+	float InnerLineStrength,
+	float3 N,
+	float3 L,
+	float3 V,
+	float ThresholdOffset,
+	float RampStep1,
+	float RampStep2,
+	float3 ShadeColor,
+	float3 MidtoneColor,
+	float3 LitColor,
+	float3 RimColor,
+	float RimPower,
+	float RimStrength)
+{
+	const float3 Normal = normalize(N);
+	const float3 Light = normalize(L);
+	const float NdotL = dot(Normal, Light);
+	const float Offset = ThresholdOffset - 0.5;
+	const float3 Ramp = ToonThreeTone(NdotL, RampStep1 + Offset, RampStep2 + Offset, ShadeColor, MidtoneColor, LitColor);
+	const float Rim = ToonRim(Normal, V, RimPower, RimStrength);
+	const float3 LitOutput = (BaseColor * TintColor * 2.0 * Ramp) + (RimColor * Rim);
+	const float LineAlpha = saturate(InnerLineMask * InnerLineStrength);
+	return lerp(LitOutput, InnerLineColor, LineAlpha);
+}
+
+float3 ToonEnvironmentShade(
+	float3 BaseColor,
+	float3 N,
+	float3 L,
+	float RampStep1,
+	float RampStep2,
+	float3 ShadeColor,
+	float3 MidtoneColor,
+	float3 LitColor)
+{
+	const float NdotL = dot(normalize(N), normalize(L));
+	const float3 Ramp = ToonThreeTone(NdotL, RampStep1, RampStep2, ShadeColor, MidtoneColor, LitColor);
+	return BaseColor * Ramp;
+}
+
+#endif

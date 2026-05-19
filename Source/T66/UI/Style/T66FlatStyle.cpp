@@ -47,6 +47,47 @@ namespace
 		return Style;
 	}
 
+	ET66FlatState FlatStateForOverlayBrush(const ET66FlatOverlayChromeBrush Brush)
+	{
+		switch (Brush)
+		{
+		case ET66FlatOverlayChromeBrush::SlotSelected:
+		case ET66FlatOverlayChromeBrush::OfferCardSelected:
+		case ET66FlatOverlayChromeBrush::CrateWinnerMarker:
+			return ET66FlatState::Selected;
+		case ET66FlatOverlayChromeBrush::SlotDisabled:
+		case ET66FlatOverlayChromeBrush::OfferCardDisabled:
+			return ET66FlatState::Disabled;
+		case ET66FlatOverlayChromeBrush::SlotHover:
+		case ET66FlatOverlayChromeBrush::OfferCardHover:
+			return ET66FlatState::Ready;
+		default:
+			return ET66FlatState::Default;
+		}
+	}
+
+	ET66FlatState FlatStateForOverlayButton(
+		const ET66FlatOverlayChromeButtonFamily Family,
+		const bool bSelected,
+		const bool bEnabled)
+	{
+		if (!bEnabled)
+		{
+			return ET66FlatState::Disabled;
+		}
+		if (bSelected || Family == ET66FlatOverlayChromeButtonFamily::Danger)
+		{
+			return ET66FlatState::Selected;
+		}
+		if (Family == ET66FlatOverlayChromeButtonFamily::Primary
+			|| Family == ET66FlatOverlayChromeButtonFamily::Central
+			|| Family == ET66FlatOverlayChromeButtonFamily::Select)
+		{
+			return ET66FlatState::Ready;
+		}
+		return ET66FlatState::Default;
+	}
+
 	FComboButtonStyle& FlatComboButtonStyle()
 	{
 		static FComboButtonStyle Style = FT66Style::GetDropdownComboButtonStyle();
@@ -335,6 +376,74 @@ namespace
 	}
 }
 
+FLinearColor FT66FlatStyle::Tokens::Bg(0.08f, 0.08f, 0.10f, 1.0f);
+FLinearColor FT66FlatStyle::Tokens::Panel(0.0f, 0.0f, 0.0f, 1.0f);
+FLinearColor FT66FlatStyle::Tokens::Panel2(0.0f, 0.0f, 0.0f, 1.0f);
+FLinearColor FT66FlatStyle::Tokens::Stroke(0.18f, 0.18f, 0.20f, 1.0f);
+FLinearColor FT66FlatStyle::Tokens::Scrim(0.f, 0.f, 0.f, 0.70f);
+FLinearColor FT66FlatStyle::Tokens::Text(244.f / 255.f, 236.f / 255.f, 216.f / 255.f, 1.0f);
+FLinearColor FT66FlatStyle::Tokens::TextMuted(0.75f, 0.75f, 0.75f, 1.0f);
+FLinearColor FT66FlatStyle::Tokens::Accent(0.0f, 0.0f, 0.0f, 1.0f);
+FLinearColor FT66FlatStyle::Tokens::Accent2(0.0f, 0.0f, 0.0f, 1.0f);
+FLinearColor FT66FlatStyle::Tokens::Danger(0.95f, 0.15f, 0.15f, 1.0f);
+FLinearColor FT66FlatStyle::Tokens::Success(0.20f, 0.80f, 0.35f, 1.0f);
+FLinearColor FT66FlatStyle::Tokens::Border(1.0f, 1.0f, 1.0f, 1.0f);
+
+const FMargin FT66FlatStyle::Tokens::ButtonPadding(12.f, 4.f);
+const FMargin FT66FlatStyle::Tokens::ButtonPaddingPressed(12.f, 5.f, 12.f, 3.f);
+
+FSlateFontInfo FT66FlatStyle::Tokens::FontRegular(const int32 Size)
+{
+	return FT66FlatStyle::MakeFont(Size);
+}
+
+FSlateFontInfo FT66FlatStyle::Tokens::FontBold(const int32 Size)
+{
+	return FT66FlatStyle::MakeBoldFont(Size);
+}
+
+FSlateFontInfo FT66FlatStyle::Tokens::FontTitle()
+{
+	FSlateFontInfo Font = FT66FlatStyle::MakeBoldFont(56);
+	Font.LetterSpacing = 180;
+	return Font;
+}
+
+FSlateFontInfo FT66FlatStyle::Tokens::FontHeading()
+{
+	FSlateFontInfo Font = FT66FlatStyle::MakeBoldFont(26);
+	Font.LetterSpacing = 120;
+	return Font;
+}
+
+FSlateFontInfo FT66FlatStyle::Tokens::FontBody()
+{
+	FSlateFontInfo Font = FT66FlatStyle::MakeFont(15);
+	Font.LetterSpacing = 20;
+	return Font;
+}
+
+FSlateFontInfo FT66FlatStyle::Tokens::FontSmall()
+{
+	FSlateFontInfo Font = FT66FlatStyle::MakeFont(12);
+	Font.LetterSpacing = 18;
+	return Font;
+}
+
+FSlateFontInfo FT66FlatStyle::Tokens::FontChip()
+{
+	FSlateFontInfo Font = FT66FlatStyle::MakeBoldFont(12);
+	Font.LetterSpacing = 90;
+	return Font;
+}
+
+FSlateFontInfo FT66FlatStyle::Tokens::FontButton()
+{
+	FSlateFontInfo Font = FT66FlatStyle::MakeBoldFont(18);
+	Font.LetterSpacing = 110;
+	return Font;
+}
+
 FLinearColor FT66FlatStyle::BackgroundColor()
 {
 	return HexColor(8, 8, 12);
@@ -433,6 +542,461 @@ FLinearColor FT66FlatStyle::SecondaryText()
 FLinearColor FT66FlatStyle::DataAccent()
 {
 	return HexColor(60, 220, 240);
+}
+
+FLinearColor FT66FlatStyle::Text()
+{
+	return FT66Style::Text();
+}
+
+FLinearColor FT66FlatStyle::TextMuted()
+{
+	return FT66Style::TextMuted();
+}
+
+FLinearColor FT66FlatStyle::Accent2()
+{
+	return FT66Style::Accent2();
+}
+
+FLinearColor FT66FlatStyle::Danger()
+{
+	return FT66Style::Danger();
+}
+
+FLinearColor FT66FlatStyle::Border()
+{
+	return FT66Style::Border();
+}
+
+FLinearColor FT66FlatStyle::Background()
+{
+	return FT66Style::Background();
+}
+
+FLinearColor FT66FlatStyle::PanelOuter()
+{
+	return FT66Style::PanelOuter();
+}
+
+FLinearColor FT66FlatStyle::PanelInner()
+{
+	return FT66Style::PanelInner();
+}
+
+FLinearColor FT66FlatStyle::BossBarBackground()
+{
+	return FT66Style::BossBarBackground();
+}
+
+FLinearColor FT66FlatStyle::BossBarFill()
+{
+	return FT66Style::BossBarFill();
+}
+
+FLinearColor FT66FlatStyle::MinimapBackground()
+{
+	return FT66Style::MinimapBackground();
+}
+
+FLinearColor FT66FlatStyle::MinimapTerrain()
+{
+	return FT66Style::MinimapTerrain();
+}
+
+FLinearColor FT66FlatStyle::MinimapGrid()
+{
+	return FT66Style::MinimapGrid();
+}
+
+FLinearColor FT66FlatStyle::MinimapFriendly()
+{
+	return FT66Style::MinimapFriendly();
+}
+
+FLinearColor FT66FlatStyle::MinimapEnemy()
+{
+	return FT66Style::MinimapEnemy();
+}
+
+FLinearColor FT66FlatStyle::MinimapNeutral()
+{
+	return FT66Style::MinimapNeutral();
+}
+
+float FT66FlatStyle::GetGlobalUIScale()
+{
+	return FT66Style::GetGlobalUIScale();
+}
+
+FVector2D FT66FlatStyle::GetViewportLogicalSize()
+{
+	return FT66Style::GetViewportLogicalSize();
+}
+
+FVector2D FT66FlatStyle::GetSafeFrameSize(const float AspectRatio)
+{
+	return FT66Style::GetSafeFrameSize(AspectRatio);
+}
+
+FMargin FT66FlatStyle::GetSafeFrameInsets(const float AspectRatio)
+{
+	return FT66Style::GetSafeFrameInsets(AspectRatio);
+}
+
+FMargin FT66FlatStyle::GetSafePadding(const FMargin& Padding, const float AspectRatio)
+{
+	return FT66Style::GetSafePadding(Padding, AspectRatio);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeResponsiveRoot(
+	const TSharedRef<SWidget>& Content,
+	const FVector2D& ReferenceResolution,
+	const bool bAllowUpscale)
+{
+	return FT66Style::MakeResponsiveRoot(Content, ReferenceResolution, bAllowUpscale);
+}
+
+void FT66FlatStyle::DeferRebuild(UUserWidget* Widget, const int32 ZOrder)
+{
+	FT66Style::DeferRebuild(Widget, ZOrder);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeButton(const FT66ButtonParams& Params)
+{
+	return FT66Style::MakeButton(Params);
+}
+
+FT66ButtonParams FT66FlatStyle::MakeInRunButtonParams(
+	const FText& Label,
+	FOnClicked OnClicked,
+	ET66ButtonType Type)
+{
+	return FT66Style::MakeInRunButtonParams(Label, MoveTemp(OnClicked), Type);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeBareButton(const FT66BareButtonParams& Params, TSharedPtr<SButton>* OutButton)
+{
+	return FT66Style::MakeBareButton(Params, OutButton);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakePanel(
+	const TSharedRef<SWidget>& Content,
+	const FT66PanelParams& Params,
+	TSharedPtr<SBorder>* OutBorder)
+{
+	return FT66Style::MakePanel(Content, Params, OutBorder);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakePanel(
+	const TSharedRef<SWidget>& Content,
+	const ET66PanelType Type,
+	const FMargin Padding)
+{
+	return FT66Style::MakePanel(Content, Type, Padding);
+}
+
+FSlateFontInfo FT66FlatStyle::MakeFont(const TCHAR* Weight, const int32 Size)
+{
+	return FT66Style::MakeFont(Weight, Size);
+}
+
+const FTextBlockStyle& FT66FlatStyle::GetTextBlockStyle(const FName StyleName)
+{
+	return FT66Style::Get().GetWidgetStyle<FTextBlockStyle>(StyleName);
+}
+
+const FSlateBrush* FT66FlatStyle::GetBrush(const FName BrushName)
+{
+	return FT66Style::Get().GetBrush(BrushName);
+}
+
+const FButtonStyle& FT66FlatStyle::GetButtonStyle(const FName StyleName)
+{
+	return FT66Style::Get().GetWidgetStyle<FButtonStyle>(StyleName);
+}
+
+const FComboButtonStyle& FT66FlatStyle::GetDropdownComboButtonStyle()
+{
+	return FT66Style::GetDropdownComboButtonStyle();
+}
+
+FLinearColor FT66FlatStyle::Scrim()
+{
+	return FT66Style::Scrim();
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeHudPanel(
+	const TSharedRef<SWidget>& Content,
+	const FText& Title,
+	const FMargin& Padding)
+{
+	return FT66Style::MakeHudPanel(Content, Title, Padding);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeHudPanel(
+	const TSharedRef<SWidget>& Content,
+	const FMargin& Padding)
+{
+	return FT66Style::MakeHudPanel(Content, Padding);
+}
+
+const FT66FlatStyle::FFrontendChromeMetrics& FT66FlatStyle::GetFrontendChromeMetrics()
+{
+	return T66ScreenSlateHelpers::GetFrontendChromeMetrics();
+}
+
+float FT66FlatStyle::GetFrontendChromeTopInset(const UT66UIManager* UIManager)
+{
+	return T66ScreenSlateHelpers::GetFrontendChromeTopInset(UIManager);
+}
+
+FT66FlatStyle::FTopBarScreenLayoutMetrics FT66FlatStyle::MakeTopBarScreenLayoutMetrics(
+	const UT66UIManager* UIManager,
+	const FMargin& ExtraPadding)
+{
+	return T66ScreenSlateHelpers::MakeTopBarScreenLayoutMetrics(UIManager, ExtraPadding);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeTopBarScreenRoot(
+	const UT66UIManager* UIManager,
+	const TSharedRef<SWidget>& Content,
+	const TSharedRef<SWidget>& BackgroundContent,
+	const FLinearColor& OverlayTint,
+	const FMargin& ExtraPadding)
+{
+	return T66ScreenSlateHelpers::MakeTopBarScreenRoot(UIManager, Content, BackgroundContent, OverlayTint, ExtraPadding);
+}
+
+FSlateFontInfo FT66FlatStyle::MakeFrontendChromeTitleFont()
+{
+	return T66ScreenSlateHelpers::MakeFrontendChromeTitleFont();
+}
+
+FSlateFontInfo FT66FlatStyle::MakeFrontendChromeTabFont()
+{
+	return T66ScreenSlateHelpers::MakeFrontendChromeTabFont();
+}
+
+TSharedPtr<FSlateBrush> FT66FlatStyle::MakeSlateBrush(const FVector2D& ImageSize, const ESlateBrushDrawType::Type DrawAs)
+{
+	return T66ScreenSlateHelpers::MakeSlateBrush(ImageSize, DrawAs);
+}
+
+FT66FlatStyle::FResponsiveGridModalMetrics FT66FlatStyle::MakeResponsiveGridModalMetrics(
+	const int32 ItemCount,
+	const FVector2D& SafeFrameSize)
+{
+	return T66ScreenSlateHelpers::MakeResponsiveGridModalMetrics(ItemCount, SafeFrameSize);
+}
+
+void FT66FlatStyle::AddUniformGridPaddingSlots(
+	SGridPanel& GridPanel,
+	const int32 FilledSlotCount,
+	const FResponsiveGridModalMetrics& Metrics)
+{
+	T66ScreenSlateHelpers::AddUniformGridPaddingSlots(GridPanel, FilledSlotCount, Metrics);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeFilledButtonText(
+	const FT66ButtonParams& Params,
+	const float ButtonHeight,
+	const TAttribute<FSlateColor>& DefaultTextColor,
+	const TAttribute<FLinearColor>& DefaultShadowColor)
+{
+	return T66ScreenSlateHelpers::MakeFilledButtonText(Params, ButtonHeight, DefaultTextColor, DefaultShadowColor);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::BuildFlatHorizontalSlicedImage(
+	TAttribute<const FSlateBrush*> Brush,
+	const FVector2D& DesiredSize,
+	const float SourceCapFraction)
+{
+	return T66ScreenSlateHelpers::MakeReferenceHorizontalSlicedImage(Brush, DesiredSize, SourceCapFraction);
+}
+
+float FT66FlatStyle::NormalizeFlatSlicedButtonMinWidth(const float RequestedMinWidth, const float Height)
+{
+	return T66ScreenSlateHelpers::NormalizeReferenceSlicedButtonMinWidth(RequestedMinWidth, Height);
+}
+
+FT66FlatStyle::ET66ReferenceChromePreset FT66FlatStyle::GetFlatChromePreset()
+{
+	return T66ScreenSlateHelpers::GetReferenceChromePreset();
+}
+
+const TCHAR* FT66FlatStyle::GetFlatChromePresetName()
+{
+	return T66ScreenSlateHelpers::GetReferenceChromePresetName();
+}
+
+void FT66FlatStyle::SetFlatChromePresetForSession(const ET66ReferenceChromePreset Preset)
+{
+	T66ScreenSlateHelpers::SetReferenceChromePresetForSession(Preset);
+}
+
+FString FT66FlatStyle::GetFlatMainMenuElementAssetPath(const TCHAR* FileName)
+{
+	return T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(FileName);
+}
+
+FString FT66FlatStyle::GetFlatChromeElementAssetPath(const TCHAR* FileName)
+{
+	return T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(FileName);
+}
+
+FString FT66FlatStyle::GetFlatLongPanelAssetPath(const TCHAR* State)
+{
+	return T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(State);
+}
+
+FString FT66FlatStyle::GetFlatRedSquareButtonAssetPath(const TCHAR* State)
+{
+	return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(State);
+}
+
+FString FT66FlatStyle::GetFlatChromeButtonAssetPath(const TCHAR* Family, const TCHAR* State)
+{
+	return T66ScreenSlateHelpers::MakeReferenceChromeButtonAssetPath(Family, State);
+}
+
+FString FT66FlatStyle::GetFlatButtonAssetPath(const TCHAR* FamilyStem, const TCHAR* State)
+{
+	return T66ScreenSlateHelpers::MakeReferenceButtonAssetPath(FamilyStem, State);
+}
+
+FString FT66FlatStyle::GetFlatSharedAssetPath(const TCHAR* RelativeAssetPath)
+{
+	return T66ScreenSlateHelpers::MakeReferenceSharedAssetPath(RelativeAssetPath);
+}
+
+const FSlateBrush* FT66FlatStyle::GetFlatSharedBrush(
+	const TCHAR* RelativeAssetPath,
+	const FMargin& Margin,
+	const TCHAR* DebugLabel)
+{
+	return T66ScreenSlateHelpers::GetReferenceSharedBrush(RelativeAssetPath, Margin, DebugLabel);
+}
+
+bool FT66FlatStyle::IsFlatChromeButtonAssetPath(const FString& SourceRelativePath)
+{
+	return T66ScreenSlateHelpers::IsReferenceChromeButtonAssetPath(SourceRelativePath);
+}
+
+bool FT66FlatStyle::IsFlatChromePillButtonAssetPath(const FString& SourceRelativePath)
+{
+	return T66ScreenSlateHelpers::IsReferenceChromePillButtonAssetPath(SourceRelativePath);
+}
+
+bool FT66FlatStyle::IsFlatChromeCTAButtonAssetPath(const FString& SourceRelativePath)
+{
+	return T66ScreenSlateHelpers::IsReferenceChromeCTAButtonAssetPath(SourceRelativePath);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::BuildFlatSharedBorder(
+	const TCHAR* RelativeAssetPath,
+	const TSharedRef<SWidget>& Content,
+	const FMargin& BrushMargin,
+	const FMargin& Padding,
+	const TCHAR* DebugLabel,
+	const FLinearColor& FallbackColor)
+{
+	return T66ScreenSlateHelpers::MakeReferenceSharedBorder(
+		RelativeAssetPath,
+		Content,
+		BrushMargin,
+		Padding,
+		DebugLabel,
+		FallbackColor);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::BuildFlatSlicedPlateButton(
+	FOnClicked OnClicked,
+	const TSharedRef<SWidget>& Content,
+	const FSlateBrush* NormalBrush,
+	const FSlateBrush* HoveredBrush,
+	const FSlateBrush* PressedBrush,
+	const FSlateBrush* DisabledBrush,
+	const float MinWidth,
+	const float Height,
+	const FMargin& ContentPadding,
+	const TAttribute<bool>& IsEnabled,
+	const TAttribute<EVisibility>& Visibility,
+	const float SourceCapFraction,
+	const FSlateBrush* SelectedBrush,
+	const TAttribute<bool>& IsSelected)
+{
+	return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+		MoveTemp(OnClicked),
+		Content,
+		NormalBrush,
+		HoveredBrush,
+		PressedBrush,
+		DisabledBrush,
+		MinWidth,
+		Height,
+		ContentPadding,
+		IsEnabled,
+		Visibility,
+		SourceCapFraction,
+		SelectedBrush,
+		IsSelected);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::BuildFlatProgressBar(
+	TAttribute<TOptional<float>> Percent,
+	const FVector2D& DesiredSize,
+	const FLinearColor& FallbackFill,
+	const FMargin& Padding)
+{
+	return T66ScreenSlateHelpers::MakeReferenceProgressBar(Percent, DesiredSize, FallbackFill, Padding);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::BuildFlatProgressBar(
+	const float Percent,
+	const FVector2D& DesiredSize,
+	const FLinearColor& FallbackFill,
+	const FMargin& Padding)
+{
+	return T66ScreenSlateHelpers::MakeReferenceProgressBar(Percent, DesiredSize, FallbackFill, Padding);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeResponsiveGridTile(
+	const FT66ButtonParams& ButtonParams,
+	const FLinearColor& BackgroundColor,
+	const TSharedRef<SWidget>& Content,
+	const FResponsiveGridModalMetrics& Metrics)
+{
+	return T66ScreenSlateHelpers::MakeResponsiveGridTile(ButtonParams, BackgroundColor, Content, Metrics);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeResponsiveGridModal(
+	const FText& TitleText,
+	const TSharedRef<SWidget>& GridContent,
+	const TSharedRef<SWidget>& FooterContent,
+	const FResponsiveGridModalMetrics& Metrics)
+{
+	return T66ScreenSlateHelpers::MakeResponsiveGridModal(TitleText, GridContent, FooterContent, Metrics);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeCenteredScrimModal(
+	const TSharedRef<SWidget>& Content,
+	const FMargin& OuterPadding,
+	const float WidthOverride,
+	const float HeightOverride,
+	const bool bUseWhiteBrush)
+{
+	return T66ScreenSlateHelpers::MakeCenteredScrimModal(Content, OuterPadding, WidthOverride, HeightOverride, bUseWhiteBrush);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeTwoButtonRow(
+	const TSharedRef<SWidget>& LeftButton,
+	const TSharedRef<SWidget>& RightButton,
+	const FMargin& LeftPadding,
+	const FMargin& RightPadding,
+	const EVisibility Visibility)
+{
+	return T66ScreenSlateHelpers::MakeTwoButtonRow(LeftButton, RightButton, LeftPadding, RightPadding, Visibility);
 }
 
 FLinearColor FT66FlatStyle::FillForState(const ET66FlatState State)
@@ -877,6 +1441,73 @@ TSharedRef<SWidget> FT66FlatStyle::MakeFlatToggleGroupButton(
 		ToggleGroup,
 		TEXT("ToggleButton"),
 		ButtonHoverProbe);
+}
+
+const FSlateBrush* FT66FlatStyle::GetFlatOverlayBrush(const ET66FlatOverlayChromeBrush)
+{
+	return FlatWhiteBrush();
+}
+
+FT66FlatOverlayChromeButtonParams FT66FlatStyle::MakeFlatOverlayButtonParams(
+	const FText& Label,
+	FOnClicked OnClicked,
+	const ET66FlatOverlayChromeButtonFamily Family)
+{
+	return FT66FlatOverlayChromeButtonParams(Label, MoveTemp(OnClicked), Family);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeFlatOverlayPanel(
+	const TSharedRef<SWidget>& Content,
+	const ET66FlatOverlayChromeBrush Brush,
+	const FMargin& Padding,
+	TSharedPtr<SBorder>* OutBorder)
+{
+	return MakeFlatPanel(FlatStateForOverlayBrush(Brush), Padding, Content, OutBorder);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeFlatOverlayButton(const FT66FlatOverlayChromeButtonParams& Params)
+{
+	const ET66FlatState State = FlatStateForOverlayButton(
+		Params.Family,
+		Params.IsSelected.Get(false),
+		Params.IsEnabled.Get(true));
+
+	if (Params.CustomContent.IsValid())
+	{
+		return MakeFlatToggleGroupButton(
+			State,
+			Params.CustomContent.ToSharedRef(),
+			Params.OnClicked,
+			Params.Padding,
+			Params.MinWidth,
+			Params.MinHeight,
+			Params.IsEnabled);
+	}
+
+	return MakeFlatButton(
+		State,
+		Params.Label,
+		Params.OnClicked,
+		nullptr,
+		nullptr,
+		Params.Padding,
+		Params.MinWidth,
+		Params.MinHeight,
+		Params.IsEnabled,
+		Params.FontSize);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeFlatOverlaySlotPanel(
+	const TSharedRef<SWidget>& Content,
+	const TAttribute<bool>& IsSelected,
+	const TAttribute<bool>& IsEnabled,
+	const FMargin& Padding)
+{
+	const ET66FlatState State = !IsEnabled.Get(true)
+		? ET66FlatState::Disabled
+		: (IsSelected.Get(false) ? ET66FlatState::Selected : ET66FlatState::Default);
+
+	return MakeFlatPanel(State, Padding, Content);
 }
 
 TArray<TSharedRef<SWidget>> FT66FlatStyle::MakeFlatToggleGroup(const FT66FlatToggleGroupParams& Params)

@@ -1,0 +1,8 @@
+{
+  "exit_code": 1,
+  "finished_at": "2026-05-17T04:52:20.579547+00:00",
+  "manifest_path": "/workspace/T66/ToonStyle_Phase1A2_LineupRetryNoRemesh/manifest.json",
+  "ok": false,
+  "started_at": "2026-05-17T04:45:11.737515+00:00",
+  "status_path": "/workspace/T66/ToonStyle_Phase1A2_LineupRetryNoRemesh/Logs/pixal3d_generation_status.jsonl"
+}

@@ -11,7 +11,7 @@ Master scripts are reusable project tools. One-off task scripts should be delete
 - Build and package helpers: `StageStandaloneBuild.ps1`, `GuardT66RuntimeAssetContract.ps1`.
 - UI capture/import helpers: `CaptureT66UIScreen.ps1`, UI texture import and repair scripts.
 - Data-table setup scripts: `Setup*DataTable.py`, roster/data reload helpers.
-- Import core: `ImportStaticMeshes.py`, `ImportSkeletalMeshes.py`, `VerifyImportBatch.py`, material flatten/unlit helpers.
+- Import core: `ImportStaticMeshes.py` plus active domain-specific import/verification wrappers. The old generic skeletal import and generic import-batch verifier were retired.
 - Active batch wrappers: current Quad Retro, combat roster, weapon projectile, coherent theme kit, arcade replacement, and world NPC/interactable imports.
 - Maintenance: focused audit, repair, and verification scripts that are still used by current docs or source-owned tooling.
 

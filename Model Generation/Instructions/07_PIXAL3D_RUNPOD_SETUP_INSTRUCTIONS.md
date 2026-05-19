@@ -1,22 +1,22 @@
 # Pixal3D RunPod Setup
 
-Use this doc when standing up or refreshing the separate Pixal3D RunPod path.
-Pixal3D is evaluated as a research pipeline only. Do not replace the TRELLIS
-path or import Pixal3D output into shipped Unreal content unless licensing is
-explicitly cleared.
+Use this doc when standing up or refreshing the Pixal3D RunPod path. Pixal3D is
+production-cleared for T66 replacement assets, while remaining technically
+separate from TRELLIS.
 
 ## Read First
 
 1. `00_MODEL_GENERATION_ROUTING_INSTRUCTIONS.md`
 2. `02_SOURCE_IMAGE_RULES_INSTRUCTIONS.md`
-3. `../Pixal3D/PIXAL3D_PIPELINE_REFERENCE.md`
-4. This setup doc
-5. `08_PIXAL3D_TROUBLESHOOTING_INSTRUCTIONS.md` if setup or export fails
+3. `09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md` for production assets
+4. `../Pixal3D/PIXAL3D_PIPELINE_REFERENCE.md`
+5. This setup doc
+6. `08_PIXAL3D_TROUBLESHOOTING_INSTRUCTIONS.md` if setup or export fails
 
 ## Expected Pod Shape
 
-- GPU: A40-class pod has been validated. Other NVIDIA GPUs may need dependency
-  rebuilds.
+- GPU: A40-class and L40S pods have been validated. Other NVIDIA GPUs may need
+  dependency rebuilds.
 - Remote checkout: `/workspace/Pixal3D`
 - Conda environment: `pixal3d`
 - Local service port: `18001`
@@ -48,8 +48,15 @@ bash /tmp/t66_pixal3d/bootstrap_pixal3d_pod.sh
 ```
 
 The bootstrap installs Pixal3D into a separate `pixal3d` conda environment. On
-A40 pods, `natten==0.21.0` must be rebuilt for CUDA arch `8.6`; otherwise NAF
-can fail with `no kernel image is available for execution on the device`.
+A40 pods, `natten==0.21.0` must be rebuilt for CUDA arch `8.6`; on L40S pods,
+use CUDA arch `8.9`. Otherwise NAF can fail with `no kernel image is available
+for execution on the device`.
+
+For L40S pods, force the rebuild with:
+
+```bash
+PIXAL3D_NATTEN_SOURCE_ARCH=8.9 bash /tmp/t66_pixal3d/bootstrap_pixal3d_pod.sh
+```
 
 If Hugging Face auth is needed, use the local helper:
 
@@ -97,30 +104,36 @@ curl -sS --max-time 10 http://127.0.0.1:18001/health
 ```
 
 The response must include `"status":"ok"`, `"pipeline_loaded":true`, GPU name,
-VRAM numbers, and the license warning.
+and VRAM numbers.
 
 ## Default Generation Settings
 
-Use these defaults for comparable T66 Pixal3D research runs:
+Use these defaults for T66 Pixal3D production replacement runs:
 
 ```text
 X-Seed: 1337
-X-Resolution: 1024
-X-Texture-Size: 2048
-X-Decimation: 80000
+X-Resolution: 1536
+X-Texture-Size: 4096
+X-Decimation: 200000
 X-Remesh: 1
 X-Export-Fallback: 1
-X-Fallback-Decimation: 30000
-X-SS-Steps: 12
+X-Fallback-Decimation: 80000
+X-Safe-Fill-Holes-Fallback: 1
+X-SS-Steps: 25
 X-SS-Guidance: 7.5
-X-Shape-Steps: 12
+X-Shape-Steps: 25
 X-Shape-Guidance: 7.5
-X-Tex-Steps: 12
-X-Tex-Guidance: 1.0
+X-Tex-Steps: 25
+X-Tex-Guidance: 4.0
 ```
 
 Leave export fallback enabled. It is part of the T66 Pixal3D server contract,
-not an experimental toggle.
+not an experimental toggle. `X-Decimation: 200000` is the production face
+target; fallback exports must be reported, not silently accepted.
+`X-Safe-Fill-Holes-Fallback: 1` is the final
+export-only recovery path for known CuMesh `fill_holes` CUDA error 9 /
+invalid-configuration crashes. If that fallback is used, the response headers
+must show it and the model still needs Blender QA before handoff.
 
 ## Smoke Test
 
@@ -134,7 +147,8 @@ python "Model Generation/Pixal3D/Scripts/run_pixal3d_smoke.py" `
   --start-server `
   --force-generation `
   --force-qa `
-  --decimation 80000 `
+  --decimation 200000 `
+  --fallback-decimation 80000 `
   --remesh
 ```
 
@@ -148,7 +162,8 @@ The smoke set covers:
 For every generated row, verify:
 
 - the local GLB exists and has nonzero byte size
-- `generation_attempts` records the actual export settings
+- `generation_attempts` records the actual export settings, including any safe
+  `fill_holes` fallback
 - Blender QA imports the GLB and writes a front render
 - Blender QA metadata includes triangle count and nonzero bounds
 - character-like rows can run Quad Retro when requested
@@ -193,11 +208,13 @@ Model Generation/Runs/Pixal3D/...
 ```
 
 Keep summary reports and durable lessons. Delete generated runs, source plates,
-temporary GLBs, Blender scenes, and screenshots after the evaluation is complete
-unless the user explicitly asks to retain an experiment folder.
+temporary GLBs, Blender scenes, and screenshots after the production import or
+diagnostic review is complete unless the user explicitly asks to retain a run
+folder.
 
 ## Promotion Boundary
 
-Pixal3D output remains research-only until legal approval changes the licensing
-status. Do not import Pixal3D assets into runtime Unreal content or refresh a
-playable standalone build from Pixal3D output without explicit user approval.
+Pixal3D assets move into runtime content through
+`09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md`, the production
+replacement manifest, the ToonStyle foundation pipeline, Unreal import
+validation, and standalone verification gates.

@@ -8,7 +8,6 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
-#include "Core/T66RetroFXSubsystem.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
@@ -84,11 +83,7 @@ void AT66FrontendGameMode::HandleSettingsChanged()
 	// or settings-order dependencies while frontend world rendering is invisible.
 	FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(World);
 
-	if (UGameInstance* GI = World ? World->GetGameInstance() : nullptr)
-	{
-		if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
-		{
-			RetroFX->ApplyCurrentSettings(World);
-		}
-	}
+	// Frontend Retro FX is driven by UI retainer (UT66FrontendUIRootWidget).
+	// Gameplay Retro FX subsystem is intentionally not invoked here so frontend
+	// and gameplay have separated post-process retro behavior.
 }

@@ -12,6 +12,16 @@
 
 - Keep reusable master scripts tight and documented. Delete task-specific scripts after the task is accomplished, but first move any durable process improvements into the relevant master script, README, or process doc.
 
+## PerformanceSystem Rule
+
+- For performance, diagnostics, profiling, telemetry, perception, or optimization-readiness work, start with `C:\UE\T66\PerformanceSystem\PERFORMANCE_SYSTEM_AGENTS.md`; keep root contracts/schemas under `PerformanceSystem\` and Unreal runtime code under `Source\T66\PerformanceSystem\`.
+
+## Git LFS Status Rule
+
+- Avoid broad `git status`, `git diff`, or similar Git scans over Unreal binary asset folders such as `Content/`, `SourceAssets/`, and staged build outputs unless the task specifically requires that scope.
+- Prefer narrow path checks against the specific files being inspected. Broad scans can spawn many `git-lfs.exe` workers that hash large `.uasset` or generated asset files, saturating disk I/O and freezing the desktop.
+- If a broad Git/LFS scan is necessary, warn the user first and explain that it may temporarily hammer disk. Treat high disk usage with many `git-lfs.exe` processes and little or no network activity as local LFS hashing/comparison, not a push or pull.
+
 ## Goal Translation Rule
 
 - Before acting, derive the current working goal in one sentence. Use it to decide:
@@ -61,6 +71,14 @@ Format:
 - What fixing it would entail: scope estimate
 
 Before working in any folder, read its `pending_issues_*.md` file (if present) so you don't duplicate or contradict prior agents' decisions.
+
+## Pixal3D ToonStyle Production Import Rule
+
+- Pixal3D is production-cleared for T66 model replacement work. Do not treat it as research-only when the task is to regenerate or replace interactables, props, mobs, or ToonStyle production assets.
+- For any Pixal3D asset that will enter playable content, use the manifest-driven ToonStyle production workflow documented in `Model Generation/Instructions/09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md`.
+- Do not use legacy one-off Pixal3D import scripts or manually assign ToonStyle materials. The production path must run the Pixal3D generation settings, Blender ToonStyle foundation pipeline, Unreal importer, and hard validators so Tint, outline, close-the-gap B, inner-line texture, import settings, and verification JSON are all present.
+- The production Pixal3D face target is `X-Decimation=200000` with remesh enabled. Lower-decimation or no-remesh output is a fallback only when the server reports it, and it must be surfaced in the replacement manifest/report rather than silently accepted.
+- If a generated asset affects the playable standalone build, refresh the staged build and verify the taskbar standalone shortcut after import.
 
 ## UI Reference Fidelity Rule
 

@@ -235,42 +235,40 @@ TSharedRef<SWidget> UT66MiniCompanionSelectScreen::BuildSlateUI()
 			.WidthOverride(168.f)
 			.HeightOverride(132.f)
 			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(
-						FOnClicked::CreateLambda([this, CompanionID = Companion.CompanionID]()
-						{
-							return HandleCompanionClicked(CompanionID);
-						}),
-						T66MiniGeneratedChrome::MakePanel(
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
-							[
-								MakeSpriteWidget(CompanionBrush, Companion.DisplayName.Left(1).ToUpper(), Companion.PlaceholderColor, 78.f, 78.f, 26)
-							]
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 5.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(FText::FromString(Companion.DisplayName))
-								.Font(T66MiniUI::BoldFont(12))
-								.ColorAndOpacity(!bIsUnlocked ? MutedText : (bIsSelected ? T66MiniUI::AccentGold() : BodyText))
-								.Justification(ETextJustify::Center)
-								.AutoWrapText(true)
-							]
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 2.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(FText::FromString(StatusText))
-								.Font(T66MiniUI::BodyFont(10))
-								.ColorAndOpacity(bIsUnlocked ? AccentText : FLinearColor(0.88f, 0.74f, 0.52f, 1.0f))
-								.Justification(ETextJustify::Center)
-							]
-						, FMargin(11.f, 9.f, 22.f, 9.f),
+				T66MiniGeneratedChrome::MakeBareContentButton(
+					FOnClicked::CreateLambda([this, CompanionID = Companion.CompanionID]()
+					{
+						return HandleCompanionClicked(CompanionID);
+					}),
+					T66MiniGeneratedChrome::MakePanel(
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+						[
+							MakeSpriteWidget(CompanionBrush, Companion.DisplayName.Left(1).ToUpper(), Companion.PlaceholderColor, 78.f, 78.f, 26)
+						]
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 5.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(Companion.DisplayName))
+							.Font(T66MiniUI::BoldFont(12))
+							.ColorAndOpacity(!bIsUnlocked ? MutedText : (bIsSelected ? T66MiniUI::AccentGold() : BodyText))
+							.Justification(ETextJustify::Center)
+							.AutoWrapText(true)
+						]
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 2.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(StatusText))
+							.Font(T66MiniUI::BodyFont(10))
+							.ColorAndOpacity(bIsUnlocked ? AccentText : FLinearColor(0.88f, 0.74f, 0.52f, 1.0f))
+							.Justification(ETextJustify::Center)
+						],
+						FMargin(11.f, 9.f, 22.f, 9.f),
 						!bIsUnlocked
 							? T66MiniGeneratedChrome::ESlice::CardDisabled
-							: (bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal)))
-					.SetColor(FLinearColor(1.f, 1.f, 1.f, 0.01f))
-					.SetPadding(FMargin(0.f))
-					.SetEnabled(bIsUnlocked))
+							: (bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal)),
+					bIsUnlocked,
+					FName(*FString::Printf(TEXT("Mini.Companion.Card.%s"), *Companion.CompanionID.ToString())))
 			]
 		];
 	}

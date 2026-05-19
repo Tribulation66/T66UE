@@ -816,7 +816,10 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 		FVector2D(54.f, 54.f),
 		TextureFilter::TF_Nearest);
 	LoadLooseBrushFromCandidatePaths(
-		{ TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png") },
+		{
+			TEXT("RuntimeDependencies/T66/UI/Reference/Screens/MainMenu/BloodyRetro/Elements/coupon_ticket_icon.png"),
+			TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png")
+		},
 		CurrencyIconBrush,
 		FVector2D(46.f, 46.f),
 		TextureFilter::TF_Nearest);
@@ -921,15 +924,16 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		RequestTopBarAssets();
 
 		UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-		const EFrontendSection ActiveSection = GetActiveSection();
 		const FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.MainMenu", "Settings", "SETTINGS");
 		const FText LanguageText = Loc ? Loc->GetText_LangButton() : NSLOCTEXT("T66.LanguageSelect", "LangButton", "LANG");
 		const FText AccountText = Loc ? Loc->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT");
+		const FText HomeText = NSLOCTEXT("T66.MainMenu", "TopBarHome", "Home");
 		const FText PowerUpText = NSLOCTEXT("T66.MainMenu", "PowerUp", "POWER UP");
 		const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
 		const FText MiniGamesText = NSLOCTEXT("T66.MainMenu", "MiniGames", "MINIGAMES");
 		const FText BackToMainMenuText = NSLOCTEXT("T66.MainMenu", "BackToMainMenu", "BACK TO MAIN MENU");
 		const FText QuitTooltipText = Loc ? Loc->GetText_Quit() : NSLOCTEXT("T66.MainMenu", "Quit", "QUIT");
+		const ETopBarSection ActiveSection = GetActiveSection();
 
 		struct FNormalizedTopBarRect
 		{
@@ -954,7 +958,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			}
 		};
 
-		const FNormalizedTopBarRect OuterRect{ 0.012f, 0.006f, 0.976f, 0.077f };
+		const FNormalizedTopBarRect OuterRect{ 0.006f, 0.000f, 0.988f, 0.095f };
 		const FNormalizedTopBarRect SettingsRect{ 0.013f, 0.006f, 0.046f, 0.077f };
 		const FNormalizedTopBarRect LanguageRect{ 0.073f, 0.006f, 0.046f, 0.077f };
 		const FNormalizedTopBarRect AccountRect{ 0.133f, 0.006f, 0.156f, 0.077f };
@@ -1051,11 +1055,11 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				.Alignment(FVector2D(0.f, 0.f))
 				.Offset(DailyOuterRect.ToReferenceOffset())
 				[
-					FT66FlatStyle::AttachMetadata(
+					FT66FlatStyle::MakeFlatTransparentRegion(
+						ET66FlatState::Default,
+						FMargin(0.f),
 						SNew(SBox),
-						TEXT("FrontendTopBar.OuterContainer"),
-						TEXT("TransparentRegion"),
-						ET66FlatState::Default)
+						TEXT("FrontendTopBar.OuterContainer"))
 				];
 
 			auto AddDailyControl = [&DailyTopBarCanvas](const FNormalizedTopBarRect& Rect, const TSharedRef<SWidget>& Widget)
@@ -1149,45 +1153,51 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			&UT66FrontendTopBarWidget::HandleAccountStatusClicked,
 			TEXT("FrontendTopBar.AccountButton"),
 			AccountRect,
-			false));
+			ActiveSection == ETopBarSection::AccountStatus));
 		CategoryGroup.Items.Add(MakeCategoryItem(
 			PowerUpText,
 			&UT66FrontendTopBarWidget::HandlePowerUpClicked,
 			TEXT("FrontendTopBar.PowerUpButton"),
 			PowerUpRect,
-			ActiveSection == EFrontendSection::PowerUp));
+			ActiveSection == ETopBarSection::PowerUp));
 		CategoryGroup.Items.Add(MakeCategoryItem(
 			AchievementsText,
 			&UT66FrontendTopBarWidget::HandleAchievementsClicked,
 			TEXT("FrontendTopBar.AchievementsButton"),
 			AchievementsRect,
-			ActiveSection == EFrontendSection::Achievements));
+			ActiveSection == ETopBarSection::Achievements));
 		CategoryGroup.Items.Add(MakeCategoryItem(
 			MiniGamesText,
 			&UT66FrontendTopBarWidget::HandleMiniGamesClicked,
 			TEXT("FrontendTopBar.MinigamesButton"),
 			MiniGamesRect,
-			ActiveSection == EFrontendSection::MiniGames));
+			ActiveSection == ETopBarSection::MiniGames));
 		const TArray<TSharedRef<SWidget>> CategoryButtons = FT66FlatStyle::MakeFlatToggleGroup(CategoryGroup);
 
 		const TSharedRef<SWidget> SettingsButtonWidget = MakeIconActionButton(
-			ActiveSection == EFrontendSection::Settings ? ET66FlatState::Selected : ET66FlatState::Default,
+			ActiveSection == ETopBarSection::Settings ? ET66FlatState::Selected : ET66FlatState::Default,
 			MakeTaggedIconWidget(SNew(ST66TopBarGearGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.SettingsButton.Icon")),
 			&UT66FrontendTopBarWidget::HandleSettingsClicked,
 			TEXT("FrontendTopBar.SettingsButton"),
 			SettingsRect);
 		const TSharedRef<SWidget> LanguageButtonWidget = MakeIconActionButton(
-			ActiveSection == EFrontendSection::Language ? ET66FlatState::Selected : ET66FlatState::Default,
+			ActiveSection == ETopBarSection::Language ? ET66FlatState::Selected : ET66FlatState::Default,
 			MakeTaggedIconWidget(SNew(ST66TopBarGlobeGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.GlobeButton.Icon")),
 			&UT66FrontendTopBarWidget::HandleLanguageClicked,
 			TEXT("FrontendTopBar.GlobeButton"),
 			LanguageRect);
-		const TSharedRef<SWidget> ProfileButtonWidget = MakeIconActionButton(
-			ActiveSection == EFrontendSection::Home ? ET66FlatState::Selected : ET66FlatState::Default,
-			MakeTaggedIconWidget(SNew(ST66TopBarProfileGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.ProfileButton.Icon")),
-			&UT66FrontendTopBarWidget::HandleHomeClicked,
-			TEXT("FrontendTopBar.ProfileButton"),
-			ProfileRect);
+		const TSharedRef<SWidget> ProfileButtonWidget = FT66FlatStyle::MakeFlatButton(
+			ActiveSection == ETopBarSection::Home ? ET66FlatState::Selected : ET66FlatState::Default,
+			HomeText,
+			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleHomeClicked),
+			nullptr,
+			nullptr,
+			FMargin(8.f),
+			ProfileRect.ReferenceWidth(),
+			ProfileRect.ReferenceHeight(),
+			true,
+			26,
+			TEXT("FrontendTopBar.ProfileButton"));
 		const TSharedRef<SWidget> PowerButtonWidget = MakeIconActionButton(
 			ET66FlatState::Selected,
 			MakeTaggedIconWidget(SNew(ST66TopBarPowerGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.PowerButton.Icon")),
@@ -1237,11 +1247,12 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			.Alignment(FVector2D(0.f, 0.f))
 			.Offset(OuterRect.ToReferenceOffset())
 			[
-				FT66FlatStyle::AttachMetadata(
+				FT66FlatStyle::MakeFlatPanel(
+					ET66FlatState::Default,
+					FMargin(0.f),
 					SNew(SBox),
-					TEXT("FrontendTopBar.OuterContainer"),
-					TEXT("TransparentRegion"),
-					ET66FlatState::Default)
+					nullptr,
+					TEXT("FrontendTopBar.OuterContainer"))
 			];
 
 		auto AddControl = [&TopBarCanvas](const FNormalizedTopBarRect& Rect, const TSharedRef<SWidget>& Widget)

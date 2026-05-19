@@ -35,7 +35,7 @@ public:
 	void UnregisterBoss(AT66BossBase* Boss);
 	const TArray<TWeakObjectPtr<AT66BossBase>>& GetBosses() const { return Bosses; }
 
-	// --------------- House NPCs ---------------
+	// --------------- NPCs ---------------
 	void RegisterNPC(AT66HouseNPCBase* NPC);
 	void UnregisterNPC(AT66HouseNPCBase* NPC);
 	const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& GetNPCs() const { return NPCs; }

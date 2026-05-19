@@ -16,6 +16,7 @@ if SCRIPT_DIR not in sys.path:
 import ImportHeroDataTable
 import SetupAudioEventsDataTable
 import SetupCharacterVisualsDataTable
+import SetupCompanionsDataTable
 import SetupWeaponsDataTable
 
 
@@ -28,6 +29,7 @@ def reload_audio_events_table_only():
 
 def main():
     ImportHeroDataTable.main()
+    SetupCompanionsDataTable.main()
     SetupWeaponsDataTable.main()
     SetupCharacterVisualsDataTable.main()
     reload_audio_events_table_only()

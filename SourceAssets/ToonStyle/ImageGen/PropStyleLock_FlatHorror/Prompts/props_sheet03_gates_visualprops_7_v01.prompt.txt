@@ -1,0 +1,32 @@
+Create one review contact sheet for T66 gate and prop model source art.
+
+Overall style: match the approved T66 DungeonHorror enemy and prop sheets: clean white background, hard continuous black ink outline, saturated flat color fills, eerie horror/uncanny mood, model-ready centered silhouettes, no cute mascot styling.
+
+Pixal3D readability constraints: do not use pure black inside mouths, voids, openings, or interior cavities. Use very dark non-black colors instead, such as dark maroon, dark indigo, or dark green. Keep openings visibly separated from the outline. Keep silhouettes simple and readable from the front.
+
+Critical flatness rule: all objects must read as flat graphic source art. No sculpted ridges, no raised bevels, no extruded edges, no realistic material relief, no glossy highlights, no cast shadows, no contact shadows, no perspective-heavy rendering. The design should come from painted texture shapes and simple silhouettes.
+
+Layout: exactly 7 separate drawings in a clean contact sheet, arranged as 4 objects on the top row and 3 objects on the bottom row. No eighth object. No text labels inside the image, no watermark, no UI chrome. Thin light gray cell separators are okay. Each object should be centered in its own cell and fully visible.
+
+Object 1, Loot Crate revision:
+A less-square loot crate shaped like a long zombie-survival mystery weapon box, elongated coffin-like chest silhouette with a slightly arched or slanted lid, wider than tall, eerie flat plank texture painted onto the surface, one huge dark non-black keyhole/mouth mark on the front. Do not make it a cube. Do not use readable branding, logos, or text.
+
+Object 2, Regular Stage Gate:
+A regular dungeon stage gate for level exits, tall flat arched portal frame, two bold body colors, simple painted stone texture, a large dark non-black portal opening inside the arch, no tutorial sign, no labels, no tiny carvings, no bevels.
+
+Object 3, Cowardice Gate:
+A huge unsettling clown head gate, front-facing clown head with the mouth as closed double doors. The clown head should be scary and uncanny, not funny or cute. Exaggerated painted grin shape, dark non-black mouth-door seam, simple flat color regions, no hair detail clutter, no text.
+
+Object 4, Wall Lamp:
+Mono-colored visual-only wall prop, one solid muted amber/bone color with black outline only. Flat wall-mounted lamp silhouette, no flame, no second theme color, no gradients, no ridges, no raised metal.
+
+Object 5, Wall Torch:
+Mono-colored visual-only wall prop, one solid smoky orange color with black outline only. Flat wall-mounted torch silhouette with simple flame shape cutout, no red/purple color theme, no gradients, no glow, no raised bands.
+
+Object 6, Broken Vase:
+Mono-colored visual-only floor prop, one solid desaturated blue-gray clay color with black outline only. Broken vase lying low on the floor, missing top shards implied by painted negative shapes, flat silhouette, no ridges, no sculpted cracks.
+
+Object 7, Skull Remains:
+Mono-colored visual-only floor prop, one solid bone ivory color with black outline only. A skull and partial missing-bone remains lying down, low horizontal pile, readable as remains but not a full skeleton, no red/purple color theme, no gore, no shadows.
+
+Avoid: pure black interior cavities, readable words, labels, cute faces, toy-like rounded style, gold-only palette, gradients, texture noise, realistic lighting, 3D bevels, physical ridges, complicated tiny ornaments.

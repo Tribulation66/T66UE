@@ -6,6 +6,7 @@
 #include "UI/Style/T66Style.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
+#include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
@@ -18,6 +19,7 @@
 #include "Engine/World.h"
 #include "InputCoreTypes.h"
 #include "UObject/GarbageCollection.h"
+#include "TimerManager.h"
 
 void UT66ScreenBase::NativeConstruct()
 {
@@ -122,6 +124,15 @@ bool UT66ScreenBase::HandleBackAction()
 		return false;
 	}
 
+	if (UIManager->GetCurrentModalType() == ScreenType
+		&& ScreenType != ET66ScreenType::PauseMenu
+		&& GetOwningPlayer()
+		&& GetOwningPlayer()->IsPaused())
+	{
+		UIManager->ShowModal(ET66ScreenType::PauseMenu);
+		return true;
+	}
+
 	UIManager->GoBack();
 	return true;
 }
@@ -158,6 +169,26 @@ void UT66ScreenBase::RequestDeferredSlateRebuild()
 	}
 
 	FT66Style::DeferRebuild(this, bIsModal ? 100 : 0);
+
+	if (bIsModal && UIManager && UIManager->GetCurrentModal() == this)
+	{
+		TWeakObjectPtr<UT66ScreenBase> WeakThis(this);
+		TWeakObjectPtr<UT66UIManager> WeakManager(UIManager);
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([WeakThis, WeakManager]()
+			{
+				UT66ScreenBase* Screen = WeakThis.Get();
+				UT66UIManager* Manager = WeakManager.Get();
+				if (!Screen || !Manager || Manager->GetCurrentModal() != Screen)
+				{
+					return;
+				}
+
+				Manager->RefreshDirectModalInputMode(Screen);
+			}));
+		}
+	}
 }
 
 bool UT66ScreenBase::DumpToJson(const FString& OutputPath)

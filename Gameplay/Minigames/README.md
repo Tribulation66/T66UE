@@ -8,7 +8,7 @@ This folder contains shared and mode-owned process docs for isolated T66 minigam
 
 ## Modes
 
-- [Mini](Mini): Mini Chadpocalypse implementation, ROTMG-style pixel runtime pass, multiplayer checklist, sprite manifests, walksheets, and UI mirror notes.
+- [Mini](Mini): Mini Chadpocalypse implementation, widget battle conversion notes, ROTMG-style pixel runtime pass, sprite manifests, walksheets, and UI mirror notes.
 - [TD](TD): Chadpocalypse TD implementation and progression memory.
 - [Deck](Deck): T66Deck implementation and progression memory.
 - [Idle](Idle): T66Idle implementation and progression memory.

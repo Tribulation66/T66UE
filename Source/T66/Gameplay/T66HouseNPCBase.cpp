@@ -144,7 +144,7 @@ void AT66HouseNPCBase::LoadFromDataTable()
 	if (!GI || NPCID.IsNone()) return;
 
 	FHouseNPCData Data;
-	if (GI->GetHouseNPCData(NPCID, Data))
+	if (GI->GetNPCData(NPCID, Data))
 	{
 		ApplyNPCData(Data);
 	}

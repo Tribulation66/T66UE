@@ -42,7 +42,8 @@ public class T66 : ModuleRules
 			"MediaAssets",
 			"Media",
 			"ProceduralMeshComponent",
-			"Projects"
+			"Projects",
+			"RenderCore"
 		});
 
 		if (Target.Platform == UnrealTargetPlatform.Win64)
@@ -85,5 +86,6 @@ public class T66 : ModuleRules
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "UI", "Screens"));
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "UI", "Components"));
 		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "Gameplay"));
+		PublicIncludePaths.Add(Path.Combine(ModuleDirectory, "PerformanceSystem"));
 	}
 }

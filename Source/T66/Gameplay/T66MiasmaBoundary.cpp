@@ -33,10 +33,16 @@ namespace
 			return false;
 		}
 
+		if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+		{
+			if (T66GI->IsTutorialRun() || T66GI->IsLabRun())
+			{
+				return false;
+			}
+		}
+
 		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
-		return !MapName.Contains(TEXT("Coliseum"))
-			&& !MapName.Contains(TEXT("Tutorial"))
-			&& !MapName.Contains(TEXT("Lab"));
+		return !MapName.Contains(TEXT("Coliseum"));
 	}
 
 	static UStaticMesh* T66LoadBoundaryPlaneMesh()
@@ -52,7 +58,7 @@ namespace
 
 	static UMaterialInterface* T66CreateBoundaryLavaMaterial(UObject* Outer)
 	{
-		UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+		UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Lit.M_Environment_Lit"));
 		if (!BaseMaterial)
 		{
 			return nullptr;

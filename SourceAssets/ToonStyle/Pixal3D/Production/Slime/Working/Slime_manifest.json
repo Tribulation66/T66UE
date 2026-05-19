@@ -1,0 +1,1065 @@
+{
+  "accepted_limitation": false,
+  "asset_class": "creature",
+  "asset_name": "Slime",
+  "fbx_export_options": {
+    "outline": {
+      "add_leaf_bones": false,
+      "apply_scale_options": "FBX_SCALE_ALL",
+      "apply_unit_scale": true,
+      "bake_space_transform": false,
+      "embed_textures": false,
+      "global_scale": 0.01,
+      "mesh_smooth_type": "FACE",
+      "object_types": [
+        "MESH"
+      ],
+      "path_mode": "STRIP",
+      "use_mesh_modifiers": true,
+      "use_selection": true
+    },
+    "shading": {
+      "add_leaf_bones": false,
+      "apply_scale_options": "FBX_SCALE_ALL",
+      "apply_unit_scale": true,
+      "bake_space_transform": false,
+      "embed_textures": false,
+      "global_scale": 0.01,
+      "mesh_smooth_type": "FACE",
+      "object_types": [
+        "MESH"
+      ],
+      "path_mode": "STRIP",
+      "use_mesh_modifiers": true,
+      "use_selection": true
+    }
+  },
+  "fbx_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime.fbx",
+  "flatten_highlight_cap": 0.85,
+  "flatten_k": 6,
+  "foundation_pass": {
+    "accepted_limitation": false,
+    "asset_class": "creature",
+    "close_the_gap": {
+      "readback": {
+        "B_max": 1.0,
+        "B_mean": 0.14683739840984344,
+        "B_min": 0.0,
+        "B_nonzero_fraction": 0.29999612538261844,
+        "N": 129045,
+        "attribute": "Col"
+      },
+      "status": "applied",
+      "transfer_function": {
+        "asset_class": "creature",
+        "high_percentile_value": 0.9468851089477539,
+        "low_percentile_value": 0.33376261591911316,
+        "method": "clamp_below_percentile_then_power_response",
+        "power": 0.7
+      }
+    },
+    "curvature": {
+      "boundary_edges": 60479,
+      "count": 129045,
+      "edge_samples": 257421,
+      "max": 1.0,
+      "mean": 0.28822675021683614,
+      "method": "edge_face_angle_divergence_abs_normalized_p95",
+      "min": 0.0,
+      "normalization_scale_raw_p95": 0.11872278513328696,
+      "percentiles": {
+        "p05": 0.0,
+        "p25": 0.12224638134986958,
+        "p50": 0.2252940878685282,
+        "p75": 0.37435843981192285,
+        "p90": 0.64609077391011,
+        "p95": 0.9468851968057211,
+        "p99": 1.0
+      },
+      "std": 0.2501167168665801
+    },
+    "enabled": true,
+    "inner_lines": {
+      "bake_report": {
+        "dependency_path": "external_python_pillow_numpy",
+        "line_coverage_fraction": 0.18167728185653687,
+        "max_intensity": 1.0,
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_InnerLines.png",
+        "padding": {
+          "applied": true,
+          "filled_pixels": 6631216,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "resolution": [
+          4096,
+          4096
+        ],
+        "segments": 102099,
+        "stddev": 0.29483091831207275,
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_numpy\", \"line_coverage_fraction\": 0.18167728185653687, \"max_intensity\": 1.0, \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_InnerLines.png\", \"padding\": {\"applied\": true, \"filled_pixels\": 6631216, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"resolution\": [4096, 4096], \"segments\": 102099, \"stddev\": 0.29483091831207275, \"unique_value_count\": 256}",
+        "unique_value_count": 256
+      },
+      "padding_pixels": 16,
+      "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_InnerLines.png",
+      "segments": 102099,
+      "segments_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_inner_line_segments.npz",
+      "status": "applied"
+    }
+  },
+  "inner_line_texture": {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_InnerLines.png",
+    "report": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_InnerLines_report.json"
+  },
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\EasyMobsInteractables_20260518_2043\\Outputs\\Slime.glb",
+  "is_humanoid": false,
+  "material_count_after_strip": 1,
+  "material_count_before_strip": 1,
+  "mesh_count_after_join": 1,
+  "mesh_count_before_join": 1,
+  "no_remesh_export": false,
+  "normal_delta_sample": {
+    "distinct": true,
+    "reason": "non_humanoid"
+  },
+  "normal_transfer": {
+    "applied": false,
+    "reason": "non_humanoid"
+  },
+  "normalization": {
+    "bounds_max": [
+      74.77458953857422,
+      64.4413833618164,
+      110.0
+    ],
+    "bounds_min": [
+      -74.77458953857422,
+      -64.4413833618164,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      149.54917907714844,
+      128.8827667236328,
+      110.0
+    ],
+    "height": 110.0,
+    "scale_factor": 174.93692438519014
+  },
+  "outline_bounds": {
+    "dimensions": [
+      149.54917907714844,
+      128.8827667236328,
+      110.0
+    ],
+    "height": 110.0,
+    "max": [
+      74.77458953857422,
+      64.4413833618164,
+      110.0
+    ],
+    "min": [
+      -74.77458953857422,
+      -64.4413833618164,
+      0.0
+    ]
+  },
+  "outline_fbx_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_outline.fbx",
+  "outline_vertex_count": 129045,
+  "outline_winding": {
+    "applied": true,
+    "face_after": [
+      51,
+      57,
+      61
+    ],
+    "face_before": [
+      51,
+      61,
+      57
+    ],
+    "face_order_reversed": true,
+    "inward_normal_samples": 63308,
+    "method": "shade_smooth before bmesh.ops.reverse_faces + restored captured outward vertex normals as custom split normals",
+    "outward_normal_samples": 65737
+  },
+  "retained_from_phase1a": false,
+  "reused_textures_manifest": null,
+  "shading_bounds": {
+    "dimensions": [
+      149.54917907714844,
+      128.8827667236328,
+      110.0
+    ],
+    "height": 110.0,
+    "max": [
+      74.77458953857422,
+      64.4413833618164,
+      110.0
+    ],
+    "min": [
+      -74.77458953857422,
+      -64.4413833618164,
+      0.0
+    ]
+  },
+  "shading_normal_editing": {
+    "applied": true,
+    "method": "shade_smooth + WeightedNormal modifier keep_sharp weight=50",
+    "weighted_normal_modifier_applied": true
+  },
+  "target_height": 110.0,
+  "texture_flattening": [
+    {
+      "active_pixels": 16777200,
+      "centers_rgb_255": [
+        [
+          18,
+          26,
+          27
+        ],
+        [
+          1,
+          21,
+          251
+        ],
+        [
+          176,
+          169,
+          32
+        ],
+        [
+          150,
+          222,
+          128
+        ],
+        [
+          202,
+          244,
+          13
+        ],
+        [
+          16,
+          136,
+          237
+        ]
+      ],
+      "final_center_shift": 0.0013214627979323268,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_0",
+      "iterations": 24,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+      "postprocess": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              18,
+              26,
+              27
+            ],
+            [
+              1,
+              21,
+              251
+            ],
+            [
+              176,
+              169,
+              32
+            ],
+            [
+              150,
+              222,
+              128
+            ],
+            [
+              202,
+              244,
+              13
+            ],
+            [
+              16,
+              136,
+              237
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              18,
+              26,
+              27
+            ],
+            [
+              1,
+              21,
+              251
+            ],
+            [
+              176,
+              169,
+              32
+            ],
+            [
+              150,
+              222,
+              128
+            ],
+            [
+              202,
+              244,
+              13
+            ],
+            [
+              16,
+              136,
+              237
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 71178,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[18, 26, 27], [1, 21, 251], [176, 169, 32], [150, 222, 128], [202, 244, 13], [16, 136, 237]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_0_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_0_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[18, 26, 27], [1, 21, 251], [176, 169, 32], [150, 222, 128], [202, 244, 13], [16, 136, 237]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 71178, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": true, \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_Tint.png\", \"saturation_scale\": 1.1, \"value_scale\": 0.6}, \"unique_rgb_after\": 4, \"unique_rgb_before\": 5, \"uv_mask_pixels\": 9921374, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 6631216, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 191777, \"width\": 4096}",
+        "tint": {
+          "generated": true,
+          "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_Tint.png",
+          "saturation_scale": 1.1,
+          "value_scale": 0.6
+        },
+        "unique_rgb_after": 4,
+        "unique_rgb_before": 5,
+        "uv_mask_pixels": 9921374,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 6631216,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 191777,
+        "width": 4096
+      },
+      "unique_colors_after": 6,
+      "unique_colors_before": 651558,
+      "width": 4096
+    },
+    {
+      "active_pixels": 16777216,
+      "centers_rgb_255": [
+        [
+          0,
+          37,
+          0
+        ],
+        [
+          0,
+          65,
+          0
+        ],
+        [
+          0,
+          73,
+          0
+        ],
+        [
+          1,
+          88,
+          1
+        ],
+        [
+          1,
+          110,
+          1
+        ],
+        [
+          1,
+          117,
+          1
+        ]
+      ],
+      "final_center_shift": 0.00013148199650458992,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_1",
+      "iterations": 7,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+      "postprocess": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              37,
+              0
+            ],
+            [
+              0,
+              65,
+              0
+            ],
+            [
+              0,
+              73,
+              0
+            ],
+            [
+              1,
+              88,
+              1
+            ],
+            [
+              1,
+              110,
+              1
+            ],
+            [
+              1,
+              117,
+              1
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              37,
+              0
+            ],
+            [
+              0,
+              65,
+              0
+            ],
+            [
+              0,
+              73,
+              0
+            ],
+            [
+              1,
+              88,
+              1
+            ],
+            [
+              1,
+              110,
+              1
+            ],
+            [
+              1,
+              117,
+              1
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 30,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 37, 0], [0, 65, 0], [0, 73, 0], [1, 88, 1], [1, 110, 1], [1, 117, 1]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_1_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_1_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 37, 0], [0, 65, 0], [0, 73, 0], [1, 88, 1], [1, 110, 1], [1, 117, 1]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 30, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": false}, \"unique_rgb_after\": 6, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9921374, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 6631216, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 191777, \"width\": 4096}",
+        "tint": {
+          "generated": false
+        },
+        "unique_rgb_after": 6,
+        "unique_rgb_before": 6,
+        "uv_mask_pixels": 9921374,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 6631216,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 191777,
+        "width": 4096
+      },
+      "unique_colors_after": 6,
+      "unique_colors_before": 3152,
+      "width": 4096
+    }
+  ],
+  "texture_postprocess_dependency_path": "external_python_pillow_scipy",
+  "textures": [
+    {
+      "flatten_report": {
+        "active_pixels": 16777200,
+        "centers_rgb_255": [
+          [
+            18,
+            26,
+            27
+          ],
+          [
+            1,
+            21,
+            251
+          ],
+          [
+            176,
+            169,
+            32
+          ],
+          [
+            150,
+            222,
+            128
+          ],
+          [
+            202,
+            244,
+            13
+          ],
+          [
+            16,
+            136,
+            237
+          ]
+        ],
+        "final_center_shift": 0.0013214627979323268,
+        "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+        "height": 4096,
+        "highlight_cap": 0.85,
+        "image_name": "Image_0",
+        "iterations": 24,
+        "k": 6,
+        "mode": "blender",
+        "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_original.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+        "postprocess": {
+          "dependency_path": "external_python_pillow_scipy",
+          "final_palette_snap": {
+            "applied": true,
+            "centers_rgb_255": [
+              [
+                18,
+                26,
+                27
+              ],
+              [
+                1,
+                21,
+                251
+              ],
+              [
+                176,
+                169,
+                32
+              ],
+              [
+                150,
+                222,
+                128
+              ],
+              [
+                202,
+                244,
+                13
+              ],
+              [
+                16,
+                136,
+                237
+              ]
+            ],
+            "palette_size": 6
+          },
+          "height": 4096,
+          "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+          "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+          "palette_snap": {
+            "applied": true,
+            "centers_rgb_255": [
+              [
+                18,
+                26,
+                27
+              ],
+              [
+                1,
+                21,
+                251
+              ],
+              [
+                176,
+                169,
+                32
+              ],
+              [
+                150,
+                222,
+                128
+              ],
+              [
+                202,
+                244,
+                13
+              ],
+              [
+                16,
+                136,
+                237
+              ]
+            ],
+            "palette_size": 6
+          },
+          "speckle_cleanup": {
+            "applied": true,
+            "changed_pixels": 71178,
+            "diff_threshold": 42.0,
+            "method": "3x3_local_median_high_contrast_pixel_replacement",
+            "prompt_region_threshold_reference": 8
+          },
+          "stderr": "",
+          "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[18, 26, 27], [1, 21, 251], [176, 169, 32], [150, 222, 128], [202, 244, 13], [16, 136, 237]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_0_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_0_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[18, 26, 27], [1, 21, 251], [176, 169, 32], [150, 222, 128], [202, 244, 13], [16, 136, 237]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 71178, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": true, \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_Tint.png\", \"saturation_scale\": 1.1, \"value_scale\": 0.6}, \"unique_rgb_after\": 4, \"unique_rgb_before\": 5, \"uv_mask_pixels\": 9921374, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 6631216, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 191777, \"width\": 4096}",
+          "tint": {
+            "generated": true,
+            "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_Tint.png",
+            "saturation_scale": 1.1,
+            "value_scale": 0.6
+          },
+          "unique_rgb_after": 4,
+          "unique_rgb_before": 5,
+          "uv_mask_pixels": 9921374,
+          "uv_padding": {
+            "applied": true,
+            "filled_pixels": 6631216,
+            "method": "iterative_frontier_expansion",
+            "padding_pixels": 16
+          },
+          "uv_triangles": 191777,
+          "width": 4096
+        },
+        "unique_colors_after": 6,
+        "unique_colors_before": 651558,
+        "width": 4096
+      },
+      "flattened": true,
+      "image_name": "Image_0",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_original.png",
+      "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+      "postprocess_report": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              18,
+              26,
+              27
+            ],
+            [
+              1,
+              21,
+              251
+            ],
+            [
+              176,
+              169,
+              32
+            ],
+            [
+              150,
+              222,
+              128
+            ],
+            [
+              202,
+              244,
+              13
+            ],
+            [
+              16,
+              136,
+              237
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              18,
+              26,
+              27
+            ],
+            [
+              1,
+              21,
+              251
+            ],
+            [
+              176,
+              169,
+              32
+            ],
+            [
+              150,
+              222,
+              128
+            ],
+            [
+              202,
+              244,
+              13
+            ],
+            [
+              16,
+              136,
+              237
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 71178,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[18, 26, 27], [1, 21, 251], [176, 169, 32], [150, 222, 128], [202, 244, 13], [16, 136, 237]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_0_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_0_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[18, 26, 27], [1, 21, 251], [176, 169, 32], [150, 222, 128], [202, 244, 13], [16, 136, 237]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 71178, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": true, \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_Tint.png\", \"saturation_scale\": 1.1, \"value_scale\": 0.6}, \"unique_rgb_after\": 4, \"unique_rgb_before\": 5, \"uv_mask_pixels\": 9921374, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 6631216, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 191777, \"width\": 4096}",
+        "tint": {
+          "generated": true,
+          "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_Tint.png",
+          "saturation_scale": 1.1,
+          "value_scale": 0.6
+        },
+        "unique_rgb_after": 4,
+        "unique_rgb_before": 5,
+        "uv_mask_pixels": 9921374,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 6631216,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 191777,
+        "width": 4096
+      },
+      "size": [
+        4096,
+        4096
+      ],
+      "source_format": "WEBP"
+    },
+    {
+      "flatten_report": {
+        "active_pixels": 16777216,
+        "centers_rgb_255": [
+          [
+            0,
+            37,
+            0
+          ],
+          [
+            0,
+            65,
+            0
+          ],
+          [
+            0,
+            73,
+            0
+          ],
+          [
+            1,
+            88,
+            1
+          ],
+          [
+            1,
+            110,
+            1
+          ],
+          [
+            1,
+            117,
+            1
+          ]
+        ],
+        "final_center_shift": 0.00013148199650458992,
+        "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+        "height": 4096,
+        "highlight_cap": 0.85,
+        "image_name": "Image_1",
+        "iterations": 7,
+        "k": 6,
+        "mode": "blender",
+        "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_original.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+        "postprocess": {
+          "dependency_path": "external_python_pillow_scipy",
+          "final_palette_snap": {
+            "applied": true,
+            "centers_rgb_255": [
+              [
+                0,
+                37,
+                0
+              ],
+              [
+                0,
+                65,
+                0
+              ],
+              [
+                0,
+                73,
+                0
+              ],
+              [
+                1,
+                88,
+                1
+              ],
+              [
+                1,
+                110,
+                1
+              ],
+              [
+                1,
+                117,
+                1
+              ]
+            ],
+            "palette_size": 6
+          },
+          "height": 4096,
+          "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+          "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+          "palette_snap": {
+            "applied": true,
+            "centers_rgb_255": [
+              [
+                0,
+                37,
+                0
+              ],
+              [
+                0,
+                65,
+                0
+              ],
+              [
+                0,
+                73,
+                0
+              ],
+              [
+                1,
+                88,
+                1
+              ],
+              [
+                1,
+                110,
+                1
+              ],
+              [
+                1,
+                117,
+                1
+              ]
+            ],
+            "palette_size": 6
+          },
+          "speckle_cleanup": {
+            "applied": true,
+            "changed_pixels": 30,
+            "diff_threshold": 42.0,
+            "method": "3x3_local_median_high_contrast_pixel_replacement",
+            "prompt_region_threshold_reference": 8
+          },
+          "stderr": "",
+          "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 37, 0], [0, 65, 0], [0, 73, 0], [1, 88, 1], [1, 110, 1], [1, 117, 1]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_1_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_1_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 37, 0], [0, 65, 0], [0, 73, 0], [1, 88, 1], [1, 110, 1], [1, 117, 1]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 30, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": false}, \"unique_rgb_after\": 6, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9921374, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 6631216, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 191777, \"width\": 4096}",
+          "tint": {
+            "generated": false
+          },
+          "unique_rgb_after": 6,
+          "unique_rgb_before": 6,
+          "uv_mask_pixels": 9921374,
+          "uv_padding": {
+            "applied": true,
+            "filled_pixels": 6631216,
+            "method": "iterative_frontier_expansion",
+            "padding_pixels": 16
+          },
+          "uv_triangles": 191777,
+          "width": 4096
+        },
+        "unique_colors_after": 6,
+        "unique_colors_before": 3152,
+        "width": 4096
+      },
+      "flattened": true,
+      "image_name": "Image_1",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_original.png",
+      "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+      "postprocess_report": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              37,
+              0
+            ],
+            [
+              0,
+              65,
+              0
+            ],
+            [
+              0,
+              73,
+              0
+            ],
+            [
+              1,
+              88,
+              1
+            ],
+            [
+              1,
+              110,
+              1
+            ],
+            [
+              1,
+              117,
+              1
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_1_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              37,
+              0
+            ],
+            [
+              0,
+              65,
+              0
+            ],
+            [
+              0,
+              73,
+              0
+            ],
+            [
+              1,
+              88,
+              1
+            ],
+            [
+              1,
+              110,
+              1
+            ],
+            [
+              1,
+              117,
+              1
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 30,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 37, 0], [0, 65, 0], [0, 73, 0], [1, 88, 1], [1, 110, 1], [1, 117, 1]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_1_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\Slime\\\\Working\\\\Slime_1_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 37, 0], [0, 65, 0], [0, 73, 0], [1, 88, 1], [1, 110, 1], [1, 117, 1]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 30, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": false}, \"unique_rgb_after\": 6, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9921374, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 6631216, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 191777, \"width\": 4096}",
+        "tint": {
+          "generated": false
+        },
+        "unique_rgb_after": 6,
+        "unique_rgb_before": 6,
+        "uv_mask_pixels": 9921374,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 6631216,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 191777,
+        "width": 4096
+      },
+      "size": [
+        4096,
+        4096
+      ],
+      "source_format": "WEBP"
+    }
+  ],
+  "tint_texture": {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_Tint.png",
+    "postprocess_report": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened_postprocess.json",
+    "source_texture": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_0_flattened.png"
+  },
+  "uv_triangles": {
+    "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working\\Slime_uv_triangles.npz",
+    "triangle_count": 191777
+  },
+  "vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 575331,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "vertex_count": 129045,
+  "working_dir": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Slime\\Working"
+}

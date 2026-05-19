@@ -36,13 +36,25 @@ AT66StageGate::AT66StageGate()
 	GateMesh->SetHiddenInGame(false, true);
 	GateMesh->SetVisibility(true, true);
 	GateMesh->SetupAttachment(RootComponent);
-	GateMeshOverride.Reset();
+	GateMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Gates/StageGate_Pixal3D.StageGate_Pixal3D")));
 	FT66VisualUtil::ApplyT66Color(GateMesh, this, FLinearColor(0.20f, 0.85f, 0.35f, 1.f));
 }
 
 void AT66StageGate::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (GateMesh && !GateMeshOverride.IsNull())
+	{
+		if (UStaticMesh* ImportedMesh = GateMeshOverride.LoadSynchronous())
+		{
+			GateMesh->EmptyOverrideMaterials();
+			GateMesh->SetStaticMesh(ImportedMesh);
+			GateMesh->SetRelativeScale3D(FVector::OneVector);
+			GateMesh->SetRelativeRotation(FRotator::ZeroRotator);
+			FT66VisualUtil::GroundMeshToActorOrigin(GateMesh, ImportedMesh);
+		}
+	}
 
 	// [GOLD] Register with the actor registry (replaces TActorIterator for map markers).
 	if (UWorld* W = GetWorld())
@@ -113,6 +125,27 @@ bool AT66StageGate::AdvanceToNextStage()
 
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	if (!T66GI) return false;
+	if (T66GI->IsTutorialRun())
+	{
+		T66GI->SelectedRunMode = ET66RunMode::Regular;
+		T66GI->SelectedRunCategory = ET66RunCategory::Tower;
+		T66GI->ApplyConfiguredMainMapLayoutVariant();
+		T66GI->bIsStageTransition = false;
+		T66GI->bPendingTowerStageDropIntro = false;
+
+		if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		{
+			Ach->MarkTutorialCompleted();
+		}
+
+		RunState->ClearTutorialHint();
+		RunState->ClearTutorialSubtitle();
+
+		const FString LevelName = UGameplayStatics::GetCurrentLevelName(this);
+		if (LevelName.IsEmpty()) return false;
+		UGameplayStatics::OpenLevel(this, FName(*LevelName));
+		return true;
+	}
 
 	// Companion Union + achievement: clearing stages with a companion increases Union and notifies stage cleared.
 	if (UT66AchievementsSubsystem* Ach = GI->GetSubsystem<UT66AchievementsSubsystem>())

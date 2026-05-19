@@ -1,0 +1,48 @@
+{
+  "source": {
+    "path": "SourceAssets\\ToonStyle\\ImageGen\\Phase1C\\CaveBat\\cavebat_v01.png",
+    "checks": {
+      "readable_png": true,
+      "expected_dimensions": [
+        1024,
+        1024
+      ],
+      "expected_dimensions_pass": true,
+      "corner_luminance_means": [
+        0.9966585636138916,
+        0.9964402914047241,
+        0.9960570335388184,
+        0.9960073232650757
+      ],
+      "corners_white_pass": true,
+      "nonwhite_coverage": 0.2975749969482422,
+      "nonwhite_coverage_pass": true,
+      "nonwhite_center_of_mass": {
+        "x": 0.4991845471659757,
+        "y": 0.44737743121862517
+      },
+      "centered_pass": true
+    },
+    "passed": true
+  },
+  "isolated": {
+    "path": "SourceAssets\\ToonStyle\\ImageGen\\Phase1C\\CaveBat\\cavebat_v01_isolated.png",
+    "checks": {
+      "readable_png": true,
+      "has_alpha": true,
+      "corner_alpha_max": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "corners_transparent_pass": true,
+      "alpha_positive_coverage": 0.32643985748291016,
+      "alpha_coverage_pass": true,
+      "largest_component_fraction": 0.9933245105858363,
+      "largest_component_pass": true
+    },
+    "passed": true
+  },
+  "passed": true
+}

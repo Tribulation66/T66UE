@@ -1,0 +1,65 @@
+{
+  "batch": "Pixal3D_PipelineSmoke01",
+  "updated_utc": "2026-05-18T20:06:07+00:00",
+  "rows": [
+    {
+      "id": "horned_monster",
+      "kind": "monster",
+      "display_name": "Horned monster",
+      "quad_retro": true,
+      "source_image": "Inputs/SourceImages/horned_monster.png",
+      "generation_attempts": [
+        {
+          "label": "requested",
+          "decimation": 80000,
+          "remesh": true,
+          "status": "ok",
+          "duration_seconds": 48.1,
+          "pod_size_bytes": 2996916,
+          "local_size_bytes": 2996916,
+          "server_export_headers": {
+            "X-Pixal3D-Export-Attempt": "1",
+            "X-Pixal3D-Export-Label": "requested",
+            "X-Pixal3D-Export-Decimation": "80000",
+            "X-Pixal3D-Export-Remesh": "1",
+            "X-Pixal3D-Export-Attempts": "1"
+          }
+        }
+      ],
+      "raw_pixal3d_glb": "Raw/Pixal3D/horned_monster/horned_monster_Pixal3D_R1024_S2026_D80000_Rmx1_requested.glb",
+      "raw_pixal3d_glb_size_bytes": 2996916,
+      "generation_duration_seconds": 48.1,
+      "generation_attempt_index": 1,
+      "generation_decimation": 80000,
+      "generation_remesh": true,
+      "generation_fallback_used": false,
+      "generation_server_export_headers": {
+        "X-Pixal3D-Export-Attempt": "1",
+        "X-Pixal3D-Export-Label": "requested",
+        "X-Pixal3D-Export-Decimation": "80000",
+        "X-Pixal3D-Export-Remesh": "1",
+        "X-Pixal3D-Export-Attempts": "1"
+      },
+      "qa_front_render": "QA/Pixal3DFront/horned_monster_front.png",
+      "qa_metadata": "QA/Pixal3DFront/horned_monster_front_metadata.json",
+      "qa_raw_triangles": 75870,
+      "qa_bounds": {
+        "min": [
+          -0.35057657957077026,
+          -0.40068894624710083,
+          -0.4540095925331116
+        ],
+        "max": [
+          0.3446696102619171,
+          0.3062971234321594,
+          0.4977630376815796
+        ],
+        "size": [
+          0.6952462196350098,
+          0.7069860696792603,
+          0.9517726302146912
+        ]
+      }
+    }
+  ]
+}

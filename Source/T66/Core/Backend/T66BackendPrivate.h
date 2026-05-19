@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Core/T66BackendSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Core/Backend/T66BackendRunSerializer.h"
 #include "Core/Backend/T66BackendRunSummaryParser.h"
 #include "Core/Backend/T66BackendDailyClimbJson.h"

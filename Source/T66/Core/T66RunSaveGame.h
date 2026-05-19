@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "Core/T66RngTuningConfig.h"
 #include "Core/T66DailyClimbTypes.h"
+#include "Core/T66RunTypes.h"
+#include "Core/T66SaveMigration.h"
 #include "GameFramework/SaveGame.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66BossPartTypes.h"
@@ -483,12 +485,6 @@ struct T66_API FT66SavedRunSnapshot
 	FName EquippedWeaponID = NAME_None;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 RemainingCatchUpIdolPicks = 0;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	bool bPendingDifficultyClearSummary = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	bool bSaintBlessingActive = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
@@ -601,7 +597,7 @@ class T66_API UT66RunSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 11;
+	int32 SaveVersion = T66CurrentRunSaveVersion;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FName HeroID;
@@ -614,6 +610,12 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	ET66Difficulty Difficulty = ET66Difficulty::Easy;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	ET66RunMode RunMode = ET66RunMode::Regular;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	ET66RunCategory RunCategory = ET66RunCategory::Tower;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	ET66PartySize PartySize = ET66PartySize::Solo;

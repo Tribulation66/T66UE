@@ -1,0 +1,48 @@
+{
+  "source": {
+    "path": "SourceAssets\\ToonStyle\\ImageGen\\Phase1C\\TombSpider\\tombspider_v01.png",
+    "checks": {
+      "readable_png": true,
+      "expected_dimensions": [
+        1024,
+        1024
+      ],
+      "expected_dimensions_pass": true,
+      "corner_luminance_means": [
+        0.9957038760185242,
+        0.9960335493087769,
+        0.995780348777771,
+        0.9959208965301514
+      ],
+      "corners_white_pass": true,
+      "nonwhite_coverage": 0.3180208206176758,
+      "nonwhite_coverage_pass": true,
+      "nonwhite_center_of_mass": {
+        "x": 0.5006839078665071,
+        "y": 0.41873706961384016
+      },
+      "centered_pass": true
+    },
+    "passed": true
+  },
+  "isolated": {
+    "path": "SourceAssets\\ToonStyle\\ImageGen\\Phase1C\\TombSpider\\tombspider_v01_isolated.png",
+    "checks": {
+      "readable_png": true,
+      "has_alpha": true,
+      "corner_alpha_max": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "corners_transparent_pass": true,
+      "alpha_positive_coverage": 0.4252471923828125,
+      "alpha_coverage_pass": true,
+      "largest_component_fraction": 0.9923212171229682,
+      "largest_component_pass": true
+    },
+    "passed": true
+  },
+  "passed": true
+}

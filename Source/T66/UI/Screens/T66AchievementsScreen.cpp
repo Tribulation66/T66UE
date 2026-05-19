@@ -41,12 +41,12 @@ namespace
 
 	FString MakeAchievementsUltrakillElementPath(const TCHAR* FileName)
 	{
-		return T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(FileName);
+		return FT66FlatStyle::GetFlatMainMenuElementAssetPath(FileName);
 	}
 
 	FString MakeAchievementsUltrakillSquareElementPath(const TCHAR* FileName)
 	{
-		return T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(FileName);
+		return FT66FlatStyle::GetFlatChromeElementAssetPath(FileName);
 	}
 
 	FString MakeAchievementsAssetPath(const TCHAR* RelativeAssetPath)
@@ -78,7 +78,7 @@ namespace
 		}
 		if (Path.Contains(TEXT("row_shell")))
 		{
-			return T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal"));
+			return FT66FlatStyle::GetFlatLongPanelAssetPath(TEXT("normal"));
 		}
 		if (Path.Contains(TEXT("ScreenArt/")))
 		{
@@ -86,7 +86,7 @@ namespace
 		}
 		if (Path.Contains(TEXT("progress_panel")))
 		{
-			return T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal"));
+			return FT66FlatStyle::GetFlatLongPanelAssetPath(TEXT("normal"));
 		}
 		if (Path.Contains(TEXT("fullscreen_panel")) || Path.Contains(TEXT("inner_panel")))
 		{
@@ -107,9 +107,9 @@ namespace
 		}
 		if (FamilyName.Equals(TEXT("CTA"), ESearchCase::IgnoreCase))
 		{
-			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*StateName);
+			return FT66FlatStyle::GetFlatRedSquareButtonAssetPath(*StateName);
 		}
-		return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*StateName);
+		return FT66FlatStyle::GetFlatRedSquareButtonAssetPath(*StateName);
 	}
 
 	void SetAchievementsActiveStateFolder(const bool bShowingSecret)
@@ -214,12 +214,12 @@ namespace
 
 	FSlateFontInfo AchievementsBoldFont(int32 BaseSize)
 	{
-		return FT66Style::Tokens::FontBold(AdjustAchievementsFontSize(BaseSize));
+		return FT66FlatStyle::Tokens::FontBold(AdjustAchievementsFontSize(BaseSize));
 	}
 
 	FSlateFontInfo AchievementsRegularFont(int32 BaseSize)
 	{
-		return FT66Style::Tokens::FontRegular(AdjustAchievementsFontSize(BaseSize));
+		return FT66FlatStyle::Tokens::FontRegular(AdjustAchievementsFontSize(BaseSize));
 	}
 
 	FString MakeSettingsAssetPath(const TCHAR* FileName)
@@ -325,11 +325,11 @@ namespace
 		{
 			return FMargin(0.06f, 0.34f, 0.06f, 0.34f);
 		}
-		if (T66ScreenSlateHelpers::IsReferenceChromePillButtonAssetPath(SourceRelativePath))
+		if (FT66FlatStyle::IsFlatChromePillButtonAssetPath(SourceRelativePath))
 		{
 			return FMargin(0.093f, 0.213f, 0.093f, 0.213f);
 		}
-		if (T66ScreenSlateHelpers::IsReferenceChromeCTAButtonAssetPath(SourceRelativePath))
+		if (FT66FlatStyle::IsFlatChromeCTAButtonAssetPath(SourceRelativePath))
 		{
 			return FMargin(0.083f, 0.231f, 0.083f, 0.231f);
 		}
@@ -346,7 +346,7 @@ namespace
 
 	bool IsAchievementsSlicedButtonPath(const FString& SourceRelativePath)
 	{
-		return T66ScreenSlateHelpers::IsReferenceChromeButtonAssetPath(SourceRelativePath)
+		return FT66FlatStyle::IsFlatChromeButtonAssetPath(SourceRelativePath)
 			|| SourceRelativePath.Contains(TEXT("/Buttons/Pill/"))
 			|| SourceRelativePath.Contains(TEXT("leaderboard_tab_button_"))
 			|| SourceRelativePath.Contains(TEXT("cta_new_game_button_"))
@@ -606,7 +606,7 @@ namespace
 				];
 		}
 
-		return FT66Style::MakePanel(
+		return FT66FlatStyle::MakePanel(
 			Content,
 			FT66PanelParams(ET66PanelType::Panel)
 				.SetColor(FallbackFill)
@@ -622,7 +622,7 @@ namespace
 	{
 		if (!ButtonStyle)
 		{
-			return FT66Style::MakeBareButton(
+			return FT66FlatStyle::MakeBareButton(
 				FT66BareButtonParams(
 					Params.OnClicked,
 					SNew(SScaleBox)
@@ -647,7 +647,7 @@ namespace
 				.SetVisibility(Params.Visibility));
 		}
 
-		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+		return FT66FlatStyle::BuildFlatSlicedPlateButton(
 			Params.OnClicked,
 			SNew(SScaleBox)
 			.Stretch(EStretch::ScaleToFit)
@@ -714,7 +714,7 @@ namespace
 				];
 		}
 
-		return T66ScreenSlateHelpers::MakeReferenceProgressBar(
+		return FT66FlatStyle::BuildFlatProgressBar(
 			Pct,
 			FVector2D(Width, BarHeight),
 			FLinearColor(0.92f, 0.05f, 0.12f, 1.0f),
@@ -763,7 +763,7 @@ namespace
 			.WidthOverride(54.f)
 			.HeightOverride(54.f)
 			[
-				FT66Style::MakeBareButton(
+				FT66FlatStyle::MakeBareButton(
 					FT66BareButtonParams(
 						OnClicked,
 						SNew(SOverlay)
@@ -777,7 +777,7 @@ namespace
 						[
 							SNew(STextBlock)
 							.Text(Glyph)
-							.Font(FT66Style::Tokens::FontRegular(30))
+							.Font(FT66FlatStyle::Tokens::FontRegular(30))
 							.ColorAndOpacity(GlyphColor)
 							.Justification(ETextJustify::Center)
 						])
@@ -1229,6 +1229,22 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		constexpr float DividerY[3] = { 0.579f, 0.693f, 0.808f };
 
 		AddN(0.024f, 0.125f, 0.951f, 0.804f, MakeMetadataRegion(STag(TEXT("SteamAchievements.Root")), TEXT("Root")));
+		if (T66IsPausedGameplayWidget(this))
+		{
+			AddN(0.024f, 0.123f, 0.100f, 0.060f,
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Default,
+					NSLOCTEXT("T66.Common", "Back", "BACK"),
+					FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked),
+					nullptr,
+					nullptr,
+					FMargin(0.f),
+					0.100f * SteamCanvasW,
+					0.060f * SteamCanvasH,
+					true,
+					22,
+					STag(TEXT("SteamAchievements.BackButton"))));
+		}
 		AddN(0.148f, 0.123f, 0.690f, 0.060f, MakeMetadataRegion(STag(TEXT("SteamAchievements.SubTabs")), TEXT("ToggleGroup.AchievementTabs")));
 		AddN(0.148f, 0.123f, 0.320f, 0.060f, MakeFlatTab(
 			STag(TEXT("SteamAchievements.SubTabs.SteamButton")),
@@ -1510,6 +1526,22 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		};
 
 		AddN(0.024f, 0.125f, 0.951f, 0.804f, MakeMetadataRegion(STag(TEXT("SecretAchievements.Root")), TEXT("Root")));
+		if (T66IsPausedGameplayWidget(this))
+		{
+			AddN(0.024f, 0.123f, 0.100f, 0.060f,
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Default,
+					NSLOCTEXT("T66.Common", "Back", "BACK"),
+					FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleBackClicked),
+					nullptr,
+					nullptr,
+					FMargin(0.f),
+					0.100f * SecretCanvasW,
+					0.060f * SecretCanvasH,
+					true,
+					22,
+					STag(TEXT("SecretAchievements.BackButton"))));
+		}
 		AddN(0.148f, 0.123f, 0.690f, 0.060f, MakeMetadataRegion(STag(TEXT("SecretAchievements.SubTabs")), TEXT("ToggleGroup.AchievementTabs")));
 		AddN(0.148f, 0.123f, 0.320f, 0.060f, MakeFlatTab(
 			STag(TEXT("SecretAchievements.SubTabs.SteamButton")),
@@ -1676,8 +1708,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		return SecretContent;
 	}
 
-	const T66ScreenSlateHelpers::FFrontendChromeMetrics& ChromeMetrics = T66ScreenSlateHelpers::GetFrontendChromeMetrics();
-	const FSlateFontInfo ChromeTabFont = T66ScreenSlateHelpers::MakeFrontendChromeTabFont();
+	const FT66FlatStyle::FFrontendChromeMetrics& ChromeMetrics = FT66FlatStyle::GetFrontendChromeMetrics();
+	const FSlateFontInfo ChromeTabFont = FT66FlatStyle::MakeFrontendChromeTabFont();
 
 	auto MakeTabButton = [this, &ChromeMetrics, ChromeTabFont](const FText& Label, bool bActive, bool bLeft, FReply(UT66AchievementsScreen::*Handler)()) -> TSharedRef<SWidget>
 	{
@@ -1730,7 +1762,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				.HeightOverride(72.f)
 				[
 					MakeAchievementsGeneratedPanel(
-						T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal")),
+						FT66FlatStyle::GetFlatRedSquareButtonAssetPath(TEXT("normal")),
 						SNew(SBox)
 						.VAlign(VAlign_Center)
 						[
@@ -1847,7 +1879,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		];
 
 	RebuildAchievementList();
-	return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
+	return FT66FlatStyle::MakeTopBarScreenRoot(
 		UIManager,
 		Root,
 		SNew(SBorder)
@@ -2090,7 +2122,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						SNew(STextBlock)
 						.Text(MaskedText)
 						.Font(AchievementsBoldFont(19))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					]
 					+ SVerticalBox::Slot()
@@ -2100,7 +2132,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						SNew(STextBlock)
 						.Text(MaskedText)
 						.Font(AchievementsRegularFont(16))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						.AutoWrapText(true)
 						.WrapTextAt(900.f)
 						.WrappingPolicy(ETextWrappingPolicy::AllowPerCharacterWrapping)
@@ -2124,7 +2156,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						SNew(STextBlock)
 						.Text(MaskedText)
 						.Font(AchievementsBoldFont(19))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						.Justification(ETextJustify::Center)
 						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					]
@@ -2163,7 +2195,7 @@ void UT66AchievementsScreen::RebuildAchievementList()
 						.SetEnabled(false),
 						ResolveAchievementsCompactButtonStyle(),
 						AchievementsBoldFont(18),
-						FT66Style::Tokens::TextMuted,
+						FT66FlatStyle::Tokens::TextMuted,
 						FMargin(16.f, 7.f, 16.f, 6.f))
 					]
 				,

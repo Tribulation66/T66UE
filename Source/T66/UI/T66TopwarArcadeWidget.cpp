@@ -4,6 +4,8 @@
 
 #include "Core/T66AudioSubsystem.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66AnimatedStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 
 #include "Styling/CoreStyle.h"
@@ -94,14 +96,14 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 
 	auto BuildStatPanel = [](const FText& Label, const TSharedRef<SWidget>& ValueWidget) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakePanel(
+		return FT66FlatStyle::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
 				.Text(Label)
-				.Font(FT66Style::Tokens::FontBold(16))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Font(FT66FlatStyle::Tokens::FontBold(16))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 			[
@@ -111,7 +113,7 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 	};
 
 	const TSharedRef<SWidget> LeftGateButton =
-		FT66Style::MakeBareButton(
+		FT66FlatStyle::MakeBareButton(
 			FT66BareButtonParams(
 				FOnClicked::CreateUObject(this, &UT66TopwarArcadeWidget::HandleGateClicked, true),
 				SAssignNew(LeftGateBorder, SBorder)
@@ -121,8 +123,8 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 			[
 				SAssignNew(LeftGateTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(30))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(30))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					.Justification(ETextJustify::Center)
 				]
 		)
@@ -130,7 +132,7 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 		.SetPadding(FMargin(0.f)));
 
 	const TSharedRef<SWidget> RightGateButton =
-		FT66Style::MakeBareButton(
+		FT66FlatStyle::MakeBareButton(
 			FT66BareButtonParams(
 				FOnClicked::CreateUObject(this, &UT66TopwarArcadeWidget::HandleGateClicked, false),
 				SAssignNew(RightGateBorder, SBorder)
@@ -140,8 +142,8 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 			[
 				SAssignNew(RightGateTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(30))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(30))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					.Justification(ETextJustify::Center)
 				]
 		)
@@ -149,7 +151,7 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 		.SetPadding(FMargin(0.f)));
 
 	const TSharedRef<SWidget> InfoPanel =
-		FT66Style::MakePanel(
+		FT66FlatStyle::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
@@ -157,8 +159,8 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 				.Text(ArcadeData.DisplayName.IsEmpty()
 					? NSLOCTEXT("T66.Arcade", "TopwarFallbackTitle", "Topwar")
 					: ArcadeData.DisplayName)
-				.Font(FT66Style::Tokens::FontBold(38))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(38))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f)
 			[
@@ -169,8 +171,8 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 						TimerLabel,
 						SAssignNew(TimerTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(30))
-						.ColorAndOpacity(FT66Style::Tokens::Text))
+						.Font(FT66FlatStyle::Tokens::FontBold(30))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text))
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 				[
@@ -178,8 +180,8 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 						ScoreLabel,
 						SAssignNew(ScoreTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(30))
-						.ColorAndOpacity(FT66Style::Tokens::Accent))
+						.Font(FT66FlatStyle::Tokens::FontBold(30))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Accent))
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f)
 				[
@@ -187,13 +189,14 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 						SquadLabel,
 						SAssignNew(SquadTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(30))
-						.ColorAndOpacity(FT66Style::Tokens::Success))
+						.Font(FT66FlatStyle::Tokens::FontBold(30))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Success))
 				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f)
 			[
-				FT66Style::MakePanel(
+				FT66AnimatedStyle::AttachMetadata(
+					FT66FlatStyle::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 					[
@@ -225,8 +228,8 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 								[
 									SNew(STextBlock)
 									.Text(NSLOCTEXT("T66.Arcade", "TopwarRunwayLabel", "CHOOSE A GATE"))
-									.Font(FT66Style::Tokens::FontBold(18))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									.Font(FT66FlatStyle::Tokens::FontBold(18))
+									.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 									.Justification(ETextJustify::Center)
 								]
 							]
@@ -248,8 +251,8 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 						[
 							SNew(STextBlock)
 							.Text(NSLOCTEXT("T66.Arcade", "TopwarEnemyLine", "ENEMY LINE"))
-							.Font(FT66Style::Tokens::FontBold(20))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Font(FT66FlatStyle::Tokens::FontBold(20))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							.Justification(ETextJustify::Center)
 						]
 					]
@@ -278,19 +281,21 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 					],
 					FT66PanelParams(ET66PanelType::Panel2)
 						.SetPadding(FMargin(18.f))
-						.SetColor(FLinearColor(0.04f, 0.045f, 0.055f, 1.f)))
+						.SetColor(FLinearColor(0.04f, 0.045f, 0.055f, 1.f))),
+					FName(TEXT("Arcade.Topwar.PlayArea")),
+					TEXT("ArcadeGameplay"))
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 			[
 				SAssignNew(StatusTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(18))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(18))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 				.AutoWrapText(true)
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 18.f, 0.f, 0.f)
 			[
-				FT66Style::MakeButton(
+				FT66FlatStyle::MakeButton(
 					FT66ButtonParams(
 						NSLOCTEXT("T66.Arcade", "TopwarAbort", "Abort"),
 						FOnClicked::CreateUObject(this, &UT66TopwarArcadeWidget::HandlePrimaryActionClicked),
@@ -300,8 +305,8 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 					.SetContent(
 						SAssignNew(PrimaryActionTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(18))
-						.ColorAndOpacity(FT66Style::Tokens::Text)))
+						.Font(FT66FlatStyle::Tokens::FontBold(18))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)))
 			],
 			FT66PanelParams(ET66PanelType::Panel)
 				.SetPadding(FMargin(24.f))
@@ -332,7 +337,7 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 			]
 		];
 
-	return FT66Style::MakeResponsiveRoot(Root);
+	return FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 
 void UT66TopwarArcadeWidget::NativeConstruct()
@@ -494,13 +499,13 @@ void UT66TopwarArcadeWidget::RefreshHud()
 	{
 		StatusTextBlock->SetText(bRoundEnded
 			? (bRoundSucceeded
-				? NSLOCTEXT("T66.Arcade", "TopwarStatusDone", "Squad score locked. Cabinet paying out...")
-				: NSLOCTEXT("T66.Arcade", "TopwarStatusEmpty", "No upgrades chosen. Cabinet shutting down."))
+				? NSLOCTEXT("T66.Arcade", "TopwarStatusDone", "Squad score locked. Arcade machine paying out...")
+				: NSLOCTEXT("T66.Arcade", "TopwarStatusEmpty", "No upgrades chosen. Arcade machine shutting down."))
 			: NSLOCTEXT("T66.Arcade", "TopwarStatusActive", "Choose either gate before the route changes."));
 		StatusTextBlock->SetColorAndOpacity(
 			bRoundEnded
-				? (bRoundSucceeded ? FT66Style::Tokens::Success : FT66Style::Tokens::Danger)
-				: FT66Style::Tokens::Text);
+				? (bRoundSucceeded ? FT66FlatStyle::Tokens::Success : FT66FlatStyle::Tokens::Danger)
+				: FT66FlatStyle::Tokens::Text);
 	}
 
 	if (PrimaryActionTextBlock.IsValid())
@@ -518,7 +523,7 @@ void UT66TopwarArcadeWidget::RefreshGateVisuals()
 		const float FeedbackAlpha = GetChoiceFeedbackAlpha(true);
 		const float UrgencyAlpha = GetGateUrgencyAlpha();
 		LeftGateBorder->SetBorderBackgroundColor(bRoundEnded
-			? FT66Style::Tokens::Panel2
+			? FT66FlatStyle::Tokens::Panel2
 			: FMath::Lerp(GetStatColor(LeftGateStat), FLinearColor(0.94f, 0.88f, 0.28f, 1.f), FMath::Max(FeedbackAlpha, UrgencyAlpha * 0.18f)));
 	}
 	if (RightGateBorder.IsValid())
@@ -526,7 +531,7 @@ void UT66TopwarArcadeWidget::RefreshGateVisuals()
 		const float FeedbackAlpha = GetChoiceFeedbackAlpha(false);
 		const float UrgencyAlpha = GetGateUrgencyAlpha();
 		RightGateBorder->SetBorderBackgroundColor(bRoundEnded
-			? FT66Style::Tokens::Panel2
+			? FT66FlatStyle::Tokens::Panel2
 			: FMath::Lerp(GetStatColor(RightGateStat), FLinearColor(0.94f, 0.88f, 0.28f, 1.f), FMath::Max(FeedbackAlpha, UrgencyAlpha * 0.18f)));
 	}
 	if (LeftGateTextBlock.IsValid())

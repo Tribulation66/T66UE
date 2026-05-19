@@ -12,18 +12,6 @@ namespace
 	static const FName T66StartGalleryBossesTag(TEXT("T66_StartGallery_Bosses"));
 	static const FName T66StartGalleryWorldTag(TEXT("T66_StartGallery_World"));
 
-	ET66ItemRarity T66LootRarityToItemRarity(ET66Rarity Rarity)
-	{
-		switch (Rarity)
-		{
-		case ET66Rarity::Black:  return ET66ItemRarity::Black;
-		case ET66Rarity::Red:    return ET66ItemRarity::Red;
-		case ET66Rarity::Yellow: return ET66ItemRarity::Yellow;
-		case ET66Rarity::White:  return ET66ItemRarity::White;
-		default:                 return ET66ItemRarity::Black;
-		}
-	}
-
 	TArray<FName> T66LoadDataTableRowNamesForStartGallery(const TCHAR* DataTablePath)
 	{
 		TArray<FName> RowNames;
@@ -140,7 +128,6 @@ void AT66GameMode::SpawnStageEffectsForStage()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	if (!RunState || !T66GI) return;
-	if (T66GI->bStageCatchUpPending) return;
 
 	const ET66Difficulty Difficulty = T66GI->SelectedDifficulty;
 	const int32 StageNum = RunState->GetCurrentStage();
@@ -173,7 +160,6 @@ void AT66GameMode::SpawnStageEffectsForStage()
 		static constexpr float TutorialArenaHalf = 9091.f;
 		struct FArena2D { float X; float Y; float Half; };
 		static constexpr FArena2D Arenas[] = {
-			{ -22727.f, 34091.f, ArenaHalf }, // Catch Up
 			{      0.f, 61364.f, TutorialArenaHalf }, // Tutorial
 		};
 		for (const FArena2D& A : Arenas)
@@ -344,7 +330,7 @@ void AT66GameMode::SpawnTricksterAndCowardiceGate()
 
 void AT66GameMode::SpawnGamblerNPCIfNeeded()
 {
-	if (IsLabLevel())
+	if (IsLabRun())
 	{
 		return;
 	}
@@ -440,7 +426,7 @@ void AT66GameMode::SpawnPlateauAtLocation(UWorld* World, const FVector& TopCente
 
 void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 {
-	if (IsLabLevel() || IsUsingTowerMainMapLayout())
+	if (IsLabRun() || IsUsingTowerMainMapLayout())
 	{
 		return;
 	}
@@ -640,8 +626,19 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 			if (AT66ChestInteractable* Chest = World->SpawnActor<AT66ChestInteractable>(
 				AT66ChestInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams))
 			{
+				const FT66RarityWeights Weights = PlayerExperience
+					? PlayerExperience->GetDifficultyChestRarityWeights(Difficulty)
+					: FT66RarityWeights{};
+				const bool bChestRarityReplayable = (RngSub && PlayerExperience);
+				const ET66Rarity ChestRarity = RollWeightedRarity(Weights);
+				const int32 ChestRarityDrawIndex = bChestRarityReplayable ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+				const int32 ChestRarityPreDrawSeed = bChestRarityReplayable ? RngSub->GetLastRunPreDrawSeed() : 0;
 				Chest->bIsMimic = false;
-				Chest->SetRarity(ET66Rarity::Yellow);
+				Chest->SetRarity(ChestRarity);
+				if (RunState)
+				{
+					RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), ChestRarity, ChestRarityDrawIndex, ChestRarityPreDrawSeed, bChestRarityReplayable ? &Weights : nullptr);
+				}
 				SpawnedActor = Chest;
 			}
 			break;
@@ -691,8 +688,8 @@ void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
 			break;
 
 		case EGuaranteedStartInteractable::Vehicle:
-			SpawnedActor = World->SpawnActor<AT66ArcadeTruckInteractable>(
-				AT66ArcadeTruckInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
+			SpawnedActor = World->SpawnActor<AT66VehicleInteractable>(
+				AT66VehicleInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
 			break;
 
 		case EGuaranteedStartInteractable::ArcadeMachine:
@@ -1001,6 +998,9 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	const FT66IntRange CrateCountRange = PlayerExperience
 		? PlayerExperience->GetDifficultyCrateCountRange(Difficulty)
 		: FT66IntRange{ 3, 6 };
+	const FT66IntRange LootWheelCountRange = PlayerExperience
+		? PlayerExperience->GetDifficultyLootWheelCountRange(Difficulty)
+		: FT66IntRange{ 1, 2 };
 
 	// Luck-affected counts use central tuning. Locations are still stage-seeded (not luck-affected).
 	int32 CountFountains = 0;
@@ -1061,6 +1061,23 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		CratesDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
 		CratesPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
 	}
+	int32 CountLootWheels = 0;
+	int32 LootWheelsDrawIndex = INDEX_NONE;
+	int32 LootWheelsPreDrawSeed = 0;
+	if (bTowerLayout)
+	{
+		FRandomStream TowerLootWheelRng(RunSeed + StageNum * 1901 + 41);
+		LootWheelsPreDrawSeed = RunSeed + StageNum * 1901 + 41;
+		const int32 MinLootWheels = FMath::Min(LootWheelCountRange.Min, LootWheelCountRange.Max);
+		const int32 MaxLootWheels = FMath::Max(LootWheelCountRange.Min, LootWheelCountRange.Max);
+		CountLootWheels = FMath::Clamp(TowerLootWheelRng.RandRange(MinLootWheels, MaxLootWheels), 0, TowerGameplayFloorNumbers.Num());
+	}
+	else
+	{
+		CountLootWheels = RngSub ? RngSub->RollIntRangeBiased(LootWheelCountRange, Rng) : Rng.RandRange(FMath::Min(LootWheelCountRange.Min, LootWheelCountRange.Max), FMath::Max(LootWheelCountRange.Min, LootWheelCountRange.Max));
+		LootWheelsDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		LootWheelsPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+	}
 
 	// Luck Rating tracking (quantity).
 	if (RunState)
@@ -1071,15 +1088,19 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		const int32 ChestsMax = bTowerLayout ? (TowerGameplayFloorNumbers.Num() * 3) : FMath::Max(ChestCountRange.Min, ChestCountRange.Max);
 		const int32 CratesMin = bTowerLayout ? TowerGameplayFloorNumbers.Num() : FMath::Min(CrateCountRange.Min, CrateCountRange.Max);
 		const int32 CratesMax = bTowerLayout ? (TowerGameplayFloorNumbers.Num() * 3) : FMath::Max(CrateCountRange.Min, CrateCountRange.Max);
+		const int32 LootWheelsMin = bTowerLayout ? 0 : FMath::Min(LootWheelCountRange.Min, LootWheelCountRange.Max);
+		const int32 LootWheelsMax = bTowerLayout ? TowerGameplayFloorNumbers.Num() : FMath::Max(LootWheelCountRange.Min, LootWheelCountRange.Max);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("FountainsPerStage")), CountFountains, FountainsMin, FountainsMax, FountainsDrawIndex, FountainsPreDrawSeed);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("ChestsPerStage")), CountChests, ChestsMin, ChestsMax, ChestsDrawIndex, ChestsPreDrawSeed);
 		RunState->RecordLuckQuantityRoll(FName(TEXT("CratesPerStage")), CountCrates, CratesMin, CratesMax, CratesDrawIndex, CratesPreDrawSeed);
+		RunState->RecordLuckQuantityRoll(FName(TEXT("LootWheelsPerStage")), CountLootWheels, LootWheelsMin, LootWheelsMax, LootWheelsDrawIndex, LootWheelsPreDrawSeed);
 	}
 
 	const int32 CountTotems = bTowerLayout ? TowerGameplayFloorNumbers.Num() : 0;
 	int32 RemainingFountains = CountFountains;
 	int32 RemainingChests = CountChests;
 	int32 RemainingCrates = CountCrates;
+	int32 RemainingLootWheels = CountLootWheels;
 	int32 RemainingTotems = CountTotems;
 
 	auto ConfigureChest = [&](AT66ChestInteractable* Chest)
@@ -1091,13 +1112,21 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 
 		const float ChestMimicChance = PlayerExperience ? PlayerExperience->GetDifficultyChestMimicChance(Difficulty) : 0.20f;
 		Chest->bIsMimic = RngSub ? RngSub->RollChance01(ChestMimicChance) : (Rng.GetFraction() < ChestMimicChance);
-		Chest->SetRarity(ET66Rarity::Yellow);
+		const FT66RarityWeights Weights = PlayerExperience
+			? PlayerExperience->GetDifficultyChestRarityWeights(Difficulty)
+			: FT66RarityWeights{};
+		const bool bChestRarityReplayable = (RngSub && PlayerExperience);
+		const ET66Rarity ChestRarity = bChestRarityReplayable ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+		const int32 ChestRarityDrawIndex = bChestRarityReplayable ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		const int32 ChestRarityPreDrawSeed = bChestRarityReplayable ? RngSub->GetLastRunPreDrawSeed() : 0;
+		Chest->SetRarity(ChestRarity);
 		if (RunState)
 		{
 			RunState->RecordLuckQuantityBool(
 				FName(TEXT("ChestMimicAvoided")),
 				!Chest->bIsMimic,
 				1.f - FMath::Clamp(ChestMimicChance, 0.f, 1.f));
+			RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), ChestRarity, ChestRarityDrawIndex, ChestRarityPreDrawSeed, bChestRarityReplayable ? &Weights : nullptr);
 		}
 	};
 
@@ -1119,6 +1148,27 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		if (RunState)
 		{
 			RunState->RecordLuckQualityRarity(FName(TEXT("CrateRarity")), Rarity, CrateRarityDrawIndex, CrateRarityPreDrawSeed, bCrateRarityReplayable ? &Weights : nullptr);
+		}
+	};
+
+	auto ConfigureLootWheel = [&](AT66LootWheelInteractable* LootWheel)
+	{
+		if (!LootWheel)
+		{
+			return;
+		}
+
+		const FT66RarityWeights Weights = PlayerExperience
+			? PlayerExperience->GetDifficultyLootWheelRarityWeights(Difficulty)
+			: FT66RarityWeights{};
+		const bool bLootWheelRarityReplayable = (RngSub && PlayerExperience);
+		const ET66Rarity WheelRarity = bLootWheelRarityReplayable ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
+		const int32 LootWheelRarityDrawIndex = bLootWheelRarityReplayable ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		const int32 LootWheelRarityPreDrawSeed = bLootWheelRarityReplayable ? RngSub->GetLastRunPreDrawSeed() : 0;
+		LootWheel->SetRarity(WheelRarity);
+		if (RunState)
+		{
+			RunState->RecordLuckQualityRarity(FName(TEXT("LootWheelRarity")), WheelRarity, LootWheelRarityDrawIndex, LootWheelRarityPreDrawSeed, bLootWheelRarityReplayable ? &Weights : nullptr);
 		}
 	};
 
@@ -1173,6 +1223,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		TSet<FName> ExistingTowerOccupantTags;
 		int32 TowerSpawnedChests = 0;
 		int32 TowerSpawnedCrates = 0;
+		int32 TowerSpawnedLootWheels = 0;
 		int32 TowerSpawnedFountains = 0;
 		int32 TowerSpawnedLootBags = 0;
 		int32 TowerSpawnedArcadeMachines = 0;
@@ -1528,8 +1579,8 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		if (QuickReviveFloorNumber != INDEX_NONE)
 		{
 			const FName VehicleTag(*FString::Printf(TEXT("T66_Tower_Vehicle_%02d"), QuickReviveFloorNumber));
-			if (AT66ArcadeTruckInteractable* Vehicle = Cast<AT66ArcadeTruckInteractable>(SpawnTaggedTowerActorOnFloor(
-				AT66ArcadeTruckInteractable::StaticClass(),
+			if (AT66VehicleInteractable* Vehicle = Cast<AT66VehicleInteractable>(SpawnTaggedTowerActorOnFloor(
+				AT66VehicleInteractable::StaticClass(),
 				QuickReviveFloorNumber,
 				6600,
 				2000.f,
@@ -1643,6 +1694,22 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 				}
 			}
 
+			if (RemainingLootWheels > 0)
+			{
+				if (AT66LootWheelInteractable* LootWheel = Cast<AT66LootWheelInteractable>(SpawnTowerActorOnFloor(AT66LootWheelInteractable::StaticClass(), FloorNumber, 8350, 1300.f, 1700.f)))
+				{
+					ConfigureLootWheel(LootWheel);
+					if (!ResnapTowerActorToFloor(LootWheel, FloorNumber))
+					{
+						LootWheel->Destroy();
+						continue;
+					}
+					--RemainingLootWheels;
+					++TowerSpawnedLootWheels;
+					continue;
+				}
+			}
+
 			if (RemainingFountains > 0)
 			{
 				if (SpawnTowerActorOnFloor(AT66FountainInteractable::StaticClass(), FloorNumber, 8400, 1300.f, 1700.f))
@@ -1679,12 +1746,14 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		UE_LOG(
 			LogT66GameMode,
 			Log,
-			TEXT("[MAP] Tower population spawned on gameplay floors=%d: chests %d/%d, crates %d/%d, fountains %d/%d, loot bags %d/%d, arcade machines %d/%d, gamblers %d/%d, vehicles %d, quick revives %d, saints %d, totems %d/%d."),
+			TEXT("[MAP] Tower population spawned on gameplay floors=%d: chests %d/%d, crates %d/%d, loot wheels %d/%d, fountains %d/%d, loot bags %d/%d, arcade machines %d/%d, gamblers %d/%d, vehicles %d, quick revives %d, saints %d, totems %d/%d."),
 			TowerGameplayFloorNumbers.Num(),
 			TowerSpawnedChests,
 			CountChests,
 			TowerSpawnedCrates,
 			CountCrates,
+			TowerSpawnedLootWheels,
+			CountLootWheels,
 			TowerSpawnedFountains,
 			CountFountains,
 			TowerSpawnedLootBags,
@@ -1712,7 +1781,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		}
 	}
 
-	if (!IsLabLevel() && !bUsingMainMapTerrain)
+	if (!IsLabRun() && !bUsingMainMapTerrain)
 	{
 		SpawnModelShowcaseRow();
 	}
@@ -1724,6 +1793,14 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		if (AT66CrateInteractable* Crate = Cast<AT66CrateInteractable>(SpawnOne(AT66CrateInteractable::StaticClass())))
 		{
 			ConfigureCrate(Crate);
+		}
+	}
+
+	for (int32 i = 0; i < RemainingLootWheels; ++i)
+	{
+		if (AT66LootWheelInteractable* LootWheel = Cast<AT66LootWheelInteractable>(SpawnOne(AT66LootWheelInteractable::StaticClass())))
+		{
+			ConfigureLootWheel(LootWheel);
 		}
 	}
 
@@ -1832,14 +1909,15 @@ void AT66GameMode::SpawnStartGalleryShowcase()
 		}
 	}
 
-	TArray<FName> NPCVisualIDs = T66LoadDataTableRowNamesForStartGallery(TEXT("/Game/Data/DT_HouseNPCs.DT_HouseNPCs"));
-	TArray<FName> ArcadeRowIDs = T66LoadDataTableRowNamesForStartGallery(TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables"));
+	TArray<FName> NPCVisualIDs = T66LoadDataTableRowNamesForStartGallery(TEXT("/Game/Data/DT_NPCs.DT_NPCs"));
 	const TArray<FName> ItemRowIDs = T66LoadDataTableRowNamesForStartGallery(TEXT("/Game/Data/DT_Items.DT_Items"));
 	const FName ShowcaseLootItemID = ItemRowIDs.Num() > 0 ? ItemRowIDs[0] : FName(TEXT("Item_LootCrate"));
-	const int32 CoreInteractableCount = 6;
+	const int32 CoreInteractableCount = 7;
+	const int32 VehicleInteractableCount = 1;
 	const int32 LootBagCount = 4;
+	const int32 ArcadeMachineCount = 1;
 	const int32 TrapCount = 4;
-	const int32 WorldTotalSlots = NPCVisualIDs.Num() + CoreInteractableCount + LootBagCount + ArcadeRowIDs.Num() + TrapCount;
+	const int32 WorldTotalSlots = NPCVisualIDs.Num() + CoreInteractableCount + VehicleInteractableCount + LootBagCount + ArcadeMachineCount + TrapCount;
 	int32 WorldSlotIndex = 0;
 
 	for (const FName NPCVisualID : NPCVisualIDs)
@@ -1885,6 +1963,10 @@ void AT66GameMode::SpawnStartGalleryShowcase()
 	{
 		++SpawnedInteractables;
 	}
+	if (SpawnWorldGalleryActor(AT66LootWheelInteractable::StaticClass()))
+	{
+		++SpawnedInteractables;
+	}
 	if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(SpawnWorldGalleryActor(AT66ChestInteractable::StaticClass())))
 	{
 		Chest->bIsMimic = false;
@@ -1905,9 +1987,15 @@ void AT66GameMode::SpawnStartGalleryShowcase()
 	}
 	if (AT66IdolAltar* GalleryIdolAltar = Cast<AT66IdolAltar>(SpawnWorldGalleryActor(AT66IdolAltar::StaticClass())))
 	{
-		GalleryIdolAltar->OfferMode = ET66AltarOfferMode::Idols;
 		GalleryIdolAltar->RemainingSelections = 999;
-		GalleryIdolAltar->CatchUpSelectionsRemaining = 0;
+		SpawnPixalTestDisplayModelsNearIdolAltar(GalleryIdolAltar);
+		++SpawnedInteractables;
+	}
+
+	if (AT66VehicleInteractable* Vehicle = Cast<AT66VehicleInteractable>(SpawnWorldGalleryActor(AT66VehicleInteractable::StaticClass())))
+	{
+		Vehicle->SetVehicleRowID(FName(TEXT("Vehicle")));
+		Vehicle->SetShowcaseReusable(true);
 		++SpawnedInteractables;
 	}
 
@@ -1928,25 +2016,11 @@ void AT66GameMode::SpawnStartGalleryShowcase()
 		}
 	}
 
-	for (const FName ArcadeRowID : ArcadeRowIDs)
+	if (AT66ArcadeMachineInteractable* ArcadeMachine = Cast<AT66ArcadeMachineInteractable>(SpawnWorldGalleryActor(AT66ArcadeMachineInteractable::StaticClass())))
 	{
-		if (ArcadeRowID == FName(TEXT("Vehicle")))
-		{
-			if (AT66ArcadeTruckInteractable* Vehicle = Cast<AT66ArcadeTruckInteractable>(SpawnWorldGalleryActor(AT66ArcadeTruckInteractable::StaticClass())))
-			{
-				Vehicle->SetArcadeRowID(ArcadeRowID);
-				Vehicle->SetShowcaseReusable(true);
-				++SpawnedInteractables;
-			}
-			continue;
-		}
-
-		if (AT66ArcadeMachineInteractable* ArcadeMachine = Cast<AT66ArcadeMachineInteractable>(SpawnWorldGalleryActor(AT66ArcadeMachineInteractable::StaticClass())))
-		{
-			ArcadeMachine->SetArcadeRowID(ArcadeRowID);
-			ArcadeMachine->SetShowcaseReusable(true);
-			++SpawnedInteractables;
-		}
+		ArcadeMachine->SetArcadeRowID(FName(TEXT("Arcade_Machine")));
+		ArcadeMachine->SetShowcaseReusable(true);
+		++SpawnedInteractables;
 	}
 
 	auto ConfigureGalleryTrap = [&](AActor* Actor)
@@ -2008,7 +2082,7 @@ void AT66GameMode::SpawnStartGalleryShowcase()
 
 void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 {
-	if (IsLabLevel()) return;
+	if (IsLabRun()) return;
 
 	UWorld* World = GetWorld();
 	if (!World || !Player) return;
@@ -2020,33 +2094,22 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 	IdolAltar = nullptr;
 
 	UGameInstance* GI = World->GetGameInstance();
-	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
-	UT66WeaponManagerSubsystem* WeaponManager = GI ? GI->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	const bool bWeaponUpgradeOffer = T66GI && T66GI->bPendingWeaponUpgradeOffer;
-	if (!bWeaponUpgradeOffer && !IdolManager)
+	if (!IdolManager)
 	{
 		return;
 	}
 
-	int32 SelectionBudget = 1;
-	int32 CatchUpSelections = 0;
-	if (!bWeaponUpgradeOffer && IdolManager && IdolManager->HasCatchUpIdolPicksRemaining())
-	{
-		CatchUpSelections = IdolManager->GetRemainingCatchUpIdolPicks();
-		SelectionBudget += CatchUpSelections;
-	}
+	const int32 SelectionBudget = 1;
 
 	const int32 CurrentStage = RunState ? RunState->GetCurrentStage() : 1;
 	UE_LOG(
 		LogT66GameMode,
 		Log,
-		TEXT("Spawning stage-entry %s altar for stage %d with %d total selections (%d catch-up)."),
-		bWeaponUpgradeOffer ? TEXT("weapon") : TEXT("idol"),
+		TEXT("Spawning stage-entry idol altar for stage %d with %d selection."),
 		CurrentStage,
-		SelectionBudget,
-		CatchUpSelections);
+		SelectionBudget);
 
 	FVector SpawnLoc = FVector::ZeroVector;
 	FRotator SpawnRotation = FRotator::ZeroRotator;
@@ -2113,35 +2176,388 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 		}
 
 		IdolAltar->RemainingSelections = FMath::Max(1, SelectionBudget);
-		IdolAltar->CatchUpSelectionsRemaining = FMath::Max(0, CatchUpSelections);
-		if (bWeaponUpgradeOffer)
-		{
-			IdolAltar->OfferMode = ET66AltarOfferMode::Weapons;
-			IdolAltar->WeaponOfferRarity = T66GI ? T66GI->PendingWeaponUpgradeRarity : ET66WeaponRarity::Black;
-			if (WeaponManager && T66GI)
-			{
-				WeaponManager->BuildWeaponOffers(T66GI->SelectedHeroID, IdolAltar->WeaponOfferRarity);
-			}
-			if (T66GI)
-			{
-				T66GI->bPendingWeaponUpgradeOffer = false;
-			}
-		}
-		else
-		{
-			IdolAltar->OfferMode = ET66AltarOfferMode::Idols;
-		}
 		TowerIdolSelectionsAtStageStart = IdolAltar->RemainingSelections;
 		if (IsUsingTowerMainMapLayout())
 		{
 			SyncTowerMiasmaSourceAnchor(CachedTowerMainMapLayout.StartFloorNumber, IdolAltar->GetActorLocation());
 		}
+		SpawnPixalTestDisplayModelsNearIdolAltar(IdolAltar);
 	}
+}
+
+void AT66GameMode::SpawnWeaponAltarForPlayer(AController* Player)
+{
+	if (IsLabRun()) return;
+
+	UWorld* World = GetWorld();
+	if (!World || !Player) return;
+
+	if (IsValid(WeaponAltar))
+	{
+		return;
+	}
+	WeaponAltar = nullptr;
+
+	UGameInstance* GI = World->GetGameInstance();
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66WeaponManagerSubsystem* WeaponManager = GI ? GI->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr;
+	UT66DifficultyTuningSubsystem* DifficultyTuning = GI ? GI->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
+	if (!T66GI || !RunState || !WeaponManager || !DifficultyTuning)
+	{
+		return;
+	}
+
+	const int32 CurrentStage = RunState->GetCurrentStage();
+	const int32 DifficultyStartStage = DifficultyTuning->GetDifficultyStartStage(T66GI->SelectedDifficulty);
+	if (CurrentStage != DifficultyStartStage || !WeaponManager->GetEquippedWeaponID().IsNone())
+	{
+		return;
+	}
+
+	FVector SpawnLoc = FVector::ZeroVector;
+	FRotator SpawnRotation = FRotator::ZeroRotator;
+	FVector SideDirection = FVector::RightVector;
+	if (T66UsesMainMapTerrainStage(World))
+	{
+		if (IsUsingTowerMainMapLayout())
+		{
+			SpawnLoc = CachedTowerMainMapLayout.StartAnchorSurfaceLocation;
+		}
+		else if (!TryGetMainMapStartPlacementLocation(0.f, 0.f, SpawnLoc))
+		{
+			return;
+		}
+
+		FVector Center = FVector::ZeroVector;
+		FVector InwardDirection = FVector::ForwardVector;
+		float CellSize = 0.f;
+		if (TryGetMainMapStartAxes(Center, InwardDirection, SideDirection, CellSize) && !InwardDirection.IsNearlyZero())
+		{
+			SpawnRotation = (-InwardDirection).Rotation();
+		}
+	}
+	else
+	{
+		SpawnLoc = T66GameplayLayout::GetStartAreaCenter();
+	}
+
+	if (SideDirection.IsNearlyZero())
+	{
+		SideDirection = FVector::RightVector;
+	}
+	SpawnLoc += SideDirection.GetSafeNormal2D() * 430.f;
+
+	if (!T66UsesMainMapTerrainStage(World))
+	{
+		FHitResult Hit;
+		const FVector TraceStart = SpawnLoc + FVector(0.f, 0.f, 3000.f);
+		const FVector TraceEnd = SpawnLoc - FVector(0.f, 0.f, 9000.f);
+		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic)
+			|| World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility))
+		{
+			SpawnLoc = Hit.ImpactPoint;
+		}
+	}
+
+	const ET66WeaponRarity OfferRarity = DifficultyTuning->GetDifficultyWeaponBaseRarity(T66GI->SelectedDifficulty);
+	WeaponManager->BuildWeaponOffers(T66GI->SelectedHeroID, OfferRarity);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	WeaponAltar = World->SpawnActor<AT66WeaponAltar>(AT66WeaponAltar::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
+	if (!WeaponAltar)
+	{
+		return;
+	}
+
+	if (IsUsingTowerMainMapLayout())
+	{
+		T66TrySnapActorToTowerFloor(World, WeaponAltar, CachedTowerMainMapLayout, CachedTowerMainMapLayout.StartFloorNumber, SpawnLoc);
+		T66AssignTowerFloorTag(WeaponAltar, CachedTowerMainMapLayout.StartFloorNumber);
+	}
+	else
+	{
+		TrySnapActorToTerrainAtLocation(WeaponAltar, SpawnLoc);
+	}
+
+	WeaponAltar->RemainingSelections = 1;
+	WeaponAltar->WeaponOfferRarity = OfferRarity;
+	if (APawn* PlayerPawn = Player->GetPawn())
+	{
+		T66FaceActorTowardLocation2D(WeaponAltar, PlayerPawn->GetActorLocation());
+	}
+}
+
+void AT66GameMode::SpawnPixalTestDisplayModelsNearIdolAltar(AT66IdolAltar* AnchorAltar, const bool bTrackAsLabSpawned)
+{
+#if UE_BUILD_SHIPPING
+	(void)AnchorAltar;
+	(void)bTrackAsLabSpawned;
+	return;
+#else
+	UWorld* World = GetWorld();
+	if (!World || !AnchorAltar || !bSpawnPixalTestModelsAtIdolAltar)
+	{
+		return;
+	}
+
+	UMaterialInterface* SharedMaterial = PixalTestSharedMaterial.LoadSynchronous();
+	if (!SharedMaterial)
+	{
+		UE_LOG(LogT66GameMode, Warning, TEXT("[PixalTestDisplay] Missing shared material; test models not spawned."));
+		return;
+	}
+
+	FVector Forward = AnchorAltar->GetActorForwardVector().GetSafeNormal2D();
+	if (Forward.IsNearlyZero())
+	{
+		Forward = FVector::ForwardVector;
+	}
+
+	FVector Side = AnchorAltar->GetActorRightVector().GetSafeNormal2D();
+	if (Side.IsNearlyZero())
+	{
+		Side = FVector::CrossProduct(FVector::UpVector, Forward).GetSafeNormal();
+	}
+	if (Side.IsNearlyZero())
+	{
+		Side = FVector::RightVector;
+	}
+
+	const FName DisplayTag(TEXT("T66_PixalTest_IdolAltar_Display"));
+	const FVector AnchorLocation = AnchorAltar->GetActorLocation();
+	const int32 TowerFloorNumber = T66ReadTowerFloorTag(AnchorAltar);
+	constexpr float MeshFacingYawCorrection = 90.0f;
+	constexpr float DisplayYawOffsetRightDegrees = 45.0f;
+
+	const APawn* HeroPawn = UGameplayStatics::GetPlayerPawn(World, 0);
+	const FVector FacingTarget = HeroPawn
+		? HeroPawn->GetActorLocation()
+		: AnchorLocation + Forward * 1000.0f;
+
+	auto HasExistingDisplay = [&](const FName AssetTag, const FVector& DesiredLocation) -> bool
+	{
+		for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+		{
+			const AStaticMeshActor* Existing = *It;
+			if (!Existing || !Existing->Tags.Contains(DisplayTag) || !Existing->Tags.Contains(AssetTag))
+			{
+				continue;
+			}
+
+			if (FVector::DistSquared2D(Existing->GetActorLocation(), DesiredLocation) <= FMath::Square(150.f))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	auto ApplyPixalDisplayMaterial = [&](UStaticMeshComponent* MeshComponent, UTexture2D* Texture, const FName AssetTag)
+	{
+		if (!MeshComponent || !Texture)
+		{
+			return;
+		}
+
+		const int32 NumMaterials = FMath::Max(1, MeshComponent->GetNumMaterials());
+		for (int32 MaterialIndex = 0; MaterialIndex < NumMaterials; ++MaterialIndex)
+		{
+			UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(SharedMaterial, MeshComponent);
+			if (!DynamicMaterial)
+			{
+				continue;
+			}
+
+			DynamicMaterial->SetTextureParameterValue(TEXT("EmissiveTexture"), Texture);
+			DynamicMaterial->SetTextureParameterValue(TEXT("BaseColorTexture"), Texture);
+			DynamicMaterial->SetTextureParameterValue(TEXT("DiffuseColorMap"), Texture);
+			DynamicMaterial->SetScalarParameterValue(TEXT("DiffuseColorMapWeight"), 1.0f);
+			DynamicMaterial->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor::White);
+			DynamicMaterial->SetVectorParameterValue(TEXT("BaseColorFactor"), FLinearColor::Black);
+			MeshComponent->SetMaterial(MaterialIndex, DynamicMaterial);
+		}
+
+		UE_LOG(LogT66GameMode, Log, TEXT("[PixalTestDisplay] Applied direct display material for %s using %s."), *AssetTag.ToString(), *Texture->GetPathName());
+	};
+
+	auto GroundMeshBottomToActorOrigin = [](UStaticMeshComponent* MeshComponent, AActor* DisplayActor)
+	{
+		if (!MeshComponent || !DisplayActor)
+		{
+			return;
+		}
+
+		MeshComponent->UpdateBounds();
+		const FBoxSphereBounds WorldBounds = MeshComponent->CalcBounds(MeshComponent->GetComponentTransform());
+		const float BottomZ = WorldBounds.Origin.Z - WorldBounds.BoxExtent.Z;
+		const float DeltaZ = DisplayActor->GetActorLocation().Z - BottomZ;
+		FVector RelativeLocation = MeshComponent->GetRelativeLocation();
+		RelativeLocation.Z += DeltaZ;
+		MeshComponent->SetRelativeLocation(RelativeLocation);
+		MeshComponent->UpdateBounds();
+	};
+
+	auto SpawnDisplay = [&](
+		const FName AssetTag,
+		TSoftObjectPtr<UStaticMesh>& MeshPtr,
+		TSoftObjectPtr<UTexture2D>& TexturePtr,
+		const float SideOffsetCm,
+		const float DesiredDisplayHeightCm,
+		const float ForwardOffsetCm)
+	{
+		UStaticMesh* Mesh = MeshPtr.LoadSynchronous();
+		UTexture2D* Texture = TexturePtr.LoadSynchronous();
+		if (!Mesh || !Texture)
+		{
+			UE_LOG(
+				LogT66GameMode,
+				Warning,
+				TEXT("[PixalTestDisplay] Missing mesh or texture for %s. Mesh=%s Texture=%s"),
+				*AssetTag.ToString(),
+				Mesh ? *Mesh->GetPathName() : TEXT("(null)"),
+				Texture ? *Texture->GetPathName() : TEXT("(null)"));
+			return;
+		}
+
+		const FVector DesiredLocation = AnchorLocation + Side * SideOffsetCm + Forward * ForwardOffsetCm;
+		FVector FacingDirection = (FacingTarget - DesiredLocation).GetSafeNormal2D();
+		if (FacingDirection.IsNearlyZero())
+		{
+			FacingDirection = -Forward;
+		}
+		if (FacingDirection.IsNearlyZero())
+		{
+			FacingDirection = FVector::ForwardVector;
+		}
+
+		const FRotator DisplayRotation(0.0f, FacingDirection.Rotation().Yaw - MeshFacingYawCorrection + DisplayYawOffsetRightDegrees, 0.0f);
+		if (HasExistingDisplay(AssetTag, DesiredLocation))
+		{
+			return;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = AnchorAltar;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		AStaticMeshActor* DisplayActor = World->SpawnActor<AStaticMeshActor>(
+			AStaticMeshActor::StaticClass(),
+			DesiredLocation,
+			DisplayRotation,
+			SpawnParams);
+		if (!DisplayActor)
+		{
+			return;
+		}
+
+		DisplayActor->Tags.AddUnique(DisplayTag);
+		DisplayActor->Tags.AddUnique(AssetTag);
+		if (TowerFloorNumber != INDEX_NONE)
+		{
+			T66AssignTowerFloorTag(DisplayActor, TowerFloorNumber);
+		}
+
+		T66_SetStaticMeshActorMobility(DisplayActor, EComponentMobility::Movable);
+		if (UStaticMeshComponent* MeshComponent = DisplayActor->GetStaticMeshComponent())
+		{
+			MeshComponent->SetStaticMesh(Mesh);
+			MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			MeshComponent->SetGenerateOverlapEvents(false);
+			MeshComponent->SetCanEverAffectNavigation(false);
+			MeshComponent->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
+			const float MeshHeight = FMath::Max(1.0f, Mesh->GetBounds().BoxExtent.Z * 2.0f);
+			MeshComponent->SetRelativeScale3D(FVector(DesiredDisplayHeightCm / MeshHeight));
+			ApplyPixalDisplayMaterial(MeshComponent, Texture, AssetTag);
+		}
+
+		if (IsUsingTowerMainMapLayout() && TowerFloorNumber != INDEX_NONE)
+		{
+			T66TrySnapActorToTowerFloor(World, DisplayActor, CachedTowerMainMapLayout, TowerFloorNumber, DesiredLocation);
+		}
+		else
+		{
+			TrySnapActorToTerrainAtLocation(DisplayActor, DesiredLocation);
+		}
+
+		if (UStaticMeshComponent* MeshComponent = DisplayActor->GetStaticMeshComponent())
+		{
+			GroundMeshBottomToActorOrigin(MeshComponent, DisplayActor);
+		}
+
+		PixalTestDisplayActors.Add(DisplayActor);
+		if (bTrackAsLabSpawned)
+		{
+			LabSpawnedActors.Add(DisplayActor);
+		}
+
+		UE_LOG(LogT66GameMode, Log, TEXT("[PixalTestDisplay] Spawned %s beside Idol Altar at %s."), *AssetTag.ToString(), *DisplayActor->GetActorLocation().ToCompactString());
+	};
+
+	auto SpawnEasyDungeonHifiDisplay = [&](
+		const int32 AssetIndex,
+		const FName AssetTag,
+		const float SideOffsetCm,
+		const float DesiredDisplayHeightCm)
+	{
+		if (!PixalEasyDungeonHifiMeshes.IsValidIndex(AssetIndex) || !PixalEasyDungeonHifiTextures.IsValidIndex(AssetIndex))
+		{
+			UE_LOG(LogT66GameMode, Warning, TEXT("[PixalTestDisplay] Missing Easy/Dungeon Pixal3D display reference for %s at index %d."), *AssetTag.ToString(), AssetIndex);
+			return;
+		}
+
+		SpawnDisplay(
+			AssetTag,
+			PixalEasyDungeonHifiMeshes[AssetIndex],
+			PixalEasyDungeonHifiTextures[AssetIndex],
+			SideOffsetCm,
+			DesiredDisplayHeightCm,
+			520.f);
+	};
+
+	auto SpawnStandaloneTestDisplay = [&](
+		const int32 AssetIndex,
+		const FName AssetTag,
+		const float SideOffsetCm)
+	{
+		if (!PixalStandaloneTestMeshes.IsValidIndex(AssetIndex) || !PixalStandaloneTestTextures.IsValidIndex(AssetIndex))
+		{
+			UE_LOG(LogT66GameMode, Warning, TEXT("[PixalTestDisplay] Missing standalone Pixal3D display reference for %s at index %d."), *AssetTag.ToString(), AssetIndex);
+			return;
+		}
+
+		SpawnDisplay(
+			AssetTag,
+			PixalStandaloneTestMeshes[AssetIndex],
+			PixalStandaloneTestTextures[AssetIndex],
+			SideOffsetCm,
+			200.f,
+			150.f);
+	};
+
+	SpawnDisplay(FName(TEXT("PIXALTEST")), PixalTestMesh, PixalTestTexture, -460.f, 200.f, 150.f);
+	SpawnDisplay(FName(TEXT("PIXALSLIME")), PixalSlimeMesh, PixalSlimeTexture, -860.f, 110.f, 150.f);
+	SpawnDisplay(FName(TEXT("PIXALSLIME_HIFIRUSH")), PixalSlimeHifiMesh, PixalSlimeHifiTexture, -1220.f, 110.f, 150.f);
+	SpawnDisplay(FName(TEXT("PIXALTEST2")), PixalTest2Mesh, PixalTest2Texture, 460.f, 200.f, 150.f);
+	SpawnStandaloneTestDisplay(0, FName(TEXT("PIXALTEST3")), 860.f);
+	SpawnStandaloneTestDisplay(1, FName(TEXT("PIXALTEST4")), 1220.f);
+	SpawnStandaloneTestDisplay(2, FName(TEXT("PIXALTEST5")), 1580.f);
+	SpawnEasyDungeonHifiDisplay(0, FName(TEXT("PIXALBONEWALKER_HIFIRUSH")), -1220.f, 360.f);
+	SpawnEasyDungeonHifiDisplay(1, FName(TEXT("PIXALRATPACK_HIFIRUSH")), -860.f, 180.f);
+	SpawnEasyDungeonHifiDisplay(2, FName(TEXT("PIXALCAVEBAT_HIFIRUSH")), -500.f, 280.f);
+	SpawnEasyDungeonHifiDisplay(3, FName(TEXT("PIXALHEXSLINGER_HIFIRUSH")), -140.f, 360.f);
+	SpawnEasyDungeonHifiDisplay(4, FName(TEXT("PIXALTOMBSPIDER_HIFIRUSH")), 220.f, 300.f);
+	SpawnEasyDungeonHifiDisplay(5, FName(TEXT("PIXALSTONESENTINEL_HIFIRUSH")), 580.f, 360.f);
+	SpawnEasyDungeonHifiDisplay(6, FName(TEXT("PIXALMIMICLURE_HIFIRUSH")), 940.f, 200.f);
+	SpawnEasyDungeonHifiDisplay(7, FName(TEXT("PIXALBONECONJURER_HIFIRUSH")), 1300.f, 400.f);
+	SpawnEasyDungeonHifiDisplay(8, FName(TEXT("PIXALCRYPTWRAITH_HIFIRUSH")), 1660.f, 340.f);
+#endif
 }
 
 void AT66GameMode::SpawnIdolVFXTestTargets()
 {
-	if (!bSpawnIdolVFXTestTargetsAtStageStart || IsLabLevel())
+	if (!bSpawnIdolVFXTestTargetsAtStageStart || IsLabRun())
 	{
 		return;
 	}
@@ -2304,85 +2720,7 @@ void AT66GameMode::SpawnIdolAltarAtLocation(const FVector& Location)
 	if (IdolAltar)
 	{
 		IdolAltar->RemainingSelections = 1;
-		IdolAltar->CatchUpSelectionsRemaining = 0;
+		SpawnPixalTestDisplayModelsNearIdolAltar(IdolAltar);
 	}
 }
 
-void AT66GameMode::SpawnStageCatchUpPlatformAndInteractables()
-{
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	UT66GameInstance* T66GI = GetT66GameInstance();
-	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!T66GI || !RunState) return;
-	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>();
-
-	RunState->SetInStageCatchUp(true);
-
-	const int32 DiffIndex = FMath::Max(0, static_cast<int32>(T66GI->SelectedDifficulty));
-	static constexpr int32 DefaultStartStages[] = { 1, 6, 11, 16, 21 };
-	const int32 FallbackStartStage = DefaultStartStages[FMath::Clamp(DiffIndex, 0, UE_ARRAY_COUNT(DefaultStartStages) - 1)];
-	const int32 StartStage = PlayerExperience
-		? PlayerExperience->GetDifficultyStartStage(T66GI->SelectedDifficulty)
-		: FallbackStartStage;
-
-	const int32 GoldAmount = PlayerExperience
-		? PlayerExperience->GetDifficultyStartGoldBonus(T66GI->SelectedDifficulty)
-		: 200 * DiffIndex;
-	const int32 LootBags = PlayerExperience
-		? PlayerExperience->GetDifficultyStartLootBags(T66GI->SelectedDifficulty)
-		: 2 + (DiffIndex * 2);
-
-	const FVector PlatformCenter(-45455.f, 23636.f, -50.f);
-
-	if (GoldAmount > 0)
-	{
-		RunState->AddGold(GoldAmount);
-	}
-
-	if (LootBags > 0)
-	{
-		UT66RngSubsystem* RngSub = T66GI->GetSubsystem<UT66RngSubsystem>();
-		if (RngSub)
-		{
-			RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
-		}
-
-		FRandomStream LocalRng(FPlatformTime::Cycles());
-		FRandomStream& Rng = RngSub ? RngSub->GetRunStream() : LocalRng;
-		const FT66RarityWeights Weights = PlayerExperience
-			? PlayerExperience->GetDifficultyCatchUpLootBagRarityWeights(T66GI->SelectedDifficulty)
-			: FT66RarityWeights{};
-
-		for (int32 Index = 0; Index < FMath::Clamp(LootBags, 0, 999); ++Index)
-		{
-			const ET66Rarity BagRarity = RngSub
-				? RngSub->RollRarityWeighted(Weights, Rng)
-				: FT66RarityUtil::RollDefaultRarity(Rng);
-			RunState->RecordLuckQualityRarity(
-				FName(TEXT("CatchUpLootBagRarity")),
-				BagRarity,
-				RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE,
-				RngSub ? RngSub->GetLastRunPreDrawSeed() : 0,
-				PlayerExperience ? &Weights : nullptr);
-			const FName ItemID = T66GI->GetRandomItemIDForLootRarityFromStream(BagRarity, Rng);
-			RunState->AddItemWithRarity(ItemID, T66LootRarityToItemRarity(BagRarity));
-		}
-	}
-
-	{
-		FActorSpawnParameters P;
-		P.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-		AT66StageCatchUpGate* Gate = World->SpawnActor<AT66StageCatchUpGate>(
-			AT66StageCatchUpGate::StaticClass(),
-			PlatformCenter + FVector(520.f, 0.f, 200.f),
-			FRotator::ZeroRotator,
-			P);
-		if (Gate)
-		{
-			Gate->TargetStage = StartStage;
-		}
-	}
-}

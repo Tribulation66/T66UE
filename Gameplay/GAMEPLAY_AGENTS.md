@@ -6,7 +6,7 @@ Gameplay runtime systems and their documentation: combat, stats, movement, camer
 
 ## Trigger Words
 
-Combat, boss, enemy, stats, XP, movement, dash, camera, trap, audio, tower, world, map, stage, minigame, Mini, TD, Deck, Idle, Versus.
+Combat, boss, enemy, stats, XP, movement, dash, camera, trap, audio, tower, world, map, stage, minigame, Mini, TD, Deck, Idle.
 
 ## Read First
 

@@ -9,7 +9,7 @@
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
-#include "Gameplay/T66ArcadeAmplifierPickup.h"
+#include "Gameplay/T66BoostInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66LootBagPickup.h"
@@ -155,7 +155,7 @@ namespace
 			|| GameType == ET66ArcadeGameType::BladeSweep;
 	}
 
-	static const TArray<ET66HeroStatType>& T66GetAmplifierStatPool()
+	static const TArray<ET66HeroStatType>& T66GetBoostStatPool()
 	{
 		static const TArray<ET66HeroStatType> StatPool = {
 			ET66HeroStatType::Damage,
@@ -514,7 +514,7 @@ void AT66ArcadeInteractableBase::SpawnCompletionRewards(const int32 FinalScore)
 	}
 
 	int32 RewardIndex = 0;
-	const int32 RewardCountBudget = FMath::Max(1, Tuning.MaxLootBags + 1 + Tuning.MaxWeaponCrates + Tuning.MaxAmplifiers);
+	const int32 RewardCountBudget = FMath::Max(1, Tuning.MaxLootBags + 1 + Tuning.MaxWeaponCrates + Tuning.MaxBoosts);
 	const float LootBagChance = T66ResolveRewardChance(Tuning.LootBagBaseChance, Tuning.LootBagMaxChance, ScoreAlpha);
 	for (int32 Attempt = 0; Attempt < FMath::Max(0, Tuning.MaxLootBags); ++Attempt)
 	{
@@ -541,17 +541,17 @@ void AT66ArcadeInteractableBase::SpawnCompletionRewards(const int32 FinalScore)
 		}
 	}
 
-	const float AmplifierChance = T66ResolveRewardChance(Tuning.AmplifierBaseChance, Tuning.AmplifierMaxChance, ScoreAlpha);
-	for (int32 Attempt = 0; Attempt < FMath::Max(0, Tuning.MaxAmplifiers); ++Attempt)
+	const float BoostChance = T66ResolveRewardChance(Tuning.BoostBaseChance, Tuning.BoostMaxChance, ScoreAlpha);
+	for (int32 Attempt = 0; Attempt < FMath::Max(0, Tuning.MaxBoosts); ++Attempt)
 	{
-		const float AttemptChance = FMath::Clamp(AmplifierChance * FMath::Pow(0.70f, static_cast<float>(Attempt)), 0.f, 1.f);
+		const float AttemptChance = FMath::Clamp(BoostChance * FMath::Pow(0.70f, static_cast<float>(Attempt)), 0.f, 1.f);
 		if (RewardRng->FRand() <= AttemptChance)
 		{
-			SpawnAmplifierReward(
+			SpawnBoostReward(
 				BuildRewardSpawnLocation(RewardIndex++, RewardCountBudget),
 				*RewardRng,
-				FMath::Max(1, Tuning.AmplifierStatBonus),
-				FMath::Max(1.f, Tuning.AmplifierDurationSeconds));
+				FMath::Max(1, Tuning.BoostStatBonus),
+				FMath::Max(1.f, Tuning.BoostDurationSeconds));
 		}
 	}
 }
@@ -616,7 +616,7 @@ void AT66ArcadeInteractableBase::SpawnWeaponCrateReward(const FVector& SpawnLoca
 	}
 }
 
-void AT66ArcadeInteractableBase::SpawnAmplifierReward(
+void AT66ArcadeInteractableBase::SpawnBoostReward(
 	const FVector& SpawnLocation,
 	FRandomStream& Rng,
 	const int32 BonusStatPoints,
@@ -628,7 +628,7 @@ void AT66ArcadeInteractableBase::SpawnAmplifierReward(
 		return;
 	}
 
-	const TArray<ET66HeroStatType>& StatPool = T66GetAmplifierStatPool();
+	const TArray<ET66HeroStatType>& StatPool = T66GetBoostStatPool();
 	const ET66HeroStatType StatType = StatPool.IsValidIndex(0)
 		? StatPool[Rng.RandRange(0, StatPool.Num() - 1)]
 		: ET66HeroStatType::Damage;
@@ -636,9 +636,9 @@ void AT66ArcadeInteractableBase::SpawnAmplifierReward(
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	if (AT66ArcadeAmplifierPickup* Amplifier = World->SpawnActor<AT66ArcadeAmplifierPickup>(AT66ArcadeAmplifierPickup::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams))
+	if (AT66BoostInteractable* Boost = World->SpawnActor<AT66BoostInteractable>(AT66BoostInteractable::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams))
 	{
-		Amplifier->ConfigureAmplifier(StatType, BonusStatPoints, DurationSeconds);
+		Boost->ConfigureBoost(StatType, BonusStatPoints, DurationSeconds);
 	}
 }
 

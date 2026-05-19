@@ -56,12 +56,12 @@ namespace
 
 	FSlateFontInfo AccountBoldFont(int32 BaseSize)
 	{
-		return FT66Style::Tokens::FontBold(AdjustAccountFontSize(BaseSize));
+		return FT66FlatStyle::Tokens::FontBold(AdjustAccountFontSize(BaseSize));
 	}
 
 	FSlateFontInfo AccountRegularFont(int32 BaseSize)
 	{
-		return FT66Style::Tokens::FontRegular(AdjustAccountFontSize(BaseSize));
+		return FT66FlatStyle::Tokens::FontRegular(AdjustAccountFontSize(BaseSize));
 	}
 
 	const FSlateBrush* AccountFlatIconBrush(const TCHAR* RelativePath, const FVector2D& ImageSize, const TCHAR* DebugLabel)
@@ -213,7 +213,7 @@ namespace
 
 	FString MakeAccountMainMenuElementPath(const TCHAR* FileName)
 	{
-		return T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(FileName);
+		return FT66FlatStyle::GetFlatMainMenuElementAssetPath(FileName);
 	}
 
 	FString MakeAccountMainMenuSquareElementPath(const TCHAR* FileName)
@@ -227,14 +227,14 @@ namespace
 				? TEXT("dropdown_field_")
 				: TEXT("leaderboard_tab_button_"),
 				ESearchCase::IgnoreCase);
-			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*State);
+			return FT66FlatStyle::GetFlatRedSquareButtonAssetPath(*State);
 		}
-		return T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(FileName);
+		return FT66FlatStyle::GetFlatChromeElementAssetPath(FileName);
 	}
 
 	FString MakeAccountMainMenuLongPanelPath(const TCHAR* State = TEXT("normal"))
 	{
-		return T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(State);
+		return FT66FlatStyle::GetFlatLongPanelAssetPath(State);
 	}
 
 	FString ResolveAccountReferenceStateName(const FString& RelativePath)
@@ -280,13 +280,13 @@ namespace
 
 		if (LowerPath.Contains(TEXT("buttons/")) || LowerPath.Contains(TEXT("_pill_")))
 		{
-			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*State);
+			return FT66FlatStyle::GetFlatRedSquareButtonAssetPath(*State);
 		}
 
 		if (LowerPath.Contains(TEXT("dropdown_field")))
 		{
 			const FString DropdownState = State.Equals(TEXT("selected"), ESearchCase::IgnoreCase) ? FString(TEXT("pressed")) : State;
-			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*DropdownState);
+			return FT66FlatStyle::GetFlatRedSquareButtonAssetPath(*DropdownState);
 		}
 
 		if (LowerPath.Contains(TEXT("slots/")) || LowerPath.Contains(TEXT("avatar_slot")) || LowerPath.Contains(TEXT("square_slot")))
@@ -305,7 +305,7 @@ namespace
 		if (LowerPath.Contains(TEXT("row")) || LowerPath.Contains(TEXT("strip")) || LowerPath.Contains(TEXT("table")))
 		{
 			return LowerPath.Contains(TEXT("header"))
-				? T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal"))
+				? FT66FlatStyle::GetFlatRedSquareButtonAssetPath(TEXT("normal"))
 				: MakeAccountMainMenuLongPanelPath(TEXT("normal"));
 		}
 
@@ -503,7 +503,7 @@ namespace
 		(void)Prefix;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(State ? State : TEXT("normal")),
+			FT66FlatStyle::GetFlatRedSquareButtonAssetPath(State ? State : TEXT("normal")),
 			FMargin(0.083f, 0.231f, 0.083f, 0.231f),
 			DebugLabel,
 			TextureFilter::TF_Nearest);
@@ -776,7 +776,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		return ResolveAccountReferenceBrush(
 			Entry,
-			T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal")),
+			FT66FlatStyle::GetFlatRedSquareButtonAssetPath(TEXT("normal")),
 			FMargin(0.130f, 0.165f, 0.130f, 0.165f),
 			TEXT("AccountHistoryTableHeader"),
 			TextureFilter::TF_Nearest);
@@ -825,7 +825,7 @@ namespace
 	TSharedRef<SWidget> MakeAccountReferenceButton(const FT66ButtonParams& Params)
 	{
 		const int32 FontSize = Params.FontSize > 0 ? Params.FontSize : 14;
-		FSlateFontInfo ButtonFont = FT66Style::MakeFont(*Params.FontWeight, FontSize);
+		FSlateFontInfo ButtonFont = FT66FlatStyle::MakeFont(*Params.FontWeight, FontSize);
 		ButtonFont.LetterSpacing = 0;
 
 		const TAttribute<FText> ButtonText = Params.DynamicLabel.IsBound()
@@ -860,7 +860,7 @@ namespace
 				]);
 
 		const FButtonStyle& ButtonStyle = GetAccountReferenceButtonStyle(Params.Type);
-		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+		return FT66FlatStyle::BuildFlatSlicedPlateButton(
 			Params.OnClicked,
 			ButtonContent,
 			&ButtonStyle.Normal,
@@ -888,7 +888,7 @@ namespace
 				];
 		}
 
-		return FT66Style::MakePanel(
+		return FT66FlatStyle::MakePanel(
 			Content,
 			FT66PanelParams(ET66PanelType::Panel2)
 				.SetBorderVisual(ET66ButtonBorderVisual::None)
@@ -902,7 +902,7 @@ namespace
 		static T66RuntimeUIBrushAccess::FOptionalTextureBrush Entry;
 		if (const FSlateBrush* BarBrush = ResolveAccountReferenceBrush(
 			Entry,
-			T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(TEXT("normal")),
+			FT66FlatStyle::GetFlatRedSquareButtonAssetPath(TEXT("normal")),
 			FMargin(0.083f, 0.231f, 0.083f, 0.231f),
 			TEXT("AccountRedBarPanel"),
 			TextureFilter::TF_Nearest))
@@ -917,7 +917,7 @@ namespace
 				];
 		}
 
-		return FT66Style::MakePanel(
+		return FT66FlatStyle::MakePanel(
 			Content,
 			FT66PanelParams(ET66PanelType::Panel2)
 				.SetBorderVisual(ET66ButtonBorderVisual::None)
@@ -966,7 +966,7 @@ namespace
 				];
 		}
 
-		return T66ScreenSlateHelpers::MakeReferenceProgressBar(
+		return FT66FlatStyle::BuildFlatProgressBar(
 			Pct,
 			DesiredSize,
 			FallbackFill,
@@ -977,7 +977,7 @@ namespace
 	{
 		static FComboButtonStyle FlatComboStyle = []()
 		{
-			FComboButtonStyle Style = FT66Style::GetDropdownComboButtonStyle();
+			FComboButtonStyle Style = FT66FlatStyle::GetDropdownComboButtonStyle();
 			Style.ButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder");
 			return Style;
 		}();
@@ -1125,7 +1125,7 @@ namespace
 				];
 		}
 
-		return FT66Style::MakePanel(
+		return FT66FlatStyle::MakePanel(
 			Content,
 			FT66PanelParams(Type)
 				.SetBorderVisual(ET66ButtonBorderVisual::None)
@@ -1291,8 +1291,8 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 	const TWeakObjectPtr<UT66LeaderboardSubsystem> WeakLB = LB;
 
 	const bool bModalPresentation = UIManager && UIManager->GetCurrentModalType() == ScreenType;
-	const T66ScreenSlateHelpers::FTopBarScreenLayoutMetrics ScreenLayout =
-		T66ScreenSlateHelpers::MakeTopBarScreenLayoutMetrics(UIManager);
+	const FT66FlatStyle::FTopBarScreenLayoutMetrics ScreenLayout =
+		FT66FlatStyle::MakeTopBarScreenLayoutMetrics(UIManager);
 	const bool bUseStackedOverviewLayout = ScreenLayout.bStacked;
 	const FT66AccountRestrictionRecord Restriction = LB ? LB->GetAccountRestrictionRecord() : FT66AccountRestrictionRecord();
 	const bool bAccountEligible = LB ? LB->IsAccountEligibleForLeaderboard() : true;
@@ -1420,7 +1420,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		(void)InactiveColor;
 		const FLinearColor ResolvedActiveTextColor = ActiveTextColor == FLinearColor::Transparent ? AccountChromeText() : ActiveTextColor;
 		const FLinearColor ResolvedInactiveTextColor = InactiveTextColor == FLinearColor::Transparent ? AccountChromeText() : InactiveTextColor;
-		const T66ScreenSlateHelpers::FFrontendChromeMetrics& ChromeMetrics = T66ScreenSlateHelpers::GetFrontendChromeMetrics();
+		const FT66FlatStyle::FFrontendChromeMetrics& ChromeMetrics = FT66FlatStyle::GetFrontendChromeMetrics();
 
 		return MakeAccountReferenceButton(
 			FT66ButtonParams(Label, FOnClicked::CreateUObject(this, Handler), bActive ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
@@ -2971,7 +2971,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 			.BorderBackgroundColor(FLinearColor::Black);
 
-		return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
+		return FT66FlatStyle::MakeTopBarScreenRoot(
 			UIManager,
 			OverviewContent,
 			BackgroundContent);
@@ -3106,7 +3106,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			const FName ToggleGroup = NAME_None) -> TSharedRef<SWidget>
 		{
 			return FT66FlatStyle::AttachMetadata(
-				FT66Style::MakeBareButton(
+				FT66FlatStyle::MakeBareButton(
 					FT66BareButtonParams(MoveTemp(OnClicked), Content)
 					.SetButtonStyle(&NoBorderButtonStyle)
 					.SetPadding(FMargin(0.f))
@@ -3874,7 +3874,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
 			.BorderBackgroundColor(FLinearColor::Black);
 
-		return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
+		return FT66FlatStyle::MakeTopBarScreenRoot(
 			UIManager,
 			SuspensionScreenContent,
 			BackgroundContent,
@@ -4215,7 +4215,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 		HistoryRows->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
 		[
-			FT66Style::MakeButton(
+			FT66FlatStyle::MakeButton(
 				FT66ButtonParams(FText::GetEmpty(), bCanOpen ? FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOpenRunSummaryClicked, Run.RunSummarySlotName) : FOnClicked::CreateLambda([]() { return FReply::Handled(); }), ET66ButtonType::Row)
 				.SetBorderVisual(ET66ButtonBorderVisual::None)
 				.SetBackgroundVisual(ET66ButtonBackgroundVisual::None)
@@ -4469,7 +4469,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 
 			Rows->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 1.f)
 			[
-				FT66Style::MakeButton(
+				FT66FlatStyle::MakeButton(
 					FT66ButtonParams(FText::GetEmpty(), bCanOpen ? FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOpenRunSummaryClicked, PB.RunSummarySlotName) : FOnClicked::CreateLambda([]() { return FReply::Handled(); }), ET66ButtonType::Row)
 					.SetBorderVisual(ET66ButtonBorderVisual::None).SetBackgroundVisual(ET66ButtonBackgroundVisual::None).SetPadding(FMargin(0.f)).SetEnabled(TAttribute<bool>(bCanOpen)).SetUseGlow(false)
 					.SetContent(
@@ -4926,7 +4926,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 	if (bModalPresentation)
 	{
 		return SNew(SOverlay)
-			+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FT66Style::Scrim())]
+			+ SOverlay::Slot()[SNew(SBorder).BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush")).BorderBackgroundColor(FT66FlatStyle::Scrim())]
 			+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(FMargin(24.f, 30.f))
 			[
 				SNew(SBox)
@@ -4981,7 +4981,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			ScreenContent
 		];
 
-	return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
+	return FT66FlatStyle::MakeTopBarScreenRoot(
 		UIManager,
 		FullWidthScreenContent,
 		BackgroundContent,

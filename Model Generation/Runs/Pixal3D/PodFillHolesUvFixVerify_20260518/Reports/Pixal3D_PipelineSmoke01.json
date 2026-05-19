@@ -1,0 +1,79 @@
+{
+  "batch": "Pixal3D_PipelineSmoke01",
+  "updated_utc": "2026-05-18T20:46:38+00:00",
+  "rows": [
+    {
+      "id": "horned_monster",
+      "kind": "monster",
+      "display_name": "Horned monster",
+      "quad_retro": true,
+      "source_image": "Inputs/SourceImages/horned_monster.png",
+      "generation_attempts": [
+        {
+          "label": "requested",
+          "decimation": 80000,
+          "remesh": true,
+          "status": "ok",
+          "duration_seconds": 60.8,
+          "pod_size_bytes": 1446956,
+          "local_size_bytes": 1446956,
+          "server_export_headers": {
+            "X-Pixal3D-Export-Attempt": "4",
+            "X-Pixal3D-Export-Label": "safe_decimation_no_remesh_skip_fill_holes",
+            "X-Pixal3D-Export-Decimation": "30000",
+            "X-Pixal3D-Export-Remesh": "0",
+            "X-Pixal3D-Export-Attempts": "4",
+            "X-Pixal3D-Export-Safe-Fill-Holes": "1",
+            "X-Pixal3D-Export-Fill-Holes-Skipped": "1",
+            "X-Pixal3D-Export-CPU-UV-Unwraps": "1"
+          }
+        }
+      ],
+      "raw_pixal3d_glb": "Raw/Pixal3D/horned_monster/horned_monster_Pixal3D_R1024_S1337_D80000_Rmx1_requested.glb",
+      "raw_pixal3d_glb_size_bytes": 1446956,
+      "generation_duration_seconds": 60.8,
+      "generation_attempt_index": 1,
+      "generation_decimation": 80000,
+      "generation_remesh": true,
+      "generation_fallback_used": true,
+      "generation_server_export_headers": {
+        "X-Pixal3D-Export-Attempt": "4",
+        "X-Pixal3D-Export-Label": "safe_decimation_no_remesh_skip_fill_holes",
+        "X-Pixal3D-Export-Decimation": "30000",
+        "X-Pixal3D-Export-Remesh": "0",
+        "X-Pixal3D-Export-Attempts": "4",
+        "X-Pixal3D-Export-Safe-Fill-Holes": "1",
+        "X-Pixal3D-Export-Fill-Holes-Skipped": "1",
+        "X-Pixal3D-Export-CPU-UV-Unwraps": "1"
+      },
+      "qa_front_render": "QA/Pixal3DFront/horned_monster_front.png",
+      "qa_metadata": "QA/Pixal3DFront/horned_monster_front_metadata.json",
+      "qa_raw_triangles": 29445,
+      "qa_bounds": {
+        "min": [
+          -0.3398085832595825,
+          -0.2957747280597687,
+          -0.4396483898162842
+        ],
+        "max": [
+          0.338172972202301,
+          0.09605014324188232,
+          0.491627961397171
+        ],
+        "size": [
+          0.6779815554618835,
+          0.391824871301651,
+          0.9312763214111328
+        ]
+      },
+      "generation_export_attempt": 4,
+      "generation_export_label": "safe_decimation_no_remesh_skip_fill_holes",
+      "generation_export_decimation": 30000,
+      "generation_export_remesh": false,
+      "generation_export_safe_fill_holes": true,
+      "generation_export_fill_holes_skipped": 1,
+      "generation_export_cpu_uv_unwraps": 1,
+      "generation_server_export_fallback_used": true
+    }
+  ]
+}

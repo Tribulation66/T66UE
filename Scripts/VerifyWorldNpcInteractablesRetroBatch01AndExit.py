@@ -32,7 +32,6 @@ STALE_IN_SCOPE_PATHS = [
     "/Game/World/Interactables/SM_IdolAltar.SM_IdolAltar",
     "/Game/World/Interactables/Vending/Vending.Vending",
     "/Game/World/Interactables/Shroom.Shroom",
-    "/Game/World/Interactables/ArcadeAmplifierPickup/ArcadeAmplifierPickup.ArcadeAmplifierPickup",
     "/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black",
     "/Game/World/LootBags/Red/SM_LootBag_Red.SM_LootBag_Red",
     "/Game/World/LootBags/Yellow/SM_LootBag_Yellow.SM_LootBag_Yellow",

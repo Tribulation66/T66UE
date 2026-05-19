@@ -16,14 +16,24 @@ Every difficulty has four stages. Local stage `4` is the boss-only finale stage 
 
 ## Regular Enemies
 
-Each difficulty has five regular enemies:
+Each difficulty has ten regular enemies. The source of truth is `Content/Data/Enemies.csv`.
 
-- `2` melee enemies
-- `1` ranged enemy
-- `1` rush enemy
-- `1` flying enemy
+The normal per-difficulty pattern is:
 
-The source of truth is `Content/Data/Enemies.csv`. Stage rosters are authored in `Content/Data/Stages.csv` through `EnemyA` through `EnemyE`.
+- `5` core enemies
+- `2` rare enemies
+- `3` late enemies
+
+Most difficulties use the core mix of `2` melee, `1` ranged, `1` rush, and `1` flying enemy. Impossible/Hell is the current exception: its core mix intentionally uses `2` rush, `1` melee, and `2` flying enemies, with no standard ranged core mob.
+
+Stage rosters are authored in `Content/Data/Stages.csv` through `EnemyA` through `EnemyJ`. The ten slots are progressively filled inside each difficulty:
+
+- Local stage `1`: `7` authored mobs, then `3` `None` slots.
+- Local stage `2`: `8` authored mobs, then `2` `None` slots.
+- Local stage `3`: `9` authored mobs, then `1` `None` slot.
+- Local stage `4`: all `10` authored mobs, while also marked as the boss-only finale stage for that difficulty.
+
+The `None` slots in local stages `1-3` are intentional authored gaps, not missing data. Runtime spawn code filters them out before choosing mobs.
 
 ## Negative Status Effects
 

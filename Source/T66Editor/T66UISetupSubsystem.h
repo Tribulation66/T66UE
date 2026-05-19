@@ -78,13 +78,6 @@ public:
 	bool CreateRetroChromaticAberrationMaterial();
 
 	/**
-	 * Create The Lab level (Content/Maps/LabLevel): empty arena with PlayerStart, lighting, and GameMode.
-	 * Run from Window → T66 Tools → Create Lab Level (or T66CreateLabLevel console).
-	 */
-	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
-	bool CreateLabLevel();
-
-	/**
 	 * Configure the demo map (Map_Summer) for gameplay: set BP_GameplayGameMode, add PlayerStart if missing, save.
 	 * Run once from Window → T66 Tools → Setup Demo Map when using the demo map switch.
 	 */

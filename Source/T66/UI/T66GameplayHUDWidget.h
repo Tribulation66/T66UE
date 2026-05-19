@@ -142,7 +142,7 @@ public:
 	bool IsTikTokPlaceholderVisible() const;
 
 	/** Crate open: show CS:GO-style item reveal overlay. */
-	void StartCrateOpen();
+	void StartCrateOpen(ET66Rarity SourceCrateRarity);
 
 	static constexpr float MinimapPanelWidth = 164.f;
 	static constexpr float BottomRightInventoryPanelWidth = 378.f;

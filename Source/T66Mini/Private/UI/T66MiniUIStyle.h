@@ -193,6 +193,22 @@ namespace T66MiniUI
 		return Params;
 	}
 
+	inline ET66FlatState StateForButtonType(const ET66ButtonType Type)
+	{
+		switch (Type)
+		{
+		case ET66ButtonType::Success:
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::ToggleActive:
+			return ET66FlatState::Selected;
+		case ET66ButtonType::Danger:
+			return ET66FlatState::Selected;
+		case ET66ButtonType::Neutral:
+		default:
+			return ET66FlatState::Default;
+		}
+	}
+
 	inline TSharedRef<SWidget> MakeButton(
 		const FText& Label,
 		const FOnClicked& OnClicked,
@@ -201,6 +217,16 @@ namespace T66MiniUI
 		const float Height,
 		const int32 FontSize)
 	{
-		return FT66Style::MakeButton(MakeButtonParams(Label, OnClicked, Type, MinWidth, Height, FontSize));
+		const FT66ButtonParams Params = MakeButtonParams(Label, OnClicked, Type, MinWidth, Height, FontSize);
+		FT66FlatButtonParams FlatParams;
+		FlatParams.State = StateForButtonType(Params.Type);
+		FlatParams.Label = Params.DynamicLabel.IsSet() ? Params.DynamicLabel : TAttribute<FText>(Params.Label);
+		FlatParams.OnClicked = Params.OnClicked;
+		FlatParams.Padding = Params.Padding.Left < 0.f ? FMargin(14.f, 8.f) : Params.Padding;
+		FlatParams.MinWidth = Params.MinWidth;
+		FlatParams.Height = Params.Height;
+		FlatParams.IsEnabled = Params.IsEnabled;
+		FlatParams.FontSize = Params.FontSize > 0 ? Params.FontSize : 18;
+		return FT66FlatStyle::MakeFlatButton(FlatParams);
 	}
 }

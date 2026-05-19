@@ -21,7 +21,7 @@ class T66_API AT66LoanShark : public ACharacter
 public:
 	AT66LoanShark();
 
-	/** Visible mesh (placeholder cylinder). */
+	/** Visible mesh, replaced by the data-driven LoanShark visual when available. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;
 

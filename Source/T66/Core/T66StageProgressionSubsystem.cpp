@@ -3,6 +3,7 @@
 #include "Core/T66StageProgressionSubsystem.h"
 
 #include "Core/T66GameInstance.h"
+#include "Core/T66DifficultyTuningSubsystem.h"
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RunStateSubsystem.h"
 
@@ -99,14 +100,15 @@ FT66StageProgressionSnapshot UT66StageProgressionSubsystem::BuildSnapshot() cons
 	const UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GameInstance);
 	const UT66RunStateSubsystem* RunState = GameInstance ? GameInstance->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	const UT66PlayerExperienceSubSystem* PlayerExperience = GameInstance ? GameInstance->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GameInstance ? GameInstance->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
 
 	Snapshot.SelectedDifficulty = T66GameInstance ? T66GameInstance->SelectedDifficulty : ET66Difficulty::Easy;
 	Snapshot.GlobalStage = RunState ? RunState->GetCurrentStage() : 1;
-	Snapshot.DifficultyStartStage = PlayerExperience
-		? PlayerExperience->GetDifficultyStartStage(Snapshot.SelectedDifficulty)
+	Snapshot.DifficultyStartStage = DifficultyTuning
+		? DifficultyTuning->GetDifficultyStartStage(Snapshot.SelectedDifficulty)
 		: 1;
-	Snapshot.DifficultyEndStage = PlayerExperience
-		? PlayerExperience->GetDifficultyEndStage(Snapshot.SelectedDifficulty)
+	Snapshot.DifficultyEndStage = DifficultyTuning
+		? DifficultyTuning->GetDifficultyEndStage(Snapshot.SelectedDifficulty)
 		: 4;
 	Snapshot.DifficultyStartStage = FMath::Clamp(Snapshot.DifficultyStartStage, 1, 20);
 	Snapshot.DifficultyEndStage = FMath::Clamp(Snapshot.DifficultyEndStage, Snapshot.DifficultyStartStage, 20);

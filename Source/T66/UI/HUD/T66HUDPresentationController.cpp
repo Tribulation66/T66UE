@@ -139,7 +139,7 @@ void FT66HUDPresentationController::QueueActivePickupCardToFront()
 }
 
 
-void FT66HUDPresentationController::StartCrateOpen()
+void FT66HUDPresentationController::StartCrateOpen(const ET66Rarity SourceCrateRarity)
 {
 	APlayerController* PC = Owner.GetOwningPlayer();
 	if (!PC)
@@ -157,6 +157,7 @@ void FT66HUDPresentationController::StartCrateOpen()
 	if (Overlay)
 	{
 		Overlay->SetPresentationHost(&Owner);
+		Overlay->SetSourceCrateRarity(SourceCrateRarity);
 		Overlay->SetVisibility(ESlateVisibility::HitTestInvisible);
 		Overlay->AddToViewport(100);
 		ActiveCrateOverlay = Overlay;
@@ -628,7 +629,7 @@ void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const
 	{
 		const FLinearColor AccentColor = bHasData
 			? (FItemData::GetItemRarityColor(ItemRarity) * 0.52f + FLinearColor(0.05f, 0.05f, 0.06f, 0.48f))
-			: FT66Style::Tokens::Panel;
+			: FT66FlatStyle::Tokens::Panel;
 		Owner.PickupCardTileBorder->SetBorderBackgroundColor(AccentColor);
 	}
 	if (Owner.PickupCardIconBorder.IsValid())

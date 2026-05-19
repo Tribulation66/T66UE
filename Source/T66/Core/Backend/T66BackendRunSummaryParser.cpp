@@ -45,6 +45,8 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 	S->SchemaVersion = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("schema_version"), 6);
 	S->EntryId = T66RunSummaryGetJsonStringOrDefault(Json, TEXT("entry_id"));
 	S->OwnerSteamId = T66RunSummaryGetJsonStringOrDefault(Json, TEXT("steam_id"));
+	S->OwnerDisplayName = T66RunSummaryGetJsonStringOrDefault(Json, TEXT("display_name"));
+	S->DisplayName = S->OwnerDisplayName;
 	S->StageReached = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("stage_reached"), 1);
 	S->Score = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("score"), 0);
 	S->ScoreRankAllTime = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("score_rank_alltime"), 0);
@@ -60,7 +62,8 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 	S->CompanionID = CompanionIdStr.IsEmpty() ? NAME_None : FName(*CompanionIdStr);
 
 	S->HeroLevel = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("hero_level"), 1);
-	S->DisplayName = T66RunSummaryGetJsonStringOrDefault(Json, TEXT("display_name"));
+	S->HeroMasteryLevel = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("hero_mastery_level"), 1);
+	S->HeroMasteryXP = T66RunSummaryGetJsonIntOrDefault(Json, TEXT("hero_mastery_xp"), 0);
 
 	const TSharedPtr<FJsonObject>* IntegrityObj = nullptr;
 	if (Json->TryGetObjectField(TEXT("integrity_context"), IntegrityObj) && IntegrityObj && (*IntegrityObj).IsValid())

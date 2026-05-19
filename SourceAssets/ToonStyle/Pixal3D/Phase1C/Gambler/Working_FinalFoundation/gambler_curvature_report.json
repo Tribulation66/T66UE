@@ -1,0 +1,24 @@
+{
+  "asset": "gambler",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 99027,
+    "count": 154873,
+    "edge_samples": 246199,
+    "max": 1.0,
+    "mean": 0.24355585651576844,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.1868927848731658,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.02515396344885621,
+      "p50": 0.1443164520540622,
+      "p75": 0.36115285701697586,
+      "p90": 0.6727723537337725,
+      "p95": 0.9375914141702337,
+      "p99": 1.0
+    },
+    "std": 0.2756204140505549
+  }
+}

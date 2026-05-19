@@ -20,9 +20,9 @@ void UT66GameplayHUDWidget::HideAchievementNotificationAndShowNext()
 }
 
 
-void UT66GameplayHUDWidget::StartCrateOpen()
+void UT66GameplayHUDWidget::StartCrateOpen(const ET66Rarity SourceCrateRarity)
 {
-	GetPresentationController().StartCrateOpen();
+	GetPresentationController().StartCrateOpen(SourceCrateRarity);
 }
 
 

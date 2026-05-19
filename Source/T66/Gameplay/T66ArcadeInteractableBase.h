@@ -53,7 +53,7 @@ private:
 	void SpawnLootBagReward(const FVector& SpawnLocation, FRandomStream& Rng);
 	void SpawnChestReward(const FVector& SpawnLocation);
 	void SpawnWeaponCrateReward(const FVector& SpawnLocation, FRandomStream& Rng);
-	void SpawnAmplifierReward(const FVector& SpawnLocation, FRandomStream& Rng, int32 BonusStatPoints, float DurationSeconds);
+	void SpawnBoostReward(const FVector& SpawnLocation, FRandomStream& Rng, int32 BonusStatPoints, float DurationSeconds);
 	FVector BuildRewardSpawnLocation(int32 RewardIndex, int32 RewardCount) const;
 	void PlayCompletionEffects(int32 FinalScore);
 };

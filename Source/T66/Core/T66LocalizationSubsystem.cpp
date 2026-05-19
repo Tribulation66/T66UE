@@ -175,12 +175,12 @@ void UT66LocalizationSubsystem::SaveLanguagePreference()
 
 FText UT66LocalizationSubsystem::GetText_HeroName(FName HeroID) const
 {
-	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroNames", "Hero_1", "Arthur");
+	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroNames", "Hero_1", "George");
 	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroNames", "Hero_2", "Lu Bu");
 	if (HeroID == FName(TEXT("Hero_3"))) return NSLOCTEXT("T66.HeroNames", "Hero_3", "Mike");
-	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroNames", "Hero_4", "George");
-	if (HeroID == FName(TEXT("Hero_5"))) return NSLOCTEXT("T66.HeroNames", "Hero_5", "Robo");
-	if (HeroID == FName(TEXT("Hero_6"))) return NSLOCTEXT("T66.HeroNames", "Hero_6", "Billy");
+	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroNames", "Hero_4", "Billy");
+	if (HeroID == FName(TEXT("Hero_5"))) return NSLOCTEXT("T66.HeroNames", "Hero_5", "Yakub");
+	if (HeroID == FName(TEXT("Hero_6"))) return NSLOCTEXT("T66.HeroNames", "Hero_6", "Robo");
 	if (HeroID == FName(TEXT("Hero_7"))) return NSLOCTEXT("T66.HeroNames", "Hero_7", "Rabbit");
 	if (HeroID == FName(TEXT("Hero_8"))) return NSLOCTEXT("T66.HeroNames", "Hero_8", "Shroud");
 	if (HeroID == FName(TEXT("Hero_9"))) return NSLOCTEXT("T66.HeroNames", "Hero_9", "xQc");
@@ -194,12 +194,12 @@ FText UT66LocalizationSubsystem::GetText_HeroName(FName HeroID) const
 
 FText UT66LocalizationSubsystem::GetText_HeroDescription(FName HeroID) const
 {
-	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_1", "A battle-worn knight who meets every trial head-on.");
+	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_1", "A founding marksman who pierces monster lines with disciplined precision.");
 	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_2", "A warlord who breaks enemy lines through sheer force.");
 	if (HeroID == FName(TEXT("Hero_3"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_3", "A streetwise bruiser who thrives when the fight turns messy.");
-	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_4", "A disciplined duelist with a steady hand and colder nerve.");
-	if (HeroID == FName(TEXT("Hero_5"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_5", "A relentless machine built to keep marching through the swarm.");
-	if (HeroID == FName(TEXT("Hero_6"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_6", "A quick-draw outlaw who turns panic into momentum.");
+	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_4", "A quick-draw outlaw who turns panic into momentum.");
+	if (HeroID == FName(TEXT("Hero_5"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_5", "A forbidden architect who turns cold knowledge into brutal power.");
+	if (HeroID == FName(TEXT("Hero_6"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_6", "A relentless machine built to keep marching through the swarm.");
 	if (HeroID == FName(TEXT("Hero_7"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_7", "A nimble trickster who never stays where danger lands.");
 	if (HeroID == FName(TEXT("Hero_8"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_8", "A silent hunter who lets the dark speak for him.");
 	if (HeroID == FName(TEXT("Hero_9"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_9", "A chaos-fueled duelist who wins fights by overwhelming the room.");
@@ -211,12 +211,12 @@ FText UT66LocalizationSubsystem::GetText_HeroDescription(FName HeroID) const
 
 FText UT66LocalizationSubsystem::GetText_HeroQuote(FName HeroID) const
 {
-	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_1", "\"Stand your ground.\"");
+	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_1", "\"Hold the line.\"");
 	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_2", "\"Break before me.\"");
 	if (HeroID == FName(TEXT("Hero_3"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_3", "\"Let's make it ugly.\"");
-	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_4", "\"Stay sharp.\"");
-	if (HeroID == FName(TEXT("Hero_5"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_5", "\"Directive: survive.\"");
-	if (HeroID == FName(TEXT("Hero_6"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_6", "\"Fast hands, faster kill.\"");
+	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_4", "\"Fast hands, faster kill.\"");
+	if (HeroID == FName(TEXT("Hero_5"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_5", "\"Built by design.\"");
+	if (HeroID == FName(TEXT("Hero_6"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_6", "\"Directive: survive.\"");
 	if (HeroID == FName(TEXT("Hero_7"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_7", "\"Catch me first.\"");
 	if (HeroID == FName(TEXT("Hero_8"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_8", "\"You won't see dawn.\"");
 	if (HeroID == FName(TEXT("Hero_9"))) return NSLOCTEXT("T66.HeroQuotes", "Hero_9", "\"Send it.\"");

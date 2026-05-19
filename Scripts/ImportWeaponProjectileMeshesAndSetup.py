@@ -22,12 +22,12 @@ HERO_DATA_TABLE = "/Game/Data/DT_Heroes.DT_Heroes"
 PARENT_MATERIAL = "/Game/Materials/M_GLB_Unlit"
 
 PROJECTILES = (
-    ("Hero_1", "RoyalChad_Sword"),
+    ("Hero_1", "FoundingChad_Rapier"),
     ("Hero_2", "ChineseChad_Guandao"),
     ("Hero_3", "BoxerChad_Glove"),
-    ("Hero_4", "FoundingChad_Rapier"),
-    ("Hero_5", "RoboChad_GearBlade"),
-    ("Hero_6", "BillyChad_Bullet"),
+    ("Hero_4", "BillyChad_Bullet"),
+    ("Hero_5", "RoyalChad_Sword"),
+    ("Hero_6", "RoboChad_GearBlade"),
     ("Hero_7", "RabbitChad_Carrot"),
     ("Hero_8", "CSChad_TacticalKnife"),
     ("Hero_9", "GoblinoChad_Cleaver"),

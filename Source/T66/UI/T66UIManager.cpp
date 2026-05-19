@@ -46,6 +46,23 @@ namespace
 			Settings.UICRTColorQuantizationBits = 8;
 		}
 	}
+
+	void ApplyDirectModalInputMode(APlayerController* PlayerController, UUserWidget* FocusWidget)
+	{
+		if (!PlayerController || !FocusWidget)
+		{
+			return;
+		}
+
+		FInputModeGameAndUI InputMode;
+		InputMode.SetWidgetToFocus(FocusWidget->TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
+		PlayerController->SetInputMode(InputMode);
+		PlayerController->bShowMouseCursor = true;
+		PlayerController->bEnableClickEvents = true;
+		PlayerController->bEnableMouseOverEvents = true;
+	}
 }
 
 UT66UIManager::UT66UIManager()
@@ -284,6 +301,10 @@ void UT66UIManager::ShowModal(ET66ScreenType ModalType)
 			CurrentModal->AddToViewport(100); // Higher Z-order than main screen
 		}
 		CurrentModal->OnScreenActivated();
+		if (!IsFrontendRootActive())
+		{
+			ApplyDirectModalInputMode(OwningPlayer, CurrentModal);
+		}
 		UpdateFrontendTopBar();
 	}
 }
@@ -404,6 +425,16 @@ bool UT66UIManager::RequestFrontendRootPaintRefresh()
 
 	FrontendRoot->RequestFrontendPaintRefresh();
 	return true;
+}
+
+void UT66UIManager::RefreshDirectModalInputMode(UUserWidget* FocusWidget)
+{
+	if (IsFrontendRootActive())
+	{
+		return;
+	}
+
+	ApplyDirectModalInputMode(OwningPlayer, FocusWidget);
 }
 
 void UT66UIManager::ShowRetroFXPreviewPopup()

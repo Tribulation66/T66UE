@@ -12,6 +12,7 @@ class UStaticMeshComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UInstancedStaticMeshComponent;
+class UPointLightComponent;
 class UMaterial;
 class UMaterialInstanceDynamic;
 class UT66CombatComponent;
@@ -109,6 +110,9 @@ public:
 	/** Optional unrigged imported hero mesh used before rigging/animation is available. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> StaticVisualMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
+	TObjectPtr<UPointLightComponent> CarryLight = nullptr;
 
 	/** Visual ring showing the hero's current auto-attack range (toggle with HUD panels). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")

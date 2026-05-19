@@ -1,0 +1,24 @@
+{
+  "asset": "lubu_validation",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 107519,
+    "count": 160521,
+    "edge_samples": 237223,
+    "max": 1.0,
+    "mean": 0.2356216829972905,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.21927244678256888,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.027186413800816663,
+      "p50": 0.13778881050410688,
+      "p75": 0.3424175253646012,
+      "p90": 0.6521302851755508,
+      "p95": 0.9172181708586992,
+      "p99": 1.0
+    },
+    "std": 0.27050037080281203
+  }
+}

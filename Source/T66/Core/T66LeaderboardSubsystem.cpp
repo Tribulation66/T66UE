@@ -4,6 +4,7 @@
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
+#include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LocalLeaderboardSaveGame.h"
 #include "Core/T66BuffSubsystem.h"
@@ -851,8 +852,11 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	Snapshot->SavedAtUtc = FDateTime::UtcNow();
 	Snapshot->RunEndedAtUtc = FDateTime::UtcNow();
 	Snapshot->RunDurationSeconds = RunState->GetFinalRunElapsedSeconds();
-	Snapshot->bWasFullClear = RunState->DidRunEndInVictory() || RunState->HasPendingDifficultyClearSummary();
+	Snapshot->bWasFullClear = RunState->DidRunEndInVictory();
 	Snapshot->bWasSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
+	Snapshot->OwnerSteamId = GetCurrentLocalSteamId();
+	Snapshot->OwnerDisplayName = GetCurrentLocalDisplayName();
+	Snapshot->DisplayName = Snapshot->OwnerDisplayName;
 
 	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 20);
 	Snapshot->Score = FMath::Max(0, Score);
@@ -874,6 +878,11 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	Snapshot->CompanionBodyType = T66GI->SelectedCompanionBodyType;
 
 	Snapshot->HeroLevel = FMath::Max(1, RunState->GetHeroLevel());
+	if (const UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
+	{
+		Snapshot->HeroMasteryLevel = FMath::Max(1, Achievements->GetHeroMasteryLevel(Snapshot->HeroID));
+		Snapshot->HeroMasteryXP = FMath::Max(0, Achievements->GetHeroMasteryXP(Snapshot->HeroID));
+	}
 	Snapshot->DamageStat = FMath::Max(1, RunState->GetDamageStat());
 	Snapshot->AttackSpeedStat = FMath::Max(1, RunState->GetAttackSpeedStat());
 	Snapshot->AttackScaleStat = FMath::Max(1, RunState->GetScaleStat());
@@ -1353,6 +1362,11 @@ bool UT66LeaderboardSubsystem::SubmitRunScore(int32 Score, const FString& Existi
 		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: score submit blocked because the run is marked ineligible. Score=%d"), Score);
 		return false;
 	}
+	if (T66GICheck && T66GICheck->IsOfflineRun())
+	{
+		UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: score submit skipped because the current run is Offline. Score=%d"), Score);
+		return false;
+	}
 
 	LoadOrCreateLocalSave();
 	if (!LocalSave)
@@ -1435,6 +1449,11 @@ bool UT66LeaderboardSubsystem::SubmitCompletedRunTime(float Seconds, const FStri
 	if (T66GICheck && T66GICheck->bRunIneligibleForLeaderboard)
 	{
 		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: completed-run submit blocked because the run is marked ineligible. Seconds=%.3f"), Seconds);
+		return false;
+	}
+	if (T66GICheck && T66GICheck->IsOfflineRun())
+	{
+		UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: completed-run submit skipped because the current run is Offline. Seconds=%.3f"), Seconds);
 		return false;
 	}
 
@@ -1521,6 +1540,11 @@ bool UT66LeaderboardSubsystem::SubmitDifficultyClearRun(float Seconds, const FSt
 	if (T66GICheck && T66GICheck->bRunIneligibleForLeaderboard)
 	{
 		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: difficulty-clear submit blocked because the run is marked ineligible. Seconds=%.3f"), Seconds);
+		return false;
+	}
+	if (T66GICheck && T66GICheck->IsOfflineRun())
+	{
+		UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: difficulty-clear submit skipped because the current run is Offline. Seconds=%.3f"), Seconds);
 		return false;
 	}
 
@@ -1616,6 +1640,10 @@ bool UT66LeaderboardSubsystem::SubmitStageSpeedRunTime(int32 Stage, float Second
 	UGameInstance* GICheck = GetGameInstance();
 	UT66GameInstance* T66GICheck = GICheck ? Cast<UT66GameInstance>(GICheck) : nullptr;
 	if (T66GICheck && T66GICheck->bRunIneligibleForLeaderboard)
+	{
+		return false;
+	}
+	if (T66GICheck && T66GICheck->IsOfflineRun())
 	{
 		return false;
 	}
@@ -1777,7 +1805,7 @@ bool UT66LeaderboardSubsystem::SaveFinishedRunSummarySnapshot(FString& OutSlotNa
 		UE_LOG(LogT66Leaderboard, Warning, TEXT("Leaderboard: could not save run summary snapshot because runtime state was unavailable."));
 		return false;
 	}
-	if (!RunState->HasPendingDifficultyClearSummary() && !RunState->HasRunEnded())
+	if (!RunState->HasRunEnded())
 	{
 		UE_LOG(LogT66Leaderboard, Log, TEXT("Leaderboard: refusing to save run summary snapshot because the run has not ended and no difficulty-clear summary is pending."));
 		return false;
@@ -1830,7 +1858,7 @@ void UT66LeaderboardSubsystem::AppendRecentRunRecord(const FString& RunSummarySl
 	Record.Score = RunState->GetCurrentScore();
 	Record.StageReached = RunState->GetCurrentStage();
 	Record.DurationSeconds = RunState->GetFinalRunElapsedSeconds();
-	Record.bWasFullClear = RunState->DidRunEndInVictory() || RunState->HasPendingDifficultyClearSummary();
+	Record.bWasFullClear = RunState->DidRunEndInVictory();
 	Record.bWasSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
 
 	if (UGameplayStatics::DoesSaveGameExist(RunSummarySlotName, 0))

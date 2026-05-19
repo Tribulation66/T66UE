@@ -1,0 +1,23 @@
+Create one review contact sheet for T66 prop and boost pickup model source art.
+
+Overall style: match the current T66 DungeonHorror enemy image sheets: clean white background, hard continuous black ink outline, bright saturated flat colors, eerie horror/uncanny mood, model-ready centered silhouettes, no cute mascot styling.
+
+Critical flatness rule: every object must be flat graphic source art. Use solid color fills only. No radial gradients, no linear gradients, no shine, no highlight spots, no bevels, no raised rims, no extruded edges, no 3D pedestal bases, no physical coin thickness, no realistic material relief, no cast shadows, no contact shadows. The design must come from painted flat color regions and a central icon.
+
+Layout: exactly 9 separate drawings in a clean contact sheet, arranged as 5 objects on the top row and 4 objects on the bottom row. No tenth object. No text labels inside the image, no watermark, no UI chrome. Thin light gray cell separators are okay. Each object should be centered in its own cell and fully visible.
+
+Object 1:
+Weapon Altar: flat stone slab plinth with an oversized black weapon-slot silhouette and one bright red cursed rune painted below it. Keep it as flat graphic art with only broad painted crack lines, no sculpted edges or carved bevels.
+
+Objects 2 through 9 are Boost Pickups. Each boost pickup must be a flat round coin-like token, not gold, not a statue, not a trophy, not a floating 3D emblem. Each coin is a simple flat disk: one solid base color, one black outline, and one large central icon. The icon is painted flat on the coin, not raised. No rim rings, no bevel rings, no inner shadows, no glow, no gradients.
+
+2. Damage / Strength Boost coin: solid bright crimson disk with a large white flexing arm icon in the center.
+3. Attack Speed Boost coin: solid bright cyan disk with a large black double-slash speed icon in the center.
+4. Attack Scale Boost coin: solid bright violet disk with four white outward arrows in the center.
+5. Armor Boost coin: solid bright cobalt blue disk with a large white shield icon in the center.
+6. Evasion Boost coin: solid bright mint green disk with a large black boot plus dodge arrow icon in the center.
+7. Luck Boost coin: solid bright emerald disk with a large white four-leaf clover icon in the center.
+8. Speed Boost coin: solid bright orange disk with a large white lightning-foot icon in the center.
+9. Accuracy Boost coin: solid bright magenta disk with a large white crosshair and arrow icon in the center.
+
+Avoid: gradients, shine, bevels, rim ridges, raised emblems, text, labels, cute faces, gold coins, pedestal bases, heavy perspective, 3D lighting, realistic rendering, painterly texture noise.

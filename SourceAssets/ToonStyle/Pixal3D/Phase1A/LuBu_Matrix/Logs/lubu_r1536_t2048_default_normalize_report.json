@@ -1,0 +1,21 @@
+{
+  "bounds_max": [
+    72.04512023925781,
+    29.75461196899414,
+    180.0
+  ],
+  "bounds_min": [
+    -72.04512023925781,
+    -29.75461196899414,
+    0.0
+  ],
+  "corrected_y_up": false,
+  "height": 180.0,
+  "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1A\\LuBu_Matrix\\Raw\\lubu_r1536_t2048_default.glb",
+  "material_count": 1,
+  "mesh_count_after_join": 1,
+  "mesh_count_before_join": 1,
+  "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1A\\LuBu_Matrix\\Normalized\\lubu_r1536_t2048_default_normalized.glb",
+  "scale_factor": 191.87155814897216,
+  "target_height": 180.0
+}

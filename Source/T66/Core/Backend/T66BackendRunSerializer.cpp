@@ -115,6 +115,12 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 	}
 
 	RunObj->SetNumberField(TEXT("hero_level"), Snapshot->HeroLevel);
+	RunObj->SetNumberField(TEXT("hero_mastery_level"), Snapshot->HeroMasteryLevel);
+	RunObj->SetNumberField(TEXT("hero_mastery_xp"), Snapshot->HeroMasteryXP);
+	if (!Snapshot->OwnerDisplayName.IsEmpty())
+	{
+		RunObj->SetStringField(TEXT("display_name"), Snapshot->OwnerDisplayName);
+	}
 
 	TSharedPtr<FJsonObject> StatsObj = MakeShared<FJsonObject>();
 	StatsObj->SetNumberField(TEXT("damage"), Snapshot->DamageStat);

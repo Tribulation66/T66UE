@@ -1,0 +1,409 @@
+{
+  "asset_name": "CaveBat",
+  "base_color_param": "/Game/Characters/Mobs/CaveBat/Textures/T_CaveBat_0.T_CaveBat_0",
+  "diffuse_param": "/Game/Characters/Mobs/CaveBat/Textures/T_CaveBat_0.T_CaveBat_0",
+  "expected_height": 130.0,
+  "flatten_k": 6,
+  "height_tolerance": 0.1,
+  "imported_object_paths": [
+    "/Game/Characters/Mobs/CaveBat/SM_CaveBat.SM_CaveBat"
+  ],
+  "imported_outline_object_paths": [
+    "/Game/Characters/Mobs/CaveBat/SM_CaveBat_Outline.SM_CaveBat_Outline"
+  ],
+  "inner_line_default_black": "/Game/ToonStyle/Textures/T_InnerLines_DefaultBlack",
+  "inner_line_param": "/Game/Characters/Mobs/CaveBat/Textures/T_CaveBat_InnerLines.T_CaveBat_InnerLines",
+  "inner_line_texture": "/Game/Characters/Mobs/CaveBat/Textures/T_CaveBat_InnerLines",
+  "manifest_normal_delta_sample": {
+    "distinct": true,
+    "reason": "non_humanoid"
+  },
+  "manifest_normal_transfer": {
+    "applied": false,
+    "reason": "non_humanoid"
+  },
+  "manifest_outline_winding": {
+    "applied": true,
+    "face_after": [
+      75,
+      51,
+      53
+    ],
+    "face_before": [
+      75,
+      53,
+      51
+    ],
+    "face_order_reversed": true,
+    "inward_normal_samples": 74401,
+    "method": "shade_smooth before bmesh.ops.reverse_faces + restored captured outward vertex normals as custom split normals",
+    "outward_normal_samples": 74208
+  },
+  "manifest_texture_flattening": [
+    {
+      "active_pixels": 16777206,
+      "centers_rgb_255": [
+        [
+          20,
+          13,
+          33
+        ],
+        [
+          115,
+          43,
+          147
+        ],
+        [
+          206,
+          61,
+          242
+        ],
+        [
+          19,
+          118,
+          154
+        ],
+        [
+          4,
+          187,
+          247
+        ],
+        [
+          216,
+          215,
+          221
+        ]
+      ],
+      "final_center_shift": 0.0008844706462696195,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_0_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_0",
+      "iterations": 13,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_0_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_0_flattened.png",
+      "postprocess": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              20,
+              13,
+              33
+            ],
+            [
+              115,
+              43,
+              147
+            ],
+            [
+              206,
+              61,
+              242
+            ],
+            [
+              19,
+              118,
+              154
+            ],
+            [
+              4,
+              187,
+              247
+            ],
+            [
+              216,
+              215,
+              221
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_0_flattened.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_0_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              20,
+              13,
+              33
+            ],
+            [
+              115,
+              43,
+              147
+            ],
+            [
+              206,
+              61,
+              242
+            ],
+            [
+              19,
+              118,
+              154
+            ],
+            [
+              4,
+              187,
+              247
+            ],
+            [
+              216,
+              215,
+              221
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 83123,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[20, 13, 33], [115, 43, 147], [206, 61, 242], [19, 118, 154], [4, 187, 247], [216, 215, 221]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\CaveBat\\\\Working\\\\CaveBat_0_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\CaveBat\\\\Working\\\\CaveBat_0_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[20, 13, 33], [115, 43, 147], [206, 61, 242], [19, 118, 154], [4, 187, 247], [216, 215, 221]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 83123, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": true, \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\CaveBat\\\\Working\\\\CaveBat_Tint.png\", \"saturation_scale\": 1.1, \"value_scale\": 0.6}, \"unique_rgb_after\": 3, \"unique_rgb_before\": 4, \"uv_mask_pixels\": 9509582, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7244871, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 197933, \"width\": 4096}",
+        "tint": {
+          "generated": true,
+          "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_Tint.png",
+          "saturation_scale": 1.1,
+          "value_scale": 0.6
+        },
+        "unique_rgb_after": 3,
+        "unique_rgb_before": 4,
+        "uv_mask_pixels": 9509582,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 7244871,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 197933,
+        "width": 4096
+      },
+      "unique_colors_after": 6,
+      "unique_colors_before": 390580,
+      "width": 4096
+    },
+    {
+      "active_pixels": 16777216,
+      "centers_rgb_255": [
+        [
+          7,
+          227,
+          9
+        ],
+        [
+          1,
+          235,
+          1
+        ],
+        [
+          0,
+          235,
+          0
+        ],
+        [
+          0,
+          236,
+          0
+        ],
+        [
+          1,
+          237,
+          1
+        ],
+        [
+          0,
+          240,
+          0
+        ]
+      ],
+      "final_center_shift": 0.0004541807866189629,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_1_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_1",
+      "iterations": 5,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_1_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_1_flattened.png",
+      "postprocess": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              7,
+              227,
+              9
+            ],
+            [
+              1,
+              235,
+              1
+            ],
+            [
+              0,
+              235,
+              0
+            ],
+            [
+              0,
+              236,
+              0
+            ],
+            [
+              1,
+              237,
+              1
+            ],
+            [
+              0,
+              240,
+              0
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_1_flattened.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CaveBat\\Working\\CaveBat_1_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              7,
+              227,
+              9
+            ],
+            [
+              1,
+              235,
+              1
+            ],
+            [
+              0,
+              235,
+              0
+            ],
+            [
+              0,
+              236,
+              0
+            ],
+            [
+              1,
+              237,
+              1
+            ],
+            [
+              0,
+              240,
+              0
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 0,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[7, 227, 9], [1, 235, 1], [0, 235, 0], [0, 236, 0], [1, 237, 1], [0, 240, 0]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\CaveBat\\\\Working\\\\CaveBat_1_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\CaveBat\\\\Working\\\\CaveBat_1_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[7, 227, 9], [1, 235, 1], [0, 235, 0], [0, 236, 0], [1, 237, 1], [0, 240, 0]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 0, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": false}, \"unique_rgb_after\": 6, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9509582, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7244871, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 197933, \"width\": 4096}",
+        "tint": {
+          "generated": false
+        },
+        "unique_rgb_after": 6,
+        "unique_rgb_before": 6,
+        "uv_mask_pixels": 9509582,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 7244871,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 197933,
+        "width": 4096
+      },
+      "unique_colors_after": 6,
+      "unique_colors_before": 221,
+      "width": 4096
+    }
+  ],
+  "manifest_vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 593799,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "material_instance": "/Game/Characters/Mobs/CaveBat/Materials/MI_CaveBat",
+  "outline_color_after_import": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "outline_color_preserved": null,
+  "outline_material_instance": "/Game/Characters/Mobs/CaveBat/Materials/MI_CaveBat_Outline",
+  "outline_slot0_material": "/Game/Characters/Mobs/CaveBat/Materials/MI_CaveBat_Outline.MI_CaveBat_Outline",
+  "outline_static_mesh": "/Game/Characters/Mobs/CaveBat/SM_CaveBat_Outline",
+  "outline_static_mesh_bounds": {
+    "extent": [
+      79.32904052734375,
+      48.783193588256836,
+      64.99999996250249
+    ],
+    "height": 129.99999992500497,
+    "origin": [
+      0.0,
+      -1.33514404296875e-05,
+      65.0000000374975
+    ],
+    "size": [
+      158.6580810546875,
+      97.56638717651367,
+      129.99999992500497
+    ]
+  },
+  "retained_from_phase1a": false,
+  "slot0_material": "/Game/Characters/Mobs/CaveBat/Materials/MI_CaveBat.MI_CaveBat",
+  "static_mesh": "/Game/Characters/Mobs/CaveBat/SM_CaveBat",
+  "static_mesh_bounds": {
+    "extent": [
+      79.32904052734375,
+      48.783193588256836,
+      64.99999996250249
+    ],
+    "height": 129.99999992500497,
+    "origin": [
+      0.0,
+      -1.33514404296875e-05,
+      65.0000000374975
+    ],
+    "size": [
+      158.6580810546875,
+      97.56638717651367,
+      129.99999992500497
+    ]
+  },
+  "target_dir": "/Game/Characters/Mobs/CaveBat",
+  "textures": [
+    "/Game/Characters/Mobs/CaveBat/Textures/T_CaveBat_0",
+    "/Game/Characters/Mobs/CaveBat/Textures/T_CaveBat_1"
+  ],
+  "tint_param": "/Game/Characters/Mobs/CaveBat/Textures/T_CaveBat_Tint.T_CaveBat_Tint",
+  "tint_texture": "/Game/Characters/Mobs/CaveBat/Textures/T_CaveBat_Tint"
+}

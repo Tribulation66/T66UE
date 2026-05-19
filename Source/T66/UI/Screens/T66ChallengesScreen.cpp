@@ -281,7 +281,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal")),
+			FT66FlatStyle::GetFlatLongPanelAssetPath(TEXT("normal")),
 			FVector2D(1632.f, 209.f),
 			FMargin(0.055f, 0.210f, 0.055f, 0.210f),
 			ESlateBrushDrawType::Box,
@@ -317,7 +317,7 @@ namespace
 		static FT66ChallengeSpriteBrushEntry Entry;
 		return ResolveChallengeSpriteBrush(
 			Entry,
-			T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal")),
+			FT66FlatStyle::GetFlatLongPanelAssetPath(TEXT("normal")),
 			FVector2D(563.f, 107.f),
 			FMargin(0.055f, 0.210f, 0.055f, 0.210f),
 			ESlateBrushDrawType::Box,
@@ -572,7 +572,7 @@ namespace
 			.HAlign(HAlign_Fill)
 			.VAlign(VAlign_Fill)
 			[
-				T66ScreenSlateHelpers::MakeReferenceHorizontalSlicedImage(
+				FT66FlatStyle::BuildFlatHorizontalSlicedImage(
 					Brush,
 					FVector2D(1.f, Height),
 					SourceCapFraction)
@@ -595,7 +595,7 @@ namespace
 				MakeChallengeHorizontalSlicedPanel(
 					SNew(STextBlock)
 					.Text(Label)
-					.Font(FT66Style::Tokens::FontBold(10))
+					.Font(FT66FlatStyle::Tokens::FontBold(10))
 					.ColorAndOpacity(ChallengeGoldText)
 					.Justification(ETextJustify::Center)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
@@ -622,7 +622,7 @@ namespace
 		const FSlateBrush* DisabledBrush = GetChallengeButtonBrush(Family, ET66ChallengeButtonState::Disabled);
 		if (!NormalBrush)
 		{
-			return FT66Style::MakeButton(
+			return FT66FlatStyle::MakeButton(
 				FT66ButtonParams(FText::GetEmpty(), OnClicked, Family == ET66ChallengeButtonFamily::ToggleOn ? ET66ButtonType::Primary : ET66ButtonType::Neutral)
 				.SetMinWidth(MinWidth)
 				.SetHeight(Height)
@@ -630,7 +630,7 @@ namespace
 				.SetContent(Content));
 		}
 
-		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+		return FT66FlatStyle::BuildFlatSlicedPlateButton(
 			OnClicked,
 			SNew(SBox)
 			.HAlign(HAlign_Center)
@@ -663,7 +663,7 @@ namespace
 			[
 				SNew(STextBlock)
 				.Text(Label)
-				.Font(FT66Style::Tokens::FontBold(FontSize))
+				.Font(FT66FlatStyle::Tokens::FontBold(FontSize))
 				.ColorAndOpacity(Family == ET66ChallengeButtonFamily::ToggleInactive ? ChallengeFantasyMuted : ChallengeFantasyText)
 				.Justification(ETextJustify::Center)
 				.AutoWrapText(false)
@@ -1385,14 +1385,14 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.Challenges", "ConstraintBullet", "\u25C6"))
-				.Font(FT66Style::Tokens::FontBold(15))
+				.Font(FT66FlatStyle::Tokens::FontBold(15))
 				.ColorAndOpacity(ChallengePaperMuted)
 			]
 			+ SHorizontalBox::Slot().FillWidth(1.f)
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(ConstraintText))
-				.Font(FT66Style::Tokens::FontBold(15))
+				.Font(FT66FlatStyle::Tokens::FontBold(15))
 				.ColorAndOpacity(ChallengePaperText)
 				.AutoWrapText(true)
 				.WrapTextAt(FMath::Max(260.f, DetailColumnWidth - 104.f))
@@ -1447,7 +1447,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				MakeChallengeSpritePanel(
 					SNew(STextBlock)
 					.Text(bConfirmed ? NSLOCTEXT("T66.Challenges", "ConfirmedMarker", "X") : FText::GetEmpty())
-					.Font(FT66Style::Tokens::FontBold(14))
+					.Font(FT66FlatStyle::Tokens::FontBold(14))
 					.ColorAndOpacity(bConfirmed ? ChallengeGoldText : FLinearColor::Transparent)
 					.Justification(ETextJustify::Center),
 					GetChallengeStateSocketBrush(),
@@ -1468,7 +1468,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(Entry.Title))
-					.Font(FT66Style::Tokens::FontBold(21))
+					.Font(FT66FlatStyle::Tokens::FontBold(21))
 					.ColorAndOpacity(bSelected ? ChallengePaperText : ChallengePaperMuted)
 					.WrapTextAt(FMath::Max(210.f, ListColumnWidth * 0.34f))
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
@@ -1483,7 +1483,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Community ? Community->BuildRewardSummary(Entry) : TEXT("No reward data")))
-				.Font(FT66Style::Tokens::FontBold(14))
+				.Font(FT66FlatStyle::Tokens::FontBold(14))
 				.ColorAndOpacity(ChallengeRewardTint())
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				.Clipping(EWidgetClipping::ClipToBounds)
@@ -1492,13 +1492,13 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Entry.IsDraft() ? GetDraftSubmissionLabel(Entry) : Entry.AuthorDisplayName))
-				.Font(FT66Style::Tokens::FontBold(13))
+				.Font(FT66FlatStyle::Tokens::FontBold(13))
 				.ColorAndOpacity(ChallengePaperMuted)
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				.Clipping(EWidgetClipping::ClipToBounds)
 			];
 
-		return FT66Style::MakeBareButton(
+		return FT66FlatStyle::MakeBareButton(
 			FT66BareButtonParams(
 				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleEntrySelected, EntryIndex),
 				SNew(SBox)
@@ -1524,8 +1524,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Label))
-				.Font(FT66Style::Tokens::FontBold(12))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(12))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
 			[
@@ -1535,7 +1535,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::AsNumber(Value))
-				.Font(FT66Style::Tokens::FontBold(12))
+				.Font(FT66FlatStyle::Tokens::FontBold(12))
 				.ColorAndOpacity(ChallengeRewardTint())
 			]
 			+ SHorizontalBox::Slot().AutoWidth()
@@ -1551,8 +1551,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Label))
-				.Font(FT66Style::Tokens::FontBold(12))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(12))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
 			[
@@ -1562,7 +1562,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(Value))
-				.Font(FT66Style::Tokens::FontBold(12))
+				.Font(FT66FlatStyle::Tokens::FontBold(12))
 				.ColorAndOpacity(ChallengeRewardTint())
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(8.f, 0.f, 0.f, 0.f)
@@ -1601,8 +1601,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.Text(FText::FromString(CurrentSourceTabIndex == static_cast<int32>(ESourceTabIndex::Community)
 					? TEXT("No community entries yet. Create the first one.")
 					: TEXT("No official entries were found.")))
-				.Font(FT66Style::Tokens::FontBold(16))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Font(FT66FlatStyle::Tokens::FontBold(16))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 				.Justification(ETextJustify::Center)
 				.AutoWrapText(true)
 			]);
@@ -1618,8 +1618,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 
 	TSharedRef<SWidget> DetailPanelContent = SNew(STextBlock)
 		.Text(NSLOCTEXT("T66.Challenges", "NoSelection", "Select an entry or create a new draft."))
-		.Font(FT66Style::Tokens::FontRegular(13))
-		.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+		.Font(FT66FlatStyle::Tokens::FontRegular(13))
+		.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 		.AutoWrapText(true);
 
 	if (bDraftEditorActive)
@@ -1639,15 +1639,15 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(DraftEditorEntry.Kind == ET66CommunityContentKind::Mod ? TEXT("Create Mod") : TEXT("Create Challenge")))
-			.Font(FT66Style::Tokens::FontBold(28))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.Font(FT66FlatStyle::Tokens::FontBold(28))
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 		];
 		AddEditorSpacer(10.f);
 		EditorRows->AddSlot().AutoHeight()
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(TEXT("Title")))
-			.Font(FT66Style::Tokens::FontBold(12))
+			.Font(FT66FlatStyle::Tokens::FontBold(12))
 			.ColorAndOpacity(ChallengeSuccessTint())
 		];
 		EditorRows->AddSlot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
@@ -1667,7 +1667,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(TEXT("Description")))
-			.Font(FT66Style::Tokens::FontBold(12))
+			.Font(FT66FlatStyle::Tokens::FontBold(12))
 			.ColorAndOpacity(ChallengeSuccessTint())
 		];
 		EditorRows->AddSlot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
@@ -1700,7 +1700,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(TEXT("Gameplay Rules")))
-			.Font(FT66Style::Tokens::FontBold(12))
+			.Font(FT66FlatStyle::Tokens::FontBold(12))
 			.ColorAndOpacity(ChallengeSuccessTint())
 		];
 		EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
@@ -1718,8 +1718,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(TEXT("Max Hero Stats")))
-				.Font(FT66Style::Tokens::FontBold(12))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(12))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SHorizontalBox::Slot().AutoWidth()
 			[
@@ -1805,7 +1805,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(TEXT("Completion Requirements")))
-				.Font(FT66Style::Tokens::FontBold(12))
+				.Font(FT66FlatStyle::Tokens::FontBold(12))
 				.ColorAndOpacity(ChallengeSuccessTint())
 			];
 			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
@@ -1816,8 +1816,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(TEXT("Require full clear")))
-					.Font(FT66Style::Tokens::FontRegular(12))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Font(FT66FlatStyle::Tokens::FontRegular(12))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 				]
 			];
 			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
@@ -1828,8 +1828,8 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(TEXT("Require no damage")))
-					.Font(FT66Style::Tokens::FontRegular(12))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Font(FT66FlatStyle::Tokens::FontRegular(12))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 				]
 			];
 			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
@@ -1905,7 +1905,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(SelectedEntry.Title))
-				.Font(FT66Style::Tokens::FontBold(28))
+				.Font(FT66FlatStyle::Tokens::FontBold(28))
 				.ColorAndOpacity(ChallengeFantasyText)
 				.Justification(ETextJustify::Center)
 				.AutoWrapText(true)
@@ -1937,7 +1937,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 					*GetOriginLabel(SelectedEntry),
 					SelectedEntry.AuthorDisplayName.IsEmpty() ? TEXT("") : TEXT(" by "),
 					*SelectedEntry.AuthorDisplayName)))
-				.Font(FT66Style::Tokens::FontBold(16))
+				.Font(FT66FlatStyle::Tokens::FontBold(16))
 				.ColorAndOpacity(ChallengeGoldText)
 				.AutoWrapText(true)
 				.WrapTextAt(DetailColumnWidth - 84.f)
@@ -1952,7 +1952,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				MakeChallengeSpritePanel(
 					SNew(STextBlock)
 					.Text(FText::FromString(SelectedEntry.Description))
-					.Font(FT66Style::Tokens::FontBold(16))
+					.Font(FT66FlatStyle::Tokens::FontBold(16))
 					.ColorAndOpacity(ChallengePaperText)
 					.AutoWrapText(true)
 					.WrapTextAt(DetailColumnWidth - 86.f)
@@ -1966,7 +1966,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(DetailListHeader))
-			.Font(FT66Style::Tokens::FontBold(22))
+			.Font(FT66FlatStyle::Tokens::FontBold(22))
 			.ColorAndOpacity(ChallengeFantasyText)
 			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 			.Clipping(EWidgetClipping::ClipToBounds)
@@ -1995,7 +1995,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(Community ? Community->BuildRewardSummary(SelectedEntry) : TEXT("No reward data")))
-			.Font(FT66Style::Tokens::FontBold(18))
+			.Font(FT66FlatStyle::Tokens::FontBold(18))
 			.ColorAndOpacity(ChallengeGoldText)
 			.AutoWrapText(true)
 			.WrapTextAt(DetailColumnWidth - 12.f)
@@ -2005,7 +2005,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		[
 			SNew(STextBlock)
 				.Text(FText::FromString(Community ? Community->BuildSelectionSummary(SelectedEntry) : TEXT("No selection summary available.")))
-				.Font(FT66Style::Tokens::FontRegular(11))
+				.Font(FT66FlatStyle::Tokens::FontRegular(11))
 				.ColorAndOpacity(ChallengeFantasyMuted)
 				.AutoWrapText(true)
 				.WrapTextAt(DetailColumnWidth - 12.f)
@@ -2018,7 +2018,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(GetDraftSubmissionLabel(SelectedEntry)))
-				.Font(FT66Style::Tokens::FontBold(14))
+				.Font(FT66FlatStyle::Tokens::FontBold(14))
 				.ColorAndOpacity(ChallengeDangerTint())
 				.AutoWrapText(true)
 				.WrapTextAt(DetailColumnWidth - 12.f)
@@ -2051,7 +2051,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(FText::FromString(bSelectedEntryConfirmed ? TEXT("Selected for the next run.") : TEXT("Confirm this entry to arm it for the next run.")))
-				.Font(FT66Style::Tokens::FontRegular(11))
+				.Font(FT66FlatStyle::Tokens::FontRegular(11))
 				.ColorAndOpacity(ChallengeFantasyMuted)
 				.AutoWrapText(true)
 				.WrapTextAt(DetailColumnWidth - 12.f)
@@ -2114,7 +2114,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(FText::FromString(HeaderTitle.ToUpper()))
-					.Font(FT66Style::MakeFont(TEXT("Black"), 62))
+					.Font(FT66FlatStyle::MakeFont(TEXT("Black"), 62))
 					.ColorAndOpacity(ChallengeFantasyText)
 					.ShadowOffset(FVector2D(0.f, 2.f))
 					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
@@ -2152,7 +2152,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 						MakeChallengeHorizontalSlicedPanel(
 							SNew(STextBlock)
 							.Text(FText::FromString(StatusMessage))
-							.Font(FT66Style::Tokens::FontBold(17))
+							.Font(FT66FlatStyle::Tokens::FontBold(17))
 							.ColorAndOpacity(ChallengeFantasyMuted)
 							.Justification(ETextJustify::Center)
 							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)

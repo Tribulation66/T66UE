@@ -1512,7 +1512,9 @@ void UT66CompanionSelectionScreen::OnEnterTribulationClicked()
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->PersistRememberedSelectionDefaults();
 		GI->ApplyConfiguredMainMapLayoutVariant();
-		GI->bStageCatchUpPending = false;
+		GI->ClearActiveDailyClimbRun();
+		GI->SelectedRunMode = ET66RunMode::Regular;
+		GI->SelectedRunCategory = ET66RunCategory::Tower;
 		GI->PendingLoadedTransform = FTransform();
 		GI->bApplyLoadedTransform = false;
 		GI->RunSeed = FMath::Rand();

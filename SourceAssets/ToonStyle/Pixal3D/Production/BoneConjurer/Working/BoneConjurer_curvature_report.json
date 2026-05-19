@@ -1,0 +1,24 @@
+{
+  "asset": "BoneConjurer",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 120337,
+    "count": 167571,
+    "edge_samples": 237095,
+    "max": 1.0,
+    "mean": 0.2936255825979833,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.20500678277012116,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.06214197182649145,
+      "p50": 0.22057697536630944,
+      "p75": 0.44139347906032445,
+      "p90": 0.7247044119033264,
+      "p95": 0.947715458495631,
+      "p99": 1.0
+    },
+    "std": 0.2793591100501874
+  }
+}

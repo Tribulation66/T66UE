@@ -35,8 +35,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66TutorialPortal.h"
+#include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -476,16 +475,11 @@ void AT66PlayerController::BeginPlay()
 			return;
 		}
 
-		SetupGameplayMode();
-		ClampGameplayCameraPitch();
-		GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
-		RefreshGameplayViewTarget(true);
+		EnsureGameplayRuntimePresentation();
 		bClientGameplayWorldSetupComplete = false;
 		bReceivedGameplayRunSettingsFromServer = false;
 		ClientGameplayWorldSetupRetriesRemaining = T66PlayerControllerClientGameplayWorldSetupRetryBudget;
 		EnsureClientGameplayWorldSetup(true);
-		SetupGameplayHUD();
-		PrimeGameplayPresentationAssetsAsync();
 		UWorld* World = GetWorld();
 		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 
@@ -528,6 +522,7 @@ void AT66PlayerController::BeginPlay()
 			return;
 		}
 
+		bGameplayRuntimePresentationInitialized = false;
 		EndHeroOneScopedUlt();
 
 		// Frontend mode: UI input, show cursor, initialize UI
@@ -564,6 +559,7 @@ void AT66PlayerController::BeginPlayingState()
 	ClampGameplayCameraPitch();
 	GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
 	RefreshGameplayViewTarget(true);
+	EnsureGameplayRuntimePresentation();
 }
 
 void AT66PlayerController::OnPossess(APawn* InPawn)
@@ -588,6 +584,7 @@ void AT66PlayerController::OnPossess(APawn* InPawn)
 
 	GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
 	RefreshGameplayViewTarget(true);
+	EnsureGameplayRuntimePresentation();
 }
 
 void AT66PlayerController::ClientRestart_Implementation(APawn* NewPawn)
@@ -602,6 +599,7 @@ void AT66PlayerController::ClientRestart_Implementation(APawn* NewPawn)
 	ClampGameplayCameraPitch();
 	GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
 	RefreshGameplayViewTarget(true);
+	EnsureGameplayRuntimePresentation();
 }
 
 void AT66PlayerController::OnRep_Pawn()
@@ -616,6 +614,7 @@ void AT66PlayerController::OnRep_Pawn()
 	ClampGameplayCameraPitch();
 	GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
 	RefreshGameplayViewTarget(true);
+	EnsureGameplayRuntimePresentation();
 }
 
 
@@ -655,6 +654,7 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	HideFrontendStartupOverlay();
 	bClientGameplayWorldSetupComplete = false;
 	bReceivedGameplayRunSettingsFromServer = false;
+	bGameplayRuntimePresentationInitialized = false;
 	GameplayPresentationAssetsLoadHandle.Reset();
 	ClearGameplayCameraWallOcclusion();
 
@@ -1389,7 +1389,7 @@ bool AT66PlayerController::IsGameplayLevel() const
 	{
 		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 		{
-			if (T66GI->bIsLabLevel) return true;
+			if (T66GI->IsLabRun()) return true;
 		}
 	}
 	FString MapName = GetWorld()->GetMapName();
@@ -1410,4 +1410,25 @@ void AT66PlayerController::SetupGameplayMode()
 		TEXT("PlayerController: Gameplay input mode set for camera preset %d (scoped state reset=%d)"),
 		CVarT66GameplayCameraPreset.GetValueOnGameThread(),
 		bHadScopedState ? 1 : 0);
+}
+
+void AT66PlayerController::EnsureGameplayRuntimePresentation()
+{
+	if (!IsGameplayLevel() || !IsLocalController())
+	{
+		return;
+	}
+
+	SetupGameplayMode();
+	ClampGameplayCameraPitch();
+	GameplayViewTargetRetriesRemaining = T66PlayerControllerGameplayViewTargetRetryBudget;
+	RefreshGameplayViewTarget(true);
+
+	if (!GameplayHUDWidget || !GameplayHUDWidget->IsInViewport())
+	{
+		SetupGameplayHUD();
+	}
+
+	PrimeGameplayPresentationAssetsAsync();
+	bGameplayRuntimePresentationInitialized = true;
 }

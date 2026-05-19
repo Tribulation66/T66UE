@@ -3,24 +3,8 @@
 #include "Core/T66IdolManagerSubsystem.h"
 
 #include "Core/T66GameInstance.h"
-#include "Core/T66PlayerExperienceSubSystem.h"
+#include "Core/T66DifficultyTuningSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
-
-namespace
-{
-	static int32 T66GetReachableStageCountBeforeDifficulty(const ET66Difficulty Difficulty)
-	{
-		switch (Difficulty)
-		{
-		case ET66Difficulty::Easy: return 0;
-		case ET66Difficulty::Medium: return 4;
-		case ET66Difficulty::Hard: return 8;
-		case ET66Difficulty::VeryHard: return 12;
-		case ET66Difficulty::Impossible: return 16;
-		default: return 0;
-		}
-	}
-}
 
 void UT66IdolManagerSubsystem::NormalizeEquippedArrays()
 {
@@ -57,10 +41,10 @@ int32 UT66IdolManagerSubsystem::GetCurrentStage() const
 int32 UT66IdolManagerSubsystem::GetDifficultyStartStage(const ET66Difficulty Difficulty) const
 {
 	const UGameInstance* GI = GetGameInstance();
-	const UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
-	if (PlayerExperience)
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GI ? GI->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
+	if (DifficultyTuning)
 	{
-		return FMath::Clamp(PlayerExperience->GetDifficultyStartStage(Difficulty), 1, 20);
+		return FMath::Clamp(DifficultyTuning->GetDifficultyStartStage(Difficulty), 1, 20);
 	}
 
 	switch (Difficulty)
@@ -77,10 +61,10 @@ int32 UT66IdolManagerSubsystem::GetDifficultyStartStage(const ET66Difficulty Dif
 int32 UT66IdolManagerSubsystem::GetDifficultyEndStage(const ET66Difficulty Difficulty) const
 {
 	const UGameInstance* GI = GetGameInstance();
-	const UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
-	if (PlayerExperience)
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GI ? GI->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
+	if (DifficultyTuning)
 	{
-		return FMath::Clamp(PlayerExperience->GetDifficultyEndStage(Difficulty), 1, 20);
+		return FMath::Clamp(DifficultyTuning->GetDifficultyEndStage(Difficulty), 1, 20);
 	}
 
 	switch (Difficulty)
@@ -93,7 +77,6 @@ int32 UT66IdolManagerSubsystem::GetDifficultyEndStage(const ET66Difficulty Diffi
 	default: return 4;
 	}
 }
-
 int32 UT66IdolManagerSubsystem::GetEquippedIdolLevelInSlot(const int32 SlotIndex) const
 {
 	if (SlotIndex < 0 || SlotIndex >= MaxEquippedIdolSlots) return 0;
@@ -293,6 +276,15 @@ void UT66IdolManagerSubsystem::RerollIdolStock()
 	IdolStockStage = GetCurrentStage();
 
 	const TArray<FName>& AllIdols = GetAllIdolIDs();
+	int32 BaseTierValue = 1;
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		if (const UT66DifficultyTuningSubsystem* DifficultyTuning = GI->GetSubsystem<UT66DifficultyTuningSubsystem>())
+		{
+			BaseTierValue = IdolRarityToTierValue(DifficultyTuning->GetDifficultyIdolBaseRarity(CurrentDifficulty));
+		}
+	}
+	BaseTierValue = FMath::Clamp(BaseTierValue, 1, MaxIdolLevel);
 
 	for (const FName& IdolID : AllIdols)
 	{
@@ -309,8 +301,8 @@ void UT66IdolManagerSubsystem::RerollIdolStock()
 
 		IdolStockIDs.Add(IdolID);
 		IdolStockTierValues.Add(static_cast<uint8>(OwnedTierValue > 0
-			? FMath::Clamp(OwnedTierValue + 1, 1, MaxIdolLevel)
-			: 1));
+			? FMath::Clamp(FMath::Max(BaseTierValue, OwnedTierValue + 1), 1, MaxIdolLevel)
+			: BaseTierValue));
 		IdolStockSelected.Add(false);
 	}
 
@@ -357,7 +349,7 @@ bool UT66IdolManagerSubsystem::ApplyStockOfferToEquipped(const int32 SlotIndex)
 		const int32 CurrentTierValue = EquippedIdolLevels.IsValidIndex(Index)
 			? FMath::Clamp(static_cast<int32>(EquippedIdolLevels[Index]), 1, MaxIdolLevel)
 			: 1;
-		if (OfferedTierValue != CurrentTierValue + 1)
+		if (OfferedTierValue <= CurrentTierValue)
 		{
 			return false;
 		}
@@ -369,17 +361,12 @@ bool UT66IdolManagerSubsystem::ApplyStockOfferToEquipped(const int32 SlotIndex)
 
 	if (!bApplied)
 	{
-		if (OfferedTierValue != 1)
-		{
-			return false;
-		}
-
 		for (int32 Index = 0; Index < EquippedIdolIDs.Num(); ++Index)
 		{
 			if (!EquippedIdolIDs[Index].IsNone()) continue;
 
 			EquippedIdolIDs[Index] = OfferedIdolID;
-			EquippedIdolLevels[Index] = 1;
+			EquippedIdolLevels[Index] = static_cast<uint8>(OfferedTierValue);
 			bApplied = true;
 			break;
 		}
@@ -474,22 +461,19 @@ bool UT66IdolManagerSubsystem::SellEquippedIdolInSlot(const int32 SlotIndex)
 void UT66IdolManagerSubsystem::RestoreState(
 	const TArray<FName>& InEquippedIdols,
 	const TArray<uint8>& InEquippedIdolTiers,
-	const ET66Difficulty Difficulty,
-	const int32 InRemainingCatchUpIdolPicks)
+	const ET66Difficulty Difficulty)
 {
 	CurrentDifficulty = Difficulty;
 	EquippedIdolIDs = InEquippedIdols;
 	EquippedIdolLevels = InEquippedIdolTiers;
 	NormalizeEquippedArrays();
 	ClearIdolStock();
-	RemainingCatchUpIdolPicks = FMath::Max(0, InRemainingCatchUpIdolPicks);
 	BroadcastIdolStateChanged();
 }
 
 void UT66IdolManagerSubsystem::ResetForNewRun(const ET66Difficulty Difficulty)
 {
 	CurrentDifficulty = Difficulty;
-	RemainingCatchUpIdolPicks = GetCatchUpIdolPickCountForDifficulty(Difficulty);
 	NormalizeEquippedArrays();
 	for (int32 Index = 0; Index < EquippedIdolIDs.Num(); ++Index)
 	{
@@ -506,25 +490,3 @@ void UT66IdolManagerSubsystem::HandleStageChanged(const int32 /*NewStage*/)
 	BroadcastIdolStateChanged();
 }
 
-int32 UT66IdolManagerSubsystem::GetCatchUpIdolPickCountForDifficulty(const ET66Difficulty Difficulty) const
-{
-	return T66GetReachableStageCountBeforeDifficulty(Difficulty);
-}
-
-bool UT66IdolManagerSubsystem::ConsumeCatchUpIdolPick()
-{
-	if (RemainingCatchUpIdolPicks <= 0)
-	{
-		return false;
-	}
-
-	--RemainingCatchUpIdolPicks;
-	BroadcastIdolStateChanged();
-	return true;
-}
-
-void UT66IdolManagerSubsystem::SetRemainingCatchUpIdolPicks(const int32 NewRemainingCatchUpIdolPicks)
-{
-	const int32 MaxCatchUpIdolPicks = GetCatchUpIdolPickCountForDifficulty(CurrentDifficulty);
-	RemainingCatchUpIdolPicks = FMath::Clamp(NewRemainingCatchUpIdolPicks, 0, MaxCatchUpIdolPicks);
-}

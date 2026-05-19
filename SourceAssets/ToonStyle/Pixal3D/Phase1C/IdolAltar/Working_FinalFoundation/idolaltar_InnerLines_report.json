@@ -1,0 +1,19 @@
+{
+  "dependency_path": "external_python_pillow_numpy",
+  "line_coverage_fraction": 0.2076687216758728,
+  "max_intensity": 1.0,
+  "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\IdolAltar\\Working_FinalFoundation\\idolaltar_InnerLines.png",
+  "padding": {
+    "applied": true,
+    "filled_pixels": 5347729,
+    "method": "iterative_frontier_expansion",
+    "padding_pixels": 16
+  },
+  "resolution": [
+    4096,
+    4096
+  ],
+  "segments": 130778,
+  "stddev": 0.30656781792640686,
+  "unique_value_count": 256
+}

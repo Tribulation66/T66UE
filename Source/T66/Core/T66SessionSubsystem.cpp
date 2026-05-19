@@ -9,6 +9,7 @@
 #include "Core/T66RunIntegritySubsystem.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66SaveMigration.h"
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66SteamHelper.h"
 #include "Gameplay/T66PlayerController.h"
@@ -769,11 +770,13 @@ UT66RunSaveGame* UT66SessionSubsystem::BuildCurrentRunSaveSnapshot(UObject* Oute
 	SaveObj->HeroBodyType = GI->SelectedHeroBodyType;
 	SaveObj->CompanionID = GI->SelectedCompanionID;
 	SaveObj->Difficulty = GI->SelectedDifficulty;
+	SaveObj->RunMode = GI->SelectedRunMode;
+	SaveObj->RunCategory = GI->SelectedRunCategory;
 	SaveObj->PartySize = GI->SelectedPartySize;
 	SaveObj->MapName = GetWorld() ? UWorld::RemovePIEPrefix(GetWorld()->GetMapName()) : FString();
 	SaveObj->LastPlayedUtc = FDateTime::UtcNow().ToIso8601();
 	SaveObj->RunSeed = GI->RunSeed;
-	SaveObj->bIsDailyClimbRun = GI->IsDailyClimbRunActive();
+	SaveObj->bIsDailyClimbRun = GI->IsDailyClimbRun() && GI->ActiveDailyClimbChallenge.IsValid();
 	SaveObj->DailyClimbChallenge = SaveObj->bIsDailyClimbRun ? GI->ActiveDailyClimbChallenge : FT66DailyClimbChallengeData{};
 	SaveObj->MainMapLayoutVariant = GI->CurrentMainMapLayoutVariant;
 	SaveObj->bRunIneligibleForLeaderboard = GI->bRunIneligibleForLeaderboard;
@@ -977,7 +980,7 @@ bool UT66SessionSubsystem::SaveCurrentRunAndReturnToFrontend()
 	PendingFoundLobbyId.Reset();
 	PendingDirectJoinConnectString.Reset();
 	PendingJoinFriendLookupAttempts = 0;
-	const ET66ScreenType ReturnFrontendScreen = GI->IsDailyClimbRunActive()
+	const ET66ScreenType ReturnFrontendScreen = GI->IsDailyClimbRun()
 		? ET66ScreenType::DailyDescent
 		: ET66ScreenType::MainMenu;
 	LocalFrontendScreen = ReturnFrontendScreen;
@@ -2039,13 +2042,16 @@ void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* L
 	GI->SelectedHeroBodyType = LoadedSave->HeroBodyType;
 	GI->SelectedCompanionID = LoadedSave->CompanionID;
 	GI->SelectedDifficulty = GI->ResolvePlayableDifficulty(LoadedSave->Difficulty);
+	GI->SelectedRunMode = LoadedSave->RunMode;
+	GI->SelectedRunCategory = LoadedSave->RunCategory;
 	GI->SelectedPartySize = LoadedSave->PartySize;
 	GI->RunSeed = LoadedSave->RunSeed;
 	if (LoadedSave->bIsDailyClimbRun && LoadedSave->DailyClimbChallenge.IsValid())
 	{
 		GI->CachedDailyClimbChallenge = LoadedSave->DailyClimbChallenge;
 		GI->ActiveDailyClimbChallenge = LoadedSave->DailyClimbChallenge;
-		GI->bIsDailyClimbRunActive = true;
+		GI->SelectedRunMode = ET66RunMode::DailyClimb;
+		GI->SelectedRunCategory = ET66RunCategory::Tower;
 		GI->SelectedRunModifierKind = ET66RunModifierKind::None;
 		GI->SelectedRunModifierID = NAME_None;
 		GI->SelectedPartySize = ET66PartySize::Solo;

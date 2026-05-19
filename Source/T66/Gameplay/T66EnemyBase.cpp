@@ -795,12 +795,13 @@ void AT66EnemyBase::RebuildScaledCombatStats(const bool bResetCurrentHPToMax)
 
 	ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedMaxHP) * ProgressionEnemyScalarApplied));
 	ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedMaxHP) * FinaleScalarApplied));
-	if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	if (const UGameInstance* GI = GetGameInstance())
 	{
-		const float DailyEnemyHpMultiplier = T66GI->GetDailyClimbFloatRuleValue(ET66DailyClimbRuleType::EnemyHpMultiplier, 1.0f);
-		if (DailyEnemyHpMultiplier > 0.0f && !FMath::IsNearlyEqual(DailyEnemyHpMultiplier, 1.0f))
+		const UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
+		const float EnemyHealthMultiplier = RunState ? RunState->GetRunModifierEnemyHealthMultiplier() : 1.0f;
+		if (EnemyHealthMultiplier > 0.0f && !FMath::IsNearlyEqual(EnemyHealthMultiplier, 1.0f))
 		{
-			ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedMaxHP) * DailyEnemyHpMultiplier));
+			ResolvedMaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ResolvedMaxHP) * EnemyHealthMultiplier));
 		}
 	}
 
@@ -1666,9 +1667,9 @@ void AT66EnemyBase::OnDeath()
 		const int32 LootBagCount = RngSub
 			? FMath::Max(1, RngSub->RollIntRangeBiased(BagCountRange, Stream))
 			: FMath::Max(1, Stream.RandRange(BagCountMin, BagCountMax));
-		const float DailyLootBagMultiplier = T66GI->GetDailyClimbFloatRuleValue(ET66DailyClimbRuleType::EnemyLootBagCountMultiplier, 1.0f);
-		const int32 AdjustedLootBagCount = (DailyLootBagMultiplier > 0.0f && !FMath::IsNearlyEqual(DailyLootBagMultiplier, 1.0f))
-			? FMath::Max(1, FMath::RoundToInt(static_cast<float>(LootBagCount) * DailyLootBagMultiplier))
+		const float LootBagMultiplier = RunState ? RunState->GetRunModifierEnemyLootBagCountMultiplier() : 1.0f;
+		const int32 AdjustedLootBagCount = (LootBagMultiplier > 0.0f && !FMath::IsNearlyEqual(LootBagMultiplier, 1.0f))
+			? FMath::Max(1, FMath::RoundToInt(static_cast<float>(LootBagCount) * LootBagMultiplier))
 			: LootBagCount;
 		const int32 BagCountDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
 		const int32 BagCountPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;

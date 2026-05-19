@@ -6,6 +6,8 @@
 
 constexpr int32 T66SparseActiveHeroIdProfileSaveVersion = 16;
 constexpr int32 T66SparseActiveHeroIdRunSaveVersion = 11;
+constexpr int32 T66RunModeCategoryRunSaveVersion = 12;
+constexpr int32 T66CurrentRunSaveVersion = T66RunModeCategoryRunSaveVersion;
 constexpr int32 T66SparseActiveHeroIdRunSummarySchemaVersion = 22;
 
 /**

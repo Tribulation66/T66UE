@@ -12,6 +12,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66DifficultyTuningSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66LeaderboardPacingUtils.h"
@@ -39,11 +40,10 @@
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66StatsPanelSlate.h"
-#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66UIManager.h"
+#include "UI/Style/T66AnimatedStyle.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
-#include "UI/Style/T66Style.h"
 #include "UI/T66CrateOverlayWidget.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/InputSettings.h"
@@ -121,7 +121,8 @@ namespace
 
 	static TSoftObjectPtr<UTexture2D> ResolveGameplayUltimateIcon(const FName HeroID, const ET66UltimateType UltimateType)
 	{
-		if (HeroID == FName(TEXT("Hero_1")) && UltimateType == ET66UltimateType::SpearStorm)
+		static_cast<void>(HeroID);
+		if (UltimateType == ET66UltimateType::SpearStorm)
 		{
 			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Abilities/Hero_1/T_Hero_1_Ultimate.T_Hero_1_Ultimate")));
 		}
@@ -131,7 +132,8 @@ namespace
 
 	static TSoftObjectPtr<UTexture2D> ResolveGameplayPassiveIcon(const FName HeroID, const ET66PassiveType PassiveType)
 	{
-		if (HeroID == FName(TEXT("Hero_1")) && PassiveType == ET66PassiveType::IronWill)
+		static_cast<void>(HeroID);
+		if (PassiveType == ET66PassiveType::IronWill)
 		{
 			return TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Abilities/Hero_1/T_Hero_1_Passive.T_Hero_1_Passive")));
 		}
@@ -166,7 +168,7 @@ namespace
 	}
 
 	static int32 ResolveDisplayedStageNumber(
-		const UT66PlayerExperienceSubSystem* PlayerExperience,
+		const UT66DifficultyTuningSubsystem* DifficultyTuning,
 		ET66Difficulty Difficulty,
 		int32 CurrentStage)
 	{
@@ -175,12 +177,12 @@ namespace
 			return 1;
 		}
 
-		if (!PlayerExperience)
+		if (!DifficultyTuning)
 		{
 			return CurrentStage;
 		}
 
-		const int32 StartStage = FMath::Max(1, PlayerExperience->GetDifficultyStartStage(Difficulty));
+		const int32 StartStage = FMath::Max(1, DifficultyTuning->GetDifficultyStartStage(Difficulty));
 		const int32 StageOffset = FMath::Max(0, CurrentStage - StartStage);
 		if (Difficulty == ET66Difficulty::Impossible)
 		{
@@ -192,18 +194,12 @@ namespace
 
 	static FText BuildDisplayedStageText(
 		UT66LocalizationSubsystem* Loc,
-		const UT66PlayerExperienceSubSystem* PlayerExperience,
+		const UT66DifficultyTuningSubsystem* DifficultyTuning,
 		ET66Difficulty Difficulty,
-		int32 CurrentStage,
-		bool bInStageCatchUp)
+		int32 CurrentStage)
 	{
-		if (bInStageCatchUp)
-		{
-			return NSLOCTEXT("T66.GameplayHUD", "StageCatchUp", "Stage: Catch Up");
-		}
-
 		const FText Fmt = Loc ? Loc->GetText_StageNumberFormat() : NSLOCTEXT("T66.GameplayHUD", "StageNumberFormat", "Stage number: {0}");
-		return FText::Format(Fmt, FText::AsNumber(ResolveDisplayedStageNumber(PlayerExperience, Difficulty, CurrentStage)));
+		return FText::Format(Fmt, FText::AsNumber(ResolveDisplayedStageNumber(DifficultyTuning, Difficulty, CurrentStage)));
 	}
 
 	static FText BuildDifficultyAreaNameText(const ET66Difficulty Difficulty)
@@ -731,7 +727,7 @@ namespace
 	static FLinearColor GetDPSColor(int32 DPS)
 	{
 		const int32 Tier = GetDPSTierIndex(DPS);
-		return Tier >= 0 ? FT66RarityUtil::GetTierColor(Tier) : FT66Style::Tokens::TextMuted;
+		return Tier >= 0 ? FT66RarityUtil::GetTierColor(Tier) : FT66FlatStyle::Tokens::TextMuted;
 	}
 
 	static const TCHAR* GetStatGradeLabel(int32 Value)
@@ -899,19 +895,18 @@ namespace
 	static TSharedPtr<IToolTip> CreateCustomTooltip(const FText& InText)
 	{
 		if (InText.IsEmpty()) return nullptr;
-		const ISlateStyle& Style = FT66Style::Get();
-		const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
+		const FTextBlockStyle& TextBody = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body"));
 		return SNew(SToolTip)
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
-				.BorderBackgroundColor(FT66Style::Tokens::Bg)
+				.BorderBackgroundColor(FT66FlatStyle::Tokens::Bg)
 				.Padding(FMargin(8.f, 6.f))
 				[
 					SNew(STextBlock)
 					.Text(InText)
 					.TextStyle(&TextBody)
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					.AutoWrapText(true)
 					.WrapTextAt(280.f)
 				]
@@ -926,7 +921,7 @@ namespace
 			[
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
-				.BorderBackgroundColor(FT66Style::Tokens::Bg)
+				.BorderBackgroundColor(FT66FlatStyle::Tokens::Bg)
 				.Padding(FMargin(10.f, 8.f))
 				[
 					SNew(SVerticalBox)
@@ -934,15 +929,15 @@ namespace
 					[
 						SNew(STextBlock)
 						.Text(Title)
-						.Font(FT66Style::Tokens::FontBold(14))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(14))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 					+ SVerticalBox::Slot().AutoHeight()
 					[
 						SNew(STextBlock)
 						.Text(Description)
-						.TextStyle(&FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body"))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body")))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						.AutoWrapText(true)
 						.WrapTextAt(280.f)
 					]
@@ -1212,7 +1207,7 @@ public:
 
 	virtual FVector2D ComputeDesiredSize(float) const override
 	{
-		return FVector2D(FT66Style::Tokens::ReferenceLayoutWidth, FT66Style::Tokens::ReferenceLayoutHeight);
+		return FVector2D(FT66FlatStyle::Tokens::ReferenceLayoutWidth, FT66FlatStyle::Tokens::ReferenceLayoutHeight);
 	}
 
 	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
@@ -1472,14 +1467,14 @@ public:
 		const bool bUsingMapArt = BackgroundBrush && BackgroundBrush->GetResourceObject();
 		const FLinearColor MapBackgroundColor = (bUseRevealMask || bUsingMapArt)
 			? FLinearColor::Black
-			: (bMinimap ? FT66Style::MinimapBackground() : FT66Style::Background());
+			: (bMinimap ? FT66FlatStyle::MinimapBackground() : FT66FlatStyle::Background());
 		const FLinearColor MapTerrainColor = bUseRevealMask
-			? WithAlpha(FT66Style::MinimapTerrain(), bMinimap ? 0.08f : 0.06f)
-			: WithAlpha(FT66Style::MinimapTerrain(), bMinimap ? 0.42f : 0.22f);
-		const FLinearColor RevealedTerrainColor = WithAlpha(FT66Style::MinimapTerrain() * FLinearColor(1.10f, 1.02f, 0.98f, 1.0f), bMinimap ? 0.72f : 0.42f);
+			? WithAlpha(FT66FlatStyle::MinimapTerrain(), bMinimap ? 0.08f : 0.06f)
+			: WithAlpha(FT66FlatStyle::MinimapTerrain(), bMinimap ? 0.42f : 0.22f);
+		const FLinearColor RevealedTerrainColor = WithAlpha(FT66FlatStyle::MinimapTerrain() * FLinearColor(1.10f, 1.02f, 0.98f, 1.0f), bMinimap ? 0.72f : 0.42f);
 		const FLinearColor GridColor = bUseRevealMask
-			? WithAlpha(FT66Style::MinimapGrid(), bMinimap ? 0.18f : 0.12f)
-			: FT66Style::MinimapGrid();
+			? WithAlpha(FT66FlatStyle::MinimapGrid(), bMinimap ? 0.18f : 0.12f)
+			: FT66FlatStyle::MinimapGrid();
 		const FLinearColor OutlineColor = WithAlpha(FT66FlatStyle::DefaultBorder(), 0.88f);
 
 		// Solid dark background fill.
@@ -1892,7 +1887,7 @@ public:
 
 				if (!bUseRevealMask && !bHasTowerPolygon)
 				{
-					const FLinearColor LaneColor = WithAlpha(FT66Style::MinimapTerrain() * FLinearColor(0.7f, 0.7f, 0.7f, 1.f), 0.75f);
+					const FLinearColor LaneColor = WithAlpha(FT66FlatStyle::MinimapTerrain() * FLinearColor(0.7f, 0.7f, 0.7f, 1.f), 0.75f);
 					const TArray<FVector2D> LaneA = {
 						FVector2D(Size.X * 0.08f, Size.Y * 0.78f),
 						FVector2D(Size.X * 0.24f, Size.Y * 0.62f),
@@ -2016,9 +2011,9 @@ public:
 			};
 
 			const TArray<FArea> Areas = {
-				{ NSLOCTEXT("T66.Map", "AreaStart", "START"), FVector2D(-10000.f, 0.f), FVector2D(3000.f, 3000.f), WithAlpha(FT66Style::MinimapFriendly(), 0.10f), WithAlpha(FT66Style::MinimapFriendly(), 0.28f) },
-				{ NSLOCTEXT("T66.Map", "AreaMain",  "MAIN"),  FVector2D(0.f, 0.f),      FVector2D(10000.f, 10000.f), WithAlpha(FT66Style::MinimapNeutral(), 0.06f), WithAlpha(FT66Style::MinimapNeutral(), 0.18f) },
-				{ NSLOCTEXT("T66.Map", "AreaBoss",  "BOSS"),  FVector2D(10000.f, 0.f),  FVector2D(3000.f, 3000.f), WithAlpha(FT66Style::MinimapEnemy(), 0.08f), WithAlpha(FT66Style::MinimapEnemy(), 0.25f) },
+				{ NSLOCTEXT("T66.Map", "AreaStart", "START"), FVector2D(-10000.f, 0.f), FVector2D(3000.f, 3000.f), WithAlpha(FT66FlatStyle::MinimapFriendly(), 0.10f), WithAlpha(FT66FlatStyle::MinimapFriendly(), 0.28f) },
+				{ NSLOCTEXT("T66.Map", "AreaMain",  "MAIN"),  FVector2D(0.f, 0.f),      FVector2D(10000.f, 10000.f), WithAlpha(FT66FlatStyle::MinimapNeutral(), 0.06f), WithAlpha(FT66FlatStyle::MinimapNeutral(), 0.18f) },
+				{ NSLOCTEXT("T66.Map", "AreaBoss",  "BOSS"),  FVector2D(10000.f, 0.f),  FVector2D(3000.f, 3000.f), WithAlpha(FT66FlatStyle::MinimapEnemy(), 0.08f), WithAlpha(FT66FlatStyle::MinimapEnemy(), 0.25f) },
 			};
 
 			for (const FArea& A : Areas)
@@ -2048,9 +2043,9 @@ public:
 					LayerId + 4,
 					ToPaintGeo(CenterLocal + FVector2D(-50.f, -10.f), FVector2D(100.f, 20.f)),
 					A.Label,
-					FT66Style::Tokens::FontBold(14),
+					FT66FlatStyle::Tokens::FontBold(14),
 					ESlateDrawEffect::None,
-					WithAlpha(FT66Style::TextMuted(), 0.80f)
+					WithAlpha(FT66FlatStyle::TextMuted(), 0.80f)
 				);
 			}
 		}
@@ -2139,7 +2134,7 @@ public:
 					AllottedGeometry.ToPaintGeometry(),
 					ArrowOutline,
 					ESlateDrawEffect::None,
-					FT66Style::MinimapFriendly(),
+					FT66FlatStyle::MinimapFriendly(),
 					true,
 					2.6f);
 			}
@@ -2164,7 +2159,7 @@ public:
 					ToPaintGeo(TL, FVector2D(MarkerSize, MarkerSize)),
 					FCoreStyle::Get().GetBrush("WhiteBrush"),
 					ESlateDrawEffect::None,
-					FT66Style::MinimapFriendly());
+					FT66FlatStyle::MinimapFriendly());
 
 				FSlateDrawElement::MakeBox(
 					OutDrawElements,
@@ -2190,7 +2185,7 @@ public:
 					AllottedGeometry.ToPaintGeometry(),
 					Diamond,
 					ESlateDrawEffect::None,
-					FT66Style::MinimapFriendly(),
+					FT66FlatStyle::MinimapFriendly(),
 					true,
 					2.5f
 				);
@@ -2258,7 +2253,7 @@ public:
 					LayerId + 10,
 					ToPaintGeo(ClampToBounds(P + FVector2D(6.f, -10.f)), FVector2D(260.f, 20.f)),
 					M.Label,
-					FT66Style::Tokens::FontBold(bMinimap ? 10 : 12),
+					FT66FlatStyle::Tokens::FontBold(bMinimap ? 10 : 12),
 					ESlateDrawEffect::None,
 					WithAlpha(FT66FlatStyle::PrimaryText(), bMinimap ? 0.70f : 0.92f)
 				);

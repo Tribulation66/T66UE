@@ -1,0 +1,16 @@
+#ifndef T66_TOON_OUTLINE_USH
+#define T66_TOON_OUTLINE_USH
+
+float3 ToonOutlineWorldPositionOffset(
+	float3 GeometricNormal,
+	float BaseWidth,
+	float VertexWidthMul,
+	float VertexDepthOffset,
+	float VertexOutlineMask)
+{
+	const float Width = max(BaseWidth, 0.0) * max(VertexWidthMul, 0.0) * saturate(VertexOutlineMask);
+	const float DepthOffset = VertexDepthOffset * saturate(VertexOutlineMask);
+	return normalize(GeometricNormal) * (Width + DepthOffset);
+}
+
+#endif

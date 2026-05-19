@@ -136,40 +136,6 @@ const FT66PlayerExperienceDifficultyTuning& UT66PlayerExperienceSubSystem::GetDi
 	return CachedTuning.Get(Difficulty);
 }
 
-int32 UT66PlayerExperienceSubSystem::GetDifficultyStartStage(const ET66Difficulty Difficulty) const
-{
-	if (!IsTuningReady(TEXT("GetDifficultyStartStage")))
-	{
-		return 0;
-	}
-	return FMath::Clamp(GetDifficultyTuning(Difficulty).StartStage, 1, 20);
-}
-
-int32 UT66PlayerExperienceSubSystem::GetDifficultyEndStage(const ET66Difficulty Difficulty) const
-{
-	if (!IsTuningReady(TEXT("GetDifficultyEndStage")))
-	{
-		return 0;
-	}
-	const FT66PlayerExperienceDifficultyTuning& Tuning = GetDifficultyTuning(Difficulty);
-	const int32 StartStage = FMath::Clamp(Tuning.StartStage, 1, 20);
-	return FMath::Clamp(Tuning.EndStage, StartStage, 20);
-}
-
-int32 UT66PlayerExperienceSubSystem::GetDifficultyStartGoldBonus(const ET66Difficulty Difficulty) const
-{
-	return FMath::Max(0, GetDifficultyTuning(Difficulty).StartGoldBonus);
-}
-
-int32 UT66PlayerExperienceSubSystem::GetDifficultyStartLootBags(const ET66Difficulty Difficulty) const
-{
-	return FMath::Max(0, GetDifficultyTuning(Difficulty).StartLootBags);
-}
-
-int32 UT66PlayerExperienceSubSystem::GetDifficultyStartHeroBonusLevels(const ET66Difficulty Difficulty) const
-{
-	return FMath::Max(0, GetDifficultyTuning(Difficulty).StartHeroBonusLevels);
-}
 
 float UT66PlayerExperienceSubSystem::GetDifficultyEnemyLootBagDropChanceBase(const ET66Difficulty Difficulty) const
 {
@@ -184,11 +150,6 @@ FT66IntRange UT66PlayerExperienceSubSystem::GetDifficultyEnemyLootBagCountOnDrop
 FT66RarityWeights UT66PlayerExperienceSubSystem::GetDifficultyEnemyLootBagRarityWeights(const ET66Difficulty Difficulty) const
 {
 	return GetDifficultyTuning(Difficulty).EnemyLootBagRarityWeights;
-}
-
-FT66RarityWeights UT66PlayerExperienceSubSystem::GetDifficultyCatchUpLootBagRarityWeights(const ET66Difficulty Difficulty) const
-{
-	return GetDifficultyTuning(Difficulty).CatchUpLootBagRarityWeights;
 }
 
 FT66IntRange UT66PlayerExperienceSubSystem::GetDifficultyChestCountRange(const ET66Difficulty Difficulty) const
@@ -227,6 +188,46 @@ FT66IntRange UT66PlayerExperienceSubSystem::GetDifficultyCrateCountRange(const E
 FT66RarityWeights UT66PlayerExperienceSubSystem::GetDifficultyCrateRarityWeights(const ET66Difficulty Difficulty) const
 {
 	return GetDifficultyTuning(Difficulty).CrateRarityWeights;
+}
+
+FT66IntRange UT66PlayerExperienceSubSystem::GetDifficultyLootWheelCountRange(const ET66Difficulty Difficulty) const
+{
+	return GetDifficultyTuning(Difficulty).LootWheelsPerStage;
+}
+
+FT66RarityWeights UT66PlayerExperienceSubSystem::GetDifficultyLootWheelRarityWeights(const ET66Difficulty Difficulty) const
+{
+	return GetDifficultyTuning(Difficulty).LootWheelRarityWeights;
+}
+
+FT66LootWheelRewardWeights UT66PlayerExperienceSubSystem::GetDifficultyLootWheelRewardWeights(
+	const ET66Difficulty Difficulty,
+	const ET66Rarity WheelRarity) const
+{
+	const FT66LootWheelRewardWeightsByRarity& WeightsByRarity = GetDifficultyTuning(Difficulty).LootWheelRewardWeightsByRarity;
+	switch (WheelRarity)
+	{
+	case ET66Rarity::Black: return WeightsByRarity.Black;
+	case ET66Rarity::Red: return WeightsByRarity.Red;
+	case ET66Rarity::Yellow: return WeightsByRarity.Yellow;
+	case ET66Rarity::White: return WeightsByRarity.White;
+	default: return WeightsByRarity.Black;
+	}
+}
+
+FT66IntRange UT66PlayerExperienceSubSystem::GetDifficultyLootWheelGoldRange(
+	const ET66Difficulty Difficulty,
+	const ET66Rarity WheelRarity) const
+{
+	const FT66RarityIntRanges& GoldByRarity = GetDifficultyTuning(Difficulty).LootWheelGoldRangeByRarity;
+	switch (WheelRarity)
+	{
+	case ET66Rarity::Black: return GoldByRarity.Black;
+	case ET66Rarity::Red: return GoldByRarity.Red;
+	case ET66Rarity::Yellow: return GoldByRarity.Yellow;
+	case ET66Rarity::White: return GoldByRarity.White;
+	default: return GoldByRarity.Black;
+	}
 }
 
 float UT66PlayerExperienceSubSystem::GetDifficultyGamblerCheatSuccessChanceBase(const ET66Difficulty Difficulty) const

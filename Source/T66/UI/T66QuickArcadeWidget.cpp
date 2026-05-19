@@ -4,6 +4,8 @@
 
 #include "Core/T66AudioSubsystem.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66AnimatedStyle.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 
 #include "Styling/CoreStyle.h"
@@ -63,7 +65,7 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 			.WidthOverride(CellSize)
 			.HeightOverride(CellSize)
 			[
-				FT66Style::MakeBareButton(
+				FT66FlatStyle::MakeBareButton(
 					FT66BareButtonParams(
 						FOnClicked::CreateUObject(this, &UT66QuickArcadeWidget::HandleCellClicked, CellIndex),
 						SAssignNew(CellBorder, SBorder)
@@ -78,8 +80,8 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 							[
 								SAssignNew(CellText, STextBlock)
 								.Text(FText::GetEmpty())
-								.Font(FT66Style::Tokens::FontBold(16))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Font(FT66FlatStyle::Tokens::FontBold(16))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 								.Justification(ETextJustify::Center)
 							]
 						])
@@ -95,14 +97,14 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 
 	auto BuildStatPanel = [](const FText& Label, const TSharedRef<SWidget>& ValueWidget) -> TSharedRef<SWidget>
 	{
-		return FT66Style::MakePanel(
+		return FT66FlatStyle::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
 				.Text(Label)
-				.Font(FT66Style::Tokens::FontBold(16))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Font(FT66FlatStyle::Tokens::FontBold(16))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 			[
@@ -112,14 +114,14 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 	};
 
 	const TSharedRef<SWidget> InfoPanel =
-		FT66Style::MakePanel(
+		FT66FlatStyle::MakePanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(STextBlock)
 				.Text(ArcadeData.DisplayName.IsEmpty() ? Spec.FallbackTitle : ArcadeData.DisplayName)
-				.Font(FT66Style::Tokens::FontBold(38))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(38))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f)
 			[
@@ -130,8 +132,8 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 						NSLOCTEXT("T66.Arcade", "QuickArcadeTimerLabel", "TIME"),
 						SAssignNew(TimerTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(30))
-						.ColorAndOpacity(FT66Style::Tokens::Text))
+						.Font(FT66FlatStyle::Tokens::FontBold(30))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text))
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 10.f, 0.f)
 				[
@@ -139,8 +141,8 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 						NSLOCTEXT("T66.Arcade", "QuickArcadeScoreLabel", "SCORE"),
 						SAssignNew(ScoreTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(30))
-						.ColorAndOpacity(FT66Style::Tokens::Accent))
+						.Font(FT66FlatStyle::Tokens::FontBold(30))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Accent))
 				]
 				+ SHorizontalBox::Slot().FillWidth(1.f)
 				[
@@ -148,14 +150,15 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 						NSLOCTEXT("T66.Arcade", "QuickArcadeHitsLabel", "HITS"),
 						SAssignNew(HitsTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(30))
-						.ColorAndOpacity(FT66Style::Tokens::Success))
+						.Font(FT66FlatStyle::Tokens::FontBold(30))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Success))
 				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f)
 			[
-				FT66Style::MakePanel(
-					SNew(SOverlay)
+				FT66FlatStyle::MakePanel(
+					FT66AnimatedStyle::AttachMetadata(
+						SNew(SOverlay)
 					+ SOverlay::Slot()
 					.HAlign(HAlign_Fill)
 					.VAlign(VAlign_Fill)
@@ -186,6 +189,8 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 							]
 						]
 					],
+						FName(TEXT("Arcade.Quick.PlayArea")),
+						TEXT("ArcadeGameplay")),
 					FT66PanelParams(ET66PanelType::Panel2)
 						.SetPadding(FMargin(18.f))
 						.SetColor(FLinearColor(0.035f, 0.036f, 0.045f, 1.f)))
@@ -194,7 +199,7 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 			[
 				SAssignNew(ActionButtonBox, SBox)
 				[
-					FT66Style::MakeButton(
+					FT66FlatStyle::MakeButton(
 						FT66ButtonParams(
 							Spec.ActionText,
 							FOnClicked::CreateUObject(this, &UT66QuickArcadeWidget::HandleActionClicked),
@@ -204,21 +209,21 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 						.SetContent(
 							SAssignNew(ActionTextBlock, STextBlock)
 							.Text(FText::GetEmpty())
-							.Font(FT66Style::Tokens::FontBold(18))
-							.ColorAndOpacity(FT66Style::Tokens::Text)))
+							.Font(FT66FlatStyle::Tokens::FontBold(18))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)))
 				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 			[
 				SAssignNew(StatusTextBlock, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(18))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(18))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 				.AutoWrapText(true)
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left).Padding(0.f, 18.f, 0.f, 0.f)
 			[
-				FT66Style::MakeButton(
+				FT66FlatStyle::MakeButton(
 					FT66ButtonParams(
 						NSLOCTEXT("T66.Arcade", "QuickArcadeAbort", "Abort"),
 						FOnClicked::CreateUObject(this, &UT66QuickArcadeWidget::HandlePrimaryActionClicked),
@@ -228,8 +233,8 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 					.SetContent(
 						SAssignNew(PrimaryActionTextBlock, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(18))
-						.ColorAndOpacity(FT66Style::Tokens::Text)))
+						.Font(FT66FlatStyle::Tokens::FontBold(18))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)))
 			],
 			FT66PanelParams(ET66PanelType::Panel)
 				.SetPadding(FMargin(24.f))
@@ -260,7 +265,7 @@ TSharedRef<SWidget> UT66QuickArcadeWidget::RebuildWidget()
 			]
 		];
 
-	return FT66Style::MakeResponsiveRoot(Root);
+	return FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 
 void UT66QuickArcadeWidget::NativeConstruct()
@@ -465,8 +470,8 @@ void UT66QuickArcadeWidget::RefreshHud()
 		StatusTextBlock->SetText(BuildStatusText());
 		StatusTextBlock->SetColorAndOpacity(
 			bRoundEnded
-				? (bRoundSucceeded ? FT66Style::Tokens::Success : FT66Style::Tokens::Danger)
-				: FT66Style::Tokens::Text);
+				? (bRoundSucceeded ? FT66FlatStyle::Tokens::Success : FT66FlatStyle::Tokens::Danger)
+				: FT66FlatStyle::Tokens::Text);
 	}
 	if (ActionTextBlock.IsValid())
 	{
@@ -642,8 +647,8 @@ FText UT66QuickArcadeWidget::BuildStatusText() const
 	if (bRoundEnded)
 	{
 		return bRoundSucceeded
-			? NSLOCTEXT("T66.Arcade", "QuickArcadeStatusWon", "Score locked. Cabinet paying out...")
-			: NSLOCTEXT("T66.Arcade", "QuickArcadeStatusLost", "No score. Cabinet shutting down.");
+			? NSLOCTEXT("T66.Arcade", "QuickArcadeStatusWon", "Score locked. Arcade machine paying out...")
+			: NSLOCTEXT("T66.Arcade", "QuickArcadeStatusLost", "No score. Arcade machine shutting down.");
 	}
 
 	if (Spec.Mode == EQuickArcadeMode::Sequence)

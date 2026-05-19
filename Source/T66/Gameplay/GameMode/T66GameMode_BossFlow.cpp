@@ -14,7 +14,11 @@ bool AT66GameMode::IsBossRushFinaleStage() const
 		return false;
 	}
 
-	return RunState->GetCurrentStage() == T66GetDifficultyEndStage(T66GI->SelectedDifficulty);
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GI ? GI->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
+	const int32 DifficultyEndStage = DifficultyTuning
+		? DifficultyTuning->GetDifficultyEndStage(T66GI->SelectedDifficulty)
+		: 20;
+	return RunState->GetCurrentStage() == DifficultyEndStage;
 }
 
 void AT66GameMode::SpawnBossGateIfNeeded()
@@ -158,7 +162,6 @@ void AT66GameMode::BeginFinalDifficultySurvival(const FVector& BossDeathLocation
 
 	RunState->BeginSaintBlessingEmpowerment();
 	RunState->SetBossInactive();
-	RunState->SetPendingDifficultyClearSummary(false);
 	RunState->SetSaintBlessingActive(true);
 	RunState->SetFinalSurvivalEnemyScalar(1.f);
 	RunState->SetStageTimerActive(true);
@@ -244,7 +247,6 @@ void AT66GameMode::TickFinalDifficultySurvival(float DeltaTime)
 	RunState->EndSaintBlessingEmpowerment();
 	RunState->SetSaintBlessingActive(false);
 	RunState->SetFinalSurvivalEnemyScalar(1.f);
-	RunState->SetPendingDifficultyClearSummary(true);
 	RunState->SetStageTimerActive(false);
 
 	UWorld* World = GetWorld();
@@ -284,7 +286,7 @@ void AT66GameMode::TickFinalDifficultySurvival(float DeltaTime)
 	{
 		if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(It->Get()))
 		{
-			T66PC->ClientShowDifficultyClearSummary();
+			T66PC->ClientShowVictoryRunSummary();
 			bOpenedSummary = true;
 		}
 	}
@@ -308,6 +310,7 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	UGameInstance* GI = World->GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	const UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GI ? GI->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
 	const UT66GameInstance* CurrentT66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
 
 	// Award boss score using the same totem-only scalar used when the boss was budgeted.
@@ -389,15 +392,14 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	if (RunState)
 	{
 		const ET66Difficulty SelectedDifficulty = GetT66GameInstance() ? GetT66GameInstance()->SelectedDifficulty : ET66Difficulty::Easy;
-		if (PlayerExperience)
-		{
-			const int32 DifficultyEndStage = PlayerExperience->GetDifficultyEndStage(SelectedDifficulty);
-			bCompletedSelectedDifficulty = (RunState->GetCurrentStage() >= DifficultyEndStage);
-		}
+		const int32 DifficultyEndStage = DifficultyTuning
+			? DifficultyTuning->GetDifficultyEndStage(SelectedDifficulty)
+			: 20;
+		bCompletedSelectedDifficulty = (RunState->GetCurrentStage() >= DifficultyEndStage);
 	}
 
-	// First-time stage clear unlock => stage finales now award an extra companion so the
-	// reduced 4/4/4/4/3 progression still unlocks the full 24-companion roster.
+	// First-time stage clear unlock => one companion per stage through stage 16.
+	// The final difficulty does not award additional companions.
 	if (RunState)
 	{
 		const int32 StageNum = RunState->GetCurrentStage();
@@ -442,7 +444,7 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 
 	const UT66GameInstance* T66GI = GetT66GameInstance();
 	const ET66Difficulty SelectedDifficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
-	if (bCompletedSelectedDifficulty && SelectedDifficulty == ET66Difficulty::Impossible)
+	if (bCompletedSelectedDifficulty && (DifficultyTuning ? DifficultyTuning->DoesDifficultyUseFinalSequence(SelectedDifficulty) : SelectedDifficulty == ET66Difficulty::Impossible))
 	{
 		if (RunState)
 		{
@@ -461,28 +463,17 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 			RunState->ClearOwedBosses();
 		}
 
-		ET66Difficulty NextDifficulty = SelectedDifficulty;
-		bool bHasNextDifficulty = T66TryGetNextDifficulty(SelectedDifficulty, NextDifficulty);
-		bHasNextDifficulty = bHasNextDifficulty && (!T66GI || T66GI->IsDifficultyPlayable(NextDifficulty));
-		if (RunState)
+		if (UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
 		{
-			RunState->SetPendingDifficultyClearSummary(bHasNextDifficulty);
-		}
-
-		if (bHasNextDifficulty)
-		{
-			if (UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
+			if (const UT66GameInstance* DifficultyClearGI = GetT66GameInstance())
 			{
-				if (const UT66GameInstance* DifficultyClearGI = GetT66GameInstance())
+				if (!DifficultyClearGI->SelectedHeroID.IsNone())
 				{
-					if (!DifficultyClearGI->SelectedHeroID.IsNone())
-					{
-						Achievements->RecordHeroDifficultyClear(DifficultyClearGI->SelectedHeroID, DifficultyClearGI->SelectedDifficulty);
-					}
-					if (!DifficultyClearGI->SelectedCompanionID.IsNone())
-					{
-						Achievements->RecordCompanionDifficultyClear(DifficultyClearGI->SelectedCompanionID, DifficultyClearGI->SelectedDifficulty);
-					}
+					Achievements->RecordHeroDifficultyClear(DifficultyClearGI->SelectedHeroID, DifficultyClearGI->SelectedDifficulty);
+				}
+				if (!DifficultyClearGI->SelectedCompanionID.IsNone())
+				{
+					Achievements->RecordCompanionDifficultyClear(DifficultyClearGI->SelectedCompanionID, DifficultyClearGI->SelectedDifficulty);
 				}
 			}
 		}
@@ -492,14 +483,7 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		{
 			if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(It->Get()))
 			{
-				if (bHasNextDifficulty)
-				{
-					T66PC->ClientShowDifficultyClearSummary();
-				}
-				else
-				{
-					T66PC->ClientShowVictoryRunSummary();
-				}
+				T66PC->ClientShowVictoryRunSummary();
 				bOpenedSummary = true;
 			}
 		}
@@ -673,22 +657,17 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 			bHasGroundedSpawn ? TEXT("") : TEXT(" [location not grounded]"));
 	}
 
-	// Tower boss floors currently need a brute-force visible fallback.
-	// Spawn the known-good catch-up gate actor in stage-advance mode at the same location so the
-	// player always gets an obvious interactable even if the legacy StageGate visual fails.
+	// Tower boss floors keep a second normal Stage Gate as a visibility fallback.
 	if (IsUsingTowerMainMapLayout())
 	{
-		FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
-		AT66StageCatchUpGate* VisibleExitGate = World->SpawnActorDeferred<AT66StageCatchUpGate>(AT66StageCatchUpGate::StaticClass(), SpawnTransform, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		const FVector VisibleFallbackLoc = SpawnLoc + FVector(220.f, 0.f, 0.f);
+		AT66StageGate* VisibleExitGate = World->SpawnActor<AT66StageGate>(AT66StageGate::StaticClass(), VisibleFallbackLoc, FRotator::ZeroRotator, SpawnParams);
 		if (VisibleExitGate)
 		{
-			VisibleExitGate->bActsAsStageAdvanceGate = true;
-			UGameplayStatics::FinishSpawningActor(VisibleExitGate, SpawnTransform);
-
 			const FVector SpawnedActorInitialLoc = VisibleExitGate->GetActorLocation();
 			if (TargetTowerFloorNumber != INDEX_NONE)
 			{
-				T66TrySnapActorToTowerFloor(World, VisibleExitGate, CachedTowerMainMapLayout, TargetTowerFloorNumber, SpawnLoc);
+				T66TrySnapActorToTowerFloor(World, VisibleExitGate, CachedTowerMainMapLayout, TargetTowerFloorNumber, VisibleFallbackLoc);
 				T66AssignTowerFloorTag(VisibleExitGate, TargetTowerFloorNumber);
 			}
 
@@ -696,10 +675,10 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 			const FVector GateMeshLoc = VisibleExitGate->GateMesh ? VisibleExitGate->GateMesh->GetComponentLocation() : FVector::ZeroVector;
 			const float PlayerDistance2D = !PlayerLocation.IsZero() ? FVector::Dist2D(PlayerLocation, SpawnedActorFinalLoc) : -1.0f;
 			const float PlayerDeltaZ = !PlayerLocation.IsZero() ? (SpawnedActorFinalLoc.Z - PlayerLocation.Z) : 0.0f;
-			UE_LOG(LogT66GameMode, Warning, TEXT("Spawned Visible Tower Exit Gate desired=(%.0f, %.0f, %.0f) initial=(%.0f, %.0f, %.0f) final=(%.0f, %.0f, %.0f) mesh=(%.0f, %.0f, %.0f)%s"),
-				SpawnLoc.X,
-				SpawnLoc.Y,
-				SpawnLoc.Z,
+			UE_LOG(LogT66GameMode, Warning, TEXT("Spawned visible tower Stage Gate fallback desired=(%.0f, %.0f, %.0f) initial=(%.0f, %.0f, %.0f) final=(%.0f, %.0f, %.0f) mesh=(%.0f, %.0f, %.0f)%s"),
+				VisibleFallbackLoc.X,
+				VisibleFallbackLoc.Y,
+				VisibleFallbackLoc.Z,
 				SpawnedActorInitialLoc.X,
 				SpawnedActorInitialLoc.Y,
 				SpawnedActorInitialLoc.Z,
@@ -724,6 +703,7 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	const UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GI ? GI->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
 	if (!T66GI || !RunState) return;
 
 	const int32 StageNum = RunState->GetCurrentStage();
@@ -741,9 +721,9 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	}
 
 	int32 SelectedDifficultyEndStage = INDEX_NONE;
-	if (PlayerExperience)
+	if (DifficultyTuning)
 	{
-		SelectedDifficultyEndStage = PlayerExperience->GetDifficultyEndStage(T66GI->SelectedDifficulty);
+		SelectedDifficultyEndStage = DifficultyTuning->GetDifficultyEndStage(T66GI->SelectedDifficulty);
 	}
 
 	TArray<FName> FinalFloorOwedBossIDs;
@@ -991,7 +971,7 @@ void AT66GameMode::SpawnBossForCurrentStage()
 
 bool AT66GameMode::TryComputeBossBeaconBase(FVector& OutBeaconBase) const
 {
-	if (IsLabLevel() || IsUsingTowerMainMapLayout() || !StageBoss.IsValid())
+	if (IsLabRun() || IsUsingTowerMainMapLayout() || !StageBoss.IsValid())
 	{
 		return false;
 	}
@@ -1086,7 +1066,7 @@ void AT66GameMode::DestroyBossBeacon()
 
 void AT66GameMode::UpdateBossBeaconTransform(bool bForceSpawnIfMissing)
 {
-	if (IsLabLevel() || IsUsingTowerMainMapLayout() || !StageBoss.IsValid())
+	if (IsLabRun() || IsUsingTowerMainMapLayout() || !StageBoss.IsValid())
 	{
 		DestroyBossBeacon();
 		return;
@@ -1112,7 +1092,7 @@ void AT66GameMode::UpdateBossBeaconTransform(bool bForceSpawnIfMissing)
 
 void AT66GameMode::SpawnBossBeaconIfNeeded()
 {
-	if (IsLabLevel() || IsUsingTowerMainMapLayout())
+	if (IsLabRun() || IsUsingTowerMainMapLayout())
 	{
 		DestroyBossBeacon();
 		return;

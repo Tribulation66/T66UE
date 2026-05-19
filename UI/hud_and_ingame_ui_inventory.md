@@ -47,7 +47,7 @@ Important interpretation: `regex matches = 0` does not mean the widget is flat-m
 - `AT66PlayerController` exposes DeletedTheme-theme override class slots for HUD and overlays (`DeletedThemeGameplayHUDClass`, `DeletedThemeCasinoOverlayClass`, `DeletedThemeCollectorOverlayClass`, `DeletedThemeCowardicePromptClass`, `DeletedThemeIdolAltarOverlayClass`). If assigned to Blueprint subclasses, those subclasses are not separately source-readable here. They inherit the same categories as their base widgets but should be checked in-editor before a HUD migration plan is locked.
 - `T66HUDPresentationController`, `T66TemporaryBuffUIUtils`, and `T66ItemCardTextUtils` are not standalone rendered widgets. They are helper/controller paths feeding `UT66GameplayHUDWidget` presentations, so their UI impact is captured under that HUD row.
 - `T66ScreenSlateHelpers`, `FT66Style`, `T66RuntimeUITextureAccess`, and `T66RuntimeUIBrushAccess` still contain global legacy helpers, but they are infrastructure rather than UI elements. They should be handled during Stage 3/global cleanup, or during a targeted migration only when the audited widget still reaches them.
-- The completed Stage 2 frontend screens from `overnight_progress_log.md` are excluded: History, Diplomas, Drugs, Steam Achievements, Minigames, Settings tabs, Daily Descent, Challenges, Run Summary, Main Menu, Pause Menu, modals, selection grids, minigame menu screens, TD screens, Idle screens, Deck screens, and Versus main menu.
+- The completed Stage 2 frontend screens from `overnight_progress_log.md` are excluded: History, Diplomas, Drugs, Steam Achievements, Minigames, Settings tabs, Daily Descent, Challenges, Run Summary, Main Menu, Pause Menu, modals, selection grids, minigame menu screens, TD screens, Idle screens, and Deck screens.
 
 ## Inventory
 
@@ -155,7 +155,7 @@ Most HUD elements are not standard hover-enabled menu controls. For runtime widg
 Minigame HUDs are not implemented through one shared HUD base:
 
 - Mini gameplay uses bespoke `AT66MiniBattleHUD`, an `AHUD` Canvas renderer.
-- TD, Idle, Deck, and Versus menu/gameplay screens listed in the progress log are Stage 2-migrated `UT66ScreenBase` style screens where applicable.
+- TD, Idle, and Deck menu/gameplay screens listed in the progress log are Stage 2-migrated `UT66ScreenBase` style screens where applicable.
 - No shared minigame HUD base class equivalent to `UT66ScreenBase` was found for actual in-run minigame HUD rendering.
 
 Arcade and shop surfaces are partially shared but still bespoke:

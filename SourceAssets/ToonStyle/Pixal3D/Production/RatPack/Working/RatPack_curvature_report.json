@@ -1,0 +1,24 @@
+{
+  "asset": "RatPack",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 121482,
+    "count": 171888,
+    "edge_samples": 234912,
+    "max": 1.0,
+    "mean": 0.24437568024964518,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.19954631024988898,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.02904226437904396,
+      "p50": 0.16533014712684724,
+      "p75": 0.3535192476276778,
+      "p90": 0.6312458520047773,
+      "p95": 0.8915278863208063,
+      "p99": 1.0
+    },
+    "std": 0.2637063385540155
+  }
+}

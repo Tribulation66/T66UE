@@ -131,7 +131,7 @@ For each mob:
 
 1. Resolve the live `EnemyID`, `CharacterVisuals.csv` row, static mesh path, texture, and mesh scale.
 2. Locate the approved source mesh. Prefer the production source GLB or Blender file that generated the live static mesh.
-3. Confirm licensing and promotion status before using research GLBs as shippable source. If the source report says research-only, document the license gate before export.
+3. Confirm promotion status before using generated GLBs as final source. If the source report says exploratory, document the remaining visual or runtime gate before export.
 4. Import the source mesh into Blender and verify mesh count, material count, texture assignment, forward axis, ground contact, and scale.
 5. Build the animation authoring rig appropriate to the silhouette:
    - simple bones for humanoids and spiders
@@ -225,6 +225,6 @@ Every completed mob pass must update:
 - Do not wire bake-only skeletal assets into live mob rows as if they are final runtime visuals.
 - Do not reuse hero animation clips on non-humanoid mobs unless the body plan and behavior actually match.
 - Do not mark a mob done because it has any motion. The motion must fit the enemy's gameplay read.
-- Do not use a research-only source asset for shipped content without documenting licensing clearance.
+- Do not use an exploratory source asset for final content without documenting visual and runtime acceptance.
 - Do not skip multi-angle Blender QA.
 - Do not hardcode VAT asset paths or clip timings in C++.

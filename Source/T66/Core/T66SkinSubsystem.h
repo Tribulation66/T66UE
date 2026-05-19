@@ -40,13 +40,13 @@ public:
 	/** Default skin ID (always considered owned). */
 	static const FName DefaultSkinID;
 
-	/** Beachgoer skin ID. */
+	/** Legacy asset-backed purchasable skin ID. Hero UI presents this as the Demo skin. */
 	static const FName BeachgoerSkinID;
 
-	/** Price in Chad Coupons for Beachgoer (and other purchasable skins unless overridden). */
+	/** Price in Chad Coupons for the purchasable Demo/Beachgoer skin. */
 	static constexpr int32 DefaultSkinPriceAC = 50;
 
-	/** All skin IDs offered in UI (Default + Beachgoer). */
+	/** All globally known skin IDs. Entity-specific offer lists are filtered by GetSkinsForEntity. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
 	static TArray<FName> GetAllSkinIDs();
 
@@ -113,5 +113,7 @@ public:
 private:
 	UT66ProfileSaveGame* GetProfile() const;
 	void MarkProfileDirtyAndSave(bool bBroadcastCoinsChanged);
+	bool IsSkinOfferedForEntity(ET66SkinEntityType EntityType, FName EntityID, FName SkinID) const;
+	TArray<FName> GetSkinIDsForEntity(ET66SkinEntityType EntityType, FName EntityID) const;
 	TSoftObjectPtr<UTexture2D> GetCompanionSkinPortraitOverride(FName CompanionID, FName SkinID, bool bSelectionPortrait) const;
 };

@@ -225,36 +225,35 @@ TSharedRef<SWidget> UT66MiniDifficultySelectScreen::BuildSlateUI()
 			.WidthOverride(242.f)
 			.HeightOverride(118.f)
 			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(
-						FOnClicked::CreateLambda([this, DifficultyID = Difficulty.DifficultyID]()
-						{
-							return HandleDifficultyClicked(DifficultyID);
-						}),
-						T66MiniGeneratedChrome::MakePanel(
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
-							[
-								SNew(STextBlock)
-								.Text(FText::FromString(Difficulty.DisplayName))
-								.Font(T66MiniUI::BoldFont(Difficulty.DisplayName.Len() > 8 ? 16 : (Difficulty.DisplayName.Len() > 6 ? 18 : 22)))
-								.ColorAndOpacity(TitleColor)
-								.Justification(ETextJustify::Center)
-								.AutoWrapText(true)
-							]
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f).HAlign(HAlign_Center)
-							[
-								SNew(STextBlock)
-								.Text(FText::FromString(FString::Printf(TEXT("Tier %d"), Index + 1)))
-								.Font(T66MiniUI::BodyFont(15))
-								.ColorAndOpacity(SubtitleColor)
-								.Justification(ETextJustify::Center)
-							]
-						, FMargin(14.f, 12.f, 24.f, 12.f),
-						bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal))
-					.SetColor(FLinearColor(1.f, 1.f, 1.f, 0.01f))
-					.SetPadding(FMargin(2.f))
-					.SetEnabled(true))
+				T66MiniGeneratedChrome::MakeBareContentButton(
+					FOnClicked::CreateLambda([this, DifficultyID = Difficulty.DifficultyID]()
+					{
+						return HandleDifficultyClicked(DifficultyID);
+					}),
+					T66MiniGeneratedChrome::MakePanel(
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(Difficulty.DisplayName))
+							.Font(T66MiniUI::BoldFont(Difficulty.DisplayName.Len() > 8 ? 16 : (Difficulty.DisplayName.Len() > 6 ? 18 : 22)))
+							.ColorAndOpacity(TitleColor)
+							.Justification(ETextJustify::Center)
+							.AutoWrapText(true)
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(FString::Printf(TEXT("Tier %d"), Index + 1)))
+							.Font(T66MiniUI::BodyFont(15))
+							.ColorAndOpacity(SubtitleColor)
+							.Justification(ETextJustify::Center)
+						],
+						FMargin(14.f, 12.f, 24.f, 12.f),
+						bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal),
+					true,
+					FName(*FString::Printf(TEXT("Mini.Difficulty.Card.%s"), *Difficulty.DifficultyID.ToString())),
+					FMargin(2.f))
 			]
 		];
 	}

@@ -1,5 +1,5 @@
 """
-Pixal3D API server for the T66 model-generation research pipeline.
+Pixal3D API server for the T66 model-generation production pipeline.
 
 This server mirrors the existing T66 TRELLIS server shape:
 
@@ -48,11 +48,6 @@ MOGE_MODEL_NAME = os.environ.get("PIXAL3D_MOGE_MODEL", "Ruicheng/moge-2-vitl")
 PORT = int(os.environ.get("PIXAL3D_PORT", "18001"))
 LOW_VRAM = os.environ.get("PIXAL3D_LOW_VRAM", "0").strip().lower() in {"1", "true", "yes"}
 EAGER_LOAD = os.environ.get("PIXAL3D_EAGER_LOAD", "1").strip().lower() not in {"0", "false", "no"}
-
-LICENSE_WARNING = (
-    "Pixal3D upstream license is academic-only, forbids commercial/production use, "
-    "and says it is not intended for use within the EU. Treat output as research."
-)
 
 IMAGE_COND_CONFIGS = {
     "ss": {
@@ -238,7 +233,6 @@ def health():
             "attention_backend": os.environ.get("ATTN_BACKEND"),
             "sparse_attention_backend": os.environ.get("SPARSE_ATTN_BACKEND"),
             "sparse_conv_backend": os.environ.get("SPARSE_CONV_BACKEND"),
-            "license_warning": LICENSE_WARNING,
             **gpu_payload(),
         }
     )
@@ -268,12 +262,129 @@ def grid_size_payload(value):
     return int(value)
 
 
+def should_skip_cumesh_fill_holes_error(exc: RuntimeError) -> bool:
+    text = str(exc).lower()
+    if "no kernel image" in text:
+        return False
+    if not any(marker in text for marker in ("cumesh", "cuda error", "out of memory")):
+        return False
+    return any(
+        marker in text
+        for marker in (
+            "invalid configuration argument",
+            "illegal memory access",
+            "out of memory",
+            "error code: 9",
+            "clean_up.cu",
+            "connectivity.cu",
+        )
+    )
+
+
+def install_safe_cumesh_fill_holes() -> dict:
+    state = {
+        "enabled": False,
+        "patched_targets": [],
+        "skipped": 0,
+        "errors": [],
+        "cpu_uv_unwraps": 0,
+        "uv_cleanup_skipped": 0,
+    }
+    try:
+        import cumesh  # noqa: PLC0415
+        from cumesh.xatlas import Atlas  # noqa: PLC0415
+    except Exception as exc:
+        state["install_error"] = str(exc)
+        return state
+
+    for attr_name in ("CuMesh", "Mesh"):
+        mesh_cls = getattr(cumesh, attr_name, None)
+        original = getattr(mesh_cls, "fill_holes", None) if mesh_cls is not None else None
+        if not callable(original):
+            continue
+
+        def safe_fill_holes(self, *args, _original=original, _target=attr_name, **kwargs):
+            try:
+                return _original(self, *args, **kwargs)
+            except RuntimeError as exc:
+                if not should_skip_cumesh_fill_holes_error(exc):
+                    raise
+                state["skipped"] += 1
+                message = str(exc)
+                state["errors"].append(message[-2000:])
+                print(
+                    "[PIXAL3D] Safe CuMesh fill_holes fallback skipped "
+                    f"{_target}.fill_holes after RuntimeError: {message[-500:]}",
+                    flush=True,
+                )
+                return None
+
+        setattr(mesh_cls, "fill_holes", safe_fill_holes)
+        state["patched_targets"].append(f"{attr_name}.fill_holes")
+
+    cu_mesh_cls = getattr(cumesh, "CuMesh", None)
+    if callable(getattr(cu_mesh_cls, "uv_unwrap", None)):
+        def cpu_xatlas_uv_unwrap(
+            self,
+            compute_charts_kwargs: dict = {},
+            xatlas_compute_charts_kwargs: dict = {},
+            xatlas_pack_charts_kwargs: dict = {},
+            return_vmaps: bool = False,
+            verbose: bool = False,
+        ):
+            try:
+                self.remove_degenerate_faces()
+            except RuntimeError as exc:
+                if not should_skip_cumesh_fill_holes_error(exc):
+                    raise
+                state["uv_cleanup_skipped"] += 1
+                state["errors"].append(str(exc)[-2000:])
+                print(
+                    "[PIXAL3D] Safe CuMesh fallback skipped remove_degenerate_faces "
+                    f"after RuntimeError: {str(exc)[-500:]}",
+                    flush=True,
+                )
+
+            current_vertices, current_faces = self.read()
+            current_vertices = current_vertices.float().cpu().contiguous()
+            current_faces = current_faces.int().cpu().contiguous()
+            atlas = Atlas()
+            atlas.add_mesh(current_vertices, current_faces)
+            chart_kwargs = dict(xatlas_compute_charts_kwargs)
+            pack_kwargs = dict(xatlas_pack_charts_kwargs)
+            chart_kwargs.setdefault("verbose", verbose)
+            pack_kwargs.setdefault("verbose", verbose)
+            atlas.compute_charts(**chart_kwargs)
+            atlas.pack_charts(**pack_kwargs)
+            vmaps, out_faces, out_uvs = atlas.get_mesh(0)
+            vmaps = vmaps.long().cpu().contiguous()
+            out = [
+                current_vertices[vmaps].contiguous(),
+                out_faces.int().cpu().contiguous(),
+                out_uvs.float().cpu().contiguous(),
+            ]
+            if return_vmaps:
+                out.append(vmaps)
+            state["cpu_uv_unwraps"] += 1
+            print("[PIXAL3D] Safe CuMesh fallback used CPU xatlas UV unwrap", flush=True)
+            return tuple(out)
+
+        setattr(cu_mesh_cls, "uv_unwrap", cpu_xatlas_uv_unwrap)
+        state["patched_targets"].append("CuMesh.uv_unwrap_cpu_xatlas")
+
+    state["enabled"] = bool(state["patched_targets"])
+    return state
+
+
 def export_glb_direct(package_path: str, output_path: str, export_params: dict):
     package = torch.load(package_path, map_location="cpu", weights_only=False)
     vertices = package["vertices"].cuda()
     faces = package["faces"].cuda()
     attr_volume = package["attr_volume"].cuda()
     coords = package["coords"].cuda()
+    safe_fill_holes_state = None
+    if export_params.get("safe_fill_holes", False):
+        safe_fill_holes_state = install_safe_cumesh_fill_holes()
 
     glb = o_voxel.postprocess.to_glb(
         vertices=vertices,
@@ -306,6 +417,12 @@ def export_glb_direct(package_path: str, output_path: str, export_params: dict):
     report = {
         "decimation": export_params["decimation"],
         "remesh": export_params["remesh"],
+        "safe_fill_holes": bool(export_params.get("safe_fill_holes", False)),
+        "fill_holes_skipped": int((safe_fill_holes_state or {}).get("skipped", 0)),
+        "fill_holes_patch_targets": (safe_fill_holes_state or {}).get("patched_targets", []),
+        "fill_holes_errors": (safe_fill_holes_state or {}).get("errors", []),
+        "cpu_uv_unwraps": int((safe_fill_holes_state or {}).get("cpu_uv_unwraps", 0)),
+        "uv_cleanup_skipped": int((safe_fill_holes_state or {}).get("uv_cleanup_skipped", 0)),
         "output_path": output_path,
         "output_bytes": os.path.getsize(output_path),
     }
@@ -352,13 +469,16 @@ def run_export_worker(package_path: str, output_path: str, export_params: dict, 
     if result.returncode != 0:
         raise RuntimeError(
             "GLB export worker failed "
-            f"(exit={result.returncode}, decimation={export_params['decimation']}, remesh={export_params['remesh']}):\n"
+            f"(exit={result.returncode}, decimation={export_params['decimation']}, "
+            f"remesh={export_params['remesh']}, "
+            f"safe_fill_holes={export_params.get('safe_fill_holes', False)}):\n"
             f"{result.stdout}"
         )
     if not os.path.exists(output_path) or os.path.getsize(output_path) <= 0:
         raise RuntimeError(
             "GLB export worker completed without a usable output "
-            f"(decimation={export_params['decimation']}, remesh={export_params['remesh']}):\n"
+            f"(decimation={export_params['decimation']}, remesh={export_params['remesh']}, "
+            f"safe_fill_holes={export_params.get('safe_fill_holes', False)}):\n"
             f"{result.stdout}"
         )
     lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
@@ -370,6 +490,10 @@ def run_export_worker(package_path: str, output_path: str, export_params: dict, 
     return {
         "decimation": export_params["decimation"],
         "remesh": export_params["remesh"],
+        "safe_fill_holes": bool(export_params.get("safe_fill_holes", False)),
+        "fill_holes_skipped": 0,
+        "cpu_uv_unwraps": 0,
+        "uv_cleanup_skipped": 0,
         "output_path": output_path,
         "output_bytes": os.path.getsize(output_path),
     }
@@ -383,11 +507,13 @@ def export_attempt_plan(
     texture_size: int,
     fallback_decimation: int,
     fallback_enabled: bool,
+    safe_fill_holes_fallback: bool,
 ) -> list[dict]:
     base = {
         "texture_size": texture_size,
         "remesh_band": remesh_band,
         "remesh_project": remesh_project,
+        "safe_fill_holes": False,
     }
     attempts = [{**base, "label": "requested", "decimation": decimation, "remesh": remesh}]
     if fallback_enabled:
@@ -396,9 +522,19 @@ def export_attempt_plan(
             {**base, "label": "safe_decimation", "decimation": safe_decimation, "remesh": remesh},
             {**base, "label": "safe_decimation_no_remesh", "decimation": safe_decimation, "remesh": False},
         ]
-        seen = {(attempts[0]["decimation"], attempts[0]["remesh"])}
+        if safe_fill_holes_fallback:
+            fallback_candidates.append(
+                {
+                    **base,
+                    "label": "safe_decimation_no_remesh_skip_fill_holes",
+                    "decimation": safe_decimation,
+                    "remesh": False,
+                    "safe_fill_holes": True,
+                }
+            )
+        seen = {(attempts[0]["decimation"], attempts[0]["remesh"], attempts[0]["safe_fill_holes"])}
         for candidate in fallback_candidates:
-            key = (candidate["decimation"], candidate["remesh"])
+            key = (candidate["decimation"], candidate["remesh"], candidate["safe_fill_holes"])
             if key not in seen:
                 attempts.append(candidate)
                 seen.add(key)
@@ -421,7 +557,8 @@ def generate():
         remesh_band = header_float("X-Remesh-Band", 1.0, 0.1, 8.0)
         remesh_project = header_float("X-Remesh-Project", 0.0, 0.0, 1.0)
         export_fallback = header_bool("X-Export-Fallback", True)
-        fallback_decimation = header_int("X-Fallback-Decimation", 30000, 1000, 2000000)
+        fallback_decimation = header_int("X-Fallback-Decimation", 80000, 1000, 2000000)
+        safe_fill_holes_fallback = header_bool("X-Safe-Fill-Holes-Fallback", True)
         export_timeout = header_int("X-Export-Timeout", 900, 60, 7200)
         resolution = header_int("X-Resolution", 1024)
         if resolution not in {1024, 1536}:
@@ -456,6 +593,7 @@ def generate():
             f"seed={seed} resolution={resolution} texture={texture_size} decimation={decimation} "
             f"remesh={remesh} remesh_band={remesh_band} remesh_project={remesh_project} "
             f"export_fallback={export_fallback} fallback_decimation={fallback_decimation} "
+            f"safe_fill_holes_fallback={safe_fill_holes_fallback} "
             f"ss={ss_sampler} shape={shape_sampler} tex={tex_sampler}",
             flush=True,
         )
@@ -525,6 +663,7 @@ def generate():
             texture_size=texture_size,
             fallback_decimation=fallback_decimation,
             fallback_enabled=export_fallback,
+            safe_fill_holes_fallback=safe_fill_holes_fallback,
         )
         try:
             for index, attempt in enumerate(attempt_plan, start=1):
@@ -532,7 +671,8 @@ def generate():
                     print(
                         "[PIXAL3D] Export attempt "
                         f"{index}/{len(attempt_plan)} label={attempt['label']} "
-                        f"decimation={attempt['decimation']} remesh={attempt['remesh']}",
+                        f"decimation={attempt['decimation']} remesh={attempt['remesh']} "
+                        f"safe_fill_holes={attempt['safe_fill_holes']}",
                         flush=True,
                     )
                     export_report = run_export_worker(export_package.name, tmp_path, attempt, export_timeout)
@@ -548,6 +688,7 @@ def generate():
                             "label": attempt["label"],
                             "decimation": attempt["decimation"],
                             "remesh": attempt["remesh"],
+                            "safe_fill_holes": attempt["safe_fill_holes"],
                             "status": "failed",
                             "error": message[-4000:],
                         }
@@ -569,7 +710,10 @@ def generate():
             "[PIXAL3D] Done "
             f"in {elapsed:.1f}s -> {tmp_path} "
             f"export_decimation={export_report['decimation']} export_remesh={export_report['remesh']} "
-            f"export_label={export_report['label']}",
+            f"export_label={export_report['label']} "
+            f"safe_fill_holes={export_report.get('safe_fill_holes', False)} "
+            f"fill_holes_skipped={export_report.get('fill_holes_skipped', 0)} "
+            f"cpu_uv_unwraps={export_report.get('cpu_uv_unwraps', 0)}",
             flush=True,
         )
 
@@ -584,6 +728,15 @@ def generate():
         response.headers["X-Pixal3D-Export-Decimation"] = str(export_report["decimation"])
         response.headers["X-Pixal3D-Export-Remesh"] = "1" if export_report["remesh"] else "0"
         response.headers["X-Pixal3D-Export-Attempts"] = str(len(export_attempts))
+        response.headers["X-Pixal3D-Export-Safe-Fill-Holes"] = (
+            "1" if export_report.get("safe_fill_holes", False) else "0"
+        )
+        response.headers["X-Pixal3D-Export-Fill-Holes-Skipped"] = str(
+            export_report.get("fill_holes_skipped", 0)
+        )
+        response.headers["X-Pixal3D-Export-CPU-UV-Unwraps"] = str(
+            export_report.get("cpu_uv_unwraps", 0)
+        )
 
         @response.call_on_close
         def cleanup():

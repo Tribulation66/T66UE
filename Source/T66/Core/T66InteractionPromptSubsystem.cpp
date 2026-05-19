@@ -56,9 +56,9 @@ namespace
 		switch (Action)
 		{
 		case ET66InteractionPromptAction::PilotTractor:
-			return NSLOCTEXT("T66.InteractionPrompt", "PilotTractor", "pilot tractor");
+			return NSLOCTEXT("T66.InteractionPrompt", "PilotVehicle", "pilot vehicle");
 		case ET66InteractionPromptAction::ExitTractor:
-			return NSLOCTEXT("T66.InteractionPrompt", "ExitTractor", "exit tractor");
+			return NSLOCTEXT("T66.InteractionPrompt", "ExitVehicle", "exit vehicle");
 		case ET66InteractionPromptAction::UseFountain:
 			return NSLOCTEXT("T66.InteractionPrompt", "UseFountain", "use fountain");
 		case ET66InteractionPromptAction::OpenChest:
@@ -119,7 +119,7 @@ FText UT66InteractionPromptSubsystem::GetPromptTargetNameForActor(const AActor* 
 
 	if (Cast<AT66PilotableTractor>(Actor))
 	{
-		return NSLOCTEXT("T66.InteractionPrompt", "TargetTractor", "Tractor");
+		return NSLOCTEXT("T66.InteractionPrompt", "TargetVehicle", "Vehicle");
 	}
 	if (Cast<AT66FountainInteractable>(Actor))
 	{

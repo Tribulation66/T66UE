@@ -1,0 +1,11 @@
+Create one full-body single-character source image for T66 model generation.
+
+Character: same original adult male Billy-the-Kid-inspired cowboy giga chad hero as the regular version: denim/crimson cowboy gunfighter outfit, wide-brim hat, holstered revolvers, huge chest and shoulders, tiny waist, huge readable head.
+
+Demo skin overlay: keep the regular cowboy outfit, but add a small cone birthday hat above or in front of the cowboy hat and a diagonal birthday sash across the torso. The sash must have large readable uppercase text: DEMO. Add a few simple birthday color accents, but do not redesign the outfit.
+
+Style: same T66 Hi-Fi-Rush/Guilty-Gear-like 2D-in-3D cel shading, hard cel-shadow bands, crisp ink contours, bold flat color zones, clean rim highlights.
+
+Pose/composition: strict front-facing A-pose, full body, white background, one subject only, revolvers holstered, no crop, no logo, no environment, no contact shadow. Only visible text should be DEMO on the sash.
+
+Hard negatives: no female character, no boxing gloves, no boxer shorts, no athletic fighter outfit, no scholar armor, no staff, no pink tracksuit, no bar maiden dress, no second character.

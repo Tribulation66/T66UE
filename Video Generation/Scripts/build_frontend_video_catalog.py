@@ -36,7 +36,6 @@ HERO_CSV = PROJECT_ROOT / "Content" / "Data" / "Heroes.csv"
 COMPANION_CSV = PROJECT_ROOT / "Content" / "Data" / "Companions.csv"
 
 LEGACY_MAIN_MENU_MOVIE = CONTENT_MOVIES / "MainMenuBackground.mp4"
-LEGACY_ARTHUR_MOVIE = CONTENT_MOVIES / "HeroSelection" / "Hero_1_Default_Chad.mp4"
 MAIN_MENU_POSTER = (
     "RuntimeDependencies/T66/UI/Reference/Screens/MainMenu/ScreenArt/"
     "mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_clean_bloodyretro_1920.png"
@@ -373,14 +372,6 @@ def materialize_assets(
             and movie.exists()
             and not replace_ai_movies
         ):
-            continue
-
-        if job["entityType"] == "Hero" and job["entityId"] == "Hero_1" and job["skinId"] == "Default" and job.get("bodyType") == "Chad" and LEGACY_ARTHUR_MOVIE.exists():
-            ensure_parent(movie)
-            if force or not movie.exists():
-                shutil.copy2(LEGACY_ARTHUR_MOVIE, movie)
-            job["status"] = "ai_accepted"
-            job["sourceMovie"] = runtime_path(LEGACY_ARTHUR_MOVIE)
             continue
 
         encode_tasks.append((poster, movie, force))

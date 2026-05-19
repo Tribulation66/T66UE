@@ -1,0 +1,194 @@
+[
+    {
+        "Name":  "Vehicle",
+        "VehicleData":  {
+                            "VehicleID":  "Vehicle",
+                            "DifficultyID":  "Shared",
+                            "DisplayName":  "Vehicle",
+                            "InteractionVerb":  "pilot vehicle",
+                            "ExitInteractionVerb":  "exit vehicle",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMeshScale":  {
+                                                     "X":  1,
+                                                     "Y":  1,
+                                                     "Z":  1
+                                                 },
+                            "DisplayMeshOffset":  {
+                                                      "X":  0,
+                                                      "Y":  0,
+                                                      "Z":  0
+                                                  },
+                            "Tint":  {
+                                         "R":  0.94,
+                                         "G":  0.53,
+                                         "B":  0.17,
+                                         "A":  1
+                                     },
+                            "PilotSeconds":  20,
+                            "DriveSpeed":  2200,
+                            "TurnSpeedDegreesPerSecond":  620,
+                            "MowKillRadius":  260,
+                            "MowMinSpeed":  125
+                        }
+    },
+    {
+        "Name":  "Vehicle_Easy",
+        "VehicleData":  {
+                            "VehicleID":  "Vehicle",
+                            "DifficultyID":  "Easy",
+                            "DisplayName":  "Vehicle",
+                            "InteractionVerb":  "pilot vehicle",
+                            "ExitInteractionVerb":  "exit vehicle",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMeshScale":  {
+                                                     "X":  1,
+                                                     "Y":  1,
+                                                     "Z":  1
+                                                 },
+                            "DisplayMeshOffset":  {
+                                                      "X":  0,
+                                                      "Y":  0,
+                                                      "Z":  0
+                                                  },
+                            "Tint":  {
+                                         "R":  0.94,
+                                         "G":  0.53,
+                                         "B":  0.17,
+                                         "A":  1
+                                     },
+                            "PilotSeconds":  20,
+                            "DriveSpeed":  2200,
+                            "TurnSpeedDegreesPerSecond":  620,
+                            "MowKillRadius":  260,
+                            "MowMinSpeed":  125
+                        }
+    },
+    {
+        "Name":  "Vehicle_Medium",
+        "VehicleData":  {
+                            "VehicleID":  "Vehicle",
+                            "DifficultyID":  "Medium",
+                            "DisplayName":  "Vehicle",
+                            "InteractionVerb":  "pilot vehicle",
+                            "ExitInteractionVerb":  "exit vehicle",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMeshScale":  {
+                                                     "X":  1,
+                                                     "Y":  1,
+                                                     "Z":  1
+                                                 },
+                            "DisplayMeshOffset":  {
+                                                      "X":  0,
+                                                      "Y":  0,
+                                                      "Z":  0
+                                                  },
+                            "Tint":  {
+                                         "R":  0.94,
+                                         "G":  0.53,
+                                         "B":  0.17,
+                                         "A":  1
+                                     },
+                            "PilotSeconds":  20,
+                            "DriveSpeed":  2200,
+                            "TurnSpeedDegreesPerSecond":  620,
+                            "MowKillRadius":  260,
+                            "MowMinSpeed":  125
+                        }
+    },
+    {
+        "Name":  "Vehicle_Hard",
+        "VehicleData":  {
+                            "VehicleID":  "Vehicle",
+                            "DifficultyID":  "Hard",
+                            "DisplayName":  "Vehicle",
+                            "InteractionVerb":  "pilot vehicle",
+                            "ExitInteractionVerb":  "exit vehicle",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMeshScale":  {
+                                                     "X":  1,
+                                                     "Y":  1,
+                                                     "Z":  1
+                                                 },
+                            "DisplayMeshOffset":  {
+                                                      "X":  0,
+                                                      "Y":  0,
+                                                      "Z":  0
+                                                  },
+                            "Tint":  {
+                                         "R":  0.94,
+                                         "G":  0.53,
+                                         "B":  0.17,
+                                         "A":  1
+                                     },
+                            "PilotSeconds":  20,
+                            "DriveSpeed":  2200,
+                            "TurnSpeedDegreesPerSecond":  620,
+                            "MowKillRadius":  260,
+                            "MowMinSpeed":  125
+                        }
+    },
+    {
+        "Name":  "Vehicle_VeryHard",
+        "VehicleData":  {
+                            "VehicleID":  "Vehicle",
+                            "DifficultyID":  "VeryHard",
+                            "DisplayName":  "Vehicle",
+                            "InteractionVerb":  "pilot vehicle",
+                            "ExitInteractionVerb":  "exit vehicle",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMeshScale":  {
+                                                     "X":  1,
+                                                     "Y":  1,
+                                                     "Z":  1
+                                                 },
+                            "DisplayMeshOffset":  {
+                                                      "X":  0,
+                                                      "Y":  0,
+                                                      "Z":  0
+                                                  },
+                            "Tint":  {
+                                         "R":  0.94,
+                                         "G":  0.53,
+                                         "B":  0.17,
+                                         "A":  1
+                                     },
+                            "PilotSeconds":  20,
+                            "DriveSpeed":  2200,
+                            "TurnSpeedDegreesPerSecond":  620,
+                            "MowKillRadius":  260,
+                            "MowMinSpeed":  125
+                        }
+    },
+    {
+        "Name":  "Vehicle_Impossible",
+        "VehicleData":  {
+                            "VehicleID":  "Vehicle",
+                            "DifficultyID":  "Impossible",
+                            "DisplayName":  "Vehicle",
+                            "InteractionVerb":  "pilot vehicle",
+                            "ExitInteractionVerb":  "exit vehicle",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMeshScale":  {
+                                                     "X":  1,
+                                                     "Y":  1,
+                                                     "Z":  1
+                                                 },
+                            "DisplayMeshOffset":  {
+                                                      "X":  0,
+                                                      "Y":  0,
+                                                      "Z":  0
+                                                  },
+                            "Tint":  {
+                                         "R":  0.94,
+                                         "G":  0.53,
+                                         "B":  0.17,
+                                         "A":  1
+                                     },
+                            "PilotSeconds":  20,
+                            "DriveSpeed":  2200,
+                            "TurnSpeedDegreesPerSecond":  620,
+                            "MowKillRadius":  260,
+                            "MowMinSpeed":  125
+                        }
+    }
+]

@@ -107,7 +107,8 @@ void UT66RunStateSubsystem::ResetHeartSlotTiers()
 
 void UT66RunStateSubsystem::SyncMaxHPToHeartTiers()
 {
-	MaxHP = FMath::Max(DefaultMaxHP, GetTotalHeartCapacity());
+	const float BaseMaxHP = FMath::Max(DefaultMaxHP, GetTotalHeartCapacity());
+	MaxHP = FMath::Max(1.0f, BaseMaxHP * FMath::Max(0.1f, ActiveRunModifiers.HeroHealthMultiplier));
 }
 
 
@@ -690,6 +691,11 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 			return true;
 		}
 		return false;
+	}
+
+	if (Cast<AT66TrapBase>(Attacker) == nullptr && (Cast<AT66EnemyBase>(Attacker) || Cast<AT66BossBase>(Attacker)))
+	{
+		DamageHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(DamageHP) * FMath::Max(0.1f, ActiveRunModifiers.EnemyDamageMultiplier)));
 	}
 
 	// Iron Will: flat damage reduction before armor.

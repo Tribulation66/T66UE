@@ -1,0 +1,24 @@
+{
+  "asset": "aria",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 99972,
+    "count": 151688,
+    "edge_samples": 232748,
+    "max": 1.0,
+    "mean": 0.2512558993736859,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.219522701370094,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.05091672376377769,
+      "p50": 0.16590593974683573,
+      "p75": 0.35863390948576856,
+      "p90": 0.6484895506648825,
+      "p95": 0.928718489479676,
+      "p99": 1.0
+    },
+    "std": 0.26598003309551893
+  }
+}

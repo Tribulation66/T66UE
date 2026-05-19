@@ -59,8 +59,9 @@ enum class ET66ScreenType : uint8
 	RemovedScreenSlot45 = 45 UMETA(Hidden),
 	IdleMainMenu = 46 UMETA(DisplayName = "Chadpocalypse Idle Main Menu"),
 	DeckMainMenu = 47 UMETA(DisplayName = "Chadpocalypse Deck Builder Main Menu"),
-	VersusMainMenu = 48 UMETA(DisplayName = "Versus Main Menu"),
-	MiniBattle = 49 UMETA(DisplayName = "Mini Chadpocalypse Battle")
+	RemovedScreenSlot48 = 48 UMETA(Hidden),
+	MiniBattle = 49 UMETA(DisplayName = "Mini Chadpocalypse Battle"),
+	GameOver = 50 UMETA(DisplayName = "Game Over Modal")
 };
 
 UENUM(BlueprintType)

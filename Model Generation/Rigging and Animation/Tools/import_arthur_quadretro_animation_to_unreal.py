@@ -37,6 +37,7 @@ SOURCE_DIR = Path(os.environ.get(
     PROJECT_DIR / "Model Generation" / "Rigging and Animation" / "Runs" / "Arthur_QuadRetro_UAL_Retarget_20260514" / "Exports",
 ))
 DEST_DIR = os.environ.get("T66_ARTHUR_QUADRETRO_DEST_DIR", "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA")
+# TOOL-ONLY validation row for the Arthur/UAL rigging pipeline. Gameplay uses Hero_1_Chad after promotion.
 VISUAL_ID = os.environ.get("T66_ARTHUR_QUADRETRO_VISUAL_ID", "Hero_1_Chad_QuadRetroUALQA")
 PROMOTE_LIVE_ROW = os.environ.get("T66_ARTHUR_QUADRETRO_PROMOTE_LIVE", "0").strip().lower() in ("1", "true", "yes")
 SKELETAL_MESH_NAME = os.environ.get("T66_ARTHUR_QUADRETRO_MESH_NAME", "SK_Hero_1_Chad_QuadRetroUALQA")

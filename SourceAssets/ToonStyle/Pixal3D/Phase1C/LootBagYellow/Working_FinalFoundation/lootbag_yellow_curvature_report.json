@@ -1,0 +1,24 @@
+{
+  "asset": "lootbag_yellow",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 95317,
+    "count": 148658,
+    "edge_samples": 239388,
+    "max": 1.0,
+    "mean": 0.2788732252839251,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.17780382837431713,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.0425202824927035,
+      "p50": 0.18758840214608727,
+      "p75": 0.4310630917940433,
+      "p90": 0.7277763738011832,
+      "p95": 0.9557783076316514,
+      "p99": 1.0
+    },
+    "std": 0.28486910644113095
+  }
+}

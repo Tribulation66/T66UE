@@ -1,0 +1,99 @@
+{
+  "dependency_path": "external_python_pillow_scipy",
+  "final_palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        0,
+        26,
+        0
+      ],
+      [
+        0,
+        147,
+        0
+      ],
+      [
+        0,
+        149,
+        0
+      ],
+      [
+        0,
+        149,
+        1
+      ],
+      [
+        1,
+        150,
+        0
+      ],
+      [
+        0,
+        152,
+        1
+      ]
+    ],
+    "palette_size": 6
+  },
+  "height": 4096,
+  "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_1_flattened.png",
+  "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_1_flattened.png",
+  "palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        0,
+        26,
+        0
+      ],
+      [
+        0,
+        147,
+        0
+      ],
+      [
+        0,
+        149,
+        0
+      ],
+      [
+        0,
+        149,
+        1
+      ],
+      [
+        1,
+        150,
+        0
+      ],
+      [
+        0,
+        152,
+        1
+      ]
+    ],
+    "palette_size": 6
+  },
+  "speckle_cleanup": {
+    "applied": true,
+    "changed_pixels": 59,
+    "diff_threshold": 42.0,
+    "method": "3x3_local_median_high_contrast_pixel_replacement",
+    "prompt_region_threshold_reference": 8
+  },
+  "tint": {
+    "generated": false
+  },
+  "unique_rgb_after": 6,
+  "unique_rgb_before": 6,
+  "uv_mask_pixels": 9760105,
+  "uv_padding": {
+    "applied": true,
+    "filled_pixels": 7017110,
+    "method": "iterative_frontier_expansion",
+    "padding_pixels": 16
+  },
+  "uv_triangles": 198536,
+  "width": 4096
+}

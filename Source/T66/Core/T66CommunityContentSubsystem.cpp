@@ -540,6 +540,15 @@ bool UT66CommunityContentSubsystem::SubmitDraftForApproval(const FName LocalId)
 	{
 		RulesJson->SetStringField(TEXT("starting_item_id"), Draft.Rules.StartingItemId.ToString());
 	}
+	RulesJson->SetNumberField(TEXT("start_random_items"), FMath::Clamp(Draft.Rules.StartRandomItems, 0, 20));
+	RulesJson->SetNumberField(TEXT("start_bonus_gold"), FMath::Clamp(Draft.Rules.StartBonusGold, 0, 10000));
+	RulesJson->SetNumberField(TEXT("enemy_health_multiplier"), FMath::Clamp(Draft.Rules.EnemyHealthMultiplier, 0.1f, 10.0f));
+	RulesJson->SetNumberField(TEXT("enemy_damage_multiplier"), FMath::Clamp(Draft.Rules.EnemyDamageMultiplier, 0.1f, 10.0f));
+	RulesJson->SetNumberField(TEXT("trap_damage_multiplier"), FMath::Clamp(Draft.Rules.TrapDamageMultiplier, 0.1f, 10.0f));
+	RulesJson->SetNumberField(TEXT("hero_health_multiplier"), FMath::Clamp(Draft.Rules.HeroHealthMultiplier, 0.1f, 10.0f));
+	RulesJson->SetNumberField(TEXT("hero_damage_multiplier"), FMath::Clamp(Draft.Rules.HeroDamageMultiplier, 0.1f, 10.0f));
+	RulesJson->SetNumberField(TEXT("hero_luck_flat"), FMath::Clamp(Draft.Rules.HeroLuckFlat, -99, 99));
+	RulesJson->SetNumberField(TEXT("enemy_loot_bag_count_multiplier"), FMath::Clamp(Draft.Rules.EnemyLootBagCountMultiplier, 0.0f, 20.0f));
 	SetOptionalString(RulesJson, TEXT("passive_override"), Draft.Rules.PassiveOverride != ET66PassiveType::None ? PassiveToApiString(Draft.Rules.PassiveOverride) : FString());
 	SetOptionalString(RulesJson, TEXT("ultimate_override"), Draft.Rules.UltimateOverride != ET66UltimateType::None ? UltimateToApiString(Draft.Rules.UltimateOverride) : FString());
 	RulesJson->SetBoolField(TEXT("require_full_clear"), Draft.Rules.bRequireFullClear);
@@ -604,6 +613,42 @@ TArray<FString> UT66CommunityContentSubsystem::BuildRuleSummaryLines(const FT66C
 	if (!Entry.Rules.StartingItemId.IsNone())
 	{
 		Lines.Add(FString::Printf(TEXT("Start with %s."), *Entry.Rules.StartingItemId.ToString()));
+	}
+	if (Entry.Rules.StartRandomItems > 0)
+	{
+		Lines.Add(FString::Printf(TEXT("Start with %d random item%s."), Entry.Rules.StartRandomItems, Entry.Rules.StartRandomItems == 1 ? TEXT("") : TEXT("s")));
+	}
+	if (Entry.Rules.StartBonusGold > 0)
+	{
+		Lines.Add(FString::Printf(TEXT("Start with %d bonus gold."), Entry.Rules.StartBonusGold));
+	}
+	if (!FMath::IsNearlyEqual(Entry.Rules.EnemyHealthMultiplier, 1.0f))
+	{
+		Lines.Add(FString::Printf(TEXT("Enemy health x%.2f."), Entry.Rules.EnemyHealthMultiplier));
+	}
+	if (!FMath::IsNearlyEqual(Entry.Rules.EnemyDamageMultiplier, 1.0f))
+	{
+		Lines.Add(FString::Printf(TEXT("Enemy damage x%.2f."), Entry.Rules.EnemyDamageMultiplier));
+	}
+	if (!FMath::IsNearlyEqual(Entry.Rules.TrapDamageMultiplier, 1.0f))
+	{
+		Lines.Add(FString::Printf(TEXT("Trap damage x%.2f."), Entry.Rules.TrapDamageMultiplier));
+	}
+	if (!FMath::IsNearlyEqual(Entry.Rules.HeroHealthMultiplier, 1.0f))
+	{
+		Lines.Add(FString::Printf(TEXT("Hero health x%.2f."), Entry.Rules.HeroHealthMultiplier));
+	}
+	if (!FMath::IsNearlyEqual(Entry.Rules.HeroDamageMultiplier, 1.0f))
+	{
+		Lines.Add(FString::Printf(TEXT("Hero damage x%.2f."), Entry.Rules.HeroDamageMultiplier));
+	}
+	if (Entry.Rules.HeroLuckFlat != 0)
+	{
+		Lines.Add(FString::Printf(TEXT("Hero luck %+d."), Entry.Rules.HeroLuckFlat));
+	}
+	if (!FMath::IsNearlyEqual(Entry.Rules.EnemyLootBagCountMultiplier, 1.0f))
+	{
+		Lines.Add(FString::Printf(TEXT("Enemy loot bag count x%.2f."), Entry.Rules.EnemyLootBagCountMultiplier));
 	}
 
 	if (Entry.Rules.PassiveOverride != ET66PassiveType::None)
@@ -1167,6 +1212,15 @@ bool UT66CommunityContentSubsystem::TryParseApiEntry(const TSharedPtr<FJsonObjec
 		{
 			OutEntry.Rules.StartingItemId = FName(*StartingItemId);
 		}
+		OutEntry.Rules.StartRandomItems = Rules->HasField(TEXT("start_random_items")) ? static_cast<int32>(Rules->GetNumberField(TEXT("start_random_items"))) : 0;
+		OutEntry.Rules.StartBonusGold = Rules->HasField(TEXT("start_bonus_gold")) ? static_cast<int32>(Rules->GetNumberField(TEXT("start_bonus_gold"))) : 0;
+		OutEntry.Rules.EnemyHealthMultiplier = Rules->HasField(TEXT("enemy_health_multiplier")) ? static_cast<float>(Rules->GetNumberField(TEXT("enemy_health_multiplier"))) : 1.0f;
+		OutEntry.Rules.EnemyDamageMultiplier = Rules->HasField(TEXT("enemy_damage_multiplier")) ? static_cast<float>(Rules->GetNumberField(TEXT("enemy_damage_multiplier"))) : 1.0f;
+		OutEntry.Rules.TrapDamageMultiplier = Rules->HasField(TEXT("trap_damage_multiplier")) ? static_cast<float>(Rules->GetNumberField(TEXT("trap_damage_multiplier"))) : 1.0f;
+		OutEntry.Rules.HeroHealthMultiplier = Rules->HasField(TEXT("hero_health_multiplier")) ? static_cast<float>(Rules->GetNumberField(TEXT("hero_health_multiplier"))) : 1.0f;
+		OutEntry.Rules.HeroDamageMultiplier = Rules->HasField(TEXT("hero_damage_multiplier")) ? static_cast<float>(Rules->GetNumberField(TEXT("hero_damage_multiplier"))) : 1.0f;
+		OutEntry.Rules.HeroLuckFlat = Rules->HasField(TEXT("hero_luck_flat")) ? static_cast<int32>(Rules->GetNumberField(TEXT("hero_luck_flat"))) : 0;
+		OutEntry.Rules.EnemyLootBagCountMultiplier = Rules->HasField(TEXT("enemy_loot_bag_count_multiplier")) ? static_cast<float>(Rules->GetNumberField(TEXT("enemy_loot_bag_count_multiplier"))) : 1.0f;
 
 		FString PassiveOverride;
 		if (Rules->TryGetStringField(TEXT("passive_override"), PassiveOverride))

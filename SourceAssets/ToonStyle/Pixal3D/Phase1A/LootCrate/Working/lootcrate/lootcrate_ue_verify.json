@@ -1,0 +1,74 @@
+{
+  "asset_name": "lootcrate",
+  "base_color_param": "/Game/ToonStyle/TestAssets/Lineup/Textures/T_lootcrate_0.T_lootcrate_0",
+  "diffuse_param": "/Game/ToonStyle/TestAssets/Lineup/Textures/T_lootcrate_0.T_lootcrate_0",
+  "expected_height": 180.0,
+  "height_tolerance": 0.1,
+  "imported_object_paths": [
+    "/Game/ToonStyle/TestAssets/Lineup/SM_lootcrate.SM_lootcrate"
+  ],
+  "imported_outline_object_paths": [
+    "/Game/ToonStyle/TestAssets/Lineup/SM_lootcrate_Outline.SM_lootcrate_Outline"
+  ],
+  "manifest_normal_delta_sample": {
+    "distinct": true,
+    "reason": "non_humanoid"
+  },
+  "manifest_normal_transfer": {
+    "applied": false,
+    "reason": "non_humanoid"
+  },
+  "manifest_vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 572637,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "material_instance": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootcrate",
+  "outline_slot0_material": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootcrate.MI_lootcrate",
+  "outline_static_mesh": "/Game/ToonStyle/TestAssets/Lineup/SM_lootcrate_Outline",
+  "outline_static_mesh_bounds": {
+    "extent": [
+      85.39278411865234,
+      92.87252044677734,
+      90.00000389637489
+    ],
+    "height": 180.00000779274978,
+    "origin": [
+      0.0,
+      -1.52587890625e-05,
+      89.99999610362511
+    ],
+    "size": [
+      170.7855682373047,
+      185.7450408935547,
+      180.00000779274978
+    ]
+  },
+  "slot0_material": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootcrate.MI_lootcrate",
+  "static_mesh": "/Game/ToonStyle/TestAssets/Lineup/SM_lootcrate",
+  "static_mesh_bounds": {
+    "extent": [
+      85.39278411865234,
+      92.87252044677734,
+      90.00000389637489
+    ],
+    "height": 180.00000779274978,
+    "origin": [
+      0.0,
+      -1.52587890625e-05,
+      89.99999610362511
+    ],
+    "size": [
+      170.7855682373047,
+      185.7450408935547,
+      180.00000779274978
+    ]
+  },
+  "target_dir": "/Game/ToonStyle/TestAssets/Lineup",
+  "textures": [
+    "/Game/ToonStyle/TestAssets/Lineup/Textures/T_lootcrate_0",
+    "/Game/ToonStyle/TestAssets/Lineup/Textures/T_lootcrate_1"
+  ]
+}

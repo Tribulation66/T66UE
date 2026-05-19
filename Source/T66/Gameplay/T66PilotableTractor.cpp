@@ -399,6 +399,6 @@ void AT66PilotableTractor::HandleMountedEnemyMow(float DeltaSeconds)
 			continue;
 		}
 
-		Enemy->TakeDamageFromHero(Enemy->CurrentHP + Enemy->MaxHP + 1, FName(TEXT("Tractor")));
+		Enemy->TakeDamageFromHero(Enemy->CurrentHP + Enemy->MaxHP + 1, FName(TEXT("Vehicle")));
 	}
 }

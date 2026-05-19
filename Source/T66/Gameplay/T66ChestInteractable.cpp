@@ -16,12 +16,7 @@
 
 AT66ChestInteractable::AT66ChestInteractable()
 {
-	const TSoftObjectPtr<UStaticMesh> ChestMesh(FSoftObjectPath(TEXT("/Game/World/Interactables/Chests/ChestModel/Chest_QuadRetro.Chest_QuadRetro")));
-	RarityMeshes.Add(ET66Rarity::Black, ChestMesh);
-	RarityMeshes.Add(ET66Rarity::Red, ChestMesh);
-	RarityMeshes.Add(ET66Rarity::Yellow, ChestMesh);
-	RarityMeshes.Add(ET66Rarity::White, ChestMesh);
-
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Chests/ChestModel/Chest_QuadRetro.Chest_QuadRetro")));
 	ApplyRarityVisuals();
 }
 
@@ -65,42 +60,13 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 	}
 
 	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
-	const FT66RarityWeights ChestRewardWeights = PlayerExperience
-		? PlayerExperience->GetDifficultyChestRarityWeights(Difficulty)
-		: FT66RarityWeights{};
-	ET66Rarity RewardRarity = ET66Rarity::Yellow;
-	int32 RewardRarityDrawIndex = INDEX_NONE;
-	int32 RewardRarityPreDrawSeed = 0;
-	const FT66RarityWeights* RewardTelemetryWeights = nullptr;
-	bool bRewardRarityReplayable = false;
-	if (RngSub)
-	{
-		RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
-		FRandomStream& Stream = RngSub->GetRunStream();
-		if (PlayerExperience)
-		{
-			RewardRarity = RngSub->RollRarityWeighted(ChestRewardWeights, Stream);
-			RewardTelemetryWeights = &ChestRewardWeights;
-			bRewardRarityReplayable = true;
-		}
-		else
-		{
-			RewardRarity = FT66RarityUtil::RollDefaultRarity(Stream);
-		}
-		RewardRarityDrawIndex = bRewardRarityReplayable ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
-		RewardRarityPreDrawSeed = bRewardRarityReplayable ? RngSub->GetLastRunPreDrawSeed() : 0;
-	}
-	else
-	{
-		FRandomStream RewardStream(FMath::Rand());
-		RewardRarity = FT66RarityUtil::RollDefaultRarity(RewardStream);
-	}
+	const ET66Rarity RewardRarity = Rarity;
 	RunState->RecordLuckQualityRarity(
 		FName(TEXT("ChestRewardRarity")),
 		RewardRarity,
-		RewardRarityDrawIndex,
-		RewardRarityPreDrawSeed,
-		RewardTelemetryWeights);
+		INDEX_NONE,
+		0,
+		nullptr);
 
 	const FT66IntRange GoldRange = PlayerExperience
 		? PlayerExperience->GetDifficultyChestGoldRange(Difficulty, RewardRarity)

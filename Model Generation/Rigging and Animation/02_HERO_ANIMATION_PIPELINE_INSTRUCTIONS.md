@@ -160,7 +160,7 @@ Accepted Royal Chad/Arthur QuadRetro UAL retarget run:
 - QA contact sheets: `Runs/Arthur_QuadRetro_UAL_Retarget_RollForward_20260515/Arthur_All_Actions_{front,side,three_quarter,gameplay}_Contact_Sheet.png`.
 - Unreal import tool: `Tools/import_arthur_quadretro_animation_to_unreal.py`.
 - Unreal verification tool: `Tools/verify_arthur_quadretro_animation_in_unreal.py`.
-- Temporary validation row: `Hero_1_Chad_QuadRetroUALQA`.
+- Tool-only validation row: `Hero_1_Chad_QuadRetroUALQA`. This row exists for Arthur/UAL rigging pipeline validation tools and is not the gameplay-selected row.
 - Promoted live row: `Hero_1_Chad`, after the temporary row was visually verified in gameplay.
 - Correct promoted-row forward fix: `MeshRelativeRotation=(Pitch=0,Yaw=90.000000,Roll=0)`. The older static row used the opposite yaw; carrying that value onto the skeletal pass makes the hero walk backward.
 - Correct roll-direction fix: the runtime roll burst remains actor-forward, but the in-place roll animation must use the corrected roll bake above. `Roll` and uncorrected `Roll_RM` both read as a backward flip after source root motion is stripped.

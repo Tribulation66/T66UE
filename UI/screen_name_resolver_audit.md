@@ -48,7 +48,6 @@ After this audit, an unknown `-T66FrontendScreen=<name>` logs `Error` and reques
 | TDBattle |  | TDBattle |
 | IdleMainMenu | IdleChadpocalypse | IdleMainMenu |
 | DeckMainMenu | Deckbuilder, ChadpocalypseDeckbuilder | DeckMainMenu |
-| VersusMainMenu | Versus, ChadpocalypseVersus | VersusMainMenu |
 | Challenges |  | Challenges |
 | DailyDescent |  | DailyDescent |
 

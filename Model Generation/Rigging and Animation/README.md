@@ -68,7 +68,7 @@ For Easy mobs, the original fallback rows remain static-only `CharacterVisuals.c
 - Staged smoke screenshot: `Saved/StandaloneLogs/EasyMobVAT_GameplaySmoke_WithAudio.png`
 - Staged smoke log: `Saved/StandaloneLogs/EasyMobVAT_GameplaySmoke_WithAudio.log`
 
-Source GLBs for the first batch exist under `Model Generation/Production/Roster_v1/AgentA` and `Model Generation/Production/Roster_v1/AgentB`, but the production reports currently mark the raw Pixal3D outputs as research-only until licensing clearance changes. Use those sources for process exploration and in-game QA; do not treat them as final shipped VAT source without resolving that gate.
+Source GLBs for the first batch exist under `Model Generation/Production/Roster_v1/AgentA` and `Model Generation/Production/Roster_v1/AgentB`. Use those sources for process exploration and in-game QA; promote them to final VAT source only after visual and runtime acceptance.
 
 ## Pipeline Contract
 

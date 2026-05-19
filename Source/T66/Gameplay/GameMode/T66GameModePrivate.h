@@ -28,15 +28,16 @@
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Gameplay/T66IdolAltar.h"
+#include "Gameplay/T66WeaponAltar.h"
 #include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66CrateInteractable.h"
+#include "Gameplay/T66LootWheelInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66ArcadeMachineInteractable.h"
-#include "Gameplay/T66ArcadeTruckInteractable.h"
+#include "Gameplay/T66VehicleInteractable.h"
 #include "Gameplay/T66QuickReviveVendingMachine.h"
-#include "Gameplay/T66StageCatchUpGate.h"
 #include "Gameplay/T66StageEffects.h"
 #include "Gameplay/T66SpawnPlateau.h"
 #include "Gameplay/T66LabCollector.h"
@@ -52,6 +53,7 @@
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/T66PlayerExperienceSubSystem.h"
+#include "Core/T66DifficultyTuningSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -118,9 +120,6 @@ namespace T66GameModePrivate
 	extern const FName T66TowerCeilingTag;
 	extern const FName T66TowerTraceBarrierTag;
 	extern const TCHAR* T66TowerFloorTagPrefix;
-
-	bool T66TryGetNextDifficulty(ET66Difficulty Current, ET66Difficulty& OutNextDifficulty);
-	int32 T66GetDifficultyEndStage(ET66Difficulty Difficulty);
 	bool T66IsReachableProgressionStage(int32 StageNum);
 	void T66_SetStaticMeshActorMobility(AStaticMeshActor* Actor, EComponentMobility::Type Mobility);
 	bool T66_IsCompanionUnlockStage(int32 StageNum);
@@ -169,7 +168,7 @@ namespace T66GameModePrivate
 	FName T66GetSelectedHeroSkinID(const UT66GameInstance* GI, const AController* Controller);
 	int32 T66GetConnectedPlayerCount(const UWorld* World);
 	int32 T66GetPlayerSlotIndex(const UWorld* World, const AController* Controller);
-	bool T66IsStandaloneTutorialMap(const UWorld* World);
+	bool T66IsTutorialRun(const UWorld* World);
 	bool T66TryGetTaggedActorTransform(const UWorld* World, FName Tag, FVector& OutLocation, FRotator& OutRotation);
 	void T66FaceActorTowardLocation2D(AActor* Actor, const FVector& TargetLocation);
 	bool T66TryBuildFacingRotation2D(const FVector& FromLocation, const FVector& TargetLocation, FRotator& OutRotation);

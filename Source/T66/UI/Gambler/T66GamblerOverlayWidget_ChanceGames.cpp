@@ -27,7 +27,7 @@
 #include "Widgets/Images/SImage.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
-#include "UI/Style/T66Style.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
@@ -175,7 +175,7 @@ FReply UT66GamblerOverlayWidget::OnLotteryNumberClicked(int32 Num)
 	for (int32 i = 0; i < 10 && i < LotteryNumberBorders.Num(); ++i)
 	{
 		if (LotteryNumberBorders[i].IsValid())
-			LotteryNumberBorders[i]->SetBorderBackgroundColor(LotterySelected.Contains(i + 1) ? FT66Style::Tokens::Accent2 : FT66Style::Tokens::Panel2);
+			LotteryNumberBorders[i]->SetBorderBackgroundColor(LotterySelected.Contains(i + 1) ? FT66FlatStyle::Tokens::Accent2 : FT66FlatStyle::Tokens::Panel2);
 	}
 	if (LotteryPicksText.IsValid())
 	{

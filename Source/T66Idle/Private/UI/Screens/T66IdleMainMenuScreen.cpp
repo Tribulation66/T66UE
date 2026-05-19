@@ -14,6 +14,7 @@
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "UI/Components/T66MinigameMenuLayout.h"
+#include "UI/Style/T66AnimatedStyle.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
@@ -108,7 +109,7 @@ namespace
 		return nullptr;
 	}
 
-	TSharedRef<SWidget> MakeIdleLooseSprite(const FString& RelativePath, const FVector2D& Size, const FLinearColor& FallbackTint)
+	TSharedRef<SWidget> MakeIdleLooseSprite(const FString& RelativePath, const FVector2D& Size, const FLinearColor& FallbackTint, const FName Tag)
 	{
 		TSharedRef<SWidget> SpriteContent = SNew(SSpacer);
 		if (const TSharedPtr<FSlateBrush> Brush = FindOrLoadIdleLooseBrush(RelativePath))
@@ -122,7 +123,7 @@ namespace
 				];
 		}
 
-		return SNew(SBox)
+		const TSharedRef<SWidget> Sprite = SNew(SBox)
 			.WidthOverride(Size.X)
 			.HeightOverride(Size.Y)
 			[
@@ -134,6 +135,16 @@ namespace
 					SpriteContent
 				]
 			];
+		return FT66AnimatedStyle::AttachMetadata(Sprite, Tag, TEXT("Idle.Sprite"));
+	}
+
+	TSharedRef<SWidget> MakeIdleAnimatedProgressBar(const TAttribute<TOptional<float>>& Percent, const FName Tag)
+	{
+		return FT66AnimatedStyle::AttachMetadata(
+			SNew(SProgressBar)
+			.Percent(Percent),
+			Tag,
+			TEXT("Idle.ProgressBar"));
 	}
 }
 
@@ -271,70 +282,6 @@ FText UT66IdleMainMenuScreen::GetAllTimeLeaderboardStatus(FName DifficultyID) co
 TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildMainMenuUI()
 {
 	return BuildSharedMainMenuUI();
-
-	return SNew(SOverlay)
-		+ SOverlay::Slot()
-		[
-			BuildMockupBackdrop(IdleMainMenuMockupPath(), FLinearColor(0.030f, 0.020f, 0.012f, 1.0f))
-		]
-		+ SOverlay::Slot()
-		[
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.26f))
-		]
-		+ SOverlay::Slot()
-		.Padding(FMargin(92.f, 108.f, 92.f, 70.f))
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Bottom)
-			[
-				MakeIdleChromePanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66Idle.MainMenu", "Title", "CHADPOCALYPSE IDLE"))
-						.Font(FT66Style::MakeFont(TEXT("Black"), 34))
-						.ColorAndOpacity(FLinearColor(0.98f, 0.76f, 0.34f, 1.0f))
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 24.f)
-					[
-						SNew(STextBlock)
-						.Text(FText::Format(
-							NSLOCTEXT("T66Idle.MainMenu", "Summary", "Stage {0} | {1}"),
-							FText::AsNumber(CurrentStage),
-							GetGoldText()))
-						.Font(FT66Style::MakeFont(TEXT("Regular"), 13))
-						.ColorAndOpacity(FLinearColor(0.82f, 0.78f, 0.70f, 1.0f))
-					]
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						MakeIdleButton(NSLOCTEXT("T66Idle.MainMenu", "Play", "PLAY"), FOnClicked::CreateUObject(this, &UT66IdleMainMenuScreen::HandlePlayClicked), 420.f, 62.f)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-					[
-						MakeIdleButton(NSLOCTEXT("T66Idle.MainMenu", "Upgrade", "UPGRADES"), FOnClicked::CreateUObject(this, &UT66IdleMainMenuScreen::HandlePlayClicked), 420.f, 62.f)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-					[
-						MakeIdleButton(NSLOCTEXT("T66Idle.MainMenu", "Options", "OPTIONS"), FOnClicked::CreateUObject(this, &UT66IdleMainMenuScreen::HandleOptionsClicked), 420.f, 62.f)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 24.f, 0.f, 0.f)
-					[
-						MakeIdleButton(NSLOCTEXT("T66Idle.MainMenu", "Back", "BACK TO MINIGAMES"), FOnClicked::CreateUObject(this, &UT66IdleMainMenuScreen::HandleBackClicked), 420.f, 48.f)
-					],
-					FMargin(28.f),
-					FLinearColor(0.74f, 0.51f, 0.18f, 0.92f))
-			]
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.f)
-			[
-				SNew(SSpacer)
-			]
-		];
 }
 
 TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildGameplayUI()
@@ -383,7 +330,7 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildGameplayUI()
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 14.f)
 						[
-							MakeIdleLooseSprite(TEXT("SourceAssets/Idle/Heroes/Singles/Idle_Player.png"), FVector2D(116.f, 116.f), FLinearColor(0.28f, 0.18f, 0.10f, 0.72f))
+							MakeIdleLooseSprite(TEXT("SourceAssets/Idle/Heroes/Singles/Idle_Player.png"), FVector2D(116.f, 116.f), FLinearColor(0.28f, 0.18f, 0.10f, 0.72f), FName(TEXT("Idle.Gameplay.PlayerSprite")))
 						]
 						+ SVerticalBox::Slot().AutoHeight()
 						[
@@ -413,7 +360,7 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildGameplayUI()
 						SNew(SVerticalBox)
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 14.f)
 						[
-							MakeIdleLooseSprite(EnemySpritePath, FVector2D(128.f, 128.f), FLinearColor(0.34f, 0.10f, 0.08f, 0.72f))
+							MakeIdleLooseSprite(EnemySpritePath, FVector2D(128.f, 128.f), FLinearColor(0.34f, 0.10f, 0.08f, 0.72f), FName(TEXT("Idle.Gameplay.EnemySprite")))
 						]
 						+ SVerticalBox::Slot().AutoHeight()
 						[
@@ -424,8 +371,7 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildGameplayUI()
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 						[
-							SNew(SProgressBar)
-							.Percent(MakeIdlePercentAttribute(this, &UT66IdleMainMenuScreen::GetEnemyHealthPercent))
+							MakeIdleAnimatedProgressBar(MakeIdlePercentAttribute(this, &UT66IdleMainMenuScreen::GetEnemyHealthPercent), FName(TEXT("Idle.Gameplay.EnemyHealthProgress")))
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 16.f, 0.f, 0.f)
 						[
@@ -436,8 +382,7 @@ TSharedRef<SWidget> UT66IdleMainMenuScreen::BuildGameplayUI()
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
 						[
-							SNew(SProgressBar)
-							.Percent(MakeIdlePercentAttribute(this, &UT66IdleMainMenuScreen::GetEngineProgressPercent))
+							MakeIdleAnimatedProgressBar(MakeIdlePercentAttribute(this, &UT66IdleMainMenuScreen::GetEngineProgressPercent), FName(TEXT("Idle.Gameplay.EngineProgress")))
 						],
 						FMargin(22.f),
 						FLinearColor(0.46f, 0.12f, 0.10f, 0.88f))

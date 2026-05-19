@@ -13,9 +13,7 @@
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66CasinoShopTabWidget.h"
-#include "UI/Style/T66OverlayChromeStyle.h"
 #include "UI/Style/T66FlatStyle.h"
-#include "UI/Style/T66Style.h"
 #include "Input/DragAndDrop.h"
 #include "Styling/CoreStyle.h"
 #include "Widgets/SBoxPanel.h"
@@ -44,7 +42,7 @@ namespace
 		const float H,
 		const TSharedRef<SWidget>& Widget)
 	{
-		const float UiScale = FMath::Max(0.1f, FT66Style::GetGlobalUIScale());
+		const float UiScale = FMath::Max(0.1f, FT66FlatStyle::GetGlobalUIScale());
 		Canvas->AddSlot()
 			.Anchors(FAnchors(0.f, 0.f))
 			.Alignment(FVector2D(0.f, 0.f))
@@ -313,7 +311,7 @@ void UT66CasinoOverlayWidget::OpenGamblingTab()
 	SharedOverlay::OpenGamblingTab(GamblerTabWidget, [this]() { SetActiveTab(ECasinoTab::Gambling); });
 	if (IsInViewport())
 	{
-		FT66Style::DeferRebuild(this, 100);
+		FT66FlatStyle::DeferRebuild(this, 100);
 	}
 }
 
@@ -322,7 +320,7 @@ void UT66CasinoOverlayWidget::OpenShopTab()
 	SharedOverlay::OpenShopTab(ShopTabWidget, [this]() { SetActiveTab(ECasinoTab::Shop); });
 	if (IsInViewport())
 	{
-		FT66Style::DeferRebuild(this, 100);
+		FT66FlatStyle::DeferRebuild(this, 100);
 	}
 }
 
@@ -354,8 +352,8 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 	const FText NetWorthFmt = Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}");
 	const FText GoldFmt = Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}");
 	const FText OweFmt = Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}");
-	const float CardWidth = FT66Style::Tokens::NPCCompactShopCardWidth;
-	const float CardHeight = FT66Style::Tokens::NPCCompactShopCardHeight;
+	const float CardWidth = FT66FlatStyle::Tokens::NPCCompactShopCardWidth;
+	const float CardHeight = FT66FlatStyle::Tokens::NPCCompactShopCardHeight;
 	const float CardPadding = 5.f;
 	const float CardNameBoxHeight = 28.f;
 	const float CardIconSize = CardWidth - CardPadding * 2.f;
@@ -383,14 +381,14 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 			.WidthOverride(CardWidth)
 			.HeightOverride(CardHeight)
 			[
-				T66OverlayChromeStyle::MakePanel(
+				FT66FlatStyle::MakeFlatOverlayPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
 						SNew(STextBlock)
 						.Text(HeadingText)
-						.Font(FT66Style::Tokens::FontBold(SectionFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(SectionFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 					[
@@ -399,8 +397,8 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 						[
 							SAssignNew(OutTitleText, STextBlock)
 							.Text(FText::GetEmpty())
-							.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Font(FT66FlatStyle::Tokens::FontBold(CardHeadingFontSize))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							.AutoWrapText(true)
 							.WrapTextAt(CardWidth - CardPadding * 2.f)
 						]
@@ -410,18 +408,20 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
 						[
-							T66OverlayChromeStyle::MakePanel(
+							FT66FlatStyle::MakeFlatOverlayPanel(
 								SNew(SBox)
 								.WidthOverride(CardIconSize)
 								.HeightOverride(CardIconSize)
 								[
-									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+									FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 										SAssignNew(OutIconImage, SImage)
 										.Image(IconBrush.Get())
 										.ColorAndOpacity(FLinearColor::White)
-										.Visibility(EVisibility::Hidden)))
+										.Visibility(EVisibility::Hidden)),
+										NAME_None,
+										TEXT("Icon"))
 								],
-								ET66OverlayChromeBrush::SlotNormal,
+								ET66FlatOverlayChromeBrush::SlotNormal,
 								FMargin(0.f))
 						]
 					]
@@ -429,22 +429,22 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 					[
 						SAssignNew(OutDetailText, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontRegular(CardBodyFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.Font(FT66FlatStyle::Tokens::FontRegular(CardBodyFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						.AutoWrapText(true)
 						.WrapTextAt(CardWidth - CardPadding * 2.f)
 					],
-					ET66OverlayChromeBrush::OfferCardNormal,
+					ET66FlatOverlayChromeBrush::OfferCardNormal,
 					FMargin(CardPadding),
 					&OutBorder)
 			];
 	};
 
-	TSharedRef<SWidget> UpgradeButtonWidget = T66OverlayChromeStyle::MakeButton(
-		T66OverlayChromeStyle::MakeButtonParams(
+	TSharedRef<SWidget> UpgradeButtonWidget = FT66FlatStyle::MakeFlatOverlayButton(
+		FT66FlatStyle::MakeFlatOverlayButtonParams(
 			UpgradeText,
 			FOnClicked::CreateUObject(this, &UT66CasinoOverlayWidget::OnAlchemyTransmuteClicked),
-			ET66OverlayChromeButtonFamily::Primary)
+			ET66FlatOverlayChromeButtonFamily::Primary)
 	.SetMinWidth(CardWidth)
 	.SetPadding(CompactButtonPadding)
 	.SetFontSize(SectionFontSize)
@@ -452,48 +452,48 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 	AlchemyUpgradeButton = UpgradeButtonWidget;
 
 	TSharedRef<SWidget> RootWidget =
-		T66OverlayChromeStyle::MakePanel(
+		FT66FlatStyle::MakeFlatOverlayPanel(
 			SNew(SVerticalBox)
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.Casino", "AlchemyTitle", "ALCHEMY"))
-				.Font(FT66Style::Tokens::FontBold(TitleFontSize))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(TitleFontSize))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 10.f)
 			[
-				T66OverlayChromeStyle::MakePanel(
+				FT66FlatStyle::MakeFlatOverlayPanel(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
 					[
 						SAssignNew(AlchemyNetWorthText, STextBlock)
 						.Text(FText::Format(NetWorthFmt, FText::AsNumber(RunState ? RunState->GetNetWorth() : 0)))
-						.Font(FT66Style::Tokens::FontBold(TopBarFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(TopBarFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
 					[
 						SAssignNew(AlchemyGoldText, STextBlock)
 						.Text(FText::Format(GoldFmt, FText::AsNumber(RunState ? RunState->GetCurrentGold() : 0)))
-						.Font(FT66Style::Tokens::FontBold(TopBarFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(TopBarFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 16.f, 0.f)
 					[
 						SAssignNew(AlchemyDebtText, STextBlock)
 						.Text(FText::Format(OweFmt, FText::AsNumber(RunState ? RunState->GetCurrentDebt() : 0)))
-						.Font(FT66Style::Tokens::FontBold(TopBarFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(TopBarFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
 						SAssignNew(AlchemyAngerText, STextBlock)
 						.Text(FText::Format(NSLOCTEXT("T66.Casino", "AngerFormat", "ANGER: {0}%"), FText::AsNumber(RunState ? FMath::RoundToInt(RunState->GetCasinoAnger01() * 100.f) : 0)))
-						.Font(FT66Style::Tokens::FontBold(TopBarFontSize))
+						.Font(FT66FlatStyle::Tokens::FontBold(TopBarFontSize))
 						.ColorAndOpacity(FLinearColor(0.95f, 0.65f, 0.20f, 1.f))
 					],
-					ET66OverlayChromeBrush::HeaderSummaryBar,
+					ET66FlatOverlayChromeBrush::HeaderSummaryBar,
 					FMargin(10.f)
 				)
 			]
@@ -516,8 +516,8 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 					[
 						SNew(STextBlock)
 						.Text(NSLOCTEXT("T66.Casino", "AlchemyArrow", "=>"))
-						.Font(FT66Style::Tokens::FontBold(ArrowFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(ArrowFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth()
 					[
@@ -547,19 +547,19 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 			[
 				SAssignNew(AlchemyEmptyStateText, STextBlock)
 				.Text(EmptyStateText)
-				.Font(FT66Style::Tokens::FontBold(SectionFontSize))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Font(FT66FlatStyle::Tokens::FontBold(SectionFontSize))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 				.Visibility(EVisibility::Collapsed)
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
 			[
 				SAssignNew(AlchemyStatusText, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(SmallFontSize))
+				.Font(FT66FlatStyle::Tokens::FontBold(SmallFontSize))
 				.ColorAndOpacity(FLinearColor::White)
 				.Justification(ETextJustify::Center)
 			],
-			ET66OverlayChromeBrush::ContentPanelWide,
+			ET66FlatOverlayChromeBrush::ContentPanelWide,
 			FMargin(20.f)
 		);
 
@@ -689,8 +689,8 @@ void UT66CasinoOverlayWidget::RefreshAlchemyDropTargets()
 		}
 	};
 
-	ClearCard(AlchemyTargetBorder, AlchemyTargetIconImage, AlchemyTargetText, AlchemyTargetDetailText, AlchemyTargetIconBrush, FT66Style::Tokens::Panel2);
-	ClearCard(AlchemySacrificeBorder, AlchemySacrificeIconImage, AlchemySacrificeText, AlchemySacrificeDetailText, AlchemySacrificeIconBrush, FT66Style::Tokens::Panel2);
+	ClearCard(AlchemyTargetBorder, AlchemyTargetIconImage, AlchemyTargetText, AlchemyTargetDetailText, AlchemyTargetIconBrush, FT66FlatStyle::Tokens::Panel2);
+	ClearCard(AlchemySacrificeBorder, AlchemySacrificeIconImage, AlchemySacrificeText, AlchemySacrificeDetailText, AlchemySacrificeIconBrush, FT66FlatStyle::Tokens::Panel2);
 
 	if (AlchemyCardsRowContainer.IsValid())
 	{
@@ -719,11 +719,11 @@ void UT66CasinoOverlayWidget::RefreshAlchemyDropTargets()
 
 	if (AlchemyTargetBorder.IsValid())
 	{
-		AlchemyTargetBorder->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
+		AlchemyTargetBorder->SetBorderBackgroundColor(FT66FlatStyle::Tokens::Panel2);
 	}
 	if (AlchemySacrificeBorder.IsValid())
 	{
-		AlchemySacrificeBorder->SetBorderBackgroundColor(FT66Style::Tokens::Panel2 * 0.55f + FT66Style::Tokens::Success * 0.45f);
+		AlchemySacrificeBorder->SetBorderBackgroundColor(FT66FlatStyle::Tokens::Panel2 * 0.55f + FT66FlatStyle::Tokens::Success * 0.45f);
 	}
 
 	const FText TargetName = Loc

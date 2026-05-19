@@ -20,12 +20,12 @@ static const FName T66VisualUtilTowerCeilingTag(TEXT("T66_Tower_Ceiling"));
 static const FName T66VisualUtilTraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
 static const TCHAR* T66TowerFloorTagPrefix = TEXT("T66_TowerFloor_");
 
-static UMaterialInterface* GetEnvironmentUnlitMaterial()
+static UMaterialInterface* GetActorUnlitMaterial()
 {
 	static TObjectPtr<UMaterialInterface> Cached = nullptr;
 	if (!Cached)
 	{
-		Cached = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+		Cached = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_GLB_Unlit.M_GLB_Unlit"));
 	}
 	return Cached.Get();
 }
@@ -46,7 +46,7 @@ static UTexture* GetWhiteFallbackTexture()
 
 UMaterialInterface* FT66VisualUtil::GetFlatColorMaterial()
 {
-	return GetEnvironmentUnlitMaterial();
+	return GetActorUnlitMaterial();
 }
 
 void FT66VisualUtil::ConfigureFlatColorMaterial(UMaterialInstanceDynamic* Material, const FLinearColor& Color)
@@ -88,14 +88,15 @@ void FT66VisualUtil::ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, c
 		}
 	}
 
-	// Fallback to M_Environment_Unlit (Unlit, uses Tint parameter).
-	if (UMaterialInterface* EnvUnlit = GetEnvironmentUnlitMaterial())
+	// Fallback to the actor-unlit band so runtime-colored props stay readable against lit terrain.
+	if (UMaterialInterface* ActorUnlit = GetActorUnlitMaterial())
 	{
-		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(EnvUnlit, Outer ? Outer : Mesh))
+		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ActorUnlit, Outer ? Outer : Mesh))
 		{
 			if (UTexture* WhiteTexture = GetWhiteFallbackTexture())
 			{
 				Mat->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
+				Mat->SetTextureParameterValue(TEXT("BaseColorTexture"), WhiteTexture);
 			}
 			Mat->SetVectorParameterValue(FName("Tint"), Color);
 			Mesh->SetMaterial(0, Mat);

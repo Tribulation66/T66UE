@@ -11,9 +11,7 @@
 #include "Data/T66DataTypes.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
-#include "UI/Style/T66OverlayChromeStyle.h"
 #include "UI/Style/T66FlatStyle.h"
-#include "UI/Style/T66Style.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -76,7 +74,7 @@ namespace
 		const float H,
 		const TSharedRef<SWidget>& Widget)
 	{
-		const float UiScale = FMath::Max(0.1f, FT66Style::GetGlobalUIScale());
+		const float UiScale = FMath::Max(0.1f, FT66FlatStyle::GetGlobalUIScale());
 		Canvas->AddSlot()
 			.Anchors(FAnchors(0.f, 0.f))
 			.Alignment(FVector2D(0.f, 0.f))
@@ -246,10 +244,12 @@ void UT66CasinoShopTabWidget::NativeDestruct()
 		}
 	}
 
-	// Safety: if destroyed unexpectedly, restore gameplay input.
+	// Safety: if destroyed unexpectedly as a standalone overlay, restore gameplay input.
+	// Embedded casino-shell tabs are rebuilt through the host overlay and must not steal
+	// input back from the visible shell.
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		if (PC->IsGameplayLevel() && !PC->IsPaused())
+		if (!bEmbeddedInCasinoShell && PC->IsGameplayLevel() && !PC->IsPaused())
 		{
 			PC->RestoreGameplayInputMode();
 		}
@@ -379,34 +379,32 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 		RunState->BossChanged.AddDynamic(this, &UT66CasinoShopTabWidget::HandleBossChanged);
 	}
 
-	const ISlateStyle& Style = FT66Style::Get();
-
-	const FTextBlockStyle& TextTitle = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Title");
-	const FTextBlockStyle& TextHeading = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
-	const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
-	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+	const FTextBlockStyle& TextTitle = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Title"));
+	const FTextBlockStyle& TextHeading = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading"));
+	const FTextBlockStyle& TextBody = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body"));
+	const FTextBlockStyle& TextChip = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Chip"));
 	const bool bCompactCasinoLayout = bEmbeddedInCasinoShell;
-	const float CompactUiScale = bCompactCasinoLayout ? FMath::Max(0.1f, FT66Style::GetGlobalUIScale()) : 1.f;
+	const float CompactUiScale = bCompactCasinoLayout ? FMath::Max(0.1f, FT66FlatStyle::GetGlobalUIScale()) : 1.f;
 	auto CompactPx = [bCompactCasinoLayout, CompactUiScale](const float Value)
 	{
 		return bCompactCasinoLayout ? (Value / CompactUiScale) : Value;
 	};
-	const float OverlayPadding = bCompactCasinoLayout ? 0.f : FT66Style::Tokens::NPCOverlayPadding;
-	const float AngerFaceSize = bCompactCasinoLayout ? CompactPx(288.f) : FT66Style::Tokens::NPCAngerCircleSize;
-	const float StatsPanelWidth = bCompactCasinoLayout ? 270.f : FT66Style::Tokens::NPCShopStatsPanelWidth;
-	const float RightPanelWidth = bCompactCasinoLayout ? 355.f : FT66Style::Tokens::NPCRightPanelWidth;
-	const float MainRowHeight = bCompactCasinoLayout ? 651.f : FT66Style::Tokens::NPCMainRowHeight;
-	const float ShopCardSize = bCompactCasinoLayout ? CompactPx(226.f) : FT66Style::Tokens::NPCShopCardWidth;
-	const float ShopCardHeight = bCompactCasinoLayout ? CompactPx(527.f) : FT66Style::Tokens::NPCShopCardHeight;
-	const float ShopCardGap = bCompactCasinoLayout ? CompactPx(13.f) : FT66Style::Tokens::Space4;
-	const float ShopCardPadding = bCompactCasinoLayout ? CompactPx(12.f) : FT66Style::Tokens::Space4;
+	const float OverlayPadding = bCompactCasinoLayout ? 0.f : FT66FlatStyle::Tokens::NPCOverlayPadding;
+	const float AngerFaceSize = bCompactCasinoLayout ? CompactPx(288.f) : FT66FlatStyle::Tokens::NPCAngerCircleSize;
+	const float StatsPanelWidth = bCompactCasinoLayout ? 270.f : FT66FlatStyle::Tokens::NPCShopStatsPanelWidth;
+	const float RightPanelWidth = bCompactCasinoLayout ? 355.f : FT66FlatStyle::Tokens::NPCRightPanelWidth;
+	const float MainRowHeight = bCompactCasinoLayout ? 651.f : FT66FlatStyle::Tokens::NPCMainRowHeight;
+	const float ShopCardSize = bCompactCasinoLayout ? CompactPx(226.f) : FT66FlatStyle::Tokens::NPCShopCardWidth;
+	const float ShopCardHeight = bCompactCasinoLayout ? CompactPx(527.f) : FT66FlatStyle::Tokens::NPCShopCardHeight;
+	const float ShopCardGap = bCompactCasinoLayout ? CompactPx(13.f) : FT66FlatStyle::Tokens::Space4;
+	const float ShopCardPadding = bCompactCasinoLayout ? CompactPx(12.f) : FT66FlatStyle::Tokens::Space4;
 	const float ShopNameBoxHeight = bCompactCasinoLayout ? CompactPx(50.f) : 60.f;
 	const float ShopIconSize = ShopCardSize - ShopCardPadding * 2.f;
-	const float InventorySlotSize = bCompactCasinoLayout ? CompactPx(75.f) : FT66Style::Tokens::InventorySlotSize;
+	const float InventorySlotSize = bCompactCasinoLayout ? CompactPx(75.f) : FT66FlatStyle::Tokens::InventorySlotSize;
 	const float AngerImageSize = bCompactCasinoLayout ? CompactPx(288.f) : 260.f;
 	const float SellPanelSize = bCompactCasinoLayout ? CompactPx(92.f) : 160.f;
-	const float BankSpinBoxWidth = bCompactCasinoLayout ? CompactPx(140.f) : FT66Style::Tokens::NPCBankSpinBoxWidth;
-	const float BankSpinBoxHeight = bCompactCasinoLayout ? CompactPx(48.f) : FT66Style::Tokens::NPCBankSpinBoxHeight;
+	const float BankSpinBoxWidth = bCompactCasinoLayout ? CompactPx(140.f) : FT66FlatStyle::Tokens::NPCBankSpinBoxWidth;
+	const float BankSpinBoxHeight = bCompactCasinoLayout ? CompactPx(48.f) : FT66FlatStyle::Tokens::NPCBankSpinBoxHeight;
 	const float CardButtonMinWidth = bCompactCasinoLayout ? 0.f : 100.f;
 	const FMargin ShopButtonPadding = bCompactCasinoLayout ? FMargin(CompactPx(10.f), CompactPx(7.f)) : FMargin(8.f, 6.f);
 	const FMargin ActionButtonPadding = bCompactCasinoLayout ? FMargin(CompactPx(14.f), CompactPx(10.f)) : FMargin(16.f, 10.f);
@@ -536,14 +534,14 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 							SAssignNew(ItemNameTexts[i], STextBlock)
 							.Text(FText::GetEmpty())
 							.TextStyle(&TextHeading)
-							.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Font(FT66FlatStyle::Tokens::FontBold(CardHeadingFontSize))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							.AutoWrapText(true)
 							.WrapTextAt(ShopCardSize - ShopCardPadding * 2.f)
 						]
 					]
 					// 2. Large image below name (centered)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space2, 0.f, 0.f)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
@@ -555,33 +553,35 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 								.WidthOverride(ShopIconSize)
 								.HeightOverride(ShopIconSize)
 								[
-									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+									FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 										SAssignNew(ItemIconImages[i], SImage)
 										.Image(ItemIconBrushes[i].Get())
-										.ColorAndOpacity(FLinearColor::White)))
+										.ColorAndOpacity(FLinearColor::White)),
+										FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.Icon"), i + 1)),
+										TEXT("Icon"))
 								],
 								&ItemIconBorders[i],
 								FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.IconPanel"), i + 1)))
 						]
 					]
 					// 3. Two stat lines stacked
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space2, 0.f, 0.f)
 					[
 						SAssignNew(ItemDescTexts[i], STextBlock)
 						.Text(FText::GetEmpty())
 						.TextStyle(&TextBody)
-						.Font(FT66Style::Tokens::FontRegular(CardBodyFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.Font(FT66FlatStyle::Tokens::FontRegular(CardBodyFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						.AutoWrapText(true)
 						.WrapTextAt(ShopCardSize - ShopCardPadding * 2.f)
 					]
 					// 4. Buy and Steal side by side
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space3, 0.f, 0.f)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot()
 							.FillWidth(1.f)
-							.Padding(0.f, 0.f, FT66Style::Tokens::Space2, 0.f)
+							.Padding(0.f, 0.f, FT66FlatStyle::Tokens::Space2, 0.f)
 						[ BuyBtnWidget ]
 						+ SHorizontalBox::Slot()
 							.FillWidth(1.f)
@@ -647,13 +647,13 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 							SAssignNew(BuybackNameTexts[i], STextBlock)
 							.Text(FText::GetEmpty())
 							.TextStyle(&TextHeading)
-							.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Font(FT66FlatStyle::Tokens::FontBold(CardHeadingFontSize))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							.AutoWrapText(true)
 							.WrapTextAt(ShopCardSize - ShopCardPadding * 2.f)
 						]
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space2, 0.f, 0.f)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
@@ -665,26 +665,28 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 								.WidthOverride(ShopIconSize)
 								.HeightOverride(ShopIconSize)
 								[
-									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+									FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 										SAssignNew(BuybackIconImages[i], SImage)
 										.Image(BuybackIconBrushes[i].Get())
-										.ColorAndOpacity(FLinearColor::White)))
+										.ColorAndOpacity(FLinearColor::White)),
+										FName(*FString::Printf(TEXT("Vendor.BuybackCard.%02d.Icon"), i + 1)),
+										TEXT("Icon"))
 								],
 								&BuybackIconBorders[i],
 								FName(*FString::Printf(TEXT("Vendor.BuybackCard.%02d.IconPanel"), i + 1)))
 						]
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space2, 0.f, 0.f)
 					[
 						SAssignNew(BuybackDescTexts[i], STextBlock)
 						.Text(FText::GetEmpty())
 						.TextStyle(&TextBody)
-						.Font(FT66Style::Tokens::FontRegular(CardBodyFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.Font(FT66FlatStyle::Tokens::FontRegular(CardBodyFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						.AutoWrapText(true)
 						.WrapTextAt(ShopCardSize - ShopCardPadding * 2.f)
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space3, 0.f, 0.f)
 					[
 						BuybackBtnWidget
 					]
@@ -702,15 +704,15 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 		.HeightOverride(bCompactCasinoLayout ? 160.f : 220.f)
 		.Visibility(EVisibility::Collapsed)
 		[
-			FT66Style::MakePanel(
+			FT66FlatStyle::MakePanel(
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.Shop", "StealTimingTitle", "STEAL (TIMING)"))
 					.TextStyle(&TextHeading)
-					.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Font(FT66FlatStyle::Tokens::FontBold(CardHeadingFontSize))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 10.f)
 				[
@@ -721,7 +723,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							FT66Style::MakePanel(SNullWidget::NullWidget, FT66PanelParams(ET66PanelType::Panel2))
+							FT66FlatStyle::MakePanel(SNullWidget::NullWidget, FT66PanelParams(ET66PanelType::Panel2))
 						]
 						+ SOverlay::Slot()
 						.HAlign(HAlign_Left)
@@ -738,9 +740,9 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 								SNew(SBox)
 								.WidthOverride(10.f)
 								[
-									FT66Style::MakePanel(
+									FT66FlatStyle::MakePanel(
 										SNullWidget::NullWidget,
-										FT66PanelParams(ET66PanelType::Panel2).SetColor(FT66Style::Tokens::Success))
+										FT66PanelParams(ET66PanelType::Panel2).SetColor(FT66FlatStyle::Tokens::Success))
 								]
 							]
 						]
@@ -751,12 +753,12 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.Shop", "StealTimingInstructions", "Press STOP near the center."))
 					.TextStyle(&TextBody)
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 				[
-					FT66Style::MakeButton(
-						FT66Style::MakeInRunButtonParams(
+					FT66FlatStyle::MakeButton(
+						FT66FlatStyle::MakeInRunButtonParams(
 							NSLOCTEXT("T66.Shop", "Stop", "STOP"),
 							FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnStealStop),
 							ET66ButtonType::Primary)
@@ -765,7 +767,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 					)
 				]
 			,
-				FT66PanelParams(ET66PanelType::Panel).SetPadding(18.f).SetColor(FT66Style::Tokens::Panel2))
+				FT66PanelParams(ET66PanelType::Panel).SetPadding(18.f).SetColor(FT66FlatStyle::Tokens::Panel2))
 		];
 
 	auto MakeTitle = [&](const FText& Text) -> TSharedRef<SWidget>
@@ -773,12 +775,12 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 		return SNew(STextBlock)
 			.Text(Text)
 			.TextStyle(&TextTitle)
-			.ColorAndOpacity(FT66Style::Tokens::Text);
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text);
 	};
 
 	// Pre-create inventory grid (buttons use centralized MakeButton).
 	TSharedRef<SUniformGridPanel> InventoryGrid = SNew(SUniformGridPanel)
-		.SlotPadding(FMargin(FT66Style::Tokens::Space2, 0.f));
+		.SlotPadding(FMargin(FT66FlatStyle::Tokens::Space2, 0.f));
 
 	for (int32 Inv = 0; Inv < UT66RunStateSubsystem::MaxInventorySlots; ++Inv)
 	{
@@ -790,17 +792,19 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 					SNew(SOverlay)
 					+ SOverlay::Slot()
 					[
-						FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+						FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 							SAssignNew(InventorySlotIconImages[Inv], SImage)
 							.Image(InventorySlotIconBrushes[Inv].Get())
-							.ColorAndOpacity(FLinearColor::White)))
+							.ColorAndOpacity(FLinearColor::White)),
+							FName(*FString::Printf(TEXT("Vendor.InventorySlot.%02d.Icon"), Inv + 1)),
+							TEXT("Icon"))
 					]
 					+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0.f, 6.f, 8.f, 0.f)
 					[
 						SAssignNew(InventorySlotCountTexts[Inv], STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(InventoryCountFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(InventoryCountFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 						.ShadowOffset(FVector2D(1.f, 1.f))
 						.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
 						.Visibility(EVisibility::Hidden)
@@ -810,8 +814,8 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 						SAssignNew(InventorySlotTexts[Inv], STextBlock)
 						.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
 						.TextStyle(&TextChip)
-						.Font(FT66Style::Tokens::FontBold(InventoryDashFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(InventoryDashFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 					,
 					&InventorySlotBorders[Inv],
@@ -1228,7 +1232,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 
 	// Build main 3-column row (Stats | Shop | Bank) as a separate widget to avoid Slate parser issues with SBox::FArguments.
 	TSharedRef<SWidget> MainRowContent = SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
+		+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space6, 0.f)
 		[
 			SAssignNew(StatsPanelBox, SBox)
 			.WidthOverride(StatsPanelWidth)
@@ -1237,7 +1241,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 				T66StatsPanelSlate::MakeLiveEssentialStatsPanel(RunState, Loc, LiveStatsPanel.ToSharedRef(), StatsPanelWidth, true, StatsPanelFontAdjustment)
 			]
 		]
-		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
+		+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space6, 0.f)
 		[
 			SNew(SBox)
 			.MinDesiredHeight(MainRowHeight)
@@ -1246,7 +1250,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Left)
 					[
 						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
+						+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66FlatStyle::Tokens::Space4, 0.f)
 						[
 							ShopModeToggleButton
 						]
@@ -1255,9 +1259,9 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 							ContextRerollButton
 						]
 					]
-					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, FT66Style::Tokens::Space4, 0.f, 0.f)
+					+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, FT66FlatStyle::Tokens::Space4, 0.f, 0.f)
 					[
-						T66OverlayChromeStyle::MakePanel(
+						FT66FlatStyle::MakeFlatOverlayPanel(
 							SAssignNew(ShopBuybackSwitcher, SWidgetSwitcher)
 							+ SWidgetSwitcher::Slot()
 							[
@@ -1267,8 +1271,8 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 							[
 								BuybackCardsScroller
 							],
-							ET66OverlayChromeBrush::ContentPanelWide,
-							FMargin(FT66Style::Tokens::Space6))
+							ET66FlatOverlayChromeBrush::ContentPanelWide,
+							FMargin(FT66FlatStyle::Tokens::Space6))
 					]
 					]
 				]
@@ -1278,7 +1282,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 			.WidthOverride(RightPanelWidth)
 			.MinDesiredHeight(MainRowHeight)
 			[
-				T66OverlayChromeStyle::MakePanel(
+				FT66FlatStyle::MakeFlatOverlayPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 14.f)
 					[
@@ -1296,15 +1300,15 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 0.f)
 					[
-						T66OverlayChromeStyle::MakePanel(
+						FT66FlatStyle::MakeFlatOverlayPanel(
 							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
+							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66FlatStyle::Tokens::Space4)
 							[
 								SNew(STextBlock)
 								.Text(BankTitle)
 								.TextStyle(&TextHeading)
-								.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 							[
@@ -1317,7 +1321,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 									[
 										SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
 										.MinValue(0).MaxValue(999999).Delta(10)
-										.Font(FT66Style::Tokens::FontBold(SpinBoxFontSize))
+										.Font(FT66FlatStyle::Tokens::FontBold(SpinBoxFontSize))
 										.Value(BorrowAmount)
 										.OnValueChanged_Lambda([this](int32 V)
 										{
@@ -1332,11 +1336,11 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 								]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 								[
-									T66OverlayChromeStyle::MakeButton(
-										T66OverlayChromeStyle::MakeButtonParams(
+									FT66FlatStyle::MakeFlatOverlayButton(
+										FT66FlatStyle::MakeFlatOverlayButtonParams(
 											Loc ? Loc->GetText_Borrow() : NSLOCTEXT("T66.Shop", "Borrow_Button", "BORROW"),
 											FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnBorrowClicked),
-											ET66OverlayChromeButtonFamily::Neutral)
+											ET66FlatOverlayChromeButtonFamily::Neutral)
 										.SetMinWidth(0.f)
 										.SetPadding(ActionButtonPadding)
 										.SetFontSize(CardButtonFontSize)
@@ -1354,18 +1358,18 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 									[
 										SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
 										.MinValue(0).MaxValue(999999).Delta(10)
-										.Font(FT66Style::Tokens::FontBold(SpinBoxFontSize))
+										.Font(FT66FlatStyle::Tokens::FontBold(SpinBoxFontSize))
 										.Value(PaybackAmount)
 										.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
 									]
 								]
 								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 								[
-									T66OverlayChromeStyle::MakeButton(
-										T66OverlayChromeStyle::MakeButtonParams(
+									FT66FlatStyle::MakeFlatOverlayButton(
+										FT66FlatStyle::MakeFlatOverlayButtonParams(
 											Loc ? Loc->GetText_Payback() : NSLOCTEXT("T66.Shop", "Payback_Button", "PAYBACK"),
 											FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnPaybackClicked),
-											ET66OverlayChromeButtonFamily::Neutral)
+											ET66FlatOverlayChromeButtonFamily::Neutral)
 										.SetMinWidth(0.f)
 										.SetPadding(ActionButtonPadding)
 										.SetFontSize(CardButtonFontSize)
@@ -1373,12 +1377,12 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 								]
 							]
 						,
-							ET66OverlayChromeBrush::InnerPanel,
-							FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space5))
+							ET66FlatOverlayChromeBrush::InnerPanel,
+							FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space5))
 					]
 				,
-					ET66OverlayChromeBrush::ContentPanelTall,
-					FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6))
+					ET66FlatOverlayChromeBrush::ContentPanelTall,
+					FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space6))
 			]
 		];
 
@@ -1392,8 +1396,8 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 				SAssignNew(ShopPageTitleText, STextBlock)
 				.Text(ShopTitle)
 				.TextStyle(&TextTitle)
-				.Font(FT66Style::Tokens::FontBold(PageTitleFontSize))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(PageTitleFontSize))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 				.Visibility(bCompactCasinoLayout ? EVisibility::Collapsed : EVisibility::Visible)
 			]
 		]
@@ -1402,16 +1406,16 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 			SAssignNew(StatusText, STextBlock)
 			.Text(FText::GetEmpty())
 			.TextStyle(&TextBody)
-			.Font(FT66Style::Tokens::FontRegular(StatusFontSize))
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.Font(FT66FlatStyle::Tokens::FontRegular(StatusFontSize))
+			.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space4 : FT66FlatStyle::Tokens::Space6, 0.f, 0.f)
 		[
 			MainRowContent
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space4 : FT66FlatStyle::Tokens::Space6, 0.f, 0.f)
 		[
-			T66OverlayChromeStyle::MakePanel(
+			FT66FlatStyle::MakeFlatOverlayPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -1421,8 +1425,8 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 							SNew(STextBlock)
 								.Text(InventoryTitle)
 								.TextStyle(&TextHeading)
-								.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(bCompactCasinoLayout ? 10.f : 18.f, 0.f, bCompactCasinoLayout ? 10.f : 16.f, 0.f)
 					[
@@ -1431,8 +1435,8 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 							Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}"),
 							FText::AsNumber(0)))
 						.TextStyle(&TextHeading)
-						.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, bCompactCasinoLayout ? 10.f : 16.f, 0.f)
 					[
@@ -1441,8 +1445,8 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 							Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}"),
 							FText::AsNumber(0)))
 						.TextStyle(&TextHeading)
-						.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
@@ -1451,15 +1455,15 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 							Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}"),
 							FText::AsNumber(0)))
 						.TextStyle(&TextHeading)
-						.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Danger)
+						.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Danger)
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f)
 					[
 						SNew(SSpacer)
 					]
 				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space3, 0.f, 0.f)
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().FillWidth(1.f)
@@ -1472,7 +1476,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 							InventoryGrid
 						]
 					]
-					+ SHorizontalBox::Slot().AutoWidth().Padding(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f, 0.f, 0.f)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space6, 0.f, 0.f, 0.f)
 					[
 						// Sell details for selected item (sized to match inventory slot: 160x160)
 						SAssignNew(SellPanelContainer, SBox)
@@ -1480,23 +1484,23 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 						.HeightOverride(SellPanelSize)
 						.Visibility(EVisibility::Visible)
 						[
-							T66OverlayChromeStyle::MakePanel(
+							FT66FlatStyle::MakeFlatOverlayPanel(
 								SNew(SVerticalBox)
 								+ SVerticalBox::Slot().AutoHeight()
 								[
 									SAssignNew(SellItemNameText, STextBlock)
 									.Text(FText::GetEmpty())
 									.TextStyle(&TextHeading)
-									.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									.Font(FT66FlatStyle::Tokens::FontBold(CardHeadingFontSize))
+									.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 								[
 									SAssignNew(SellItemDescText, STextBlock)
 									.Text(FText::GetEmpty())
 									.TextStyle(&TextBody)
-									.Font(FT66Style::Tokens::FontRegular(CardBodyFontSize))
-									.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+									.Font(FT66FlatStyle::Tokens::FontRegular(CardBodyFontSize))
+									.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 									.AutoWrapText(true)
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
@@ -1504,25 +1508,25 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 									SAssignNew(SellItemPriceText, STextBlock)
 									.Text(FText::GetEmpty())
 									.TextStyle(&TextChip)
-									.Font(FT66Style::Tokens::FontBold(CardButtonFontSize))
-									.ColorAndOpacity(FT66Style::Tokens::Accent2)
+									.Font(FT66FlatStyle::Tokens::FontBold(CardButtonFontSize))
+									.ColorAndOpacity(FT66FlatStyle::Tokens::Accent2)
 								]
 								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 								[ SellBtnWidget ]
 							,
-								ET66OverlayChromeBrush::InnerPanel,
-								FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4))
+								ET66FlatOverlayChromeBrush::InnerPanel,
+								FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space4))
 						]
 					]
 				]
 			,
-				ET66OverlayChromeBrush::ContentPanelWide,
-				FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4))
+				ET66FlatOverlayChromeBrush::ContentPanelWide,
+				FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space4))
 		];
 
 	const TAttribute<FOptionalSize> ShopPageWidthAttr = TAttribute<FOptionalSize>::CreateLambda([this, OverlayPadding]() -> FOptionalSize
 	{
-		const FVector2D Bounds = bEmbeddedInCasinoShell ? FT66Style::GetViewportLogicalSize() : FT66Style::GetSafeFrameSize();
+		const FVector2D Bounds = bEmbeddedInCasinoShell ? FT66FlatStyle::GetViewportLogicalSize() : FT66FlatStyle::GetSafeFrameSize();
 		const float HorizontalMargins = bEmbeddedInCasinoShell
 			? (OverlayPadding * 4.f)
 			: (OverlayPadding * 2.f);
@@ -1543,7 +1547,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 
 	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
 	{
-		return bEmbeddedInCasinoShell ? FMargin(0.f) : FT66Style::GetSafeFrameInsets();
+		return bEmbeddedInCasinoShell ? FMargin(0.f) : FT66FlatStyle::GetSafeFrameInsets();
 	});
 
 	const TAttribute<FMargin> SafeClosePadding = TAttribute<FMargin>::CreateLambda([this, OverlayPadding]() -> FMargin
@@ -1553,14 +1557,14 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 			OverlayPadding,
 			OverlayPadding,
 			0.f);
-		return bEmbeddedInCasinoShell ? LocalPadding : FT66Style::GetSafePadding(LocalPadding);
+		return bEmbeddedInCasinoShell ? LocalPadding : FT66FlatStyle::GetSafePadding(LocalPadding);
 	});
 
 	TSharedRef<SWidget> Root =
 		SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
-			T66OverlayChromeStyle::MakePanel(
+			FT66FlatStyle::MakeFlatOverlayPanel(
 				SNew(SBorder)
 				.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
 				.Padding(SafeContentInsets)
@@ -1572,7 +1576,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 					]
 				]
 			,
-				ET66OverlayChromeBrush::ContentPanelWide,
+				ET66FlatOverlayChromeBrush::ContentPanelWide,
 				FMargin(OverlayPadding))
 		]
 		+ SOverlay::Slot()
@@ -1583,10 +1587,10 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 			SAssignNew(CloseButtonBox, SBox)
 			.Visibility(EVisibility::Visible)
 			[
-				T66OverlayChromeStyle::MakeButton(
-					T66OverlayChromeStyle::MakeButtonParams(CloseText,
+				FT66FlatStyle::MakeFlatOverlayButton(
+					FT66FlatStyle::MakeFlatOverlayButtonParams(CloseText,
 						FOnClicked::CreateUObject(this, &UT66CasinoShopTabWidget::OnBack),
-						ET66OverlayChromeButtonFamily::Danger)
+						ET66FlatOverlayChromeButtonFamily::Danger)
 					.SetMinWidth(0.f)
 					.SetPadding(FMargin(20.f, 12.f))
 				)
@@ -1602,7 +1606,7 @@ TSharedRef<SWidget> UT66CasinoShopTabWidget::RebuildWidget()
 	SetPage(EShopPage::Shop);
 	RefreshAll();
 	RefreshShopChrome();
-	return bEmbeddedInCasinoShell ? Root : FT66Style::MakeResponsiveRoot(Root);
+	return bEmbeddedInCasinoShell ? Root : FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 
 void UT66CasinoShopTabWidget::HandleGoldOrDebtChanged()
@@ -1791,8 +1795,8 @@ void UT66CasinoShopTabWidget::RefreshTopBar()
 		const FText Fmt = Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}");
 		NetWorthText->SetText(FText::Format(Fmt, FText::AsNumber(NetWorth)));
 		const FLinearColor NetWorthColor = NetWorth > 0
-			? FT66Style::Tokens::Success
-			: (NetWorth < 0 ? FT66Style::Tokens::Danger : FT66Style::Tokens::Text);
+			? FT66FlatStyle::Tokens::Success
+			: (NetWorth < 0 ? FT66FlatStyle::Tokens::Danger : FT66FlatStyle::Tokens::Text);
 		NetWorthText->SetColorAndOpacity(NetWorthColor);
 	}
 	if (GoldText.IsValid())
@@ -1893,7 +1897,7 @@ void UT66CasinoShopTabWidget::RefreshStock()
 		}
 		if (ItemIconBorders.IsValidIndex(i) && ItemIconBorders[i].IsValid())
 		{
-			ItemIconBorders[i]->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(SlotRarity) : FT66Style::Tokens::Panel2);
+			ItemIconBorders[i]->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(SlotRarity) : FT66FlatStyle::Tokens::Panel2);
 		}
 		if (ItemIconBrushes.IsValidIndex(i) && ItemIconBrushes[i].IsValid())
 		{
@@ -1914,7 +1918,7 @@ void UT66CasinoShopTabWidget::RefreshStock()
 		}
 		if (ItemTileBorders.IsValidIndex(i) && ItemTileBorders[i].IsValid())
 		{
-			ItemTileBorders[i]->SetBorderBackgroundColor(bHasItem ? FT66Style::Tokens::Panel2 : FT66Style::Tokens::Panel);
+			ItemTileBorders[i]->SetBorderBackgroundColor(bHasItem ? FT66FlatStyle::Tokens::Panel2 : FT66FlatStyle::Tokens::Panel);
 		}
 		if (BuyButtons.IsValidIndex(i) && BuyButtons[i].IsValid())
 		{
@@ -1986,7 +1990,7 @@ void UT66CasinoShopTabWidget::RefreshBuyback()
 		}
 		if (BuybackIconBorders.IsValidIndex(i) && BuybackIconBorders[i].IsValid())
 		{
-			BuybackIconBorders[i]->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(SlotRarity) : FT66Style::Tokens::Panel2);
+			BuybackIconBorders[i]->SetBorderBackgroundColor(bHasData ? FItemData::GetItemRarityColor(SlotRarity) : FT66FlatStyle::Tokens::Panel2);
 		}
 		if (BuybackIconBrushes.IsValidIndex(i) && BuybackIconBrushes[i].IsValid())
 		{
@@ -2007,7 +2011,7 @@ void UT66CasinoShopTabWidget::RefreshBuyback()
 		}
 		if (BuybackTileBorders.IsValidIndex(i) && BuybackTileBorders[i].IsValid())
 		{
-			BuybackTileBorders[i]->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
+			BuybackTileBorders[i]->SetBorderBackgroundColor(FT66FlatStyle::Tokens::Panel2);
 		}
 		if (BuybackPriceTexts.IsValidIndex(i) && BuybackPriceTexts[i].IsValid())
 		{
@@ -2100,13 +2104,13 @@ void UT66CasinoShopTabWidget::RefreshInventory()
 		}
 		if (InventorySlotBorders.IsValidIndex(i) && InventorySlotBorders[i].IsValid())
 		{
-			FLinearColor Fill = FT66Style::Tokens::Panel2;
+			FLinearColor Fill = FT66FlatStyle::Tokens::Panel2;
 			FItemData D;
 			const bool bHasData = bHasItem && GI && GI->GetItemData(Inv[i], D);
 
 			if (i == SelectedInventoryIndex)
 			{
-				Fill = (Fill * 0.45f + FT66Style::Tokens::Accent * 0.55f);
+				Fill = (Fill * 0.45f + FT66FlatStyle::Tokens::Accent * 0.55f);
 			}
 			InventorySlotBorders[i]->SetBorderBackgroundColor(Fill);
 

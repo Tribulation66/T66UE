@@ -102,8 +102,8 @@ void UT66GameplayHUDWidget::RefreshEconomy()
 		NetWorthText->SetText(FText::AsNumber(NetWorth));
 
 		const FLinearColor NetWorthColor = NetWorth > 0
-			? FT66Style::Tokens::Success
-			: (NetWorth < 0 ? FT66Style::Tokens::Danger : FT66Style::Tokens::Text);
+			? FT66FlatStyle::Tokens::Success
+			: (NetWorth < 0 ? FT66FlatStyle::Tokens::Danger : FT66FlatStyle::Tokens::Text);
 		NetWorthText->SetColorAndOpacity(FSlateColor(NetWorthColor));
 	}
 
@@ -179,7 +179,7 @@ void UT66GameplayHUDWidget::RefreshStageAndTimer()
 	if (!RunState) return;
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
-	const UT66PlayerExperienceSubSystem* PlayerExperience = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
 	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
 
 	bool bTowerBloodActive = false;
@@ -200,7 +200,7 @@ void UT66GameplayHUDWidget::RefreshStageAndTimer()
 		DifficultyAreaNameText->SetText(BuildDifficultyAreaNameText(Difficulty));
 		DifficultyAreaNameText->SetColorAndOpacity(bTowerBloodActive
 			? FSlateColor(FLinearColor(0.95f, 0.18f, 0.20f, 1.0f))
-			: FSlateColor(FT66Style::Tokens::Accent2));
+			: FSlateColor(FT66FlatStyle::Tokens::Accent2));
 	}
 
 	// Stage number
@@ -208,12 +208,11 @@ void UT66GameplayHUDWidget::RefreshStageAndTimer()
 	{
 		StageText->SetText(BuildDisplayedStageText(
 			Loc,
-			PlayerExperience,
+			DifficultyTuning,
 			Difficulty,
-			RunState->GetCurrentStage(),
-			RunState->IsInStageCatchUp()));
+			RunState->GetCurrentStage()));
 
-		StageText->SetColorAndOpacity(bTowerBloodActive ? FSlateColor(FLinearColor(0.95f, 0.18f, 0.20f, 1.0f)) : FSlateColor(FT66Style::Tokens::Text));
+		StageText->SetColorAndOpacity(bTowerBloodActive ? FSlateColor(FLinearColor(0.95f, 0.18f, 0.20f, 1.0f)) : FSlateColor(FT66FlatStyle::Tokens::Text));
 	}
 
 	// (Central countdown timer removed)
@@ -401,7 +400,6 @@ void UT66GameplayHUDWidget::RefreshBeatTargets()
 		UT66LeaderboardRunSummarySaveGame* PacingSummary = PS->GetShowScorePacing() ? LoadPacingSummary(ScoreTarget) : nullptr;
 		FT66StagePacingPoint PacingPoint;
 		if (PS->GetShowScorePacing()
-			&& !RunState->IsInStageCatchUp()
 			&& PacingSummary
 			&& FindStagePacingPointForStage(PacingSummary, RunState->GetCurrentStage(), PacingPoint)
 			&& PacingPoint.Score > 0)
@@ -423,7 +421,7 @@ void UT66GameplayHUDWidget::RefreshBeatTargets()
 
 	if (SpeedRunTargetText.IsValid())
 	{
-		if (bShowLiveRunTime && PS->GetShowTimeToBeat() && TimeTarget.bValid && !RunState->IsInStageCatchUp())
+		if (bShowLiveRunTime && PS->GetShowTimeToBeat() && TimeTarget.bValid)
 		{
 			SpeedRunTargetText->SetText(FText::Format(
 				NSLOCTEXT("T66.GameplayHUD", "SpeedRunTargetFormat", "Time to Beat {0}"),
@@ -442,7 +440,6 @@ void UT66GameplayHUDWidget::RefreshBeatTargets()
 		FT66StagePacingPoint PacingPoint;
 		if (bShowLiveRunTime
 			&& PS->GetShowTimePacing()
-			&& !RunState->IsInStageCatchUp()
 			&& PacingSummary
 			&& FindStagePacingPointForStage(PacingSummary, RunState->GetCurrentStage(), PacingPoint)
 			&& PacingPoint.ElapsedSeconds > 0.f)
@@ -580,8 +577,8 @@ void UT66GameplayHUDWidget::RebuildBossPartBars(
 			.VAlign(VAlign_Center)
 			[
 				SAssignNew(Row.Text, STextBlock)
-				.Font(FT66Style::Tokens::FontBold(11))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(11))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 		];
 	}
@@ -776,7 +773,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	UT66LeaderboardSubsystem* LB = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LeaderboardSubsystem>() : nullptr;
 	UT66GameInstance* GIAsT66 = Cast<UT66GameInstance>(GetGameInstance());
 	const UT66GameInstance* T66GI = GIAsT66;
-	const UT66PlayerExperienceSubSystem* PlayerExperience = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
 
 	RefreshEconomy();
 	RefreshStageAndTimer();
@@ -996,8 +993,8 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	// Difficulty (Skulls): 5-slot compression with tier colors (no half-skulls).
 	{
 		const int32 Skulls = FMath::Max(0, RunState->GetDifficultySkulls());
-		const int32 SkullColorBandSize = PlayerExperience
-			? PlayerExperience->GetDifficultySkullColorBandSize(T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy)
+		const int32 SkullColorBandSize = DifficultyTuning
+			? DifficultyTuning->GetDifficultySkullColorBandSize(T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy)
 			: 4;
 
 		// Color tier changes every 4 skulls, but filling within a tier is 1..4.
@@ -1050,7 +1047,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	// Score multiplier color: theme for initial/tier 0, tier color for higher tiers
 	if (ScoreMultiplierText.IsValid())
 	{
-		ScoreMultiplierText->SetColorAndOpacity(FT66Style::Tokens::Text);
+		ScoreMultiplierText->SetColorAndOpacity(FT66FlatStyle::Tokens::Text);
 	}
 
 	// Dev toggles (immortality / power)
@@ -1060,7 +1057,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		ImmortalityButtonText->SetText(bOn
 			? NSLOCTEXT("T66.Dev", "ImmortalityOn", "IMMORTALITY: ON")
 			: NSLOCTEXT("T66.Dev", "ImmortalityOff", "IMMORTALITY: OFF"));
-		ImmortalityButtonText->SetColorAndOpacity(bOn ? FLinearColor(0.20f, 0.85f, 0.35f, 1.f) : FT66Style::Tokens::Text);
+		ImmortalityButtonText->SetColorAndOpacity(bOn ? FLinearColor(0.20f, 0.85f, 0.35f, 1.f) : FT66FlatStyle::Tokens::Text);
 	}
 	if (PowerButtonText.IsValid())
 	{
@@ -1068,7 +1065,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		PowerButtonText->SetText(bOn
 			? NSLOCTEXT("T66.Dev", "PowerOn", "POWER: ON")
 			: NSLOCTEXT("T66.Dev", "PowerOff", "POWER: OFF"));
-		PowerButtonText->SetColorAndOpacity(bOn ? FLinearColor(0.95f, 0.80f, 0.20f, 1.f) : FT66Style::Tokens::Text);
+		PowerButtonText->SetColorAndOpacity(bOn ? FLinearColor(0.95f, 0.80f, 0.20f, 1.f) : FT66FlatStyle::Tokens::Text);
 	}
 
 	// Idol slots: rarity-colored when equipped, dark teal when empty.
@@ -1136,7 +1133,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	const TArray<FT66InventorySlot>& InvSlots = EquippedInventorySlots;
 	if (InvSlots.Num() > InventorySlotBorders.Num())
 	{
-		FT66Style::DeferRebuild(this);
+		FT66FlatStyle::DeferRebuild(this);
 		return;
 	}
 	for (int32 i = 0; i < InventorySlotBorders.Num(); ++i)
@@ -1152,7 +1149,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			FItemData D;
 			if (InventoryGI && InventoryGI->GetItemData(ItemID, D))
 			{
-				SlotColor = InvSlots.IsValidIndex(i) ? FItemData::GetItemRarityColor(InvSlots[i].Rarity) : FT66Style::Tokens::Panel2;
+				SlotColor = InvSlots.IsValidIndex(i) ? FItemData::GetItemRarityColor(InvSlots[i].Rarity) : FT66FlatStyle::Tokens::Panel2;
 				TArray<FText> TipLines;
 				TipLines.Reserve(8);
 				const ET66ItemRarity SlotRarity = InvSlots.IsValidIndex(i) ? InvSlots[i].Rarity : ET66ItemRarity::Black;

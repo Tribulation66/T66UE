@@ -22,7 +22,6 @@ static const FName ParamNameCharacterPixelationWeight(TEXT("CharacterPixelationW
 void UT66PixelationSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	QueuePixelationMaterialPreload();
 }
 
 // Level 1 = least pixelation (high grid), 10 = most (capped at former level 1). Linear: 680 down to 320.
@@ -89,6 +88,13 @@ void UT66PixelationSubsystem::SetPixelationLevels(int32 WorldLevel, int32 Charac
 	{
 		return;
 	}
+
+	if (CurrentWorldLevel <= 0 && CurrentCharacterLevel <= 0)
+	{
+		ApplyLevelToBlendable();
+		return;
+	}
+
 	EnsureBlendableInWorld(World);
 	ApplyLevelToBlendable();
 }

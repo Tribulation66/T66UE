@@ -10,7 +10,7 @@
 
 namespace
 {
-	static const TCHAR* T66EnvironmentUnlitMaterialPath = TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit");
+	static const TCHAR* T66EnvironmentLitMaterialPath = TEXT("/Game/Materials/M_Environment_Lit.M_Environment_Lit");
 	static const TCHAR* T66CoherentThemeKitRoot = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01");
 
 	struct FT66TowerThemeSurfacePaths
@@ -112,7 +112,7 @@ namespace
 			}
 		}
 
-		UMaterialInterface* BaseMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+		UMaterialInterface* BaseMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(T66EnvironmentLitMaterialPath);
 		UTexture* ThemeTexture = T66TowerFindOrLoadObject<UTexture>(TexturePath);
 		if (BaseMaterial && ThemeTexture)
 		{
@@ -201,14 +201,14 @@ bool T66TowerThemeVisuals::ResolveTheme(
 		OutTheme.FloorMaterial = T66BuildThemeMaterialFromTexture(
 			Outer,
 			SurfacePaths.BlockTexturePath,
-			T66EnvironmentUnlitMaterialPath);
+			T66EnvironmentLitMaterialPath);
 	}
 	if (!OutTheme.WallMaterial)
 	{
 		OutTheme.WallMaterial = T66BuildThemeMaterialFromTexture(
 			Outer,
 			SurfacePaths.BlockTexturePath,
-			T66EnvironmentUnlitMaterialPath);
+			T66EnvironmentLitMaterialPath);
 	}
 	if (!OutTheme.RoofMaterial)
 	{
@@ -319,11 +319,11 @@ bool T66TowerThemeVisuals::ResolveTheme(
 
 	if (!OutTheme.FloorMaterial)
 	{
-		OutTheme.FloorMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(T66EnvironmentUnlitMaterialPath);
+		OutTheme.FloorMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(T66EnvironmentLitMaterialPath);
 	}
 	if (!OutTheme.WallMaterial)
 	{
-		OutTheme.WallMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(T66EnvironmentUnlitMaterialPath);
+		OutTheme.WallMaterial = T66TowerFindOrLoadObject<UMaterialInterface>(T66EnvironmentLitMaterialPath);
 	}
 	if (!OutTheme.RoofMaterial)
 	{

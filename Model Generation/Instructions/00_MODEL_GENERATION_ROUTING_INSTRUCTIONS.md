@@ -11,7 +11,7 @@ This workspace owns model-generation process, not runtime game content. A model 
    - For editable character rigs, retargeting, Rigodotify, Quaternius, or authored hero/enemy animation sets, route into `../Rigging and Animation/RIGGING_ANIMATION_AGENTS.md`.
 5. For Unreal import, DataTable reloads, material checks, or standalone verification, use `05_UNREAL_IMPORT_AND_VALIDATION_INSTRUCTIONS.md`.
 6. For known failure modes and historical lessons, use `06_RUN_HISTORY_AND_KNOWN_ISSUES_REFERENCE.md`.
-7. For the separate Pixal3D RunPod path, read `../Pixal3D/PIXAL3D_PIPELINE_REFERENCE.md`, then `07_PIXAL3D_RUNPOD_SETUP_INSTRUCTIONS.md`. Use `08_PIXAL3D_TROUBLESHOOTING_INSTRUCTIONS.md` for CuMesh/export/remesh failures. Treat Pixal3D as research-only until licensing changes or legal approval is explicit.
+7. For Pixal3D production replacement assets, read `09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md` first, then `../Pixal3D/PIXAL3D_PIPELINE_REFERENCE.md`, `07_PIXAL3D_RUNPOD_SETUP_INSTRUCTIONS.md`, and `08_PIXAL3D_TROUBLESHOOTING_INSTRUCTIONS.md` for CuMesh/export/remesh failures.
 
 ## Folder Rules
 

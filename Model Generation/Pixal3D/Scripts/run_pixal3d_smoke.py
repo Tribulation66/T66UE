@@ -432,6 +432,7 @@ def run_generation_attempt(
             f"-H 'X-Shape-Steps: {args.shape_steps}'",
             f"-H 'X-Export-Fallback: {0 if args.disable_server_export_fallback else 1}'",
             f"-H 'X-Fallback-Decimation: {args.fallback_decimation}'",
+            f"-H 'X-Safe-Fill-Holes-Fallback: {0 if args.disable_safe_fill_holes_fallback else 1}'",
             f"--data-binary @{shlex.quote(remote_source)}",
             f"-o {shlex.quote(remote_glb)};",
             "cat \"$headers\";",
@@ -490,7 +491,23 @@ def run_generation(args: argparse.Namespace, run_root: Path, rows: list[dict]) -
                 row["generation_attempt_index"] = attempt_index
                 row["generation_decimation"] = attempt["decimation"]
                 row["generation_remesh"] = attempt["remesh"]
-                row["generation_fallback_used"] = attempt_index > 1
+                server_export_attempt = headers.get("X-Pixal3D-Export-Attempt", "")
+                server_export_label = headers.get("X-Pixal3D-Export-Label", attempt["label"])
+                server_export_decimation = headers.get("X-Pixal3D-Export-Decimation", str(attempt["decimation"]))
+                server_export_remesh = headers.get("X-Pixal3D-Export-Remesh", "1" if attempt["remesh"] else "0")
+                row["generation_export_attempt"] = int(server_export_attempt) if server_export_attempt.isdigit() else server_export_attempt
+                row["generation_export_label"] = server_export_label
+                row["generation_export_decimation"] = int(server_export_decimation) if server_export_decimation.isdigit() else server_export_decimation
+                row["generation_export_remesh"] = server_export_remesh == "1"
+                row["generation_export_safe_fill_holes"] = headers.get("X-Pixal3D-Export-Safe-Fill-Holes", "0") == "1"
+                fill_holes_skipped = headers.get("X-Pixal3D-Export-Fill-Holes-Skipped", "0")
+                cpu_uv_unwraps = headers.get("X-Pixal3D-Export-CPU-UV-Unwraps", "0")
+                row["generation_export_fill_holes_skipped"] = int(fill_holes_skipped) if fill_holes_skipped.isdigit() else fill_holes_skipped
+                row["generation_export_cpu_uv_unwraps"] = int(cpu_uv_unwraps) if cpu_uv_unwraps.isdigit() else cpu_uv_unwraps
+                row["generation_server_export_fallback_used"] = (
+                    server_export_label != "requested" or (server_export_attempt.isdigit() and int(server_export_attempt) > 1)
+                )
+                row["generation_fallback_used"] = attempt_index > 1 or row["generation_server_export_fallback_used"]
                 row["generation_server_export_headers"] = headers
                 row["generation_attempts"].append(
                     {
@@ -544,6 +561,9 @@ def run_blender_qa(args: argparse.Namespace, run_root: Path, rows: list[dict]) -
             print(f"QA SKIP {row_id} existing")
             continue
         print(f"QA START {row_id}")
+        glb_abs = glb.resolve()
+        render_abs = render.resolve()
+        metadata_abs = metadata.resolve()
         run_cmd(
             [
                 str(BLENDER_EXE),
@@ -552,11 +572,11 @@ def run_blender_qa(args: argparse.Namespace, run_root: Path, rows: list[dict]) -
                 str(BLENDER_QA_SCRIPT),
                 "--",
                 "--input",
-                str(glb),
+                str(glb_abs),
                 "--render",
-                str(render),
+                str(render_abs),
                 "--metadata",
-                str(metadata),
+                str(metadata_abs),
                 "--yaw",
                 "0",
                 "--pitch",
@@ -566,6 +586,10 @@ def run_blender_qa(args: argparse.Namespace, run_root: Path, rows: list[dict]) -
             ],
             timeout=args.qa_timeout,
         )
+        if not render.exists() or render.stat().st_size <= 0:
+            raise RuntimeError(f"Blender QA did not write render: {render}")
+        if not metadata.exists() or metadata.stat().st_size <= 0:
+            raise RuntimeError(f"Blender QA did not write metadata: {metadata}")
         try:
             meta = json.loads(metadata.read_text(encoding="utf-8"))
             row["qa_raw_triangles"] = meta.get("raw_triangles")
@@ -656,12 +680,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--resolution", type=int, default=1024, choices=(1024, 1536))
     parser.add_argument("--seed", type=int, default=1337)
     parser.add_argument("--texture-size", type=int, default=2048)
-    parser.add_argument("--decimation", type=int, default=80000)
-    parser.add_argument("--fallback-decimation", type=int, default=30000)
+    parser.add_argument("--decimation", type=int, default=200000)
+    parser.add_argument("--fallback-decimation", type=int, default=80000)
     parser.add_argument("--remesh", dest="remesh", action="store_true", default=True)
     parser.add_argument("--no-remesh", dest="remesh", action="store_false")
     parser.add_argument("--disable-generation-fallback", action="store_true")
     parser.add_argument("--disable-server-export-fallback", action="store_true")
+    parser.add_argument("--disable-safe-fill-holes-fallback", action="store_true")
     parser.add_argument("--restart-server-on-failure", dest="restart_server_on_failure", action="store_true", default=True)
     parser.add_argument("--no-restart-server-on-failure", dest="restart_server_on_failure", action="store_false")
     parser.add_argument("--ss-guidance", type=float, default=7.5)

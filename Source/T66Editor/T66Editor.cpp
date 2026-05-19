@@ -104,22 +104,6 @@ void FT66EditorModule::RegisterT66ToolsMenu()
 		{
 			FToolMenuSection& SubSection = SubMenu->AddSection(TEXT("T66ProceduralLandscape"));
 			SubSection.AddMenuEntry(
-				TEXT("CreateLabLevel"),
-				NSLOCTEXT("T66Editor", "CreateLabLevel", "Create Lab Level"),
-				NSLOCTEXT("T66Editor", "CreateLabLevelTooltip", "Create The Lab level (Content/Maps/LabLevel) with PlayerStart, lighting, and GameMode. Replaces current level."),
-				FSlateIcon(),
-				FUIAction(FExecuteAction::CreateLambda([]()
-				{
-					if (GEditor)
-					{
-						if (UT66UISetupSubsystem* Sub = GEditor->GetEditorSubsystem<UT66UISetupSubsystem>())
-						{
-							Sub->CreateLabLevel();
-						}
-					}
-				}))
-			);
-			SubSection.AddMenuEntry(
 				TEXT("SetupDemoMap"),
 				NSLOCTEXT("T66Editor", "SetupDemoMap", "Setup Demo Map"),
 				NSLOCTEXT("T66Editor", "SetupDemoMapTooltip", "Configure Map_Summer for gameplay: set GameMode, add PlayerStart if missing, save. Run once when using the demo map switch."),

@@ -45,8 +45,7 @@
 #include "Gameplay/T66ArcadeMachineInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66TutorialPortal.h"
+#include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -58,6 +57,7 @@
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
+#include "TimerManager.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
@@ -68,7 +68,6 @@
 #include "Components/PrimitiveComponent.h"
 #include "GameFramework/InputSettings.h"
 #include "GameFramework/PlayerInput.h"
-#include "Gameplay/T66GameMode.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
@@ -153,6 +152,17 @@ namespace
 void AT66PlayerController::SetupGameplayHUD()
 {
 	if (!IsGameplayLevel() || !IsLocalController()) return;
+	if (GameplayHUDWidget)
+	{
+		if (!GameplayHUDWidget->IsInViewport())
+		{
+			GameplayHUDWidget->AddToViewport(0);
+		}
+		GameplayHUDWidget->MarkHUDDirty();
+		QueueGameplayAutomationScreenshotIfRequested();
+		return;
+	}
+
 	UClass* HUDClass = ResolveGameplayHUDClass();
 	if (!HUDClass) return;
 	GameplayHUDWidget = CreateWidget<UT66GameplayHUDWidget>(this, HUDClass);
@@ -803,7 +813,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		return;
 	}
 
-	if (Mode == TEXT("arcadeselector") || Mode == TEXT("arcade") || Mode == TEXT("arcadecabinet"))
+	if (Mode == TEXT("arcadeselector") || Mode == TEXT("arcade") || Mode == TEXT("arcademachine"))
 	{
 		if (AT66ArcadeMachineInteractable* AutomationArcade = GetWorld()->SpawnActor<AT66ArcadeMachineInteractable>(
 			AT66ArcadeMachineInteractable::StaticClass(),
@@ -982,10 +992,7 @@ void AT66PlayerController::OpenCasinoOverlay()
 			CasinoOverlayWidget->AddToViewport(100);
 		}
 
-		FInputModeGameAndUI InputMode;
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		SetInputMode(InputMode);
-		bShowMouseCursor = true;
+		ApplyCasinoOverlayInputMode();
 	}
 }
 
@@ -1003,6 +1010,7 @@ void AT66PlayerController::SwitchCasinoOverlayToGambling()
 	if (CasinoOverlayWidget)
 	{
 		CasinoOverlayWidget->OpenGamblingTab();
+		ApplyCasinoOverlayInputMode();
 	}
 }
 
@@ -1011,6 +1019,7 @@ void AT66PlayerController::SwitchCasinoOverlayToShopTab()
 	if (CasinoOverlayWidget)
 	{
 		CasinoOverlayWidget->OpenShopTab();
+		ApplyCasinoOverlayInputMode();
 	}
 }
 
@@ -1019,12 +1028,45 @@ void AT66PlayerController::SwitchCasinoOverlayToAlchemy()
 	if (CasinoOverlayWidget)
 	{
 		CasinoOverlayWidget->OpenShopTab();
+		ApplyCasinoOverlayInputMode();
 	}
 }
 
 bool AT66PlayerController::IsCasinoOverlayOpen() const
 {
 	return CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport();
+}
+
+void AT66PlayerController::ApplyCasinoOverlayInputMode(const bool bReassertNextTick)
+{
+	if (!CasinoOverlayWidget || !CasinoOverlayWidget->IsInViewport())
+	{
+		return;
+	}
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetWidgetToFocus(CasinoOverlayWidget->TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+	bEnableClickEvents = true;
+	bEnableMouseOverEvents = true;
+
+	if (bReassertNextTick)
+	{
+		TWeakObjectPtr<AT66PlayerController> WeakThis(this);
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([WeakThis]()
+			{
+				if (AT66PlayerController* PC = WeakThis.Get())
+				{
+					PC->ApplyCasinoOverlayInputMode(false);
+				}
+			}));
+		}
+	}
 }
 
 bool AT66PlayerController::TriggerCasinoBossIfAngry()
@@ -1089,6 +1131,7 @@ void AT66PlayerController::OpenCasinoShopTab()
 	{
 		CasinoOverlayWidget->SetShopAllowsSteal(false);
 		CasinoOverlayWidget->OpenShopTab();
+		ApplyCasinoOverlayInputMode();
 	}
 }
 
@@ -1308,13 +1351,13 @@ void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 	}
 }
 
-void AT66PlayerController::StartCrateOpenHUD()
+void AT66PlayerController::StartCrateOpenHUD(const ET66Rarity SourceCrateRarity)
 {
 	if (!IsGameplayLevel()) return;
 	if (IsPaused()) return;
 	if (GameplayHUDWidget)
 	{
-		GameplayHUDWidget->StartCrateOpen();
+		GameplayHUDWidget->StartCrateOpen(SourceCrateRarity);
 	}
 }
 
@@ -1328,6 +1371,15 @@ void AT66PlayerController::StartChestRewardHUD(ET66Rarity Rarity, int32 GoldAmou
 	}
 }
 
+void AT66PlayerController::ShowPickupItemCardHUD(const FName ItemID, const ET66ItemRarity ItemRarity)
+{
+	if (!IsGameplayLevel()) return;
+	if (IsPaused()) return;
+	if (GameplayHUDWidget)
+	{
+		GameplayHUDWidget->ShowPickupItemCard(ItemID, ItemRarity);
+	}
+}
 
 void AT66PlayerController::OnPlayerDied()
 {
@@ -1378,7 +1430,7 @@ void AT66PlayerController::OnPlayerDied()
 			}
 			if (UIManager)
 			{
-				UIManager->ShowModal(ET66ScreenType::RunSummary);
+				UIManager->ShowModal(ET66ScreenType::GameOver);
 			}
 			FInputModeGameAndUI InputMode;
 			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
@@ -1399,7 +1451,7 @@ void AT66PlayerController::OnPlayerDied()
 		}
 		if (UIManager)
 		{
-			UIManager->ShowModal(ET66ScreenType::RunSummary);
+			UIManager->ShowModal(ET66ScreenType::GameOver);
 		}
 		FInputModeGameAndUI InputMode;
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
@@ -1450,40 +1502,6 @@ void AT66PlayerController::ClientShowVictoryRunSummary_Implementation()
 {
 	ShowVictoryRunSummary();
 }
-
-void AT66PlayerController::ShowDifficultyClearSummary()
-{
-	EndHeroOneScopedUlt();
-	CloseArcadePopup(false);
-
-	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
-	{
-		if (UT66MediaViewerSubsystem* MV = GI->GetSubsystem<UT66MediaViewerSubsystem>())
-		{
-			if (MV->IsMediaViewerOpen())
-			{
-				MV->SetMediaViewerOpen(false);
-			}
-		}
-	}
-
-	SetPause(true);
-	EnsureGameplayUIManager();
-	if (UIManager)
-	{
-		UIManager->ShowModal(ET66ScreenType::RunSummary);
-	}
-	FInputModeGameAndUI InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	SetInputMode(InputMode);
-	bShowMouseCursor = true;
-}
-
-void AT66PlayerController::ClientShowDifficultyClearSummary_Implementation()
-{
-	ShowDifficultyClearSummary();
-}
-
 
 void AT66PlayerController::HandleQuickReviveStateChanged()
 {
@@ -1681,6 +1699,20 @@ void AT66PlayerController::HandleEscapePressed()
 	const float Now = GetWorld() ? static_cast<float>(GetWorld()->GetTimeSeconds()) : 0.f;
 	const bool bPaused = IsPaused();
 
+	if (bPaused
+		&& UIManager
+		&& UIManager->IsModalActive()
+		&& UIManager->GetCurrentModalType() == ET66ScreenType::PauseMenu)
+	{
+		if (UT66ScreenBase* PauseModal = UIManager->GetCurrentModal())
+		{
+			if (PauseModal->HandleBackAction())
+			{
+				return;
+			}
+		}
+	}
+
 	// Closing a sub-modal (Settings / Report Bug / Achievements) returns to Pause menu without debounce so the next Esc can unpause.
 	if (bPaused && UIManager && UIManager->IsModalActive())
 	{
@@ -1731,7 +1763,12 @@ void AT66PlayerController::HandleEscapePressed()
 			UIManager->ShowModal(ET66ScreenType::PauseMenu);
 		}
 		FInputModeGameAndUI InputMode;
+		if (UIManager && UIManager->GetCurrentModal())
+		{
+			InputMode.SetWidgetToFocus(UIManager->GetCurrentModal()->TakeWidget());
+		}
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		InputMode.SetHideCursorDuringCapture(false);
 		SetInputMode(InputMode);
 		bShowMouseCursor = true;
 		bEnableClickEvents = true;

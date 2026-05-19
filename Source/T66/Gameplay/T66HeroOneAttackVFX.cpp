@@ -17,7 +17,7 @@ namespace
 
 	const TCHAR* HeroOneStreakMaterialPath = TEXT("/Game/VFX/Hero1/MI_Hero1_Attack_Streak.MI_Hero1_Attack_Streak");
 	const TCHAR* HeroOneImpactMaterialPath = TEXT("/Game/VFX/Hero1/MI_Hero1_Attack_Impact.MI_Hero1_Attack_Impact");
-	const FName HeroOneID(TEXT("Hero_1"));
+	const FName HeroOneID(TEXT("Hero_5"));
 
 	UMaterialInterface* GetHeroOneStreakBaseMaterial()
 	{

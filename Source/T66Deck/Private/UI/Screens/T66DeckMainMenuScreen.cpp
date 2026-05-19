@@ -15,6 +15,7 @@
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "UI/Components/T66MinigameMenuLayout.h"
+#include "UI/Style/T66AnimatedStyle.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
@@ -115,7 +116,7 @@ namespace
 		return nullptr;
 	}
 
-	TSharedRef<SWidget> MakeDeckLooseSprite(const FString& RelativePath, const FVector2D& Size, const FLinearColor& FallbackTint)
+	TSharedRef<SWidget> MakeDeckLooseSprite(const FString& RelativePath, const FVector2D& Size, const FLinearColor& FallbackTint, const FName Tag)
 	{
 		TSharedRef<SWidget> SpriteContent = SNew(SSpacer);
 		if (const TSharedPtr<FSlateBrush> Brush = FindOrLoadDeckLooseBrush(RelativePath))
@@ -129,7 +130,7 @@ namespace
 				];
 		}
 
-		return SNew(SBox)
+		TSharedRef<SWidget> Sprite = SNew(SBox)
 			.WidthOverride(Size.X)
 			.HeightOverride(Size.Y)
 			[
@@ -141,6 +142,14 @@ namespace
 					SpriteContent
 				]
 			];
+		return FT66AnimatedStyle::AttachMetadata(Sprite, Tag, TEXT("Deck.Sprite"));
+	}
+
+	TSharedRef<SWidget> MakeDeckAnimatedProgressBar(const TAttribute<TOptional<float>>& Percent, const FName Tag)
+	{
+		TSharedRef<SWidget> ProgressBar = SNew(SProgressBar)
+			.Percent(Percent);
+		return FT66AnimatedStyle::AttachMetadata(ProgressBar, Tag, TEXT("Deck.ProgressBar"));
 	}
 
 	FString MakeDeckCardIconPath(const FName CardID)
@@ -378,78 +387,6 @@ FText UT66DeckMainMenuScreen::GetAllTimeLeaderboardStatus(FName DifficultyID) co
 TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildMainMenuUI()
 {
 	return BuildSharedMainMenuUI();
-
-	const UGameInstance* GameInstance = GetGameInstance();
-	const UT66DeckDataSubsystem* DataSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66DeckDataSubsystem>() : nullptr;
-	const int32 CardCount = DataSubsystem ? DataSubsystem->GetCards().Num() : 0;
-	const int32 RelicCount = DataSubsystem ? DataSubsystem->GetRelics().Num() : 0;
-	const int32 EncounterCount = DataSubsystem ? DataSubsystem->GetEncounters().Num() : 0;
-
-	return SNew(SOverlay)
-		+ SOverlay::Slot()
-		[
-			BuildMockupBackdrop(DeckMainMenuMockupPath(), FLinearColor(0.014f, 0.014f, 0.020f, 1.0f))
-		]
-		+ SOverlay::Slot()
-		[
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.25f))
-		]
-		+ SOverlay::Slot()
-		.Padding(FMargin(92.f, 118.f, 92.f, 70.f))
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Bottom)
-			[
-				MakeDeckChromePanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66Deck.MainMenu", "Title", "CHADPOCALYPSE DECK BUILDER"))
-						.Font(FT66Style::MakeFont(TEXT("Black"), 30))
-						.ColorAndOpacity(FLinearColor(0.94f, 0.72f, 0.36f, 1.0f))
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 24.f)
-					[
-						SNew(STextBlock)
-						.Text(FText::Format(
-							NSLOCTEXT("T66Deck.MainMenu", "Summary", "Run registry: {0} cards, {1} relics, {2} encounters."),
-							FText::AsNumber(CardCount),
-							FText::AsNumber(RelicCount),
-							FText::AsNumber(EncounterCount)))
-						.Font(FT66Style::MakeFont(TEXT("Regular"), 13))
-						.ColorAndOpacity(FLinearColor(0.82f, 0.78f, 0.86f, 1.0f))
-						.AutoWrapText(true)
-					]
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						MakeDeckButton(NSLOCTEXT("T66Deck.MainMenu", "Play", "PLAY"), FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandlePlayClicked), 430.f, 62.f)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-					[
-						MakeDeckButton(NSLOCTEXT("T66Deck.MainMenu", "Collection", "COLLECTION"), FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleCollectionClicked), 430.f, 62.f)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 14.f, 0.f, 0.f)
-					[
-						MakeDeckButton(NSLOCTEXT("T66Deck.MainMenu", "Options", "OPTIONS"), FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleOptionsClicked), 430.f, 62.f)
-					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 24.f, 0.f, 0.f)
-					[
-						MakeDeckButton(NSLOCTEXT("T66Deck.MainMenu", "Back", "BACK TO MINIGAMES"), FOnClicked::CreateUObject(this, &UT66DeckMainMenuScreen::HandleBackClicked), 430.f, 48.f)
-					],
-					FMargin(28.f),
-					FLinearColor(0.50f, 0.16f, 0.18f, 0.88f))
-			]
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.f)
-			[
-				SNew(SSpacer)
-			]
-		];
 }
 
 TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildHeroSelectUI()
@@ -634,8 +571,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildGameplayUI()
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 						[
-							SNew(SProgressBar)
-							.Percent(MakeDeckPercentAttribute(this, &UT66DeckMainMenuScreen::GetPlayerHealthPercent))
+							MakeDeckAnimatedProgressBar(MakeDeckPercentAttribute(this, &UT66DeckMainMenuScreen::GetPlayerHealthPercent), FName(TEXT("Deck.Gameplay.PlayerHealthProgress")))
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 						[
@@ -651,7 +587,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildGameplayUI()
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
-						MakeDeckLooseSprite(HeroSpritePath, FVector2D(128.f, 128.f), FLinearColor(0.30f, 0.16f, 0.18f, 0.72f))
+						MakeDeckLooseSprite(HeroSpritePath, FVector2D(128.f, 128.f), FLinearColor(0.30f, 0.16f, 0.18f, 0.72f), FName(TEXT("Deck.Gameplay.HeroSprite")))
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(22.f, 0.f)
 					[
@@ -662,7 +598,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildGameplayUI()
 					]
 					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 					[
-						MakeDeckLooseSprite(EnemySpritePath, FVector2D(144.f, 144.f), FLinearColor(0.36f, 0.10f, 0.10f, 0.72f))
+						MakeDeckLooseSprite(EnemySpritePath, FVector2D(144.f, 144.f), FLinearColor(0.36f, 0.10f, 0.10f, 0.72f), FName(TEXT("Deck.Gameplay.EnemySprite")))
 					]
 				]
 				+ SHorizontalBox::Slot().FillWidth(0.30f).VAlign(VAlign_Top).Padding(24.f, 0.f, 0.f, 0.f)
@@ -678,8 +614,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::BuildGameplayUI()
 						]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 						[
-							SNew(SProgressBar)
-							.Percent(MakeDeckPercentAttribute(this, &UT66DeckMainMenuScreen::GetEnemyHealthPercent))
+							MakeDeckAnimatedProgressBar(MakeDeckPercentAttribute(this, &UT66DeckMainMenuScreen::GetEnemyHealthPercent), FName(TEXT("Deck.Gameplay.EnemyHealthProgress")))
 						],
 						FMargin(20.f),
 						FLinearColor(0.52f, 0.16f, 0.14f, 0.88f))
@@ -1046,6 +981,22 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::MakeCardPreviewWidget(
 		];
 	}
 
+	TSharedRef<SWidget> CardArt = SNew(SSpacer);
+	if (bHasArt)
+	{
+		CardArt = SNew(SScaleBox)
+			.Stretch(EStretch::ScaleToFit)
+			[
+				SNew(SImage)
+				.Image(FindOrLoadDeckLooseBrush(MakeDeckCardIconPath(CardID)).Get())
+				.ColorAndOpacity(ArtTint)
+			];
+	}
+	CardArt = FT66AnimatedStyle::AttachMetadata(
+		CardArt,
+		FName(*(Tag.ToString() + TEXT(".Art"))),
+		TEXT("Deck.CardArt"));
+
 	return SNew(SBox)
 		.WidthOverride(210.f)
 		.HeightOverride(304.f)
@@ -1084,15 +1035,7 @@ TSharedRef<SWidget> UT66DeckMainMenuScreen::MakeCardPreviewWidget(
 									SNew(SBox)
 									.HeightOverride(112.f)
 									[
-										bHasArt
-											? static_cast<TSharedRef<SWidget>>(SNew(SScaleBox)
-												.Stretch(EStretch::ScaleToFit)
-												[
-													SNew(SImage)
-													.Image(FindOrLoadDeckLooseBrush(MakeDeckCardIconPath(CardID)).Get())
-													.ColorAndOpacity(ArtTint)
-												])
-											: static_cast<TSharedRef<SWidget>>(SNew(SSpacer))
+										CardArt
 									]
 								]
 							]

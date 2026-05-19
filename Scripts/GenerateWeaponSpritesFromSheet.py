@@ -1,8 +1,8 @@
 """
-Build pixelated weapon sprites from a 5x4 imagegen source sheet.
+Build pixelated weapon sprites from a 4x4 imagegen source sheet.
 
 The input sheet layout is:
-  rows: Grey, Black, Red, Yellow, White
+  rows: Black, Red, Yellow, White
   cols: Pierce, Bounce, AOE, DOT
 
 Outputs one PNG for every row in Content/Data/Weapons.csv under SourceAssets/WeaponSprites.
@@ -17,10 +17,9 @@ import shutil
 from PIL import Image, ImageChops, ImageDraw
 
 
-RARITY_ORDER = ["Grey", "Black", "Red", "Yellow", "White"]
+RARITY_ORDER = ["Black", "Red", "Yellow", "White"]
 BRANCH_ORDER = ["Pierce", "Bounce", "AOE", "DOT"]
 RARITY_ACCENT = {
-    "Grey": (126, 132, 142, 255),
     "Black": (34, 30, 45, 255),
     "Red": (222, 38, 38, 255),
     "Yellow": (245, 202, 56, 255),
@@ -168,12 +167,12 @@ def main():
 
     for weapon in weapons:
         weapon_id = weapon["WeaponID"]
-        rarity = weapon.get("Rarity") or "Grey"
+        rarity = weapon.get("Rarity") or "Black"
         branch = weapon.get("Branch") or "Pierce"
         hero = heroes.get(weapon.get("HeroID"), {})
         hero_color = parse_color(hero.get("PlaceholderColor"))
-        rarity_color = RARITY_ACCENT.get(rarity, RARITY_ACCENT["Grey"])
-        base = bases.get((rarity, branch)) or bases[("Grey", "Pierce")]
+        rarity_color = RARITY_ACCENT.get(rarity, RARITY_ACCENT["Black"])
+        base = bases.get((rarity, branch)) or bases[("Black", "Pierce")]
         final = pixelate(tint_overlay(base, hero_color, rarity_color))
         output_path = os.path.join(source_root, f"{weapon_id}.png")
         final.save(output_path)

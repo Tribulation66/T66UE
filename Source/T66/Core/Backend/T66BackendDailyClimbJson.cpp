@@ -19,6 +19,26 @@ namespace
 		{
 			return ET66DailyClimbRuleType::EnemyHpMultiplier;
 		}
+		if (Type.Equals(TEXT("enemy_damage_multiplier"), ESearchCase::IgnoreCase))
+		{
+			return ET66DailyClimbRuleType::EnemyDamageMultiplier;
+		}
+		if (Type.Equals(TEXT("trap_damage_multiplier"), ESearchCase::IgnoreCase))
+		{
+			return ET66DailyClimbRuleType::TrapDamageMultiplier;
+		}
+		if (Type.Equals(TEXT("hero_health_multiplier"), ESearchCase::IgnoreCase))
+		{
+			return ET66DailyClimbRuleType::HeroHealthMultiplier;
+		}
+		if (Type.Equals(TEXT("hero_damage_multiplier"), ESearchCase::IgnoreCase))
+		{
+			return ET66DailyClimbRuleType::HeroDamageMultiplier;
+		}
+		if (Type.Equals(TEXT("hero_luck_flat"), ESearchCase::IgnoreCase))
+		{
+			return ET66DailyClimbRuleType::HeroLuckFlat;
+		}
 		if (Type.Equals(TEXT("enemy_loot_bag_count_multiplier"), ESearchCase::IgnoreCase))
 		{
 			return ET66DailyClimbRuleType::EnemyLootBagCountMultiplier;
@@ -102,6 +122,8 @@ bool T66BackendDailyClimbJson::ParseChallengeData(const TSharedPtr<FJsonObject>&
 			FString RuleTypeString;
 			(*RuleObject)->TryGetStringField(TEXT("type"), RuleTypeString);
 			Rule.Type = T66ParseDailyClimbRuleType(RuleTypeString);
+			(*RuleObject)->TryGetStringField(TEXT("id"), Rule.ModifierId);
+			(*RuleObject)->TryGetStringField(TEXT("category"), Rule.Category);
 			(*RuleObject)->TryGetStringField(TEXT("label"), Rule.Label);
 			(*RuleObject)->TryGetStringField(TEXT("description"), Rule.Description);
 

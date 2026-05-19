@@ -1,0 +1,9 @@
+Create one full-body single-character source image for T66 model generation.
+
+Character: original adult light-skin Black female companion with early-2000s hip-hop music-video fashion energy. Glamorous and confident, fully clothed, non-explicit. Oversized readable head, stylized heroic proportions, front-readable silhouette.
+
+Outfit: early-2000s rap video inspired fashion with hot pink and white as the two dominant colors, small silver accents, fitted cropped jacket over full top, low-rise cargo pants or flared pants, platform sneakers, large hoop earrings kept simple, no brand logos, no text.
+
+Style: same current T66 character source style as the accepted Lu Bu shading pass: Hi-Fi-Rush/Guilty-Gear-like 2D-in-3D cel shading, hard cel-shadow bands, crisp ink contours, bold flat color zones, clean rim highlights.
+
+Pose/composition: strict front-facing A-pose, full body, white background, one subject only, no crop, no text, no logo, no environment, no contact shadow.

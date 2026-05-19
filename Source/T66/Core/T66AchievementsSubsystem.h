@@ -316,6 +316,15 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
 	int32 GetHeroCumulativeScore(FName HeroID) const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetHeroMasteryXP(FName HeroID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	int32 GetHeroMasteryLevel(FName HeroID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
+	float GetHeroMasteryProgress01(FName HeroID) const;
+
 	/** Lifetime cumulative score earned with a specific companion. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Account")
 	int32 GetCompanionCumulativeScore(FName CompanionID) const;
@@ -335,6 +344,9 @@ public:
 	/** Add run score to a hero's lifetime cumulative total. */
 	UFUNCTION(BlueprintCallable, Category = "Account")
 	void AddHeroCumulativeScore(FName HeroID, int32 DeltaScore);
+
+	UFUNCTION(BlueprintCallable, Category = "Account")
+	void AddHeroMasteryXP(FName HeroID, int32 DeltaXP);
 
 	/** Add run score to a companion's lifetime cumulative total. */
 	UFUNCTION(BlueprintCallable, Category = "Account")

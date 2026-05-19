@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://t66.local/performance/performance_session_report.schema.v1.json",
+  "title": "T66 PerformanceSystem Session Report v1",
+  "type": "object",
+  "required": [
+    "SchemaVersion",
+    "SessionId",
+    "StartedUtc",
+    "EndedUtc",
+    "ExitReason",
+    "Build",
+    "EventCounts",
+    "FrameSummary",
+    "MemorySummary",
+    "DetectorRuntime"
+  ],
+  "properties": {
+    "SchemaVersion": { "const": 1 },
+    "SessionId": { "type": "string" },
+    "StartedUtc": { "type": "string" },
+    "EndedUtc": { "type": "string" },
+    "ExitReason": { "type": "string" },
+    "Build": { "type": "object" },
+    "EventCounts": { "type": "object" },
+    "FrameSummary": { "type": "object" },
+    "MemorySummary": { "type": "object" },
+    "DetectorRuntime": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "RecentEvents": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
+

@@ -44,40 +44,40 @@ private:
 	void TickMountedDriving(float DeltaSeconds);
 	void HandleMountedEnemyMow(float DeltaSeconds);
 
-	UPROPERTY(VisibleAnywhere, Category = "Tractor")
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
 	TObjectPtr<USceneComponent> TractorRoot;
 
-	UPROPERTY(VisibleAnywhere, Category = "Tractor")
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
 	TObjectPtr<UBoxComponent> BodyCollision;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Pilot", meta = (ClampMin = "1.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle|Pilot", meta = (ClampMin = "1.0"))
 	float TotalPilotSeconds = 30.f;
 
-	UPROPERTY(VisibleAnywhere, Category = "Tractor|Pilot")
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle|Pilot")
 	float RemainingPilotSeconds = 30.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Combat", meta = (ClampMin = "50.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle|Combat", meta = (ClampMin = "50.0"))
 	float MowKillRadius = 220.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Combat", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle|Combat", meta = (ClampMin = "0.0"))
 	float MowMinSpeed = 150.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Combat", meta = (ClampMin = "0.01"))
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle|Combat", meta = (ClampMin = "0.01"))
 	float MowCheckInterval = 0.05f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Visual")
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle|Visual")
 	FVector MountedHeroVisualOffset = FVector::ZeroVector;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Visual")
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle|Visual")
 	FRotator MountedHeroVisualRotation = FRotator::ZeroRotator;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Visual")
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle|Visual")
 	FVector MountedHeroSeatOffset = FVector(-10.f, 0.f, 245.f);
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Movement", meta = (ClampMin = "100.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle|Movement", meta = (ClampMin = "100.0"))
 	float DriveSpeed = 1800.f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Tractor|Movement", meta = (ClampMin = "30.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Vehicle|Movement", meta = (ClampMin = "30.0"))
 	float TurnSpeedDegreesPerSecond = 540.f;
 
 	UPROPERTY(Transient)

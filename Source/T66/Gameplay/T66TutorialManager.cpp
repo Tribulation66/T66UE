@@ -16,8 +16,8 @@
 #include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66LootBagPickup.h"
+#include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66TutorialGuideCompanion.h"
-#include "Gameplay/T66TutorialPortal.h"
 #include "Kismet/GameplayStatics.h"
 
 namespace
@@ -42,8 +42,8 @@ namespace
 	const FName TutorialTotemWaveAnchorTag(TEXT("T66_Tutorial_Spawn_TotemWave"));
 	const FName TutorialFinalMarkerTag(TEXT("T66_Tutorial_Stop_Final"));
 	const FName TutorialFinalArenaAnchorTag(TEXT("T66_Tutorial_Spawn_FinalArena"));
-	const FName TutorialPortalMarkerTag(TEXT("T66_Tutorial_Stop_Portal"));
-	const FName TutorialPortalAnchorTag(TEXT("T66_Tutorial_Spawn_Portal"));
+	const FName TutorialGateMarkerTag(TEXT("T66_Tutorial_Stop_Gate"));
+	const FName TutorialGateAnchorTag(TEXT("T66_Tutorial_Spawn_Gate"));
 
 	FText GetTutorialSpeakerText()
 	{
@@ -241,7 +241,6 @@ void AT66TutorialManager::StartIdolLessonStep()
 	if (TutorialIdolAltar)
 	{
 		TutorialIdolAltar->RemainingSelections = 1;
-		TutorialIdolAltar->CatchUpSelectionsRemaining = 0;
 		TutorialIdolAltar->bUseTutorialSingleOffer = true;
 		TutorialIdolAltar->TutorialOfferedIdolID = TutorialElectricIdolID;
 	}
@@ -322,21 +321,21 @@ void AT66TutorialManager::StartFinalArenaStep()
 	SpawnFinalArenaWave();
 }
 
-void AT66TutorialManager::SpawnPortalAndFinish()
+void AT66TutorialManager::SpawnGateAndFinish()
 {
-	if (Step == ET66TutorialStep::PortalReady || Step == ET66TutorialStep::Done)
+	if (Step == ET66TutorialStep::GateReady || Step == ET66TutorialStep::Done)
 	{
 		return;
 	}
 
-	Step = ET66TutorialStep::PortalReady;
-	AdvanceGuideToMarker(TutorialPortalMarkerTag);
+	Step = ET66TutorialStep::GateReady;
+	AdvanceGuideToMarker(TutorialGateMarkerTag);
 	SetTutorialPresentation(
-		NSLOCTEXT("T66.Tutorial", "PortalSubtitle", "That is all the hand-holding you're getting. Some things are better learned by surviving them. Step through when you're ready."),
-		NSLOCTEXT("T66.Tutorial", "PortalObjective1", "Enter the portal"),
-		NSLOCTEXT("T66.Tutorial", "PortalObjective2", "Stage 1 starts clean"));
+		NSLOCTEXT("T66.Tutorial", "GateSubtitle", "That is all the hand-holding you're getting. Some things are better learned by surviving them. Step through when you're ready."),
+		NSLOCTEXT("T66.Tutorial", "GateObjective1", "Enter the stage gate"),
+		NSLOCTEXT("T66.Tutorial", "GateObjective2", "Stage 1 starts clean"));
 
-	if (TutorialPortal)
+	if (TutorialStageGate)
 	{
 		return;
 	}
@@ -349,8 +348,8 @@ void AT66TutorialManager::SpawnPortalAndFinish()
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	const FVector PortalLocation = GetGroundPoint(GetTaggedLocation(TutorialPortalAnchorTag, FVector(0.f, 68300.f, 0.f)));
-	TutorialPortal = World->SpawnActor<AT66TutorialPortal>(AT66TutorialPortal::StaticClass(), PortalLocation, GetTaggedRotation(TutorialPortalAnchorTag, FRotator::ZeroRotator), SpawnParams);
+	const FVector GateLocation = GetGroundPoint(GetTaggedLocation(TutorialGateAnchorTag, FVector(0.f, 68300.f, 0.f)));
+	TutorialStageGate = World->SpawnActor<AT66StageGate>(AT66StageGate::StaticClass(), GateLocation, GetTaggedRotation(TutorialGateAnchorTag, FRotator::ZeroRotator), SpawnParams);
 }
 
 bool AT66TutorialManager::TrySpawnGuide()
@@ -560,10 +559,10 @@ void AT66TutorialManager::TryFinishFinalArenaStep()
 	{
 		SetTutorialPresentation(
 			NSLOCTEXT("T66.Tutorial", "FinalArenaNoUltSubtitle", "You can win ugly if you want. Still, your ultimate is how you take the screen back when it matters."),
-			NSLOCTEXT("T66.Tutorial", "FinalArenaExitObjective", "Enter the portal when ready"));
+			NSLOCTEXT("T66.Tutorial", "FinalArenaExitObjective", "Enter the stage gate when ready"));
 	}
 
-	SpawnPortalAndFinish();
+	SpawnGateAndFinish();
 }
 
 FName AT66TutorialManager::PickTutorialPrimaryStatItemID() const

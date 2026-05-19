@@ -28,8 +28,8 @@
 #include "Widgets/Images/SImage.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
+#include "UI/Style/T66AnimatedStyle.h"
 #include "UI/Style/T66FlatStyle.h"
-#include "UI/Style/T66Style.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
@@ -100,7 +100,7 @@ namespace
 		const float H,
 		const TSharedRef<SWidget>& Widget)
 	{
-		const float UiScale = FMath::Max(0.1f, FT66Style::GetGlobalUIScale());
+		const float UiScale = FMath::Max(0.1f, FT66FlatStyle::GetGlobalUIScale());
 		Canvas->AddSlot()
 			.Anchors(FAnchors(0.f, 0.f))
 			.Alignment(FVector2D(0.f, 0.f))
@@ -354,28 +354,26 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	}
 	LiveStatsPanel = MakeShared<T66StatsPanelSlate::FT66LiveStatsPanel>();
 
-	const ISlateStyle& Style = FT66Style::Get();
-
-	const FTextBlockStyle& TextTitle = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Title");
-	const FTextBlockStyle& TextHeading = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Heading");
-	const FTextBlockStyle& TextBody = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
-	const FTextBlockStyle& TextChip = Style.GetWidgetStyle<FTextBlockStyle>("T66.Text.Chip");
+	const FTextBlockStyle& TextTitle = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Title"));
+	const FTextBlockStyle& TextHeading = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading"));
+	const FTextBlockStyle& TextBody = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body"));
+	const FTextBlockStyle& TextChip = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Chip"));
 	const bool bCompactCasinoLayout = bEmbeddedInCasinoShell;
-	const float StatsPanelWidth = bCompactCasinoLayout ? 240.f : FT66Style::Tokens::NPCGamblerStatsPanelWidth;
-	const float RightPanelWidth = bCompactCasinoLayout ? 275.f : FT66Style::Tokens::NPCRightPanelWidth;
-	const float MainRowHeight = bCompactCasinoLayout ? 380.f : FT66Style::Tokens::NPCMainRowHeight;
+	const float StatsPanelWidth = bCompactCasinoLayout ? 240.f : FT66FlatStyle::Tokens::NPCGamblerStatsPanelWidth;
+	const float RightPanelWidth = bCompactCasinoLayout ? 275.f : FT66FlatStyle::Tokens::NPCRightPanelWidth;
+	const float MainRowHeight = bCompactCasinoLayout ? 380.f : FT66FlatStyle::Tokens::NPCMainRowHeight;
 	const float CenterPanelWidth = bCompactCasinoLayout ? 812.f : 0.f;
-	const float InventorySlotSize = bCompactCasinoLayout ? 80.f : FT66Style::Tokens::InventorySlotSize;
-	const float GameCardSize = bCompactCasinoLayout ? FT66Style::Tokens::NPCCompactShopCardWidth : FT66Style::Tokens::NPCShopCardWidth;
-	const float GameCardPadding = bCompactCasinoLayout ? 5.f : FT66Style::Tokens::Space4;
+	const float InventorySlotSize = bCompactCasinoLayout ? 80.f : FT66FlatStyle::Tokens::InventorySlotSize;
+	const float GameCardSize = bCompactCasinoLayout ? FT66FlatStyle::Tokens::NPCCompactShopCardWidth : FT66FlatStyle::Tokens::NPCShopCardWidth;
+	const float GameCardPadding = bCompactCasinoLayout ? 5.f : FT66FlatStyle::Tokens::Space4;
 	const float GameCardIconSize = bCompactCasinoLayout ? GameCardSize - GameCardPadding * 2.f : 260.f;
-	const float GameCardTotalHeight = bCompactCasinoLayout ? FT66Style::Tokens::NPCCompactShopCardHeight : 420.f;
-	const float BuybackCardSize = bCompactCasinoLayout ? GameCardSize : FT66Style::Tokens::NPCShopCardWidth;
-	const float BuybackCardHeight = bCompactCasinoLayout ? 264.f : FT66Style::Tokens::NPCShopCardHeight;
-	const float BuybackIconSize = bCompactCasinoLayout ? BuybackCardSize - GameCardPadding * 2.f : BuybackCardSize - FT66Style::Tokens::Space4 * 2.f;
+	const float GameCardTotalHeight = bCompactCasinoLayout ? FT66FlatStyle::Tokens::NPCCompactShopCardHeight : 420.f;
+	const float BuybackCardSize = bCompactCasinoLayout ? GameCardSize : FT66FlatStyle::Tokens::NPCShopCardWidth;
+	const float BuybackCardHeight = bCompactCasinoLayout ? 264.f : FT66FlatStyle::Tokens::NPCShopCardHeight;
+	const float BuybackIconSize = bCompactCasinoLayout ? BuybackCardSize - GameCardPadding * 2.f : BuybackCardSize - FT66FlatStyle::Tokens::Space4 * 2.f;
 	const float GamblerAngerCircleSize = bCompactCasinoLayout ? 136.f : 260.f;
-	const float BankSpinBoxWidth = bCompactCasinoLayout ? 68.f : FT66Style::Tokens::NPCBankSpinBoxWidth;
-	const float BankSpinBoxHeight = bCompactCasinoLayout ? 28.f : FT66Style::Tokens::NPCBankSpinBoxHeight;
+	const float BankSpinBoxWidth = bCompactCasinoLayout ? 68.f : FT66FlatStyle::Tokens::NPCBankSpinBoxWidth;
+	const float BankSpinBoxHeight = bCompactCasinoLayout ? 28.f : FT66FlatStyle::Tokens::NPCBankSpinBoxHeight;
 	const int32 StatsPanelFontAdjustment = bCompactCasinoLayout ? -5 : 0;
 	const int32 SectionHeadingFontSize = bCompactCasinoLayout ? 10 : 16;
 	const int32 CardHeadingFontSize = bCompactCasinoLayout ? 9 : 16;
@@ -389,7 +387,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	const FMargin ActionButtonPadding = bCompactCasinoLayout ? FMargin(8.f, 5.f) : FMargin(16.f, 10.f);
 
 	// --- NPC anger face sprites ---
-	const float AngerFaceSize = bCompactCasinoLayout ? 85.f : FT66Style::Tokens::NPCAngerCircleSize;
+	const float AngerFaceSize = bCompactCasinoLayout ? 85.f : FT66FlatStyle::Tokens::NPCAngerCircleSize;
 	auto InitFaceBrush = [](FSlateBrush& B, float Size) {
 		B = FSlateBrush();
 		B.ImageSize = FVector2D(Size, Size);
@@ -541,7 +539,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		return SNew(STextBlock)
 			.Text(Text)
 			.TextStyle(&TextTitle)
-			.ColorAndOpacity(FT66Style::Tokens::Text);
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text);
 	};
 
 	TSharedRef<SWidget> DialoguePage =
@@ -553,7 +551,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_GamblerDialoguePrompt() : FText::GetEmpty())
 			.TextStyle(&TextBody)
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
@@ -605,13 +603,13 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				MakeGamblerFlatPanel(
 					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, FT66FlatStyle::Tokens::Space4)
 					[
 						FT66FlatStyle::AttachMetadata(SNew(STextBlock)
 						.Text(BankTitle)
 						.TextStyle(&TextHeading)
-						.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text),
+						.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text),
 						FName(TEXT("Gambler.Bank.Title")),
 						TEXT("Label.Section"),
 						ET66FlatState::Default,
@@ -625,8 +623,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						FT66FlatStyle::AttachMetadata(SNew(STextBlock)
 						.Text(NSLOCTEXT("T66.Gambler", "BorrowAmountLabel", "BORROW AMOUNT"))
 						.TextStyle(&TextChip)
-						.Font(FT66Style::Tokens::FontBold(FMath::Max(8, CardButtonFontSize - 1)))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted),
+						.Font(FT66FlatStyle::Tokens::FontBold(FMath::Max(8, CardButtonFontSize - 1)))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted),
 						FName(TEXT("Gambler.Bank.BorrowLabel")),
 						TEXT("Label.Caption"),
 						ET66FlatState::Default,
@@ -646,7 +644,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							[
 								SAssignNew(BorrowAmountSpin, SSpinBox<int32>)
 								.MinValue(0).MaxValue(999999).Delta(10)
-								.Font(FT66Style::Tokens::FontBold(SpinBoxFontSize))
+								.Font(FT66FlatStyle::Tokens::FontBold(SpinBoxFontSize))
 								.Value(BorrowAmount)
 								.OnValueChanged_Lambda([this](int32 V)
 								{
@@ -682,8 +680,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						FT66FlatStyle::AttachMetadata(SNew(STextBlock)
 						.Text(NSLOCTEXT("T66.Gambler", "PaybackAmountLabel", "PAYBACK AMOUNT"))
 						.TextStyle(&TextChip)
-						.Font(FT66Style::Tokens::FontBold(FMath::Max(8, CardButtonFontSize - 1)))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted),
+						.Font(FT66FlatStyle::Tokens::FontBold(FMath::Max(8, CardButtonFontSize - 1)))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted),
 						FName(TEXT("Gambler.Bank.PaybackLabel")),
 						TEXT("Label.Caption"),
 						ET66FlatState::Default,
@@ -703,7 +701,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							[
 								SAssignNew(PaybackAmountSpin, SSpinBox<int32>)
 								.MinValue(0).MaxValue(999999).Delta(10)
-								.Font(FT66Style::Tokens::FontBold(SpinBoxFontSize))
+								.Font(FT66FlatStyle::Tokens::FontBold(SpinBoxFontSize))
 								.Value(PaybackAmount)
 								.OnValueChanged_Lambda([this](int32 V) { PaybackAmount = FMath::Max(0, V); })
 							]
@@ -722,13 +720,13 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					]
 				,
 					EGamblerFlatPanel::InnerPanel,
-					FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space5),
+					FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space5),
 					nullptr,
 					FName(TEXT("Gambler.BankPanel")))
 			]
 		,
 			EGamblerFlatPanel::ContentPanelTall,
-			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6),
+			FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space6),
 			nullptr,
 			FName(TEXT("Gambler.RightPanel")));
 
@@ -754,13 +752,13 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				MakeGamblerFlatPanel(
 					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space3)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66FlatStyle::Tokens::Space3)
 					[
 						FT66FlatStyle::AttachMetadata(SNew(STextBlock)
 						.Text(TitleText)
 						.TextStyle(&TextHeading)
-						.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(CardHeadingFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 						.AutoWrapText(true)
 						.WrapTextAt(GameCardSize - GameCardPadding * 2.f),
 						CardTitleTag,
@@ -781,10 +779,12 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								.WidthOverride(GameCardIconSize)
 								.HeightOverride(GameCardIconSize)
 								[
-									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+									FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 										SNew(SImage)
 										.Image(IconBrush)
-										.ColorAndOpacity(FLinearColor::White)))
+										.ColorAndOpacity(FLinearColor::White)),
+										CardIconTag,
+										TEXT("Icon"))
 								],
 								EGamblerFlatPanel::SlotNormal,
 								FMargin(0.f),
@@ -792,7 +792,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								CardIconTag)
 						]
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space3, 0.f, 0.f)
 					[
 						PlayBtn
 					]
@@ -852,7 +852,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				+ SUniformGridPanel::Slot(2, 0) [ bCompactCasinoLayout ? SNullWidget::NullWidget : MakeGameCard(8, PlinkoText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenPlinko), &GameIcon_Plinko) ]
 			]
 		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f, 0.f)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space6, 0.f, 0.f)
 		[
 			MakeGamblerFlatButton(
 				MakeGamblerFlatButtonParams(BackToGamesText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBackToMainGames), EGamblerFlatButton::Neutral)
@@ -877,7 +877,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
 			[
-				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
 					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
@@ -887,14 +887,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(CoinFlipStatusText, STextBlock)
 				.Text(FText::GetEmpty())
 				.TextStyle(&TextBody)
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
 				SAssignNew(CoinFlipWagerText, STextBlock)
 				.Text(FText::GetEmpty())
 				.TextStyle(&TextBody)
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 10.f)
@@ -902,21 +902,21 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty())
 			.TextStyle(&TextHeading)
-			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
 		[
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_ChooseHeadsOrTails() : FText::GetEmpty())
 			.TextStyle(&TextBody)
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill).Padding(0.f, 0.f, 0.f, 16.f)
 		[
 			SNew(SBox)
 			.HeightOverride(220.f)
 			[
-				FT66Style::MakePanel(
+				FT66FlatStyle::MakePanel(
 					SNew(SOverlay)
 					// Coin sprite (center)
 					+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
@@ -933,9 +933,9 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						SAssignNew(CoinFlipResultText, STextBlock)
 						.Text(Loc ? Loc->GetText_ResultDash() : FText::GetEmpty())
 						.TextStyle(&TextHeading)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					],
-					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FT66Style::Tokens::Space6))
+					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FT66FlatStyle::Tokens::Space6))
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
@@ -943,7 +943,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Heads() : FText::GetEmpty(),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCoinFlipHeads),
 					ET66ButtonType::Primary)
@@ -952,7 +952,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Tails() : FText::GetEmpty(),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnCoinFlipTails),
 					ET66ButtonType::Primary)
@@ -968,7 +968,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
 			[
-				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
 					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
@@ -978,14 +978,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(RpsStatusText, STextBlock)
 				.Text(FText::GetEmpty())
 				.TextStyle(&TextBody)
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
 				SAssignNew(RpsWagerText, STextBlock)
 				.Text(FText::GetEmpty())
 				.TextStyle(&TextBody)
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 10.f)
@@ -993,14 +993,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty())
 			.TextStyle(&TextHeading)
-			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill).Padding(0.f, 0.f, 0.f, 16.f)
 		[
 			SNew(SBox)
 			.HeightOverride(220.f)
 			[
-				FT66Style::MakePanel(
+				FT66FlatStyle::MakePanel(
 					SNew(SVerticalBox)
 					// Hand images (hidden until reveal)
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 6.f)
@@ -1022,7 +1022,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								SNew(STextBlock)
 								.Text(NSLOCTEXT("T66.Gambler", "VS", "VS"))
 								.TextStyle(&TextHeading)
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							]
 							+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
 							[
@@ -1040,9 +1040,9 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						SAssignNew(RpsResultText, STextBlock)
 						.Text(Loc ? Loc->GetText_PickOne() : FText::GetEmpty())
 						.TextStyle(&TextHeading)
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					],
-					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FT66Style::Tokens::Space6))
+					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FT66FlatStyle::Tokens::Space6))
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
@@ -1050,7 +1050,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Rock() : FText::GetEmpty(),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsRock),
 					ET66ButtonType::Primary)
@@ -1059,7 +1059,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Paper() : FText::GetEmpty(),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsPaper),
 					ET66ButtonType::Primary)
@@ -1068,7 +1068,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
-				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Scissors() : FText::GetEmpty(),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnRpsScissors),
 					ET66ButtonType::Primary)
@@ -1100,13 +1100,13 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackDealerValueText, STextBlock)
 				.Text(FText::FromString(TEXT("-")))
 				.TextStyle(&TextBody)
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 		+ SVerticalBox::Slot().AutoHeight()
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
-			[ SNew(STextBlock).Text(Loc ? Loc->GetText_Dealer() : FText::GetEmpty()).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+			[ SNew(STextBlock).Text(Loc ? Loc->GetText_Dealer() : FText::GetEmpty()).TextStyle(&TextBody).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, 6.f, 0.f)
 			[
 				SNew(SOverlay)
@@ -1144,7 +1144,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
 			[
-				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
 					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
@@ -1154,14 +1154,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackStatusText, STextBlock)
 				.Text(FText::GetEmpty())
 				.TextStyle(&TextBody)
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
 				SAssignNew(BlackJackWagerText, STextBlock)
 				.Text(FText::GetEmpty())
 				.TextStyle(&TextBody)
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 10.f)
@@ -1169,7 +1169,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(STextBlock)
 			.Text(Loc ? Loc->GetText_BlackJack() : FText::GetEmpty())
 			.TextStyle(&TextHeading)
-			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
 		[
@@ -1185,24 +1185,24 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackPlayerValueText, STextBlock)
 				.Text(FText::FromString(TEXT("-")))
 				.TextStyle(&TextBody)
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			]
 			+ SVerticalBox::Slot().AutoHeight()
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
-				[ SNew(STextBlock).Text(Loc ? Loc->GetText_You() : FText::GetEmpty()).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+				[ SNew(STextBlock).Text(Loc ? Loc->GetText_You() : FText::GetEmpty()).TextStyle(&TextBody).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ]
 				+ SHorizontalBox::Slot().AutoWidth()[ BlackJackPlayerCardsRow ]
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 16.f, 0.f, 12.f)
 		[
-			SNew(SBox).HeightOverride(FT66Style::Tokens::NPCBankSpinBoxHeight)
+			SNew(SBox).HeightOverride(FT66FlatStyle::Tokens::NPCBankSpinBoxHeight)
 			[
 				SAssignNew(BlackJackResultText, STextBlock)
 				.Text(Loc ? Loc->GetText_ResultDash() : FText::GetEmpty())
 				.TextStyle(&TextBody)
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
@@ -1213,7 +1213,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackDealButtonBox, SBox)
 				.Visibility(EVisibility::Visible)
 				[
-					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+					FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 						NSLOCTEXT("T66.Gambler", "Deal", "Deal"),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJDealClicked),
 						ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
@@ -1224,7 +1224,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackHitButtonBox, SBox)
 				.Visibility(EVisibility::Collapsed)
 				[
-					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+					FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 						Loc ? Loc->GetText_Hit() : FText::GetEmpty(),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJHit),
 						ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
@@ -1235,7 +1235,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackStandButtonBox, SBox)
 				.Visibility(EVisibility::Collapsed)
 				[
-					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+					FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 						Loc ? Loc->GetText_Stand() : FText::GetEmpty(),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJStand),
 						ET66ButtonType::Primary).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
@@ -1246,7 +1246,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackDoubleButtonBox, SBox)
 				.Visibility(EVisibility::Collapsed)
 				[
-					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+					FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 						Loc ? Loc->GetText_Double() : FText::GetEmpty(),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJDouble),
 						ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
@@ -1257,7 +1257,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				SAssignNew(BlackJackSplitButtonBox, SBox)
 				.Visibility(EVisibility::Collapsed)
 				[
-					FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+					FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 						Loc ? Loc->GetText_Split() : FText::GetEmpty(),
 						FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnBJSplit),
 						ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(14.f, 8.f)))
@@ -1271,7 +1271,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		return SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot().AutoWidth().HAlign(HAlign_Left)
 			[
-				FT66Style::MakeButton(FT66Style::MakeInRunButtonParams(
+				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
 					Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Gambler", "Back", "BACK"),
 					FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnGameBackToSelection),
 					ET66ButtonType::Neutral).SetMinWidth(0.f).SetPadding(FMargin(12.f, 8.f)))
@@ -1288,11 +1288,11 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		const int32 Num = i + 1;
 		LotteryNumberRow->AddSlot()
 			.AutoWidth()
-			.Padding(i > 0 ? FMargin(FT66Style::Tokens::Space2, 0.f, 0.f, 0.f) : FMargin(0.f))
+			.Padding(i > 0 ? FMargin(FT66FlatStyle::Tokens::Space2, 0.f, 0.f, 0.f) : FMargin(0.f))
 		[
-			FT66Style::MakePanel(
-				FT66Style::MakeButton(
-					FT66Style::MakeInRunButtonParams(FText::AsNumber(Num), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnLotteryNumberClicked, Num), ET66ButtonType::Neutral)
+			FT66FlatStyle::MakePanel(
+				FT66FlatStyle::MakeButton(
+					FT66FlatStyle::MakeInRunButtonParams(FText::AsNumber(Num), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnLotteryNumberClicked, Num), ET66ButtonType::Neutral)
 					.SetMinWidth(0.f).SetPadding(FMargin(10.f, 8.f))),
 				FT66PanelParams(ET66PanelType::Panel2).SetPadding(0.f),
 				&LotteryNumberBorders[i])
@@ -1303,16 +1303,16 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f) [ MakeGameBackRow() ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 4.f)
-			[ SNew(STextBlock).Text(LotteryText).TextStyle(&TextTitle).ColorAndOpacity(FT66Style::Tokens::Text) ]
+			[ SNew(STextBlock).Text(LotteryText).TextStyle(&TextTitle).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
-			[ SNew(STextBlock).Text(LotteryDesc).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true) ]
+			[ SNew(STextBlock).Text(LotteryDesc).TextStyle(&TextBody).ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted).AutoWrapText(true) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 4.f) [ LotteryNumberRow ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 2.f)
-			[ SAssignNew(LotteryPicksText, STextBlock).Text(YourPicksText).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+			[ SAssignNew(LotteryPicksText, STextBlock).Text(YourPicksText).TextStyle(&TextBody).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 2.f)
-			[ SAssignNew(LotteryDrawnText, STextBlock).Text(DrawnText).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+			[ SAssignNew(LotteryDrawnText, STextBlock).Text(DrawnText).TextStyle(&TextBody).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 0.f)
-			[ SAssignNew(LotteryResultText, STextBlock).Text(FText::GetEmpty()).TextStyle(&TextHeading).ColorAndOpacity(FT66Style::Tokens::Text) ];
+			[ SAssignNew(LotteryResultText, STextBlock).Text(FText::GetEmpty()).TextStyle(&TextHeading).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ];
 
 	// Plinko: visual board with pin grid + ball
 	const FText PlinkoSlotsDesc = NSLOCTEXT("T66.Gambler", "PlinkoSlotsDesc", "Ball drops through pins. Payout by slot below.");
@@ -1374,9 +1374,9 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f) [ MakeGameBackRow() ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 4.f)
-			[ SNew(STextBlock).Text(PlinkoText).TextStyle(&TextTitle).ColorAndOpacity(FT66Style::Tokens::Text) ]
+			[ SNew(STextBlock).Text(PlinkoText).TextStyle(&TextTitle).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 4.f)
-			[ SNew(STextBlock).Text(PlinkoSlotsDesc).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true) ]
+			[ SNew(STextBlock).Text(PlinkoSlotsDesc).TextStyle(&TextBody).ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted).AutoWrapText(true) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 4.f)
 			[
 				SAssignNew(PlinkoBoardContainer, SBox)
@@ -1384,14 +1384,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				.HeightOverride(PlinkoBoardH)
 				[
 					SNew(SOverlay)
-					+ SOverlay::Slot()[ FT66Style::MakePanel(PinGrid, FT66PanelParams(ET66PanelType::Panel2).SetPadding(4.f)) ]
+					+ SOverlay::Slot()[ FT66FlatStyle::MakePanel(PinGrid, FT66PanelParams(ET66PanelType::Panel2).SetPadding(4.f)) ]
 					+ SOverlay::Slot()
 						.HAlign(HAlign_Left).VAlign(VAlign_Top)
 						[ PlinkoBall ]
 				]
 			]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 0.f)
-			[ SAssignNew(PlinkoResultText, STextBlock).Text(FText::GetEmpty()).TextStyle(&TextHeading).ColorAndOpacity(FT66Style::Tokens::Text) ];
+			[ SAssignNew(PlinkoResultText, STextBlock).Text(FText::GetEmpty()).TextStyle(&TextHeading).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ];
 
 	// Box Opening: 5 colored squares; middle one is the result when spin stops
 	const FText BoxOpeningDesc = NSLOCTEXT("T66.Gambler", "BoxOpeningDesc", "Bet then spin. Colors scroll; the one in the middle when it stops is your result.");
@@ -1420,9 +1420,9 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 		SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f) [ MakeGameBackRow() ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 4.f)
-			[ SNew(STextBlock).Text(BoxOpeningText).TextStyle(&TextTitle).ColorAndOpacity(FT66Style::Tokens::Text) ]
+			[ SNew(STextBlock).Text(BoxOpeningText).TextStyle(&TextTitle).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 8.f)
-			[ SNew(STextBlock).Text(BoxOpeningDesc).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::TextMuted).AutoWrapText(true) ]
+			[ SNew(STextBlock).Text(BoxOpeningDesc).TextStyle(&TextBody).ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted).AutoWrapText(true) ]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 12.f, 0.f, 4.f)
 			[
 				SNew(SBox)
@@ -1449,17 +1449,17 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				]
 			]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 8.f, 0.f, 0.f)
-			[ SAssignNew(BoxOpeningResultText, STextBlock).Text(FText::GetEmpty()).TextStyle(&TextHeading).ColorAndOpacity(FT66Style::Tokens::Text) ];
+			[ SAssignNew(BoxOpeningResultText, STextBlock).Text(FText::GetEmpty()).TextStyle(&TextHeading).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ];
 
 	TSharedRef<SWidget> BetRow =
 		SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-		[ SNew(STextBlock).Text(Loc ? Loc->GetText_BetAmount() : NSLOCTEXT("T66.Gambler", "BetAmount", "Bet Amount")).TextStyle(&TextBody).ColorAndOpacity(FT66Style::Tokens::Text) ]
+		[ SNew(STextBlock).Text(Loc ? Loc->GetText_BetAmount() : NSLOCTEXT("T66.Gambler", "BetAmount", "Bet Amount")).TextStyle(&TextBody).ColorAndOpacity(FT66FlatStyle::Tokens::Text) ]
 		+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
 		[
 			SAssignNew(GambleAmountSpin, SSpinBox<int32>)
 			.MinValue(0).MaxValue(999999).Delta(10)
-			.Font(FT66Style::Tokens::FontBold(26))
+			.Font(FT66FlatStyle::Tokens::FontBold(26))
 			.Value(GambleAmount)
 			.OnValueChanged_Lambda([this](int32 V) { GambleAmount = FMath::Max(0, V); })
 		]
@@ -1480,12 +1480,12 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SAssignNew(CasinoSwitcher, SWidgetSwitcher)
 				+ SWidgetSwitcher::Slot() [ CardsView ]
-				+ SWidgetSwitcher::Slot() [ CoinFlipView ]
-				+ SWidgetSwitcher::Slot() [ RpsView ]
-				+ SWidgetSwitcher::Slot() [ BlackJackView ]
-				+ SWidgetSwitcher::Slot() [ LotteryView ]
-				+ SWidgetSwitcher::Slot() [ PlinkoView ]
-				+ SWidgetSwitcher::Slot() [ BoxOpeningView ]
+				+ SWidgetSwitcher::Slot() [ FT66AnimatedStyle::AttachMetadata(CoinFlipView, TEXT("Casino.Gambler.CoinFlip.PlayArea"), TEXT("GamblingGame")) ]
+				+ SWidgetSwitcher::Slot() [ FT66AnimatedStyle::AttachMetadata(RpsView, TEXT("Casino.Gambler.RPS.PlayArea"), TEXT("GamblingGame")) ]
+				+ SWidgetSwitcher::Slot() [ FT66AnimatedStyle::AttachMetadata(BlackJackView, TEXT("Casino.Gambler.BlackJack.PlayArea"), TEXT("GamblingGame")) ]
+				+ SWidgetSwitcher::Slot() [ FT66AnimatedStyle::AttachMetadata(LotteryView, TEXT("Casino.Gambler.Lottery.PlayArea"), TEXT("GamblingGame")) ]
+				+ SWidgetSwitcher::Slot() [ FT66AnimatedStyle::AttachMetadata(PlinkoView, TEXT("Casino.Gambler.Plinko.PlayArea"), TEXT("GamblingGame")) ]
+				+ SWidgetSwitcher::Slot() [ FT66AnimatedStyle::AttachMetadata(BoxOpeningView, TEXT("Casino.Gambler.BoxOpening.PlayArea"), TEXT("GamblingGame")) ]
 			]
 			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 18.f, 0.f, 0.f)
 			[
@@ -1497,7 +1497,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			]
 		,
 			EGamblerFlatPanel::ContentPanelWide,
-			FMargin(FT66Style::Tokens::Space6));
+			FMargin(FT66FlatStyle::Tokens::Space6));
 
 	// Buyback row (shared slot count with shop buyback)
 	static constexpr int32 BuybackSlotCount = UT66RunStateSubsystem::BuybackDisplaySlotCount;
@@ -1529,14 +1529,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			.SetContent(
 				SAssignNew(BuybackPriceTexts[i], STextBlock)
 				.Text(Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"))
-				.Font(FT66Style::Tokens::FontBold(CardButtonFontSize))
-				.ColorAndOpacity(FT66Style::Tokens::Text)
+				.Font(FT66FlatStyle::Tokens::FontBold(CardButtonFontSize))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			)
 		);
 		BuybackBuyButtons[i] = BuybackBtnWidget;
 		BuybackRow->AddSlot()
 			.AutoWidth()
-			.Padding(i > 0 ? FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4, 0.f, 0.f, 0.f) : FMargin(0.f))
+			.Padding(i > 0 ? FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space4, 0.f, 0.f, 0.f) : FMargin(0.f))
 		[
 			SNew(SBox)
 			.WidthOverride(BuybackCardSize)
@@ -1552,13 +1552,13 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							SAssignNew(BuybackNameTexts[i], STextBlock)
 							.Text(FText::GetEmpty())
 							.TextStyle(&TextHeading)
-							.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Font(FT66FlatStyle::Tokens::FontBold(CardHeadingFontSize))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							.AutoWrapText(true)
 							.WrapTextAt(BuybackCardSize - GameCardPadding * 2.f)
 						]
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space2, 0.f, 0.f)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).HAlign(HAlign_Center)
@@ -1568,27 +1568,29 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								.WidthOverride(BuybackIconSize)
 								.HeightOverride(BuybackIconSize)
 								[
-									FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+									FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 										SAssignNew(BuybackIconImages[i], SImage)
 										.Image(BuybackIconBrushes[i].Get())
-										.ColorAndOpacity(FLinearColor::White)))
+										.ColorAndOpacity(FLinearColor::White)),
+										FName(*FString::Printf(TEXT("Gambler.BuybackCard.%02d.Icon"), i + 1)),
+										TEXT("Icon"))
 								],
 								EGamblerFlatPanel::SlotNormal,
 								FMargin(0.f),
 								&BuybackIconBorders[i])
 						]
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space2, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space2, 0.f, 0.f)
 					[
 						SAssignNew(BuybackDescTexts[i], STextBlock)
 						.Text(FText::GetEmpty())
 						.TextStyle(&TextBody)
-						.Font(FT66Style::Tokens::FontRegular(CardBodyFontSize))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.Font(FT66FlatStyle::Tokens::FontRegular(CardBodyFontSize))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						.AutoWrapText(true)
 						.WrapTextAt(BuybackCardSize - GameCardPadding * 2.f)
 					]
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space3, 0.f, 0.f)
 					[
 						BuybackBtnWidget
 					]
@@ -1603,7 +1605,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	TSharedRef<SWidget> CenterControls = bCompactCasinoLayout
 		? StaticCastSharedRef<SWidget>(
 			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66FlatStyle::Tokens::Space4, 0.f)
 			[
 				MakeGamblerFlatButton(
 					MakeGamblerFlatButtonParams(
@@ -1629,7 +1631,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					.SetTag(FName(TEXT("Gambler.Mode.BuybackButton")))
 					.SetToggleGroup(GamblerModeToggleGroup))
 			]
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66FlatStyle::Tokens::Space4, 0.f)
 			[
 				MakeGamblerFlatButton(
 					MakeGamblerFlatButtonParams(
@@ -1689,7 +1691,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			])
 		: StaticCastSharedRef<SWidget>(
 			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66Style::Tokens::Space4, 0.f)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, FT66FlatStyle::Tokens::Space4, 0.f)
 			[
 				MakeGamblerFlatButton(
 					MakeGamblerFlatButtonParams(CasinoTitle, FOnClicked::CreateLambda([this]() {
@@ -1717,11 +1719,11 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	TSharedRef<SWidget> CenterPanel =
 		MakeGamblerFlatPanel(
 			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
+			+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66FlatStyle::Tokens::Space4)
 			[
 				CenterControls
 			]
-			+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, FT66Style::Tokens::Space4, 0.f, 0.f)
+			+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, FT66FlatStyle::Tokens::Space4, 0.f, 0.f)
 			[
 				SAssignNew(CasinoBuybackSwitcher, SWidgetSwitcher)
 				+ SWidgetSwitcher::Slot()
@@ -1747,7 +1749,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							BuybackRow
 						]
 					]
-					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66Style::Tokens::Space6, 0.f, 0.f)
+					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, FT66FlatStyle::Tokens::Space6, 0.f, 0.f)
 					[
 						SAssignNew(CasinoRerollButtonWidget, SBox)
 						[
@@ -1768,7 +1770,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			]
 		,
 			EGamblerFlatPanel::ContentPanelWide,
-			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6),
+			FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space4 : FT66FlatStyle::Tokens::Space6),
 			nullptr,
 			FName(TEXT("Gambler.GamesPanel")));
 
@@ -1791,17 +1793,19 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						SNew(SOverlay)
 						+ SOverlay::Slot()
 						[
-							FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+							FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 								SAssignNew(InventorySlotIconImages[i], SImage)
 								.Image(InventorySlotIconBrushes[i].Get())
-								.ColorAndOpacity(FLinearColor::White)))
+								.ColorAndOpacity(FLinearColor::White)),
+								FName(*FString::Printf(TEXT("Gambler.InventorySlot.%02d.Icon"), i + 1)),
+								TEXT("Icon"))
 						]
 						+ SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0.f, 6.f, 8.f, 0.f)
 						[
 							SAssignNew(InventorySlotCountTexts[i], STextBlock)
 							.Text(FText::GetEmpty())
-							.Font(FT66Style::Tokens::FontBold(InventoryCountFontSize))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Font(FT66FlatStyle::Tokens::FontBold(InventoryCountFontSize))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							.ShadowOffset(FVector2D(1.f, 1.f))
 							.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
 							.Visibility(EVisibility::Hidden)
@@ -1811,8 +1815,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							SAssignNew(InventorySlotTexts[i], STextBlock)
 							.Text(NSLOCTEXT("T66.Common", "Dash", "-"))
 							.TextStyle(&TextChip)
-							.Font(FT66Style::Tokens::FontBold(InventoryDashFontSize))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Font(FT66FlatStyle::Tokens::FontBold(InventoryDashFontSize))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 						]
 					,
 						EGamblerFlatPanel::SlotNormal,
@@ -1834,7 +1838,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 
 	// Inventory grid: same as Shop — 20 slots in horizontal scroll, each 160×160
 	TSharedRef<SUniformGridPanel> GamblerInventoryGrid = SNew(SUniformGridPanel)
-		.SlotPadding(FMargin(FT66Style::Tokens::Space2, 0.f));
+		.SlotPadding(FMargin(FT66FlatStyle::Tokens::Space2, 0.f));
 	for (int32 Inv = 0; Inv < UT66RunStateSubsystem::MaxInventorySlots; ++Inv)
 	{
 		GamblerInventoryGrid->AddSlot(Inv, 0)
@@ -1859,8 +1863,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					FT66FlatStyle::AttachMetadata(SNew(STextBlock)
 					.Text(InventoryTitle)
 					.TextStyle(&TextHeading)
-					.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text),
+					.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text),
 					FName(TEXT("Gambler.Inventory.Title")),
 					TEXT("Label.Section"),
 					ET66FlatState::Default,
@@ -1874,8 +1878,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					FT66FlatStyle::AttachMetadata(SAssignNew(NetWorthText, STextBlock)
 					.Text(FText::GetEmpty())
 					.TextStyle(&TextHeading)
-					.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text),
+					.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text),
 					FName(TEXT("Gambler.Inventory.NetWorth")),
 					TEXT("Label.Stat"),
 					ET66FlatState::Default,
@@ -1889,8 +1893,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					FT66FlatStyle::AttachMetadata(SAssignNew(GoldText, STextBlock)
 					.Text(FText::GetEmpty())
 					.TextStyle(&TextHeading)
-					.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Text),
+					.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text),
 					FName(TEXT("Gambler.Inventory.Gold")),
 					TEXT("Label.Stat"),
 					ET66FlatState::Default,
@@ -1904,8 +1908,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					FT66FlatStyle::AttachMetadata(SAssignNew(DebtText, STextBlock)
 					.Text(FText::GetEmpty())
 					.TextStyle(&TextHeading)
-					.Font(FT66Style::Tokens::FontBold(SectionHeadingFontSize))
-					.ColorAndOpacity(FT66Style::Tokens::Danger),
+					.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Danger),
 					FName(TEXT("Gambler.Inventory.Debt")),
 					TEXT("Label.Stat"),
 					ET66FlatState::Default,
@@ -1919,7 +1923,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					SNew(SSpacer)
 				]
 			]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66Style::Tokens::Space3, 0.f, 0.f)
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space3, 0.f, 0.f)
 			[
 				SNew(SHorizontalBox)
 				+ SHorizontalBox::Slot().FillWidth(1.f)
@@ -1932,7 +1936,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						GamblerInventoryGrid
 					]
 				]
-				+ SHorizontalBox::Slot().AutoWidth().Padding(FT66Style::Tokens::Space6, 0.f, 0.f, 0.f)
+				+ SHorizontalBox::Slot().AutoWidth().Padding(FT66FlatStyle::Tokens::Space6, 0.f, 0.f, 0.f)
 				[
 					SAssignNew(SellPanelContainer, SBox)
 					.WidthOverride(InventorySlotSize)
@@ -1946,16 +1950,16 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								SAssignNew(SellItemNameText, STextBlock)
 								.Text(FText::GetEmpty())
 								.TextStyle(&TextHeading)
-								.Font(FT66Style::Tokens::FontBold(CardHeadingFontSize))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Font(FT66FlatStyle::Tokens::FontBold(CardHeadingFontSize))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 							[
 								SAssignNew(SellItemDescText, STextBlock)
 								.Text(FText::GetEmpty())
 								.TextStyle(&TextBody)
-								.Font(FT66Style::Tokens::FontRegular(CardBodyFontSize))
-								.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+								.Font(FT66FlatStyle::Tokens::FontRegular(CardBodyFontSize))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 								.AutoWrapText(true)
 							]
 							+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
@@ -1963,8 +1967,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 								SAssignNew(SellItemPriceText, STextBlock)
 								.Text(FText::GetEmpty())
 								.TextStyle(&TextChip)
-								.Font(FT66Style::Tokens::FontBold(CardButtonFontSize))
-								.ColorAndOpacity(FT66Style::Tokens::Accent2)
+								.Font(FT66FlatStyle::Tokens::FontBold(CardButtonFontSize))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Accent2)
 							]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
 						[
@@ -1972,7 +1976,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						]
 						,
 							EGamblerFlatPanel::InnerPanel,
-							FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4),
+							FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space4),
 							nullptr,
 							FName(TEXT("Gambler.SellPanel")))
 					]
@@ -1980,24 +1984,24 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			]
 		,
 			EGamblerFlatPanel::ContentPanelWide,
-			FMargin(bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space4),
+			FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space4),
 			nullptr,
 			FName(TEXT("Gambler.InventoryPanel")));
 
 	TSharedRef<SWidget> CasinoPageBody =
 		SNew(SVerticalBox)
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66Style::Tokens::Space4)
+		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, FT66FlatStyle::Tokens::Space4)
 		[
 			SNew(STextBlock)
 			.Text(CasinoTitle)
 			.TextStyle(&TextTitle)
-			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			.Visibility(bCompactCasinoLayout ? EVisibility::Collapsed : EVisibility::Visible)
 		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? 0.f : 0.f, 0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space4 : FT66Style::Tokens::Space6)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? 0.f : 0.f, 0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space4 : FT66FlatStyle::Tokens::Space6)
 		[
 			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
+			+ SHorizontalBox::Slot().AutoWidth().Padding(0.f, 0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space6, 0.f)
 			[
 				SAssignNew(StatsPanelBox, SBox)
 				.WidthOverride(StatsPanelWidth)
@@ -2010,7 +2014,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 						ET66FlatState::Default)
 				]
 			]
-			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, bCompactCasinoLayout ? FT66Style::Tokens::Space3 : FT66Style::Tokens::Space6, 0.f)
+			+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space6, 0.f)
 			[
 				SNew(SBox)
 				.WidthOverride(CenterPanelWidth > 0.f ? FOptionalSize(CenterPanelWidth) : FOptionalSize())
@@ -2054,7 +2058,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			SNew(SBox)
 			.WidthOverride(TAttribute<FOptionalSize>::CreateLambda([this]() -> FOptionalSize
 			{
-				const FVector2D Bounds = bEmbeddedInCasinoShell ? FT66Style::GetViewportLogicalSize() : FT66Style::GetSafeFrameSize();
+				const FVector2D Bounds = bEmbeddedInCasinoShell ? FT66FlatStyle::GetViewportLogicalSize() : FT66FlatStyle::GetSafeFrameSize();
 				const float HorizontalMargins = bEmbeddedInCasinoShell ? 128.f : 80.f;
 				return FOptionalSize(FMath::Max(1.f, Bounds.X - HorizontalMargins));
 			}))
@@ -2065,13 +2069,13 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 
 	const TAttribute<FMargin> SafeContentInsets = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
 	{
-		return bEmbeddedInCasinoShell ? FMargin(0.f) : FT66Style::GetSafeFrameInsets();
+		return bEmbeddedInCasinoShell ? FMargin(0.f) : FT66FlatStyle::GetSafeFrameInsets();
 	});
 
 	const TAttribute<FMargin> SafeClosePadding = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
 	{
-		const FMargin LocalPadding(FT66Style::Tokens::Space6, FT66Style::Tokens::Space4, FT66Style::Tokens::Space6, 0.f);
-		return bEmbeddedInCasinoShell ? LocalPadding : FT66Style::GetSafePadding(LocalPadding);
+		const FMargin LocalPadding(FT66FlatStyle::Tokens::Space6, FT66FlatStyle::Tokens::Space4, FT66FlatStyle::Tokens::Space6, 0.f);
+		return bEmbeddedInCasinoShell ? LocalPadding : FT66FlatStyle::GetSafePadding(LocalPadding);
 	});
 
 	TSharedRef<SWidget> Root =
@@ -2084,7 +2088,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 				.Padding(SafeContentInsets)
 				[
 					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(FT66Style::Tokens::Space6, FT66Style::Tokens::Space4, FT66Style::Tokens::Space6, FT66Style::Tokens::Space2)
+					+ SVerticalBox::Slot().AutoHeight().Padding(FT66FlatStyle::Tokens::Space6, FT66FlatStyle::Tokens::Space4, FT66FlatStyle::Tokens::Space6, FT66FlatStyle::Tokens::Space2)
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
@@ -2092,8 +2096,8 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							SAssignNew(StatusText, STextBlock)
 							.Text(FText::GetEmpty())
 							.TextStyle(&TextBody)
-							.Font(FT66Style::Tokens::FontRegular(StatusFontSize))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							.Font(FT66FlatStyle::Tokens::FontRegular(StatusFontSize))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						]
 					]
 					+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).VAlign(VAlign_Top).Padding(bCompactCasinoLayout ? 20.f : 40.f, bCompactCasinoLayout ? 8.f : 16.f, bCompactCasinoLayout ? 20.f : 40.f, 0.f)
@@ -2135,14 +2139,14 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 							SNew(STextBlock)
 							.Text(Loc ? Loc->GetText_CheatPromptTitle() : FText::GetEmpty())
 							.TextStyle(&TextHeading)
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 						]
 						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 14.f)
 						[
 							SNew(STextBlock)
 							.Text(Loc ? Loc->GetText_CheatPromptBody() : FText::GetEmpty())
 							.TextStyle(&TextBody)
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						]
 					+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 					[
@@ -2168,7 +2172,7 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					]
 					,
 						EGamblerFlatPanel::OverlayModalPanel,
-						FMargin(FT66Style::Tokens::Space6))
+						FMargin(FT66FlatStyle::Tokens::Space6))
 				]
 			]
 		,
@@ -2180,6 +2184,6 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 	RefreshTopBar();
 	RefreshInventory();
 	RefreshSellPanel();
-	return bEmbeddedInCasinoShell ? Root : FT66Style::MakeResponsiveRoot(Root);
+	return bEmbeddedInCasinoShell ? Root : FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 

@@ -50,16 +50,10 @@ public:
 	bool SelectIdolFromStock(int32 SlotIndex);
 	bool IsIdolStockSlotSelected(int32 SlotIndex) const;
 	bool SellEquippedIdolInSlot(int32 SlotIndex);
-	void RestoreState(const TArray<FName>& InEquippedIdols, const TArray<uint8>& InEquippedIdolTiers, ET66Difficulty Difficulty, int32 InRemainingCatchUpIdolPicks);
+	void RestoreState(const TArray<FName>& InEquippedIdols, const TArray<uint8>& InEquippedIdolTiers, ET66Difficulty Difficulty);
 
 	void ResetForNewRun(ET66Difficulty Difficulty);
 	void HandleStageChanged(int32 NewStage);
-
-	int32 GetCatchUpIdolPickCountForDifficulty(ET66Difficulty Difficulty) const;
-	int32 GetRemainingCatchUpIdolPicks() const { return RemainingCatchUpIdolPicks; }
-	bool HasCatchUpIdolPicksRemaining() const { return RemainingCatchUpIdolPicks > 0; }
-	bool ConsumeCatchUpIdolPick();
-	void SetRemainingCatchUpIdolPicks(int32 NewRemainingCatchUpIdolPicks);
 
 	ET66Difficulty GetCurrentDifficulty() const { return CurrentDifficulty; }
 
@@ -92,7 +86,4 @@ private:
 
 	UPROPERTY()
 	ET66Difficulty CurrentDifficulty = ET66Difficulty::Easy;
-
-	UPROPERTY()
-	int32 RemainingCatchUpIdolPicks = 0;
 };

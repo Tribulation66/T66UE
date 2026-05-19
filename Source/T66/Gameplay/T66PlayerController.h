@@ -19,6 +19,7 @@ class UT66CowardicePromptWidget;
 class AT66CowardiceGate;
 class AT66EnemyBase;
 class UT66IdolAltarOverlayWidget;
+class UT66WeaponAltarOverlayWidget;
 class UNiagaraSystem;
 class UT66CollectorOverlayWidget;
 class UT66ArcadePopupWidget;
@@ -112,6 +113,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Game")
 	void RestoreGameplayInputMode();
 
+	/** Ensure gameplay input, HUD, and camera presentation are active after travel/spawn recovery. */
+	void EnsureGameplayRuntimePresentation();
+
 	/** Rebuild gameplay mouse mappings from the current InputSettings action bindings. */
 	UFUNCTION(BlueprintCallable, Category = "Game|Input")
 	void RefreshGameplayMouseMappings();
@@ -150,6 +154,7 @@ public:
 	void SwitchCasinoOverlayToAlchemy();
 	bool IsCasinoOverlayOpen() const;
 	bool TriggerCasinoBossIfAngry();
+	void ApplyCasinoOverlayInputMode(bool bReassertNextTick = true);
 
 	void OpenCasinoShopTab();
 
@@ -175,22 +180,21 @@ public:
 	void OpenCowardicePrompt(AT66CowardiceGate* Gate);
 
 	/** Crate open: play CS:GO-style item reveal HUD animation. */
-	void StartCrateOpenHUD();
+	void StartCrateOpenHUD(ET66Rarity SourceCrateRarity);
 
 	/** Chest open: play an above-inventory gold reward HUD presentation. */
 	void StartChestRewardHUD(ET66Rarity Rarity, int32 GoldAmount);
 
+	/** Item reward: play an above-inventory item reward HUD presentation. */
+	void ShowPickupItemCardHUD(FName ItemID, ET66ItemRarity ItemRarity);
+
 	/** Open the Run Summary after a full-clear victory. */
 	void ShowVictoryRunSummary();
 
-	/** Open the between-difficulties clear summary without ending the run. */
-	void ShowDifficultyClearSummary();
 
 	UFUNCTION(Client, Reliable)
 	void ClientShowVictoryRunSummary();
 
-	UFUNCTION(Client, Reliable)
-	void ClientShowDifficultyClearSummary();
 
 	/** Loot proximity: HUD prompt + accept/reject input. */
 	void SetNearbyLootBag(AT66LootBagPickup* LootBag);
@@ -308,13 +312,14 @@ private:
 	TSubclassOf<UT66CollectorOverlayWidget> ResolveCollectorOverlayClass() const;
 	TSubclassOf<UT66CowardicePromptWidget> ResolveCowardicePromptClass() const;
 	TSubclassOf<UT66IdolAltarOverlayWidget> ResolveIdolAltarOverlayClass() const;
+	TSubclassOf<UT66WeaponAltarOverlayWidget> ResolveWeaponAltarOverlayClass() const;
 	bool SpawnArcadePopupWidget(const FT66ArcadeInteractableData& ArcadeData, AT66ArcadeInteractableBase* SourceInteractable);
 
 	/** Gameplay HUD (hearts, gold, inventory, minimap); created in gameplay BeginPlay */
 	UPROPERTY()
 	TObjectPtr<UT66GameplayHUDWidget> GameplayHUDWidget;
 
-	/** Lab overlay (items + enemies panels + exit); shown only when bIsLabLevel */
+	/** Lab overlay (items + enemies panels + exit); shown only during Lab runs. */
 	UPROPERTY()
 	TObjectPtr<UT66LabOverlayWidget> LabOverlayWidget;
 
@@ -335,6 +340,8 @@ private:
 	TObjectPtr<UT66ArcadePopupWidget> ArcadePopupWidget;
 
 	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
+
+	bool bGameplayRuntimePresentationInitialized = false;
 
 	/** Niagara system for jump VFX (legacy round ball: VFX_Attack1). */
 	UPROPERTY(EditDefaultsOnly, Category = "Game|VFX")
@@ -499,6 +506,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66IdolAltarOverlayWidget> IdolAltarOverlayWidget;
+
+	UPROPERTY()
+	TObjectPtr<UT66WeaponAltarOverlayWidget> WeaponAltarOverlayWidget;
 
 	bool bDevConsoleOpen = false;
 	TSharedPtr<SWidget> DevConsoleWidget;

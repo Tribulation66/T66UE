@@ -127,6 +127,33 @@ struct T66_API FT66CommunityRuleSet
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community")
 	FName StartingItemId = NAME_None;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	int32 StartRandomItems = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	int32 StartBonusGold = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	float EnemyHealthMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	float EnemyDamageMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	float TrapDamageMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	float HeroHealthMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	float HeroDamageMultiplier = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	int32 HeroLuckFlat = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	float EnemyLootBagCountMultiplier = 1.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community")
 	ET66PassiveType PassiveOverride = ET66PassiveType::None;
 
@@ -151,6 +178,15 @@ struct T66_API FT66CommunityRuleSet
 			|| StartLevelOverride > 0
 			|| BonusStats.HasAnyBonus()
 			|| !StartingItemId.IsNone()
+			|| StartRandomItems > 0
+			|| StartBonusGold > 0
+			|| !FMath::IsNearlyEqual(EnemyHealthMultiplier, 1.0f)
+			|| !FMath::IsNearlyEqual(EnemyDamageMultiplier, 1.0f)
+			|| !FMath::IsNearlyEqual(TrapDamageMultiplier, 1.0f)
+			|| !FMath::IsNearlyEqual(HeroHealthMultiplier, 1.0f)
+			|| !FMath::IsNearlyEqual(HeroDamageMultiplier, 1.0f)
+			|| HeroLuckFlat != 0
+			|| !FMath::IsNearlyEqual(EnemyLootBagCountMultiplier, 1.0f)
 			|| PassiveOverride != ET66PassiveType::None
 			|| UltimateOverride != ET66UltimateType::None;
 	}
@@ -159,6 +195,15 @@ struct T66_API FT66CommunityRuleSet
 	{
 		StartLevelOverride = T66CommunityContentLimits::ClampStartLevelOverride(StartLevelOverride);
 		BonusStats.Sanitize();
+		StartRandomItems = FMath::Clamp(StartRandomItems, 0, 20);
+		StartBonusGold = FMath::Clamp(StartBonusGold, 0, 10000);
+		EnemyHealthMultiplier = FMath::Clamp(EnemyHealthMultiplier, 0.1f, 10.0f);
+		EnemyDamageMultiplier = FMath::Clamp(EnemyDamageMultiplier, 0.1f, 10.0f);
+		TrapDamageMultiplier = FMath::Clamp(TrapDamageMultiplier, 0.1f, 10.0f);
+		HeroHealthMultiplier = FMath::Clamp(HeroHealthMultiplier, 0.1f, 10.0f);
+		HeroDamageMultiplier = FMath::Clamp(HeroDamageMultiplier, 0.1f, 10.0f);
+		HeroLuckFlat = FMath::Clamp(HeroLuckFlat, -99, 99);
+		EnemyLootBagCountMultiplier = FMath::Clamp(EnemyLootBagCountMultiplier, 0.0f, 20.0f);
 		RequiredStageReached = T66CommunityContentLimits::ClampRequiredStageReached(RequiredStageReached);
 		MaxRunTimeSeconds = T66CommunityContentLimits::ClampRunTimeSeconds(MaxRunTimeSeconds);
 	}

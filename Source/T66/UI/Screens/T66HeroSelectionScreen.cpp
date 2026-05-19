@@ -4,10 +4,28 @@
 #include "UI/Screens/HeroSelection/T66HeroSelectionScreen_Private.h"
 #include "UI/Screens/T66ChallengesScreen.h"
 #include "UI/T66UIManager.h"
+#include "Core/T66LeaderboardSubsystem.h"
 
 using namespace T66HeroSelectionPrivate;
 
 DEFINE_LOG_CATEGORY(LogT66HeroSelection);
+
+namespace
+{
+	ET66RunMode T66ResolveHeroSelectionRunMode(UT66GameInstance* GI)
+	{
+		if (!GI)
+		{
+			return ET66RunMode::Offline;
+		}
+
+		const UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>();
+		const UT66LeaderboardSubsystem* Leaderboard = GI->GetSubsystem<UT66LeaderboardSubsystem>();
+		const bool bBackendReady = Backend && Backend->IsBackendConfigured() && Backend->HasSteamTicket();
+		const bool bAccountEligible = !Leaderboard || Leaderboard->IsAccountEligibleForLeaderboard();
+		return (bBackendReady && bAccountEligible) ? ET66RunMode::Regular : ET66RunMode::Offline;
+	}
+}
 
 UT66HeroSelectionScreen::UT66HeroSelectionScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -174,7 +192,88 @@ FReply UT66HeroSelectionScreen::HandleClearTemporaryBuffsClicked()
 
 FReply UT66HeroSelectionScreen::HandleLabClicked()
 {
-	UE_LOG(LogT66HeroSelection, Warning, TEXT("Action OpenLab clicked - backend not yet implemented"));
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		PreviewedHeroID = GI->ResolvePlayableHeroID(PreviewedHeroID);
+		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
+		GI->SelectedHeroID = PreviewedHeroID;
+		GI->SelectedDifficulty = SelectedDifficulty;
+		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->ApplyConfiguredMainMapLayoutVariant();
+		GI->ClearActiveDailyClimbRun();
+		GI->SelectedRunMode = T66ResolveHeroSelectionRunMode(GI);
+		GI->SelectedRunCategory = ET66RunCategory::Lab;
+		GI->bRunIneligibleForLeaderboard = true;
+		GI->bIsNewGameFlow = true;
+		GI->bIsStageTransition = false;
+		GI->PendingLoadedTransform = FTransform();
+		GI->bApplyLoadedTransform = false;
+		GI->RunSeed = FMath::Rand();
+
+		if (UIManager)
+		{
+			UIManager->HideAllUI();
+		}
+		GI->TransitionToGameplayLevel();
+	}
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandleTutorialClicked()
+{
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		PreviewedHeroID = GI->ResolvePlayableHeroID(PreviewedHeroID);
+		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
+		GI->SelectedHeroID = PreviewedHeroID;
+		GI->SelectedDifficulty = SelectedDifficulty;
+		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->ApplyConfiguredMainMapLayoutVariant();
+		GI->ClearActiveDailyClimbRun();
+		GI->SelectedRunMode = T66ResolveHeroSelectionRunMode(GI);
+		GI->SelectedRunCategory = ET66RunCategory::Tutorial;
+		GI->bRunIneligibleForLeaderboard = true;
+		GI->bIsNewGameFlow = true;
+		GI->bIsStageTransition = false;
+		GI->PendingLoadedTransform = FTransform();
+		GI->bApplyLoadedTransform = false;
+		GI->RunSeed = FMath::Rand();
+
+		if (UIManager)
+		{
+			UIManager->HideAllUI();
+		}
+		GI->TransitionToGameplayLevel();
+	}
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandleTestClicked()
+{
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		PreviewedHeroID = GI->ResolvePlayableHeroID(PreviewedHeroID);
+		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
+		GI->SelectedHeroID = PreviewedHeroID;
+		GI->SelectedDifficulty = SelectedDifficulty;
+		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->ApplyConfiguredMainMapLayoutVariant();
+		GI->ClearActiveDailyClimbRun();
+		GI->SelectedRunMode = T66ResolveHeroSelectionRunMode(GI);
+		GI->SelectedRunCategory = ET66RunCategory::TestRoom;
+		GI->bRunIneligibleForLeaderboard = true;
+		GI->bIsNewGameFlow = true;
+		GI->bIsStageTransition = false;
+		GI->PendingLoadedTransform = FTransform();
+		GI->bApplyLoadedTransform = false;
+		GI->RunSeed = FMath::Rand();
+
+		if (UIManager)
+		{
+			UIManager->HideAllUI();
+		}
+		GI->TransitionToGameplayLevel();
+	}
 	return FReply::Handled();
 }
 
@@ -323,7 +422,7 @@ bool UT66HeroSelectionScreen::GetPreviewedHeroData(FHeroData& OutHeroData)
 FText UT66HeroSelectionScreen::GetPreviewedHeroTitleText() const
 {
 	FHeroData HeroData;
-	FText DisplayName = NSLOCTEXT("T66.HeroSelection", "FlatHeroArthur", "ARTHUR");
+	FText DisplayName = NSLOCTEXT("T66.HeroSelection", "FlatHeroGeorge", "GEORGE");
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	if (GI && !PreviewedHeroID.IsNone() && GI->GetHeroData(PreviewedHeroID, HeroData))
 	{
@@ -341,7 +440,7 @@ FText UT66HeroSelectionScreen::GetPreviewedHeroTitleText() const
 	Value.ToUpperInline();
 	if (Value.IsEmpty() || Value.Contains(TEXT("HERO_")) || Value.Equals(TEXT("HERO")) || Value.Equals(TEXT("HERO 1")))
 	{
-		Value = TEXT("ARTHUR");
+		Value = TEXT("GEORGE");
 	}
 	return FText::FromString(Value);
 }
@@ -349,7 +448,7 @@ FText UT66HeroSelectionScreen::GetPreviewedHeroTitleText() const
 FText UT66HeroSelectionScreen::GetPreviewedHeroSubtitleText() const
 {
 	FHeroData HeroData;
-	FText Description = NSLOCTEXT("T66.HeroSelection", "FlatArthurSubtitle", "A KING. A CRUSADE. AN APOCALYPSE.");
+	FText Description = NSLOCTEXT("T66.HeroSelection", "FlatGeorgeSubtitle", "A FOUNDING SHOT. A CLEAN LINE.");
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	if (GI && !PreviewedHeroID.IsNone() && GI->GetHeroData(PreviewedHeroID, HeroData) && !HeroData.Description.IsEmpty())
 	{
@@ -596,7 +695,10 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
 		GI->ApplyConfiguredMainMapLayoutVariant();
-		GI->bStageCatchUpPending = false;
+		GI->ClearActiveDailyClimbRun();
+		GI->SelectedRunMode = T66ResolveHeroSelectionRunMode(GI);
+		GI->SelectedRunCategory = ET66RunCategory::Tower;
+		GI->bRunIneligibleForLeaderboard = GI->IsOfflineRun();
 		GI->PendingLoadedTransform = FTransform();
 		GI->bApplyLoadedTransform = false;
 		// New seed each time so procedural terrain layout differs per run

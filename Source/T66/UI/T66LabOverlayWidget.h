@@ -13,7 +13,7 @@ class AT66GameMode;
 
 /**
  * Lab overlay: single right-side panel (Items | NPC | Mobs | Stage Bosses tabs) between Power and inventory.
- * Toggleable like minimap. Shown only when bIsLabLevel. All strings localized.
+ * Toggleable like minimap. Shown only during Lab runs. All strings localized.
  */
 UCLASS()
 class T66_API UT66LabOverlayWidget : public UUserWidget

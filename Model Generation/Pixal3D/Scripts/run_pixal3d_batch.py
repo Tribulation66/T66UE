@@ -305,6 +305,7 @@ def pixal_headers(args: argparse.Namespace) -> dict[str, str]:
         "X-Tex-Rescale-T": str(args.tex_rescale_t),
         "X-Export-Fallback": "1" if args.export_fallback else "0",
         "X-Fallback-Decimation": str(args.fallback_decimation),
+        "X-Safe-Fill-Holes-Fallback": "1" if args.safe_fill_holes_fallback else "0",
     }
 
 
@@ -497,9 +498,9 @@ def add_common_arguments(parser: argparse.ArgumentParser) -> None:
 
 def add_pixal_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--seed", type=int, default=1337)
-    parser.add_argument("--resolution", type=int, default=1024)
-    parser.add_argument("--texture-size", type=int, default=2048)
-    parser.add_argument("--decimation", type=int, default=30000)
+    parser.add_argument("--resolution", type=int, default=1536)
+    parser.add_argument("--texture-size", type=int, default=4096)
+    parser.add_argument("--decimation", type=int, default=200000)
     parser.add_argument("--remesh", dest="remesh", action="store_true", default=True)
     parser.add_argument("--no-remesh", dest="remesh", action="store_false")
     parser.add_argument("--remesh-band", type=float, default=1.0)
@@ -522,7 +523,9 @@ def add_pixal_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--tex-rescale-t", type=float, default=3.0)
     parser.add_argument("--export-fallback", dest="export_fallback", action="store_true", default=True)
     parser.add_argument("--no-export-fallback", dest="export_fallback", action="store_false")
-    parser.add_argument("--fallback-decimation", type=int, default=30000)
+    parser.add_argument("--fallback-decimation", type=int, default=80000)
+    parser.add_argument("--safe-fill-holes-fallback", dest="safe_fill_holes_fallback", action="store_true", default=True)
+    parser.add_argument("--no-safe-fill-holes-fallback", dest="safe_fill_holes_fallback", action="store_false")
 
 
 def normalize_paths(args: argparse.Namespace) -> None:

@@ -1,0 +1,45 @@
+Create one clean single-character concept image for T66 character model reference.
+
+Use the accepted v06 female Lu Bu character direction as the style baseline:
+- Premium smooth anime fighting-game cel shading, dimensional armor forms, crimson / purple / black / gold palette.
+- Slightly fair warm skin color: fair peach / light ivory skin with warm shadows, not pure white, not porcelain, not gray, not tan.
+- Towering nephilim body with giant heroic proportions, tiny waist, long powerful limbs, oversized readable stylized fighting-game head.
+- Keep the female design as-is from the accepted v06 direction: giant-bust armored bodice, red / purple / black armor, warm gold accents, simplified clothing, no center crotch cloth.
+
+Subject:
+- One original adult female warlord inspired by the historical Lu Bu archetype, not a copy of any existing game character.
+- She is alone in the image. Do not include a male character or a second character.
+- Exaggerated giant-bust heroic silhouette under a fully clothed simplified armored bodice. No nudity, no lingerie, no pin-up pose.
+- Serious intimidating warlord face, large readable head with strong brows and clear face planes.
+
+Pose:
+- Strict mannequin A-pose for rigging reference.
+- Full-body front view, torso vertical, hips level, shoulders level, feet shoulder-width apart.
+- Arms angled down and outward about 45 degrees from the torso with visible empty space between arms and torso.
+- Elbows straight or nearly straight. No action pose, no hero bend, no contrapposto, no hip-cocked fashion pose.
+
+Weapon:
+- Hold one large simplified Lu Bu-style halberd / fang tian ji vertically beside the body.
+- One visible hand grips the shaft cleanly, with the shaft passing through the center of the closed hand.
+- The weapon must be fully visible and not cropped.
+- Keep the elegant v06 halberd identity, but not too busy: no gems, no tiny prongs, no filigree, no dense cutouts.
+
+Clothing:
+- Preserve the accepted female v06 look: simplified red / purple / black armored bodice, giant-bust silhouette, strong shoulder armor, fitted waist, thigh/leg armor, warm gold accents.
+- No long center crotch cloth, no loincloth tab, no hanging middle sash, no fabric strip between the legs.
+- Side cloth panels or short side cape pieces are okay.
+- Gold trim should be few and thick, not many thin outlines on every edge.
+
+Composition:
+- Single full-body character centered on a white or very light neutral background.
+- Generous padding around head plume, weapon, feet, and hands.
+- No environment, no text, no labels, no logo, no watermark, no frame.
+- Pixal3D-friendly: crisp silhouette, readable limbs, clean separation between weapon and body, no smoke, no glow, no heavy cast shadow, no transparent materials.
+
+Negative constraints:
+- Do not include any other character.
+- Do not use small heads, normal heroic heads, realistic head proportions, or pin heads.
+- Do not make the skin pure white, gray, porcelain, chalky, tan, bronze, or brown.
+- Do not add a center crotch cloth, loincloth, front tab, apron, skirt, or hanging center sash.
+- Do not use ornate armor, many thin gold edge lines, layered decorations, busy weapons, gems, or complex prongs.
+- Do not imitate a specific copyrighted character design.

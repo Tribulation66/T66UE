@@ -38,9 +38,12 @@ namespace
 			return false;
 		}
 
-		const FString MapName = UWorld::RemovePIEPrefix(World->GetMapName());
-		return !MapName.Contains(TEXT("Tutorial"))
-			&& !MapName.Contains(TEXT("Lab"));
+		if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+		{
+			return !T66GI->IsTutorialRun() && !T66GI->IsLabRun();
+		}
+
+		return true;
 	}
 
 	static UTexture* T66GetFallbackTexture()
@@ -457,7 +460,7 @@ int32 AT66MiasmaManager::SpawnLegacyStageLavaPatchesForCurrentStage()
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
-	if (!World || !GameMode || !RunState || !T66GI || !T66ShouldUseMainBoardCoverage(World) || GameMode->IsUsingTowerMainMapLayout() || T66GI->bStageCatchUpPending)
+	if (!World || !GameMode || !RunState || !T66GI || !T66ShouldUseMainBoardCoverage(World) || GameMode->IsUsingTowerMainMapLayout())
 	{
 		return 0;
 	}

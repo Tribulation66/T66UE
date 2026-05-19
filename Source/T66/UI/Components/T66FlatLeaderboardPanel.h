@@ -23,8 +23,8 @@ struct FT66FavoriteLeaderboardRun;
 /**
  * Functional flat Main Menu leaderboard.
  *
- * This keeps the active Stage 2 / FT66FlatStyle chrome while using the same
- * backend-driven behavior that the dormant ST66LeaderboardPanel established.
+ * This keeps the active Stage 2 / FT66FlatStyle chrome while preserving the
+ * backend-driven behavior from the old reference leaderboard path.
  */
 class T66_API ST66FlatLeaderboardPanel : public SCompoundWidget
 {
@@ -53,10 +53,16 @@ private:
 	TSharedRef<SWidget> BuildRowsPanel();
 	TSharedRef<SWidget> BuildFilterButton(ET66LeaderboardFilter Filter, const FText& Label, const FString& Name);
 	TSharedRef<SWidget> BuildTypeButton(ET66LeaderboardType Type, const FText& Label, const FString& Name);
+	TSharedRef<SWidget> BuildTimeButton(ET66LeaderboardTime TimeFilter, const FText& Label, const FString& Name);
 	TSharedRef<SWidget> BuildTimeDropdown();
 	TSharedRef<SWidget> BuildRuleDropdown();
+	TSharedRef<SWidget> BuildPartySizeDropdown();
+	TSharedRef<SWidget> BuildDifficultyDropdown();
+	TSharedRef<SWidget> BuildMetricCheckButton(ET66LeaderboardType Type, const FText& Label, const FString& Name);
 	TSharedRef<SWidget> BuildTimeMenu();
 	TSharedRef<SWidget> BuildRuleMenu();
+	TSharedRef<SWidget> BuildPartySizeMenu();
+	TSharedRef<SWidget> BuildDifficultyMenu();
 	TSharedRef<SWidget> BuildStreamerRequestPanel();
 	TSharedRef<SWidget> BuildLeaderboardRow(const FLeaderboardEntry& Entry, int32 DisplayIndex, bool bLocalRow);
 	TSharedRef<SWidget> BuildMenuSectionLabel(const FString& Label, const FString& TagName) const;
@@ -128,6 +134,7 @@ private:
 	const FSlateBrush* GetOrCreateSteamAvatarBrush(const FString& SteamId);
 	const FSlateBrush* GetOrCreateAvatarBrush(const FString& AvatarUrl);
 	const FSlateBrush* GetOrCreateHeroPortraitBrush(FName HeroID);
+	const FSlateBrush* GetFilterIconBrush(ET66LeaderboardFilter Filter);
 	void SetBrushTexture(const TSharedPtr<FSlateBrush>& Brush, UTexture2D* Texture);
 	void TrackBrushTexture(UTexture2D* Texture);
 	void ReleaseRootedBrushTextures();
@@ -167,5 +174,6 @@ private:
 	TMap<FString, TSharedPtr<FSlateBrush>> AvatarBrushes;
 	TMap<FString, TSharedPtr<FSlateBrush>> SteamAvatarBrushes;
 	TMap<FName, TSharedPtr<FSlateBrush>> HeroPortraitBrushes;
+	TMap<ET66LeaderboardFilter, TSharedPtr<FSlateBrush>> FilterIconBrushes;
 	TArray<TWeakObjectPtr<UTexture2D>> RootedBrushTextures;
 };

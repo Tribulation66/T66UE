@@ -70,19 +70,19 @@ public:
 	int32 MaxWeaponCrates = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arcade|Rewards")
-	float AmplifierBaseChance = 0.25f;
+	float BoostBaseChance = 0.25f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arcade|Rewards")
-	float AmplifierMaxChance = 0.75f;
+	float BoostMaxChance = 0.75f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arcade|Rewards")
-	int32 MaxAmplifiers = 2;
+	int32 MaxBoosts = 2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arcade|Rewards")
-	int32 AmplifierStatBonus = 8;
+	int32 BoostStatBonus = 8;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Arcade|Rewards")
-	float AmplifierDurationSeconds = 10.f;
+	float BoostDurationSeconds = 10.f;
 };
 
 USTRUCT(BlueprintType)
@@ -207,9 +207,4 @@ namespace T66ArcadeModifierKeys
 	inline const FName GoldMinerLargeGoldScore(TEXT("GoldMinerLargeGoldScore"));
 	inline const FName GoldMinerGemScore(TEXT("GoldMinerGemScore"));
 	inline const FName GoldMinerRockScore(TEXT("GoldMinerRockScore"));
-	inline const FName VehicleDuration(TEXT("VehicleDuration"));
-	inline const FName VehicleDriveSpeed(TEXT("VehicleDriveSpeed"));
-	inline const FName VehicleTurnSpeed(TEXT("VehicleTurnSpeed"));
-	inline const FName VehicleMowRadius(TEXT("VehicleMowRadius"));
-	inline const FName VehicleMowMinSpeed(TEXT("VehicleMowMinSpeed"));
 }

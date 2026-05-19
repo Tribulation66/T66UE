@@ -1,0 +1,435 @@
+{
+  "asset_name": "CryptWraith",
+  "base_color_param": "/Game/Characters/Mobs/CryptWraith/Textures/T_CryptWraith_0.T_CryptWraith_0",
+  "diffuse_param": "/Game/Characters/Mobs/CryptWraith/Textures/T_CryptWraith_0.T_CryptWraith_0",
+  "expected_height": 190.0,
+  "flatten_k": 6,
+  "height_tolerance": 0.1,
+  "imported_object_paths": [
+    "/Game/Characters/Mobs/CryptWraith/SM_CryptWraith.SM_CryptWraith"
+  ],
+  "imported_outline_object_paths": [
+    "/Game/Characters/Mobs/CryptWraith/SM_CryptWraith_Outline.SM_CryptWraith_Outline"
+  ],
+  "inner_line_default_black": "/Game/ToonStyle/Textures/T_InnerLines_DefaultBlack",
+  "inner_line_param": "/Game/Characters/Mobs/CryptWraith/Textures/T_CryptWraith_InnerLines.T_CryptWraith_InnerLines",
+  "inner_line_texture": "/Game/Characters/Mobs/CryptWraith/Textures/T_CryptWraith_InnerLines",
+  "manifest_normal_delta_sample": {
+    "delta": 0.9754167138583385,
+    "distinct": true,
+    "loop_index": 4847,
+    "outline_normal": [
+      0.7387093305587769,
+      -0.5137508511543274,
+      0.43631234765052795
+    ],
+    "position": [
+      24.247411727905273,
+      -26.999385833740234,
+      142.66481018066406
+    ],
+    "shading_normal": [
+      0.7183632254600525,
+      -0.4430660307407379,
+      -0.536327064037323
+    ],
+    "vertex_index": 677
+  },
+  "manifest_normal_transfer": {
+    "applied": true,
+    "changed_loop_count": 63589,
+    "head_threshold_z": 142.5,
+    "head_vertex_count": 14787,
+    "method": "sphere_proxy_split_normals",
+    "proxy_center": [
+      -1.3085335493087769,
+      -11.237833976745605,
+      161.74185180664062
+    ],
+    "proxy_radius": 28.458714957482712
+  },
+  "manifest_outline_winding": {
+    "applied": true,
+    "face_after": [
+      51,
+      47,
+      50
+    ],
+    "face_before": [
+      51,
+      50,
+      47
+    ],
+    "face_order_reversed": true,
+    "inward_normal_samples": 90956,
+    "method": "shade_smooth before bmesh.ops.reverse_faces + restored captured outward vertex normals as custom split normals",
+    "outward_normal_samples": 89998
+  },
+  "manifest_texture_flattening": [
+    {
+      "active_pixels": 15402374,
+      "centers_rgb_255": [
+        [
+          1,
+          8,
+          10
+        ],
+        [
+          3,
+          122,
+          124
+        ],
+        [
+          9,
+          157,
+          157
+        ],
+        [
+          2,
+          187,
+          181
+        ],
+        [
+          94,
+          200,
+          204
+        ],
+        [
+          193,
+          223,
+          226
+        ]
+      ],
+      "final_center_shift": 0.0004623683635145426,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_0_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_0",
+      "iterations": 15,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_0_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_0_flattened.png",
+      "postprocess": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              1,
+              8,
+              10
+            ],
+            [
+              3,
+              122,
+              124
+            ],
+            [
+              9,
+              157,
+              157
+            ],
+            [
+              2,
+              187,
+              181
+            ],
+            [
+              94,
+              200,
+              204
+            ],
+            [
+              193,
+              223,
+              226
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_0_flattened.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_0_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              1,
+              8,
+              10
+            ],
+            [
+              3,
+              122,
+              124
+            ],
+            [
+              9,
+              157,
+              157
+            ],
+            [
+              2,
+              187,
+              181
+            ],
+            [
+              94,
+              200,
+              204
+            ],
+            [
+              193,
+              223,
+              226
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 47540,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[1, 8, 10], [3, 122, 124], [9, 157, 157], [2, 187, 181], [94, 200, 204], [193, 223, 226]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\CryptWraith\\\\Working\\\\CryptWraith_0_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\CryptWraith\\\\Working\\\\CryptWraith_0_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[1, 8, 10], [3, 122, 124], [9, 157, 157], [2, 187, 181], [94, 200, 204], [193, 223, 226]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 47540, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": true, \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\CryptWraith\\\\Working\\\\CryptWraith_Tint.png\", \"saturation_scale\": 1.1, \"value_scale\": 0.6}, \"unique_rgb_after\": 2, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9760105, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7017110, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 198536, \"width\": 4096}",
+        "tint": {
+          "generated": true,
+          "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_Tint.png",
+          "saturation_scale": 1.1,
+          "value_scale": 0.6
+        },
+        "unique_rgb_after": 2,
+        "unique_rgb_before": 6,
+        "uv_mask_pixels": 9760105,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 7017110,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 198536,
+        "width": 4096
+      },
+      "unique_colors_after": 6,
+      "unique_colors_before": 183880,
+      "width": 4096
+    },
+    {
+      "active_pixels": 16777216,
+      "centers_rgb_255": [
+        [
+          0,
+          26,
+          0
+        ],
+        [
+          0,
+          147,
+          0
+        ],
+        [
+          0,
+          149,
+          0
+        ],
+        [
+          0,
+          149,
+          1
+        ],
+        [
+          1,
+          150,
+          0
+        ],
+        [
+          0,
+          152,
+          1
+        ]
+      ],
+      "final_center_shift": 6.334478530334309e-05,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_1_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_1",
+      "iterations": 5,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_1_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_1_flattened.png",
+      "postprocess": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              26,
+              0
+            ],
+            [
+              0,
+              147,
+              0
+            ],
+            [
+              0,
+              149,
+              0
+            ],
+            [
+              0,
+              149,
+              1
+            ],
+            [
+              1,
+              150,
+              0
+            ],
+            [
+              0,
+              152,
+              1
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_1_flattened.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\CryptWraith\\Working\\CryptWraith_1_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              26,
+              0
+            ],
+            [
+              0,
+              147,
+              0
+            ],
+            [
+              0,
+              149,
+              0
+            ],
+            [
+              0,
+              149,
+              1
+            ],
+            [
+              1,
+              150,
+              0
+            ],
+            [
+              0,
+              152,
+              1
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 59,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 26, 0], [0, 147, 0], [0, 149, 0], [0, 149, 1], [1, 150, 0], [0, 152, 1]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\CryptWraith\\\\Working\\\\CryptWraith_1_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\SourceAssets\\\\ToonStyle\\\\Pixal3D\\\\Production\\\\CryptWraith\\\\Working\\\\CryptWraith_1_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 26, 0], [0, 147, 0], [0, 149, 0], [0, 149, 1], [1, 150, 0], [0, 152, 1]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 59, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": false}, \"unique_rgb_after\": 6, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9760105, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7017110, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 198536, \"width\": 4096}",
+        "tint": {
+          "generated": false
+        },
+        "unique_rgb_after": 6,
+        "unique_rgb_before": 6,
+        "uv_mask_pixels": 9760105,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 7017110,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 198536,
+        "width": 4096
+      },
+      "unique_colors_after": 6,
+      "unique_colors_before": 602,
+      "width": 4096
+    }
+  ],
+  "manifest_vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 595608,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "material_instance": "/Game/Characters/Mobs/CryptWraith/Materials/MI_CryptWraith",
+  "outline_color_after_import": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+  ],
+  "outline_color_preserved": null,
+  "outline_material_instance": "/Game/Characters/Mobs/CryptWraith/Materials/MI_CryptWraith_Outline",
+  "outline_slot0_material": "/Game/Characters/Mobs/CryptWraith/Materials/MI_CryptWraith_Outline.MI_CryptWraith_Outline",
+  "outline_static_mesh": "/Game/Characters/Mobs/CryptWraith/SM_CryptWraith_Outline",
+  "outline_static_mesh_bounds": {
+    "extent": [
+      52.71580505371094,
+      34.844316482543945,
+      94.99999900532066
+    ],
+    "height": 189.99999801064132,
+    "origin": [
+      0.0,
+      -9.5367431640625e-06,
+      95.00000099467934
+    ],
+    "size": [
+      105.43161010742188,
+      69.68863296508789,
+      189.99999801064132
+    ]
+  },
+  "retained_from_phase1a": false,
+  "slot0_material": "/Game/Characters/Mobs/CryptWraith/Materials/MI_CryptWraith.MI_CryptWraith",
+  "static_mesh": "/Game/Characters/Mobs/CryptWraith/SM_CryptWraith",
+  "static_mesh_bounds": {
+    "extent": [
+      52.71580505371094,
+      34.844316482543945,
+      94.99999900532066
+    ],
+    "height": 189.99999801064132,
+    "origin": [
+      0.0,
+      -9.5367431640625e-06,
+      95.00000099467934
+    ],
+    "size": [
+      105.43161010742188,
+      69.68863296508789,
+      189.99999801064132
+    ]
+  },
+  "target_dir": "/Game/Characters/Mobs/CryptWraith",
+  "textures": [
+    "/Game/Characters/Mobs/CryptWraith/Textures/T_CryptWraith_0",
+    "/Game/Characters/Mobs/CryptWraith/Textures/T_CryptWraith_1"
+  ],
+  "tint_param": "/Game/Characters/Mobs/CryptWraith/Textures/T_CryptWraith_Tint.T_CryptWraith_Tint",
+  "tint_texture": "/Game/Characters/Mobs/CryptWraith/Textures/T_CryptWraith_Tint"
+}

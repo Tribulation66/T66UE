@@ -7,7 +7,7 @@ DEFINE_LOG_CATEGORY(LogT66HUD);
 
 TSharedRef<SWidget> UT66GameplayHUDWidget::RebuildWidget()
 {
-	return FT66Style::MakeResponsiveRoot(BuildSlateUI());
+	return FT66FlatStyle::MakeResponsiveRoot(BuildSlateUI());
 }
 
 

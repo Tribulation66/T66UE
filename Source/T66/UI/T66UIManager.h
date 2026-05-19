@@ -117,6 +117,7 @@ public:
 	/** Queue a retained frontend-root layer refresh for a managed widget. Returns false when the frontend root is not active. */
 	bool RequestFrontendRootLayerRefresh(UUserWidget* Widget);
 	bool RequestFrontendRootPaintRefresh();
+	void RefreshDirectModalInputMode(UUserWidget* FocusWidget);
 
 	void ShowRetroFXPreviewPopup();
 	void HideRetroFXPreviewPopup();

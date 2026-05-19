@@ -8,6 +8,7 @@
 
 class UBoxComponent;
 class UStaticMeshComponent;
+class UStaticMesh;
 
 /**
  * START GATE: Two poles next to each other. Walk through (get really close / between them)
@@ -30,6 +31,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh")
 	TObjectPtr<UStaticMeshComponent> PoleRight;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh")
+	TObjectPtr<UStaticMeshComponent> GateMesh;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Mesh")
+	TSoftObjectPtr<UStaticMesh> GateMeshOverride;
+
 	/** Extra safety: if overlaps fail, trigger when hero gets very close. */
 	UPROPERTY(EditAnywhere, Category = "StartGate")
 	float TriggerDistance2D = 90.f;
@@ -49,5 +56,6 @@ protected:
 	bool bTriggered = false;
 
 private:
+	void ApplyImportedGateMesh();
 	void TryTriggerForActor(AActor* OtherActor);
 };

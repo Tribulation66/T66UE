@@ -4,6 +4,7 @@
 
 #include "Core/T66GameplayLayout.h"
 #include "Data/T66DataTypes.h"
+#include "Gameplay/T66TowerLighting.h"
 #include "Gameplay/T66TowerThemeVisuals.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/CollisionProfile.h"
@@ -4591,11 +4592,58 @@ namespace
 		}
 	}
 
+	static void T66AppendShellWallBoxSegments(
+		TArray<FBox2D>& OutBoxes,
+		const FBox2D& WallBox,
+		const T66TowerThemeVisuals::FResolvedTheme& Theme,
+		const bool bSplitGeneratedWalls)
+	{
+		const FVector2D WallSize = WallBox.Max - WallBox.Min;
+		if (WallSize.X <= 10.0f || WallSize.Y <= 10.0f)
+		{
+			return;
+		}
+
+		const bool bWallRunsAlongX = WallSize.X >= WallSize.Y;
+		const float SpanLength = bWallRunsAlongX ? WallSize.X : WallSize.Y;
+		int32 SegmentCount = 1;
+		if (bSplitGeneratedWalls && Theme.WallMeshes.Num() > 0)
+		{
+			const float NativeWallUnitLength = T66GetMeshAxisSize(Theme.WallMeshes[0], 1);
+			const float PlannedWallUnitLength = FMath::Max(
+				1.0f,
+				FMath::Min(
+					FMath::Max(NativeWallUnitLength, T66GetGeneratedKitWallVisualTargetSegmentLength()),
+					SpanLength));
+			SegmentCount = T66GetNativeDungeonKitModuleCount(SpanLength, PlannedWallUnitLength);
+		}
+
+		SegmentCount = FMath::Max(1, SegmentCount);
+		if (SegmentCount <= 1)
+		{
+			OutBoxes.Add(WallBox);
+			return;
+		}
+
+		const float SegmentLength = SpanLength / static_cast<float>(SegmentCount);
+		const float SpanMin = bWallRunsAlongX ? WallBox.Min.X : WallBox.Min.Y;
+		for (int32 SegmentIndex = 0; SegmentIndex < SegmentCount; ++SegmentIndex)
+		{
+			const float SegmentMin = SpanMin + (SegmentLength * static_cast<float>(SegmentIndex));
+			const float SegmentMax = (SegmentIndex == SegmentCount - 1)
+				? (bWallRunsAlongX ? WallBox.Max.X : WallBox.Max.Y)
+				: (SegmentMin + SegmentLength);
+			OutBoxes.Add(bWallRunsAlongX
+				? FBox2D(FVector2D(SegmentMin, WallBox.Min.Y), FVector2D(SegmentMax, WallBox.Max.Y))
+				: FBox2D(FVector2D(WallBox.Min.X, SegmentMin), FVector2D(WallBox.Max.X, SegmentMax)));
+		}
+	}
+
 	static void T66SpawnShellWallsForFloor(
 		UWorld* World,
 		UStaticMesh* CubeMesh,
 		const T66TowerMapTerrain::FLayout& Layout,
-		const T66TowerMapTerrain::FFloor& Floor,
+		T66TowerMapTerrain::FFloor& Floor,
 		const T66TowerThemeVisuals::FResolvedTheme& Theme,
 		const float WallHeight,
 		const FActorSpawnParameters& SpawnParams)
@@ -4617,11 +4665,21 @@ namespace
 			WallBatch.Reset(Theme.WallMeshes.Num());
 		}
 
+		Floor.OuterShellWallBoxes.Reset();
+		const FBox2D EastShellBox(FVector2D(Layout.ShellRadius - WallHalfDepth, -WallHalfSpan), FVector2D(Layout.ShellRadius + WallHalfDepth, WallHalfSpan));
+		const FBox2D WestShellBox(FVector2D(-Layout.ShellRadius - WallHalfDepth, -WallHalfSpan), FVector2D(-Layout.ShellRadius + WallHalfDepth, WallHalfSpan));
+		const FBox2D NorthShellBox(FVector2D(-WallHalfSpan, Layout.ShellRadius - WallHalfDepth), FVector2D(WallHalfSpan, Layout.ShellRadius + WallHalfDepth));
+		const FBox2D SouthShellBox(FVector2D(-WallHalfSpan, -Layout.ShellRadius - WallHalfDepth), FVector2D(WallHalfSpan, -Layout.ShellRadius + WallHalfDepth));
+		T66AppendShellWallBoxSegments(Floor.OuterShellWallBoxes, EastShellBox, Theme, bBatchGeneratedWalls);
+		T66AppendShellWallBoxSegments(Floor.OuterShellWallBoxes, WestShellBox, Theme, bBatchGeneratedWalls);
+		T66AppendShellWallBoxSegments(Floor.OuterShellWallBoxes, NorthShellBox, Theme, bBatchGeneratedWalls);
+		T66AppendShellWallBoxSegments(Floor.OuterShellWallBoxes, SouthShellBox, Theme, bBatchGeneratedWalls);
+
 		T66SpawnThemedWallBox(
 			World,
 			CubeMesh,
 			Theme,
-			FBox2D(FVector2D(Layout.ShellRadius - WallHalfDepth, -WallHalfSpan), FVector2D(Layout.ShellRadius + WallHalfDepth, WallHalfSpan)),
+			EastShellBox,
 			Floor.SurfaceZ,
 			WallHeight,
 			SpawnParams,
@@ -4635,7 +4693,7 @@ namespace
 			World,
 			CubeMesh,
 			Theme,
-			FBox2D(FVector2D(-Layout.ShellRadius - WallHalfDepth, -WallHalfSpan), FVector2D(-Layout.ShellRadius + WallHalfDepth, WallHalfSpan)),
+			WestShellBox,
 			Floor.SurfaceZ,
 			WallHeight,
 			SpawnParams,
@@ -4649,7 +4707,7 @@ namespace
 			World,
 			CubeMesh,
 			Theme,
-			FBox2D(FVector2D(-WallHalfSpan, Layout.ShellRadius - WallHalfDepth), FVector2D(WallHalfSpan, Layout.ShellRadius + WallHalfDepth)),
+			NorthShellBox,
 			Floor.SurfaceZ,
 			WallHeight,
 			SpawnParams,
@@ -4663,7 +4721,7 @@ namespace
 			World,
 			CubeMesh,
 			Theme,
-			FBox2D(FVector2D(-WallHalfSpan, -Layout.ShellRadius - WallHalfDepth), FVector2D(WallHalfSpan, -Layout.ShellRadius + WallHalfDepth)),
+			SouthShellBox,
 			Floor.SurfaceZ,
 			WallHeight,
 			SpawnParams,
@@ -4685,6 +4743,14 @@ namespace
 				TEXT("GeneratedShellWall"),
 				T66ShouldIgnoreTowerWallCameraCollision());
 		}
+
+		UE_LOG(
+			LogT66TowerMapTerrain,
+			Display,
+			TEXT("[ATMOSPHERE] Registered %d outer shell wall box(es) for floor %d."),
+			Floor.OuterShellWallBoxes.Num(),
+			Floor.FloorNumber);
+
 	}
 
 	static void T66SpawnMazeWalls(
@@ -5770,7 +5836,7 @@ namespace T66TowerMapTerrain
 		{
 			const double FloorStartSeconds = FPlatformTime::Seconds();
 			const FT66TowerTerrainSpawnStats FloorStartStats = SpawnStats;
-			const FFloor& Floor = Layout.Floors[FloorIndex];
+			FFloor Floor = Layout.Floors[FloorIndex];
 			const T66TowerThemeVisuals::FResolvedTheme& Theme = FloorThemes[FloorIndex];
 			const bool bUsingGeneratedDungeonKitForTheme =
 				T66ShouldUseGeneratedDungeonKit()
@@ -5791,6 +5857,7 @@ namespace T66TowerMapTerrain
 			}
 			T66SpawnMazeWalls(World, CubeMesh, Theme, Layout, Floor, ModuleWallHeight, SpawnParams);
 			T66SpawnPropActors(World, CubeMesh, Theme, Layout, Floor, SpawnParams);
+			T66TowerLighting::SpawnFloorTorchLights(World, Floor, Layout, StageTheme, nullptr);
 
 			if (bUsingGeneratedDungeonKitForTheme)
 			{

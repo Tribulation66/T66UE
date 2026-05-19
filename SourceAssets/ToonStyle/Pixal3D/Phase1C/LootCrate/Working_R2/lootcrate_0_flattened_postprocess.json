@@ -1,0 +1,82 @@
+{
+  "dependency_path": "external_python_pillow_scipy",
+  "final_palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        43,
+        29,
+        10
+      ],
+      [
+        108,
+        69,
+        19
+      ],
+      [
+        169,
+        106,
+        33
+      ],
+      [
+        209,
+        135,
+        45
+      ]
+    ],
+    "palette_size": 4
+  },
+  "height": 4096,
+  "input": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootCrate\\Working_R2\\lootcrate_0_flattened.png",
+  "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootCrate\\Working_R2\\lootcrate_0_flattened.png",
+  "palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        43,
+        29,
+        10
+      ],
+      [
+        108,
+        69,
+        19
+      ],
+      [
+        169,
+        106,
+        33
+      ],
+      [
+        209,
+        135,
+        45
+      ]
+    ],
+    "palette_size": 4
+  },
+  "speckle_cleanup": {
+    "applied": true,
+    "changed_pixels": 114403,
+    "diff_threshold": 42.0,
+    "method": "3x3_local_median_high_contrast_pixel_replacement",
+    "prompt_region_threshold_reference": 8
+  },
+  "tint": {
+    "generated": true,
+    "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootCrate\\Working_R2\\lootcrate_Tint.png",
+    "saturation_scale": 1.1,
+    "value_scale": 0.6
+  },
+  "unique_rgb_after": 4,
+  "unique_rgb_before": 4,
+  "uv_mask_pixels": 11005118,
+  "uv_padding": {
+    "applied": true,
+    "filled_pixels": 5772098,
+    "method": "iterative_frontier_expansion",
+    "padding_pixels": 32
+  },
+  "uv_triangles": 167711,
+  "width": 4096
+}

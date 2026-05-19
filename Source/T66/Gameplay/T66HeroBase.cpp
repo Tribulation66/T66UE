@@ -14,6 +14,7 @@
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -106,6 +107,17 @@ AT66HeroBase::AT66HeroBase()
 	StaticVisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	StaticVisualMesh->SetVisibility(false, true);
 	StaticVisualMesh->SetHiddenInGame(true, true);
+
+	CarryLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CarryLight"));
+	CarryLight->SetupAttachment(RootComponent);
+	CarryLight->SetRelativeLocation(FVector(0.0f, 0.0f, 60.0f));
+	CarryLight->SetMobility(EComponentMobility::Movable);
+	CarryLight->SetIntensity(2000.0f);
+	CarryLight->SetAttenuationRadius(650.0f);
+	CarryLight->SetLightColor(FLinearColor(1.0f, 0.85f, 0.65f));
+	CarryLight->SetCastShadows(false);
+	CarryLight->bUseInverseSquaredFalloff = false;
+	CarryLight->LightFalloffExponent = 2.0f;
 
 	// Cache mesh assets in constructor
 	CacheMeshAssets();

@@ -25,11 +25,10 @@ enum class ET66AttackCategory : uint8
 	DOT UMETA(DisplayName = "DOT"),
 };
 
-/** Auto-attack weapon rarity. Grey is the starter tier; the other tiers are difficulty-clear upgrades. */
+/** Auto-attack weapon rarity. Difficulty tuning chooses the offer tier at run start. */
 UENUM(BlueprintType)
 enum class ET66WeaponRarity : uint8
 {
-	Grey UMETA(DisplayName = "Grey"),
 	Black UMETA(DisplayName = "Black"),
 	Red UMETA(DisplayName = "Red"),
 	Yellow UMETA(DisplayName = "Yellow"),
@@ -398,7 +397,7 @@ struct T66_API FHeroData : public FTableRowBase
 
 /**
  * Auto-attack weapon row.
- * Weapons are the authored branch upgrades for the hero's primary attack.
+ * Weapons are authored branch choices for the hero's primary attack.
  */
 USTRUCT(BlueprintType)
 struct T66_API FWeaponData : public FTableRowBase
@@ -421,7 +420,7 @@ struct T66_API FWeaponData : public FTableRowBase
 	TSoftObjectPtr<UTexture2D> Icon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	ET66WeaponRarity Rarity = ET66WeaponRarity::Grey;
+	ET66WeaponRarity Rarity = ET66WeaponRarity::Black;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	ET66AttackCategory Branch = ET66AttackCategory::Pierce;
@@ -1658,7 +1657,7 @@ struct T66_API FIdolData : public FTableRowBase
 };
 
 /**
- * House NPC data row (Gambler/Saint/Ouroboros).
+ * NPC data row (Gambler/Saint/Ouroboros).
  */
 USTRUCT(BlueprintType)
 struct T66_API FHouseNPCData : public FTableRowBase
@@ -1786,6 +1785,56 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 	bool bAutoGroundToActorOrigin = false;
 
 	FT66CharacterVisualRow() = default;
+};
+
+/**
+ * Non-interactable world prop visual data.
+ * These rows are intentionally presentation-only: no prompts, rewards, collision,
+ * or gameplay effects should be routed through this table.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66WorldVisualPropData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop")
+	FName PropID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop")
+	FName DifficultyID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop")
+	FText DisplayName = FText::GetEmpty();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop|Visuals")
+	TSoftObjectPtr<UStaticMesh> DisplayMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop|Visuals")
+	FVector DisplayMeshScale = FVector(1.f, 1.f, 1.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop|Visuals")
+	FVector DisplayMeshOffset = FVector::ZeroVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop|Visuals")
+	FRotator DisplayMeshRotation = FRotator::ZeroRotator;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop|Visuals")
+	FLinearColor Tint = FLinearColor(0.78f, 0.72f, 0.56f, 1.f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop|Visuals")
+	bool bAutoGroundToActorOrigin = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop|Visuals")
+	bool bSnapToGround = true;
+};
+
+USTRUCT(BlueprintType)
+struct T66_API FT66WorldVisualPropRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visual Prop")
+	FT66WorldVisualPropData PropData;
 };
 
 /**

@@ -1,0 +1,170 @@
+{
+  "asset_name": "lootbag_yellow",
+  "base_color_param": "/Game/ToonStyle/TestAssets/Lineup/Textures/T_lootbag_yellow_0.T_lootbag_yellow_0",
+  "diffuse_param": "/Game/ToonStyle/TestAssets/Lineup/Textures/T_lootbag_yellow_0.T_lootbag_yellow_0",
+  "expected_height": 180.0,
+  "flatten_k": 4,
+  "height_tolerance": 0.1,
+  "imported_object_paths": [
+    "/Game/ToonStyle/TestAssets/Lineup/SM_lootbag_yellow.SM_lootbag_yellow"
+  ],
+  "imported_outline_object_paths": [
+    "/Game/ToonStyle/TestAssets/Lineup/SM_lootbag_yellow_Outline.SM_lootbag_yellow_Outline"
+  ],
+  "manifest_normal_delta_sample": {
+    "distinct": true,
+    "reason": "non_humanoid"
+  },
+  "manifest_normal_transfer": {
+    "applied": false,
+    "reason": "non_humanoid"
+  },
+  "manifest_outline_winding": {
+    "applied": true,
+    "face_after": [
+      169,
+      171,
+      170
+    ],
+    "face_before": [
+      169,
+      170,
+      171
+    ],
+    "face_order_reversed": true,
+    "method": "bmesh.ops.reverse_faces + restored captured vertex normals as custom split normals"
+  },
+  "manifest_texture_flattening": [
+    {
+      "active_pixels": 16776646,
+      "centers_rgb_255": [
+        [
+          22,
+          20,
+          20
+        ],
+        [
+          34,
+          36,
+          30
+        ],
+        [
+          100,
+          27,
+          35
+        ],
+        [
+          190,
+          175,
+          178
+        ]
+      ],
+      "final_center_shift": 0.0005531173082999885,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootBagYellow\\Working\\lootbag_yellow\\lootbag_yellow_0_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_0",
+      "iterations": 10,
+      "k": 4,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootBagYellow\\Working\\lootbag_yellow\\lootbag_yellow_0_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootBagYellow\\Working\\lootbag_yellow\\lootbag_yellow_0_flattened.png",
+      "unique_colors_after": 4,
+      "unique_colors_before": 105539,
+      "width": 4096
+    },
+    {
+      "active_pixels": 16777216,
+      "centers_rgb_255": [
+        [
+          0,
+          32,
+          0
+        ],
+        [
+          1,
+          242,
+          1
+        ],
+        [
+          0,
+          239,
+          0
+        ],
+        [
+          1,
+          244,
+          1
+        ]
+      ],
+      "final_center_shift": 0.0007523284293711185,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootBagYellow\\Working\\lootbag_yellow\\lootbag_yellow_1_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_1",
+      "iterations": 4,
+      "k": 4,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootBagYellow\\Working\\lootbag_yellow\\lootbag_yellow_1_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootBagYellow\\Working\\lootbag_yellow\\lootbag_yellow_1_flattened.png",
+      "unique_colors_after": 4,
+      "unique_colors_before": 1654,
+      "width": 4096
+    }
+  ],
+  "manifest_vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 574179,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "material_instance": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootbag_yellow",
+  "outline_material_instance": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootbag_yellow_Outline",
+  "outline_slot0_material": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootbag_yellow_Outline.MI_lootbag_yellow_Outline",
+  "outline_static_mesh": "/Game/ToonStyle/TestAssets/Lineup/SM_lootbag_yellow_Outline",
+  "outline_static_mesh_bounds": {
+    "extent": [
+      81.92327880859375,
+      44.32497596740723,
+      90.0000008920864
+    ],
+    "height": 180.0000017841728,
+    "origin": [
+      0.0,
+      -5.7220458984375e-06,
+      89.9999991079136
+    ],
+    "size": [
+      163.8465576171875,
+      88.64995193481445,
+      180.0000017841728
+    ]
+  },
+  "retained_from_phase1a": false,
+  "slot0_material": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootbag_yellow.MI_lootbag_yellow",
+  "static_mesh": "/Game/ToonStyle/TestAssets/Lineup/SM_lootbag_yellow",
+  "static_mesh_bounds": {
+    "extent": [
+      81.92327880859375,
+      44.32497596740723,
+      90.0000008920864
+    ],
+    "height": 180.0000017841728,
+    "origin": [
+      0.0,
+      -5.7220458984375e-06,
+      89.9999991079136
+    ],
+    "size": [
+      163.8465576171875,
+      88.64995193481445,
+      180.0000017841728
+    ]
+  },
+  "target_dir": "/Game/ToonStyle/TestAssets/Lineup",
+  "textures": [
+    "/Game/ToonStyle/TestAssets/Lineup/Textures/T_lootbag_yellow_0",
+    "/Game/ToonStyle/TestAssets/Lineup/Textures/T_lootbag_yellow_1"
+  ]
+}

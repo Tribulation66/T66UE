@@ -10,14 +10,14 @@ class AT66DifficultyTotem;
 class AT66EnemyBase;
 class AT66FountainInteractable;
 class AT66IdolAltar;
+class AT66StageGate;
 class AT66TutorialGuideCompanion;
-class AT66TutorialPortal;
 class APawn;
 class UT66RunStateSubsystem;
 
 /**
- * Authored tutorial flow for Gameplay_Tutorial.
- * Route markers and encounter anchors come from actors placed in the map, not hardcoded combat coordinates.
+ * Authored tutorial flow for Tutorial-category runs inside GameplayLevel.
+ * Route markers and encounter anchors come from tagged actors when present, with procedural fallback coordinates.
  */
 UCLASS(Blueprintable)
 class T66_API AT66TutorialManager : public AActor
@@ -45,7 +45,7 @@ private:
 		FountainLesson,
 		TotemLesson,
 		FinalArena,
-		PortalReady,
+		GateReady,
 		Done,
 	};
 
@@ -58,7 +58,7 @@ private:
 	void StartFountainLessonStep();
 	void StartTotemLessonStep();
 	void StartFinalArenaStep();
-	void SpawnPortalAndFinish();
+	void SpawnGateAndFinish();
 
 	bool TrySpawnGuide();
 	APawn* GetPlayerPawn() const;
@@ -130,7 +130,7 @@ private:
 	TObjectPtr<AT66DifficultyTotem> TutorialDifficultyTotem;
 
 	UPROPERTY()
-	TObjectPtr<AT66TutorialPortal> TutorialPortal;
+	TObjectPtr<AT66StageGate> TutorialStageGate;
 
 	mutable TMap<FName, TWeakObjectPtr<AActor>> CachedTaggedActors;
 

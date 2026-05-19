@@ -89,12 +89,12 @@ AT66LootBagPickup::AT66LootBagPickup()
 	FallMovement->bRotationFollowsVelocity = false;
 	FallMovement->bShouldBounce = false;
 
-	// Default expected import locations (safe if missing; we fall back to the cube).
-	// Note: meshes are imported into per-color subfolders so their materials/textures don't collide.
+	// Default expected import location (safe if missing; we fall back to the cube).
+	// Rarity remains gameplay-authored, but all rarities share one loot bag model.
 	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro")));
-	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Red/SM_LootBag_Red_QuadRetro.SM_LootBag_Red_QuadRetro")));
-	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Yellow/SM_LootBag_Yellow_QuadRetro.SM_LootBag_Yellow_QuadRetro")));
-	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/White/SM_LootBag_White_QuadRetro.SM_LootBag_White_QuadRetro")));
+	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro")));
+	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro")));
+	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro")));
 
 	if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 	{
@@ -336,7 +336,7 @@ void AT66LootBagPickup::UpdateVisualsFromRarity()
 
 	if (Mesh)
 	{
-		// Use real mesh (per-rarity), no tinting. Clear any prior placeholder material overrides.
+		// Use the shared real mesh, no tinting. Clear any prior placeholder material overrides.
 		VisualMesh->EmptyOverrideMaterials();
 		VisualMesh->SetStaticMesh(Mesh);
 		VisualMesh->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));

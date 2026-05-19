@@ -70,7 +70,6 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.BossMaxHP = BossMaxHP;
 	OutSnapshot.BossCurrentHP = BossCurrentHP;
 	OutSnapshot.BossParts = BossPartSnapshots;
-	OutSnapshot.bPendingDifficultyClearSummary = bPendingDifficultyClearSummary;
 	OutSnapshot.bSaintBlessingActive = bSaintBlessingActive;
 	OutSnapshot.FinalSurvivalEnemyScalar = FinalSurvivalEnemyScalar;
 	OutSnapshot.AntiCheatIncomingHitChecks = AntiCheatIncomingHitChecks;
@@ -94,7 +93,6 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	{
 		OutSnapshot.EquippedIdols = IdolManager->GetEquippedIdols();
 		OutSnapshot.EquippedIdolTiers = IdolManager->GetEquippedIdolTierValues();
-		OutSnapshot.RemainingCatchUpIdolPicks = IdolManager->GetRemainingCatchUpIdolPicks();
 	}
 	else
 	{
@@ -136,6 +134,7 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 		return;
 	}
 
+	RefreshActiveRunModifiersFromGameInstance();
 	CurrentStage = FMath::Clamp(Snapshot.CurrentStage, 1, 20);
 	CurrentHP = FMath::Max(0.f, Snapshot.CurrentHP);
 	MaxHP = FMath::Max(1.f, Snapshot.MaxHP);
@@ -185,7 +184,6 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	FinalRunElapsedSeconds = FMath::Max(0.f, Snapshot.FinalRunElapsedSeconds);
 	bRunEnded = Snapshot.bRunEnded;
 	bRunEndedAsVictory = Snapshot.bRunEndedAsVictory;
-	bPendingDifficultyClearSummary = Snapshot.bPendingDifficultyClearSummary;
 	bSaintBlessingActive = Snapshot.bSaintBlessingActive;
 	FinalSurvivalEnemyScalar = FMath::Clamp(Snapshot.FinalSurvivalEnemyScalar, 1.f, 99.f);
 	AntiCheatIncomingHitChecks = FMath::Max(0, Snapshot.AntiCheatIncomingHitChecks);
@@ -285,7 +283,7 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 		{
 			Difficulty = T66GI->SelectedDifficulty;
 		}
-		IdolManager->RestoreState(Snapshot.EquippedIdols, Snapshot.EquippedIdolTiers, Difficulty, Snapshot.RemainingCatchUpIdolPicks);
+		IdolManager->RestoreState(Snapshot.EquippedIdols, Snapshot.EquippedIdolTiers, Difficulty);
 	}
 	if (UT66WeaponManagerSubsystem* WeaponManager = GetWeaponManager())
 	{

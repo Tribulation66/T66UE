@@ -23,7 +23,7 @@ public:
 	void ShowNextAchievementNotification();
 	void HideAchievementNotificationAndShowNext();
 
-	void StartCrateOpen();
+	void StartCrateOpen(ET66Rarity SourceCrateRarity);
 	void StartChestReward(ET66Rarity ChestRarity, int32 GoldAmount);
 	bool TrySkipActivePresentation();
 	void ClearActiveCratePresentation(UT66CrateOverlayWidget* Overlay);

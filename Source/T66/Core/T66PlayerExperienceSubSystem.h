@@ -32,24 +32,42 @@ struct T66_API FT66RarityIntRanges
 };
 
 USTRUCT(BlueprintType)
-struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
+struct T66_API FT66LootWheelRewardWeights
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "1", ClampMax = "20"))
-	int32 StartStage = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|LootWheel", meta = (ClampMin = "0.0"))
+	float Gold = 0.55f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunShape", meta = (ClampMin = "1", ClampMax = "20"))
-	int32 EndStage = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|LootWheel", meta = (ClampMin = "0.0"))
+	float Item = 0.35f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "0"))
-	int32 StartGoldBonus = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|LootWheel", meta = (ClampMin = "0.0"))
+	float Boost = 0.10f;
+};
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "0"))
-	int32 StartLootBags = 0;
+USTRUCT(BlueprintType)
+struct T66_API FT66LootWheelRewardWeightsByRarity
+{
+	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|RunStart", meta = (ClampMin = "0"))
-	int32 StartHeroBonusLevels = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|LootWheel")
+	FT66LootWheelRewardWeights Black;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|LootWheel")
+	FT66LootWheelRewardWeights Red;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|LootWheel")
+	FT66LootWheelRewardWeights Yellow;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|LootWheel")
+	FT66LootWheelRewardWeights White;
+};
+
+USTRUCT(BlueprintType)
+struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
+{
+	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Loot", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float EnemyLootBagDropChanceBase = 0.0f;
@@ -59,9 +77,6 @@ struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Loot")
 	FT66RarityWeights EnemyLootBagRarityWeights;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Loot")
-	FT66RarityWeights CatchUpLootBagRarityWeights;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
 	FT66IntRange ChestsPerStage;
@@ -80,6 +95,18 @@ struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
 	FT66RarityWeights CrateRarityWeights;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
+	FT66IntRange LootWheelsPerStage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
+	FT66RarityWeights LootWheelRarityWeights;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
+	FT66LootWheelRewardWeightsByRarity LootWheelRewardWeightsByRarity;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World")
+	FT66RarityIntRanges LootWheelGoldRangeByRarity;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|World", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float GamblerCheatSuccessChanceBase = 0.0f;
@@ -131,32 +158,20 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
 	int32 GetDifficultyIndex(ET66Difficulty Difficulty) const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
-	int32 GetDifficultyStartStage(ET66Difficulty Difficulty) const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
-	int32 GetDifficultyEndStage(ET66Difficulty Difficulty) const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
-	int32 GetDifficultyStartGoldBonus(ET66Difficulty Difficulty) const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
-	int32 GetDifficultyStartLootBags(ET66Difficulty Difficulty) const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PlayerExperience")
-	int32 GetDifficultyStartHeroBonusLevels(ET66Difficulty Difficulty) const;
-
 	const FT66PlayerExperienceDifficultyTuning& GetDifficultyTuning(ET66Difficulty Difficulty) const;
 	float GetDifficultyEnemyLootBagDropChanceBase(ET66Difficulty Difficulty) const;
 	FT66IntRange GetDifficultyEnemyLootBagCountOnDrop(ET66Difficulty Difficulty) const;
 	FT66RarityWeights GetDifficultyEnemyLootBagRarityWeights(ET66Difficulty Difficulty) const;
-	FT66RarityWeights GetDifficultyCatchUpLootBagRarityWeights(ET66Difficulty Difficulty) const;
 	FT66IntRange GetDifficultyChestCountRange(ET66Difficulty Difficulty) const;
 	FT66RarityWeights GetDifficultyChestRarityWeights(ET66Difficulty Difficulty) const;
 	FT66IntRange GetDifficultyChestGoldRange(ET66Difficulty Difficulty, ET66Rarity Rarity) const;
 	float GetDifficultyChestMimicChance(ET66Difficulty Difficulty) const;
 	FT66IntRange GetDifficultyCrateCountRange(ET66Difficulty Difficulty) const;
 	FT66RarityWeights GetDifficultyCrateRarityWeights(ET66Difficulty Difficulty) const;
+	FT66IntRange GetDifficultyLootWheelCountRange(ET66Difficulty Difficulty) const;
+	FT66RarityWeights GetDifficultyLootWheelRarityWeights(ET66Difficulty Difficulty) const;
+	FT66LootWheelRewardWeights GetDifficultyLootWheelRewardWeights(ET66Difficulty Difficulty, ET66Rarity WheelRarity) const;
+	FT66IntRange GetDifficultyLootWheelGoldRange(ET66Difficulty Difficulty, ET66Rarity WheelRarity) const;
 	float GetDifficultyGamblerCheatSuccessChanceBase(ET66Difficulty Difficulty) const;
 	float GetDifficultyShopStealSuccessChanceOnTimingHitBase(ET66Difficulty Difficulty) const;
 	FT66TotemRules GetDifficultyTotemRules(ET66Difficulty Difficulty) const;

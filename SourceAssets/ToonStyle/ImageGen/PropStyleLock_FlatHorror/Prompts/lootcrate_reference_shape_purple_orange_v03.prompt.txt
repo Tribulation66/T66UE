@@ -1,0 +1,17 @@
+Create one revision contact sheet for the T66 Loot Crate only.
+
+Overall style: match the approved T66 DungeonHorror interactables: clean white background, hard continuous black ink outline, bright saturated flat colors, eerie horror/uncanny mood, model-ready centered silhouette, no cute mascot styling.
+
+Reference shape target: use the attached reference image as the shape guide. The crate should be a long, wide, low rectangular mystery weapon crate: very wide horizontal proportions, flat rectangular lid, straight boxy sides, blocky raised corner posts at the four ends, flat metal hinge plates on top, a center latch/lock on the front seam, and a few glowing symbol/crack marks on the lid and side. It should feel like a flat stylized COD-zombies-style mystery box shape without copying branding.
+
+Color correction: use the T66 interactable colorway, not the gate colors. Main body should be deep saturated purple. Braces, corner posts, latch accent, and painted glowing marks should be vivid orange. Small dark non-black accent lines are allowed. Do not use teal, cyan, red, magenta, brown wood, beige wood, or stone colors.
+
+Flatness rule: this is source art for Pixal3D, so keep it flat and simple. Use broad painted shapes and light line texture only. No realistic wood grain, no bevel-heavy rendering, no arched treasure-chest lid, no chest-like curved top, no raised sculpted ridges, no cast shadow, no contact shadow, no glossy lighting.
+
+Layout: exactly 3 separate loot-crate variants in one horizontal row. All three must keep the same long low reference shape and purple/orange interactable palette. No text labels, no watermark, no UI chrome. Thin light gray separators are okay.
+
+Variant 1: purple long crate body with orange corner posts, orange metal plates, orange center latch, two orange glowing question-mark-like painted symbols on the flat lid.
+Variant 2: darker purple long crate body with orange X brace across the front, orange corner blocks, orange latch, orange glowing side slashes and top rune marks.
+Variant 3: purple plank body with orange end caps and orange top plates, central dark non-black mouth/rune emblem on the front surrounded by orange paint, still boxy and long.
+
+Avoid: treasure chest silhouette, rounded lid, arched top, short square crate, teal/cyan/red gate palette, realistic brown wood, pure black holes, labels, readable words, cute face, dense detail, gradients, realistic lighting, 3D bevels.

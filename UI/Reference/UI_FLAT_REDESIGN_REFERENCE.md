@@ -536,7 +536,7 @@ Screens still pending V3 reference creation (not in current scope; added to Stag
 - Additional Settings tabs (Gameplay, Graphics, Controls, Media Viewer, Audio)
 - Additional Achievements tabs (Secret)
 - Additional History filter views
-- Minigame-specific screens (Mini, TD, Idle, Deck, Versus main menus + sub-screens)
+- Minigame-specific screens (Mini, TD, Idle, and Deck main menus + sub-screens)
 
 ### 7.2 Per-screen specifications
 

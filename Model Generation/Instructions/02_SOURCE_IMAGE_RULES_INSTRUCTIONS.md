@@ -47,6 +47,19 @@ includes a post-bake luminance normalization step, but the source still needs
 to be deliberately bright. This means over-bright relative to realistic source
 art, not over-bright relative to the target in-game result.
 
+## Source Image Stop Rule
+
+When any source image fails a technical or visual gate, stop the model-generation
+workflow before staging or generation. Do not manually edit the pixels, do not
+crop, brighten, repaint, clean up, split, or otherwise repair the image, and do
+not regenerate a corrected source with imagegen unless Pablo explicitly asks for
+that in a follow-up instruction.
+
+The agent response must report the failing image, the exact gate or visible
+problem, and why the issue blocks generation. Wait for Pablo to provide a
+replacement image or explicitly approve a separate correction/regeneration pass.
+Keep the original source unchanged.
+
 ## Style Direction
 
 Style is not locked. Cartoon proportions, grounded proportions, angular
@@ -92,6 +105,8 @@ Before retopo, rigging, import, or promotion:
 - verify duo-color discipline on the source image
 - sample source mean luminance with a quick script
 - reject sources below the brightness bar or outside the two-color discipline
+- for source-image failures, stop and report the failing gate to Pablo instead
+  of repairing, splitting, or regenerating the image
 - verify the GLB opens and renders
 - check front, side, and oblique views for silhouette, face, hands, equipment, and scale
 - reject weak input early instead of trying to repair it downstream

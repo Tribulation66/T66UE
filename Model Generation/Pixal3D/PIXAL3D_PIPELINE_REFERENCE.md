@@ -1,16 +1,15 @@
 # Pixal3D Pipeline
 
-This folder owns the experimental Pixal3D RunPod path for T66 model generation.
-It is separate from the existing TRELLIS.2 pipeline so the current generator can
-stay intact while Pixal3D is evaluated.
+This folder owns the production-cleared Pixal3D RunPod path for T66 model
+generation and ToonStyle asset replacement. It remains technically separate
+from the existing TRELLIS.2 pipeline so failures and settings do not cross
+contaminate.
 
 ## Status
 
-Pixal3D is technically useful, but its current license is a blocker for shipped
-T66 production assets. The upstream license says Pixal3D is academic-only, not
-for commercial or production use, and not intended for use within the European
-Union. Keep generated output marked as research until that changes or legal
-approval is explicit.
+Pixal3D is production-cleared for T66 replacement assets. Production imports
+must use the manifest-driven ToonStyle workflow in
+`../Instructions/09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md`.
 
 ## Sources Checked
 
@@ -36,13 +35,20 @@ Checked on 2026-05-12:
   experiment source folders. It launches generation on the pod with `nohup`,
   writes JSONL status plus a `DONE` sentinel, polls with short SSH calls, and
   downloads GLBs/logs after completion.
+- `Scripts/run_pixal3d_toonstyle_production_import.py`: production wrapper that
+  validates the replacement manifest, drives Pixal3D generation, runs the
+  ToonStyle Blender foundation pipeline, imports to Unreal, and verifies hard
+  ToonStyle bindings.
+- `production_asset_replacement_manifest.json`: manifest template/source of
+  truth for replacement assets.
 - `../Instructions/07_PIXAL3D_RUNPOD_SETUP_INSTRUCTIONS.md`: step-by-step RunPod setup and
   smoke-test runbook.
 - `../Instructions/08_PIXAL3D_TROUBLESHOOTING_INSTRUCTIONS.md`: CuMesh/export/remesh failure
   table and recovery rules.
 
 Generated run output should live under `Model Generation/Runs/Pixal3D/...` and
-should be deleted or summarized after the evaluation is complete.
+should be deleted or summarized after the production import, diagnostic review,
+or rejection decision is complete.
 
 ## Existing T66 TRELLIS Baseline
 
@@ -68,7 +74,7 @@ decimation `80000` for T66 batches.
 
 The Pixal3D server intentionally keeps the same basic shape:
 
-- `GET /health` returns status, GPU, VRAM, model path, and license warning.
+- `GET /health` returns status, GPU, VRAM, and model path.
 - `POST /generate` accepts raw image bytes and returns a GLB.
 
 Supported headers:
@@ -82,6 +88,10 @@ Supported headers:
   process and retries safer export settings if CuMesh fails.
 - `X-Fallback-Decimation`: default `30000`. Used by the server and smoke runner
   when the requested export setting fails.
+- `X-Safe-Fill-Holes-Fallback`: `1` by default. Enables the final export-only
+  fallback that skips known crashing CuMesh `fill_holes` calls and uses CPU
+  xatlas UV unwrap inside the child export worker after requested, decimated,
+  and no-remesh attempts fail.
 - `X-Resolution`: `1024` or `1536`
 - `X-SS-Guidance`
 - `X-SS-Steps`
@@ -131,14 +141,21 @@ the client with an empty reply.
 The T66 server now serializes the generated mesh tensors, frees transient GPU
 state, and runs GLB export in a short-lived worker process. If the worker fails,
 the server can retry the same generated mesh with `X-Fallback-Decimation`
-(`30000` by default) and then with remesh disabled. The smoke runner also records
-per-attempt export settings and can restart the server before a client-side
-fallback if an older server still dies.
+(`80000` by default), then with remesh disabled, then with a worker-local safe
+CuMesh `fill_holes` skip plus CPU xatlas UV unwrap for known CUDA error 9 /
+invalid-configuration and follow-on UV atlas crashes.
+The smoke runner records per-attempt export settings and CPU UV unwrap headers
+and can restart the server before a client-side fallback if an older server
+still dies.
 
 With the worker-isolated exporter, `stone_wall_module` and the retained
 Experiment 1 `Variant_B` source both generated successfully at the formerly
-risky `X-Decimation: 80000`, `X-Remesh: 1` setting on the A40 pod. Keep
-`X-Remesh: 1` for normal Pixal3D research runs, and leave fallback enabled.
+risky `X-Decimation: 80000`, `X-Remesh: 1` setting on the A40 pod. The current
+production target is `X-Decimation: 200000` with `X-Fallback-Decimation: 80000`.
+Keep `X-Remesh: 1` for normal Pixal3D production runs, and leave fallback
+enabled. If `X-Pixal3D-Export-Safe-Fill-Holes: 1` appears in a response, surface
+that fallback in the production manifest/report and run the full ToonStyle
+production wrapper verification before accepting the asset.
 
 ## RunPod Bootstrap
 
@@ -157,7 +174,7 @@ Do not treat Pixal3D export decimation as production topology for deformation
 critical characters. Keep Quad Retro or human-authored topology for characters
 that need animation or deformation.
 
-## Research Test Matrix
+## Production Test Matrix
 
 Use a small but broad test set before larger batches:
 
@@ -166,19 +183,20 @@ Use a small but broad test set before larger batches:
 - humanoid character
 - monster or non-human creature
 
-Recommended first pass:
+Production default:
 
-- resolution `1024`
+- resolution `1536`
 - seed `1337`
-- texture size `2048`
-- decimation `80000`
+- texture size `4096`
+- decimation `200000`
 - remesh enabled
-- export fallback enabled with fallback decimation `30000`
+- export fallback enabled, including safe CuMesh `fill_holes` / CPU UV unwrap fallback
+- export fallback enabled with fallback decimation `80000`
 
 Optional stress pass:
 
 - resolution `1536`
-- decimation `200000` and `1000000`
+- decimation `1000000`
 
 For multi-model experiments, use `Scripts/run_pixal3d_batch.py` instead of a
 foreground SSH loop. A foreground loop can finish the GLBs remotely while the
@@ -189,5 +207,5 @@ For every generated GLB, run Blender QA and capture triangle count, bounds, file
 size, and front render. For character-like samples, also run the Quad Retro
 wrapper to prove the existing post-processing path can consume the output.
 
-Do not import into Unreal or stage standalone from Pixal3D output until the
-license issue is resolved.
+Import into Unreal through the production ToonStyle wrapper and hard validators:
+`Scripts/run_pixal3d_toonstyle_production_import.py`.

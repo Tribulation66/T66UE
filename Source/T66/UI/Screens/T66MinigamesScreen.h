@@ -33,7 +33,6 @@ private:
 	FReply HandleOpenChadpocalypseTDClicked();
 	FReply HandleOpenIdleChadpocalypseClicked();
 	FReply HandleOpenChadpocalypseDeckbuilderClicked();
-	FReply HandleOpenVersusClicked();
 	FReply HandlePrevMinigamePageClicked();
 	FReply HandleNextMinigamePageClicked();
 	FReply HandleSelectMinigamePageClicked(int32 PageIndex);

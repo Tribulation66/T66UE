@@ -358,6 +358,39 @@ namespace
 				|| ClampPercent(Settings.CharacterAffineBlendPercent) > KINDA_SMALL_NUMBER);
 	}
 
+	static bool HasPs1StackEnabled(const FT66RetroFXSettings& Settings)
+	{
+		return ClampPercent(Settings.PS1BlendPercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.PS1DitheringPercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.PS1BayerDitheringPercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.PS1ColorLUTPercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.PS1ColorBoostPercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.PS1FogPercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.PS1FogDensityPercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.PS1FogStartDistancePercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.PS1FogFallOffDistancePercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.PS1SceneDepthFogPercent) > KINDA_SMALL_NUMBER;
+	}
+
+	static bool HasChromaticEnabled(const FT66RetroFXSettings& Settings)
+	{
+		return ClampPercent(Settings.ChromaticAberrationPercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.ChromaticDistortionPercent) > KINDA_SMALL_NUMBER;
+	}
+
+	static bool HasResolutionCollectionEnabled(const FT66RetroFXSettings& Settings)
+	{
+		return ClampPercent(Settings.FakeResolutionSwitchSizePercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.FakeResolutionSwitchUVPercent) > KINDA_SMALL_NUMBER;
+	}
+
+	static bool HasN64BlurEnabled(const FT66RetroFXSettings& Settings)
+	{
+		return ClampPercent(Settings.N64BlurBlendPercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.N64BlurStepsPercent) > KINDA_SMALL_NUMBER
+			|| ClampPercent(Settings.N64LowFakeResolutionPercent) > KINDA_SMALL_NUMBER;
+	}
+
 	static bool IsGroupEnabled(ET66RetroGeometryGroup Group, bool bEnableWorldGeometry, bool bEnableCharacterGeometry)
 	{
 		return Group == ET66RetroGeometryGroup::World ? bEnableWorldGeometry : bEnableCharacterGeometry;
@@ -514,7 +547,6 @@ namespace
 void UT66RetroFXSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	QueueRetroAssetPreloads();
 }
 
 void UT66RetroFXSubsystem::Deinitialize()
@@ -551,7 +583,7 @@ void UT66RetroFXSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-void UT66RetroFXSubsystem::QueueRetroAssetPreloads()
+void UT66RetroFXSubsystem::QueueRetroAssetPreloads(const FT66RetroFXSettings& Settings)
 {
 	if (RetroAssetLoadHandle.IsValid())
 	{
@@ -567,26 +599,44 @@ void UT66RetroFXSubsystem::QueueRetroAssetPreloads()
 		}
 	};
 
-	for (const TCHAR* CandidatePath : Ps1CandidatePaths)
+	if (HasPs1StackEnabled(Settings))
 	{
-		AddPath(CandidatePath);
+		for (const TCHAR* CandidatePath : Ps1CandidatePaths)
+		{
+			AddPath(CandidatePath);
+		}
+		for (uint8 Mask = 0; Mask < 8; ++Mask)
+		{
+			Paths.AddUnique(FSoftObjectPath(GetPs1VariantMaterialPath(Mask)));
+		}
 	}
-	for (uint8 Mask = 0; Mask < 8; ++Mask)
+	if (HasN64BlurEnabled(Settings))
 	{
-		Paths.AddUnique(FSoftObjectPath(GetPs1VariantMaterialPath(Mask)));
+		AddPath(N64BlurPath);
+		AddPath(N64BlurReplaceTonemapperPath);
 	}
-	AddPath(N64BlurPath);
-	AddPath(N64BlurReplaceTonemapperPath);
-	AddPath(OutlinePostProcessMaterialPath);
-	AddPath(ChromaticAberrationMaterialPath);
-	AddPath(ResolutionCollectionPath);
-	AddPath(GeometryCollectionPath);
-	AddPath(CharacterRetroGeometryMaterialPath);
-	AddPath(EnvironmentRetroGeometryMaterialPath);
-	AddPath(FbxRetroGeometryMaterialPath);
-	AddPath(GlbRetroGeometryMaterialPath);
-	AddPath(TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
-	AddPath(TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+	if (Settings.bEnableCharacterOutline)
+	{
+		AddPath(OutlinePostProcessMaterialPath);
+	}
+	if (HasChromaticEnabled(Settings))
+	{
+		AddPath(ChromaticAberrationMaterialPath);
+	}
+	if (HasResolutionCollectionEnabled(Settings))
+	{
+		AddPath(ResolutionCollectionPath);
+	}
+	if (HasWorldGeometryEnabled(Settings) || HasCharacterGeometryEnabled(Settings))
+	{
+		AddPath(GeometryCollectionPath);
+		AddPath(CharacterRetroGeometryMaterialPath);
+		AddPath(EnvironmentRetroGeometryMaterialPath);
+		AddPath(FbxRetroGeometryMaterialPath);
+		AddPath(GlbRetroGeometryMaterialPath);
+		AddPath(TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+		AddPath(TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
+	}
 
 	for (int32 Index = Paths.Num() - 1; Index >= 0; --Index)
 	{
@@ -667,17 +717,56 @@ void UT66RetroFXSubsystem::ApplySettings(const FT66RetroFXSettings& Settings, UW
 		Settings.TargetResolutionHeightPercent);
 
 	const FT66RetroFXSettings EffectiveSettings = BuildEffectiveSettings(Settings);
+	const bool bPs1StackEnabled = HasPs1StackEnabled(EffectiveSettings);
+	const bool bOutlineEnabled = EffectiveSettings.bEnableCharacterOutline;
+	const bool bChromaticEnabled = HasChromaticEnabled(EffectiveSettings);
+	const bool bN64BlurEnabled = HasN64BlurEnabled(EffectiveSettings);
+	const bool bResolutionCollectionEnabled = HasResolutionCollectionEnabled(EffectiveSettings);
 
 	EnsureBlendablesInWorld(TargetWorld);
-	EnsurePs1PostProcessDMI(EffectiveSettings);
-	EnsureBlendableEntry(OutlinePostProcessDMI);
-	EnsureBlendableEntry(ChromaticAberrationDMI);
+	QueueRetroAssetPreloads(EffectiveSettings);
+	if (bPs1StackEnabled)
+	{
+		EnsurePs1PostProcessDMI(EffectiveSettings);
+	}
+	if (bOutlineEnabled)
+	{
+		GetOrCreateDMI(LoadOutlinePostProcessMaterial(), OutlinePostProcessDMI);
+		EnsureBlendableEntry(OutlinePostProcessDMI);
+	}
+	if (bChromaticEnabled)
+	{
+		GetOrCreateDMI(LoadChromaticAberrationMaterial(), ChromaticAberrationDMI);
+		EnsureBlendableEntry(ChromaticAberrationDMI);
+	}
+	if (bN64BlurEnabled)
+	{
+		GetOrCreateDMI(LoadN64BlurMaterial(false), N64BlurDMI);
+		GetOrCreateDMI(LoadN64BlurMaterial(true), N64BlurReplaceTonemapperDMI);
+		EnsureBlendableEntry(N64BlurDMI);
+		EnsureBlendableEntry(N64BlurReplaceTonemapperDMI);
+	}
 	ApplyBlendableWeights(EffectiveSettings);
-	ApplyPs1Parameters(EffectiveSettings);
-	ApplyOutlineParameters();
-	ApplyChromaticAberrationParameters(EffectiveSettings);
-	ApplyN64Parameters(EffectiveSettings);
-	ApplyResolutionCollection(EffectiveSettings, TargetWorld);
+	if (bPs1StackEnabled)
+	{
+		ApplyPs1Parameters(EffectiveSettings);
+	}
+	if (bOutlineEnabled)
+	{
+		ApplyOutlineParameters();
+	}
+	if (bChromaticEnabled)
+	{
+		ApplyChromaticAberrationParameters(EffectiveSettings);
+	}
+	if (bN64BlurEnabled)
+	{
+		ApplyN64Parameters(EffectiveSettings);
+	}
+	if (bResolutionCollectionEnabled)
+	{
+		ApplyResolutionCollection(EffectiveSettings, TargetWorld);
+	}
 	ApplyResolutionRuntime(EffectiveSettings, TargetWorld);
 	ApplyGeometryCollection(EffectiveSettings, TargetWorld);
 	ApplyPixelationStencilMasks(EffectiveSettings, TargetWorld);
@@ -731,18 +820,15 @@ void UT66RetroFXSubsystem::EnsureBlendablesInWorld(UWorld* World)
 		ActiveVolume = UseVolume;
 	}
 
-	GetOrCreateDMI(LoadN64BlurMaterial(false), N64BlurDMI);
-	GetOrCreateDMI(LoadN64BlurMaterial(true), N64BlurReplaceTonemapperDMI);
-	GetOrCreateDMI(LoadOutlinePostProcessMaterial(), OutlinePostProcessDMI);
-	GetOrCreateDMI(LoadChromaticAberrationMaterial(), ChromaticAberrationDMI);
-
-	EnsureBlendableEntry(OutlinePostProcessDMI);
-	EnsureBlendableEntry(N64BlurDMI);
-	EnsureBlendableEntry(N64BlurReplaceTonemapperDMI);
 }
 
 void UT66RetroFXSubsystem::EnsurePs1PostProcessDMI(const FT66RetroFXSettings& Settings)
 {
+	if (!HasPs1StackEnabled(Settings))
+	{
+		return;
+	}
+
 	UMaterialInterface* DesiredMaterial = LoadPs1PostProcessMaterialVariant(Settings);
 	const FString DesiredPath = DesiredMaterial ? DesiredMaterial->GetPathName() : FString();
 	if (Ps1PostProcessDMI && ActivePs1MaterialPath != DesiredPath)
@@ -801,6 +887,11 @@ void UT66RetroFXSubsystem::ApplyBlendableWeights(const FT66RetroFXSettings& Sett
 
 void UT66RetroFXSubsystem::ApplyPs1Parameters(const FT66RetroFXSettings& Settings)
 {
+	if (!HasPs1StackEnabled(Settings))
+	{
+		return;
+	}
+
 	if (!Ps1PostProcessDMI)
 	{
 		UE_LOG(LogT66RetroFXRuntime, Warning, TEXT("ApplyPs1Parameters: PS1 post-process DMI was null"));
@@ -849,6 +940,11 @@ void UT66RetroFXSubsystem::ApplyOutlineParameters()
 
 void UT66RetroFXSubsystem::ApplyChromaticAberrationParameters(const FT66RetroFXSettings& Settings)
 {
+	if (!HasChromaticEnabled(Settings))
+	{
+		return;
+	}
+
 	if (!ChromaticAberrationDMI)
 	{
 		UE_LOG(LogT66RetroFXRuntime, Warning, TEXT("ApplyChromaticAberrationParameters: chromatic aberration DMI was null"));
@@ -871,6 +967,11 @@ void UT66RetroFXSubsystem::ApplyChromaticAberrationParameters(const FT66RetroFXS
 
 void UT66RetroFXSubsystem::ApplyN64Parameters(const FT66RetroFXSettings& Settings)
 {
+	if (!HasN64BlurEnabled(Settings))
+	{
+		return;
+	}
+
 	const float BlurSteps = PercentToRange(Settings.N64BlurStepsPercent, 0.0f, 12.0f);
 	const float UseLowFakeResolution = PercentToSwitch(Settings.N64LowFakeResolutionPercent);
 
@@ -882,6 +983,11 @@ void UT66RetroFXSubsystem::ApplyN64Parameters(const FT66RetroFXSettings& Setting
 
 void UT66RetroFXSubsystem::ApplyResolutionCollection(const FT66RetroFXSettings& Settings, UWorld* World)
 {
+	if (!HasResolutionCollectionEnabled(Settings))
+	{
+		return;
+	}
+
 	if (!World)
 	{
 		UE_LOG(LogT66RetroFXRuntime, Warning, TEXT("ApplyResolutionCollection: world was null"));
@@ -939,16 +1045,11 @@ void UT66RetroFXSubsystem::ApplyResolutionRuntime(const FT66RetroFXSettings& Set
 	const float TargetHeight = GetTargetResolutionHeight(Settings.TargetResolutionHeightPercent);
 	const float ScreenPercentage = FMath::Clamp((TargetHeight / ViewportHeight) * 100.0f, 5.0f, 100.0f);
 
-	SetRetroCVarInt(TEXT("r.AntiAliasingMethod"), 0);
-	SetRetroCVarInt(TEXT("r.Upscale.Quality"), 1);
-	SetRetroCVarInt(TEXT("r.TemporalAA.Upsampling"), 0);
-	SetRetroCVarFloat(TEXT("r.SecondaryScreenPercentage.GameViewport"), 100.0f);
-
+	// These CVars are owned by Config/DefaultEngine.ini [SystemSettings] at
+	// SetByProjectSetting priority. Runtime writes at SetByGameSetting would be
+	// ignored. r.ScreenPercentage remains runtime-owned because it depends on
+	// viewport height and target resolution.
 	const bool bSetMinResolutionFraction = SetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolutionFraction"), 0.1f);
-	if (!bSetMinResolutionFraction)
-	{
-		SetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolution"), 0.0f);
-	}
 
 	SetRetroCVarFloat(TEXT("r.ScreenPercentage"), ScreenPercentage);
 	bResolutionRuntimeActive = true;
@@ -1581,19 +1682,16 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadPs1PostProcessMaterialVariant(cons
 		return VariantMaterial;
 	}
 
-	QueueRetroAssetPreloads();
 	return LoadPs1PostProcessMaterial();
 }
 
 UMaterialInterface* UT66RetroFXSubsystem::LoadN64BlurMaterial(bool bReplaceTonemapper)
 {
-	QueueRetroAssetPreloads();
 	return ResolveLoadedRetroObject<UMaterialInterface>(bReplaceTonemapper ? N64BlurReplaceTonemapperPath : N64BlurPath);
 }
 
 UMaterialInterface* UT66RetroFXSubsystem::LoadOutlinePostProcessMaterial()
 {
-	QueueRetroAssetPreloads();
 	return ResolveLoadedRetroObject<UMaterialInterface>(OutlinePostProcessMaterialPath);
 }
 
@@ -1601,7 +1699,6 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadCharacterRetroGeometryMaterial()
 {
 	if (!CharacterRetroGeometryMaterial)
 	{
-		QueueRetroAssetPreloads();
 		CharacterRetroGeometryMaterial = ResolveLoadedRetroObject<UMaterialInterface>(CharacterRetroGeometryMaterialPath);
 	}
 	return CharacterRetroGeometryMaterial;
@@ -1611,7 +1708,6 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadEnvironmentRetroGeometryMaterial()
 {
 	if (!EnvironmentRetroGeometryMaterial)
 	{
-		QueueRetroAssetPreloads();
 		EnvironmentRetroGeometryMaterial = ResolveLoadedRetroObject<UMaterialInterface>(EnvironmentRetroGeometryMaterialPath);
 	}
 	return EnvironmentRetroGeometryMaterial;
@@ -1621,7 +1717,6 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadFbxRetroGeometryMaterial()
 {
 	if (!FbxRetroGeometryMaterial)
 	{
-		QueueRetroAssetPreloads();
 		FbxRetroGeometryMaterial = ResolveLoadedRetroObject<UMaterialInterface>(FbxRetroGeometryMaterialPath);
 	}
 	return FbxRetroGeometryMaterial;
@@ -1631,7 +1726,6 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadGlbRetroGeometryMaterial()
 {
 	if (!GlbRetroGeometryMaterial)
 	{
-		QueueRetroAssetPreloads();
 		GlbRetroGeometryMaterial = ResolveLoadedRetroObject<UMaterialInterface>(GlbRetroGeometryMaterialPath);
 	}
 	return GlbRetroGeometryMaterial;
@@ -1639,7 +1733,6 @@ UMaterialInterface* UT66RetroFXSubsystem::LoadGlbRetroGeometryMaterial()
 
 UMaterialInterface* UT66RetroFXSubsystem::LoadChromaticAberrationMaterial()
 {
-	QueueRetroAssetPreloads();
 	return ResolveLoadedRetroObject<UMaterialInterface>(ChromaticAberrationMaterialPath);
 }
 
@@ -1647,7 +1740,6 @@ UMaterialParameterCollection* UT66RetroFXSubsystem::LoadResolutionCollection()
 {
 	if (!ResolutionCollection)
 	{
-		QueueRetroAssetPreloads();
 		ResolutionCollection = ResolveLoadedRetroObject<UMaterialParameterCollection>(ResolutionCollectionPath);
 	}
 	return ResolutionCollection;
@@ -1657,7 +1749,6 @@ UMaterialParameterCollection* UT66RetroFXSubsystem::LoadGeometryCollection()
 {
 	if (!GeometryCollection)
 	{
-		QueueRetroAssetPreloads();
 		GeometryCollection = ResolveLoadedRetroObject<UMaterialParameterCollection>(GeometryCollectionPath);
 	}
 	return GeometryCollection;
@@ -1783,26 +1874,6 @@ void UT66RetroFXSubsystem::CaptureResolutionRuntimeDefaults()
 	{
 		OriginalScreenPercentage = ScreenPercentage->GetFloat();
 	}
-	if (IConsoleVariable* SecondaryScreenPercentage = IConsoleManager::Get().FindConsoleVariable(TEXT("r.SecondaryScreenPercentage.GameViewport")))
-	{
-		OriginalSecondaryScreenPercentage = SecondaryScreenPercentage->GetFloat();
-	}
-	if (IConsoleVariable* UpscaleQuality = IConsoleManager::Get().FindConsoleVariable(TEXT("r.Upscale.Quality")))
-	{
-		OriginalUpscaleQuality = UpscaleQuality->GetInt();
-	}
-	if (IConsoleVariable* AntiAliasingMethod = IConsoleManager::Get().FindConsoleVariable(TEXT("r.AntiAliasingMethod")))
-	{
-		OriginalAntiAliasingMethod = AntiAliasingMethod->GetInt();
-	}
-	if (IConsoleVariable* TemporalAAUpsampling = IConsoleManager::Get().FindConsoleVariable(TEXT("r.TemporalAA.Upsampling")))
-	{
-		OriginalTemporalAAUpsampling = TemporalAAUpsampling->GetInt();
-	}
-	if (IConsoleVariable* ScreenPercentageMinResolution = IConsoleManager::Get().FindConsoleVariable(TEXT("r.ScreenPercentage.MinResolution")))
-	{
-		OriginalScreenPercentageMinResolution = ScreenPercentageMinResolution->GetFloat();
-	}
 	if (IConsoleVariable* ScreenPercentageMinResolutionFraction = IConsoleManager::Get().FindConsoleVariable(TEXT("r.ScreenPercentage.MinResolutionFraction")))
 	{
 		OriginalScreenPercentageMinResolutionFraction = ScreenPercentageMinResolutionFraction->GetFloat();
@@ -1819,16 +1890,13 @@ void UT66RetroFXSubsystem::RestoreResolutionRuntimeDefaults()
 		return;
 	}
 
-	SetRetroCVarInt(TEXT("r.AntiAliasingMethod"), OriginalAntiAliasingMethod);
-	SetRetroCVarInt(TEXT("r.Upscale.Quality"), OriginalUpscaleQuality);
-	SetRetroCVarInt(TEXT("r.TemporalAA.Upsampling"), OriginalTemporalAAUpsampling);
+	// Project-owned AA/upscaler/min-resolution CVars are restored by config on
+	// boot; only runtime-owned resolution overrides are reset here.
 	SetRetroCVarFloat(TEXT("r.ScreenPercentage"), OriginalScreenPercentage);
-	SetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolution"), OriginalScreenPercentageMinResolution);
 	if (bHasOriginalScreenPercentageMinResolutionFraction)
 	{
 		SetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolutionFraction"), OriginalScreenPercentageMinResolutionFraction);
 	}
-	SetRetroCVarFloat(TEXT("r.SecondaryScreenPercentage.GameViewport"), OriginalSecondaryScreenPercentage);
 	bResolutionRuntimeActive = false;
 }
 
@@ -1845,7 +1913,11 @@ float UT66RetroFXSubsystem::GetViewportHeight(UWorld* World) const
 
 		if (GEngine->GameViewport->Viewport)
 		{
-			return static_cast<float>(GEngine->GameViewport->Viewport->GetSizeXY().Y);
+			const float ViewportHeight = static_cast<float>(GEngine->GameViewport->Viewport->GetSizeXY().Y);
+			if (ViewportHeight > KINDA_SMALL_NUMBER)
+			{
+				return ViewportHeight;
+			}
 		}
 	}
 

@@ -59,7 +59,7 @@ UMaterialInterface* FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(UObj
 		}
 	}
 
-	UMaterialInterface* BaseMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+	UMaterialInterface* BaseMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_Environment_Lit.M_Environment_Lit"));
 	UTexture* DifficultyTexture = LoadDifficultyGroundTexture(Difficulty);
 	if (BaseMaterial && DifficultyTexture)
 	{

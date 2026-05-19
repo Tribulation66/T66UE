@@ -1,0 +1,35 @@
+Traceback (most recent call last):
+  File "C:\UE\T66\Model Generation\Pixal3D\Scripts\run_pixal3d_batch.py", line 581, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\UE\T66\Model Generation\Pixal3D\Scripts\run_pixal3d_batch.py", line 574, in main
+    run(args)
+    ~~~^^^^^^
+  File "C:\UE\T66\Model Generation\Pixal3D\Scripts\run_pixal3d_batch.py", line 477, in run
+    is_done = poll(args)
+  File "C:\UE\T66\Model Generation\Pixal3D\Scripts\run_pixal3d_batch.py", line 418, in poll
+    status_text = read_remote_text(args, paths["status"])
+  File "C:\UE\T66\Model Generation\Pixal3D\Scripts\run_pixal3d_batch.py", line 398, in read_remote_text
+    result = ssh(args, bash_lc(f"test -f {shlex.quote(remote_path)} && cat {shlex.quote(remote_path)} || true"), timeout=30)
+  File "C:\UE\T66\Model Generation\Pixal3D\Scripts\run_pixal3d_batch.py", line 240, in ssh
+    return run_local(ssh_base(args) + [remote_command], timeout=timeout)
+  File "C:\UE\T66\Model Generation\Pixal3D\Scripts\run_pixal3d_batch.py", line 187, in run_local
+    return subprocess.run(
+           ~~~~~~~~~~~~~~^
+        command,
+        ^^^^^^^^
+    ...<5 lines>...
+        check=False,
+        ^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Python313\Lib\subprocess.py", line 556, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\subprocess.py", line 1222, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\subprocess.py", line 1650, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['ssh', '-p', '17632', '-i', 'C:\\Users\\DoPra\\.ssh\\id_ed25519', '-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=NUL', 'root@38.147.83.18', "bash -lc 'test -f /workspace/T66/ModelGeneration/Runs/Pixal3D/ProductionReplacement/Logs/pixal3d_generation_status.jsonl && cat /workspace/T66/ModelGeneration/Runs/Pixal3D/ProductionReplacement/Logs/pixal3d_generation_status.jsonl || true'"]' timed out after 30 seconds
+Command failed (1): C:\Python313\python.exe C:\UE\T66\Model Generation\Pixal3D\Scripts\run_pixal3d_batch.py run --pod-ip 38.147.83.18 --pod-port 17632 --local-run-root C:\UE\T66\Model Generation\Runs\Pixal3D\ProductionReplacement\EasyMobsInteractables_20260518_2043 --remote-run-root /workspace/T66/ModelGeneration/Runs/Pixal3D/ProductionReplacement --sources-dir C:\UE\T66\Model Generation\Runs\Pixal3D\ProductionReplacement\EasyMobsInteractables_20260518_2043\Sources --decimation 200000 --fallback-decimation 80000 --resolution 1536 --image-resolution 1536 --texture-size 4096 --seed 1337 --ss-steps 25 --ss-guidance 7.5 --shape-steps 25 --shape-guidance 7.5 --tex-steps 25 --tex-guidance 4.0 --remesh --export-fallback --safe-fill-holes-fallback

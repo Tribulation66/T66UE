@@ -19,6 +19,45 @@ TArray<FName> UT66SkinSubsystem::GetAllSkinIDs()
 	return { DefaultSkinID, BeachgoerSkinID };
 }
 
+bool UT66SkinSubsystem::IsSkinOfferedForEntity(const ET66SkinEntityType EntityType, const FName EntityID, const FName SkinID) const
+{
+	if (EntityID.IsNone() || SkinID.IsNone())
+	{
+		return false;
+	}
+
+	if (SkinID == DefaultSkinID)
+	{
+		return true;
+	}
+
+	if (EntityType == ET66SkinEntityType::Hero)
+	{
+		static const TSet<FName> DemoBeachgoerHeroIDs = {
+			FName(TEXT("Hero_1")),
+			FName(TEXT("Hero_3")),
+			FName(TEXT("Hero_4")),
+			FName(TEXT("Hero_5"))
+		};
+		return SkinID == BeachgoerSkinID && DemoBeachgoerHeroIDs.Contains(EntityID);
+	}
+
+	return SkinID == BeachgoerSkinID;
+}
+
+TArray<FName> UT66SkinSubsystem::GetSkinIDsForEntity(const ET66SkinEntityType EntityType, const FName EntityID) const
+{
+	TArray<FName> Out;
+	for (const FName SkinID : GetAllSkinIDs())
+	{
+		if (IsSkinOfferedForEntity(EntityType, EntityID, SkinID))
+		{
+			Out.Add(SkinID);
+		}
+	}
+	return Out;
+}
+
 UT66ProfileSaveGame* UT66SkinSubsystem::GetProfile() const
 {
 	UGameInstance* GI = GetGameInstance();
@@ -42,6 +81,7 @@ bool UT66SkinSubsystem::IsSkinOwned(ET66SkinEntityType EntityType, FName EntityI
 {
 	if (EntityID.IsNone()) return false;
 	if (SkinID == DefaultSkinID) return true;
+	if (!IsSkinOfferedForEntity(EntityType, EntityID, SkinID)) return false;
 	UT66ProfileSaveGame* Profile = GetProfile();
 	if (!Profile)
 	{
@@ -93,6 +133,7 @@ bool UT66SkinSubsystem::PurchaseSkin(ET66SkinEntityType EntityType, FName Entity
 {
 	if (EntityID.IsNone() || SkinID.IsNone() || CostAC <= 0) return false;
 	if (SkinID == DefaultSkinID) return false;
+	if (!IsSkinOfferedForEntity(EntityType, EntityID, SkinID)) return false;
 	if (IsSkinOwned(EntityType, EntityID, SkinID)) return false;
 
 	UT66ProfileSaveGame* Profile = GetProfile();
@@ -193,6 +234,7 @@ FName UT66SkinSubsystem::GetEquippedSkin(ET66SkinEntityType EntityType, FName En
 void UT66SkinSubsystem::SetEquippedSkin(ET66SkinEntityType EntityType, FName EntityID, FName SkinID)
 {
 	if (!GetProfile() || EntityID.IsNone() || SkinID.IsNone()) return;
+	if (!IsSkinOfferedForEntity(EntityType, EntityID, SkinID)) return;
 	if (SkinID != DefaultSkinID && !IsSkinOwned(EntityType, EntityID, SkinID)) return;
 
 	UT66ProfileSaveGame* Profile = GetProfile();
@@ -211,7 +253,7 @@ TArray<FSkinData> UT66SkinSubsystem::GetSkinsForEntity(ET66SkinEntityType Entity
 	FName EquippedID = GetEquippedSkin(EntityType, EntityID);
 	if (EquippedID.IsNone()) EquippedID = DefaultSkinID;
 
-	for (FName SkinID : GetAllSkinIDs())
+	for (FName SkinID : GetSkinIDsForEntity(EntityType, EntityID))
 	{
 		FSkinData Skin;
 		Skin.SkinID = SkinID;
@@ -222,6 +264,10 @@ TArray<FSkinData> UT66SkinSubsystem::GetSkinsForEntity(ET66SkinEntityType Entity
 		Skin.CoinCost = Skin.bIsDefault ? 0 : DefaultSkinPriceAC;
 		Skin.Portrait = GetSkinPortrait(EntityType, EntityID, SkinID, false);
 		Skin.SelectionPortrait = GetSkinPortrait(EntityType, EntityID, SkinID, true);
+		if (EntityType == ET66SkinEntityType::Hero && SkinID == BeachgoerSkinID)
+		{
+			Skin.DisplayName = NSLOCTEXT("T66.Skins", "HeroDemoSkin", "Demo");
+		}
 		Out.Add(Skin);
 	}
 	return Out;

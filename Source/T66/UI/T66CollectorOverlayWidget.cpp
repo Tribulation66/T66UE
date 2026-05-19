@@ -7,7 +7,6 @@
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "UI/Style/T66FlatStyle.h"
-#include "UI/Style/T66Style.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66PlayerController.h"
@@ -86,7 +85,12 @@ void UT66CollectorOverlayWidget::OnExitLab()
 	UWorld* World = GetWorld();
 	UGameInstance* GIBase = World ? World->GetGameInstance() : nullptr;
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GIBase))
-		GI->bIsLabLevel = false;
+	{
+		if (GI->IsLabRun())
+		{
+			GI->SelectedRunCategory = ET66RunCategory::Tower;
+		}
+	}
 	RemoveFromParent();
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 		PC->RestoreGameplayInputMode();
@@ -102,7 +106,7 @@ void UT66CollectorOverlayWidget::CloseOverlay()
 
 void UT66CollectorOverlayWidget::RefreshContent()
 {
-	FT66Style::DeferRebuild(this);
+	FT66FlatStyle::DeferRebuild(this);
 }
 
 void UT66CollectorOverlayWidget::NativeDestruct()
@@ -157,7 +161,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		return FT66FlatStyle::MakeFlatButton(
 			CollectorTabIndex == Index ? ET66FlatState::Selected : ET66FlatState::Default,
 			Label,
-			FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }),
+			FOnClicked::CreateLambda([this, Index]() { CollectorTabIndex = Index; FT66FlatStyle::DeferRebuild(this); return FReply::Handled(); }),
 			nullptr,
 			nullptr,
 			FMargin(12.f, 6.f),
@@ -420,7 +424,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 
 	const TAttribute<FMargin> SafePanelPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
-		return FT66Style::GetSafePadding(FMargin(40.f, 126.f, 40.f, 40.f));
+		return FT66FlatStyle::GetSafePadding(FMargin(40.f, 126.f, 40.f, 40.f));
 	});
 
 	const FLinearColor BackdropColor = FLinearColor(
@@ -460,7 +464,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 		TEXT("Overlay"),
 		ET66FlatState::Default);
 
-	return FT66Style::MakeResponsiveRoot(Root);
+	return FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 
 #undef LOCTEXT_NAMESPACE

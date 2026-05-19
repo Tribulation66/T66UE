@@ -3,13 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/StrongObjectPtr.h"
 #include "UI/T66ScreenBase.h"
 #include "T66DailyClimbScreen.generated.h"
-
-struct FSlateBrush;
-class ST66LeaderboardPanel;
-class UTexture2D;
 
 /**
  * Full-screen Daily Descent frontend.
@@ -33,23 +28,10 @@ private:
 	FReply HandleContinueClicked();
 	FReply HandleStartClicked();
 	void HandleDailyClimbStatusReady(const FString& RequestTag);
+	void HandleDailyLeaderboardReady(const FString& LeaderboardKey);
 	void RefreshContinueAvailability();
 	int32 ComputeSeedQualityPreview(int32 RunSeed) const;
 
-	TSharedPtr<FSlateBrush> FireMoonBrush;
-	TStrongObjectPtr<UTexture2D> FireMoonTexture;
-	TSharedPtr<FSlateBrush> PyramidChadBrush;
-	TStrongObjectPtr<UTexture2D> PyramidChadTexture;
-	TSharedPtr<FSlateBrush> PrimaryCTAFillBrush;
-	TStrongObjectPtr<UTexture2D> PrimaryCTAFillTexture;
-	TSharedPtr<FSlateBrush> SkyBackgroundBrush;
-	TStrongObjectPtr<UTexture2D> SkyBackgroundTexture;
-	TSharedPtr<FSlateBrush> ForegroundOccluderBrush;
-	TStrongObjectPtr<UTexture2D> ForegroundOccluderTexture;
-
-	TSharedPtr<ST66LeaderboardPanel> LeaderboardPanel;
-
 	bool bStartRequestInFlight = false;
 	int32 ContinueSaveSlotIndex = INDEX_NONE;
-	int32 DailyFlatLeaderboardFilterIndex = 0;
 };

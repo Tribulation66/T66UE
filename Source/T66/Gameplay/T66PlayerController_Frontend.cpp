@@ -23,6 +23,7 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66QuitConfirmationModal.h"
 #include "UI/Screens/T66LanguageSelectScreen.h"
+#include "UI/Screens/T66GameOverScreen.h"
 #include "UI/Screens/T66RunSummaryScreen.h"
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
 #include "UI/Screens/T66SavePreviewScreen.h"
@@ -37,6 +38,7 @@
 #include "UI/T66CasinoOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
+#include "UI/T66WeaponAltarOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
 #include "Core/T66SessionSubsystem.h"
@@ -47,8 +49,7 @@
 DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66TutorialPortal.h"
+#include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66BackendSubsystem.h"
@@ -64,6 +65,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "UI/T66LoadingScreenWidget.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66IdolAltar.h"
+#include "Gameplay/T66WeaponAltar.h"
 #include "Gameplay/T66GamblerNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
@@ -378,12 +380,12 @@ namespace
 		return TEXT(
 			"MainMenu, HeroSelection, HeroSelect, SaveSlots, SaveSlot, CompanionSelection, CompanionSelect, "
 			"Settings, SettingsScreen, LanguageSelect, Language, Achievements, Minigames, PauseMenu, Pause, "
-			"ReportBug, RunSummary, PowerUp, HeroGrid, CompanionGrid, QuitConfirmation, Quit, PartyInvite, "
+			"ReportBug, GameOver, RunSummary, PowerUp, HeroGrid, CompanionGrid, QuitConfirmation, Quit, PartyInvite, "
 			"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, MiniMainMenu, "
 			"MiniCharacterSelect, MiniCompanionSelect, MiniDifficultySelect, MiniIdolSelect, MiniSaveSlots, "
 			"MiniShop, MiniRunSummary, MiniBattle, TDMainMenu, TDDifficultySelect, TDBattle, IdleMainMenu, "
-			"IdleChadpocalypse, DeckMainMenu, Deckbuilder, ChadpocalypseDeckbuilder, VersusMainMenu, "
-			"Versus, ChadpocalypseVersus, Challenges, DailyDescent, Overview, History, Diplomas, "
+			"IdleChadpocalypse, DeckMainMenu, Deckbuilder, ChadpocalypseDeckbuilder, "
+			"Challenges, DailyDescent, Overview, History, Diplomas, "
 			"Drugs, SteamAchievements, Steam, SettingsRetroFX, RetroFX, SettingsGameplay, SettingsGraphics, "
 			"SettingsControls, SettingsMediaViewer, SettingsMedia, SettingsAudio, LoadGame");
 	}
@@ -456,6 +458,12 @@ namespace
 		if (Normalized.Equals(TEXT("ReportBug"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::ReportBug;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("GameOver"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("GameOverScreen"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::GameOver;
 			return true;
 		}
 		if (Normalized.Equals(TEXT("RunSummary"), ESearchCase::IgnoreCase))
@@ -583,13 +591,6 @@ namespace
 			OutScreenType = ET66ScreenType::DeckMainMenu;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("VersusMainMenu"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("Versus"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("ChadpocalypseVersus"), ESearchCase::IgnoreCase))
-		{
-			OutScreenType = ET66ScreenType::VersusMainMenu;
-			return true;
-		}
 		if (Normalized.Equals(TEXT("Challenges"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::Challenges;
@@ -714,8 +715,6 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Idle.T66IdleMainMenuScreen"));
 	case ET66ScreenType::DeckMainMenu:
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Deck.T66DeckMainMenuScreen"));
-	case ET66ScreenType::VersusMainMenu:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Versus.T66VersusMainMenuScreen"));
 	case ET66ScreenType::ReportBug:
 		return UT66ReportBugScreen::StaticClass();
 	case ET66ScreenType::Settings:
@@ -724,6 +723,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66LanguageSelectScreen::StaticClass();
 	case ET66ScreenType::RunSummary:
 		return UT66RunSummaryScreen::StaticClass();
+	case ET66ScreenType::GameOver:
+		return UT66GameOverScreen::StaticClass();
 	case ET66ScreenType::PlayerSummaryPicker:
 		return UT66PlayerSummaryPickerScreen::StaticClass();
 	case ET66ScreenType::SavePreview:
@@ -766,6 +767,11 @@ TSubclassOf<UT66CowardicePromptWidget> AT66PlayerController::ResolveCowardicePro
 TSubclassOf<UT66IdolAltarOverlayWidget> AT66PlayerController::ResolveIdolAltarOverlayClass() const
 {
 	return UT66IdolAltarOverlayWidget::StaticClass();
+}
+
+TSubclassOf<UT66WeaponAltarOverlayWidget> AT66PlayerController::ResolveWeaponAltarOverlayClass() const
+{
+	return UT66WeaponAltarOverlayWidget::StaticClass();
 }
 
 
@@ -1369,6 +1375,10 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, RunSummaryClass);
 	}
+	if (TSubclassOf<UT66ScreenBase> GameOverClass = ResolveScreenClass(ET66ScreenType::GameOver))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::GameOver, GameOverClass);
+	}
 	if (TSubclassOf<UT66ScreenBase> SummaryPickerClass = ResolveScreenClass(ET66ScreenType::PlayerSummaryPicker))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, SummaryPickerClass);
@@ -1457,10 +1467,6 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::DeckMainMenu, DeckMainMenuClass);
 	}
-	if (TSubclassOf<UT66ScreenBase> VersusMainMenuClass = ResolveScreenClass(ET66ScreenType::VersusMainMenu))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::VersusMainMenu, VersusMainMenuClass);
-	}
 	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
 	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))
 	{
@@ -1520,10 +1526,34 @@ void AT66PlayerController::InitializeUI()
 
 	ApplyFrontendCommandLineOverrides(ScreenToShow);
 
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		FString DirectEntrySource;
+		if (GI->ConsumePendingDirectGameplayEntry(DirectEntrySource))
+		{
+			UE_LOG(LogT66Frontend, Display, TEXT("Direct entry '%s' is transitioning frontend startup to gameplay."), *DirectEntrySource);
+			if (UIManager)
+			{
+				UIManager->HideAllUI();
+			}
+			GI->TransitionToGameplayLevel();
+			HideFrontendStartupOverlay();
+			return;
+		}
+	}
+
 	if (ScreenToShow != ET66ScreenType::None)
 	{
 		UIManager->ShowScreen(ScreenToShow);
 		RefreshPartyInviteModal();
+		if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
+		{
+			if (GI->PendingDirectEntryModal != ET66ScreenType::None)
+			{
+				UIManager->ShowModal(GI->PendingDirectEntryModal);
+				GI->PendingDirectEntryModal = ET66ScreenType::None;
+			}
+		}
 		if (FrontendAutomationModalToShow != ET66ScreenType::None)
 		{
 			UIManager->ShowModal(FrontendAutomationModalToShow);

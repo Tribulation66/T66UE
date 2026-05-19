@@ -1,0 +1,19 @@
+{
+  "dependency_path": "external_python_pillow_numpy",
+  "line_coverage_fraction": 0.15439897775650024,
+  "max_intensity": 1.0,
+  "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\BoneWalker\\Working\\BoneWalker_InnerLines.png",
+  "padding": {
+    "applied": true,
+    "filled_pixels": 8154453,
+    "method": "iterative_frontier_expansion",
+    "padding_pixels": 16
+  },
+  "resolution": [
+    4096,
+    4096
+  ],
+  "segments": 99580,
+  "stddev": 0.266915500164032,
+  "unique_value_count": 256
+}

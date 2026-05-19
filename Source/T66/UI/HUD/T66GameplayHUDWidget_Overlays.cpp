@@ -91,8 +91,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
 		[
 			SNew(STextBlock)
 			.Text(NSLOCTEXT("T66.PauseMenu", "NoTrackedAchievements", "No in-progress achievements right now."))
-			.Font(FT66Style::Tokens::FontRegular(10))
-			.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+			.Font(FT66FlatStyle::Tokens::FontRegular(10))
+			.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			.AutoWrapText(true)
 		];
 	}
@@ -107,7 +107,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
 			const bool bFavorited = PlayerSettings && PlayerSettings->IsFavoriteAchievement(Achievement.AchievementID);
 			const FLinearColor ProgressColor = bFavorited
 				? FLinearColor(0.94f, 0.78f, 0.28f, 1.0f)
-				: FT66Style::Tokens::Success;
+				: FT66FlatStyle::Tokens::Success;
 			const FText ProgressText = FText::Format(
 				NSLOCTEXT("T66.PauseMenu", "PauseAchievementProgress", "{0}/{1}"),
 				FText::AsNumber(Progress),
@@ -134,8 +134,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
 						[
 							SNew(STextBlock)
 							.Text(Achievement.DisplayName)
-							.Font(FT66Style::Tokens::FontBold(11))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Font(FT66FlatStyle::Tokens::FontBold(11))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							.AutoWrapText(true)
 						]
 						+ SHorizontalBox::Slot()
@@ -145,7 +145,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
 						[
 							SNew(STextBlock)
 							.Text(FText::FromString(bFavorited ? TEXT("\u2605") : TEXT("")))
-							.Font(FT66Style::Tokens::FontRegular(12))
+							.Font(FT66FlatStyle::Tokens::FontRegular(12))
 							.ColorAndOpacity(ProgressColor)
 						]
 					]
@@ -155,8 +155,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
 					[
 						SNew(STextBlock)
 						.Text(Achievement.Description)
-						.Font(FT66Style::Tokens::FontRegular(9))
-						.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+						.Font(FT66FlatStyle::Tokens::FontRegular(9))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						.AutoWrapText(true)
 					]
 					+ SVerticalBox::Slot()
@@ -182,8 +182,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
 						[
 							SNew(STextBlock)
 							.Text(ProgressText)
-							.Font(FT66Style::Tokens::FontBold(10))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Font(FT66FlatStyle::Tokens::FontBold(10))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 						]
 						+ SHorizontalBox::Slot()
 						.AutoWidth()
@@ -192,8 +192,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
 							.Text(FText::Format(
 								NSLOCTEXT("T66.PauseMenu", "PauseAchievementRemaining", "{0} left"),
 								FText::AsNumber(GetAchievementRemainingCount(Achievement))))
-							.Font(FT66Style::Tokens::FontRegular(9))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							.Font(FT66FlatStyle::Tokens::FontRegular(9))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						]
 					]
 				]
@@ -204,7 +204,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildPauseAchievementsPanel() const
 	return SNew(SBox)
 		.WidthOverride(BottomRightPauseAchievementPanelWidth)
 		[
-			FT66Style::MakePanel(
+			FT66FlatStyle::MakePanel(
 				SNew(SBox)
 				.HeightOverride(420.f)
 				[
@@ -409,7 +409,7 @@ static void T66_ApplyWorldDialogueSelectionOverlay(
 		}
 		if (OptionTexts.IsValidIndex(i) && OptionTexts[i].IsValid())
 		{
-			OptionTexts[i]->SetColorAndOpacity(bSelected ? FT66Style::Tokens::Text : FT66Style::Tokens::TextMuted);
+			OptionTexts[i]->SetColorAndOpacity(bSelected ? FT66FlatStyle::Tokens::Text : FT66FlatStyle::Tokens::TextMuted);
 		}
 	}
 }

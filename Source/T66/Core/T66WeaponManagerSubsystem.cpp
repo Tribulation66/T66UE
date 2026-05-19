@@ -14,17 +14,11 @@ void UT66WeaponManagerSubsystem::BroadcastWeaponStateChanged()
 	OnWeaponStateChanged.Broadcast();
 }
 
-void UT66WeaponManagerSubsystem::ResetForNewRun(FName HeroID)
+void UT66WeaponManagerSubsystem::ResetForNewRun(FName /*HeroID*/)
 {
-	EquippedWeaponID = MakeStarterWeaponID(HeroID);
+	EquippedWeaponID = NAME_None;
 	WeaponOfferIDs.Reset();
 	CurrentOfferRarity = ET66WeaponRarity::Black;
-
-	if (HeroID.IsNone())
-	{
-		EquippedWeaponID = NAME_None;
-	}
-
 	BroadcastWeaponStateChanged();
 }
 
@@ -98,13 +92,6 @@ bool UT66WeaponManagerSubsystem::SelectWeapon(FName WeaponID)
 	return true;
 }
 
-FName UT66WeaponManagerSubsystem::MakeStarterWeaponID(FName HeroID)
-{
-	return HeroID.IsNone()
-		? NAME_None
-		: FName(FString::Printf(TEXT("%s_Grey_Base"), *HeroID.ToString()));
-}
-
 FName UT66WeaponManagerSubsystem::MakeWeaponID(FName HeroID, ET66WeaponRarity Rarity, ET66AttackCategory Branch)
 {
 	if (HeroID.IsNone())
@@ -119,47 +106,10 @@ FName UT66WeaponManagerSubsystem::MakeWeaponID(FName HeroID, ET66WeaponRarity Ra
 		*AttackBranchToString(Branch)));
 }
 
-ET66WeaponRarity UT66WeaponManagerSubsystem::GetUpgradeRarityForClearedDifficulty(ET66Difficulty Difficulty)
-{
-	switch (Difficulty)
-	{
-	case ET66Difficulty::Easy:
-		return ET66WeaponRarity::Black;
-	case ET66Difficulty::Medium:
-		return ET66WeaponRarity::Red;
-	case ET66Difficulty::Hard:
-		return ET66WeaponRarity::Yellow;
-	case ET66Difficulty::VeryHard:
-	case ET66Difficulty::Impossible:
-	default:
-		return ET66WeaponRarity::White;
-	}
-}
-
-ET66WeaponRarity UT66WeaponManagerSubsystem::GetUpgradeRarityForStartingDifficulty(ET66Difficulty Difficulty)
-{
-	switch (Difficulty)
-	{
-	case ET66Difficulty::Medium:
-		return ET66WeaponRarity::Black;
-	case ET66Difficulty::Hard:
-		return ET66WeaponRarity::Red;
-	case ET66Difficulty::VeryHard:
-		return ET66WeaponRarity::Yellow;
-	case ET66Difficulty::Impossible:
-		return ET66WeaponRarity::White;
-	case ET66Difficulty::Easy:
-	default:
-		return ET66WeaponRarity::Grey;
-	}
-}
-
 FString UT66WeaponManagerSubsystem::WeaponRarityToString(ET66WeaponRarity Rarity)
 {
 	switch (Rarity)
 	{
-	case ET66WeaponRarity::Grey:
-		return TEXT("Grey");
 	case ET66WeaponRarity::Black:
 		return TEXT("Black");
 	case ET66WeaponRarity::Red:
@@ -192,8 +142,6 @@ FLinearColor UT66WeaponManagerSubsystem::GetWeaponRarityColor(ET66WeaponRarity R
 {
 	switch (Rarity)
 	{
-	case ET66WeaponRarity::Grey:
-		return FLinearColor(0.40f, 0.42f, 0.45f, 1.0f);
 	case ET66WeaponRarity::Black:
 		return FLinearColor(0.05f, 0.05f, 0.06f, 1.0f);
 	case ET66WeaponRarity::Red:

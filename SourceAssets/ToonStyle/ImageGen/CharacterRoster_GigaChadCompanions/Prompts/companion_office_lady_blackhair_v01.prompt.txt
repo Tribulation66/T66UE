@@ -1,0 +1,9 @@
+Create one full-body single-character source image for T66 model generation.
+
+Character: original adult black-haired female companion, strict office lady archetype. Sharp, serious, disciplined expression, fully clothed, non-explicit. Oversized readable head, stylized heroic proportions, front-readable silhouette.
+
+Outfit: strict office outfit with charcoal black and white as the two dominant colors, small red accent, fitted blazer, pencil skirt or tailored pants, dress shoes, simple glasses optional, neat black hair, no logos, no text, no busy jewelry.
+
+Style: same current T66 character source style as the accepted Lu Bu shading pass: Hi-Fi-Rush/Guilty-Gear-like 2D-in-3D cel shading, hard cel-shadow bands, crisp ink contours, bold flat color zones, clean rim highlights.
+
+Pose/composition: strict front-facing A-pose, full body, white background, one subject only, no crop, no text, no logo, no environment, no contact shadow. No nudity, no lingerie, no pin-up pose.

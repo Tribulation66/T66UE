@@ -1,11 +1,11 @@
 # Companion_15 Default
 
 Runtime movie: `Frontend/HeroSelection/Companions/Companion_15/Default.mp4`
-Source plate: `SourceAssets/Archive/FinalPortraits/Companion_Mercy.png`
+Source plate: `missing`
 
 ## Prompt
 
-Locked camera companion-selection loop. Mercy the companion wearing the Default skin holds a heroic idle pose in a moody fantasy alcove, subtle breathing and light movement, readable silhouette, no interface elements.
+Locked camera companion-selection loop. Slavic Ice Skater the companion wearing the Default skin holds a heroic idle pose in a moody fantasy alcove, subtle breathing and light movement, readable silhouette, no interface elements.
 
 ## Negative Prompt
 
@@ -13,5 +13,4 @@ text, UI, logo, subtitles, extra limbs, malformed hands, duplicate face, camera 
 
 ## Runtime Notes
 
-The current first-pass clip was generated through the RunPod LTX roster batch. Replace this MP4 in-place with a higher-quality reviewed render when polishing this character.
-
+Draft clips can be replaced in-place by a reviewed RunPod AI render using the same runtime path.

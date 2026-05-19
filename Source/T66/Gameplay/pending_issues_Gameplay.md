@@ -48,3 +48,31 @@
 - What's wrong: `Source/T66/Gameplay/T66TowerMapTerrain.cpp` records doorway headers as `FBox2D` values without the wall-run seed or side metadata from `T66EmitDungeonTileEdgeWall`. The generated-kit header path can spawn a pinned wall module for each header, but it cannot always prove it is the exact same module as both adjacent wall fragments.
 - Why it's out of scope now: The current pass only enables generated-kit header spawning and keeps the existing floor/header data model intact.
 - What fixing it would entail: Store doorway header metadata alongside each header box, including source direction and wall-run seed, then consume that metadata during generated header visual selection.
+
+## Non-Dungeon Theme Atmosphere Specs Need Authoring
+
+- Severity tag: [Minor]
+- What's wrong: `Source/T66/Gameplay/T66ThemeAtmosphereData.cpp` now contains the first Dungeon atmosphere spec, but Forest, Ocean, Martian, and Hell return neutral lighting/fog/grading values.
+- Why it's out of scope now: Atmosphere Iteration 01 is explicitly Dungeon-only so Pablo can validate the foundation before extending vibe-setter values to other themes.
+- What fixing it would entail: Author and tune per-theme sky light, fog, and color-grading specs for Forest, Ocean, Martian, and Hell, then validate them in staged gameplay screenshots.
+
+## NPC Class Names Still Use HouseNPC
+
+- Severity tag: [Minor]
+- What's wrong: The data/setup/runtime table seam now uses `NPCs.csv`, `DT_NPCs`, `NPCsDataTable`, and `GetNPCData`, but the underlying C++ actor/data symbols still include `AT66HouseNPCBase`, `FHouseNPCData`, and related subclass/include names in `Source/T66/Gameplay` and registry consumers.
+- Why it's out of scope now: The current cleanup is constrained to data/loader/source naming and avoids broad C++ class renames that would touch generated headers, includes, Blueprint references, and asset class bindings.
+- What fixing it would entail: Rename the C++ base actor and data struct to neutral NPC names, add Unreal redirects if needed, update all includes/subclasses/registry references, compile, and verify existing Blueprint/class references still resolve.
+
+## Vehicle Class Names Still Use Tractor
+
+- Severity tag: [Minor]
+- What's wrong: The authored data row, prompts, damage source token, and interaction row lookup now use `Vehicle`, but the inherited C++ implementation still uses `AT66PilotableTractor`, `T66PilotableTractor.*`, and enum/action names such as `PilotTractor`, subobject names such as `TractorRoot`, and local variable names such as `ClosestTractor` in player interaction code.
+- Why it's out of scope now: The current pass is scoped to data/schema/loader cleanup and avoids broad class/file renames that would touch generated headers, includes, actor references, and Blueprint bindings.
+- What fixing it would entail: Rename the C++ class/files to a neutral vehicle name, update includes and player-controller interaction variables, add Unreal redirects if required, compile, and verify existing spawned/interactable vehicle references still resolve.
+
+## TutorialGate Class Remains After Tutorial Exit Uses StageGate
+
+- Severity tag: [Minor]
+- What's wrong: `Source/T66/Gameplay/T66TutorialGate.*` and the `AT66TutorialGate` interaction path in `Source/T66/Gameplay/T66PlayerController_Combat.cpp` still exist, but `Source/T66/Gameplay/T66TutorialManager.cpp` now spawns `AT66StageGate` for the tutorial exit.
+- Why it's out of scope now: This pass was intentionally constrained to swapping the tutorial end to the regular Stage Gate without broad class/file deletion or reference cleanup.
+- What fixing it would entail: Prove there are no Blueprint, asset, map, or automation references to `AT66TutorialGate`, then remove the class, includes, player-controller branch, and any stale generated/API references with a focused compile and content reference check.

@@ -17,11 +17,16 @@
 #include "Engine/Texture2D.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Internationalization/Text.h"
+#include "Styling/CoreStyle.h"
 #include "UI/Style/T66FlatStyle.h"
+#include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66UIManager.h"
+#include "Misc/Paths.h"
 #include "Widgets/Images/SImage.h"
+#include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
+#include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SScrollBox.h"
@@ -30,17 +35,17 @@
 
 namespace
 {
-	constexpr float PanelWidth = 476.0f;
+constexpr float PanelWidth = 476.0f;
 	constexpr float PanelHeight = 884.0f;
-	constexpr float FilterButtonWidth = 136.0f;
+	constexpr float FilterButtonWidth = 72.0f;
 	constexpr float FilterButtonHeight = 72.0f;
-	constexpr float ContentWidth = 440.0f;
-	constexpr float ContentHeight = 764.0f;
+	constexpr float ContentWidth = 390.0f;
+	constexpr float ContentHeight = PanelHeight;
 	constexpr float RowHeight = 42.0f;
-	constexpr float RowPortraitSize = 30.0f;
+	constexpr float FlatRowPortraitSize = 30.0f;
 	constexpr int32 VisibleRemoteEntryCount = 10;
 
-	bool IsSyntheticLeaderboardName(const FString& Name)
+	bool IsFlatSyntheticLeaderboardName(const FString& Name)
 	{
 		const FString Trimmed = Name.TrimStartAndEnd();
 		return Trimmed.StartsWith(TEXT("Player_"), ESearchCase::IgnoreCase)
@@ -48,7 +53,7 @@ namespace
 			|| Trimmed.Equals(TEXT("Steam Player"), ESearchCase::IgnoreCase);
 	}
 
-	int32 GetPartyMemberCount(const ET66PartySize PartySize)
+	int32 GetFlatPartyMemberCount(const ET66PartySize PartySize)
 	{
 		switch (PartySize)
 		{
@@ -64,7 +69,7 @@ namespace
 		}
 	}
 
-	FName GetFallbackHeroId(UT66GameInstance* GameInstance, const int32 FallbackIndex)
+	FName GetFlatFallbackHeroId(UT66GameInstance* GameInstance, const int32 FallbackIndex)
 	{
 		if (!GameInstance)
 		{
@@ -82,6 +87,20 @@ namespace
 
 		return NAME_None;
 	}
+
+	const TCHAR* GetFlatLeaderboardFilterIconPath(const ET66LeaderboardFilter Filter)
+	{
+		switch (Filter)
+		{
+		case ET66LeaderboardFilter::Friends:
+			return TEXT("RuntimeDependencies/T66/UI/Reference/Screens/MainMenu/BloodyRetro/Elements/leaderboard_filter_friends_icon.png");
+		case ET66LeaderboardFilter::Streamers:
+			return TEXT("RuntimeDependencies/T66/UI/Reference/Screens/MainMenu/BloodyRetro/Elements/leaderboard_filter_streamers_icon.png");
+		case ET66LeaderboardFilter::Global:
+		default:
+			return TEXT("RuntimeDependencies/T66/UI/Reference/Screens/MainMenu/BloodyRetro/Elements/leaderboard_filter_global_icon.png");
+		}
+	}
 }
 
 void ST66FlatLeaderboardPanel::Construct(const FArguments& InArgs)
@@ -96,7 +115,7 @@ void ST66FlatLeaderboardPanel::Construct(const FArguments& InArgs)
 
 	DefaultAvatarBrush = MakeShared<FSlateBrush>();
 	DefaultAvatarBrush->DrawAs = ESlateBrushDrawType::Image;
-	DefaultAvatarBrush->ImageSize = FVector2D(RowPortraitSize, RowPortraitSize);
+	DefaultAvatarBrush->ImageSize = FVector2D(FlatRowPortraitSize, FlatRowPortraitSize);
 	DefaultAvatarBrush->TintColor = FSlateColor(FLinearColor(0.14f, 0.15f, 0.17f, 0.36f));
 
 	StatusText = NSLOCTEXT("T66.FlatLeaderboard", "Loading", "Loading leaderboard...");
@@ -180,42 +199,28 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPanel()
 
 	Canvas->AddSlot()
 		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(0.f, 0.f, PanelWidth, PanelHeight))
-		[
-			FT66FlatStyle::MakeFlatPanel(
-				ET66FlatState::Default,
-				FMargin(0.f),
-				SNew(SBox)
-				.WidthOverride(PanelWidth)
-				.HeightOverride(PanelHeight),
-				nullptr,
-				Tag(TEXT("Panel")))
-		];
-
-	Canvas->AddSlot()
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(11.f, 1.f, FilterButtonWidth, FilterButtonHeight))
+		.Offset(FMargin(0.f, 0.f, FilterButtonWidth, FilterButtonHeight))
 		[
 			BuildFilterButton(ET66LeaderboardFilter::Global, NSLOCTEXT("T66.FlatLeaderboard", "World", "WORLD"), TEXT("FilterWorldButton"))
 		];
 
 	Canvas->AddSlot()
 		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(161.f, 1.f, FilterButtonWidth, FilterButtonHeight))
+		.Offset(FMargin(0.f, 86.f, FilterButtonWidth, FilterButtonHeight))
 		[
 			BuildFilterButton(ET66LeaderboardFilter::Friends, NSLOCTEXT("T66.FlatLeaderboard", "Friends", "FRIENDS"), TEXT("FilterFriendsButton"))
 		];
 
 	Canvas->AddSlot()
 		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(311.f, 1.f, FilterButtonWidth, FilterButtonHeight))
+		.Offset(FMargin(0.f, 172.f, FilterButtonWidth, FilterButtonHeight))
 		[
 			BuildFilterButton(ET66LeaderboardFilter::Streamers, NSLOCTEXT("T66.FlatLeaderboard", "Stream", "STREAM"), TEXT("FilterStreamersButton"))
 		];
 
 	Canvas->AddSlot()
 		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(18.f, 102.f, ContentWidth, ContentHeight))
+		.Offset(FMargin(86.f, 0.f, ContentWidth, ContentHeight))
 		[
 			BuildContentPanel()
 		];
@@ -228,12 +233,13 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 	TSharedRef<SHorizontalBox> HeaderRow = SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
+		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
 		[
 			FT66FlatStyle::MakeFlatLabel(
 				TAttribute<FText>::CreateSP(this, &ST66FlatLeaderboardPanel::GetHeaderText),
 				ET66FlatLabelRole::Header,
-				ETextJustify::Left,
+				ETextJustify::Center,
 				Tag(TEXT("LeaderboardHeader")))
 		];
 
@@ -261,18 +267,18 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 			];
 	}
 
-	TSharedRef<SHorizontalBox> TypeRow = SNew(SHorizontalBox)
+	TSharedRef<SHorizontalBox> TimeRow = SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
 		.Padding(0.f, 0.f, 6.f, 0.f)
 		[
-			BuildTypeButton(ET66LeaderboardType::Score, NSLOCTEXT("T66.FlatLeaderboard", "Score", "SCORE"), TEXT("ScoreScopeButton"))
+			BuildTimeButton(ET66LeaderboardTime::Current, NSLOCTEXT("T66.FlatLeaderboard", "Weekly", "WEEKLY"), TEXT("TimeWeeklyButton"))
 		]
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
 		.Padding(6.f, 0.f, 0.f, 0.f)
 		[
-			BuildTypeButton(ET66LeaderboardType::SpeedRun, NSLOCTEXT("T66.FlatLeaderboard", "SpeedRun", "SPEED RUN"), TEXT("SpeedrunScopeButton"))
+			BuildTimeButton(ET66LeaderboardTime::AllTime, NSLOCTEXT("T66.FlatLeaderboard", "AllTime", "ALL TIME"), TEXT("TimeAllTimeButton"))
 		];
 
 	TSharedRef<SHorizontalBox> DropdownRow = SNew(SHorizontalBox)
@@ -280,13 +286,27 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 		.FillWidth(1.f)
 		.Padding(0.f, 0.f, 6.f, 0.f)
 		[
-			BuildTimeDropdown()
+			BuildPartySizeDropdown()
 		]
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
 		.Padding(6.f, 0.f, 0.f, 0.f)
 		[
-			BuildRuleDropdown()
+			BuildDifficultyDropdown()
+		];
+
+	TSharedRef<SHorizontalBox> MetricRow = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.f)
+		.Padding(0.f, 0.f, 6.f, 0.f)
+		[
+			BuildMetricCheckButton(ET66LeaderboardType::Score, NSLOCTEXT("T66.FlatLeaderboard", "HighScore", "High Score"), TEXT("HighScoreMetricButton"))
+		]
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.f)
+		.Padding(6.f, 0.f, 0.f, 0.f)
+		[
+			BuildMetricCheckButton(ET66LeaderboardType::SpeedRun, NSLOCTEXT("T66.FlatLeaderboard", "SpeedRunMixedCase", "Speed Run"), TEXT("SpeedRunMetricButton"))
 		];
 
 	TSharedRef<SVerticalBox> Column = SNew(SVerticalBox)
@@ -307,7 +327,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 			SNew(SBox)
 			.HeightOverride(57.f)
 			[
-				TypeRow
+				TimeRow
 			]
 		]
 		+ SVerticalBox::Slot()
@@ -318,6 +338,16 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 			.HeightOverride(57.f)
 			[
 				DropdownRow
+			]
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.f, 0.f, 0.f, 12.f)
+		[
+			SNew(SBox)
+			.HeightOverride(57.f)
+			[
+				MetricRow
 			]
 		];
 
@@ -393,19 +423,31 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRowsPanel()
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildFilterButton(const ET66LeaderboardFilter Filter, const FText& Label, const FString& Name)
 {
-	return FT66FlatStyle::MakeFlatButton(
+	const FSlateBrush* IconBrush = GetFilterIconBrush(Filter);
+	const TSharedRef<SWidget> IconContent = IconBrush
+		? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IconBrush).ColorAndOpacity(FLinearColor::White))
+		: FT66FlatStyle::MakeFlatLabel(Label, ET66FlatLabelRole::Button, ETextJustify::Center, Tag(Name + TEXT(".FallbackLabel")));
+	const TSharedRef<SWidget> Content = SNew(SBox)
+		.WidthOverride(42.f)
+		.HeightOverride(42.f)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			IconContent
+		];
+
+	TSharedRef<SWidget> Button = FT66FlatStyle::MakeFlatToggleGroupButton(
 		CurrentFilter == Filter ? ET66FlatState::Selected : ET66FlatState::Default,
-		Label,
+		Content,
 		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetFilter, Filter),
-		nullptr,
-		nullptr,
 		FMargin(12.f, 8.f),
 		FilterButtonWidth,
 		FilterButtonHeight,
 		true,
-		18,
 		Tag(Name),
 		FName(TEXT("MainMenuLeaderboardFilter")));
+	Button->SetToolTipText(Label);
+	return Button;
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTypeButton(const ET66LeaderboardType Type, const FText& Label, const FString& Name)
@@ -423,6 +465,23 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTypeButton(const ET66Leaderbo
 		18,
 		Tag(Name),
 		FName(TEXT("MainMenuLeaderboardScope")));
+}
+
+TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTimeButton(const ET66LeaderboardTime TimeFilter, const FText& Label, const FString& Name)
+{
+	return FT66FlatStyle::MakeFlatButton(
+		CurrentTimeFilter == TimeFilter ? ET66FlatState::Selected : ET66FlatState::Default,
+		Label,
+		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetTimeFilter, TimeFilter),
+		nullptr,
+		nullptr,
+		FMargin(12.f, 8.f),
+		0.f,
+		57.f,
+		TimeFilter != ET66LeaderboardTime::Daily,
+		18,
+		Tag(Name),
+		FName(TEXT("MainMenuLeaderboardTime")));
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTimeDropdown()
@@ -455,6 +514,101 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRuleDropdown()
 		57.f,
 		16,
 		Tag(TEXT("ModeDropdown")));
+}
+
+TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPartySizeDropdown()
+{
+	return FT66FlatStyle::MakeFlatDropdown(
+		ET66FlatState::Default,
+		TAttribute<FText>::CreateLambda([this]()
+		{
+			return PartySizeText(CurrentPartySize);
+		}),
+		[this]()
+		{
+			return BuildPartySizeMenu();
+		},
+		false,
+		0.f,
+		57.f,
+		16,
+		Tag(TEXT("PartySizeDropdown")));
+}
+
+TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyDropdown()
+{
+	return FT66FlatStyle::MakeFlatDropdown(
+		ET66FlatState::Default,
+		TAttribute<FText>::CreateLambda([this]()
+		{
+			return DifficultyText(CurrentDifficulty);
+		}),
+		[this]()
+		{
+			return BuildDifficultyMenu();
+		},
+		false,
+		0.f,
+		57.f,
+		16,
+		Tag(TEXT("DifficultyDropdown")));
+}
+
+TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMetricCheckButton(const ET66LeaderboardType Type, const FText& Label, const FString& Name)
+{
+	const bool bSelected = CurrentType == Type;
+	TSharedRef<SWidget> Content = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.VAlign(VAlign_Center)
+		[
+			FT66FlatStyle::AttachMetadata(
+				SNew(SBox)
+				.WidthOverride(20.f)
+				.HeightOverride(20.f)
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::DefaultBorder())
+					.Padding(2.f)
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::PanelInner())
+						.Padding(0.f)
+					]
+				],
+				Tag(Name + TEXT(".Check")),
+				TEXT("CheckboxSquare"),
+				bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
+				TOptional<FLinearColor>(),
+				false,
+				NAME_None,
+				false,
+				false)
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.Padding(8.f, 0.f, 0.f, 0.f)
+		.VAlign(VAlign_Center)
+		[
+			FT66FlatStyle::MakeFlatLabel(
+				Label,
+				ET66FlatLabelRole::Button,
+				ETextJustify::Left,
+				Tag(Name + TEXT(".Label")))
+		];
+
+	return FT66FlatStyle::MakeFlatToggleGroupButton(
+		bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
+		Content,
+		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetLeaderboardType, Type),
+		FMargin(12.f, 8.f),
+		0.f,
+		57.f,
+		true,
+		Tag(Name),
+		FName(TEXT("MainMenuLeaderboardMetric")));
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTimeMenu()
@@ -536,6 +690,54 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRuleMenu()
 			];
 	}
 
+	return Menu;
+}
+
+TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPartySizeMenu()
+{
+	TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+	const ET66PartySize Parties[] = { ET66PartySize::Solo, ET66PartySize::Duo, ET66PartySize::Trio, ET66PartySize::Quad };
+	for (int32 PartyIndex = 0; PartyIndex < UE_ARRAY_COUNT(Parties); ++PartyIndex)
+	{
+		const ET66PartySize Party = Parties[PartyIndex];
+		Menu->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, PartyIndex == 0 ? 0.f : 4.f, 0.f, 0.f)
+			[
+				BuildMenuOption(
+					PartySizeText(Party),
+					FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetPartySize, Party),
+					CurrentPartySize == Party,
+					FString::Printf(TEXT("Party%sOption"), *PartySizeText(Party).ToString()))
+			];
+	}
+	return Menu;
+}
+
+TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyMenu()
+{
+	TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+	const ET66Difficulty Difficulties[] = {
+		ET66Difficulty::Easy,
+		ET66Difficulty::Medium,
+		ET66Difficulty::Hard,
+		ET66Difficulty::VeryHard,
+		ET66Difficulty::Impossible
+	};
+	for (int32 DifficultyIndex = 0; DifficultyIndex < UE_ARRAY_COUNT(Difficulties); ++DifficultyIndex)
+	{
+		const ET66Difficulty Difficulty = Difficulties[DifficultyIndex];
+		Menu->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, DifficultyIndex == 0 ? 0.f : 4.f, 0.f, 0.f)
+			[
+				BuildMenuOption(
+					DifficultyText(Difficulty),
+					FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetDifficulty, Difficulty),
+					CurrentDifficulty == Difficulty,
+					FString::Printf(TEXT("Difficulty%sOption"), *DifficultyText(Difficulty).ToString().Replace(TEXT(" "), TEXT(""))))
+			];
+	}
 	return Menu;
 }
 
@@ -721,7 +923,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildLeaderboardRow(const FLeaderb
 				RowState,
 				GetPortraitBrushForEntry(Entry),
 				nullptr,
-				FVector2D(RowPortraitSize, RowPortraitSize),
+				FVector2D(FlatRowPortraitSize, FlatRowPortraitSize),
 				Tag(RowLeaf + TEXT(".Avatar")))
 		]
 		+ SHorizontalBox::Slot()
@@ -1071,6 +1273,10 @@ void ST66FlatLeaderboardPanel::OnBackendRunSummaryReady(const FString& EntryId)
 	{
 		PendingRunSummaryEntryId.Reset();
 		Leaderboard->SetPendingFakeRunSummarySnapshot(Snapshot);
+		if (Manager->GetCurrentModalType() == ET66ScreenType::PauseMenu)
+		{
+			Leaderboard->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::PauseMenu);
+		}
 		Manager->ShowModal(ET66ScreenType::RunSummary);
 	}
 }
@@ -1169,6 +1375,10 @@ FReply ST66FlatLeaderboardPanel::HandleEntryClicked(const FLeaderboardEntry& Ent
 		if (UT66LeaderboardRunSummarySaveGame* Snapshot = Backend->GetCachedRunSummary(Entry.EntryId))
 		{
 			Leaderboard->SetPendingFakeRunSummarySnapshot(Snapshot);
+			if (Manager->GetCurrentModalType() == ET66ScreenType::PauseMenu)
+			{
+				Leaderboard->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::PauseMenu);
+			}
 			Manager->ShowModal(ET66ScreenType::RunSummary);
 		}
 		return FReply::Handled();
@@ -1202,6 +1412,10 @@ FReply ST66FlatLeaderboardPanel::HandleLocalEntryClicked(const FLeaderboardEntry
 				if (UT66LeaderboardRunSummarySaveGame* Snapshot = Backend->GetCachedRunSummary(Entry.EntryId))
 				{
 					Leaderboard->SetPendingFakeRunSummarySnapshot(Snapshot);
+					if (Manager->GetCurrentModalType() == ET66ScreenType::PauseMenu)
+					{
+						Leaderboard->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::PauseMenu);
+					}
 					Manager->ShowModal(ET66ScreenType::RunSummary);
 				}
 				return FReply::Handled();
@@ -1217,6 +1431,10 @@ FReply ST66FlatLeaderboardPanel::HandleLocalEntryClicked(const FLeaderboardEntry
 		&& Leaderboard->HasLocalBestScoreRunSummary(CurrentDifficulty, CurrentPartySize))
 	{
 		Leaderboard->RequestOpenLocalBestScoreRunSummary(CurrentDifficulty, CurrentPartySize);
+		if (Manager->GetCurrentModalType() == ET66ScreenType::PauseMenu)
+		{
+			Leaderboard->SetPendingReturnModalAfterViewerRunSummary(ET66ScreenType::PauseMenu);
+		}
 		Manager->ShowModal(ET66ScreenType::RunSummary);
 	}
 
@@ -1251,7 +1469,7 @@ void ST66FlatLeaderboardPanel::NormalizeEntryIdentity(FLeaderboardEntry& Entry, 
 	UGameInstance* GI = GetGameInstance();
 	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
 
-	const int32 PartyMemberCount = GetPartyMemberCount(Entry.PartySize);
+	const int32 PartyMemberCount = GetFlatPartyMemberCount(Entry.PartySize);
 	const int32 FallbackStartIndex = FMath::Max(0, EntryIndex) * 4;
 	if (Entry.PlayerSteamIds.Num() == 0 && !Entry.SteamId.IsEmpty())
 	{
@@ -1262,7 +1480,7 @@ void ST66FlatLeaderboardPanel::NormalizeEntryIdentity(FLeaderboardEntry& Entry, 
 	auto TryAddCleanName = [&CleanNames](const FString& Candidate)
 	{
 		const FString Trimmed = Candidate.TrimStartAndEnd();
-		if (Trimmed.IsEmpty() || IsSyntheticLeaderboardName(Trimmed) || CleanNames.Contains(Trimmed))
+		if (Trimmed.IsEmpty() || IsFlatSyntheticLeaderboardName(Trimmed) || CleanNames.Contains(Trimmed))
 		{
 			return;
 		}
@@ -1310,7 +1528,7 @@ void ST66FlatLeaderboardPanel::NormalizeEntryIdentity(FLeaderboardEntry& Entry, 
 		}
 		else
 		{
-			Entry.HeroID = GetFallbackHeroId(T66GI, FallbackStartIndex);
+			Entry.HeroID = GetFlatFallbackHeroId(T66GI, FallbackStartIndex);
 		}
 	}
 }
@@ -1625,7 +1843,7 @@ FString ST66FlatLeaderboardPanel::ResolveEntryDisplayName(const FLeaderboardEntr
 	}
 
 	const FString Trimmed = Entry.PlayerName.TrimStartAndEnd();
-	if (!Trimmed.IsEmpty() && !IsSyntheticLeaderboardName(Trimmed))
+	if (!Trimmed.IsEmpty() && !IsFlatSyntheticLeaderboardName(Trimmed))
 	{
 		return Trimmed;
 	}
@@ -1647,7 +1865,7 @@ FString ST66FlatLeaderboardPanel::ResolveEntryMemberDisplayName(const FLeaderboa
 	if (Entry.PlayerNames.IsValidIndex(MemberIndex))
 	{
 		const FString Name = Entry.PlayerNames[MemberIndex].TrimStartAndEnd();
-		if (!Name.IsEmpty() && !IsSyntheticLeaderboardName(Name))
+		if (!Name.IsEmpty() && !IsFlatSyntheticLeaderboardName(Name))
 		{
 			return Name;
 		}
@@ -1861,7 +2079,7 @@ const FSlateBrush* ST66FlatLeaderboardPanel::GetOrCreateSteamAvatarBrush(const F
 	TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
 	Brush->DrawAs = ESlateBrushDrawType::Image;
 	Brush->Tiling = ESlateBrushTileType::NoTile;
-	Brush->ImageSize = FVector2D(RowPortraitSize, RowPortraitSize);
+	Brush->ImageSize = FVector2D(FlatRowPortraitSize, FlatRowPortraitSize);
 	SetBrushTexture(Brush, AvatarTexture);
 	SteamAvatarBrushes.Add(TrimmedSteamId, Brush);
 	return Brush.Get();
@@ -1891,7 +2109,7 @@ const FSlateBrush* ST66FlatLeaderboardPanel::GetOrCreateAvatarBrush(const FStrin
 		TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
 		Brush->DrawAs = ESlateBrushDrawType::Image;
 		Brush->Tiling = ESlateBrushTileType::NoTile;
-		Brush->ImageSize = FVector2D(RowPortraitSize, RowPortraitSize);
+		Brush->ImageSize = FVector2D(FlatRowPortraitSize, FlatRowPortraitSize);
 		SetBrushTexture(Brush, Texture);
 		AvatarBrushes.Add(TrimmedUrl, Brush);
 		return Brush.Get();
@@ -1941,7 +2159,7 @@ const FSlateBrush* ST66FlatLeaderboardPanel::GetOrCreateHeroPortraitBrush(const 
 	TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
 	Brush->DrawAs = ESlateBrushDrawType::Image;
 	Brush->Tiling = ESlateBrushTileType::NoTile;
-	Brush->ImageSize = FVector2D(RowPortraitSize, RowPortraitSize);
+	Brush->ImageSize = FVector2D(FlatRowPortraitSize, FlatRowPortraitSize);
 
 	if (UTexture2D* LoadedPortrait = T66SlateTexture::GetLoaded(TexturePool, PortraitSoft))
 	{
@@ -1976,6 +2194,46 @@ const FSlateBrush* ST66FlatLeaderboardPanel::GetOrCreateHeroPortraitBrush(const 
 	}
 
 	HeroPortraitBrushes.Add(HeroID, Brush);
+	return Brush.Get();
+}
+
+const FSlateBrush* ST66FlatLeaderboardPanel::GetFilterIconBrush(const ET66LeaderboardFilter Filter)
+{
+	if (TSharedPtr<FSlateBrush>* Found = FilterIconBrushes.Find(Filter))
+	{
+		return Found->Get();
+	}
+
+	TSharedPtr<FSlateBrush> Brush = MakeShared<FSlateBrush>();
+	Brush->DrawAs = ESlateBrushDrawType::Image;
+	Brush->Tiling = ESlateBrushTileType::NoTile;
+	Brush->ImageSize = FVector2D(46.f, 46.f);
+
+	const FString RelativePath = GetFlatLeaderboardFilterIconPath(Filter);
+	for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
+	{
+		if (!FPaths::FileExists(CandidatePath))
+		{
+			continue;
+		}
+
+		if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
+			CandidatePath,
+			TextureFilter::TF_Nearest,
+			false,
+			TEXT("FlatLeaderboardFilterIcon")))
+		{
+			SetBrushTexture(Brush, Texture);
+			break;
+		}
+	}
+
+	if (!Brush->GetResourceObject())
+	{
+		return nullptr;
+	}
+
+	FilterIconBrushes.Add(Filter, Brush);
 	return Brush.Get();
 }
 

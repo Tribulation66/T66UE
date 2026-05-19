@@ -26,7 +26,7 @@
 #include "Widgets/Images/SImage.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
-#include "UI/Style/T66Style.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Engine/Texture2D.h"
@@ -266,7 +266,7 @@ void UT66GamblerOverlayWidget::SetPage(EGamblerPage Page)
 	if (Page == EGamblerPage::Lottery)
 	{
 		for (int32 i = 0; i < 10 && i < LotteryNumberBorders.Num(); ++i)
-			if (LotteryNumberBorders[i].IsValid()) LotteryNumberBorders[i]->SetBorderBackgroundColor(FT66Style::Tokens::Panel2);
+			if (LotteryNumberBorders[i].IsValid()) LotteryNumberBorders[i]->SetBorderBackgroundColor(FT66FlatStyle::Tokens::Panel2);
 		if (LotteryPicksText.IsValid()) LotteryPicksText->SetText(NSLOCTEXT("T66.Gambler", "YourPicks", "Your picks:"));
 		if (LotteryDrawnText.IsValid()) LotteryDrawnText->SetText(NSLOCTEXT("T66.Gambler", "Drawn", "Drawn:"));
 		if (LotteryResultText.IsValid()) LotteryResultText->SetText(FText::GetEmpty());

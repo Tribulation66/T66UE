@@ -161,6 +161,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	TMap<FName, int32> HeroCumulativeScoreByID;
 
+	/** Simple hero mastery XP. Awarded once when a run reaches its summary flow. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	TMap<FName, int32> HeroMasteryXPByID;
+
 	/** Lifetime games played per companion (increment once when a run reaches Run Summary). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	TMap<FName, int32> CompanionGamesPlayedByID;

@@ -30,16 +30,15 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 {
 	UT66LocalizationSubsystem* Loc = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
-	const UT66PlayerExperienceSubSystem* PlayerExperience = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
 	const ET66Difficulty SelectedDifficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
 	const int32 InitialStage = GetRunState() ? GetRunState()->GetCurrentStage() : 1;
 	const FText DifficultyAreaNameInit = BuildDifficultyAreaNameText(SelectedDifficulty);
 	const FText StageInit = BuildDisplayedStageText(
 		Loc,
-		PlayerExperience,
+		DifficultyTuning,
 		SelectedDifficulty,
-		InitialStage,
-		false);
+		InitialStage);
 	const FText GoldInit = FText::AsNumber(0);
 	const FText OweInit = FText::AsNumber(0);
 	const FText NetWorthInit = FText::AsNumber(0);
@@ -61,8 +60,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const FLinearColor SlotOuterColor = bUseAlternateHudChrome ? FLinearColor(0.018f, 0.014f, 0.012f, 0.98f) : T66HudBorderRed;
 	const FLinearColor SlotFrameColor = bUseAlternateHudChrome ? FLinearColor(0.56f, 0.42f, 0.23f, 0.88f) : T66HudBorderRed;
 	const FLinearColor SlotFillColor = bUseAlternateHudChrome ? FLinearColor(0.025f, 0.026f, 0.032f, 0.96f) : T66HudDeepRed;
-	const FLinearColor BossBarBackgroundColor = bUseAlternateHudChrome ? FT66Style::BossBarBackground() : FLinearColor(0.08f, 0.08f, 0.08f, 0.9f);
-	const FLinearColor BossBarFillColor = bUseAlternateHudChrome ? FT66Style::BossBarFill() : FLinearColor(0.9f, 0.1f, 0.1f, 0.95f);
+	const FLinearColor BossBarBackgroundColor = bUseAlternateHudChrome ? FT66FlatStyle::BossBarBackground() : FLinearColor(0.08f, 0.08f, 0.08f, 0.9f);
+	const FLinearColor BossBarFillColor = bUseAlternateHudChrome ? FT66FlatStyle::BossBarFill() : FLinearColor(0.9f, 0.1f, 0.1f, 0.95f);
 	const FLinearColor PromptBackgroundColor = bUseAlternateHudChrome ? FLinearColor(0.026f, 0.022f, 0.020f, 0.90f) : T66HudDeepRed;
 	const FLinearColor DialogueBackgroundColor = bUseAlternateHudChrome ? FLinearColor(0.030f, 0.026f, 0.024f, 0.94f) : T66HudPanelRed;
 	const int32 InventorySlotWidgetCount = UT66RunStateSubsystem::MaxInventorySlots;
@@ -423,10 +422,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.WidthOverride(GT66BottomLeftAbilityBoxSize)
 		.HeightOverride(GT66BottomLeftAbilityBoxSize)
 		[
-			FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+			FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 				SAssignNew(QuickReviveIconImage, SImage)
 				.Image(QuickReviveBrush.Get())
-				.ColorAndOpacity(FLinearColor::White)))
+				.ColorAndOpacity(FLinearColor::White)),
+				TEXT("GameplayHUD.QuickRevive.Icon"),
+				TEXT("Icon"))
 		];
 
 	// Idol slots: 2x2 grid sized to match the stats panel footprint.
@@ -463,12 +464,10 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			SNew(SOverlay)
 			+ SOverlay::Slot()
 			[
-				FT66FlatStyle::AttachMetadata(
+				FT66AnimatedStyle::AttachMetadata(
 					SAssignNew(LevelRingWidget, ST66RingWidget),
 					TEXT("GameplayHUD.LevelRing"),
-					TEXT("HUDChromeRing"),
-					ET66FlatState::Default,
-					FT66FlatStyle::DefaultBorder())
+					TEXT("ProgressRing"))
 			]
 			+ SOverlay::Slot()
 			.HAlign(HAlign_Center)
@@ -476,7 +475,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			[
 				SAssignNew(LevelText, STextBlock)
 				.Text(FText::AsNumber(1))
-				.Font(FT66Style::Tokens::FontBold(11))
+				.Font(FT66FlatStyle::Tokens::FontBold(11))
 				.ColorAndOpacity(LevelTextColor)
 				.Justification(ETextJustify::Center)
 			]
@@ -500,7 +499,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(Title)
-							.Font(FT66Style::Tokens::FontBold(13))
+							.Font(FT66FlatStyle::Tokens::FontBold(13))
 							.ColorAndOpacity(BottomLeftPanelTitleColor)
 							.Justification(ETextJustify::Center)
 						]
@@ -526,7 +525,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				[
 					SNew(STextBlock)
 					.Text(Title)
-					.Font(FT66Style::Tokens::FontBold(13))
+					.Font(FT66FlatStyle::Tokens::FontBold(13))
 					.ColorAndOpacity(BottomLeftPanelTitleColor)
 					.Justification(ETextJustify::Center)
 				]
@@ -589,8 +588,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	{
 		return SAssignNew(OutText, STextBlock)
 			.Text(NSLOCTEXT("T66.GameplayHUD", "PrimaryStatPending", "--"))
-			.Font(FT66Style::Tokens::FontBold(13))
-			.ColorAndOpacity(FT66Style::Tokens::Text)
+			.Font(FT66FlatStyle::Tokens::FontBold(13))
+			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			.Justification(ETextJustify::Left)
 			.AutoWrapText(false);
 	};
@@ -601,14 +600,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			[
 				SNew(STextBlock)
 				.Text(Label)
-				.Font(FT66Style::Tokens::FontBold(13))
-				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+				.Font(FT66FlatStyle::Tokens::FontBold(13))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			]
 			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 			[
 				SAssignNew(OutValueText, STextBlock)
 				.Text(InitialValue)
-				.Font(FT66Style::Tokens::FontBold(13))
+				.Font(FT66FlatStyle::Tokens::FontBold(13))
 				.ColorAndOpacity(ValueColor)
 			];
 	};
@@ -827,7 +826,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
-					MakeCurrencyReadout(NSLOCTEXT("T66.GameplayHUD", "NetWorthLabel", "Net Worth"), NetWorthText, NetWorthInit, FT66Style::Tokens::Text)
+					MakeCurrencyReadout(NSLOCTEXT("T66.GameplayHUD", "NetWorthLabel", "Net Worth"), NetWorthText, NetWorthInit, FT66FlatStyle::Tokens::Text)
 				]
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
@@ -912,14 +911,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 
 	const TAttribute<FOptionalSize> FullMapWidthAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
 	{
-		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize();
+		const FVector2D SafeFrame = FT66FlatStyle::GetSafeFrameSize();
 		const float Width = FMath::Clamp(SafeFrame.X - 72.f, 720.f, 1100.f);
 		return FOptionalSize(Width);
 	});
 
 	const TAttribute<FOptionalSize> FullMapHeightAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
 	{
-		const FVector2D SafeFrame = FT66Style::GetSafeFrameSize();
+		const FVector2D SafeFrame = FT66FlatStyle::GetSafeFrameSize();
 		const float Height = FMath::Clamp(SafeFrame.Y - 88.f, 420.f, 680.f);
 		return FOptionalSize(Height);
 	});
@@ -1021,8 +1020,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							NSLOCTEXT("T66.Common", "Fraction", "{0}/{1}"),
 							FText::AsNumber(100),
 							FText::AsNumber(100)))
-						.Font(FT66Style::Tokens::FontBold(16))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(16))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 				]
 				+ SVerticalBox::Slot()
@@ -1057,19 +1056,21 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.WidthOverride(28.f)
 						.HeightOverride(28.f)
 						[
-							FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+							FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 								SAssignNew(LootPromptIconImage, SImage)
 								.Image(LootPromptIconBrush.Get())
 								.ColorAndOpacity(FLinearColor::White)
-								.Visibility(EVisibility::Collapsed)))
+								.Visibility(EVisibility::Collapsed)),
+								TEXT("GameplayHUD.LootPrompt.Icon"),
+								TEXT("Icon"))
 						]
 					]
 					+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
 					[
 						SAssignNew(LootPromptText, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(14))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontBold(14))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					]
 				]
 			]
@@ -1095,8 +1096,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SAssignNew(WorldDialogueOptionTexts[0], STextBlock)
 							.Text(FText::GetEmpty())
-							.Font(FT66Style::Tokens::FontBold(18))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							.Font(FT66FlatStyle::Tokens::FontBold(18))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
@@ -1108,8 +1109,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SAssignNew(WorldDialogueOptionTexts[1], STextBlock)
 							.Text(FText::GetEmpty())
-							.Font(FT66Style::Tokens::FontBold(18))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							.Font(FT66FlatStyle::Tokens::FontBold(18))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
@@ -1121,8 +1122,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SAssignNew(WorldDialogueOptionTexts[2], STextBlock)
 							.Text(FText::GetEmpty())
-							.Font(FT66Style::Tokens::FontBold(18))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							.Font(FT66FlatStyle::Tokens::FontBold(18))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						]
 					]
 				,
@@ -1186,7 +1187,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.Padding(TopLeftHudPadding)
 		[
 			bUseAlternateHudChrome
-				? FT66Style::MakeHudPanel(
+				? FT66FlatStyle::MakeHudPanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
@@ -1195,55 +1196,55 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(ScoreLabelText)
-							.Font(FT66Style::Tokens::FontBold(10))
-							.ColorAndOpacity(FSlateColor(FT66Style::Text()))
+							.Font(FT66FlatStyle::Tokens::FontBold(10))
+							.ColorAndOpacity(FSlateColor(FT66FlatStyle::Text()))
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f, 0.f, 0.f)
 						[
 							SAssignNew(ScoreText, STextBlock)
 							.Text(FText::AsNumber(0))
-							.Font(FT66Style::Tokens::FontBold(10))
-							.ColorAndOpacity(FSlateColor(FT66Style::Text()))
+							.Font(FT66FlatStyle::Tokens::FontBold(10))
+							.ColorAndOpacity(FSlateColor(FT66FlatStyle::Text()))
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 					[
 						SAssignNew(ScorePacingText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "ScorePacingDefault", "Score Pace --"))
-						.Font(FT66Style::Tokens::FontBold(9))
-						.ColorAndOpacity(FSlateColor(FT66Style::TextMuted()))
+						.Font(FT66FlatStyle::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66FlatStyle::TextMuted()))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 					[
 						SAssignNew(ScoreTargetText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "ScoreTargetDefault", "Score to Beat --"))
-						.Font(FT66Style::Tokens::FontBold(9))
-						.ColorAndOpacity(FSlateColor(FT66Style::TextMuted()))
+						.Font(FT66FlatStyle::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66FlatStyle::TextMuted()))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
 					[
 						SAssignNew(SpeedRunText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunDefault", "Time 0:00.00"))
-						.Font(FT66Style::Tokens::FontBold(10))
-						.ColorAndOpacity(FSlateColor(FT66Style::Text()))
+						.Font(FT66FlatStyle::Tokens::FontBold(10))
+						.ColorAndOpacity(FSlateColor(FT66FlatStyle::Text()))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 					[
 						SAssignNew(SpeedRunPacingText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "TimePacingDefault", "Time Pace --:--.--"))
-						.Font(FT66Style::Tokens::FontBold(9))
-						.ColorAndOpacity(FSlateColor(FT66Style::TextMuted()))
+						.Font(FT66FlatStyle::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66FlatStyle::TextMuted()))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 					[
 						SAssignNew(SpeedRunTargetText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunTargetDefault", "Time to Beat --:--.--"))
-						.Font(FT66Style::Tokens::FontBold(9))
-						.ColorAndOpacity(FSlateColor(FT66Style::TextMuted()))
+						.Font(FT66FlatStyle::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66FlatStyle::TextMuted()))
 						.Visibility(EVisibility::Collapsed)
 					],
 					FMargin(6.f, 4.f))
@@ -1256,55 +1257,55 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(ScoreLabelText)
-							.Font(FT66Style::Tokens::FontBold(10))
-							.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
+							.Font(FT66FlatStyle::Tokens::FontBold(10))
+							.ColorAndOpacity(FSlateColor(FT66FlatStyle::Tokens::Text))
 						]
 						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 						[
 							SAssignNew(ScoreText, STextBlock)
 							.Text(FText::AsNumber(0))
-							.Font(FT66Style::Tokens::FontBold(10))
-							.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
+							.Font(FT66FlatStyle::Tokens::FontBold(10))
+							.ColorAndOpacity(FSlateColor(FT66FlatStyle::Tokens::Text))
 						]
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
 					[
 						SAssignNew(ScorePacingText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "ScorePacingDefault", "Score Pace --"))
-						.Font(FT66Style::Tokens::FontBold(9))
-						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::TextMuted))
+						.Font(FT66FlatStyle::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66FlatStyle::Tokens::TextMuted))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 					[
 						SAssignNew(ScoreTargetText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "ScoreTargetDefault", "Score to Beat --"))
-						.Font(FT66Style::Tokens::FontBold(9))
-						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::TextMuted))
+						.Font(FT66FlatStyle::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66FlatStyle::Tokens::TextMuted))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 3.f, 0.f, 0.f)
 					[
 						SAssignNew(SpeedRunText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunDefault", "Time 0:00.00"))
-						.Font(FT66Style::Tokens::FontBold(10))
-						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::Text))
+						.Font(FT66FlatStyle::Tokens::FontBold(10))
+						.ColorAndOpacity(FSlateColor(FT66FlatStyle::Tokens::Text))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 					[
 						SAssignNew(SpeedRunPacingText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "TimePacingDefault", "Time Pace --:--.--"))
-						.Font(FT66Style::Tokens::FontBold(9))
-						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::TextMuted))
+						.Font(FT66FlatStyle::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66FlatStyle::Tokens::TextMuted))
 						.Visibility(EVisibility::Collapsed)
 					]
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f, 0.f, 0.f)
 					[
 						SAssignNew(SpeedRunTargetText, STextBlock)
 						.Text(NSLOCTEXT("T66.GameplayHUD", "SpeedRunTargetDefault", "Time to Beat --:--.--"))
-						.Font(FT66Style::Tokens::FontBold(9))
-						.ColorAndOpacity(FSlateColor(FT66Style::Tokens::TextMuted))
+						.Font(FT66FlatStyle::Tokens::FontBold(9))
+						.ColorAndOpacity(FSlateColor(FT66FlatStyle::Tokens::TextMuted))
 						.Visibility(EVisibility::Collapsed)
 					],
 					FMargin(8.f, 6.f)
@@ -1381,17 +1382,17 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 												[
 													SNew(SBorder)
 													.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-													.BorderBackgroundColor(FT66Style::PanelOuter())
+													.BorderBackgroundColor(FT66FlatStyle::PanelOuter())
 													.Padding(1.f)
 													[
 														SNew(SBorder)
 														.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-														.BorderBackgroundColor(FT66Style::Border())
+														.BorderBackgroundColor(FT66FlatStyle::Border())
 														.Padding(1.f)
 														[
 															SAssignNew(PortraitBorder, SBorder)
 															.BorderImage(bUseAlternateHudChrome ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(true))
-															.BorderBackgroundColor(bUseAlternateHudChrome ? FT66Style::PanelInner() : T66HudPanelRed)
+															.BorderBackgroundColor(bUseAlternateHudChrome ? FT66FlatStyle::PanelInner() : T66HudPanelRed)
 														]
 													]
 												]
@@ -1415,8 +1416,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 												[
 													SAssignNew(PortraitPlaceholderText, STextBlock)
 													.Text(PortraitLabel)
-													.Font(FT66Style::Tokens::FontBold(11))
-													.ColorAndOpacity(FT66Style::TextMuted())
+													.Font(FT66FlatStyle::Tokens::FontBold(11))
+													.ColorAndOpacity(FT66FlatStyle::TextMuted())
 													.Justification(ETextJustify::Center)
 													.Visibility(EVisibility::Visible)
 												]
@@ -1449,8 +1450,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 												[
 													SAssignNew(PortraitPlaceholderText, STextBlock)
 													.Text(PortraitLabel)
-													.Font(FT66Style::Tokens::FontBold(11))
-													.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+													.Font(FT66FlatStyle::Tokens::FontBold(11))
+													.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 													.Justification(ETextJustify::Center)
 													.Visibility(EVisibility::Visible)
 												]
@@ -1522,7 +1523,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 																[
 																	SAssignNew(UltimateText, STextBlock)
 																	.Text(FText::GetEmpty())
-																	.Font(FT66Style::Tokens::FontBold(16))
+																	.Font(FT66FlatStyle::Tokens::FontBold(16))
 																	.ColorAndOpacity(FLinearColor::White)
 																	.Justification(ETextJustify::Center)
 																]
@@ -1543,7 +1544,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 																	[
 																		SAssignNew(UltimateInputHintText, STextBlock)
 																		.Text(NSLOCTEXT("T66.GameplayHUD", "UltKeybindDefault", "R"))
-																		.Font(FT66Style::Tokens::FontBold(8))
+																		.Font(FT66FlatStyle::Tokens::FontBold(8))
 																		.ColorAndOpacity(FLinearColor::White)
 																		.Justification(ETextJustify::Center)
 																	]
@@ -1593,7 +1594,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 																+ SOverlay::Slot()
 																[
 																	SNew(SBorder)
-																	.BorderImage(FT66Style::Get().GetBrush("T66.Brush.Circle"))
+																	.BorderImage(FT66FlatStyle::GetBrush(TEXT("T66.Brush.Circle")))
 																	.BorderBackgroundColor(FLinearColor(0.12f, 0.10f, 0.08f, 0.95f))
 																	.Padding(0.f)
 																	.HAlign(HAlign_Center)
@@ -1601,7 +1602,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 																	[
 																		SAssignNew(PassiveStackText, STextBlock)
 																		.Text(FText::AsNumber(0))
-																		.Font(FT66Style::Tokens::FontBold(9))
+																		.Font(FT66FlatStyle::Tokens::FontBold(9))
 																		.ColorAndOpacity(FLinearColor(0.95f, 0.75f, 0.25f, 1.f))
 																		.Justification(ETextJustify::Center)
 																	]
@@ -1675,13 +1676,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						FT66FlatStyle::MakeFlatPanel(
 							ET66FlatState::Default,
 							FMargin(8.f),
-							FT66FlatStyle::AttachMetadata(
+							FT66AnimatedStyle::AttachMetadata(
 								SAssignNew(MinimapWidget, ST66WorldMapWidget)
 								.bMinimap(true)
 								.bShowLabels(false),
 								TEXT("GameplayHUD.Minimap.Map"),
-								TEXT("MapContent"),
-								ET66FlatState::Default),
+								TEXT("Minimap")),
 							nullptr,
 							TEXT("GameplayHUD.Minimap.Frame"))
 					]
@@ -1693,14 +1693,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.WidthOverride(MinimapWidth)
 					[
 						bUseAlternateHudChrome
-							? FT66Style::MakeHudPanel(
+							? FT66FlatStyle::MakeHudPanel(
 							SNew(SVerticalBox)
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 							[
 								SAssignNew(DifficultyAreaNameText, STextBlock)
 								.Text(DifficultyAreaNameInit)
-								.Font(FT66Style::Tokens::FontBold(10))
-								.ColorAndOpacity(FT66Style::Tokens::Accent2)
+								.Font(FT66FlatStyle::Tokens::FontBold(10))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Accent2)
 								.Justification(ETextJustify::Center)
 								.AutoWrapText(true)
 							]
@@ -1708,8 +1708,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							[
 								SAssignNew(StageText, STextBlock)
 								.Text(StageInit)
-								.Font(FT66Style::Tokens::FontBold(11))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Font(FT66FlatStyle::Tokens::FontBold(11))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 								.Justification(ETextJustify::Center)
 							]
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
@@ -1730,30 +1730,30 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							]
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 							[
-								FT66Style::MakeBareButton(
+								FT66FlatStyle::MakeBareButton(
 									FT66BareButtonParams(
 										FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnToggleImmortality),
 										SAssignNew(ImmortalityButtonText, STextBlock)
 										.Text(NSLOCTEXT("T66.Dev", "ImmortalityOff", "IMMORTALITY: OFF"))
-										.Font(FT66Style::Tokens::FontBold(7))
-										.ColorAndOpacity(FT66Style::Tokens::Text))
-									.SetButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-									.SetColor(FT66Style::Tokens::Panel2)
+										.Font(FT66FlatStyle::Tokens::FontBold(7))
+										.ColorAndOpacity(FT66FlatStyle::Tokens::Text))
+									.SetButtonStyle(&FT66FlatStyle::GetButtonStyle(TEXT("T66.Button.Neutral")))
+									.SetColor(FT66FlatStyle::Tokens::Panel2)
 									.SetPadding(FMargin(5.f, 2.f))
 									.SetVisibility(EVisibility::Collapsed),
 									&ImmortalityButton)
 							]
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 							[
-								FT66Style::MakeBareButton(
+								FT66FlatStyle::MakeBareButton(
 									FT66BareButtonParams(
 										FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnTogglePower),
 										SAssignNew(PowerButtonText, STextBlock)
 										.Text(NSLOCTEXT("T66.Dev", "PowerOff", "POWER: OFF"))
-										.Font(FT66Style::Tokens::FontBold(7))
-										.ColorAndOpacity(FT66Style::Tokens::Text))
-									.SetButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-									.SetColor(FT66Style::Tokens::Panel2)
+										.Font(FT66FlatStyle::Tokens::FontBold(7))
+										.ColorAndOpacity(FT66FlatStyle::Tokens::Text))
+									.SetButtonStyle(&FT66FlatStyle::GetButtonStyle(TEXT("T66.Button.Neutral")))
+									.SetColor(FT66FlatStyle::Tokens::Panel2)
 									.SetPadding(FMargin(5.f, 2.f))
 									.SetVisibility(EVisibility::Collapsed),
 									&PowerButton)
@@ -1765,8 +1765,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							[
 								SAssignNew(DifficultyAreaNameText, STextBlock)
 								.Text(DifficultyAreaNameInit)
-								.Font(FT66Style::Tokens::FontBold(10))
-								.ColorAndOpacity(FT66Style::Tokens::Accent2)
+								.Font(FT66FlatStyle::Tokens::FontBold(10))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Accent2)
 								.Justification(ETextJustify::Center)
 								.AutoWrapText(true)
 							]
@@ -1774,8 +1774,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							[
 								SAssignNew(StageText, STextBlock)
 								.Text(StageInit)
-								.Font(FT66Style::Tokens::FontBold(11))
-								.ColorAndOpacity(FT66Style::Tokens::Text)
+								.Font(FT66FlatStyle::Tokens::FontBold(11))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 								.Justification(ETextJustify::Center)
 							]
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
@@ -1797,15 +1797,15 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							// Dev toggles are hidden in the current HUD pass.
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 							[
-								FT66Style::MakeBareButton(
+								FT66FlatStyle::MakeBareButton(
 									FT66BareButtonParams(
 										FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnToggleImmortality),
 										SAssignNew(ImmortalityButtonText, STextBlock)
 										.Text(NSLOCTEXT("T66.Dev", "ImmortalityOff", "IMMORTALITY: OFF"))
-										.Font(FT66Style::Tokens::FontBold(7))
-										.ColorAndOpacity(FT66Style::Tokens::Text))
-									.SetButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-									.SetColor(FT66Style::Tokens::Panel2)
+										.Font(FT66FlatStyle::Tokens::FontBold(7))
+										.ColorAndOpacity(FT66FlatStyle::Tokens::Text))
+									.SetButtonStyle(&FT66FlatStyle::GetButtonStyle(TEXT("T66.Button.Neutral")))
+									.SetColor(FT66FlatStyle::Tokens::Panel2)
 									.SetPadding(FMargin(5.f, 2.f))
 									.SetVisibility(EVisibility::Collapsed),
 									&ImmortalityButton)
@@ -1813,15 +1813,15 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							// Dev toggles are hidden in the current HUD pass.
 							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 6.f, 0.f, 0.f)
 							[
-								FT66Style::MakeBareButton(
+								FT66FlatStyle::MakeBareButton(
 									FT66BareButtonParams(
 										FOnClicked::CreateUObject(this, &UT66GameplayHUDWidget::OnTogglePower),
 										SAssignNew(PowerButtonText, STextBlock)
 										.Text(NSLOCTEXT("T66.Dev", "PowerOff", "POWER: OFF"))
-										.Font(FT66Style::Tokens::FontBold(7))
-										.ColorAndOpacity(FT66Style::Tokens::Text))
-									.SetButtonStyle(&FT66Style::Get().GetWidgetStyle<FButtonStyle>("T66.Button.Neutral"))
-									.SetColor(FT66Style::Tokens::Panel2)
+										.Font(FT66FlatStyle::Tokens::FontBold(7))
+										.ColorAndOpacity(FT66FlatStyle::Tokens::Text))
+									.SetButtonStyle(&FT66FlatStyle::GetButtonStyle(TEXT("T66.Button.Neutral")))
+									.SetColor(FT66FlatStyle::Tokens::Panel2)
 									.SetPadding(FMargin(5.f, 2.f))
 									.SetVisibility(EVisibility::Collapsed),
 									&PowerButton)
@@ -1845,11 +1845,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				.HeightOverride(InventoryPanelVisibleHeight)
 				[
 					bUseAlternateHudChrome
-						? FT66Style::MakeHudPanel(
+						? FT66FlatStyle::MakeHudPanel(
 							MakeInventoryEconomySection(
-								FT66Style::Accent2(),
-								FT66Style::Danger(),
-								WithAlpha(FT66Style::Border(), 0.65f)),
+								FT66FlatStyle::Accent2(),
+								FT66FlatStyle::Danger(),
+								WithAlpha(FT66FlatStyle::Border(), 0.65f)),
 							FMargin(6.f, 5.f))
 						: MakeGameplayHudSquarePanel(
 							MakeInventoryEconomySection(
@@ -1922,8 +1922,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SAssignNew(AchievementNotificationTitleText, STextBlock)
 							.Text(FText::GetEmpty())
-							.Font(FT66Style::Tokens::FontBold(16))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.Font(FT66FlatStyle::Tokens::FontBold(16))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							.AutoWrapText(true)
 							.WrapTextAt(256.f)
 						]
@@ -1931,8 +1931,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						[
 							SNew(STextBlock)
 							.Text(NSLOCTEXT("T66.GameplayHUD", "AchievementUnlocked", "Unlocked!"))
-							.Font(FT66Style::Tokens::FontRegular(14))
-							.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+							.Font(FT66FlatStyle::Tokens::FontRegular(14))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 						]
 					]
 				]
@@ -1983,7 +1983,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								[
 									SAssignNew(ChestRewardCounterText, STextBlock)
 									.Text(FText::GetEmpty())
-									.Font(FT66Style::Tokens::FontBold(18))
+									.Font(FT66FlatStyle::Tokens::FontBold(18))
 									.ColorAndOpacity(FLinearColor(0.98f, 0.83f, 0.24f, 1.f))
 								]
 							]
@@ -2007,7 +2007,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							[
 								SAssignNew(ChestRewardSkipText, STextBlock)
 								.Text(FText::GetEmpty())
-								.Font(FT66Style::Tokens::FontBold(11))
+								.Font(FT66FlatStyle::Tokens::FontBold(11))
 								.ColorAndOpacity(FLinearColor::White)
 								.Justification(ETextJustify::Center)
 							]
@@ -2052,11 +2052,13 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 									.Stretch(EStretch::ScaleToFit)
 									.StretchDirection(EStretchDirection::Both)
 									[
-										FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+										FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 											SAssignNew(PickupCardIconImage, SImage)
 											.Image(PickupCardIconBrush.Get())
 											.ColorAndOpacity(FLinearColor::White)
-											.Visibility(EVisibility::Collapsed)))
+											.Visibility(EVisibility::Collapsed)),
+											TEXT("GameplayHUD.PickupCard.Icon"),
+											TEXT("Icon"))
 									]
 								]
 							]
@@ -2073,7 +2075,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								[
 									SAssignNew(PickupCardNameText, STextBlock)
 									.Text(FText::GetEmpty())
-									.Font(FT66Style::Tokens::FontBold(12))
+									.Font(FT66FlatStyle::Tokens::FontBold(12))
 									.ColorAndOpacity(FLinearColor::White)
 									.AutoWrapText(true)
 									.WrapTextAt(PickupCardWidth - 20.f)
@@ -2082,7 +2084,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								[
 									SAssignNew(PickupCardDescText, STextBlock)
 									.Text(FText::GetEmpty())
-									.Font(FT66Style::Tokens::FontRegular(10))
+									.Font(FT66FlatStyle::Tokens::FontRegular(10))
 									.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, 0.92f))
 									.AutoWrapText(true)
 									.WrapTextAt(PickupCardWidth - 20.f)
@@ -2098,7 +2100,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							[
 								SAssignNew(PickupCardSkipText, STextBlock)
 								.Text(FText::GetEmpty())
-								.Font(FT66Style::Tokens::FontBold(11))
+								.Font(FT66FlatStyle::Tokens::FontBold(11))
 								.ColorAndOpacity(FLinearColor::White)
 								.Justification(ETextJustify::Center)
 							]
@@ -2116,14 +2118,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			SNew(SBox)
 			.MinDesiredWidth(860.f)
 			[
-				FT66Style::MakePanel(
+				FT66FlatStyle::MakePanel(
 					SNew(SVerticalBox)
 					+ SVerticalBox::Slot().AutoHeight()
 					[
 						SAssignNew(TutorialSubtitleSpeakerText, STextBlock)
 						.Visibility(EVisibility::Collapsed)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(18))
+						.Font(FT66FlatStyle::Tokens::FontBold(18))
 						.ColorAndOpacity(FLinearColor(0.95f, 0.72f, 0.38f, 1.f))
 						.Justification(ETextJustify::Center)
 					]
@@ -2131,8 +2133,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					[
 						SAssignNew(TutorialSubtitleBodyText, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontRegular(18))
-						.ColorAndOpacity(FT66Style::Tokens::Text)
+						.Font(FT66FlatStyle::Tokens::FontRegular(18))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 						.Justification(ETextJustify::Center)
 						.AutoWrapText(true)
 						.WrapTextAt(820.f)
@@ -2151,14 +2153,14 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.VAlign(VAlign_Center)
 		.Padding(0.f, -220.f, 0.f, 0.f)
 		[
-			FT66Style::MakePanel(
+			FT66FlatStyle::MakePanel(
 				SNew(SVerticalBox)
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 				[
 					SAssignNew(TutorialHintLine1Text, STextBlock)
 					.Text(FText::GetEmpty())
-					.Font(FT66Style::Tokens::FontBold(18))
-					.ColorAndOpacity(FT66Style::Tokens::Text)
+					.Font(FT66FlatStyle::Tokens::FontBold(18))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 					.Justification(ETextJustify::Center)
 				]
 				+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 4.f, 0.f, 0.f)
@@ -2166,8 +2168,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					SAssignNew(TutorialHintLine2Text, STextBlock)
 					.Visibility(EVisibility::Collapsed)
 					.Text(FText::GetEmpty())
-					.Font(FT66Style::Tokens::FontRegular(14))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.Font(FT66FlatStyle::Tokens::FontRegular(14))
+					.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 					.Justification(ETextJustify::Center)
 				]
 			,
@@ -2185,13 +2187,11 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.WidthOverride(28.f)
 			.HeightOverride(28.f)
 			[
-				FT66FlatStyle::AttachMetadata(
+				FT66AnimatedStyle::AttachMetadata(
 					SAssignNew(CenterCrosshairWidget, ST66CrosshairWidget)
 					.Locked(false),
 					TEXT("GameplayHUD.Crosshair"),
-					TEXT("GameplayReticle"),
-					ET66FlatState::Default,
-					FT66FlatStyle::PrimaryText())
+					TEXT("Crosshair"))
 			]
 		]
 		// Hero 1 scoped sniper overlay (first-person aim view + ult timers)
@@ -2209,12 +2209,10 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				.HAlign(HAlign_Fill)
 				.VAlign(VAlign_Fill)
 				[
-					FT66FlatStyle::AttachMetadata(
+					FT66AnimatedStyle::AttachMetadata(
 						SNew(ST66ScopedSniperWidget),
 						TEXT("GameplayHUD.ScopedSniperOverlay.Scope"),
-						TEXT("GameplayScopeOverlay"),
-						ET66FlatState::Default,
-						FT66FlatStyle::PrimaryText())
+						TEXT("ScopeOverlay"))
 				]
 				+ SOverlay::Slot()
 				.HAlign(HAlign_Center)
@@ -2224,8 +2222,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					MakeGameplayHudSquarePanel(
 						SAssignNew(ScopedUltTimerText, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(20))
-						.ColorAndOpacity(FT66Style::Tokens::Text),
+						.Font(FT66FlatStyle::Tokens::FontBold(20))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text),
 						FMargin(12.f, 8.f))
 				]
 				+ SOverlay::Slot()
@@ -2236,8 +2234,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					MakeGameplayHudSquarePanel(
 						SAssignNew(ScopedShotCooldownText, STextBlock)
 						.Text(FText::GetEmpty())
-						.Font(FT66Style::Tokens::FontBold(18))
-						.ColorAndOpacity(FT66Style::Tokens::Text),
+						.Font(FT66FlatStyle::Tokens::FontBold(18))
+						.ColorAndOpacity(FT66FlatStyle::Tokens::Text),
 						FMargin(14.f, 8.f))
 				]
 			]
@@ -2256,7 +2254,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			[
 				SAssignNew(QuickReviveDownedText, STextBlock)
 				.Text(FText::GetEmpty())
-				.Font(FT66Style::Tokens::FontBold(28))
+				.Font(FT66FlatStyle::Tokens::FontBold(28))
 				.ColorAndOpacity(FLinearColor::White)
 				.Justification(ETextJustify::Center)
 			]
@@ -2317,13 +2315,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								FT66FlatStyle::MakeFlatPanel(
 									ET66FlatState::Default,
 									FMargin(10.f),
-									FT66FlatStyle::AttachMetadata(
+									FT66AnimatedStyle::AttachMetadata(
 										SAssignNew(FullMapWidget, ST66WorldMapWidget)
 										.bMinimap(false)
 										.bShowLabels(true),
 										TEXT("GameplayHUD.FullMap.Map"),
-										TEXT("MapContent"),
-										ET66FlatState::Default),
+										TEXT("FullMap")),
 									nullptr,
 									TEXT("GameplayHUD.FullMap.MapFrame"))
 							]
@@ -2355,7 +2352,7 @@ static void T66_ApplyWorldDialogueSelection(
 		}
 		if (OptionTexts.IsValidIndex(i) && OptionTexts[i].IsValid())
 		{
-			OptionTexts[i]->SetColorAndOpacity(bSelected ? FT66Style::Tokens::Text : FT66Style::Tokens::TextMuted);
+			OptionTexts[i]->SetColorAndOpacity(bSelected ? FT66FlatStyle::Tokens::Text : FT66FlatStyle::Tokens::TextMuted);
 		}
 	}
 }

@@ -122,18 +122,6 @@ void UT66RunStateSubsystem::ActivatePendingSingleUseBuffsForRunStart()
 }
 
 
-void UT66RunStateSubsystem::SetPendingDifficultyClearSummary(const bool bPending)
-{
-	if (bPendingDifficultyClearSummary == bPending)
-	{
-		return;
-	}
-
-	bPendingDifficultyClearSummary = bPending;
-	StageChanged.Broadcast();
-}
-
-
 void UT66RunStateSubsystem::SetSaintBlessingActive(const bool bActive)
 {
 	if (bSaintBlessingActive == bActive)
@@ -176,8 +164,7 @@ void UT66RunStateSubsystem::BeginSaintBlessingEmpowerment()
 			IdolManager->RestoreState(
 				SaintBlessingEquippedIdolsSnapshot,
 				BlessedTiers,
-				IdolManager->GetCurrentDifficulty(),
-				IdolManager->GetRemainingCatchUpIdolPicks());
+				IdolManager->GetCurrentDifficulty());
 		}
 	}
 
@@ -228,8 +215,7 @@ void UT66RunStateSubsystem::EndSaintBlessingEmpowerment()
 			IdolManager->RestoreState(
 				SaintBlessingEquippedIdolsSnapshot,
 				SaintBlessingEquippedIdolTiersSnapshot,
-				IdolManager->GetCurrentDifficulty(),
-				IdolManager->GetRemainingCatchUpIdolPicks());
+				IdolManager->GetCurrentDifficulty());
 		}
 	}
 
@@ -371,13 +357,35 @@ void UT66RunStateSubsystem::ToggleDevPower()
 }
 
 
+void UT66RunStateSubsystem::RefreshActiveRunModifiersFromGameInstance()
+{
+	ActiveRunModifiers = FT66RunModifierSnapshot{};
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		if (T66GI->IsDailyClimbRun() && T66GI->ActiveDailyClimbChallenge.IsValid())
+		{
+			ActiveRunModifiers.Merge(FT66RunModifierCatalog::FromDailyChallenge(T66GI->ActiveDailyClimbChallenge));
+		}
+
+		FT66CommunityContentEntry ActiveCommunityEntry;
+		const UT66CommunityContentSubsystem* Community = T66GI->GetSubsystem<UT66CommunityContentSubsystem>();
+		if (Community && Community->GetActiveEntry(ActiveCommunityEntry))
+		{
+			ActiveRunModifiers.Merge(FT66RunModifierCatalog::FromCommunityRules(ActiveCommunityEntry.Rules));
+		}
+	}
+}
+
+
 void UT66RunStateSubsystem::ResetForNewRun()
 {
+	RefreshActiveRunModifiersFromGameInstance();
+
 	ResetHeartSlotTiers();
 	SyncMaxHPToHeartTiers();
 	CurrentHP = MaxHP;
 	DeferredRunStartItemId = NAME_None;
-	CurrentGold = DefaultStartGold;
+	CurrentGold = 0;
 	CurrentDebt = 0;
 	bLoanSharkPending = false;
 	DifficultyTier = 0;
@@ -433,7 +441,6 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	FinalRunElapsedSeconds = 0.f;
 	bRunEnded = false;
 	bRunEndedAsVictory = false;
-	bPendingDifficultyClearSummary = false;
 	bSaintBlessingActive = false;
 	SaintBlessingInventorySnapshot.Reset();
 	SaintBlessingEquippedIdolsSnapshot.Reset();
@@ -495,12 +502,6 @@ void UT66RunStateSubsystem::ResetForNewRun()
 		{
 			WeaponManager->ResetForNewRun(T66GI->SelectedHeroID);
 		}
-		if (UT66PlayerExperienceSubSystem* PlayerExperience = T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>())
-		{
-			const int32 BonusLevels = PlayerExperience->GetDifficultyStartHeroBonusLevels(T66GI->SelectedDifficulty);
-			HeroLevel = FMath::Clamp(DefaultHeroLevel + BonusLevels, DefaultHeroLevel, MaxHeroLevel);
-		}
-		bInStageCatchUp = T66GI->bStageCatchUpPending;
 	}
 	else if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{

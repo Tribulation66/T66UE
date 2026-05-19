@@ -1346,6 +1346,7 @@ void UT66AchievementsSubsystem::ResetProfileProgress()
 	Profile->HeroGamesPlayedByID.Reset();
 	Profile->HeroHighestMedalByID.Reset();
 	Profile->HeroCumulativeScoreByID.Reset();
+	Profile->HeroMasteryXPByID.Reset();
 	Profile->CompanionGamesPlayedByID.Reset();
 	Profile->CompanionHighestMedalByID.Reset();
 	Profile->CompanionCumulativeScoreByID.Reset();
@@ -1487,6 +1488,25 @@ int32 UT66AchievementsSubsystem::GetHeroCumulativeScore(FName HeroID) const
 	return Found ? FMath::Max(0, *Found) : 0;
 }
 
+int32 UT66AchievementsSubsystem::GetHeroMasteryXP(FName HeroID) const
+{
+	if (!Profile || HeroID.IsNone()) return 0;
+	const int32* Found = Profile->HeroMasteryXPByID.Find(HeroID);
+	return Found ? FMath::Max(0, *Found) : 0;
+}
+
+int32 UT66AchievementsSubsystem::GetHeroMasteryLevel(FName HeroID) const
+{
+	const int32 XP = GetHeroMasteryXP(HeroID);
+	return FMath::Clamp((XP / 100) + 1, 1, 100);
+}
+
+float UT66AchievementsSubsystem::GetHeroMasteryProgress01(FName HeroID) const
+{
+	const int32 XP = GetHeroMasteryXP(HeroID);
+	return static_cast<float>(XP % 100) / 100.f;
+}
+
 int32 UT66AchievementsSubsystem::GetCompanionCumulativeScore(FName CompanionID) const
 {
 	if (!Profile || CompanionID.IsNone()) return 0;
@@ -1554,6 +1574,20 @@ void UT66AchievementsSubsystem::AddHeroCumulativeScore(FName HeroID, int32 Delta
 
 	const int32 Prev = GetHeroCumulativeScore(HeroID);
 	Profile->HeroCumulativeScoreByID.FindOrAdd(HeroID) = FMath::Clamp(Prev + Delta, 0, 2000000000);
+	MarkDirtyAndMaybeSave(false);
+}
+
+void UT66AchievementsSubsystem::AddHeroMasteryXP(FName HeroID, int32 DeltaXP)
+{
+	if (HeroID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const int32 Delta = FMath::Clamp(DeltaXP, 0, 1000000);
+	if (Delta <= 0) return;
+
+	const int32 Prev = GetHeroMasteryXP(HeroID);
+	Profile->HeroMasteryXPByID.FindOrAdd(HeroID) = FMath::Clamp(Prev + Delta, 0, 2000000000);
 	MarkDirtyAndMaybeSave(false);
 }
 

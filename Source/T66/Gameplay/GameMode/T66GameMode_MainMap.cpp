@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/GameMode/T66GameModePrivate.h"
+#include "Gameplay/GameMode/T66GameMode_TestRoom.h"
 
 using namespace T66GameModePrivate;
 
@@ -11,233 +12,233 @@ static const FName T66FloorMainTag(TEXT("T66_Floor_Main"));
 
 static void DestroyActorsWithTag(UWorld* World, FName Tag)
 {
-	if (!World)
-	{
-		return;
-	}
+if (!World)
+{
+return;
+}
 
-	TArray<AActor*> ToDestroy;
-	// Setup cleanup helper: used by level/terrain regeneration, not tick paths.
-	for (TActorIterator<AActor> It(World); It; ++It)
-	{
-		if (It->Tags.Contains(Tag))
-		{
-			ToDestroy.Add(*It);
-		}
-	}
+TArray<AActor*> ToDestroy;
+// Setup cleanup helper: used by level/terrain regeneration, not tick paths.
+for (TActorIterator<AActor> It(World); It; ++It)
+{
+if (It->Tags.Contains(Tag))
+{
+ToDestroy.Add(*It);
+}
+}
 
-	for (AActor* Actor : ToDestroy)
-	{
-		if (Actor)
-		{
-			Actor->Destroy();
-		}
-	}
+for (AActor* Actor : ToDestroy)
+{
+if (Actor)
+{
+Actor->Destroy();
+}
+}
 }
 
 bool AT66GameMode::TryGetMainMapStartAxes(FVector& OutCenter, FVector& OutInwardDirection, FVector& OutSideDirection, float& OutCellSize) const
 {
-	if (!bHasMainMapSpawnSurfaceLocation || MainMapStartPathSurfaceLocation.IsNearlyZero() || MainMapStartAnchorSurfaceLocation.IsNearlyZero())
-	{
-		return false;
-	}
+if (!bHasMainMapSpawnSurfaceLocation || MainMapStartPathSurfaceLocation.IsNearlyZero() || MainMapStartAnchorSurfaceLocation.IsNearlyZero())
+{
+return false;
+}
 
-	const FVector Center = MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
-		? MainMapSpawnSurfaceLocation
-		: MainMapStartAreaCenterSurfaceLocation;
-	const FVector Inward2D = (MainMapStartAnchorSurfaceLocation - MainMapStartPathSurfaceLocation).GetSafeNormal2D();
-	if (Inward2D.IsNearlyZero())
-	{
-		return false;
-	}
+const FVector Center = MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
+? MainMapSpawnSurfaceLocation
+: MainMapStartAreaCenterSurfaceLocation;
+const FVector Inward2D = (MainMapStartAnchorSurfaceLocation - MainMapStartPathSurfaceLocation).GetSafeNormal2D();
+if (Inward2D.IsNearlyZero())
+{
+return false;
+}
 
-	float CellSize = 0.0f;
-	if (IsUsingTowerMainMapLayout())
-	{
-		CellSize = CachedTowerMainMapLayout.PlacementCellSize;
-	}
-	else
-	{
-		const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
-		const T66MainMapTerrain::FSettings Settings = T66MainMapTerrain::MakeSettings(Preset);
-		CellSize = Settings.CellSize;
-	}
+float CellSize = 0.0f;
+if (IsUsingTowerMainMapLayout())
+{
+CellSize = CachedTowerMainMapLayout.PlacementCellSize;
+}
+else
+{
+const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+const T66MainMapTerrain::FSettings Settings = T66MainMapTerrain::MakeSettings(Preset);
+CellSize = Settings.CellSize;
+}
 
-	if (CellSize <= KINDA_SMALL_NUMBER)
-	{
-		return false;
-	}
+if (CellSize <= KINDA_SMALL_NUMBER)
+{
+return false;
+}
 
-	OutCenter = Center;
-	OutInwardDirection = FVector(Inward2D.X, Inward2D.Y, 0.f);
-	OutSideDirection = FVector(-Inward2D.Y, Inward2D.X, 0.f);
-	OutCellSize = CellSize;
-	return true;
+OutCenter = Center;
+OutInwardDirection = FVector(Inward2D.X, Inward2D.Y, 0.f);
+OutSideDirection = FVector(-Inward2D.Y, Inward2D.X, 0.f);
+OutCellSize = CellSize;
+return true;
 }
 
 bool AT66GameMode::TryGetMainMapStartPlacementLocation(float SideCells, float InwardCells, FVector& OutLocation) const
 {
-	if (IsUsingTowerMainMapLayout())
-	{
-		return T66TowerMapTerrain::TryGetStartPlacementLocation(GetWorld(), CachedTowerMainMapLayout, SideCells, InwardCells, OutLocation);
-	}
+if (IsUsingTowerMainMapLayout())
+{
+return T66TowerMapTerrain::TryGetStartPlacementLocation(GetWorld(), CachedTowerMainMapLayout, SideCells, InwardCells, OutLocation);
+}
 
-	FVector Center = FVector::ZeroVector;
-	FVector InwardDirection = FVector::ZeroVector;
-	FVector SideDirection = FVector::ZeroVector;
-	float CellSize = 0.f;
-	if (!TryGetMainMapStartAxes(Center, InwardDirection, SideDirection, CellSize))
-	{
-		return false;
-	}
+FVector Center = FVector::ZeroVector;
+FVector InwardDirection = FVector::ZeroVector;
+FVector SideDirection = FVector::ZeroVector;
+float CellSize = 0.f;
+if (!TryGetMainMapStartAxes(Center, InwardDirection, SideDirection, CellSize))
+{
+return false;
+}
 
-	const FVector DesiredLocation = Center + (SideDirection * (SideCells * CellSize)) + (InwardDirection * (InwardCells * CellSize));
-	OutLocation = DesiredLocation;
+const FVector DesiredLocation = Center + (SideDirection * (SideCells * CellSize)) + (InwardDirection * (InwardCells * CellSize));
+OutLocation = DesiredLocation;
 
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return true;
-	}
+UWorld* World = GetWorld();
+if (!World)
+{
+return true;
+}
 
-	const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
-	const T66MainMapTerrain::FSettings Settings = T66MainMapTerrain::MakeSettings(Preset);
-	const float TraceStartZ = T66MainMapTerrain::GetTraceZ(Preset);
-	const float TraceEndZ = T66MainMapTerrain::GetLowestCollisionBottomZ(Preset) - Settings.StepHeight;
+const FT66MapPreset Preset = T66BuildMainMapPreset(GetT66GameInstance());
+const T66MainMapTerrain::FSettings Settings = T66MainMapTerrain::MakeSettings(Preset);
+const float TraceStartZ = T66MainMapTerrain::GetTraceZ(Preset);
+const float TraceEndZ = T66MainMapTerrain::GetLowestCollisionBottomZ(Preset) - Settings.StepHeight;
 
-	FHitResult Hit;
-	if (World->LineTraceSingleByChannel(
-		Hit,
-		FVector(DesiredLocation.X, DesiredLocation.Y, TraceStartZ),
-		FVector(DesiredLocation.X, DesiredLocation.Y, TraceEndZ),
-		ECC_WorldStatic))
-	{
-		OutLocation = Hit.ImpactPoint;
-	}
-	else
-	{
-		OutLocation.Z = Center.Z;
-	}
+FHitResult Hit;
+if (World->LineTraceSingleByChannel(
+Hit,
+FVector(DesiredLocation.X, DesiredLocation.Y, TraceStartZ),
+FVector(DesiredLocation.X, DesiredLocation.Y, TraceEndZ),
+ECC_WorldStatic))
+{
+OutLocation = Hit.ImpactPoint;
+}
+else
+{
+OutLocation.Z = Center.Z;
+}
 
-	return true;
+return true;
 }
 
 bool AT66GameMode::TryFindRandomMainMapSurfaceLocation(int32 SeedOffset, FVector& OutLocation, float ExtraSafeBubbleMargin) const
 {
-	UWorld* World = GetWorld();
-	if (!World || !T66UsesMainMapTerrainStage(World))
-	{
-		return false;
-	}
+UWorld* World = GetWorld();
+if (!World || !T66UsesMainMapTerrainStage(World))
+{
+return false;
+}
 
-	UT66GameInstance* T66GI = GetT66GameInstance();
-	if (!T66GI)
-	{
-		return false;
-	}
+UT66GameInstance* T66GI = GetT66GameInstance();
+if (!T66GI)
+{
+return false;
+}
 
-	UGameInstance* GI = GetGameInstance();
-	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	const FT66MapPreset MainMapPreset = T66BuildMainMapPreset(T66GI);
-	const bool bTowerLayout = IsUsingTowerMainMapLayout();
-	const T66MainMapTerrain::FSettings MainMapSettings = bTowerLayout
-		? T66MainMapTerrain::FSettings{}
-		: T66MainMapTerrain::MakeSettings(MainMapPreset);
-	const float MainHalfExtent = bTowerLayout
-		? 0.0f
-		: FMath::Max(0.0f, MainMapSettings.HalfExtent - MainMapSettings.CellSize * 1.25f);
-	const float TraceStartZ = bTowerLayout ? CachedTowerMainMapLayout.TraceStartZ : T66MainMapTerrain::GetTraceZ(MainMapPreset);
-	const float TraceEndZ = bTowerLayout
-		? CachedTowerMainMapLayout.TraceEndZ
-		: T66MainMapTerrain::GetLowestCollisionBottomZ(MainMapPreset) - MainMapSettings.StepHeight;
-	const float PlacementCellSize = bTowerLayout ? CachedTowerMainMapLayout.PlacementCellSize : MainMapSettings.CellSize;
-	const float RoomReserveRadius = PlacementCellSize * T66MainMapRoomReserveRadiusCells;
-	const float CorridorReserveRadius = PlacementCellSize * T66MainMapCorridorReserveRadiusCells;
-	const float SafeBubbleMargin = 250.f + ExtraSafeBubbleMargin;
+UGameInstance* GI = GetGameInstance();
+UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+const FT66MapPreset MainMapPreset = T66BuildMainMapPreset(T66GI);
+const bool bTowerLayout = IsUsingTowerMainMapLayout();
+const T66MainMapTerrain::FSettings MainMapSettings = bTowerLayout
+? T66MainMapTerrain::FSettings{}
+: T66MainMapTerrain::MakeSettings(MainMapPreset);
+const float MainHalfExtent = bTowerLayout
+? 0.0f
+: FMath::Max(0.0f, MainMapSettings.HalfExtent - MainMapSettings.CellSize * 1.25f);
+const float TraceStartZ = bTowerLayout ? CachedTowerMainMapLayout.TraceStartZ : T66MainMapTerrain::GetTraceZ(MainMapPreset);
+const float TraceEndZ = bTowerLayout
+? CachedTowerMainMapLayout.TraceEndZ
+: T66MainMapTerrain::GetLowestCollisionBottomZ(MainMapPreset) - MainMapSettings.StepHeight;
+const float PlacementCellSize = bTowerLayout ? CachedTowerMainMapLayout.PlacementCellSize : MainMapSettings.CellSize;
+const float RoomReserveRadius = PlacementCellSize * T66MainMapRoomReserveRadiusCells;
+const float CorridorReserveRadius = PlacementCellSize * T66MainMapCorridorReserveRadiusCells;
+const float SafeBubbleMargin = 250.f + ExtraSafeBubbleMargin;
 
-	const int32 RunSeed = T66EnsureRunSeed(T66GI);
-	const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
-	FRandomStream Rng(RunSeed + StageNum * 1337 + SeedOffset);
+const int32 RunSeed = T66EnsureRunSeed(T66GI);
+const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
+FRandomStream Rng(RunSeed + StageNum * 1337 + SeedOffset);
 
-	auto IsInsideReservedZone = [&](const FVector& Location) -> bool
-	{
-		if (!MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
-			&& FVector::DistSquared2D(Location, MainMapStartAreaCenterSurfaceLocation) < FMath::Square(RoomReserveRadius))
-		{
-			return true;
-		}
-		if (!MainMapBossAreaCenterSurfaceLocation.IsNearlyZero()
-			&& FVector::DistSquared2D(Location, MainMapBossAreaCenterSurfaceLocation) < FMath::Square(RoomReserveRadius))
-		{
-			return true;
-		}
-		if (!MainMapStartPathSurfaceLocation.IsNearlyZero()
-			&& FVector::DistSquared2D(Location, MainMapStartPathSurfaceLocation) < FMath::Square(CorridorReserveRadius))
-		{
-			return true;
-		}
-		if (!MainMapStartAnchorSurfaceLocation.IsNearlyZero()
-			&& FVector::DistSquared2D(Location, MainMapStartAnchorSurfaceLocation) < FMath::Square(CorridorReserveRadius))
-		{
-			return true;
-		}
-		if (!MainMapBossAnchorSurfaceLocation.IsNearlyZero()
-			&& FVector::DistSquared2D(Location, MainMapBossAnchorSurfaceLocation) < FMath::Square(CorridorReserveRadius))
-		{
-			return true;
-		}
-		return false;
-	};
+auto IsInsideReservedZone = [&](const FVector& Location) -> bool
+{
+if (!MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
+&& FVector::DistSquared2D(Location, MainMapStartAreaCenterSurfaceLocation) < FMath::Square(RoomReserveRadius))
+{
+return true;
+}
+if (!MainMapBossAreaCenterSurfaceLocation.IsNearlyZero()
+&& FVector::DistSquared2D(Location, MainMapBossAreaCenterSurfaceLocation) < FMath::Square(RoomReserveRadius))
+{
+return true;
+}
+if (!MainMapStartPathSurfaceLocation.IsNearlyZero()
+&& FVector::DistSquared2D(Location, MainMapStartPathSurfaceLocation) < FMath::Square(CorridorReserveRadius))
+{
+return true;
+}
+if (!MainMapStartAnchorSurfaceLocation.IsNearlyZero()
+&& FVector::DistSquared2D(Location, MainMapStartAnchorSurfaceLocation) < FMath::Square(CorridorReserveRadius))
+{
+return true;
+}
+if (!MainMapBossAnchorSurfaceLocation.IsNearlyZero()
+&& FVector::DistSquared2D(Location, MainMapBossAnchorSurfaceLocation) < FMath::Square(CorridorReserveRadius))
+{
+return true;
+}
+return false;
+};
 
-	UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
-	for (int32 Try = 0; Try < 60; ++Try)
-	{
-		FVector Candidate = FVector::ZeroVector;
-		if (bTowerLayout)
-		{
-			if (!T66TowerMapTerrain::TryGetRandomGameplaySurfaceLocation(World, CachedTowerMainMapLayout, Rng, Candidate))
-			{
-				continue;
-			}
-		}
-		else
-		{
-			const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
-			const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
+for (int32 Try = 0; Try < 60; ++Try)
+{
+FVector Candidate = FVector::ZeroVector;
+if (bTowerLayout)
+{
+if (!T66TowerMapTerrain::TryGetRandomGameplaySurfaceLocation(World, CachedTowerMainMapLayout, Rng, Candidate))
+{
+continue;
+}
+}
+else
+{
+const float X = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
+const float Y = Rng.FRandRange(-MainHalfExtent, MainHalfExtent);
 
-			FHitResult Hit;
-			if (!World->LineTraceSingleByChannel(
-				Hit,
-				FVector(X, Y, TraceStartZ),
-				FVector(X, Y, TraceEndZ),
-				ECC_WorldStatic))
-			{
-				continue;
-			}
-			if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
-			{
-				continue;
-			}
+FHitResult Hit;
+if (!World->LineTraceSingleByChannel(
+Hit,
+FVector(X, Y, TraceStartZ),
+FVector(X, Y, TraceEndZ),
+ECC_WorldStatic))
+{
+continue;
+}
+if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal))
+{
+continue;
+}
 
-			Candidate = Hit.ImpactPoint;
-		}
+Candidate = Hit.ImpactPoint;
+}
 
-		if (IsInsideReservedZone(Candidate))
-		{
-			continue;
-		}
+if (IsInsideReservedZone(Candidate))
+{
+continue;
+}
 
-		bool bBlockedByNPC = false;
-		if (Registry)
-		{
-			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
-			{
-				const AT66HouseNPCBase* NPC = WeakNPC.Get();
-				if (!NPC)
-				{
-					continue;
-				}
-				const float Clearance = NPC->GetSafeZoneRadius() + SafeBubbleMargin;
+bool bBlockedByNPC = false;
+if (Registry)
+{
+for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+{
+const AT66HouseNPCBase* NPC = WeakNPC.Get();
+if (!NPC)
+{
+continue;
+}
+	const float Clearance = NPC->GetSafeZoneRadius() + SafeBubbleMargin;
 				if (FVector::DistSquared2D(Candidate, NPC->GetActorLocation()) < FMath::Square(Clearance))
 				{
 					bBlockedByNPC = true;
@@ -431,7 +432,16 @@ void AT66GameMode::EnsureLevelSetup()
 		}
 	}
 
-	if (IsLabLevel())
+	if (const UT66GameInstance* T66GI = GetT66GameInstance(); T66GI && T66GI->IsTestRoomRun())
+	{
+		FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
+		T66TestRoom::SpawnRoom(GetWorld());
+		T66TestRoom::SpawnLighting(GetWorld());
+		SpawnPlayerStartIfNeeded();
+		return;
+	}
+
+	if (IsLabRun())
 	{
 		SpawnLabFloorIfNeeded();
 		FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
@@ -505,7 +515,8 @@ void AT66GameMode::SpawnTutorialArenaIfNeeded()
 	// Tutorial Arena is an enclosed side-area inside GameplayLevel. It is only relevant for normal gameplay stages.
 	UWorld* World = GetWorld();
 	if (!World) return;
-	if (!T66IsStandaloneTutorialMap(World)) return;
+	const UT66GameInstance* T66GI = GetT66GameInstance();
+	if (!T66GI || !T66GI->IsTutorialRun()) return;
 
 	UStaticMesh* CubeMesh = GetCubeMesh();
 	if (!CubeMesh) return;
@@ -718,18 +729,17 @@ void AT66GameMode::SpawnFloorIfNeeded()
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
-	if (IsLabLevel()) return;  // Lab uses SpawnLabFloorIfNeeded() only
+	if (IsLabRun()) return;  // Lab uses SpawnLabFloorIfNeeded() only
 
 	// Ground materials are loaded async: if not yet resident the floor spawns without material,
 	// and the async callback at the bottom of this function re-applies once loaded.
 
-	// Main run uses dedicated runtime terrain. Helper floors are spawned explicitly for catch-up and tutorial content.
+	// Main run uses dedicated runtime terrain. Helper floors are spawned explicitly for tutorial content.
 	const TArray<FName> CleanupTags = {
 		FName("T66_Floor_Conn1"),
 		FName("T66_Floor_Conn2"),
 		FName("T66_Floor_Start"),
 		FName("T66_Floor_Boss"),
-		FName("T66_Floor_CatchUp"),
 		FName("T66_Floor_Tutorial")
 	};
 
@@ -743,7 +753,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 	}
 	// T66_Floor_Main is spawned by SpawnMainMapTerrain(); do not destroy it here.
 
-	if (T66UsesMainMapTerrainStage(World) || T66IsStandaloneTutorialMap(World))
+	if (T66UsesMainMapTerrainStage(World) || T66IsTutorialRun(World))
 	{
 		return;
 	}
@@ -752,7 +762,7 @@ void AT66GameMode::SpawnFloorIfNeeded()
 void AT66GameMode::SpawnMainMapTerrain()
 {
 	UWorld* World = GetWorld();
-	if (!World || IsLabLevel() || !T66UsesMainMapTerrainStage(World))
+	if (!World || IsLabRun() || !T66UsesMainMapTerrainStage(World))
 	{
 		return;
 	}

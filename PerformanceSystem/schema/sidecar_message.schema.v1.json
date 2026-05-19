@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://t66.local/performance/sidecar_message.schema.v1.json",
+  "title": "T66 PerformanceSystem Sidecar Message v1",
+  "type": "object",
+  "required": [
+    "SchemaVersion",
+    "WallClockUtc",
+    "Source"
+  ],
+  "properties": {
+    "SchemaVersion": { "const": 1 },
+    "WallClockUtc": { "type": "string" },
+    "Source": { "type": "string" },
+    "CpuTemperatureC": { "type": ["number", "null"] },
+    "GpuTemperatureC": { "type": ["number", "null"] },
+    "GpuPowerWatts": { "type": ["number", "null"] },
+    "FanRpm": { "type": ["number", "null"] },
+    "BatteryDrainWatts": { "type": ["number", "null"] },
+    "Confidence": { "enum": ["Exact", "Sampled", "Inferred", "Unavailable"] }
+  }
+}
+

@@ -1,0 +1,48 @@
+{
+  "source": {
+    "path": "SourceAssets\\ToonStyle\\ImageGen\\Phase1C\\LootChest\\lootchest_v01.png",
+    "checks": {
+      "readable_png": true,
+      "expected_dimensions": [
+        1024,
+        1024
+      ],
+      "expected_dimensions_pass": true,
+      "corner_luminance_means": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "corners_white_pass": true,
+      "nonwhite_coverage": 0.48800086975097656,
+      "nonwhite_coverage_pass": true,
+      "nonwhite_center_of_mass": {
+        "x": 0.5000274320520964,
+        "y": 0.4776356489282498
+      },
+      "centered_pass": true
+    },
+    "passed": true
+  },
+  "isolated": {
+    "path": "SourceAssets\\ToonStyle\\ImageGen\\Phase1C\\LootChest\\lootchest_v01_isolated.png",
+    "checks": {
+      "readable_png": true,
+      "has_alpha": true,
+      "corner_alpha_max": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "corners_transparent_pass": true,
+      "alpha_positive_coverage": 0.5046653747558594,
+      "alpha_coverage_pass": true,
+      "largest_component_fraction": 0.9907668468196077,
+      "largest_component_pass": true
+    },
+    "passed": true
+  },
+  "passed": true
+}

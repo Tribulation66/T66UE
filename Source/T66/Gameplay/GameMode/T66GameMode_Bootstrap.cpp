@@ -6,470 +6,494 @@ using namespace T66GameModePrivate;
 
 void AT66GameMode::BeginPlay()
 {
-	Super::BeginPlay();
+Super::BeginPlay();
 
-	EnsureGameplayStartupInitialized(TEXT("BeginPlay"));
+EnsureGameplayStartupInitialized(TEXT("BeginPlay"));
 }
 
 void AT66GameMode::StartPlay()
 {
-	const bool bRecoveringSkippedBeginPlay = !bGameplayStartupInitialized;
-	Super::StartPlay();
+const bool bRecoveringSkippedBeginPlay = !bGameplayStartupInitialized;
+Super::StartPlay();
 
-	EnsureGameplayStartupInitialized(TEXT("StartPlay"));
+EnsureGameplayStartupInitialized(TEXT("StartPlay"));
 
-	if (bRecoveringSkippedBeginPlay)
-	{
-		UE_LOG(LogT66GameMode, Warning, TEXT("AT66GameMode recovered gameplay startup from StartPlay because BeginPlay initialization was skipped."));
-	}
+if (bRecoveringSkippedBeginPlay)
+{
+UE_LOG(LogT66GameMode, Warning, TEXT("AT66GameMode recovered gameplay startup from StartPlay because BeginPlay initialization was skipped."));
+}
 }
 
 void AT66GameMode::EnsureGameplayStartupInitialized(const TCHAR* TriggerContext)
 {
-	if (bGameplayStartupInitialized)
-	{
-		return;
-	}
+if (bGameplayStartupInitialized)
+{
+return;
+}
 
-	bGameplayStartupInitialized = true;
+bGameplayStartupInitialized = true;
 
-	// Main flat floor is spawned in SpawnLevelContentAfterLandscapeReady (no external asset packs).
-	InitializeRunStateForBeginPlay();
+if (UT66GameInstance* T66GI = GetT66GameInstance())
+{
+T66GI->ClearPendingDirectGameplayEntry();
+}
 
-	if (bAutoSetupLevel)
-	{
-		EnsureLevelSetup();
-	}
+// Main flat floor is spawned in SpawnLevelContentAfterLandscapeReady (no external asset packs).
+InitializeRunStateForBeginPlay();
 
-	if (UGameInstance* GIP = GetGameInstance())
-	{
-		if (UT66PlayerSettingsSubsystem* PS = GIP->GetSubsystem<UT66PlayerSettingsSubsystem>())
-		{
-			PS->OnSettingsChanged.RemoveDynamic(this, &AT66GameMode::HandleSettingsChanged);
-			PS->OnSettingsChanged.AddDynamic(this, &AT66GameMode::HandleSettingsChanged);
-		}
-	}
-	HandleSettingsChanged();
+if (bAutoSetupLevel)
+{
+EnsureLevelSetup();
+}
 
-	if (HandleSpecialModeBeginPlay())
-	{
-		UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode %s - special-mode startup initialized."), TriggerContext);
-		return;
-	}
+if (UGameInstance* GIP = GetGameInstance())
+{
+if (UT66PlayerSettingsSubsystem* PS = GIP->GetSubsystem<UT66PlayerSettingsSubsystem>())
+{
+PS->OnSettingsChanged.RemoveDynamic(this, &AT66GameMode::HandleSettingsChanged);
+PS->OnSettingsChanged.AddDynamic(this, &AT66GameMode::HandleSettingsChanged);
+}
+}
+HandleSettingsChanged();
 
-	ConsumePendingStageCatchUp();
-	ScheduleDeferredGameplayLevelSpawn();
-	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode %s - level setup scheduled; content will spawn after landscape is ready."), TriggerContext);
+if (HandleSpecialModeBeginPlay())
+{
+UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode %s - special-mode startup initialized."), TriggerContext);
+return;
+}
+
+ScheduleDeferredGameplayLevelSpawn();
+UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode %s - level setup scheduled; content will spawn after landscape is ready."), TriggerContext);
 }
 
 void AT66GameMode::InitializeRunStateForBeginPlay()
 {
-	UGameInstance* GI = GetGameInstance();
-	UT66GameInstance* T66GI = GetT66GameInstance();
-	PendingRunStartItemId = NAME_None;
-	if (!GI || !T66GI)
-	{
-		return;
-	}
+UGameInstance* GI = GetGameInstance();
+UT66GameInstance* T66GI = GetT66GameInstance();
+PendingRunStartItemId = NAME_None;
+if (!GI || !T66GI)
+{
+return;
+}
 
-	if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-	{
-		// Bind to timer changes so we can spawn LoanShark exactly when timer starts.
-		RunState->StageTimerChanged.AddDynamic(this, &AT66GameMode::HandleStageTimerChanged);
-		RunState->StageChanged.AddDynamic(this, &AT66GameMode::HandleStageChanged);
-		RunState->DifficultyChanged.AddDynamic(this, &AT66GameMode::HandleDifficultyChanged);
-		RunState->EndSaintBlessingEmpowerment();
-		RunState->SetSaintBlessingActive(false);
-		RunState->SetFinalSurvivalEnemyScalar(1.f);
-		if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
-		{
-			IdolManager->IdolStateChanged.RemoveDynamic(this, &AT66GameMode::HandleIdolStateChanged);
-			IdolManager->IdolStateChanged.AddDynamic(this, &AT66GameMode::HandleIdolStateChanged);
-		}
+if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+{
+// Bind to timer changes so we can spawn LoanShark exactly when timer starts.
+RunState->StageTimerChanged.AddDynamic(this, &AT66GameMode::HandleStageTimerChanged);
+RunState->StageChanged.AddDynamic(this, &AT66GameMode::HandleStageChanged);
+RunState->DifficultyChanged.AddDynamic(this, &AT66GameMode::HandleDifficultyChanged);
+RunState->EndSaintBlessingEmpowerment();
+RunState->SetSaintBlessingActive(false);
+RunState->SetFinalSurvivalEnemyScalar(1.f);
+if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+{
+IdolManager->IdolStateChanged.RemoveDynamic(this, &AT66GameMode::HandleIdolStateChanged);
+IdolManager->IdolStateChanged.AddDynamic(this, &AT66GameMode::HandleIdolStateChanged);
+}
 
-		if (T66GI->bApplyLoadedRunSnapshot)
-		{
-			T66GI->bApplyLoadedRunSnapshot = false;
-			RunState->ResetForNewRun();
-			RunState->ImportSavedRunSnapshot(T66GI->PendingLoadedRunSnapshot);
-			T66GI->PendingLoadedRunSnapshot = FT66SavedRunSnapshot{};
-			if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
-			{
-				DamageLog->ResetForNewRun();
-			}
-			return;
-		}
+if (T66GI->bApplyLoadedRunSnapshot)
+{
+T66GI->bApplyLoadedRunSnapshot = false;
+RunState->ResetForNewRun();
+RunState->ImportSavedRunSnapshot(T66GI->PendingLoadedRunSnapshot);
+T66GI->PendingLoadedRunSnapshot = FT66SavedRunSnapshot{};
+if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+{
+DamageLog->ResetForNewRun();
+}
+return;
+}
 
-		// Robust: treat any stage > 1 as a stage transition even if a gate forgot to set the flag.
-		const bool bKeepProgress = T66GI->bIsStageTransition || (RunState->GetCurrentStage() > 1);
-		if (bKeepProgress)
-		{
-			if (UT66PlayerExperienceSubSystem* PlayerExperience = GI->GetSubsystem<UT66PlayerExperienceSubSystem>())
-			{
-				const int32 DifficultyStartStage = PlayerExperience->GetDifficultyStartStage(T66GI->SelectedDifficulty);
-				const bool bEnteringDifficultyStartStage =
-					DifficultyStartStage > 1
-					&& RunState->GetCurrentStage() == DifficultyStartStage;
-				if (bEnteringDifficultyStartStage)
-				{
-					RunState->ResetDifficultyPacing();
-					RunState->ResetDifficultyScore();
-				}
-			}
+// Robust: treat any stage > 1 as a stage transition even if a gate forgot to set the flag.
+const bool bKeepProgress = T66GI->bIsStageTransition || (RunState->GetCurrentStage() > 1);
+if (bKeepProgress)
+{
+if (UT66DifficultyTuningSubsystem* DifficultyTuning = GI->GetSubsystem<UT66DifficultyTuningSubsystem>())
+{
+const int32 DifficultyStartStage = DifficultyTuning->GetDifficultyStartStage(T66GI->SelectedDifficulty);
+const bool bEnteringDifficultyStartStage =
+DifficultyStartStage > 1
+&& RunState->GetCurrentStage() == DifficultyStartStage;
+if (bEnteringDifficultyStartStage)
+{
+RunState->ResetDifficultyPacing();
+RunState->ResetDifficultyScore();
+}
+}
 
-			T66GI->bIsStageTransition = false;
-			RunState->ResetStageTimerToFull(); // New stage: timer is frozen at full until combat starts.
-			RunState->ResetBossState(); // New stage: boss is dormant again; hide boss UI
-			return;
-		}
+T66GI->bIsStageTransition = false;
+RunState->ResetStageTimerToFull(); // New stage: timer is frozen at full until combat starts.
+RunState->ResetBossState(); // New stage: boss is dormant again; hide boss UI
+return;
+}
 
-		if (UT66RunIntegritySubsystem* Integrity = GI->GetSubsystem<UT66RunIntegritySubsystem>())
-		{
-			Integrity->CaptureFreshRunBaseline();
+if (UT66RunIntegritySubsystem* Integrity = GI->GetSubsystem<UT66RunIntegritySubsystem>())
+{
+Integrity->CaptureFreshRunBaseline();
 
-			if (T66GI->HasSelectedRunModifier())
-			{
-				const FString ModifierKind =
-					(T66GI->SelectedRunModifierKind == ET66RunModifierKind::Challenge)
-					? TEXT("challenge")
-					: ((T66GI->SelectedRunModifierKind == ET66RunModifierKind::Mod) ? TEXT("mod") : TEXT("unknown"));
-				Integrity->MarkRunModifierSelected(ModifierKind, T66GI->SelectedRunModifierID);
-			}
+if (T66GI->HasSelectedRunModifier())
+{
+const FString ModifierKind =
+(T66GI->SelectedRunModifierKind == ET66RunModifierKind::Challenge)
+? TEXT("challenge")
+: ((T66GI->SelectedRunModifierKind == ET66RunModifierKind::Mod) ? TEXT("mod") : TEXT("unknown"));
+Integrity->MarkRunModifierSelected(ModifierKind, T66GI->SelectedRunModifierID);
+}
 
-			T66GI->bRunIneligibleForLeaderboard = !Integrity->GetCurrentContext().ShouldAllowRankedSubmission();
-		}
-		else
-		{
-			T66GI->bRunIneligibleForLeaderboard = T66GI->HasSelectedRunModifier();
-		}
-		T66GI->bPendingTowerStageDropIntro = false;
-		RunState->ResetForNewRun();
-		PendingRunStartItemId = RunState->ConsumeDeferredRunStartItemId();
-		if (!PendingRunStartItemId.IsNone())
-		{
-			UE_LOG(LogT66GameMode, Log, TEXT("[Community] Queued deferred run-start item grant: %s"), *PendingRunStartItemId.ToString());
-		}
-		RunState->ActivatePendingSingleUseBuffsForRunStart();
-		if (T66GI->IsDailyClimbRunActive())
-		{
-			const int32 BonusGold = T66GI->GetDailyClimbIntRuleValue(ET66DailyClimbRuleType::StartBonusGold, 0);
-			if (BonusGold > 0)
-			{
-				RunState->AddGold(BonusGold);
-			}
+T66GI->bRunIneligibleForLeaderboard = !Integrity->GetCurrentContext().ShouldAllowRankedSubmission();
+}
+else
+{
+T66GI->bRunIneligibleForLeaderboard = T66GI->HasSelectedRunModifier();
+}
+T66GI->bPendingTowerStageDropIntro = false;
+RunState->ResetForNewRun();
+PendingRunStartItemId = RunState->ConsumeDeferredRunStartItemId();
+if (!PendingRunStartItemId.IsNone())
+{
+UE_LOG(LogT66GameMode, Log, TEXT("[Community] Queued deferred run-start item grant: %s"), *PendingRunStartItemId.ToString());
+}
+RunState->ActivatePendingSingleUseBuffsForRunStart();
+if (RunState->GetActiveRunModifiers().HasAnyGameplayModifier())
+{
+const int32 BonusGold = RunState->GetRunModifierStartBonusGold();
+if (BonusGold > 0)
+{
+RunState->AddGold(BonusGold);
+}
 
-			const int32 RandomItemCount = T66GI->GetDailyClimbIntRuleValue(ET66DailyClimbRuleType::StartRandomItems, 0);
-			if (RandomItemCount > 0)
-			{
-				FRandomStream DailyItemStream((T66GI->RunSeed != 0 ? T66GI->RunSeed : 1) ^ 0x4441494C);
-				for (int32 ItemIndex = 0; ItemIndex < RandomItemCount; ++ItemIndex)
-				{
-					const FName ItemID = T66GI->GetRandomItemIDFromStream(DailyItemStream);
-					if (!ItemID.IsNone())
-					{
-						RunState->AddItem(ItemID);
-					}
-				}
-			}
-		}
-		if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
-		{
-			DamageLog->ResetForNewRun();
-		}
-	}
+const int32 RandomItemCount = RunState->GetRunModifierStartRandomItems();
+if (RandomItemCount > 0)
+{
+FRandomStream DailyItemStream((T66GI->RunSeed != 0 ? T66GI->RunSeed : 1) ^ 0x4441494C);
+for (int32 ItemIndex = 0; ItemIndex < RandomItemCount; ++ItemIndex)
+{
+const FName ItemID = T66GI->GetRandomItemIDFromStream(DailyItemStream);
+if (!ItemID.IsNone())
+{
+RunState->AddItem(ItemID);
+}
+}
+}
+}
+if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+{
+DamageLog->ResetForNewRun();
+}
+}
 }
 
 bool AT66GameMode::HandleSpecialModeBeginPlay()
 {
-	if (IsLabLevel())
-	{
-		HandleLabBeginPlay();
-		return true;
-	}
+if (const UT66GameInstance* T66GI = GetT66GameInstance(); T66GI && T66GI->IsTestRoomRun())
+{
+if (UGameInstance* GI = GetGameInstance())
+{
+if (UT66GameInstance* MutableT66GI = Cast<UT66GameInstance>(GI))
+{
+MutableT66GI->bRunIneligibleForLeaderboard = true;
+}
+if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+{
+RunState->ResetForNewRun();
+}
+if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+{
+DamageLog->ResetForNewRun();
+}
+}
+if (bAutoSetupLevel)
+{
+EnsureLevelSetup();
+}
+ScheduleGameplayVisualCleanup(GetWorld());
+ScheduleGameplayWarmupOverlayHide(GetWorld(), nullptr);
+UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode BeginPlay - TestRoom"));
+return true;
+}
 
-	return false;
+if (IsLabRun())
+{
+HandleLabBeginPlay();
+return true;
+}
+
+return false;
 }
 
 void AT66GameMode::HandleLabBeginPlay()
 {
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
-		{
-			RunState->ResetForNewRun();
-		}
-		if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
-		{
-			DamageLog->ResetForNewRun();
-		}
-	}
-
-	if (bAutoSetupLevel)
-	{
-		EnsureLevelSetup();
-	}
-
-	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode BeginPlay - Lab"));
+if (UGameInstance* GI = GetGameInstance())
+{
+if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+{
+T66GI->bRunIneligibleForLeaderboard = true;
+}
+if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+{
+RunState->ResetForNewRun();
+}
+if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+{
+DamageLog->ResetForNewRun();
+}
 }
 
-void AT66GameMode::ConsumePendingStageCatchUp()
+if (bAutoSetupLevel)
 {
-	UT66GameInstance* T66GI = GetT66GameInstance();
-	if (!T66GI || !T66GI->bStageCatchUpPending)
-	{
-		return;
-	}
+EnsureLevelSetup();
+}
 
-	T66GI->bStageCatchUpPending = false;
-	if (UT66RunStateSubsystem* RunState = T66GI->GetSubsystem<UT66RunStateSubsystem>())
-	{
-		RunState->SetInStageCatchUp(false);
-	}
+ScheduleGameplayVisualCleanup(GetWorld());
+ScheduleGameplayWarmupOverlayHide(GetWorld(), nullptr);
+
+UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode BeginPlay - Lab"));
 }
 
 void AT66GameMode::ScheduleDeferredGameplayLevelSpawn()
 {
-	if (bGameplayLevelSpawnScheduled || bGameplayLevelSpawnCompleted)
-	{
-		return;
-	}
+if (bGameplayLevelSpawnScheduled || bGameplayLevelSpawnCompleted)
+{
+return;
+}
 
-	if (UWorld* World = GetWorld())
-	{
-		bGameplayLevelSpawnScheduled = true;
-		// Normal stage: defer all ground-dependent spawns until next tick so the landscape is fully formed and collision is ready.
-		World->GetTimerManager().SetTimerForNextTick(this, &AT66GameMode::SpawnLevelContentAfterLandscapeReady);
-	}
+if (UWorld* World = GetWorld())
+{
+bGameplayLevelSpawnScheduled = true;
+// Normal stage: defer all ground-dependent spawns until next tick so the landscape is fully formed and collision is ready.
+World->GetTimerManager().SetTimerForNextTick(this, &AT66GameMode::SpawnLevelContentAfterLandscapeReady);
+}
 }
 
 void AT66GameMode::SpawnLevelContentAfterLandscapeReady()
 {
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		bGameplayLevelSpawnScheduled = false;
-		return;
-	}
+UWorld* World = GetWorld();
+if (!World)
+{
+bGameplayLevelSpawnScheduled = false;
+return;
+}
 
-	if (bGameplayLevelSpawnCompleted)
-	{
-		return;
-	}
+if (bGameplayLevelSpawnCompleted)
+{
+return;
+}
 
-	bGameplayLevelSpawnScheduled = false;
-	bGameplayLevelSpawnCompleted = true;
-	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
-	TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay = CreateGameplayWarmupOverlay(World, bUsingMainMapTerrain);
+bGameplayLevelSpawnScheduled = false;
+bGameplayLevelSpawnCompleted = true;
+const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
+TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay = CreateGameplayWarmupOverlay(World, bUsingMainMapTerrain);
 
-	// Phase 0: Spawn the runtime main map terrain before any ground-traced content.
-	const double TerrainSpawnStartSeconds = FPlatformTime::Seconds();
-	SpawnMainMapTerrain();
-	UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] SpawnMainMapTerrain finished in %.1f ms."),
-		(FPlatformTime::Seconds() - TerrainSpawnStartSeconds) * 1000.0);
+// Phase 0: Spawn the runtime main map terrain before any ground-traced content.
+const double TerrainSpawnStartSeconds = FPlatformTime::Seconds();
+SpawnMainMapTerrain();
+UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] SpawnMainMapTerrain finished in %.1f ms."),
+(FPlatformTime::Seconds() - TerrainSpawnStartSeconds) * 1000.0);
 
-	const double StructureSpawnStartSeconds = FPlatformTime::Seconds();
-	SpawnStageStructuresAndInteractables(World, bUsingMainMapTerrain);
-	UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] SpawnStageStructuresAndInteractables finished in %.1f ms."),
-		(FPlatformTime::Seconds() - StructureSpawnStartSeconds) * 1000.0);
+const double StructureSpawnStartSeconds = FPlatformTime::Seconds();
+SpawnStageStructuresAndInteractables(World, bUsingMainMapTerrain);
+UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] SpawnStageStructuresAndInteractables finished in %.1f ms."),
+(FPlatformTime::Seconds() - StructureSpawnStartSeconds) * 1000.0);
 
-	if (bUsingMainMapTerrain)
-	{
-		const double PrepareStageStartSeconds = FPlatformTime::Seconds();
-		PrepareMainMapStage(World);
-		UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] PrepareMainMapStage finished in %.1f ms."),
-			(FPlatformTime::Seconds() - PrepareStageStartSeconds) * 1000.0);
-		ScheduleGameplayVisualCleanup(World);
-		ScheduleGameplayWarmupOverlayHide(World, GameplayWarmupOverlay);
-		UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Main map terrain content spawned. Main-board combat and random interactables are waiting for the player to enter the board."));
-		return;
-	}
+if (bUsingMainMapTerrain)
+{
+const double PrepareStageStartSeconds = FPlatformTime::Seconds();
+PrepareMainMapStage(World);
+UE_LOG(LogT66GameMode, Log, TEXT("[LOAD] PrepareMainMapStage finished in %.1f ms."),
+(FPlatformTime::Seconds() - PrepareStageStartSeconds) * 1000.0);
+ScheduleGameplayVisualCleanup(World);
+ScheduleGameplayWarmupOverlayHide(World, GameplayWarmupOverlay);
+UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Main map terrain content spawned. Main-board combat and random interactables are waiting for the player to enter the board."));
+return;
+}
 
-	UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
-	ScheduleStandardStageCombatBootstrap(World);
-	ScheduleGameplayVisualCleanup(World);
-	ScheduleGameplayWarmupOverlayHide(World, GameplayWarmupOverlay);
+UE_LOG(LogT66GameMode, Log, TEXT("T66GameMode - Phase 1 content spawned (structures + NPCs)."));
+ScheduleStandardStageCombatBootstrap(World);
+ScheduleGameplayVisualCleanup(World);
+ScheduleGameplayWarmupOverlayHide(World, GameplayWarmupOverlay);
 }
 
 TWeakObjectPtr<UT66LoadingScreenWidget> AT66GameMode::CreateGameplayWarmupOverlay(UWorld* World, bool bUsingMainMapTerrain) const
 {
-	if (!bUsingMainMapTerrain || !World)
-	{
-		return nullptr;
-	}
+if (!bUsingMainMapTerrain || !World)
+{
+return nullptr;
+}
 
-	APlayerController* PC = nullptr;
-	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
-	{
-		if (APlayerController* Candidate = It->Get())
-		{
-			if (Candidate->IsLocalController())
-			{
-				PC = Candidate;
-				break;
-			}
-		}
-	}
-	if (!PC)
-	{
-		return nullptr;
-	}
+APlayerController* PC = nullptr;
+for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+{
+if (APlayerController* Candidate = It->Get())
+{
+if (Candidate->IsLocalController())
+{
+PC = Candidate;
+break;
+}
+}
+}
+if (!PC)
+{
+return nullptr;
+}
 
-	if (UT66LoadingScreenWidget* Overlay = CreateWidget<UT66LoadingScreenWidget>(PC, UT66LoadingScreenWidget::StaticClass()))
-	{
-		Overlay->AddToViewport(10000);
-		return Overlay;
-	}
+if (UT66LoadingScreenWidget* Overlay = CreateWidget<UT66LoadingScreenWidget>(PC, UT66LoadingScreenWidget::StaticClass()))
+{
+Overlay->AddToViewport(10000);
+return Overlay;
+}
 
-	return nullptr;
+return nullptr;
 }
 
 void AT66GameMode::ScheduleGameplayVisualCleanup(UWorld* World)
 {
-	if (!World)
-	{
-		return;
-	}
+if (!World)
+{
+return;
+}
 
-	// Re-run world visual cleanup after runtime terrain registers so no legacy sky/light actors survive PIE startup.
-	World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-	{
-		FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
-		ApplyStageProgressionVisuals();
-	}));
+// Re-run world visual cleanup after runtime terrain registers so no legacy sky/light actors survive PIE startup.
+World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+{
+FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
+ApplyStageProgressionVisuals();
+}));
 
-	FTimerHandle DelayedVisualCleanupHandle;
-	World->GetTimerManager().SetTimer(
-		DelayedVisualCleanupHandle,
-		FTimerDelegate::CreateWeakLambda(this, [this]()
-		{
-			FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
-			ApplyStageProgressionVisuals();
-		}),
-		0.35f,
-		false);
+FTimerHandle DelayedVisualCleanupHandle;
+World->GetTimerManager().SetTimer(
+DelayedVisualCleanupHandle,
+FTimerDelegate::CreateWeakLambda(this, [this]()
+{
+FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
+ApplyStageProgressionVisuals();
+}),
+0.35f,
+false);
 
-	FTimerHandle FinalVisualCleanupHandle;
-	World->GetTimerManager().SetTimer(
-		FinalVisualCleanupHandle,
-		FTimerDelegate::CreateWeakLambda(this, [this]()
-		{
-			FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
-			ApplyStageProgressionVisuals();
-		}),
-		0.65f,
-		false);
+FTimerHandle FinalVisualCleanupHandle;
+World->GetTimerManager().SetTimer(
+FinalVisualCleanupHandle,
+FTimerDelegate::CreateWeakLambda(this, [this]()
+{
+FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(GetWorld());
+ApplyStageProgressionVisuals();
+}),
+0.65f,
+false);
 }
 
 void AT66GameMode::ScheduleGameplayWarmupOverlayHide(UWorld* World, TWeakObjectPtr<UT66LoadingScreenWidget> GameplayWarmupOverlay)
 {
-	if (!World)
-	{
-		return;
-	}
+if (!World)
+{
+return;
+}
 
-	// Tutorial / non-main-map stages do not create the terrain warmup overlay, but they
-	// still need to clear the persistent black transition curtain after the level loads.
-	if (!GameplayWarmupOverlay.IsValid())
-	{
-		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
-		{
-			T66GI->HidePersistentGameplayTransitionCurtain();
-		}
-		return;
-	}
+// Tutorial / non-main-map stages do not create the terrain warmup overlay, but they
+// still need to clear the persistent black transition curtain after the level loads.
+if (!GameplayWarmupOverlay.IsValid())
+{
+if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+{
+T66GI->HidePersistentGameplayTransitionCurtain();
+}
+return;
+}
 
-	TSharedPtr<int32> OverlayPollCount = MakeShared<int32>(0);
-	TSharedPtr<FTimerHandle> HideOverlayHandle = MakeShared<FTimerHandle>();
-	World->GetTimerManager().SetTimer(
-		*HideOverlayHandle,
-		FTimerDelegate::CreateWeakLambda(this, [this, World, GameplayWarmupOverlay, OverlayPollCount, HideOverlayHandle]()
-		{
-			if (!World)
-			{
-				return;
-			}
+TSharedPtr<int32> OverlayPollCount = MakeShared<int32>(0);
+TSharedPtr<FTimerHandle> HideOverlayHandle = MakeShared<FTimerHandle>();
+World->GetTimerManager().SetTimer(
+*HideOverlayHandle,
+FTimerDelegate::CreateWeakLambda(this, [this, World, GameplayWarmupOverlay, OverlayPollCount, HideOverlayHandle]()
+{
+if (!World)
+{
+return;
+}
 
-			if (!GameplayWarmupOverlay.IsValid())
-			{
-				World->GetTimerManager().ClearTimer(*HideOverlayHandle);
-				return;
-			}
+if (!GameplayWarmupOverlay.IsValid())
+{
+World->GetTimerManager().ClearTimer(*HideOverlayHandle);
+return;
+}
 
-			const bool bTerrainReady = bTerrainCollisionReady || T66AreMainMapTerrainMaterialsReady(World);
-			++(*OverlayPollCount);
-			const bool bTimedOut = *OverlayPollCount >= 50;
-			if (bTerrainReady || bTimedOut)
-			{
-				if (GameplayWarmupOverlay.IsValid())
-				{
-					GameplayWarmupOverlay->RemoveFromParent();
-				}
+const bool bTerrainReady = bTerrainCollisionReady || T66AreMainMapTerrainMaterialsReady(World);
+++(*OverlayPollCount);
+const bool bTimedOut = *OverlayPollCount >= 50;
+if (bTerrainReady || bTimedOut)
+{
+if (GameplayWarmupOverlay.IsValid())
+{
+GameplayWarmupOverlay->RemoveFromParent();
+}
 
-				if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
-				{
-					T66GI->HidePersistentGameplayTransitionCurtain();
-				}
+if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+{
+T66GI->HidePersistentGameplayTransitionCurtain();
+}
 
-				World->GetTimerManager().ClearTimer(*HideOverlayHandle);
-				if (bTimedOut && !bTerrainReady)
-				{
-					UE_LOG(LogT66GameMode, Warning, TEXT("T66GameMode - Gameplay warmup overlay timed out before main map terrain reported ready."));
-				}
-			}
-		}),
-		0.10f,
-		true);
+World->GetTimerManager().ClearTimer(*HideOverlayHandle);
+if (bTimedOut && !bTerrainReady)
+{
+UE_LOG(LogT66GameMode, Warning, TEXT("T66GameMode - Gameplay warmup overlay timed out before main map terrain reported ready."));
+}
+}
+}),
+0.10f,
+true);
 }
 
 void AT66GameMode::SpawnStageStructuresAndInteractables(UWorld* World, bool bUsingMainMapTerrain)
 {
-	if (!bUsingMainMapTerrain && !IsLabLevel())
-	{
-		if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
-		{
-			SpawnStartGateForPlayer(PC);
-		}
-	}
+if (!bUsingMainMapTerrain && !IsLabRun())
+{
+if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
+{
+SpawnStartGateForPlayer(PC);
+}
+}
 
-	if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
-	{
-		SpawnIdolAltarForPlayer(PC);
-	}
+if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
+{
+SpawnIdolAltarForPlayer(PC);
+SpawnWeaponAltarForPlayer(PC);
+}
 
-	if (!IsUsingTowerMainMapLayout())
-	{
-		SpawnGamblerNPCIfNeeded();
-		SpawnGuaranteedStartAreaInteractables();
-	}
-	else
-	{
-		SpawnWorldInteractablesForStage();
-	}
+if (!IsUsingTowerMainMapLayout())
+{
+SpawnGamblerNPCIfNeeded();
+SpawnGuaranteedStartAreaInteractables();
+}
+else
+{
+SpawnWorldInteractablesForStage();
+}
 
-	if (!bUsingMainMapTerrain)
-	{
-		SpawnTricksterAndCowardiceGate();
-		SpawnBossBeaconIfNeeded();
-		SpawnWorldInteractablesForStage();
-		SpawnTutorialIfNeeded();
-	}
+if (!bUsingMainMapTerrain)
+{
+SpawnTricksterAndCowardiceGate();
+SpawnBossBeaconIfNeeded();
+SpawnWorldInteractablesForStage();
+SpawnTutorialIfNeeded();
+}
 }
 
 void AT66GameMode::PrepareMainMapStage(UWorld* World)
 {
-	SpawnTricksterAndCowardiceGate();
-	SpawnBossForCurrentStage();
-	if (IsUsingTowerMainMapLayout())
-	{
-		SpawnTowerDescentHolesIfNeeded();
-		SyncTowerBossEntryState();
-	}
+SpawnTricksterAndCowardiceGate();
+SpawnBossForCurrentStage();
+if (IsUsingTowerMainMapLayout())
+{
+SpawnTowerDescentHolesIfNeeded();
+SyncTowerBossEntryState();
+}
 
-	ResetTowerMiasmaState();
-	if (IsUsingTowerMainMapLayout())
-	{
-		T66DestroyMiasmaBoundaryActors(World);
-	}
+ResetTowerMiasmaState();
+if (IsUsingTowerMainMapLayout())
+{
+T66DestroyMiasmaBoundaryActors(World);
+}
 	else
 	{
 		if (!IsValid(MiasmaManager))
@@ -731,7 +755,6 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	if (!RunState || !T66GI) return;
-	if (T66GI->bStageCatchUpPending) return;
 
 	// v0 per your request: stage 1 always shows tutorial prompts.
 	if (RunState->GetCurrentStage() != 1) return;
@@ -739,15 +762,14 @@ void AT66GameMode::SpawnTutorialIfNeeded()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// The duplicated tutorial map should always run the tutorial flow.
-	if (!T66IsStandaloneTutorialMap(World) && !bForceSpawnInTutorialArea) return;
+	if (!T66GI->IsTutorialRun() && !bForceSpawnInTutorialArea) return;
 
 	if (TutorialManager.IsValid())
 	{
 		return;
 	}
 
-	// Tutorial-map bootstrap only. TutorialManager is cached after first resolve.
+	// Tutorial bootstrap only. TutorialManager is cached after first resolve.
 	for (TActorIterator<AT66TutorialManager> It(World); It; ++It)
 	{
 		if (AT66TutorialManager* ExistingTutorialManager = *It)

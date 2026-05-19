@@ -21,18 +21,21 @@ class AT66LoanShark;
 class AT66CowardiceGate;
 class AT66BossGate;
 class AT66IdolAltar;
+class AT66WeaponAltar;
 class AT66TowerDescentHole;
-class AT66StageCatchUpGate;
 class AT66Shroom;
 class AT66SpawnPlateau;
 class AT66TutorialManager;
 class AT66SaintNPC;
+class AStaticMeshActor;
 class APawn;
 class UT66GameInstance;
 class AT66RecruitableCompanion;
 class UT66LoadingScreenWidget;
 class APlayerStart;
 class UMaterialInterface;
+class UStaticMesh;
+class UTexture2D;
 struct FStreamableHandle;
 
 /**
@@ -86,6 +89,49 @@ public:
 	/** Development/test helper: spawn a cow, pig, and goat near the stage-start altar as stationary idol test dummies. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Idols")
 	bool bSpawnIdolVFXTestTargetsAtStageStart = true;
+
+	/** Development/test helper: show Pixal3D experiment meshes beside Idol Altars without character data-table rows. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	bool bSpawnPixalTestModelsAtIdolAltar = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TSoftObjectPtr<UStaticMesh> PixalTestMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TSoftObjectPtr<UTexture2D> PixalTestTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TSoftObjectPtr<UStaticMesh> PixalTest2Mesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TSoftObjectPtr<UTexture2D> PixalTest2Texture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TSoftObjectPtr<UStaticMesh> PixalSlimeMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TSoftObjectPtr<UTexture2D> PixalSlimeTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TSoftObjectPtr<UStaticMesh> PixalSlimeHifiMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TSoftObjectPtr<UTexture2D> PixalSlimeHifiTexture;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TArray<TSoftObjectPtr<UStaticMesh>> PixalStandaloneTestMeshes;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TArray<TSoftObjectPtr<UTexture2D>> PixalStandaloneTestTextures;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TArray<TSoftObjectPtr<UStaticMesh>> PixalEasyDungeonHifiMeshes;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TArray<TSoftObjectPtr<UTexture2D>> PixalEasyDungeonHifiTextures;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+	TSoftObjectPtr<UMaterialInterface> PixalTestSharedMaterial;
 
 	/**
 	 * Spawn the hero based on current Game Instance selections
@@ -164,8 +210,10 @@ protected:
 	void SpawnStartGateForPlayer(AController* Player);
 	/** Spawn the stage-entry idol altar near the start area. */
 	void SpawnIdolAltarForPlayer(AController* Player);
+	void SpawnWeaponAltarForPlayer(AController* Player);
 	void SpawnIdolAltarAtLocation(const FVector& Location);
 	void SpawnIdolVFXTestTargets();
+	void SpawnPixalTestDisplayModelsNearIdolAltar(AT66IdolAltar* AnchorAltar, bool bTrackAsLabSpawned = false);
 
 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
 	void SpawnBossGateIfNeeded();
@@ -173,7 +221,6 @@ protected:
 	void SpawnGuaranteedStartAreaInteractables();
 	void SpawnModelShowcaseRow();
 	void SpawnStartGalleryShowcase();
-	void SpawnStageCatchUpPlatformAndInteractables();
 	void SpawnStageEffectsForStage();
 	void SpawnTutorialArenaIfNeeded();
 	void BeginFinalDifficultySurvival(const FVector& BossDeathLocation);
@@ -204,7 +251,6 @@ protected:
 	void InitializeRunStateForBeginPlay();
 	bool HandleSpecialModeBeginPlay();
 	void HandleLabBeginPlay();
-	void ConsumePendingStageCatchUp();
 	void ScheduleDeferredGameplayLevelSpawn();
 	TWeakObjectPtr<UT66LoadingScreenWidget> CreateGameplayWarmupOverlay(UWorld* World, bool bUsingMainMapTerrain) const;
 	void ScheduleGameplayVisualCleanup(UWorld* World);
@@ -217,8 +263,8 @@ protected:
 	void SpawnStageEnemyDirector();
 	void FinalizeStandardStageCombatBootstrap();
 
-	/** True when current level is The Lab (practice room). */
-	bool IsLabLevel() const;
+	/** True when current run category is The Lab (practice room). */
+	bool IsLabRun() const;
 
 	/** Called when stage timer changes (we use it to detect "timer started"). */
 	UFUNCTION()
@@ -249,7 +295,7 @@ protected:
 
 public:
 	// ============================================
-	// The Lab: spawn / reset (only used when IsLabLevel())
+	// The Lab: spawn / reset (only used when IsLabRun())
 	// ============================================
 
 	/** Spawn one mob in the Lab from the current enemy roster. Returns spawned actor or null. */
@@ -303,7 +349,13 @@ private:
 	TObjectPtr<AT66IdolAltar> IdolAltar;
 
 	UPROPERTY()
+	TObjectPtr<AT66WeaponAltar> WeaponAltar;
+
+	UPROPERTY()
 	TArray<TObjectPtr<AT66EnemyBase>> IdolVFXTestTargets;
+
+	UPROPERTY()
+	TArray<TObjectPtr<AStaticMeshActor>> PixalTestDisplayActors;
 
 	UPROPERTY()
 	TArray<TObjectPtr<AT66TowerDescentHole>> TowerDescentHoles;

@@ -87,16 +87,13 @@ namespace T66SelectionScreenUtils
 {
 	inline void PopulateDefaultOwnedSkins(TArray<FSkinData>& OutSkins)
 	{
-		for (const FName SkinID : UT66SkinSubsystem::GetAllSkinIDs())
-		{
-			FSkinData SkinData;
-			SkinData.SkinID = SkinID;
-			SkinData.bIsDefault = (SkinID == UT66SkinSubsystem::DefaultSkinID);
-			SkinData.bIsOwned = SkinData.bIsDefault;
-			SkinData.bIsEquipped = SkinData.bIsDefault;
-			SkinData.CoinCost = SkinData.bIsDefault ? 0 : UT66SkinSubsystem::DefaultSkinPriceAC;
-			OutSkins.Add(SkinData);
-		}
+		FSkinData SkinData;
+		SkinData.SkinID = UT66SkinSubsystem::DefaultSkinID;
+		SkinData.bIsDefault = true;
+		SkinData.bIsOwned = true;
+		SkinData.bIsEquipped = true;
+		SkinData.CoinCost = 0;
+		OutSkins.Add(SkinData);
 	}
 
 	inline int32 GetAchievementCoinBalance(const UObject* ContextObject)

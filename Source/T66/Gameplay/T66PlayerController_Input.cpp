@@ -33,8 +33,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66StageCatchUpGate.h"
-#include "Gameplay/T66TutorialPortal.h"
+#include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -514,8 +513,13 @@ void AT66PlayerController::HandleRestartRunPressed()
 	if (!IsGameplayLevel()) return;
 	// Bible: host-only in co-op. v0: solo only (no co-op yet).
 	if (IsPaused()) SetPause(false);
-	const FName LevelToOpen = UT66GameInstance::GetTribulationEntryLevelName();
-	UGameplayStatics::OpenLevel(this, LevelToOpen);
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		T66GI->TransitionToGameplayLevel();
+		return;
+	}
+
+	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
 }
 
 

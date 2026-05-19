@@ -1,0 +1,315 @@
+{
+  "asset_name": "lootchest",
+  "fbx_export_options": {
+    "outline": {
+      "add_leaf_bones": false,
+      "apply_scale_options": "FBX_SCALE_ALL",
+      "apply_unit_scale": true,
+      "bake_space_transform": false,
+      "embed_textures": false,
+      "global_scale": 0.01,
+      "mesh_smooth_type": "FACE",
+      "object_types": [
+        "MESH"
+      ],
+      "path_mode": "STRIP",
+      "use_mesh_modifiers": true,
+      "use_selection": true
+    },
+    "shading": {
+      "add_leaf_bones": false,
+      "apply_scale_options": "FBX_SCALE_ALL",
+      "apply_unit_scale": true,
+      "bake_space_transform": false,
+      "embed_textures": false,
+      "global_scale": 0.01,
+      "mesh_smooth_type": "FACE",
+      "object_types": [
+        "MESH"
+      ],
+      "path_mode": "STRIP",
+      "use_mesh_modifiers": true,
+      "use_selection": true
+    }
+  },
+  "fbx_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest.fbx",
+  "flatten_highlight_cap": 0.85,
+  "flatten_k": 4,
+  "input_glb": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Raw\\lootchest.glb",
+  "is_humanoid": false,
+  "no_remesh_export": true,
+  "material_count_after_strip": 1,
+  "material_count_before_strip": 1,
+  "mesh_count_after_join": 1,
+  "mesh_count_before_join": 1,
+  "normal_delta_sample": {
+    "distinct": true,
+    "reason": "non_humanoid"
+  },
+  "normal_transfer": {
+    "applied": false,
+    "reason": "non_humanoid"
+  },
+  "normalization": {
+    "bounds_max": [
+      97.78422546386719,
+      193.37759399414062,
+      180.0
+    ],
+    "bounds_min": [
+      -97.78422546386719,
+      -193.37759399414062,
+      0.0
+    ],
+    "corrected_y_up": true,
+    "dimensions": [
+      195.56845092773438,
+      386.75518798828125,
+      180.0
+    ],
+    "height": 180.0,
+    "scale_factor": 390.06445191332375
+  },
+  "outline_bounds": {
+    "dimensions": [
+      195.56845092773438,
+      386.75518798828125,
+      180.0
+    ],
+    "height": 180.0,
+    "max": [
+      97.78422546386719,
+      193.37759399414062,
+      180.0
+    ],
+    "min": [
+      -97.78422546386719,
+      -193.37759399414062,
+      0.0
+    ]
+  },
+  "outline_fbx_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_outline.fbx",
+  "outline_vertex_count": 218724,
+  "outline_winding": {
+    "applied": true,
+    "face_after": [
+      877,
+      729,
+      732
+    ],
+    "face_before": [
+      877,
+      732,
+      729
+    ],
+    "face_order_reversed": true,
+    "method": "bmesh.ops.reverse_faces + restored captured vertex normals as custom split normals"
+  },
+  "retained_from_phase1a": false,
+  "shading_bounds": {
+    "dimensions": [
+      195.56845092773438,
+      386.75518798828125,
+      180.0
+    ],
+    "height": 180.0,
+    "max": [
+      97.78422546386719,
+      193.37759399414062,
+      180.0
+    ],
+    "min": [
+      -97.78422546386719,
+      -193.37759399414062,
+      0.0
+    ]
+  },
+  "target_height": 180.0,
+  "texture_flattening": [
+    {
+      "active_pixels": 16774893,
+      "centers_rgb_255": [
+        [
+          12,
+          10,
+          6
+        ],
+        [
+          73,
+          57,
+          19
+        ],
+        [
+          155,
+          115,
+          23
+        ],
+        [
+          244,
+          192,
+          29
+        ]
+      ],
+      "final_center_shift": 0.0012459774734452367,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_0_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_0",
+      "iterations": 24,
+      "k": 4,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_0_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_0_flattened.png",
+      "unique_colors_after": 4,
+      "unique_colors_before": 235468,
+      "width": 4096
+    },
+    {
+      "active_pixels": 16777216,
+      "centers_rgb_255": [
+        [
+          0,
+          47,
+          0
+        ],
+        [
+          0,
+          225,
+          0
+        ],
+        [
+          0,
+          228,
+          1
+        ],
+        [
+          1,
+          233,
+          1
+        ]
+      ],
+      "final_center_shift": 0.00048430997412651777,
+      "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_1_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_1",
+      "iterations": 5,
+      "k": 4,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_1_original.png",
+      "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_1_flattened.png",
+      "unique_colors_after": 4,
+      "unique_colors_before": 4864,
+      "width": 4096
+    }
+  ],
+  "textures": [
+    {
+      "flatten_report": {
+        "active_pixels": 16774893,
+        "centers_rgb_255": [
+          [
+            12,
+            10,
+            6
+          ],
+          [
+            73,
+            57,
+            19
+          ],
+          [
+            155,
+            115,
+            23
+          ],
+          [
+            244,
+            192,
+            29
+          ]
+        ],
+        "final_center_shift": 0.0012459774734452367,
+        "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_0_flattened.png",
+        "height": 4096,
+        "highlight_cap": 0.85,
+        "image_name": "Image_0",
+        "iterations": 24,
+        "k": 4,
+        "mode": "blender",
+        "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_0_original.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_0_flattened.png",
+        "unique_colors_after": 4,
+        "unique_colors_before": 235468,
+        "width": 4096
+      },
+      "flattened": true,
+      "image_name": "Image_0",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_0_original.png",
+      "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_0_flattened.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "source_format": "WEBP"
+    },
+    {
+      "flatten_report": {
+        "active_pixels": 16777216,
+        "centers_rgb_255": [
+          [
+            0,
+            47,
+            0
+          ],
+          [
+            0,
+            225,
+            0
+          ],
+          [
+            0,
+            228,
+            1
+          ],
+          [
+            1,
+            233,
+            1
+          ]
+        ],
+        "final_center_shift": 0.00048430997412651777,
+        "flattened_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_1_flattened.png",
+        "height": 4096,
+        "highlight_cap": 0.85,
+        "image_name": "Image_1",
+        "iterations": 5,
+        "k": 4,
+        "mode": "blender",
+        "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_1_original.png",
+        "output": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_1_flattened.png",
+        "unique_colors_after": 4,
+        "unique_colors_before": 4864,
+        "width": 4096
+      },
+      "flattened": true,
+      "image_name": "Image_1",
+      "original_path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_1_original.png",
+      "path": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest\\lootchest_1_flattened.png",
+      "size": [
+        4096,
+        4096
+      ],
+      "source_format": "WEBP"
+    }
+  ],
+  "vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 535836,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "vertex_count": 218724,
+  "working_dir": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Phase1C\\LootChest\\Working\\lootchest"
+}

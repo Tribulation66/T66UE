@@ -143,7 +143,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
 	bool bRunAwayFromPlayer = false;
 
-	/** If distance to player exceeds this (uu), enemy gains catch-up speed instead of teleporting. 0 = disabled. */
+	/** If distance to player exceeds this (uu), enemy gains leash speed instead of teleporting. 0 = disabled. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI", meta = (ClampMin = "0"))
 	float LeashMaxDistance = 3000.f;
 

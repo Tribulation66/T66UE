@@ -1,0 +1,13 @@
+Create one full-body single-character source image for T66 model generation.
+
+Character: same original adult male heavyweight-boxer-inspired giga chad hero as the regular version: not a living-person likeness, black/red boxer-warrior gear, boxing gloves, huge chest and shoulders, tiny waist, huge readable head.
+
+Male identity is mandatory: adult male body, square jaw, short hair or shaved head, flat muscular chest, no breasts, no feminine torso, no female face, no long flowing hair.
+
+Demo skin overlay: keep the regular boxer outfit, but add a small cone birthday hat and a diagonal birthday sash across the torso. The sash must have large readable uppercase text: DEMO. Add a few simple birthday color accents, but do not add logos or redesign the outfit.
+
+Style: same T66 Hi-Fi-Rush/Guilty-Gear-like 2D-in-3D cel shading, hard cel-shadow bands, crisp ink contours, bold flat color zones, clean rim highlights.
+
+Pose/composition: strict front-facing A-pose, full body, white background, one subject only, no crop, no logo, no environment, no contact shadow. Only visible text should be DEMO on the sash.
+
+Hard negatives: no female character, no breasts, no feminine body, no long hair, no second character, no cowboy outfit, no scholar armor.

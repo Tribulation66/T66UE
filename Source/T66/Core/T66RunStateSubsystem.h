@@ -8,6 +8,7 @@
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/PlayerExperience/T66PlayerExperienceTypes.h"
+#include "Core/T66RunModifierTypes.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66Rarity.h"
 #include "Templates/Function.h"
@@ -102,7 +103,7 @@ public:
 	/** Default max HP at run start (5 red hearts). */
 	static constexpr float DefaultMaxHP = 100.f;
 	static constexpr float DefaultInvulnDurationSeconds = 0.75f;
-	static constexpr int32 DefaultStartGold = 100;
+	static constexpr int32 DefaultStartGold = 0;
 	static constexpr int32 MaxInventorySlots = 20;
 	static constexpr int32 MaxEquippedIdolSlots = UT66IdolManagerSubsystem::MaxEquippedIdolSlots;
 	static constexpr int32 DefaultHeroLevel = 1;
@@ -239,6 +240,17 @@ public:
 	/** Max HP (numerical). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetMaxHP() const { return MaxHP; }
+
+	const FT66RunModifierSnapshot& GetActiveRunModifiers() const { return ActiveRunModifiers; }
+	int32 GetRunModifierStartRandomItems() const { return ActiveRunModifiers.StartRandomItems; }
+	int32 GetRunModifierStartBonusGold() const { return ActiveRunModifiers.StartBonusGold; }
+	float GetRunModifierEnemyHealthMultiplier() const { return ActiveRunModifiers.EnemyHealthMultiplier; }
+	float GetRunModifierEnemyDamageMultiplier() const { return ActiveRunModifiers.EnemyDamageMultiplier; }
+	float GetRunModifierTrapDamageMultiplier() const { return ActiveRunModifiers.TrapDamageMultiplier; }
+	float GetRunModifierHeroHealthMultiplier() const { return ActiveRunModifiers.HeroHealthMultiplier; }
+	float GetRunModifierHeroDamageMultiplier() const { return ActiveRunModifiers.HeroDamageMultiplier; }
+	int32 GetRunModifierHeroLuckFlat() const { return ActiveRunModifiers.HeroLuckFlat; }
+	float GetRunModifierEnemyLootBagCountMultiplier() const { return ActiveRunModifiers.EnemyLootBagCountMultiplier; }
 
 	/** Actual HP restored by the current companion during this run. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -935,12 +947,6 @@ public:
 	void ActivatePendingSingleUseBuffsForRunStart();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
-	bool HasPendingDifficultyClearSummary() const { return bPendingDifficultyClearSummary; }
-
-	UFUNCTION(BlueprintCallable, Category = "RunState|Finale")
-	void SetPendingDifficultyClearSummary(bool bPending);
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
 	bool IsSaintBlessingActive() const { return bSaintBlessingActive; }
 
 	UFUNCTION(BlueprintCallable, Category = "RunState|Finale")
@@ -1183,16 +1189,6 @@ public:
 	/** Attempt to buy back a display slot. Price = sell price of that item. Returns true if purchased. */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Buyback")
 	bool TryBuybackSlot(int32 DisplayIndex);
-
-	// ============================================
-	// Stage Catch Up (Difficulty start)
-	// ============================================
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|StageCatchUp")
-	bool IsInStageCatchUp() const { return bInStageCatchUp; }
-
-	UFUNCTION(BlueprintCallable, Category = "RunState|StageCatchUp")
-	void SetInStageCatchUp(bool bInCatchUp);
 
 	// ============================================
 	// Ultimate
@@ -1501,6 +1497,7 @@ private:
 	static float GetHPForHeartTier(int32 Tier);
 	float GetHeartSlotCapacity(int32 SlotIndex) const;
 	float GetTotalHeartCapacity() const;
+	void RefreshActiveRunModifiersFromGameInstance();
 	void ResetHeartSlotTiers();
 	void SyncMaxHPToHeartTiers();
 	void RebuildHeartSlotTiersFromMaxHP();
@@ -1511,6 +1508,8 @@ private:
 
 	UPROPERTY()
 	float MaxHP = DefaultMaxHP;
+
+	FT66RunModifierSnapshot ActiveRunModifiers;
 
 	UPROPERTY()
 	float CompanionHealingDoneThisRun = 0.f;
@@ -1610,10 +1609,6 @@ private:
 	/** True if the finalized run ended on a full clear instead of a death. */
 	UPROPERTY()
 	bool bRunEndedAsVictory = false;
-
-	/** True when the player should be shown the between-difficulties clear summary instead of ending the run. */
-	UPROPERTY()
-	bool bPendingDifficultyClearSummary = false;
 
 	/** Saint blessing used during the post-boss survival extraction. */
 	UPROPERTY()
@@ -1876,8 +1871,6 @@ private:
 	int32 AntiCheatCurrentPressureDodges = 0;
 	int32 AntiCheatCurrentPressureDamageApplied = 0;
 	float AntiCheatCurrentPressureExpectedDodges = 0.f;
-
-	bool bInStageCatchUp = false;
 
 	// Stage effects
 	float StageMoveSpeedMultiplier = 1.f;

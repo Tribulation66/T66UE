@@ -7,7 +7,6 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "UI/Style/T66FlatStyle.h"
-#include "UI/Style/T66Style.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Kismet/GameplayStatics.h"
@@ -127,7 +126,10 @@ void UT66LabOverlayWidget::OnExitLab()
 {
 	if (UT66GameInstance* GI = GetT66GameInstance())
 	{
-		GI->bIsLabLevel = false;
+		if (GI->IsLabRun())
+		{
+			GI->SelectedRunCategory = ET66RunCategory::Tower;
+		}
 	}
 	UGameplayStatics::OpenLevel(GetWorld(), UT66GameInstance::GetFrontendLevelName());
 }
@@ -150,7 +152,7 @@ void UT66LabOverlayWidget::NativeDestruct()
 
 void UT66LabOverlayWidget::RefreshLabUI()
 {
-	FT66Style::DeferRebuild(this);
+	FT66FlatStyle::DeferRebuild(this);
 }
 
 TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
@@ -277,7 +279,7 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 				FT66FlatStyle::MakeFlatButton(
 					LabTabIndex == Index ? ET66FlatState::Selected : ET66FlatState::Default,
 					Label,
-					FOnClicked::CreateLambda([this, Index]() { LabTabIndex = Index; FT66Style::DeferRebuild(this); return FReply::Handled(); }),
+					FOnClicked::CreateLambda([this, Index]() { LabTabIndex = Index; FT66FlatStyle::DeferRebuild(this); return FReply::Handled(); }),
 					nullptr,
 					nullptr,
 					FMargin(6.f, 2.f),
@@ -365,7 +367,7 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 
 	const TAttribute<FMargin> SafePanelPadding = TAttribute<FMargin>::CreateLambda([this]() -> FMargin
 	{
-		return FT66Style::GetSafePadding(FMargin(24.f, LabPanelTopOffset, 24.f, 0.f));
+		return FT66FlatStyle::GetSafePadding(FMargin(24.f, LabPanelTopOffset, 24.f, 0.f));
 	});
 
 	// Full-screen overlay: transparent, only the right-side panel has content (between Power and inventory)
@@ -397,7 +399,7 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 		TEXT("Overlay"),
 		ET66FlatState::Default);
 
-	return FT66Style::MakeResponsiveRoot(Root);
+	return FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 
 #undef LOCTEXT_NAMESPACE

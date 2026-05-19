@@ -35,10 +35,7 @@ public:
 	bool SelectWeapon(FName WeaponID);
 	bool IsWeaponOfferSelected(FName WeaponID) const { return !WeaponID.IsNone() && EquippedWeaponID == WeaponID; }
 
-	static FName MakeStarterWeaponID(FName HeroID);
 	static FName MakeWeaponID(FName HeroID, ET66WeaponRarity Rarity, ET66AttackCategory Branch);
-	static ET66WeaponRarity GetUpgradeRarityForClearedDifficulty(ET66Difficulty Difficulty);
-	static ET66WeaponRarity GetUpgradeRarityForStartingDifficulty(ET66Difficulty Difficulty);
 	static FString WeaponRarityToString(ET66WeaponRarity Rarity);
 	static FString AttackBranchToString(ET66AttackCategory Branch);
 	static FLinearColor GetWeaponRarityColor(ET66WeaponRarity Rarity);

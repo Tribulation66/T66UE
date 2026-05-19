@@ -1,0 +1,100 @@
+{
+  "asset_name": "gambler",
+  "base_color_param": "/Game/ToonStyle/TestAssets/Lineup/Textures/T_gambler_0.T_gambler_0",
+  "diffuse_param": "/Game/ToonStyle/TestAssets/Lineup/Textures/T_gambler_0.T_gambler_0",
+  "expected_height": 180.0,
+  "height_tolerance": 0.1,
+  "imported_object_paths": [
+    "/Game/ToonStyle/TestAssets/Lineup/SM_gambler.SM_gambler"
+  ],
+  "imported_outline_object_paths": [
+    "/Game/ToonStyle/TestAssets/Lineup/SM_gambler_Outline.SM_gambler_Outline"
+  ],
+  "manifest_normal_delta_sample": {
+    "delta": 0.9045496061177126,
+    "distinct": true,
+    "loop_index": 12230,
+    "outline_normal": [
+      0.8683663010597229,
+      -0.2515588700771332,
+      0.4273853003978729
+    ],
+    "position": [
+      27.50487518310547,
+      -8.914505958557129,
+      135.04205322265625
+    ],
+    "shading_normal": [
+      0.8235619068145752,
+      -0.3114597499370575,
+      -0.47406598925590515
+    ],
+    "vertex_index": 2738
+  },
+  "manifest_normal_transfer": {
+    "applied": true,
+    "changed_loop_count": 131421,
+    "head_threshold_z": 135.0,
+    "head_vertex_count": 39781,
+    "method": "sphere_proxy_split_normals",
+    "proxy_center": [
+      -1.8632912635803223,
+      2.191969633102417,
+      151.9458465576172
+    ],
+    "proxy_radius": 44.76990980802564
+  },
+  "manifest_vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 588771,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "material_instance": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_gambler",
+  "outline_slot0_material": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_gambler.MI_gambler",
+  "outline_static_mesh": "/Game/ToonStyle/TestAssets/Lineup/SM_gambler_Outline",
+  "outline_static_mesh_bounds": {
+    "extent": [
+      41.773193359375,
+      37.56495475769043,
+      90.00000002875802
+    ],
+    "height": 180.00000005751605,
+    "origin": [
+      0.0,
+      -1.33514404296875e-05,
+      89.99999997124196
+    ],
+    "size": [
+      83.54638671875,
+      75.12990951538086,
+      180.00000005751605
+    ]
+  },
+  "slot0_material": "/Game/ToonStyle/TestAssets/Lineup/Materials/MI_gambler.MI_gambler",
+  "static_mesh": "/Game/ToonStyle/TestAssets/Lineup/SM_gambler",
+  "static_mesh_bounds": {
+    "extent": [
+      41.773193359375,
+      37.56495475769043,
+      90.00000002875802
+    ],
+    "height": 180.00000005751605,
+    "origin": [
+      0.0,
+      -1.33514404296875e-05,
+      89.99999997124196
+    ],
+    "size": [
+      83.54638671875,
+      75.12990951538086,
+      180.00000005751605
+    ]
+  },
+  "target_dir": "/Game/ToonStyle/TestAssets/Lineup",
+  "textures": [
+    "/Game/ToonStyle/TestAssets/Lineup/Textures/T_gambler_0",
+    "/Game/ToonStyle/TestAssets/Lineup/Textures/T_gambler_1"
+  ]
+}

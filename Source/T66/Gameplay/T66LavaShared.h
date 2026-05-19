@@ -5,7 +5,7 @@
 namespace T66LavaShared
 {
 	inline constexpr float TwoPi = 6.28318530718f;
-	inline constexpr const TCHAR* BaseMaterialPath = TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit");
+	inline constexpr const TCHAR* BaseMaterialPath = TEXT("/Game/Materials/M_Environment_Lit.M_Environment_Lit");
 	inline constexpr const TCHAR* DefaultTexturePath = TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture");
 
 	inline float Frac(float Value)

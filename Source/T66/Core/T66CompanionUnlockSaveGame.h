@@ -20,7 +20,7 @@ public:
 	UPROPERTY(SaveGame)
 	int32 SchemaVersion = 1;
 
-	/** Unlocked companion IDs (e.g. Companion_01..Companion_24). */
+	/** Unlocked companion IDs (e.g. Companion_01..Companion_16). */
 	UPROPERTY(SaveGame)
 	TSet<FName> UnlockedCompanionIDs;
 };

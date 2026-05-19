@@ -26,11 +26,11 @@ private:
 	FText ResolveGameCode(ET66ArcadeGameType GameType) const;
 	FText ResolveGameFlavorText(ET66ArcadeGameType GameType) const;
 	FLinearColor ResolveGameAccentColor(ET66ArcadeGameType GameType, int32 Index) const;
-	void LoadCabinetArtworkBrush();
-	TSharedRef<SWidget> BuildCabinetArtworkLayer(float Opacity) const;
+	void LoadMachineArtworkBrush();
+	TSharedRef<SWidget> BuildMachineArtworkLayer(float Opacity) const;
 	TSharedRef<SWidget> BuildCrtOverlay() const;
 
 	TArray<FT66ArcadeInteractableData> GameOptions;
-	TStrongObjectPtr<UTexture2D> CabinetArtworkTexture;
-	FSlateBrush CabinetArtworkBrush;
+	TStrongObjectPtr<UTexture2D> MachineArtworkTexture;
+	FSlateBrush MachineArtworkBrush;
 };

@@ -257,18 +257,7 @@ bool AT66WorldInteractableBase::TryApplyImportedMesh()
 	if (!VisualMesh) return false;
 
 	UStaticMesh* M = nullptr;
-
-	if (RarityMeshes.Num() > 0)
-	{
-		const TSoftObjectPtr<UStaticMesh>* Ptr = RarityMeshes.Find(Rarity);
-		if (Ptr && !Ptr->IsNull())
-		{
-			M = Ptr->Get();
-			if (!M) M = Ptr->LoadSynchronous();
-		}
-	}
-
-	if (!M && !SingleMesh.IsNull())
+	if (!SingleMesh.IsNull())
 	{
 		M = SingleMesh.Get();
 		if (!M) M = SingleMesh.LoadSynchronous();

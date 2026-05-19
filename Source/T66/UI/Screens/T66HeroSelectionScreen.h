@@ -278,6 +278,8 @@ private:
 	FReply HandleTemporaryBuffEquipClicked(ET66SecondaryStatType StatType);
 	FReply HandleClearTemporaryBuffsClicked();
 	FReply HandleLabClicked();
+	FReply HandleTutorialClicked();
+	FReply HandleTestClicked();
 	FReply HandleLoreClicked();
 	FReply HandleStatsClicked();
 	FReply HandleOpenStatsPanelClicked();

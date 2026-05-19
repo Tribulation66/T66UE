@@ -48,10 +48,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interactable")
 	bool bShowcaseReusable = false;
 
-	/** Per-rarity imported mesh overrides. If populated, TryApplyImportedMesh() picks by current Rarity. */
-	UPROPERTY(EditDefaultsOnly, Category = "Interactable|Meshes")
-	TMap<ET66Rarity, TSoftObjectPtr<UStaticMesh>> RarityMeshes;
-
 	/** Single imported mesh for interactables that don't use rarity variants. */
 	UPROPERTY(EditDefaultsOnly, Category = "Interactable|Meshes")
 	TSoftObjectPtr<UStaticMesh> SingleMesh;
@@ -82,7 +78,7 @@ protected:
 	bool IsLocalHeroOverlapping() const { return LocalHeroOverlapCount > 0; }
 	const AT66HeroBase* GetLocalHero() const;
 
-	/** Load & apply the appropriate imported mesh (rarity-specific or single).
+	/** Load & apply the imported mesh.
 	 *  Returns true if a mesh was applied; false means subclass should fall back to primitives. */
 	bool TryApplyImportedMesh();
 

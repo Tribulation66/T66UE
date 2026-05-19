@@ -13,6 +13,11 @@ enum class ET66DailyClimbRuleType : uint8
 	StartRandomItems UMETA(DisplayName = "Start Random Items"),
 	StartBonusGold UMETA(DisplayName = "Start Bonus Gold"),
 	EnemyHpMultiplier UMETA(DisplayName = "Enemy HP Multiplier"),
+	EnemyDamageMultiplier UMETA(DisplayName = "Enemy Damage Multiplier"),
+	TrapDamageMultiplier UMETA(DisplayName = "Trap Damage Multiplier"),
+	HeroHealthMultiplier UMETA(DisplayName = "Hero Health Multiplier"),
+	HeroDamageMultiplier UMETA(DisplayName = "Hero Damage Multiplier"),
+	HeroLuckFlat UMETA(DisplayName = "Hero Luck Flat"),
 	EnemyLootBagCountMultiplier UMETA(DisplayName = "Enemy Loot Bag Count Multiplier")
 };
 
@@ -23,6 +28,12 @@ struct T66_API FT66DailyClimbRule
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	ET66DailyClimbRuleType Type = ET66DailyClimbRuleType::Unknown;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
+	FString ModifierId;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
+	FString Category;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Daily Descent")
 	FString Label;

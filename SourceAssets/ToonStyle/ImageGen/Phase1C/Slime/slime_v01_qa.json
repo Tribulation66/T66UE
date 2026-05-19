@@ -1,0 +1,48 @@
+{
+  "source": {
+    "path": "SourceAssets\\ToonStyle\\ImageGen\\Phase1C\\Slime\\slime_v01.png",
+    "checks": {
+      "readable_png": true,
+      "expected_dimensions": [
+        1024,
+        1024
+      ],
+      "expected_dimensions_pass": true,
+      "corner_luminance_means": [
+        0.9951980113983154,
+        0.9956984519958496,
+        0.9948946237564087,
+        0.995302677154541
+      ],
+      "corners_white_pass": true,
+      "nonwhite_coverage": 0.4892301559448242,
+      "nonwhite_coverage_pass": true,
+      "nonwhite_center_of_mass": {
+        "x": 0.4999099389277373,
+        "y": 0.5107681008897427
+      },
+      "centered_pass": true
+    },
+    "passed": true
+  },
+  "isolated": {
+    "path": "SourceAssets\\ToonStyle\\ImageGen\\Phase1C\\Slime\\slime_v01_isolated.png",
+    "checks": {
+      "readable_png": true,
+      "has_alpha": true,
+      "corner_alpha_max": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "corners_transparent_pass": true,
+      "alpha_positive_coverage": 0.5232343673706055,
+      "alpha_coverage_pass": true,
+      "largest_component_fraction": 0.9960885881917649,
+      "largest_component_pass": true
+    },
+    "passed": true
+  },
+  "passed": true
+}

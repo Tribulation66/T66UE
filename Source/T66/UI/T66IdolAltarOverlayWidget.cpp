@@ -6,13 +6,11 @@
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
-#include "Core/T66WeaponManagerSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66FlatStyle.h"
-#include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
 #include "Styling/CoreStyle.h"
@@ -36,12 +34,6 @@ namespace
 	{
 		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
 		return GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
-	}
-
-	UT66WeaponManagerSubsystem* GetWeaponManager(UWorld* World)
-	{
-		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
-		return GI ? GI->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr;
 	}
 
 	const FSlateBrush* GetIdolAltarWhiteBrush()
@@ -70,7 +62,7 @@ namespace
 
 	FTextBlockStyle BuildIdolCardBodyStyle()
 	{
-		FTextBlockStyle Style = FT66Style::Get().GetWidgetStyle<FTextBlockStyle>("T66.Text.Body");
+		FTextBlockStyle Style;
 		Style.SetFont(FT66FlatStyle::MakeFont(15));
 		Style.SetColorAndOpacity(FT66FlatStyle::SecondaryText());
 		return Style;
@@ -212,10 +204,6 @@ void UT66IdolAltarOverlayWidget::NativeDestruct()
 		{
 			IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
 		}
-		if (UT66WeaponManagerSubsystem* WeaponManager = GetWeaponManager(World))
-		{
-			WeaponManager->OnWeaponStateChanged.RemoveAll(this);
-		}
 	}
 
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
@@ -234,11 +222,6 @@ void UT66IdolAltarOverlayWidget::HandleIdolsChanged()
 	RefreshStock();
 }
 
-void UT66IdolAltarOverlayWidget::HandleWeaponsChanged()
-{
-	RefreshStock();
-}
-
 int32 UT66IdolAltarOverlayWidget::GetOfferStockIndexForVisibleSlot(const int32 VisibleSlotIndex) const
 {
 	return (FMath::Clamp(ActiveOfferCategoryIndex, 0, OfferCategoryCount - 1) * OfferSlotsPerCategory)
@@ -253,95 +236,35 @@ bool UT66IdolAltarOverlayWidget::HasSelectionsRemaining() const
 
 void UT66IdolAltarOverlayWidget::ConsumeSelectionBudget(const int32 SlotIndex)
 {
+	(void)SlotIndex;
 	AT66IdolAltar* Altar = SourceAltar.Get();
 	if (!Altar)
 	{
 		return;
-	}
-
-	const bool bWeaponOfferMode = IsWeaponOfferMode();
-	const bool bConsumedCatchUp = !bWeaponOfferMode && Altar->CatchUpSelectionsRemaining > 0;
-	if (bConsumedCatchUp)
-	{
-		Altar->CatchUpSelectionsRemaining = FMath::Max(0, Altar->CatchUpSelectionsRemaining - 1);
 	}
 
 	if (Altar->RemainingSelections > 0)
 	{
 		Altar->RemainingSelections = FMath::Max(0, Altar->RemainingSelections - 1);
 	}
-
-	if (!bWeaponOfferMode && IsTutorialSingleOfferMode())
-	{
-		Altar->SetTutorialOfferConsumedCatchUp(bConsumedCatchUp);
-	}
-	else if (!bWeaponOfferMode)
-	{
-		Altar->SetSelectedStockSlotConsumedCatchUp(SlotIndex, bConsumedCatchUp);
-	}
-
-	if (!bWeaponOfferMode)
-	{
-		if (UWorld* World = GetWorld())
-		{
-			if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))
-			{
-				IdolManager->SetRemainingCatchUpIdolPicks(Altar->CatchUpSelectionsRemaining);
-			}
-		}
-	}
 }
 
 void UT66IdolAltarOverlayWidget::RefundSelectionBudget(const int32 SlotIndex)
 {
+	(void)SlotIndex;
 	AT66IdolAltar* Altar = SourceAltar.Get();
 	if (!Altar)
 	{
 		return;
 	}
 
-	bool bRefundCatchUp = false;
-	const bool bWeaponOfferMode = IsWeaponOfferMode();
-	if (!bWeaponOfferMode && IsTutorialSingleOfferMode())
-	{
-		bRefundCatchUp = Altar->DidTutorialOfferConsumeCatchUp();
-		Altar->SetTutorialOfferConsumedCatchUp(false);
-	}
-	else if (!bWeaponOfferMode)
-	{
-		bRefundCatchUp = Altar->DidSelectedStockSlotConsumeCatchUp(SlotIndex);
-		Altar->SetSelectedStockSlotConsumedCatchUp(SlotIndex, false);
-	}
-
-	if (bRefundCatchUp)
-	{
-		++Altar->CatchUpSelectionsRemaining;
-	}
-
 	++Altar->RemainingSelections;
-
-	if (!bWeaponOfferMode)
-	{
-		if (UWorld* World = GetWorld())
-		{
-			if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))
-			{
-				IdolManager->SetRemainingCatchUpIdolPicks(Altar->CatchUpSelectionsRemaining);
-			}
-		}
-	}
 }
 
 bool UT66IdolAltarOverlayWidget::IsTutorialSingleOfferMode() const
 {
 	const AT66IdolAltar* Altar = SourceAltar.Get();
 	return Altar && Altar->bUseTutorialSingleOffer;
-}
-
-bool UT66IdolAltarOverlayWidget::IsWeaponOfferMode() const
-{
-	const AT66IdolAltar* Altar = SourceAltar.Get();
-	return Altar && Altar->OfferMode == ET66AltarOfferMode::Weapons;
 }
 
 FName UT66IdolAltarOverlayWidget::GetTutorialOfferedIdolID() const
@@ -354,8 +277,6 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 {
 	UWorld* World = GetWorld();
 	UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World);
-	UT66WeaponManagerSubsystem* WeaponManager = GetWeaponManager(World);
-	const bool bWeaponOfferMode = IsWeaponOfferMode();
 	UT66LocalizationSubsystem* Loc = nullptr;
 	if (World)
 	{
@@ -365,25 +286,14 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 		}
 	}
 
-	if (IdolManager && !bWeaponOfferMode)
+	if (IdolManager)
 	{
 		IdolManager->EnsureIdolStock();
 		IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
 		IdolManager->IdolStateChanged.AddDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
 	}
-	if (WeaponManager && bWeaponOfferMode)
-	{
-		const AT66IdolAltar* Altar = SourceAltar.Get();
-		const UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
-		const FName HeroID = T66GI ? T66GI->SelectedHeroID : NAME_None;
-		WeaponManager->BuildWeaponOffers(HeroID, Altar ? Altar->WeaponOfferRarity : ET66WeaponRarity::Black);
-		WeaponManager->OnWeaponStateChanged.RemoveAll(this);
-		WeaponManager->OnWeaponStateChanged.AddUObject(this, &UT66IdolAltarOverlayWidget::HandleWeaponsChanged);
-	}
 
-	const FText AltarTitle = bWeaponOfferMode
-		? NSLOCTEXT("T66.IdolAltar", "WeaponTitle", "WEAPON ALTAR")
-		: (Loc ? Loc->GetText_IdolAltarTitle() : NSLOCTEXT("T66.IdolAltar", "Title", "IDOL ALTAR"));
+	const FText AltarTitle = Loc ? Loc->GetText_IdolAltarTitle() : NSLOCTEXT("T66.IdolAltar", "Title", "IDOL ALTAR");
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const FText TakeLabel = NSLOCTEXT("T66.IdolAltar", "Take", "TAKE");
 	const float IdolCardWidth = 286.f;
@@ -527,13 +437,13 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 
 	const TAttribute<FMargin> VerticalSafeInsets = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
-		const FMargin SafeInsets = FT66Style::GetSafeFrameInsets();
+		const FMargin SafeInsets = FT66FlatStyle::GetSafeFrameInsets();
 		return FMargin(0.f, SafeInsets.Top, 0.f, SafeInsets.Bottom);
 	});
 
 	const TAttribute<FOptionalSize> SurfaceWidthAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
 	{
-		return FOptionalSize(FMath::Max(1.f, FT66Style::GetViewportLogicalSize().X));
+		return FOptionalSize(FMath::Max(1.f, FT66FlatStyle::GetViewportLogicalSize().X));
 	});
 
 	TSharedRef<SWidget> Root =
@@ -647,14 +557,14 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 		ET66FlatState::Default);
 
 	SetActionButtonState(BackButton, BackButtonBorder, BackButtonText, true, false);
-	SetActionButtonState(RerollButton, RerollButtonBorder, RerollButtonText, !IsTutorialSingleOfferMode() && !IsWeaponOfferMode(), false);
+	SetActionButtonState(RerollButton, RerollButtonBorder, RerollButtonText, !IsTutorialSingleOfferMode(), false);
 	if (IsTutorialSingleOfferMode() && StatusText.IsValid())
 	{
 		StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "TutorialSingleOffer", "Aria prepared one idol for this lesson."));
 	}
 
 	RefreshStock();
-	return FT66Style::MakeResponsiveRoot(Root);
+	return FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 
 void UT66IdolAltarOverlayWidget::RefreshStock()
@@ -662,91 +572,6 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 	UWorld* World = GetWorld();
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	const bool bWeaponOfferMode = IsWeaponOfferMode();
-
-	if (bWeaponOfferMode)
-	{
-		UT66WeaponManagerSubsystem* WeaponManager = GetWeaponManager(World);
-		if (!WeaponManager || !GI)
-		{
-			return;
-		}
-
-		if (RerollButton.IsValid())
-		{
-			RerollButton->SetVisibility(EVisibility::Collapsed);
-		}
-
-		const TArray<FName>& WeaponOffers = WeaponManager->GetWeaponOfferIDs();
-		UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
-		const bool bHasSelectionAllowance = HasSelectionsRemaining();
-		for (int32 VisibleSlotIndex = 0; VisibleSlotIndex < OfferSlotsPerCategory; ++VisibleSlotIndex)
-		{
-			const bool bHasItem = WeaponOffers.IsValidIndex(VisibleSlotIndex) && !WeaponOffers[VisibleSlotIndex].IsNone();
-			const FName WeaponID = bHasItem ? WeaponOffers[VisibleSlotIndex] : NAME_None;
-			FWeaponData WeaponData;
-			const bool bHasData = bHasItem && GI->GetWeaponData(WeaponID, WeaponData);
-			const bool bSelected = bHasData && WeaponManager->IsWeaponOfferSelected(WeaponID);
-			const bool bCanTake = bHasData && !bSelected && bHasSelectionAllowance;
-			const FLinearColor RarityColor = bHasData ? UT66WeaponManagerSubsystem::GetWeaponRarityColor(WeaponData.Rarity) : FT66Style::Tokens::Panel2;
-			const TSoftObjectPtr<UTexture2D> WeaponIconSoft = bHasData ? WeaponData.Icon : TSoftObjectPtr<UTexture2D>();
-
-			if (OfferCardBoxes.IsValidIndex(VisibleSlotIndex) && OfferCardBoxes[VisibleSlotIndex].IsValid())
-			{
-				OfferCardBoxes[VisibleSlotIndex]->SetVisibility(bHasData ? EVisibility::Visible : EVisibility::Collapsed);
-			}
-			if (OfferNameTexts.IsValidIndex(VisibleSlotIndex) && OfferNameTexts[VisibleSlotIndex].IsValid())
-			{
-				OfferNameTexts[VisibleSlotIndex]->SetText(bHasData ? WeaponData.DisplayName : FText::GetEmpty());
-			}
-			if (OfferDescriptionTexts.IsValidIndex(VisibleSlotIndex) && OfferDescriptionTexts[VisibleSlotIndex].IsValid())
-			{
-				OfferDescriptionTexts[VisibleSlotIndex]->SetText(bHasData ? WeaponData.Description : FText::GetEmpty());
-				OfferDescriptionTexts[VisibleSlotIndex]->SetVisibility(bHasData ? EVisibility::Visible : EVisibility::Collapsed);
-			}
-			if (OfferTileBorders.IsValidIndex(VisibleSlotIndex) && OfferTileBorders[VisibleSlotIndex].IsValid())
-			{
-				OfferTileBorders[VisibleSlotIndex]->SetBorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::DefaultBorder());
-				OfferTileBorders[VisibleSlotIndex]->SetToolTip(nullptr);
-			}
-			if (OfferIconBorders.IsValidIndex(VisibleSlotIndex) && OfferIconBorders[VisibleSlotIndex].IsValid())
-			{
-				OfferIconBorders[VisibleSlotIndex]->SetBorderBackgroundColor(RarityColor);
-				OfferIconBorders[VisibleSlotIndex]->SetToolTip(nullptr);
-			}
-			if (OfferIconBrushes.IsValidIndex(VisibleSlotIndex) && OfferIconBrushes[VisibleSlotIndex].IsValid())
-			{
-				if (!WeaponIconSoft.IsNull() && TexPool)
-				{
-					T66SlateTexture::BindSharedBrushAsync(TexPool, WeaponIconSoft, this, OfferIconBrushes[VisibleSlotIndex], FName(TEXT("WeaponOffer"), VisibleSlotIndex + 1), true);
-				}
-				else
-				{
-					OfferIconBrushes[VisibleSlotIndex]->SetResourceObject(nullptr);
-				}
-			}
-			if (OfferIconImages.IsValidIndex(VisibleSlotIndex) && OfferIconImages[VisibleSlotIndex].IsValid())
-			{
-				OfferIconImages[VisibleSlotIndex]->SetVisibility(!WeaponIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Hidden);
-				OfferIconImages[VisibleSlotIndex]->SetToolTip(nullptr);
-			}
-			if (OfferButtonTexts.IsValidIndex(VisibleSlotIndex) && OfferButtonTexts[VisibleSlotIndex].IsValid())
-			{
-				OfferButtonTexts[VisibleSlotIndex]->SetText(
-					bSelected
-						? NSLOCTEXT("T66.IdolAltar", "WeaponEquipped", "EQUIPPED")
-						: NSLOCTEXT("T66.IdolAltar", "WeaponChoose", "CHOOSE"));
-			}
-
-			SetActionButtonState(
-				OfferButtons.IsValidIndex(VisibleSlotIndex) ? OfferButtons[VisibleSlotIndex] : TSharedPtr<SWidget>(),
-				OfferButtonBorders.IsValidIndex(VisibleSlotIndex) ? OfferButtonBorders[VisibleSlotIndex] : TSharedPtr<SBorder>(),
-				OfferButtonTexts.IsValidIndex(VisibleSlotIndex) ? OfferButtonTexts[VisibleSlotIndex] : TSharedPtr<STextBlock>(),
-				bSelected || bCanTake,
-				bSelected);
-		}
-		return;
-	}
 
 	UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World);
 	if (!IdolManager)
@@ -799,7 +624,7 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 		FIdolData IdolData;
 		const bool bHasData = bHasItem && GI && GI->GetIdolData(IdolID, IdolData);
 		const TSoftObjectPtr<UTexture2D> IdolIconSoft = bHasData ? IdolData.GetIconForRarity(OfferedRarity) : TSoftObjectPtr<UTexture2D>();
-		const FLinearColor RarityColor = bHasItem ? FItemData::GetItemRarityColor(OfferedRarity) : FT66Style::Tokens::Panel2;
+		const FLinearColor RarityColor = bHasItem ? FItemData::GetItemRarityColor(OfferedRarity) : FT66FlatStyle::Tokens::Panel2;
 
 		if (OfferNameTexts.IsValidIndex(VisibleSlotIndex) && OfferNameTexts[VisibleSlotIndex].IsValid())
 		{
@@ -870,50 +695,6 @@ FReply UT66IdolAltarOverlayWidget::OnToggleSlot(int32 SlotIndex)
 	UWorld* World = GetWorld();
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
-	if (IsWeaponOfferMode())
-	{
-		UT66WeaponManagerSubsystem* WeaponManager = GetWeaponManager(World);
-		if (!WeaponManager || !GI)
-		{
-			return FReply::Handled();
-		}
-		const TArray<FName>& WeaponOffers = WeaponManager->GetWeaponOfferIDs();
-		const FName WeaponID = WeaponOffers.IsValidIndex(SlotIndex) ? WeaponOffers[SlotIndex] : NAME_None;
-		if (WeaponID.IsNone())
-		{
-			return FReply::Handled();
-		}
-
-		if (!HasSelectionsRemaining())
-		{
-			if (StatusText.IsValid())
-			{
-				StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "NoWeaponSelectionsRemaining", "No weapon selections remain."));
-			}
-			return FReply::Handled();
-		}
-
-		FWeaponData WeaponData;
-		if (!GI->GetWeaponData(WeaponID, WeaponData) || !WeaponManager->SelectWeapon(WeaponID))
-		{
-			if (StatusText.IsValid())
-			{
-				StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "WeaponSelectionFailed", "Weapon selection failed."));
-			}
-			return FReply::Handled();
-		}
-
-		ConsumeSelectionBudget(SlotIndex);
-		if (StatusText.IsValid())
-		{
-			StatusText->SetText(FText::Format(
-				NSLOCTEXT("T66.IdolAltar", "WeaponSelectionApplied", "Equipped {0}."),
-				WeaponData.DisplayName));
-		}
-		RefreshStock();
-		return FReply::Handled();
-	}
-
 	UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World);
 	if (!IdolManager)
 	{
@@ -1000,7 +781,7 @@ FReply UT66IdolAltarOverlayWidget::OnToggleSlot(int32 SlotIndex)
 
 FReply UT66IdolAltarOverlayWidget::OnReroll()
 {
-	if (IsTutorialSingleOfferMode() || IsWeaponOfferMode())
+	if (IsTutorialSingleOfferMode())
 	{
 		return FReply::Handled();
 	}
@@ -1017,10 +798,6 @@ FReply UT66IdolAltarOverlayWidget::OnBack()
 		if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))
 		{
 			IdolManager->IdolStateChanged.RemoveDynamic(this, &UT66IdolAltarOverlayWidget::HandleIdolsChanged);
-		}
-		if (UT66WeaponManagerSubsystem* WeaponManager = GetWeaponManager(World))
-		{
-			WeaponManager->OnWeaponStateChanged.RemoveAll(this);
 		}
 	}
 

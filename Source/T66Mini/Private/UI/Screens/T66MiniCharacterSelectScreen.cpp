@@ -182,28 +182,27 @@ TSharedRef<SWidget> UT66MiniCharacterSelectScreen::BuildSlateUI()
 			.WidthOverride(126.f)
 			.HeightOverride(102.f)
 			[
-				FT66Style::MakeBareButton(
-					FT66BareButtonParams(
-						FOnClicked::CreateLambda([this, HeroID = Hero.HeroID]() { return HandleHeroClicked(HeroID); }),
-						T66MiniGeneratedChrome::MakePanel(
-							SNew(SVerticalBox)
-							+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
-							[
-								MakeSpriteWidget(HeroBrush, Hero.DisplayName.Left(1).ToUpper(), Hero.PlaceholderColor, 60.f, 60.f, 22)
-							]
-							+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 3.f, 0.f, 0.f)
-							[
-								SNew(STextBlock)
-								.Text(FText::FromString(Hero.DisplayName))
-								.Font(T66MiniUI::BoldFont(11))
-								.ColorAndOpacity(bIsSelected ? T66MiniUI::AccentGold() : BodyText)
-								.Justification(ETextJustify::Center)
-								.AutoWrapText(true)
-							]
-						, FMargin(10.f, 8.f, 18.f, 8.f),
-						bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal))
-					.SetColor(FLinearColor(1.f, 1.f, 1.f, 0.01f))
-					.SetPadding(FMargin(0.f)))
+				T66MiniGeneratedChrome::MakeBareContentButton(
+					FOnClicked::CreateLambda([this, HeroID = Hero.HeroID]() { return HandleHeroClicked(HeroID); }),
+					T66MiniGeneratedChrome::MakePanel(
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Center)
+						[
+							MakeSpriteWidget(HeroBrush, Hero.DisplayName.Left(1).ToUpper(), Hero.PlaceholderColor, 60.f, 60.f, 22)
+						]
+						+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 3.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString(Hero.DisplayName))
+							.Font(T66MiniUI::BoldFont(11))
+							.ColorAndOpacity(bIsSelected ? T66MiniUI::AccentGold() : BodyText)
+							.Justification(ETextJustify::Center)
+							.AutoWrapText(true)
+						],
+						FMargin(10.f, 8.f, 18.f, 8.f),
+						bIsSelected ? T66MiniGeneratedChrome::ESlice::CardSelected : T66MiniGeneratedChrome::ESlice::CardNormal),
+					true,
+					FName(*FString::Printf(TEXT("Mini.Character.Card.%s"), *Hero.HeroID.ToString())))
 			]
 		];
 	}

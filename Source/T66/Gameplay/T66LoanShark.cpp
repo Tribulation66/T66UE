@@ -5,6 +5,7 @@
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Data/T66DataTypes.h"
@@ -112,6 +113,17 @@ void AT66LoanShark::BeginPlay()
 		}
 	}
 	UpdateTuningFromDebt();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameInstance* GI = World->GetGameInstance())
+		{
+			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
+			{
+				Visuals->ApplyCharacterVisual(FName(TEXT("LoanShark")), GetMesh(), VisualMesh, true, false, false, VisualMesh);
+			}
+		}
+	}
 }
 
 void AT66LoanShark::Tick(float DeltaSeconds)

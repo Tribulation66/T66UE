@@ -2,11 +2,11 @@
 
 ## Owns
 
-TRELLIS, RunPod model generation, source-image rules, Quad Retro, Blender QA, rigging/retopo policy, Rigging and Animation source workflows, Unreal mesh import, generated model cleanup, and model-generation scripts.
+TRELLIS, production-cleared Pixal3D model replacement, RunPod model generation, source-image rules, Quad Retro, Blender QA, rigging/retopo policy, Rigging and Animation source workflows, Unreal mesh import, generated model cleanup, and model-generation scripts.
 
 ## Trigger Words
 
-Trellis, RunPod, model generation, GLB, source image, Quad Retro, Blender QA, retopo, rigging, animation, Rigodotify, Quaternius, import meshes, generated meshes, environment kit, dungeon kit assets.
+Trellis, Pixal3D, RunPod, model generation, GLB, source image, Quad Retro, Blender QA, retopo, rigging, animation, Rigodotify, Quaternius, import meshes, generated meshes, environment kit, dungeon kit assets.
 
 ## Read First
 
@@ -20,6 +20,7 @@ Trellis, RunPod, model generation, GLB, source image, Quad Retro, Blender QA, re
 - Do not commit live secrets or pod-local access material.
 - Do not keep raw generation output as a runtime dependency.
 - Do not add one-off scripts when a manifest can drive an existing reusable script.
+- For production Pixal3D replacements, use `Model Generation/Instructions/09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md` and the manifest-driven wrapper; do not use legacy one-off Pixal3D import scripts.
 - If the generated asset affects the playable build, follow Unreal import and standalone validation instructions.
 
 ## Verification

@@ -253,7 +253,7 @@ Source finding:
 - Source GLBs for all ten Easy mobs exist under `Model Generation/Production/Roster_v1`.
 - Agent A owns `Slime`, `RatPack`, `HexSlinger`, `StoneSentinel`, and `BoneConjurer`.
 - Agent B owns `BoneWalker`, `CaveBat`, `TombSpider`, `MimicLure`, and `CryptWraith`.
-- The production reports say the Pixal3D GLB outputs remain research-only until licensing approval changes. Treat that as a shipping gate before promoting those raw sources.
+- Promote Pixal3D GLB outputs only after visual and runtime acceptance.
 
 Runtime behavior finding:
 
@@ -331,6 +331,6 @@ Runtime and staged evidence:
 
 Remaining caveats:
 
-- The Easy VAT rows are live-runtime QA assets, not final release art until the raw Pixal3D source licensing gate is cleared.
+- The Easy VAT rows are live-runtime QA assets, not final release art until final visual acceptance.
 - Gameplay archetypes beyond `Melee`, `Rush`, `Ranged`, and `Flying` remain visual-only until the missing behavior classes are implemented.
 - Current playback uses one dynamic material instance per enemy. This is suitable for first live QA, but crowd-scale optimization should move toward instanced playback once the enemy rendering path is ready.

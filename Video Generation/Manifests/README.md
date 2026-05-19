@@ -9,7 +9,7 @@ This folder tracks the source-side metadata for frontend videos.
 
 ## Current Job Statuses
 
-- `ai_accepted`: the original hand-reviewed Arthur clip.
+- `ai_accepted`: a hand-reviewed clip that should be preserved unless explicitly replaced.
 - `ai_generated_ltx2b_fast`: first-pass full-roster RunPod LTX2B clips.
 
 There should be no `placeholder_generated` jobs once the first-pass AI roster pass has been accepted.

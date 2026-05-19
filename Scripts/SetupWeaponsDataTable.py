@@ -109,44 +109,42 @@ def _int(value, default=0):
         return default
 
 
-def _starter_row(hero):
-    hero_id = hero["HeroID"]
-    branch = hero.get("PrimaryCategory") or "Pierce"
-    base_hit = _int(hero.get("BaseHitDamage"), 20)
-    weapon_id = f"{hero_id}_Grey_Base"
-    return {
-        "---": weapon_id,
-        "WeaponID": weapon_id,
-        "HeroID": hero_id,
-        "DisplayName": f"{hero.get('DisplayName', hero_id)}'s Starter Weapon",
-        "Description": f"Core {branch} auto-attack loadout. Grey starter tier.",
-        "Icon": f"/Game/Weapons/Sprites/Grey/{weapon_id}.{weapon_id}",
-        "Rarity": "Grey",
-        "Branch": branch,
-        "DamageMultiplier": "1.10",
-        "AttackSpeedMultiplier": "1.00",
-        "AttackScaleMultiplier": "1.00",
-        "RangeMultiplier": "1.00",
-        "BonusHitDamage": str(max(2, round(base_hit * 0.10))),
-        "BonusPierceCount": "0",
-        "BonusBounceCount": "0",
-        "BonusAoeCount": "0",
-        "BonusDotSources": "0",
-        "BonusAoeRadius": "0.0",
-        "BonusDotDuration": "0.0",
-        "BonusDotTickDamageMultiplier": "1.00",
-        "FalloffPerHitMultiplier": "1.00",
-    }
+WEAPON_NAMES = {
+    "Black": {
+        "Pierce": "Iron Edge",
+        "Bounce": "Rebound Star",
+        "AOE": "Ash Burst",
+        "DOT": "Grave Venom",
+    },
+    "Red": {
+        "Pierce": "Demon Edge",
+        "Bounce": "Blood Comet",
+        "AOE": "Hell Nova",
+        "DOT": "Demon Rot",
+    },
+    "Yellow": {
+        "Pierce": "Sunpiercer",
+        "Bounce": "Solar Ricochet",
+        "AOE": "Radiant Blast",
+        "DOT": "Solar Blight",
+    },
+    "White": {
+        "Pierce": "Void Edge",
+        "Bounce": "Astral Echo",
+        "AOE": "Void Singularity",
+        "DOT": "Void Plague",
+    },
+}
 
 
 def _branch_description(branch, rarity):
     if branch == "Pierce":
-        return f"{rarity} branch: heavier damage falloff control and more pierce targets."
+        return f"{rarity} tier. A piercing auto-attack branch that cuts through lined-up targets."
     if branch == "Bounce":
-        return f"{rarity} branch: stronger chaining and more bounce targets."
+        return f"{rarity} tier. A chaining auto-attack branch that jumps between nearby targets."
     if branch == "AOE":
-        return f"{rarity} branch: wider auto-attack splash and area pressure."
-    return f"{rarity} branch: longer damaging ticks attached to the auto-attack payload."
+        return f"{rarity} tier. A splash auto-attack branch that detonates around the impact point."
+    return f"{rarity} tier. A damage-over-time auto-attack branch that leaves a lingering wound."
 
 
 def _upgrade_row(hero, rarity, branch, tuning):
@@ -156,7 +154,7 @@ def _upgrade_row(hero, rarity, branch, tuning):
         "---": weapon_id,
         "WeaponID": weapon_id,
         "HeroID": hero_id,
-        "DisplayName": f"{rarity} {branch} {hero.get('DisplayName', hero_id)} Weapon",
+        "DisplayName": WEAPON_NAMES.get(rarity, {}).get(branch, f"{rarity} {branch} Weapon"),
         "Description": _branch_description(branch, rarity),
         "Icon": f"/Game/Weapons/Sprites/{rarity}/{weapon_id}.{weapon_id}",
         "Rarity": rarity,
@@ -189,7 +187,6 @@ def generate_weapons_csv(project_dir):
 
     rows = []
     for hero in heroes:
-        rows.append(_starter_row(hero))
         for rarity, tuning in RARITY_TUNING.items():
             for branch in BRANCHES:
                 rows.append(_upgrade_row(hero, rarity, branch, tuning))

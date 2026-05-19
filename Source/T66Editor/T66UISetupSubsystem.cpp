@@ -68,21 +68,6 @@ static FAutoConsoleCommand T66SetupCommand(
 	})
 );
 
-static FAutoConsoleCommand T66CreateLabLevelCommand(
-	TEXT("T66CreateLabLevel"),
-	TEXT("Creates The Lab level at Content/Maps/LabLevel (PlayerStart, lighting, GameMode)."),
-	FConsoleCommandDelegate::CreateLambda([]()
-	{
-		if (GEditor)
-		{
-			if (UT66UISetupSubsystem* Sub = GEditor->GetEditorSubsystem<UT66UISetupSubsystem>())
-			{
-				Sub->CreateLabLevel();
-			}
-		}
-	})
-);
-
 static FAutoConsoleCommand T66CreateRetroChromaticAberrationMaterialCommand(
 	TEXT("T66CreateRetroChromaticAberrationMaterial"),
 	TEXT("Creates M_RetroChromaticAberrationPostProcess (full-screen radial chromatic aberration / distortion post-process material)."),
@@ -480,7 +465,7 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	const FString StatusEffectsTablePath = TEXT("/Game/Data/DT_StatusEffects.DT_StatusEffects");
 	const FString BossEncountersTablePath = TEXT("/Game/Data/DT_BossEncounters.DT_BossEncounters");
 	const FString BossEncounterMembersTablePath = TEXT("/Game/Data/DT_BossEncounterMembers.DT_BossEncounterMembers");
-	const FString HouseNPCsTablePath = TEXT("/Game/Data/DT_HouseNPCs.DT_HouseNPCs");
+	const FString NPCsTablePath = TEXT("/Game/Data/DT_NPCs.DT_NPCs");
 	const FString CharacterVisualsTablePath = TEXT("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals");
 	const FString ArcadeInteractablesTablePath = TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables");
 
@@ -494,7 +479,7 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	UDataTable* StatusEffectsTable = LoadObject<UDataTable>(nullptr, *StatusEffectsTablePath);
 	UDataTable* BossEncountersTable = LoadObject<UDataTable>(nullptr, *BossEncountersTablePath);
 	UDataTable* BossEncounterMembersTable = LoadObject<UDataTable>(nullptr, *BossEncounterMembersTablePath);
-	UDataTable* HouseNPCsTable = LoadObject<UDataTable>(nullptr, *HouseNPCsTablePath);
+	UDataTable* NPCsTable = LoadObject<UDataTable>(nullptr, *NPCsTablePath);
 	UDataTable* CharacterVisualsTable = LoadObject<UDataTable>(nullptr, *CharacterVisualsTablePath);
 	UDataTable* ArcadeInteractablesTable = LoadObject<UDataTable>(nullptr, *ArcadeInteractablesTablePath);
 
@@ -598,14 +583,14 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_BossEncounterMembers (create via SetupCombatRosterDataTables.py)"));
 	}
 
-	if (HouseNPCsTable)
+	if (NPCsTable)
 	{
-		GameInstanceCDO->HouseNPCsDataTable = HouseNPCsTable;
-		UE_LOG(LogT66Editor, Log, TEXT("Set HouseNPCsDataTable to DT_HouseNPCs"));
+		GameInstanceCDO->NPCsDataTable = NPCsTable;
+		UE_LOG(LogT66Editor, Log, TEXT("Set NPCsDataTable to DT_NPCs"));
 	}
 	else
 	{
-		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_HouseNPCs (create via CreateAssets.py then ImportData.py)"));
+		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_NPCs (create via SetupNPCsDataTable.py)"));
 	}
 
 	if (CharacterVisualsTable)
@@ -800,77 +785,6 @@ bool UT66UISetupSubsystem::CreateRetroChromaticAberrationMaterial()
 
 	UE_LOG(LogT66Editor, Warning, TEXT("Failed to save RetroChromaticAberrationMaterial"));
 	return false;
-}
-
-bool UT66UISetupSubsystem::CreateLabLevel()
-{
-	const FString LabLevelPath = TEXT("/Game/Maps/LabLevel");
-
-	// Create a new world in our package (no template duplication = no cross-package BSP references)
-	UPackage* NewPackage = CreatePackage(*LabLevelPath);
-	if (!NewPackage)
-	{
-		UE_LOG(LogT66Editor, Warning, TEXT("CreateLabLevel: CreatePackage failed"));
-		return false;
-	}
-	UWorld* World = UWorld::CreateWorld(EWorldType::Editor, false, FName("LabLevel"), NewPackage, false);
-	if (!World || !World->PersistentLevel)
-	{
-		UE_LOG(LogT66Editor, Warning, TEXT("CreateLabLevel: CreateWorld failed"));
-		return false;
-	}
-	World->SetFlags(RF_Standalone | RF_Public);
-	World->PersistentLevel->SetFlags(RF_Standalone | RF_Public);
-	if (World->GetWorldSettings())
-	{
-		World->GetWorldSettings()->SetFlags(RF_Standalone | RF_Public);
-	}
-
-	// GameMode: same as GameplayLevel
-	const FString GameModePath = TEXT("/Game/Blueprints/GameModes/BP_GameplayGameMode.BP_GameplayGameMode_C");
-	UClass* GameModeClass = LoadClass<AGameModeBase>(nullptr, *GameModePath);
-	if (GameModeClass && World->GetWorldSettings())
-	{
-		World->GetWorldSettings()->DefaultGameMode = GameModeClass;
-	}
-
-	// Spawn PlayerStart at origin (Lab spawn uses 0,0,200)
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	SpawnParams.OverrideLevel = World->PersistentLevel;
-	FVector PlayerStartLoc(0.f, 0.f, 200.f);
-	World->SpawnActor<APlayerStart>(APlayerStart::StaticClass(), PlayerStartLoc, FRotator::ZeroRotator, SpawnParams);
-
-	// Spawn DirectionalLight
-	ADirectionalLight* DirLight = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FVector::ZeroVector, FRotator(-45.f, 0.f, 0.f), SpawnParams);
-	if (DirLight && DirLight->GetLightComponent())
-	{
-		DirLight->GetLightComponent()->SetIntensity(10.f);
-	}
-
-	// Spawn SkyLight
-	if (ASkyLight* SkyLight = World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams))
-	{
-		if (USkyLightComponent* SkyLightComponent = Cast<USkyLightComponent>(SkyLight->GetLightComponent()))
-		{
-			SkyLightComponent->SetRealTimeCapture(false);
-		}
-	}
-
-	World->MarkPackageDirty();
-	NewPackage->MarkPackageDirty();
-
-	// Save to disk
-	FString Filename = FPackageName::LongPackageNameToFilename(LabLevelPath, FPackageName::GetMapPackageExtension());
-	FSavePackageArgs SaveArgs;
-	SaveArgs.TopLevelFlags = RF_Standalone;
-	if (!UPackage::SavePackage(NewPackage, World, *Filename, SaveArgs))
-	{
-		UE_LOG(LogT66Editor, Warning, TEXT("CreateLabLevel: SavePackage failed for %s"), *LabLevelPath);
-		return false;
-	}
-	UE_LOG(LogT66Editor, Log, TEXT("CreateLabLevel: created and saved LabLevel at %s"), *LabLevelPath);
-	return true;
 }
 
 void UT66UISetupSubsystem::PrintSetupStatus()

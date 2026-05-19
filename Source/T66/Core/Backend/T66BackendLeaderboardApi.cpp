@@ -42,9 +42,14 @@ void UT66BackendSubsystem::FetchDailyLeaderboard(const FString& Filter)
 	{
 		return;
 	}
+	LeaderboardCache.Remove(CacheKey);
 	PendingLeaderboardFetches.Add(CacheKey);
 
-	const FString Endpoint = FString::Printf(TEXT("/api/daily/leaderboard?filter=%s"), *NormalizedFilter);
+	FString Endpoint = FString::Printf(TEXT("/api/daily/leaderboard?filter=%s"), *NormalizedFilter);
+	if (CachedDailyClimbChallenge.IsValid() && !CachedDailyClimbChallenge.ChallengeDateUtc.IsEmpty())
+	{
+		Endpoint += FString::Printf(TEXT("&date=%s"), *CachedDailyClimbChallenge.ChallengeDateUtc);
+	}
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = CreateRequest(TEXT("GET"), Endpoint);
 	Request->OnProcessRequestComplete().BindUObject(this, &UT66BackendSubsystem::OnLeaderboardResponseReceived, CacheKey);
 	Request->ProcessRequest();

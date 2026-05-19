@@ -24,10 +24,10 @@ Before animating any Easy mob:
 1. Confirm the `Enemies.csv` row still exists and still has `DifficultyID=Easy`.
 2. Confirm the `CharacterVisuals.csv` row still resolves to the expected static mesh and scale.
 3. Compare the live Unreal static mesh against the source GLB before assuming they match.
-4. Check the production report for the source GLB's licensing and promotion status.
+4. Check the production report for the source GLB's current visual and runtime status.
 5. Keep live `CharacterVisuals.csv` unchanged until the VAT path passes temporary-row or temporary-map QA.
 
-Current production source reports say the `Roster_v1` Pixal3D GLBs are research-only until licensing clearance changes. That does not block process exploration, but it does block treating those raw GLBs as shippable without a license decision.
+The `Roster_v1` Pixal3D GLBs are available for process exploration and in-game QA. Treat them as final only after visual and runtime acceptance.
 
 ## Easy Source Map
 
@@ -253,7 +253,7 @@ Current accepted warnings:
 
 - UE Python cannot reliably read the data asset `FVector3f` bounds for this plugin path, so verification treats material instance `MinBBox`/`SizeBBox` as authoritative and fails if CSV values do not match them.
 - Python verification could not prove static mesh UV channel `2` even though AnimToTexture generated valid position/normal textures and matching material parameters. Do not ignore this warning if playback or material sampling fails.
-- Raw Pixal3D source licensing is still a shipping gate. The runtime assets are wired for in-game QA, but future release review must confirm the source licensing status before treating them as final shipped mob art.
+- The runtime assets are wired for in-game QA, but future release review must confirm visual and runtime quality before treating them as final mob art.
 
 Current staged smoke evidence:
 

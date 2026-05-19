@@ -8,6 +8,7 @@
 #include "Core/T66DailyClimbTypes.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RunSaveGame.h"
+#include "Core/T66RunTypes.h"
 #include "Gameplay/T66ArcadeInteractableTypes.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "UI/T66UITypes.h"
@@ -104,9 +105,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> BossEncounterMembersDataTable;
 
-	/** Reference to the House NPCs DataTable (Gambler/Saint/Ouroboros) */
+	/** Reference to the NPCs DataTable (Gambler/Saint/Ouroboros) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
-	TSoftObjectPtr<UDataTable> HouseNPCsDataTable;
+	TSoftObjectPtr<UDataTable> NPCsDataTable;
 
 	/** Reference to the Loan Shark DataTable (debt collector NPC tuning) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
@@ -140,13 +141,13 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
 
-	/** Set when the next stage-entry altar should offer weapon upgrades instead of idols. */
-	UPROPERTY(BlueprintReadWrite, Category = "Selection")
-	bool bPendingWeaponUpgradeOffer = false;
+	/** Rules/backend axis for the next or active run. */
+	UPROPERTY(BlueprintReadWrite, Category = "Run")
+	ET66RunMode SelectedRunMode = ET66RunMode::Regular;
 
-	/** Rarity for the next weapon-upgrade altar. */
-	UPROPERTY(BlueprintReadWrite, Category = "Selection")
-	ET66WeaponRarity PendingWeaponUpgradeRarity = ET66WeaponRarity::Black;
+	/** Content/layout axis for the next or active run. */
+	UPROPERTY(BlueprintReadWrite, Category = "Run")
+	ET66RunCategory SelectedRunCategory = ET66RunCategory::Tower;
 
 	/** Selected run modifier kind. None means no active challenge/mod. */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
@@ -180,10 +181,6 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Mini")
 	bool bMiniIntermissionFlow = false;
 
-	/** If true, the next GameplayLevel load should spawn into the Stage Catch Up platform first. */
-	UPROPERTY(BlueprintReadWrite, Category = "Flow")
-	bool bStageCatchUpPending = false;
-
 	/** Run-level random seed (set when entering tribulation). Used for stage effects, NPC shuffle, world interactables. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	int32 RunSeed = 0;
@@ -195,10 +192,6 @@ public:
 	/** Active Daily Descent run context for the current gameplay session. */
 	UPROPERTY(BlueprintReadWrite, Category = "Daily Descent")
 	FT66DailyClimbChallengeData ActiveDailyClimbChallenge;
-
-	/** True while the current gameplay session is an active Daily Descent run. */
-	UPROPERTY(BlueprintReadWrite, Category = "Daily Descent")
-	bool bIsDailyClimbRunActive = false;
 
 	/** Active main gameplay terrain layout for the current run. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
@@ -276,13 +269,21 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	bool bRunIneligibleForLeaderboard = false;
 
-	/** If true, the current level is The Lab (practice room). No rewards, no run save; exit returns to Hero Selection. */
-	UPROPERTY(BlueprintReadWrite, Category = "Flow")
-	bool bIsLabLevel = false;
-
 	/** Frontend screen to show immediately after the next frontend-level BeginPlay. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
 	ET66ScreenType PendingFrontendScreen = ET66ScreenType::None;
+
+	/** Optional modal to open after PendingFrontendScreen is shown by direct-entry automation. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	ET66ScreenType PendingDirectEntryModal = ET66ScreenType::None;
+
+	/** True when frontend startup should immediately transition to gameplay through a direct-entry request. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	bool bPendingDirectGameplayEntry = false;
+
+	/** Human-readable source of the pending direct gameplay entry request, used for diagnostics. */
+	UPROPERTY(BlueprintReadWrite, Category = "Flow")
+	FString PendingDirectGameplayEntrySource;
 
 	/** True while a loaded save is being inspected in paused preview mode. */
 	UPROPERTY(BlueprintReadWrite, Category = "Save")
@@ -362,9 +363,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetBossEncounterMembersDataTable();
 
-	/** Get the loaded House NPCs DataTable (loads if necessary) */
+	/** Get the loaded NPCs DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
-	UDataTable* GetHouseNPCsDataTable();
+	UDataTable* GetNPCsDataTable();
 
 	/** Get the loaded Loan Shark DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -414,9 +415,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	void GetBossEncounterMemberData(FName BossEncounterID, TArray<FT66BossEncounterMemberData>& OutMembers);
 
-	/** Get house NPC data by ID (row name). Returns false if not found. */
+	/** Get NPC data by ID (row name). Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
-	bool GetHouseNPCData(FName NPCID, FHouseNPCData& OutNPCData);
+	bool GetNPCData(FName NPCID, FHouseNPCData& OutNPCData);
 
 	/** Get loan shark tuning data. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -507,8 +508,20 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Daily Descent")
 	void ClearActiveDailyClimbRun();
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Descent")
-	bool IsDailyClimbRunActive() const { return bIsDailyClimbRunActive && ActiveDailyClimbChallenge.IsValid(); }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Run")
+	bool IsDailyClimbRun() const { return SelectedRunMode == ET66RunMode::DailyClimb; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Run")
+	bool IsOfflineRun() const { return SelectedRunMode == ET66RunMode::Offline; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Run")
+	bool IsLabRun() const { return SelectedRunCategory == ET66RunCategory::Lab; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Run")
+	bool IsTutorialRun() const { return SelectedRunCategory == ET66RunCategory::Tutorial; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Run")
+	bool IsTestRoomRun() const { return SelectedRunCategory == ET66RunCategory::TestRoom; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Daily Descent")
 	int32 GetDailyClimbIntRuleValue(ET66DailyClimbRuleType RuleType, int32 DefaultValue = 0) const;
@@ -564,6 +577,10 @@ public:
 	 */
 	void TransitionToGameplayLevel();
 
+	void MarkPendingDirectGameplayEntry(const FString& Source);
+	bool ConsumePendingDirectGameplayEntry(FString& OutSource);
+	void ClearPendingDirectGameplayEntry();
+
 	/** Cover the viewport with a persistent blackout that survives level transitions. */
 	void ShowPersistentGameplayTransitionCurtain();
 
@@ -581,14 +598,10 @@ public:
 
 	/** Frontend map package path. */
 	static FName GetFrontendLevelName();
-	/** Lab map package path. */
-	static FName GetLabLevelName();
 	/** Main gameplay map package path. */
 	static FName GetGameplayLevelName();
 	/** Entry map package path for a brand-new Tribulation run. */
 	static FName GetTribulationEntryLevelName();
-	/** Standalone tutorial gameplay map package path. */
-	static FName GetTutorialLevelName();
 
 private:
 	UDataTable* ResolveCachedDataTable(TObjectPtr<UDataTable>& Cached, const TSoftObjectPtr<UDataTable>& Soft);
@@ -707,9 +720,9 @@ private:
 	TObjectPtr<UDataTable> CachedBossEncounterMembersDataTable;
 
 
-	/** Cached loaded House NPCs DataTable */
+	/** Cached loaded NPCs DataTable */
 	UPROPERTY(Transient)
-	TObjectPtr<UDataTable> CachedHouseNPCsDataTable;
+	TObjectPtr<UDataTable> CachedNPCsDataTable;
 
 	/** Cached loaded Loan Shark DataTable */
 	UPROPERTY(Transient)

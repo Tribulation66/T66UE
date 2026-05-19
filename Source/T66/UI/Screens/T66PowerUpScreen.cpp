@@ -65,12 +65,12 @@ namespace
 
 	FSlateFontInfo ShopBoldFont(int32 BaseSize)
 	{
-		return FT66Style::Tokens::FontBold(AdjustShopFontSize(BaseSize));
+		return FT66FlatStyle::Tokens::FontBold(AdjustShopFontSize(BaseSize));
 	}
 
 	FSlateFontInfo ShopRegularFont(int32 BaseSize)
 	{
-		return FT66Style::Tokens::FontRegular(AdjustShopFontSize(BaseSize));
+		return FT66FlatStyle::Tokens::FontRegular(AdjustShopFontSize(BaseSize));
 	}
 
 	FLinearColor T66PowerUpPanelFill()
@@ -130,7 +130,7 @@ namespace
 
 	FString MakePowerUpMainMenuChromePath(const TCHAR* FileName)
 	{
-		return T66ScreenSlateHelpers::MakeReferenceMainMenuElementAssetPath(FileName);
+		return FT66FlatStyle::GetFlatMainMenuElementAssetPath(FileName);
 	}
 
 	FString MakePowerUpMainMenuSquareChromePath(const TCHAR* FileName)
@@ -154,9 +154,9 @@ namespace
 				State.RemoveFromStart(TEXT("cta_new_game_button_"), ESearchCase::IgnoreCase);
 				State.RemoveFromEnd(TEXT("_red_square_variant"), ESearchCase::IgnoreCase);
 			}
-			return T66ScreenSlateHelpers::MakeReferenceRedSquareButtonAssetPath(*State);
+			return FT66FlatStyle::GetFlatRedSquareButtonAssetPath(*State);
 		}
-		return T66ScreenSlateHelpers::MakeReferenceChromeElementAssetPath(FileName);
+		return FT66FlatStyle::GetFlatChromeElementAssetPath(FileName);
 	}
 
 	FString MakePowerUpReferencePath(const TCHAR* StateFolder, const TCHAR* Family, const FString& FileName)
@@ -218,7 +218,7 @@ namespace
 		}
 		if (Name.Contains(TEXT("row_shell")))
 		{
-			return T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal"));
+			return FT66FlatStyle::GetFlatLongPanelAssetPath(TEXT("normal"));
 		}
 
 		return MakePowerUpMainMenuSquareChromePath(TEXT("main_panel_normal_square_variant.png"));
@@ -353,12 +353,12 @@ namespace
 
 	TSharedRef<SWidget> MakeShopButton(const FT66ButtonParams& Params)
 	{
-		return FT66Style::MakeButton(FlattenShopButton(Params));
+		return FT66FlatStyle::MakeButton(FlattenShopButton(Params));
 	}
 
 	TSharedRef<SWidget> MakeShopPanel(const TSharedRef<SWidget>& Content, const FLinearColor& FillColor, const FMargin& Padding, ET66PanelType Type = ET66PanelType::Panel)
 	{
-		return FT66Style::MakePanel(
+		return FT66FlatStyle::MakePanel(
 			Content,
 			FT66PanelParams(Type)
 				.SetBorderVisual(ET66ButtonBorderVisual::None)
@@ -491,7 +491,7 @@ namespace
 		}
 		if (Name == TEXT("settings_row_shell_full.png") || Name == TEXT("settings_row_shell_split.png"))
 		{
-			return T66ScreenSlateHelpers::MakeReferenceLongPanelAssetPath(TEXT("normal"));
+			return FT66FlatStyle::GetFlatLongPanelAssetPath(TEXT("normal"));
 		}
 		if (Name == TEXT("settings_dropdown_field.png"))
 		{
@@ -567,11 +567,11 @@ namespace
 		{
 			return FMargin(0.12f, 0.34f, 0.12f, 0.34f);
 		}
-		if (T66ScreenSlateHelpers::IsReferenceChromePillButtonAssetPath(SourceRelativePath))
+		if (FT66FlatStyle::IsFlatChromePillButtonAssetPath(SourceRelativePath))
 		{
 			return FMargin(0.093f, 0.213f, 0.093f, 0.213f);
 		}
-		if (T66ScreenSlateHelpers::IsReferenceChromeCTAButtonAssetPath(SourceRelativePath))
+		if (FT66FlatStyle::IsFlatChromeCTAButtonAssetPath(SourceRelativePath))
 		{
 			return FMargin(0.083f, 0.231f, 0.083f, 0.231f);
 		}
@@ -588,7 +588,7 @@ namespace
 
 	bool IsShopSlicedButtonPath(const FString& SourceRelativePath)
 	{
-		return T66ScreenSlateHelpers::IsReferenceChromeButtonAssetPath(SourceRelativePath)
+		return FT66FlatStyle::IsFlatChromeButtonAssetPath(SourceRelativePath)
 			&& SourceRelativePath.Contains(TEXT("/Buttons/"));
 	}
 
@@ -901,7 +901,7 @@ namespace
 
 		if (!ButtonStyle)
 		{
-			return FT66Style::MakeBareButton(
+			return FT66FlatStyle::MakeBareButton(
 				FT66BareButtonParams(Params.OnClicked, ButtonContent)
 				.SetButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>("NoBorder"))
 				.SetPadding(ContentPadding)
@@ -913,7 +913,7 @@ namespace
 				.SetVisibility(Params.Visibility));
 		}
 
-		return T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(
+		return FT66FlatStyle::BuildFlatSlicedPlateButton(
 			Params.OnClicked,
 			ButtonContent,
 			&ButtonStyle->Normal,
@@ -1744,7 +1744,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			const FName ToggleGroup = NAME_None) -> TSharedRef<SWidget>
 		{
 			return FT66FlatStyle::AttachMetadata(
-				FT66Style::MakeBareButton(
+				FT66FlatStyle::MakeBareButton(
 					FT66BareButtonParams(MoveTemp(OnClicked), Content)
 					.SetButtonStyle(&NoBorderButtonStyle)
 					.SetPadding(FMargin(0.f))
@@ -2458,7 +2458,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.PowerUp", "MissingDiplomaArt", "DIPLOMA"))
 					.Font(ShopBoldFont(13))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					.Clipping(EWidgetClipping::ClipToBounds)
 				]);
@@ -2551,7 +2551,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 									SNew(STextBlock)
 									.Text(ButtonText)
 									.Font(ShopBoldFont(15))
-									.ColorAndOpacity(FT66Style::Tokens::Text)
+									.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 									.Clipping(EWidgetClipping::ClipToBounds)
 								]
@@ -2581,7 +2581,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					,
 					ResolveShopDiplomaCompactButtonStyle(),
 					ShopBoldFont(15),
-					FT66Style::Tokens::Text,
+					FT66FlatStyle::Tokens::Text,
 					FMargin(14.f, 7.f, 14.f, 6.f)
 				)
 			],
@@ -2623,9 +2623,11 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					SNew(SScaleBox)
 					.Stretch(EStretch::ScaleToFit)
 					[
-						FT66Style::MakeRetroUIIcon(StaticCastSharedRef<SWidget>(
+						FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
 							SNew(SImage)
-							.Image(IconBrush.Get())))
+							.Image(IconBrush.Get())),
+							NAME_None,
+							TEXT("Icon"))
 					]
 				])
 			: StaticCastSharedRef<SWidget>(
@@ -2638,7 +2640,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.PowerUp", "MissingSecondaryArt", "ART"))
 					.Font(ShopBoldFont(12))
-					.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+					.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					.Clipping(EWidgetClipping::ClipToBounds)
 				]);
@@ -2742,7 +2744,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 											SNew(STextBlock)
 											.Text(SingleUseActionText)
 											.Font(ShopBoldFont(15))
-											.ColorAndOpacity(FT66Style::Tokens::Text)
+											.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 											.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 											.Clipping(EWidgetClipping::ClipToBounds)
 										]
@@ -2775,7 +2777,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 							,
 							ResolveShopDrugsCompactButtonStyle(),
 							ShopBoldFont(15),
-							FT66Style::Tokens::Text,
+							FT66FlatStyle::Tokens::Text,
 							FMargin(10.f, 5.f, 10.f, 5.f)
 						)
 					]
@@ -2933,7 +2935,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 							SNew(STextBlock)
 							.Text(GetDrugRowTitle(RowDef.PrimaryStat))
 							.Font(ShopBoldFont(28))
-							.ColorAndOpacity(FT66Style::Tokens::Text)
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							.Justification(ETextJustify::Center)
 							.AutoWrapText(true)
 							.WrapTextAt(270.f)
@@ -2977,8 +2979,8 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			SingleUseRowsBox
 		];
 
-	const T66ScreenSlateHelpers::FFrontendChromeMetrics& ChromeMetrics = T66ScreenSlateHelpers::GetFrontendChromeMetrics();
-	const FSlateFontInfo ChromeTabFont = T66ScreenSlateHelpers::MakeFrontendChromeTabFont();
+	const FT66FlatStyle::FFrontendChromeMetrics& ChromeMetrics = FT66FlatStyle::GetFrontendChromeMetrics();
+	const FSlateFontInfo ChromeTabFont = FT66FlatStyle::MakeFrontendChromeTabFont();
 	constexpr float PowerUpTabWidth = 540.f;
 	constexpr float PowerUpTabHeight = 78.f;
 	auto MakePowerUpTabButton = [&](const FText& TabText, FOnClicked OnClicked, bool bActive, bool bLeft) -> TSharedRef<SWidget>
@@ -3082,7 +3084,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			];
 	}
 
-	return T66ScreenSlateHelpers::MakeTopBarScreenRoot(
+	return FT66FlatStyle::MakeTopBarScreenRoot(
 		UIManager,
 		Root,
 		SNew(SBorder)

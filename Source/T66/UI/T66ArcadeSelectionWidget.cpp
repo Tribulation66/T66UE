@@ -5,6 +5,7 @@
 #include "Gameplay/T66ArcadeInteractableBase.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
@@ -22,8 +23,8 @@
 
 namespace
 {
-	constexpr float GArcadeSelectorCabinetWidth = 1500.f;
-	constexpr float GArcadeSelectorCabinetHeight = 838.f;
+	constexpr float GArcadeSelectorMachineWidth = 1500.f;
+	constexpr float GArcadeSelectorMachineHeight = 838.f;
 	constexpr float GArcadeSelectorScreenWidth = 900.f;
 	constexpr float GArcadeSelectorScreenHeight = 340.f;
 	constexpr int32 GArcadeSelectorColumns = 2;
@@ -31,7 +32,7 @@ namespace
 
 TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 {
-	LoadCabinetArtworkBrush();
+	LoadMachineArtworkBrush();
 
 	GameOptions.Reset();
 	if (AT66ArcadeInteractableBase* Source = GetSourceInteractable())
@@ -60,12 +61,12 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.Arcade", "ArcadeSelectorNoGames", "NO GAME CARTRIDGES FOUND"))
-				.Font(FT66Style::Tokens::FontBold(22))
-				.ColorAndOpacity(FT66Style::Tokens::Danger)
+				.Font(FT66FlatStyle::Tokens::FontBold(22))
+				.ColorAndOpacity(FT66FlatStyle::Tokens::Danger)
 				.Justification(ETextJustify::Center)
 			]);
 
-	const TSharedRef<SWidget> CabinetScreenContent =
+	const TSharedRef<SWidget> MachineScreenContent =
 		SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
 		.BorderBackgroundColor(FLinearColor(0.006f, 0.012f, 0.020f, 0.86f))
@@ -81,7 +82,7 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.Arcade", "ArcadeSelectorScreenTitle", "SELECT GAME"))
-					.Font(FT66Style::Tokens::FontBold(26))
+					.Font(FT66FlatStyle::Tokens::FontBold(26))
 					.ColorAndOpacity(FLinearColor(0.25f, 0.92f, 1.f, 1.f))
 				]
 				+ SHorizontalBox::Slot()
@@ -89,7 +90,7 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 				[
 					SNew(STextBlock)
 					.Text(NSLOCTEXT("T66.Arcade", "ArcadeSelectorCreditReadout", "CREDIT 01"))
-					.Font(FT66Style::Tokens::FontBold(18))
+					.Font(FT66FlatStyle::Tokens::FontBold(18))
 					.ColorAndOpacity(FLinearColor(1.f, 0.78f, 0.22f, 1.f))
 				]
 			]
@@ -119,11 +120,11 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 			]
 		];
 
-	const TSharedRef<SWidget> CabinetScreen =
+	const TSharedRef<SWidget> MachineScreen =
 		SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
-			CabinetScreenContent
+			MachineScreenContent
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
@@ -145,13 +146,13 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.Arcade", "ArcadeSelectorDeckLabel", "CHADCADE MULTI-CART"))
-				.Font(FT66Style::Tokens::FontBold(20))
+				.Font(FT66FlatStyle::Tokens::FontBold(20))
 				.ColorAndOpacity(FLinearColor(1.f, 0.74f, 0.26f, 1.f))
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			[
-				FT66Style::MakeButton(
+				FT66FlatStyle::MakeButton(
 					FT66ButtonParams(
 						NSLOCTEXT("T66.Arcade", "ArcadeSelectorExit", "Exit"),
 						FOnClicked::CreateUObject(this, &UT66ArcadeSelectionWidget::HandleExitClicked),
@@ -162,7 +163,7 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 			]
 		];
 
-	const TSharedRef<SWidget> Cabinet =
+	const TSharedRef<SWidget> Machine =
 		SNew(SOverlay)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
@@ -176,7 +177,7 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
 		[
-			BuildCabinetArtworkLayer(1.f)
+			BuildMachineArtworkLayer(1.f)
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Center)
@@ -189,7 +190,7 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 			[
 				SNew(STextBlock)
 				.Text(NSLOCTEXT("T66.Arcade", "ArcadeSelectorMarquee", "CHADCADE"))
-				.Font(FT66Style::Tokens::FontBold(44))
+				.Font(FT66FlatStyle::Tokens::FontBold(44))
 				.ColorAndOpacity(FLinearColor(1.f, 0.93f, 0.38f, 1.f))
 				.ShadowOffset(FVector2D(0.f, 3.f))
 				.ShadowColorAndOpacity(FLinearColor(0.34f, 0.f, 0.08f, 0.90f))
@@ -205,7 +206,7 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 			.WidthOverride(GArcadeSelectorScreenWidth)
 			.HeightOverride(GArcadeSelectorScreenHeight)
 			[
-				CabinetScreen
+				MachineScreen
 			]
 		]
 		+ SOverlay::Slot()
@@ -236,47 +237,47 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 		.Padding(FMargin(28.f))
 		[
 			SNew(SBox)
-			.WidthOverride(GArcadeSelectorCabinetWidth)
-			.HeightOverride(GArcadeSelectorCabinetHeight)
+			.WidthOverride(GArcadeSelectorMachineWidth)
+			.HeightOverride(GArcadeSelectorMachineHeight)
 			[
-				Cabinet
+				Machine
 			]
 		];
 
-	return FT66Style::MakeResponsiveRoot(Root);
+	return FT66FlatStyle::MakeResponsiveRoot(Root);
 }
 
-void UT66ArcadeSelectionWidget::LoadCabinetArtworkBrush()
+void UT66ArcadeSelectionWidget::LoadMachineArtworkBrush()
 {
-	if (CabinetArtworkTexture.IsValid())
+	if (MachineArtworkTexture.IsValid())
 	{
 		return;
 	}
 
-	for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(TEXT("SourceAssets/Arcade/Selector/arcade_selector_front_cabinet.png")))
+	for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(TEXT("SourceAssets/Arcade/Selector/arcade_selector_front_machine.png")))
 	{
-		if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(CandidatePath, TextureFilter::TF_Trilinear, TEXT("ArcadeSelectorCabinet")))
+		if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTextureWithGeneratedMips(CandidatePath, TextureFilter::TF_Trilinear, TEXT("ArcadeSelectorMachine")))
 		{
-			CabinetArtworkTexture.Reset(Texture);
-			CabinetArtworkBrush = FSlateBrush();
-			CabinetArtworkBrush.SetResourceObject(Texture);
-			CabinetArtworkBrush.DrawAs = ESlateBrushDrawType::Image;
-			CabinetArtworkBrush.Tiling = ESlateBrushTileType::NoTile;
-			CabinetArtworkBrush.ImageSize = FVector2D(Texture->GetSizeX(), Texture->GetSizeY());
+			MachineArtworkTexture.Reset(Texture);
+			MachineArtworkBrush = FSlateBrush();
+			MachineArtworkBrush.SetResourceObject(Texture);
+			MachineArtworkBrush.DrawAs = ESlateBrushDrawType::Image;
+			MachineArtworkBrush.Tiling = ESlateBrushTileType::NoTile;
+			MachineArtworkBrush.ImageSize = FVector2D(Texture->GetSizeX(), Texture->GetSizeY());
 			return;
 		}
 	}
 }
 
-TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildCabinetArtworkLayer(const float Opacity) const
+TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildMachineArtworkLayer(const float Opacity) const
 {
-	if (!CabinetArtworkTexture.IsValid())
+	if (!MachineArtworkTexture.IsValid())
 	{
 		return SNullWidget::NullWidget;
 	}
 
 	return SNew(SImage)
-		.Image(&CabinetArtworkBrush)
+		.Image(&MachineArtworkBrush)
 		.ColorAndOpacity(FLinearColor(1.f, 1.f, 1.f, FMath::Clamp(Opacity, 0.f, 1.f)));
 }
 
@@ -347,7 +348,7 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildGameButton(const FT66ArcadeI
 	return SNew(SBox)
 		.HeightOverride(104.f)
 		[
-			FT66Style::MakeBareButton(
+			FT66FlatStyle::MakeBareButton(
 				FT66BareButtonParams(
 					FOnClicked::CreateUObject(this, &UT66ArcadeSelectionWidget::HandleGameClicked, GameData.ArcadeGameType),
 					SNew(SBorder)
@@ -378,7 +379,7 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildGameButton(const FT66ArcadeI
 									[
 										SNew(STextBlock)
 										.Text(ResolveGameCode(GameData.ArcadeGameType))
-										.Font(FT66Style::Tokens::FontBold(18))
+										.Font(FT66FlatStyle::Tokens::FontBold(18))
 										.ColorAndOpacity(FLinearColor(0.02f, 0.02f, 0.03f, 1.f))
 										.Justification(ETextJustify::Center)
 									]
@@ -393,8 +394,8 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildGameButton(const FT66ArcadeI
 									[
 										SNew(STextBlock)
 										.Text(DisplayName)
-										.Font(FT66Style::Tokens::FontBold(22))
-										.ColorAndOpacity(FT66Style::Tokens::Text)
+										.Font(FT66FlatStyle::Tokens::FontBold(22))
+										.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 									]
 									+ SVerticalBox::Slot()
 									.AutoHeight()
@@ -402,8 +403,8 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildGameButton(const FT66ArcadeI
 									[
 										SNew(STextBlock)
 										.Text(ResolveGameFlavorText(GameData.ArcadeGameType))
-										.Font(FT66Style::Tokens::FontRegular(15))
-										.ColorAndOpacity(FT66Style::Tokens::TextMuted)
+										.Font(FT66FlatStyle::Tokens::FontRegular(15))
+										.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 										.AutoWrapText(true)
 									]
 								]
@@ -414,7 +415,7 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildGameButton(const FT66ArcadeI
 								[
 									SNew(STextBlock)
 									.Text(NSLOCTEXT("T66.Arcade", "ArcadeSelectorStartLabel", "START"))
-									.Font(FT66Style::Tokens::FontBold(16))
+									.Font(FT66FlatStyle::Tokens::FontBold(16))
 									.ColorAndOpacity(Accent)
 								]
 							]
@@ -528,7 +529,7 @@ FText UT66ArcadeSelectionWidget::ResolveGameFlavorText(const ET66ArcadeGameType 
 	case ET66ArcadeGameType::BladeSweep:
 		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorBladeSweep", "Sweep cursed fruit and dodge bad tiles.");
 	default:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorDefault", "Boot the selected cabinet cartridge.");
+		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorDefault", "Boot the selected arcade machine cartridge.");
 	}
 }
 
