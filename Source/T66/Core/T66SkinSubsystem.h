@@ -40,10 +40,10 @@ public:
 	/** Default skin ID (always considered owned). */
 	static const FName DefaultSkinID;
 
-	/** Legacy asset-backed purchasable skin ID. Hero UI presents this as the Demo skin. */
-	static const FName BeachgoerSkinID;
+	/** Demo-facing purchasable skin ID. Offered only for the first five heroes. */
+	static const FName DemoSkinID;
 
-	/** Price in Chad Coupons for the purchasable Demo/Beachgoer skin. */
+	/** Price in Chad Coupons for the purchasable demo skin. */
 	static constexpr int32 DefaultSkinPriceAC = 50;
 
 	/** All globally known skin IDs. Entity-specific offer lists are filtered by GetSkinsForEntity. */
@@ -116,4 +116,6 @@ private:
 	bool IsSkinOfferedForEntity(ET66SkinEntityType EntityType, FName EntityID, FName SkinID) const;
 	TArray<FName> GetSkinIDsForEntity(ET66SkinEntityType EntityType, FName EntityID) const;
 	TSoftObjectPtr<UTexture2D> GetCompanionSkinPortraitOverride(FName CompanionID, FName SkinID, bool bSelectionPortrait) const;
+	static const FName LegacyBeachgoerSkinID;
+	static FName NormalizeSkinID(FName SkinID);
 };

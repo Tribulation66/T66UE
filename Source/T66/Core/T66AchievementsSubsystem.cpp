@@ -881,43 +881,6 @@ void UT66AchievementsSubsystem::RebuildDefinitions()
 			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraTokenDesc", "Unlock Gambler's Token level {0}."), FText::AsNumber(Requirement)));
 	}
 
-	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
-	{
-		const FText BeachgoerSkinName = Loc
-			? Loc->GetText_SkinName(UT66SkinSubsystem::BeachgoerSkinID)
-			: FText::FromName(UT66SkinSubsystem::BeachgoerSkinID);
-		for (const FName CompanionID : GI->GetAllCompanionIDs())
-		{
-			if (CompanionID.IsNone())
-			{
-				continue;
-			}
-
-			FCompanionData CompanionData;
-			const bool bHasCompanionData = GI->GetCompanionData(CompanionID, CompanionData);
-			const FText CompanionName = bHasCompanionData
-				? (Loc ? Loc->GetCompanionDisplayName(CompanionData) : (!CompanionData.DisplayName.IsEmpty() ? CompanionData.DisplayName : FText::FromName(CompanionID)))
-				: FText::FromName(CompanionID);
-
-			AddSpecialSkinAchievement(
-				CachedDefinitions,
-				MakeSpecialCompanionSkinAchievementID(CompanionID),
-				ET66AchievementTier::White,
-				SpecialCompanionSkinRequirement,
-				ET66AchievementRewardEntityType::Companion,
-				CompanionID,
-				UT66SkinSubsystem::BeachgoerSkinID,
-				FText::Format(
-					NSLOCTEXT("T66.Achievements", "SpecialCompanionSkinTitle", "{0} Devotion"),
-					CompanionName),
-				FText::Format(
-					NSLOCTEXT("T66.Achievements", "SpecialCompanionSkinDesc", "Clear {0} stages with {1} to unlock the {2} outfit."),
-					FText::AsNumber(SpecialCompanionSkinRequirement),
-					CompanionName,
-					BeachgoerSkinName));
-		}
-	}
-
 	ApplyRuntimeStateToCachedDefinitions(CachedDefinitions);
 }
 

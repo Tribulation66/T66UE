@@ -30,6 +30,9 @@ struct FT66ResolvedCharacterVisual
 	TObjectPtr<UStaticMesh> StaticMesh = nullptr;
 
 	UPROPERTY()
+	TObjectPtr<UStaticMesh> OutlineStaticMesh = nullptr;
+
+	UPROPERTY()
 	TObjectPtr<UAnimationAsset> LoopingAnim = nullptr;
 
 	/** Optional alert/stand animation (preview). */
@@ -81,7 +84,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
 	static FName GetHeroVisualID(FName HeroID, ET66BodyType BodyType, FName SkinID);
 
-	/** Compute companion VisualID from CompanionID + SkinID (e.g. Companion_01 + Beachgoer -> Companion_01_Beachgoer). */
+	/** Compute companion VisualID from CompanionID + SkinID. Legacy Beachgoer skin IDs normalize to DemoSkin before lookup. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
 	static FName GetCompanionVisualID(FName CompanionID, FName SkinID);
 

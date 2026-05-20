@@ -1392,9 +1392,9 @@ FText UT66LocalizationSubsystem::GetText_SkinName(FName SkinID) const
 	{
 		return NSLOCTEXT("T66.Skins", "Default", "Default");
 	}
-	if (SkinID == FName(TEXT("Beachgoer")))
+	if (SkinID == FName(TEXT("DemoSkin")) || SkinID == FName(TEXT("Beachgoer")))
 	{
-		return NSLOCTEXT("T66.Skins", "Beachgoer", "Beachgoer");
+		return NSLOCTEXT("T66.Skins", "DemoSkin", "Demo Skin");
 	}
 	if (SkinID == FName(TEXT("Golden")))
 	{

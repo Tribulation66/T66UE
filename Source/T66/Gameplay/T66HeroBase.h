@@ -137,7 +137,7 @@ public:
 	 * Called after spawning to set up visuals and stats
 	 * @param InHeroData The hero's data from the DataTable
 	 * @param InBodyType The selected body style (Chad or Stacy)
-	 * @param InSkinID Skin ID (e.g. Default, Beachgoer)
+	 * @param InSkinID Skin ID (e.g. Default, DemoSkin)
 	 * @param bPreviewMode If true, use the idle animation for hero selection preview
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Hero")

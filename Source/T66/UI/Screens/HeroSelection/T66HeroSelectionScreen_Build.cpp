@@ -202,9 +202,13 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	{
 		SelectedDifficulty = SessionSubsystem->GetSharedLobbyDifficulty();
 	}
+	if (T66GI)
+	{
+		SelectedDifficulty = T66GI->ResolvePlayableDifficulty(SelectedDifficulty);
+	}
 
 	DifficultyOptions.Empty();
-	const TArray<ET66Difficulty> Difficulties = T66GI ? T66GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
+	const TArray<ET66Difficulty> Difficulties = T66GI ? T66GI->GetVisibleDifficulties() : TArray<ET66Difficulty>{
 		ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 	};
 	for (ET66Difficulty Diff : Difficulties)
@@ -246,7 +250,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	const FSlateBrush* StacyIconBrush = HSLooseBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/stacy_icon.png"), FVector2D(24.f, 24.f), TEXT("HeroSelectionStacyIcon"));
 	const FSlateBrush* TicketBrush = HSLooseBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png"), FVector2D(28.f, 28.f), TEXT("HeroSelectionTicketIcon"));
 
-	auto MakeButton = [](const TCHAR* Tag, const FText& Label, const ET66FlatState State, FOnClicked OnClicked, const float MinWidth, const float Height, const int32 FontSize = 20, const TSharedPtr<SWidget>& Icon = nullptr, const FName ToggleGroup = NAME_None)
+	auto MakeButton = [](const TCHAR* Tag, const FText& Label, const ET66FlatState State, FOnClicked OnClicked, const float MinWidth, const float Height, const int32 FontSize = 20, const TSharedPtr<SWidget>& Icon = nullptr, const FName ToggleGroup = NAME_None, const bool bEnabled = true)
 	{
 		return FT66FlatStyle::MakeFlatButton(
 			State,
@@ -257,7 +261,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			FMargin(12.f, 7.f),
 			MinWidth,
 			Height,
-			true,
+			bEnabled,
 			FontSize,
 			HSName(Tag),
 			ToggleGroup);
@@ -402,26 +406,38 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	for (int32 Index = 0; Index < HeroSelectionHeroCarouselVisibleSlots; ++Index)
 	{
 		const bool bSelected = Index == HeroSelectionHeroCarouselCenterIndex;
+		const int32 OffsetFromCenter = Index - HeroSelectionHeroCarouselCenterIndex;
+		const int32 SlotHeroIndex = AllHeroIDs.Num() > 0 ? (CurrentHeroIndex + OffsetFromCenter + AllHeroIDs.Num()) % AllHeroIDs.Num() : INDEX_NONE;
+		const FName SlotHeroID = AllHeroIDs.IsValidIndex(SlotHeroIndex) ? AllHeroIDs[SlotHeroIndex] : NAME_None;
+		const bool bHeroPlayable = !SlotHeroID.IsNone() && (!T66GI || T66GI->IsHeroPlayable(SlotHeroID));
+		const ET66FlatState SlotState = !bHeroPlayable
+			? ET66FlatState::Disabled
+			: (bSelected ? ET66FlatState::Selected : ET66FlatState::Default);
 		const float X = 65.f + Index * 82.f;
 		const FString Tag = FString::Printf(TEXT("HeroSelection.TopRow.HeroCarousel.Portrait%02d"), Index + 1);
 		const TSharedPtr<FSlateBrush> PortraitBrush = HeroCarouselPortraitBrushes.IsValidIndex(Index)
 			? HeroCarouselPortraitBrushes[Index]
 			: nullptr;
+		const TSharedRef<SWidget> HeroCarouselButton = FT66FlatStyle::MakeFlatToggleGroupButton(
+			SlotState,
+			FT66FlatStyle::MakeFlatPortraitSlot(
+				SlotState,
+				PortraitBrush.IsValid() ? PortraitBrush.Get() : nullptr,
+				nullptr,
+				FVector2D(67.f, Index < 5 ? 72.f : 71.f)),
+			bHeroPlayable ? FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleHeroCarouselPortraitClicked, Index) : FOnClicked(),
+			FMargin(0.f),
+			0.f,
+			0.f,
+			bHeroPlayable,
+			FName(*Tag),
+			HeroCarouselGroup);
 		HSAddCanvasSlot(CarouselCanvas, X, Index < 5 ? 1.f : 2.f, 67.f, Index < 5 ? 72.f : 71.f,
-			FT66FlatStyle::MakeFlatToggleGroupButton(
-				bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
-				FT66FlatStyle::MakeFlatPortraitSlot(
-					bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
-					PortraitBrush.IsValid() ? PortraitBrush.Get() : nullptr,
-					nullptr,
-					FVector2D(67.f, Index < 5 ? 72.f : 71.f)),
-				FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleHeroCarouselPortraitClicked, Index),
-				FMargin(0.f),
-				0.f,
-				0.f,
-				true,
-				FName(*Tag),
-				HeroCarouselGroup));
+			T66DemoModeUI::WrapWithComingSoonOverlay(
+				HeroCarouselButton,
+				!SlotHeroID.IsNone() && !bHeroPlayable,
+				this,
+				FName(*(Tag + TEXT(".DemoOverlay")))));
 	}
 	HSAddCanvasSlot(CarouselCanvas, 644.f, 0.f, 44.f, 70.f,
 		MakeButton(TEXT("HeroSelection.TopRow.HeroCarousel.RightArrow"), FText::FromString(TEXT(">")), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleNextClicked), 44.f, 70.f, 24));
@@ -451,23 +467,23 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			}));
 	HSAddCanvasSlot(SkinsCanvas, 19.f, 184.f, 495.f, 111.f,
 		MakeSkinRow(
-			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer"),
-			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer.Portrait"),
-			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer.Name"),
-			FName(TEXT("Beachgoer")),
+			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin"),
+			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin.Portrait"),
+			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin.Name"),
+			UT66SkinSubsystem::DemoSkinID,
 			NSLOCTEXT("T66.HeroSelection", "FlatSkinHeroDemo", "DEMO"),
 			SkinBeachBrush,
 			111.f,
 			[&](const TSharedRef<SConstraintCanvas>& RowCanvas)
 			{
 				HSAddCanvasSlot(RowCanvas, 147.f, 56.f, 134.f, 42.f,
-					MakeButton(TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer.PreviewButton"), NSLOCTEXT("T66.Common", "Preview", "PREVIEW"), ET66FlatState::Default, FOnClicked::CreateLambda([]()
+					MakeButton(TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin.PreviewButton"), NSLOCTEXT("T66.Common", "Preview", "PREVIEW"), ET66FlatState::Default, FOnClicked::CreateLambda([]()
 					{
 						UE_LOG(LogT66HeroSelection, Warning, TEXT("Action SkinPreview clicked - backend not yet implemented"));
 						return FReply::Handled();
 					}), 0.f, 42.f, 13));
 				HSAddCanvasSlot(RowCanvas, 357.f, 56.f, 121.f, 42.f,
-					HSTextPanel(TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer.Cost"), FText::FromString(TEXT("50")), ET66FlatState::Default, 16, FMargin(8.f, 5.f)));
+					HSTextPanel(TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin.Cost"), FText::FromString(TEXT("50")), ET66FlatState::Default, 16, FMargin(8.f, 5.f)));
 			}));
 
 	const TSharedRef<SConstraintCanvas> DrugsCanvas = HSMakeCanvas();
@@ -477,8 +493,26 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(DrugsCanvas, 94.f, 45.f, 56.f, 49.f, MakeEmptyDrugSlot(TEXT("HeroSelection.LeftColumn.DrugsPanel.EquipSlot02")));
 	HSAddCanvasSlot(DrugsCanvas, 169.f, 45.f, 54.f, 49.f, MakeEmptyDrugSlot(TEXT("HeroSelection.LeftColumn.DrugsPanel.EquipSlot03")));
 	HSAddCanvasSlot(DrugsCanvas, 238.f, 45.f, 54.f, 49.f, MakeEmptyDrugSlot(TEXT("HeroSelection.LeftColumn.DrugsPanel.EquipSlot04")));
+	const bool bDemoDrugPurchasesBlocked = T66GI
+		&& T66GI->GetSubsystem<UT66BuffSubsystem>()
+		&& !T66GI->GetSubsystem<UT66BuffSubsystem>()->AreSingleUseBuffPurchasesAllowed();
+	const TSharedRef<SWidget> DrugsBuyButton = MakeButton(
+		TEXT("HeroSelection.LeftColumn.DrugsPanel.BuyButton"),
+		NSLOCTEXT("T66.Common", "Buy", "BUY"),
+		bDemoDrugPurchasesBlocked ? ET66FlatState::Disabled : ET66FlatState::Selected,
+		bDemoDrugPurchasesBlocked ? FOnClicked() : FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTemporaryBuffSlotClicked, 0),
+		0.f,
+		50.f,
+		16,
+		nullptr,
+		NAME_None,
+		!bDemoDrugPurchasesBlocked);
 	HSAddCanvasSlot(DrugsCanvas, 326.f, 44.f, 77.f, 50.f,
-		MakeButton(TEXT("HeroSelection.LeftColumn.DrugsPanel.BuyButton"), NSLOCTEXT("T66.Common", "Buy", "BUY"), ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTemporaryBuffSlotClicked, 0), 0.f, 50.f, 16));
+		T66DemoModeUI::WrapWithComingSoonOverlay(
+			DrugsBuyButton,
+			bDemoDrugPurchasesBlocked,
+			this,
+			HSName(TEXT("HeroSelection.LeftColumn.DrugsPanel.BuyButton.DemoOverlay"))));
 	HSAddCanvasSlot(DrugsCanvas, 421.f, 44.f, 92.f, 50.f,
 		MakeButton(TEXT("HeroSelection.LeftColumn.DrugsPanel.ClearButton"), NSLOCTEXT("T66.Common", "Clear", "CLEAR"), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleClearTemporaryBuffsClicked), 0.f, 50.f, 16));
 
@@ -683,29 +717,36 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(CompanionPanel, 19.f, 103.f, 374.f, 72.f,
 		MakeButton(TEXT("HeroSelection.BottomRow.CompanionPanel.ChooseCompanionButton"), FText::FromString(TEXT("CHOOSE COMPANION")), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionClicked), 0.f, 72.f, 15));
 
-	auto MakeDifficultyMenu = [this, Loc, Difficulties]() -> TSharedRef<SWidget>
+	auto MakeDifficultyMenu = [this, Loc, T66GI, Difficulties]() -> TSharedRef<SWidget>
 	{
 		TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
 		for (ET66Difficulty Difficulty : Difficulties)
 		{
 			const FText Label = Loc ? Loc->GetText_Difficulty(Difficulty) : FText::FromString(TEXT("Easy"));
+			const bool bDifficultyPlayable = !T66GI || T66GI->IsDifficultyPlayable(Difficulty);
+			const ET66FlatState OptionState = !bDifficultyPlayable
+				? ET66FlatState::Disabled
+				: (Difficulty == SelectedDifficulty ? ET66FlatState::Selected : ET66FlatState::Default);
 			Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 			[
-				FT66FlatStyle::MakeFlatButton(
-					Difficulty == SelectedDifficulty ? ET66FlatState::Selected : ET66FlatState::Default,
+				T66DemoModeUI::WrapWithComingSoonOverlay(
+				FT66FlatStyle::MakeFlatDropdownOptionButton(
+					OptionState,
 					Label,
-					FOnClicked::CreateLambda([this, Difficulty]()
-					{
-						SelectDifficulty(Difficulty);
-						return FReply::Handled();
-					}),
-					nullptr,
-					nullptr,
-					FMargin(10.f, 6.f),
+					bDifficultyPlayable
+						? FOnClicked::CreateLambda([this, Difficulty]()
+						{
+							SelectDifficulty(Difficulty);
+							FSlateApplication::Get().DismissAllMenus();
+							return FReply::Handled();
+						})
+						: FOnClicked(),
 					160.f,
-					36.f,
-					true,
-					16)
+					56.f,
+					20),
+				!bDifficultyPlayable,
+				this,
+				HSName(TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown.Option.DemoOverlay")))
 			];
 		}
 		return HSMakePanel(TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown.Menu"), ET66FlatState::Default, Menu, FMargin(6.f));

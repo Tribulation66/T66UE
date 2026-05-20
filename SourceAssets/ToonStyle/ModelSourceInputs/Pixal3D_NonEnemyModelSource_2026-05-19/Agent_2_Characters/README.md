@@ -47,10 +47,9 @@ These are purchasable demo or early-adopter skin source images. Demo source imag
 | `Characters/Heroes/Demo/hero_5_stacy_yakub_female_demo.png` | Hero 5 Stacy demo skin |
 
 Skin notes:
-- Runtime keeps the legacy asset-backed `Beachgoer` skin ID as the purchasable hero skin slot for compatibility, but hero selection displays it as `Demo`.
-- `UT66SkinSubsystem` offers that skin only for `Hero_1`, `Hero_3`, `Hero_4`, and `Hero_5`; default skins remain available for every hero.
-- `Content/Data/CharacterVisuals.csv` currently keeps asset-backed `Hero_1_Chad_Beachgoer`, `Hero_3_Chad_Beachgoer`, `Hero_4_Chad_Beachgoer`, and `Hero_5_Chad_Beachgoer` rows only. These are placeholder-backed runtime rows until the Pixal3D birthday-sash demo meshes are imported.
-- After Pixal3D import, add or replace both `Chad` and `Stacy` visual rows for the four demo heroes so the male and female demo source images become real runtime visuals. Do not add demo rows for `Hero_2` unless a finalized Lu Bu demo source image is created.
+- Runtime uses `DemoSkin` as the purchasable demo hero skin ID. Legacy `Beachgoer` inputs are normalized for compatibility only because the imported asset folders still use that name.
+- `UT66SkinSubsystem` offers `DemoSkin` only for `Hero_1` through `Hero_5`; default skins remain available for every hero.
+- `Content/Data/CharacterVisuals.csv` keeps `*_DemoSkin` rows only for the first five heroes. Rows with no dedicated demo model reuse the default model path.
 
 ## Companions
 

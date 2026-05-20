@@ -1011,7 +1011,7 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 		InHeroData.PlaceholderColor.G,
 		InHeroData.PlaceholderColor.B);
 
-	// Resolve the legacy visual row by HeroID + body style + SkinID (for example Hero_1_Chad, Hero_1_Stacy_Beachgoer).
+	// Resolve the visual row by HeroID + body style + SkinID (for example Hero_1_Chad, Hero_1_Stacy_DemoSkin).
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())

@@ -14,6 +14,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Modules/ModuleManager.h"
+#include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
 #include "Components/CapsuleComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -30,6 +31,7 @@ static const FName T66_CharactersRootPath(TEXT("/Game/Characters"));
 static const TCHAR* T66_CharacterBaseMaterialPath = TEXT("/Game/Materials/M_Character_Unlit.M_Character_Unlit");
 static const TCHAR* T66_FbxBaseMaterialPath = TEXT("/Game/Materials/M_FBX_Unlit.M_FBX_Unlit");
 static const TCHAR* T66_QuadRetroSharedMaterialPath = TEXT("/Game/Materials/MI_GLB_Unlit_Character_Shared.MI_GLB_Unlit_Character_Shared");
+static const FName T66_OutlineSidecarTag(TEXT("T66OutlineSidecar"));
 static constexpr float T66_CharacterVisualBrightness = 0.8f;
 
 struct FT66ResolvedImportedTextureSet
@@ -127,6 +129,7 @@ static void T66AppendCharacterVisualAssetPaths(const FT66CharacterVisualRow& Row
 {
 	T66AddUniqueCharacterVisualPath(Row.SkeletalMesh.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.StaticMesh.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.OutlineStaticMesh.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.PixelatedTextureAssetPath.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.LoopingAnimation.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.AlertAnimation.ToSoftObjectPath(), OutPaths);
@@ -138,6 +141,135 @@ static void T66AppendCharacterVisualAssetPaths(const FT66CharacterVisualRow& Row
 	T66AppendAnimationFallbackPreloadPaths(Row.RollAnimation, OutPaths);
 }
 
+static FName T66GetOutlineOwnerTag(const UStaticMeshComponent* BaseComponent)
+{
+	return BaseComponent
+		? FName(*FString::Printf(TEXT("T66OutlineOwner_%s"), *BaseComponent->GetFName().ToString()))
+		: NAME_None;
+}
+
+static FName T66NormalizeSkinVisualToken(const FName SkinID)
+{
+	return SkinID == FName(TEXT("Beachgoer")) ? FName(TEXT("DemoSkin")) : SkinID;
+}
+
+static UStaticMeshComponent* T66FindOutlineSidecarComponent(UStaticMeshComponent* BaseComponent)
+{
+	AActor* Owner = BaseComponent ? BaseComponent->GetOwner() : nullptr;
+	if (!Owner)
+	{
+		return nullptr;
+	}
+
+	const FName OwnerTag = T66GetOutlineOwnerTag(BaseComponent);
+	TArray<UStaticMeshComponent*> Components;
+	Owner->GetComponents<UStaticMeshComponent>(Components);
+	for (UStaticMeshComponent* Component : Components)
+	{
+		if (Component
+			&& Component->ComponentHasTag(T66_OutlineSidecarTag)
+			&& Component->ComponentHasTag(OwnerTag))
+		{
+			return Component;
+		}
+	}
+
+	return nullptr;
+}
+
+static void T66DestroyOutlineSidecarComponent(UStaticMeshComponent* BaseComponent)
+{
+	if (UStaticMeshComponent* OutlineComponent = T66FindOutlineSidecarComponent(BaseComponent))
+	{
+		OutlineComponent->DestroyComponent();
+	}
+}
+
+static UStaticMeshComponent* T66FindOrCreateOutlineSidecarComponent(UStaticMeshComponent* BaseComponent)
+{
+	if (!BaseComponent)
+	{
+		return nullptr;
+	}
+
+	if (UStaticMeshComponent* Existing = T66FindOutlineSidecarComponent(BaseComponent))
+	{
+		return Existing;
+	}
+
+	AActor* Owner = BaseComponent->GetOwner();
+	if (!Owner)
+	{
+		return nullptr;
+	}
+
+	const FName ComponentName(*FString::Printf(TEXT("%s_OutlineSidecar"), *BaseComponent->GetName()));
+	UStaticMeshComponent* OutlineComponent = NewObject<UStaticMeshComponent>(Owner, ComponentName);
+	if (!OutlineComponent)
+	{
+		return nullptr;
+	}
+
+	OutlineComponent->CreationMethod = EComponentCreationMethod::Instance;
+	OutlineComponent->ComponentTags.Add(T66_OutlineSidecarTag);
+	OutlineComponent->ComponentTags.Add(T66GetOutlineOwnerTag(BaseComponent));
+	OutlineComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	OutlineComponent->SetCanEverAffectNavigation(false);
+	OutlineComponent->CastShadow = false;
+
+	USceneComponent* AttachParent = BaseComponent->GetAttachParent();
+	if (!AttachParent)
+	{
+		AttachParent = Owner->GetRootComponent();
+	}
+	OutlineComponent->AttachToComponent(AttachParent, FAttachmentTransformRules::KeepRelativeTransform);
+	OutlineComponent->RegisterComponent();
+	Owner->AddInstanceComponent(OutlineComponent);
+	return OutlineComponent;
+}
+
+static void T66ApplyOutlineSidecarComponent(FName VisualID, UStaticMeshComponent* BaseComponent, UStaticMesh* OutlineMesh)
+{
+	if (!BaseComponent)
+	{
+		return;
+	}
+
+	if (!OutlineMesh)
+	{
+		T66DestroyOutlineSidecarComponent(BaseComponent);
+		return;
+	}
+
+	UStaticMeshComponent* OutlineComponent = T66FindOrCreateOutlineSidecarComponent(BaseComponent);
+	if (!OutlineComponent)
+	{
+		UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[OUTLINE] Failed to create outline sidecar for VisualID=%s"), *VisualID.ToString());
+		return;
+	}
+
+	OutlineComponent->EmptyOverrideMaterials();
+	OutlineComponent->SetStaticMesh(OutlineMesh);
+	USceneComponent* AttachParent = BaseComponent->GetAttachParent();
+	if (!AttachParent)
+	{
+		AttachParent = BaseComponent->GetOwner() ? BaseComponent->GetOwner()->GetRootComponent() : BaseComponent;
+	}
+	OutlineComponent->AttachToComponent(AttachParent, FAttachmentTransformRules::KeepRelativeTransform);
+	OutlineComponent->SetRelativeLocation(BaseComponent->GetRelativeLocation());
+	OutlineComponent->SetRelativeRotation(BaseComponent->GetRelativeRotation());
+	OutlineComponent->SetRelativeScale3D(BaseComponent->GetRelativeScale3D());
+	OutlineComponent->SetHiddenInGame(BaseComponent->bHiddenInGame, true);
+	OutlineComponent->SetVisibility(BaseComponent->IsVisible(), true);
+	OutlineComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	OutlineComponent->SetCanEverAffectNavigation(false);
+	UE_LOG(
+		LogT66CharacterVisuals,
+		Log,
+		TEXT("[OUTLINE] Applied OutlineStaticMesh for VisualID=%s Mesh=%s"),
+		*VisualID.ToString(),
+		*OutlineMesh->GetPathName());
+}
 static bool T66IsUsableImportedTexture(const UTexture* Texture)
 {
 	return IsValid(Texture) && Texture != GetWhiteFallbackTexture();
@@ -1135,6 +1267,13 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[MESH] ResolveVisual VisualID=%s ResolvedRow=%s StaticMesh path=%s Loaded=%s"),
 				*VisualID.ToString(), *ResolvedVisualID.ToString(), *Res.Row.StaticMesh.ToString(), Res.StaticMesh ? TEXT("YES") : TEXT("NO"));
 		}
+		if (!Res.Row.OutlineStaticMesh.IsNull())
+		{
+			Res.OutlineStaticMesh = ResolveSoftObjectIfPackageExists(Res.Row.OutlineStaticMesh);
+			bMissingRequiredLoadedAsset |= (Res.OutlineStaticMesh == nullptr);
+			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[OUTLINE] ResolveVisual VisualID=%s ResolvedRow=%s OutlineStaticMesh path=%s Loaded=%s"),
+				*VisualID.ToString(), *ResolvedVisualID.ToString(), *Res.Row.OutlineStaticMesh.ToString(), Res.OutlineStaticMesh ? TEXT("YES") : TEXT("NO"));
+		}
 		if (Res.Row.SkeletalMesh.IsNull() && Res.Row.StaticMesh.IsNull())
 		{
 			UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MESH] ResolveVisual VisualID=%s ResolvedRow=%s has no SkeletalMesh or StaticMesh in DataTable row!"), *VisualID.ToString(), *ResolvedVisualID.ToString());
@@ -1302,6 +1441,7 @@ void UT66CharacterVisualSubsystem::HandleCharacterVisualPreloadCompleted(FName V
 FName UT66CharacterVisualSubsystem::GetHeroVisualID(FName HeroID, ET66BodyType BodyType, FName SkinID)
 {
 	if (HeroID.IsNone()) return NAME_None;
+	SkinID = T66NormalizeSkinVisualToken(SkinID);
 	const TCHAR* BodySuffix = T66BodyTypeAliases::IsChad(BodyType) ? TEXT("Chad") : TEXT("Stacy");
 	FString Key = FString::Printf(TEXT("%s_%s"), *HeroID.ToString(), BodySuffix);
 	if (SkinID != NAME_None && SkinID != FName(TEXT("Default")))
@@ -1315,6 +1455,7 @@ FName UT66CharacterVisualSubsystem::GetHeroVisualID(FName HeroID, ET66BodyType B
 FName UT66CharacterVisualSubsystem::GetCompanionVisualID(FName CompanionID, FName SkinID)
 {
 	if (CompanionID.IsNone()) return NAME_None;
+	SkinID = T66NormalizeSkinVisualToken(SkinID);
 	if (SkinID.IsNone() || SkinID == FName(TEXT("Default")))
 	{
 		return CompanionID;
@@ -1397,6 +1538,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 		TargetStaticMesh->SetRelativeLocation(RelLoc);
 		TargetStaticMesh->SetHiddenInGame(false, true);
 		TargetStaticMesh->SetVisibility(true, true);
+		T66ApplyOutlineSidecarComponent(VisualID, TargetStaticMesh, Res.OutlineStaticMesh);
 		if (T66IsQuadRetroStaticVisual(Res))
 		{
 			UMaterialInterface* SharedMaterial = T66LoadQuadRetroSharedMaterial();
@@ -1446,6 +1588,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 
 	if (TargetStaticMesh)
 	{
+		T66DestroyOutlineSidecarComponent(TargetStaticMesh);
 		TargetStaticMesh->SetHiddenInGame(true, true);
 		TargetStaticMesh->SetVisibility(false, true);
 	}

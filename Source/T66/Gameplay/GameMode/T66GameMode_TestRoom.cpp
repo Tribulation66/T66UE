@@ -34,6 +34,12 @@ static TAutoConsoleVariable<int32> CVarT66TestRoomSpawnFullLineup(
 	TEXT("Spawns the ToonStyle full asset lineup in the TestRoom."),
 	ECVF_Default);
 
+static TAutoConsoleVariable<int32> CVarT66TestRoomShowRepresentativeLineupOnly(
+	TEXT("t66.TestRoom.ShowRepresentativeLineupOnly"),
+	1,
+	TEXT("Limits the ToonStyle TestRoom lineup to the five face-normal-transfer-disabled review assets. Set 0 to restore the full lineup."),
+	ECVF_Default);
+
 static TAutoConsoleVariable<int32> CVarT66TestRoomUseManualExposure(
 	TEXT("t66.TestRoom.UseManualExposure"),
 	1,
@@ -117,12 +123,18 @@ namespace T66TestRoom
 			return LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/ToonStyle/TestAssets/Environment/Materials/MI_TestRoom_Ceiling.MI_TestRoom_Ceiling"));
 		}
 
-		FRotator LineupDisplayRotation()
+		FRotator LineupDisplayRotation(const FVector& Location)
 		{
-			return FRotator(0.f, -90.f, 0.f);
+			FVector ToCenter = FVector::ZeroVector - Location;
+			ToCenter.Z = 0.f;
+			if (!ToCenter.Normalize())
+			{
+				return FRotator(0.f, -90.f, 0.f);
+			}
+			return ToCenter.Rotation();
 		}
 
-		void DestroyActorsWithTag(UWorld* World, const FName Tag)
+		void DestroyTestRoomActorsWithTag(UWorld* World, const FName Tag)
 		{
 			if (!World || Tag.IsNone())
 			{
@@ -203,13 +215,20 @@ namespace T66TestRoom
 
 		struct FLineupEntry
 		{
-			const TCHAR* MeshPath;
-			const TCHAR* OutlineMeshPath;
-			const TCHAR* MaterialPath;
-			const TCHAR* OutlineMaterialPath;
+			const TCHAR* ContentFolder;
+			const TCHAR* AssetID;
 			const TCHAR* Label;
 			FVector Location;
 		};
+
+		bool IsRepresentativeLineupAsset(const TCHAR* AssetID)
+		{
+			return FCString::Strcmp(AssetID, TEXT("Hero_1_Chad")) == 0
+				|| FCString::Strcmp(AssetID, TEXT("Hero_3_Chad")) == 0
+				|| FCString::Strcmp(AssetID, TEXT("Hero_4_Stacy")) == 0
+				|| FCString::Strcmp(AssetID, TEXT("Hero_5_Chad")) == 0
+				|| FCString::Strcmp(AssetID, TEXT("Hero_1_Chad_Beachgoer")) == 0;
+		}
 
 		struct FLuBuMatrixEntry
 		{
@@ -251,7 +270,7 @@ namespace T66TestRoom
 				AStaticMeshActor* VariantActor = World->SpawnActor<AStaticMeshActor>(
 					AStaticMeshActor::StaticClass(),
 					MeshLocation,
-					LineupDisplayRotation(),
+					LineupDisplayRotation(MeshLocation),
 					SpawnParams);
 				if (VariantActor)
 				{
@@ -345,19 +364,32 @@ namespace T66TestRoom
 				return nullptr;
 			}
 
-			const TCHAR* MeshPath = bOutline ? Entry.OutlineMeshPath : Entry.MeshPath;
-			const TCHAR* MaterialPath = bOutline ? Entry.OutlineMaterialPath : Entry.MaterialPath;
-			UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, MeshPath);
+			const FString OutlineSuffix = bOutline ? TEXT("_Outline") : TEXT("");
+			const FString MeshPath = FString::Printf(
+				TEXT("%s/SM_%s%s.SM_%s%s"),
+				Entry.ContentFolder,
+				Entry.AssetID,
+				*OutlineSuffix,
+				Entry.AssetID,
+				*OutlineSuffix);
+			const FString MaterialPath = FString::Printf(
+				TEXT("%s/Materials/MI_%s%s.MI_%s%s"),
+				Entry.ContentFolder,
+				Entry.AssetID,
+				*OutlineSuffix,
+				Entry.AssetID,
+				*OutlineSuffix);
+			UStaticMesh* Mesh = LoadObject<UStaticMesh>(nullptr, *MeshPath);
 			if (!Mesh)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("ToonStyle TestRoom could not load lineup %s mesh %s"), bOutline ? TEXT("outline") : TEXT("shading"), MeshPath);
+				UE_LOG(LogTemp, Warning, TEXT("ToonStyle TestRoom could not load lineup %s mesh %s"), bOutline ? TEXT("outline") : TEXT("shading"), *MeshPath);
 				return nullptr;
 			}
 
-			UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, MaterialPath);
+			UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, *MaterialPath);
 			if (!Material)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("ToonStyle TestRoom could not load lineup %s material %s"), bOutline ? TEXT("outline") : TEXT("shading"), MaterialPath);
+				UE_LOG(LogTemp, Warning, TEXT("ToonStyle TestRoom could not load lineup %s material %s"), bOutline ? TEXT("outline") : TEXT("shading"), *MaterialPath);
 			}
 
 			FActorSpawnParameters SpawnParams;
@@ -365,7 +397,7 @@ namespace T66TestRoom
 			AStaticMeshActor* Actor = World->SpawnActor<AStaticMeshActor>(
 				AStaticMeshActor::StaticClass(),
 				Entry.Location,
-				LineupDisplayRotation(),
+				LineupDisplayRotation(Entry.Location),
 				SpawnParams);
 			if (!Actor)
 			{
@@ -421,25 +453,99 @@ namespace T66TestRoom
 
 			static const FLineupEntry Entries[] =
 			{
-				{ TEXT("/Game/ToonStyle/TestAssets/Validation/SM_lubu_validation.SM_lubu_validation"), TEXT("/Game/ToonStyle/TestAssets/Validation/SM_lubu_validation_Outline.SM_lubu_validation_Outline"), TEXT("/Game/ToonStyle/TestAssets/Validation/Materials/MI_lubu_validation.MI_lubu_validation"), TEXT("/Game/ToonStyle/TestAssets/Validation/Materials/MI_lubu_validation_Outline.MI_lubu_validation_Outline"), TEXT("Lu Bu"), FVector(1500.f, -500.f, 0.f) },
-				{ TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_aria.SM_aria"), TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_aria_Outline.SM_aria_Outline"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_aria.MI_aria"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_aria_Outline.MI_aria_Outline"), TEXT("ARIA"), FVector(1500.f, 0.f, 0.f) },
-				{ TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_gambler.SM_gambler"), TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_gambler_Outline.SM_gambler_Outline"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_gambler.MI_gambler"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_gambler_Outline.MI_gambler_Outline"), TEXT("Gambler"), FVector(1500.f, 500.f, 0.f) },
-				{ TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_slime.SM_slime"), TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_slime_Outline.SM_slime_Outline"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_slime.MI_slime"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_slime_Outline.MI_slime_Outline"), TEXT("Slime"), FVector(2500.f, -750.f, 0.f) },
-				{ TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_tombspider.SM_tombspider"), TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_tombspider_Outline.SM_tombspider_Outline"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_tombspider.MI_tombspider"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_tombspider_Outline.MI_tombspider_Outline"), TEXT("TombSpider"), FVector(2500.f, -250.f, 0.f) },
-				{ TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_cavebat.SM_cavebat"), TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_cavebat_Outline.SM_cavebat_Outline"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_cavebat.MI_cavebat"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_cavebat_Outline.MI_cavebat_Outline"), TEXT("CaveBat"), FVector(2500.f, 250.f, 0.f) },
-				{ TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_idolaltar.SM_idolaltar"), TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_idolaltar_Outline.SM_idolaltar_Outline"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_idolaltar.MI_idolaltar"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_idolaltar_Outline.MI_idolaltar_Outline"), TEXT("Idol Altar"), FVector(2500.f, 750.f, 0.f) },
-				{ TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_arcademachine.SM_arcademachine"), TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_arcademachine_Outline.SM_arcademachine_Outline"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_arcademachine.MI_arcademachine"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_arcademachine_Outline.MI_arcademachine_Outline"), TEXT("Arcade Machine"), FVector(3500.f, -750.f, 0.f) },
-				{ TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_lootchest.SM_lootchest"), TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_lootchest_Outline.SM_lootchest_Outline"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootchest.MI_lootchest"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootchest_Outline.MI_lootchest_Outline"), TEXT("Loot Chest"), FVector(3500.f, -250.f, 0.f) },
-				{ TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_lootbag_yellow.SM_lootbag_yellow"), TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_lootbag_yellow_Outline.SM_lootbag_yellow_Outline"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootbag_yellow.MI_lootbag_yellow"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootbag_yellow_Outline.MI_lootbag_yellow_Outline"), TEXT("Loot Bag Yellow"), FVector(3500.f, 250.f, 0.f) },
-				{ TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_lootcrate.SM_lootcrate"), TEXT("/Game/ToonStyle/TestAssets/Lineup/SM_lootcrate_Outline.SM_lootcrate_Outline"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootcrate.MI_lootcrate"), TEXT("/Game/ToonStyle/TestAssets/Lineup/Materials/MI_lootcrate_Outline.MI_lootcrate_Outline"), TEXT("Loot Crate"), FVector(3500.f, 750.f, 0.f) },
+				// Male heroes - north side.
+				{ TEXT("/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle"), TEXT("Hero_1_Chad"), TEXT("H1 Chad"), FVector(-3200.0f, 3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_2/Chad/Pixal3DToonStyle"), TEXT("Hero_2_Chad"), TEXT("H2 Chad"), FVector(-2400.0f, 3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_3/Chad/Pixal3DToonStyle"), TEXT("Hero_3_Chad"), TEXT("H3 Chad"), FVector(-1600.0f, 3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_4/Chad/Pixal3DToonStyle"), TEXT("Hero_4_Chad"), TEXT("H4 Chad"), FVector(-800.0f, 3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_5/Chad/Pixal3DToonStyle"), TEXT("Hero_5_Chad"), TEXT("H5 Chad"), FVector(0.0f, 3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle"), TEXT("Hero_1_Chad_Beachgoer"), TEXT("H1 Chad Demo"), FVector(800.0f, 3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/Pixal3DToonStyle"), TEXT("Hero_3_Chad_Beachgoer"), TEXT("H3 Chad Demo"), FVector(1600.0f, 3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/Pixal3DToonStyle"), TEXT("Hero_4_Chad_Beachgoer"), TEXT("H4 Chad Demo"), FVector(2400.0f, 3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/Pixal3DToonStyle"), TEXT("Hero_5_Chad_Beachgoer"), TEXT("H5 Chad Demo"), FVector(3200.0f, 3950.0f, 0.f) },
+				// Female heroes - south side.
+				{ TEXT("/Game/Characters/Heroes/Hero_1/Stacy/Pixal3DToonStyle"), TEXT("Hero_1_Stacy"), TEXT("H1 Stacy"), FVector(-3200.0f, -3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_2/Stacy/Pixal3DToonStyle"), TEXT("Hero_2_Stacy"), TEXT("H2 Stacy"), FVector(-2400.0f, -3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_3/Stacy/Pixal3DToonStyle"), TEXT("Hero_3_Stacy"), TEXT("H3 Stacy"), FVector(-1600.0f, -3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_4/Stacy/Pixal3DToonStyle"), TEXT("Hero_4_Stacy"), TEXT("H4 Stacy"), FVector(-800.0f, -3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_5/Stacy/Pixal3DToonStyle"), TEXT("Hero_5_Stacy"), TEXT("H5 Stacy"), FVector(0.0f, -3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_1/Stacy/Beachgoer/Pixal3DToonStyle"), TEXT("Hero_1_Stacy_Beachgoer"), TEXT("H1 Stacy Demo"), FVector(800.0f, -3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_3/Stacy/Beachgoer/Pixal3DToonStyle"), TEXT("Hero_3_Stacy_Beachgoer"), TEXT("H3 Stacy Demo"), FVector(1600.0f, -3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_4/Stacy/Beachgoer/Pixal3DToonStyle"), TEXT("Hero_4_Stacy_Beachgoer"), TEXT("H4 Stacy Demo"), FVector(2400.0f, -3950.0f, 0.f) },
+				{ TEXT("/Game/Characters/Heroes/Hero_5/Stacy/Beachgoer/Pixal3DToonStyle"), TEXT("Hero_5_Stacy_Beachgoer"), TEXT("H5 Stacy Demo"), FVector(3200.0f, -3950.0f, 0.f) },
+				// Companions - west side.
+				{ TEXT("/Game/Characters/Companions/Companion_01/Default/Pixal3DToonStyle"), TEXT("Companion_01"), TEXT("Comp 01"), FVector(-3950.0f, -2800.0f, 0.f) },
+				{ TEXT("/Game/Characters/Companions/Companion_02/Default/Pixal3DToonStyle"), TEXT("Companion_02"), TEXT("Comp 02"), FVector(-3950.0f, -1200.0f, 0.f) },
+				{ TEXT("/Game/Characters/Companions/Companion_03/Default/Pixal3DToonStyle"), TEXT("Companion_03"), TEXT("Comp 03"), FVector(-3950.0f, 400.0f, 0.f) },
+				{ TEXT("/Game/Characters/Companions/Companion_04/Default/Pixal3DToonStyle"), TEXT("Companion_04"), TEXT("Comp 04"), FVector(-3950.0f, 2000.0f, 0.f) },
+				// Easy enemies - center north rows.
+				{ TEXT("/Game/Characters/Mobs/Slime"), TEXT("Slime"), TEXT("Slime"), FVector(-1600.0f, 2650.0f, 0.f) },
+				{ TEXT("/Game/Characters/Mobs/BoneWalker"), TEXT("BoneWalker"), TEXT("Bone Walker"), FVector(-800.0f, 2650.0f, 0.f) },
+				{ TEXT("/Game/Characters/Mobs/RatPack"), TEXT("RatPack"), TEXT("Rat Pack"), FVector(0.0f, 2650.0f, 0.f) },
+				{ TEXT("/Game/Characters/Mobs/CaveBat"), TEXT("CaveBat"), TEXT("Cave Bat"), FVector(800.0f, 2650.0f, 0.f) },
+				{ TEXT("/Game/Characters/Mobs/HexSlinger"), TEXT("HexSlinger"), TEXT("Hex Slinger"), FVector(1600.0f, 2650.0f, 0.f) },
+				{ TEXT("/Game/Characters/Mobs/TombSpider"), TEXT("TombSpider"), TEXT("Tomb Spider"), FVector(-1600.0f, 1850.0f, 0.f) },
+				{ TEXT("/Game/Characters/Mobs/StoneSentinel"), TEXT("StoneSentinel"), TEXT("Stone Sentinel"), FVector(-800.0f, 1850.0f, 0.f) },
+				{ TEXT("/Game/Characters/Mobs/MimicLure"), TEXT("MimicLure"), TEXT("Mimic Lure"), FVector(0.0f, 1850.0f, 0.f) },
+				{ TEXT("/Game/Characters/Mobs/BoneConjurer"), TEXT("BoneConjurer"), TEXT("Bone Conjurer"), FVector(800.0f, 1850.0f, 0.f) },
+				{ TEXT("/Game/Characters/Mobs/CryptWraith"), TEXT("CryptWraith"), TEXT("Crypt Wraith"), FVector(1600.0f, 1850.0f, 0.f) },
+				// World assets - east side.
+				{ TEXT("/Game/World/Interactables/Arcade/Arcade_Machine"), TEXT("Arcade_Machine_Pixal3D"), TEXT("Arcade Machine"), FVector(3950.0f, -3850.0f, 0.f) },
+				{ TEXT("/Game/World/Interactables/Vehicles"), TEXT("Vehicle_Pixal3D"), TEXT("Vehicle"), FVector(3950.0f, -3150.0f, 0.f) },
+				{ TEXT("/Game/World/Interactables/Chests/ChestModel"), TEXT("Chest_Pixal3D"), TEXT("Chest"), FVector(3950.0f, -2450.0f, 0.f) },
+				{ TEXT("/Game/World/Interactables/Fountain"), TEXT("Fountain_Pixal3D"), TEXT("Fountain"), FVector(3950.0f, -1750.0f, 0.f) },
+				{ TEXT("/Game/World/Interactables/DifficultyTotem"), TEXT("DifficultyTotem_Pixal3D"), TEXT("Difficulty Totem"), FVector(3950.0f, -1050.0f, 0.f) },
+				{ TEXT("/Game/World/Interactables/Vending"), TEXT("QuickReviveVending_Pixal3D"), TEXT("Quick Revive"), FVector(3950.0f, -350.0f, 0.f) },
+				{ TEXT("/Game/World/Interactables/LootWheel"), TEXT("LootWheel_Pixal3D"), TEXT("Loot Wheel"), FVector(3950.0f, 350.0f, 0.f) },
+				{ TEXT("/Game/World/LootBags/Shared"), TEXT("LootBag_Shared_Pixal3D"), TEXT("Loot Bag"), FVector(3950.0f, 1050.0f, 0.f) },
+				{ TEXT("/Game/World/Interactables/IdolAltar"), TEXT("IdolAltar_Pixal3D"), TEXT("Idol Altar"), FVector(3950.0f, 1750.0f, 0.f) },
+				{ TEXT("/Game/World/Interactables/WeaponAltar"), TEXT("WeaponAltar_Pixal3D"), TEXT("Weapon Altar"), FVector(3950.0f, 2450.0f, 0.f) },
+				{ TEXT("/Game/World/Boosts"), TEXT("Boost_DamageStrength_Pixal3D"), TEXT("Boost Damage"), FVector(3950.0f, 3150.0f, 0.f) },
+				{ TEXT("/Game/World/Boosts"), TEXT("Boost_AttackSpeed_Pixal3D"), TEXT("Boost Atk Speed"), FVector(3950.0f, 3850.0f, 0.f) },
+				{ TEXT("/Game/World/Boosts"), TEXT("Boost_AttackScale_Pixal3D"), TEXT("Boost Scale"), FVector(3350.0f, -3850.0f, 0.f) },
+				{ TEXT("/Game/World/Boosts"), TEXT("Boost_Armor_Pixal3D"), TEXT("Boost Armor"), FVector(3350.0f, -3150.0f, 0.f) },
+				{ TEXT("/Game/World/Boosts"), TEXT("Boost_Evasion_Pixal3D"), TEXT("Boost Evasion"), FVector(3350.0f, -2450.0f, 0.f) },
+				{ TEXT("/Game/World/Boosts"), TEXT("Boost_Luck_Pixal3D"), TEXT("Boost Luck"), FVector(3350.0f, -1750.0f, 0.f) },
+				{ TEXT("/Game/World/Boosts"), TEXT("Boost_Speed_Pixal3D"), TEXT("Boost Speed"), FVector(3350.0f, -1050.0f, 0.f) },
+				{ TEXT("/Game/World/Boosts"), TEXT("Boost_Accuracy_Pixal3D"), TEXT("Boost Accuracy"), FVector(3350.0f, -350.0f, 0.f) },
+				{ TEXT("/Game/World/Gates"), TEXT("StageGate_Pixal3D"), TEXT("Stage Gate"), FVector(3350.0f, 350.0f, 0.f) },
+				{ TEXT("/Game/World/Gates"), TEXT("CowardiceGate_Pixal3D"), TEXT("Cowardice Gate"), FVector(3350.0f, 1050.0f, 0.f) },
+				{ TEXT("/Game/World/VisualProps/Easy"), TEXT("WallLamp_Easy_Pixal3D"), TEXT("Wall Lamp"), FVector(3350.0f, 1750.0f, 0.f) },
+				{ TEXT("/Game/World/VisualProps/Easy"), TEXT("WallTorch_Easy_Pixal3D"), TEXT("Wall Torch"), FVector(3350.0f, 2450.0f, 0.f) },
+				{ TEXT("/Game/World/VisualProps/Easy"), TEXT("BrokenVase_Easy_Pixal3D"), TEXT("Broken Vase"), FVector(3350.0f, 3150.0f, 0.f) },
+				{ TEXT("/Game/World/VisualProps/Easy"), TEXT("SkullRemains_Easy_Pixal3D"), TEXT("Skull Remains"), FVector(3350.0f, 3850.0f, 0.f) },
 			};
 
+			const bool bRepresentativeOnly = CVarT66TestRoomShowRepresentativeLineupOnly.GetValueOnGameThread() != 0;
+			if (bRepresentativeOnly)
+			{
+				SpawnTextLabel(World, TEXT("DEV_TestRoom_LineupGroupLabel"), TEXT("Representative Models"), FVector(0.f, 4400.f, 520.f), LineupActorTag());
+			}
+			else
+			{
+				SpawnTextLabel(World, TEXT("DEV_TestRoom_LineupGroupLabel"), TEXT("Male Heroes"), FVector(0.f, 4400.f, 520.f), LineupActorTag());
+				SpawnTextLabel(World, TEXT("DEV_TestRoom_LineupGroupLabel"), TEXT("Female Heroes"), FVector(0.f, -4400.f, 520.f), LineupActorTag());
+				SpawnTextLabel(World, TEXT("DEV_TestRoom_LineupGroupLabel"), TEXT("Companions"), FVector(-4400.f, 0.f, 520.f), LineupActorTag());
+				SpawnTextLabel(World, TEXT("DEV_TestRoom_LineupGroupLabel"), TEXT("Easy Enemies"), FVector(0.f, 3300.f, 520.f), LineupActorTag());
+				SpawnTextLabel(World, TEXT("DEV_TestRoom_LineupGroupLabel"), TEXT("World Assets"), FVector(4400.f, 0.f, 520.f), LineupActorTag());
+			}
+
+			int32 SpawnedLineupCount = 0;
 			for (const FLineupEntry& Entry : Entries)
 			{
+				if (bRepresentativeOnly && !IsRepresentativeLineupAsset(Entry.AssetID))
+				{
+					continue;
+				}
 				SpawnLineupStaticMeshActor(World, Entry, false);
 				SpawnLineupStaticMeshActor(World, Entry, true);
 				SpawnTextLabel(World, TEXT("DEV_TestRoom_LineupLabel"), Entry.Label, Entry.Location + FVector(0.f, 0.f, 400.f), LineupActorTag());
+				++SpawnedLineupCount;
 			}
+
+			UE_LOG(LogTemp, Display, TEXT("ToonStyle TestRoom spawned %d lineup entries (RepresentativeOnly=%d)."),
+				SpawnedLineupCount,
+				bRepresentativeOnly ? 1 : 0);
 		}
 
 		void SpawnPostProcessVolume(UWorld* World)
@@ -502,7 +608,7 @@ namespace T66TestRoom
 			return;
 		}
 
-		DestroyActorsWithTag(World, RoomActorTag());
+		DestroyTestRoomActorsWithTag(World, RoomActorTag());
 
 		UStaticMesh* CubeMesh = LoadCubeMesh();
 		if (!CubeMesh)
@@ -553,7 +659,7 @@ namespace T66TestRoom
 			return;
 		}
 
-		DestroyActorsWithTag(World, LightingActorTag());
+		DestroyTestRoomActorsWithTag(World, LightingActorTag());
 
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;

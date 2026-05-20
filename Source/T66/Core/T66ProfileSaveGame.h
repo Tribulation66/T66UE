@@ -75,11 +75,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Achievements", meta = (DeprecatedProperty))
 	int32 AchievementCoinsBalance = 10000;
 
-	/** Per-hero owned skin IDs (e.g. Hero_1 -> [Beachgoer]). Default is always considered owned. */
+	/** Per-hero owned skin IDs (e.g. Hero_1 -> [DemoSkin]). Default is always considered owned. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
 	TMap<FName, FT66OwnedSkinsList> OwnedHeroSkinsByHero;
 
-	/** Per-hero equipped skin ID (e.g. Hero_1 -> Beachgoer). Missing/Default means Default. */
+	/** Per-hero equipped skin ID (e.g. Hero_1 -> DemoSkin). Missing/Default means Default. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
 	TMap<FName, FName> EquippedHeroSkinIDByHero;
 
@@ -91,11 +91,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
 	FName EquippedHeroSkinID = FName(TEXT("Default"));
 
-	/** Per-companion owned skin IDs (e.g. Companion_01 -> [Beachgoer]). Default is always considered owned. */
+	/** Per-companion owned skin IDs. Default is always considered owned. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
 	TMap<FName, FT66OwnedSkinsList> OwnedCompanionSkinsByCompanion;
 
-	/** Per-companion equipped skin ID (e.g. Companion_01 -> Beachgoer). Missing/Default means Default. */
+	/** Per-companion equipped skin ID. Missing/Default means Default. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
 	TMap<FName, FName> EquippedCompanionSkinIDByCompanion;
 

@@ -237,12 +237,12 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 		const bool bIsDefault = Skin.bIsDefault;
 		const bool bIsOwned = Skin.bIsOwned;
 		const bool bIsEquipped = Skin.bIsEquipped;
-		const bool bIsBeachgoer = (SkinIDCopy == FName(TEXT("Beachgoer")));
+		const bool bIsDemoSkin = (SkinIDCopy == UT66SkinSubsystem::DemoSkinID);
 
 		const FString SkinInitialText = SkinDisplayName.ToString().Left(2).ToUpper();
 		const FLinearColor SkinThumbnailFill = bIsDefault
 			? FLinearColor(0.16f, 0.08f, 0.05f, 1.0f)
-			: (bIsBeachgoer
+			: (bIsDemoSkin
 				? FLinearColor(0.07f, 0.18f, 0.25f, 1.0f)
 				: FLinearColor(0.09f, 0.08f, 0.12f, 1.0f));
 
@@ -280,7 +280,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 					]
 				];
 		}
-		if (bIsBeachgoer)
+		if (bIsDemoSkin)
 		{
 			ButtonRow->AddSlot().AutoWidth().Padding(3.0f, 0.0f)
 				[
