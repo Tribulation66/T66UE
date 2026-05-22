@@ -1,0 +1,132 @@
+[
+  {
+    "asset_id": "Hero_1_Chad",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Base\\hero_1_chad_george_founding_male.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_1_Chad.png"
+  },
+  {
+    "asset_id": "Hero_1_Stacy",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Base\\hero_1_stacy_george_founding_female.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_1_Stacy.png"
+  },
+  {
+    "asset_id": "Hero_2_Chad",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Base\\hero_2_chad_lubu_male.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_2_Chad.png"
+  },
+  {
+    "asset_id": "Hero_2_Stacy",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Base\\hero_2_stacy_lubu_female.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_2_Stacy.png"
+  },
+  {
+    "asset_id": "Hero_3_Chad",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Base\\hero_3_chad_boxer_male.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_3_Chad.png"
+  },
+  {
+    "asset_id": "Hero_3_Stacy",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Base\\hero_3_stacy_boxer_female.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_3_Stacy.png"
+  },
+  {
+    "asset_id": "Hero_4_Chad",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Base\\hero_4_chad_billy_cowboy_male.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_4_Chad.png"
+  },
+  {
+    "asset_id": "Hero_4_Stacy",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Base\\hero_4_stacy_billy_cowboy_female.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_4_Stacy.png"
+  },
+  {
+    "asset_id": "Hero_5_Chad",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Base\\hero_5_chad_yakub_male.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_5_Chad.png"
+  },
+  {
+    "asset_id": "Hero_5_Stacy",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Base\\hero_5_stacy_yakub_female.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_5_Stacy.png"
+  },
+  {
+    "asset_id": "Hero_1_Chad_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Demo\\hero_1_chad_george_founding_male_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_1_Chad_Beachgoer.png"
+  },
+  {
+    "asset_id": "Hero_1_Stacy_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Demo\\hero_1_stacy_george_founding_female_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_1_Stacy_Beachgoer.png"
+  },
+  {
+    "asset_id": "Hero_3_Chad_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Demo\\hero_3_chad_boxer_male_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_3_Chad_Beachgoer.png"
+  },
+  {
+    "asset_id": "Hero_3_Stacy_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Demo\\hero_3_stacy_boxer_female_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_3_Stacy_Beachgoer.png"
+  },
+  {
+    "asset_id": "Hero_4_Chad_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Demo\\hero_4_chad_billy_cowboy_male_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_4_Chad_Beachgoer.png"
+  },
+  {
+    "asset_id": "Hero_4_Stacy_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Demo\\hero_4_stacy_billy_cowboy_female_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_4_Stacy_Beachgoer.png"
+  },
+  {
+    "asset_id": "Hero_5_Chad_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Demo\\hero_5_chad_yakub_male_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_5_Chad_Beachgoer.png"
+  },
+  {
+    "asset_id": "Hero_5_Stacy_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Heroes\\Demo\\hero_5_stacy_yakub_female_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Hero_5_Stacy_Beachgoer.png"
+  },
+  {
+    "asset_id": "Companion_01",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Companions\\Base\\companion_01_light_skin_black_rap_vixen.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Companion_01.png"
+  },
+  {
+    "asset_id": "Companion_01_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Companions\\Demo\\companion_01_light_skin_black_rap_vixen_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Companion_01_Beachgoer.png"
+  },
+  {
+    "asset_id": "Companion_02",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Companions\\Base\\companion_02_blonde_tavern_barmaid.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Companion_02.png"
+  },
+  {
+    "asset_id": "Companion_02_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Companions\\Demo\\companion_02_blonde_tavern_barmaid_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Companion_02_Beachgoer.png"
+  },
+  {
+    "asset_id": "Companion_03",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Companions\\Base\\companion_03_brunette_college_girl.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Companion_03.png"
+  },
+  {
+    "asset_id": "Companion_03_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Companions\\Demo\\companion_03_brunette_college_girl_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Companion_03_Beachgoer.png"
+  },
+  {
+    "asset_id": "Companion_04",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Companions\\Base\\companion_04_black_haired_office_lady.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Companion_04.png"
+  },
+  {
+    "asset_id": "Companion_04_Beachgoer",
+    "source": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_2_Characters\\Characters\\Companions\\Demo\\companion_04_black_haired_office_lady_demo.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Agent2Characters_2026-05-19\\Sources\\Companion_04_Beachgoer.png"
+  }
+]

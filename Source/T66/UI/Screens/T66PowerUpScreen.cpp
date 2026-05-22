@@ -7,6 +7,7 @@
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66FlatStyle.h"
@@ -1341,6 +1342,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		Buffs->BeginHeroSelectionSingleUseBuffEdit(Buffs->GetSelectedSingleUseBuffEditSlotIndex());
 	}
 	const bool bHeroSelectionSingleUseEdit = Buffs && Buffs->IsHeroSelectionSingleUseBuffEditActive();
+	const bool bDemoDrugPurchasesBlocked = Buffs && !Buffs->AreSingleUseBuffPurchasesAllowed();
 	if (bHeroSelectionSingleUseEdit)
 	{
 		bShowingSingleUse = true;
@@ -1759,22 +1761,28 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				State != ET66FlatState::Disabled);
 		};
 
-		auto MakeGraduateButton = [&PlainText](const FName Tag, FOnClicked OnClicked, const float Width, const float Height) -> TSharedRef<SWidget>
+		auto MakeGraduateButton = [&PlainText](const FName Tag, FOnClicked OnClicked, const float Width, const float Height, const bool bEnabled) -> TSharedRef<SWidget>
 		{
+			const ET66FlatState ButtonState = bEnabled ? ET66FlatState::Selected : ET66FlatState::Disabled;
 			return FT66FlatStyle::MakeFlatToggleGroupButton(
-				ET66FlatState::Selected,
+				ButtonState,
 				SNew(SBox)
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Center)
 				.Padding(FMargin(28.f, 0.f, 0.f, 0.f))
 				[
-					PlainText(NSLOCTEXT("T66.PowerUp", "FlatGraduate", "GRADUATE"), 24, FT66FlatStyle::SelectedText(), true, ETextJustify::Left)
+					PlainText(
+						NSLOCTEXT("T66.PowerUp", "FlatGraduate", "GRADUATE"),
+						24,
+						bEnabled ? FT66FlatStyle::SelectedText() : FT66FlatStyle::DisabledText(),
+						true,
+						ETextJustify::Left)
 				],
 				MoveTemp(OnClicked),
 				FMargin(0.f),
 				Width,
 				Height,
-				true,
+				bEnabled,
 				Tag);
 		};
 
@@ -1840,13 +1848,15 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			InfoBrush,
 			PermanentHintText,
 			FVector2D(31.f, 31.f),
-			DTag(TEXT("Diplomas.SubTabs.DiplomasInfoIcon"))));
+			DTag(TEXT("Diplomas.SubTabs.DiplomasInfoIcon")),
+			FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowPermanentClicked)));
 		AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
 			ET66FlatState::Default,
 			InfoBrush,
 			SingleUseHintText,
 			FVector2D(31.f, 31.f),
-			DTag(TEXT("Diplomas.SubTabs.DrugsInfoIcon"))));
+			DTag(TEXT("Diplomas.SubTabs.DrugsInfoIcon")),
+			FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowSingleUseClicked)));
 
 		AddN(
 			0.032f,
@@ -1930,6 +1940,9 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			const ET66HeroStatType StatType = PermanentCardOrder[StatIndex];
 			const int32 DisplayStep = FMath::Clamp(VisibleIndex, 0, ShopDiplomaUpgradeCount - 1);
 			const FString Prefix = FString::Printf(TEXT("Diplomas.Card%02d"), VisibleIndex + 1);
+			const bool bDemoDiplomaLocked = Buffs
+				&& !Buffs->IsStatMaxed(StatType)
+				&& Buffs->IsDemoDiplomaUpgradeLimitReached(StatType);
 			const FText StatText = FText::Format(
 				NSLOCTEXT("T66.PowerUp", "FlatDiplomaStatText", "+{0} {1}"),
 				FText::AsNumber(DisplayStep),
@@ -1938,24 +1951,34 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			AddN(CardX[VisibleIndex], CardY[VisibleIndex], CardW[VisibleIndex], CardH[VisibleIndex], MakePanelSurface(FName(*Prefix), ET66FlatState::Default));
 			AddN(ArtX[VisibleIndex], ArtY[VisibleIndex], ArtW[VisibleIndex], ArtH[VisibleIndex], MakeArtwork(FName(*(Prefix + TEXT(".Artwork"))), GetFlatDiplomaArtPath(StatType, DisplayStep), FVector2D(340.f, 430.f)));
 			AddN(StatX[VisibleIndex], 0.740f, StatW[VisibleIndex], 0.028f, TaggedText(FName(*(Prefix + TEXT(".StatText"))), StatText, 24, FT66FlatStyle::PurpleAccent(), true, ETextJustify::Center));
-			AddN(ButtonX[VisibleIndex], 0.781f, ButtonW[VisibleIndex], 0.072f, MakeGraduateButton(
+			const TSharedRef<SWidget> GraduateButton = MakeGraduateButton(
 				FName(*(Prefix + TEXT(".GraduateButton"))),
 				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType),
 				ButtonW[VisibleIndex] * DiplomasCanvasW,
-				0.072f * DiplomasCanvasH));
-			AddN(CostX[VisibleIndex], 0.807f, CostW[VisibleIndex], 0.030f, TaggedText(
-				FName(*(Prefix + TEXT(".GraduateButton.Cost"))),
-				FText::AsNumber(UT66BuffSubsystem::PermanentBuffUnlockCostCC),
-				24,
-				FT66FlatStyle::PrimaryText(),
-				true,
-				ETextJustify::Right));
-			AddN(CostX[VisibleIndex] + CostW[VisibleIndex] + 0.006f, 0.805f, 0.019f, 0.029f, MakeIcon(
-				FName(*(Prefix + TEXT(".GraduateButton.TicketIcon"))),
-				TicketBrush,
-				FVector2D(36.f, 28.f),
-				FText::FromString(TEXT("[]")),
-				FLinearColor::White));
+				0.072f * DiplomasCanvasH,
+				!bDemoDiplomaLocked);
+			AddN(ButtonX[VisibleIndex], 0.781f, ButtonW[VisibleIndex], 0.072f,
+				T66DemoModeUI::WrapWithComingSoonOverlay(
+					GraduateButton,
+					bDemoDiplomaLocked,
+					this,
+					FName(*(Prefix + TEXT(".GraduateButton.DemoOverlay")))));
+			if (!bDemoDiplomaLocked)
+			{
+				AddN(CostX[VisibleIndex], 0.807f, CostW[VisibleIndex], 0.030f, TaggedText(
+					FName(*(Prefix + TEXT(".GraduateButton.Cost"))),
+					FText::AsNumber(UT66BuffSubsystem::PermanentBuffUnlockCostCC),
+					24,
+					FT66FlatStyle::PrimaryText(),
+					true,
+					ETextJustify::Right));
+				AddN(CostX[VisibleIndex] + CostW[VisibleIndex] + 0.006f, 0.805f, 0.019f, 0.029f, MakeIcon(
+					FName(*(Prefix + TEXT(".GraduateButton.TicketIcon"))),
+					TicketBrush,
+					FVector2D(36.f, 28.f),
+					FText::FromString(TEXT("[]")),
+					FLinearColor::White));
+			}
 		}
 
 		auto MakePageDot = [](const bool bActive) -> TSharedRef<SWidget>
@@ -2217,22 +2240,29 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			const FName Tag,
 			FOnClicked OnClicked,
 			const float Width,
-			const float Height) -> TSharedRef<SWidget>
+			const float Height,
+			const bool bEnabled) -> TSharedRef<SWidget>
 		{
+			const ET66FlatState ButtonState = bEnabled ? ET66FlatState::Selected : ET66FlatState::Disabled;
 			return FT66FlatStyle::MakeFlatToggleGroupButton(
-				ET66FlatState::Selected,
+				ButtonState,
 				SNew(SBox)
 				.HAlign(HAlign_Left)
 				.VAlign(VAlign_Center)
 				.Padding(FMargin(28.f, 0.f, 0.f, 0.f))
 				[
-					PlainText(NSLOCTEXT("T66.PowerUp", "FlatBuy", "BUY"), 26, FT66FlatStyle::SelectedText(), true, ETextJustify::Left)
+					PlainText(
+						NSLOCTEXT("T66.PowerUp", "FlatBuy", "BUY"),
+						26,
+						bEnabled ? FT66FlatStyle::SelectedText() : FT66FlatStyle::DisabledText(),
+						true,
+						ETextJustify::Left)
 				],
 				MoveTemp(OnClicked),
 				FMargin(0.f),
 				Width,
 				Height,
-				true,
+				bEnabled,
 				Tag);
 		};
 
@@ -2323,13 +2353,15 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			InfoBrush,
 			PermanentHintText,
 			FVector2D(31.f, 31.f),
-			DrugTag(TEXT("Drugs.SubTabs.DiplomasInfoIcon"))));
+			DrugTag(TEXT("Drugs.SubTabs.DiplomasInfoIcon")),
+			FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowPermanentClicked)));
 		AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
 			ET66FlatState::Selected,
 			InfoBrush,
 			SingleUseHintText,
 			FVector2D(31.f, 31.f),
-			DrugTag(TEXT("Drugs.SubTabs.DrugsInfoIcon"))));
+			DrugTag(TEXT("Drugs.SubTabs.DrugsInfoIcon")),
+			FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowSingleUseClicked)));
 
 		AddN(0.041f, 0.236f, 0.108f, 0.346f, MakePanelSurface(DrugTag(TEXT("Drugs.Category.DamagePanel")), ET66FlatState::Selected));
 		AddN(0.075f, 0.291f, 0.038f, 0.065f, MakeIcon(DrugTag(TEXT("Drugs.Category.DamageIcon")), TargetBrush, FVector2D(72.f, 72.f), FText::FromString(TEXT("+")), FT66FlatStyle::SelectedText()));
@@ -2376,24 +2408,34 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				FT66FlatStyle::PrimaryText(),
 				false,
 				ETextJustify::Center));
-			AddN(BuyX[CardIndex], BuyY[CardIndex], BuyW[CardIndex], 0.054f, MakeBuyButton(
+			const TSharedRef<SWidget> BuyButton = MakeBuyButton(
 				FName(*(Prefix + TEXT(".BuyButton"))),
 				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandlePurchaseSingleUseClicked, StatType),
 				BuyW[CardIndex] * DrugsCanvasW,
-				0.054f * DrugsCanvasH));
-			AddN(CostX[CardIndex], CostY[CardIndex] - 0.002f, 0.018f, 0.027f, MakeIcon(
-				FName(*(Prefix + TEXT(".BuyButton.TicketIcon"))),
-				TicketBrush,
-				FVector2D(34.f, 26.f),
-				FText::FromString(TEXT("[]")),
-				FLinearColor::White));
-			AddN(CostX[CardIndex] + 0.025f, CostY[CardIndex], 0.014f, 0.029f, TaggedText(
-				FName(*(Prefix + TEXT(".BuyButton.Cost"))),
-				FText::AsNumber(UT66BuffSubsystem::SingleUseBuffCostCC),
-				23,
-				FT66FlatStyle::PrimaryText(),
-				true,
-				ETextJustify::Left));
+				0.054f * DrugsCanvasH,
+				!bDemoDrugPurchasesBlocked);
+			AddN(BuyX[CardIndex], BuyY[CardIndex], BuyW[CardIndex], 0.054f,
+				T66DemoModeUI::WrapWithComingSoonOverlay(
+					BuyButton,
+					bDemoDrugPurchasesBlocked,
+					this,
+					FName(*(Prefix + TEXT(".BuyButton.DemoOverlay")))));
+			if (!bDemoDrugPurchasesBlocked)
+			{
+				AddN(CostX[CardIndex], CostY[CardIndex] - 0.002f, 0.018f, 0.027f, MakeIcon(
+					FName(*(Prefix + TEXT(".BuyButton.TicketIcon"))),
+					TicketBrush,
+					FVector2D(34.f, 26.f),
+					FText::FromString(TEXT("[]")),
+					FLinearColor::White));
+				AddN(CostX[CardIndex] + 0.025f, CostY[CardIndex], 0.014f, 0.029f, TaggedText(
+					FName(*(Prefix + TEXT(".BuyButton.Cost"))),
+					FText::AsNumber(UT66BuffSubsystem::SingleUseBuffCostCC),
+					23,
+					FT66FlatStyle::PrimaryText(),
+					true,
+					ETextJustify::Left));
+			}
 		}
 
 		TSharedRef<SWidget> DrugsContent = SNew(SOverlay)
@@ -2426,10 +2468,14 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		const int32 UnlockedSteps = Buffs ? Buffs->GetUnlockedFillStepCount(StatType) : 0;
 		const int32 VisibleUnlockedSteps = FMath::Clamp(UnlockedSteps, 0, ShopDiplomaUpgradeCount);
 		const bool bDiplomaMaxed = VisibleUnlockedSteps >= ShopDiplomaUpgradeCount;
+		const bool bDiplomaDemoLocked = Buffs
+			&& !Buffs->IsStatMaxed(StatType)
+			&& Buffs->IsDemoDiplomaUpgradeLimitReached(StatType);
+		const bool bDiplomaActionEnabled = !bDiplomaMaxed && !bDiplomaDemoLocked && Balance >= Cost;
 		const FText ButtonText = bDiplomaMaxed
 			? NSLOCTEXT("T66.PowerUp", "Max", "MAX")
 			: NSLOCTEXT("T66.PowerUp", "Graduate", "GRADUATE");
-		const FText CostText = FText::AsNumber(Cost);
+		const FText CostText = FText::AsNumber((bDiplomaDemoLocked && Cost <= 0) ? UT66BuffSubsystem::PermanentBuffUnlockCostCC : Cost);
 		const FSlateBrush* DiplomaBrush = ResolveShopGeneratedBrush(GetDiplomaImagePath(StatType, VisibleUnlockedSteps), FVector2D(244.f, 244.f));
 		const FSlateBrush* CouponBrush = ResolveShopGeneratedBrush(MakePowerUpCommonPath(TEXT("Icons"), TEXT("powerup_iconsgenerated_icon_07_coupon_ticket_white_v1.png")), FVector2D(30.f, 24.f));
 		const FText DiplomaTitle = GetDiplomaRankTitle(StatType, VisibleUnlockedSteps);
@@ -2522,20 +2568,21 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom).Padding(16.f, 8.f, 16.f, 18.f)
 			[
+				T66DemoModeUI::WrapWithComingSoonOverlay(
 				MakeShopGeneratedButton(
 					FT66ButtonParams(ButtonText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType), ET66ButtonType::Primary)
 					.SetMinWidth(0.f)
 					.SetHeight(44.f)
-					.SetColor(TAttribute<FSlateColor>::CreateLambda([bDiplomaMaxed, Balance, Cost]() -> FSlateColor
+					.SetColor(TAttribute<FSlateColor>::CreateLambda([bDiplomaMaxed, bDiplomaActionEnabled]() -> FSlateColor
 					{
 						if (bDiplomaMaxed)
 						{
 							return FSlateColor(T66PowerUpButtonFill());
 						}
 
-						return FSlateColor(Balance >= Cost ? T66PowerUpButtonFill() : T66PowerUpButtonDisabledFill());
+						return FSlateColor(bDiplomaActionEnabled ? T66PowerUpButtonFill() : T66PowerUpButtonDisabledFill());
 					}))
-					.SetEnabled(TAttribute<bool>::CreateLambda([bDiplomaMaxed, Balance, Cost]() { return !bDiplomaMaxed && Balance >= Cost; }))
+					.SetEnabled(TAttribute<bool>(bDiplomaActionEnabled))
 					.SetContent(
 						SNew(SBox)
 						.HAlign(HAlign_Center)
@@ -2561,7 +2608,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 									.Text(CostText)
 									.Font(ShopBoldFont(14))
 									.ColorAndOpacity(ShopPermanentCardAccent)
-									.Visibility(bDiplomaMaxed ? EVisibility::Collapsed : EVisibility::Visible)
+									.Visibility(bDiplomaMaxed || bDiplomaDemoLocked ? EVisibility::Collapsed : EVisibility::Visible)
 									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 									.Clipping(EWidgetClipping::ClipToBounds)
 								]
@@ -2570,7 +2617,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 									SNew(SBox)
 									.WidthOverride(24.f)
 									.HeightOverride(18.f)
-									.Visibility(bDiplomaMaxed || !CouponBrush ? EVisibility::Collapsed : EVisibility::Visible)
+									.Visibility(bDiplomaMaxed || bDiplomaDemoLocked || !CouponBrush ? EVisibility::Collapsed : EVisibility::Visible)
 									[
 										SNew(SImage)
 										.Image(CouponBrush)
@@ -2583,7 +2630,10 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					ShopBoldFont(15),
 					FT66FlatStyle::Tokens::Text,
 					FMargin(14.f, 7.f, 14.f, 6.f)
-				)
+				),
+				bDiplomaDemoLocked,
+				this,
+				NAME_None)
 			],
 			FMargin(26.f, 30.f, 26.f, 34.f),
 			FLinearColor::White,
@@ -2604,7 +2654,9 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		const bool bCanEquipOwnedCopy = bHeroSelectionSingleUseEdit && OwnedCount > AssignedOutsideFocused;
 		const bool bUseOwnedCopy = bFocusedSlotMatches || bCanEquipOwnedCopy;
 		const bool bShowCost = !bHeroSelectionSingleUseEdit || !bUseOwnedCopy;
-		const bool bSingleUseActionEnabled = bFocusedSlotMatches ? false : (bUseOwnedCopy ? true : Balance >= Cost);
+		const bool bSingleUsePurchaseBlocked = bDemoDrugPurchasesBlocked && !bUseOwnedCopy;
+		const bool bShowPurchaseCost = bShowCost && !bSingleUsePurchaseBlocked;
+		const bool bSingleUseActionEnabled = bFocusedSlotMatches ? false : (bUseOwnedCopy ? true : (Balance >= Cost && !bSingleUsePurchaseBlocked));
 		const FText SingleUseActionText = bFocusedSlotMatches
 			? NSLOCTEXT("T66.PowerUp", "SingleUseEquipped", "EQUIPPED")
 			: (bUseOwnedCopy
@@ -2715,6 +2767,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					]
 					+ SVerticalBox::Slot().AutoHeight().VAlign(VAlign_Bottom).Padding(0.f, 0.f, 0.f, 32.f)
 					[
+						T66DemoModeUI::WrapWithComingSoonOverlay(
 						MakeShopGeneratedButton(
 							FT66ButtonParams(
 								SingleUseActionText,
@@ -2751,7 +2804,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 										+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(16.f, 0.f, 0.f, 0.f)
 										[
 											SNew(SBox)
-											.Visibility(bShowCost ? EVisibility::Visible : EVisibility::Collapsed)
+											.Visibility(bShowPurchaseCost ? EVisibility::Visible : EVisibility::Collapsed)
 											[
 												SNew(STextBlock)
 												.Text(CostText)
@@ -2766,7 +2819,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 											SNew(SBox)
 											.WidthOverride(26.f)
 											.HeightOverride(21.f)
-											.Visibility((bShowCost && CouponBrush) ? EVisibility::Visible : EVisibility::Collapsed)
+											.Visibility((bShowPurchaseCost && CouponBrush) ? EVisibility::Visible : EVisibility::Collapsed)
 											[
 												SNew(SImage)
 												.Image(CouponBrush)
@@ -2779,7 +2832,10 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 							ShopBoldFont(15),
 							FT66FlatStyle::Tokens::Text,
 							FMargin(10.f, 5.f, 10.f, 5.f)
-						)
+						),
+						bSingleUsePurchaseBlocked,
+						this,
+						NAME_None)
 					]
 			];
 	};

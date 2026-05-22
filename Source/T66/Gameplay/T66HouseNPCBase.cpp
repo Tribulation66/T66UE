@@ -112,7 +112,7 @@ void AT66HouseNPCBase::BeginPlay()
 		{
 			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 			{
-				bUsingCharacterVisual = Visuals->ApplyCharacterVisual(NPCID, SkeletalMesh, VisualMesh, true);
+				bUsingCharacterVisual = Visuals->ApplyCharacterVisual(NPCID, SkeletalMesh, VisualMesh, true, false, false, VisualMesh);
 				if (!bUsingCharacterVisual && SkeletalMesh)
 				{
 					SkeletalMesh->SetVisibility(false, true);

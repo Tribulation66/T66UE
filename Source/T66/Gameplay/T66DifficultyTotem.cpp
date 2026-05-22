@@ -24,7 +24,7 @@ AT66DifficultyTotem::AT66DifficultyTotem()
 		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
 	}
 
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/DifficultyTotem/DifficultyTotem_QuadRetro.DifficultyTotem_QuadRetro")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D.SM_DifficultyTotem_Pixal3D")));
 }
 
 void AT66DifficultyTotem::BeginPlay()

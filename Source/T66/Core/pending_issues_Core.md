@@ -13,3 +13,10 @@
 - What's wrong: `UT66CharacterVisualSubsystem::ApplyCharacterVisual` applies `MeshRelativeScale` for static hero visuals, but skeletal `Hero_` visuals are currently forced to `FVector::OneVector`. The accepted Royal Chad/Arthur skeletal asset therefore bakes the former live row scale `1.011123` into `SK_Hero_1_Chad_QuadRetroAnimQA` to preserve the selected character's runtime size.
 - Why it's out of scope now: The Arthur pass needed to avoid broad changes to every skeletal hero, companion, and preview alignment path while fixing the live playable visual.
 - What fixing it would entail: Add a data-driven skeletal hero scale policy in the character visual subsystem, regression-test preview and gameplay alignment, and remove per-asset baked-scale workarounds only after every affected hero row is revalidated.
+
+## QuadRetro Mob Rows Reference Missing Pixel Textures
+
+- Severity tag: [Minor]
+- What's wrong: The map-transition staged gameplay smoke logged `LogT66CharacterVisuals` warnings from `Source/T66/Core/T66CharacterVisualSubsystem.cpp` for QuadRetro static mob visuals such as `Slime`, `BoneWalker`, `RatPack`, `CaveBat`, `HexSlinger`, `TombSpider`, `StoneSentinel`, `MimicLure`, `BoneConjurer`, and `CryptWraith` because their expected `/Game/Characters/Mobs/.../Textures/T_<Mob>` pixelated textures are missing in the packaged build.
+- Why it's out of scope now: The map-transition pass only replaced tower wall/floor/ceiling visuals and did not alter mob visual rows, mob texture assets, or the QuadRetro fallback path.
+- What fixing it would entail: Audit the mob visual data rows and packaged texture assets, either restore/import the referenced pixel textures or update the rows to the current production ToonStyle/VAT assets, then add a staged smoke check that `LogT66CharacterVisuals` no longer emits these missing-pixel-texture warnings.

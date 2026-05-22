@@ -91,10 +91,10 @@ AT66LootBagPickup::AT66LootBagPickup()
 
 	// Default expected import location (safe if missing; we fall back to the cube).
 	// Rarity remains gameplay-authored, but all rarities share one loot bag model.
-	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro")));
-	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro")));
-	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro")));
-	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro")));
+	MeshBlack = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D.SM_LootBag_Shared_Pixal3D")));
+	MeshRed = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D.SM_LootBag_Shared_Pixal3D")));
+	MeshYellow = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D.SM_LootBag_Shared_Pixal3D")));
+	MeshWhite = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D.SM_LootBag_Shared_Pixal3D")));
 
 	if (UStaticMesh* Cube = FT66VisualUtil::GetBasicShapeCube())
 	{

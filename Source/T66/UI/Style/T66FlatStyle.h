@@ -171,6 +171,22 @@ struct FT66FlatButtonParams
 	}
 };
 
+struct FT66FlatDropdownOptionData
+{
+	ET66FlatState State = ET66FlatState::Default;
+	FText Label;
+	FOnClicked OnClicked;
+	bool bEnabled = true;
+	bool bShowUnavailableOverlay = false;
+	FText UnavailableText;
+	float MinWidth = 0.f;
+	float Height = 0.f;
+	int32 FontSize = 0;
+	FName Tag = NAME_None;
+	FName ToggleGroup = NAME_None;
+	FName OverlayTag = NAME_None;
+};
+
 struct FT66FlatToggleGroupItem
 {
 	ET66FlatState State = ET66FlatState::Default;
@@ -595,6 +611,19 @@ public:
 		FName Tag = NAME_None,
 		FName ToggleGroup = NAME_None);
 
+	static TSharedRef<SWidget> MakeFlatUnavailablePanel(
+		const FText& Text,
+		FName Tag = NAME_None,
+		float MaxWidth = 220.f,
+		int32 FontSize = 20);
+
+	static TSharedRef<SWidget> WrapWithFlatUnavailableOverlay(
+		const TSharedRef<SWidget>& Content,
+		bool bShowOverlay,
+		const FText& OverlayText,
+		FName Tag = NAME_None,
+		bool bBlockInteraction = true);
+
 	static TSharedRef<SWidget> MakeFlatToggleGroupButton(
 		ET66FlatState State,
 		const TSharedRef<SWidget>& Content,
@@ -642,7 +671,8 @@ public:
 		const FSlateBrush* Icon,
 		const FText& TooltipText,
 		const FVector2D& SizeHint = FVector2D(31.f, 31.f),
-		FName Tag = NAME_None);
+		FName Tag = NAME_None,
+		FOnClicked OnClicked = FOnClicked());
 
 	static TSharedRef<SWidget> MakeFlatTabButton(
 		ET66FlatState State,
@@ -669,6 +699,31 @@ public:
 		float Height = 42.f,
 		int32 FontSize = 20,
 		FName Tag = NAME_None);
+
+	static TSharedRef<SWidget> MakeFlatDropdownMenuPanel(
+		const TSharedRef<SWidget>& Options,
+		float MinWidth = 0.f);
+
+	static TSharedRef<SWidget> MakeFlatDropdownOptionButton(
+		ET66FlatState State,
+		const FText& Label,
+		FOnClicked OnClicked,
+		float MinWidth = 0.f,
+		float Height = 0.f,
+		int32 FontSize = 0,
+		FName Tag = NAME_None,
+		FName ToggleGroup = NAME_None);
+
+	static TSharedRef<SWidget> MakeFlatDropdownOptionsMenu(
+		const TArray<FT66FlatDropdownOptionData>& Options,
+		float MinWidth = 0.f,
+		float Height = 0.f,
+		int32 FontSize = 0,
+		FName Tag = NAME_None);
+
+	static float GetActiveDropdownMenuWidth(float Fallback = 0.f);
+	static float GetActiveDropdownMenuHeight(float Fallback = 42.f);
+	static int32 GetActiveDropdownMenuFontSize(int32 Fallback = 20);
 
 	static TSharedRef<SWidget> MakeFlatSlider(
 		ET66FlatState State,

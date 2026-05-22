@@ -163,6 +163,7 @@ public:
 
 	/** Open a run-time arcade popup without pausing gameplay. */
 	bool OpenArcadePopup(const FT66ArcadeInteractableData& ArcadeData, AT66ArcadeInteractableBase* SourceInteractable);
+	bool OpenArcadePopupFromFrontend(const FT66ArcadeInteractableData& ArcadeData);
 	void HandleArcadeGameSelected(UT66ArcadePopupWidget* SelectorWidget, const FT66ArcadeInteractableData& SelectedGameData);
 	void HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, bool bSucceeded, int32 FinalScore);
 	void CloseArcadePopup(bool bSucceeded, int32 FinalScore = 0);

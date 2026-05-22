@@ -3,7 +3,9 @@
 #include "UI/T66ArcadeSelectionWidget.h"
 
 #include "Gameplay/T66ArcadeInteractableBase.h"
+#include "Gameplay/T66ArcadeGameCatalog.h"
 #include "Gameplay/T66PlayerController.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
@@ -38,6 +40,17 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 	if (AT66ArcadeInteractableBase* Source = GetSourceInteractable())
 	{
 		GameOptions = Source->BuildArcadeSelectionOptions();
+	}
+	else
+	{
+		for (const FT66ArcadeGameCatalogEntry& Entry : T66ArcadeGameCatalog::GetPlayableEntries())
+		{
+			FT66ArcadeInteractableData GameData;
+			if (T66ArcadeGameCatalog::BuildSessionDataForGame(this, Entry.GameType, GameData))
+			{
+				GameOptions.Add(MoveTemp(GameData));
+			}
+		}
 	}
 
 	TSharedRef<SUniformGridPanel> GameGrid = SNew(SUniformGridPanel)
@@ -341,93 +354,110 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildCrtOverlay() const
 TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildGameButton(const FT66ArcadeInteractableData& GameData, const int32 Index)
 {
 	const FLinearColor Accent = ResolveGameAccentColor(GameData.ArcadeGameType, Index);
-	const FText DisplayName = GameData.DisplayName.IsEmpty()
-		? ResolveGameCode(GameData.ArcadeGameType)
-		: GameData.DisplayName;
+	const FText DisplayName = T66ArcadeGameCatalog::GetPrototypeDisplayName(GameData.ArcadeGameType);
+	const bool bArcadeAllowed = T66DemoModeUI::IsArcadeGameAllowed(this, T66ArcadeGameCatalog::GetRowID(GameData.ArcadeGameType));
+
+	FOnClicked GameClicked;
+	if (bArcadeAllowed)
+	{
+		GameClicked = FOnClicked::CreateUObject(this, &UT66ArcadeSelectionWidget::HandleGameClicked, GameData.ArcadeGameType);
+	}
+
+	const TSharedRef<SWidget> Button = FT66FlatStyle::MakeBareButton(
+		FT66BareButtonParams(
+			MoveTemp(GameClicked),
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.025f, 0.030f, 0.040f, 1.f))
+			.Padding(FMargin(4.f))
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(Accent)
+				.Padding(FMargin(4.f))
+				[
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.015f, 0.018f, 0.025f, 1.f))
+					.Padding(FMargin(14.f, 10.f))
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
+						.Padding(0.f, 0.f, 14.f, 0.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(Accent)
+							.Padding(FMargin(10.f, 8.f))
+							[
+								SNew(STextBlock)
+								.Text(ResolveGameCode(GameData.ArcadeGameType))
+								.Font(FT66FlatStyle::Tokens::FontBold(18))
+								.ColorAndOpacity(FLinearColor(0.02f, 0.02f, 0.03f, 1.f))
+								.Justification(ETextJustify::Center)
+							]
+						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.f)
+						.VAlign(VAlign_Center)
+						[
+							SNew(SVerticalBox)
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							[
+								SNew(STextBlock)
+								.Text(DisplayName)
+								.Font(FT66FlatStyle::Tokens::FontBold(22))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
+							]
+							+ SVerticalBox::Slot()
+							.AutoHeight()
+							.Padding(0.f, 4.f, 0.f, 0.f)
+							[
+								SNew(STextBlock)
+								.Text(ResolveGameFlavorText(GameData.ArcadeGameType))
+								.Font(FT66FlatStyle::Tokens::FontRegular(15))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
+								.AutoWrapText(true)
+							]
+						]
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						.VAlign(VAlign_Center)
+						.Padding(14.f, 0.f, 0.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(NSLOCTEXT("T66.Arcade", "ArcadeSelectorStartLabel", "START"))
+							.Font(FT66FlatStyle::Tokens::FontBold(16))
+							.ColorAndOpacity(bArcadeAllowed ? Accent : FT66FlatStyle::Tokens::TextMuted)
+						]
+					]
+				]
+			])
+		.SetColor(FLinearColor::Transparent)
+		.SetPadding(FMargin(0.f))
+		.SetEnabled(bArcadeAllowed));
 
 	return SNew(SBox)
 		.HeightOverride(104.f)
 		[
-			FT66FlatStyle::MakeBareButton(
-				FT66BareButtonParams(
-					FOnClicked::CreateUObject(this, &UT66ArcadeSelectionWidget::HandleGameClicked, GameData.ArcadeGameType),
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.025f, 0.030f, 0.040f, 1.f))
-					.Padding(FMargin(4.f))
-					[
-						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(Accent)
-						.Padding(FMargin(4.f))
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.015f, 0.018f, 0.025f, 1.f))
-							.Padding(FMargin(14.f, 10.f))
-							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot()
-								.AutoWidth()
-								.VAlign(VAlign_Center)
-								.Padding(0.f, 0.f, 14.f, 0.f)
-								[
-									SNew(SBorder)
-									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-									.BorderBackgroundColor(Accent)
-									.Padding(FMargin(10.f, 8.f))
-									[
-										SNew(STextBlock)
-										.Text(ResolveGameCode(GameData.ArcadeGameType))
-										.Font(FT66FlatStyle::Tokens::FontBold(18))
-										.ColorAndOpacity(FLinearColor(0.02f, 0.02f, 0.03f, 1.f))
-										.Justification(ETextJustify::Center)
-									]
-								]
-								+ SHorizontalBox::Slot()
-								.FillWidth(1.f)
-								.VAlign(VAlign_Center)
-								[
-									SNew(SVerticalBox)
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									[
-										SNew(STextBlock)
-										.Text(DisplayName)
-										.Font(FT66FlatStyle::Tokens::FontBold(22))
-										.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-									]
-									+ SVerticalBox::Slot()
-									.AutoHeight()
-									.Padding(0.f, 4.f, 0.f, 0.f)
-									[
-										SNew(STextBlock)
-										.Text(ResolveGameFlavorText(GameData.ArcadeGameType))
-										.Font(FT66FlatStyle::Tokens::FontRegular(15))
-										.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
-										.AutoWrapText(true)
-									]
-								]
-								+ SHorizontalBox::Slot()
-								.AutoWidth()
-								.VAlign(VAlign_Center)
-								.Padding(14.f, 0.f, 0.f, 0.f)
-								[
-									SNew(STextBlock)
-									.Text(NSLOCTEXT("T66.Arcade", "ArcadeSelectorStartLabel", "START"))
-									.Font(FT66FlatStyle::Tokens::FontBold(16))
-									.ColorAndOpacity(Accent)
-								]
-							]
-						]
-					])
-				.SetColor(FLinearColor::Transparent)
-				.SetPadding(FMargin(0.f)))
+			T66DemoModeUI::WrapWithComingSoonOverlay(
+				Button,
+				!bArcadeAllowed,
+				this,
+				FName(*FString::Printf(TEXT("ArcadeSelector.Game.%02d.DemoOverlay"), Index + 1)))
 		];
 }
 
 FReply UT66ArcadeSelectionWidget::HandleGameClicked(const ET66ArcadeGameType GameType)
 {
+	if (!T66DemoModeUI::IsArcadeGameAllowed(this, T66ArcadeGameCatalog::GetRowID(GameType)))
+	{
+		return FReply::Handled();
+	}
+
 	AT66ArcadeInteractableBase* Source = GetSourceInteractable();
 	if (!Source)
 	{
@@ -465,101 +495,15 @@ FReply UT66ArcadeSelectionWidget::HandleExitClicked()
 
 FText UT66ArcadeSelectionWidget::ResolveGameCode(const ET66ArcadeGameType GameType) const
 {
-	switch (GameType)
-	{
-	case ET66ArcadeGameType::WhackAMole:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeWhack", "MOL");
-	case ET66ArcadeGameType::Topwar:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeTopwar", "TOP");
-	case ET66ArcadeGameType::GoldMiner:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeGoldMiner", "GLD");
-	case ET66ArcadeGameType::RuneSwipe:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeRuneSwipe", "RUN");
-	case ET66ArcadeGameType::CartSwitcher:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeCartSwitcher", "CRT");
-	case ET66ArcadeGameType::CrystalDash:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeCrystalDash", "DSH");
-	case ET66ArcadeGameType::PotionPour:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodePotionPour", "POT");
-	case ET66ArcadeGameType::RelicStack:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeRelicStack", "REL");
-	case ET66ArcadeGameType::ShieldParry:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeShieldParry", "SHD");
-	case ET66ArcadeGameType::MimicMemory:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeMimicMemory", "MEM");
-	case ET66ArcadeGameType::BombSorter:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeBombSorter", "BOM");
-	case ET66ArcadeGameType::LanternLeap:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeLanternLeap", "LMP");
-	case ET66ArcadeGameType::BladeSweep:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeBladeSweep", "BLD");
-	default:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorCodeDefault", "???");
-	}
+	return T66ArcadeGameCatalog::GetShortCode(GameType);
 }
 
 FText UT66ArcadeSelectionWidget::ResolveGameFlavorText(const ET66ArcadeGameType GameType) const
 {
-	switch (GameType)
-	{
-	case ET66ArcadeGameType::WhackAMole:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorWhack", "Fast target bonks across a lit 3x3 board.");
-	case ET66ArcadeGameType::Topwar:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorTopwar", "Choose power gates and grow the squad score.");
-	case ET66ArcadeGameType::GoldMiner:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorGoldMiner", "Swing, hook, and reel treasure from the pit.");
-	case ET66ArcadeGameType::RuneSwipe:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorRuneSwipe", "Tap the glowing rune chain before it fades.");
-	case ET66ArcadeGameType::CartSwitcher:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorCartSwitcher", "Switch mine tracks into the active lane.");
-	case ET66ArcadeGameType::CrystalDash:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorCrystalDash", "Dash through crystals while avoiding hazards.");
-	case ET66ArcadeGameType::PotionPour:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorPotionPour", "Stop the pour on the glowing mark.");
-	case ET66ArcadeGameType::RelicStack:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorRelicStack", "Drop moving relics over the center stack.");
-	case ET66ArcadeGameType::ShieldParry:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorShieldParry", "Parry the lit projectile direction.");
-	case ET66ArcadeGameType::MimicMemory:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorMimicMemory", "Repeat the chest sequence under pressure.");
-	case ET66ArcadeGameType::BombSorter:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorBombSorter", "Sort the lit bomb into the matching chute.");
-	case ET66ArcadeGameType::LanternLeap:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorLanternLeap", "Leap onto the glowing lantern platform.");
-	case ET66ArcadeGameType::BladeSweep:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorBladeSweep", "Sweep cursed fruit and dodge bad tiles.");
-	default:
-		return NSLOCTEXT("T66.Arcade", "ArcadeSelectorFlavorDefault", "Boot the selected arcade machine cartridge.");
-	}
+	return T66ArcadeGameCatalog::GetDescription(GameType);
 }
 
 FLinearColor UT66ArcadeSelectionWidget::ResolveGameAccentColor(const ET66ArcadeGameType GameType, const int32 Index) const
 {
-	switch (GameType)
-	{
-	case ET66ArcadeGameType::WhackAMole:
-		return FLinearColor(0.24f, 0.84f, 0.42f, 1.f);
-	case ET66ArcadeGameType::Topwar:
-		return FLinearColor(0.95f, 0.44f, 0.16f, 1.f);
-	case ET66ArcadeGameType::GoldMiner:
-		return FLinearColor(0.95f, 0.76f, 0.20f, 1.f);
-	case ET66ArcadeGameType::ShieldParry:
-		return FLinearColor(0.18f, 0.72f, 1.f, 1.f);
-	case ET66ArcadeGameType::MimicMemory:
-		return FLinearColor(0.88f, 0.12f, 0.10f, 1.f);
-	case ET66ArcadeGameType::BombSorter:
-		return FLinearColor(0.94f, 0.18f, 0.14f, 1.f);
-	default:
-	{
-		static const FLinearColor Palette[] =
-		{
-			FLinearColor(0.16f, 0.82f, 0.78f, 1.f),
-			FLinearColor(0.94f, 0.56f, 0.18f, 1.f),
-			FLinearColor(0.62f, 0.72f, 1.f, 1.f),
-			FLinearColor(0.90f, 0.32f, 0.56f, 1.f),
-			FLinearColor(0.72f, 0.92f, 0.28f, 1.f),
-		};
-		return Palette[FMath::Abs(Index) % UE_ARRAY_COUNT(Palette)];
-	}
-	}
+	return T66ArcadeGameCatalog::GetAccentColor(GameType, Index);
 }

@@ -1,8 +1,0 @@
-{
-  "exit_code": 1,
-  "finished_at": "2026-05-17T10:56:25.642932+00:00",
-  "manifest_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CTrackDPart1/03_slime/manifest.json",
-  "ok": false,
-  "started_at": "2026-05-17T10:52:04.757553+00:00",
-  "status_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CTrackDPart1/03_slime/Logs/pixal3d_generation_status.jsonl"
-}

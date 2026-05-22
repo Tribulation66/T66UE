@@ -12,12 +12,14 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66ReleaseVariantSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
 #include "Core/T66SteamHelper.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66FlatStyle.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "Engine/Texture2D.h"
 #include "Engine/Engine.h"
 #include "Engine/UserInterfaceSettings.h"
@@ -567,16 +569,24 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			];
 	};
 
-	auto MakeCtaButton = [&](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const ET66FlatState State, const float Width, const float Height, const FName InTag, const FSlateBrush* LeftIcon = nullptr, const FSlateBrush* RightIcon = nullptr) -> TSharedRef<SWidget>
+	auto IsDailyDescentAvailable = [this]() -> bool
 	{
+		const UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+		const UT66ReleaseVariantSubsystem* ReleaseVariant = GI ? GI->GetSubsystem<UT66ReleaseVariantSubsystem>() : nullptr;
+		return !ReleaseVariant || !ReleaseVariant->IsDemoModeActive();
+	};
+
+	auto MakeCtaButton = [&](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const ET66FlatState State, const float Width, const float Height, const FName InTag, const FSlateBrush* LeftIcon = nullptr, const FSlateBrush* RightIcon = nullptr, const bool bEnabled = true) -> TSharedRef<SWidget>
+	{
+		const ET66FlatState RenderState = bEnabled ? State : ET66FlatState::Disabled;
 		return FT66FlatStyle::MakeFlatToggleGroupButton(
-			State,
-			MakeCtaContent(Text, State, Height, InTag, LeftIcon, RightIcon),
-			FOnClicked::CreateUObject(this, ClickFunc),
+			RenderState,
+			MakeCtaContent(Text, RenderState, Height, InTag, LeftIcon, RightIcon),
+			bEnabled ? FOnClicked::CreateUObject(this, ClickFunc) : FOnClicked(),
 			FMargin(18.f, 8.f),
 			Width,
 			Height,
-			true,
+			bEnabled,
 			InTag);
 	};
 
@@ -1158,6 +1168,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 
 	auto MakeCtaStack = [&]() -> TSharedRef<SWidget>
 	{
+		const bool bDailyDescentAvailable = IsDailyDescentAvailable();
 		TSharedRef<SConstraintCanvas> CtaCanvas = SNew(SConstraintCanvas);
 		CtaCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
@@ -1189,14 +1200,20 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			.Alignment(FVector2D(0.f, 0.f))
 			.Offset(FMargin(117.f, 254.f, 486.f, 92.f))
 			[
-				MakeCtaButton(
-					NSLOCTEXT("T66.MainMenu", "DailyDescent", "DAILY DESCENT"),
-					&UT66MainMenuScreen::HandleDailyDescentClicked,
-					ET66FlatState::Default,
-					486.f,
-					92.f,
-					Tag(TEXT("MainMenu.Center.DailyDescentButton")),
-					DailyDescentIconBrush.Get())
+				T66DemoModeUI::WrapWithComingSoonOverlay(
+					MakeCtaButton(
+						NSLOCTEXT("T66.MainMenu", "DailyDescent", "DAILY DESCENT"),
+						&UT66MainMenuScreen::HandleDailyDescentClicked,
+						ET66FlatState::Default,
+						486.f,
+						92.f,
+						Tag(TEXT("MainMenu.Center.DailyDescentButton")),
+						DailyDescentIconBrush.Get(),
+						nullptr,
+						bDailyDescentAvailable),
+					!bDailyDescentAvailable,
+					this,
+					Tag(TEXT("MainMenu.Center.DailyDescentButton.DemoOverlay")))
 			];
 
 		return FT66FlatStyle::AttachMetadata(
@@ -2025,6 +2042,13 @@ void UT66MainMenuScreen::OnLoadGameClicked()
 
 void UT66MainMenuScreen::OnDailyDescentClicked()
 {
+	const UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	const UT66ReleaseVariantSubsystem* ReleaseVariant = GI ? GI->GetSubsystem<UT66ReleaseVariantSubsystem>() : nullptr;
+	if (ReleaseVariant && ReleaseVariant->IsDemoModeActive())
+	{
+		return;
+	}
+
 	NavigateTo(ET66ScreenType::DailyDescent);
 }
 

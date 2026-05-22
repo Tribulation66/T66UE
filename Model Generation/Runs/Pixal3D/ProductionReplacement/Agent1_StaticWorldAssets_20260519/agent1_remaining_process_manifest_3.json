@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "workflow": "pixal3d_toonstyle_production_import",
+  "production_cleared": true,
+  "source_gate_override": {
+    "luminance_floor": "waived_by_user_2026-05-19",
+    "reason": "Pablo explicitly instructed to ignore luminance issues/warnings and proceed with these images."
+  },
+  "settings": {
+    "seed": 1337,
+    "resolution": 1536,
+    "texture_size": 4096,
+    "decimation": 200000,
+    "fallback_decimation": 80000,
+    "remesh": true,
+    "export_fallback": true,
+    "safe_fill_holes_fallback": true,
+    "ss_steps": 25,
+    "ss_guidance": 7.5,
+    "shape_steps": 25,
+    "shape_guidance": 7.5,
+    "tex_steps": 25,
+    "tex_guidance": 4.0
+  },
+  "assets": [
+    {
+      "asset_id": "WallTorch_Easy_Pixal3D",
+      "display_name": "Wall Torch Easy Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/VisualProps/prop_wall_torch_easy.png",
+      "target_dir": "/Game/World/VisualProps/Easy",
+      "replaces": "/Game/World/VisualProps/Easy/WallTorch_Pixal3D.WallTorch_Pixal3D",
+      "target_height": 130.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/WorldVisualProps.json row WallTorch_Easy; DT_WorldVisualProps",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/WallTorch_Easy_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "BrokenVase_Easy_Pixal3D",
+      "display_name": "Broken Vase Easy Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/VisualProps/prop_broken_vase_easy.png",
+      "target_dir": "/Game/World/VisualProps/Easy",
+      "replaces": "/Game/World/VisualProps/Easy/BrokenVase_Pixal3D.BrokenVase_Pixal3D",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/WorldVisualProps.json row BrokenVase_Easy; DT_WorldVisualProps",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/BrokenVase_Easy_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "display_name": "Skull Remains Easy Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/VisualProps/prop_skull_remains_easy.png",
+      "target_dir": "/Game/World/VisualProps/Easy",
+      "replaces": "/Game/World/VisualProps/Easy/SkullRemains_Pixal3D.SkullRemains_Pixal3D",
+      "target_height": 60.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/WorldVisualProps.json row SkullRemains_Easy; DT_WorldVisualProps",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/SkullRemains_Easy_Pixal3D/Working",
+      "notes": ""
+    }
+  ]
+}

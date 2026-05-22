@@ -39,6 +39,6 @@ It reuses `UploadToSteam.ps1`, copies the staged build into `ContentBuilder\cont
 
 ## Validation
 
-- Launch `T66 Demo Standalone.lnk` locally and confirm only `Easy`, `Medium`, `Hero_1`, `Hero_2`, `Hero_3`, and `Hero_4` are selectable.
+- Launch `T66 Demo Standalone.lnk` locally and confirm only `Easy` is playable, `Hero_1` through `Hero_5` are playable, later heroes/difficulties show the locked demo state, and Easy-stage progression can unlock only `Companion_01` through `Companion_04`.
 - After uploading, set the build live only on a private/test branch first.
 - Install the Steam demo AppID `4718770` from Steam and confirm the overlay reports the demo app, not the full game app.

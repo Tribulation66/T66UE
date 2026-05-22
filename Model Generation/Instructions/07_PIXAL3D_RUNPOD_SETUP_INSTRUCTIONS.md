@@ -116,9 +116,9 @@ X-Resolution: 1536
 X-Texture-Size: 4096
 X-Decimation: 200000
 X-Remesh: 1
-X-Export-Fallback: 1
+X-Export-Fallback: 0
 X-Fallback-Decimation: 80000
-X-Safe-Fill-Holes-Fallback: 1
+X-Safe-Fill-Holes-Fallback: 0
 X-SS-Steps: 25
 X-SS-Guidance: 7.5
 X-Shape-Steps: 25
@@ -127,13 +127,13 @@ X-Tex-Steps: 25
 X-Tex-Guidance: 4.0
 ```
 
-Leave export fallback enabled. It is part of the T66 Pixal3D server contract,
-not an experimental toggle. `X-Decimation: 200000` is the production face
-target; fallback exports must be reported, not silently accepted.
-`X-Safe-Fill-Holes-Fallback: 1` is the final
-export-only recovery path for known CuMesh `fill_holes` CUDA error 9 /
-invalid-configuration crashes. If that fallback is used, the response headers
-must show it and the model still needs Blender QA before handoff.
+Leave export fallback disabled for strict production. `X-Decimation: 200000` is
+the production face target; fallback exports are diagnostic evidence, not
+accepted production output. Use `--diagnostic-mode` with
+`X-Export-Fallback: 1` and `X-Safe-Fill-Holes-Fallback: 1` only when
+investigating CuMesh export failures. If that fallback is used, the response
+headers must show it and the production wrapper must fail or explicitly mark a
+per-asset accepted limitation.
 
 ## Smoke Test
 

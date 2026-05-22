@@ -1,0 +1,1066 @@
+{
+  "accepted_limitation": false,
+  "asset_class": "humanoid",
+  "asset_name": "Hero_1_Chad",
+  "fbx_export_options": {
+    "outline": {
+      "add_leaf_bones": false,
+      "apply_scale_options": "FBX_SCALE_ALL",
+      "apply_unit_scale": true,
+      "bake_space_transform": false,
+      "embed_textures": false,
+      "global_scale": 0.01,
+      "mesh_smooth_type": "FACE",
+      "object_types": [
+        "MESH"
+      ],
+      "path_mode": "STRIP",
+      "use_mesh_modifiers": true,
+      "use_selection": true
+    },
+    "shading": {
+      "add_leaf_bones": false,
+      "apply_scale_options": "FBX_SCALE_ALL",
+      "apply_unit_scale": true,
+      "bake_space_transform": false,
+      "embed_textures": false,
+      "global_scale": 0.01,
+      "mesh_smooth_type": "FACE",
+      "object_types": [
+        "MESH"
+      ],
+      "path_mode": "STRIP",
+      "use_mesh_modifiers": true,
+      "use_selection": true
+    }
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad.fbx",
+  "flatten_highlight_cap": 0.85,
+  "flatten_k": 6,
+  "foundation_pass": {
+    "accepted_limitation": false,
+    "asset_class": "humanoid",
+    "close_the_gap": {
+      "readback": {
+        "B_max": 1.0,
+        "B_mean": 0.155961275100708,
+        "B_min": 0.0,
+        "B_nonzero_fraction": 0.2999910308332356,
+        "N": 144941,
+        "attribute": "Col"
+      },
+      "status": "applied",
+      "transfer_function": {
+        "asset_class": "humanoid",
+        "high_percentile_value": 0.9288671016693115,
+        "low_percentile_value": 0.23426486551761627,
+        "method": "clamp_below_percentile_then_power_response",
+        "power": 0.7
+      }
+    },
+    "curvature": {
+      "boundary_edges": 88730,
+      "count": 144941,
+      "edge_samples": 236502,
+      "max": 1.0,
+      "mean": 0.21840140572219333,
+      "method": "edge_face_angle_divergence_abs_normalized_p95",
+      "min": 0.0,
+      "normalization_scale_raw_p95": 0.23067036352016654,
+      "percentiles": {
+        "p05": 0.0,
+        "p25": 0.03624998322828569,
+        "p50": 0.11358167357672129,
+        "p75": 0.28890618122582357,
+        "p90": 0.6359388141228484,
+        "p95": 0.9288671222732937,
+        "p99": 1.0
+      },
+      "std": 0.26648300292848826
+    },
+    "enabled": true,
+    "inner_lines": {
+      "bake_report": {
+        "dependency_path": "external_python_pillow_numpy",
+        "line_coverage_fraction": 0.11670643091201782,
+        "max_intensity": 1.0,
+        "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_InnerLines.png",
+        "padding": {
+          "applied": true,
+          "filled_pixels": 7359978,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "resolution": [
+          4096,
+          4096
+        ],
+        "segments": 94725,
+        "stddev": 0.24156656861305237,
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_numpy\", \"line_coverage_fraction\": 0.11670643091201782, \"max_intensity\": 1.0, \"output\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_InnerLines.png\", \"padding\": {\"applied\": true, \"filled_pixels\": 7359978, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"resolution\": [4096, 4096], \"segments\": 94725, \"stddev\": 0.24156656861305237, \"unique_value_count\": 256}",
+        "unique_value_count": 256
+      },
+      "padding_pixels": 16,
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_InnerLines.png",
+      "segments": 94725,
+      "segments_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_inner_line_segments.npz",
+      "status": "applied"
+    }
+  },
+  "inner_line_texture": {
+    "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_InnerLines.png",
+    "report": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_InnerLines_report.json"
+  },
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Outputs\\Hero_1_Chad.glb",
+  "is_humanoid": true,
+  "material_count_after_strip": 1,
+  "material_count_before_strip": 1,
+  "mesh_count_after_join": 1,
+  "mesh_count_before_join": 1,
+  "no_remesh_export": false,
+  "normal_delta_sample": {
+    "distinct": true,
+    "reason": "humanoid_face_normal_transfer_deprecated_disabled"
+  },
+  "normal_transfer": {
+    "enabled": false,
+    "experimental_opt_in_flag": "--enable-humanoid-face-normal-transfer",
+    "method": "disabled_original_normals",
+    "reason": "humanoid_face_normal_transfer_deprecated_disabled_by_default"
+  },
+  "normalization": {
+    "bounds_max": [
+      52.0896110534668,
+      19.99800682067871,
+      180.00001525878906
+    ],
+    "bounds_min": [
+      -52.0896110534668,
+      -19.99800682067871,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      104.1792221069336,
+      39.99601364135742,
+      180.00001525878906
+    ],
+    "height": 180.00001525878906,
+    "scale_factor": 205.06734854522253
+  },
+  "outline_bounds": {
+    "dimensions": [
+      104.1792221069336,
+      39.99601364135742,
+      180.00001525878906
+    ],
+    "height": 180.00001525878906,
+    "max": [
+      52.0896110534668,
+      19.99800682067871,
+      180.00001525878906
+    ],
+    "min": [
+      -52.0896110534668,
+      -19.99800682067871,
+      0.0
+    ]
+  },
+  "outline_fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_outline.fbx",
+  "outline_vertex_count": 144941,
+  "outline_winding": {
+    "applied": true,
+    "face_after": [
+      52,
+      53,
+      51
+    ],
+    "face_before": [
+      52,
+      51,
+      53
+    ],
+    "face_order_reversed": true,
+    "inward_normal_samples": 72116,
+    "method": "shade_smooth before bmesh.ops.reverse_faces + restored captured outward vertex normals as custom split normals",
+    "outward_normal_samples": 72825
+  },
+  "retained_from_phase1a": false,
+  "reused_textures_manifest": null,
+  "shading_bounds": {
+    "dimensions": [
+      104.1792221069336,
+      39.99601364135742,
+      180.00001525878906
+    ],
+    "height": 180.00001525878906,
+    "max": [
+      52.0896110534668,
+      19.99800682067871,
+      180.00001525878906
+    ],
+    "min": [
+      -52.0896110534668,
+      -19.99800682067871,
+      0.0
+    ]
+  },
+  "shading_normal_editing": {
+    "applied": false,
+    "reason": "skipped_for_humanoid_to_avoid_overwriting_transfer_face_normals"
+  },
+  "target_height": 180.0,
+  "texture_flattening": [
+    {
+      "active_pixels": 16777125,
+      "centers_rgb_255": [
+        [
+          9,
+          9,
+          10
+        ],
+        [
+          2,
+          18,
+          55
+        ],
+        [
+          3,
+          36,
+          120
+        ],
+        [
+          85,
+          36,
+          38
+        ],
+        [
+          152,
+          110,
+          97
+        ],
+        [
+          237,
+          186,
+          160
+        ]
+      ],
+      "final_center_shift": 0.000556984799914062,
+      "flattened_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_0",
+      "iterations": 16,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_original.png",
+      "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+      "postprocess": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              9,
+              9,
+              10
+            ],
+            [
+              2,
+              18,
+              55
+            ],
+            [
+              3,
+              36,
+              120
+            ],
+            [
+              85,
+              36,
+              38
+            ],
+            [
+              152,
+              110,
+              97
+            ],
+            [
+              237,
+              186,
+              160
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+        "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              9,
+              9,
+              10
+            ],
+            [
+              2,
+              18,
+              55
+            ],
+            [
+              3,
+              36,
+              120
+            ],
+            [
+              85,
+              36,
+              38
+            ],
+            [
+              152,
+              110,
+              97
+            ],
+            [
+              237,
+              186,
+              160
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 64826,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[9, 9, 10], [2, 18, 55], [3, 36, 120], [85, 36, 38], [152, 110, 97], [237, 186, 160]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_0_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_0_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[9, 9, 10], [2, 18, 55], [3, 36, 120], [85, 36, 38], [152, 110, 97], [237, 186, 160]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 64826, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": true, \"output\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_Tint.png\", \"saturation_scale\": 1.1, \"value_scale\": 0.6}, \"unique_rgb_after\": 6, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9365888, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7359978, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 187248, \"width\": 4096}",
+        "tint": {
+          "generated": true,
+          "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_Tint.png",
+          "saturation_scale": 1.1,
+          "value_scale": 0.6
+        },
+        "unique_rgb_after": 6,
+        "unique_rgb_before": 6,
+        "uv_mask_pixels": 9365888,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 7359978,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 187248,
+        "width": 4096
+      },
+      "unique_colors_after": 6,
+      "unique_colors_before": 222261,
+      "width": 4096
+    },
+    {
+      "active_pixels": 16777216,
+      "centers_rgb_255": [
+        [
+          0,
+          38,
+          0
+        ],
+        [
+          0,
+          254,
+          0
+        ],
+        [
+          2,
+          255,
+          1
+        ],
+        [
+          0,
+          255,
+          1
+        ],
+        [
+          0,
+          255,
+          1
+        ],
+        [
+          5,
+          254,
+          11
+        ]
+      ],
+      "final_center_shift": 0.000949089415371418,
+      "flattened_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+      "height": 4096,
+      "highlight_cap": 0.85,
+      "image_name": "Image_1",
+      "iterations": 4,
+      "k": 6,
+      "mode": "blender",
+      "original_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_original.png",
+      "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+      "postprocess": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              38,
+              0
+            ],
+            [
+              0,
+              254,
+              0
+            ],
+            [
+              2,
+              255,
+              1
+            ],
+            [
+              0,
+              255,
+              1
+            ],
+            [
+              0,
+              255,
+              1
+            ],
+            [
+              5,
+              254,
+              11
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+        "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              38,
+              0
+            ],
+            [
+              0,
+              254,
+              0
+            ],
+            [
+              2,
+              255,
+              1
+            ],
+            [
+              0,
+              255,
+              1
+            ],
+            [
+              0,
+              255,
+              1
+            ],
+            [
+              5,
+              254,
+              11
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 23,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 38, 0], [0, 254, 0], [2, 255, 1], [0, 255, 1], [0, 255, 1], [5, 254, 11]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_1_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_1_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 38, 0], [0, 254, 0], [2, 255, 1], [0, 255, 1], [0, 255, 1], [5, 254, 11]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 23, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": false}, \"unique_rgb_after\": 2, \"unique_rgb_before\": 2, \"uv_mask_pixels\": 9365888, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7359978, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 187248, \"width\": 4096}",
+        "tint": {
+          "generated": false
+        },
+        "unique_rgb_after": 2,
+        "unique_rgb_before": 2,
+        "uv_mask_pixels": 9365888,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 7359978,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 187248,
+        "width": 4096
+      },
+      "unique_colors_after": 5,
+      "unique_colors_before": 396,
+      "width": 4096
+    }
+  ],
+  "texture_postprocess_dependency_path": "external_python_pillow_scipy",
+  "textures": [
+    {
+      "flatten_report": {
+        "active_pixels": 16777125,
+        "centers_rgb_255": [
+          [
+            9,
+            9,
+            10
+          ],
+          [
+            2,
+            18,
+            55
+          ],
+          [
+            3,
+            36,
+            120
+          ],
+          [
+            85,
+            36,
+            38
+          ],
+          [
+            152,
+            110,
+            97
+          ],
+          [
+            237,
+            186,
+            160
+          ]
+        ],
+        "final_center_shift": 0.000556984799914062,
+        "flattened_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+        "height": 4096,
+        "highlight_cap": 0.85,
+        "image_name": "Image_0",
+        "iterations": 16,
+        "k": 6,
+        "mode": "blender",
+        "original_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_original.png",
+        "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+        "postprocess": {
+          "dependency_path": "external_python_pillow_scipy",
+          "final_palette_snap": {
+            "applied": true,
+            "centers_rgb_255": [
+              [
+                9,
+                9,
+                10
+              ],
+              [
+                2,
+                18,
+                55
+              ],
+              [
+                3,
+                36,
+                120
+              ],
+              [
+                85,
+                36,
+                38
+              ],
+              [
+                152,
+                110,
+                97
+              ],
+              [
+                237,
+                186,
+                160
+              ]
+            ],
+            "palette_size": 6
+          },
+          "height": 4096,
+          "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+          "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+          "palette_snap": {
+            "applied": true,
+            "centers_rgb_255": [
+              [
+                9,
+                9,
+                10
+              ],
+              [
+                2,
+                18,
+                55
+              ],
+              [
+                3,
+                36,
+                120
+              ],
+              [
+                85,
+                36,
+                38
+              ],
+              [
+                152,
+                110,
+                97
+              ],
+              [
+                237,
+                186,
+                160
+              ]
+            ],
+            "palette_size": 6
+          },
+          "speckle_cleanup": {
+            "applied": true,
+            "changed_pixels": 64826,
+            "diff_threshold": 42.0,
+            "method": "3x3_local_median_high_contrast_pixel_replacement",
+            "prompt_region_threshold_reference": 8
+          },
+          "stderr": "",
+          "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[9, 9, 10], [2, 18, 55], [3, 36, 120], [85, 36, 38], [152, 110, 97], [237, 186, 160]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_0_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_0_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[9, 9, 10], [2, 18, 55], [3, 36, 120], [85, 36, 38], [152, 110, 97], [237, 186, 160]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 64826, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": true, \"output\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_Tint.png\", \"saturation_scale\": 1.1, \"value_scale\": 0.6}, \"unique_rgb_after\": 6, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9365888, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7359978, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 187248, \"width\": 4096}",
+          "tint": {
+            "generated": true,
+            "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_Tint.png",
+            "saturation_scale": 1.1,
+            "value_scale": 0.6
+          },
+          "unique_rgb_after": 6,
+          "unique_rgb_before": 6,
+          "uv_mask_pixels": 9365888,
+          "uv_padding": {
+            "applied": true,
+            "filled_pixels": 7359978,
+            "method": "iterative_frontier_expansion",
+            "padding_pixels": 16
+          },
+          "uv_triangles": 187248,
+          "width": 4096
+        },
+        "unique_colors_after": 6,
+        "unique_colors_before": 222261,
+        "width": 4096
+      },
+      "flattened": true,
+      "image_name": "Image_0",
+      "original_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_original.png",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+      "postprocess_report": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              9,
+              9,
+              10
+            ],
+            [
+              2,
+              18,
+              55
+            ],
+            [
+              3,
+              36,
+              120
+            ],
+            [
+              85,
+              36,
+              38
+            ],
+            [
+              152,
+              110,
+              97
+            ],
+            [
+              237,
+              186,
+              160
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+        "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              9,
+              9,
+              10
+            ],
+            [
+              2,
+              18,
+              55
+            ],
+            [
+              3,
+              36,
+              120
+            ],
+            [
+              85,
+              36,
+              38
+            ],
+            [
+              152,
+              110,
+              97
+            ],
+            [
+              237,
+              186,
+              160
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 64826,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[9, 9, 10], [2, 18, 55], [3, 36, 120], [85, 36, 38], [152, 110, 97], [237, 186, 160]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_0_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_0_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[9, 9, 10], [2, 18, 55], [3, 36, 120], [85, 36, 38], [152, 110, 97], [237, 186, 160]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 64826, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": true, \"output\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_Tint.png\", \"saturation_scale\": 1.1, \"value_scale\": 0.6}, \"unique_rgb_after\": 6, \"unique_rgb_before\": 6, \"uv_mask_pixels\": 9365888, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7359978, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 187248, \"width\": 4096}",
+        "tint": {
+          "generated": true,
+          "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_Tint.png",
+          "saturation_scale": 1.1,
+          "value_scale": 0.6
+        },
+        "unique_rgb_after": 6,
+        "unique_rgb_before": 6,
+        "uv_mask_pixels": 9365888,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 7359978,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 187248,
+        "width": 4096
+      },
+      "size": [
+        4096,
+        4096
+      ],
+      "source_format": "WEBP"
+    },
+    {
+      "flatten_report": {
+        "active_pixels": 16777216,
+        "centers_rgb_255": [
+          [
+            0,
+            38,
+            0
+          ],
+          [
+            0,
+            254,
+            0
+          ],
+          [
+            2,
+            255,
+            1
+          ],
+          [
+            0,
+            255,
+            1
+          ],
+          [
+            0,
+            255,
+            1
+          ],
+          [
+            5,
+            254,
+            11
+          ]
+        ],
+        "final_center_shift": 0.000949089415371418,
+        "flattened_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+        "height": 4096,
+        "highlight_cap": 0.85,
+        "image_name": "Image_1",
+        "iterations": 4,
+        "k": 6,
+        "mode": "blender",
+        "original_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_original.png",
+        "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+        "postprocess": {
+          "dependency_path": "external_python_pillow_scipy",
+          "final_palette_snap": {
+            "applied": true,
+            "centers_rgb_255": [
+              [
+                0,
+                38,
+                0
+              ],
+              [
+                0,
+                254,
+                0
+              ],
+              [
+                2,
+                255,
+                1
+              ],
+              [
+                0,
+                255,
+                1
+              ],
+              [
+                0,
+                255,
+                1
+              ],
+              [
+                5,
+                254,
+                11
+              ]
+            ],
+            "palette_size": 6
+          },
+          "height": 4096,
+          "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+          "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+          "palette_snap": {
+            "applied": true,
+            "centers_rgb_255": [
+              [
+                0,
+                38,
+                0
+              ],
+              [
+                0,
+                254,
+                0
+              ],
+              [
+                2,
+                255,
+                1
+              ],
+              [
+                0,
+                255,
+                1
+              ],
+              [
+                0,
+                255,
+                1
+              ],
+              [
+                5,
+                254,
+                11
+              ]
+            ],
+            "palette_size": 6
+          },
+          "speckle_cleanup": {
+            "applied": true,
+            "changed_pixels": 23,
+            "diff_threshold": 42.0,
+            "method": "3x3_local_median_high_contrast_pixel_replacement",
+            "prompt_region_threshold_reference": 8
+          },
+          "stderr": "",
+          "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 38, 0], [0, 254, 0], [2, 255, 1], [0, 255, 1], [0, 255, 1], [5, 254, 11]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_1_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_1_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 38, 0], [0, 254, 0], [2, 255, 1], [0, 255, 1], [0, 255, 1], [5, 254, 11]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 23, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": false}, \"unique_rgb_after\": 2, \"unique_rgb_before\": 2, \"uv_mask_pixels\": 9365888, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7359978, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 187248, \"width\": 4096}",
+          "tint": {
+            "generated": false
+          },
+          "unique_rgb_after": 2,
+          "unique_rgb_before": 2,
+          "uv_mask_pixels": 9365888,
+          "uv_padding": {
+            "applied": true,
+            "filled_pixels": 7359978,
+            "method": "iterative_frontier_expansion",
+            "padding_pixels": 16
+          },
+          "uv_triangles": 187248,
+          "width": 4096
+        },
+        "unique_colors_after": 5,
+        "unique_colors_before": 396,
+        "width": 4096
+      },
+      "flattened": true,
+      "image_name": "Image_1",
+      "original_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_original.png",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+      "postprocess_report": {
+        "dependency_path": "external_python_pillow_scipy",
+        "final_palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              38,
+              0
+            ],
+            [
+              0,
+              254,
+              0
+            ],
+            [
+              2,
+              255,
+              1
+            ],
+            [
+              0,
+              255,
+              1
+            ],
+            [
+              0,
+              255,
+              1
+            ],
+            [
+              5,
+              254,
+              11
+            ]
+          ],
+          "palette_size": 6
+        },
+        "height": 4096,
+        "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+        "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_1_flattened.png",
+        "palette_snap": {
+          "applied": true,
+          "centers_rgb_255": [
+            [
+              0,
+              38,
+              0
+            ],
+            [
+              0,
+              254,
+              0
+            ],
+            [
+              2,
+              255,
+              1
+            ],
+            [
+              0,
+              255,
+              1
+            ],
+            [
+              0,
+              255,
+              1
+            ],
+            [
+              5,
+              254,
+              11
+            ]
+          ],
+          "palette_size": 6
+        },
+        "speckle_cleanup": {
+          "applied": true,
+          "changed_pixels": 23,
+          "diff_threshold": 42.0,
+          "method": "3x3_local_median_high_contrast_pixel_replacement",
+          "prompt_region_threshold_reference": 8
+        },
+        "stderr": "",
+        "stdout": "{\"dependency_path\": \"external_python_pillow_scipy\", \"final_palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 38, 0], [0, 254, 0], [2, 255, 1], [0, 255, 1], [0, 255, 1], [5, 254, 11]], \"palette_size\": 6}, \"height\": 4096, \"input\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_1_flattened.png\", \"output\": \"C:\\\\UE\\\\T66\\\\Model Generation\\\\Runs\\\\Pixal3D\\\\HeroDemoLineup_20260522_AccuRig\\\\Processed\\\\Hero_1_Chad\\\\Working\\\\Hero_1_Chad_1_flattened.png\", \"palette_snap\": {\"applied\": true, \"centers_rgb_255\": [[0, 38, 0], [0, 254, 0], [2, 255, 1], [0, 255, 1], [0, 255, 1], [5, 254, 11]], \"palette_size\": 6}, \"speckle_cleanup\": {\"applied\": true, \"changed_pixels\": 23, \"diff_threshold\": 42.0, \"method\": \"3x3_local_median_high_contrast_pixel_replacement\", \"prompt_region_threshold_reference\": 8}, \"tint\": {\"generated\": false}, \"unique_rgb_after\": 2, \"unique_rgb_before\": 2, \"uv_mask_pixels\": 9365888, \"uv_padding\": {\"applied\": true, \"filled_pixels\": 7359978, \"method\": \"iterative_frontier_expansion\", \"padding_pixels\": 16}, \"uv_triangles\": 187248, \"width\": 4096}",
+        "tint": {
+          "generated": false
+        },
+        "unique_rgb_after": 2,
+        "unique_rgb_before": 2,
+        "uv_mask_pixels": 9365888,
+        "uv_padding": {
+          "applied": true,
+          "filled_pixels": 7359978,
+          "method": "iterative_frontier_expansion",
+          "padding_pixels": 16
+        },
+        "uv_triangles": 187248,
+        "width": 4096
+      },
+      "size": [
+        4096,
+        4096
+      ],
+      "source_format": "WEBP"
+    }
+  ],
+  "tint_texture": {
+    "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_Tint.png",
+    "postprocess_report": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened_postprocess.json",
+    "source_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_0_flattened.png"
+  },
+  "uv_triangles": {
+    "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_uv_triangles.npz",
+    "triangle_count": 187248
+  },
+  "vertex_colors": {
+    "attribute": "Col",
+    "domain": "CORNER",
+    "loop_count": 561744,
+    "mode": "cycles_ao",
+    "type": "BYTE_COLOR"
+  },
+  "vertex_count": 144941,
+  "working_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working"
+}

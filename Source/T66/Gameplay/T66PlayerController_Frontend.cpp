@@ -29,6 +29,7 @@
 #include "UI/Screens/T66SavePreviewScreen.h"
 #include "UI/Screens/T66PowerUpScreen.h"
 #include "UI/Screens/T66MinigamesScreen.h"
+#include "UI/Screens/T66VersusArcadeScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/Screens/T66ChallengesScreen.h"
 #include "UI/Screens/T66DailyClimbScreen.h"
@@ -384,7 +385,7 @@ namespace
 			"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, MiniMainMenu, "
 			"MiniCharacterSelect, MiniCompanionSelect, MiniDifficultySelect, MiniIdolSelect, MiniSaveSlots, "
 			"MiniShop, MiniRunSummary, MiniBattle, TDMainMenu, TDDifficultySelect, TDBattle, IdleMainMenu, "
-			"IdleChadpocalypse, DeckMainMenu, Deckbuilder, ChadpocalypseDeckbuilder, "
+			"IdleChadpocalypse, DeckMainMenu, Deckbuilder, ChadpocalypseDeckbuilder, Versus, VersusMainMenu, "
 			"Challenges, DailyDescent, Overview, History, Diplomas, "
 			"Drugs, SteamAchievements, Steam, SettingsRetroFX, RetroFX, SettingsGameplay, SettingsGraphics, "
 			"SettingsControls, SettingsMediaViewer, SettingsMedia, SettingsAudio, LoadGame");
@@ -447,6 +448,12 @@ namespace
 		if (Normalized.Equals(TEXT("Minigames"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::Minigames;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("Versus"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("VersusMainMenu"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::VersusMainMenu;
 			return true;
 		}
 		if (Normalized.Equals(TEXT("PauseMenu"), ESearchCase::IgnoreCase)
@@ -687,6 +694,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66AchievementsScreen::StaticClass();
 	case ET66ScreenType::Minigames:
 		return UT66MinigamesScreen::StaticClass();
+	case ET66ScreenType::VersusMainMenu:
+		return UT66VersusArcadeScreen::StaticClass();
 	case ET66ScreenType::MiniMainMenu:
 		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniMainMenuScreen"));
 	case ET66ScreenType::MiniSaveSlots:
@@ -1410,6 +1419,10 @@ void AT66PlayerController::InitializeUI()
 	if (TSubclassOf<UT66ScreenBase> MinigamesClass = ResolveScreenClass(ET66ScreenType::Minigames))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::Minigames, MinigamesClass);
+	}
+	if (TSubclassOf<UT66ScreenBase> VersusClass = ResolveScreenClass(ET66ScreenType::VersusMainMenu))
+	{
+		UIManager->RegisterScreenClass(ET66ScreenType::VersusMainMenu, VersusClass);
 	}
 	if (TSubclassOf<UT66ScreenBase> MiniMainMenuClass = ResolveScreenClass(ET66ScreenType::MiniMainMenu))
 	{

@@ -1,0 +1,167 @@
+{
+  "schema_version": 1,
+  "workflow": "pixal3d_toonstyle_production_import",
+  "production_cleared": true,
+  "settings": {
+    "seed": 1337,
+    "resolution": 1536,
+    "image_resolution": 1536,
+    "texture_size": 4096,
+    "decimation": 200000,
+    "fallback_decimation": 80000,
+    "remesh": true,
+    "export_fallback": false,
+    "safe_fill_holes_fallback": false,
+    "ss_steps": 25,
+    "ss_guidance": 7.5,
+    "shape_steps": 25,
+    "shape_guidance": 7.5,
+    "tex_steps": 25,
+    "tex_guidance": 4.0,
+    "batch_generate_timeout": 7200,
+    "batch_poll_interval": 60,
+    "batch_wait_timeout": 43200
+  },
+  "assets": [
+    {
+      "asset_id": "Companion_02",
+      "display_name": "Companion 02 Blonde Tavern Barmaid",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_2_Characters/Characters/Companions/Base/companion_02_blonde_tavern_barmaid.png",
+      "target_dir": "/Game/Characters/Companions/Companion_02/Default/Pixal3DToonStyle",
+      "replaces": "/Game/Characters/Companions/Companion_02/Default/SK_Companion_02_Default.SK_Companion_02_Default",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/CharacterVisuals.csv row Companion_02; Content/Data/Companions.csv row Companion_02 remains identity/unlock owner.",
+      "production_status": "planned",
+      "notes": "Base companion runtime visual. Manifest category uses hero because the production wrapper has no companion enum; runtime owner is the companion CharacterVisuals row. Reprocess/import pass removes deprecated humanoid face-normal transfer; no regeneration."
+    },
+    {
+      "asset_id": "Companion_03",
+      "display_name": "Companion 03 Brunette College Girl",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_2_Characters/Characters/Companions/Base/companion_03_brunette_college_girl.png",
+      "target_dir": "/Game/Characters/Companions/Companion_03/Default/Pixal3DToonStyle",
+      "replaces": "/Game/Characters/Companions/Companion_03/Default/SK_Companion_03_Default.SK_Companion_03_Default",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/CharacterVisuals.csv row Companion_03; Content/Data/Companions.csv row Companion_03 remains identity/unlock owner.",
+      "production_status": "planned",
+      "notes": "Base companion runtime visual. Manifest category uses hero because the production wrapper has no companion enum; runtime owner is the companion CharacterVisuals row. Reprocess/import pass removes deprecated humanoid face-normal transfer; no regeneration."
+    },
+    {
+      "asset_id": "Companion_04",
+      "display_name": "Companion 04 Black Haired Office Lady",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_2_Characters/Characters/Companions/Base/companion_04_black_haired_office_lady.png",
+      "target_dir": "/Game/Characters/Companions/Companion_04/Default/Pixal3DToonStyle",
+      "replaces": "/Game/Characters/Companions/Companion_04/Default/SK_Companion_04_Default.SK_Companion_04_Default",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/CharacterVisuals.csv row Companion_04; Content/Data/Companions.csv row Companion_04 remains identity/unlock owner.",
+      "production_status": "planned",
+      "notes": "Base companion runtime visual. Manifest category uses hero because the production wrapper has no companion enum; runtime owner is the companion CharacterVisuals row. Reprocess/import pass removes deprecated humanoid face-normal transfer; no regeneration."
+    },
+    {
+      "asset_id": "BoneWalker",
+      "display_name": "BoneWalker",
+      "category": "mob",
+      "asset_class": "humanoid",
+      "source_image": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\BoneWalker_faithful_fix_v02.png",
+      "target_dir": "/Game/Characters/Mobs/BoneWalker",
+      "replaces": "/Game/Characters/Mobs/BoneWalker/SM_BoneWalker.SM_BoneWalker",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/CharacterVisuals.csv row BoneWalker; test-room lineup in Source/T66/Gameplay/GameMode/T66GameMode_TestRoom.cpp.",
+      "production_status": "planned",
+      "notes": "Reprocess/import pass removes deprecated humanoid face-normal transfer; no regeneration."
+    },
+    {
+      "asset_id": "HexSlinger",
+      "display_name": "HexSlinger",
+      "category": "mob",
+      "asset_class": "humanoid",
+      "source_image": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\HexSlinger_faithful_fix_v02.png",
+      "target_dir": "/Game/Characters/Mobs/HexSlinger",
+      "replaces": "/Game/Characters/Mobs/HexSlinger/SM_HexSlinger.SM_HexSlinger",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/CharacterVisuals.csv row HexSlinger; test-room lineup in Source/T66/Gameplay/GameMode/T66GameMode_TestRoom.cpp.",
+      "production_status": "planned",
+      "notes": "Reprocess/import pass removes deprecated humanoid face-normal transfer; no regeneration."
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "display_name": "BoneConjurer",
+      "category": "mob",
+      "asset_class": "humanoid",
+      "source_image": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\BoneConjurer_faithful_fix_v02.png",
+      "target_dir": "/Game/Characters/Mobs/BoneConjurer",
+      "replaces": "/Game/Characters/Mobs/BoneConjurer/SM_BoneConjurer.SM_BoneConjurer",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/CharacterVisuals.csv row BoneConjurer; test-room lineup in Source/T66/Gameplay/GameMode/T66GameMode_TestRoom.cpp.",
+      "production_status": "planned",
+      "notes": "Reprocess/import pass removes deprecated humanoid face-normal transfer; no regeneration."
+    },
+    {
+      "asset_id": "CryptWraith",
+      "display_name": "CryptWraith",
+      "category": "mob",
+      "asset_class": "humanoid",
+      "source_image": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_Handoff_2026-05-18\\ModelReady\\ImageGen_FaithfulFixes_EasyMobsAndCrate_2026-05-18\\CryptWraith_faithful_fix_v02.png",
+      "target_dir": "/Game/Characters/Mobs/CryptWraith",
+      "replaces": "/Game/Characters/Mobs/CryptWraith/SM_CryptWraith.SM_CryptWraith",
+      "target_height": 190.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/CharacterVisuals.csv row CryptWraith; test-room lineup in Source/T66/Gameplay/GameMode/T66GameMode_TestRoom.cpp.",
+      "production_status": "planned",
+      "notes": "Reprocess/import pass removes deprecated humanoid face-normal transfer; no regeneration."
+    }
+  ]
+}

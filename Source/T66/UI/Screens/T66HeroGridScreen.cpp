@@ -8,6 +8,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Engine/Texture2D.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "Kismet/GameplayStatics.h"
@@ -97,7 +98,7 @@ void UT66HeroGridScreen::OnScreenActivated_Implementation()
 	AllHeroIDs.Empty();
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		AllHeroIDs = GI->GetPlayableHeroIDs();
+		AllHeroIDs = GI->GetAllHeroIDs();
 	}
 }
 
@@ -108,7 +109,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 	{
 		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 		{
-			AllHeroIDs = GI->GetPlayableHeroIDs();
+			AllHeroIDs = GI->GetAllHeroIDs();
 		}
 	}
 
@@ -164,6 +165,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 		FName HeroID = bHasHero ? AllHeroIDs[Index] : NAME_None;
 		FHeroData HeroData;
 		const bool bSelected = bHasHero && GI && GI->SelectedHeroID == HeroID;
+		const bool bHeroPlayable = !bHasHero || !GI || GI->IsHeroPlayable(HeroID);
 		TSharedPtr<FSlateBrush> PortraitBrush;
 		if (bHasHero && GI && GI->GetHeroData(HeroID, HeroData))
 		{
@@ -182,20 +184,28 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 		const TSharedRef<SWidget> PortraitContent = PortraitBrush.IsValid()
 			? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrush.Get()))
 			: SNullWidget::NullWidget;
-		const FOnClicked TileClicked = bHasHero
+		const FOnClicked TileClicked = bHasHero && bHeroPlayable
 			? FOnClicked::CreateLambda([this, HeroIDCopy]() { return HandleHeroClicked(HeroIDCopy); })
 			: FOnClicked();
+		const ET66FlatState TileState = !bHasHero
+			? ET66FlatState::Disabled
+			: (!bHeroPlayable ? ET66FlatState::Disabled : (bSelected ? ET66FlatState::Selected : ET66FlatState::Default));
+		const TSharedRef<SWidget> Tile = MakeHeroGridTile(
+			TileState,
+			TileClicked,
+			PortraitContent,
+			bHasHero && bHeroPlayable,
+			HeroGridSlotTag(Index));
 		AddSlot(
 			SlotXs[Col],
 			SlotYs[Row],
 			TileSize,
 			TileSize,
-			MakeHeroGridTile(
-				bHasHero ? (bSelected ? ET66FlatState::Selected : ET66FlatState::Default) : ET66FlatState::Disabled,
-				TileClicked,
-				PortraitContent,
-				bHasHero,
-				HeroGridSlotTag(Index)));
+			T66DemoModeUI::WrapWithComingSoonOverlay(
+				Tile,
+				bHasHero && !bHeroPlayable,
+				this,
+				FName(*FString::Printf(TEXT("HeroGrid.Slot%02d.DemoOverlay"), Index + 1))));
 	}
 
 	const TSharedRef<SWidget> RootContent = SNew(SBox)
@@ -227,6 +237,14 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 
 FReply UT66HeroGridScreen::HandleHeroClicked(FName HeroID)
 {
+	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (!GI->IsHeroPlayable(HeroID))
+		{
+			return FReply::Handled();
+		}
+	}
+
 	// Tell the underlying Hero Selection screen to preview this hero
 	if (UIManager)
 	{

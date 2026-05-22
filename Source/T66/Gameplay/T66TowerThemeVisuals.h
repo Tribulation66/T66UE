@@ -18,12 +18,23 @@ namespace T66TowerThemeVisuals
 		SplitCollisionVisual,
 	};
 
+	enum class EEnvironmentSurfaceType : uint8
+	{
+		WallXZ,
+		WallYZ,
+		Floor,
+		Ceiling,
+	};
+
 	struct FResolvedTheme
 	{
 		FName ThemeName = NAME_None;
 		UMaterialInterface* FloorMaterial = nullptr;
 		UMaterialInterface* WallMaterial = nullptr;
 		UMaterialInterface* RoofMaterial = nullptr;
+		UMaterialInterface* WallXZMaterial = nullptr;
+		UMaterialInterface* WallYZMaterial = nullptr;
+		UMaterialInterface* CeilingMaterial = nullptr;
 		UMaterialInterface* WallMeshMaterialOverride = nullptr;
 		UMaterialInterface* DecorationMaterialOverride = nullptr;
 		TArray<UStaticMesh*> WallMeshes;
@@ -39,6 +50,11 @@ namespace T66TowerThemeVisuals
 		T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme,
 		bool bBossFloor,
 		FResolvedTheme& OutTheme);
+
+	UMaterialInterface* ResolveEnvironmentSurfaceMaterial(
+		UObject* Outer,
+		T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme,
+		EEnvironmentSurfaceType Surface);
 
 	bool ResolveFloorTheme(
 		UObject* Outer,

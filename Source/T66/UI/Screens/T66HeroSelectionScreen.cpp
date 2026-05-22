@@ -561,6 +561,14 @@ void UT66HeroSelectionScreen::PreviewHero(FName HeroID)
 
 void UT66HeroSelectionScreen::PreviewCompanion(FName CompanionID)
 {
+	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		if (!GI->IsCompanionPlayable(CompanionID))
+		{
+			return;
+		}
+	}
+
 	PreviewedCompanionID = CompanionID;
 	GetOrCreatePreviewController()->ResetCompanionSkinPreviewOverride();
 
@@ -600,8 +608,29 @@ void UT66HeroSelectionScreen::PreviewNextCompanion()
 		return;
 	}
 
-	CurrentCompanionIndex = (CurrentCompanionIndex + 1 + CompanionWheelIDs.Num()) % CompanionWheelIDs.Num();
-	PreviewCompanion(CompanionWheelIDs[CurrentCompanionIndex]);
+	for (int32 Step = 0; Step < CompanionWheelIDs.Num(); ++Step)
+	{
+		CurrentCompanionIndex = (CurrentCompanionIndex + 1 + CompanionWheelIDs.Num()) % CompanionWheelIDs.Num();
+		const FName CandidateID = CompanionWheelIDs[CurrentCompanionIndex];
+		if (CandidateID.IsNone())
+		{
+			PreviewCompanion(CandidateID);
+			return;
+		}
+		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+		{
+			if (GI->IsCompanionPlayable(CandidateID))
+			{
+				PreviewCompanion(CandidateID);
+				return;
+			}
+		}
+		else
+		{
+			PreviewCompanion(CandidateID);
+			return;
+		}
+	}
 }
 
 void UT66HeroSelectionScreen::PreviewPreviousHero()
@@ -621,20 +650,48 @@ void UT66HeroSelectionScreen::PreviewPreviousCompanion()
 		return;
 	}
 
-	CurrentCompanionIndex = (CurrentCompanionIndex - 1 + CompanionWheelIDs.Num()) % CompanionWheelIDs.Num();
-	PreviewCompanion(CompanionWheelIDs[CurrentCompanionIndex]);
+	for (int32 Step = 0; Step < CompanionWheelIDs.Num(); ++Step)
+	{
+		CurrentCompanionIndex = (CurrentCompanionIndex - 1 + CompanionWheelIDs.Num()) % CompanionWheelIDs.Num();
+		const FName CandidateID = CompanionWheelIDs[CurrentCompanionIndex];
+		if (CandidateID.IsNone())
+		{
+			PreviewCompanion(CandidateID);
+			return;
+		}
+		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+		{
+			if (GI->IsCompanionPlayable(CandidateID))
+			{
+				PreviewCompanion(CandidateID);
+				return;
+			}
+		}
+		else
+		{
+			PreviewCompanion(CandidateID);
+			return;
+		}
+	}
 }
 
 void UT66HeroSelectionScreen::SelectDifficulty(ET66Difficulty Difficulty)
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
+		if (!GI->IsDifficultyPlayable(Difficulty))
+		{
+			RefreshDifficultyDropdownText();
+			return;
+		}
 		SelectedDifficulty = GI->ResolvePlayableDifficulty(Difficulty);
 	}
 	else
 	{
 		SelectedDifficulty = Difficulty;
 	}
+	RefreshDifficultyDropdownText();
+	CommitLocalSelectionsToLobby(true);
 	RefreshHeroRecordRank();
 }
 
@@ -690,8 +747,10 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 	if (GI)
 	{
 		PreviewedHeroID = GI->ResolvePlayableHeroID(PreviewedHeroID);
+		PreviewedCompanionID = GI->ResolvePlayableCompanionID(PreviewedCompanionID);
 		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
 		GI->SelectedHeroID = PreviewedHeroID;
+		GI->SelectedCompanionID = PreviewedCompanionID;
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->SelectedHeroBodyType = SelectedBodyType;
 		GI->ApplyConfiguredMainMapLayoutVariant();

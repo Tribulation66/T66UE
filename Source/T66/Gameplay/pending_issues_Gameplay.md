@@ -28,26 +28,19 @@
 - Why it's out of scope now: The VAT pass only changed enemy visual animation data and did not change the player-experience subsystem initialization order.
 - What fixing it would entail: Audit the player-experience subsystem load sequence, make the tuning table available before gameplay difficulty startup queries, and add a staged smoke assertion that this warning no longer appears.
 
-## Generated Wall Stack Has A Mid-Height Visual Join
-
-- Severity tag: [Major]
-- What's wrong: `Source/T66/Gameplay/T66TowerMapTerrain.cpp` now fills the 1200 UU wall span by stacking two generated wall mesh instances at 600 UU each. The wall source textures/modules are not authored as vertical top/bottom pairs, so a horizontal visual join can remain at Z=600 even though the wall-to-ceiling gap is closed.
-- Why it's out of scope now: This terrain pass was limited to runtime assembly logic and explicitly did not touch mesh or texture assets.
-- What fixing it would entail: Author vertically tileable wall modules or add paired bottom/top wall variants per theme, then teach the generated-kit assembly to select matched pairs.
-
 ## Inter-Walkable-Box Floor Seams Remain Possible
 
 - Severity tag: [Major]
-- What's wrong: `Source/T66/Gameplay/T66TowerMapTerrain.cpp` now emits one generated floor visual mesh per walkable source box, which removes internal subdivision seams, but seams can still appear where separate walkable boxes or drop-hole carve-out rectangles meet.
+- What's wrong: `Source/T66/Gameplay/T66TowerMapTerrain.cpp` now emits one generated floor rectangle per walkable source box, which removes internal subdivision seams, but seams can still appear where separate walkable boxes or drop-hole carve-out rectangles meet.
 - Why it's out of scope now: Eliminating those joins requires changing floor-box generation/merging semantics beyond the requested visual assembly fix.
 - What fixing it would entail: Merge each gameplay floor's compatible walkable rectangles into a single visual surface, or author a dedicated runtime mesh for the floor footprint so there are no visual boundaries between adjacent boxes.
 
-## Doorway Header Mesh Selection Lacks Source Run Metadata
+## Drop-Hole Rectangle Floors Are Split Around The Opening
 
 - Severity tag: [Minor]
-- What's wrong: `Source/T66/Gameplay/T66TowerMapTerrain.cpp` records doorway headers as `FBox2D` values without the wall-run seed or side metadata from `T66EmitDungeonTileEdgeWall`. The generated-kit header path can spawn a pinned wall module for each header, but it cannot always prove it is the exact same module as both adjacent wall fragments.
-- Why it's out of scope now: The current pass only enables generated-kit header spawning and keeps the existing floor/header data model intact.
-- What fixing it would entail: Store doorway header metadata alongside each header box, including source direction and wall-run seed, then consume that metadata during generated header visual selection.
+- What's wrong: `Source/T66/Gameplay/T66TowerMapTerrain.cpp` now uses the rectangle-plus-texture path for generated dungeon floors, and drop-hole floors are split into up to four rectangles around the opening. This preserves layout and avoids new material work, but it can still leave visible seams at the hole boundary if the texture reads across the split.
+- Why it's out of scope now: The map transition intentionally ships the first-pass test-room rectangle approach with no masked-material or procedural-cutout extension until Pablo reviews the live result.
+- What fixing it would entail: Add either a masked floor material with per-spawn hole parameters or a procedural floor cutout mesh so each drop-hole floor can render as one continuous surface with a geometric opening.
 
 ## Non-Dungeon Theme Atmosphere Specs Need Authoring
 

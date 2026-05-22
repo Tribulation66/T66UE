@@ -13,6 +13,7 @@
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66HouseNPCBase.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
@@ -731,21 +732,25 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			FName(TEXT("Gambler.RightPanel")));
 
 	// Game card: title, content well, and red Play action; compact embedded layout mirrors the reference.
-	auto MakeGameCard = [&](const int32 CardIndex, const FText& TitleText, const FOnClicked& OnClicked, const FSlateBrush* IconBrush) -> TSharedRef<SWidget>
+	auto MakeGameCard = [&](const int32 CardIndex, const FName GameID, const FText& TitleText, const FOnClicked& OnClicked, const FSlateBrush* IconBrush) -> TSharedRef<SWidget>
 	{
 		const FString CardPrefix = FString::Printf(TEXT("Gambler.GameCard.%02d"), CardIndex);
 		const FName CardPanelTag(*FString::Printf(TEXT("%s.Panel"), *CardPrefix));
 		const FName CardTitleTag(*FString::Printf(TEXT("%s.Title"), *CardPrefix));
 		const FName CardIconTag(*FString::Printf(TEXT("%s.IconWell"), *CardPrefix));
 		const FName CardPlayTag(*FString::Printf(TEXT("%s.PlayButton"), *CardPrefix));
+		const FName CardDemoOverlayTag(*FString::Printf(TEXT("%s.DemoOverlay"), *CardPrefix));
 		const FText PlayText = NSLOCTEXT("T66.Gambler", "Play", "PLAY");
+		const bool bGameAllowed = IsCasinoGameAllowed(GameID);
+		const FOnClicked EffectiveOnClicked = bGameAllowed ? OnClicked : FOnClicked();
 		TSharedRef<SWidget> PlayBtn = MakeGamblerFlatButton(
-			MakeGamblerFlatButtonParams(PlayText, OnClicked, EGamblerFlatButton::Danger)
+			MakeGamblerFlatButtonParams(PlayText, EffectiveOnClicked, EGamblerFlatButton::Danger)
 			.SetMinWidth(bCompactCasinoLayout ? 0.f : 100.f)
 			.SetPadding(CardButtonPadding)
 			.SetFontSize(CardButtonFontSize)
+			.SetEnabled(bGameAllowed)
 			.SetTag(CardPlayTag));
-		return SNew(SBox)
+		const TSharedRef<SWidget> Card = SNew(SBox)
 			.WidthOverride(GameCardSize)
 			.HeightOverride(GameCardTotalHeight)
 			.Padding(FMargin(GameCardPadding, 0.f))
@@ -802,6 +807,12 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 					nullptr,
 					CardPanelTag)
 			];
+
+		return T66DemoModeUI::WrapWithComingSoonOverlay(
+			Card,
+			!bGameAllowed,
+			this,
+			CardDemoOverlayTag);
 	};
 
 	const FText MoreGamesText = NSLOCTEXT("T66.Gambler", "MoreGames", "MORE GAMES");
@@ -820,11 +831,11 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SNew(SUniformGridPanel)
 				.SlotPadding(bCompactCasinoLayout ? FMargin(8.f, 6.f) : FMargin(16.f, 8.f))
-				+ SUniformGridPanel::Slot(0, 0) [ MakeGameCard(1, Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), &GameIcon_Rps) ]
-				+ SUniformGridPanel::Slot(1, 0) [ MakeGameCard(2, Loc ? Loc->GetText_BlackJack() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBlackJack), &GameIcon_BlackJack) ]
-				+ SUniformGridPanel::Slot(2, 0) [ MakeGameCard(3, Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), &GameIcon_CoinFlip) ]
-				+ SUniformGridPanel::Slot(3, 0) [ bCompactCasinoLayout ? MakeGameCard(4, LotteryText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenLottery), &GameIcon_Lottery) : SNullWidget::NullWidget ]
-				+ SUniformGridPanel::Slot(4, 0) [ bCompactCasinoLayout ? MakeGameCard(5, PlinkoText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenPlinko), &GameIcon_Plinko) : SNullWidget::NullWidget ]
+				+ SUniformGridPanel::Slot(0, 0) [ MakeGameCard(1, FName(TEXT("RockPaperScissors")), Loc ? Loc->GetText_RockPaperScissors() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenRps), &GameIcon_Rps) ]
+				+ SUniformGridPanel::Slot(1, 0) [ MakeGameCard(2, FName(TEXT("BlackJack")), Loc ? Loc->GetText_BlackJack() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBlackJack), &GameIcon_BlackJack) ]
+				+ SUniformGridPanel::Slot(2, 0) [ MakeGameCard(3, FName(TEXT("CoinFlip")), Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty(), FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenCoinFlip), &GameIcon_CoinFlip) ]
+				+ SUniformGridPanel::Slot(3, 0) [ bCompactCasinoLayout ? MakeGameCard(4, FName(TEXT("Lottery")), LotteryText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenLottery), &GameIcon_Lottery) : SNullWidget::NullWidget ]
+				+ SUniformGridPanel::Slot(4, 0) [ bCompactCasinoLayout ? MakeGameCard(5, FName(TEXT("Plinko")), PlinkoText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenPlinko), &GameIcon_Plinko) : SNullWidget::NullWidget ]
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, bCompactCasinoLayout ? 10.f : 28.f, 0.f, 0.f)
@@ -847,9 +858,9 @@ TSharedRef<SWidget> UT66GamblerOverlayWidget::RebuildWidget()
 			[
 				SNew(SUniformGridPanel)
 				.SlotPadding(bCompactCasinoLayout ? FMargin(8.f, 6.f) : FMargin(16.f, 8.f))
-				+ SUniformGridPanel::Slot(0, 0) [ MakeGameCard(6, BoxOpeningText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBoxOpening), &GameIcon_BoxOpening) ]
-				+ SUniformGridPanel::Slot(1, 0) [ bCompactCasinoLayout ? SNullWidget::NullWidget : MakeGameCard(7, LotteryText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenLottery), &GameIcon_Lottery) ]
-				+ SUniformGridPanel::Slot(2, 0) [ bCompactCasinoLayout ? SNullWidget::NullWidget : MakeGameCard(8, PlinkoText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenPlinko), &GameIcon_Plinko) ]
+				+ SUniformGridPanel::Slot(0, 0) [ MakeGameCard(6, FName(TEXT("BoxOpening")), BoxOpeningText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenBoxOpening), &GameIcon_BoxOpening) ]
+				+ SUniformGridPanel::Slot(1, 0) [ bCompactCasinoLayout ? SNullWidget::NullWidget : MakeGameCard(7, FName(TEXT("Lottery")), LotteryText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenLottery), &GameIcon_Lottery) ]
+				+ SUniformGridPanel::Slot(2, 0) [ bCompactCasinoLayout ? SNullWidget::NullWidget : MakeGameCard(8, FName(TEXT("Plinko")), PlinkoText, FOnClicked::CreateUObject(this, &UT66GamblerOverlayWidget::OnOpenPlinko), &GameIcon_Plinko) ]
 			]
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space6, 0.f, 0.f)

@@ -20,6 +20,7 @@ Pixal3D production workflow.
 
 ## Workflows
 
+- [Visual Layers](VisualLayers.md) - required first read before changing ToonStyle materials, imports, difficulty atmosphere, lighting, tints, outlines, Retro FX, or UI-facing visual treatment. This defines what each visual layer applies to and protects playable heroes from difficulty-atmosphere recolor.
 - [Codex CLI Image Generation Workflow](IMAGEGEN_CLI_WORKFLOW.md) - generate images through the local Codex CLI and save paths to disk without embedding images in chat.
 - [Pixal3D ToonStyle Production Import](../../Model%20Generation/Instructions/09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md) - canonical path for Pixal3D models entering playable content with the full ToonStyle NPR stack.
 

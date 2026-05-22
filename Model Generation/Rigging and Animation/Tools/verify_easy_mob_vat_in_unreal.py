@@ -1,8 +1,12 @@
 r"""
 Verify Easy mob vertex-animation assets, data rows, and live fallback visual preservation.
 
-Run with a forward-slash script path:
-  UnrealEditor-Cmd.exe T66.uproject -run=pythonscript -script=C:/UE/T66/Model Generation/Rigging and Animation/Tools/verify_easy_mob_vat_in_unreal.py -unattended -nop4 -nosplash -NullRHI
+Run through the full editor wrapper for authoritative UV-channel inspection:
+  set T66_RIGGING_ANIMATION_TOOL_SCRIPT=C:/UE/T66/Model Generation/Rigging and Animation/Tools/verify_easy_mob_vat_in_unreal.py
+  set T66_RIGGING_ANIMATION_TOOL_QUIT_EDITOR=1
+  UnrealEditor.exe T66.uproject -NoSplash -NullRHI -Unattended -ExecutePythonScript=C:/UE/T66/Scripts/RunRiggingAnimationToolAndExit.py
+
+UnrealEditor-Cmd.exe can report zero UV channels for these generated static meshes.
 """
 
 import csv
@@ -147,18 +151,19 @@ def get_material_vector(material, parameter_name):
 
 def get_static_mesh_uv_channels(static_mesh):
     channels = {}
+    subsystem = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
     try:
-        lods = int(static_mesh.get_num_lods())
+        lods = int(subsystem.get_lod_count(static_mesh))
     except Exception:
-        lods = 1
+        try:
+            lods = int(static_mesh.get_num_lods())
+        except Exception:
+            lods = 1
     for lod_index in range(max(1, lods)):
-        count = 0
-        while count < 8:
-            try:
-                static_mesh.get_uv_channel_data(lod_index, count)
-                count += 1
-            except Exception:
-                break
+        try:
+            count = int(subsystem.get_num_uv_channels(static_mesh, lod_index))
+        except Exception:
+            count = 0
         channels[str(lod_index)] = count
     return channels
 
@@ -272,7 +277,7 @@ def verify_enemy(row, visual_row):
     if static_mesh:
         result["static_mesh_uv_channels"] = get_static_mesh_uv_channels(static_mesh)
         if int(result["static_mesh_uv_channels"].get("0", 0)) < 3:
-            result["warnings"].append("Could not prove static mesh has UV channel 2 through Python")
+            result["errors"].append("Static mesh is missing VAT UV channel 2")
 
     for clip in CLIPS:
         start = int(row.get(f"{clip}StartFrame", "-1") or "-1")

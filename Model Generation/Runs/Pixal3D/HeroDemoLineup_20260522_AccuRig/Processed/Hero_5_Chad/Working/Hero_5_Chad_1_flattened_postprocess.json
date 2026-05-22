@@ -1,0 +1,99 @@
+{
+  "dependency_path": "external_python_pillow_scipy",
+  "final_palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        0,
+        36,
+        0
+      ],
+      [
+        0,
+        254,
+        0
+      ],
+      [
+        0,
+        255,
+        0
+      ],
+      [
+        0,
+        255,
+        1
+      ],
+      [
+        0,
+        255,
+        1
+      ],
+      [
+        3,
+        254,
+        2
+      ]
+    ],
+    "palette_size": 6
+  },
+  "height": 4096,
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_5_Chad\\Working\\Hero_5_Chad_1_flattened.png",
+  "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_5_Chad\\Working\\Hero_5_Chad_1_flattened.png",
+  "palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        0,
+        36,
+        0
+      ],
+      [
+        0,
+        254,
+        0
+      ],
+      [
+        0,
+        255,
+        0
+      ],
+      [
+        0,
+        255,
+        1
+      ],
+      [
+        0,
+        255,
+        1
+      ],
+      [
+        3,
+        254,
+        2
+      ]
+    ],
+    "palette_size": 6
+  },
+  "speckle_cleanup": {
+    "applied": true,
+    "changed_pixels": 16,
+    "diff_threshold": 42.0,
+    "method": "3x3_local_median_high_contrast_pixel_replacement",
+    "prompt_region_threshold_reference": 8
+  },
+  "tint": {
+    "generated": false
+  },
+  "unique_rgb_after": 2,
+  "unique_rgb_before": 2,
+  "uv_mask_pixels": 9900493,
+  "uv_padding": {
+    "applied": true,
+    "filled_pixels": 6867808,
+    "method": "iterative_frontier_expansion",
+    "padding_pixels": 16
+  },
+  "uv_triangles": 186964,
+  "width": 4096
+}

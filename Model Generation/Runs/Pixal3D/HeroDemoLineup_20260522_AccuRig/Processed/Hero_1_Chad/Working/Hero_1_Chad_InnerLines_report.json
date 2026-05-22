@@ -1,0 +1,19 @@
+{
+  "dependency_path": "external_python_pillow_numpy",
+  "line_coverage_fraction": 0.11670643091201782,
+  "max_intensity": 1.0,
+  "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Chad\\Working\\Hero_1_Chad_InnerLines.png",
+  "padding": {
+    "applied": true,
+    "filled_pixels": 7359978,
+    "method": "iterative_frontier_expansion",
+    "padding_pixels": 16
+  },
+  "resolution": [
+    4096,
+    4096
+  ],
+  "segments": 94725,
+  "stddev": 0.24156656861305237,
+  "unique_value_count": 256
+}

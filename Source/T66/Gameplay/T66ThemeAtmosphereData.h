@@ -31,7 +31,7 @@ struct T66_API FT66ThemeCelAtmosphere
 	FLinearColor MidtoneColor = FLinearColor(0.7f, 0.7f, 0.72f, 1.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FLinearColor LitColor = FLinearColor::White;
+	FLinearColor LitColor = FLinearColor(0.85f, 0.85f, 0.85f, 1.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FLinearColor RimColor = FLinearColor(1.0f, 0.95f, 0.85f, 1.0f);
@@ -40,7 +40,7 @@ struct T66_API FT66ThemeCelAtmosphere
 	float RimPower = 4.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float RimStrength = 0.3f;
+	float RimStrength = 0.21f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FLinearColor OutlineColor = FLinearColor::Black;
@@ -55,7 +55,7 @@ struct T66_API FT66ThemeCelAtmosphere
 	float OutlineReferenceFOVTanHalf = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float OutlineDepthOffsetScalar = 1.0f;
+	float OutlineDepthOffsetScalar = 2.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FLinearColor EnvShadeColor = FLinearColor(0.3f, 0.32f, 0.42f, 1.0f);

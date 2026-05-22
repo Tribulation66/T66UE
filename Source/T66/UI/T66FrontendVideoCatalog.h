@@ -9,6 +9,7 @@ struct FT66FrontendVideoAsset
 {
 	FString MoviePath;
 	FString PosterPath;
+	bool bPosterOnly = false;
 };
 
 namespace T66FrontendVideoCatalog

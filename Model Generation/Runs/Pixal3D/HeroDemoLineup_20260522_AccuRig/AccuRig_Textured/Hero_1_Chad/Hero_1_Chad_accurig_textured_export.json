@@ -1,0 +1,114 @@
+{
+  "asset_name": "Hero_1_Chad",
+  "bounds": {
+    "dimensions": [
+      104.1792221069336,
+      39.99601364135742,
+      180.00001525878906
+    ],
+    "max": [
+      52.0896110534668,
+      19.99800682067871,
+      180.00001525878906
+    ],
+    "min": [
+      -52.0896110534668,
+      -19.99800682067871,
+      0.0
+    ]
+  },
+  "fbx_bytes": 9374748,
+  "fbx_export_options": {
+    "add_leaf_bones": false,
+    "apply_scale_options": "FBX_SCALE_ALL",
+    "apply_unit_scale": true,
+    "bake_space_transform": false,
+    "embed_textures": true,
+    "global_scale": 0.01,
+    "mesh_smooth_type": "FACE",
+    "object_types": [
+      "MESH"
+    ],
+    "path_mode": "COPY",
+    "use_mesh_modifiers": true,
+    "use_selection": true
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\AccuRig_Textured\\Hero_1_Chad\\Hero_1_Chad_Textured.fbx",
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Outputs\\Hero_1_Chad.glb",
+  "material_count": 1,
+  "mtl_bytes": 263,
+  "mtl_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\AccuRig_Textured\\Hero_1_Chad\\Hero_1_Chad_Textured.mtl",
+  "normalization": {
+    "bounds_max": [
+      52.0896110534668,
+      19.99800682067871,
+      180.00001525878906
+    ],
+    "bounds_min": [
+      -52.0896110534668,
+      -19.99800682067871,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      104.1792221069336,
+      39.99601364135742,
+      180.00001525878906
+    ],
+    "height": 180.00001525878906,
+    "scale_factor": 205.06734854522253
+  },
+  "obj_bytes": 21620984,
+  "obj_export_options": {
+    "apply_modifiers": true,
+    "apply_transform": false,
+    "export_materials": true,
+    "export_normals": true,
+    "export_pbr_extensions": false,
+    "export_selected_objects": true,
+    "export_uv": true,
+    "global_scale": 1.0,
+    "path_mode": "RELATIVE"
+  },
+  "obj_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\AccuRig_Textured\\Hero_1_Chad\\Hero_1_Chad_Textured.obj",
+  "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\AccuRig_Textured\\Hero_1_Chad",
+  "texture_usage": [
+    {
+      "image": "Image_0",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture"
+    },
+    {
+      "image": "Image_1",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture.001"
+    }
+  ],
+  "textures": [
+    {
+      "image": "Image_0",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\AccuRig_Textured\\Hero_1_Chad\\Textures\\Hero_1_Chad_00_Image_0.png",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "image": "Image_1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\AccuRig_Textured\\Hero_1_Chad\\Textures\\Hero_1_Chad_01_Image_1.png",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "vertex_count": 144941
+}

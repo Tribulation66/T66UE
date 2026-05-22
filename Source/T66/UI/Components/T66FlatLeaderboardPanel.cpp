@@ -20,6 +20,7 @@
 #include "Styling/CoreStyle.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66UIManager.h"
 #include "Misc/Paths.h"
@@ -41,6 +42,7 @@ constexpr float PanelWidth = 476.0f;
 	constexpr float FilterButtonHeight = 72.0f;
 	constexpr float ContentWidth = 390.0f;
 	constexpr float ContentHeight = PanelHeight;
+	constexpr float DropdownColumnWidth = (ContentWidth - 32.0f) * 0.5f;
 	constexpr float RowHeight = 42.0f;
 	constexpr float FlatRowPortraitSize = 30.0f;
 	constexpr int32 VisibleRemoteEntryCount = 10;
@@ -494,7 +496,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTimeDropdown()
 			return BuildTimeMenu();
 		},
 		false,
-		0.f,
+		ContentWidth,
 		57.f,
 		18,
 		Tag(TEXT("TypeDropdown")));
@@ -510,7 +512,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRuleDropdown()
 			return BuildRuleMenu();
 		},
 		false,
-		0.f,
+		ContentWidth,
 		57.f,
 		16,
 		Tag(TEXT("ModeDropdown")));
@@ -529,7 +531,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPartySizeDropdown()
 			return BuildPartySizeMenu();
 		},
 		false,
-		0.f,
+		DropdownColumnWidth,
 		57.f,
 		16,
 		Tag(TEXT("PartySizeDropdown")));
@@ -548,7 +550,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyDropdown()
 			return BuildDifficultyMenu();
 		},
 		false,
-		0.f,
+		DropdownColumnWidth,
 		57.f,
 		16,
 		Tag(TEXT("DifficultyDropdown")));
@@ -557,58 +559,77 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyDropdown()
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMetricCheckButton(const ET66LeaderboardType Type, const FText& Label, const FString& Name)
 {
 	const bool bSelected = CurrentType == Type;
-	TSharedRef<SWidget> Content = SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.VAlign(VAlign_Center)
+	const ET66FlatState State = bSelected ? ET66FlatState::Selected : ET66FlatState::Default;
+	TSharedRef<SWidget> Content = SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+		.Padding(FMargin(12.f, 8.f))
 		[
-			FT66FlatStyle::AttachMetadata(
-				SNew(SBox)
-				.WidthOverride(20.f)
-				.HeightOverride(20.f)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::DefaultBorder())
-					.Padding(2.f)
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				FT66FlatStyle::AttachMetadata(
+					SNew(SBox)
+					.WidthOverride(20.f)
+					.HeightOverride(20.f)
 					[
 						SNew(SBorder)
 						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::PanelInner())
-						.Padding(0.f)
-					]
-				],
-				Tag(Name + TEXT(".Check")),
-				TEXT("CheckboxSquare"),
-				bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
-				TOptional<FLinearColor>(),
-				false,
-				NAME_None,
-				false,
-				false)
-		]
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.Padding(8.f, 0.f, 0.f, 0.f)
-		.VAlign(VAlign_Center)
-		[
-			FT66FlatStyle::MakeFlatLabel(
-				Label,
-				ET66FlatLabelRole::Button,
-				ETextJustify::Left,
-				Tag(Name + TEXT(".Label")))
+						.BorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::DefaultBorder())
+						.Padding(2.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::PanelInner())
+							.Padding(0.f)
+						]
+					],
+					Tag(Name + TEXT(".Check")),
+					TEXT("CheckboxSquare"),
+					State,
+					TOptional<FLinearColor>(),
+					false,
+					NAME_None,
+					false,
+					false)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.Padding(8.f, 0.f, 0.f, 0.f)
+			.VAlign(VAlign_Center)
+			[
+				FT66FlatStyle::MakeFlatLabel(
+					Label,
+					ET66FlatLabelRole::Button,
+					ETextJustify::Left,
+					Tag(Name + TEXT(".Label")))
+			]
 		];
 
-	return FT66FlatStyle::MakeFlatToggleGroupButton(
-		bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
-		Content,
-		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetLeaderboardType, Type),
-		FMargin(12.f, 8.f),
-		0.f,
-		57.f,
-		true,
+	TSharedRef<SWidget> Button = SNew(SButton)
+		.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder")))
+		.ContentPadding(FMargin(0.f))
+		.ClickMethod(EButtonClickMethod::MouseDown)
+		.OnClicked(FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetLeaderboardType, Type))
+		[
+			SNew(SBox)
+			.HeightOverride(57.f)
+			[
+				Content
+			]
+		];
+
+	return FT66FlatStyle::AttachMetadata(
+		Button,
 		Tag(Name),
-		FName(TEXT("MainMenuLeaderboardMetric")));
+		TEXT("CheckboxButton"),
+		State,
+		TOptional<FLinearColor>(),
+		true,
+		FName(TEXT("MainMenuLeaderboardMetric")),
+		false,
+		true);
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTimeMenu()
@@ -716,7 +737,6 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPartySizeMenu()
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyMenu()
 {
-	TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
 	const ET66Difficulty Difficulties[] = {
 		ET66Difficulty::Easy,
 		ET66Difficulty::Medium,
@@ -724,21 +744,34 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyMenu()
 		ET66Difficulty::VeryHard,
 		ET66Difficulty::Impossible
 	};
+	TArray<FT66FlatDropdownOptionData> Options;
+	Options.Reserve(UE_ARRAY_COUNT(Difficulties));
 	for (int32 DifficultyIndex = 0; DifficultyIndex < UE_ARRAY_COUNT(Difficulties); ++DifficultyIndex)
 	{
 		const ET66Difficulty Difficulty = Difficulties[DifficultyIndex];
-		Menu->AddSlot()
-			.AutoHeight()
-			.Padding(0.f, DifficultyIndex == 0 ? 0.f : 4.f, 0.f, 0.f)
-			[
-				BuildMenuOption(
-					DifficultyText(Difficulty),
-					FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetDifficulty, Difficulty),
-					CurrentDifficulty == Difficulty,
-					FString::Printf(TEXT("Difficulty%sOption"), *DifficultyText(Difficulty).ToString().Replace(TEXT(" "), TEXT(""))))
-			];
+		const bool bPlayable = IsDifficultyPlayable(Difficulty);
+		FT66FlatDropdownOptionData Option;
+		Option.Label = DifficultyText(Difficulty);
+		Option.State = !bPlayable
+			? ET66FlatState::Disabled
+			: (CurrentDifficulty == Difficulty ? ET66FlatState::Selected : ET66FlatState::Default);
+		Option.bEnabled = bPlayable;
+		Option.bShowUnavailableOverlay = !bPlayable;
+		Option.UnavailableText = T66DemoModeUI::GetUnavailableContentText(GetGameInstance());
+		Option.MinWidth = DropdownColumnWidth;
+		Option.Height = 57.f;
+		Option.FontSize = 16;
+		Option.Tag = Tag(FString::Printf(TEXT("Difficulty%sOption"), *DifficultyText(Difficulty).ToString().Replace(TEXT(" "), TEXT(""))));
+		Option.OverlayTag = Tag(FString::Printf(TEXT("Difficulty%sOption.DemoOverlay"), *DifficultyText(Difficulty).ToString().Replace(TEXT(" "), TEXT(""))));
+		Option.OnClicked = FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetDifficulty, Difficulty);
+		Options.Add(MoveTemp(Option));
 	}
-	return Menu;
+	return FT66FlatStyle::MakeFlatDropdownOptionsMenu(
+		Options,
+		DropdownColumnWidth,
+		57.f,
+		16,
+		Tag(TEXT("DifficultyOptionsMenu")));
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMenuSectionLabel(const FString& Label, const FString& TagName) const
@@ -752,18 +785,16 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMenuSectionLabel(const FStrin
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMenuOption(const FText& Label, FOnClicked OnClicked, const bool bSelected, const FString& TagName) const
 {
-	return FT66FlatStyle::MakeFlatButton(
-		bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
+	const ET66FlatState State = bSelected ? ET66FlatState::Selected : ET66FlatState::Default;
+	return FT66FlatStyle::MakeFlatDropdownOptionButton(
+		State,
 		Label,
 		MoveTemp(OnClicked),
-		nullptr,
-		nullptr,
-		FMargin(10.f, 5.f),
-		190.f,
-		30.f,
-		true,
-		13,
-		Tag(TagName));
+		0.f,
+		0.f,
+		0,
+		Tag(TagName),
+		NAME_None);
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildStreamerRequestPanel()
@@ -1152,8 +1183,9 @@ FReply ST66FlatLeaderboardPanel::SetPartySize(const ET66PartySize NewPartySize)
 
 FReply ST66FlatLeaderboardPanel::SetDifficulty(const ET66Difficulty NewDifficulty)
 {
-	if (CurrentDifficulty == NewDifficulty)
+	if (CurrentDifficulty == NewDifficulty || !IsDifficultyPlayable(NewDifficulty))
 	{
+		FSlateApplication::Get().DismissAllMenus();
 		return FReply::Handled();
 	}
 	CurrentDifficulty = NewDifficulty;
@@ -1736,6 +1768,15 @@ FString ST66FlatLeaderboardPanel::CurrentBackendFilter() const
 	default:
 		return TEXT("global");
 	}
+}
+
+bool ST66FlatLeaderboardPanel::IsDifficultyPlayable(const ET66Difficulty Difficulty) const
+{
+	if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		return T66GI->IsDifficultyPlayable(Difficulty);
+	}
+	return true;
 }
 
 FText ST66FlatLeaderboardPanel::GetHeaderText() const

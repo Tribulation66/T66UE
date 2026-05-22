@@ -15,12 +15,18 @@
 #include "Engine/TextRenderActor.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 #include "Gameplay/T66ThemeAtmosphereData.h"
+#include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66TowerMapTerrain.h"
 #include "Gameplay/T66PerActorLightDirection.h"
 #include "Gameplay/T66WorldVisualSetup.h"
 #include "HAL/IConsoleManager.h"
 #include "Materials/MaterialInterface.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+#include "TimerManager.h"
 
 static TAutoConsoleVariable<int32> CVarT66TestRoomSpawnLuBuMatrix(
 	TEXT("t66.TestRoom.SpawnLuBuMatrix"),
@@ -36,8 +42,8 @@ static TAutoConsoleVariable<int32> CVarT66TestRoomSpawnFullLineup(
 
 static TAutoConsoleVariable<int32> CVarT66TestRoomShowRepresentativeLineupOnly(
 	TEXT("t66.TestRoom.ShowRepresentativeLineupOnly"),
-	1,
-	TEXT("Limits the ToonStyle TestRoom lineup to the five face-normal-transfer-disabled review assets. Set 0 to restore the full lineup."),
+	0,
+	TEXT("Limits the ToonStyle TestRoom lineup to the five representative review assets when set to 1. Default 0 shows the full fixed lineup."),
 	ECVF_Default);
 
 static TAutoConsoleVariable<int32> CVarT66TestRoomUseManualExposure(
@@ -50,6 +56,18 @@ static TAutoConsoleVariable<int32> CVarT66TestRoomTestPerActorLightOverride(
 	TEXT("t66.TestRoom.TestPerActorLightOverride"),
 	0,
 	TEXT("Temporarily attaches UT66PerActorLightDirection to Lu Bu in TestRoom for ToonStyle smoke verification."),
+	ECVF_Default);
+
+static TAutoConsoleVariable<int32> CVarT66TestRoomSpawnVATSlimeChase(
+	TEXT("t66.TestRoom.SpawnVATSlimeChase"),
+	1,
+	TEXT("Spawns a VAT Slime chase target in TestRoom after the player spawns. Disable with t66.TestRoom.SpawnVATSlimeChase=0."),
+	ECVF_Default);
+
+static TAutoConsoleVariable<float> CVarT66TestRoomVATSlimeDelaySeconds(
+	TEXT("t66.TestRoom.VATSlimeDelaySeconds"),
+	2.0f,
+	TEXT("Delay before spawning the TestRoom VAT Slime chase target."),
 	ECVF_Default);
 
 namespace T66TestRoom
@@ -87,6 +105,12 @@ namespace T66TestRoom
 	FName AtmosphereSparedTag()
 	{
 		static const FName Tag(TEXT("T66_AtmosphereSpared"));
+		return Tag;
+	}
+
+	FName VATSlimeChaseActorTag()
+	{
+		static const FName Tag(TEXT("T66_TestRoom_VATSlimeChase"));
 		return Tag;
 	}
 
@@ -599,6 +623,86 @@ namespace T66TestRoom
 				UE_LOG(LogTemp, Display, TEXT("ToonStyle TestRoom using Phase 1B fixed exposure clamp rollback."));
 			}
 		}
+	}
+
+	void ScheduleVATSlimeChase(UWorld* World)
+	{
+		if (!World)
+		{
+			return;
+		}
+
+		const bool bRequested = CVarT66TestRoomSpawnVATSlimeChase.GetValueOnGameThread() != 0
+			|| FParse::Param(FCommandLine::Get(), TEXT("T66TestRoomSpawnVATSlime"));
+		if (!bRequested)
+		{
+			return;
+		}
+
+		DestroyTestRoomActorsWithTag(World, VATSlimeChaseActorTag());
+
+		FTimerHandle SpawnTimerHandle;
+		TWeakObjectPtr<UWorld> WeakWorld(World);
+		const float DelaySeconds = FMath::Max(0.f, CVarT66TestRoomVATSlimeDelaySeconds.GetValueOnGameThread());
+		World->GetTimerManager().SetTimer(
+			SpawnTimerHandle,
+			FTimerDelegate::CreateLambda([WeakWorld]()
+			{
+				UWorld* TimerWorld = WeakWorld.Get();
+				if (!TimerWorld)
+				{
+					return;
+				}
+
+				DestroyTestRoomActorsWithTag(TimerWorld, VATSlimeChaseActorTag());
+
+				APlayerController* PlayerController = TimerWorld->GetFirstPlayerController();
+				APawn* PlayerPawn = PlayerController ? PlayerController->GetPawn() : nullptr;
+				const FVector PlayerLocation = PlayerPawn ? PlayerPawn->GetActorLocation() : PlayerStartLocation();
+				FVector SpawnLocation = PlayerLocation + FVector(850.f, 0.f, 0.f);
+				SpawnLocation.Z = PlayerStartLocation().Z;
+
+				FVector ToPlayer = PlayerLocation - SpawnLocation;
+				ToPlayer.Z = 0.f;
+				const FRotator SpawnRotation = ToPlayer.IsNearlyZero() ? FRotator::ZeroRotator : ToPlayer.Rotation();
+
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+				AT66EnemyBase* Slime = TimerWorld->SpawnActor<AT66EnemyBase>(
+					AT66EnemyBase::StaticClass(),
+					SpawnLocation,
+					SpawnRotation,
+					SpawnParams);
+				if (!Slime)
+				{
+					UE_LOG(LogTemp, Warning, TEXT("TestRoom VAT Slime QA spawn failed."));
+					return;
+				}
+
+				TagTestRoomActor(Slime, false, false);
+				Slime->Tags.AddUnique(VATSlimeChaseActorTag());
+				Slime->ConfigureAsMob(FName(TEXT("Slime")));
+				Slime->TouchDamageHearts = 0;
+				Slime->PointValue = 0;
+				Slime->XPValue = 0;
+				Slime->bDropsLoot = false;
+				Slime->EnemyFamily = ET66EnemyFamily::Melee;
+				if (!Slime->GetController())
+				{
+					Slime->SpawnDefaultController();
+				}
+#if !UE_BUILD_SHIPPING
+				Slime->ForceMobVertexAnimationClipForAutomation(FName(TEXT("Move")), 30.f);
+#endif
+
+				UE_LOG(LogTemp, Display, TEXT("TestRoom VAT Slime QA spawned at %.1f %.1f %.1f and configured to chase the player."),
+					SpawnLocation.X,
+					SpawnLocation.Y,
+					SpawnLocation.Z);
+			}),
+			DelaySeconds,
+			false);
 	}
 
 	void SpawnRoom(UWorld* World)

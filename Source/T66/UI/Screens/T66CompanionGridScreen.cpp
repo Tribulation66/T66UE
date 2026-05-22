@@ -10,6 +10,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Engine/Texture2D.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "Kismet/GameplayStatics.h"
@@ -200,24 +201,30 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 		FName CompanionIDCopy = CompanionID;
 		TSharedPtr<FSlateBrush> PortraitBrushCopy = PortraitBrush;
 		const bool bSelected = bHasEntry && GI && GI->SelectedCompanionID == CompanionIDCopy;
+		const bool bCompanionPlayable = !bHasEntry || CompanionIDCopy.IsNone() || !GI || GI->IsCompanionPlayable(CompanionIDCopy);
 		const TSharedRef<SWidget> PortraitContent = PortraitBrushCopy.IsValid()
 			? StaticCastSharedRef<SWidget>(SNew(SImage).Image(PortraitBrushCopy.Get()))
 			: SNullWidget::NullWidget;
-		const bool bEnabled = bHasEntry && (CompanionIDCopy.IsNone() || bUnlocked);
+		const bool bEnabled = bHasEntry && (CompanionIDCopy.IsNone() || (bUnlocked && bCompanionPlayable));
 		const FOnClicked TileClicked = bEnabled
 			? FOnClicked::CreateLambda([this, CompanionIDCopy]() { return HandleCompanionClicked(CompanionIDCopy); })
 			: FOnClicked();
+		const TSharedRef<SWidget> Tile = MakeCompanionGridTile(
+			bEnabled ? (bSelected ? ET66FlatState::Selected : ET66FlatState::Default) : ET66FlatState::Disabled,
+			TileClicked,
+			PortraitContent,
+			bEnabled,
+			CompanionGridSlotTag(Index));
 		AddSlot(
 			SlotXs[Col],
 			SlotYs[Row],
 			TileSize,
 			TileSize,
-			MakeCompanionGridTile(
-				bEnabled ? (bSelected ? ET66FlatState::Selected : ET66FlatState::Default) : ET66FlatState::Disabled,
-				TileClicked,
-				PortraitContent,
-				bEnabled,
-				CompanionGridSlotTag(Index)));
+			T66DemoModeUI::WrapWithComingSoonOverlay(
+				Tile,
+				bHasEntry && !CompanionIDCopy.IsNone() && !bCompanionPlayable,
+				this,
+				FName(*FString::Printf(TEXT("CompanionGrid.Slot%02d.DemoOverlay"), Index + 1))));
 	}
 
 	const TSharedRef<SWidget> RootContent = SNew(SBox)
@@ -254,6 +261,11 @@ FReply UT66CompanionGridScreen::HandleCompanionClicked(FName CompanionID)
 	{
 		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 		{
+			if (!GI->IsCompanionPlayable(CompanionID))
+			{
+				return FReply::Handled();
+			}
+
 			if (UT66CompanionUnlockSubsystem* Unlocks = GI->GetSubsystem<UT66CompanionUnlockSubsystem>())
 			{
 				if (!Unlocks->IsCompanionUnlocked(CompanionID))

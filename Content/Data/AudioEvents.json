@@ -1735,6 +1735,174 @@
     ]
   },
   {
+    "Name": "Interact.Crate.Tick",
+    "Description": "Per-item tick for future crate scroll item-boundary crossings.",
+    "VolumeBus": "UI",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": true,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.78,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.05,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.02,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_001.HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_002.HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_003.HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Interact.Crate.SlowdownTick",
+    "Description": "Lower-pitched crate tick for the final slowdown items.",
+    "VolumeBus": "UI",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": true,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.8,
+    "PitchMultiplier": 0.85,
+    "PitchRandomRange": 0.05,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.05,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_001.HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_002.HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_003.HYPC_UIClick_INTERFACE_Positive_Click_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Interact.Crate.Landing",
+    "Description": "Crate item lock-in thud for future landing marker.",
+    "VolumeBus": "UI",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": true,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.9,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.02,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.5,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_001.HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_002.HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_003.HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Interact.Crate.RarityReveal",
+    "Description": "Crate rarity reveal stinger; rarity-specific variants can replace this later.",
+    "VolumeBus": "UI",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": true,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.86,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.02,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.5,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Magic_Item_HY_PC_001.HYPC_DSGNTonl_USABLE_Magic_Item_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Magic_Item_HY_PC_002.HYPC_DSGNTonl_USABLE_Magic_Item_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Magic_Item_HY_PC_003.HYPC_DSGNTonl_USABLE_Magic_Item_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Interact.LootWheel.Tick",
+    "Description": "Ratchet tick for future loot wheel segment crossings.",
+    "VolumeBus": "SFX",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": false,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.82,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.04,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.03,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_001.HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_002.HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_003.HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Interact.LootWheel.Landing",
+    "Description": "Loot wheel landing thud for future stop marker.",
+    "VolumeBus": "SFX",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": false,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.9,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.02,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.5,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_001.HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_002.HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_003.HYPC_DSGNImpt_EXPLOSION_Sand_Impact_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "LootWheel.Spin",
+    "Description": "Loot wheel spin start sound referenced by the current interactable.",
+    "VolumeBus": "SFX",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": false,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.86,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.03,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 1.0,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_001.HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_002.HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_003.HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Interact.Chest.OpenBeat",
+    "Description": "Chest opening beat for future world-open animation marker.",
+    "VolumeBus": "SFX",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": false,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.9,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.025,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.5,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Generic_Item_HY_PC_001.HYPC_DSGNTonl_USABLE_Generic_Item_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Generic_Item_HY_PC_002.HYPC_DSGNTonl_USABLE_Generic_Item_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Generic_Item_HY_PC_003.HYPC_DSGNTonl_USABLE_Generic_Item_HY_PC_003"
+    ]
+  },
+  {
     "Name": "Interact.Totem.Activate",
     "Description": "Totem or magical world interaction.",
     "VolumeBus": "SFX",

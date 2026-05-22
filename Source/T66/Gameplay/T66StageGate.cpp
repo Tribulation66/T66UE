@@ -36,7 +36,7 @@ AT66StageGate::AT66StageGate()
 	GateMesh->SetHiddenInGame(false, true);
 	GateMesh->SetVisibility(true, true);
 	GateMesh->SetupAttachment(RootComponent);
-	GateMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Gates/StageGate_Pixal3D.StageGate_Pixal3D")));
+	GateMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Gates/SM_StageGate_Pixal3D.SM_StageGate_Pixal3D")));
 	FT66VisualUtil::ApplyT66Color(GateMesh, this, FLinearColor(0.20f, 0.85f, 0.35f, 1.f));
 }
 

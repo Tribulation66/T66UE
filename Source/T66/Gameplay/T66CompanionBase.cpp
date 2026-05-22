@@ -197,6 +197,7 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 {
 	CompanionID = InData.CompanionID;
 	CompanionData = InData;
+	ActiveSkinID = SkinID.IsNone() ? FName(TEXT("Default")) : SkinID;
 	ApplyCompanionScale();
 	CompanionHealAccumulatorSeconds = 0.f;
 	bHasCachedGroundZ = false;
@@ -209,15 +210,25 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 
 	// VisualID = Companion_01 or Companion_01_Beachgoer (from DT_CharacterVisuals).
 	// In preview mode use alert animation and preview context (like hero selection).
+	ApplyCurrentCharacterVisual();
+}
+
+bool AT66CompanionBase::ApplyCurrentCharacterVisual()
+{
 	bUsingCharacterVisual = false;
+	bUsingStaticCharacterVisual = false;
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
-			const FName VisualID = UT66CharacterVisualSubsystem::GetCompanionVisualID(CompanionID, SkinID.IsNone() ? FName(TEXT("Default")) : SkinID);
+			const FName VisualID = UT66CharacterVisualSubsystem::GetCompanionVisualID(CompanionID, ActiveSkinID.IsNone() ? FName(TEXT("Default")) : ActiveSkinID);
 			const bool bUseAlertAnimation = bIsPreviewMode;
 			const bool bIsPreviewContext = bIsPreviewMode;
-			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(VisualID, SkeletalMesh, PlaceholderMesh, true, bUseAlertAnimation, bIsPreviewContext);
+			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(VisualID, SkeletalMesh, PlaceholderMesh, true, bUseAlertAnimation, bIsPreviewContext, PlaceholderMesh);
+			bUsingStaticCharacterVisual = bUsingCharacterVisual
+				&& PlaceholderMesh
+				&& PlaceholderMesh->IsVisible()
+				&& (!SkeletalMesh || !SkeletalMesh->IsVisible());
 			if (!bUsingCharacterVisual && SkeletalMesh)
 			{
 				SkeletalMesh->SetVisibility(false, true);
@@ -238,6 +249,7 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 			}
 		}
 	}
+	return bUsingCharacterVisual;
 }
 
 void AT66CompanionBase::SetPlaceholderColor(FLinearColor Color)
@@ -259,6 +271,12 @@ void AT66CompanionBase::SetPlaceholderColor(FLinearColor Color)
 void AT66CompanionBase::SetPreviewMode(bool bPreview)
 {
 	bIsPreviewMode = bPreview;
+	if (bUsingStaticCharacterVisual)
+	{
+		ApplyCurrentCharacterVisual();
+		return;
+	}
+
 	// Make preview easier to see in UI (only affects placeholder).
 	if (PlaceholderMesh && PlaceholderMesh->IsVisible())
 	{
@@ -274,7 +292,7 @@ void AT66CompanionBase::SetLockedVisual(bool bLocked)
 
 	if (bLockedVisual)
 	{
-		// Locked silhouette: hide skeletal mesh and show a near-black placeholder cylinder.
+		// Locked silhouette: hide skeletal visuals and tint the visible static fallback black.
 		if (SkeletalMesh)
 		{
 			SkeletalMesh->SetVisibility(false, true);
@@ -290,18 +308,27 @@ void AT66CompanionBase::SetLockedVisual(bool bLocked)
 	}
 
 	// Unlocked: revert to the normal visual selection.
-	if (bUsingCharacterVisual && SkeletalMesh)
+	if (bUsingStaticCharacterVisual)
+	{
+		ApplyCurrentCharacterVisual();
+		return;
+	}
+
+	if (bUsingCharacterVisual && !bUsingStaticCharacterVisual && SkeletalMesh)
 	{
 		SkeletalMesh->SetHiddenInGame(false, true);
 		SkeletalMesh->SetVisibility(true, true);
 	}
 	if (PlaceholderMesh)
 	{
-		const bool bShowPlaceholder = !bUsingCharacterVisual;
+		const bool bShowPlaceholder = !bUsingCharacterVisual || bUsingStaticCharacterVisual;
 		PlaceholderMesh->SetVisibility(bShowPlaceholder, true);
 		PlaceholderMesh->SetHiddenInGame(!bShowPlaceholder, true);
 	}
-	SetPlaceholderColor(CompanionData.PlaceholderColor);
+	if (!bUsingStaticCharacterVisual)
+	{
+		SetPlaceholderColor(CompanionData.PlaceholderColor);
+	}
 }
 
 void AT66CompanionBase::Tick(float DeltaTime)

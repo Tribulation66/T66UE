@@ -24,11 +24,15 @@ void UT66HeroSelectionScreen::OnDifficultyChanged(TSharedPtr<FString> NewValue, 
 	if (Index != INDEX_NONE)
 	{
 		UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
-		const TArray<ET66Difficulty> Difficulties = GI ? GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
+		const TArray<ET66Difficulty> Difficulties = GI ? GI->GetVisibleDifficulties() : TArray<ET66Difficulty>{
 			ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 		};
 		if (Index < Difficulties.Num())
 		{
+			if (GI && !GI->IsDifficultyPlayable(Difficulties[Index]))
+			{
+				return;
+			}
 			SelectedDifficulty = GI ? GI->ResolvePlayableDifficulty(Difficulties[Index]) : Difficulties[Index];
 			CurrentDifficultyOption = NewValue;
 			CommitLocalSelectionsToLobby(true);
@@ -43,6 +47,7 @@ void UT66HeroSelectionScreen::CommitLocalSelectionsToLobby(bool bResetReady)
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		PreviewedHeroID = GI->ResolvePlayableHeroID(PreviewedHeroID);
+		PreviewedCompanionID = GI->ResolvePlayableCompanionID(PreviewedCompanionID);
 		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedCompanionID = PreviewedCompanionID;
@@ -113,7 +118,7 @@ void UT66HeroSelectionScreen::RefreshDifficultyDropdownText()
 	if (DifficultyOptions.Num() > 0)
 	{
 		UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
-		const TArray<ET66Difficulty> Difficulties = GI ? GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
+		const TArray<ET66Difficulty> Difficulties = GI ? GI->GetVisibleDifficulties() : TArray<ET66Difficulty>{
 			ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 		};
 
@@ -260,6 +265,7 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 			}
 		}
 
+		GI->SelectedCompanionID = GI->ResolvePlayableCompanionID(GI->SelectedCompanionID);
 		PreviewedCompanionID = GI->SelectedCompanionID;
 		TArray<FName> CompanionWheelIDs;
 		CompanionWheelIDs.Add(NAME_None);

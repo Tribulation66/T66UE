@@ -20,8 +20,8 @@ The pipelines are intentionally separate.
 
 | Symptom | Likely cause | Action |
 | --- | --- | --- |
-| `curl: empty reply from server` | The server process died, usually from native CUDA/CuMesh export code in an older server. | Upload the current `pixal3d_server.py`, restart with `--start-server`, and keep `X-Export-Fallback: 1`. |
-| HTTP 500 with `GLB export worker failed` | The worker caught an export failure without killing the model server. | Inspect the response/log. Let fallback run. If all attempts fail, retry with lower `X-Decimation`, then `X-Remesh: 0`. |
+| `curl: empty reply from server` | The server process died, usually from native CUDA/CuMesh export code in an older server. | Upload the current `pixal3d_server.py`, restart with `--start-server`, and use `--diagnostic-mode` with `X-Export-Fallback: 1` only for troubleshooting. |
+| HTTP 500 with `GLB export worker failed` | The worker caught an export failure without killing the model server. | Inspect the response/log. In diagnostic mode, let fallback run. If all attempts fail, retry with lower `X-Decimation`, then `X-Remesh: 0`. |
 | CuMesh `clean_up.cu` / `repair_non_manifold_edges` | Export-time mesh cleanup failed. This is not an image-to-shape failure. | Keep worker export enabled. The server tries fallback decimation, no-remesh, then the safe `fill_holes` / CPU UV unwrap fallback for known CuMesh CUDA error 9 / invalid-configuration crashes. |
 | CuMesh `atlas.cu` / `uv_unwrap compute_charts` | Export-time UV atlas creation failed. | Same as above. If repeated, use the generated mesh package or source image for a narrower repro. |
 | `no kernel image is available for execution on the device` | CUDA extension was built for the wrong GPU arch. | Rebuild `natten==0.21.0` for the pod GPU. A40 needs CUDA arch `8.6`; L40S needs CUDA arch `8.9`. |
@@ -91,31 +91,33 @@ X-Resolution: 1536
 X-Texture-Size: 4096
 X-Decimation: 200000
 X-Remesh: 1
-X-Export-Fallback: 1
+X-Export-Fallback: 0
 X-Fallback-Decimation: 80000
-X-Safe-Fill-Holes-Fallback: 1
+X-Safe-Fill-Holes-Fallback: 0
 ```
 
 With worker-isolated export, earlier smoke tests proved the server can recover
-from export failures. For production imports, any fallback below the requested
-200k target is allowed only when the response headers/report surface it and the
-asset passes Blender/ToonStyle validation.
+from export failures. For strict production imports, any fallback below the
+requested 200k target fails verification unless the manifest row documents an
+accepted limitation. Diagnostic-mode runs may continue so the operator can see
+which fallback would have been used.
 
 ## When To Lower Settings
 
-Lower settings only after the current server and fallback path are confirmed.
+Lower settings only after the current server and diagnostic fallback path are confirmed.
 
 Recommended sequence:
 
 1. Keep `X-Remesh: 1`, lower `X-Decimation` to `80000`.
 2. Keep `X-Decimation: 80000`, set `X-Remesh: 0`.
-3. Leave `X-Safe-Fill-Holes-Fallback: 1` unless you need a strict repro of the
-   original CuMesh crash.
+3. Enable `X-Safe-Fill-Holes-Fallback: 1` only under `--diagnostic-mode` unless
+   you need a strict repro of the original CuMesh crash.
 4. Reduce texture size only if the error is clearly memory pressure, not CuMesh
    cleanup or UV atlas failure.
 
-If a fallback output is intended for runtime content, run the production wrapper
-verification and document the fallback state in the replacement manifest/report.
+If a fallback output is intended for runtime content, mark that specific asset
+as an accepted limitation in the manifest, run the production wrapper
+verification, and document the fallback state in the replacement manifest/report.
 
 Do not change source-image style to work around CuMesh until export settings
 and server version have been verified.

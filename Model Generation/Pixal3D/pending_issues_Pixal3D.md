@@ -39,3 +39,13 @@ What's wrong: The repo server can now recover from known export-time CuMesh `fil
 Why it's out of scope now: This pass is a reliability fix for RunPod export failures and docs. It does not add a full manifoldness validator, topology repair pass, or Unreal import gate for safe-fill-holes outputs.
 
 What fixing it would entail: Add automated mesh-quality checks after Blender import, record boundary/non-manifold counts in QA metadata, and route any safe-fill-holes output through Quad Retro or manual retopology before production import.
+
+## Manual camera mode for AI portrait inputs is not wired into the T66 Pixal3D endpoint
+
+Severity: [Major]
+
+What's wrong: AI-generated full-body source portraits can make MoGe estimate an unstable implied camera, which can produce Pixal3D outputs that lean forward or backward. The desired production behavior is manual camera mode with a locked `manual_fov` of `45.0` degrees for these portrait-style inputs. However, the T66 Pixal3D server currently has no manual-camera request contract: `Model Generation/Pixal3D/Server/pixal3d_server.py` always loads MoGe, always calls `camera_params_from_image(...)`, and `/generate` accepts no camera mode or manual FOV header. The production wrapper and detached batch runner also have no `camera_mode` or `manual_fov` settings. Evidence and source-image FOV sampling are documented in `Saved/Codex/Pixal3D/ManualCameraMode/Implementation_Report.md`.
+
+Why it's out of scope now: Pablo is moving back to visual assessment of the existing test-room models. This is a future-generation pipeline correction, not a blocker for inspecting models already generated/imported.
+
+What fixing it would entail: Add server support for manual camera mode, likely via `X-Camera-Mode: manual` and `X-Manual-FOV: 45.0`, with response headers proving what camera path ran. Then wire `camera_mode` and `manual_fov` through `run_pixal3d_batch.py`, `run_pixal3d_toonstyle_production_import.py`, production manifests, `PipelineSpec.md`, and Pixal3D instructions. Production validation should require manual mode and FOV; MoGe/auto mode should be diagnostic-only. Regenerate exactly one previously leaning asset and verify uprightness with PCA or bounding-box measurements before broader reprocessing.

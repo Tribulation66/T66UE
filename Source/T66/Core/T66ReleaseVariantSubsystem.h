@@ -15,14 +15,17 @@ enum class ET66ReleaseVariant : uint8
 	SteamDemo UMETA(DisplayName = "Steam Demo")
 };
 
-UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "T66 Release Variant"))
-class T66_API UT66ReleaseVariantSettings : public UDeveloperSettings
+UCLASS(Config = DemoMode, DefaultConfig, meta = (DisplayName = "T66 Demo Mode"))
+class T66_API UT66DemoModeSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(Config, EditAnywhere, Category = "Release")
-	ET66ReleaseVariant ReleaseVariant = ET66ReleaseVariant::FullGame;
+	UPROPERTY(Config, EditAnywhere, Category = "Activation")
+	bool bForceDemoMode = false;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Activation")
+	bool bAllowCommandLineDemoMode = true;
 
 	UPROPERTY(Config, EditAnywhere, Category = "Steam")
 	bool bDetectSteamDemoAppId = true;
@@ -33,11 +36,29 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Steam")
 	int32 DemoSteamAppId = 4718770;
 
-	UPROPERTY(Config, EditAnywhere, Category = "Demo")
-	TArray<FName> DemoAllowedHeroIDs;
+	UPROPERTY(Config, EditAnywhere, Category = "Content")
+	TArray<FName> AllowedHeroIDs;
 
-	UPROPERTY(Config, EditAnywhere, Category = "Demo")
-	TArray<FName> DemoAllowedDifficultyIDs;
+	UPROPERTY(Config, EditAnywhere, Category = "Content")
+	TArray<FName> AllowedCompanionIDs;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Content")
+	TArray<FName> AllowedDifficultyIDs;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Content")
+	TArray<FName> AllowedArcadeGameIDs;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Content")
+	TArray<FName> AllowedCasinoGameIDs;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Economy", meta = (ClampMin = "0"))
+	int32 MaxDiplomaUpgradesPerStat = 1;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Economy")
+	bool bAllowDrugPurchases = false;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Presentation")
+	FString UnavailableContentText = TEXT("COMING SOON");
 };
 
 UCLASS()
@@ -53,14 +74,31 @@ public:
 	bool IsSteamDemoBuild() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
+	bool IsDemoModeActive() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
 	bool IsHeroAllowed(FName HeroID) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
+	bool IsCompanionAllowed(FName CompanionID) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
 	bool IsDifficultyAllowed(ET66Difficulty Difficulty) const;
 
+	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
+	bool IsArcadeGameAllowed(FName ArcadeGameID) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
+	bool IsCasinoGameAllowed(FName CasinoGameID) const;
+
 	TArray<FName> FilterHeroIDs(const TArray<FName>& HeroIDs) const;
+	TArray<FName> FilterCompanionIDs(const TArray<FName>& CompanionIDs) const;
 	TArray<ET66Difficulty> GetPlayableDifficulties() const;
+	TArray<ET66Difficulty> GetVisibleDifficulties() const;
 	ET66Difficulty ResolvePlayableDifficulty(ET66Difficulty Difficulty) const;
+	bool IsDiplomaUpgradeAllowed(int32 CurrentUnlockedSteps) const;
+	bool AreDrugPurchasesAllowed() const;
+	FText GetUnavailableContentText() const;
 
 private:
 	static bool ParseReleaseVariantName(const FString& Value, ET66ReleaseVariant& OutVariant);

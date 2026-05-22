@@ -92,7 +92,7 @@ void AT66GameMode::SpawnFinalDifficultyTotem(const FVector& SpawnLocation)
 
 	if (UStaticMeshComponent* SMC = TotemActor->GetStaticMeshComponent())
 	{
-		TSoftObjectPtr<UStaticMesh> TotemMesh(FSoftObjectPath(TEXT("/Game/World/Interactables/DifficultyTotem/DifficultyTotem_QuadRetro.DifficultyTotem_QuadRetro")));
+		TSoftObjectPtr<UStaticMesh> TotemMesh(FSoftObjectPath(TEXT("/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D.SM_DifficultyTotem_Pixal3D")));
 		if (UStaticMesh* LoadedMesh = TotemMesh.LoadSynchronous())
 		{
 			SMC->SetStaticMesh(LoadedMesh);

@@ -1,8 +1,0 @@
-{
-  "exit_code": 0,
-  "finished_at": "2026-05-17T11:23:21.632847+00:00",
-  "manifest_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CTrackDPart1/04_tombspider_retry01/manifest.json",
-  "ok": true,
-  "started_at": "2026-05-17T11:21:27.699968+00:00",
-  "status_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CTrackDPart1/04_tombspider_retry01/Logs/pixal3d_generation_status.jsonl"
-}

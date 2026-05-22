@@ -3,6 +3,7 @@
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66BuffSaveGame.h"
+#include "Core/T66ReleaseVariantSubsystem.h"
 #include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66Buff, Log, All);
@@ -808,7 +809,7 @@ int32 UT66BuffSubsystem::GetTotalStatBonus(ET66HeroStatType StatType) const
 
 int32 UT66BuffSubsystem::GetCostForNextFillStepUnlock(ET66HeroStatType StatType) const
 {
-	return IsStatMaxed(StatType) ? 0 : PermanentBuffUnlockCostCC;
+	return (IsStatMaxed(StatType) || IsDemoDiplomaUpgradeLimitReached(StatType)) ? 0 : PermanentBuffUnlockCostCC;
 }
 
 bool UT66BuffSubsystem::UnlockNextFillStep(ET66HeroStatType StatType)
@@ -816,6 +817,11 @@ bool UT66BuffSubsystem::UnlockNextFillStep(ET66HeroStatType StatType)
 	TArray<uint8>* Arr = GetFillStepStatesForStat(StatType);
 	if (!SaveData || !Arr) return false;
 	EnsureFillStepStatesSize(*Arr);
+
+	if (IsDemoDiplomaUpgradeLimitReached(StatType))
+	{
+		return false;
+	}
 
 	const int32 Cost = GetCostForNextFillStepUnlock(StatType);
 	if (Cost <= 0)
@@ -860,6 +866,11 @@ bool UT66BuffSubsystem::UnlockRandomStat()
 	}
 	for (ET66HeroStatType Stat : Shuffled)
 	{
+		if (IsDemoDiplomaUpgradeLimitReached(Stat))
+		{
+			continue;
+		}
+
 		TArray<uint8>* Arr = GetFillStepStatesForStat(Stat);
 		if (!Arr) continue;
 		EnsureFillStepStatesSize(*Arr);
@@ -892,6 +903,19 @@ bool UT66BuffSubsystem::IsStatMaxed(ET66HeroStatType StatType) const
 		}
 	}
 	return true;
+}
+
+bool UT66BuffSubsystem::IsDemoDiplomaUpgradeLimitReached(ET66HeroStatType StatType) const
+{
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GI->GetSubsystem<UT66ReleaseVariantSubsystem>())
+		{
+			return !ReleaseVariant->IsDiplomaUpgradeAllowed(GetUnlockedFillStepCount(StatType));
+		}
+	}
+
+	return false;
 }
 
 FT66HeroStatBonuses UT66BuffSubsystem::GetPermanentBuffStatBonuses() const
@@ -1093,6 +1117,19 @@ int32 UT66BuffSubsystem::GetSelectedSingleUseBuffSlotAssignedCountForStat(ET66Se
 	return Count;
 }
 
+bool UT66BuffSubsystem::AreSingleUseBuffPurchasesAllowed() const
+{
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GI->GetSubsystem<UT66ReleaseVariantSubsystem>())
+		{
+			return ReleaseVariant->AreDrugPurchasesAllowed();
+		}
+	}
+
+	return true;
+}
+
 bool UT66BuffSubsystem::PurchaseSelectedSingleUseBuffSlot(int32 SlotIndex)
 {
 	const ET66SecondaryStatType SlotStat = GetSelectedSingleUseBuffSlot(SlotIndex);
@@ -1201,6 +1238,11 @@ bool UT66BuffSubsystem::RemoveSelectedSingleUseBuff(ET66SecondaryStatType StatTy
 
 bool UT66BuffSubsystem::PurchaseSingleUseBuff(ET66SecondaryStatType StatType)
 {
+	if (!AreSingleUseBuffPurchasesAllowed())
+	{
+		return false;
+	}
+
 	TArray<uint8>* PendingStates = GetPendingSingleUseStates();
 	TArray<uint8>* SelectedStates = GetSelectedSingleUseStates();
 	if (!SaveData || !PendingStates || !SelectedStates)

@@ -984,6 +984,7 @@ namespace
 
 		TSharedRef<SComboButton> Combo = SNew(SComboButton)
 			.ComboButtonStyle(&FlatComboStyle)
+			.MenuPlacement(MenuPlacement_BelowAnchor)
 			.HasDownArrow(false)
 			.OnGetMenuContent_Lambda([OnGet = Params.OnGetMenuContent]()
 			{
@@ -1967,13 +1968,15 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 				InfoBrush,
 				NSLOCTEXT("T66.Account", "OverviewTabInfoTooltipFixed", "Account overview"),
 				FVector2D(31.f, 31.f),
-				OTag(TEXT("Overview.SubTabs.OverviewInfoIcon"))));
+				OTag(TEXT("Overview.SubTabs.OverviewInfoIcon")),
+				FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOverviewTabClicked)));
 			AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
 				ET66FlatState::Default,
 				InfoBrush,
 				NSLOCTEXT("T66.Account", "HistoryTabInfoTooltipFixed", "Run history"),
 				FVector2D(31.f, 31.f),
-				OTag(TEXT("Overview.SubTabs.HistoryInfoIcon"))));
+				OTag(TEXT("Overview.SubTabs.HistoryInfoIcon")),
+				FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleHistoryTabClicked)));
 
 			const FText OverviewProfileNameText = !LocalSteamName.IsEmpty()
 				? FText::FromString(LocalSteamName)
@@ -1994,9 +1997,8 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			const FText StatusValue = bAccountEligible
 				? NSLOCTEXT("T66.Account", "GoodStandingFlatFixed", "GOOD STANDING")
 				: UpperText(RestrictionText(Restriction.Restriction));
-			AddN(0.029f, 0.488f, 0.053f, 0.084f, MakeIcon(OTag(TEXT("Overview.AccountStatusPanel.Icon")), ShieldBrush, FText::FromString(TEXT("S"))));
-			AddN(0.090f, 0.483f, 0.131f, 0.030f, TaggedText(OTag(TEXT("Overview.AccountStatusPanel.Header")), NSLOCTEXT("T66.Account", "StatusHeaderFlatFixed", "ACCOUNT STATUS"), 22, FT66FlatStyle::PrimaryText()));
-			AddN(0.228f, 0.483f, 0.135f, 0.030f, TaggedText(OTag(TEXT("Overview.AccountStatusPanel.Status")), StatusValue, 22, bAccountEligible ? FT66FlatStyle::GoodStandingGreen() : FT66FlatStyle::SelectedText()));
+			AddN(0.029f, 0.483f, 0.131f, 0.030f, TaggedText(OTag(TEXT("Overview.AccountStatusPanel.Header")), NSLOCTEXT("T66.Account", "StatusHeaderFlatFixed", "ACCOUNT STATUS"), 22, FT66FlatStyle::PrimaryText()));
+			AddN(0.167f, 0.483f, 0.196f, 0.030f, TaggedText(OTag(TEXT("Overview.AccountStatusPanel.Status")), StatusValue, 22, bAccountEligible ? FT66FlatStyle::GoodStandingGreen() : FT66FlatStyle::SelectedText()));
 			AddN(
 				0.090f,
 				0.525f,
@@ -2010,9 +2012,6 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 					false,
 					ETextJustify::Left,
 					true));
-
-			AddN(0.029f, 0.678f, 0.042f, 0.061f, MakeIcon(OTag(TEXT("Overview.AccountProgressPanel.Icon")), ChartBrush, FText::FromString(TEXT("#"))));
-			AddN(0.090f, 0.683f, 0.144f, 0.032f, TaggedText(OTag(TEXT("Overview.AccountProgressPanel.Header")), NSLOCTEXT("T66.Account", "ProgressHeaderFlatFixed", "ACCOUNT PROGRESS"), 22, FT66FlatStyle::PrimaryText()));
 
 			int32 OverviewProgressIndex = 0;
 			auto AddProgressRow = [&](const TCHAR* RowTag, const FText& Label, const int32 Current, const int32 Total, const float X, const float Y, const float W, const float H, const float LabelW)
@@ -2031,11 +2030,11 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 					ETextJustify::Right));
 			};
 
-			AddProgressRow(TEXT("Overview.AccountProgressPanel.Achievements"), NSLOCTEXT("T66.Account", "AchProgFlatFixed", "Achievements Unlocked"), UnlockedAchievements, AchievementDefs.Num(), 0.090f, 0.729f, 0.294f, 0.029f, 0.135f);
-			AddProgressRow(TEXT("Overview.AccountProgressPanel.PowerUps"), NSLOCTEXT("T66.Account", "PowerProgFlatFixed", "Permanent Buffs Unlocked"), UnlockedPowerUps, PowerStats.Num() * UT66BuffSubsystem::MaxFillStepsPerStat, 0.090f, 0.775f, 0.294f, 0.029f, 0.151f);
-			AddProgressRow(TEXT("Overview.AccountProgressPanel.Heroes"), NSLOCTEXT("T66.Account", "HeroProgFlatFixed", "Heroes Unlocked"), HeroIDs.Num(), HeroIDs.Num(), 0.090f, 0.819f, 0.294f, 0.029f, 0.108f);
-			AddProgressRow(TEXT("Overview.AccountProgressPanel.Companions"), NSLOCTEXT("T66.Account", "CompProgFlatFixed", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num(), 0.090f, 0.864f, 0.294f, 0.029f, 0.139f);
-			AddProgressRow(TEXT("Overview.AccountProgressPanel.Challenges"), NSLOCTEXT("T66.Account", "ChallengeProgFlatFixed", "Challenges Completed"), DisplayChallengesCompleted, TotalChallengeCount, 0.090f, 0.912f, 0.294f, 0.029f, 0.136f);
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.Achievements"), NSLOCTEXT("T66.Account", "AchProgFlatFixed", "Achievements Unlocked"), UnlockedAchievements, AchievementDefs.Num(), 0.029f, 0.686f, 0.356f, 0.043f, 0.190f);
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.PowerUps"), NSLOCTEXT("T66.Account", "PowerProgFlatFixed", "Permanent Buffs Unlocked"), UnlockedPowerUps, PowerStats.Num() * UT66BuffSubsystem::MaxFillStepsPerStat, 0.029f, 0.737f, 0.356f, 0.043f, 0.190f);
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.Heroes"), NSLOCTEXT("T66.Account", "HeroProgFlatFixed", "Heroes Unlocked"), HeroIDs.Num(), HeroIDs.Num(), 0.029f, 0.788f, 0.356f, 0.043f, 0.190f);
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.Companions"), NSLOCTEXT("T66.Account", "CompProgFlatFixed", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num(), 0.029f, 0.839f, 0.356f, 0.043f, 0.190f);
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.Challenges"), NSLOCTEXT("T66.Account", "ChallengeProgFlatFixed", "Challenges Completed"), DisplayChallengesCompleted, TotalChallengeCount, 0.029f, 0.890f, 0.356f, 0.043f, 0.190f);
 
 			auto MakePBMenuEntry = [&OTag, &UpperText](
 				const TCHAR* Tag,
@@ -2043,24 +2042,12 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 				const bool bActive,
 				TFunction<void()> OnSelected) -> TSharedRef<SWidget>
 			{
-				return FT66FlatStyle::MakeFlatButton(
-					bActive ? ET66FlatState::Selected : ET66FlatState::Default,
-					UpperText(Label),
-					FOnClicked::CreateLambda([OnSelected = MoveTemp(OnSelected)]()
+				return FT66FlatStyle::MakeFlatDropdownOptionButton(bActive ? ET66FlatState::Selected : ET66FlatState::Default, UpperText(Label), FOnClicked::CreateLambda([OnSelected = MoveTemp(OnSelected)]()
 					{
 						OnSelected();
 						FSlateApplication::Get().DismissAllMenus();
 						return FReply::Handled();
-					}),
-					nullptr,
-					nullptr,
-					FMargin(10.f, 7.f),
-					220.f,
-					38.f,
-					true,
-					16,
-					OTag(Tag),
-					TEXT("OverviewFilterSelection"));
+					}), 220.f, 38.f, 16, OTag(Tag), TEXT("OverviewFilterSelection"));
 			};
 
 			auto MakePBViewModeMenuFlat = [&]() -> TSharedRef<SWidget>
@@ -2203,8 +2190,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 				const TArray<float>& RowYs,
 				const TArray<float>& RowHs)
 			{
-				AddN(0.451f, HeaderY - 0.003f, 0.029f, IconH, MakeIcon(OTag(IconTag), IconBrush, bTime ? FText::FromString(TEXT("T")) : FText::FromString(TEXT("#"))));
-				AddN(0.492f, HeaderY, bTime ? 0.141f : 0.145f, 0.034f, TaggedText(OTag(HeaderTag), Title, 22, FT66FlatStyle::PrimaryText()));
+				AddN(0.451f, HeaderY, bTime ? 0.182f : 0.186f, 0.034f, TaggedText(OTag(HeaderTag), Title, 22, FT66FlatStyle::PrimaryText()));
 				AddN(0.440f, TableY, 0.527f, TableH, MakeMetadataRegion(OTag(TableTag), TEXT("Table")));
 				AddN(0.440f, TableY, 0.527f, bTime ? 0.033f : 0.030f, MakeMetadataRegion(OTag(*FString::Printf(TEXT("%s.TableHeader"), PanelTag)), TEXT("TableHeader")));
 
@@ -2230,7 +2216,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 				{
 					const FString RowTag = FString::Printf(TEXT("%s.Row%02d"), PanelTag, RowIndex + 1);
 					const FOverviewPBCellData RowData = MakePBCellData(bTime, Difficulties[RowIndex]);
-					const ET66FlatState RowState = RowIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default;
+					const ET66FlatState RowState = ET66FlatState::Default;
 					const TSharedRef<SWidget> RowSurface = RowData.bCanOpen
 						? FT66FlatStyle::MakeFlatToggleGroupButton(
 							RowState,
@@ -2394,14 +2380,15 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		const FSlateBrush* TrophyBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/trophy_laurel.png"), FVector2D(40.f, 40.f), TEXT("OverviewTrophyIcon"));
 		const FSlateBrush* StopwatchBrush = AccountFlatIconBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/stopwatch.png"), FVector2D(40.f, 40.f), TEXT("OverviewStopwatchIcon"));
 
-		auto MakeInfoIcon = [InfoBrush](const TCHAR* Tag, const FText& TooltipText) -> TSharedPtr<SWidget>
+		auto MakeInfoIcon = [InfoBrush](const TCHAR* Tag, const FText& TooltipText, FOnClicked OnClicked) -> TSharedPtr<SWidget>
 		{
 			return FT66FlatStyle::MakeFlatTooltipIcon(
 				ET66FlatState::Default,
 				InfoBrush,
 				TooltipText,
 				FVector2D(22.f, 22.f),
-				FName(Tag));
+				FName(Tag),
+				MoveTemp(OnClicked));
 		};
 
 		FT66FlatToggleGroupParams AccountTabs;
@@ -2413,7 +2400,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		OverviewTab.bIsSelected = true;
 		OverviewTab.Label = NSLOCTEXT("T66.Account", "OverviewTabFlat", "OVERVIEW");
 		OverviewTab.OnClicked = FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOverviewTabClicked);
-		OverviewTab.OptionalRightIcon = MakeInfoIcon(TEXT("Overview.SubTabs.OverviewInfoIcon"), NSLOCTEXT("T66.Account", "OverviewTabInfoTooltip", "Account overview"));
+		OverviewTab.OptionalRightIcon = MakeInfoIcon(TEXT("Overview.SubTabs.OverviewInfoIcon"), NSLOCTEXT("T66.Account", "OverviewTabInfoTooltip", "Account overview"), FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOverviewTabClicked));
 		OverviewTab.MinWidth = 268.f;
 		OverviewTab.Height = 54.f;
 		OverviewTab.FontSize = 24;
@@ -2425,7 +2412,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		HistoryTab.bIsSelected = false;
 		HistoryTab.Label = NSLOCTEXT("T66.Account", "HistoryTabFlat", "HISTORY");
 		HistoryTab.OnClicked = FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleHistoryTabClicked);
-		HistoryTab.OptionalRightIcon = MakeInfoIcon(TEXT("Overview.SubTabs.HistoryInfoIcon"), NSLOCTEXT("T66.Account", "HistoryTabInfoTooltip", "Run history"));
+		HistoryTab.OptionalRightIcon = MakeInfoIcon(TEXT("Overview.SubTabs.HistoryInfoIcon"), NSLOCTEXT("T66.Account", "HistoryTabInfoTooltip", "Run history"), FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleHistoryTabClicked));
 		HistoryTab.MinWidth = 268.f;
 		HistoryTab.Height = 54.f;
 		HistoryTab.FontSize = 24;
@@ -2626,24 +2613,12 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			const bool bActive,
 			TFunction<void()> OnSelected) -> TSharedRef<SWidget>
 		{
-			return FT66FlatStyle::MakeFlatButton(
-				bActive ? ET66FlatState::Selected : ET66FlatState::Default,
-				UpperText(Label),
-				FOnClicked::CreateLambda([OnSelected = MoveTemp(OnSelected)]()
+			return FT66FlatStyle::MakeFlatDropdownOptionButton(bActive ? ET66FlatState::Selected : ET66FlatState::Default, UpperText(Label), FOnClicked::CreateLambda([OnSelected = MoveTemp(OnSelected)]()
 				{
 					OnSelected();
 					FSlateApplication::Get().DismissAllMenus();
 					return FReply::Handled();
-				}),
-				nullptr,
-				nullptr,
-				FMargin(10.f, 7.f),
-				220.f,
-				38.f,
-				true,
-				16,
-				OTag(Tag),
-				TEXT("OverviewFilterSelection"));
+				}), 220.f, 38.f, 16, OTag(Tag), TEXT("OverviewFilterSelection"));
 		};
 
 		auto MakePBViewModeMenuFlat = [&]() -> TSharedRef<SWidget>
@@ -3127,7 +3102,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		AddN(0.013f, 0.201f, 0.974f, 0.760f, MakeMetadataRegion(HTag(TEXT("History.MainBody")), TEXT("Body")));
 		AddN(0.148f, 0.123f, 0.690f, 0.060f, MakeMetadataRegion(HTag(TEXT("History.SubTabs")), TEXT("ToggleGroup.AccountTabs")));
 		AddN(0.011f, 0.201f, 0.977f, 0.168f, MakePanelSurface(HTag(TEXT("History.FilterPanel"))));
-		AddN(0.011f, 0.393f, 0.977f, 0.514f, MakePanelSurface(HTag(TEXT("History.RunHistoryPanel"))));
+		AddN(0.011f, 0.393f, 0.977f, 0.568f, MakePanelSurface(HTag(TEXT("History.RunHistoryPanel"))));
 
 		AddN(
 			0.148f,
@@ -3171,13 +3146,15 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			InfoBrush,
 			NSLOCTEXT("T66.Account", "HistoryOverviewInfoTooltip", "Account overview"),
 			FVector2D(31.f, 31.f),
-			HTag(TEXT("History.SubTabs.OverviewInfoIcon"))));
+			HTag(TEXT("History.SubTabs.OverviewInfoIcon")),
+			FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleOverviewTabClicked)));
 		AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
 			ET66FlatState::Selected,
 			InfoBrush,
 			NSLOCTEXT("T66.Account", "HistoryHistoryInfoTooltip", "Run history"),
 			FVector2D(31.f, 31.f),
-			HTag(TEXT("History.SubTabs.HistoryInfoIcon"))));
+			HTag(TEXT("History.SubTabs.HistoryInfoIcon")),
+			FOnClicked::CreateUObject(this, &UT66AccountStatusScreen::HandleHistoryTabClicked)));
 
 		auto MakeMenuEntry = [&HTag, &UpperText](
 			const TCHAR* Tag,
@@ -3185,24 +3162,12 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			const bool bActive,
 			TFunction<void()> OnSelected) -> TSharedRef<SWidget>
 		{
-			return FT66FlatStyle::MakeFlatButton(
-				bActive ? ET66FlatState::Selected : ET66FlatState::Default,
-				UpperText(Label),
-				FOnClicked::CreateLambda([OnSelected = MoveTemp(OnSelected)]()
+			return FT66FlatStyle::MakeFlatDropdownOptionButton(bActive ? ET66FlatState::Selected : ET66FlatState::Default, UpperText(Label), FOnClicked::CreateLambda([OnSelected = MoveTemp(OnSelected)]()
 				{
 					OnSelected();
 					FSlateApplication::Get().DismissAllMenus();
 					return FReply::Handled();
-				}),
-				nullptr,
-				nullptr,
-				FMargin(10.f, 7.f),
-				220.f,
-				38.f,
-				true,
-				16,
-				HTag(Tag),
-				TEXT("HistoryFilterSelection"));
+				}), 220.f, 38.f, 16, HTag(Tag), TEXT("HistoryFilterSelection"));
 		};
 
 		auto MakeHeroMenu = [&]() -> TSharedRef<SWidget>

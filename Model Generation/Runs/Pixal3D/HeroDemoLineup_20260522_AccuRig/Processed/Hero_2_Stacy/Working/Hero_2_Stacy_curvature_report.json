@@ -1,0 +1,24 @@
+{
+  "asset": "Hero_2_Stacy",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 97988,
+    "count": 151035,
+    "edge_samples": 234029,
+    "max": 1.0,
+    "mean": 0.24345090165458447,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.21981167444628064,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.0407665580494053,
+      "p50": 0.144007105654469,
+      "p75": 0.35276968494860994,
+      "p90": 0.6639637140278607,
+      "p95": 0.9279046285456785,
+      "p99": 1.0
+    },
+    "std": 0.27139505719416934
+  }
+}

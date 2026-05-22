@@ -819,6 +819,8 @@ namespace T66SettingsScreenPrivate
 
 		TSharedRef<SComboButton> Combo = SNew(SComboButton)
 			.ComboButtonStyle(&FlatComboStyle)
+			.MenuPlacement(MenuPlacement_BelowAnchor)
+			.HasDownArrow(false)
 			.OnGetMenuContent_Lambda([OnGet = Params.OnGetMenuContent]()
 			{
 				return FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, FMargin(4.f), OnGet());
@@ -846,16 +848,12 @@ namespace T66SettingsScreenPrivate
 		const float Height = 34.f,
 		const int32 FontSize = 14)
 	{
-		return FT66FlatStyle::MakeFlatButton(
+		return FT66FlatStyle::MakeFlatDropdownOptionButton(
 			bSelected ? ET66FlatState::Selected : ET66FlatState::Default,
 			Label,
 			MoveTemp(OnClicked),
-			nullptr,
-			nullptr,
-			FMargin(10.f, 5.f),
 			MinWidth,
 			Height,
-			true,
 			FontSize);
 	}
 }

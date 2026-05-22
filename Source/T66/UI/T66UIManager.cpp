@@ -3,6 +3,7 @@
 #include "UI/T66UIManager.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66ReleaseVariantSubsystem.h"
 #include "Core/T66RetroFXSubsystem.h"
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/T66FrontendUIRootWidget.h"
@@ -144,6 +145,12 @@ bool UT66UIManager::SwitchToScreen(ET66ScreenType ScreenType, const bool bAddCur
 		return true;
 	}
 
+	if (!CanShowScreenForReleaseVariant(ScreenType))
+	{
+		UE_LOG(LogT66UIManager, Log, TEXT("Blocked screen %s for current release variant"), *T66ScreenTypeToDebugName(ScreenType));
+		return false;
+	}
+
 	// Close any active modal first so switching screens or refreshing the current
 	// screen never duplicates history entries for the same destination.
 	if (CurrentModal)
@@ -238,6 +245,16 @@ void UT66UIManager::ShowScreen(ET66ScreenType ScreenType)
 		return;
 	}
 
+	if (!CanShowScreenForReleaseVariant(ScreenType))
+	{
+		UE_LOG(LogT66UIManager, Log, TEXT("ShowScreen ignored gated screen %s"), *T66ScreenTypeToDebugName(ScreenType));
+		if (!CurrentScreen && ScreenType != ET66ScreenType::MainMenu)
+		{
+			SwitchToScreen(ET66ScreenType::MainMenu, false);
+		}
+		return;
+	}
+
 	if (CurrentScreen && CurrentScreenType == ScreenType && !CurrentModal)
 	{
 		return;
@@ -253,6 +270,16 @@ void UT66UIManager::ShowScreenWithoutHistory(ET66ScreenType ScreenType)
 	const bool bWarmShow = ExistingScreen && ExistingScreen->Get() && ExistingScreen->Get()->HasBuiltSlateUI();
 	const FString PerfLabel = FString::Printf(TEXT("UIManager::ShowScreenWithoutHistory[%s][%s]"), *T66ScreenTypeToDebugName(ScreenType), bWarmShow ? TEXT("warm") : TEXT("cold"));
 	FLagScopedScope LagScope(World, *PerfLabel);
+
+	if (!CanShowScreenForReleaseVariant(ScreenType))
+	{
+		UE_LOG(LogT66UIManager, Log, TEXT("ShowScreenWithoutHistory ignored gated screen %s"), *T66ScreenTypeToDebugName(ScreenType));
+		if (!CurrentScreen && ScreenType != ET66ScreenType::MainMenu)
+		{
+			SwitchToScreen(ET66ScreenType::MainMenu, false);
+		}
+		return;
+	}
 
 	if (CurrentScreen && CurrentScreenType == ScreenType && !CurrentModal)
 	{

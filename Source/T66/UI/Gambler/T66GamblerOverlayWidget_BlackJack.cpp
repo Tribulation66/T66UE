@@ -137,6 +137,11 @@ namespace
 
 FReply UT66GamblerOverlayWidget::OnOpenBlackJack()
 {
+	if (!IsCasinoGameAllowed(FName(TEXT("BlackJack"))))
+	{
+		return HandleBlockedCasinoGame();
+	}
+
 	SetPage(EGamblerPage::BlackJack);
 	return FReply::Handled();
 }

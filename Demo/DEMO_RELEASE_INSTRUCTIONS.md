@@ -91,10 +91,13 @@ Current local command path:
 
 Current first-pass scope:
 
-- Available difficulties: `Easy`, `Medium`.
-- Locked difficulties: `Hard`, `VeryHard`, `Impossible`.
-- Available heroes: `Hero_1`, `Hero_2`, `Hero_3`, `Hero_4`.
-- Locked heroes: every hero after `Hero_4`.
+- Available difficulties: `Easy`.
+- Locked difficulties: `Medium`, `Hard`, `VeryHard`, `Impossible`.
+- Available heroes: `Hero_1`, `Hero_2`, `Hero_3`, `Hero_4`, `Hero_5`.
+- Locked heroes: every hero after `Hero_5`.
+- Companion unlocks: one companion unlocks after each cleared stage through the first four difficulties; the final difficulty does not add companion unlocks. Because the demo allows only `Easy`, demo progression can unlock `Companion_01`, `Companion_02`, `Companion_03`, and `Companion_04`.
+- Rigging/animation planning for the demo should focus on available hero visuals, demo-reachable companions, and regular Easy mobs. Bosses are excluded unless explicitly re-added to scope.
+- Demo-mode content locks are authored in `Config/DefaultDemoMode.ini`; unavailable visible UI should use the shared `COMING SOON` overlay instead of hiding the option.
 
 Implementation rule:
 

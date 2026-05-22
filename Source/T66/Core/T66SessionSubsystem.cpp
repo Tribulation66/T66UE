@@ -2040,7 +2040,7 @@ void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* L
 
 	GI->SelectedHeroID = GI->ResolvePlayableHeroID(LoadedSave->HeroID);
 	GI->SelectedHeroBodyType = LoadedSave->HeroBodyType;
-	GI->SelectedCompanionID = LoadedSave->CompanionID;
+	GI->SelectedCompanionID = GI->ResolvePlayableCompanionID(LoadedSave->CompanionID);
 	GI->SelectedDifficulty = GI->ResolvePlayableDifficulty(LoadedSave->Difficulty);
 	GI->SelectedRunMode = LoadedSave->RunMode;
 	GI->SelectedRunCategory = LoadedSave->RunCategory;

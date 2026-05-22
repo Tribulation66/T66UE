@@ -32,10 +32,10 @@ namespace
 		Cel.RampStep2 = 0.5f;
 		Cel.ShadeColor = FLinearColor(0.35f, 0.38f, 0.50f, 1.0f);
 		Cel.MidtoneColor = FLinearColor(0.7f, 0.7f, 0.72f, 1.0f);
-		Cel.LitColor = FLinearColor::White;
+		Cel.LitColor = FLinearColor(0.85f, 0.85f, 0.85f, 1.0f);
 		Cel.RimColor = FLinearColor(1.0f, 0.95f, 0.85f, 1.0f);
 		Cel.RimPower = 4.0f;
-		Cel.RimStrength = 0.3f;
+		Cel.RimStrength = 0.21f;
 		Cel.OutlineColor = FLinearColor::Black;
 		Cel.OutlineWidth = 1.5f;
 		Cel.EnvShadeColor = FLinearColor(0.3f, 0.32f, 0.42f, 1.0f);
@@ -87,7 +87,7 @@ namespace
 		Spec.CelAtmosphere.LightDirection = FVector(-0.25f, 0.45f, -0.86f).GetSafeNormal();
 		Spec.CelAtmosphere.ShadeColor = FLinearColor(0.28f, 0.05f, 0.04f, 1.0f);
 		Spec.CelAtmosphere.MidtoneColor = FLinearColor(0.65f, 0.22f, 0.12f, 1.0f);
-		Spec.CelAtmosphere.LitColor = FLinearColor(1.0f, 0.68f, 0.35f, 1.0f);
+		Spec.CelAtmosphere.LitColor = FLinearColor(0.85f, 0.58f, 0.30f, 1.0f);
 		Spec.CelAtmosphere.RimColor = FLinearColor(1.0f, 0.38f, 0.05f, 1.0f);
 		Spec.CelAtmosphere.OutlineColor = FLinearColor(0.04f, 0.0f, 0.0f, 1.0f);
 		Spec.CelAtmosphere.EnvShadeColor = FLinearColor(0.18f, 0.04f, 0.04f, 1.0f);
@@ -103,7 +103,7 @@ namespace
 		Spec.CelAtmosphere.LightDirection = FVector(-0.2f, 0.35f, -0.92f).GetSafeNormal();
 		Spec.CelAtmosphere.ShadeColor = FLinearColor(0.05f, 0.22f, 0.28f, 1.0f);
 		Spec.CelAtmosphere.MidtoneColor = FLinearColor(0.35f, 0.62f, 0.70f, 1.0f);
-		Spec.CelAtmosphere.LitColor = FLinearColor(0.85f, 0.98f, 1.0f, 1.0f);
+		Spec.CelAtmosphere.LitColor = FLinearColor(0.72f, 0.83f, 0.85f, 1.0f);
 		Spec.CelAtmosphere.RimColor = FLinearColor(0.35f, 0.95f, 1.0f, 1.0f);
 		Spec.CelAtmosphere.OutlineColor = FLinearColor(0.0f, 0.02f, 0.08f, 1.0f);
 		Spec.CelAtmosphere.EnvShadeColor = FLinearColor(0.04f, 0.16f, 0.21f, 1.0f);
@@ -119,7 +119,7 @@ namespace
 		Spec.CelAtmosphere.LightDirection = FVector(-0.45f, 0.25f, -0.86f).GetSafeNormal();
 		Spec.CelAtmosphere.ShadeColor = FLinearColor(0.34f, 0.13f, 0.07f, 1.0f);
 		Spec.CelAtmosphere.MidtoneColor = FLinearColor(0.68f, 0.36f, 0.18f, 1.0f);
-		Spec.CelAtmosphere.LitColor = FLinearColor(1.0f, 0.74f, 0.48f, 1.0f);
+		Spec.CelAtmosphere.LitColor = FLinearColor(0.85f, 0.63f, 0.41f, 1.0f);
 		Spec.CelAtmosphere.RimColor = FLinearColor(1.0f, 0.55f, 0.22f, 1.0f);
 		Spec.CelAtmosphere.EnvShadeColor = FLinearColor(0.24f, 0.09f, 0.05f, 1.0f);
 		Spec.CelAtmosphere.EnvMidtoneColor = FLinearColor(0.52f, 0.25f, 0.14f, 1.0f);
@@ -134,7 +134,7 @@ namespace
 		Spec.CelAtmosphere.LightDirection = FVector(-0.35f, 0.5f, -0.79f).GetSafeNormal();
 		Spec.CelAtmosphere.ShadeColor = FLinearColor(0.08f, 0.22f, 0.10f, 1.0f);
 		Spec.CelAtmosphere.MidtoneColor = FLinearColor(0.42f, 0.60f, 0.34f, 1.0f);
-		Spec.CelAtmosphere.LitColor = FLinearColor(0.88f, 0.96f, 0.76f, 1.0f);
+		Spec.CelAtmosphere.LitColor = FLinearColor(0.75f, 0.82f, 0.65f, 1.0f);
 		Spec.CelAtmosphere.RimColor = FLinearColor(0.78f, 1.0f, 0.50f, 1.0f);
 		Spec.CelAtmosphere.EnvShadeColor = FLinearColor(0.07f, 0.18f, 0.08f, 1.0f);
 		Spec.CelAtmosphere.EnvMidtoneColor = FLinearColor(0.32f, 0.48f, 0.28f, 1.0f);

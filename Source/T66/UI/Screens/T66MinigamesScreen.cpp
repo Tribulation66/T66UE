@@ -11,6 +11,7 @@
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "UI/T66UIManager.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/Images/SImage.h"
@@ -29,6 +30,13 @@ namespace
 {
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GMinigamesFlatTextureCache;
 	TMap<FString, TSharedPtr<FSlateBrush>> GMinigamesFlatBrushCache;
+	constexpr int32 GMinigamesCardsPerPage = 4;
+	constexpr int32 GMinigamesCardCount = 5;
+
+	int32 GetMinigamesTotalPages()
+	{
+		return FMath::Max(1, FMath::DivideAndRoundUp(GMinigamesCardCount, GMinigamesCardsPerPage));
+	}
 
 	bool T66IsMinigamesPausedGameplayWidget(const UUserWidget* Widget)
 	{
@@ -124,9 +132,10 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 {
 	constexpr float CanvasW = 1920.f;
 	constexpr float CanvasH = 1080.f;
-	constexpr int32 CardsPerPage = 4;
+	constexpr int32 CardsPerPage = GMinigamesCardsPerPage;
 	TSharedRef<SConstraintCanvas> MinigamesCanvas = SNew(SConstraintCanvas);
 	const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder"));
+	const bool bDemoMinigamePlayLocked = T66DemoModeUI::IsDemoModeActive(this);
 
 	auto DTag = [](const TCHAR* Tag) -> FName
 	{
@@ -246,22 +255,30 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 			true);
 	};
 
-	auto MakePlayButton = [&TaggedText](const FName ButtonTag, const FName LabelTag, FOnClicked OnClicked, const float Width, const float Height) -> TSharedRef<SWidget>
+	auto MakePlayButton = [this, &TaggedText](const FName ButtonTag, const FName LabelTag, FOnClicked OnClicked, const float Width, const float Height, const bool bDemoLocked) -> TSharedRef<SWidget>
 	{
-		return FT66FlatStyle::MakeFlatToggleGroupButton(
-			ET66FlatState::Selected,
+		const ET66FlatState ButtonState = bDemoLocked ? ET66FlatState::Disabled : ET66FlatState::Selected;
+		FOnClicked EffectiveOnClicked = bDemoLocked ? FOnClicked() : MoveTemp(OnClicked);
+		const TSharedRef<SWidget> Button = FT66FlatStyle::MakeFlatToggleGroupButton(
+			ButtonState,
 			SNew(SBox)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				TaggedText(LabelTag, NSLOCTEXT("T66.MiniGames", "FlatPlay", "PLAY"), 27, FT66FlatStyle::SelectedText(), true, ETextJustify::Center)
+				TaggedText(LabelTag, NSLOCTEXT("T66.MiniGames", "FlatPlay", "PLAY"), 27, bDemoLocked ? FT66FlatStyle::TextMuted() : FT66FlatStyle::SelectedText(), true, ETextJustify::Center)
 			],
-			MoveTemp(OnClicked),
+			MoveTemp(EffectiveOnClicked),
 			FMargin(0.f),
 			Width,
 			Height,
-			true,
+			!bDemoLocked,
 			ButtonTag);
+
+		return T66DemoModeUI::WrapWithComingSoonOverlay(
+			Button,
+			bDemoLocked,
+			this,
+			FName(*(ButtonTag.ToString() + TEXT(".DemoOverlay"))));
 	};
 
 	struct FFlatMinigameCard
@@ -270,33 +287,45 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 		FText Body;
 		FString ArtPath;
 		FOnClicked OnClicked;
+		bool bDemoLocked = true;
 	};
 
 	TArray<FFlatMinigameCard> Cards;
-	Cards.Reserve(4);
+	Cards.Reserve(GMinigamesCardCount);
+	Cards.Add({
+		NSLOCTEXT("T66.MiniGames", "FlatVersusTitle", "VERSUS"),
+		NSLOCTEXT("T66.MiniGames", "FlatVersusBody", "A direct arcade prototype launcher for the 13 current copy-game experiments."),
+		TEXT("RuntimeDependencies/T66/Arcade/Selector/arcade_selector_front_cabinet.png"),
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenVersusClicked),
+		false
+	});
 	Cards.Add({
 		NSLOCTEXT("T66.MiniGames", "FlatMiniTitle", "CHADPOCALYPSE MINI"),
 		NSLOCTEXT("T66.MiniGames", "FlatMiniBody", "A 2D survivor minigame with its own saves, heroes, idols, enemies, and progression."),
 		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card01_art.png"),
-		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked)
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked),
+		bDemoMinigamePlayLocked
 	});
 	Cards.Add({
-		NSLOCTEXT("T66.MiniGames", "FlatTDTitle", "CHADPOCALYPSE TOWER DEFENSE"),
+		NSLOCTEXT("T66.MiniGames", "FlatTDTitle", "CHADPOCALYPSE TD"),
 		NSLOCTEXT("T66.MiniGames", "FlatTDBody", "A tower defense minigame with hero placement, enemy waves, upgrades, and rotating maps."),
 		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card02_art.png"),
-		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked)
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked),
+		bDemoMinigamePlayLocked
 	});
 	Cards.Add({
 		NSLOCTEXT("T66.MiniGames", "FlatDeckTitle", "CHADPOCALYPSE DECKBUILDER"),
 		NSLOCTEXT("T66.MiniGames", "FlatDeckBody", "A dungeon-descent deckbuilder with card combat, route choices, relics, and reward drafts."),
 		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card03_art.png"),
-		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked)
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked),
+		bDemoMinigamePlayLocked
 	});
 	Cards.Add({
 		NSLOCTEXT("T66.MiniGames", "FlatIdleTitle", "CHADPOCALYPSE IDLE"),
 		NSLOCTEXT("T66.MiniGames", "FlatIdleBody", "An offline-progress idle minigame with heroes, upgrades, stage pushing, and comeback rewards."),
 		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card04_art.png"),
-		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked)
+		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked),
+		bDemoMinigamePlayLocked
 	});
 
 	const int32 TotalPages = FMath::Max(1, FMath::DivideAndRoundUp(Cards.Num(), CardsPerPage));
@@ -306,7 +335,7 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 	AddN(0.381f, 0.141f, 0.237f, 0.071f, TaggedText(DTag(TEXT("Minigames.Title")), NSLOCTEXT("T66.MiniGames", "Title", "MINIGAMES"), 72, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
 	AddN(0.277f, 0.253f, 0.447f, 0.032f, TaggedText(
 		DTag(TEXT("Minigames.DescriptionBand")),
-		NSLOCTEXT("T66.MiniGames", "FlatDescription", "Earn Chad Coupons across Mini, Tower Defense, Deckbuilder, and Idle minigames."),
+		NSLOCTEXT("T66.MiniGames", "FlatDescription", "Earn Chad Coupons across Versus, Mini, TD, Deckbuilder, and Idle."),
 		24,
 		FT66FlatStyle::PrimaryText(),
 		false,
@@ -318,8 +347,8 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 	constexpr float CardW[4] = { 0.225f, 0.224f, 0.224f, 0.225f };
 	constexpr float ArtX[4] = { 0.040f, 0.278f, 0.513f, 0.749f };
 	constexpr float ArtW[4] = { 0.211f, 0.210f, 0.210f, 0.211f };
-	constexpr float TitleX[4] = { 0.068f, 0.288f, 0.522f, 0.774f };
-	constexpr float TitleW[4] = { 0.155f, 0.190f, 0.190f, 0.160f };
+	constexpr float TitleX[4] = { 0.043f, 0.281f, 0.516f, 0.752f };
+	constexpr float TitleW[4] = { 0.205f, 0.204f, 0.204f, 0.205f };
 	constexpr float ButtonX[4] = { 0.043f, 0.281f, 0.516f, 0.752f };
 	constexpr float ButtonW[4] = { 0.202f, 0.202f, 0.202f, 0.202f };
 
@@ -343,7 +372,41 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 			FName(*(Prefix + TEXT(".PlayButton.Label"))),
 			Card.OnClicked,
 			ButtonW[VisibleIndex] * CanvasW,
-			0.069f * CanvasH));
+			0.069f * CanvasH,
+			Card.bDemoLocked));
+	}
+
+	if (TotalPages > 1)
+	{
+		AddN(0.371f, 0.943f, 0.078f, 0.048f, FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Default,
+			NSLOCTEXT("T66.MiniGames", "PrevPage", "PREV"),
+			FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandlePrevMinigamePageClicked),
+			nullptr,
+			nullptr,
+			FMargin(12.f, 6.f),
+			150.f,
+			52.f,
+			true,
+			20,
+			DTag(TEXT("Minigames.PrevPageButton"))));
+		AddN(0.474f, 0.962f, 0.052f, 0.010f, FT66FlatStyle::MakeFlatPaginationIndicator(
+			TotalPages,
+			MinigamesPageIndex,
+			FT66FlatStyle::SelectedText(),
+			DTag(TEXT("Minigames.Pagination"))));
+		AddN(0.551f, 0.943f, 0.078f, 0.048f, FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Default,
+			NSLOCTEXT("T66.MiniGames", "NextPage", "NEXT"),
+			FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleNextMinigamePageClicked),
+			nullptr,
+			nullptr,
+			FMargin(12.f, 6.f),
+			150.f,
+			52.f,
+			true,
+			20,
+			DTag(TEXT("Minigames.NextPageButton"))));
 	}
 
 	const TSharedRef<SWidget> Content = SNew(SBox)
@@ -410,6 +473,12 @@ FReply UT66MinigamesScreen::HandleBackClicked()
 	return FReply::Handled();
 }
 
+FReply UT66MinigamesScreen::HandleOpenVersusClicked()
+{
+	NavigateTo(ET66ScreenType::VersusMainMenu);
+	return FReply::Handled();
+}
+
 FReply UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked()
 {
 	NavigateTo(ET66ScreenType::MiniMainMenu);
@@ -436,7 +505,7 @@ FReply UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked()
 
 FReply UT66MinigamesScreen::HandlePrevMinigamePageClicked()
 {
-	constexpr int32 TotalPages = 1;
+	const int32 TotalPages = GetMinigamesTotalPages();
 	MinigamesPageIndex = (MinigamesPageIndex + TotalPages - 1) % TotalPages;
 	RequestDeferredSlateRebuild();
 	return FReply::Handled();
@@ -444,7 +513,7 @@ FReply UT66MinigamesScreen::HandlePrevMinigamePageClicked()
 
 FReply UT66MinigamesScreen::HandleNextMinigamePageClicked()
 {
-	constexpr int32 TotalPages = 1;
+	const int32 TotalPages = GetMinigamesTotalPages();
 	MinigamesPageIndex = (MinigamesPageIndex + 1) % TotalPages;
 	RequestDeferredSlateRebuild();
 	return FReply::Handled();
@@ -452,7 +521,7 @@ FReply UT66MinigamesScreen::HandleNextMinigamePageClicked()
 
 FReply UT66MinigamesScreen::HandleSelectMinigamePageClicked(const int32 PageIndex)
 {
-	constexpr int32 TotalPages = 1;
+	const int32 TotalPages = GetMinigamesTotalPages();
 	MinigamesPageIndex = FMath::Clamp(PageIndex, 0, TotalPages - 1);
 	RequestDeferredSlateRebuild();
 	return FReply::Handled();

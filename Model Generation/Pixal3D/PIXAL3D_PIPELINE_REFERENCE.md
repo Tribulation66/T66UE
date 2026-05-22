@@ -84,14 +84,15 @@ Supported headers:
 - `X-Decimation`
 - `X-Remesh`: `1` by default; use `0` to skip Pixal3D export remeshing when
   flat or modular inputs hit CuMesh UV atlas failures.
-- `X-Export-Fallback`: `1` by default. The T66 server exports GLBs in a child
-  process and retries safer export settings if CuMesh fails.
-- `X-Fallback-Decimation`: default `30000`. Used by the server and smoke runner
-  when the requested export setting fails.
-- `X-Safe-Fill-Holes-Fallback`: `1` by default. Enables the final export-only
-  fallback that skips known crashing CuMesh `fill_holes` calls and uses CPU
-  xatlas UV unwrap inside the child export worker after requested, decimated,
-  and no-remesh attempts fail.
+- `X-Export-Fallback`: `0` by default for strict production. Diagnostic runs may
+  set `1` to let the child export worker retry safer export settings if CuMesh
+  fails.
+- `X-Fallback-Decimation`: production diagnostic default `80000`. Used only when
+  fallback is explicitly enabled.
+- `X-Safe-Fill-Holes-Fallback`: `0` by default for strict production. Diagnostic
+  runs may set `1` to enable the final export-only fallback that skips known
+  crashing CuMesh `fill_holes` calls and uses CPU xatlas UV unwrap inside the
+  child export worker after requested, decimated, and no-remesh attempts fail.
 - `X-Resolution`: `1024` or `1536`
 - `X-SS-Guidance`
 - `X-SS-Steps`
@@ -152,10 +153,11 @@ With the worker-isolated exporter, `stone_wall_module` and the retained
 Experiment 1 `Variant_B` source both generated successfully at the formerly
 risky `X-Decimation: 80000`, `X-Remesh: 1` setting on the A40 pod. The current
 production target is `X-Decimation: 200000` with `X-Fallback-Decimation: 80000`.
-Keep `X-Remesh: 1` for normal Pixal3D production runs, and leave fallback
-enabled. If `X-Pixal3D-Export-Safe-Fill-Holes: 1` appears in a response, surface
-that fallback in the production manifest/report and run the full ToonStyle
-production wrapper verification before accepting the asset.
+Keep `X-Remesh: 1` for normal Pixal3D production runs and leave fallback
+disabled unless the run is explicitly diagnostic. If
+`X-Pixal3D-Export-Safe-Fill-Holes: 1` appears in a response, strict production
+verification fails the asset for regeneration unless the manifest row documents
+an accepted limitation.
 
 ## RunPod Bootstrap
 
@@ -190,8 +192,9 @@ Production default:
 - texture size `4096`
 - decimation `200000`
 - remesh enabled
-- export fallback enabled, including safe CuMesh `fill_holes` / CPU UV unwrap fallback
-- export fallback enabled with fallback decimation `80000`
+- export fallback disabled
+- safe CuMesh `fill_holes` / CPU UV unwrap fallback disabled
+- diagnostic fallback decimation `80000` when `--diagnostic-mode` explicitly enables fallback
 
 Optional stress pass:
 

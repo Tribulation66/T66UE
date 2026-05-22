@@ -9,6 +9,7 @@
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Gameplay/T66ArcadeGameCatalog.h"
 #include "Gameplay/T66BoostInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
@@ -41,118 +42,22 @@ namespace
 			return false;
 		}
 
-		if (const UWorld* World = Actor ? Actor->GetWorld() : nullptr)
-		{
-			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
-			{
-				if (T66GI->GetArcadeInteractableData(ArcadeRowID, OutData))
-				{
-					return true;
-				}
-			}
-		}
-
-		if (UDataTable* DataTable = LoadObject<UDataTable>(nullptr, TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables")))
-		{
-			if (const FT66ArcadeInteractableRow* FoundRow = DataTable->FindRow<FT66ArcadeInteractableRow>(ArcadeRowID, TEXT("ArcadeInteractableBaseResolve")))
-			{
-				OutData = FoundRow->ArcadeData;
-				if (OutData.ArcadeID.IsNone())
-				{
-					OutData.ArcadeID = ArcadeRowID;
-				}
-				return true;
-			}
-		}
-
-		return false;
+		return T66ArcadeGameCatalog::TryResolveRowData(Actor, ArcadeRowID, OutData);
 	}
 
 	static FName T66GetArcadeRowIDForGameType(const ET66ArcadeGameType GameType)
 	{
-		switch (GameType)
-		{
-		case ET66ArcadeGameType::WhackAMole:
-			return FName(TEXT("Arcade_WhackAMole"));
-		case ET66ArcadeGameType::Topwar:
-			return FName(TEXT("Arcade_Topwar"));
-		case ET66ArcadeGameType::GoldMiner:
-			return FName(TEXT("Arcade_GoldMiner"));
-		case ET66ArcadeGameType::RuneSwipe:
-			return FName(TEXT("Arcade_RuneSwipe"));
-		case ET66ArcadeGameType::CartSwitcher:
-			return FName(TEXT("Arcade_CartSwitcher"));
-		case ET66ArcadeGameType::CrystalDash:
-			return FName(TEXT("Arcade_CrystalDash"));
-		case ET66ArcadeGameType::PotionPour:
-			return FName(TEXT("Arcade_PotionPour"));
-		case ET66ArcadeGameType::RelicStack:
-			return FName(TEXT("Arcade_RelicStack"));
-		case ET66ArcadeGameType::ShieldParry:
-			return FName(TEXT("Arcade_ShieldParry"));
-		case ET66ArcadeGameType::MimicMemory:
-			return FName(TEXT("Arcade_MimicMemory"));
-		case ET66ArcadeGameType::BombSorter:
-			return FName(TEXT("Arcade_BombSorter"));
-		case ET66ArcadeGameType::LanternLeap:
-			return FName(TEXT("Arcade_LanternLeap"));
-		case ET66ArcadeGameType::BladeSweep:
-			return FName(TEXT("Arcade_BladeSweep"));
-		default:
-			return NAME_None;
-		}
+		return T66ArcadeGameCatalog::GetRowID(GameType);
 	}
 
 	static FText T66GetArcadeDisplayNameForGameType(const ET66ArcadeGameType GameType)
 	{
-		switch (GameType)
-		{
-		case ET66ArcadeGameType::WhackAMole:
-			return NSLOCTEXT("T66.Arcade", "WhackAMoleDisplayNameFallback", "Whack-a-Mole");
-		case ET66ArcadeGameType::Topwar:
-			return NSLOCTEXT("T66.Arcade", "TopwarDisplayNameFallback", "Topwar");
-		case ET66ArcadeGameType::GoldMiner:
-			return NSLOCTEXT("T66.Arcade", "GoldMinerDisplayNameFallback", "Gold Miner");
-		case ET66ArcadeGameType::RuneSwipe:
-			return NSLOCTEXT("T66.Arcade", "RuneSwipeDisplayNameFallback", "Rune Swipe");
-		case ET66ArcadeGameType::CartSwitcher:
-			return NSLOCTEXT("T66.Arcade", "CartSwitcherDisplayNameFallback", "Cart Switcher");
-		case ET66ArcadeGameType::CrystalDash:
-			return NSLOCTEXT("T66.Arcade", "CrystalDashDisplayNameFallback", "Crystal Dash");
-		case ET66ArcadeGameType::PotionPour:
-			return NSLOCTEXT("T66.Arcade", "PotionPourDisplayNameFallback", "Potion Pour");
-		case ET66ArcadeGameType::RelicStack:
-			return NSLOCTEXT("T66.Arcade", "RelicStackDisplayNameFallback", "Relic Stack");
-		case ET66ArcadeGameType::ShieldParry:
-			return NSLOCTEXT("T66.Arcade", "ShieldParryDisplayNameFallback", "Shield Parry");
-		case ET66ArcadeGameType::MimicMemory:
-			return NSLOCTEXT("T66.Arcade", "MimicMemoryDisplayNameFallback", "Mimic Memory");
-		case ET66ArcadeGameType::BombSorter:
-			return NSLOCTEXT("T66.Arcade", "BombSorterDisplayNameFallback", "Bomb Sorter");
-		case ET66ArcadeGameType::LanternLeap:
-			return NSLOCTEXT("T66.Arcade", "LanternLeapDisplayNameFallback", "Lantern Leap");
-		case ET66ArcadeGameType::BladeSweep:
-			return NSLOCTEXT("T66.Arcade", "BladeSweepDisplayNameFallback", "Blade Sweep");
-		default:
-			return NSLOCTEXT("T66.Arcade", "ArcadeGameDisplayNameFallback", "Arcade");
-		}
+		return T66ArcadeGameCatalog::GetPrototypeDisplayName(GameType);
 	}
 
 	static bool T66IsPlayableArcadeGameType(const ET66ArcadeGameType GameType)
 	{
-		return GameType == ET66ArcadeGameType::WhackAMole
-			|| GameType == ET66ArcadeGameType::Topwar
-			|| GameType == ET66ArcadeGameType::GoldMiner
-			|| GameType == ET66ArcadeGameType::RuneSwipe
-			|| GameType == ET66ArcadeGameType::CartSwitcher
-			|| GameType == ET66ArcadeGameType::CrystalDash
-			|| GameType == ET66ArcadeGameType::PotionPour
-			|| GameType == ET66ArcadeGameType::RelicStack
-			|| GameType == ET66ArcadeGameType::ShieldParry
-			|| GameType == ET66ArcadeGameType::MimicMemory
-			|| GameType == ET66ArcadeGameType::BombSorter
-			|| GameType == ET66ArcadeGameType::LanternLeap
-			|| GameType == ET66ArcadeGameType::BladeSweep;
+		return T66ArcadeGameCatalog::IsPlayable(GameType);
 	}
 
 	static const TArray<ET66HeroStatType>& T66GetBoostStatPool()
@@ -258,19 +163,10 @@ TArray<FT66ArcadeInteractableData> AT66ArcadeInteractableBase::BuildArcadeSelect
 
 	if (GameTypes.Num() == 0)
 	{
-		GameTypes.Add(ET66ArcadeGameType::WhackAMole);
-		GameTypes.Add(ET66ArcadeGameType::Topwar);
-		GameTypes.Add(ET66ArcadeGameType::GoldMiner);
-		GameTypes.Add(ET66ArcadeGameType::RuneSwipe);
-		GameTypes.Add(ET66ArcadeGameType::CartSwitcher);
-		GameTypes.Add(ET66ArcadeGameType::CrystalDash);
-		GameTypes.Add(ET66ArcadeGameType::PotionPour);
-		GameTypes.Add(ET66ArcadeGameType::RelicStack);
-		GameTypes.Add(ET66ArcadeGameType::ShieldParry);
-		GameTypes.Add(ET66ArcadeGameType::MimicMemory);
-		GameTypes.Add(ET66ArcadeGameType::BombSorter);
-		GameTypes.Add(ET66ArcadeGameType::LanternLeap);
-		GameTypes.Add(ET66ArcadeGameType::BladeSweep);
+		for (const FT66ArcadeGameCatalogEntry& Entry : T66ArcadeGameCatalog::GetPlayableEntries())
+		{
+			GameTypes.Add(Entry.GameType);
+		}
 	}
 
 	TArray<FT66ArcadeInteractableData> Options;
@@ -294,24 +190,7 @@ bool AT66ArcadeInteractableBase::BuildArcadeSessionDataForGame(const ET66ArcadeG
 		return false;
 	}
 
-	const FT66ArcadeInteractableData& SourceData = GetArcadeData();
-	FT66ArcadeInteractableData SessionData = SourceData;
-	FT66ArcadeInteractableData GameData;
-	if (const FName GameRowID = T66GetArcadeRowIDForGameType(GameType); !GameRowID.IsNone()
-		&& T66TryResolveArcadeRowData(this, GameRowID, GameData))
-	{
-		SessionData = GameData;
-	}
-
-	SessionData.ArcadeClass = ET66ArcadeInteractableClass::PopupArcade;
-	SessionData.ArcadeGameType = GameType;
-	if (SessionData.DisplayName.IsEmpty())
-	{
-		SessionData.DisplayName = T66GetArcadeDisplayNameForGameType(GameType);
-	}
-
-	OutData = MoveTemp(SessionData);
-	return true;
+	return T66ArcadeGameCatalog::BuildSessionDataForGame(this, GameType, OutData);
 }
 
 void AT66ArcadeInteractableBase::HandleArcadePopupClosed(const bool bSucceeded, const int32 FinalScore)
@@ -465,19 +344,10 @@ ET66ArcadeGameType AT66ArcadeInteractableBase::ResolveRandomGameType(const FT66A
 
 	if (Candidates.Num() == 0)
 	{
-		Candidates.Add(ET66ArcadeGameType::WhackAMole);
-		Candidates.Add(ET66ArcadeGameType::Topwar);
-		Candidates.Add(ET66ArcadeGameType::GoldMiner);
-		Candidates.Add(ET66ArcadeGameType::RuneSwipe);
-		Candidates.Add(ET66ArcadeGameType::CartSwitcher);
-		Candidates.Add(ET66ArcadeGameType::CrystalDash);
-		Candidates.Add(ET66ArcadeGameType::PotionPour);
-		Candidates.Add(ET66ArcadeGameType::RelicStack);
-		Candidates.Add(ET66ArcadeGameType::ShieldParry);
-		Candidates.Add(ET66ArcadeGameType::MimicMemory);
-		Candidates.Add(ET66ArcadeGameType::BombSorter);
-		Candidates.Add(ET66ArcadeGameType::LanternLeap);
-		Candidates.Add(ET66ArcadeGameType::BladeSweep);
+		for (const FT66ArcadeGameCatalogEntry& Entry : T66ArcadeGameCatalog::GetPlayableEntries())
+		{
+			Candidates.Add(Entry.GameType);
+		}
 	}
 
 	if (const UGameInstance* GI = GetGameInstance())

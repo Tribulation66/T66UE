@@ -1,8 +1,0 @@
-{
-  "exit_code": 0,
-  "finished_at": "2026-05-17T19:30:52.327213+00:00",
-  "manifest_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CNewPod/10_cavebat_original_clean_lowvram/manifest.json",
-  "ok": true,
-  "started_at": "2026-05-17T19:28:25.632881+00:00",
-  "status_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CNewPod/10_cavebat_original_clean_lowvram/Logs/pixal3d_generation_status.jsonl"
-}

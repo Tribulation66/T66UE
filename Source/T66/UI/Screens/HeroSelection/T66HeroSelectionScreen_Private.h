@@ -18,6 +18,7 @@
 #include "Core/T66SteamHelper.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "UI/T66StatsPanelSlate.h"
 #include "UI/T66TemporaryBuffUIUtils.h"
 #include "UI/Style/T66FlatStyle.h"
@@ -1042,6 +1043,8 @@ namespace T66HeroSelectionPrivate
 
 		TSharedRef<SComboButton> Combo = SNew(SComboButton)
 			.ComboButtonStyle(&FlatComboStyle)
+			.MenuPlacement(MenuPlacement_BelowAnchor)
+			.HasDownArrow(false)
 			.OnGetMenuContent_Lambda([OnGet = Params.OnGetMenuContent]()
 			{
 				return MakeHeroSelectionContentShell(OnGet(), FMargin(4.f));

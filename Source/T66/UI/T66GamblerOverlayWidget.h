@@ -319,6 +319,8 @@ public:
 	void RefreshSellPanel();
 	void RefreshStatsPanel();
 	bool IsBossActive() const;
+	bool IsCasinoGameAllowed(FName CasinoGameID) const;
+	FReply HandleBlockedCasinoGame();
 	bool TryPayToPlay();
 	bool TryPayWithLockedBet();  // requires LockedBetAmount > 0, deducts and sets PendingBetAmount
 	void AwardWin();

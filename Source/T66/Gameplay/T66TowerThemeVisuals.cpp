@@ -91,6 +91,45 @@ namespace
 		return T66TowerFindOrLoadObject<UMaterialInterface>(MaterialPath);
 	}
 
+	static const TCHAR* T66ThemeNameForPath(const T66TowerMapTerrain::ET66TowerGameplayLevelTheme ThemeId)
+	{
+		switch (ThemeId)
+		{
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Forest:
+			return TEXT("Forest");
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Ocean:
+			return TEXT("Ocean");
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Martian:
+			return TEXT("Martian");
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell:
+			return TEXT("Hell");
+		case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon:
+		default:
+			return TEXT("Dungeon");
+		}
+	}
+
+	static const TCHAR* T66SurfaceNameForPath(const T66TowerThemeVisuals::EEnvironmentSurfaceType Surface)
+	{
+		switch (Surface)
+		{
+		case T66TowerThemeVisuals::EEnvironmentSurfaceType::WallYZ:
+			return TEXT("Wall_YZ");
+		case T66TowerThemeVisuals::EEnvironmentSurfaceType::Floor:
+			return TEXT("Floor");
+		case T66TowerThemeVisuals::EEnvironmentSurfaceType::Ceiling:
+			return TEXT("Ceiling");
+		case T66TowerThemeVisuals::EEnvironmentSurfaceType::WallXZ:
+		default:
+			return TEXT("Wall_XZ");
+		}
+	}
+
+	static FName T66ThemeDisplayName(const T66TowerMapTerrain::ET66TowerGameplayLevelTheme ThemeId)
+	{
+		return FName(T66ThemeNameForPath(ThemeId));
+	}
+
 	static UMaterialInterface* T66BuildThemeMaterialFromTexture(
 		UObject* Outer,
 		const TCHAR* TexturePath,
@@ -189,133 +228,16 @@ bool T66TowerThemeVisuals::ResolveTheme(
 {
 	OutTheme = FResolvedTheme{};
 	OutTheme.bBossFloor = bBossFloor;
+	OutTheme.ThemeName = T66ThemeDisplayName(ThemeId);
 
-	const FT66TowerThemeSurfacePaths SurfacePaths = T66GetThemeSurfacePaths(ThemeId);
-
-	OutTheme.FloorMaterial = T66LoadThemeMaterial(Outer, SurfacePaths.FloorMaterialPath);
-	OutTheme.WallMaterial = T66LoadThemeMaterial(Outer, SurfacePaths.WallMaterialPath);
-	OutTheme.RoofMaterial = T66LoadThemeMaterial(Outer, SurfacePaths.RoofMaterialPath);
-
-	if (!OutTheme.FloorMaterial)
-	{
-		OutTheme.FloorMaterial = T66BuildThemeMaterialFromTexture(
-			Outer,
-			SurfacePaths.BlockTexturePath,
-			T66EnvironmentLitMaterialPath);
-	}
-	if (!OutTheme.WallMaterial)
-	{
-		OutTheme.WallMaterial = T66BuildThemeMaterialFromTexture(
-			Outer,
-			SurfacePaths.BlockTexturePath,
-			T66EnvironmentLitMaterialPath);
-	}
-	if (!OutTheme.RoofMaterial)
-	{
-		OutTheme.RoofMaterial = T66BuildThemeMaterialFromTexture(
-			Outer,
-			SurfacePaths.RoofTexturePath ? SurfacePaths.RoofTexturePath : SurfacePaths.BlockTexturePath,
-			TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof"));
-	}
-
-	switch (ThemeId)
-	{
-	case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Forest:
-	{
-		OutTheme.ThemeName = TEXT("Forest");
-		static const TCHAR* WallModules[] = {
-			TEXT("ForestWall_VineTotem_A"),
-			TEXT("ForestWall_TrunkWeave_A"),
-			TEXT("ForestWall_RootBraid_A"),
-			TEXT("ForestWall_MushroomBark_A"),
-		};
-		static const TCHAR* FloorModules[] = {
-			TEXT("ForestFloor_RootMat_A"),
-			TEXT("ForestFloor_MossStone_A"),
-			TEXT("ForestFloor_LeafCrack_A"),
-			TEXT("ForestFloor_BrambleEdge_A"),
-		};
-		T66ConfigureGeneratedThemeKit(OutTheme, WallModules, UE_ARRAY_COUNT(WallModules), FloorModules, UE_ARRAY_COUNT(FloorModules));
-		OutTheme.DecorationMaterialOverride = nullptr;
-		break;
-	}
-	case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Ocean:
-	{
-		OutTheme.ThemeName = TEXT("Ocean");
-		static const TCHAR* WallModules[] = {
-			TEXT("OceanWall_CoralReef_A"),
-			TEXT("OceanWall_ShellLimestone_A"),
-			TEXT("OceanWall_KelpCoral_A"),
-			TEXT("OceanWall_ReefRuin_A"),
-		};
-		static const TCHAR* FloorModules[] = {
-			TEXT("OceanFloor_ReefStone_A"),
-			TEXT("OceanFloor_ShellSand_A"),
-			TEXT("OceanFloor_CoralCrack_A"),
-			TEXT("OceanFloor_TidePool_A"),
-		};
-		T66ConfigureGeneratedThemeKit(OutTheme, WallModules, UE_ARRAY_COUNT(WallModules), FloorModules, UE_ARRAY_COUNT(FloorModules));
-		OutTheme.DecorationMaterialOverride = OutTheme.WallMaterial;
-		break;
-	}
-	case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Martian:
-	{
-		OutTheme.ThemeName = TEXT("Martian");
-		OutTheme.DecorationMaterialOverride = OutTheme.WallMaterial;
-		static const TCHAR* WallModules[] = {
-			TEXT("MartianWall_RuinPanel_A"),
-			TEXT("MartianWall_RedRock_A"),
-			TEXT("MartianWall_MeteorScar_A"),
-			TEXT("MartianWall_CrystalVein_A"),
-		};
-		static const TCHAR* FloorModules[] = {
-			TEXT("MartianFloor_RuinTile_A"),
-			TEXT("MartianFloor_RegolithPlates_A"),
-			TEXT("MartianFloor_CrystalDust_A"),
-			TEXT("MartianFloor_CraterCracks_A"),
-		};
-		T66ConfigureGeneratedThemeKit(OutTheme, WallModules, UE_ARRAY_COUNT(WallModules), FloorModules, UE_ARRAY_COUNT(FloorModules));
-		break;
-	}
-	case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell:
-	{
-		OutTheme.ThemeName = TEXT("Hell");
-		OutTheme.DecorationMaterialOverride = OutTheme.WallMaterial;
-		static const TCHAR* WallModules[] = {
-			TEXT("HellWall_SpikeBasalt_A"),
-			TEXT("HellWall_LavaCrack_A"),
-			TEXT("HellWall_ChainsSkulls_A"),
-			TEXT("HellWall_Brimstone_A"),
-		};
-		static const TCHAR* FloorModules[] = {
-			TEXT("HellFloor_RunePlate_A"),
-			TEXT("HellFloor_Obsidian_A"),
-			TEXT("HellFloor_EmberFissure_A"),
-			TEXT("HellFloor_BoneAsh_A"),
-		};
-		T66ConfigureGeneratedThemeKit(OutTheme, WallModules, UE_ARRAY_COUNT(WallModules), FloorModules, UE_ARRAY_COUNT(FloorModules));
-		break;
-	}
-	case T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon:
-	default:
-	{
-		OutTheme.ThemeName = TEXT("Dungeon");
-		static const TCHAR* WallModules[] = {
-			TEXT("DungeonWall_TorchSconce_A"),
-			TEXT("DungeonWall_StoneBlocks_A"),
-			TEXT("DungeonWall_Chains_A"),
-			TEXT("DungeonWall_BonesNiche_A"),
-		};
-		static const TCHAR* FloorModules[] = {
-			TEXT("DungeonFloor_StoneSlabs_A"),
-			TEXT("DungeonFloor_Drain_A"),
-			TEXT("DungeonFloor_Cracked_A"),
-			TEXT("DungeonFloor_Bones_A"),
-		};
-		T66ConfigureGeneratedThemeKit(OutTheme, WallModules, UE_ARRAY_COUNT(WallModules), FloorModules, UE_ARRAY_COUNT(FloorModules));
-		break;
-	}
-	}
+	OutTheme.WallFamily = EWallFamily::SplitCollisionVisual;
+	OutTheme.WallXZMaterial = ResolveEnvironmentSurfaceMaterial(Outer, ThemeId, EEnvironmentSurfaceType::WallXZ);
+	OutTheme.WallYZMaterial = ResolveEnvironmentSurfaceMaterial(Outer, ThemeId, EEnvironmentSurfaceType::WallYZ);
+	OutTheme.FloorMaterial = ResolveEnvironmentSurfaceMaterial(Outer, ThemeId, EEnvironmentSurfaceType::Floor);
+	OutTheme.CeilingMaterial = ResolveEnvironmentSurfaceMaterial(Outer, ThemeId, EEnvironmentSurfaceType::Ceiling);
+	OutTheme.WallMaterial = OutTheme.WallXZMaterial ? OutTheme.WallXZMaterial : OutTheme.WallYZMaterial;
+	OutTheme.RoofMaterial = OutTheme.CeilingMaterial ? OutTheme.CeilingMaterial : OutTheme.FloorMaterial;
+	OutTheme.DecorationMaterialOverride = OutTheme.WallMaterial;
 
 	if (!OutTheme.FloorMaterial)
 	{
@@ -331,6 +253,21 @@ bool T66TowerThemeVisuals::ResolveTheme(
 	}
 
 	return OutTheme.FloorMaterial || OutTheme.WallMaterial || OutTheme.RoofMaterial;
+}
+
+UMaterialInterface* T66TowerThemeVisuals::ResolveEnvironmentSurfaceMaterial(
+	UObject* Outer,
+	const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme,
+	const EEnvironmentSurfaceType Surface)
+{
+	const FString MaterialPath = FString::Printf(
+		TEXT("/Game/ToonStyle/Environment/%s/Materials/MI_%s_%s.MI_%s_%s"),
+		T66ThemeNameForPath(Theme),
+		T66ThemeNameForPath(Theme),
+		T66SurfaceNameForPath(Surface),
+		T66ThemeNameForPath(Theme),
+		T66SurfaceNameForPath(Surface));
+	return T66LoadThemeMaterial(Outer, *MaterialPath);
 }
 
 bool T66TowerThemeVisuals::ResolveFloorTheme(

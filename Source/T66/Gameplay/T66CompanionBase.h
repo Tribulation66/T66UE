@@ -98,6 +98,12 @@ protected:
 	bool bUsingCharacterVisual = false;
 
 	UPROPERTY(Transient)
+	bool bUsingStaticCharacterVisual = false;
+
+	UPROPERTY(Transient)
+	FName ActiveSkinID = NAME_None;
+
+	UPROPERTY(Transient)
 	bool bLockedVisual = false;
 
 	/** Cached alert/walk/run anims; companion uses hero speed subsystem (same rules: idle=alert, walk, run). */
@@ -136,4 +142,5 @@ protected:
 	void HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs);
 
 	void ApplyCompanionScale();
+	bool ApplyCurrentCharacterVisual();
 };

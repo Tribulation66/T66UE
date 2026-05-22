@@ -16,4 +16,5 @@ namespace T66TestRoom
 	FVector PlayerStartLocation();
 	void SpawnRoom(UWorld* World);
 	void SpawnLighting(UWorld* World);
+	void ScheduleVATSlimeChase(UWorld* World);
 }

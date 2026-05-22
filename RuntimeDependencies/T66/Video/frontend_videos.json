@@ -10,19 +10,23 @@
     "fallbacks": {
       "heroChad": {
         "movie": "Frontend/HeroSelection/Heroes/Hero_1/Default/Chad.mp4",
-        "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Default/Chad.png"
+        "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Default/Chad.png",
+        "posterOnly": true
       },
       "heroStacy": {
         "movie": "Frontend/HeroSelection/Heroes/Hero_1/Default/Stacy.mp4",
-        "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Default/Stacy.png"
+        "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Default/Stacy.png",
+        "posterOnly": true
       },
       "hero": {
         "movie": "Frontend/HeroSelection/Heroes/Hero_1/Default/Chad.mp4",
-        "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Default/Chad.png"
+        "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Default/Chad.png",
+        "posterOnly": true
       },
       "companion": {
         "movie": "Frontend/HeroSelection/Companions/Companion_01/Default.mp4",
-        "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_01/Default.png"
+        "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_01/Default.png",
+        "posterOnly": true
       }
     },
     "heroes": {
@@ -30,21 +34,25 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_1/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_1/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Default/Stacy.png",
+            "posterOnly": true
           }
         },
         "DemoSkin": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_1/Beachgoer/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Beachgoer/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Beachgoer/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_1/Beachgoer/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Beachgoer/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_1/Beachgoer/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -52,21 +60,25 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_2/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_2/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_2/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_2/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_2/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_2/Default/Stacy.png",
+            "posterOnly": true
           }
         },
         "DemoSkin": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_2/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_2/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_2/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_2/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_2/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_2/Default/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -74,21 +86,25 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_3/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_3/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_3/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_3/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_3/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_3/Default/Stacy.png",
+            "posterOnly": true
           }
         },
         "DemoSkin": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_3/Beachgoer/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_3/Beachgoer/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_3/Beachgoer/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_3/Beachgoer/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_3/Beachgoer/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_3/Beachgoer/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -96,21 +112,25 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_4/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_4/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_4/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_4/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_4/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_4/Default/Stacy.png",
+            "posterOnly": true
           }
         },
         "DemoSkin": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_4/Beachgoer/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_4/Beachgoer/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_4/Beachgoer/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_4/Beachgoer/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_4/Beachgoer/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_4/Beachgoer/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -118,21 +138,25 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_5/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_5/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_5/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_5/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_5/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_5/Default/Stacy.png",
+            "posterOnly": true
           }
         },
         "DemoSkin": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_5/Beachgoer/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_5/Beachgoer/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_5/Beachgoer/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_5/Beachgoer/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_5/Beachgoer/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_5/Beachgoer/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -140,11 +164,13 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_6/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_6/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_6/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_6/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_6/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_6/Default/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -152,11 +178,13 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_7/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_7/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_7/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_7/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_7/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_7/Default/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -164,11 +192,13 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_8/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_8/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_8/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_8/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_8/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_8/Default/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -176,11 +206,13 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_9/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_9/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_9/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_9/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_9/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_9/Default/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -188,11 +220,13 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_10/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_10/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_10/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_10/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_10/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_10/Default/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -200,11 +234,13 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_11/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_11/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_11/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_11/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_11/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_11/Default/Stacy.png",
+            "posterOnly": true
           }
         }
       },
@@ -212,11 +248,13 @@
         "Default": {
           "Chad": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_12/Default/Chad.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_12/Default/Chad.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_12/Default/Chad.png",
+            "posterOnly": true
           },
           "Stacy": {
             "movie": "Frontend/HeroSelection/Heroes/Hero_12/Default/Stacy.mp4",
-            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_12/Default/Stacy.png"
+            "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Heroes/Hero_12/Default/Stacy.png",
+            "posterOnly": true
           }
         }
       }
@@ -225,97 +263,113 @@
       "Companion_01": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_01/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_01/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_01/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_02": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_02/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_02/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_02/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_03": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_03/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_03/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_03/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_04": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_04/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_04/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_04/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_05": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_05/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_05/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_05/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_06": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_06/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_06/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_06/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_07": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_07/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_07/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_07/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_08": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_08/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_08/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_08/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_09": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_09/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_09/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_09/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_10": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_10/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_10/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_10/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_11": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_11/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_11/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_11/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_12": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_12/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_12/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_12/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_13": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_13/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_13/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_13/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_14": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_14/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_14/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_14/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_15": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_15/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_15/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_15/Default.png",
+          "posterOnly": true
         }
       },
       "Companion_16": {
         "Default": {
           "movie": "Frontend/HeroSelection/Companions/Companion_16/Default.mp4",
-          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_16/Default.png"
+          "poster": "RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_16/Default.png",
+          "posterOnly": true
         }
       }
     }

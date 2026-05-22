@@ -29,6 +29,12 @@ VERTEX_B_DIAGNOSTIC_MATERIAL = f"{DIAGNOSTIC_DIR}/M_OutlineDiagnostic_VertexColo
 TEXTURE_DIR = "/Game/ToonStyle/Textures"
 INNER_LINES_DEFAULT_BLACK = f"{TEXTURE_DIR}/T_InnerLines_DefaultBlack"
 INNER_LINES_DEFAULT_BLACK_SOURCE = Path(r"C:\UE\T66\SourceAssets\ToonStyle\Textures\T_InnerLines_DefaultBlack.png")
+MAP_TRANSITION_DIR = Path(r"C:\UE\T66\Saved\Codex\ToonStyle\MapTransition")
+MAP_TRANSITION_DIR.mkdir(parents=True, exist_ok=True)
+ENVIRONMENT_KIT_DIR = "/Game/ToonStyle/Environment"
+TESTROOM_WALL_TEXTURE = "/Game/ToonStyle/TestAssets/Environment/Textures/T_TestRoom_Wall"
+TESTROOM_FLOOR_TEXTURE = "/Game/ToonStyle/TestAssets/Environment/Textures/T_TestRoom_Floor"
+ENVIRONMENT_KIT_THEMES = ["Dungeon", "Forest", "Ocean", "Martian", "Hell"]
 
 mel = unreal.MaterialEditingLibrary
 asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
@@ -101,6 +107,15 @@ def scalar_param(material, name: str, default: float, x: int, y: int):
     return node
 
 
+def static_switch_param(material, name: str, default: bool, false_input, true_input, x: int, y: int):
+    node = expr(material, unreal.MaterialExpressionStaticSwitchParameter, x, y)
+    safe_set(node, "parameter_name", name)
+    safe_set(node, "default_value", bool(default))
+    connect(true_input, "", node, "True")
+    connect(false_input, "", node, "False")
+    return node
+
+
 def constant(material, value: float, x: int, y: int):
     node = expr(material, unreal.MaterialExpressionConstant, x, y)
     safe_set(node, "r", float(value))
@@ -116,6 +131,11 @@ def texture_param(material, name: str, x: int, y: int, default_texture=None):
 
 
 def ensure_imported_texture(source_path: Path, asset_path: str):
+    existing = unreal.EditorAssetLibrary.load_asset(asset_path)
+    if existing:
+        if not isinstance(existing, unreal.Texture2D):
+            raise RuntimeError(f"Existing asset is not a Texture2D: {asset_path}")
+        return existing
     if not source_path.exists():
         raise RuntimeError(f"Missing source texture for material generator: {source_path}")
     package, name = asset_path.rsplit("/", 1)
@@ -225,12 +245,12 @@ def create_character_master():
     ramp2 = scalar_param(material, "RampStep2", 0.5, -1160, -120)
     shade = vector_param(material, "ShadeColor", unreal.LinearColor(0.35, 0.38, 0.50, 1.0), -1160, 80)
     mid = vector_param(material, "MidtoneColor", unreal.LinearColor(0.7, 0.7, 0.72, 1.0), -1160, 280)
-    lit = vector_param(material, "LitColor", unreal.LinearColor(1.0, 1.0, 1.0, 1.0), -1160, 480)
+    lit = vector_param(material, "LitColor", unreal.LinearColor(0.85, 0.85, 0.85, 1.0), -1160, 480)
     inner_line_color = vector_param(material, "InnerLineColor", unreal.LinearColor(0.0, 0.0, 0.0, 1.0), -1160, 680)
     inner_line_strength = scalar_param(material, "InnerLineStrength", 0.5, -1160, 840)
     rim_color = vector_param(material, "RimColor", unreal.LinearColor(1.0, 0.95, 0.85, 1.0), -1160, 1020)
     rim_power = scalar_param(material, "RimPower", 4.0, -1160, 1220)
-    rim_strength = scalar_param(material, "RimStrength", 0.3, -1160, 1380)
+    rim_strength = scalar_param(material, "RimStrength", 0.21, -1160, 1380)
 
     custom = expr(material, unreal.MaterialExpressionCustom, -520, 80)
     safe_set(custom, "description", "ToonCharacterShade")
@@ -261,7 +281,7 @@ def create_character_master():
     safe_set(
         custom,
         "code",
-        "return ToonCharacterShade(BaseColor, max(TintColor, float3(0.5, 0.5, 0.5)), InnerLineMask, InnerLineColor, InnerLineStrength, N, L, V, ThresholdOffset, RampStep1, RampStep2, ShadeColor, MidtoneColor, LitColor, RimColor, RimPower, RimStrength);",
+        "return ToonCharacterShade(BaseColor, max(TintColor, float3(0.4, 0.4, 0.4)), InnerLineMask, InnerLineColor, InnerLineStrength, N, L, V, ThresholdOffset, RampStep1, RampStep2, ShadeColor, MidtoneColor, LitColor, RimColor, RimPower, RimStrength);",
     )
 
     connect(base, "RGB", custom, "BaseColor")
@@ -312,17 +332,43 @@ def create_environment_master():
     connect(u_mul, "", uv_tiled, "A")
     connect(v_mul, "", uv_tiled, "B")
 
-    base = texture_param(material, "BaseColorTexture", -1080, -300)
-    connect(uv_tiled, "", base, "UVs")
-    normal = expr(material, unreal.MaterialExpressionPixelNormalWS, -1080, 40)
-    light = vector_param(material, "LightDirection", unreal.LinearColor(-0.4, 0.6, -0.7, 1.0), -1080, 240)
-    ramp1 = scalar_param(material, "RampStep1", 0.0, -1080, 440)
-    ramp2 = scalar_param(material, "RampStep2", 0.5, -1080, 600)
-    shade = vector_param(material, "EnvShadeColor", unreal.LinearColor(0.3, 0.32, 0.42, 1.0), -1080, 780)
-    mid = vector_param(material, "EnvMidtoneColor", unreal.LinearColor(0.55, 0.58, 0.62, 1.0), -1080, 980)
-    lit = vector_param(material, "EnvLitColor", unreal.LinearColor(0.85, 0.85, 0.90, 1.0), -1080, 1180)
+    # World-space projection conventions for bUseWorldSpaceUVs=true:
+    # (1, 1, 0) projects floors/ceilings onto XY and ignores Z.
+    # (1, 0, 1) projects X-running walls onto XZ and ignores Y.
+    # (0, 1, 1) projects Y-running walls onto YZ and ignores X.
+    world_position = expr(material, unreal.MaterialExpressionWorldPosition, -1600, 420)
+    projection_axes = vector_param(material, "ProjectionAxes", unreal.LinearColor(1.0, 1.0, 0.0, 0.0), -1600, 620)
+    world_tile_size = scalar_param(material, "WorldSpaceTileSize", 100.0, -1600, 820)
+    world_uv = expr(material, unreal.MaterialExpressionCustom, -1320, 560)
+    safe_set(world_uv, "description", "ToonEnvironmentWorldSpaceUV")
+    safe_set(world_uv, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT2)
+    set_custom_inputs(world_uv, ["WorldPosition", "ProjectionAxes", "WorldSpaceTileSize"])
+    safe_set(
+        world_uv,
+        "code",
+        "float TileSize = max(WorldSpaceTileSize, 1.0);\n"
+        "float3 Axes = step(0.5, ProjectionAxes.xyz);\n"
+        "float U = (Axes.x > 0.5) ? WorldPosition.x : WorldPosition.y;\n"
+        "float V = (Axes.z > 0.5) ? WorldPosition.z : WorldPosition.y;\n"
+        "return float2(U, V) / TileSize;",
+    )
+    connect(world_position, "", world_uv, "WorldPosition")
+    connect(projection_axes, "", world_uv, "ProjectionAxes")
+    connect(world_tile_size, "", world_uv, "WorldSpaceTileSize")
 
-    custom = expr(material, unreal.MaterialExpressionCustom, -420, 220)
+    final_uv = static_switch_param(material, "bUseWorldSpaceUVs", False, uv_tiled, world_uv, -1080, -80)
+
+    base = texture_param(material, "BaseColorTexture", -840, -300)
+    connect(final_uv, "", base, "UVs")
+    normal = expr(material, unreal.MaterialExpressionPixelNormalWS, -840, 40)
+    light = vector_param(material, "LightDirection", unreal.LinearColor(-0.4, 0.6, -0.7, 1.0), -840, 240)
+    ramp1 = scalar_param(material, "RampStep1", 0.0, -840, 440)
+    ramp2 = scalar_param(material, "RampStep2", 0.5, -840, 600)
+    shade = vector_param(material, "EnvShadeColor", unreal.LinearColor(0.3, 0.32, 0.42, 1.0), -840, 780)
+    mid = vector_param(material, "EnvMidtoneColor", unreal.LinearColor(0.55, 0.58, 0.62, 1.0), -840, 980)
+    lit = vector_param(material, "EnvLitColor", unreal.LinearColor(0.85, 0.85, 0.90, 1.0), -840, 1180)
+
+    custom = expr(material, unreal.MaterialExpressionCustom, -180, 220)
     safe_set(custom, "description", "ToonEnvironmentShade")
     safe_set(custom, "output_type", unreal.CustomMaterialOutputType.CMOT_FLOAT3)
     set_custom_includes(custom, ["/Project/ToonStyle/ToonShadingCommon.ush"])
@@ -357,7 +403,7 @@ def create_outline_master(path: str = OUTLINE_MASTER):
     outline_reference_distance = scalar_param(material, "OutlineReferenceDistance", 1500.0, -1240, -140)
     outline_fov_tan_half = scalar_param(material, "OutlineFOVTanHalf", 1.0, -1240, 20)
     outline_reference_fov_tan_half = scalar_param(material, "OutlineReferenceFOVTanHalf", 1.0, -1240, 180)
-    outline_depth_offset_scalar = scalar_param(material, "OutlineDepthOffsetScalar", 1.0, -1240, 340)
+    outline_depth_offset_scalar = scalar_param(material, "OutlineDepthOffsetScalar", 2.5, -1240, 340)
     # Legacy compatibility parameter. Runtime C++ sets both this and OutlineBaseWidth;
     # production graph consumes OutlineBaseWidth.
     scalar_param(material, "OutlineWidth", 1.5, -1240, 500)
@@ -427,6 +473,9 @@ def create_material_instance(
     texture=None,
     uv_tile_u: float | None = None,
     uv_tile_v: float | None = None,
+    use_world_space_uvs: bool | None = None,
+    projection_axes: unreal.LinearColor | None = None,
+    world_space_tile_size: float | None = None,
     outline_color: unreal.LinearColor | None = None,
 ):
     instance = recreate_asset(path, unreal.MaterialInstanceConstant, unreal.MaterialInstanceConstantFactoryNew())
@@ -438,6 +487,12 @@ def create_material_instance(
         mel.set_material_instance_scalar_parameter_value(instance, "UVTileU", float(uv_tile_u))
     if uv_tile_v is not None:
         mel.set_material_instance_scalar_parameter_value(instance, "UVTileV", float(uv_tile_v))
+    if use_world_space_uvs is not None:
+        mel.set_material_instance_static_switch_parameter_value(instance, "bUseWorldSpaceUVs", bool(use_world_space_uvs))
+    if projection_axes is not None:
+        mel.set_material_instance_vector_parameter_value(instance, "ProjectionAxes", projection_axes)
+    if world_space_tile_size is not None:
+        mel.set_material_instance_scalar_parameter_value(instance, "WorldSpaceTileSize", float(world_space_tile_size))
     if outline_color is not None:
         mel.set_material_instance_vector_parameter_value(instance, "OutlineColor", outline_color)
     mel.update_material_instance(instance)
@@ -532,6 +587,68 @@ def create_instances() -> dict[str, object]:
     return result
 
 
+def create_environment_kit_instances() -> dict[str, object]:
+    wall_texture = load_asset(TESTROOM_WALL_TEXTURE)
+    floor_texture = load_asset(TESTROOM_FLOOR_TEXTURE)
+    surfaces = [
+        ("Wall_XZ", wall_texture, unreal.LinearColor(1.0, 0.0, 1.0, 0.0), "wall texture placeholder"),
+        ("Wall_YZ", wall_texture, unreal.LinearColor(0.0, 1.0, 1.0, 0.0), "wall texture placeholder"),
+        ("Floor", floor_texture, unreal.LinearColor(1.0, 1.0, 0.0, 0.0), "floor texture placeholder"),
+        ("Ceiling", wall_texture, unreal.LinearColor(1.0, 1.0, 0.0, 0.0), "ceiling placeholder reuses test-room wall texture"),
+    ]
+
+    created = []
+    placeholder_lines = [
+        "# T66 Map Transition Placeholder Texture Manifest",
+        "",
+        "All production environment kit MIs currently bind existing test-room textures so the rectangle path can land before final texture authoring.",
+        "Pablo can replace these by updating the MI `BaseColorTexture` bindings or replacing assets in a later content pass.",
+        "",
+    ]
+    for theme in ENVIRONMENT_KIT_THEMES:
+        ensure_dir(f"{ENVIRONMENT_KIT_DIR}/{theme}/Materials")
+        ensure_dir(f"{ENVIRONMENT_KIT_DIR}/{theme}/Textures")
+        placeholder_lines.append(f"## {theme}")
+        for suffix, texture, axes, note in surfaces:
+            material_path = f"{ENVIRONMENT_KIT_DIR}/{theme}/Materials/MI_{theme}_{suffix}"
+            instance = create_material_instance(
+                material_path,
+                ENV_MASTER,
+                texture=texture,
+                use_world_space_uvs=True,
+                projection_axes=axes,
+                world_space_tile_size=300.0,
+            )
+            created.append(
+                {
+                    "theme": theme,
+                    "surface": suffix,
+                    "material": instance.get_path_name(),
+                    "texture": texture.get_path_name(),
+                    "bUseWorldSpaceUVs": True,
+                    "ProjectionAxes": [axes.r, axes.g, axes.b, axes.a],
+                    "WorldSpaceTileSize": 300.0,
+                    "placeholder_note": note,
+                }
+            )
+            placeholder_lines.append(f"- `{instance.get_path_name()}` -> `{texture.get_path_name()}` ({note}; SHARED TEST-ROOM TEXTURE, REPLACE ONLY IF VISUAL TUNING CALLS FOR IT)")
+        placeholder_lines.append("")
+
+    result = {
+        "environment_kit_material_instances": created,
+        "texture_strategy": "All themes intentionally reuse existing test-room wall/floor textures for this implementation pass.",
+    }
+    (OUT_DIR / "environment_kit_material_instances_verify.json").write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8")
+    (MAP_TRANSITION_DIR / "PlaceholderTextureManifest.md").write_text(
+        "\n".join(placeholder_lines).rstrip() + "\n",
+        encoding="utf-8")
+    unreal.EditorAssetLibrary.save_directory(ENVIRONMENT_KIT_DIR, only_if_is_dirty=False, recursive=True)
+    log(json.dumps(result, sort_keys=True))
+    return result
+
+
 def create_distance_test_material() -> dict[str, str]:
     create_outline_master(DISTANCE_TEST_MATERIAL)
     result = {
@@ -605,8 +722,12 @@ def main() -> int:
         result["outline_master"] = {"outline_master": create_outline_master(OUTLINE_MASTER).get_path_name()}
     if mode in {"masters", "all"}:
         result["masters"] = create_masters()
+    if mode in {"environment_master", "env_master"}:
+        result["environment_master"] = {"environment_master": create_environment_master().get_path_name()}
     if mode in {"instances", "all"}:
         result["instances"] = create_instances()
+    if mode in {"environment_kit_instances", "env_kit_instances", "all"}:
+        result["environment_kit_instances"] = create_environment_kit_instances()
     if mode in {"delete_distance_test", "all"}:
         delete_distance_test_material()
     (OUT_DIR / "phase1c_toon_material_setup_verify.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")

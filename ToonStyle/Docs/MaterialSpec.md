@@ -36,10 +36,10 @@ Parameters:
 - `RampStep2` Scalar
 - `ShadeColor` Vector
 - `MidtoneColor` Vector
-- `LitColor` Vector
+- `LitColor` Vector, default `(0.85, 0.85, 0.85, 1.0)`
 - `RimColor` Vector
 - `RimPower` Scalar
-- `RimStrength` Scalar
+- `RimStrength` Scalar, default `0.21`
 
 Graph:
 
@@ -52,6 +52,8 @@ Graph:
 - Vertex color R into `ThresholdOffset`.
 - Custom node includes `/Project/ToonStyle/ToonShadingCommon.ush`.
 - Custom node calls `ToonCharacterShade(...)`.
+- `TintTexture` is floored with `max(TintColor, float3(0.4, 0.4, 0.4))` before the shader function call.
+- Character diffuse contribution is `(BaseColor * TintColor * 1.5 * Ramp) + (RimColor * Rim)`.
 - Inner line composition is alpha-blended overlay inside `ToonCharacterShade`: `lerp(LitOutput, InnerLineColor, saturate(InnerLineMask * InnerLineStrength))`. A black default texture therefore evaluates to `LineAlpha=0` and is a visible no-op.
 - Custom output goes to Emissive Color.
 
@@ -71,17 +73,26 @@ Parameters:
 - `BaseColorTexture` Texture2D
 - `UVTileU` Scalar
 - `UVTileV` Scalar
+- `bUseWorldSpaceUVs` Static Switch, default `false`
+- `ProjectionAxes` Vector, default `(1, 1, 0, 0)`
+- `WorldSpaceTileSize` Scalar, default `100.0`
 - `LightDirection` Vector
 - `RampStep1` Scalar
 - `RampStep2` Scalar
-- `ShadeColor` Vector
-- `MidtoneColor` Vector
-- `LitColor` Vector
+- `EnvShadeColor` Vector
+- `EnvMidtoneColor` Vector
+- `EnvLitColor` Vector
 
 Graph:
 
 - Texture coordinate U and V are split, multiplied independently by `UVTileU` and `UVTileV`, then appended back into tiled UVs.
-- Tiled UV samples `BaseColorTexture`.
+- Static switch `bUseWorldSpaceUVs=false` preserves the legacy mesh-UV path above. This is the default so existing test-room material instances remain unchanged.
+- Static switch `bUseWorldSpaceUVs=true` uses planar world-space UVs from `AbsoluteWorldPosition` divided by `WorldSpaceTileSize`.
+- `ProjectionAxes` selects the projection plane for world-space UVs:
+  - `(1, 1, 0)` = floor/ceiling projection onto XY, ignoring Z.
+  - `(1, 0, 1)` = XZ wall projection, ignoring Y. Use for walls that run along X with normals along Y.
+  - `(0, 1, 1)` = YZ wall projection, ignoring X. Use for walls that run along Y with normals along X.
+- Final UV samples `BaseColorTexture`.
 - Pixel normal world space into `N`.
 - Custom node includes `/Project/ToonStyle/ToonShadingCommon.ush`.
 - Custom node calls `ToonEnvironmentShade(...)`.
@@ -105,7 +116,7 @@ Parameters:
 - `OutlineReferenceDistance` Scalar
 - `OutlineFOVTanHalf` Scalar
 - `OutlineReferenceFOVTanHalf` Scalar
-- `OutlineDepthOffsetScalar` Scalar
+- `OutlineDepthOffsetScalar` Scalar, default `2.5`
 - `OutlineWidth` Scalar, legacy compatibility alias set by C++ but not consumed by the production graph
 
 Graph:

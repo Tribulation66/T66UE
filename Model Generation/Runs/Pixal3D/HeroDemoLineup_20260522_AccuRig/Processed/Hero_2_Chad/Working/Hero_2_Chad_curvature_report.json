@@ -1,0 +1,24 @@
+{
+  "asset": "Hero_2_Chad",
+  "codex_opinion": "edge-angle divergence produced non-degenerate curvature suitable for mechanical tool activation",
+  "curvature": {
+    "boundary_edges": 91723,
+    "count": 150468,
+    "edge_samples": 249089,
+    "max": 1.0,
+    "mean": 0.25295365658004787,
+    "method": "edge_face_angle_divergence_abs_normalized_p95",
+    "min": 0.0,
+    "normalization_scale_raw_p95": 0.19917657822414506,
+    "percentiles": {
+      "p05": 0.0,
+      "p25": 0.05885070820227379,
+      "p50": 0.1614011791467993,
+      "p75": 0.35869235626609197,
+      "p90": 0.6573194190883034,
+      "p95": 0.9322937435859875,
+      "p99": 1.0
+    },
+    "std": 0.266388069150423
+  }
+}

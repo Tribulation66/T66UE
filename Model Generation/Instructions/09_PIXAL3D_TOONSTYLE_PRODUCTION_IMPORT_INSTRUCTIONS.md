@@ -62,9 +62,9 @@ X-Resolution: 1536
 X-Texture-Size: 4096
 X-Decimation: 200000
 X-Remesh: 1
-X-Export-Fallback: 1
+X-Export-Fallback: 0
 X-Fallback-Decimation: 80000
-X-Safe-Fill-Holes-Fallback: 1
+X-Safe-Fill-Holes-Fallback: 0
 X-SS-Steps: 25
 X-SS-Guidance: 7.5
 X-Shape-Steps: 25
@@ -74,10 +74,19 @@ X-Tex-Guidance: 4.0
 ```
 
 `X-Decimation=200000` is the face target Pablo requested for production
-replacement assets. Lower values, no-remesh, or safe-fill-holes output are
-fallback states, not silent success states. If any fallback export path is used,
-record it in the manifest/report and decide whether the asset is acceptable or
-needs source-image regeneration.
+replacement assets. Strict production runs use halt-on-failure: lower values,
+no-remesh, or safe-fill-holes output are fallback states and fail verification
+for normal assets. If export fallback is needed for diagnosis, rerun with the
+wrapper and batch `--diagnostic-mode` flag; the run may continue, but the
+verifier still reports every actual fallback response header.
+
+Accepted-limitation cases are not wrapper defaults. Mark them per asset with
+`asset_class: "accepted-limitation"` or `accepted_limitation: true`, include
+`accepted_limitation_reason`, and keep the exception visible in the manifest and
+report. This matches the asset failure policy locked in
+`ToonStyle/Docs/Phase1C_FinalFoundationPass_Report.md`: failures halt loudly and
+flag source regeneration unless a specific asset has a documented accepted
+limitation.
 
 ## Replacement Manifest
 
@@ -107,6 +116,7 @@ Every production Pixal3D GLB must run:
 
 ```powershell
 & "C:\Program Files\Blender Foundation\Blender 5.1\blender.exe" --background `
+  --python-exit-code 1 `
   --python "ToonStyle/BlenderScripts/run_toon_pipeline.py" -- `
   --input "<run>/Outputs/<asset_id>.glb" `
   --working-dir "SourceAssets/ToonStyle/Pixal3D/Production/<asset_id>/Working" `
@@ -129,6 +139,42 @@ The Blender stage is responsible for:
 - close-the-gap B authoring on outline mesh
 - inner-line texture bake
 - manifest readbacks
+
+Humanoid face/head normal transfer is disabled by default in production. Do not
+pass `--enable-humanoid-face-normal-transfer` unless Pablo explicitly authorizes
+an experiment.
+
+## AccuRig Textured Handoff For Humanoids
+
+The ToonStyle processing FBX intentionally strips texture references and exports
+a gray placeholder material because Unreal receives ToonStyle material instances,
+Tint, outline, and InnerLine textures through the production importer. Do not
+send that gray ToonStyle FBX to AccuRig when the rigging pass needs visible
+textures.
+
+For manual AccuRig character rigging, add a separate textured handoff step after
+Pixal3D GLB generation:
+
+```powershell
+python "Model Generation/Pixal3D/Scripts/export_accurig_textured_batch.py" `
+  --manifest "<run>/hero_demo_lineup_accuRig_manifest.json" `
+  --run-root "<run>" `
+  --blender-exe "C:\Program Files\Blender Foundation\Blender 5.1\blender.exe" `
+  --force
+```
+
+This step imports the raw Pixal3D GLB, normalizes the character to the manifest
+height, preserves GLB material image nodes, writes texture PNGs, and exports:
+
+- `<run>/AccuRig_Textured/<asset>/<asset>_Textured.fbx`
+- `<run>/AccuRig_Textured/<asset>/<asset>_Textured.obj`
+- `<run>/AccuRig_Textured/<asset>/<asset>_Textured.mtl`
+- `<run>/AccuRig_Textured/<asset>/Textures/*.png`
+
+For AccuRig, prefer the `_Textured.fbx` first. If AccuRig still drops FBX
+textures, import the `_Textured.obj` from the same asset folder so the `.mtl`
+can resolve the sibling `Textures` PNGs. Keep the whole per-asset folder
+together; moving only the OBJ or FBX can break external texture references.
 
 ## Unreal Import
 
@@ -156,7 +202,11 @@ or InnerLine parameters in the editor.
 The wrapper `verify` phase must fail for any non-accepted-limitation asset if:
 
 - generated GLB is missing or zero bytes
-- generation headers/status do not record the requested or fallback export path
+- generation headers/status are missing
+- `X-Pixal3D-Export-Label` is not `requested`
+- `X-Pixal3D-Export-Remesh` is `0` when the manifest requested remesh
+- `X-Pixal3D-Export-Decimation` differs from the manifest requested value
+- `X-Pixal3D-Export-Safe-Fill-Holes` is `1`
 - Blender manifest is missing
 - `foundation_pass.enabled` is not true
 - close-the-gap readback has `B_max <= 0` or `B_max > 1`

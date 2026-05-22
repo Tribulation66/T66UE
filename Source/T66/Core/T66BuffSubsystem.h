@@ -88,6 +88,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	bool IsStatMaxed(ET66HeroStatType StatType) const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Demo")
+	bool IsDemoDiplomaUpgradeLimitReached(ET66HeroStatType StatType) const;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Buffs")
 	FT66HeroStatBonuses GetPermanentBuffStatBonuses() const;
 
@@ -164,6 +167,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	int32 GetSingleUseBuffCost() const { return SingleUseBuffCostCC; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Demo")
+	bool AreSingleUseBuffPurchasesAllowed() const;
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool PurchaseSingleUseBuff(ET66SecondaryStatType StatType);

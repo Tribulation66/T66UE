@@ -191,12 +191,21 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	{
 		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 		{
+			GI->SelectedCompanionID = GI->ResolvePlayableCompanionID(GI->SelectedCompanionID);
 			PreviewedCompanionID = GI->SelectedCompanionID;
 		}
 	}
 	GeneratePlaceholderSkins();
 
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	if (T66GI)
+	{
+		AllHeroIDs = T66GI->GetAllHeroIDs();
+		if (!PreviewedHeroID.IsNone() && !AllHeroIDs.Contains(PreviewedHeroID))
+		{
+			PreviewedHeroID = T66GI->ResolvePlayableHeroID(PreviewedHeroID);
+		}
+	}
 	UT66SessionSubsystem* SessionSubsystem = T66GI ? T66GI->GetSubsystem<UT66SessionSubsystem>() : nullptr;
 	if (SessionSubsystem)
 	{
@@ -719,42 +728,39 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 
 	auto MakeDifficultyMenu = [this, Loc, T66GI, Difficulties]() -> TSharedRef<SWidget>
 	{
-		TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+		TArray<FT66FlatDropdownOptionData> Options;
 		for (ET66Difficulty Difficulty : Difficulties)
 		{
 			const FText Label = Loc ? Loc->GetText_Difficulty(Difficulty) : FText::FromString(TEXT("Easy"));
 			const bool bDifficultyPlayable = !T66GI || T66GI->IsDifficultyPlayable(Difficulty);
-			const ET66FlatState OptionState = !bDifficultyPlayable
+			FT66FlatDropdownOptionData Option;
+			Option.Label = Label;
+			Option.State = !bDifficultyPlayable
 				? ET66FlatState::Disabled
 				: (Difficulty == SelectedDifficulty ? ET66FlatState::Selected : ET66FlatState::Default);
-			Menu->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-			[
-				T66DemoModeUI::WrapWithComingSoonOverlay(
-				FT66FlatStyle::MakeFlatDropdownOptionButton(
-					OptionState,
-					Label,
-					bDifficultyPlayable
-						? FOnClicked::CreateLambda([this, Difficulty]()
-						{
-							SelectDifficulty(Difficulty);
-							FSlateApplication::Get().DismissAllMenus();
-							return FReply::Handled();
-						})
-						: FOnClicked(),
-					160.f,
-					56.f,
-					20),
-				!bDifficultyPlayable,
-				this,
-				HSName(TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown.Option.DemoOverlay")))
-			];
+			Option.bEnabled = bDifficultyPlayable;
+			Option.bShowUnavailableOverlay = !bDifficultyPlayable;
+			Option.UnavailableText = T66DemoModeUI::GetUnavailableContentText(this);
+			Option.MinWidth = 160.f;
+			Option.Height = 56.f;
+			Option.FontSize = 20;
+			Option.Tag = FName(*FString::Printf(TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown.Option.%d"), static_cast<int32>(Difficulty)));
+			Option.OverlayTag = FName(*FString::Printf(TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown.Option.%d.DemoOverlay"), static_cast<int32>(Difficulty)));
+			Option.OnClicked = FOnClicked::CreateLambda([this, Difficulty]()
+			{
+				SelectDifficulty(Difficulty);
+				FSlateApplication::Get().DismissAllMenus();
+				return FReply::Handled();
+			});
+			Options.Add(MoveTemp(Option));
 		}
-		return HSMakePanel(TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown.Menu"), ET66FlatState::Default, Menu, FMargin(6.f));
+		return HSMakePanel(
+			TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown.Menu"),
+			ET66FlatState::Default,
+			FT66FlatStyle::MakeFlatDropdownOptionsMenu(Options, 160.f, 56.f, 20, HSName(TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown.Options"))),
+			FMargin(6.f));
 	};
 
-	const FText DifficultyText = CurrentDifficultyOption.IsValid()
-		? FText::FromString(*CurrentDifficultyOption)
-		: FText::FromString(TEXT("Easy"));
 	const TSharedRef<SVerticalBox> DifficultyPanel = SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight()
 		[
@@ -762,7 +768,20 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		]
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
 		[
-			FT66FlatStyle::MakeFlatDropdown(ET66FlatState::Default, TAttribute<FText>(DifficultyText), MakeDifficultyMenu, false, 0.f, 56.f, 20, HSName(TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown")))
+			FT66FlatStyle::MakeFlatDropdown(
+				ET66FlatState::Default,
+				TAttribute<FText>::CreateLambda([this, Loc]()
+				{
+					return CurrentDifficultyOption.IsValid()
+						? FText::FromString(*CurrentDifficultyOption)
+						: (Loc ? Loc->GetText_Easy() : NSLOCTEXT("T66.Difficulty", "Easy", "Easy"));
+				}),
+				MakeDifficultyMenu,
+				false,
+				0.f,
+				56.f,
+				20,
+				HSName(TEXT("HeroSelection.BottomRow.DifficultyPanel.Dropdown")))
 		];
 
 	const TSharedRef<SConstraintCanvas> RightClusterCanvas = HSMakeCanvas();

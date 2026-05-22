@@ -100,13 +100,15 @@ ET66ReleaseVariant UT66ReleaseVariantSubsystem::GetEffectiveReleaseVariant() con
 		return ET66ReleaseVariant::FullGame;
 	}
 
-	if (FParse::Param(CommandLine, TEXT("T66Demo")) || FParse::Param(CommandLine, TEXT("T66SteamDemo")))
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+
+	if (Settings && Settings->bForceDemoMode)
 	{
 		return ET66ReleaseVariant::SteamDemo;
 	}
 
-	const UT66ReleaseVariantSettings* Settings = GetDefault<UT66ReleaseVariantSettings>();
-	if (Settings && Settings->ReleaseVariant == ET66ReleaseVariant::SteamDemo)
+	if ((!Settings || Settings->bAllowCommandLineDemoMode)
+		&& (FParse::Param(CommandLine, TEXT("T66Demo")) || FParse::Param(CommandLine, TEXT("T66SteamDemo"))))
 	{
 		return ET66ReleaseVariant::SteamDemo;
 	}
@@ -135,6 +137,11 @@ bool UT66ReleaseVariantSubsystem::IsSteamDemoBuild() const
 	return GetEffectiveReleaseVariant() == ET66ReleaseVariant::SteamDemo;
 }
 
+bool UT66ReleaseVariantSubsystem::IsDemoModeActive() const
+{
+	return IsSteamDemoBuild();
+}
+
 bool UT66ReleaseVariantSubsystem::IsHeroAllowed(FName HeroID) const
 {
 	if (!IsSteamDemoBuild() || HeroID.IsNone())
@@ -142,13 +149,29 @@ bool UT66ReleaseVariantSubsystem::IsHeroAllowed(FName HeroID) const
 		return true;
 	}
 
-	const UT66ReleaseVariantSettings* Settings = GetDefault<UT66ReleaseVariantSettings>();
-	if (!Settings || Settings->DemoAllowedHeroIDs.Num() == 0)
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	if (!Settings || Settings->AllowedHeroIDs.Num() == 0)
 	{
 		return true;
 	}
 
-	return Settings->DemoAllowedHeroIDs.Contains(HeroID);
+	return Settings->AllowedHeroIDs.Contains(HeroID);
+}
+
+bool UT66ReleaseVariantSubsystem::IsCompanionAllowed(FName CompanionID) const
+{
+	if (!IsSteamDemoBuild() || CompanionID.IsNone())
+	{
+		return true;
+	}
+
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	if (!Settings || Settings->AllowedCompanionIDs.Num() == 0)
+	{
+		return true;
+	}
+
+	return Settings->AllowedCompanionIDs.Contains(CompanionID);
 }
 
 bool UT66ReleaseVariantSubsystem::IsDifficultyAllowed(ET66Difficulty Difficulty) const
@@ -162,6 +185,38 @@ bool UT66ReleaseVariantSubsystem::IsDifficultyAllowed(ET66Difficulty Difficulty)
 	return PlayableDifficulties.Contains(Difficulty);
 }
 
+bool UT66ReleaseVariantSubsystem::IsArcadeGameAllowed(FName ArcadeGameID) const
+{
+	if (!IsSteamDemoBuild() || ArcadeGameID.IsNone())
+	{
+		return true;
+	}
+
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	if (!Settings || Settings->AllowedArcadeGameIDs.Num() == 0)
+	{
+		return true;
+	}
+
+	return Settings->AllowedArcadeGameIDs.Contains(ArcadeGameID);
+}
+
+bool UT66ReleaseVariantSubsystem::IsCasinoGameAllowed(FName CasinoGameID) const
+{
+	if (!IsSteamDemoBuild() || CasinoGameID.IsNone())
+	{
+		return true;
+	}
+
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	if (!Settings || Settings->AllowedCasinoGameIDs.Num() == 0)
+	{
+		return true;
+	}
+
+	return Settings->AllowedCasinoGameIDs.Contains(CasinoGameID);
+}
+
 TArray<FName> UT66ReleaseVariantSubsystem::FilterHeroIDs(const TArray<FName>& HeroIDs) const
 {
 	if (!IsSteamDemoBuild())
@@ -169,22 +224,47 @@ TArray<FName> UT66ReleaseVariantSubsystem::FilterHeroIDs(const TArray<FName>& He
 		return HeroIDs;
 	}
 
-	const UT66ReleaseVariantSettings* Settings = GetDefault<UT66ReleaseVariantSettings>();
-	if (!Settings || Settings->DemoAllowedHeroIDs.Num() == 0)
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	if (!Settings || Settings->AllowedHeroIDs.Num() == 0)
 	{
 		return HeroIDs;
 	}
 
 	TArray<FName> FilteredHeroIDs;
-	FilteredHeroIDs.Reserve(FMath::Min(HeroIDs.Num(), Settings->DemoAllowedHeroIDs.Num()));
+	FilteredHeroIDs.Reserve(FMath::Min(HeroIDs.Num(), Settings->AllowedHeroIDs.Num()));
 	for (const FName& HeroID : HeroIDs)
 	{
-		if (Settings->DemoAllowedHeroIDs.Contains(HeroID))
+		if (Settings->AllowedHeroIDs.Contains(HeroID))
 		{
 			FilteredHeroIDs.Add(HeroID);
 		}
 	}
 	return FilteredHeroIDs;
+}
+
+TArray<FName> UT66ReleaseVariantSubsystem::FilterCompanionIDs(const TArray<FName>& CompanionIDs) const
+{
+	if (!IsSteamDemoBuild())
+	{
+		return CompanionIDs;
+	}
+
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	if (!Settings || Settings->AllowedCompanionIDs.Num() == 0)
+	{
+		return CompanionIDs;
+	}
+
+	TArray<FName> FilteredCompanionIDs;
+	FilteredCompanionIDs.Reserve(FMath::Min(CompanionIDs.Num(), Settings->AllowedCompanionIDs.Num()));
+	for (const FName& CompanionID : CompanionIDs)
+	{
+		if (Settings->AllowedCompanionIDs.Contains(CompanionID))
+		{
+			FilteredCompanionIDs.Add(CompanionID);
+		}
+	}
+	return FilteredCompanionIDs;
 }
 
 TArray<ET66Difficulty> UT66ReleaseVariantSubsystem::GetPlayableDifficulties() const
@@ -194,15 +274,15 @@ TArray<ET66Difficulty> UT66ReleaseVariantSubsystem::GetPlayableDifficulties() co
 		return T66AllDifficulties();
 	}
 
-	const UT66ReleaseVariantSettings* Settings = GetDefault<UT66ReleaseVariantSettings>();
-	if (!Settings || Settings->DemoAllowedDifficultyIDs.Num() == 0)
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	if (!Settings || Settings->AllowedDifficultyIDs.Num() == 0)
 	{
 		return T66AllDifficulties();
 	}
 
 	TArray<ET66Difficulty> ParsedDifficulties;
-	ParsedDifficulties.Reserve(Settings->DemoAllowedDifficultyIDs.Num());
-	for (const FName& DifficultyID : Settings->DemoAllowedDifficultyIDs)
+	ParsedDifficulties.Reserve(Settings->AllowedDifficultyIDs.Num());
+	for (const FName& DifficultyID : Settings->AllowedDifficultyIDs)
 	{
 		ET66Difficulty ParsedDifficulty = ET66Difficulty::Easy;
 		if (ParseDifficultyName(DifficultyID, ParsedDifficulty))
@@ -214,6 +294,11 @@ TArray<ET66Difficulty> UT66ReleaseVariantSubsystem::GetPlayableDifficulties() co
 	return ParsedDifficulties.Num() > 0 ? ParsedDifficulties : T66AllDifficulties();
 }
 
+TArray<ET66Difficulty> UT66ReleaseVariantSubsystem::GetVisibleDifficulties() const
+{
+	return T66AllDifficulties();
+}
+
 ET66Difficulty UT66ReleaseVariantSubsystem::ResolvePlayableDifficulty(ET66Difficulty Difficulty) const
 {
 	const TArray<ET66Difficulty> PlayableDifficulties = GetPlayableDifficulties();
@@ -223,4 +308,38 @@ ET66Difficulty UT66ReleaseVariantSubsystem::ResolvePlayableDifficulty(ET66Diffic
 	}
 
 	return PlayableDifficulties.Num() > 0 ? PlayableDifficulties[0] : ET66Difficulty::Easy;
+}
+
+bool UT66ReleaseVariantSubsystem::IsDiplomaUpgradeAllowed(int32 CurrentUnlockedSteps) const
+{
+	if (!IsSteamDemoBuild())
+	{
+		return true;
+	}
+
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	const int32 MaxDemoUpgrades = Settings ? Settings->MaxDiplomaUpgradesPerStat : 1;
+	return CurrentUnlockedSteps < MaxDemoUpgrades;
+}
+
+bool UT66ReleaseVariantSubsystem::AreDrugPurchasesAllowed() const
+{
+	if (!IsSteamDemoBuild())
+	{
+		return true;
+	}
+
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	return Settings ? Settings->bAllowDrugPurchases : false;
+}
+
+FText UT66ReleaseVariantSubsystem::GetUnavailableContentText() const
+{
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	if (Settings && !Settings->UnavailableContentText.IsEmpty())
+	{
+		return FText::FromString(Settings->UnavailableContentText);
+	}
+
+	return NSLOCTEXT("T66.DemoMode", "UnavailableContent", "COMING SOON");
 }

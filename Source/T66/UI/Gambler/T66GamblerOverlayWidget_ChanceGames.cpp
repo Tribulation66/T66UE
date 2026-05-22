@@ -149,18 +149,33 @@ FReply UT66GamblerOverlayWidget::OnBackToMainGames()
 
 FReply UT66GamblerOverlayWidget::OnOpenLottery()
 {
+	if (!IsCasinoGameAllowed(FName(TEXT("Lottery"))))
+	{
+		return HandleBlockedCasinoGame();
+	}
+
 	SetPage(EGamblerPage::Lottery);
 	return FReply::Handled();
 }
 
 FReply UT66GamblerOverlayWidget::OnOpenPlinko()
 {
+	if (!IsCasinoGameAllowed(FName(TEXT("Plinko"))))
+	{
+		return HandleBlockedCasinoGame();
+	}
+
 	SetPage(EGamblerPage::Plinko);
 	return FReply::Handled();
 }
 
 FReply UT66GamblerOverlayWidget::OnOpenBoxOpening()
 {
+	if (!IsCasinoGameAllowed(FName(TEXT("BoxOpening"))))
+	{
+		return HandleBlockedCasinoGame();
+	}
+
 	SetPage(EGamblerPage::BoxOpening);
 	return FReply::Handled();
 }

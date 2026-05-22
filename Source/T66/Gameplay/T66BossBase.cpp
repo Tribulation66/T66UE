@@ -736,7 +736,7 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 			bool bApplied = Visuals->ApplyCharacterVisual(BossVisualID, GetMesh(), nullptr, true, false, false, VisualMesh);
 			if (!bApplied && BossVisualID != FName(TEXT("Boss")))
 			{
-				bApplied = Visuals->ApplyCharacterVisual(FName(TEXT("Boss")), GetMesh(), VisualMesh, true);
+				bApplied = Visuals->ApplyCharacterVisual(FName(TEXT("Boss")), GetMesh(), VisualMesh, true, false, false, VisualMesh);
 			}
 			if (USkeletalMeshComponent* SkelMesh = GetMesh())
 			{

@@ -1,8 +1,0 @@
-{
-  "exit_code": 1,
-  "finished_at": "2026-05-17T19:23:05.353130+00:00",
-  "manifest_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CNewPod/03_slime_original_lowvram/manifest.json",
-  "ok": false,
-  "started_at": "2026-05-17T19:19:52.743565+00:00",
-  "status_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CNewPod/03_slime_original_lowvram/Logs/pixal3d_generation_status.jsonl"
-}

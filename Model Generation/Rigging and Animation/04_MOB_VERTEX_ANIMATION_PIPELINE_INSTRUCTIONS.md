@@ -4,7 +4,7 @@
 
 Create professional mob animation sources that bake to vertex animation textures for runtime, so T66 can display many enemies at once without paying per-enemy skeletal animation cost.
 
-This is not the humanoid hero pipeline. Use armatures, Rigify, Rigodotify, shape keys, lattices, constraints, or simulations inside Blender when they help author the motion, but the runtime deliverable for normal mobs is a static mesh driven by vertex baked animation data.
+Use armatures, shape keys, lattices, constraints, or simulations inside Blender when they help author the motion, but the runtime deliverable for normal mobs is a static mesh driven by vertex baked animation data.
 
 ## When To Use This
 
@@ -15,7 +15,7 @@ Use this pipeline for:
 - blobs, insects, spiders, bats, quadrupeds, statues, swarms, wisps, and other non-humanoid silhouettes
 - any mob that needs many on-screen copies
 
-Do not use this pipeline as a shortcut for playable heroes or humanoid companions that need live skeletal gameplay slots. For those, use `02_HERO_ANIMATION_PIPELINE_INSTRUCTIONS.md`.
+Do not use this pipeline for playable heroes or humanoid companions. The user is handling those manually outside this automated mob/VAT path.
 
 ## Required Read Order
 
@@ -25,9 +25,10 @@ Before editing or generating mob animation assets, read:
 2. `00_RIGGING_ANIMATION_ROUTING_INSTRUCTIONS.md`
 3. `03_FINDINGS_AND_LIMITATIONS_REFERENCE.md`
 4. this file
-5. the batch file for the requested difficulty, such as `05_EASY_MOB_VERTEX_ANIMATION_BATCH_INSTRUCTIONS.md`
-6. `../Instructions/05_UNREAL_IMPORT_AND_VALIDATION_INSTRUCTIONS.md` before any Unreal import or playable wiring
-7. the relevant Gameplay instruction files when runtime behavior or stage data is touched
+5. `06_MOB_ANIMATION_GUIDELINES.md`
+6. the batch file for the requested difficulty, such as `05_EASY_MOB_VERTEX_ANIMATION_BATCH_INSTRUCTIONS.md`
+7. `../Instructions/05_UNREAL_IMPORT_AND_VALIDATION_INSTRUCTIONS.md` before any Unreal import or playable wiring
+8. the relevant Gameplay instruction files when runtime behavior or stage data is touched
 
 Also read any `pending_issues_*.md` file in every folder you touch.
 
@@ -112,7 +113,7 @@ Keep bake-only skeletal assets out of live `CharacterVisuals.csv` rows unless a 
 Current repo-proven notes:
 
 - Enable `AnimToTexture` in `T66.uproject` before running the import tooling.
-- `UnrealEditor-Cmd.exe -run=pythonscript` can inspect assets, but FBX import through this path can fail with a Slate application assertion. Use full `UnrealEditor.exe -ExecutePythonScript=...` for FBX import/bake work.
+- `UnrealEditor-Cmd.exe -run=pythonscript` can inspect many assets, but FBX import through this path can fail with a Slate application assertion and generated static mesh UV-channel reads can report zero channels. Use full `UnrealEditor.exe -ExecutePythonScript=...` for FBX import/bake work and UV2-sensitive VAT verification.
 - Use `Scripts/RunRiggingAnimationToolAndExit.py` with `T66_RIGGING_ANIMATION_TOOL_SCRIPT` and `T66_RIGGING_ANIMATION_TOOL_QUIT_EDITOR=1` for full-editor automation under paths with spaces.
 - Pass Unreal Python script paths with forward slashes. Backslash script paths can be mangled by command-line escaping, and Python docstrings containing Windows paths must be raw strings or use escaped backslashes.
 - Scan `/AnimToTexture`, `/AnimToTexture/Characters`, and `/AnimToTexture/Materials` in the asset registry before loading plugin sample assets.
@@ -223,7 +224,7 @@ Every completed mob pass must update:
 ## Prohibited Shortcuts
 
 - Do not wire bake-only skeletal assets into live mob rows as if they are final runtime visuals.
-- Do not reuse hero animation clips on non-humanoid mobs unless the body plan and behavior actually match.
+- Do not reuse humanoid animation clips on non-humanoid mobs unless the body plan and behavior actually match.
 - Do not mark a mob done because it has any motion. The motion must fit the enemy's gameplay read.
 - Do not use an exploratory source asset for final content without documenting visual and runtime acceptance.
 - Do not skip multi-angle Blender QA.

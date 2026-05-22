@@ -14,6 +14,7 @@
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SGridPanel.h"
+#include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Notifications/SProgressBar.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
@@ -98,6 +99,43 @@ namespace
 			bInitialized = true;
 		}
 		return Style;
+	}
+
+	struct FFlatDropdownMenuContext
+	{
+		float Width = 0.f;
+		float Height = 42.f;
+		int32 FontSize = 20;
+	};
+
+	TArray<FFlatDropdownMenuContext> GFlatDropdownMenuContextStack;
+
+	class FScopedFlatDropdownMenuContext
+	{
+	public:
+		FScopedFlatDropdownMenuContext(const float InWidth, const float InHeight, const int32 InFontSize)
+		{
+			GFlatDropdownMenuContextStack.Add({
+				InWidth,
+				InHeight > 0.f ? InHeight : 42.f,
+				InFontSize > 0 ? InFontSize : 20
+			});
+		}
+
+		~FScopedFlatDropdownMenuContext()
+		{
+			if (GFlatDropdownMenuContextStack.Num() > 0)
+			{
+				GFlatDropdownMenuContextStack.Pop(EAllowShrinking::No);
+			}
+		}
+	};
+
+	const FFlatDropdownMenuContext* GetActiveFlatDropdownMenuContext()
+	{
+		return GFlatDropdownMenuContextStack.Num() > 0
+			? &GFlatDropdownMenuContextStack.Last()
+			: nullptr;
 	}
 
 	const FProgressBarStyle& FlatProgressBarStyle()
@@ -327,6 +365,7 @@ namespace
 				.SetPadding(FMargin(0.f))
 				.SetEnabled(IsEnabled)
 				.SetMinWidth(MinWidth)
+				.SetWidth(MinWidth)
 				.SetHeight(Height));
 		BindHoverProbe(ButtonHoverProbe, Button);
 		return FT66FlatStyle::AttachMetadata(Button, Tag, IntendedRole, State, TOptional<FLinearColor>(), bHasClickHandler, ToggleGroup, false, bHoverCapable);
@@ -1417,6 +1456,81 @@ TSharedRef<SWidget> FT66FlatStyle::MakeFlatButton(
 	return MakeFlatButton(State, TAttribute<FText>(Label), MoveTemp(OnClicked), OptionalLeftIcon, OptionalRightIcon, Padding, MinWidth, Height, IsEnabled, FontSize, Tag, ToggleGroup);
 }
 
+TSharedRef<SWidget> FT66FlatStyle::MakeFlatUnavailablePanel(
+	const FText& Text,
+	const FName Tag,
+	const float MaxWidth,
+	const int32 FontSize)
+{
+	const TSharedRef<SWidget> TextContent =
+		SNew(SBox)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SNew(SBox)
+			.MaxDesiredWidth(MaxWidth > 0.f ? MaxWidth : 220.f)
+			[
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					SNew(STextBlock)
+					.Text(Text)
+					.Font(MakeBoldFont(FontSize > 0 ? FontSize : 20))
+					.ColorAndOpacity(FSlateColor(PrimaryText()))
+					.Justification(ETextJustify::Center)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)
+				]
+			]
+		];
+
+	return AttachMetadata(
+		MakeFlatPanel(ET66FlatState::Selected, FMargin(8.f, 3.f), TextContent),
+		Tag,
+		TEXT("UnavailablePanel"),
+		ET66FlatState::Disabled);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::WrapWithFlatUnavailableOverlay(
+	const TSharedRef<SWidget>& Content,
+	const bool bShowOverlay,
+	const FText& OverlayText,
+	const FName Tag,
+	const bool bBlockInteraction)
+{
+	if (!bShowOverlay)
+	{
+		return Content;
+	}
+
+	const TSharedRef<SWidget> ProtectedContent = bBlockInteraction
+		? StaticCastSharedRef<SWidget>(SNew(SBox).IsEnabled(false)[Content])
+		: Content;
+
+	return AttachMetadata(
+		SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			ProtectedContent
+		]
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Fill)
+		[
+			SNew(SBox)
+			.Visibility(bBlockInteraction ? EVisibility::Visible : EVisibility::HitTestInvisible)
+			[
+				MakeFlatUnavailablePanel(
+					OverlayText,
+					Tag.IsNone() ? NAME_None : FName(*(Tag.ToString() + TEXT(".Panel"))))
+			]
+		],
+		Tag,
+		TEXT("UnavailableOverlay"),
+		ET66FlatState::Disabled);
+}
+
 TSharedRef<SWidget> FT66FlatStyle::MakeFlatToggleGroupButton(
 	const ET66FlatState State,
 	const TSharedRef<SWidget>& Content,
@@ -1665,15 +1779,21 @@ TSharedRef<SWidget> FT66FlatStyle::MakeFlatTooltipIcon(
 	const FSlateBrush* Icon,
 	const FText& TooltipText,
 	const FVector2D& SizeHint,
-	const FName Tag)
+	const FName Tag,
+	FOnClicked OnClicked)
 {
+	if (!OnClicked.IsBound())
+	{
+		OnClicked = FOnClicked::CreateLambda([]()
+		{
+			return FReply::Handled();
+		});
+	}
+
 	TSharedRef<SWidget> IconButton = MakeFlatIconButton(
 		State,
 		Icon,
-		FOnClicked::CreateLambda([]()
-		{
-			return FReply::Handled();
-		}),
+		MoveTemp(OnClicked),
 		SizeHint,
 		Tag);
 
@@ -1784,6 +1904,174 @@ TSharedRef<SWidget> FT66FlatStyle::MakeFlatActionRow(
 	return AttachMetadata(Row, Tag, TEXT("ActionRow"), ET66FlatState::Default);
 }
 
+float FT66FlatStyle::GetActiveDropdownMenuWidth(const float Fallback)
+{
+	if (const FFlatDropdownMenuContext* Context = GetActiveFlatDropdownMenuContext())
+	{
+		return Context->Width > 0.f ? Context->Width : Fallback;
+	}
+	return Fallback;
+}
+
+float FT66FlatStyle::GetActiveDropdownMenuHeight(const float Fallback)
+{
+	if (const FFlatDropdownMenuContext* Context = GetActiveFlatDropdownMenuContext())
+	{
+		return Context->Height > 0.f ? Context->Height : Fallback;
+	}
+	return Fallback;
+}
+
+int32 FT66FlatStyle::GetActiveDropdownMenuFontSize(const int32 Fallback)
+{
+	if (const FFlatDropdownMenuContext* Context = GetActiveFlatDropdownMenuContext())
+	{
+		return Context->FontSize > 0 ? Context->FontSize : Fallback;
+	}
+	return Fallback;
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeFlatDropdownMenuPanel(
+	const TSharedRef<SWidget>& Options,
+	const float MinWidth)
+{
+	const float ResolvedWidth = MinWidth > 0.f
+		? MinWidth
+		: GetActiveDropdownMenuWidth(0.f);
+	TSharedRef<SWidget> MenuContent = ResolvedWidth > 0.f
+		? StaticCastSharedRef<SWidget>(
+			SNew(SBox)
+			.WidthOverride(ResolvedWidth)
+			[
+				Options
+			])
+		: Options;
+
+	return MakeFlatPanel(ET66FlatState::Default, FMargin(0.f), MenuContent);
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeFlatDropdownOptionButton(
+	const ET66FlatState State,
+	const FText& Label,
+	FOnClicked OnClicked,
+	const float MinWidth,
+	const float Height,
+	const int32 FontSize,
+	const FName Tag,
+	const FName ToggleGroup)
+{
+	const float ResolvedWidth = MinWidth > 0.f ? MinWidth : GetActiveDropdownMenuWidth(0.f);
+	const float ResolvedHeight = Height > 0.f ? Height : GetActiveDropdownMenuHeight(42.f);
+	const int32 ResolvedFontSize = FontSize > 0 ? FontSize : GetActiveDropdownMenuFontSize(20);
+	const bool bHasClickHandler = OnClicked.IsBound();
+	const TAttribute<bool> IsEnabled(State != ET66FlatState::Disabled);
+	const TSharedPtr<TWeakPtr<SWidget>> ButtonHoverProbe = MakeHoverProbe();
+	TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.f)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SNew(STextBlock)
+			.Text(Label)
+			.Font(MakeBoldFont(ResolvedFontSize))
+			.ColorAndOpacity(MakeInteractiveTextColorAttribute(State, IsEnabled, ButtonHoverProbe))
+			.Justification(ETextJustify::Center)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds)
+		];
+
+	const TSharedRef<SWidget> ButtonSurface = MakeFlatPanelSurface(State, FMargin(10.f, 4.f), Row, nullptr, nullptr, IsEnabled, ButtonHoverProbe);
+	FT66BareButtonParams ButtonParams(MoveTemp(OnClicked), ButtonSurface);
+	ButtonParams
+		.SetButtonStyle(&FlatNoBorderButtonStyle())
+		.SetPadding(FMargin(0.f))
+		.SetEnabled(IsEnabled)
+		.SetClickMethod(EButtonClickMethod::MouseDown)
+		.SetDebounceClick(false);
+	if (ResolvedWidth > 0.f)
+	{
+		ButtonParams.SetWidth(ResolvedWidth);
+	}
+	if (ResolvedHeight > 0.f)
+	{
+		ButtonParams.SetHeight(ResolvedHeight);
+	}
+
+	TSharedRef<SWidget> Button = FT66Style::MakeBareButton(ButtonParams);
+	BindHoverProbe(ButtonHoverProbe, Button);
+	Button = AttachMetadata(
+		Button,
+		Tag,
+		TEXT("DropdownOption"),
+		State,
+		TOptional<FLinearColor>(),
+		bHasClickHandler,
+		ToggleGroup,
+		false,
+		bHasClickHandler && State != ET66FlatState::Disabled);
+
+	if (ResolvedWidth > 0.f)
+	{
+		return SNew(SBox)
+			.WidthOverride(ResolvedWidth)
+			[
+				Button
+			];
+	}
+	return Button;
+}
+
+TSharedRef<SWidget> FT66FlatStyle::MakeFlatDropdownOptionsMenu(
+	const TArray<FT66FlatDropdownOptionData>& Options,
+	const float MinWidth,
+	const float Height,
+	const int32 FontSize,
+	const FName Tag)
+{
+	TSharedRef<SVerticalBox> Menu = SNew(SVerticalBox);
+	for (const FT66FlatDropdownOptionData& Option : Options)
+	{
+		const float OptionWidth = Option.MinWidth > 0.f ? Option.MinWidth : MinWidth;
+		const float OptionHeight = Option.Height > 0.f ? Option.Height : Height;
+		const int32 OptionFontSize = Option.FontSize > 0 ? Option.FontSize : FontSize;
+		const bool bEnabled = Option.bEnabled && Option.State != ET66FlatState::Disabled;
+		const ET66FlatState OptionState = bEnabled ? Option.State : ET66FlatState::Disabled;
+		FOnClicked OptionClicked = bEnabled ? Option.OnClicked : FOnClicked();
+
+		TSharedRef<SWidget> OptionWidget = MakeFlatDropdownOptionButton(
+			OptionState,
+			Option.Label,
+			MoveTemp(OptionClicked),
+			OptionWidth,
+			OptionHeight,
+			OptionFontSize,
+			Option.Tag,
+			Option.ToggleGroup);
+
+		if (Option.bShowUnavailableOverlay)
+		{
+			OptionWidget = WrapWithFlatUnavailableOverlay(
+				OptionWidget,
+				true,
+				Option.UnavailableText.IsEmpty()
+					? NSLOCTEXT("T66.FlatStyle", "UnavailableFallback", "COMING SOON")
+					: Option.UnavailableText,
+				Option.OverlayTag,
+				true);
+		}
+
+		Menu->AddSlot()
+			.AutoHeight()
+			.Padding(0.f, 0.f, 0.f, 4.f)
+			[
+				OptionWidget
+			];
+	}
+
+	return AttachMetadata(Menu, Tag, TEXT("DropdownOptionsMenu"), ET66FlatState::Default);
+}
+
 TSharedRef<SWidget> FT66FlatStyle::MakeFlatDropdown(
 	const ET66FlatState State,
 	const TAttribute<FText>& CurrentValueText,
@@ -1797,44 +2085,58 @@ TSharedRef<SWidget> FT66FlatStyle::MakeFlatDropdown(
 	const ET66FlatState RenderState = bForceSelectedState ? ET66FlatState::Selected : State;
 	const TAttribute<bool> IsEnabled(State != ET66FlatState::Disabled);
 	const TSharedPtr<TWeakPtr<SWidget>> DropdownHoverProbe = MakeHoverProbe();
+	TSharedRef<SHorizontalBox> ButtonRow = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.f)
+		.VAlign(VAlign_Center)
+		[
+			SNew(STextBlock)
+			.Text(CurrentValueText)
+			.Font(MakeBoldFont(FontSize))
+			.ColorAndOpacity(MakeInteractiveTextColorAttribute(RenderState, IsEnabled, DropdownHoverProbe))
+			.Justification(ETextJustify::Left)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.VAlign(VAlign_Center)
+		.Padding(8.f, 0.f, 0.f, 0.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(TEXT("v")))
+			.Font(MakeBoldFont(FMath::Max(12, FontSize - 4)))
+			.ColorAndOpacity(MakeInteractiveTextColorAttribute(RenderState, IsEnabled, DropdownHoverProbe))
+		];
+
+	TSharedRef<SWidget> ButtonSurface = MakeFlatPanelSurface(
+		RenderState,
+		FMargin(12.f, 7.f),
+		ButtonRow,
+		nullptr,
+		nullptr,
+		IsEnabled,
+		DropdownHoverProbe);
+
 	TSharedPtr<SComboButton> Combo;
 	SAssignNew(Combo, SComboButton)
 		.ComboButtonStyle(&FlatComboButtonStyle())
+		.MenuPlacement(MenuPlacement_BelowAnchor)
+		.HasDownArrow(false)
 		.ContentPadding(FMargin(0.f))
 		.IsEnabled(IsEnabled)
-		.OnGetMenuContent_Lambda([OptionsProvider = MoveTemp(OptionsProvider)]()
+		.OnGetMenuContent_Lambda([OptionsProvider = MoveTemp(OptionsProvider), MinWidth, Height, FontSize]()
 		{
-			return FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, FMargin(4.f), OptionsProvider());
+			FScopedFlatDropdownMenuContext Context(MinWidth, Height, FontSize);
+			return FT66FlatStyle::MakeFlatDropdownMenuPanel(OptionsProvider(), MinWidth);
 		})
 		.ButtonContent()
 		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.FillWidth(1.f)
-			.VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(CurrentValueText)
-				.Font(MakeBoldFont(FontSize))
-				.ColorAndOpacity(MakeInteractiveTextColorAttribute(RenderState, IsEnabled, DropdownHoverProbe))
-				.Justification(ETextJustify::Left)
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
-			.VAlign(VAlign_Center)
-			.Padding(8.f, 0.f, 0.f, 0.f)
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(TEXT("v")))
-				.Font(MakeBoldFont(FMath::Max(12, FontSize - 4)))
-				.ColorAndOpacity(MakeInteractiveTextColorAttribute(RenderState, IsEnabled, DropdownHoverProbe))
-			]
+			ButtonSurface
 		];
 	BindHoverProbe(DropdownHoverProbe, Combo.ToSharedRef());
 
 	return AttachMetadata(WrapInOptionalBox(
-		MakeFlatPanelSurface(RenderState, FMargin(12.f, 7.f), Combo.ToSharedRef(), nullptr, nullptr, IsEnabled, DropdownHoverProbe),
+		Combo.ToSharedRef(),
 		MinWidth,
 		Height), Tag, TEXT("Dropdown"), RenderState, TOptional<FLinearColor>(), true, NAME_None, false, RenderState != ET66FlatState::Disabled);
 }
@@ -1888,18 +2190,40 @@ TSharedRef<SWidget> FT66FlatStyle::MakeFlatCheckbox(
 {
 	const TAttribute<bool> IsEnabled(State != ET66FlatState::Disabled);
 	const TSharedPtr<TWeakPtr<SWidget>> CheckboxHoverProbe = MakeHoverProbe();
+	const FName SquareTag = Tag.IsNone() ? NAME_None : FName(*(Tag.ToString() + TEXT(".Square")));
+	auto IsChecked = [Checked]() { return Checked.Get() == ECheckBoxState::Checked; };
+	const TSharedRef<SWidget> Square = AttachMetadata(
+		SNew(SBox)
+		.WidthOverride(20.f)
+		.HeightOverride(20.f)
+		[
+			SNew(SBorder)
+			.BorderImage(FlatWhiteBrush())
+			.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([IsChecked]() { return FSlateColor(IsChecked() ? SelectedBorder() : DefaultBorder()); }))
+			.Padding(2.f)
+			[
+				SNew(SBorder)
+				.BorderImage(FlatWhiteBrush())
+				.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([IsChecked]() { return FSlateColor(IsChecked() ? SelectedBorder() : PanelInner()); }))
+			]
+		],
+		SquareTag,
+		TEXT("CheckboxSquare"),
+		State,
+		TOptional<FLinearColor>(),
+		false,
+		NAME_None,
+		false,
+		false);
+
 	TSharedPtr<SHorizontalBox> Row;
 	SAssignNew(Row, SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
 		.VAlign(VAlign_Center)
 		[
-			SNew(SCheckBox)
-			.IsChecked(Checked)
-			.IsEnabled(IsEnabled)
-			.OnCheckStateChanged(OnToggle)
+			Square
 		];
-	BindHoverProbe(CheckboxHoverProbe, Row.ToSharedRef());
 
 	if (OptionalLabel.IsSet())
 	{
@@ -1916,7 +2240,34 @@ TSharedRef<SWidget> FT66FlatStyle::MakeFlatCheckbox(
 			];
 	}
 
-	return AttachMetadata(MakeFlatPanelSurface(State, FMargin(8.f), Row.ToSharedRef(), nullptr, nullptr, IsEnabled, CheckboxHoverProbe), Tag, TEXT("Checkbox"), State, TOptional<FLinearColor>(), OnToggle.IsBound(), NAME_None, false, OnToggle.IsBound() && State != ET66FlatState::Disabled);
+	TSharedRef<SWidget> Content = SNew(SBorder)
+		.BorderImage(FCoreStyle::Get().GetBrush(TEXT("NoBrush")))
+		.Padding(OptionalLabel.IsSet() ? FMargin(12.f, 8.f) : FMargin(0.f))
+		[
+			Row.ToSharedRef()
+		];
+
+	FOnClicked ToggleClicked = FOnClicked::CreateLambda([Checked, OnToggle]() mutable
+	{
+		if (OnToggle.IsBound())
+		{
+			OnToggle.Execute(Checked.Get() == ECheckBoxState::Checked ? ECheckBoxState::Unchecked : ECheckBoxState::Checked);
+		}
+		return FReply::Handled();
+	});
+
+	FT66BareButtonParams ButtonParams(ToggleClicked, Content);
+	ButtonParams
+		.SetButtonStyle(&FlatNoBorderButtonStyle())
+		.SetPadding(FMargin(0.f))
+		.SetEnabled(IsEnabled)
+		.SetClickMethod(EButtonClickMethod::MouseDown)
+		.SetDebounceClick(false);
+
+	TSharedRef<SWidget> Button = FT66Style::MakeBareButton(ButtonParams);
+	BindHoverProbe(CheckboxHoverProbe, Button);
+
+	return AttachMetadata(Button, Tag, TEXT("CheckboxButton"), State, TOptional<FLinearColor>(), OnToggle.IsBound(), NAME_None, false, OnToggle.IsBound() && State != ET66FlatState::Disabled);
 }
 
 TSharedRef<SWidget> FT66FlatStyle::MakeFlatToggleButton(

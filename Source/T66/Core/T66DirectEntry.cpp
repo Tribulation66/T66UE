@@ -546,7 +546,7 @@ void T66DirectEntry::ApplyRequestToGameInstance(UT66GameInstance& GameInstance, 
 
 	GameInstance.SelectedPartySize = ET66PartySize::Solo;
 	GameInstance.SelectedHeroID = GameInstance.ResolvePlayableHeroID(Request.HeroID.IsNone() ? DefaultDirectHeroID : Request.HeroID);
-	GameInstance.SelectedCompanionID = Request.CompanionID;
+	GameInstance.SelectedCompanionID = GameInstance.ResolvePlayableCompanionID(Request.CompanionID);
 	GameInstance.SelectedDifficulty = GameInstance.ResolvePlayableDifficulty(Request.Difficulty);
 	GameInstance.SelectedHeroBodyType = ET66BodyType::Chad;
 	GameInstance.SelectedCompanionBodyType = ET66BodyType::Chad;

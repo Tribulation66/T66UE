@@ -1741,6 +1741,10 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<UStaticMesh> StaticMesh;
 
+	/** Optional inverted-hull outline sidecar mesh for static ToonStyle character visuals. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UStaticMesh> OutlineStaticMesh;
+
 	/** Pixelated texture used by QuadRetro static meshes at runtime. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<UTexture2D> PixelatedTextureAssetPath;

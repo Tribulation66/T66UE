@@ -143,6 +143,7 @@ TSharedRef<SWidget> UT66GameOverScreen::BuildSlateUI()
 			ET66FlatState::Default));
 
 	AddN(0.200f, 0.155f, 0.600f, 0.160f, Label(FName(TEXT("GameOver.Title")), NSLOCTEXT("T66.GameOver", "Title", "GAME OVER"), 86, Red, true));
+	AddN(0.250f, 0.292f, 0.500f, 0.045f, Label(FName(TEXT("GameOver.Subtitle")), NSLOCTEXT("T66.GameOver", "Subtitle", "YOU DIDED LIKE A DOG"), 30, White, true));
 
 	StatPanel(0.175f, FName(TEXT("GameOver.CouponsPanel")), NSLOCTEXT("T66.GameOver", "Coupons", "CHAD COUPONS"), Coupons);
 	StatPanel(0.398f, FName(TEXT("GameOver.AchievementsPanel")), NSLOCTEXT("T66.GameOver", "Achievements", "ACHIEVEMENTS"), Achievements);

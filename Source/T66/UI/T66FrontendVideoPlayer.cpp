@@ -115,7 +115,7 @@ bool UT66FrontendVideoPlayer::OpenVideo(const FT66FrontendVideoAsset& Asset, con
 	const FString AbsoluteMoviePath = T66FrontendVideoCatalog::ResolveMovieAbsolutePath(Asset.MoviePath);
 	CurrentDebugName = DebugName;
 
-	if (ShouldUsePosterSurfaceForRetainedCRT(this))
+	if (Asset.bPosterOnly || ShouldUsePosterSurfaceForRetainedCRT(this))
 	{
 		return OpenPosterSurface(Asset, ImageSize, DebugName);
 	}
@@ -227,7 +227,7 @@ bool UT66FrontendVideoPlayer::OpenPosterSurface(const FT66FrontendVideoAsset& As
 {
 	if (Asset.PosterPath.IsEmpty())
 	{
-		UE_LOG(LogT66FrontendVideo, Warning, TEXT("Frontend CRT video '%s' has no poster fallback; skipping retained media texture"), *DebugName.ToString());
+		UE_LOG(LogT66FrontendVideo, Warning, TEXT("Frontend video '%s' has no poster fallback; skipping poster surface"), *DebugName.ToString());
 		CloseVideo();
 		return false;
 	}
@@ -257,6 +257,6 @@ bool UT66FrontendVideoPlayer::OpenPosterSurface(const FT66FrontendVideoAsset& As
 
 	bHasOpenVideo = true;
 	bUsingPosterSurface = true;
-	UE_LOG(LogT66FrontendVideo, Log, TEXT("Frontend CRT video '%s' using poster surface '%s'"), *DebugName.ToString(), *CurrentPosterPath);
+	UE_LOG(LogT66FrontendVideo, Log, TEXT("Frontend video '%s' using poster surface '%s'"), *DebugName.ToString(), *CurrentPosterPath);
 	return true;
 }

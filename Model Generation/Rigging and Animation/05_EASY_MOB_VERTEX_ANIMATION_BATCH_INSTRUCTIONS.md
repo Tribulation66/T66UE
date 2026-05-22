@@ -77,6 +77,16 @@ Track this distinction in QA notes and in `Source/T66/Gameplay/Enemies/pending_i
 - Death: flatten, melt, or pop into a low puddle
 - Reject if it walks on invisible legs or bounces so high it stops reading as floor-dragging
 
+#### 2026-05-21 Accepted Move Direction
+
+- Baseline preview: `Model Generation/Rigging and Animation/Runs/Slime_MoveTowardBouncyStutterPreview_V2_20260521/Slime_MoveTowardCamera_preview.mp4`
+- Source front: `+Y`
+- Review camera: front-facing on `+Y`
+- Preview render: native Blender MP4, 72 frames, 15 fps, unlit/emissive material
+- Timing: every frame should visibly change; use stepped/constant-style motion for the crunchy low-frame read
+- Preview travel: move toward camera for review, while runtime actor translation remains gameplay-owned
+- Motion note: stronger bounce is desired, but the body must still read as a sticky ground blob instead of a hidden biped
+
 ### BoneWalker
 
 - Gameplay row: `FamilyID=Melee`, `Archetype=Melee`, `Feeling=Pressure`
@@ -85,8 +95,8 @@ Track this distinction in QA notes and in `Source/T66/Gameplay/Enemies/pending_i
 - Move: stiff biped shamble with small foot lifts and clear ground contact
 - AttackCue: arm/torso wind-up, jaw/head snap
 - HitReact: bone-rattle recoil
-- Death: collapse downward, not a clean hero fall
-- Reject if it uses polished hero locomotion without skeletal looseness
+- Death: collapse downward, not a clean player-style fall
+- Reject if it uses polished player locomotion without skeletal looseness
 
 ### RatPack
 
@@ -187,7 +197,7 @@ Run the first batch in this order:
 
 1. `Slime`: proves non-skeletal blob deformation and ground drag.
 2. `CaveBat`: proves flying/wing deformation and hover compatibility.
-3. `BoneWalker`: proves simple humanoid enemy VAT without using the hero pipeline.
+3. `BoneWalker`: proves simple humanoid enemy VAT without using player rigging.
 4. `RatPack`: proves swarm-like multi-part offset motion.
 5. `TombSpider`: proves many-leg crawl and contact QA.
 6. `HexSlinger`: proves ranged/caster cues.
@@ -249,10 +259,25 @@ Current runtime behavior:
 - Actor movement, collision, touch damage, hit reaction state, death handling, and pooling remain gameplay-owned.
 - VAT clip playback is currently per-enemy dynamic material instance playback. A later crowd-scaling pass can move this data to instanced rendering.
 
+## 2026-05-21 Slime Movement Preview Output
+
+Current accepted movement preview:
+
+```text
+Model Generation/Rigging and Animation/Runs/Slime_MoveTowardBouncyStutterPreview_V2_20260521/Slime_MoveTowardCamera_preview.mp4
+```
+
+Associated review assets:
+
+- `Model Generation/Rigging and Animation/Runs/Slime_MoveTowardBouncyStutterPreview_V2_20260521/Slime_MoveTowardCamera_bouncy_stutter_v2_contact_sheet.png`
+- `Model Generation/Rigging and Animation/Runs/Slime_MoveTowardBouncyStutterPreview_V2_20260521/Slime_MoveTowardCamera_bouncy_stutter_v2_autocrop_first16.png`
+
+This preview is accepted as the current Slime movement direction, not as final imported VAT content. The next Slime pass should apply the same style standard to idle before attack work.
+
 Current accepted warnings:
 
 - UE Python cannot reliably read the data asset `FVector3f` bounds for this plugin path, so verification treats material instance `MinBBox`/`SizeBBox` as authoritative and fails if CSV values do not match them.
-- Python verification could not prove static mesh UV channel `2` even though AnimToTexture generated valid position/normal textures and matching material parameters. Do not ignore this warning if playback or material sampling fails.
+- Commandlet Python UV inspection can report zero channels for generated VAT static meshes. Run `Tools/verify_easy_mob_vat_in_unreal.py` through the full editor wrapper for authoritative UV2 verification; a passing full-editor report should show LOD `0` with `3` UV channels.
 - The runtime assets are wired for in-game QA, but future release review must confirm visual and runtime quality before treating them as final mob art.
 
 Current staged smoke evidence:

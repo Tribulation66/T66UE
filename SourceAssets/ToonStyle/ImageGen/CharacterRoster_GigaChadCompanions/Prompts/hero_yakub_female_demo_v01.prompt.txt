@@ -1,9 +1,0 @@
-Create one full-body single-character source image for T66 model generation.
-
-Character: same original adult female Yakub-inspired giga chad hero as the regular version: mythic inventor-scholar-warrior, giant nephilim proportions, white/turquoise simplified cosmic scholar armor, geometric staff, huge heroic bust under full armor, huge readable head.
-
-Demo skin overlay: keep the regular outfit, but add a small cone birthday hat and a diagonal birthday sash across the torso. The sash must have large readable uppercase text: DEMO. Add a few simple birthday color accents, but do not redesign the outfit.
-
-Style: same T66 Hi-Fi-Rush/Guilty-Gear-like 2D-in-3D cel shading, hard cel-shadow bands, crisp ink contours, bold flat color zones, clean rim highlights.
-
-Pose/composition: strict front-facing A-pose, full body, white background, one subject only, staff fully visible, no crop, no logo, no environment, no contact shadow. Only visible text should be DEMO on the sash. No nudity.

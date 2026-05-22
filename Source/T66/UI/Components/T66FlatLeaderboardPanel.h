@@ -108,6 +108,7 @@ private:
 	FString CurrentBackendParty() const;
 	FString CurrentBackendDifficulty() const;
 	FString CurrentBackendFilter() const;
+	bool IsDifficultyPlayable(ET66Difficulty Difficulty) const;
 	FText GetHeaderText() const;
 	FText GetTimeDropdownText() const;
 	FText GetRuleDropdownText() const;

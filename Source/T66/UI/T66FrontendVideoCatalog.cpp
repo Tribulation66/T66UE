@@ -52,14 +52,21 @@ namespace
 		}
 
 		FString MoviePath;
-		if (!Object->TryGetStringField(TEXT("movie"), MoviePath) || MoviePath.TrimStartAndEnd().IsEmpty())
+		OutAsset.bPosterOnly = false;
+		Object->TryGetStringField(TEXT("movie"), MoviePath);
+		Object->TryGetStringField(TEXT("poster"), OutAsset.PosterPath);
+		Object->TryGetBoolField(TEXT("posterOnly"), OutAsset.bPosterOnly);
+		if (MoviePath.TrimStartAndEnd().IsEmpty() && !OutAsset.bPosterOnly)
 		{
 			return false;
 		}
 
 		OutAsset.MoviePath = MoviePath.TrimStartAndEnd();
-		Object->TryGetStringField(TEXT("poster"), OutAsset.PosterPath);
 		OutAsset.PosterPath = OutAsset.PosterPath.TrimStartAndEnd();
+		if (OutAsset.bPosterOnly && OutAsset.PosterPath.IsEmpty())
+		{
+			return false;
+		}
 		return true;
 	}
 

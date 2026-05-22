@@ -77,7 +77,7 @@ namespace
 AT66LootWheelInteractable::AT66LootWheelInteractable()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/LootWheel/LootWheel_Pixal3D.LootWheel_Pixal3D")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D.SM_LootWheel_Pixal3D")));
 
 	if (VisualMesh)
 	{

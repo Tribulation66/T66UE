@@ -8,81 +8,44 @@ Blender:
 C:\Program Files\Blender Foundation\Blender 5.1\blender.exe
 ```
 
-External cache:
+Mob animation workspace:
 
 ```text
-C:\UE\T66\Model Generation\Rigging and Animation\External
+C:\UE\T66\Model Generation\Rigging and Animation
 ```
 
-Reusable setup script:
+The previous humanoid rigging vendor setup is no longer part of the active mob workflow. Leave any local vendor cache in `External/` alone unless the user explicitly asks to clean it; do not route future mob work through those retired tools.
+
+## Blender Preview Requirements
+
+Mob previews should be rendered natively from Blender as MP4 files, not stitched from still frames. Use the current preview tool unless a mob needs a new specialized renderer:
 
 ```powershell
-.\Model Generation\Rigging and Animation\Tools\setup_rigging_animation_infrastructure.ps1
+& "C:\Program Files\Blender Foundation\Blender 5.1\blender.exe" --background --python "C:\UE\T66\Model Generation\Rigging and Animation\Tools\render_easy_mob_movement_preview.py" -- --enemy-id Slime --out-root "C:\UE\T66\Model Generation\Rigging and Animation\Runs\Slime_MoveTowardBouncyStutterPreview_V2_20260521" --frames 72 --fps 15 --width 1280 --height 720
 ```
 
-## Rigodotify
+Preview materials should use unlit/emissive display so the video represents the intended unlit game-read and does not hide form issues behind lighting.
 
-Rigodotify is pulled from GitHub:
+## Unreal VAT Tooling
 
-```powershell
-git clone https://github.com/catprisbrey/Rigodotify.git "C:\UE\T66\Model Generation\Rigging and Animation\External\Rigodotify"
-```
-
-Blender add-on installation needs a zip with a top-level `Rigodotify/` directory. A raw `git archive` without a prefix fails because `__init__.py` lands at zip root.
-
-Working package command:
-
-```powershell
-git -C "C:\UE\T66\Model Generation\Rigging and Animation\External\Rigodotify" archive --format=zip --prefix=Rigodotify/ --output="C:\UE\T66\Model Generation\Rigging and Animation\External\Rigodotify.zip" HEAD
-```
-
-Known Blender setup command:
-
-```powershell
-& "C:\Program Files\Blender Foundation\Blender 5.1\blender.exe" --background --python-expr "import bpy; bpy.ops.preferences.addon_enable(module='rigify'); bpy.ops.preferences.addon_install(filepath=r'C:\UE\T66\Model Generation\Rigging and Animation\External\Rigodotify.zip', overwrite=True); bpy.ops.preferences.addon_enable(module='Rigodotify'); bpy.ops.wm.save_userpref()"
-```
-
-## Quaternius Packages
-
-Current Downloads source files:
+UE 5.7 includes the Experimental AnimToTexture plugin at:
 
 ```text
-C:\Users\DoPra\Downloads\Universal Animation Library[Standard].zip
-C:\Users\DoPra\Downloads\Universal Animation Library 2[Standard].zip
-C:\Users\DoPra\Downloads\Universal Base Characters[Standard].zip
-C:\Users\DoPra\Downloads\Universal Animation Library[Source].zip
-C:\Users\DoPra\Downloads\Universal Animation Library 2[Source].zip
-C:\Users\DoPra\Downloads\Universal Base Characters[Source].zip
+C:\Program Files\Epic Games\UE_5.7\Engine\Plugins\Experimental\AnimToTexture
 ```
 
-Extracted cache:
+The project path for imported mob VAT data is documented in:
 
-```text
-External\Quaternius\Universal Animation Library Standard
-External\Quaternius\Universal Animation Library 2 Standard
-External\Quaternius\Universal Base Characters Standard
-External\Quaternius\Universal Animation Library Source
-External\Quaternius\Universal Animation Library 2 Source
-External\Quaternius\Universal Base Characters Source
-```
+- `04_MOB_VERTEX_ANIMATION_PIPELINE_INSTRUCTIONS.md`
+- `05_EASY_MOB_VERTEX_ANIMATION_BATCH_INSTRUCTIONS.md`
 
-## GLTF / GLB Note
-
-The Quaternius setup note says Unreal exports use GLTF/GLB because rigged FBX from Blender can trigger a scaling bug and break retargeting in some cases. Prefer GLTF/GLB for Quaternius reference import/export unless a specific Unreal import test proves FBX is safer for a T66 target.
-
-For Unreal import, use the package guidance:
-
-- leave the skeleton unset on first import when creating the library skeleton
-- enable import animations
-- use 30 kHz to bake bone animation
-- snap to closest frame boundary
-
-Use Source `.blend` files for editable animation work. Use GLTF/GLB for Unreal library import/export tests when retargeting or scale fidelity is the main concern.
+Use `Tools/import_easy_mob_vat_to_unreal.py` and `Tools/verify_easy_mob_vat_in_unreal.py` for the current Easy mob VAT path.
 
 ## Reverification
 
-After changing Blender version, Rigodotify commit, or Quaternius packages:
+After changing Blender, Unreal, the VAT import tool, or the preview renderer:
 
-1. Re-run add-on enable/install check.
-2. Run `Tools/inspect_animation_assets.py` on the core Quaternius files.
-3. Update `03_FINDINGS_AND_LIMITATIONS_REFERENCE.md` with any behavior change.
+1. Render a short Slime movement preview.
+2. Compile the changed Python scripts.
+3. If Unreal assets or data rows changed, run the matching VAT verifier.
+4. If playable content changed, refresh the staged standalone build per the root rule.

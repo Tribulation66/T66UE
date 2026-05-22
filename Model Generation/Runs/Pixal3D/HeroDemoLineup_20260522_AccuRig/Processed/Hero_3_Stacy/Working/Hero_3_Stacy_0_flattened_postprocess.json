@@ -1,0 +1,102 @@
+{
+  "dependency_path": "external_python_pillow_scipy",
+  "final_palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        11,
+        8,
+        8
+      ],
+      [
+        7,
+        27,
+        43
+      ],
+      [
+        107,
+        52,
+        19
+      ],
+      [
+        145,
+        7,
+        13
+      ],
+      [
+        146,
+        105,
+        89
+      ],
+      [
+        214,
+        210,
+        208
+      ]
+    ],
+    "palette_size": 6
+  },
+  "height": 4096,
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_3_Stacy\\Working\\Hero_3_Stacy_0_flattened.png",
+  "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_3_Stacy\\Working\\Hero_3_Stacy_0_flattened.png",
+  "palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        11,
+        8,
+        8
+      ],
+      [
+        7,
+        27,
+        43
+      ],
+      [
+        107,
+        52,
+        19
+      ],
+      [
+        145,
+        7,
+        13
+      ],
+      [
+        146,
+        105,
+        89
+      ],
+      [
+        214,
+        210,
+        208
+      ]
+    ],
+    "palette_size": 6
+  },
+  "speckle_cleanup": {
+    "applied": true,
+    "changed_pixels": 157324,
+    "diff_threshold": 42.0,
+    "method": "3x3_local_median_high_contrast_pixel_replacement",
+    "prompt_region_threshold_reference": 8
+  },
+  "tint": {
+    "generated": true,
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_3_Stacy\\Working\\Hero_3_Stacy_Tint.png",
+    "saturation_scale": 1.1,
+    "value_scale": 0.6
+  },
+  "unique_rgb_after": 4,
+  "unique_rgb_before": 5,
+  "uv_mask_pixels": 10157666,
+  "uv_padding": {
+    "applied": true,
+    "filled_pixels": 6618392,
+    "method": "iterative_frontier_expansion",
+    "padding_pixels": 16
+  },
+  "uv_triangles": 186930,
+  "width": 4096
+}

@@ -1190,6 +1190,26 @@ bool AT66PlayerController::OpenArcadePopup(
 	return true;
 }
 
+bool AT66PlayerController::OpenArcadePopupFromFrontend(const FT66ArcadeInteractableData& ArcadeData)
+{
+	if (ArcadeData.ArcadeClass != ET66ArcadeInteractableClass::PopupArcade || IsArcadePopupOpen())
+	{
+		return false;
+	}
+
+	if (!SpawnArcadePopupWidget(ArcadeData, nullptr))
+	{
+		return false;
+	}
+
+	FInputModeGameAndUI InputMode;
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(InputMode);
+	bShowMouseCursor = true;
+	bEnableClickEvents = true;
+	bEnableMouseOverEvents = true;
+	return true;
+}
 bool AT66PlayerController::SpawnArcadePopupWidget(
 	const FT66ArcadeInteractableData& ArcadeData,
 	AT66ArcadeInteractableBase* SourceInteractable)
@@ -1273,7 +1293,10 @@ void AT66PlayerController::HandleArcadeGameSelected(
 		{
 			SourceInteractable->HandleArcadePopupDismissedWithoutResult();
 		}
-		RestoreGameplayInputMode();
+		if (IsGameplayLevel())
+		{
+			RestoreGameplayInputMode();
+		}
 	}
 }
 
@@ -1315,7 +1338,7 @@ void AT66PlayerController::CloseArcadePopup(const bool bSucceeded, const int32 F
 		}
 	}
 
-	if (!IsPaused() && !(UIManager && UIManager->IsModalActive()))
+	if (IsGameplayLevel() && !IsPaused() && !(UIManager && UIManager->IsModalActive()))
 	{
 		RestoreGameplayInputMode();
 	}
@@ -1553,52 +1576,35 @@ void AT66PlayerController::HandleQuickReviveStateChanged()
 
 void AT66PlayerController::EnsureGameplayUIManager()
 {
-	if (UIManager || !IsGameplayLevel() || !IsLocalController()) return;
+	if (!IsGameplayLevel() || !IsLocalController()) return;
 
-	UIManager = NewObject<UT66UIManager>(this, UT66UIManager::StaticClass());
-	if (!UIManager) return;
+	if (!UIManager)
+	{
+		UIManager = NewObject<UT66UIManager>(this, UT66UIManager::StaticClass());
+		if (!UIManager) return;
 
-	UIManager->Initialize(this);
-	if (TSubclassOf<UT66ScreenBase> PauseClass = ResolveScreenClass(ET66ScreenType::PauseMenu))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::PauseMenu, PauseClass);
+		UIManager->Initialize(this);
 	}
-	if (TSubclassOf<UT66ScreenBase> AchievementsClass = ResolveScreenClass(ET66ScreenType::Achievements))
+
+	auto RegisterGameplayScreen = [this](const ET66ScreenType ScreenType)
 	{
-		UIManager->RegisterScreenClass(ET66ScreenType::Achievements, AchievementsClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> ReportBugClass = ResolveScreenClass(ET66ScreenType::ReportBug))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::ReportBug, ReportBugClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> SettingsClass = ResolveScreenClass(ET66ScreenType::Settings))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::Settings, SettingsClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> RunSummaryClass = ResolveScreenClass(ET66ScreenType::RunSummary))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::RunSummary, RunSummaryClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> SummaryPickerClass = ResolveScreenClass(ET66ScreenType::PlayerSummaryPicker))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, SummaryPickerClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> SavePreviewClass = ResolveScreenClass(ET66ScreenType::SavePreview))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::SavePreview, SavePreviewClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> ShopClass = ResolveScreenClass(ET66ScreenType::PowerUp))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::PowerUp, ShopClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::AccountStatus, AccountStatusClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> PartyInviteClass = ResolveScreenClass(ET66ScreenType::PartyInvite))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::PartyInvite, PartyInviteClass);
-	}
+		if (TSubclassOf<UT66ScreenBase> ScreenClass = ResolveScreenClass(ScreenType))
+		{
+			UIManager->RegisterScreenClass(ScreenType, ScreenClass);
+		}
+	};
+
+	RegisterGameplayScreen(ET66ScreenType::PauseMenu);
+	RegisterGameplayScreen(ET66ScreenType::Achievements);
+	RegisterGameplayScreen(ET66ScreenType::ReportBug);
+	RegisterGameplayScreen(ET66ScreenType::Settings);
+	RegisterGameplayScreen(ET66ScreenType::RunSummary);
+	RegisterGameplayScreen(ET66ScreenType::GameOver);
+	RegisterGameplayScreen(ET66ScreenType::PlayerSummaryPicker);
+	RegisterGameplayScreen(ET66ScreenType::SavePreview);
+	RegisterGameplayScreen(ET66ScreenType::PowerUp);
+	RegisterGameplayScreen(ET66ScreenType::AccountStatus);
+	RegisterGameplayScreen(ET66ScreenType::PartyInvite);
 }
 
 

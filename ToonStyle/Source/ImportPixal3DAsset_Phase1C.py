@@ -23,6 +23,21 @@ INNER_LINES_DEFAULT_BLACK = "/Game/ToonStyle/Textures/T_InnerLines_DefaultBlack"
 EXPECTED_HEIGHT = 180.0
 HEIGHT_TOLERANCE = 0.10
 
+# Parameters bound by this importer on M_Toon_Character MIDs.
+# Source of truth: binding logic, verification readback, reports, and drift checks.
+# Must match parameters that exist on /Game/ToonStyle/Materials/M_Toon_Character.
+_TOON_CHARACTER_PARAMETERS = {
+    "textures": ["BaseColorTexture", "TintTexture", "InnerLineTexture"],
+    "scalars": [],
+    "vectors": [],
+}
+
+_TOON_CHARACTER_TEXTURE_SOURCES = {
+    "BaseColorTexture": "base_color",
+    "TintTexture": "tint",
+    "InnerLineTexture": "inner_line",
+}
+
 
 def parse_args() -> argparse.Namespace:
     argv = list(sys.argv[1:])
@@ -35,6 +50,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target-dir", default=os.environ.get("T66_PIXAL3D_TARGET_DIR", "/Game/ToonStyle/TestAssets/Lineup"))
     parser.add_argument("--expected-height", type=float, default=float(os.environ.get("T66_PIXAL3D_EXPECTED_HEIGHT", EXPECTED_HEIGHT)))
     parser.add_argument("--height-tolerance", type=float, default=float(os.environ.get("T66_PIXAL3D_HEIGHT_TOLERANCE", HEIGHT_TOLERANCE)))
+    parser.add_argument("--dry-run-material-bindings", action="store_true", default=os.environ.get("T66_PIXAL3D_DRY_RUN_MATERIAL_BINDINGS") == "1")
+    parser.add_argument("--dry-run-report", default=os.environ.get("T66_PIXAL3D_DRY_RUN_REPORT"))
     args, _unknown = parser.parse_known_args(argv)
 
     missing = [name for name in ("working_dir", "asset_name", "target_dir") if not getattr(args, name)]
@@ -79,6 +96,64 @@ def set_material_vector_parameter(
         parameter_name,
         unreal.LinearColor(float(rgba[0]), float(rgba[1]), float(rgba[2]), float(rgba[3])),
     )
+
+
+def _string_names(names: list[object]) -> list[str]:
+    return sorted(str(name) for name in names)
+
+
+def get_material_parameter_names(material_path: str) -> dict[str, list[str]]:
+    material = unreal.EditorAssetLibrary.load_asset(material_path)
+    if not material:
+        raise RuntimeError(f"Missing material {material_path}")
+    return {
+        "textures": _string_names(unreal.MaterialEditingLibrary.get_texture_parameter_names(material)),
+        "scalars": _string_names(unreal.MaterialEditingLibrary.get_scalar_parameter_names(material)),
+        "vectors": _string_names(unreal.MaterialEditingLibrary.get_vector_parameter_names(material)),
+    }
+
+
+def validate_toon_character_parameters() -> dict[str, list[str]]:
+    live = get_material_parameter_names(CHARACTER_PARENT_MATERIAL)
+    missing = []
+    for group, names in _TOON_CHARACTER_PARAMETERS.items():
+        live_group = set(live.get(group, []))
+        for name in names:
+            if name not in live_group:
+                missing.append(name)
+    if missing:
+        joined = ", ".join(sorted(missing))
+        raise RuntimeError(
+            "ImportPixal3DAsset: parameter(s) "
+            f"{joined} not found on live M_Toon_Character; update "
+            "_TOON_CHARACTER_PARAMETERS to match the live master or restore the parameter to the master."
+        )
+    return live
+
+
+def texture_path(texture: unreal.Texture2D | None) -> str | None:
+    return str(texture.get_path_name()) if texture else None
+
+
+def build_toon_character_texture_bindings(
+    base_color: unreal.Texture2D | None,
+    tint: unreal.Texture2D | None,
+    inner_line: unreal.Texture2D | None,
+) -> dict[str, unreal.Texture2D | None]:
+    sources = {
+        "base_color": base_color,
+        "tint": tint,
+        "inner_line": inner_line,
+    }
+    return {param: sources[_TOON_CHARACTER_TEXTURE_SOURCES[param]] for param in _TOON_CHARACTER_PARAMETERS["textures"]}
+
+
+def read_toon_character_texture_parameters(material: unreal.MaterialInstanceConstant) -> dict[str, str | None]:
+    readback: dict[str, str | None] = {}
+    for parameter_name in _TOON_CHARACTER_PARAMETERS["textures"]:
+        texture = unreal.MaterialEditingLibrary.get_material_instance_texture_parameter_value(material, parameter_name)
+        readback[parameter_name] = texture_path(texture)
+    return readback
 
 
 def import_fbx(fbx_path: Path, target_dir: str, asset_name: str) -> list[str]:
@@ -250,22 +325,79 @@ def create_material(
         raise RuntimeError(f"Material instance creation failed: {material_path}")
 
     material.set_editor_property("parent", parent)
-    if texture is not None:
-        unreal.MaterialEditingLibrary.set_material_instance_texture_parameter_value(material, "DiffuseColorMap", texture)
-        unreal.MaterialEditingLibrary.set_material_instance_texture_parameter_value(material, "BaseColorTexture", texture)
-        unreal.MaterialEditingLibrary.set_material_instance_scalar_parameter_value(material, "Brightness", 1.0)
-        unreal.MaterialEditingLibrary.set_material_instance_vector_parameter_value(
-            material,
-            "Tint",
-            unreal.LinearColor(1.0, 1.0, 1.0, 1.0),
-        )
-        if tint_texture is not None:
-            unreal.MaterialEditingLibrary.set_material_instance_texture_parameter_value(material, "TintTexture", tint_texture)
-        if inner_line_texture is not None:
-            unreal.MaterialEditingLibrary.set_material_instance_texture_parameter_value(material, "InnerLineTexture", inner_line_texture)
+    if parent_path == CHARACTER_PARENT_MATERIAL:
+        validate_toon_character_parameters()
+        texture_bindings = build_toon_character_texture_bindings(texture, tint_texture, inner_line_texture)
+        for parameter_name, texture_asset in texture_bindings.items():
+            if texture_asset is None:
+                raise RuntimeError(f"ImportPixal3DAsset: missing texture asset for {parameter_name}")
+            unreal.MaterialEditingLibrary.set_material_instance_texture_parameter_value(material, parameter_name, texture_asset)
     set_material_vector_parameter(material, "OutlineColor", outline_color)
     unreal.EditorAssetLibrary.save_loaded_asset(material)
     return material_path, material
+
+
+def run_material_binding_dry_run(args: argparse.Namespace, working_dir: Path, manifest: dict[str, object]) -> dict[str, object]:
+    live_parameters = validate_toon_character_parameters()
+    target_dir = args.target_dir.rstrip("/")
+    texture_dir = f"{target_dir}/Textures"
+    texture_entries = manifest.get("textures") or []
+    if not texture_entries:
+        raise RuntimeError("Manifest has no extracted textures")
+
+    base_texture_name = f"T_{args.asset_name}" if len(texture_entries) == 1 else f"T_{args.asset_name}_0"
+    base_source = Path(texture_entries[0]["path"])
+    if not base_source.exists():
+        raise RuntimeError(f"Missing BaseColorTexture source: {base_source}")
+
+    tint_entry = manifest.get("tint_texture") or {}
+    tint_source = Path(str(tint_entry.get("path", ""))) if tint_entry.get("path") else working_dir / f"{args.asset_name}_Tint.png"
+    if not tint_source.exists():
+        raise RuntimeError(f"Missing TintTexture source: {tint_source}")
+
+    inner_entry = manifest.get("inner_line_texture") or {}
+    inner_source = Path(str(inner_entry.get("path", ""))) if inner_entry.get("path") else working_dir / f"{args.asset_name}_InnerLines.png"
+    if inner_source.exists():
+        inner_binding_path = f"{texture_dir}/T_{args.asset_name}_InnerLines.T_{args.asset_name}_InnerLines"
+        inner_source_path = str(inner_source)
+    else:
+        inner_asset = unreal.EditorAssetLibrary.load_asset(INNER_LINES_DEFAULT_BLACK)
+        if inner_asset is None:
+            raise RuntimeError(f"Missing default black inner-line texture: {INNER_LINES_DEFAULT_BLACK}")
+        inner_binding_path = f"{INNER_LINES_DEFAULT_BLACK}.{INNER_LINES_DEFAULT_BLACK.rsplit('/', 1)[-1]}"
+        inner_source_path = None
+
+    planned_bindings = {
+        "BaseColorTexture": {
+            "source_file": str(base_source),
+            "asset_path": f"{texture_dir}/{base_texture_name}.{base_texture_name}",
+        },
+        "TintTexture": {
+            "source_file": str(tint_source),
+            "asset_path": f"{texture_dir}/T_{args.asset_name}_Tint.T_{args.asset_name}_Tint",
+        },
+        "InnerLineTexture": {
+            "source_file": inner_source_path,
+            "asset_path": inner_binding_path,
+        },
+    }
+
+    report = {
+        "asset_name": args.asset_name,
+        "dry_run": True,
+        "parent_material": CHARACTER_PARENT_MATERIAL,
+        "configured_parameters": _TOON_CHARACTER_PARAMETERS,
+        "live_material_parameters": live_parameters,
+        "planned_texture_bindings": planned_bindings,
+        "removed_stale_bindings": ["DiffuseColorMap", "Brightness", "Tint"],
+        "writes_material_instances": False,
+        "ok": True,
+    }
+    if args.dry_run_report:
+        Path(args.dry_run_report).write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    else:
+        unreal.log(f"[ImportPixal3DAsset] Material binding dry run: {json.dumps(report, sort_keys=True)}")
+    return report
 
 
 def main() -> int:
@@ -275,6 +407,14 @@ def main() -> int:
     if not manifest_path.exists():
         raise RuntimeError(f"Missing manifest: {manifest_path}")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    if args.dry_run_material_bindings:
+        run_material_binding_dry_run(args, working_dir, manifest)
+        if os.environ.get("T66_PIXAL3D_QUIT_EDITOR") == "1":
+            unreal.SystemLibrary.quit_editor()
+        return 0
+
+    validate_toon_character_parameters()
 
     target_dir = args.target_dir.rstrip("/")
     texture_dir = f"{target_dir}/Textures"
@@ -360,10 +500,7 @@ def main() -> int:
     outline_mesh.set_material(0, outline_material)
     unreal.EditorAssetLibrary.save_loaded_asset(outline_mesh)
 
-    diffuse = unreal.MaterialEditingLibrary.get_material_instance_texture_parameter_value(material, "DiffuseColorMap")
-    base = unreal.MaterialEditingLibrary.get_material_instance_texture_parameter_value(material, "BaseColorTexture")
-    tint = unreal.MaterialEditingLibrary.get_material_instance_texture_parameter_value(material, "TintTexture")
-    inner_line = unreal.MaterialEditingLibrary.get_material_instance_texture_parameter_value(material, "InnerLineTexture")
+    material_texture_params = read_toon_character_texture_parameters(material)
     outline_color = get_material_vector_parameter(outline_material_asset_path, "OutlineColor")
 
     verify = {
@@ -381,11 +518,12 @@ def main() -> int:
         "outline_material_instance": outline_material_asset_path,
         "slot0_material": str(mesh.get_material(0).get_path_name()) if mesh.get_material(0) else None,
         "outline_slot0_material": str(outline_mesh.get_material(0).get_path_name()) if outline_mesh.get_material(0) else None,
-        "diffuse_param": str(diffuse.get_path_name()) if diffuse else None,
-        "base_color_param": str(base.get_path_name()) if base else None,
-        "tint_param": str(tint.get_path_name()) if tint else None,
+        "toon_character_parameters": _TOON_CHARACTER_PARAMETERS,
+        "material_texture_params": material_texture_params,
+        "base_color_param": material_texture_params.get("BaseColorTexture"),
+        "tint_param": material_texture_params.get("TintTexture"),
         "inner_line_texture": inner_line_texture_path,
-        "inner_line_param": str(inner_line.get_path_name()) if inner_line else None,
+        "inner_line_param": material_texture_params.get("InnerLineTexture"),
         "inner_line_default_black": INNER_LINES_DEFAULT_BLACK,
         "outline_color_preserved": previous_outline_color,
         "outline_color_after_import": outline_color,
@@ -409,4 +547,5 @@ def main() -> int:
     return 0
 
 
-main()
+if __name__ == "__main__":
+    raise SystemExit(main())

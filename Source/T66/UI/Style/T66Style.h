@@ -168,6 +168,7 @@ struct FT66BareButtonParams
 	FSimpleDelegate OnReleased;
 	EHorizontalAlignment HAlign = HAlign_Fill;
 	EVerticalAlignment VAlign = VAlign_Fill;
+	EButtonClickMethod::Type ClickMethod = EButtonClickMethod::DownAndUp;
 	EMouseCursor::Type Cursor = EMouseCursor::Hand;
 	float MinWidth = 0.f;
 	float WidthOverride = 0.f;
@@ -191,6 +192,7 @@ struct FT66BareButtonParams
 	FT66BareButtonParams& SetOnReleased(FSimpleDelegate InOnReleased) { OnReleased = MoveTemp(InOnReleased); return *this; }
 	FT66BareButtonParams& SetHAlign(EHorizontalAlignment InHAlign) { HAlign = InHAlign; return *this; }
 	FT66BareButtonParams& SetVAlign(EVerticalAlignment InVAlign) { VAlign = InVAlign; return *this; }
+	FT66BareButtonParams& SetClickMethod(EButtonClickMethod::Type InClickMethod) { ClickMethod = InClickMethod; return *this; }
 	FT66BareButtonParams& SetCursor(EMouseCursor::Type InCursor) { Cursor = InCursor; return *this; }
 	FT66BareButtonParams& SetMinWidth(float InMinWidth) { MinWidth = InMinWidth; return *this; }
 	FT66BareButtonParams& SetWidth(float InWidth) { WidthOverride = InWidth; return *this; }

@@ -16,6 +16,7 @@
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "UI/T66UIManager.h"
 #include "Styling/CoreStyle.h"
 #include "UObject/StrongObjectPtr.h"
@@ -35,9 +36,80 @@ namespace
 {
 	constexpr int32 T66AchievementsFontDelta = 0;
 	constexpr int32 T66SecretPlaceholderRowCount = 10;
+	constexpr const TCHAR* T66SteamAchievementsLogoPath = TEXT("RuntimeDependencies/T66/UI/Icons/Flat/steam_logo_imagegen.png");
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GAchievementsGeneratedTextureCache;
 	TMap<FString, TSharedPtr<FSlateBrush>> GAchievementsGeneratedBrushCache;
 	TMap<FString, TSharedPtr<FButtonStyle>> GAchievementsGeneratedButtonStyleCache;
+
+	struct FT66AchievementReferenceRowLayout
+	{
+		float RowY;
+		float TextY;
+		float ButtonY;
+	};
+
+	constexpr FT66AchievementReferenceRowLayout T66AchievementReferenceRows[] = {
+		{ 0.497f, 0.509f, 0.498f },
+		{ 0.610f, 0.622f, 0.610f },
+		{ 0.725f, 0.736f, 0.725f },
+		{ 0.838f, 0.850f, 0.838f }
+	};
+
+	constexpr float T66AchievementReferenceDividerY[] = {
+		0.579f,
+		0.693f,
+		0.808f
+	};
+
+	constexpr float T66AchievementReferenceListPanelX = 0.024f;
+	constexpr float T66AchievementReferenceListPanelY = 0.463f;
+	constexpr float T66AchievementReferenceListPanelW = 0.951f;
+	constexpr float T66AchievementReferenceListPanelH = 0.467f;
+	constexpr float T66AchievementReferenceRowX = 0.035f;
+	constexpr float T66AchievementReferenceRowW = 0.928f;
+	constexpr float T66AchievementReferenceRowH = 0.082f;
+	constexpr float T66AchievementReferenceNumberX = 0.059f;
+	constexpr float T66AchievementReferenceNumberW = 0.024f;
+	constexpr float T66AchievementReferenceNameX = 0.123f;
+	constexpr float T66AchievementReferenceNameW = 0.147f;
+	constexpr float T66AchievementReferenceDescriptionX = 0.308f;
+	constexpr float T66AchievementReferenceDescriptionW = 0.260f;
+	constexpr float T66AchievementReferenceProgressX = 0.639f;
+	constexpr float T66AchievementReferenceProgressW = 0.036f;
+	constexpr float T66AchievementReferenceRewardValueX = 0.722f;
+	constexpr float T66AchievementReferenceRewardValueW = 0.014f;
+	constexpr float T66AchievementReferenceRewardIconX = 0.745f;
+	constexpr float T66AchievementReferenceRewardIconW = 0.027f;
+	constexpr float T66AchievementReferenceClaimButtonX = 0.804f;
+	constexpr float T66AchievementReferenceClaimButtonW = 0.081f;
+	constexpr float T66AchievementReferenceFavoriteButtonX = 0.914f;
+	constexpr float T66AchievementReferenceFavoriteButtonW = 0.029f;
+	constexpr float T66AchievementReferenceTextH = 0.045f;
+	constexpr float T66AchievementReferenceNumberH = 0.040f;
+	constexpr float T66AchievementReferenceRewardIconH = 0.040f;
+	constexpr float T66AchievementReferenceButtonH = 0.056f;
+	constexpr int32 T66AchievementReferenceRowFontSize = 28;
+
+	float GetAchievementReferenceSlotRowY(const int32 RowIndex)
+	{
+		if (RowIndex <= 0)
+		{
+			return T66AchievementReferenceListPanelY;
+		}
+
+		const int32 LastDividerIndex = static_cast<int32>(UE_ARRAY_COUNT(T66AchievementReferenceDividerY)) - 1;
+		const int32 DividerIndex = FMath::Min(RowIndex - 1, LastDividerIndex);
+		return T66AchievementReferenceDividerY[DividerIndex];
+	}
+
+	float GetAchievementReferenceSlotRowH(const int32 RowIndex)
+	{
+		const float RowY = GetAchievementReferenceSlotRowY(RowIndex);
+		const float RowBottom = RowIndex < UE_ARRAY_COUNT(T66AchievementReferenceDividerY)
+			? T66AchievementReferenceDividerY[RowIndex]
+			: T66AchievementReferenceListPanelY + T66AchievementReferenceListPanelH;
+		return FMath::Max(0.f, RowBottom - RowY);
+	}
 
 	FString MakeAchievementsUltrakillElementPath(const TCHAR* FileName)
 	{
@@ -1021,6 +1093,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	const FText ActiveTabInfoText = bShowingSecret
 		? NSLOCTEXT("T66.Achievements", "SecretTabInfo", "Reveal hidden achievements by discovering secret conditions in runs.")
 		: NSLOCTEXT("T66.Achievements", "SteamTabInfo", "Track Steam achievements, rewards, and completion progress.");
+	const bool bDemoAchievementRowsLocked = T66DemoModeUI::IsDemoModeActive(this);
 	SetAchievementsActiveStateFolder(bShowingSecret);
 
 	if (!bShowingSecret)
@@ -1096,19 +1169,14 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				.HAlign(HAlign_Fill)
 				.VAlign(VAlign_Fill)
 				[
-					SNew(SScaleBox)
-					.Stretch(EStretch::ScaleToFit)
-					.StretchDirection(EStretchDirection::DownOnly)
-					[
-						SNew(STextBlock)
-						.Visibility(EVisibility::HitTestInvisible)
-						.Text(Text)
-						.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
-						.ColorAndOpacity(Color)
-						.Justification(Justification)
-						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-						.Clipping(EWidgetClipping::ClipToBounds)
-					]
+					SNew(STextBlock)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Text(Text)
+					.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+					.ColorAndOpacity(Color)
+					.Justification(Justification)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+					.Clipping(EWidgetClipping::ClipToBounds)
 				],
 				Tag,
 				TEXT("Label"),
@@ -1206,7 +1274,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		};
 
 		const FSlateBrush* InfoBrush = ResolveAchievementsGeneratedBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(32.f, 32.f));
-		const FSlateBrush* SteamBrush = ResolveAchievementsGeneratedBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/steam_placeholder.png"), FVector2D(128.f, 128.f));
+		const FSlateBrush* SteamBrush = ResolveAchievementsGeneratedBrush(T66SteamAchievementsLogoPath, FVector2D(128.f, 128.f));
 		const FSlateBrush* TicketBrush = ResolveAchievementsGeneratedBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png"), FVector2D(42.f, 32.f));
 
 		struct FFlatSteamAchievementRow
@@ -1222,11 +1290,6 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			{ FText::FromString(TEXT("03")), NSLOCTEXT("T66.Achievements", "FlatSteamTokenRank1", "Token Rank 1"), NSLOCTEXT("T66.Achievements", "FlatSteamTokenRank1Desc", "[Unlock Gambler's Token level 1]") },
 			{ FText::FromString(TEXT("04")), NSLOCTEXT("T66.Achievements", "FlatSteamFirstWin1", "First Win 1"), NSLOCTEXT("T66.Achievements", "FlatSteamFirstWin1Desc", "[Win 1 match in any mode]") }
 		};
-
-		constexpr float RowY[4] = { 0.497f, 0.610f, 0.725f, 0.838f };
-		constexpr float TextY[4] = { 0.509f, 0.622f, 0.736f, 0.850f };
-		constexpr float ButtonY[4] = { 0.498f, 0.610f, 0.725f, 0.838f };
-		constexpr float DividerY[3] = { 0.579f, 0.693f, 0.808f };
 
 		AddN(0.024f, 0.125f, 0.951f, 0.804f, MakeMetadataRegion(STag(TEXT("SteamAchievements.Root")), TEXT("Root")));
 		if (T66IsPausedGameplayWidget(this))
@@ -1261,8 +1324,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			0.340f * SteamCanvasW,
 			0.060f * SteamCanvasH));
 
-		AddN(0.438f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(ET66FlatState::Selected, InfoBrush, NSLOCTEXT("T66.Achievements", "SteamTabInfoFlatSelected", "Track Steam achievements, rewards, and completion progress."), FVector2D(31.f, 31.f), STag(TEXT("SteamAchievements.SubTabs.SteamInfoIcon"))));
-		AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(ET66FlatState::Default, InfoBrush, NSLOCTEXT("T66.Achievements", "SecretTabInfoFlat", "Reveal hidden achievements by discovering secret conditions in runs."), FVector2D(31.f, 31.f), STag(TEXT("SteamAchievements.SubTabs.SecretInfoIcon"))));
+		AddN(0.438f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(ET66FlatState::Selected, InfoBrush, NSLOCTEXT("T66.Achievements", "SteamTabInfoFlatSelected", "Track Steam achievements, rewards, and completion progress."), FVector2D(31.f, 31.f), STag(TEXT("SteamAchievements.SubTabs.SteamInfoIcon")), FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleAchievementsTabClicked)));
+		AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(ET66FlatState::Default, InfoBrush, NSLOCTEXT("T66.Achievements", "SecretTabInfoFlat", "Reveal hidden achievements by discovering secret conditions in runs."), FVector2D(31.f, 31.f), STag(TEXT("SteamAchievements.SubTabs.SecretInfoIcon")), FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleSecretTabClicked)));
 
 		AddN(0.024f, 0.225f, 0.951f, 0.213f, MakePanelSurface(STag(TEXT("SteamAchievements.SummaryPanel")), ET66FlatState::Selected));
 		AddN(0.060f, 0.239f, 0.114f, 0.185f, MakeIcon(STag(TEXT("SteamAchievements.Summary.SteamLogo")), SteamBrush, FVector2D(128.f, 128.f), FText::FromString(TEXT("S")), FLinearColor::White));
@@ -1285,10 +1348,10 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			TOptional<FLinearColor>(FT66FlatStyle::SelectedBorder()),
 			STag(TEXT("SteamAchievements.Summary.ProgressBar"))));
 
-		AddN(0.024f, 0.463f, 0.951f, 0.467f, MakePanelSurface(STag(TEXT("SteamAchievements.ListPanel")), ET66FlatState::Default));
-		for (int32 DividerIndex = 0; DividerIndex < UE_ARRAY_COUNT(DividerY); ++DividerIndex)
+		AddN(T66AchievementReferenceListPanelX, T66AchievementReferenceListPanelY, T66AchievementReferenceListPanelW, T66AchievementReferenceListPanelH, MakePanelSurface(STag(TEXT("SteamAchievements.ListPanel")), ET66FlatState::Default));
+		for (int32 DividerIndex = 0; DividerIndex < UE_ARRAY_COUNT(T66AchievementReferenceDividerY); ++DividerIndex)
 		{
-			AddN(0.024f, DividerY[DividerIndex], 0.951f, 0.003f, FT66FlatStyle::MakeFlatDivider(
+			AddN(T66AchievementReferenceListPanelX, T66AchievementReferenceDividerY[DividerIndex], T66AchievementReferenceListPanelW, 0.003f, FT66FlatStyle::MakeFlatDivider(
 				Orient_Horizontal,
 				3.f,
 				TOptional<FLinearColor>(),
@@ -1298,19 +1361,33 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		for (int32 RowIndex = 0; RowIndex < Rows.Num(); ++RowIndex)
 		{
 			const FString Prefix = FString::Printf(TEXT("SteamAchievements.Row%02d"), RowIndex + 1);
-			AddN(0.035f, RowY[RowIndex], 0.928f, 0.082f, MakeMetadataRegion(FName(*Prefix), TEXT("AchievementRow")));
-			AddN(0.059f, TextY[RowIndex], 0.024f, 0.040f, TaggedText(FName(*(Prefix + TEXT(".Number"))), Rows[RowIndex].Number, 28, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
-			AddN(0.123f, TextY[RowIndex], 0.147f, 0.045f, TaggedText(FName(*(Prefix + TEXT(".Name"))), Rows[RowIndex].Name, 28, FT66FlatStyle::PrimaryText(), true, ETextJustify::Left));
-			AddN(0.308f, TextY[RowIndex], 0.260f, 0.045f, TaggedText(FName(*(Prefix + TEXT(".Description"))), Rows[RowIndex].Description, 28, FT66FlatStyle::PrimaryText(), true, ETextJustify::Left));
-			AddN(0.639f, TextY[RowIndex], 0.036f, 0.045f, TaggedText(FName(*(Prefix + TEXT(".Progress"))), FText::FromString(TEXT("0/1")), 28, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
-			AddN(0.722f, TextY[RowIndex], 0.014f, 0.045f, TaggedText(FName(*(Prefix + TEXT(".RewardValue"))), FText::FromString(TEXT("5")), 28, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
-			AddN(0.745f, TextY[RowIndex] - 0.002f, 0.027f, 0.040f, MakeIcon(FName(*(Prefix + TEXT(".RewardIcon"))), TicketBrush, FVector2D(45.f, 38.f), FText::FromString(TEXT("[]")), FLinearColor::White));
-			AddN(0.804f, ButtonY[RowIndex], 0.081f, 0.056f, MakeClaimButton(
+			const FT66AchievementReferenceRowLayout& RowLayout = T66AchievementReferenceRows[RowIndex];
+			AddN(T66AchievementReferenceListPanelX, GetAchievementReferenceSlotRowY(RowIndex), T66AchievementReferenceListPanelW, GetAchievementReferenceSlotRowH(RowIndex), MakeMetadataRegion(FName(*Prefix), TEXT("AchievementRow")));
+			AddN(T66AchievementReferenceNumberX, RowLayout.TextY, T66AchievementReferenceNumberW, T66AchievementReferenceNumberH, TaggedText(FName(*(Prefix + TEXT(".Number"))), Rows[RowIndex].Number, T66AchievementReferenceRowFontSize, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
+			AddN(T66AchievementReferenceNameX, RowLayout.TextY, T66AchievementReferenceNameW, T66AchievementReferenceTextH, TaggedText(FName(*(Prefix + TEXT(".Name"))), Rows[RowIndex].Name, T66AchievementReferenceRowFontSize, FT66FlatStyle::PrimaryText(), true, ETextJustify::Left));
+			AddN(T66AchievementReferenceDescriptionX, RowLayout.TextY, T66AchievementReferenceDescriptionW, T66AchievementReferenceTextH, TaggedText(FName(*(Prefix + TEXT(".Description"))), Rows[RowIndex].Description, T66AchievementReferenceRowFontSize, FT66FlatStyle::PrimaryText(), true, ETextJustify::Left));
+			AddN(T66AchievementReferenceProgressX, RowLayout.TextY, T66AchievementReferenceProgressW, T66AchievementReferenceTextH, TaggedText(FName(*(Prefix + TEXT(".Progress"))), FText::FromString(TEXT("0/1")), T66AchievementReferenceRowFontSize, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
+			AddN(T66AchievementReferenceRewardValueX, RowLayout.TextY, T66AchievementReferenceRewardValueW, T66AchievementReferenceTextH, TaggedText(FName(*(Prefix + TEXT(".RewardValue"))), FText::FromString(TEXT("5")), T66AchievementReferenceRowFontSize, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
+			AddN(T66AchievementReferenceRewardIconX, RowLayout.TextY - 0.002f, T66AchievementReferenceRewardIconW, T66AchievementReferenceRewardIconH, MakeIcon(FName(*(Prefix + TEXT(".RewardIcon"))), TicketBrush, FVector2D(45.f, 38.f), FText::FromString(TEXT("[]")), FLinearColor::White));
+			AddN(T66AchievementReferenceClaimButtonX, RowLayout.ButtonY, T66AchievementReferenceClaimButtonW, T66AchievementReferenceButtonH, MakeClaimButton(
 				FName(*(Prefix + TEXT(".ClaimButton"))),
 				FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleClaimClicked, FName()),
-				0.081f * SteamCanvasW,
-				0.056f * SteamCanvasH));
-			AddN(0.914f, ButtonY[RowIndex], 0.029f, 0.056f, MakeFavoriteButton(FName(*(Prefix + TEXT(".FavoriteButton"))), RowIndex));
+				T66AchievementReferenceClaimButtonW * SteamCanvasW,
+				T66AchievementReferenceButtonH * SteamCanvasH));
+			AddN(T66AchievementReferenceFavoriteButtonX, RowLayout.ButtonY, T66AchievementReferenceFavoriteButtonW, T66AchievementReferenceButtonH, MakeFavoriteButton(FName(*(Prefix + TEXT(".FavoriteButton"))), RowIndex));
+		}
+		if (bDemoAchievementRowsLocked)
+		{
+			for (int32 RowIndex = 0; RowIndex < Rows.Num(); ++RowIndex)
+			{
+				const FString Prefix = FString::Printf(TEXT("SteamAchievements.Row%02d"), RowIndex + 1);
+				AddN(T66AchievementReferenceListPanelX, GetAchievementReferenceSlotRowY(RowIndex), T66AchievementReferenceListPanelW, GetAchievementReferenceSlotRowH(RowIndex),
+					T66DemoModeUI::WrapWithComingSoonOverlay(
+						MakeMetadataRegion(FName(*(Prefix + TEXT(".DemoOverlaySurface"))), TEXT("AchievementRowUnavailableSurface"), ET66FlatState::Disabled),
+						true,
+						this,
+						FName(*(Prefix + TEXT(".DemoOverlay")))));
+			}
 		}
 
 		TSharedRef<SWidget> SteamContent = SNew(SOverlay)
@@ -1555,7 +1632,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			InfoIconBrush,
 			NSLOCTEXT("T66.Achievements", "SteamTabInfoFlatDefault", "Track Steam achievements, rewards, and completion progress."),
 			FVector2D(31.f, 31.f),
-			STag(TEXT("SecretAchievements.SubTabs.SteamInfoIcon"))));
+			STag(TEXT("SecretAchievements.SubTabs.SteamInfoIcon")),
+			FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleAchievementsTabClicked)));
 		AddN(0.498f, 0.123f, 0.340f, 0.060f, MakeFlatTab(
 			STag(TEXT("SecretAchievements.SubTabs.SecretButton")),
 			SecretText,
@@ -1568,7 +1646,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			InfoIconBrush,
 			NSLOCTEXT("T66.Achievements", "SecretTabInfoFlatSelected", "Reveal hidden achievements by discovering secret conditions in runs."),
 			FVector2D(31.f, 31.f),
-			STag(TEXT("SecretAchievements.SubTabs.SecretInfoIcon"))));
+			STag(TEXT("SecretAchievements.SubTabs.SecretInfoIcon")),
+			FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleSecretTabClicked)));
 
 		AddN(0.024f, 0.225f, 0.951f, 0.213f, MakePanelSurface(STag(TEXT("SecretAchievements.SummaryPanel")), ET66FlatState::Selected));
 		AddN(0.060f, 0.239f, 0.114f, 0.185f, MakeSecretIcon(
@@ -1594,20 +1673,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			TOptional<FLinearColor>(FT66FlatStyle::SelectedBorder()),
 			STag(TEXT("SecretAchievements.Summary.ProgressBar"))));
 
-		AddN(0.024f, 0.463f, 0.951f, 0.467f, MakePanelSurface(STag(TEXT("SecretAchievements.ListPanel")), ET66FlatState::Default));
+		AddN(T66AchievementReferenceListPanelX, T66AchievementReferenceListPanelY, T66AchievementReferenceListPanelW, T66AchievementReferenceListPanelH, MakePanelSurface(STag(TEXT("SecretAchievements.ListPanel")), ET66FlatState::Default));
 
-		struct FSecretRowLayout
-		{
-			float RowY;
-			float TextY;
-			float ButtonY;
-		};
-		const FSecretRowLayout RowLayouts[] = {
-			{ 0.497f, 0.509f, 0.498f },
-			{ 0.610f, 0.622f, 0.610f },
-			{ 0.725f, 0.736f, 0.725f },
-			{ 0.838f, 0.850f, 0.838f }
-		};
 		const FText SecretRowNames[] = {
 			NSLOCTEXT("T66.Achievements", "SecretRow01NameFlat", "?? #???$ ??#"),
 			NSLOCTEXT("T66.Achievements", "SecretRow02NameFlat", "??$# ???# $$?"),
@@ -1621,54 +1688,55 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			NSLOCTEXT("T66.Achievements", "SecretRow04DescriptionFlat", "L?\"? #??? $#?]")
 		};
 
-		for (int32 RowIndex = 0; RowIndex < UE_ARRAY_COUNT(RowLayouts); ++RowIndex)
+		for (int32 RowIndex = 0; RowIndex < UE_ARRAY_COUNT(T66AchievementReferenceRows); ++RowIndex)
 		{
 			const FString Prefix = FString::Printf(TEXT("SecretAchievements.Row%02d"), RowIndex + 1);
-			AddN(0.035f, RowLayouts[RowIndex].RowY, 0.928f, 0.082f, MakeMetadataRegion(FName(*Prefix), TEXT("AchievementRow")));
-			AddN(0.059f, RowLayouts[RowIndex].TextY, 0.024f, 0.040f, TaggedText(
+			const FT66AchievementReferenceRowLayout& RowLayout = T66AchievementReferenceRows[RowIndex];
+			AddN(T66AchievementReferenceListPanelX, GetAchievementReferenceSlotRowY(RowIndex), T66AchievementReferenceListPanelW, GetAchievementReferenceSlotRowH(RowIndex), MakeMetadataRegion(FName(*Prefix), TEXT("AchievementRow")));
+			AddN(T66AchievementReferenceNumberX, RowLayout.TextY, T66AchievementReferenceNumberW, T66AchievementReferenceNumberH, TaggedText(
 				FName(*(Prefix + TEXT(".Number"))),
 				FText::FromString(FString::Printf(TEXT("%02d"), RowIndex + 1)),
-				28,
+				T66AchievementReferenceRowFontSize,
 				FT66FlatStyle::PrimaryText(),
 				true,
 				ETextJustify::Center));
-			AddN(0.123f, RowLayouts[RowIndex].TextY, 0.147f, 0.045f, TaggedText(
+			AddN(T66AchievementReferenceNameX, RowLayout.TextY, T66AchievementReferenceNameW, T66AchievementReferenceTextH, TaggedText(
 				FName(*(Prefix + TEXT(".Name"))),
 				SecretRowNames[RowIndex],
-				28,
+				T66AchievementReferenceRowFontSize,
 				FT66FlatStyle::PrimaryText(),
 				true,
 				ETextJustify::Left));
-			AddN(0.308f, RowLayouts[RowIndex].TextY, 0.153f, 0.045f, TaggedText(
+			AddN(T66AchievementReferenceDescriptionX, RowLayout.TextY, T66AchievementReferenceDescriptionW, T66AchievementReferenceTextH, TaggedText(
 				FName(*(Prefix + TEXT(".Description"))),
 				SecretRowDescriptions[RowIndex],
-				28,
+				T66AchievementReferenceRowFontSize,
 				FT66FlatStyle::PrimaryText(),
 				true,
 				ETextJustify::Left));
-			AddN(0.639f, RowLayouts[RowIndex].TextY, 0.036f, 0.045f, TaggedText(
+			AddN(T66AchievementReferenceProgressX, RowLayout.TextY, T66AchievementReferenceProgressW, T66AchievementReferenceTextH, TaggedText(
 				FName(*(Prefix + TEXT(".Progress"))),
 				MaskedText,
-				28,
+				T66AchievementReferenceRowFontSize,
 				FT66FlatStyle::PrimaryText(),
 				true,
 				ETextJustify::Center));
-			AddN(0.722f, RowLayouts[RowIndex].TextY, 0.014f, 0.045f, TaggedText(
+			AddN(T66AchievementReferenceRewardValueX, RowLayout.TextY, T66AchievementReferenceRewardValueW, T66AchievementReferenceTextH, TaggedText(
 				FName(*(Prefix + TEXT(".RewardValue"))),
 				NSLOCTEXT("T66.Achievements", "SecretAchievementRewardValueFlat", "5"),
-				28,
+				T66AchievementReferenceRowFontSize,
 				FT66FlatStyle::PrimaryText(),
 				true,
 				ETextJustify::Center));
-			AddN(0.745f, RowLayouts[RowIndex].TextY - 0.002f, 0.027f, 0.040f, MakeSecretIcon(
+			AddN(T66AchievementReferenceRewardIconX, RowLayout.TextY - 0.002f, T66AchievementReferenceRewardIconW, T66AchievementReferenceRewardIconH, MakeSecretIcon(
 				FName(*(Prefix + TEXT(".RewardIcon"))),
 				TicketIconBrush,
 				FVector2D(45.f, 38.f)));
-			AddN(0.804f, RowLayouts[RowIndex].ButtonY, 0.081f, 0.056f, MakeClaimButton(
+			AddN(T66AchievementReferenceClaimButtonX, RowLayout.ButtonY, T66AchievementReferenceClaimButtonW, T66AchievementReferenceButtonH, MakeClaimButton(
 				FName(*(Prefix + TEXT(".ClaimButton"))),
-				0.081f * SecretCanvasW,
-				0.056f * SecretCanvasH));
-			AddN(0.914f, RowLayouts[RowIndex].ButtonY, 0.029f, 0.056f, FT66FlatStyle::MakeFlatIconButton(
+				T66AchievementReferenceClaimButtonW * SecretCanvasW,
+				T66AchievementReferenceButtonH * SecretCanvasH));
+			AddN(T66AchievementReferenceFavoriteButtonX, RowLayout.ButtonY, T66AchievementReferenceFavoriteButtonW, T66AchievementReferenceButtonH, FT66FlatStyle::MakeFlatIconButton(
 				ET66FlatState::Default,
 				FavoriteIconBrush,
 				FOnClicked::CreateLambda([]()
@@ -1680,9 +1748,27 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				FName(*(Prefix + TEXT(".FavoriteButton")))));
 		}
 
-		AddN(0.024f, 0.579f, 0.951f, 0.003f, FT66FlatStyle::MakeFlatDivider(Orient_Horizontal, 3.f, TOptional<FLinearColor>(), STag(TEXT("SecretAchievements.Row01.Divider"))));
-		AddN(0.024f, 0.693f, 0.951f, 0.003f, FT66FlatStyle::MakeFlatDivider(Orient_Horizontal, 3.f, TOptional<FLinearColor>(), STag(TEXT("SecretAchievements.Row02.Divider"))));
-		AddN(0.024f, 0.808f, 0.951f, 0.003f, FT66FlatStyle::MakeFlatDivider(Orient_Horizontal, 3.f, TOptional<FLinearColor>(), STag(TEXT("SecretAchievements.Row03.Divider"))));
+		for (int32 DividerIndex = 0; DividerIndex < UE_ARRAY_COUNT(T66AchievementReferenceDividerY); ++DividerIndex)
+		{
+			AddN(T66AchievementReferenceListPanelX, T66AchievementReferenceDividerY[DividerIndex], T66AchievementReferenceListPanelW, 0.003f, FT66FlatStyle::MakeFlatDivider(
+				Orient_Horizontal,
+				3.f,
+				TOptional<FLinearColor>(),
+				FName(*FString::Printf(TEXT("SecretAchievements.Row%02d.Divider"), DividerIndex + 1))));
+		}
+		if (bDemoAchievementRowsLocked)
+		{
+			for (int32 RowIndex = 0; RowIndex < UE_ARRAY_COUNT(T66AchievementReferenceRows); ++RowIndex)
+			{
+				const FString Prefix = FString::Printf(TEXT("SecretAchievements.Row%02d"), RowIndex + 1);
+				AddN(T66AchievementReferenceListPanelX, GetAchievementReferenceSlotRowY(RowIndex), T66AchievementReferenceListPanelW, GetAchievementReferenceSlotRowH(RowIndex),
+					T66DemoModeUI::WrapWithComingSoonOverlay(
+						MakeMetadataRegion(FName(*(Prefix + TEXT(".DemoOverlaySurface"))), TEXT("AchievementRowUnavailableSurface"), ET66FlatState::Disabled),
+						true,
+						this,
+						FName(*(Prefix + TEXT(".DemoOverlay")))));
+			}
+		}
 
 		TSharedRef<SWidget> SecretContent = SNew(SOverlay)
 			+ SOverlay::Slot()

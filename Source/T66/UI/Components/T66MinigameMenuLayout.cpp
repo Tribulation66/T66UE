@@ -4,6 +4,7 @@
 
 #include "Core/T66BackendSubsystem.h"
 #include "Data/T66DataTypes.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
@@ -352,21 +353,18 @@ TSharedRef<SWidget> ST66MinigameMenuLayout::MakeDifficultyDropdown()
 					.AutoHeight()
 					.Padding(0.f, 0.f, 0.f, 4.f)
 					[
-						FT66FlatStyle::MakeFlatButton(
+						FT66FlatStyle::MakeFlatDropdownOptionButton(
 							Option == SelectedDifficulty ? ET66FlatState::Selected : ET66FlatState::Default,
 							Option->DisplayName,
 							FOnClicked::CreateLambda([this, Option]()
 							{
 								OnDifficultyChanged(Option, ESelectInfo::OnMouseClick);
+								FSlateApplication::Get().DismissAllMenus();
 								return FReply::Handled();
 							}),
-							nullptr,
-							nullptr,
-							FMargin(10.f, 6.f),
 							210.f,
-							34.f,
-							true,
-							13,
+							42.f,
+							14,
 							FName(*FString::Printf(TEXT("MinigameMenu.DifficultyOption.%s"), *MakeMinigameTagSegment(Option->DisplayName))),
 							FName(TEXT("MinigameDifficulty")))
 					];

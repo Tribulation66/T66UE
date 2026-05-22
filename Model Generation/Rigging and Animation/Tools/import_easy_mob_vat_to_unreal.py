@@ -473,6 +473,23 @@ def configure_texture(texture, srgb=False):
     unreal.EditorAssetLibrary.save_loaded_asset(texture)
 
 
+def ensure_static_mesh_can_write_vat_uv(static_mesh, lod_index, target_uv_channel):
+    """AnimToTexture can only insert the target channel if earlier channels exist."""
+    subsystem = unreal.get_editor_subsystem(unreal.StaticMeshEditorSubsystem)
+    current = int(subsystem.get_num_uv_channels(static_mesh, lod_index))
+    required_channel_count = target_uv_channel + 1
+    while current < required_channel_count:
+        subsystem.add_uv_channel(static_mesh, lod_index)
+        next_count = int(subsystem.get_num_uv_channels(static_mesh, lod_index))
+        if next_count <= current:
+            raise RuntimeError(
+                f"Could not add intermediate UV channel before VAT bake; "
+                f"mesh={static_mesh.get_path_name()} lod={lod_index} count={current}"
+            )
+        current = next_count
+    unreal.EditorAssetLibrary.save_loaded_asset(static_mesh)
+
+
 def configure_material_instance(material, base_texture, data_asset, position_texture, normal_texture):
     mel = unreal.MaterialEditingLibrary
     for param_name in ("BaseColorTexture", "EmissiveTexture", "DiffuseColorMap"):
@@ -553,6 +570,7 @@ def bake_mob(mob, visual_row, master_material, clip_frames):
     data_asset.set_editor_property("anim_sequences", make_anim_sequence_infos(anim_assets))
     unreal.EditorAssetLibrary.save_loaded_asset(data_asset)
 
+    ensure_static_mesh_can_write_vat_uv(static_mesh, 0, 2)
     if not unreal.AnimToTextureBPLibrary.animation_to_texture(data_asset):
         raise RuntimeError(f"AnimToTexture bake failed for {enemy_id}")
 

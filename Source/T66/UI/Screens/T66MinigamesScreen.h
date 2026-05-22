@@ -29,6 +29,7 @@ private:
 	UT66LocalizationSubsystem* GetLocSubsystem() const;
 
 	FReply HandleBackClicked();
+	FReply HandleOpenVersusClicked();
 	FReply HandleOpenMiniChadpocalypseClicked();
 	FReply HandleOpenChadpocalypseTDClicked();
 	FReply HandleOpenIdleChadpocalypseClicked();

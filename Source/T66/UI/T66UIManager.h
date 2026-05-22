@@ -182,6 +182,7 @@ protected:
 	static constexpr int32 MaxHistoryDepth = 10;
 
 	bool SwitchToScreen(ET66ScreenType ScreenType, bool bAddCurrentToHistory);
+	bool CanShowScreenForReleaseVariant(ET66ScreenType ScreenType) const;
 	bool ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const;
 	void UpdateFrontendTopBar();
 	bool ShouldUseFrontendRoot() const;

@@ -25,7 +25,7 @@
                                                ],
                            "bConsumeOnSuccess":  true,
                            "bConsumeOnFailure":  true,
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro",
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D",
                            "DisplayMeshScale":  {
                                                     "X":  1,
                                                     "Y":  1,
@@ -116,7 +116,7 @@
                                                                "WhackBombPenalty":  250
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -158,7 +158,7 @@
                                                                "TopwarSquadGain":  2
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -203,7 +203,7 @@
                                                                "GoldMinerRockScore":  3
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -235,7 +235,7 @@
                                                                "ArcadeMissPenalty":  3
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -267,7 +267,7 @@
                                                                "ArcadeMissPenalty":  4
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -299,7 +299,7 @@
                                                                "ArcadeMissPenalty":  5
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -331,7 +331,7 @@
                                                                "ArcadeMissPenalty":  4
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -363,7 +363,7 @@
                                                                "ArcadeMissPenalty":  5
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -395,7 +395,7 @@
                                                                "ArcadeMissPenalty":  5
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -427,7 +427,7 @@
                                                                "ArcadeMissPenalty":  4
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -459,7 +459,7 @@
                                                                "ArcadeMissPenalty":  6
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -491,7 +491,7 @@
                                                                "ArcadeMissPenalty":  4
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     },
     {
@@ -523,7 +523,7 @@
                                                                "ArcadeMissPenalty":  6
                                                            }
                                          },
-                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro"
+                           "DisplayMesh":  "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D"
                        }
     }
 ]

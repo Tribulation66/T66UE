@@ -927,7 +927,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		const FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.MainMenu", "Settings", "SETTINGS");
 		const FText LanguageText = Loc ? Loc->GetText_LangButton() : NSLOCTEXT("T66.LanguageSelect", "LangButton", "LANG");
 		const FText AccountText = Loc ? Loc->GetText_AccountStatus() : NSLOCTEXT("T66.AccountStatus", "Title", "ACCOUNT");
-		const FText HomeText = NSLOCTEXT("T66.MainMenu", "TopBarHome", "Home");
+		const FText HomeText = NSLOCTEXT("T66.MainMenu", "TopBarHome", "HOME");
 		const FText PowerUpText = NSLOCTEXT("T66.MainMenu", "PowerUp", "POWER UP");
 		const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
 		const FText MiniGamesText = NSLOCTEXT("T66.MainMenu", "MiniGames", "MINIGAMES");
@@ -958,16 +958,20 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			}
 		};
 
-		const FNormalizedTopBarRect OuterRect{ 0.006f, 0.000f, 0.988f, 0.095f };
-		const FNormalizedTopBarRect SettingsRect{ 0.013f, 0.006f, 0.046f, 0.077f };
-		const FNormalizedTopBarRect LanguageRect{ 0.073f, 0.006f, 0.046f, 0.077f };
-		const FNormalizedTopBarRect AccountRect{ 0.133f, 0.006f, 0.156f, 0.077f };
-		const FNormalizedTopBarRect ProfileRect{ 0.302f, 0.006f, 0.043f, 0.077f };
-		const FNormalizedTopBarRect PowerUpRect{ 0.359f, 0.006f, 0.142f, 0.077f };
-		const FNormalizedTopBarRect AchievementsRect{ 0.513f, 0.006f, 0.153f, 0.077f };
-		const FNormalizedTopBarRect MiniGamesRect{ 0.679f, 0.006f, 0.126f, 0.077f };
-		const FNormalizedTopBarRect TicketRect{ 0.819f, 0.006f, 0.087f, 0.077f };
-		const FNormalizedTopBarRect QuitRect{ 0.923f, 0.006f, 0.063f, 0.077f };
+		const FNormalizedTopBarRect OuterRect{ 0.006f, 0.000f, 0.988f, 0.089f };
+		const float TopBarSidePaddingPx = (0.013f - OuterRect.X) * T66MainMenuReferenceLayout::CanvasWidth;
+		const float TopBarVerticalPadding = TopBarSidePaddingPx / T66MainMenuReferenceLayout::CanvasHeight;
+		const float TopBarControlY = OuterRect.Y + TopBarVerticalPadding;
+		const float TopBarControlH = FMath::Max(0.001f, OuterRect.H - (2.f * TopBarVerticalPadding));
+		const FNormalizedTopBarRect SettingsRect{ 0.013f, TopBarControlY, 0.046f, TopBarControlH };
+		const FNormalizedTopBarRect LanguageRect{ 0.073f, TopBarControlY, 0.046f, TopBarControlH };
+		const FNormalizedTopBarRect AccountRect{ 0.133f, TopBarControlY, 0.148f, TopBarControlH };
+		const FNormalizedTopBarRect ProfileRect{ 0.294f, TopBarControlY, 0.051f, TopBarControlH };
+		const FNormalizedTopBarRect PowerUpRect{ 0.359f, TopBarControlY, 0.142f, TopBarControlH };
+		const FNormalizedTopBarRect AchievementsRect{ 0.513f, TopBarControlY, 0.153f, TopBarControlH };
+		const FNormalizedTopBarRect MiniGamesRect{ 0.679f, TopBarControlY, 0.126f, TopBarControlH };
+		const FNormalizedTopBarRect TicketRect{ 0.819f, TopBarControlY, 0.087f, TopBarControlH };
+		const FNormalizedTopBarRect QuitRect{ 0.923f, TopBarControlY, 0.063f, TopBarControlH };
 
 		const float IconSize = 46.f;
 		auto MakeTaggedIconWidget = [](const TSharedRef<SWidget>& IconContent, const FVector2D& Size, const FName Tag) -> TSharedRef<SWidget>

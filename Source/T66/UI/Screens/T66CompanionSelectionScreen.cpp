@@ -27,6 +27,7 @@ class STextBlock;
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66FrontendVideoCatalog.h"
 #include "UI/T66FrontendVideoPlayer.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
 #include "Gameplay/T66CompanionBase.h"
@@ -194,6 +195,20 @@ bool UT66CompanionSelectionScreen::IsCompanionUnlocked(FName CompanionID) const
 		}
 	}
 	return true; // fail-open so we don't hard-lock the UI if subsystem is missing
+}
+
+bool UT66CompanionSelectionScreen::IsCompanionPlayable(FName CompanionID) const
+{
+	if (CompanionID.IsNone())
+	{
+		return true;
+	}
+
+	if (const UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+	{
+		return GI->IsCompanionPlayable(CompanionID);
+	}
+	return true;
 }
 
 void UT66CompanionSelectionScreen::GeneratePlaceholderSkins()
@@ -431,22 +446,35 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		T66GI->SelectedDifficulty = SelectedDifficulty;
 	}
 
-	if ((PreviewedCompanionID.IsNone() || !AllCompanionIDs.Contains(PreviewedCompanionID)) && T66GI)
+	if (T66GI)
 	{
-		if (!T66GI->SelectedCompanionID.IsNone() && AllCompanionIDs.Contains(T66GI->SelectedCompanionID))
+		T66GI->SelectedCompanionID = T66GI->ResolvePlayableCompanionID(T66GI->SelectedCompanionID);
+	}
+
+	if ((PreviewedCompanionID.IsNone() || !AllCompanionIDs.Contains(PreviewedCompanionID) || !IsCompanionPlayable(PreviewedCompanionID)) && T66GI)
+	{
+		if (!T66GI->SelectedCompanionID.IsNone()
+			&& AllCompanionIDs.Contains(T66GI->SelectedCompanionID)
+			&& T66GI->IsCompanionPlayable(T66GI->SelectedCompanionID))
 		{
 			PreviewedCompanionID = T66GI->SelectedCompanionID;
 		}
-		else if (AllCompanionIDs.Num() > 0)
+		else
 		{
-			PreviewedCompanionID = AllCompanionIDs[0];
+			const TArray<FName> PlayableCompanionIDs = T66GI->GetPlayableCompanionIDs();
+			PreviewedCompanionID = PlayableCompanionIDs.Num() > 0 ? PlayableCompanionIDs[0] : NAME_None;
 		}
 	}
 	CurrentCompanionIndex = AllCompanionIDs.IndexOfByKey(PreviewedCompanionID);
 	if (CurrentCompanionIndex == INDEX_NONE && AllCompanionIDs.Num() > 0)
 	{
-		CurrentCompanionIndex = 0;
-		PreviewedCompanionID = AllCompanionIDs[0];
+		const TArray<FName> PlayableCompanionIDs = T66GI ? T66GI->GetPlayableCompanionIDs() : AllCompanionIDs;
+		PreviewedCompanionID = PlayableCompanionIDs.Num() > 0 ? PlayableCompanionIDs[0] : AllCompanionIDs[0];
+		CurrentCompanionIndex = AllCompanionIDs.IndexOfByKey(PreviewedCompanionID);
+		if (CurrentCompanionIndex == INDEX_NONE)
+		{
+			CurrentCompanionIndex = 0;
+		}
 	}
 
 	GeneratePlaceholderSkins();
@@ -462,9 +490,13 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	const FText UnreadyText = NSLOCTEXT("T66.CompanionSelection", "Unready", "UNREADY");
 	const FText WaitingForPartyText = NSLOCTEXT("T66.CompanionSelection", "WaitingForParty", "WAITING FOR PARTY");
 	const FText ACBalanceText = T66SelectionScreenUtils::FormatAchievementCoinBalance(Loc, T66SelectionScreenUtils::GetAchievementCoinBalance(this));
+	if (T66GI)
+	{
+		SelectedDifficulty = T66GI->ResolvePlayableDifficulty(SelectedDifficulty);
+	}
 
 	DifficultyOptions.Empty();
-	const TArray<ET66Difficulty> Difficulties = T66GI ? T66GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
+	const TArray<ET66Difficulty> Difficulties = T66GI ? T66GI->GetVisibleDifficulties() : TArray<ET66Difficulty>{
 		ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 	};
 	for (const ET66Difficulty Difficulty : Difficulties)
@@ -495,7 +527,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			PreviewColor = Data.PlaceholderColor;
 		}
 	}
-	if (!PreviewedCompanionID.IsNone() && !IsCompanionUnlocked(PreviewedCompanionID))
+	if (!PreviewedCompanionID.IsNone() && (!IsCompanionUnlocked(PreviewedCompanionID) || !IsCompanionPlayable(PreviewedCompanionID)))
 	{
 		PreviewColor = FLinearColor(0.02f, 0.02f, 0.02f, 1.0f);
 	}
@@ -640,29 +672,33 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		const FName CompanionID = AllCompanionIDs.IsValidIndex(Idx) ? AllCompanionIDs[Idx] : NAME_None;
 		const bool bCenterSlot = Offset == 0;
 		const bool bUnlocked = CompanionID.IsNone() || IsCompanionUnlocked(CompanionID);
+		const bool bPlayable = IsCompanionPlayable(CompanionID);
+		const bool bSelectable = bUnlocked && bPlayable && !CompanionID.IsNone();
 		FName CompanionIDCopy = CompanionID;
 		const TSharedRef<SWidget> Portrait = CompanionCarouselPortraitBrushes.IsValidIndex(SlotIdx) && CompanionCarouselPortraitBrushes[SlotIdx].IsValid()
-			? StaticCastSharedRef<SWidget>(SNew(SImage).Image(CompanionCarouselPortraitBrushes[SlotIdx].Get()).ColorAndOpacity(bUnlocked ? FLinearColor::White : FLinearColor(1.f, 1.f, 1.f, 0.35f)))
+			? StaticCastSharedRef<SWidget>(SNew(SImage).Image(CompanionCarouselPortraitBrushes[SlotIdx].Get()).ColorAndOpacity(bUnlocked && bPlayable ? FLinearColor::White : FLinearColor(1.f, 1.f, 1.f, 0.35f)))
 			: SNullWidget::NullWidget;
+		const TSharedRef<SWidget> CompanionButton = FT66FlatStyle::MakeFlatToggleGroupButton(
+			bCenterSlot ? ET66FlatState::Selected : (bUnlocked && bPlayable ? ET66FlatState::Default : ET66FlatState::Disabled),
+			SNew(SBox).Padding(6.f)[Portrait],
+			bSelectable ? FOnClicked::CreateLambda([this, CompanionIDCopy]()
+			{
+				PreviewCompanion(CompanionIDCopy);
+				return FReply::Handled();
+			}) : FOnClicked(),
+			FMargin(0.f),
+			88.f,
+			88.f,
+			bSelectable,
+			CompanionSelectionIndexedTag(TEXT("CompanionSelection.Carousel.Slot"), SlotIdx),
+			CompanionSelectionTag(TEXT("CompanionSelectionCarousel")));
 		CarouselRow->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 8.f, 0.f)
 		[
-			FT66FlatStyle::MakeFlatToggleGroupButton(
-				bCenterSlot ? ET66FlatState::Selected : (bUnlocked ? ET66FlatState::Default : ET66FlatState::Disabled),
-				SNew(SBox).Padding(6.f)[Portrait],
-				FOnClicked::CreateLambda([this, CompanionIDCopy]()
-				{
-					if (!CompanionIDCopy.IsNone())
-					{
-						PreviewCompanion(CompanionIDCopy);
-					}
-					return FReply::Handled();
-				}),
-				FMargin(0.f),
-				88.f,
-				88.f,
-				bUnlocked && !CompanionIDCopy.IsNone(),
-				CompanionSelectionIndexedTag(TEXT("CompanionSelection.Carousel.Slot"), SlotIdx),
-				CompanionSelectionTag(TEXT("CompanionSelectionCarousel")))
+			T66DemoModeUI::WrapWithComingSoonOverlay(
+				CompanionButton,
+				!CompanionID.IsNone() && !bPlayable,
+				this,
+				FName(*FString::Printf(TEXT("CompanionSelection.Carousel.Slot%02d.DemoOverlay"), SlotIdx + 1)))
 		];
 	}
 	CarouselRow->AddSlot().AutoWidth().VAlign(VAlign_Center)
@@ -795,44 +831,51 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 				FMargin(20.f, 12.f),
 				0.f,
 				126.f,
-				TAttribute<bool>::CreateLambda([this]() { return !PreviewedCompanionID.IsNone() && IsCompanionUnlocked(PreviewedCompanionID); }),
+				TAttribute<bool>::CreateLambda([this]() { return !PreviewedCompanionID.IsNone() && IsCompanionUnlocked(PreviewedCompanionID) && IsCompanionPlayable(PreviewedCompanionID); }),
 				24,
 				CompanionSelectionTag(TEXT("CompanionSelection.ConfirmButton"))),
 			nullptr,
 			CompanionSelectionTag(TEXT("CompanionSelection.ConfirmPanel"))));
 
-	auto MakeDifficultyMenu = [this, MakeBottomPanel]() -> TSharedRef<SWidget>
+	auto MakeDifficultyMenu = [this, MakeBottomPanel, T66GI, Difficulties]() -> TSharedRef<SWidget>
 	{
-		TSharedRef<SVerticalBox> OptionsBox = SNew(SVerticalBox);
-		for (const TSharedPtr<FString>& Opt : DifficultyOptions)
+		TArray<FT66FlatDropdownOptionData> Options;
+		for (int32 OptionIndex = 0; OptionIndex < DifficultyOptions.Num(); ++OptionIndex)
 		{
+			const TSharedPtr<FString>& Opt = DifficultyOptions[OptionIndex];
 			if (!Opt.IsValid())
 			{
 				continue;
 			}
 			TSharedPtr<FString> Captured = Opt;
-			OptionsBox->AddSlot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-			[
-				FT66FlatStyle::MakeFlatButton(
-					CurrentDifficultyOption.IsValid() && *CurrentDifficultyOption == *Opt ? ET66FlatState::Selected : ET66FlatState::Default,
-					FText::FromString(*Opt),
-					FOnClicked::CreateLambda([this, Captured]()
-					{
-						OnDifficultyChanged(Captured, ESelectInfo::Direct);
-						FSlateApplication::Get().DismissAllMenus();
-						return FReply::Handled();
-					}),
-					nullptr,
-					nullptr,
-					FMargin(10.f, 6.f),
-					160.f,
-					36.f,
-					true,
-					16,
-					NAME_None)
-			];
+			const ET66Difficulty Difficulty = Difficulties.IsValidIndex(OptionIndex) ? Difficulties[OptionIndex] : ET66Difficulty::Easy;
+			const bool bDifficultyPlayable = !T66GI || T66GI->IsDifficultyPlayable(Difficulty);
+			FT66FlatDropdownOptionData Option;
+			Option.Label = FText::FromString(*Opt);
+			Option.State = !bDifficultyPlayable
+				? ET66FlatState::Disabled
+				: (CurrentDifficultyOption.IsValid() && *CurrentDifficultyOption == *Opt ? ET66FlatState::Selected : ET66FlatState::Default);
+			Option.bEnabled = bDifficultyPlayable;
+			Option.bShowUnavailableOverlay = !bDifficultyPlayable;
+			Option.UnavailableText = T66DemoModeUI::GetUnavailableContentText(this);
+			Option.MinWidth = 160.f;
+			Option.Height = 56.f;
+			Option.FontSize = 20;
+			Option.Tag = FName(*FString::Printf(TEXT("CompanionSelection.BottomRow.DifficultyPanel.Dropdown.Option.%02d"), OptionIndex + 1));
+			Option.OverlayTag = FName(*FString::Printf(TEXT("CompanionSelection.BottomRow.DifficultyPanel.Dropdown.Option.%02d.DemoOverlay"), OptionIndex + 1));
+			Option.OnClicked = FOnClicked::CreateLambda([this, Captured]()
+			{
+				OnDifficultyChanged(Captured, ESelectInfo::Direct);
+				FSlateApplication::Get().DismissAllMenus();
+				return FReply::Handled();
+			});
+			Options.Add(MoveTemp(Option));
 		}
-		return MakeBottomPanel(TEXT("CompanionSelection.BottomRow.DifficultyPanel.Dropdown.Menu"), ET66FlatState::Default, OptionsBox, FMargin(6.f));
+		return MakeBottomPanel(
+			TEXT("CompanionSelection.BottomRow.DifficultyPanel.Dropdown.Menu"),
+			ET66FlatState::Default,
+			FT66FlatStyle::MakeFlatDropdownOptionsMenu(Options, 160.f, 56.f, 20, CompanionSelectionTag(TEXT("CompanionSelection.BottomRow.DifficultyPanel.Dropdown.Options"))),
+			FMargin(6.f));
 	};
 
 	const TSharedRef<SVerticalBox> DifficultyPanel = SNew(SVerticalBox)
@@ -932,11 +975,16 @@ void UT66CompanionSelectionScreen::OnDifficultyChanged(TSharedPtr<FString> NewVa
 	}
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
-	const TArray<ET66Difficulty> Difficulties = GI ? GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
+	const TArray<ET66Difficulty> Difficulties = GI ? GI->GetVisibleDifficulties() : TArray<ET66Difficulty>{
 		ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 	};
 	const int32 Index = DifficultyOptions.IndexOfByKey(NewValue);
 	if (!Difficulties.IsValidIndex(Index))
+	{
+		return;
+	}
+
+	if (GI && !GI->IsDifficultyPlayable(Difficulties[Index]))
 	{
 		return;
 	}
@@ -961,7 +1009,7 @@ void UT66CompanionSelectionScreen::RefreshDifficultyDropdownText()
 	if (DifficultyOptions.Num() > 0)
 	{
 		UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
-		const TArray<ET66Difficulty> Difficulties = GI ? GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
+		const TArray<ET66Difficulty> Difficulties = GI ? GI->GetVisibleDifficulties() : TArray<ET66Difficulty>{
 			ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 		};
 		const int32 CurrentDiffIndex = Difficulties.IndexOfByKey(SelectedDifficulty);
@@ -992,6 +1040,12 @@ void UT66CompanionSelectionScreen::RefreshCompanionRecordRank()
 	if (PreviewedCompanionID.IsNone())
 	{
 		CompanionRecordRankWidget->SetText(NSLOCTEXT("T66.CompanionSelection", "CompanionRecordRankUnavailable", "--"));
+		return;
+	}
+
+	if (!IsCompanionPlayable(PreviewedCompanionID))
+	{
+		CompanionRecordRankWidget->SetText(NSLOCTEXT("T66.CompanionSelection", "CompanionRecordRankDemoUnavailable", "--"));
 		return;
 	}
 
@@ -1171,7 +1225,7 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 			CompanionPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.3f, 0.3f, 0.4f, 1.0f));
 		}
 
-		if (!PreviewedCompanionID.IsNone() && !IsCompanionUnlocked(PreviewedCompanionID))
+		if (!PreviewedCompanionID.IsNone() && (!IsCompanionUnlocked(PreviewedCompanionID) || !IsCompanionPlayable(PreviewedCompanionID)))
 		{
 			CompanionPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.02f, 0.02f, 0.02f, 1.0f));
 		}
@@ -1214,7 +1268,7 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 	// Unity is profile progression only; healing strength is fixed by difficulty.
 	if (CompanionUnionBox.IsValid())
 	{
-		const bool bShowUnion = !PreviewedCompanionID.IsNone() && IsCompanionUnlocked(PreviewedCompanionID);
+		const bool bShowUnion = !PreviewedCompanionID.IsNone() && IsCompanionUnlocked(PreviewedCompanionID) && IsCompanionPlayable(PreviewedCompanionID);
 		CompanionUnionBox->SetVisibility(bShowUnion ? EVisibility::Visible : EVisibility::Collapsed);
 	}
 
@@ -1415,6 +1469,11 @@ bool UT66CompanionSelectionScreen::GetPreviewedCompanionData(FCompanionData& Out
 
 void UT66CompanionSelectionScreen::PreviewCompanion(FName ID)
 {
+	if (!IsCompanionPlayable(ID))
+	{
+		return;
+	}
+
 	PreviewedCompanionID = ID;
 	PreviewedCompanionSkinIDOverride = NAME_None;
 	CurrentCompanionIndex = ID.IsNone() ? -1 : AllCompanionIDs.IndexOfByKey(ID);
@@ -1431,15 +1490,33 @@ void UT66CompanionSelectionScreen::SelectNoCompanion() { PreviewCompanion(NAME_N
 void UT66CompanionSelectionScreen::PreviewNextCompanion()
 {
 	if (AllCompanionIDs.Num() == 0) return;
-	CurrentCompanionIndex = (FMath::Max(CurrentCompanionIndex, 0) + 1) % AllCompanionIDs.Num();
-	PreviewCompanion(AllCompanionIDs[CurrentCompanionIndex]);
+	const int32 StartIndex = FMath::Max(CurrentCompanionIndex, 0);
+	for (int32 Step = 1; Step <= AllCompanionIDs.Num(); ++Step)
+	{
+		const int32 CandidateIndex = (StartIndex + Step) % AllCompanionIDs.Num();
+		if (IsCompanionPlayable(AllCompanionIDs[CandidateIndex]))
+		{
+			CurrentCompanionIndex = CandidateIndex;
+			PreviewCompanion(AllCompanionIDs[CurrentCompanionIndex]);
+			return;
+		}
+	}
 }
 
 void UT66CompanionSelectionScreen::PreviewPreviousCompanion()
 {
 	if (AllCompanionIDs.Num() == 0) return;
-	CurrentCompanionIndex = (FMath::Max(CurrentCompanionIndex, 0) - 1 + AllCompanionIDs.Num()) % AllCompanionIDs.Num();
-	PreviewCompanion(AllCompanionIDs[CurrentCompanionIndex]);
+	const int32 StartIndex = FMath::Max(CurrentCompanionIndex, 0);
+	for (int32 Step = 1; Step <= AllCompanionIDs.Num(); ++Step)
+	{
+		const int32 CandidateIndex = (StartIndex - Step + AllCompanionIDs.Num()) % AllCompanionIDs.Num();
+		if (IsCompanionPlayable(AllCompanionIDs[CandidateIndex]))
+		{
+			CurrentCompanionIndex = CandidateIndex;
+			PreviewCompanion(AllCompanionIDs[CurrentCompanionIndex]);
+			return;
+		}
+	}
 }
 
 void UT66CompanionSelectionScreen::OnCompanionGridClicked() { ShowModal(ET66ScreenType::CompanionGrid); }
@@ -1447,13 +1524,13 @@ void UT66CompanionSelectionScreen::OnCompanionLoreClicked() { if (!PreviewedComp
 void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
 {
 	// Locked companions cannot be confirmed/selected.
-	if (!PreviewedCompanionID.IsNone() && !IsCompanionUnlocked(PreviewedCompanionID))
+	if (!PreviewedCompanionID.IsNone() && (!IsCompanionUnlocked(PreviewedCompanionID) || !IsCompanionPlayable(PreviewedCompanionID)))
 	{
 		return;
 	}
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		GI->SelectedCompanionID = PreviewedCompanionID;
+		GI->SelectedCompanionID = GI->ResolvePlayableCompanionID(PreviewedCompanionID);
 		GI->PersistRememberedSelectionDefaults();
 		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
 		{
@@ -1498,7 +1575,7 @@ const FSlateBrush* UT66CompanionSelectionScreen::GetCompanionPreviewVideoBrush()
 
 void UT66CompanionSelectionScreen::OnEnterTribulationClicked()
 {
-	if (!PreviewedCompanionID.IsNone() && !IsCompanionUnlocked(PreviewedCompanionID))
+	if (!PreviewedCompanionID.IsNone() && (!IsCompanionUnlocked(PreviewedCompanionID) || !IsCompanionPlayable(PreviewedCompanionID)))
 	{
 		return;
 	}
@@ -1508,7 +1585,7 @@ void UT66CompanionSelectionScreen::OnEnterTribulationClicked()
 	if (GI)
 	{
 		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
-		GI->SelectedCompanionID = PreviewedCompanionID;
+		GI->SelectedCompanionID = GI->ResolvePlayableCompanionID(PreviewedCompanionID);
 		GI->SelectedDifficulty = SelectedDifficulty;
 		GI->PersistRememberedSelectionDefaults();
 		GI->ApplyConfiguredMainMapLayoutVariant();

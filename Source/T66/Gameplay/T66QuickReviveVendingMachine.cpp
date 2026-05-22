@@ -11,7 +11,7 @@
 
 AT66QuickReviveVendingMachine::AT66QuickReviveVendingMachine()
 {
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D")));
 
 	if (VisualMesh)
 	{

@@ -137,6 +137,11 @@ namespace
 
 FReply UT66GamblerOverlayWidget::OnOpenCoinFlip()
 {
+	if (!IsCasinoGameAllowed(FName(TEXT("CoinFlip"))))
+	{
+		return HandleBlockedCasinoGame();
+	}
+
 	SetPage(EGamblerPage::CoinFlip);
 	// Reset coin to Heads face
 	if (CoinFlipImage.IsValid()) CoinFlipImage->SetImage(&CoinBrush_Heads);
@@ -145,6 +150,11 @@ FReply UT66GamblerOverlayWidget::OnOpenCoinFlip()
 
 FReply UT66GamblerOverlayWidget::OnOpenRps()
 {
+	if (!IsCasinoGameAllowed(FName(TEXT("RockPaperScissors"))))
+	{
+		return HandleBlockedCasinoGame();
+	}
+
 	SetPage(EGamblerPage::RockPaperScissors);
 	// Hide hand images until a round is revealed
 	if (RpsHandsContainer.IsValid()) RpsHandsContainer->SetVisibility(EVisibility::Collapsed);

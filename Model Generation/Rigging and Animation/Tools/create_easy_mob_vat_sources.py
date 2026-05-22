@@ -358,6 +358,67 @@ def create_action(spec: MobSpec, armature: bpy.types.Object, clip: str, length: 
     key_all_defaults(armature, 1)
     key_all_defaults(armature, length)
 
+    if spec.profile == "slime" and clip == "Move":
+        hop_frames = 8
+        for frame in range(1, length + 1):
+            set_pose_defaults(armature)
+            hop_u = ((frame - 1) % hop_frames) / float(hop_frames)
+            travel_u = (frame - 1) / max(1.0, float(length - 1))
+            lift = max(0.0, math.sin(math.pi * hop_u))
+            contact = max(0.0, math.cos(math.tau * hop_u)) ** 2
+            launch = max(0.0, math.sin(math.tau * hop_u))
+            landing = max(0.0, -math.sin(math.tau * hop_u))
+            wobble = math.sin(math.tau * travel_u)
+            wobble_c = math.cos(math.tau * travel_u)
+
+            key_bone(
+                armature,
+                frame,
+                "body",
+                loc=(0.0, 0.018 * launch - 0.012 * landing, 0.095 * lift - 0.020 * contact),
+                rot=(-0.055 * launch + 0.040 * landing, 0.0, 0.035 * wobble),
+                scale=(
+                    1.0 + 0.18 * contact - 0.07 * lift,
+                    1.0 + 0.20 * contact + 0.04 * launch - 0.05 * lift,
+                    1.0 - 0.30 * contact + 0.22 * lift,
+                ),
+            )
+            key_bone(
+                armature,
+                frame,
+                "top",
+                loc=(0.014 * wobble, 0.018 * launch, 0.080 * lift - 0.035 * contact),
+                rot=(0.050 * landing - 0.035 * launch, 0.0, -0.050 * wobble_c),
+                scale=(1.0 - 0.04 * lift, 1.0 - 0.04 * lift, 1.0 + 0.15 * lift),
+            )
+            key_bone(
+                armature,
+                frame,
+                "front",
+                loc=(0.0, 0.130 * launch + 0.045 * lift, 0.042 * lift - 0.012 * contact),
+                scale=(1.0 + 0.05 * launch, 1.0 + 0.11 * launch, 1.0 - 0.08 * contact),
+            )
+            key_bone(
+                armature,
+                frame,
+                "back",
+                loc=(0.0, -0.085 * landing, -0.012 * contact),
+                scale=(1.0 + 0.04 * landing, 1.0 + 0.08 * landing, 1.0 - 0.05 * contact),
+            )
+            key_bone(armature, frame, "lower", scale=(1.0 + 0.20 * contact, 1.0 + 0.16 * contact, 1.0 - 0.22 * contact))
+
+            for pbone in armature.pose.bones:
+                if pbone.name == "root":
+                    continue
+                pbone.keyframe_insert("location", frame=frame)
+                pbone.keyframe_insert("rotation_euler", frame=frame)
+                pbone.keyframe_insert("scale", frame=frame)
+
+        for fcurve in iter_action_fcurves(action):
+            for key in fcurve.keyframe_points:
+                key.interpolation = "CONSTANT"
+        return action
+
     for frame, phase in phase_keyframes(length, 6 if clip in {"Idle", "Move"} else 5):
         set_pose_defaults(armature)
         s = math.sin(phase)

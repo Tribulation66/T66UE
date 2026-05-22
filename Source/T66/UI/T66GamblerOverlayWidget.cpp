@@ -13,6 +13,7 @@
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "UI/T66ItemCardTextUtils.h"
+#include "UI/T66DemoModeUIUtils.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -144,6 +145,16 @@ void UT66GamblerOverlayWidget::SetWinGoldAmount(int32 InAmount)
 	RefreshTopBar();
 }
 
+bool UT66GamblerOverlayWidget::IsCasinoGameAllowed(const FName CasinoGameID) const
+{
+	return T66DemoModeUI::IsCasinoGameAllowed(this, CasinoGameID);
+}
+
+FReply UT66GamblerOverlayWidget::HandleBlockedCasinoGame()
+{
+	SetStatus(T66DemoModeUI::GetUnavailableContentText(this), FT66FlatStyle::Tokens::TextMuted);
+	return FReply::Handled();
+}
 
 FReply UT66GamblerOverlayWidget::OnBack()
 {

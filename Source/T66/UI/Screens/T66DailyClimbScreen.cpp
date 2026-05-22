@@ -187,7 +187,7 @@ FReply UT66DailyClimbScreen::HandleContinueClicked()
 
 	T66GI->SelectedHeroID = T66GI->ResolvePlayableHeroID(Loaded->HeroID);
 	T66GI->SelectedHeroBodyType = Loaded->HeroBodyType;
-	T66GI->SelectedCompanionID = Loaded->CompanionID;
+	T66GI->SelectedCompanionID = T66GI->ResolvePlayableCompanionID(Loaded->CompanionID);
 	T66GI->SelectedDifficulty = T66GI->ResolvePlayableDifficulty(Loaded->Difficulty);
 	T66GI->SelectedPartySize = ET66PartySize::Solo;
 	T66GI->RunSeed = Loaded->RunSeed;

@@ -7,7 +7,7 @@
                             "DisplayName":  "Vehicle",
                             "InteractionVerb":  "pilot vehicle",
                             "ExitInteractionVerb":  "exit vehicle",
-                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D",
                             "DisplayMeshScale":  {
                                                      "X":  1,
                                                      "Y":  1,
@@ -39,7 +39,7 @@
                             "DisplayName":  "Vehicle",
                             "InteractionVerb":  "pilot vehicle",
                             "ExitInteractionVerb":  "exit vehicle",
-                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D",
                             "DisplayMeshScale":  {
                                                      "X":  1,
                                                      "Y":  1,
@@ -71,7 +71,7 @@
                             "DisplayName":  "Vehicle",
                             "InteractionVerb":  "pilot vehicle",
                             "ExitInteractionVerb":  "exit vehicle",
-                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D",
                             "DisplayMeshScale":  {
                                                      "X":  1,
                                                      "Y":  1,
@@ -103,7 +103,7 @@
                             "DisplayName":  "Vehicle",
                             "InteractionVerb":  "pilot vehicle",
                             "ExitInteractionVerb":  "exit vehicle",
-                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D",
                             "DisplayMeshScale":  {
                                                      "X":  1,
                                                      "Y":  1,
@@ -135,7 +135,7 @@
                             "DisplayName":  "Vehicle",
                             "InteractionVerb":  "pilot vehicle",
                             "ExitInteractionVerb":  "exit vehicle",
-                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D",
                             "DisplayMeshScale":  {
                                                      "X":  1,
                                                      "Y":  1,
@@ -167,7 +167,7 @@
                             "DisplayName":  "Vehicle",
                             "InteractionVerb":  "pilot vehicle",
                             "ExitInteractionVerb":  "exit vehicle",
-                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+                            "DisplayMesh":  "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D",
                             "DisplayMeshScale":  {
                                                      "X":  1,
                                                      "Y":  1,

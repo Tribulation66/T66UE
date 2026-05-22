@@ -6,7 +6,17 @@
 
 ## Version Naming Rule
 
-- When the user names a new version, treat that value as both the Unreal game version and the GitHub repo version. Update `ProjectVersion` in `Config/DefaultGame.ini` and use the same exact value for the GitHub branch/tag/release naming unless the user explicitly asks for a different split.
+- `main` is the only normal development branch. Do not create version branches such as `alpha-0.8`, `main/alpha-0.8`, or `version-1.1` unless the user explicitly asks for a separate branch.
+- When the user names a new version, treat that value as both the Unreal game version and the GitHub repo version. Update `ProjectVersion` in `Config/DefaultGame.ini` and use the same exact value for the GitHub tag/release naming unless the user explicitly asks for a different split.
+- Version snapshots are Git tags on `main`. After the intended changes are committed and pushed to `origin/main`, create and push the version tag from the committed `main` tip.
+
+## Commit And Push Rule
+
+- When the user says "commit and push", interpret it as: commit approved changes to `main`, push `main`, create and push the next version tag, and verify the working tree is clean afterward.
+- The default next version tag is the current version with the final numeric component incremented by `0.1` (for example, `alpha-0.7` -> `alpha-0.8`) unless the user names a specific version.
+- A commit/push task is not complete until `main` equals `origin/main` and there are no remaining tracked changes. If any tracked changes remain, classify each as commit, restore, ignore/untrack, or explicitly deferred before reporting completion.
+- Do not use broad Git scans over LFS-heavy folders to prove cleanliness unless necessary. Prefer path-scoped checks during the task, then one final clean-tree verification.
+- Never use blanket discard, reset, or clean commands to make the tree clean unless the user explicitly approves that destructive cleanup.
 
 ## Script Lifecycle Rule
 

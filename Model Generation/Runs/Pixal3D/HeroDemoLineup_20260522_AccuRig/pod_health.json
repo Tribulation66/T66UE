@@ -1,0 +1,1 @@
+{"attention_backend":"flash_attn_3","cuda":true,"gpu":"NVIDIA RTX 6000 Ada Generation","loaded_at":1779404797.9874527,"low_vram":false,"model_path":"TencentARC/Pixal3D","pipeline_loaded":true,"sparse_attention_backend":"flash_attn_3","sparse_conv_backend":"flex_gemm","status":"ok","vram_allocated_gb":20.3,"vram_reserved_gb":20.3,"vram_total_gb":50.9}

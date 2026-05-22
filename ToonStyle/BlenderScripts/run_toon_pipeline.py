@@ -57,6 +57,11 @@ def parse_args() -> argparse.Namespace:
 	parser.add_argument("--no-remesh-export", action="store_true")
 	parser.add_argument("--texture-postprocess-python", default="python")
 	parser.add_argument("--enable-foundation-tools", action="store_true")
+	parser.add_argument(
+		"--enable-humanoid-face-normal-transfer",
+		action="store_true",
+		help="Deprecated opt-in for humanoid face/head normal transfer. Production default is disabled; revisit only in a future research pass.",
+	)
 	parser.add_argument("--accepted-limitation", action="store_true")
 	parser.add_argument("--asset-class", choices=["humanoid", "creature", "prop", "accepted-limitation"], default="prop")
 	parser.add_argument("--inner-line-size", default=4096, type=int)
@@ -385,15 +390,30 @@ def bounds_report(obj: bpy.types.Object) -> dict[str, object]:
 	}
 
 
-def sample_head_normal_delta(shading_obj: bpy.types.Object, outline_obj: bpy.types.Object) -> dict[str, object]:
+def sample_head_normal_delta(
+	shading_obj: bpy.types.Object,
+	outline_obj: bpy.types.Object,
+	normal_transfer_report: dict[str, object] | None = None,
+) -> dict[str, object]:
 	shading_obj.data.calc_loop_triangles()
 	outline_obj.data.calc_loop_triangles()
 	mins, maxs = world_bounds(shading_obj)
+	center = None
+	radius = None
+	if normal_transfer_report:
+		report_center = normal_transfer_report.get("proxy_center")
+		report_radius = normal_transfer_report.get("proxy_radius")
+		if isinstance(report_center, list) and len(report_center) == 3 and report_radius:
+			center = Vector((float(report_center[0]), float(report_center[1]), float(report_center[2])))
+			radius = float(report_radius)
 	threshold = mins.z + ((maxs.z - mins.z) * 0.75)
 	for loop in shading_obj.data.loops:
 		vertex = shading_obj.data.vertices[loop.vertex_index]
 		world_pos = shading_obj.matrix_world @ vertex.co
-		if world_pos.z < threshold:
+		if center is not None and radius is not None:
+			if (world_pos - center).length > radius:
+				continue
+		elif world_pos.z < threshold:
 			continue
 		outline_loop = outline_obj.data.loops[loop.index]
 		shading_n = loop.normal.copy()
@@ -407,8 +427,9 @@ def sample_head_normal_delta(shading_obj: bpy.types.Object, outline_obj: bpy.typ
 			"outline_normal": [outline_n.x, outline_n.y, outline_n.z],
 			"delta": delta,
 			"distinct": delta > 0.01,
+			"sample_region": "face_mask" if center is not None else "legacy_top_25_percent",
 		}
-	return {"distinct": False, "reason": "no_head_loop_sample"}
+	return {"distinct": False, "reason": "no_face_mask_loop_sample" if center is not None else "no_head_loop_sample"}
 
 
 def main() -> int:
@@ -454,8 +475,20 @@ def main() -> int:
 		args,
 		args.working_dir / f"{args.asset_name}_uv_triangles.npz",
 	)
-	normal_transfer_report = transfer_face_normals(joined, args.is_humanoid)
-	normal_delta_report = sample_head_normal_delta(joined, outline_obj) if args.is_humanoid else {"distinct": True, "reason": "non_humanoid"}
+	if args.is_humanoid and args.enable_humanoid_face_normal_transfer:
+		normal_transfer_report = transfer_face_normals(joined, args.is_humanoid, args.asset_name)
+		normal_delta_report = sample_head_normal_delta(joined, outline_obj, normal_transfer_report)
+	elif args.is_humanoid:
+		normal_transfer_report = {
+			"enabled": False,
+			"method": "disabled_original_normals",
+			"reason": "humanoid_face_normal_transfer_deprecated_disabled_by_default",
+			"experimental_opt_in_flag": "--enable-humanoid-face-normal-transfer",
+		}
+		normal_delta_report = {"distinct": True, "reason": "humanoid_face_normal_transfer_deprecated_disabled"}
+	else:
+		normal_transfer_report = {"enabled": False, "method": "not_applicable", "reason": "non_humanoid"}
+		normal_delta_report = {"distinct": True, "reason": "non_humanoid"}
 
 	shading_fbx = args.working_dir / f"{args.asset_name}.fbx"
 	outline_fbx = args.working_dir / f"{args.asset_name}_outline.fbx"

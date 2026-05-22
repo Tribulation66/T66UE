@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "workflow": "pixal3d_toonstyle_production_import",
+  "production_cleared": true,
+  "run_purpose": "AccuRig FBX source generation for Hero 1-5 Chad/Stacy demo lineup from accepted imagegen sources.",
+  "source_gate_override": {
+    "luminance_floor": "waived_for_user_requested_pod_generation_2026-05-22",
+    "reason": "User explicitly asked to generate these selected source PNGs on the PIXAL pod for AccuRig; original PNGs were preserved unchanged and the source-gate hard rejects are recorded in source_gate_report.json."
+  },
+  "settings": {
+    "seed": 1337,
+    "resolution": 1536,
+    "image_resolution": 1024,
+    "texture_size": 4096,
+    "decimation": 200000,
+    "fallback_decimation": 80000,
+    "remesh": true,
+    "export_fallback": false,
+    "safe_fill_holes_fallback": false,
+    "ss_steps": 25,
+    "ss_guidance": 7.5,
+    "shape_steps": 25,
+    "shape_guidance": 7.5,
+    "tex_steps": 25,
+    "tex_guidance": 4.0,
+    "batch_generate_timeout": 7200,
+    "batch_poll_interval": 60,
+    "batch_wait_timeout": 43200
+  },
+  "assets": [
+    {
+      "asset_id": "Hero_1_Chad",
+      "display_name": "Hero 1 Chad",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ImageGen/HeroDesign/Hero_1_Chad/hero_1_chad_detail_parity_bust_20260522_v01.png",
+      "target_dir": "/Game/Characters/Heroes/Hero_1/Chad/AccuRigSource",
+      "replaces": "",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "AccuRig source export only; no Unreal gameplay reference update in this pass.",
+      "production_status": "planned",
+      "working_dir": "Model Generation/Runs/Pixal3D/HeroDemoLineup_20260522_AccuRig/Processed/Hero_1_Chad/Working",
+      "notes": "Generated for manual AccuRig rigging handoff; do not treat as imported runtime content until a separate Unreal import pass validates it."
+    },
+    {
+      "asset_id": "Hero_1_Stacy",
+      "display_name": "Hero 1 Stacy",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ImageGen/HeroDesign/Hero_1_Stacy/hero_1_stacy_detail_parity_bust_20260522_v01.png",
+      "target_dir": "/Game/Characters/Heroes/Hero_1/Stacy/AccuRigSource",
+      "replaces": "",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "AccuRig source export only; no Unreal gameplay reference update in this pass.",
+      "production_status": "planned",
+      "working_dir": "Model Generation/Runs/Pixal3D/HeroDemoLineup_20260522_AccuRig/Processed/Hero_1_Stacy/Working",
+      "notes": "Generated for manual AccuRig rigging handoff; do not treat as imported runtime content until a separate Unreal import pass validates it."
+    },
+    {
+      "asset_id": "Hero_2_Chad",
+      "display_name": "Hero 2 Chad",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ImageGen/HeroDesign/Hero_2_Chad/hero_2_chad_detail_parity_bust_20260522_v01.png",
+      "target_dir": "/Game/Characters/Heroes/Hero_2/Chad/AccuRigSource",
+      "replaces": "",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "AccuRig source export only; no Unreal gameplay reference update in this pass.",
+      "production_status": "planned",
+      "working_dir": "Model Generation/Runs/Pixal3D/HeroDemoLineup_20260522_AccuRig/Processed/Hero_2_Chad/Working",
+      "notes": "Generated for manual AccuRig rigging handoff; do not treat as imported runtime content until a separate Unreal import pass validates it."
+    },
+    {
+      "asset_id": "Hero_2_Stacy",
+      "display_name": "Hero 2 Stacy",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ImageGen/HeroDesign/Hero_2_Stacy/hero_2_stacy_detail_parity_bust_20260522_v01.png",
+      "target_dir": "/Game/Characters/Heroes/Hero_2/Stacy/AccuRigSource",
+      "replaces": "",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "AccuRig source export only; no Unreal gameplay reference update in this pass.",
+      "production_status": "planned",
+      "working_dir": "Model Generation/Runs/Pixal3D/HeroDemoLineup_20260522_AccuRig/Processed/Hero_2_Stacy/Working",
+      "notes": "Generated for manual AccuRig rigging handoff; do not treat as imported runtime content until a separate Unreal import pass validates it."
+    },
+    {
+      "asset_id": "Hero_3_Chad",
+      "display_name": "Hero 3 Chad",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ImageGen/HeroDesign/Hero_3_Chad/hero_3_chad_detail_parity_bust_20260522_v01.png",
+      "target_dir": "/Game/Characters/Heroes/Hero_3/Chad/AccuRigSource",
+      "replaces": "",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "AccuRig source export only; no Unreal gameplay reference update in this pass.",
+      "production_status": "planned",
+      "working_dir": "Model Generation/Runs/Pixal3D/HeroDemoLineup_20260522_AccuRig/Processed/Hero_3_Chad/Working",
+      "notes": "Generated for manual AccuRig rigging handoff; do not treat as imported runtime content until a separate Unreal import pass validates it."
+    },
+    {
+      "asset_id": "Hero_3_Stacy",
+      "display_name": "Hero 3 Stacy",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ImageGen/HeroDesign/Hero_3_Stacy/hero_3_stacy_detail_parity_bust_20260522_v01.png",
+      "target_dir": "/Game/Characters/Heroes/Hero_3/Stacy/AccuRigSource",
+      "replaces": "",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "AccuRig source export only; no Unreal gameplay reference update in this pass.",
+      "production_status": "planned",
+      "working_dir": "Model Generation/Runs/Pixal3D/HeroDemoLineup_20260522_AccuRig/Processed/Hero_3_Stacy/Working",
+      "notes": "Generated for manual AccuRig rigging handoff; do not treat as imported runtime content until a separate Unreal import pass validates it."
+    },
+    {
+      "asset_id": "Hero_4_Chad",
+      "display_name": "Hero 4 Chad",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ImageGen/HeroDesign/Hero_4_Chad/hero_4_chad_detail_parity_bust_20260522_v01.png",
+      "target_dir": "/Game/Characters/Heroes/Hero_4/Chad/AccuRigSource",
+      "replaces": "",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "AccuRig source export only; no Unreal gameplay reference update in this pass.",
+      "production_status": "planned",
+      "working_dir": "Model Generation/Runs/Pixal3D/HeroDemoLineup_20260522_AccuRig/Processed/Hero_4_Chad/Working",
+      "notes": "Generated for manual AccuRig rigging handoff; do not treat as imported runtime content until a separate Unreal import pass validates it."
+    },
+    {
+      "asset_id": "Hero_4_Stacy",
+      "display_name": "Hero 4 Stacy",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ImageGen/HeroDesign/Hero_4_Stacy/hero_4_stacy_detail_parity_bust_20260522_v02.png",
+      "target_dir": "/Game/Characters/Heroes/Hero_4/Stacy/AccuRigSource",
+      "replaces": "",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "AccuRig source export only; no Unreal gameplay reference update in this pass.",
+      "production_status": "planned",
+      "working_dir": "Model Generation/Runs/Pixal3D/HeroDemoLineup_20260522_AccuRig/Processed/Hero_4_Stacy/Working",
+      "notes": "Generated for manual AccuRig rigging handoff; do not treat as imported runtime content until a separate Unreal import pass validates it."
+    },
+    {
+      "asset_id": "Hero_5_Chad",
+      "display_name": "Hero 5 Chad",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ImageGen/HeroDesign/Hero_5_Chad/hero_5_chad_detail_parity_bust_20260522_v01.png",
+      "target_dir": "/Game/Characters/Heroes/Hero_5/Chad/AccuRigSource",
+      "replaces": "",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "AccuRig source export only; no Unreal gameplay reference update in this pass.",
+      "production_status": "planned",
+      "working_dir": "Model Generation/Runs/Pixal3D/HeroDemoLineup_20260522_AccuRig/Processed/Hero_5_Chad/Working",
+      "notes": "Generated for manual AccuRig rigging handoff; do not treat as imported runtime content until a separate Unreal import pass validates it."
+    },
+    {
+      "asset_id": "Hero_5_Stacy",
+      "display_name": "Hero 5 Stacy",
+      "category": "hero",
+      "asset_class": "humanoid",
+      "source_image": "SourceAssets/ToonStyle/ImageGen/HeroDesign/Hero_5_Stacy/hero_5_stacy_detail_parity_bust_20260522_v01.png",
+      "target_dir": "/Game/Characters/Heroes/Hero_5/Stacy/AccuRigSource",
+      "replaces": "",
+      "target_height": 180.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "AccuRig source export only; no Unreal gameplay reference update in this pass.",
+      "production_status": "planned",
+      "working_dir": "Model Generation/Runs/Pixal3D/HeroDemoLineup_20260522_AccuRig/Processed/Hero_5_Stacy/Working",
+      "notes": "Generated for manual AccuRig rigging handoff; do not treat as imported runtime content until a separate Unreal import pass validates it."
+    }
+  ]
+}

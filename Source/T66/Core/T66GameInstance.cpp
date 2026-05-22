@@ -1021,6 +1021,22 @@ TArray<ET66Difficulty> UT66GameInstance::GetPlayableDifficulties() const
 	};
 }
 
+TArray<ET66Difficulty> UT66GameInstance::GetVisibleDifficulties() const
+{
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->GetVisibleDifficulties();
+	}
+
+	return {
+		ET66Difficulty::Easy,
+		ET66Difficulty::Medium,
+		ET66Difficulty::Hard,
+		ET66Difficulty::VeryHard,
+		ET66Difficulty::Impossible
+	};
+}
+
 bool UT66GameInstance::IsDifficultyPlayable(ET66Difficulty Difficulty) const
 {
 	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
@@ -1043,6 +1059,32 @@ TArray<FName> UT66GameInstance::GetAllCompanionIDs()
 {
 	UDataTable* DataTable = GetCompanionDataTable();
 	return DataTable ? DataTable->GetRowNames() : TArray<FName>();
+}
+
+TArray<FName> UT66GameInstance::GetPlayableCompanionIDs()
+{
+	const TArray<FName> AllCompanionIDs = GetAllCompanionIDs();
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->FilterCompanionIDs(AllCompanionIDs);
+	}
+	return AllCompanionIDs;
+}
+
+bool UT66GameInstance::IsCompanionPlayable(FName CompanionID) const
+{
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->IsCompanionAllowed(CompanionID);
+	}
+	return true;
+}
+
+FName UT66GameInstance::ResolvePlayableCompanionID(FName CompanionID) const
+{
+	return (CompanionID.IsNone() || IsCompanionPlayable(CompanionID))
+		? CompanionID
+		: NAME_None;
 }
 
 bool UT66GameInstance::GetSelectedHeroData(FHeroData& OutHeroData)
@@ -1216,7 +1258,7 @@ void UT66GameInstance::RestoreRememberedSelectionDefaults()
 		else
 		{
 			FCompanionData CompanionData;
-			SelectedCompanionID = GetCompanionData(RememberedCompanionID, CompanionData)
+			SelectedCompanionID = IsCompanionPlayable(RememberedCompanionID) && GetCompanionData(RememberedCompanionID, CompanionData)
 				? RememberedCompanionID
 				: NAME_None;
 		}

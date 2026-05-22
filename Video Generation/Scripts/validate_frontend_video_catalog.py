@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import csv
 import json
-import sys
 from pathlib import Path
 
 
@@ -14,8 +13,16 @@ CATALOG_PATH = PROJECT_ROOT / "RuntimeDependencies" / "T66" / "Video" / "fronten
 CONTENT_MOVIES = PROJECT_ROOT / "Content" / "Movies"
 HERO_CSV = PROJECT_ROOT / "Content" / "Data" / "Heroes.csv"
 COMPANION_CSV = PROJECT_ROOT / "Content" / "Data" / "Companions.csv"
-SKIN_IDS = ["Default", "Beachgoer"]
+DEFAULT_HERO_SKIN_IDS = ["Default"]
+AGENT2_HERO_SKIN_IDS = ["Default", "DemoSkin"]
+COMPANION_SKIN_IDS = ["Default"]
 BODY_TYPES = ["Chad", "Stacy"]
+
+
+def hero_skin_ids(hero_id: str) -> list[str]:
+    if hero_id in {"Hero_1", "Hero_2", "Hero_3", "Hero_4", "Hero_5"}:
+        return AGENT2_HERO_SKIN_IDS
+    return DEFAULT_HERO_SKIN_IDS
 
 
 def read_ids(path: Path, key: str) -> list[str]:
@@ -26,9 +33,10 @@ def read_ids(path: Path, key: str) -> list[str]:
 def check_asset(asset: dict, errors: list[str], label: str) -> None:
     movie = asset.get("movie", "")
     poster = asset.get("poster", "")
-    if not movie:
+    poster_only = bool(asset.get("posterOnly", False))
+    if not movie and not poster_only:
         errors.append(f"{label}: missing movie field")
-    elif not (CONTENT_MOVIES / movie).exists():
+    elif movie and not poster_only and not (CONTENT_MOVIES / movie).exists():
         errors.append(f"{label}: missing movie Content/Movies/{movie}")
     if not poster:
         errors.append(f"{label}: missing poster field")
@@ -48,7 +56,7 @@ def main() -> int:
     check_asset(catalog.get("mainMenu", {}).get("background", {}), errors, "mainMenu.background")
 
     for hero_id in hero_ids:
-        for skin_id in SKIN_IDS:
+        for skin_id in hero_skin_ids(hero_id):
             for body_type in BODY_TYPES:
                 asset = hero_catalog.get(hero_id, {}).get(skin_id, {}).get(body_type)
                 if not isinstance(asset, dict):
@@ -57,7 +65,7 @@ def main() -> int:
                 check_asset(asset, errors, f"hero {hero_id}/{skin_id}/{body_type}")
 
     for companion_id in companion_ids:
-        for skin_id in SKIN_IDS:
+        for skin_id in COMPANION_SKIN_IDS:
             asset = companion_catalog.get(companion_id, {}).get(skin_id)
             if not isinstance(asset, dict):
                 errors.append(f"companion {companion_id}/{skin_id}: missing catalog entry")
@@ -76,10 +84,11 @@ def main() -> int:
             print(f"- {error}")
         return 1
 
+    hero_entry_count = sum(len(hero_skin_ids(hero_id)) for hero_id in hero_ids) * len(BODY_TYPES)
+    companion_entry_count = len(companion_ids) * len(COMPANION_SKIN_IDS)
     print(
         "frontend video catalog validation passed: "
-        f"{len(hero_ids) * len(SKIN_IDS) * len(BODY_TYPES)} hero entries, "
-        f"{len(companion_ids) * len(SKIN_IDS)} companion entries"
+        f"{hero_entry_count} hero entries, {companion_entry_count} companion entries"
     )
     return 0
 

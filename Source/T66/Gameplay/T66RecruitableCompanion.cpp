@@ -86,7 +86,7 @@ void AT66RecruitableCompanion::InitializeRecruit(const FCompanionData& InData)
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
 			// If a skeletal mesh visual exists, it hides the placeholder cylinder.
-			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CompanionID, SkeletalMesh, VisualMesh, true);
+			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CompanionID, SkeletalMesh, VisualMesh, true, false, false, VisualMesh);
 			if (!bUsingCharacterVisual && SkeletalMesh)
 			{
 				SkeletalMesh->SetVisibility(false, true);

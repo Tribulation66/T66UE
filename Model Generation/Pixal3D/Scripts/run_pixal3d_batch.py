@@ -521,11 +521,12 @@ def add_pixal_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--tex-guidance", type=float, default=1.0)
     parser.add_argument("--tex-guidance-rescale", type=float, default=0.0)
     parser.add_argument("--tex-rescale-t", type=float, default=3.0)
-    parser.add_argument("--export-fallback", dest="export_fallback", action="store_true", default=True)
+    parser.add_argument("--export-fallback", dest="export_fallback", action="store_true", default=False)
     parser.add_argument("--no-export-fallback", dest="export_fallback", action="store_false")
     parser.add_argument("--fallback-decimation", type=int, default=80000)
-    parser.add_argument("--safe-fill-holes-fallback", dest="safe_fill_holes_fallback", action="store_true", default=True)
+    parser.add_argument("--safe-fill-holes-fallback", dest="safe_fill_holes_fallback", action="store_true", default=False)
     parser.add_argument("--no-safe-fill-holes-fallback", dest="safe_fill_holes_fallback", action="store_false")
+    parser.add_argument("--diagnostic-mode", action="store_true", help="Allow Pixal3D fallback headers for diagnostic runs.")
 
 
 def normalize_paths(args: argparse.Namespace) -> None:
@@ -563,6 +564,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     normalize_paths(args)
+
+    if args.command in {"launch", "run"} and not args.diagnostic_mode:
+        if getattr(args, "export_fallback", False):
+            raise SystemExit("--export-fallback requires --diagnostic-mode; strict production batches must halt on export failure")
+        if getattr(args, "safe_fill_holes_fallback", False):
+            raise SystemExit("--safe-fill-holes-fallback requires --diagnostic-mode; strict production batches must halt on fill-hole failure")
 
     if args.command == "launch":
         launch(args)

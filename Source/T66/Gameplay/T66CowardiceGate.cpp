@@ -44,7 +44,7 @@ AT66CowardiceGate::AT66CowardiceGate()
 	GateMesh->SetupAttachment(RootComponent);
 
 	// Default expected import location (safe if missing).
-	GateMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Gates/SM_CowardiceGate.SM_CowardiceGate")));
+	GateMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Gates/SM_CowardiceGate_Pixal3D.SM_CowardiceGate_Pixal3D")));
 }
 
 void AT66CowardiceGate::BeginPlay()

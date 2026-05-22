@@ -5,7 +5,7 @@
       "PropID": "WallLamp",
       "DifficultyID": "Easy",
       "DisplayName": "Wall Lamp",
-      "DisplayMesh": "/Game/World/VisualProps/Easy/WallLamp_Pixal3D.WallLamp_Pixal3D",
+      "DisplayMesh": "/Game/World/VisualProps/Easy/SM_WallLamp_Easy_Pixal3D.SM_WallLamp_Easy_Pixal3D",
       "DisplayMeshScale": {
         "X": 0.7,
         "Y": 0.25,
@@ -37,7 +37,7 @@
       "PropID": "WallTorch",
       "DifficultyID": "Easy",
       "DisplayName": "Wall Torch",
-      "DisplayMesh": "/Game/World/VisualProps/Easy/WallTorch_Pixal3D.WallTorch_Pixal3D",
+      "DisplayMesh": "/Game/World/VisualProps/Easy/SM_WallTorch_Easy_Pixal3D.SM_WallTorch_Easy_Pixal3D",
       "DisplayMeshScale": {
         "X": 0.5,
         "Y": 0.25,
@@ -69,7 +69,7 @@
       "PropID": "BrokenVase",
       "DifficultyID": "Easy",
       "DisplayName": "Broken Vase",
-      "DisplayMesh": "/Game/World/VisualProps/Easy/BrokenVase_Pixal3D.BrokenVase_Pixal3D",
+      "DisplayMesh": "/Game/World/VisualProps/Easy/SM_BrokenVase_Easy_Pixal3D.SM_BrokenVase_Easy_Pixal3D",
       "DisplayMeshScale": {
         "X": 0.8,
         "Y": 0.8,
@@ -101,7 +101,7 @@
       "PropID": "SkullRemains",
       "DifficultyID": "Easy",
       "DisplayName": "Skull Remains",
-      "DisplayMesh": "/Game/World/VisualProps/Easy/SkullRemains_Pixal3D.SkullRemains_Pixal3D",
+      "DisplayMesh": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D.SM_SkullRemains_Easy_Pixal3D",
       "DisplayMeshScale": {
         "X": 0.9,
         "Y": 0.55,

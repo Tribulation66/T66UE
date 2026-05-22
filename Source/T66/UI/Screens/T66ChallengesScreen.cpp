@@ -8,6 +8,9 @@
 #include "Engine/Texture2D.h"
 #include "Engine/DataTable.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+#include "Brushes/SlateColorBrush.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "UObject/StrongObjectPtr.h"
@@ -19,7 +22,6 @@
 #include "UI/T66UIManager.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
-#include "Widgets/Input/SCheckBox.h"
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -56,13 +58,6 @@ namespace
 		ToggleInactive
 	};
 
-	enum class ET66ChallengeButtonState : uint8
-	{
-		Normal,
-		Hovered,
-		Pressed,
-		Disabled
-	};
 
 	struct FT66ChallengeSpriteBrushEntry
 	{
@@ -71,23 +66,6 @@ namespace
 		bool bSimpleFallback = false;
 	};
 
-	struct FT66ChallengeButtonBrushSet
-	{
-		FT66ChallengeSpriteBrushEntry Normal;
-		FT66ChallengeSpriteBrushEntry Hover;
-		FT66ChallengeSpriteBrushEntry Pressed;
-		FT66ChallengeSpriteBrushEntry Disabled;
-	};
-
-	struct FFlatChallengeCardData
-	{
-		const TCHAR* Title;
-		int32 SkullCount = 1;
-		int32 RewardCoupons = 0;
-		const TCHAR* Description;
-		const TCHAR* RuleA;
-		const TCHAR* RuleB;
-	};
 
 	UT66GameInstance* GetT66GameInstance(const UObject* Context)
 	{
@@ -96,32 +74,23 @@ namespace
 
 	FLinearColor ChallengeShellFill()
 	{
-		return FLinearColor(0.055f, 0.027f, 0.012f, 1.0f);
+		return FT66FlatStyle::BackgroundColor();
 	}
 
 	FLinearColor ChallengePanelFill()
 	{
-		return FLinearColor(0.095f, 0.047f, 0.020f, 1.0f);
+		return FT66FlatStyle::DefaultFill();
 	}
 
 	FLinearColor ChallengePanelInsetFill()
 	{
-		return FLinearColor(0.72f, 0.50f, 0.23f, 1.0f);
+		return FT66FlatStyle::DefaultFill();
 	}
 
-	FLinearColor ChallengeHeaderFill()
-	{
-		return FLinearColor(0.18f, 0.34f, 0.28f, 1.0f);
-	}
-
-	FLinearColor ChallengeSelectedFill()
-	{
-		return FLinearColor(0.16f, 0.27f, 0.22f, 1.0f);
-	}
 
 	FLinearColor ChallengeRewardTint()
 	{
-		return FLinearColor(0.36f, 0.20f, 0.07f, 1.0f);
+		return FT66FlatStyle::SelectedText();
 	}
 
 	FLinearColor ChallengeDangerTint()
@@ -131,19 +100,19 @@ namespace
 
 	FLinearColor ChallengeSuccessTint()
 	{
-		return FLinearColor(0.86f, 0.67f, 0.34f, 1.0f);
+		return FT66FlatStyle::SelectedText();
 	}
 
 	FLinearColor ChallengeMutedBadgeTint()
 	{
-		return FLinearColor(0.37f, 0.22f, 0.09f, 1.0f);
+		return FT66FlatStyle::DefaultFill();
 	}
 
-	const FLinearColor ChallengeFantasyText(0.953f, 0.925f, 0.835f, 1.0f);
-	const FLinearColor ChallengeFantasyMuted(0.738f, 0.708f, 0.648f, 1.0f);
-	const FLinearColor ChallengePaperText(0.98f, 0.91f, 0.70f, 1.0f);
-	const FLinearColor ChallengePaperMuted(0.74f, 0.66f, 0.48f, 1.0f);
-	const FLinearColor ChallengeGoldText(0.92f, 0.74f, 0.42f, 1.0f);
+	const FLinearColor ChallengeFantasyText(0.863f, 0.843f, 0.922f, 1.0f);
+	const FLinearColor ChallengeFantasyMuted(0.541f, 0.541f, 0.584f, 1.0f);
+	const FLinearColor ChallengePaperText(0.863f, 0.843f, 0.922f, 1.0f);
+	const FLinearColor ChallengePaperMuted(0.541f, 0.541f, 0.584f, 1.0f);
+	const FLinearColor ChallengeGoldText(1.0f, 0.314f, 0.373f, 1.0f);
 
 	const FSlateBrush* ResolveChallengeSpriteBrush(
 		FT66ChallengeSpriteBrushEntry& Entry,
@@ -203,334 +172,23 @@ namespace
 		return nullptr;
 	}
 
-	const FSlateBrush* ResolveChallengeSpriteRegionBrush(
-		FT66ChallengeSpriteBrushEntry& Entry,
-		const FString& RelativePath,
-		const FVector2D& ImageSize,
-		const FMargin& Margin,
-		const FBox2f& UVRegion,
-		const ESlateBrushDrawType::Type DrawAs,
-		const FLinearColor& Tint,
-		const TextureFilter Filter = TextureFilter::TF_Trilinear)
-	{
-		if (!Entry.Brush.IsValid())
-		{
-			Entry.Brush = MakeShared<FSlateBrush>();
-			Entry.Brush->DrawAs = DrawAs;
-			Entry.Brush->Tiling = ESlateBrushTileType::NoTile;
-			Entry.Brush->TintColor = FSlateColor(Tint);
-			Entry.Brush->ImageSize = ImageSize;
-			Entry.Brush->Margin = Margin;
-			Entry.Brush->SetUVRegion(UVRegion);
-		}
-
-		if (!Entry.Texture.IsValid() && !Entry.bSimpleFallback)
-		{
-			for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(RelativePath))
-			{
-				if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
-					CandidatePath,
-					Filter,
-					true,
-					TEXT("ChallengesReferenceSprite")))
-				{
-					Entry.Texture.Reset(Texture);
-					break;
-				}
-			}
-		}
-
-		if (Entry.Texture.IsValid())
-		{
-			Entry.bSimpleFallback = false;
-			Entry.Brush->SetResourceObject(Entry.Texture.Get());
-			return Entry.Brush.Get();
-		}
-
-		if (T66RuntimeUIBrushAccess::ShouldUseSimpleReferenceFallback(RelativePath))
-		{
-			Entry.bSimpleFallback = true;
-			T66RuntimeUIBrushAccess::ConfigureSimpleReferenceFallbackBrush(
-				*Entry.Brush,
-				RelativePath,
-				ImageSize,
-				Margin,
-				DrawAs);
-			return Entry.Brush.Get();
-		}
-
-		Entry.bSimpleFallback = false;
-		Entry.Brush->SetResourceObject(nullptr);
-		return nullptr;
-	}
-
-	const FSlateBrush* GetChallengeContentShellBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
-			FVector2D(1588.f, 653.f),
-			FMargin(0.060f, 0.090f, 0.060f, 0.105f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetChallengeRowShellBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			FT66FlatStyle::GetFlatLongPanelAssetPath(TEXT("normal")),
-			FVector2D(1632.f, 209.f),
-			FMargin(0.055f, 0.210f, 0.055f, 0.210f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetChallengeListPanelBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
-			FVector2D(777.f, 380.f),
-			FMargin(0.065f, 0.090f, 0.065f, 0.105f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetChallengeDetailFrameBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
-			FVector2D(405.f, 388.f),
-			FMargin(0.090f, 0.090f, 0.090f, 0.105f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetChallengeBrowserRowBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			FT66FlatStyle::GetFlatLongPanelAssetPath(TEXT("normal")),
-			FVector2D(563.f, 107.f),
-			FMargin(0.055f, 0.210f, 0.055f, 0.210f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetChallengeDetailPaperBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
-			FVector2D(451.f, 148.f),
-			FMargin(0.095f, 0.185f, 0.095f, 0.185f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetChallengeRulesPaperBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/main_panel_normal_square_variant.png"),
-			FVector2D(457.f, 181.f),
-			FMargin(0.085f, 0.165f, 0.085f, 0.165f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetChallengeStatusBarBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/progress_bar_track.png"),
-			FVector2D(693.f, 39.f),
-			FMargin(0.f),
-			ESlateBrushDrawType::Image,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetChallengeTagPillBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_normal_red_square_variant.png"),
-			FVector2D(181.f, 60.f),
-			FMargin(0.f),
-			ESlateBrushDrawType::Image,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetChallengeStateSocketBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/check_square_normal.png"),
-			FVector2D(123.f, 116.f),
-			FMargin(0.f),
-			ESlateBrushDrawType::Image,
-			TextureFilter::TF_Nearest);
-	}
-
-	const FSlateBrush* GetChallengeHeaderDividerBrush()
-	{
-		static FT66ChallengeSpriteBrushEntry Entry;
-		return ResolveChallengeSpriteBrush(
-			Entry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/progress_bar_fill_cyan.png"),
-			FVector2D(144.f, 6.f),
-			FMargin(0.f),
-			ESlateBrushDrawType::Image,
-			TextureFilter::TF_Nearest);
-	}
-
 	const FScrollBarStyle* GetChallengeReferenceScrollBarStyle()
 	{
 		static FScrollBarStyle Style = FCoreStyle::Get().GetWidgetStyle<FScrollBarStyle>("ScrollBar");
-		static FT66ChallengeSpriteBrushEntry TrackEntry;
-		static FT66ChallengeSpriteBrushEntry ThumbEntry;
-		static FT66ChallengeSpriteBrushEntry HoverEntry;
+		static FSlateColorBrush TrackBrush(FT66FlatStyle::DisabledBorder());
+		static FSlateColorBrush ThumbBrush(FT66FlatStyle::SelectedBorder());
+		static FSlateColorBrush HoverBrush(FT66FlatStyle::SelectedText());
 
-		const FSlateBrush* TrackBrush = ResolveChallengeSpriteBrush(
-			TrackEntry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/progress_bar_track.png"),
-			FVector2D(14.f, 120.f),
-			FMargin(0.42f, 0.085f, 0.42f, 0.085f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-		const FSlateBrush* ThumbBrush = ResolveChallengeSpriteBrush(
-			ThumbEntry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/progress_bar_fill_cyan.png"),
-			FVector2D(16.f, 96.f),
-			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-		const FSlateBrush* HoverBrush = ResolveChallengeSpriteBrush(
-			HoverEntry,
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/progress_bar_fill_cyan.png"),
-			FVector2D(16.f, 96.f),
-			FMargin(0.38f, 0.115f, 0.38f, 0.115f),
-			ESlateBrushDrawType::Box,
-			TextureFilter::TF_Nearest);
-
-		if (TrackBrush && ThumbBrush && HoverBrush)
-		{
-			Style
-				.SetVerticalBackgroundImage(*TrackBrush)
-				.SetVerticalTopSlotImage(*TrackBrush)
-				.SetVerticalBottomSlotImage(*TrackBrush)
-				.SetNormalThumbImage(*ThumbBrush)
-				.SetHoveredThumbImage(*HoverBrush)
-				.SetDraggedThumbImage(*HoverBrush)
-				.SetThickness(14.f);
-		}
+		Style
+			.SetVerticalBackgroundImage(TrackBrush)
+			.SetVerticalTopSlotImage(TrackBrush)
+			.SetVerticalBottomSlotImage(TrackBrush)
+			.SetNormalThumbImage(ThumbBrush)
+			.SetHoveredThumbImage(HoverBrush)
+			.SetDraggedThumbImage(HoverBrush)
+			.SetThickness(14.f);
 
 		return &Style;
-	}
-
-	FString GetChallengeButtonPath(const ET66ChallengeButtonFamily Family, const ET66ChallengeButtonState State)
-	{
-		const TCHAR* Suffix = TEXT("normal");
-		if (Family == ET66ChallengeButtonFamily::ToggleOn && State == ET66ChallengeButtonState::Normal)
-		{
-			Suffix = TEXT("selected");
-		}
-		else if (State == ET66ChallengeButtonState::Hovered)
-		{
-			Suffix = TEXT("hover");
-		}
-		else if (State == ET66ChallengeButtonState::Pressed)
-		{
-			Suffix = TEXT("pressed");
-		}
-		else if (State == ET66ChallengeButtonState::Disabled)
-		{
-			Suffix = TEXT("disabled");
-		}
-
-		const FString ButtonState = FCString::Stricmp(Suffix, TEXT("selected")) == 0
-			? FString(TEXT("normal"))
-			: FString(Suffix);
-		return FString::Printf(
-			TEXT("SourceAssets/UI/Reference/Screens/MainMenu/Ultrakill/Elements/SquareVariant/cta_new_game_button_%s_red_square_variant.png"),
-			*ButtonState);
-	}
-
-	FVector2D GetChallengeButtonSize(const ET66ChallengeButtonFamily Family, const ET66ChallengeButtonState State)
-	{
-		if (Family == ET66ChallengeButtonFamily::ToggleOn)
-		{
-			return State == ET66ChallengeButtonState::Pressed ? FVector2D(187.f, 67.f) : FVector2D(180.f, 68.f);
-		}
-		if (Family == ET66ChallengeButtonFamily::ToggleOff)
-		{
-			return State == ET66ChallengeButtonState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
-		}
-		if (Family == ET66ChallengeButtonFamily::ToggleInactive)
-		{
-			return State == ET66ChallengeButtonState::Hovered ? FVector2D(186.f, 69.f) : FVector2D(180.f, 68.f);
-		}
-		return State == ET66ChallengeButtonState::Pressed ? FVector2D(186.f, 68.f) : FVector2D(180.f, 68.f);
-	}
-
-	FT66ChallengeButtonBrushSet& GetChallengeButtonBrushSet(const ET66ChallengeButtonFamily Family)
-	{
-		static FT66ChallengeButtonBrushSet CompactNeutral;
-		static FT66ChallengeButtonBrushSet ToggleOn;
-		static FT66ChallengeButtonBrushSet ToggleOff;
-		static FT66ChallengeButtonBrushSet ToggleInactive;
-
-		if (Family == ET66ChallengeButtonFamily::ToggleOn)
-		{
-			return ToggleOn;
-		}
-		if (Family == ET66ChallengeButtonFamily::ToggleOff)
-		{
-			return ToggleOff;
-		}
-		if (Family == ET66ChallengeButtonFamily::ToggleInactive)
-		{
-			return ToggleInactive;
-		}
-		return CompactNeutral;
-	}
-
-	const FSlateBrush* GetChallengeButtonBrush(const ET66ChallengeButtonFamily Family, const ET66ChallengeButtonState State)
-	{
-		FT66ChallengeButtonBrushSet& Set = GetChallengeButtonBrushSet(Family);
-		FT66ChallengeSpriteBrushEntry* Entry = &Set.Normal;
-		if (State == ET66ChallengeButtonState::Hovered)
-		{
-			Entry = &Set.Hover;
-		}
-		else if (State == ET66ChallengeButtonState::Pressed)
-		{
-			Entry = &Set.Pressed;
-		}
-		else if (State == ET66ChallengeButtonState::Disabled)
-		{
-			Entry = &Set.Disabled;
-		}
-
-		return ResolveChallengeSpriteBrush(
-			*Entry,
-			GetChallengeButtonPath(Family, State),
-			GetChallengeButtonSize(Family, State),
-			FMargin(0.f),
-			ESlateBrushDrawType::Image,
-			TextureFilter::TF_Nearest);
 	}
 
 	TSharedRef<SWidget> MakeChallengeSpritePanel(
@@ -539,13 +197,9 @@ namespace
 		const FMargin& Padding,
 		const FLinearColor& FallbackColor)
 	{
-		return SNew(SBorder)
-			.BorderImage(Brush ? Brush : FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(Brush ? FLinearColor::White : FallbackColor)
-			.Padding(Padding)
-			[
-				Content
-			];
+		(void)Brush;
+		(void)FallbackColor;
+		return FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, Padding, Content);
 	}
 
 	TSharedRef<SWidget> MakeChallengeHorizontalSlicedPanel(
@@ -556,33 +210,13 @@ namespace
 		const FLinearColor& FallbackColor,
 		const float SourceCapFraction = 0.105f)
 	{
-		if (!Brush)
-		{
-			return SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FallbackColor)
-				.Padding(Padding)
-				[
-					Content
-				];
-		}
-
-		return SNew(SOverlay)
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
+		(void)Brush;
+		(void)FallbackColor;
+		(void)SourceCapFraction;
+		return SNew(SBox)
+			.HeightOverride(Height)
 			[
-				FT66FlatStyle::BuildFlatHorizontalSlicedImage(
-					Brush,
-					FVector2D(1.f, Height),
-					SourceCapFraction)
-			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			.Padding(Padding)
-			[
-				Content
+				FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, Padding, Content)
 			];
 	}
 
@@ -600,7 +234,7 @@ namespace
 					.Justification(ETextJustify::Center)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 					.Clipping(EWidgetClipping::ClipToBounds),
-					GetChallengeTagPillBrush(),
+					nullptr,
 					28.f,
 					FMargin(8.f, 4.f, 8.f, 3.f),
 					ChallengeMutedBadgeTint(),
@@ -616,35 +250,23 @@ namespace
 		const float Height,
 		const FMargin& ContentPadding)
 	{
-		const FSlateBrush* NormalBrush = GetChallengeButtonBrush(Family, ET66ChallengeButtonState::Normal);
-		const FSlateBrush* HoverBrush = GetChallengeButtonBrush(Family, ET66ChallengeButtonState::Hovered);
-		const FSlateBrush* PressedBrush = GetChallengeButtonBrush(Family, ET66ChallengeButtonState::Pressed);
-		const FSlateBrush* DisabledBrush = GetChallengeButtonBrush(Family, ET66ChallengeButtonState::Disabled);
-		if (!NormalBrush)
-		{
-			return FT66FlatStyle::MakeButton(
-				FT66ButtonParams(FText::GetEmpty(), OnClicked, Family == ET66ChallengeButtonFamily::ToggleOn ? ET66ButtonType::Primary : ET66ButtonType::Neutral)
-				.SetMinWidth(MinWidth)
-				.SetHeight(Height)
-				.SetPadding(ContentPadding)
-				.SetContent(Content));
-		}
-
-		return FT66FlatStyle::BuildFlatSlicedPlateButton(
-			OnClicked,
+		const ET66FlatState State = Family == ET66ChallengeButtonFamily::ToggleOn
+			? ET66FlatState::Selected
+			: (Family == ET66ChallengeButtonFamily::ToggleInactive ? ET66FlatState::Disabled : ET66FlatState::Default);
+		const bool bEnabled = Family != ET66ChallengeButtonFamily::ToggleInactive && OnClicked.IsBound();
+		return FT66FlatStyle::MakeFlatToggleGroupButton(
+			State,
 			SNew(SBox)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
 				Content
 			],
-			NormalBrush,
-			HoverBrush,
-			PressedBrush,
-			DisabledBrush,
+			OnClicked,
+			ContentPadding,
 			MinWidth,
 			Height,
-			ContentPadding);
+			bEnabled);
 	}
 
 	TSharedRef<SWidget> MakeChallengeSpriteButton(
@@ -704,6 +326,8 @@ void UT66ChallengesScreen::OnScreenActivated_Implementation()
 			bCommunityDelegateBound = true;
 		}
 	}
+
+	ApplyCommandLineStartupMode();
 }
 
 void UT66ChallengesScreen::OnScreenDeactivated_Implementation()
@@ -740,6 +364,50 @@ void UT66ChallengesScreen::OpenContentKind(const ET66CommunityContentKind Conten
 		: static_cast<int32>(ETabIndex::Challenges);
 	EndDraftEditor();
 	RequestDeferredSlateRebuild();
+}
+
+void UT66ChallengesScreen::ApplyCommandLineStartupMode()
+{
+	if (bAppliedCommandLineStartupMode)
+	{
+		return;
+	}
+
+	FString RequestedMode;
+	if (!FParse::Value(FCommandLine::Get(), TEXT("T66ChallengesMode="), RequestedMode) || RequestedMode.IsEmpty())
+	{
+		return;
+	}
+
+	bAppliedCommandLineStartupMode = true;
+	InitializeSelectionState();
+
+	if (RequestedMode.Equals(TEXT("Mods"), ESearchCase::IgnoreCase))
+	{
+		OpenContentKind(ET66CommunityContentKind::Mod);
+		return;
+	}
+
+	const bool bCreateMod = RequestedMode.Equals(TEXT("CreateMod"), ESearchCase::IgnoreCase)
+		|| RequestedMode.Equals(TEXT("ModEditor"), ESearchCase::IgnoreCase);
+	const bool bCreateChallenge = RequestedMode.Equals(TEXT("CreateChallenge"), ESearchCase::IgnoreCase)
+		|| RequestedMode.Equals(TEXT("ChallengeEditor"), ESearchCase::IgnoreCase);
+	if (!bCreateMod && !bCreateChallenge)
+	{
+		return;
+	}
+
+	const ET66CommunityContentKind DraftKind = bCreateMod ? ET66CommunityContentKind::Mod : ET66CommunityContentKind::Challenge;
+	ActiveTabIndex = DraftKind == ET66CommunityContentKind::Mod
+		? static_cast<int32>(ETabIndex::Mods)
+		: static_cast<int32>(ETabIndex::Challenges);
+	ActiveSourceTabIndex[ActiveTabIndex] = static_cast<int32>(ESourceTabIndex::Community);
+
+	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	{
+		BeginDraftEditor(Community->CreateDraftTemplate(DraftKind));
+		RequestDeferredSlateRebuild();
+	}
 }
 
 TArray<FT66CommunityContentEntry> UT66ChallengesScreen::GetEntriesForView(const int32 TabIndex, const int32 SourceTabIndex) const
@@ -1114,16 +782,11 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 		Community->RefreshMySubmissionStates(false);
 	}
 
-	const float ReferenceCanvasWidth = 1920.0f;
-	const float ReferenceCanvasHeight = 941.0f;
-	const float ListPanelWidth = 672.0f;
-	const float DetailPanelWidth = 900.0f;
-	const float BodyPanelHeight = 548.0f;
-	const float DetailColumnWidth = DetailPanelWidth - 46.0f;
+	const float ListPanelWidth = 895.0f;
+	const float DetailPanelWidth = 893.0f;
+	const float BodyPanelHeight = 760.0f;
+	const float DetailColumnWidth = DetailPanelWidth - 66.0f;
 	const float ListColumnWidth = ListPanelWidth - 44.0f;
-	const int32 HeaderTabFontSize = 18;
-	const int32 SourceTabFontSize = 20;
-	const int32 ActionButtonFontSize = 19;
 	const int32 CurrentSourceTabIndex = ActiveSourceTabIndex[ActiveTabIndex];
 	const ET66CommunityContentKind ActiveKind = GetActiveKind();
 	const TArray<FT66CommunityContentEntry> Entries = GetEntriesForView(ActiveTabIndex, CurrentSourceTabIndex);
@@ -1137,246 +800,11 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 
 	const FString HeaderTitle = ActiveKind == ET66CommunityContentKind::Mod ? TEXT("Mods") : TEXT("Challenges");
 	const FString DetailListHeader = ActiveKind == ET66CommunityContentKind::Mod ? TEXT("Rules") : TEXT("Rules And Requirements");
-	const FString StatusMessage = Community ? Community->GetLastStatusMessage() : FString();
 	const bool bCanConfirmSelectedEntry = bHasSelectedEntry && !SelectedEntry.IsDraft();
 	const FText FooterConfirmLabel = FText::FromString(bSelectedEntryConfirmed ? TEXT("SELECTED") : TEXT("CONFIRM"));
 	const ET66ChallengeButtonFamily FooterConfirmFamily = bCanConfirmSelectedEntry
 		? ET66ChallengeButtonFamily::ToggleOn
 		: ET66ChallengeButtonFamily::ToggleInactive;
-
-	if (ActiveKind == ET66CommunityContentKind::Challenge && !bDraftEditorActive)
-	{
-		FlatSelectedChallengeCardIndex = FMath::Clamp(FlatSelectedChallengeCardIndex, 0, 3);
-		FlatChallengePageIndex = FMath::Clamp(FlatChallengePageIndex, 0, 3);
-
-		constexpr float CanvasW = 1920.f;
-		constexpr float CanvasH = 1080.f;
-		const FName ChallengeTabsGroup(TEXT("ChallengeTabs"));
-		const FName ChallengeSelectionGroup(TEXT("ChallengeSelection"));
-		const FName ChallengePaginationGroup(TEXT("ChallengePagination"));
-		const FLinearColor Purple = FT66FlatStyle::PurpleAccent();
-		const FLinearColor Red = FT66FlatStyle::SelectedText();
-		const FLinearColor White = FT66FlatStyle::PrimaryText();
-
-		const FFlatChallengeCardData FlatCards[4] =
-		{
-			{ TEXT("GLASS ROUTE"), 1, 40, TEXT("Clear the run without taking a single hit."), TEXT("Challenge only completes on a full clear."), TEXT("Take no damage for the run.") },
-			{ TEXT("PRESSURE RUN"), 2, 30, TEXT("Finish a full clear before the timer budget expires."), TEXT("Challenge only completes on a full clear."), TEXT("Finish before the pressure timer expires.") },
-			{ TEXT("LAST STAND"), 3, 60, TEXT("Survive the final route with no second chances."), TEXT("Challenge only completes on a full clear."), TEXT("No revival or safety net is allowed.") },
-			{ TEXT("APOCALYPSE PROTOCOL"), 4, 80, TEXT("Clear the run under maximum pressure protocol."), TEXT("Challenge only completes on a full clear."), TEXT("All route pressure modifiers are active.") },
-		};
-		const FFlatChallengeCardData& SelectedFlatCard = FlatCards[FlatSelectedChallengeCardIndex];
-
-		TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
-		auto DTag = [](const TCHAR* Name) -> FName
-		{
-			return FName(Name);
-		};
-		auto AddN = [&Canvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
-		{
-			Canvas->AddSlot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(X * CanvasW, Y * CanvasH, W * CanvasW, H * CanvasH))
-			[
-				Widget
-			];
-		};
-		auto MakeLabel = [](
-			const FName Tag,
-			const FText& Text,
-			const int32 FontSize,
-			const FLinearColor& Color,
-			const bool bBold = true,
-			const ETextJustify::Type Justification = ETextJustify::Left) -> TSharedRef<SWidget>
-		{
-			TSharedRef<STextBlock> Label = SNew(STextBlock)
-				.Text(Text)
-				.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
-				.ColorAndOpacity(Color)
-				.Justification(Justification)
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				.Visibility(EVisibility::HitTestInvisible);
-			return FT66FlatStyle::AttachMetadata(
-				Label,
-				Tag,
-				TEXT("Label"),
-				ET66FlatState::Default,
-				TOptional<FLinearColor>(),
-				false,
-				NAME_None,
-				true);
-		};
-		auto MakeRect = [](const FLinearColor& Color, const FName Tag, const FString& Role = TEXT("Rect")) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::AttachMetadata(
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-				.BorderBackgroundColor(Color)
-				.Visibility(EVisibility::HitTestInvisible),
-				Tag,
-				Role,
-				ET66FlatState::Default);
-		};
-		auto MakePanel = [](const ET66FlatState State, const FName Tag) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::MakeFlatPanel(State, FMargin(0.f), SNullWidget::NullWidget, nullptr, Tag);
-		};
-		auto MakeButtonShell = [](
-			const ET66FlatState State,
-			FOnClicked OnClicked,
-			const FName Tag,
-			const FName ToggleGroup = NAME_None) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::MakeFlatToggleGroupButton(
-				State,
-				SNullWidget::NullWidget,
-				MoveTemp(OnClicked),
-				FMargin(0.f),
-				0.f,
-				0.f,
-				true,
-				Tag,
-				ToggleGroup);
-		};
-		auto MakeIcon = [&MakeLabel](const FName Tag, const TCHAR* Path, const FVector2D& Size, const FLinearColor& Tint, const FText& Fallback) -> TSharedRef<SWidget>
-		{
-			static TMap<FString, FT66ChallengeSpriteBrushEntry> FlatIconEntries;
-			FT66ChallengeSpriteBrushEntry& Entry = FlatIconEntries.FindOrAdd(FString(Path));
-			const FSlateBrush* Brush = ResolveChallengeSpriteBrush(
-				Entry,
-				FString(Path),
-				Size,
-				FMargin(0.f),
-				ESlateBrushDrawType::Image,
-				TextureFilter::TF_Trilinear);
-			if (!Brush)
-			{
-				return MakeLabel(Tag, Fallback, 24, Tint, true, ETextJustify::Center);
-			}
-			TSharedRef<SImage> Image = SNew(SImage)
-				.Image(Brush)
-				.ColorAndOpacity(Tint)
-				.Visibility(EVisibility::HitTestInvisible);
-			return FT66FlatStyle::AttachMetadata(Image, Tag, TEXT("Icon"), ET66FlatState::Default);
-		};
-		auto AddSectionHeader = [&](const float Y, const TCHAR* HeaderTag, const FText& Text)
-		{
-			AddN(0.533f, Y + 0.012f, 0.132f, 0.003f, MakeRect(FT66FlatStyle::SelectedBorder(), NAME_None, TEXT("Divider")));
-			AddN(0.808f, Y + 0.012f, 0.140f, 0.003f, MakeRect(FT66FlatStyle::SelectedBorder(), NAME_None, TEXT("Divider")));
-			AddN(0.662f, Y, 0.160f, 0.032f, MakeLabel(DTag(HeaderTag), Text, 22, Red, true, ETextJustify::Center));
-		};
-
-		AddN(0.f, 0.f, 1.f, 1.f, MakeRect(FT66FlatStyle::BackgroundColor(), DTag(TEXT("Challenges.Background")), TEXT("Background")));
-		AddN(0.f, 0.f, 1.f, 1.f, FT66FlatStyle::AttachMetadata(SNew(SBox), DTag(TEXT("Challenges.Root")), TEXT("ScreenRoot"), ET66FlatState::Default));
-
-		AddN(0.012f, 0.021f, 0.132f, 0.071f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleBackClicked), DTag(TEXT("Challenges.TopRow.BackButton"))));
-		AddN(0.033f, 0.044f, 0.022f, 0.034f, MakeIcon(DTag(TEXT("Challenges.TopRow.BackButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/back_chevron.png"), FVector2D(48.f, 48.f), Purple, FText::FromString(TEXT("<"))));
-		AddN(0.071f, 0.039f, 0.054f, 0.044f, MakeLabel(DTag(TEXT("Challenges.TopRow.BackButton.Label")), NSLOCTEXT("T66.Challenges", "FlatBack", "BACK"), 28, Purple, true, ETextJustify::Left));
-
-		AddN(0.374f, 0.033f, 0.254f, 0.066f, MakeLabel(DTag(TEXT("Challenges.Title")), NSLOCTEXT("T66.Challenges", "FlatTitle", "CHALLENGES"), 60, White, true, ETextJustify::Center));
-
-		AddN(0.846f, 0.021f, 0.141f, 0.071f, MakeButtonShell(ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleConfirmClicked), DTag(TEXT("Challenges.TopRow.ConfirmButton"))));
-		AddN(0.870f, 0.039f, 0.070f, 0.044f, MakeLabel(DTag(TEXT("Challenges.TopRow.ConfirmButton.Label")), NSLOCTEXT("T66.Challenges", "FlatConfirm", "CONFIRM"), 27, Red, true, ETextJustify::Left));
-		AddN(0.947f, 0.044f, 0.025f, 0.034f, MakeIcon(DTag(TEXT("Challenges.TopRow.ConfirmButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/forward_chevron.png"), FVector2D(48.f, 48.f), Red, FText::FromString(TEXT(">"))));
-
-		const bool bOfficialSelected = CurrentSourceTabIndex == static_cast<int32>(ESourceTabIndex::Official);
-		const bool bCommunitySelected = CurrentSourceTabIndex == static_cast<int32>(ESourceTabIndex::Community);
-		AddN(0.149f, 0.129f, 0.206f, 0.077f, MakeButtonShell(bOfficialSelected ? ET66FlatState::Selected : ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSourceTabSelected, static_cast<int32>(ESourceTabIndex::Official)), DTag(TEXT("Challenges.Tabs.OfficialButton")), ChallengeTabsGroup));
-		AddN(0.181f, 0.145f, 0.032f, 0.048f, MakeIcon(DTag(TEXT("Challenges.Tabs.OfficialButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/target_crosshair.png"), FVector2D(56.f, 56.f), bOfficialSelected ? Red : Purple, FText::FromString(TEXT("+"))));
-		AddN(0.222f, 0.148f, 0.076f, 0.044f, MakeLabel(DTag(TEXT("Challenges.Tabs.OfficialButton.Label")), NSLOCTEXT("T66.Challenges", "FlatOfficial", "OFFICIAL"), 26, bOfficialSelected ? Red : White, true, ETextJustify::Center));
-		AddN(0.314f, 0.146f, 0.025f, 0.044f, MakeIcon(DTag(TEXT("Challenges.Tabs.OfficialButton.InfoIcon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(44.f, 44.f), bOfficialSelected ? Red : Purple, FText::FromString(TEXT("i"))));
-
-		AddN(0.376f, 0.129f, 0.217f, 0.074f, MakeButtonShell(bCommunitySelected ? ET66FlatState::Selected : ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSourceTabSelected, static_cast<int32>(ESourceTabIndex::Community)), DTag(TEXT("Challenges.Tabs.CommunityButton")), ChallengeTabsGroup));
-		AddN(0.406f, 0.145f, 0.032f, 0.048f, MakeIcon(DTag(TEXT("Challenges.Tabs.CommunityButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/people.png"), FVector2D(56.f, 56.f), bCommunitySelected ? Red : Purple, FText::FromString(TEXT("**"))));
-		AddN(0.447f, 0.148f, 0.096f, 0.044f, MakeLabel(DTag(TEXT("Challenges.Tabs.CommunityButton.Label")), NSLOCTEXT("T66.Challenges", "FlatCommunity", "COMMUNITY"), 25, bCommunitySelected ? Red : White, true, ETextJustify::Center));
-		AddN(0.552f, 0.146f, 0.025f, 0.044f, MakeIcon(DTag(TEXT("Challenges.Tabs.CommunityButton.InfoIcon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(44.f, 44.f), bCommunitySelected ? Red : Purple, FText::FromString(TEXT("i"))));
-
-		AddN(0.615f, 0.129f, 0.236f, 0.074f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCreateDraftClicked), DTag(TEXT("Challenges.Tabs.CreateButton")), ChallengeTabsGroup));
-		AddN(0.642f, 0.145f, 0.032f, 0.048f, MakeIcon(DTag(TEXT("Challenges.Tabs.CreateButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/pencil_edit.png"), FVector2D(56.f, 56.f), Purple, FText::FromString(TEXT("/"))));
-		AddN(0.683f, 0.148f, 0.130f, 0.044f, MakeLabel(DTag(TEXT("Challenges.Tabs.CreateButton.Label")), NSLOCTEXT("T66.Challenges", "FlatCreateChallenge", "CREATE CHALLENGE"), 23, White, true, ETextJustify::Center));
-		AddN(0.819f, 0.146f, 0.025f, 0.044f, MakeIcon(DTag(TEXT("Challenges.Tabs.CreateButton.InfoIcon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(44.f, 44.f), Purple, FText::FromString(TEXT("i"))));
-
-		AddN(0.027f, 0.230f, 0.466f, 0.704f, MakePanel(ET66FlatState::Default, DTag(TEXT("Challenges.LeftPanel"))));
-		const float CardY[4] = { 0.252f, 0.418f, 0.586f, 0.753f };
-		const TCHAR* CardTags[4] =
-		{
-			TEXT("Challenges.LeftPanel.Card01"),
-			TEXT("Challenges.LeftPanel.Card02"),
-			TEXT("Challenges.LeftPanel.Card03"),
-			TEXT("Challenges.LeftPanel.Card04"),
-		};
-		for (int32 CardIndex = 0; CardIndex < 4; ++CardIndex)
-		{
-			const FFlatChallengeCardData& Card = FlatCards[CardIndex];
-			const FString Prefix(CardTags[CardIndex]);
-			const ET66FlatState CardState = CardIndex == FlatSelectedChallengeCardIndex ? ET66FlatState::Selected : ET66FlatState::Default;
-			const FLinearColor CardAccent = CardState == ET66FlatState::Selected ? Red : Purple;
-			AddN(0.038f, CardY[CardIndex], 0.445f, 0.150f, MakeButtonShell(CardState, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleFlatChallengeCardSelected, CardIndex), DTag(CardTags[CardIndex]), ChallengeSelectionGroup));
-			AddN(0.142f, CardY[CardIndex] + 0.030f, CardIndex == 3 ? 0.210f : 0.150f, 0.042f, MakeLabel(FName(*(Prefix + TEXT(".Title"))), FText::FromString(Card.Title), 32, White, true, ETextJustify::Left));
-			AddN(0.172f, CardY[CardIndex] + 0.087f, 0.126f, 0.038f, MakeLabel(FName(*(Prefix + TEXT(".Reward"))), FText::Format(NSLOCTEXT("T66.Challenges", "FlatRewardFormat", "{0} CHAD COUPONS"), FText::AsNumber(Card.RewardCoupons)), 23, CardAccent, true, ETextJustify::Left));
-			AddN(0.351f, CardY[CardIndex] + 0.087f, 0.132f, 0.038f, MakeLabel(FName(*(Prefix + TEXT(".Author"))), NSLOCTEXT("T66.Challenges", "FlatAuthor", "TRIBULATION 66"), 23, CardAccent, true, ETextJustify::Left));
-			AddN(0.143f, CardY[CardIndex] + 0.088f, 0.024f, 0.036f, MakeIcon(NAME_None, TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png"), FVector2D(44.f, 44.f), CardAccent, FText::FromString(TEXT("#"))));
-			AddN(0.322f, CardY[CardIndex] + 0.088f, 0.024f, 0.036f, MakeIcon(NAME_None, TEXT("RuntimeDependencies/T66/UI/Icons/Flat/people.png"), FVector2D(44.f, 44.f), CardAccent, FText::FromString(TEXT("@"))));
-			for (int32 SkullIndex = 0; SkullIndex < Card.SkullCount; ++SkullIndex)
-			{
-				AddN(0.057f + SkullIndex * 0.022f, CardY[CardIndex] + 0.049f, 0.025f, 0.047f, MakeIcon(NAME_None, TEXT("RuntimeDependencies/T66/UI/Icons/Flat/skull.png"), FVector2D(48.f, 48.f), CardAccent, FText::FromString(TEXT("S"))));
-			}
-		}
-
-		AddN(0.221f, 0.912f, 0.050f, 0.016f, FT66FlatStyle::AttachMetadata(SNew(SBox), DTag(TEXT("Challenges.Pagination")), TEXT("Pagination"), ET66FlatState::Default));
-		for (int32 DotIndex = 0; DotIndex < 4; ++DotIndex)
-		{
-			const FString DotTag = FString::Printf(TEXT("Challenges.Pagination.Dot%02d"), DotIndex + 1);
-			AddN(0.221f + DotIndex * 0.014f, 0.912f, 0.008f, 0.014f, MakeButtonShell(DotIndex == FlatChallengePageIndex ? ET66FlatState::Selected : ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleFlatPaginationSelected, DotIndex), FName(*DotTag), ChallengePaginationGroup));
-		}
-
-		AddN(0.507f, 0.231f, 0.465f, 0.704f, MakePanel(ET66FlatState::Selected, DTag(TEXT("Challenges.RightPanel"))));
-		AddN(0.533f, 0.270f, 0.210f, 0.048f, MakeLabel(DTag(TEXT("Challenges.RightPanel.Title")), FText::FromString(SelectedFlatCard.Title), 38, White, true, ETextJustify::Left));
-		AddN(0.895f, 0.279f, 0.062f, 0.036f, MakeLabel(DTag(TEXT("Challenges.RightPanel.OriginLabel")), NSLOCTEXT("T66.Challenges", "FlatOfficialOrigin", "Official"), 26, Red, true, ETextJustify::Right));
-		AddSectionHeader(0.342f, TEXT("Challenges.RightPanel.DescriptionHeader"), NSLOCTEXT("T66.Challenges", "FlatDescriptionHeader", "DESCRIPTION"));
-		AddN(0.533f, 0.397f, 0.330f, 0.038f, MakeLabel(DTag(TEXT("Challenges.RightPanel.DescriptionText")), FText::FromString(SelectedFlatCard.Description), 23, White, false, ETextJustify::Left));
-		AddSectionHeader(0.471f, TEXT("Challenges.RightPanel.SkullRatingHeader"), NSLOCTEXT("T66.Challenges", "FlatSkullRatingHeader", "SKULL RATING"));
-		AddN(0.718f, 0.522f, 0.030f, 0.061f, MakeIcon(DTag(TEXT("Challenges.RightPanel.SkullRatingIcon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/skull.png"), FVector2D(60.f, 60.f), Red, FText::FromString(TEXT("S"))));
-		AddSectionHeader(0.615f, TEXT("Challenges.RightPanel.RulesHeader"), NSLOCTEXT("T66.Challenges", "FlatRulesHeader", "RULES AND REQUIREMENTS"));
-		AddN(0.535f, 0.674f, 0.009f, 0.016f, MakeRect(FT66FlatStyle::SelectedBorder(), DTag(TEXT("Challenges.RightPanel.Rule01.Bullet")), TEXT("Bullet")));
-		AddN(0.553f, 0.663f, 0.345f, 0.045f, MakeLabel(DTag(TEXT("Challenges.RightPanel.Rule01")), FText::FromString(SelectedFlatCard.RuleA), 22, White, false, ETextJustify::Left));
-		AddN(0.535f, 0.730f, 0.009f, 0.016f, MakeRect(FT66FlatStyle::SelectedBorder(), DTag(TEXT("Challenges.RightPanel.Rule02.Bullet")), TEXT("Bullet")));
-		AddN(0.553f, 0.719f, 0.300f, 0.045f, MakeLabel(DTag(TEXT("Challenges.RightPanel.Rule02")), FText::FromString(SelectedFlatCard.RuleB), 22, White, false, ETextJustify::Left));
-		AddSectionHeader(0.811f, TEXT("Challenges.RightPanel.RewardHeader"), NSLOCTEXT("T66.Challenges", "FlatRewardHeader", "REWARD"));
-		AddN(0.645f, 0.864f, 0.164f, 0.046f, FT66FlatStyle::AttachMetadata(SNew(SBox), DTag(TEXT("Challenges.RightPanel.Reward")), TEXT("RewardCluster"), ET66FlatState::Default));
-		AddN(0.644f, 0.850f, 0.031f, 0.055f, MakeIcon(DTag(TEXT("Challenges.RightPanel.Reward.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png"), FVector2D(58.f, 58.f), Red, FText::FromString(TEXT("#"))));
-		AddN(0.685f, 0.858f, 0.140f, 0.046f, MakeLabel(DTag(TEXT("Challenges.RightPanel.Reward.Label")), FText::Format(NSLOCTEXT("T66.Challenges", "FlatDetailRewardFormat", "{0} CHAD COUPONS"), FText::AsNumber(SelectedFlatCard.RewardCoupons)), 24, Red, true, ETextJustify::Left));
-
-		return FT66FlatStyle::WrapWithoutRetainer(
-			SNew(SOverlay)
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-				.BorderBackgroundColor(FT66FlatStyle::BackgroundColor())
-			]
-			+ SOverlay::Slot()
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Fill)
-			[
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				.StretchDirection(EStretchDirection::Both)
-				[
-					SNew(SBox)
-					.WidthOverride(CanvasW)
-					.HeightOverride(CanvasH)
-					[
-						Canvas
-					]
-				]
-			],
-			DTag(TEXT("Challenges.ViewportRoot")));
-	}
 
 	auto MakeConstraintRow = [DetailColumnWidth](const FString& ConstraintText) -> TSharedRef<SWidget>
 	{
@@ -1398,33 +826,6 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.WrapTextAt(FMath::Max(260.f, DetailColumnWidth - 104.f))
 				.Clipping(EWidgetClipping::ClipToBounds)
 			];
-	};
-
-	auto MakeTopTabButton = [this, HeaderTabFontSize](const int32 TabIndex, const FText& Label) -> TSharedRef<SWidget>
-	{
-		const bool bActive = ActiveTabIndex == TabIndex;
-		const float ButtonWidth = TabIndex == static_cast<int32>(ETabIndex::Challenges) ? 246.f : 178.f;
-		return MakeChallengeSpriteButton(
-			Label,
-			FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleTabSelected, TabIndex),
-			bActive ? ET66ChallengeButtonFamily::ToggleOn : ET66ChallengeButtonFamily::CompactNeutral,
-			ButtonWidth,
-			52.f,
-			HeaderTabFontSize,
-			FMargin(16.f, 7.f));
-	};
-
-	auto MakeSourceTabButton = [this, CurrentSourceTabIndex, SourceTabFontSize](const int32 SourceTabIndex, const FText& Label) -> TSharedRef<SWidget>
-	{
-		const bool bActive = CurrentSourceTabIndex == SourceTabIndex;
-		return MakeChallengeSpriteButton(
-			Label,
-			FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSourceTabSelected, SourceTabIndex),
-			bActive ? ET66ChallengeButtonFamily::ToggleOn : ET66ChallengeButtonFamily::CompactNeutral,
-			296.f,
-			44.f,
-			SourceTabFontSize,
-			FMargin(16.f, 8.f));
 	};
 
 	auto MakeEntryRow = [this, CurrentSourceTabIndex, Community, ListColumnWidth](const FT66CommunityContentEntry& Entry, const int32 EntryIndex) -> TSharedRef<SWidget>
@@ -1450,7 +851,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 					.Font(FT66FlatStyle::Tokens::FontBold(14))
 					.ColorAndOpacity(bConfirmed ? ChallengeGoldText : FLinearColor::Transparent)
 					.Justification(ETextJustify::Center),
-					GetChallengeStateSocketBrush(),
+					nullptr,
 					FMargin(0.f),
 					ChallengeMutedBadgeTint())
 			];
@@ -1506,7 +907,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				[
 					MakeChallengeSpritePanel(
 						RowContent,
-						GetChallengeBrowserRowBrush(),
+						nullptr,
 						FMargin(28.f, 18.f, 28.f, 16.f),
 						ChallengePanelInsetFill())
 				])
@@ -1607,15 +1008,6 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.AutoWrapText(true)
 			]);
 
-	const TSharedRef<SWidget> CreateButtonContent = MakeChallengeSpriteButton(
-		FText::FromString(ActiveKind == ET66CommunityContentKind::Mod ? TEXT("CREATE MOD") : TEXT("CREATE CHALLENGE")),
-		FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCreateDraftClicked),
-		ET66ChallengeButtonFamily::ToggleOn,
-		264.f,
-		44.f,
-		ActionButtonFontSize,
-		FMargin(18.f, 8.f));
-
 	TSharedRef<SWidget> DetailPanelContent = SNew(STextBlock)
 		.Text(NSLOCTEXT("T66.Challenges", "NoSelection", "Select an entry or create a new draft."))
 		.Font(FT66FlatStyle::Tokens::FontRegular(13))
@@ -1658,7 +1050,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.ForegroundColor(ChallengeFantasyText)
 				.BackgroundColor(FLinearColor::Transparent)
 				.OnTextChanged_UObject(this, &UT66ChallengesScreen::HandleDraftTitleChanged),
-				GetChallengeRowShellBrush(),
+				nullptr,
 				FMargin(10.f, 6.f),
 				ChallengePanelInsetFill())
 		];
@@ -1677,7 +1069,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 				.Text(FText::FromString(DraftEditorEntry.Description))
 				.ForegroundColor(ChallengeFantasyText)
 				.OnTextChanged_UObject(this, &UT66ChallengesScreen::HandleDraftDescriptionChanged),
-				GetChallengeRowShellBrush(),
+				nullptr,
 				FMargin(10.f, 6.f),
 				ChallengePanelInsetFill())
 		];
@@ -1810,27 +1202,19 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			];
 			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 			[
-				SNew(SCheckBox)
-				.IsChecked(DraftEditorEntry.Rules.bRequireFullClear ? ECheckBoxState::Checked : ECheckBoxState::Unchecked)
-				.OnCheckStateChanged_UObject(this, &UT66ChallengesScreen::HandleDraftFullClearChanged)
-				[
-					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("Require full clear")))
-					.Font(FT66FlatStyle::Tokens::FontRegular(12))
-					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-				]
+				FT66FlatStyle::MakeFlatCheckbox(
+					DraftEditorEntry.Rules.bRequireFullClear ? ET66FlatState::Selected : ET66FlatState::Default,
+					TAttribute<ECheckBoxState>::CreateLambda([this]() { return DraftEditorEntry.Rules.bRequireFullClear ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; }),
+					FOnCheckStateChanged::CreateUObject(this, &UT66ChallengesScreen::HandleDraftFullClearChanged),
+					TAttribute<FText>(FText::FromString(TEXT("Require full clear"))))
 			];
 			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 			[
-				SNew(SCheckBox)
-				.IsChecked(DraftEditorEntry.Rules.bRequireNoDamage ? ECheckBoxState::Checked : ECheckBoxState::Unchecked)
-				.OnCheckStateChanged_UObject(this, &UT66ChallengesScreen::HandleDraftNoDamageChanged)
-				[
-					SNew(STextBlock)
-					.Text(FText::FromString(TEXT("Require no damage")))
-					.Font(FT66FlatStyle::Tokens::FontRegular(12))
-					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-				]
+				FT66FlatStyle::MakeFlatCheckbox(
+					DraftEditorEntry.Rules.bRequireNoDamage ? ET66FlatState::Selected : ET66FlatState::Default,
+					TAttribute<ECheckBoxState>::CreateLambda([this]() { return DraftEditorEntry.Rules.bRequireNoDamage ? ECheckBoxState::Checked : ECheckBoxState::Unchecked; }),
+					FOnCheckStateChanged::CreateUObject(this, &UT66ChallengesScreen::HandleDraftNoDamageChanged),
+					TAttribute<FText>(FText::FromString(TEXT("Require no damage"))))
 			];
 			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 			[
@@ -1957,7 +1341,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 					.AutoWrapText(true)
 					.WrapTextAt(DetailColumnWidth - 86.f)
 					.Clipping(EWidgetClipping::ClipToBounds),
-					GetChallengeDetailPaperBrush(),
+					nullptr,
 					FMargin(26.f, 24.f),
 					ChallengePanelInsetFill())
 			]
@@ -1986,7 +1370,7 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 					[
 						RuleList
 					],
-					GetChallengeRulesPaperBrush(),
+					nullptr,
 					FMargin(28.f, 22.f),
 					ChallengePanelInsetFill())
 			]
@@ -2082,184 +1466,191 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			];
 	}
 
-	const TSharedRef<SWidget> ChallengeCanvas = SNew(SBorder)
-		.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-		.BorderBackgroundColor(FLinearColor::Black)
-		[
-			SNew(SBox)
-			.WidthOverride(ReferenceCanvasWidth)
-			.HeightOverride(ReferenceCanvasHeight)
+	constexpr float CanvasW = 1920.f;
+	constexpr float CanvasH = 1080.f;
+	const FName ChallengeTabsGroup(TEXT("ChallengeTabs"));
+	const FLinearColor Purple = FT66FlatStyle::PurpleAccent();
+	const FLinearColor Red = FT66FlatStyle::SelectedText();
+	const FLinearColor White = FT66FlatStyle::PrimaryText();
+	const TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
+	auto DTag = [](const TCHAR* Name) -> FName
+	{
+		return FName(Name);
+	};
+	auto AddN = [&Canvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+	{
+		Canvas->AddSlot()
+			.Anchors(FAnchors(0.f, 0.f))
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X * CanvasW, Y * CanvasH, W * CanvasW, H * CanvasH))
 			[
-				SNew(SOverlay)
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(0.f, 26.f, 0.f, 0.f))
-				[
-					SNew(SBox)
-					.WidthOverride(ReferenceCanvasWidth)
-					.HeightOverride(887.f)
-					[
-						MakeChallengeSpritePanel(
-							SNew(SSpacer),
-							GetChallengeContentShellBrush(),
-							FMargin(0.f),
-							ChallengeShellFill())
-					]
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(0.f, 70.f, 0.f, 0.f))
-				[
-					SNew(STextBlock)
-					.Text(FText::FromString(HeaderTitle.ToUpper()))
-					.Font(FT66FlatStyle::MakeFont(TEXT("Black"), 62))
-					.ColorAndOpacity(ChallengeFantasyText)
-					.ShadowOffset(FVector2D(0.f, 2.f))
-					.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(254.f, 164.f, 0.f, 0.f))
-				[
-					MakeSourceTabButton(static_cast<int32>(ESourceTabIndex::Official), NSLOCTEXT("T66.Challenges", "OfficialTab", "OFFICIAL"))
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(516.f, 164.f, 0.f, 0.f))
-				[
-					MakeSourceTabButton(static_cast<int32>(ESourceTabIndex::Community), NSLOCTEXT("T66.Challenges", "CommunityTab", "COMMUNITY"))
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(810.f, 164.f, 0.f, 0.f))
-				[
-					CreateButtonContent
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(36.f, 209.f, 0.f, 0.f))
-				[
-					SNew(SBox)
-					.WidthOverride(ReferenceCanvasWidth - 72.f)
-					.HeightOverride(48.f)
-					[
-						MakeChallengeHorizontalSlicedPanel(
-							SNew(STextBlock)
-							.Text(FText::FromString(StatusMessage))
-							.Font(FT66FlatStyle::Tokens::FontBold(17))
-							.ColorAndOpacity(ChallengeFantasyMuted)
-							.Justification(ETextJustify::Center)
-							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-							.Clipping(EWidgetClipping::ClipToBounds),
-							GetChallengeStatusBarBrush(),
-							48.f,
-							FMargin(28.f, 12.f, 28.f, 10.f),
-							ChallengePanelFill(),
-							0.125f)
-					]
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(0.f, 266.f, 0.f, 0.f))
-				[
-					SNew(SBox)
-					.WidthOverride(ListPanelWidth)
-					.HeightOverride(BodyPanelHeight)
-					[
-						MakeChallengeSpritePanel(
-							SNew(SBox)
-							.WidthOverride(ListColumnWidth)
-							[
-								ListPanelContent
-							],
-							GetChallengeListPanelBrush(),
-							FMargin(22.f, 28.f),
-							ChallengePanelFill())
-					]
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(716.f, 266.f, 0.f, 0.f))
-				[
-					SNew(SBox)
-					.WidthOverride(DetailPanelWidth)
-					.HeightOverride(BodyPanelHeight)
-					[
-						MakeChallengeSpritePanel(
-							SNew(SBox)
-							.WidthOverride(DetailColumnWidth)
-							[
-								DetailPanelContent
-							],
-							GetChallengeDetailFrameBrush(),
-							FMargin(34.f, 28.f, 32.f, 28.f),
-							ChallengePanelFill())
-					]
-				]
-				+ SOverlay::Slot()
-				.HAlign(HAlign_Right)
-				.VAlign(VAlign_Top)
-				.Padding(FMargin(0.f, 834.f, 96.f, 0.f))
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.Padding(0.f, 0.f, 16.f, 0.f)
-					[
-						MakeChallengeSpriteButton(
-							NSLOCTEXT("T66.Challenges", "FooterBack", "BACK"),
-							FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleBackClicked),
-							ET66ChallengeButtonFamily::CompactNeutral,
-							214.f,
-							62.f,
-							20,
-							FMargin(22.f, 10.f, 22.f, 8.f))
-					]
-					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					[
-						MakeChallengeSpriteButton(
-							FooterConfirmLabel,
-							FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleConfirmClicked),
-							FooterConfirmFamily,
-							270.f,
-							62.f,
-							20,
-							FMargin(22.f, 10.f, 22.f, 8.f))
-					]
-			]
-		]
-		];
+				Widget
+			];
+	};
+	auto MakeLabel = [](
+		const FName Tag,
+		const FText& Text,
+		const int32 FontSize,
+		const FLinearColor& Color,
+		const bool bBold = true,
+		const ETextJustify::Type Justification = ETextJustify::Left) -> TSharedRef<SWidget>
+	{
+		TSharedRef<STextBlock> Label = SNew(STextBlock)
+			.Text(Text)
+			.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
+			.ColorAndOpacity(Color)
+			.Justification(Justification)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds)
+			.Visibility(EVisibility::HitTestInvisible);
+		return FT66FlatStyle::AttachMetadata(
+			Label,
+			Tag,
+			TEXT("Label"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true);
+	};
+	auto MakeRect = [](const FLinearColor& Color, const FName Tag, const FString& Role = TEXT("Rect")) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::AttachMetadata(
+			SNew(SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+			.BorderBackgroundColor(Color)
+			.Visibility(EVisibility::HitTestInvisible),
+			Tag,
+			Role,
+			ET66FlatState::Default);
+	};
+	auto MakeButtonShell = [](
+		const ET66FlatState State,
+		FOnClicked OnClicked,
+		const FName Tag,
+		const FName ToggleGroup = NAME_None,
+		const bool bEnabled = true) -> TSharedRef<SWidget>
+	{
+		return FT66FlatStyle::MakeFlatToggleGroupButton(
+			State,
+			SNullWidget::NullWidget,
+			MoveTemp(OnClicked),
+			FMargin(0.f),
+			0.f,
+			0.f,
+			TAttribute<bool>(bEnabled),
+			Tag,
+			ToggleGroup);
+	};
+	auto MakeIcon = [&MakeLabel](const FName Tag, const TCHAR* Path, const FVector2D& Size, const FLinearColor& Tint, const FText& Fallback) -> TSharedRef<SWidget>
+	{
+		static TMap<FString, FT66ChallengeSpriteBrushEntry> FlatIconEntries;
+		FT66ChallengeSpriteBrushEntry& Entry = FlatIconEntries.FindOrAdd(FString(Path));
+		const FSlateBrush* Brush = ResolveChallengeSpriteBrush(
+			Entry,
+			FString(Path),
+			Size,
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			TextureFilter::TF_Trilinear);
+		if (!Brush)
+		{
+			return MakeLabel(Tag, Fallback, 24, Tint, true, ETextJustify::Center);
+		}
+		TSharedRef<SImage> Image = SNew(SImage)
+			.Image(Brush)
+			.ColorAndOpacity(Tint)
+			.Visibility(EVisibility::HitTestInvisible);
+		return FT66FlatStyle::AttachMetadata(Image, Tag, TEXT("Icon"), ET66FlatState::Default);
+	};
 
-	return SNew(SOverlay)
+	const bool bOfficialSelected = !bDraftEditorActive && CurrentSourceTabIndex == static_cast<int32>(ESourceTabIndex::Official);
+	const bool bCommunitySelected = !bDraftEditorActive && CurrentSourceTabIndex == static_cast<int32>(ESourceTabIndex::Community);
+	const bool bCreateSelected = bDraftEditorActive;
+	const FText CreateTabLabel = FText::FromString(ActiveKind == ET66CommunityContentKind::Mod ? TEXT("CREATE MOD") : TEXT("CREATE CHALLENGE"));
+	const ET66FlatState ConfirmState = FooterConfirmFamily == ET66ChallengeButtonFamily::ToggleInactive
+		? ET66FlatState::Disabled
+		: ET66FlatState::Selected;
+	const bool bConfirmEnabled = FooterConfirmFamily != ET66ChallengeButtonFamily::ToggleInactive;
+
+	AddN(0.f, 0.f, 1.f, 1.f, MakeRect(FT66FlatStyle::BackgroundColor(), DTag(TEXT("Challenges.Background")), TEXT("Background")));
+	AddN(0.f, 0.f, 1.f, 1.f, FT66FlatStyle::AttachMetadata(SNew(SBox), DTag(TEXT("Challenges.Root")), TEXT("ScreenRoot"), ET66FlatState::Default));
+
+	AddN(0.012f, 0.021f, 0.132f, 0.071f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleBackClicked), DTag(TEXT("Challenges.TopRow.BackButton"))));
+	AddN(0.033f, 0.044f, 0.022f, 0.034f, MakeIcon(DTag(TEXT("Challenges.TopRow.BackButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/back_chevron.png"), FVector2D(48.f, 48.f), Purple, FText::FromString(TEXT("<"))));
+	AddN(0.071f, 0.039f, 0.054f, 0.044f, MakeLabel(DTag(TEXT("Challenges.TopRow.BackButton.Label")), NSLOCTEXT("T66.Challenges", "FlatBack", "BACK"), 28, Purple, true, ETextJustify::Left));
+
+	AddN(0.374f, 0.033f, 0.254f, 0.066f, MakeLabel(DTag(TEXT("Challenges.Title")), FText::FromString(HeaderTitle.ToUpper()), 60, White, true, ETextJustify::Center));
+
+	AddN(0.846f, 0.021f, 0.141f, 0.071f, MakeButtonShell(ConfirmState, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleConfirmClicked), DTag(TEXT("Challenges.TopRow.ConfirmButton")), NAME_None, bConfirmEnabled));
+	AddN(0.870f, 0.039f, 0.070f, 0.044f, MakeLabel(DTag(TEXT("Challenges.TopRow.ConfirmButton.Label")), FooterConfirmLabel, 27, bConfirmEnabled ? Red : FT66FlatStyle::DisabledText(), true, ETextJustify::Left));
+	AddN(0.947f, 0.044f, 0.025f, 0.034f, MakeIcon(DTag(TEXT("Challenges.TopRow.ConfirmButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/forward_chevron.png"), FVector2D(48.f, 48.f), bConfirmEnabled ? Red : FT66FlatStyle::DisabledText(), FText::FromString(TEXT(">"))));
+
+	AddN(0.149f, 0.129f, 0.206f, 0.077f, MakeButtonShell(bOfficialSelected ? ET66FlatState::Selected : ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSourceTabSelected, static_cast<int32>(ESourceTabIndex::Official)), DTag(TEXT("Challenges.Tabs.OfficialButton")), ChallengeTabsGroup));
+	AddN(0.181f, 0.145f, 0.032f, 0.048f, MakeIcon(DTag(TEXT("Challenges.Tabs.OfficialButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/target_crosshair.png"), FVector2D(56.f, 56.f), bOfficialSelected ? Red : Purple, FText::FromString(TEXT("+"))));
+	AddN(0.222f, 0.148f, 0.076f, 0.044f, MakeLabel(DTag(TEXT("Challenges.Tabs.OfficialButton.Label")), NSLOCTEXT("T66.Challenges", "FlatOfficial", "OFFICIAL"), 26, bOfficialSelected ? Red : White, true, ETextJustify::Center));
+	AddN(0.314f, 0.146f, 0.025f, 0.044f, MakeIcon(DTag(TEXT("Challenges.Tabs.OfficialButton.InfoIcon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(44.f, 44.f), bOfficialSelected ? Red : Purple, FText::FromString(TEXT("i"))));
+
+	AddN(0.376f, 0.129f, 0.217f, 0.074f, MakeButtonShell(bCommunitySelected ? ET66FlatState::Selected : ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleSourceTabSelected, static_cast<int32>(ESourceTabIndex::Community)), DTag(TEXT("Challenges.Tabs.CommunityButton")), ChallengeTabsGroup));
+	AddN(0.406f, 0.145f, 0.032f, 0.048f, MakeIcon(DTag(TEXT("Challenges.Tabs.CommunityButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/people.png"), FVector2D(56.f, 56.f), bCommunitySelected ? Red : Purple, FText::FromString(TEXT("**"))));
+	AddN(0.447f, 0.148f, 0.096f, 0.044f, MakeLabel(DTag(TEXT("Challenges.Tabs.CommunityButton.Label")), NSLOCTEXT("T66.Challenges", "FlatCommunity", "COMMUNITY"), 25, bCommunitySelected ? Red : White, true, ETextJustify::Center));
+	AddN(0.552f, 0.146f, 0.025f, 0.044f, MakeIcon(DTag(TEXT("Challenges.Tabs.CommunityButton.InfoIcon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(44.f, 44.f), bCommunitySelected ? Red : Purple, FText::FromString(TEXT("i"))));
+
+	AddN(0.615f, 0.129f, 0.236f, 0.074f, MakeButtonShell(bCreateSelected ? ET66FlatState::Selected : ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleCreateDraftClicked), DTag(TEXT("Challenges.Tabs.CreateButton")), ChallengeTabsGroup));
+	AddN(0.642f, 0.145f, 0.032f, 0.048f, MakeIcon(DTag(TEXT("Challenges.Tabs.CreateButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/pencil_edit.png"), FVector2D(56.f, 56.f), bCreateSelected ? Red : Purple, FText::FromString(TEXT("/"))));
+	AddN(0.683f, 0.148f, 0.130f, 0.044f, MakeLabel(DTag(TEXT("Challenges.Tabs.CreateButton.Label")), CreateTabLabel, 23, bCreateSelected ? Red : White, true, ETextJustify::Center));
+	AddN(0.819f, 0.146f, 0.025f, 0.044f, MakeIcon(DTag(TEXT("Challenges.Tabs.CreateButton.InfoIcon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(44.f, 44.f), bCreateSelected ? Red : Purple, FText::FromString(TEXT("i"))));
+
+	AddN(0.027f, 0.230f, 0.466f, 0.704f,
+		FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Default,
+			FMargin(22.f, 28.f),
+			SNew(SBox)
+			.WidthOverride(ListColumnWidth)
+			[
+				ListPanelContent
+			],
+			nullptr,
+			DTag(TEXT("Challenges.LeftPanel"))));
+	AddN(0.507f, 0.231f, 0.465f, 0.704f,
+		FT66FlatStyle::MakeFlatPanel(
+			ET66FlatState::Selected,
+			FMargin(34.f, 28.f, 32.f, 28.f),
+			SNew(SBox)
+			.WidthOverride(DetailColumnWidth)
+			[
+				DetailPanelContent
+			],
+			nullptr,
+			DTag(TEXT("Challenges.RightPanel"))));
+
+	return FT66FlatStyle::WrapWithoutRetainer(
+		SNew(SOverlay)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
 		[
 			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor::Black)
+			.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+			.BorderBackgroundColor(FT66FlatStyle::BackgroundColor())
 		]
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Center)
-		.Padding(FMargin(-14.f, 0.f, -14.f, 0.f))
+		.VAlign(VAlign_Fill)
 		[
 			SNew(SScaleBox)
 			.Stretch(EStretch::ScaleToFit)
 			.StretchDirection(EStretchDirection::Both)
 			[
-				ChallengeCanvas
+				SNew(SBox)
+				.WidthOverride(CanvasW)
+				.HeightOverride(CanvasH)
+				[
+					Canvas
+				]
 			]
-		];
+		],
+		DTag(TEXT("Challenges.ViewportRoot")));
 }
 
 FReply UT66ChallengesScreen::HandleBackClicked()
@@ -2291,7 +1682,6 @@ FReply UT66ChallengesScreen::HandleSourceTabSelected(const int32 SourceTabIndex)
 {
 	InitializeSelectionState();
 	ActiveSourceTabIndex[ActiveTabIndex] = FMath::Clamp(SourceTabIndex, 0, static_cast<int32>(ESourceTabIndex::Count) - 1);
-	FlatSelectedChallengeCardIndex = 0;
 	EndDraftEditor();
 	RequestDeferredSlateRebuild();
 	return FReply::Handled();
@@ -2311,41 +1701,8 @@ FReply UT66ChallengesScreen::HandleEntrySelected(const int32 EntryIndex)
 	return FReply::Handled();
 }
 
-FReply UT66ChallengesScreen::HandleFlatChallengeCardSelected(const int32 CardIndex)
-{
-	InitializeSelectionState();
-	FlatSelectedChallengeCardIndex = FMath::Clamp(CardIndex, 0, 3);
-
-	const int32 SourceTabIndex = ActiveSourceTabIndex[ActiveTabIndex];
-	const TArray<FT66CommunityContentEntry> Entries = GetEntriesForView(ActiveTabIndex, SourceTabIndex);
-	if (Entries.IsValidIndex(FlatSelectedChallengeCardIndex))
-	{
-		PendingSelections[ActiveTabIndex][SourceTabIndex] = Entries[FlatSelectedChallengeCardIndex].LocalId;
-	}
-
-	EndDraftEditor();
-	RequestDeferredSlateRebuild();
-	return FReply::Handled();
-}
-
-FReply UT66ChallengesScreen::HandleFlatPaginationSelected(const int32 PageIndex)
-{
-	FlatChallengePageIndex = FMath::Clamp(PageIndex, 0, 3);
-	RequestDeferredSlateRebuild();
-	return FReply::Handled();
-}
-
 FReply UT66ChallengesScreen::HandleConfirmClicked()
 {
-	if (GetActiveKind() == ET66CommunityContentKind::Challenge && !bDraftEditorActive)
-	{
-		const int32 SourceTabIndex = ActiveSourceTabIndex[ActiveTabIndex];
-		if (!GetEntriesForView(ActiveTabIndex, SourceTabIndex).IsValidIndex(FlatSelectedChallengeCardIndex))
-		{
-			return FReply::Handled();
-		}
-	}
-
 	bool bActivatedEntry = false;
 	FT66CommunityContentEntry Entry;
 	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())

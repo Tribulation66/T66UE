@@ -58,7 +58,7 @@ float3 ToonCharacterShade(
 	const float Offset = ThresholdOffset - 0.5;
 	const float3 Ramp = ToonThreeTone(NdotL, RampStep1 + Offset, RampStep2 + Offset, ShadeColor, MidtoneColor, LitColor);
 	const float Rim = ToonRim(Normal, V, RimPower, RimStrength);
-	const float3 LitOutput = (BaseColor * TintColor * 2.0 * Ramp) + (RimColor * Rim);
+	const float3 LitOutput = (BaseColor * TintColor * 1.5 * Ramp) + (RimColor * Rim);
 	const float LineAlpha = saturate(InnerLineMask * InnerLineStrength);
 	return lerp(LitOutput, InnerLineColor, LineAlpha);
 }

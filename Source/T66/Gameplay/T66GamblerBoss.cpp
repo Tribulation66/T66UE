@@ -123,7 +123,7 @@ void AT66GamblerBoss::BeginPlay()
 
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
-			const bool bApplied = Visuals->ApplyCharacterVisual(FName(TEXT("GamblerBoss")), GetMesh(), VisualMesh, true);
+			const bool bApplied = Visuals->ApplyCharacterVisual(FName(TEXT("GamblerBoss")), GetMesh(), VisualMesh, true, false, false, VisualMesh);
 			if (!bApplied && GetMesh())
 			{
 				GetMesh()->SetVisibility(false, true);

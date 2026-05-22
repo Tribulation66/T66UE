@@ -52,7 +52,7 @@ class ManifestAsset:
 
     @property
     def accepted_limitation(self) -> bool:
-        return self.asset_class == "accepted-limitation"
+        return self.asset_class == "accepted-limitation" or bool(self.row.get("accepted_limitation", False))
 
     @property
     def target_dir(self) -> str:
@@ -95,14 +95,17 @@ def settings(manifest: dict[str, Any]) -> dict[str, Any]:
         "decimation": 200000,
         "fallback_decimation": 80000,
         "remesh": True,
-        "export_fallback": True,
-        "safe_fill_holes_fallback": True,
+        "export_fallback": False,
+        "safe_fill_holes_fallback": False,
         "ss_steps": 25,
         "ss_guidance": 7.5,
         "shape_steps": 25,
         "shape_guidance": 7.5,
         "tex_steps": 25,
         "tex_guidance": 4.0,
+        "batch_generate_timeout": None,
+        "batch_poll_interval": None,
+        "batch_wait_timeout": None,
     }
     merged = defaults.copy()
     merged.update(manifest.get("settings", {}))
@@ -113,7 +116,7 @@ def iter_assets(manifest: dict[str, Any]) -> list[ManifestAsset]:
     return [ManifestAsset(row) for row in manifest.get("assets", [])]
 
 
-def validate_manifest(manifest_path: Path, allow_template: bool = False) -> tuple[dict[str, Any], list[str]]:
+def validate_manifest(manifest_path: Path, allow_template: bool = False, diagnostic_mode: bool = False) -> tuple[dict[str, Any], list[str]]:
     manifest = load_manifest(manifest_path)
     errors: list[str] = []
 
@@ -131,10 +134,10 @@ def validate_manifest(manifest_path: Path, allow_template: bool = False) -> tupl
         errors.append("settings.fallback_decimation should be at least 80000 for production unless an asset row documents an exception")
     if not bool(cfg["remesh"]):
         errors.append("settings.remesh must default to true; no-remesh is an explicit per-asset fallback state only")
-    if not bool(cfg["export_fallback"]):
-        errors.append("settings.export_fallback must be true")
-    if not bool(cfg["safe_fill_holes_fallback"]):
-        errors.append("settings.safe_fill_holes_fallback must be true")
+    if bool(cfg["export_fallback"]) and not diagnostic_mode:
+        errors.append("settings.export_fallback requires --diagnostic-mode; strict production runs must halt on export failure")
+    if bool(cfg["safe_fill_holes_fallback"]) and not diagnostic_mode:
+        errors.append("settings.safe_fill_holes_fallback requires --diagnostic-mode; strict production runs must halt on fill-hole failure")
 
     assets = iter_assets(manifest)
     if not assets:
@@ -258,7 +261,47 @@ def generation_command(manifest: dict[str, Any], args: argparse.Namespace, run_r
         command.append("--safe-fill-holes-fallback")
     else:
         command.append("--no-safe-fill-holes-fallback")
+    if args.diagnostic_mode:
+        command.append("--diagnostic-mode")
+    for option, key in [
+        ("--generate-timeout", "batch_generate_timeout"),
+        ("--poll-interval", "batch_poll_interval"),
+        ("--wait-timeout", "batch_wait_timeout"),
+    ]:
+        value = cfg.get(key)
+        if value not in (None, ""):
+            command.extend([option, str(value)])
     return command
+
+
+def load_generation_status(run_root: Path) -> tuple[dict[str, dict[str, Any]], list[str]]:
+    status_path = run_root / "Logs" / "pixal3d_generation_status.jsonl"
+    rows: dict[str, dict[str, Any]] = {}
+    errors: list[str] = []
+    if not status_path.exists():
+        return rows, [f"missing Pixal3D generation status JSONL: {status_path}"]
+    for line_number, line in enumerate(status_path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            errors.append(f"{status_path}:{line_number}: invalid JSONL row: {exc}")
+            continue
+        variant = str(row.get("variant", "")).strip()
+        if not variant:
+            errors.append(f"{status_path}:{line_number}: missing variant")
+            continue
+        rows[variant] = row
+    return rows, errors
+
+
+def normalized_header(headers: dict[str, Any], name: str) -> str:
+    target = name.lower()
+    for key, value in headers.items():
+        if str(key).lower() == target:
+            return str(value).strip()
+    return ""
 
 
 def process_assets(manifest: dict[str, Any], args: argparse.Namespace, run_root: Path) -> None:
@@ -271,6 +314,8 @@ def process_assets(manifest: dict[str, Any], args: argparse.Namespace, run_root:
         command = [
             str(args.blender_exe),
             "--background",
+            "--python-exit-code",
+            "1",
             "--python",
             str(BLENDER_PIPELINE),
             "--",
@@ -324,9 +369,12 @@ def import_assets(manifest: dict[str, Any], args: argparse.Namespace) -> None:
             print(f"[WARN] {asset.asset_id}: Unreal exited {completed.returncode} after writing verify JSON")
 
 
-def verify_assets(manifest: dict[str, Any], run_root: Path) -> dict[str, Any]:
+def verify_assets(manifest: dict[str, Any], run_root: Path, diagnostic_mode: bool = False) -> dict[str, Any]:
+    cfg = settings(manifest)
+    generation_rows, generation_errors = load_generation_status(run_root)
     rows = []
-    errors = []
+    errors = list(generation_errors)
+    diagnostic_fallback_issues: list[str] = []
     outputs_dir = run_root / "Outputs"
 
     for asset in iter_assets(manifest):
@@ -349,6 +397,44 @@ def verify_assets(manifest: dict[str, Any], run_root: Path) -> dict[str, Any]:
             row["ok"] = False
             row["errors"].append(message)
             errors.append(f"{asset.asset_id}: {message}")
+
+        def fallback_fail(message: str) -> None:
+            row["ok"] = False
+            row.setdefault("fallback_issues", []).append(message)
+            issue = f"{asset.asset_id}: {message}"
+            if diagnostic_mode:
+                diagnostic_fallback_issues.append(issue)
+            else:
+                row["errors"].append(message)
+                errors.append(issue)
+
+        generation_row = generation_rows.get(asset.asset_id)
+        if generation_row is None:
+            fail("missing Pixal3D generation status row")
+        else:
+            headers = generation_row.get("response_headers", {})
+            if not isinstance(headers, dict):
+                headers = {}
+            export_label = normalized_header(headers, "X-Pixal3D-Export-Label")
+            export_decimation = normalized_header(headers, "X-Pixal3D-Export-Decimation")
+            export_remesh = normalized_header(headers, "X-Pixal3D-Export-Remesh")
+            safe_fill_holes = normalized_header(headers, "X-Pixal3D-Export-Safe-Fill-Holes")
+            row["pixal3d_export_headers"] = {
+                "X-Pixal3D-Export-Label": export_label,
+                "X-Pixal3D-Export-Decimation": export_decimation,
+                "X-Pixal3D-Export-Remesh": export_remesh,
+                "X-Pixal3D-Export-Safe-Fill-Holes": safe_fill_holes,
+            }
+            if not asset.accepted_limitation:
+                expected_decimation = str(int(cfg["decimation"]))
+                if export_label != "requested":
+                    fallback_fail(f"Pixal3D export label {export_label!r} != 'requested'")
+                if bool(cfg.get("remesh", True)) and export_remesh != "1":
+                    fallback_fail(f"Pixal3D export remesh {export_remesh!r} != '1'")
+                if export_decimation != expected_decimation:
+                    fallback_fail(f"Pixal3D export decimation {export_decimation!r} != requested {expected_decimation}")
+                if safe_fill_holes == "1":
+                    fallback_fail("Pixal3D safe fill holes fallback was used")
 
         if not glb.exists() or glb.stat().st_size <= 0:
             fail(f"missing or empty GLB: {glb}")
@@ -417,9 +503,11 @@ def verify_assets(manifest: dict[str, Any], run_root: Path) -> dict[str, Any]:
         rows.append(row)
 
     report = {
-        "ok": not errors,
+        "ok": not errors and not diagnostic_fallback_issues,
         "generated_at": utc_now(),
+        "diagnostic_mode": diagnostic_mode,
         "errors": errors,
+        "diagnostic_fallback_issues": diagnostic_fallback_issues,
         "assets": rows,
     }
     report_path = run_root / "Reports" / "Pixal3D_ToonStyle_Production_Import_Report.json"
@@ -428,6 +516,8 @@ def verify_assets(manifest: dict[str, Any], run_root: Path) -> dict[str, Any]:
     print(f"Wrote {report_path}")
     if errors:
         raise SystemExit("Production verification failed:\n" + "\n".join(errors))
+    if diagnostic_fallback_issues:
+        print("Diagnostic fallback issues detected:\n" + "\n".join(diagnostic_fallback_issues))
     return report
 
 
@@ -441,6 +531,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--blender-exe", type=Path, default=DEFAULT_BLENDER)
     parser.add_argument("--unreal-editor-exe", type=Path, default=DEFAULT_UNREAL)
     parser.add_argument("--allow-template", action="store_true")
+    parser.add_argument("--diagnostic-mode", action="store_true", help="Allow fallback flags for diagnostic runs; verifier still reports actual fallback usage.")
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ["validate", "generate", "process", "import", "verify", "run"]:
         sub.add_parser(name)
@@ -452,7 +543,7 @@ def main(argv: list[str] | None = None) -> int:
     args.manifest = args.manifest.resolve()
     args.run_root = args.run_root.resolve()
 
-    manifest, errors = validate_manifest(args.manifest, allow_template=args.allow_template)
+    manifest, errors = validate_manifest(args.manifest, allow_template=args.allow_template, diagnostic_mode=args.diagnostic_mode)
     if errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
@@ -470,7 +561,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command in {"import", "run"}:
         import_assets(manifest, args)
     if args.command in {"verify", "run"}:
-        verify_assets(manifest, args.run_root)
+        verify_assets(manifest, args.run_root, diagnostic_mode=args.diagnostic_mode)
     return 0
 
 

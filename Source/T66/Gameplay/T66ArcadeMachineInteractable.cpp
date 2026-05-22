@@ -6,6 +6,7 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Gameplay/T66ArcadeGameCatalog.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -32,24 +33,13 @@ AT66ArcadeMachineInteractable::AT66ArcadeMachineInteractable()
 	ArcadeData.InteractionVerb = NSLOCTEXT("T66.Arcade", "MachineInteractVerb", "play arcade");
 	ArcadeData.ArcadeClass = ET66ArcadeInteractableClass::PopupArcade;
 	ArcadeData.ArcadeGameType = ET66ArcadeGameType::Random;
-	ArcadeData.RandomGameTypes = {
-		ET66ArcadeGameType::WhackAMole,
-		ET66ArcadeGameType::Topwar,
-		ET66ArcadeGameType::GoldMiner,
-		ET66ArcadeGameType::RuneSwipe,
-		ET66ArcadeGameType::CartSwitcher,
-		ET66ArcadeGameType::CrystalDash,
-		ET66ArcadeGameType::PotionPour,
-		ET66ArcadeGameType::RelicStack,
-		ET66ArcadeGameType::ShieldParry,
-		ET66ArcadeGameType::MimicMemory,
-		ET66ArcadeGameType::BombSorter,
-		ET66ArcadeGameType::LanternLeap,
-		ET66ArcadeGameType::BladeSweep,
-	};
+	for (const FT66ArcadeGameCatalogEntry& Entry : T66ArcadeGameCatalog::GetPlayableEntries())
+	{
+		ArcadeData.RandomGameTypes.Add(Entry.GameType);
+	}
 	ArcadeData.bConsumeOnSuccess = true;
 	ArcadeData.bConsumeOnFailure = true;
-	ArcadeData.DisplayMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro")));
+	ArcadeData.DisplayMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D")));
 	ArcadeData.DisplayMeshScale = FVector(1.f, 1.f, 1.f);
 	ArcadeData.DisplayMeshOffset = FVector::ZeroVector;
 	ArcadeData.Tint = FLinearColor(0.14f, 0.36f, 0.92f, 1.f);

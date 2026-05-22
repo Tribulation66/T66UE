@@ -42,7 +42,7 @@ AT66WeaponAltar::AT66WeaponAltar()
 		TopRect->SetStaticMesh(Cube);
 	}
 
-	AltarMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/IdolAltar/IdolAltar_Pixal3D.IdolAltar_Pixal3D")));
+	AltarMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D.SM_WeaponAltar_Pixal3D")));
 
 	BaseRect->SetRelativeLocation(FVector(0.f, 0.f, 14.f * VisualScaleMultiplier));
 	BaseRect->SetRelativeScale3D(FVector(2.8f, 1.7f, 0.28f) * VisualScaleMultiplier);

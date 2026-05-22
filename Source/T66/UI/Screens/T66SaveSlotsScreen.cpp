@@ -114,11 +114,6 @@ namespace
 			.BorderBackgroundColor(Tint);
 	}
 
-	TSharedRef<SWidget> MakeSaveFlowShell(const TSharedRef<SWidget>& Content, const FMargin& Padding)
-	{
-		return FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, Padding, Content);
-	}
-
 	TSharedRef<SWidget> MakeSaveFlowRowShell(const TSharedRef<SWidget>& Content, const FMargin& Padding, const bool bSelected, const bool bEnabled)
 	{
 		return FT66FlatStyle::MakeFlatPanel(
@@ -398,7 +393,7 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 				.AutoHeight()
 				.Padding(0.f, 0.f, 0.f, 6.f)
 				[
-					FT66FlatStyle::MakeFlatButton(
+					FT66FlatStyle::MakeFlatDropdownOptionButton(
 						bSelectedPartySize ? ET66FlatState::Selected : ET66FlatState::Default,
 						T66PartySizeText(Loc, PartySize),
 						FOnClicked::CreateLambda([this, PartySize]()
@@ -409,13 +404,9 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 							FSlateApplication::Get().DismissAllMenus();
 							return FReply::Handled();
 						}),
-						nullptr,
-						nullptr,
-						FMargin(10.f, 5.f),
-						150.f,
-						38.f,
-						true,
-						18,
+						0.f,
+						0.f,
+						0,
 						FName(*FString::Printf(TEXT("SaveSlots.PartyFilter.%s"), *T66PartySizeText(Loc, PartySize).ToString())))
 				];
 		}
@@ -790,11 +781,6 @@ TSharedRef<SWidget> UT66SaveSlotsScreen::BuildSlateUI()
 
 	AddSaveFlowCanvasSlot(
 		DesignCanvas,
-		163.f, 239.f, 1591.f, 752.f,
-		MakeSaveFlowShell(SNew(SSpacer), FMargin(0.f)));
-
-	AddSaveFlowCanvasSlot(
-		DesignCanvas,
 		169.f, 60.f, 143.f, 62.f,
 		MakeSaveFlowPlateButton(
 			BackText,
@@ -990,7 +976,7 @@ void UT66SaveSlotsScreen::PrepareGameInstanceForLoadedSave(UT66GameInstance* GI,
 
 	GI->SelectedHeroID = GI->ResolvePlayableHeroID(Loaded->HeroID);
 	GI->SelectedHeroBodyType = Loaded->HeroBodyType;
-	GI->SelectedCompanionID = Loaded->CompanionID;
+	GI->SelectedCompanionID = GI->ResolvePlayableCompanionID(Loaded->CompanionID);
 	GI->SelectedDifficulty = GI->ResolvePlayableDifficulty(Loaded->Difficulty);
 	GI->SelectedPartySize = Loaded->PartySize;
 	GI->RunSeed = Loaded->RunSeed;

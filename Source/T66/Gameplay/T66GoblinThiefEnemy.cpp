@@ -66,7 +66,7 @@ void AT66GoblinThiefEnemy::SetRarity(ET66Rarity InRarity)
 		{
 			if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 			{
-				bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CharacterVisualID, GetMesh(), VisualMesh, true);
+				bUsingCharacterVisual = Visuals->ApplyCharacterVisual(CharacterVisualID, GetMesh(), VisualMesh, true, false, false, VisualMesh);
 			}
 		}
 	}

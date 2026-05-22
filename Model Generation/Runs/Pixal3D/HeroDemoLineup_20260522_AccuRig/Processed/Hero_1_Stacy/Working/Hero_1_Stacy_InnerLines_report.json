@@ -1,0 +1,19 @@
+{
+  "dependency_path": "external_python_pillow_numpy",
+  "line_coverage_fraction": 0.07349264621734619,
+  "max_intensity": 1.0,
+  "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_1_Stacy\\Working\\Hero_1_Stacy_InnerLines.png",
+  "padding": {
+    "applied": true,
+    "filled_pixels": 6905664,
+    "method": "iterative_frontier_expansion",
+    "padding_pixels": 16
+  },
+  "resolution": [
+    4096,
+    4096
+  ],
+  "segments": 92709,
+  "stddev": 0.2013411670923233,
+  "unique_value_count": 256
+}

@@ -1,0 +1,531 @@
+{
+  "schema_version": 1,
+  "workflow": "pixal3d_toonstyle_production_import",
+  "production_cleared": true,
+  "source_gate_override": {
+    "luminance_floor": "waived_by_user_2026-05-19",
+    "reason": "Pablo explicitly instructed to ignore luminance issues/warnings and proceed with these images."
+  },
+  "settings": {
+    "seed": 1337,
+    "resolution": 1536,
+    "texture_size": 4096,
+    "decimation": 200000,
+    "fallback_decimation": 80000,
+    "remesh": true,
+    "export_fallback": false,
+    "safe_fill_holes_fallback": false,
+    "ss_steps": 25,
+    "ss_guidance": 7.5,
+    "shape_steps": 25,
+    "shape_guidance": 7.5,
+    "tex_steps": 25,
+    "tex_guidance": 4.0
+  },
+  "assets": [
+    {
+      "asset_id": "Arcade_Machine_Pixal3D",
+      "display_name": "Arcade Machine Pixal3D",
+      "category": "interactable",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Interactables/interactable_arcade_machine.png",
+      "target_dir": "/Game/World/Interactables/Arcade/Arcade_Machine",
+      "replaces": "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro",
+      "target_height": 180.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/ArcadeInteractables.json; DT_ArcadeInteractables shared arcade rows",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Arcade_Machine_Pixal3D/Working",
+      "notes": "Shared arcade cabinet model for all Arcade_* rows."
+    },
+    {
+      "asset_id": "Vehicle_Pixal3D",
+      "display_name": "Vehicle Pixal3D",
+      "category": "interactable",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Interactables/interactable_vehicle.png",
+      "target_dir": "/Game/World/Interactables/Vehicles",
+      "replaces": "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+      "target_height": 150.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/VehicleInteractables.json; DT_VehicleInteractables Vehicle rows",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Vehicle_Pixal3D/Working",
+      "notes": "Keep runtime/data-facing name Vehicle, not Tractor."
+    },
+    {
+      "asset_id": "Chest_Pixal3D",
+      "display_name": "Chest Pixal3D",
+      "category": "interactable",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Interactables/interactable_chest.png",
+      "target_dir": "/Game/World/Interactables/Chests/ChestModel",
+      "replaces": "/Game/World/Interactables/Chests/ChestModel/Chest_QuadRetro.Chest_QuadRetro",
+      "target_height": 120.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Source/T66/Gameplay/T66ChestInteractable.cpp SingleMesh; preserve rarity reward logic",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Chest_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "Fountain_Pixal3D",
+      "display_name": "Fountain Pixal3D",
+      "category": "interactable",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Interactables/interactable_fountain.png",
+      "target_dir": "/Game/World/Interactables/Fountain",
+      "replaces": "/Game/World/Interactables/Fountain/Fountain_QuadRetro.Fountain_QuadRetro",
+      "target_height": 170.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Source/T66/Gameplay/T66FountainInteractable.cpp SingleMesh",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Fountain_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "display_name": "Difficulty Totem Pixal3D",
+      "category": "interactable",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Interactables/interactable_difficulty_totem.png",
+      "target_dir": "/Game/World/Interactables/DifficultyTotem",
+      "replaces": "/Game/World/Interactables/DifficultyTotem/DifficultyTotem_QuadRetro.DifficultyTotem_QuadRetro",
+      "target_height": 180.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Source/T66/Gameplay/T66DifficultyTotem.cpp SingleMesh",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/DifficultyTotem_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "QuickReviveVending_Pixal3D",
+      "display_name": "Quick Revive Vending Pixal3D",
+      "category": "interactable",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Interactables/interactable_quick_revive_vending_machine.png",
+      "target_dir": "/Game/World/Interactables/Vending",
+      "replaces": "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro",
+      "target_height": 180.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Source/T66/Gameplay/T66QuickReviveVendingMachine.cpp SingleMesh",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/QuickReviveVending_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "LootWheel_Pixal3D",
+      "display_name": "Loot Wheel Pixal3D",
+      "category": "interactable",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Interactables/interactable_loot_wheel.png",
+      "target_dir": "/Game/World/Interactables/LootWheel",
+      "replaces": "/Game/World/Interactables/LootWheel/LootWheel_Pixal3D.LootWheel_Pixal3D",
+      "target_height": 170.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Source/T66/Gameplay/T66LootWheelInteractable.cpp SingleMesh; preserve rarity reward logic",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/LootWheel_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "display_name": "Shared Loot Bag Pixal3D",
+      "category": "interactable",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Interactables/interactable_loot_bag_shared_rarity.png",
+      "target_dir": "/Game/World/LootBags/Shared",
+      "replaces": "/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro",
+      "target_height": 80.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Source/T66/Gameplay/T66LootBagPickup.cpp MeshBlack/MeshRed/MeshYellow/MeshWhite all point to shared mesh; preserve rarity gameplay logic",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/LootBag_Shared_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "IdolAltar_Pixal3D",
+      "display_name": "Idol Altar Pixal3D",
+      "category": "interactable",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Interactables/interactable_idol_altar.png",
+      "target_dir": "/Game/World/Interactables/IdolAltar",
+      "replaces": "/Game/World/Interactables/IdolAltar/IdolAltar_Pixal3D.IdolAltar_Pixal3D",
+      "target_height": 100.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Source/T66/Gameplay/T66IdolAltar.cpp AltarMeshOverride",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/IdolAltar_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "WeaponAltar_Pixal3D",
+      "display_name": "Weapon Altar Pixal3D",
+      "category": "interactable",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Interactables/interactable_weapon_altar.png",
+      "target_dir": "/Game/World/Interactables/WeaponAltar",
+      "replaces": "/Game/World/Interactables/IdolAltar/IdolAltar_Pixal3D.IdolAltar_Pixal3D",
+      "target_height": 100.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Source/T66/Gameplay/T66WeaponAltar.cpp AltarMeshOverride",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/WeaponAltar_Pixal3D/Working",
+      "notes": "Dedicated weapon altar model; do not share idol altar mesh."
+    },
+    {
+      "asset_id": "Boost_DamageStrength_Pixal3D",
+      "display_name": "Damage Strength Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_damage_strength.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_DamageStrength_Pixal3D/Working",
+      "notes": "ET66HeroStatType::Damage / Strength boost coin."
+    },
+    {
+      "asset_id": "Boost_AttackSpeed_Pixal3D",
+      "display_name": "Attack Speed Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_attack_speed.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_AttackSpeed_Pixal3D/Working",
+      "notes": "ET66HeroStatType::AttackSpeed boost coin."
+    },
+    {
+      "asset_id": "Boost_AttackScale_Pixal3D",
+      "display_name": "Attack Scale Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_attack_scale.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_AttackScale_Pixal3D/Working",
+      "notes": "ET66HeroStatType::AttackScale boost coin."
+    },
+    {
+      "asset_id": "Boost_Armor_Pixal3D",
+      "display_name": "Armor Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_armor.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_Armor_Pixal3D/Working",
+      "notes": "ET66HeroStatType::Armor boost coin."
+    },
+    {
+      "asset_id": "Boost_Evasion_Pixal3D",
+      "display_name": "Evasion Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_evasion.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_Evasion_Pixal3D/Working",
+      "notes": "ET66HeroStatType::Evasion boost coin."
+    },
+    {
+      "asset_id": "Boost_Luck_Pixal3D",
+      "display_name": "Luck Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_luck.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_Luck_Pixal3D/Working",
+      "notes": "ET66HeroStatType::Luck boost coin."
+    },
+    {
+      "asset_id": "Boost_Speed_Pixal3D",
+      "display_name": "Speed Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_speed.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_Speed_Pixal3D/Working",
+      "notes": "ET66HeroStatType::Speed boost coin."
+    },
+    {
+      "asset_id": "Boost_Accuracy_Pixal3D",
+      "display_name": "Accuracy Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_accuracy.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_Accuracy_Pixal3D/Working",
+      "notes": "ET66HeroStatType::Accuracy boost coin."
+    },
+    {
+      "asset_id": "StageGate_Pixal3D",
+      "display_name": "Stage Gate Pixal3D",
+      "category": "environment",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Gates/gate_stage.png",
+      "target_dir": "/Game/World/Gates",
+      "replaces": "/Game/World/Gates/StageGate_Pixal3D.StageGate_Pixal3D",
+      "target_height": 260.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Source/T66/Gameplay/T66StageGate.cpp GateMeshOverride; tutorial end gate uses regular stage gate visual",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/StageGate_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "CowardiceGate_Pixal3D",
+      "display_name": "Cowardice Gate Pixal3D",
+      "category": "environment",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Gates/gate_cowardice.png",
+      "target_dir": "/Game/World/Gates",
+      "replaces": "/Game/World/Gates/SM_CowardiceGate.SM_CowardiceGate",
+      "target_height": 240.0,
+      "collision_policy": "simple",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Source/T66/Gameplay/T66CowardiceGate.cpp GateMeshOverride",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/CowardiceGate_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "WallLamp_Easy_Pixal3D",
+      "display_name": "Wall Lamp Easy Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/VisualProps/prop_wall_lamp_easy.png",
+      "target_dir": "/Game/World/VisualProps/Easy",
+      "replaces": "/Game/World/VisualProps/Easy/WallLamp_Pixal3D.WallLamp_Pixal3D",
+      "target_height": 120.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/WorldVisualProps.json row WallLamp_Easy; DT_WorldVisualProps",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/WallLamp_Easy_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "WallTorch_Easy_Pixal3D",
+      "display_name": "Wall Torch Easy Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/VisualProps/prop_wall_torch_easy.png",
+      "target_dir": "/Game/World/VisualProps/Easy",
+      "replaces": "/Game/World/VisualProps/Easy/WallTorch_Pixal3D.WallTorch_Pixal3D",
+      "target_height": 130.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/WorldVisualProps.json row WallTorch_Easy; DT_WorldVisualProps",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/WallTorch_Easy_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "BrokenVase_Easy_Pixal3D",
+      "display_name": "Broken Vase Easy Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/VisualProps/prop_broken_vase_easy.png",
+      "target_dir": "/Game/World/VisualProps/Easy",
+      "replaces": "/Game/World/VisualProps/Easy/BrokenVase_Pixal3D.BrokenVase_Pixal3D",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/WorldVisualProps.json row BrokenVase_Easy; DT_WorldVisualProps",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/BrokenVase_Easy_Pixal3D/Working",
+      "notes": ""
+    },
+    {
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "display_name": "Skull Remains Easy Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/VisualProps/prop_skull_remains_easy.png",
+      "target_dir": "/Game/World/VisualProps/Easy",
+      "replaces": "/Game/World/VisualProps/Easy/SkullRemains_Pixal3D.SkullRemains_Pixal3D",
+      "target_height": 60.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Content/Data/WorldVisualProps.json row SkullRemains_Easy; DT_WorldVisualProps",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/SkullRemains_Easy_Pixal3D/Working",
+      "notes": ""
+    }
+  ]
+}

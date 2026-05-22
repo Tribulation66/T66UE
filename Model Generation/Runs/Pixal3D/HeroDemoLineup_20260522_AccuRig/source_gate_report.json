@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "run_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig",
+  "gate": "source_image_rules_2026_05",
+  "result": "overridden_hard_rejects",
+  "override_reason": "User explicitly asked to generate these selected sources on the PIXAL pod for AccuRig; original source PNGs were not edited.",
+  "luminance_target": {
+    "preferred_min": 0.55,
+    "preferred_max": 0.65,
+    "hard_reject_below": 0.45
+  },
+  "rows": [
+    {
+      "asset_id": "Hero_1_Chad",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Sources\\Hero_1_Chad.png",
+      "width": 1024,
+      "height": 1536,
+      "character_pixels": 465879,
+      "mean_luminance": 0.13682,
+      "luminance_gate": "hard_reject",
+      "color_buckets_over_1pct": 14,
+      "top5_color_bucket_coverage": 0.629578
+    },
+    {
+      "asset_id": "Hero_1_Stacy",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Sources\\Hero_1_Stacy.png",
+      "width": 1024,
+      "height": 1536,
+      "character_pixels": 369450,
+      "mean_luminance": 0.12495,
+      "luminance_gate": "hard_reject",
+      "color_buckets_over_1pct": 13,
+      "top5_color_bucket_coverage": 0.696576
+    },
+    {
+      "asset_id": "Hero_2_Chad",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Sources\\Hero_2_Chad.png",
+      "width": 1024,
+      "height": 1536,
+      "character_pixels": 475741,
+      "mean_luminance": 0.124609,
+      "luminance_gate": "hard_reject",
+      "color_buckets_over_1pct": 14,
+      "top5_color_bucket_coverage": 0.615038
+    },
+    {
+      "asset_id": "Hero_2_Stacy",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Sources\\Hero_2_Stacy.png",
+      "width": 1024,
+      "height": 1536,
+      "character_pixels": 360441,
+      "mean_luminance": 0.123614,
+      "luminance_gate": "hard_reject",
+      "color_buckets_over_1pct": 17,
+      "top5_color_bucket_coverage": 0.568462
+    },
+    {
+      "asset_id": "Hero_3_Chad",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Sources\\Hero_3_Chad.png",
+      "width": 1024,
+      "height": 1536,
+      "character_pixels": 450691,
+      "mean_luminance": 0.061095,
+      "luminance_gate": "hard_reject",
+      "color_buckets_over_1pct": 15,
+      "top5_color_bucket_coverage": 0.532882
+    },
+    {
+      "asset_id": "Hero_3_Stacy",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Sources\\Hero_3_Stacy.png",
+      "width": 1024,
+      "height": 1536,
+      "character_pixels": 351536,
+      "mean_luminance": 0.056032,
+      "luminance_gate": "hard_reject",
+      "color_buckets_over_1pct": 13,
+      "top5_color_bucket_coverage": 0.713796
+    },
+    {
+      "asset_id": "Hero_4_Chad",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Sources\\Hero_4_Chad.png",
+      "width": 1024,
+      "height": 1536,
+      "character_pixels": 504509,
+      "mean_luminance": 0.115231,
+      "luminance_gate": "hard_reject",
+      "color_buckets_over_1pct": 17,
+      "top5_color_bucket_coverage": 0.569179
+    },
+    {
+      "asset_id": "Hero_4_Stacy",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Sources\\Hero_4_Stacy.png",
+      "width": 1024,
+      "height": 1536,
+      "character_pixels": 397696,
+      "mean_luminance": 0.087292,
+      "luminance_gate": "hard_reject",
+      "color_buckets_over_1pct": 17,
+      "top5_color_bucket_coverage": 0.579752
+    },
+    {
+      "asset_id": "Hero_5_Chad",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Sources\\Hero_5_Chad.png",
+      "width": 1024,
+      "height": 1536,
+      "character_pixels": 464047,
+      "mean_luminance": 0.265288,
+      "luminance_gate": "hard_reject",
+      "color_buckets_over_1pct": 12,
+      "top5_color_bucket_coverage": 0.698548
+    },
+    {
+      "asset_id": "Hero_5_Stacy",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Sources\\Hero_5_Stacy.png",
+      "width": 1024,
+      "height": 1536,
+      "character_pixels": 369542,
+      "mean_luminance": 0.233697,
+      "luminance_gate": "hard_reject",
+      "color_buckets_over_1pct": 10,
+      "top5_color_bucket_coverage": 0.733191
+    }
+  ]
+}

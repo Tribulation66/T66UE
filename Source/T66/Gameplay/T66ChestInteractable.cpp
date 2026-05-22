@@ -16,7 +16,7 @@
 
 AT66ChestInteractable::AT66ChestInteractable()
 {
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Chests/ChestModel/Chest_QuadRetro.Chest_QuadRetro")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D.SM_Chest_Pixal3D")));
 	ApplyRarityVisuals();
 }
 

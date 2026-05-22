@@ -1,8 +1,0 @@
-{
-  "exit_code": 0,
-  "finished_at": "2026-05-17T11:31:03.742071+00:00",
-  "manifest_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CTrackDPart1/06_arcademachine/manifest.json",
-  "ok": true,
-  "started_at": "2026-05-17T11:28:06.356204+00:00",
-  "status_path": "/workspace/T66/ModelGeneration/Runs/Pixal3D/Phase1CTrackDPart1/06_arcademachine/Logs/pixal3d_generation_status.jsonl"
-}

@@ -10,7 +10,7 @@
 
 AT66FountainInteractable::AT66FountainInteractable()
 {
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Fountain/Fountain_QuadRetro.Fountain_QuadRetro")));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D.SM_Fountain_Pixal3D")));
 
 	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
 	{

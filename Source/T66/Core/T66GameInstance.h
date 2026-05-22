@@ -455,6 +455,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Release")
 	TArray<ET66Difficulty> GetPlayableDifficulties() const;
 
+	/** Get difficulty choices that should remain visible in selection UI. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	TArray<ET66Difficulty> GetVisibleDifficulties() const;
+
 	/** Returns true when the difficulty is playable for this release variant. */
 	UFUNCTION(BlueprintCallable, Category = "Release")
 	bool IsDifficultyPlayable(ET66Difficulty Difficulty) const;
@@ -466,6 +470,18 @@ public:
 	/** Get all companion IDs from the DataTable */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	TArray<FName> GetAllCompanionIDs();
+
+	/** Get companion IDs currently playable for this release variant. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	TArray<FName> GetPlayableCompanionIDs();
+
+	/** Returns true when the companion is playable for this release variant. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	bool IsCompanionPlayable(FName CompanionID) const;
+
+	/** Resolve to the requested companion if playable, otherwise no companion. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	FName ResolvePlayableCompanionID(FName CompanionID) const;
 
 	/** Get the currently selected hero data */
 	UFUNCTION(BlueprintCallable, Category = "Selection")

@@ -4,5 +4,6 @@ External/*
 Runs/*
 !Runs/README.md
 
-AssetInventory/*.json
-!AssetInventory/README.md
+Backups/*
+
+Tools/__pycache__/

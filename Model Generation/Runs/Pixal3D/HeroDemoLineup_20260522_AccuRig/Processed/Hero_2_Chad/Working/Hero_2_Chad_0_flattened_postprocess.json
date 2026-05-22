@@ -1,0 +1,102 @@
+{
+  "dependency_path": "external_python_pillow_scipy",
+  "final_palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        17,
+        13,
+        17
+      ],
+      [
+        5,
+        23,
+        56
+      ],
+      [
+        59,
+        32,
+        91
+      ],
+      [
+        156,
+        5,
+        6
+      ],
+      [
+        165,
+        104,
+        80
+      ],
+      [
+        247,
+        165,
+        118
+      ]
+    ],
+    "palette_size": 6
+  },
+  "height": 4096,
+  "input": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_2_Chad\\Working\\Hero_2_Chad_0_flattened.png",
+  "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_2_Chad\\Working\\Hero_2_Chad_0_flattened.png",
+  "palette_snap": {
+    "applied": true,
+    "centers_rgb_255": [
+      [
+        17,
+        13,
+        17
+      ],
+      [
+        5,
+        23,
+        56
+      ],
+      [
+        59,
+        32,
+        91
+      ],
+      [
+        156,
+        5,
+        6
+      ],
+      [
+        165,
+        104,
+        80
+      ],
+      [
+        247,
+        165,
+        118
+      ]
+    ],
+    "palette_size": 6
+  },
+  "speckle_cleanup": {
+    "applied": true,
+    "changed_pixels": 175366,
+    "diff_threshold": 42.0,
+    "method": "3x3_local_median_high_contrast_pixel_replacement",
+    "prompt_region_threshold_reference": 8
+  },
+  "tint": {
+    "generated": true,
+    "output": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig\\Processed\\Hero_2_Chad\\Working\\Hero_2_Chad_Tint.png",
+    "saturation_scale": 1.1,
+    "value_scale": 0.6
+  },
+  "unique_rgb_after": 6,
+  "unique_rgb_before": 6,
+  "uv_mask_pixels": 9489673,
+  "uv_padding": {
+    "applied": true,
+    "filled_pixels": 7271761,
+    "method": "iterative_frontier_expansion",
+    "padding_pixels": 16
+  },
+  "uv_triangles": 196643,
+  "width": 4096
+}

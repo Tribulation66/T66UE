@@ -50,6 +50,7 @@ private:
 	FString GetItemLabel(FName ItemId) const;
 	TArray<FName> GetSelectableItemIds() const;
 	const FSlateBrush* GetOrCreateAvatarBrush(const FString& AvatarUrl);
+	void ApplyCommandLineStartupMode();
 	void InitializeSelectionState();
 	void BeginDraftEditor(const FT66CommunityContentEntry& DraftEntry);
 	void EndDraftEditor();
@@ -62,8 +63,6 @@ private:
 	FReply HandleTabSelected(int32 TabIndex);
 	FReply HandleSourceTabSelected(int32 SourceTabIndex);
 	FReply HandleEntrySelected(int32 EntryIndex);
-	FReply HandleFlatChallengeCardSelected(int32 CardIndex);
-	FReply HandleFlatPaginationSelected(int32 PageIndex);
 	FReply HandleConfirmClicked();
 	FReply HandleCreateDraftClicked();
 	FReply HandleEditDraftClicked();
@@ -90,11 +89,10 @@ private:
 	bool bSelectionStateInitialized = false;
 	bool bRequestedCommunityRefresh = false;
 	bool bCommunityDelegateBound = false;
+	bool bAppliedCommandLineStartupMode = false;
 	bool bDraftEditorActive = false;
 	int32 ActiveTabIndex = 0;
 	int32 ActiveSourceTabIndex[2] = { 0, 0 };
-	int32 FlatSelectedChallengeCardIndex = 0;
-	int32 FlatChallengePageIndex = 0;
 	FName PendingSelections[2][2];
 	FT66CommunityContentEntry DraftEditorEntry;
 	TMap<FString, TSharedPtr<FSlateBrush>> AvatarBrushes;

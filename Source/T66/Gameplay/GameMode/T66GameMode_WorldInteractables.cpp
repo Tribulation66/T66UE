@@ -2181,7 +2181,6 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 		{
 			SyncTowerMiasmaSourceAnchor(CachedTowerMainMapLayout.StartFloorNumber, IdolAltar->GetActorLocation());
 		}
-		SpawnPixalTestDisplayModelsNearIdolAltar(IdolAltar);
 	}
 }
 

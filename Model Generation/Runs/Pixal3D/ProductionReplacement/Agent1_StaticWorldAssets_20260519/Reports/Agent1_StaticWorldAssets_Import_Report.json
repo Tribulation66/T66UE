@@ -1,0 +1,728 @@
+{
+  "success": true,
+  "source_gate_override": {
+    "luminance_floor": "waived_by_user_2026-05-19",
+    "reason": "Pablo explicitly instructed to ignore luminance issues/warnings and proceed with these images."
+  },
+  "requested_generation_settings": {
+    "seed": 1337,
+    "resolution": 1536,
+    "texture_size": 4096,
+    "decimation": 200000,
+    "fallback_decimation": 80000,
+    "remesh": true,
+    "export_fallback": true,
+    "safe_fill_holes_fallback": true,
+    "ss_steps": 25,
+    "ss_guidance": 7.5,
+    "shape_steps": 25,
+    "shape_guidance": 7.5,
+    "tex_steps": 25,
+    "tex_guidance": 4.0
+  },
+  "fallbacks": [
+    {
+      "asset_id": "Chest_Pixal3D",
+      "label": "safe_decimation_no_remesh",
+      "decimation": 80000,
+      "remesh": false,
+      "attempt": "3",
+      "attempts": "3"
+    },
+    {
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "label": "safe_decimation_no_remesh_skip_fill_holes",
+      "decimation": 80000,
+      "remesh": false,
+      "attempt": "4",
+      "attempts": "4"
+    },
+    {
+      "asset_id": "WallTorch_Easy_Pixal3D",
+      "label": "safe_decimation_no_remesh_skip_fill_holes",
+      "decimation": 80000,
+      "remesh": false,
+      "attempt": "4",
+      "attempts": "4"
+    }
+  ],
+  "reports": {
+    "production_verify": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Reports\\Pixal3D_ToonStyle_Production_Import_Report.json",
+    "runtime_validation": "C:\\UE\\T66\\Saved\\Codex\\ModelGeneration\\Agent1_StaticWorldAssets_20260519\\Agent1_StaticWorldAssets_RuntimeValidation.json",
+    "source_gate": "C:\\UE\\T66\\Saved\\Codex\\ModelGeneration\\Agent1_StaticWorldAssets_SourceGate_20260519\\agent1_static_world_assets_source_gate.json"
+  },
+  "assets": [
+    {
+      "asset_id": "Arcade_Machine_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Interactables\\interactable_arcade_machine.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Arcade_Machine_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Arcade_Machine_Pixal3D\\Working\\Arcade_Machine_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Arcade_Machine_Pixal3D\\Working\\Arcade_Machine_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D",
+      "imported_outline_asset": "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D_Outline.SM_Arcade_Machine_Pixal3D_Outline",
+      "target_path": "/Game/World/Interactables/Arcade/Arcade_Machine",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 8873468,
+      "generation_duration_seconds": 371.3,
+      "target_height": 180.0,
+      "runtime_owner": "Content/Data/ArcadeInteractables.json; DT_ArcadeInteractables shared arcade rows"
+    },
+    {
+      "asset_id": "Vehicle_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Interactables\\interactable_vehicle.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Vehicle_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Vehicle_Pixal3D\\Working\\Vehicle_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Vehicle_Pixal3D\\Working\\Vehicle_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D",
+      "imported_outline_asset": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D_Outline.SM_Vehicle_Pixal3D_Outline",
+      "target_path": "/Game/World/Interactables/Vehicles",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 10833572,
+      "generation_duration_seconds": 373.4,
+      "target_height": 150.0,
+      "runtime_owner": "Content/Data/VehicleInteractables.json; DT_VehicleInteractables Vehicle rows"
+    },
+    {
+      "asset_id": "Chest_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Interactables\\interactable_chest.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Chest_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Chest_Pixal3D\\Working\\Chest_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Chest_Pixal3D\\Working\\Chest_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D.SM_Chest_Pixal3D",
+      "imported_outline_asset": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+      "target_path": "/Game/World/Interactables/Chests/ChestModel",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": true,
+      "fallback_settings": {
+        "label": "safe_decimation_no_remesh",
+        "decimation": 80000,
+        "remesh": false,
+        "attempt": "3",
+        "attempts": "3"
+      },
+      "glb_bytes": 5767012,
+      "generation_duration_seconds": 561.7,
+      "target_height": 120.0,
+      "runtime_owner": "Source/T66/Gameplay/T66ChestInteractable.cpp SingleMesh; preserve rarity reward logic"
+    },
+    {
+      "asset_id": "Fountain_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Interactables\\interactable_fountain.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Fountain_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Fountain_Pixal3D\\Working\\Fountain_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Fountain_Pixal3D\\Working\\Fountain_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D.SM_Fountain_Pixal3D",
+      "imported_outline_asset": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+      "target_path": "/Game/World/Interactables/Fountain",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 9589264,
+      "generation_duration_seconds": 235.0,
+      "target_height": 170.0,
+      "runtime_owner": "Source/T66/Gameplay/T66FountainInteractable.cpp SingleMesh"
+    },
+    {
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Interactables\\interactable_difficulty_totem.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\DifficultyTotem_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\DifficultyTotem_Pixal3D\\Working\\DifficultyTotem_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\DifficultyTotem_Pixal3D\\Working\\DifficultyTotem_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D.SM_DifficultyTotem_Pixal3D",
+      "imported_outline_asset": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+      "target_path": "/Game/World/Interactables/DifficultyTotem",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": true,
+      "fallback_settings": {
+        "label": "safe_decimation_no_remesh_skip_fill_holes",
+        "decimation": 80000,
+        "remesh": false,
+        "attempt": "4",
+        "attempts": "4"
+      },
+      "glb_bytes": 4282080,
+      "generation_duration_seconds": 167.8,
+      "target_height": 180.0,
+      "runtime_owner": "Source/T66/Gameplay/T66DifficultyTotem.cpp SingleMesh"
+    },
+    {
+      "asset_id": "QuickReviveVending_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Interactables\\interactable_quick_revive_vending_machine.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\QuickReviveVending_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\QuickReviveVending_Pixal3D\\Working\\QuickReviveVending_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\QuickReviveVending_Pixal3D\\Working\\QuickReviveVending_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D",
+      "imported_outline_asset": "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline.SM_QuickReviveVending_Pixal3D_Outline",
+      "target_path": "/Game/World/Interactables/Vending",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 8756612,
+      "generation_duration_seconds": 254.0,
+      "target_height": 180.0,
+      "runtime_owner": "Source/T66/Gameplay/T66QuickReviveVendingMachine.cpp SingleMesh"
+    },
+    {
+      "asset_id": "LootWheel_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Interactables\\interactable_loot_wheel.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\LootWheel_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\LootWheel_Pixal3D\\Working\\LootWheel_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\LootWheel_Pixal3D\\Working\\LootWheel_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D.SM_LootWheel_Pixal3D",
+      "imported_outline_asset": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+      "target_path": "/Game/World/Interactables/LootWheel",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 10481728,
+      "generation_duration_seconds": 172.3,
+      "target_height": 170.0,
+      "runtime_owner": "Source/T66/Gameplay/T66LootWheelInteractable.cpp SingleMesh; preserve rarity reward logic"
+    },
+    {
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Interactables\\interactable_loot_bag_shared_rarity.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\LootBag_Shared_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\LootBag_Shared_Pixal3D\\Working\\LootBag_Shared_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\LootBag_Shared_Pixal3D\\Working\\LootBag_Shared_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D.SM_LootBag_Shared_Pixal3D",
+      "imported_outline_asset": "/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D_Outline.SM_LootBag_Shared_Pixal3D_Outline",
+      "target_path": "/Game/World/LootBags/Shared",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 10507380,
+      "generation_duration_seconds": 275.8,
+      "target_height": 80.0,
+      "runtime_owner": "Source/T66/Gameplay/T66LootBagPickup.cpp MeshBlack/MeshRed/MeshYellow/MeshWhite all point to shared mesh; preserve rarity gameplay logic"
+    },
+    {
+      "asset_id": "IdolAltar_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Interactables\\interactable_idol_altar.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\IdolAltar_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\IdolAltar_Pixal3D\\Working\\IdolAltar_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\IdolAltar_Pixal3D\\Working\\IdolAltar_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D.SM_IdolAltar_Pixal3D",
+      "imported_outline_asset": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+      "target_path": "/Game/World/Interactables/IdolAltar",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 9540892,
+      "generation_duration_seconds": 293.4,
+      "target_height": 100.0,
+      "runtime_owner": "Source/T66/Gameplay/T66IdolAltar.cpp AltarMeshOverride"
+    },
+    {
+      "asset_id": "WeaponAltar_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Interactables\\interactable_weapon_altar.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\WeaponAltar_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\WeaponAltar_Pixal3D\\Working\\WeaponAltar_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\WeaponAltar_Pixal3D\\Working\\WeaponAltar_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D.SM_WeaponAltar_Pixal3D",
+      "imported_outline_asset": "/Game/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D_Outline.SM_WeaponAltar_Pixal3D_Outline",
+      "target_path": "/Game/World/Interactables/WeaponAltar",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 10705052,
+      "generation_duration_seconds": 325.2,
+      "target_height": 100.0,
+      "runtime_owner": "Source/T66/Gameplay/T66WeaponAltar.cpp AltarMeshOverride"
+    },
+    {
+      "asset_id": "Boost_DamageStrength_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Boosts\\boost_damage_strength.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Boost_DamageStrength_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_DamageStrength_Pixal3D\\Working\\Boost_DamageStrength_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_DamageStrength_Pixal3D\\Working\\Boost_DamageStrength_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Boosts/SM_Boost_DamageStrength_Pixal3D.SM_Boost_DamageStrength_Pixal3D",
+      "imported_outline_asset": "/Game/World/Boosts/SM_Boost_DamageStrength_Pixal3D_Outline.SM_Boost_DamageStrength_Pixal3D_Outline",
+      "target_path": "/Game/World/Boosts",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 9791804,
+      "generation_duration_seconds": 214.6,
+      "target_height": 80.0,
+      "runtime_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README"
+    },
+    {
+      "asset_id": "Boost_AttackSpeed_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Boosts\\boost_attack_speed.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Boost_AttackSpeed_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_AttackSpeed_Pixal3D\\Working\\Boost_AttackSpeed_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_AttackSpeed_Pixal3D\\Working\\Boost_AttackSpeed_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Boosts/SM_Boost_AttackSpeed_Pixal3D.SM_Boost_AttackSpeed_Pixal3D",
+      "imported_outline_asset": "/Game/World/Boosts/SM_Boost_AttackSpeed_Pixal3D_Outline.SM_Boost_AttackSpeed_Pixal3D_Outline",
+      "target_path": "/Game/World/Boosts",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 11423456,
+      "generation_duration_seconds": 384.5,
+      "target_height": 80.0,
+      "runtime_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README"
+    },
+    {
+      "asset_id": "Boost_AttackScale_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Boosts\\boost_attack_scale.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Boost_AttackScale_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_AttackScale_Pixal3D\\Working\\Boost_AttackScale_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_AttackScale_Pixal3D\\Working\\Boost_AttackScale_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Boosts/SM_Boost_AttackScale_Pixal3D.SM_Boost_AttackScale_Pixal3D",
+      "imported_outline_asset": "/Game/World/Boosts/SM_Boost_AttackScale_Pixal3D_Outline.SM_Boost_AttackScale_Pixal3D_Outline",
+      "target_path": "/Game/World/Boosts",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 13384660,
+      "generation_duration_seconds": 152.3,
+      "target_height": 80.0,
+      "runtime_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README"
+    },
+    {
+      "asset_id": "Boost_Armor_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Boosts\\boost_armor.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Boost_Armor_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_Armor_Pixal3D\\Working\\Boost_Armor_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_Armor_Pixal3D\\Working\\Boost_Armor_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Boosts/SM_Boost_Armor_Pixal3D.SM_Boost_Armor_Pixal3D",
+      "imported_outline_asset": "/Game/World/Boosts/SM_Boost_Armor_Pixal3D_Outline.SM_Boost_Armor_Pixal3D_Outline",
+      "target_path": "/Game/World/Boosts",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 9119804,
+      "generation_duration_seconds": 206.9,
+      "target_height": 80.0,
+      "runtime_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README"
+    },
+    {
+      "asset_id": "Boost_Evasion_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Boosts\\boost_evasion.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Boost_Evasion_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_Evasion_Pixal3D\\Working\\Boost_Evasion_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_Evasion_Pixal3D\\Working\\Boost_Evasion_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Boosts/SM_Boost_Evasion_Pixal3D.SM_Boost_Evasion_Pixal3D",
+      "imported_outline_asset": "/Game/World/Boosts/SM_Boost_Evasion_Pixal3D_Outline.SM_Boost_Evasion_Pixal3D_Outline",
+      "target_path": "/Game/World/Boosts",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 9652368,
+      "generation_duration_seconds": 210.4,
+      "target_height": 80.0,
+      "runtime_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README"
+    },
+    {
+      "asset_id": "Boost_Luck_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Boosts\\boost_luck.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Boost_Luck_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_Luck_Pixal3D\\Working\\Boost_Luck_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_Luck_Pixal3D\\Working\\Boost_Luck_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Boosts/SM_Boost_Luck_Pixal3D.SM_Boost_Luck_Pixal3D",
+      "imported_outline_asset": "/Game/World/Boosts/SM_Boost_Luck_Pixal3D_Outline.SM_Boost_Luck_Pixal3D_Outline",
+      "target_path": "/Game/World/Boosts",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 11239680,
+      "generation_duration_seconds": 204.0,
+      "target_height": 80.0,
+      "runtime_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README"
+    },
+    {
+      "asset_id": "Boost_Speed_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Boosts\\boost_speed.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Boost_Speed_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_Speed_Pixal3D\\Working\\Boost_Speed_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_Speed_Pixal3D\\Working\\Boost_Speed_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Boosts/SM_Boost_Speed_Pixal3D.SM_Boost_Speed_Pixal3D",
+      "imported_outline_asset": "/Game/World/Boosts/SM_Boost_Speed_Pixal3D_Outline.SM_Boost_Speed_Pixal3D_Outline",
+      "target_path": "/Game/World/Boosts",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 11648912,
+      "generation_duration_seconds": 225.3,
+      "target_height": 80.0,
+      "runtime_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README"
+    },
+    {
+      "asset_id": "Boost_Accuracy_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Boosts\\boost_accuracy.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\Boost_Accuracy_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_Accuracy_Pixal3D\\Working\\Boost_Accuracy_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\Boost_Accuracy_Pixal3D\\Working\\Boost_Accuracy_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Boosts/SM_Boost_Accuracy_Pixal3D.SM_Boost_Accuracy_Pixal3D",
+      "imported_outline_asset": "/Game/World/Boosts/SM_Boost_Accuracy_Pixal3D_Outline.SM_Boost_Accuracy_Pixal3D_Outline",
+      "target_path": "/Game/World/Boosts",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 9697888,
+      "generation_duration_seconds": 192.7,
+      "target_height": 80.0,
+      "runtime_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README"
+    },
+    {
+      "asset_id": "StageGate_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Gates\\gate_stage.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\StageGate_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\StageGate_Pixal3D\\Working\\StageGate_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\StageGate_Pixal3D\\Working\\StageGate_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Gates/SM_StageGate_Pixal3D.SM_StageGate_Pixal3D",
+      "imported_outline_asset": "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+      "target_path": "/Game/World/Gates",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 11241004,
+      "generation_duration_seconds": 195.5,
+      "target_height": 260.0,
+      "runtime_owner": "Source/T66/Gameplay/T66StageGate.cpp GateMeshOverride; tutorial end gate uses regular stage gate visual"
+    },
+    {
+      "asset_id": "CowardiceGate_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\Gates\\gate_cowardice.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\CowardiceGate_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\CowardiceGate_Pixal3D\\Working\\CowardiceGate_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\CowardiceGate_Pixal3D\\Working\\CowardiceGate_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/Gates/SM_CowardiceGate_Pixal3D.SM_CowardiceGate_Pixal3D",
+      "imported_outline_asset": "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+      "target_path": "/Game/World/Gates",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 10732832,
+      "generation_duration_seconds": 200.6,
+      "target_height": 240.0,
+      "runtime_owner": "Source/T66/Gameplay/T66CowardiceGate.cpp GateMeshOverride"
+    },
+    {
+      "asset_id": "WallLamp_Easy_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\VisualProps\\prop_wall_lamp_easy.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\WallLamp_Easy_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\WallLamp_Easy_Pixal3D\\Working\\WallLamp_Easy_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\WallLamp_Easy_Pixal3D\\Working\\WallLamp_Easy_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/VisualProps/Easy/SM_WallLamp_Easy_Pixal3D.SM_WallLamp_Easy_Pixal3D",
+      "imported_outline_asset": "/Game/World/VisualProps/Easy/SM_WallLamp_Easy_Pixal3D_Outline.SM_WallLamp_Easy_Pixal3D_Outline",
+      "target_path": "/Game/World/VisualProps/Easy",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 8640552,
+      "generation_duration_seconds": 146.7,
+      "target_height": 120.0,
+      "runtime_owner": "Content/Data/WorldVisualProps.json row WallLamp_Easy; DT_WorldVisualProps"
+    },
+    {
+      "asset_id": "WallTorch_Easy_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\VisualProps\\prop_wall_torch_easy.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\WallTorch_Easy_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\WallTorch_Easy_Pixal3D\\Working\\WallTorch_Easy_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\WallTorch_Easy_Pixal3D\\Working\\WallTorch_Easy_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/VisualProps/Easy/SM_WallTorch_Easy_Pixal3D.SM_WallTorch_Easy_Pixal3D",
+      "imported_outline_asset": "/Game/World/VisualProps/Easy/SM_WallTorch_Easy_Pixal3D_Outline.SM_WallTorch_Easy_Pixal3D_Outline",
+      "target_path": "/Game/World/VisualProps/Easy",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": true,
+      "fallback_settings": {
+        "label": "safe_decimation_no_remesh_skip_fill_holes",
+        "decimation": 80000,
+        "remesh": false,
+        "attempt": "4",
+        "attempts": "4"
+      },
+      "glb_bytes": 4678524,
+      "generation_duration_seconds": 141.7,
+      "target_height": 130.0,
+      "runtime_owner": "Content/Data/WorldVisualProps.json row WallTorch_Easy; DT_WorldVisualProps"
+    },
+    {
+      "asset_id": "BrokenVase_Easy_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\VisualProps\\prop_broken_vase_easy.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\BrokenVase_Easy_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\BrokenVase_Easy_Pixal3D\\Working\\BrokenVase_Easy_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\BrokenVase_Easy_Pixal3D\\Working\\BrokenVase_Easy_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/VisualProps/Easy/SM_BrokenVase_Easy_Pixal3D.SM_BrokenVase_Easy_Pixal3D",
+      "imported_outline_asset": "/Game/World/VisualProps/Easy/SM_BrokenVase_Easy_Pixal3D_Outline.SM_BrokenVase_Easy_Pixal3D_Outline",
+      "target_path": "/Game/World/VisualProps/Easy",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 9799952,
+      "generation_duration_seconds": 209.4,
+      "target_height": 80.0,
+      "runtime_owner": "Content/Data/WorldVisualProps.json row BrokenVase_Easy; DT_WorldVisualProps"
+    },
+    {
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "source_png": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\ModelSourceInputs\\Pixal3D_NonEnemyModelSource_2026-05-19\\Agent_1_StaticWorldAssets\\VisualProps\\prop_skull_remains_easy.png",
+      "generated_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Outputs\\SkullRemains_Easy_Pixal3D.glb",
+      "fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\SkullRemains_Easy_Pixal3D\\Working\\SkullRemains_Easy_Pixal3D.fbx",
+      "outline_fbx": "C:\\UE\\T66\\SourceAssets\\ToonStyle\\Pixal3D\\Production\\Agent1_StaticWorldAssets_20260519\\SkullRemains_Easy_Pixal3D\\Working\\SkullRemains_Easy_Pixal3D_outline.fbx",
+      "imported_unreal_asset": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D.SM_SkullRemains_Easy_Pixal3D",
+      "imported_outline_asset": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline",
+      "target_path": "/Game/World/VisualProps/Easy",
+      "validation": {
+        "generation_ok": true,
+        "toonstyle_production_verify_ok": true,
+        "runtime_asset_validation_ok": true,
+        "errors": []
+      },
+      "fallback": false,
+      "fallback_settings": {
+        "label": "requested",
+        "decimation": 200000,
+        "remesh": true,
+        "attempt": "1",
+        "attempts": "1"
+      },
+      "glb_bytes": 9292288,
+      "generation_duration_seconds": 163.3,
+      "target_height": 60.0,
+      "runtime_owner": "Content/Data/WorldVisualProps.json row SkullRemains_Easy; DT_WorldVisualProps"
+    }
+  ]
+}
