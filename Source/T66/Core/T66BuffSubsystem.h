@@ -68,19 +68,19 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	int32 GetUnlockedFillStepCount(ET66HeroStatType StatType) const;
 
-	/** Flat stat bonus from this stat's fill steps plus any non-visual overflow bonus. */
+	/** Deprecated compatibility value. Permanent stat upgrades no longer apply to runs. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	int32 GetTotalStatBonus(ET66HeroStatType StatType) const;
 
-	/** Cost in Chad Coupons for the next visible fill-step unlock on this stat (0 if maxed). */
+	/** Deprecated compatibility value. Permanent stat upgrade purchases are disabled. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	int32 GetCostForNextFillStepUnlock(ET66HeroStatType StatType) const;
 
-	/** Unlock the next locked fill step for the given stat. Returns true if successful. */
+	/** Deprecated compatibility path. Always returns false. */
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool UnlockNextFillStep(ET66HeroStatType StatType);
 
-	/** Unlock one random stat: reveal its next locked fill step. Costs PermanentBuffUnlockCostCC. */
+	/** Deprecated compatibility path. Always returns false. */
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool UnlockRandomStat();
 
@@ -94,7 +94,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Buffs")
 	FT66HeroStatBonuses GetPermanentBuffStatBonuses() const;
 
-	/** All permanent buff bonuses as flat stat points. Each unlocked fill step counts as +1. */
+	/** Deprecated compatibility value. Returns no runtime stat bonuses. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	FT66HeroStatBonuses GetPowerupStatBonuses() const;
 

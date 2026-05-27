@@ -22,6 +22,14 @@ void UT66WeaponManagerSubsystem::ResetForNewRun(FName /*HeroID*/)
 	BroadcastWeaponStateChanged();
 }
 
+void UT66WeaponManagerSubsystem::ResetForStageWeaponSelection(FName /*HeroID*/)
+{
+	EquippedWeaponID = NAME_None;
+	WeaponOfferIDs.Reset();
+	CurrentOfferRarity = ET66WeaponRarity::Black;
+	BroadcastWeaponStateChanged();
+}
+
 void UT66WeaponManagerSubsystem::RestoreState(FName InEquippedWeaponID)
 {
 	EquippedWeaponID = InEquippedWeaponID;
@@ -111,14 +119,14 @@ FString UT66WeaponManagerSubsystem::WeaponRarityToString(ET66WeaponRarity Rarity
 	switch (Rarity)
 	{
 	case ET66WeaponRarity::Black:
-		return TEXT("Black");
+		return TEXT("black");
 	case ET66WeaponRarity::Red:
-		return TEXT("Red");
+		return TEXT("red");
 	case ET66WeaponRarity::Yellow:
-		return TEXT("Yellow");
+		return TEXT("yellow");
 	case ET66WeaponRarity::White:
 	default:
-		return TEXT("White");
+		return TEXT("white");
 	}
 }
 
@@ -127,14 +135,14 @@ FString UT66WeaponManagerSubsystem::AttackBranchToString(ET66AttackCategory Bran
 	switch (Branch)
 	{
 	case ET66AttackCategory::Pierce:
-		return TEXT("Pierce");
+		return TEXT("pierce");
 	case ET66AttackCategory::Bounce:
-		return TEXT("Bounce");
+		return TEXT("bounce");
 	case ET66AttackCategory::AOE:
-		return TEXT("AOE");
+		return TEXT("aoe");
 	case ET66AttackCategory::DOT:
 	default:
-		return TEXT("DOT");
+		return TEXT("dot");
 	}
 }
 

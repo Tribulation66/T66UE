@@ -50,6 +50,17 @@ bool UT66SkinSubsystem::IsSkinOfferedForEntity(const ET66SkinEntityType EntityTy
 		return NormalizedSkinID == DemoSkinID && DemoSkinHeroIDs.Contains(EntityID);
 	}
 
+	if (EntityType == ET66SkinEntityType::Companion)
+	{
+		static const TSet<FName> DemoSkinCompanionIDs = {
+			FName(TEXT("Companion_01")),
+			FName(TEXT("Companion_02")),
+			FName(TEXT("Companion_03")),
+			FName(TEXT("Companion_04"))
+		};
+		return NormalizedSkinID == DemoSkinID && DemoSkinCompanionIDs.Contains(EntityID);
+	}
+
 	return false;
 }
 
@@ -287,9 +298,9 @@ TArray<FSkinData> UT66SkinSubsystem::GetSkinsForEntity(ET66SkinEntityType Entity
 		Skin.CoinCost = Skin.bIsDefault ? 0 : DefaultSkinPriceAC;
 		Skin.Portrait = GetSkinPortrait(EntityType, EntityID, SkinID, false);
 		Skin.SelectionPortrait = GetSkinPortrait(EntityType, EntityID, SkinID, true);
-		if (EntityType == ET66SkinEntityType::Hero && SkinID == DemoSkinID)
+		if ((EntityType == ET66SkinEntityType::Hero || EntityType == ET66SkinEntityType::Companion) && SkinID == DemoSkinID)
 		{
-			Skin.DisplayName = NSLOCTEXT("T66.Skins", "HeroDemoSkin", "Demo Skin");
+			Skin.DisplayName = NSLOCTEXT("T66.Skins", "DemoSkin", "Demo Skin");
 		}
 		Out.Add(Skin);
 	}

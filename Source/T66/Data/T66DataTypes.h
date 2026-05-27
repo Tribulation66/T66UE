@@ -152,11 +152,11 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay")
 	FName MapTheme;
 
-	/** Max movement speed (UU/s). Hero ramps from base speed toward this at AccelerationPercentPerSecond per second. */
+	/** Reserved movement cap metadata (UU/s). Current live walking speed is driven by BaseSpeed. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay|Movement", meta = (ClampMin = "100", ClampMax = "3000"))
 	float MaxSpeed = 1400.f;
 
-	/** Percent of MaxSpeed gained per second when moving (e.g. 20 = 20% of max per second until capped). */
+	/** Reserved acceleration metadata for a future MaxSpeed cap/ramp model; current live walking does not ramp from this value. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gameplay|Movement", meta = (ClampMin = "1", ClampMax = "100"))
 	float AccelerationPercentPerSecond = 20.f;
 
@@ -199,10 +199,10 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
 	int32 BaseLuck = 2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Base")
-	int32 BaseSpeed = 2;
+	int32 BaseSpeed = 1;
 
 	// ============================================
-	// Per-Level Gain Ranges (generic stats only)
+	// Deprecated per-level gain ranges retained for Heroes.csv/DataTable compatibility.
 	// ============================================
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
@@ -467,7 +467,7 @@ struct T66_API FWeaponData : public FTableRowBase
 
 /**
  * Core hero stats used by the leveling system.
- * Intended tuning range (early): 1-5 at base, then increases via level ups.
+ * Intended tuning range (early): 1-5 at base, then increases through item bonuses.
  */
 USTRUCT(BlueprintType)
 struct T66_API FT66HeroStatBlock
@@ -646,7 +646,7 @@ struct T66_API FT66HeroStatBonuses
 	int32 DotAtkScale = 0;
 };
 
-/** Random gain range (inclusive) for a stat on level up. */
+/** Deprecated random gain range retained for hero row compatibility. */
 USTRUCT(BlueprintType)
 struct T66_API FT66HeroStatGainRange
 {
@@ -677,7 +677,7 @@ struct T66_API FT66HeroStatGainRange
 	}
 };
 
-/** Per-level gain ranges for the 7 foundational stats. */
+/** Deprecated per-level gain ranges retained for hero row compatibility. */
 USTRUCT(BlueprintType)
 struct T66_API FT66HeroPerLevelStatGains
 {
@@ -1268,7 +1268,7 @@ struct T66_API FT66EnemyData : public FTableRowBase
 	FName ModelStatus;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	FName Archetype;  // Melee | Ranged | Rush | Flying | Exploder | Strafer | Stutterer | Turret | Burrower | Necromancer
+	FName Archetype;  // Melee | Ranged | Rush | Flying | Exploder | Stutterer | Burrower
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FName Feeling;  // MowDown | Pressure | DodgeThreat | MiniBossFeel | Disruptor | Specialist
@@ -1507,11 +1507,7 @@ struct T66_API FStageData : public FTableRowBase
  *
  * Each idol is an independent attack source (fires alongside the hero's basic attack).
  * Category determines the type of effect (Pierce/Bounce/AOE/DOT).
- * Rarity determines the strength: black/red/yellow/white map directly to tiers 1..4.
- * Damage scales linearly, and the category property (bounce count, pierce count,
- * AOE radius, DOT duration) scales linearly.
- *
- * Formula: ValueAtTier(T) = Base + (T - 1) * PerTier
+ * Idol rarity controls offer strength and icon presentation.
  */
 USTRUCT(BlueprintType)
 struct T66_API FIdolData : public FTableRowBase
@@ -1529,7 +1525,7 @@ struct T66_API FIdolData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> Icon;
 
-	/** Rarity-specific icons (black/red/yellow/white). Falls back to Icon when unset. */
+	/** Rarity-specific icons. Falls back to Icon when unset. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> BlackIcon;
 
@@ -1542,9 +1538,9 @@ struct T66_API FIdolData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> WhiteIcon;
 
-	/** Deprecated legacy field. Idol progression now uses the four live rarity tiers directly. */
+	/** Legacy per-idol max level. Live progression uses rarity tiers instead of XP levels. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Scaling")
-	int32 MaxLevel = 4;
+	int32 MaxLevel = 1;
 
 	// ============================================
 	// Damage scaling (linear: Base + (Tier-1) * PerTier)
@@ -1657,7 +1653,7 @@ struct T66_API FIdolData : public FTableRowBase
 };
 
 /**
- * NPC data row (Gambler/Saint/Ouroboros).
+ * NPC data row (CasinoNPC/Saint/Ouroboros).
  */
 USTRUCT(BlueprintType)
 struct T66_API FHouseNPCData : public FTableRowBase
@@ -1676,9 +1672,9 @@ struct T66_API FHouseNPCData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SafeZone")
 	float SafeZoneRadius = 650.f;
 
-	/** Only used by Gambler: payout on correct guess. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gambler")
-	int32 GamblerWinGold = 10;
+	/** Only used by CasinoNPC: payout on correct casino-game win. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Casino")
+	int32 CasinoWinGold = 10;
 
 	FHouseNPCData()
 		: NPCID(NAME_None)
@@ -1717,14 +1713,48 @@ struct T66_API FLoanSharkData : public FTableRowBase
 };
 
 /**
+ * Unique enemy data for authored, non-roster chase threats such as the Backrooms stalker.
+ * These are intentionally outside the regular Enemies table so they do not enter wave, loot,
+ * lab, or collection flows.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FUniqueEnemyData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName UniqueEnemyID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FText DisplayName = FText::GetEmpty();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FName CharacterVisualID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	float MoveSpeed = 720.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	int32 TouchDamageHP = 999999;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	bool bUnkillable = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	bool bBypassLethalSaves = true;
+
+	FUniqueEnemyData() = default;
+};
+
+/**
  * Character visual mapping row.
  * Maps a stable gameplay ID (HeroID / CompanionID / NPCID / BossID / EnemyVisualID) to imported character assets.
  *
  * - SkeletalMesh: the mesh to assign to a USkeletalMeshComponent
  * - StaticMesh: optional unrigged mesh to assign to a UStaticMeshComponent when no rig is available
- * - LoopingAnimation: walk animation (used when moving slowly)
- * - AlertAnimation: alert/stand animation (e.g. hero/companion selection preview)
- * - RunAnimation: run animation (used when moving fast); if unset, walk is used for all movement
+ * - WalkAnimation: looping walk animation used while moving
+ * - IdleAnimation: looping idle/stand animation used when stationary and in selection previews
+ * - JumpAnimation: one-shot jump animation used when the player jumps
  * - RollAnimation: one-shot forward roll animation
  * - MeshRelative*: applied directly to the target component
  */
@@ -1751,15 +1781,15 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 
 	/** Walk animation (looping). Used when moving below run threshold. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
-	TSoftObjectPtr<UAnimationAsset> LoopingAnimation;
+	TSoftObjectPtr<UAnimationAsset> WalkAnimation;
 
-	/** Alert/stand animation (e.g. hero/companion selection preview). If set, used in preview instead of walk. */
+	/** Idle/stand animation. If set, used when stationary and in preview instead of walk. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
-	TSoftObjectPtr<UAnimationAsset> AlertAnimation;
+	TSoftObjectPtr<UAnimationAsset> IdleAnimation;
 
-	/** Run animation (looping). Used when moving above run threshold. If unset, walk is used for all movement. */
+	/** Jump animation (one-shot). Used when the player jumps. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
-	TSoftObjectPtr<UAnimationAsset> RunAnimation;
+	TSoftObjectPtr<UAnimationAsset> JumpAnimation;
 
 	/** Roll animation (one-shot). Used when the player triggers forward roll. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
@@ -1777,7 +1807,7 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	FVector MeshRelativeScale = FVector(1.f, 1.f, 1.f);
 
-	/** If true and LoopingAnimation is set, play it in a loop. */
+	/** If true and WalkAnimation is set, play it in a loop. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	bool bLoopAnimation = true;
 
@@ -1954,6 +1984,7 @@ enum class ET66RunEventType : uint8
 	StageEntered   UMETA(DisplayName = "Stage Entered"),
 	StageExited    UMETA(DisplayName = "Stage Exited"),
 	ItemAcquired   UMETA(DisplayName = "Item Acquired"),
+	ItemConsumed   UMETA(DisplayName = "Item Consumed"),
 	GoldGained     UMETA(DisplayName = "Gold Gained"),
 	EnemyKilled    UMETA(DisplayName = "Enemy Killed"),
 	DamageDealt    UMETA(DisplayName = "Damage Dealt")

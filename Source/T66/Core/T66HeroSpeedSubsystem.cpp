@@ -2,20 +2,22 @@
 
 #include "Core/T66HeroSpeedSubsystem.h"
 
-void UT66HeroSpeedSubsystem::SetParams(float InMaxSpeed, float AccelerationPercentPerSecond)
+void UT66HeroSpeedSubsystem::SetParams(float InMovementSpeed, float AccelerationPercentPerSecond)
 {
-	MaxSpeed = FMath::Max(1.f, InMaxSpeed);
+	MaxSpeed = FMath::Max(1.f, InMovementSpeed);
 }
 
 void UT66HeroSpeedSubsystem::Update(float DeltaTime, bool bHasMovementInput)
 {
-	bLastHasMovementInput = bHasMovementInput;
 	CurrentSpeed = bHasMovementInput ? MaxSpeed : 0.f;
 }
 
 int32 UT66HeroSpeedSubsystem::GetMovementAnimState() const
 {
-	if (!bLastHasMovementInput)
-		return 0; // Idle
-	return 1; // Moving
+	return MovementAnimState;
+}
+
+void UT66HeroSpeedSubsystem::SetMovementAnimState(const int32 InState)
+{
+	MovementAnimState = FMath::Clamp(InState, 0, 3);
 }

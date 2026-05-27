@@ -17,7 +17,6 @@ enum class ET66InteractionPromptAction : uint8
 	UseFountain,
 	OpenChest,
 	OpenCrate,
-	GetQuickRevive,
 	RaiseDifficulty,
 };
 

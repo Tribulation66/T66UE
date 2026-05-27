@@ -1,6 +1,6 @@
 # T66 Master Traps
 
-**Last updated:** 2026-04-18
+**Last updated:** 2026-05-23
 **Scope:** Single-source handoff for environmental trap runtime, ownership, procedural spawning, damage routing, trap-family identity, and shipped trap VFX/mesh rules.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md`, `Gameplay/World/T66_Tower_Multi_Agent_Implementation_Plan.md`
 **Maintenance rule:** Update this file after every material trap, trap-subsystem, trap-spawn, trap-damage, trap-VFX, or trap-map-integration change.
@@ -80,6 +80,8 @@ Visual/runtime rules:
 - projectile and trap visuals prefer `/Game/Stylized_VFX_StPack/Meshes/SM_Arrows_PickUp.SM_Arrows_PickUp`
 - Arthur sword remains a fallback only if the stylized arrow mesh fails to load
 - primitive cone geometry remains a final fallback only
+- projectile damage now uses an oriented box component named `DamageBox`, not the older small sphere, so the combat debug view matches the long arrow/harpoon body more closely
+- combat debug shows the projectile visual mesh/trail and its separate damage box container together
 - projectile trail still uses `UT66PixelVFXSubsystem`
 
 ### 4.2 Floor Burst
@@ -101,6 +103,7 @@ Visual/runtime rules:
 - active fire now spawns as a clustered set of Niagara systems for fuller flame volume
 - warning and eruption support visuals still use `UT66PixelVFXSubsystem`
 - damage uses an overlap sphere plus `UT66RunStateSubsystem::ApplyDamage()`
+- combat debug draws the floor-burst damage sphere even while dormant, labeled as a container until warning or active damage begins
 
 ### 4.3 Area Control
 
@@ -124,6 +127,8 @@ Visual/runtime rules:
 - primitive cones remain a final fallback only
 - spike eruptions now spawn `/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02`
 - warning and burst support visuals still use `UT66PixelVFXSubsystem`
+- combat debug draws the area-control damage sphere even while dormant, labeled as a container until warning or raised damage begins
+- pressure plates are non-damage triggers, but combat debug draws their trigger box as `Trap Trigger Zone` so the trap activation container is visible separately from the plate mesh
 
 ## 5. Procedural Tower Spawn Rules
 

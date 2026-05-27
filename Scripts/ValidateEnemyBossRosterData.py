@@ -33,11 +33,8 @@ ALLOWED_ARCHETYPES = {
     "Rush",
     "Flying",
     "Exploder",
-    "Strafer",
     "Stutterer",
-    "Turret",
     "Burrower",
-    "Necromancer",
 }
 ALLOWED_FEELINGS = {"MowDown", "Pressure", "DodgeThreat", "MiniBossFeel", "Disruptor", "Specialist"}
 ALLOWED_RARITIES = {"Core", "Rare", "Late"}
@@ -47,12 +44,22 @@ FAMILY_FALLBACK_BY_ARCHETYPE = {
     "Rush": "Rush",
     "Flying": "Flying",
     "Exploder": "Rush",
-    "Strafer": "Ranged",
     "Stutterer": "Melee",
-    "Turret": "Ranged",
     "Burrower": "Melee",
-    "Necromancer": "Ranged",
 }
+REQUIRED_SPAWN_BUDGET_KEYS = (
+    "GameplayFloorsPerStage",
+    "InitialEnemiesPerGameplayFloor",
+    "TotalInitialEnemiesPerStage",
+    "RuntimeEnemiesPerWave",
+    "RuntimeMaxAliveEnemies",
+    "RuntimeSpawnIntervalSeconds",
+)
+ESTIMATED_SPAWN_BUDGET_KEYS = (
+    "EstimatedRuntimeWavesPerStage",
+    "EstimatedRuntimeEnemiesPerStage",
+    "EstimatedTotalEnemiesPerStage",
+)
 EXPECTED_STAGE_FILL = {1: 7, 2: 8, 3: 9, 4: 10}
 OLD_PLACEHOLDER_TOKENS = (
     "Roost",
@@ -90,10 +97,22 @@ def validate_player_experience() -> None:
     rows = json.loads((DATA / "PlayerExperience.json").read_text(encoding="utf-8"))
     by_name = {row["Name"]: row for row in rows}
     assert_true(set(by_name) == set(DIFFICULTY_RANGES), "PlayerExperience difficulties do not match expected set")
-    for difficulty, (start, end, _theme) in DIFFICULTY_RANGES.items():
+    for difficulty in DIFFICULTY_RANGES:
         row = by_name[difficulty]
-        assert_true(row["StartStage"] == start, f"{difficulty} StartStage expected {start} got {row['StartStage']}")
-        assert_true(row["EndStage"] == end, f"{difficulty} EndStage expected {end} got {row['EndStage']}")
+        budget = row.get("TowerSpawnBudgetBase")
+        assert_true(isinstance(budget, dict), f"{difficulty} TowerSpawnBudgetBase must be an object")
+
+        for key in REQUIRED_SPAWN_BUDGET_KEYS:
+            assert_true(key in budget, f"{difficulty} TowerSpawnBudgetBase missing {key}")
+            value = budget[key]
+            assert_true(isinstance(value, (int, float)), f"{difficulty} {key} must be numeric")
+            assert_true(value > 0, f"{difficulty} {key} must be greater than zero")
+
+        for key in ESTIMATED_SPAWN_BUDGET_KEYS:
+            if key in budget:
+                value = budget[key]
+                assert_true(isinstance(value, (int, float)), f"{difficulty} {key} must be numeric")
+                assert_true(value >= 0, f"{difficulty} {key} must be non-negative")
 
 
 def validate_enemies(enemies: list[dict[str, str]]) -> dict[str, list[str]]:

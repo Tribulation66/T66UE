@@ -732,44 +732,6 @@ void UT66ChallengesScreen::CycleDraftStartingItem(const int32 Direction)
 	DraftEditorEntry.Rules.StartingItemId = ItemIds[NextIndex];
 }
 
-void UT66ChallengesScreen::AdjustDraftStat(const EDraftStatField Field, const int32 Delta)
-{
-	auto Clamp = [](int32 Value)
-	{
-		return T66CommunityContentLimits::ClampStatBonus(Value);
-	};
-
-	switch (Field)
-	{
-	case EDraftStatField::Damage:
-		DraftEditorEntry.Rules.BonusStats.Damage = Clamp(DraftEditorEntry.Rules.BonusStats.Damage + Delta);
-		break;
-	case EDraftStatField::AttackSpeed:
-		DraftEditorEntry.Rules.BonusStats.AttackSpeed = Clamp(DraftEditorEntry.Rules.BonusStats.AttackSpeed + Delta);
-		break;
-	case EDraftStatField::AttackScale:
-		DraftEditorEntry.Rules.BonusStats.AttackScale = Clamp(DraftEditorEntry.Rules.BonusStats.AttackScale + Delta);
-		break;
-	case EDraftStatField::Accuracy:
-		DraftEditorEntry.Rules.BonusStats.Accuracy = Clamp(DraftEditorEntry.Rules.BonusStats.Accuracy + Delta);
-		break;
-	case EDraftStatField::Armor:
-		DraftEditorEntry.Rules.BonusStats.Armor = Clamp(DraftEditorEntry.Rules.BonusStats.Armor + Delta);
-		break;
-	case EDraftStatField::Evasion:
-		DraftEditorEntry.Rules.BonusStats.Evasion = Clamp(DraftEditorEntry.Rules.BonusStats.Evasion + Delta);
-		break;
-	case EDraftStatField::Luck:
-		DraftEditorEntry.Rules.BonusStats.Luck = Clamp(DraftEditorEntry.Rules.BonusStats.Luck + Delta);
-		break;
-	case EDraftStatField::Speed:
-		DraftEditorEntry.Rules.BonusStats.Speed = Clamp(DraftEditorEntry.Rules.BonusStats.Speed + Delta);
-		break;
-	default:
-		break;
-	}
-}
-
 TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 {
 	InitializeSelectionState();
@@ -1095,76 +1057,6 @@ TSharedRef<SWidget> UT66ChallengesScreen::BuildSlateUI()
 			.Font(FT66FlatStyle::Tokens::FontBold(12))
 			.ColorAndOpacity(ChallengeSuccessTint())
 		];
-		EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-		[
-			MakeDraftStepRow(
-				TEXT("Start Level"),
-				DraftEditorEntry.Rules.StartLevelOverride,
-				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftStartLevel, -1),
-				FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftStartLevel, +1))
-		];
-		EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().FillWidth(1.f).VAlign(VAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(FText::FromString(TEXT("Max Hero Stats")))
-				.Font(FT66FlatStyle::Tokens::FontBold(12))
-				.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-			]
-			+ SHorizontalBox::Slot().AutoWidth()
-			[
-				MakeChallengeSpriteButton(
-					FText::FromString(DraftEditorEntry.Rules.bSetMaxHeroStats ? TEXT("Enabled") : TEXT("Disabled")),
-					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleToggleDraftMaxStats),
-					DraftEditorEntry.Rules.bSetMaxHeroStats ? ET66ChallengeButtonFamily::ToggleOn : ET66ChallengeButtonFamily::CompactNeutral,
-					100.f,
-					24.f,
-					10,
-					FMargin(8.f, 2.f))
-			]
-		];
-
-		const TArray<TPair<FString, EDraftStatField>> StatFields = {
-			TPair<FString, EDraftStatField>(TEXT("Damage"), EDraftStatField::Damage),
-			TPair<FString, EDraftStatField>(TEXT("Attack Speed"), EDraftStatField::AttackSpeed),
-			TPair<FString, EDraftStatField>(TEXT("Attack Scale"), EDraftStatField::AttackScale),
-			TPair<FString, EDraftStatField>(TEXT("Accuracy"), EDraftStatField::Accuracy),
-			TPair<FString, EDraftStatField>(TEXT("Armor"), EDraftStatField::Armor),
-			TPair<FString, EDraftStatField>(TEXT("Evasion"), EDraftStatField::Evasion),
-			TPair<FString, EDraftStatField>(TEXT("Luck"), EDraftStatField::Luck),
-			TPair<FString, EDraftStatField>(TEXT("Speed"), EDraftStatField::Speed),
-		};
-
-		auto GetDraftStatValue = [this](const EDraftStatField Field)
-		{
-			switch (Field)
-			{
-			case EDraftStatField::Damage: return DraftEditorEntry.Rules.BonusStats.Damage;
-			case EDraftStatField::AttackSpeed: return DraftEditorEntry.Rules.BonusStats.AttackSpeed;
-			case EDraftStatField::AttackScale: return DraftEditorEntry.Rules.BonusStats.AttackScale;
-			case EDraftStatField::Accuracy: return DraftEditorEntry.Rules.BonusStats.Accuracy;
-			case EDraftStatField::Armor: return DraftEditorEntry.Rules.BonusStats.Armor;
-			case EDraftStatField::Evasion: return DraftEditorEntry.Rules.BonusStats.Evasion;
-			case EDraftStatField::Luck: return DraftEditorEntry.Rules.BonusStats.Luck;
-			case EDraftStatField::Speed: return DraftEditorEntry.Rules.BonusStats.Speed;
-			default: return 0;
-			}
-		};
-
-		for (const TPair<FString, EDraftStatField>& StatField : StatFields)
-		{
-			EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-			[
-				MakeDraftStepRow(
-					StatField.Key,
-					GetDraftStatValue(StatField.Value),
-					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftStatClicked, StatField.Value, -5),
-					FOnClicked::CreateUObject(this, &UT66ChallengesScreen::HandleAdjustDraftStatClicked, StatField.Value, +5))
-			];
-		}
-
 		EditorRows->AddSlot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
 		[
 			MakeCycleRow(
@@ -1839,13 +1731,6 @@ FReply UT66ChallengesScreen::HandleAdjustDraftReward(const int32 Delta)
 	return FReply::Handled();
 }
 
-FReply UT66ChallengesScreen::HandleAdjustDraftStartLevel(const int32 Delta)
-{
-	DraftEditorEntry.Rules.StartLevelOverride = T66CommunityContentLimits::ClampStartLevelOverride(DraftEditorEntry.Rules.StartLevelOverride + Delta);
-	RequestDeferredSlateRebuild();
-	return FReply::Handled();
-}
-
 FReply UT66ChallengesScreen::HandleAdjustDraftRequiredStage(const int32 Delta)
 {
 	DraftEditorEntry.Rules.RequiredStageReached = T66CommunityContentLimits::ClampRequiredStageReached(DraftEditorEntry.Rules.RequiredStageReached + Delta);
@@ -1856,20 +1741,6 @@ FReply UT66ChallengesScreen::HandleAdjustDraftRequiredStage(const int32 Delta)
 FReply UT66ChallengesScreen::HandleAdjustDraftMaxRunTime(const int32 Delta)
 {
 	DraftEditorEntry.Rules.MaxRunTimeSeconds = T66CommunityContentLimits::ClampRunTimeSeconds(DraftEditorEntry.Rules.MaxRunTimeSeconds + Delta);
-	RequestDeferredSlateRebuild();
-	return FReply::Handled();
-}
-
-FReply UT66ChallengesScreen::HandleToggleDraftMaxStats()
-{
-	DraftEditorEntry.Rules.bSetMaxHeroStats = !DraftEditorEntry.Rules.bSetMaxHeroStats;
-	RequestDeferredSlateRebuild();
-	return FReply::Handled();
-}
-
-FReply UT66ChallengesScreen::HandleAdjustDraftStatClicked(const EDraftStatField Field, const int32 Delta)
-{
-	AdjustDraftStat(Field, Delta);
 	RequestDeferredSlateRebuild();
 	return FReply::Handled();
 }

@@ -2,6 +2,7 @@
 
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66RunStateSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Internationalization/Internationalization.h"
@@ -324,8 +325,8 @@ FText UT66LocalizationSubsystem::GetText_PrimaryStatDescription(int32 StatIndex)
 {
 	switch (StatIndex)
 	{
-	case 0: return NSLOCTEXT("T66.StatTooltips", "Level", "Your hero's current level. Gain XP by killing enemies to level up and improve your stats.");
-	case 1: return NSLOCTEXT("T66.StatTooltips", "Damage", "Base damage dealt by each attack. Increased by items and level-ups.");
+	case 0: return NSLOCTEXT("T66.StatTooltips", "Level", "Deprecated run-level field retained for old save compatibility.");
+	case 1: return NSLOCTEXT("T66.StatTooltips", "Damage", "Base damage dealt by each attack. Increased by items.");
 	case 2: return NSLOCTEXT("T66.StatTooltips", "AttackSpeed", "How quickly your hero attacks. Higher values reduce the interval between attacks.");
 	case 3: return NSLOCTEXT("T66.StatTooltips", "AttackScale", "Size multiplier for your attack hitbox. Larger scale hits more enemies per swing.");
 	case 4: return NSLOCTEXT("T66.StatTooltips", "AccuracyPrimary", "Improves the precision family of stats: critical chance, critical damage, attack range, and head-targeting accuracy.");
@@ -529,6 +530,11 @@ FText UT66LocalizationSubsystem::GetText_ItemNameFormat() const
 
 FText UT66LocalizationSubsystem::GetText_ItemBaseName(FName ItemID) const
 {
+	if (ItemID == UT66RunStateSubsystem::BackroomsQuickReviveItemID)
+	{
+		return NSLOCTEXT("T66.Items", "BaseName_BackroomsQuickRevive", "Quick Revive");
+	}
+
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
 		FItemData ItemData;
@@ -590,6 +596,11 @@ FText UT66LocalizationSubsystem::GetText_ItemDisplayName(FName ItemID) const
 
 FText UT66LocalizationSubsystem::GetText_ItemDisplayNameForRarity(FName ItemID, ET66ItemRarity Rarity) const
 {
+	if (ItemID == UT66RunStateSubsystem::BackroomsQuickReviveItemID)
+	{
+		return GetText_ItemBaseName(ItemID);
+	}
+
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
 		FItemData ItemData;

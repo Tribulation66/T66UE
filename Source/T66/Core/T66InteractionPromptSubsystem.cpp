@@ -7,7 +7,6 @@
 #include "Gameplay/T66DifficultyTotem.h"
 #include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
-#include "Gameplay/T66QuickReviveVendingMachine.h"
 #include "GameFramework/InputSettings.h"
 
 namespace
@@ -65,8 +64,6 @@ namespace
 			return NSLOCTEXT("T66.InteractionPrompt", "OpenChest", "open chest");
 		case ET66InteractionPromptAction::OpenCrate:
 			return NSLOCTEXT("T66.InteractionPrompt", "OpenCrate", "open crate");
-		case ET66InteractionPromptAction::GetQuickRevive:
-			return NSLOCTEXT("T66.InteractionPrompt", "GetQuickRevive", "get quick revive");
 		case ET66InteractionPromptAction::RaiseDifficulty:
 			return NSLOCTEXT("T66.InteractionPrompt", "RaiseDifficulty", "raise difficulty");
 		default:
@@ -98,10 +95,6 @@ ET66InteractionPromptAction UT66InteractionPromptSubsystem::GetPromptActionForAc
 	{
 		return ET66InteractionPromptAction::OpenCrate;
 	}
-	if (Cast<AT66QuickReviveVendingMachine>(Actor))
-	{
-		return ET66InteractionPromptAction::GetQuickRevive;
-	}
 	if (Cast<AT66DifficultyTotem>(Actor))
 	{
 		return ET66InteractionPromptAction::RaiseDifficulty;
@@ -132,10 +125,6 @@ FText UT66InteractionPromptSubsystem::GetPromptTargetNameForActor(const AActor* 
 	if (Cast<AT66CrateInteractable>(Actor))
 	{
 		return NSLOCTEXT("T66.InteractionPrompt", "TargetCrate", "Crate");
-	}
-	if (Cast<AT66QuickReviveVendingMachine>(Actor))
-	{
-		return NSLOCTEXT("T66.InteractionPrompt", "TargetQuickRevive", "Quick Revive");
 	}
 	if (Cast<AT66DifficultyTotem>(Actor))
 	{

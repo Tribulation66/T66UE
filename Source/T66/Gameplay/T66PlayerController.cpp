@@ -49,13 +49,14 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
-#include "Gameplay/T66GamblerNPC.h"
+#include "Gameplay/T66CasinoNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Components/BoxComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "EngineUtils.h"
@@ -180,6 +181,7 @@ namespace
 		ECVF_Default);
 	const FName T66PlayerControllerMainMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
 	const FName T66PlayerControllerTraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
+	const FName T66PlayerControllerCameraWallVisualTag(TEXT("T66_CameraOccludingWallVisual"));
 	const FName T66PlayerControllerTowerCeilingTag(TEXT("T66_Tower_Ceiling"));
 
 	static void T66CollectMainMapTerrainVisualActors(UWorld* World, TArray<AActor*>& OutActors)
@@ -219,9 +221,19 @@ namespace
 
 		const bool bWall = Owner->ActorHasTag(T66PlayerControllerTraversalBarrierTag)
 			|| Component->ComponentHasTag(T66PlayerControllerTraversalBarrierTag);
+		const bool bCameraWallVisual = Owner->ActorHasTag(T66PlayerControllerCameraWallVisualTag)
+			|| Component->ComponentHasTag(T66PlayerControllerCameraWallVisualTag);
 		const bool bCeiling = Owner->ActorHasTag(T66PlayerControllerTowerCeilingTag)
 			|| Component->ComponentHasTag(T66PlayerControllerTowerCeilingTag);
-		return bWall && !bCeiling;
+		if (!bWall || !bCameraWallVisual || bCeiling || Component->IsA<UInstancedStaticMeshComponent>())
+		{
+			return false;
+		}
+
+		const FVector Extents = Component->Bounds.BoxExtent;
+		const float ThinXY = FMath::Min(Extents.X, Extents.Y);
+		const float LongXY = FMath::Max(Extents.X, Extents.Y);
+		return Extents.Z >= 250.0f && ThinXY <= 650.0f && LongXY >= 120.0f;
 	}
 }
 
@@ -487,7 +499,6 @@ void AT66PlayerController::BeginPlay()
 		if (RunState)
 		{
 			RunState->OnPlayerDied.AddDynamic(this, &AT66PlayerController::OnPlayerDied);
-			RunState->QuickReviveChanged.AddDynamic(this, &AT66PlayerController::HandleQuickReviveStateChanged);
 		}
 
 		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI); T66GI && T66GI->bSaveSlotPreviewMode)
@@ -632,7 +643,6 @@ void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 	{
 		RunState->OnPlayerDied.RemoveDynamic(this, &AT66PlayerController::OnPlayerDied);
-		RunState->QuickReviveChanged.RemoveDynamic(this, &AT66PlayerController::HandleQuickReviveStateChanged);
 	}
 
 	UnbindPartyInviteEvents();

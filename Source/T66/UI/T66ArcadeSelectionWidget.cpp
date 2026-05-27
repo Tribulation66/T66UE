@@ -3,12 +3,12 @@
 #include "UI/T66ArcadeSelectionWidget.h"
 
 #include "Gameplay/T66ArcadeInteractableBase.h"
-#include "Gameplay/T66ArcadeGameCatalog.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/T66DemoModeUIUtils.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "UI/Style/T66Style.h"
+#include "UI/WidgetGames/T66WidgetGameRegistry.h"
 
 #include "Engine/Texture2D.h"
 #include "Styling/CoreStyle.h"
@@ -43,10 +43,17 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::RebuildWidget()
 	}
 	else
 	{
-		for (const FT66ArcadeGameCatalogEntry& Entry : T66ArcadeGameCatalog::GetPlayableEntries())
+		TArray<const FT66WidgetGameDescriptor*> ArcadeDescriptors;
+		T66WidgetGames::Registry::GetArcadeDescriptors(ArcadeDescriptors);
+		for (const FT66WidgetGameDescriptor* Descriptor : ArcadeDescriptors)
 		{
+			if (!Descriptor)
+			{
+				continue;
+			}
+
 			FT66ArcadeInteractableData GameData;
-			if (T66ArcadeGameCatalog::BuildSessionDataForGame(this, Entry.GameType, GameData))
+			if (T66WidgetGames::Registry::BuildArcadeSessionDataForGame(this, Descriptor->ArcadeGameType, GameData))
 			{
 				GameOptions.Add(MoveTemp(GameData));
 			}
@@ -354,8 +361,17 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildCrtOverlay() const
 TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildGameButton(const FT66ArcadeInteractableData& GameData, const int32 Index)
 {
 	const FLinearColor Accent = ResolveGameAccentColor(GameData.ArcadeGameType, Index);
-	const FText DisplayName = T66ArcadeGameCatalog::GetPrototypeDisplayName(GameData.ArcadeGameType);
-	const bool bArcadeAllowed = T66DemoModeUI::IsArcadeGameAllowed(this, T66ArcadeGameCatalog::GetRowID(GameData.ArcadeGameType));
+	const FText DisplayName = [GameType = GameData.ArcadeGameType]()
+	{
+		if (const FT66WidgetGameDescriptor* Descriptor = T66WidgetGames::Registry::FindByArcadeGameType(GameType))
+		{
+			return Descriptor->DisplayName;
+		}
+
+		return NSLOCTEXT("T66.ArcadeCatalog", "UnknownPrototypeName", "ARCADE COPY");
+	}();
+	const FT66WidgetGameDescriptor* GameDescriptor = T66WidgetGames::Registry::FindByArcadeGameType(GameData.ArcadeGameType);
+	const bool bArcadeAllowed = !GameDescriptor || T66WidgetGames::Registry::IsAvailable(this, *GameDescriptor);
 
 	FOnClicked GameClicked;
 	if (bArcadeAllowed)
@@ -453,7 +469,8 @@ TSharedRef<SWidget> UT66ArcadeSelectionWidget::BuildGameButton(const FT66ArcadeI
 
 FReply UT66ArcadeSelectionWidget::HandleGameClicked(const ET66ArcadeGameType GameType)
 {
-	if (!T66DemoModeUI::IsArcadeGameAllowed(this, T66ArcadeGameCatalog::GetRowID(GameType)))
+	const FT66WidgetGameDescriptor* GameDescriptor = T66WidgetGames::Registry::FindByArcadeGameType(GameType);
+	if (GameDescriptor && !T66WidgetGames::Registry::IsAvailable(this, *GameDescriptor))
 	{
 		return FReply::Handled();
 	}
@@ -495,15 +512,38 @@ FReply UT66ArcadeSelectionWidget::HandleExitClicked()
 
 FText UT66ArcadeSelectionWidget::ResolveGameCode(const ET66ArcadeGameType GameType) const
 {
-	return T66ArcadeGameCatalog::GetShortCode(GameType);
+	if (const FT66WidgetGameDescriptor* Descriptor = T66WidgetGames::Registry::FindByArcadeGameType(GameType))
+	{
+		return Descriptor->ShortCode;
+	}
+
+	return NSLOCTEXT("T66.ArcadeCatalog", "UnknownCode", "???");
 }
 
 FText UT66ArcadeSelectionWidget::ResolveGameFlavorText(const ET66ArcadeGameType GameType) const
 {
-	return T66ArcadeGameCatalog::GetDescription(GameType);
+	if (const FT66WidgetGameDescriptor* Descriptor = T66WidgetGames::Registry::FindByArcadeGameType(GameType))
+	{
+		return Descriptor->Description;
+	}
+
+	return NSLOCTEXT("T66.ArcadeCatalog", "UnknownDescription", "Boot the selected arcade machine cartridge.");
 }
 
 FLinearColor UT66ArcadeSelectionWidget::ResolveGameAccentColor(const ET66ArcadeGameType GameType, const int32 Index) const
 {
-	return T66ArcadeGameCatalog::GetAccentColor(GameType, Index);
+	if (const FT66WidgetGameDescriptor* Descriptor = T66WidgetGames::Registry::FindByArcadeGameType(GameType))
+	{
+		return Descriptor->AccentColor;
+	}
+
+	static const FLinearColor Palette[] =
+	{
+		FLinearColor(0.16f, 0.82f, 0.78f, 1.f),
+		FLinearColor(0.94f, 0.56f, 0.18f, 1.f),
+		FLinearColor(0.62f, 0.72f, 1.f, 1.f),
+		FLinearColor(0.90f, 0.32f, 0.56f, 1.f),
+		FLinearColor(0.72f, 0.92f, 0.28f, 1.f),
+	};
+	return Palette[FMath::Abs(Index) % UE_ARRAY_COUNT(Palette)];
 }

@@ -3,8 +3,11 @@
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66CombatHitZoneComponent.h"
+#include "Gameplay/T66CombatDebugDraw.h"
+#include "Gameplay/T66BossAttackTelegraph.h"
 #include "Gameplay/T66BossProjectile.h"
 #include "Gameplay/T66BossGroundAOE.h"
+#include "Gameplay/T66BossLaneBlockerHazard.h"
 #include "Gameplay/T66GameMode.h"
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
@@ -318,6 +321,37 @@ void AT66BossBase::AssignBossPartDefinitionsForProfile(const ET66BossPartProfile
 	}
 }
 
+void AT66BossBase::AssignSewerSlimeKingPartDefinitions()
+{
+	bUsesBossPartHitZones = true;
+	BossPartDefinitions.Reset();
+	BossPartDefinitions.Reserve(5);
+
+	auto AddSlimePart = [this](
+		const TCHAR* PartName,
+		const ET66HitZoneType HitZoneType,
+		const float HPWeight,
+		const float DamageMultiplier,
+		const FVector& RelativeLocation,
+		const float Radius)
+	{
+		FT66BossPartDefinition& Part = BossPartDefinitions.AddDefaulted_GetRef();
+		Part.PartID = FName(PartName);
+		Part.HitZoneType = HitZoneType;
+		Part.HPWeight = HPWeight;
+		Part.DamageMultiplier = DamageMultiplier;
+		Part.RelativeLocation = RelativeLocation;
+		Part.Radius = Radius;
+		Part.bTargetable = true;
+	};
+
+	AddSlimePart(TEXT("LeftLobe"), ET66HitZoneType::LeftArm, 0.16f, 1.10f, FVector(35.f, -165.f, 136.f), 118.f);
+	AddSlimePart(TEXT("RightLobe"), ET66HitZoneType::RightArm, 0.16f, 1.10f, FVector(35.f, 165.f, 136.f), 118.f);
+	AddSlimePart(TEXT("LeftBase"), ET66HitZoneType::LeftLeg, 0.16f, 0.95f, FVector(20.f, -118.f, 62.f), 104.f);
+	AddSlimePart(TEXT("RightBase"), ET66HitZoneType::RightLeg, 0.16f, 0.95f, FVector(20.f, 118.f, 62.f), 104.f);
+	AddSlimePart(TEXT("MouthCore"), ET66HitZoneType::Head, 0.36f, 1.35f, FVector(92.f, 0.f, 132.f), 142.f);
+}
+
 void AT66BossBase::ConfigureAttackProfileFromBossPartProfile(const ET66BossPartProfile InProfile)
 {
 	switch (InProfile)
@@ -399,13 +433,28 @@ void AT66BossBase::RefreshCombatHitZoneState()
 			continue;
 		}
 
-		const bool bEnableZone = bEnableHitZones && Zone->bTargetable;
+		const bool bEnableZone = bEnableHitZones && Zone->bTargetable && Part.CurrentHP > 0;
 		Zone->HitZoneType = Part.HitZoneType;
 		Zone->HitZoneName = Part.PartID;
 		Zone->DamageMultiplier = FMath::Max(0.1f, Part.DamageMultiplier);
 		Zone->SetCollisionEnabled(bEnableZone ? ECollisionEnabled::QueryOnly : ECollisionEnabled::NoCollision);
 		Zone->SetGenerateOverlapEvents(bEnableZone);
 		Zone->SetHiddenInGame(true);
+	}
+}
+
+void AT66BossBase::DrawCombatDebug() const
+{
+	if (!bAwakened || CurrentHP <= 0)
+	{
+		return;
+	}
+
+	for (const FT66BossPartRuntimeState& Part : BossPartStates)
+	{
+		const bool bActive = Part.CurrentHP > 0 && Part.ZoneComponent && Part.ZoneComponent->bTargetable;
+		const FString Label = FString::Printf(TEXT("Boss Hurtbox: %s"), *Part.PartID.ToString());
+		T66CombatDebugDraw::DrawHitZone(Part.ZoneComponent, Part.HitZoneType, bActive, Label);
 	}
 }
 
@@ -478,6 +527,7 @@ bool AT66BossBase::RestoreBossPartStateFromRunState()
 	}
 
 	CurrentHP = FMath::Clamp(CurrentHP, 0, MaxHP);
+	RefreshCombatHitZoneState();
 	PushBossPartStateToRunState();
 	return true;
 }
@@ -699,8 +749,17 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 		(BossData.BossPartProfile != ET66BossPartProfile::UseActorDefault)
 		? BossData.BossPartProfile
 		: T66ResolveLegacyBossPartProfile(BossData.BossID);
-	AssignBossPartDefinitionsForProfile(ResolvedPartProfile);
-	ConfigureAttackProfileFromBossPartProfile(ResolvedPartProfile);
+	if (BossData.BossID == FName(TEXT("Dungeon_SewerSlimeKing")))
+	{
+		AssignSewerSlimeKingPartDefinitions();
+		AttackProfile = ET66BossAttackProfile::Juggernaut;
+		GroundAOEIntervalSeconds = 0.f;
+	}
+	else
+	{
+		AssignBossPartDefinitionsForProfile(ResolvedPartProfile);
+		ConfigureAttackProfileFromBossPartProfile(ResolvedPartProfile);
+	}
 	AttackPrimaryColor = BossData.PlaceholderColor;
 	AttackPrimaryColor.A = 1.f;
 	AttackSecondaryColor = T66MakeAttackSecondaryColor(AttackPrimaryColor);
@@ -902,6 +961,45 @@ void AT66BossBase::SpawnProjectileInDirection(const FVector& Direction, const fl
 	}
 }
 
+void AT66BossBase::SpawnScaledProjectileInDirection(
+	const FVector& Direction,
+	const float SpeedScale,
+	const FVector& SpawnOffset,
+	const bool bUseSecondaryTint,
+	const float VisualScaleMultiplier)
+{
+	if (!bAwakened || CurrentHP <= 0 || StunSecondsRemaining > 0.f || FreezeSecondsRemaining > 0.f)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const FVector ShotDirection = Direction.GetSafeNormal();
+	if (ShotDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	const FVector SpawnLoc = GetActorLocation() + FVector(0.f, 0.f, 84.f) + SpawnOffset;
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (AT66BossProjectile* Proj = World->SpawnActor<AT66BossProjectile>(AT66BossProjectile::StaticClass(), SpawnLoc, ShotDirection.Rotation(), SpawnParams))
+	{
+		Proj->DamageHearts = ProjectileDamageHearts;
+		Proj->ConfigureVisualStyle(AttackProfile, AttackPrimaryColor, AttackSecondaryColor, bUseSecondaryTint);
+		Proj->SetVisualScaleMultiplier(VisualScaleMultiplier);
+		Proj->SetTargetLocation(SpawnLoc + ShotDirection * 1000.f, ProjectileSpeed * FMath::Max(0.35f, SpeedScale));
+		T66PlayBossProfileAudioEvent(this, TEXT("Boss.Projectile.Fire"), FName(TEXT("Boss.Projectile.Fire")), SpawnLoc);
+	}
+}
+
 void AT66BossBase::QueueProjectileShotDirection(const FVector& Direction, const float DelaySeconds, const float SpeedScale, const FVector& SpawnOffset, const bool bUseSecondaryTint)
 {
 	const FVector ShotDirection = Direction.GetSafeNormal();
@@ -1000,6 +1098,281 @@ void AT66BossBase::QueueRadialBurst(
 	}
 }
 
+bool AT66BossBase::IsSewerSlimeKingBoss() const
+{
+	return BossID == FName(TEXT("Dungeon_SewerSlimeKing"));
+}
+
+bool AT66BossBase::IsBossPartAlive(const FName PartID) const
+{
+	for (const FT66BossPartRuntimeState& Part : BossPartStates)
+	{
+		if (Part.PartID == PartID)
+		{
+			return Part.CurrentHP > 0;
+		}
+	}
+
+	return false;
+}
+
+FVector AT66BossBase::GetBossPartWorldLocation(const FName PartID) const
+{
+	for (const FT66BossPartRuntimeState& Part : BossPartStates)
+	{
+		if (Part.PartID == PartID)
+		{
+			return Part.ZoneComponent ? Part.ZoneComponent->GetComponentLocation() : GetActorLocation() + FVector(0.f, 0.f, 120.f);
+		}
+	}
+
+	return GetActorLocation() + FVector(0.f, 0.f, 120.f);
+}
+
+FName AT66BossBase::PickSewerSlimeKingAttackPart() const
+{
+	TArray<FName> AvailableParts;
+	for (const FName PartID : {
+		FName(TEXT("LeftLobe")),
+		FName(TEXT("RightLobe")),
+		FName(TEXT("LeftBase")),
+		FName(TEXT("RightBase")),
+		FName(TEXT("MouthCore")) })
+	{
+		if (IsBossPartAlive(PartID))
+		{
+			AvailableParts.Add(PartID);
+		}
+	}
+
+	if (AvailableParts.Num() <= 0)
+	{
+		return NAME_None;
+	}
+
+	if (AvailableParts.Num() > 1)
+	{
+		AvailableParts.Remove(LastSewerSlimeKingAttackPart);
+	}
+
+	return AvailableParts[FMath::RandRange(0, AvailableParts.Num() - 1)];
+}
+
+void AT66BossBase::SpawnSewerSlimeKingTelegraph(
+	const FName AttackPartID,
+	const FVector& Location,
+	const float DurationSeconds,
+	const float ScaleMultiplier,
+	const bool bCylinder)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (AT66BossAttackTelegraph* Telegraph = World->SpawnActor<AT66BossAttackTelegraph>(
+		AT66BossAttackTelegraph::StaticClass(),
+		Location,
+		FRotator::ZeroRotator,
+		SpawnParams))
+	{
+		UStaticMesh* TelegraphMesh = bCylinder ? FT66VisualUtil::GetBasicShapeCylinder() : FT66VisualUtil::GetBasicShapeSphere();
+		const bool bMouthAttack = AttackPartID == FName(TEXT("MouthCore"));
+		const FLinearColor TelegraphColor = bMouthAttack
+			? FLinearColor(0.68f, 1.00f, 0.10f, 1.f)
+			: FLinearColor(0.20f, 0.95f, 0.08f, 1.f);
+		const FVector EndScale = bCylinder
+			? FVector(ScaleMultiplier, ScaleMultiplier, 0.32f)
+			: FVector(ScaleMultiplier);
+		Telegraph->ConfigureTelegraph(TelegraphMesh, TelegraphColor, EndScale * 0.18f, EndScale, DurationSeconds, bMouthAttack ? 260.f : 180.f);
+	}
+}
+
+void AT66BossBase::QueueSewerSlimeKingLobeVolley(
+	const FName AttackPartID,
+	APawn* InitialPlayerPawn,
+	const bool bUseSecondaryTint)
+{
+	static const float ShotYawOffsets[] = { -10.f, -5.f, 0.f, 5.f, 10.f };
+	TWeakObjectPtr<AT66BossBase> WeakThis(this);
+	TWeakObjectPtr<APawn> WeakInitialPlayer(InitialPlayerPawn);
+
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(ShotYawOffsets); ++Index)
+	{
+		const float Delay = 0.58f + static_cast<float>(Index) * 0.12f;
+		const float YawOffset = ShotYawOffsets[Index];
+		QueueTimedAttackLambda(
+			FTimerDelegate::CreateLambda([WeakThis, WeakInitialPlayer, AttackPartID, YawOffset, bUseSecondaryTint, Index]()
+			{
+				if (!WeakThis.IsValid())
+				{
+					return;
+				}
+
+				AT66BossBase* Boss = WeakThis.Get();
+				if (!Boss->IsBossPartAlive(AttackPartID))
+				{
+					return;
+				}
+
+				APawn* PlayerPawn = Boss->ResolvePlayerPawn();
+				if (!PlayerPawn && WeakInitialPlayer.IsValid())
+				{
+					PlayerPawn = WeakInitialPlayer.Get();
+				}
+				if (!PlayerPawn)
+				{
+					return;
+				}
+
+				const FVector PartWorldLocation = Boss->GetBossPartWorldLocation(AttackPartID);
+				FVector Direction = PlayerPawn->GetActorLocation() - PartWorldLocation;
+				Direction.Z = 0.f;
+				Direction = T66RotatePlanarVector(Direction.GetSafeNormal(), YawOffset);
+				const FVector SpawnOffset = PartWorldLocation - (Boss->GetActorLocation() + FVector(0.f, 0.f, 84.f));
+				Boss->SpawnScaledProjectileInDirection(Direction, 0.88f + static_cast<float>(Index) * 0.025f, SpawnOffset, bUseSecondaryTint, 1.12f);
+			}),
+			Delay);
+	}
+}
+
+void AT66BossBase::SpawnSewerSlimeKingLaneBlocker(const FName AttackPartID, const FVector& TargetLocation)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	FVector Forward = TargetLocation - GetActorLocation();
+	Forward.Z = 0.f;
+	Forward = Forward.GetSafeNormal();
+	if (Forward.IsNearlyZero())
+	{
+		Forward = GetActorForwardVector().GetSafeNormal2D();
+	}
+	const FVector Right = T66ResolvePlanarRightVector(Forward);
+	const float SideSign = (AttackPartID == FName(TEXT("LeftBase"))) ? -1.f : 1.f;
+	const FVector HazardBase = ResolveGroundLocation(TargetLocation + Forward * 100.f + Right * SideSign * 255.f);
+	const FVector SpawnLocation = HazardBase + FVector(0.f, 0.f, 48.f);
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (AT66BossLaneBlockerHazard* Hazard = World->SpawnActor<AT66BossLaneBlockerHazard>(
+		AT66BossLaneBlockerHazard::StaticClass(),
+		SpawnLocation,
+		FRotator::ZeroRotator,
+		SpawnParams))
+	{
+		const int32 DamageHP = FMath::Max(18, ProjectileDamageHearts * 22);
+		Hazard->ConfigureHazard(
+			FLinearColor(0.36f, 1.00f, 0.06f, 1.f),
+			FLinearColor(0.06f, 0.88f, 0.20f, 1.f),
+			FVector(2.65f, 2.65f, 0.80f),
+			FVector(185.f, 185.f, 115.f),
+			0.78f,
+			1.45f,
+			DamageHP);
+	}
+}
+
+void AT66BossBase::SpawnSewerSlimeKingMouthProjectile(const FVector& TargetLocation)
+{
+	if (!IsBossPartAlive(FName(TEXT("MouthCore"))))
+	{
+		return;
+	}
+
+	const FVector MouthLocation = GetBossPartWorldLocation(FName(TEXT("MouthCore")));
+	FVector Direction = TargetLocation - MouthLocation;
+	Direction.Z = 0.f;
+	Direction = Direction.GetSafeNormal();
+	if (Direction.IsNearlyZero())
+	{
+		Direction = GetActorForwardVector().GetSafeNormal2D();
+	}
+
+	const FVector SpawnOffset = MouthLocation - (GetActorLocation() + FVector(0.f, 0.f, 84.f));
+	SpawnScaledProjectileInDirection(Direction, 0.82f, SpawnOffset, true, 2.35f);
+}
+
+void AT66BossBase::FireSewerSlimeKingAttack(APawn* PlayerPawn, const FName ForcedAttackPartID)
+{
+	if (!PlayerPawn)
+	{
+		return;
+	}
+
+	FName AttackPartID = ForcedAttackPartID;
+	if (AttackPartID.IsNone() || !IsBossPartAlive(AttackPartID))
+	{
+		AttackPartID = PickSewerSlimeKingAttackPart();
+	}
+	if (AttackPartID.IsNone())
+	{
+		return;
+	}
+
+	LastSewerSlimeKingAttackPart = AttackPartID;
+
+	const FVector TargetLocation = PlayerPawn->GetActorLocation();
+	FVector Facing = TargetLocation - GetActorLocation();
+	Facing.Z = 0.f;
+	if (!Facing.IsNearlyZero())
+	{
+		SetActorRotation(Facing.Rotation());
+	}
+
+	const bool bLeftOrRightLobe = AttackPartID == FName(TEXT("LeftLobe")) || AttackPartID == FName(TEXT("RightLobe"));
+	const bool bLeftOrRightBase = AttackPartID == FName(TEXT("LeftBase")) || AttackPartID == FName(TEXT("RightBase"));
+	const bool bMouthCore = AttackPartID == FName(TEXT("MouthCore"));
+
+	if (!bMouthCore && IsBossPartAlive(FName(TEXT("MouthCore"))))
+	{
+		const FVector MouthTelegraphLocation = GetBossPartWorldLocation(FName(TEXT("MouthCore"))) + FVector(0.f, 0.f, 18.f);
+		SpawnSewerSlimeKingTelegraph(FName(TEXT("MouthCore")), MouthTelegraphLocation, 0.32f, 0.82f, false);
+		QueueTimedAttackLambda(
+			FTimerDelegate::CreateWeakLambda(this, [this, TargetLocation]()
+			{
+				SpawnSewerSlimeKingMouthProjectile(TargetLocation);
+			}),
+			0.34f);
+	}
+
+	if (bLeftOrRightLobe)
+	{
+		const FVector TelegraphLocation = GetBossPartWorldLocation(AttackPartID) + FVector(0.f, 0.f, 28.f);
+		SpawnSewerSlimeKingTelegraph(AttackPartID, TelegraphLocation, 0.56f, 1.05f, false);
+		QueueSewerSlimeKingLobeVolley(AttackPartID, PlayerPawn, AttackPartID == FName(TEXT("RightLobe")));
+		return;
+	}
+
+	if (bLeftOrRightBase)
+	{
+		SpawnSewerSlimeKingLaneBlocker(AttackPartID, TargetLocation);
+		return;
+	}
+
+	if (bMouthCore)
+	{
+		const FVector TelegraphLocation = GetBossPartWorldLocation(AttackPartID) + FVector(0.f, 0.f, 28.f);
+		SpawnSewerSlimeKingTelegraph(AttackPartID, TelegraphLocation, 0.95f, 1.8f, false);
+		QueueTimedAttackLambda(
+			FTimerDelegate::CreateWeakLambda(this, [this, TargetLocation]()
+			{
+				SpawnSewerSlimeKingMouthProjectile(TargetLocation);
+			}),
+			0.98f);
+	}
+}
+
 void AT66BossBase::SpawnGroundAOEAtLocation(const FVector& WorldLocation, const float RadiusScale, const float WarningScale, const bool bUseSecondaryTint)
 {
 	UWorld* World = GetWorld();
@@ -1077,6 +1450,7 @@ void AT66BossBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AT66BossBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	DrawCombatDebug();
 
 	APawn* PlayerPawn = ResolvePlayerPawn();
 	if (!PlayerPawn) return;
@@ -1333,6 +1707,34 @@ void AT66BossBase::Awaken()
 	}
 }
 
+void AT66BossBase::ForceSewerSlimeKingAttackForAutomation(const FName AttackPartID)
+{
+	if (!IsSewerSlimeKingBoss())
+	{
+		return;
+	}
+
+	if (!bAwakened)
+	{
+		Awaken();
+	}
+	if (!bAwakened || CurrentHP <= 0)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(FireTimerHandle);
+		World->GetTimerManager().ClearTimer(AOETimerHandle);
+	}
+	ClearPendingAttackTimers();
+	if (APawn* PlayerPawn = ResolvePlayerPawn())
+	{
+		FireSewerSlimeKingAttack(PlayerPawn, AttackPartID);
+	}
+}
+
 void AT66BossBase::FireAtPlayer()
 {
 	if (!bAwakened || CurrentHP <= 0 || StunSecondsRemaining > 0.f || FreezeSecondsRemaining > 0.f) return;
@@ -1344,6 +1746,12 @@ void AT66BossBase::FireAtPlayer()
 	if (!PlayerPawn) return;
 
 	ClearPendingAttackTimers();
+
+	if (IsSewerSlimeKingBoss())
+	{
+		FireSewerSlimeKingAttack(PlayerPawn);
+		return;
+	}
 
 	const FVector TargetLocation = PlayerPawn->GetActorLocation();
 	const FVector PlanarToTarget = (TargetLocation - GetActorLocation()).GetSafeNormal2D();
@@ -1450,6 +1858,7 @@ bool AT66BossBase::TakeDamageFromHeroHitZone(int32 DamageAmount, const FT66Comba
 	}
 
 	FT66BossPartRuntimeState& Part = BossPartStates[PartIndex];
+	const bool bPartWasAlive = Part.CurrentHP > 0;
 	Part.CurrentHP = FMath::Max(0, Part.CurrentHP - ReducedDamage);
 	CurrentHP = 0;
 	for (const FT66BossPartRuntimeState& RuntimePart : BossPartStates)
@@ -1457,6 +1866,11 @@ bool AT66BossBase::TakeDamageFromHeroHitZone(int32 DamageAmount, const FT66Comba
 		CurrentHP += RuntimePart.CurrentHP;
 	}
 	CurrentHP = FMath::Clamp(CurrentHP, 0, MaxHP);
+	if (bPartWasAlive && Part.CurrentHP <= 0)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Boss part destroyed: BossID=%s PartID=%s"), *BossID.ToString(), *Part.PartID.ToString());
+		RefreshCombatHitZoneState();
+	}
 	PushBossPartStateToRunState();
 
 	if (CurrentHP <= 0)

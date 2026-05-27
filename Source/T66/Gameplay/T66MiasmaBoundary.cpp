@@ -328,6 +328,6 @@ void AT66MiasmaBoundary::ApplyBoundaryDamageTick()
 
 	if (!IsLocationInsidePlayableSpace(Hero->GetActorLocation()))
 	{
-		RunState->ApplyDamage(20);
+		RunState->ApplyDamage(20, this, FName(TEXT("MiasmaBoundary")), this);
 	}
 }

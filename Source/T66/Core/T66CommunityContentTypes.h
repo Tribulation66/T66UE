@@ -116,12 +116,15 @@ struct T66_API FT66CommunityRuleSet
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community")
+	// Deprecated: run-start hero levels no longer affect stats.
 	int32 StartLevelOverride = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community")
+	// Deprecated: max hero stats no longer apply.
 	bool bSetMaxHeroStats = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community")
+	// Deprecated: direct stat bonuses no longer apply; start items are the supported stat path.
 	FT66CommunityStatBonusBlock BonusStats;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community")
@@ -143,12 +146,15 @@ struct T66_API FT66CommunityRuleSet
 	float TrapDamageMultiplier = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	// Deprecated: hero health modifiers no longer apply; health changes should come from items.
 	float HeroHealthMultiplier = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	// Deprecated: hero damage modifiers no longer apply; damage changes should come from items.
 	float HeroDamageMultiplier = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
+	// Deprecated: hero luck modifiers no longer apply; luck changes should come from items.
 	int32 HeroLuckFlat = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Community|Modifiers")
@@ -174,18 +180,12 @@ struct T66_API FT66CommunityRuleSet
 
 	bool HasGameplayChanges() const
 	{
-		return bSetMaxHeroStats
-			|| StartLevelOverride > 0
-			|| BonusStats.HasAnyBonus()
-			|| !StartingItemId.IsNone()
+		return !StartingItemId.IsNone()
 			|| StartRandomItems > 0
 			|| StartBonusGold > 0
 			|| !FMath::IsNearlyEqual(EnemyHealthMultiplier, 1.0f)
 			|| !FMath::IsNearlyEqual(EnemyDamageMultiplier, 1.0f)
 			|| !FMath::IsNearlyEqual(TrapDamageMultiplier, 1.0f)
-			|| !FMath::IsNearlyEqual(HeroHealthMultiplier, 1.0f)
-			|| !FMath::IsNearlyEqual(HeroDamageMultiplier, 1.0f)
-			|| HeroLuckFlat != 0
 			|| !FMath::IsNearlyEqual(EnemyLootBagCountMultiplier, 1.0f)
 			|| PassiveOverride != ET66PassiveType::None
 			|| UltimateOverride != ET66UltimateType::None;

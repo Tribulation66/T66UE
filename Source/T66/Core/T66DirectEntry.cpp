@@ -2,6 +2,7 @@
 
 #include "Core/T66DirectEntry.h"
 
+#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66GameInstance.h"
 #include "Gameplay/T66PlayerController.h"
 #include "HAL/IConsoleManager.h"
@@ -24,6 +25,17 @@ namespace
 		Value.ReplaceInline(TEXT("_"), TEXT(""));
 		Value.ReplaceInline(TEXT("-"), TEXT(""));
 		return Value.ToLower();
+	}
+
+	bool TryResolveDeprecatedMinigameScreen(const ET66ScreenType ScreenType, ET66ScreenType& OutScreenType)
+	{
+		if (T66DeprecatedFeatures::AreMinigamesDisabled())
+		{
+			return false;
+		}
+
+		OutScreenType = ScreenType;
+		return true;
 	}
 
 	FString ResolveArgValue(const TArray<FString>& Args, const TCHAR* RequestedKey)
@@ -231,8 +243,7 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 	}
 	if (Key == TEXT("minigames"))
 	{
-		OutScreenType = ET66ScreenType::Minigames;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::Minigames, OutScreenType);
 	}
 	if (Key == TEXT("pausemenu") || Key == TEXT("pause"))
 	{
@@ -291,73 +302,59 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 	}
 	if (Key == TEXT("minimainmenu"))
 	{
-		OutScreenType = ET66ScreenType::MiniMainMenu;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniMainMenu, OutScreenType);
 	}
 	if (Key == TEXT("minicharacterselect"))
 	{
-		OutScreenType = ET66ScreenType::MiniCharacterSelect;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniCharacterSelect, OutScreenType);
 	}
 	if (Key == TEXT("minicompanionselect"))
 	{
-		OutScreenType = ET66ScreenType::MiniCompanionSelect;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniCompanionSelect, OutScreenType);
 	}
 	if (Key == TEXT("minidifficultyselect"))
 	{
-		OutScreenType = ET66ScreenType::MiniDifficultySelect;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniDifficultySelect, OutScreenType);
 	}
 	if (Key == TEXT("miniidolselect"))
 	{
-		OutScreenType = ET66ScreenType::MiniIdolSelect;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniIdolSelect, OutScreenType);
 	}
 	if (Key == TEXT("minisaveslots"))
 	{
-		OutScreenType = ET66ScreenType::MiniSaveSlots;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniSaveSlots, OutScreenType);
 	}
 	if (Key == TEXT("minishop"))
 	{
-		OutScreenType = ET66ScreenType::MiniShop;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniShop, OutScreenType);
 	}
 	if (Key == TEXT("minirunsummary"))
 	{
-		OutScreenType = ET66ScreenType::MiniRunSummary;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniRunSummary, OutScreenType);
 	}
 	if (Key == TEXT("minibattle"))
 	{
-		OutScreenType = ET66ScreenType::MiniBattle;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniBattle, OutScreenType);
 	}
 	if (Key == TEXT("tdmainmenu"))
 	{
-		OutScreenType = ET66ScreenType::TDMainMenu;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::TDMainMenu, OutScreenType);
 	}
 	if (Key == TEXT("tddifficultyselect"))
 	{
-		OutScreenType = ET66ScreenType::TDDifficultySelect;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::TDDifficultySelect, OutScreenType);
 	}
 	if (Key == TEXT("tdbattle"))
 	{
-		OutScreenType = ET66ScreenType::TDBattle;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::TDBattle, OutScreenType);
 	}
 	if (Key == TEXT("idlemainmenu") || Key == TEXT("idlechadpocalypse"))
 	{
-		OutScreenType = ET66ScreenType::IdleMainMenu;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::IdleMainMenu, OutScreenType);
 	}
 	if (Key == TEXT("deckmainmenu") || Key == TEXT("deckbuilder") || Key == TEXT("chadpocalypsedeckbuilder"))
 	{
-		OutScreenType = ET66ScreenType::DeckMainMenu;
-		return true;
+		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::DeckMainMenu, OutScreenType);
 	}
 	if (Key == TEXT("challenges"))
 	{
@@ -548,11 +545,13 @@ void T66DirectEntry::ApplyRequestToGameInstance(UT66GameInstance& GameInstance, 
 	GameInstance.SelectedHeroID = GameInstance.ResolvePlayableHeroID(Request.HeroID.IsNone() ? DefaultDirectHeroID : Request.HeroID);
 	GameInstance.SelectedCompanionID = GameInstance.ResolvePlayableCompanionID(Request.CompanionID);
 	GameInstance.SelectedDifficulty = GameInstance.ResolvePlayableDifficulty(Request.Difficulty);
+	const ET66RunCategory RequestedRunCategory = Request.RunCategory;
+	const ET66RunCategory ResolvedRunCategory = GameInstance.ResolvePlayableRunCategory(RequestedRunCategory);
 	GameInstance.SelectedHeroBodyType = ET66BodyType::Chad;
 	GameInstance.SelectedCompanionBodyType = ET66BodyType::Chad;
 	GameInstance.ClearActiveDailyClimbRun();
 	GameInstance.SelectedRunMode = ET66RunMode::Regular;
-	GameInstance.SelectedRunCategory = Request.RunCategory;
+	GameInstance.SelectedRunCategory = ResolvedRunCategory;
 	GameInstance.SelectedRunModifierKind = ET66RunModifierKind::None;
 	GameInstance.SelectedRunModifierID = NAME_None;
 	GameInstance.bRunIneligibleForLeaderboard = Request.bLeaderboardIneligible;
@@ -565,12 +564,16 @@ void T66DirectEntry::ApplyRequestToGameInstance(UT66GameInstance& GameInstance, 
 	GameInstance.RunSeed = FMath::Rand();
 	GameInstance.ApplyConfiguredMainMapLayoutVariant();
 	GameInstance.MarkPendingDirectGameplayEntry(Request.Source.IsEmpty() ? TEXT("DirectEntry") : Request.Source);
+	if (ResolvedRunCategory != RequestedRunCategory)
+	{
+		UE_LOG(LogT66DirectEntry, Display, TEXT("Direct entry run category %d is unavailable for this release variant; using %d."), static_cast<int32>(RequestedRunCategory), static_cast<int32>(ResolvedRunCategory));
+	}
 
 	UE_LOG(
 		LogT66DirectEntry,
 		Display,
 		TEXT("Direct entry configured gameplay run Category=%d Hero=%s Difficulty=%d Source='%s'."),
-		static_cast<int32>(Request.RunCategory),
+		static_cast<int32>(ResolvedRunCategory),
 		*GameInstance.SelectedHeroID.ToString(),
 		static_cast<int32>(GameInstance.SelectedDifficulty),
 		*Request.Source);

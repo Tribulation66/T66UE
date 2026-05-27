@@ -12,6 +12,25 @@
 
 class FSubsystemCollectionBase;
 
+struct FT66LagTrackerBoardSaturationSample
+{
+	bool bValid = false;
+	int32 LiveRegularEnemies = 0;
+	int32 LiveRichEnemies = 0;
+	int32 LiveLightweightMobs = 0;
+	int32 LiveLightweightMeleeMobs = 0;
+	int32 LiveLightweightRushMobs = 0;
+	int32 LiveLightweightFlyingMobs = 0;
+	int32 LiveLightweightRangedMobs = 0;
+	int32 PendingSpawns = 0;
+	int32 ActiveEnemyProjectiles = 0;
+	int32 LightweightPoolReuseAcquires = 0;
+	int32 LightweightPoolReleases = 0;
+	int32 LightweightPoolInactive = 0;
+	int32 LightweightPoolInactivePeak = 0;
+	double TimestampSeconds = 0.0;
+};
+
 /**
  * Tracks slow operations and logs them under [LAG] with the cause.
  * Use FLagScopedScope in hot paths to identify performance culprits.
@@ -55,6 +74,8 @@ public:
 	/** Window in ms used to correlate recent operations with a frame hitch. */
 	float GetRecentWindowMs() const;
 
+	bool GetLatestBoardSaturationSample(FT66LagTrackerBoardSaturationSample& OutSample) const;
+
 private:
 	struct FLagCauseStats
 	{
@@ -72,6 +93,7 @@ private:
 	};
 
 	bool TickFrame(float DeltaSeconds);
+	void SampleBoardSaturation(double NowSeconds);
 	void PruneRecentOperations(double NowSeconds);
 	void LogFrameHitch(double FrameMs, double NowSeconds);
 
@@ -80,6 +102,8 @@ private:
 	FTSTicker::FDelegateHandle FrameTickerHandle;
 	double SessionStartSeconds = 0.0;
 	double LastFrameTimestampSeconds = 0.0;
+	double LastBoardSaturationSampleSeconds = -DBL_MAX;
+	FT66LagTrackerBoardSaturationSample LatestBoardSaturationSample;
 	int32 TotalRecordedOperations = 0;
 	int32 TotalLoggedSlowOperations = 0;
 	int32 HitchCount = 0;

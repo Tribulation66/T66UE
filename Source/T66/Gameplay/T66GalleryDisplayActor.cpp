@@ -65,7 +65,7 @@ UPrimitiveComponent* AT66GalleryDisplayActor::GetInteractionPromptPrimitive() co
 
 bool AT66GalleryDisplayActor::Interact(APlayerController* PC)
 {
-	if (VisualID != FName(TEXT("Gambler")))
+	if (VisualID != FName(TEXT("CasinoNPC")))
 	{
 		return false;
 	}
@@ -77,7 +77,7 @@ bool AT66GalleryDisplayActor::Interact(APlayerController* PC)
 	}
 
 	T66PC->OpenCasinoOverlay();
-	T66PC->SwitchCasinoOverlayToGambling();
+	T66PC->SwitchCasinoOverlayToGamblerTab();
 	return true;
 }
 

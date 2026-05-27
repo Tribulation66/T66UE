@@ -26,9 +26,18 @@ void UT66GameplayHUDWidget::StartCrateOpen(const ET66Rarity SourceCrateRarity)
 }
 
 
-void UT66GameplayHUDWidget::StartChestReward(const ET66Rarity ChestRarity, const int32 GoldAmount)
+bool UT66GameplayHUDWidget::StartChestReward(
+	const ET66Rarity ChestRarity,
+	const int32 GoldAmount,
+	TFunction<void()> OnCommit,
+	TFunction<void()> OnFinished)
 {
-	GetPresentationController().StartChestReward(ChestRarity, GoldAmount);
+	return GetPresentationController().StartChestReward(ChestRarity, GoldAmount, MoveTemp(OnCommit), MoveTemp(OnFinished));
+}
+
+bool UT66GameplayHUDWidget::StartLootWheelSpin(FT66LootWheelPresentationParams Params)
+{
+	return GetPresentationController().StartLootWheelSpin(MoveTemp(Params));
 }
 
 
@@ -41,6 +50,11 @@ bool UT66GameplayHUDWidget::TrySkipActivePresentation()
 void UT66GameplayHUDWidget::ClearActiveCratePresentation(UT66CrateOverlayWidget* Overlay)
 {
 	GetPresentationController().ClearActiveCratePresentation(Overlay);
+}
+
+void UT66GameplayHUDWidget::ClearActiveLootWheelPresentation(UT66LootWheelOverlayWidget* Overlay)
+{
+	GetPresentationController().ClearActiveLootWheelPresentation(Overlay);
 }
 
 
@@ -83,6 +97,12 @@ void UT66GameplayHUDWidget::TryShowQueuedPresentation()
 void UT66GameplayHUDWidget::ShowPickupItemCard(FName ItemID, ET66ItemRarity ItemRarity)
 {
 	GetPresentationController().ShowPickupItemCard(ItemID, ItemRarity);
+}
+
+
+void UT66GameplayHUDWidget::ShowLootBagItemReveal(FName ItemID, ET66ItemRarity ItemRarity)
+{
+	GetPresentationController().ShowLootBagItemReveal(ItemID, ItemRarity);
 }
 
 

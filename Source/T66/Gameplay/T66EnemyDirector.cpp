@@ -10,6 +10,8 @@
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66MobBase.h"
+#include "Gameplay/T66MobManagerSubsystem.h"
 #include "Gameplay/T66TowerMapTerrain.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Core/T66GameplayLayout.h"
@@ -27,6 +29,7 @@
 #include "Core/T66EnemyPoolSubsystem.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
+#include "HAL/IConsoleManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66EnemyDirector, Log, All);
 
@@ -34,6 +37,109 @@ namespace
 {
 	static constexpr bool T66EnableTowerEnemySpawns = true;
 	static constexpr int32 T66TowerTargetInitialEnemiesPerGameplayFloor = 4;
+
+	static TAutoConsoleVariable<int32> CVarT66EnemyDirectorMaxAliveOverride(
+		TEXT("T66.EnemyDirector.MaxAliveOverride"),
+		0,
+		TEXT("Non-shipping diagnostics: overrides runtime max alive enemy cap when greater than 0. Default 0 uses data/default tuning."),
+#if UE_BUILD_SHIPPING
+		ECVF_ReadOnly
+#else
+		ECVF_Default
+#endif
+	);
+
+	static TAutoConsoleVariable<int32> CVarT66MobUseLightweight(
+		TEXT("T66.Mob.UseLightweight"),
+		0,
+		TEXT("When 1, AT66EnemyDirector routes migrated non-mini-boss non-special families to AT66MobBase instead of AT66EnemyBase. B.10 migrated families: Melee, Rush, Flying, and Ranged. All other families and special spawns continue through AT66EnemyBase regardless. Default 0 for safety."),
+#if UE_BUILD_SHIPPING
+		ECVF_ReadOnly
+#else
+		ECVF_Default
+#endif
+	);
+
+	static TAutoConsoleVariable<int32> CVarT66MobDiagnosticsRouteRushLightweight(
+		TEXT("T66.Mob.Diagnostics.RouteRushLightweight"),
+		1,
+		TEXT("Non-shipping diagnostic: when 0, T66.Mob.UseLightweight routes Melee only and leaves Rush on the rich actor path for same-binary B.8.1 comparison. Default 1 preserves production Melee+Rush routing."),
+#if UE_BUILD_SHIPPING
+		ECVF_ReadOnly
+#else
+		ECVF_Default
+#endif
+	);
+
+	static TAutoConsoleVariable<int32> CVarT66MobDiagnosticsRouteFlyingLightweight(
+		TEXT("T66.Mob.Diagnostics.RouteFlyingLightweight"),
+		1,
+		TEXT("Non-shipping diagnostic: when 0, T66.Mob.UseLightweight leaves Flying on the rich actor path while Melee/Rush keep their current routing. Default 1 preserves B.9 Flying routing."),
+#if UE_BUILD_SHIPPING
+		ECVF_ReadOnly
+#else
+		ECVF_Default
+#endif
+	);
+
+	static TAutoConsoleVariable<int32> CVarT66MobDiagnosticsRouteRangedLightweight(
+		TEXT("T66.Mob.Diagnostics.RouteRangedLightweight"),
+		1,
+		TEXT("Non-shipping diagnostic: when 0, T66.Mob.UseLightweight leaves Ranged on the rich actor path while Melee/Rush/Flying keep their current routing. Default 1 preserves B.10 Ranged routing."),
+#if UE_BUILD_SHIPPING
+		ECVF_ReadOnly
+#else
+		ECVF_Default
+#endif
+	);
+
+	static bool T66IsLightweightMobRoutingEnabled()
+	{
+#if !UE_BUILD_SHIPPING
+		return CVarT66MobUseLightweight.GetValueOnGameThread() != 0;
+#else
+		return false;
+#endif
+	}
+
+	static bool T66ShouldRouteRushToLightweight()
+	{
+#if !UE_BUILD_SHIPPING
+		return CVarT66MobDiagnosticsRouteRushLightweight.GetValueOnGameThread() != 0;
+#else
+		return true;
+#endif
+	}
+
+	static bool T66ShouldRouteFlyingToLightweight()
+	{
+#if !UE_BUILD_SHIPPING
+		return CVarT66MobDiagnosticsRouteFlyingLightweight.GetValueOnGameThread() != 0;
+#else
+		return true;
+#endif
+	}
+
+	static bool T66ShouldRouteRangedToLightweight()
+	{
+#if !UE_BUILD_SHIPPING
+		return CVarT66MobDiagnosticsRouteRangedLightweight.GetValueOnGameThread() != 0;
+#else
+		return true;
+#endif
+	}
+
+	static int32 T66ResolveRuntimeMaxAliveEnemies(const int32 DataMaxAliveEnemies, const int32 FallbackMaxAliveEnemies)
+	{
+#if !UE_BUILD_SHIPPING
+		const int32 OverrideMaxAliveEnemies = CVarT66EnemyDirectorMaxAliveOverride.GetValueOnGameThread();
+		if (OverrideMaxAliveEnemies > 0)
+		{
+			return OverrideMaxAliveEnemies;
+		}
+#endif
+		return DataMaxAliveEnemies > 0 ? DataMaxAliveEnemies : FallbackMaxAliveEnemies;
+	}
 
 	static void T66ResolveStageMobIDs(UGameInstance* GI, const int32 StageNum, TArray<FName>& OutMobIDs)
 	{
@@ -107,6 +213,28 @@ namespace
 		return AT66MeleeEnemy::StaticClass();
 	}
 
+	static ET66EnemyFamily T66ResolveEnemyFamilyFromFamilyID(const FName FamilyID, const ET66EnemyFamily FallbackFamily)
+	{
+		if (FamilyID == FName(TEXT("Flying")))
+		{
+			return ET66EnemyFamily::Flying;
+		}
+		if (FamilyID == FName(TEXT("Ranged")))
+		{
+			return ET66EnemyFamily::Ranged;
+		}
+		if (FamilyID == FName(TEXT("Rush")))
+		{
+			return ET66EnemyFamily::Rush;
+		}
+		if (FamilyID == FName(TEXT("Melee")))
+		{
+			return ET66EnemyFamily::Melee;
+		}
+
+		return FallbackFamily;
+	}
+
 	static TSubclassOf<AT66EnemyBase> T66ResolveStageEnemyClass(UT66GameInstance* T66GI, const FName MobID, TSubclassOf<AT66EnemyBase> FallbackClass)
 	{
 		if (T66GI)
@@ -119,6 +247,74 @@ namespace
 		}
 
 		return FT66EnemyFamilyResolver::ResolveEnemyClass(MobID, FallbackClass);
+	}
+
+	static ET66EnemyFamily T66ResolveStageEnemyFamily(UT66GameInstance* T66GI, const FName MobID)
+	{
+		if (T66GI)
+		{
+			FT66EnemyData EnemyData;
+			if (T66GI->GetEnemyData(MobID, EnemyData))
+			{
+				return T66ResolveEnemyFamilyFromFamilyID(EnemyData.FamilyID, FT66EnemyFamilyResolver::ResolveFamily(MobID));
+			}
+		}
+
+		return FT66EnemyFamilyResolver::ResolveFamily(MobID);
+	}
+
+	static FName T66ResolveStageEnemyArchetype(UT66GameInstance* T66GI, const FName MobID)
+	{
+		if (T66GI)
+		{
+			FT66EnemyData EnemyData;
+			if (T66GI->GetEnemyData(MobID, EnemyData))
+			{
+				return EnemyData.Archetype;
+			}
+		}
+
+		return NAME_None;
+	}
+
+	static void T66IncrementLightweightFamilyCounter(const ET66EnemyFamily Family, int32& MeleeCount, int32& RushCount, int32& FlyingCount, int32& RangedCount)
+	{
+		if (Family == ET66EnemyFamily::Melee)
+		{
+			++MeleeCount;
+		}
+		else if (Family == ET66EnemyFamily::Rush)
+		{
+			++RushCount;
+		}
+		else if (Family == ET66EnemyFamily::Flying)
+		{
+			++FlyingCount;
+		}
+		else if (Family == ET66EnemyFamily::Ranged)
+		{
+			++RangedCount;
+		}
+	}
+
+	static void T66DecrementLightweightFamilyCounter(const ET66EnemyFamily Family, int32& MeleeCount, int32& RushCount, int32& FlyingCount, int32& RangedCount)
+	{
+		if (Family == ET66EnemyFamily::Melee && MeleeCount > 0)
+		{
+			--MeleeCount;
+		}
+		else if (Family == ET66EnemyFamily::Rush && RushCount > 0)
+		{
+			--RushCount;
+		}
+		else if (Family == ET66EnemyFamily::Flying && FlyingCount > 0)
+		{
+			--FlyingCount;
+		}
+		else if (Family == ET66EnemyFamily::Ranged && RangedCount > 0)
+		{
+			--RangedCount;
+		}
 	}
 }
 
@@ -257,6 +453,7 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>();
 
 	int32 SpawnedCount = 0;
 	for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
@@ -274,6 +471,7 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 			SpawnBudget.InitialEnemiesPerGameplayFloor > 0 ? SpawnBudget.InitialEnemiesPerGameplayFloor : T66TowerTargetInitialEnemiesPerGameplayFloor,
 			0,
 			128);
+		const bool bUseLightweightRouting = T66IsLightweightMobRoutingEnabled();
 		for (int32 SpawnIndex = 0; SpawnIndex < InitialPopulationCount; ++SpawnIndex)
 		{
 			FVector SpawnLoc = FVector::ZeroVector;
@@ -307,8 +505,45 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 			SpawnLoc.Z += EnemyCapsuleHalfHeight;
 
 			const FName MobID = MobIDs[Rng.RandRange(0, MobIDs.Num() - 1)];
+			const ET66EnemyFamily MobFamily = T66ResolveStageEnemyFamily(T66GI, MobID);
+			const FName MobArchetype = T66ResolveStageEnemyArchetype(T66GI, MobID);
 			const TSubclassOf<AT66EnemyBase> MobClass = T66ResolveStageEnemyClass(T66GI, MobID, RegularClass);
 			const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
+			if (ShouldRouteSpawnToLightweightMob(MobID, MobFamily, false, false, bUseLightweightRouting))
+			{
+				bool bRequiresFinishSpawning = false;
+				AT66MobBase* Mob = MobManager ? MobManager->AcquireMob(AT66MobBase::StaticClass(), SpawnTransform, &bRequiresFinishSpawning) : nullptr;
+				if (!Mob)
+				{
+					continue;
+				}
+
+				Mob->OwningDirector = this;
+				Mob->MobID = MobID;
+				Mob->CharacterVisualID = MobID;
+				Mob->ConfigureAsMob(
+					MobID,
+					MobFamily,
+					MobArchetype,
+					StageNum,
+					RunState ? RunState->GetDifficultyScalar() : 1.f,
+					Snapshot.EnemyStatScalar,
+					RunState ? RunState->GetFinalSurvivalEnemyScalar() : 1.f,
+					false);
+				if (bRequiresFinishSpawning)
+				{
+					UGameplayStatics::FinishSpawningActor(Mob, SpawnTransform);
+				}
+				++LightweightAliveCount;
+				T66IncrementLightweightFamilyCounter(Mob->GetEnemyFamily(), LightweightMeleeAliveCount, LightweightRushAliveCount, LightweightFlyingAliveCount, LightweightRangedAliveCount);
+				if (MobManager && Mob->GetEnemyFamily() == ET66EnemyFamily::Ranged)
+				{
+					MobManager->RecordRangedMobSpawn(true, Mob->MobID);
+				}
+				++SpawnedCount;
+				continue;
+			}
+
 			AT66EnemyBase* Enemy = World->SpawnActorDeferred<AT66EnemyBase>(
 				MobClass,
 				SpawnTransform,
@@ -334,6 +569,10 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 			}
 
 			++AliveCount;
+			if (MobManager && Enemy->EnemyFamily == ET66EnemyFamily::Ranged)
+			{
+				MobManager->RecordRangedMobSpawn(false, Enemy->MobID);
+			}
 			++SpawnedCount;
 		}
 	}
@@ -341,10 +580,12 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 	if (SpawnedCount > 0)
 	{
 		TowerFloorsWithInitialPopulation.Add(ActiveGameplayFloorNumber);
-		UE_LOG(LogT66EnemyDirector, Log, TEXT("[SPAWN] Tower initial enemies floor=%d spawned=%d alive=%d."),
+		UE_LOG(LogT66EnemyDirector, Log, TEXT("[SPAWN] Tower initial enemies floor=%d spawned=%d alive=%d richAlive=%d lightweightAlive=%d."),
 			ActiveGameplayFloorNumber,
 			SpawnedCount,
-			AliveCount);
+			GetAliveEnemyCount(),
+			AliveCount,
+			LightweightAliveCount);
 	}
 	else
 	{
@@ -388,6 +629,93 @@ void AT66EnemyDirector::NotifyEnemyDied(AT66EnemyBase* Enemy)
 	{
 		ScheduleNextTowerRuntimeWave(0.05f);
 	}
+}
+
+void AT66EnemyDirector::NotifyMobDied(AT66MobBase* Mob)
+{
+	if (!Mob)
+	{
+		return;
+	}
+
+	if (LightweightAliveCount > 0)
+	{
+		--LightweightAliveCount;
+	}
+	T66DecrementLightweightFamilyCounter(Mob->GetEnemyFamily(), LightweightMeleeAliveCount, LightweightRushAliveCount, LightweightFlyingAliveCount, LightweightRangedAliveCount);
+
+	UE_LOG(
+		LogT66EnemyDirector,
+		Verbose,
+		TEXT("[LightweightMob] Mob died MobID=%s family=%d richAlive=%d lightweightAlive=%d lightweightMelee=%d lightweightRush=%d lightweightFlying=%d lightweightRanged=%d totalAlive=%d"),
+		Mob->MobID.IsNone() ? TEXT("unset") : *Mob->MobID.ToString(),
+		static_cast<int32>(Mob->GetEnemyFamily()),
+		AliveCount,
+		LightweightAliveCount,
+		LightweightMeleeAliveCount,
+		LightweightRushAliveCount,
+		LightweightFlyingAliveCount,
+		LightweightRangedAliveCount,
+		GetAliveEnemyCount());
+
+	UWorld* World = GetWorld();
+	if (!World || bSpawningPaused || !bSpawningArmed)
+	{
+		return;
+	}
+
+	if (PendingSpawns.Num() > 0 || World->GetTimerManager().IsTimerActive(StaggeredSpawnTimerHandle))
+	{
+		return;
+	}
+
+	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
+	const UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	if (RunState && RunState->GetStageTimerActive() && GameMode && GameMode->IsUsingTowerMainMapLayout())
+	{
+		ScheduleNextTowerRuntimeWave(0.05f);
+	}
+}
+
+bool AT66EnemyDirector::ShouldRouteSpawnToLightweightMob(
+	const FName MobID,
+	const ET66EnemyFamily Family,
+	const bool bIsMiniBoss,
+	const bool bIsSpecialSpawn,
+	const bool bUseLightweightRouting) const
+{
+	if (!bUseLightweightRouting)
+	{
+		return false;
+	}
+	if (MobID.IsNone() || bIsMiniBoss || bIsSpecialSpawn)
+	{
+		return false;
+	}
+
+	return Family == ET66EnemyFamily::Melee
+		|| (Family == ET66EnemyFamily::Rush && T66ShouldRouteRushToLightweight())
+		|| (Family == ET66EnemyFamily::Flying && T66ShouldRouteFlyingToLightweight())
+		|| (Family == ET66EnemyFamily::Ranged && T66ShouldRouteRangedToLightweight());
+}
+
+int32 AT66EnemyDirector::GetAliveEnemyCountForSpawnBudget()
+{
+	const int32 CombinedAliveCount = GetAliveEnemyCount();
+	if (!bLoggedLightweightCountWidening && LightweightAliveCount > 0)
+	{
+		UE_LOG(
+			LogT66EnemyDirector,
+			Warning,
+			TEXT("[LightweightMob] Wave progression/live-count widened: richAlive=%d lightweightAlive=%d combinedAlive=%d."),
+			AliveCount,
+			LightweightAliveCount,
+			CombinedAliveCount);
+		bLoggedLightweightCountWidening = true;
+	}
+
+	return CombinedAliveCount;
 }
 
 void AT66EnemyDirector::SetSpawningPaused(bool bPaused)
@@ -624,7 +952,9 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	if (bTowerLayout)
 	{
 		EffectivePerWave = FMath::Max(1, Snapshot.SpawnBudget.RuntimeEnemiesPerWave);
-		EffectiveMaxAlive = FMath::Max(EffectivePerWave, Snapshot.SpawnBudget.RuntimeMaxAliveEnemies);
+		EffectiveMaxAlive = FMath::Max(
+			EffectivePerWave,
+			T66ResolveRuntimeMaxAliveEnemies(Snapshot.SpawnBudget.RuntimeMaxAliveEnemies, MaxAliveEnemies));
 	}
 	else
 	{
@@ -640,7 +970,8 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	}
 	EffectiveMaxAlive = FMath::Max(EffectiveMaxAlive, EffectivePerWave);
 
-	int32 ToSpawn = FMath::Min(EffectivePerWave, EffectiveMaxAlive - AliveCount);
+	const int32 AliveCountForSpawnBudget = GetAliveEnemyCountForSpawnBudget();
+	int32 ToSpawn = FMath::Min(EffectivePerWave, EffectiveMaxAlive - AliveCountForSpawnBudget);
 	if (ToSpawn <= 0)
 	{
 		if (bTowerLayout)
@@ -1120,8 +1451,12 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		const bool bIsMob = (ClassToSpawn != GoblinThiefClass);
 		const bool bIsMiniBossSlot = bIsMob && (MiniBossIndex == i);
 		const FName MobID = bIsMob ? MobIDs[RngSub ? RngSub->RunRandRange(0, MobIDs.Num() - 1) : Rng.RandRange(0, MobIDs.Num() - 1)] : NAME_None;
+		ET66EnemyFamily MobFamily = ET66EnemyFamily::Special;
+		FName MobArchetype = NAME_None;
 		if (bIsMob)
 		{
+			MobFamily = T66ResolveStageEnemyFamily(T66GI, MobID);
+			MobArchetype = T66ResolveStageEnemyArchetype(T66GI, MobID);
 			ClassToSpawn = T66ResolveStageEnemyClass(T66GI, MobID, RegularClass);
 		}
 
@@ -1129,6 +1464,8 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		Slot.GroundLocation = SpawnLoc;
 		Slot.ClassToSpawn = ClassToSpawn;
 		Slot.MobID = MobID;
+		Slot.Family = MobFamily;
+		Slot.Archetype = MobArchetype;
 		Slot.bIsMiniBoss = bIsMiniBossSlot;
 		Slot.bSpawnFromWall = bTowerLayout && bSpawnFromWall;
 		Slot.DifficultyScalar = Scalar;
@@ -1176,6 +1513,7 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 	UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66EnemyPoolSubsystem* EnemyPool = World->GetSubsystem<UT66EnemyPoolSubsystem>();
+	UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>();
 	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
 	const UT66RngTuningConfig* Tuning = RngSub ? RngSub->GetTuning() : nullptr;
 	FRandomStream LocalRng(static_cast<int32>(FPlatformTime::Cycles()));
@@ -1185,6 +1523,7 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 
 	const int32 BatchSize = FMath::Max(1, ActiveMaxSpawnsPerStaggeredBatch);
 	int32 ProcessedCount = 0;
+	const bool bUseLightweightRouting = T66IsLightweightMobRoutingEnabled();
 	while (ProcessedCount < PendingSpawns.Num() && ProcessedCount < BatchSize)
 	{
 		const FPendingEnemySpawn Slot = PendingSpawns[ProcessedCount];
@@ -1192,6 +1531,60 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 
 		const bool bIsMob = !Slot.MobID.IsNone();
 		AT66EnemyBase* Enemy = nullptr;
+
+		if (ShouldRouteSpawnToLightweightMob(Slot.MobID, Slot.Family, Slot.bIsMiniBoss, !bIsMob, bUseLightweightRouting))
+		{
+			const FTransform Xform(FRotator::ZeroRotator, Slot.GroundLocation);
+			bool bRequiresFinishSpawning = false;
+			AT66MobBase* Mob = MobManager ? MobManager->AcquireMob(AT66MobBase::StaticClass(), Xform, &bRequiresFinishSpawning) : nullptr;
+			if (Mob)
+			{
+				Mob->OwningDirector = this;
+				Mob->MobID = Slot.MobID;
+				Mob->CharacterVisualID = Slot.MobID;
+				Mob->ConfigureAsMob(
+					Slot.MobID,
+					Slot.Family,
+					Slot.Archetype,
+					Slot.StageNum,
+					Slot.DifficultyScalar,
+					Slot.EnemyProgressionScalar,
+					Slot.FinaleScalar,
+					false);
+				if (bRequiresFinishSpawning)
+				{
+					UGameplayStatics::FinishSpawningActor(Mob, Xform);
+				}
+				++LightweightAliveCount;
+				T66IncrementLightweightFamilyCounter(Mob->GetEnemyFamily(), LightweightMeleeAliveCount, LightweightRushAliveCount, LightweightFlyingAliveCount, LightweightRangedAliveCount);
+				if (MobManager && Mob->GetEnemyFamily() == ET66EnemyFamily::Ranged)
+				{
+					MobManager->RecordRangedMobSpawn(true, Mob->MobID);
+				}
+				UE_LOG(
+					LogT66EnemyDirector,
+					VeryVerbose,
+					TEXT("[LightweightMob] Routed spawn MobID=%s family=%d channel=%d richAlive=%d lightweightAlive=%d lightweightMelee=%d lightweightRush=%d lightweightFlying=%d lightweightRanged=%d totalAlive=%d location=%s"),
+					*Slot.MobID.ToString(),
+					static_cast<int32>(Slot.Family),
+					static_cast<int32>(Slot.Channel),
+					AliveCount,
+					LightweightAliveCount,
+					LightweightMeleeAliveCount,
+					LightweightRushAliveCount,
+					LightweightFlyingAliveCount,
+					LightweightRangedAliveCount,
+					GetAliveEnemyCount(),
+					*Slot.GroundLocation.ToCompactString());
+				continue;
+			}
+
+			UE_LOG(
+				LogT66EnemyDirector,
+				Warning,
+				TEXT("[LightweightMob] Failed to spawn lightweight MobID=%s; falling back to AT66EnemyBase path."),
+				*Slot.MobID.ToString());
+		}
 
 		if (bIsMob)
 		{
@@ -1271,6 +1664,10 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 				RunState->RegisterSpawnedEnemyScoreBudget(Enemy->GetResolvedScoreAward(), Slot.StageNum);
 			}
 			AliveCount++;
+			if (MobManager && Enemy->EnemyFamily == ET66EnemyFamily::Ranged)
+			{
+				MobManager->RecordRangedMobSpawn(false, Enemy->MobID);
+			}
 			if (Slot.bSpawnFromWall && bTowerLayout)
 			{
 				Enemy->StartEmergeFromWall(Slot.GroundLocation, Slot.WallNormal);

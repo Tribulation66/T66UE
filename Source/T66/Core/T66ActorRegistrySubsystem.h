@@ -4,15 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
+#include "Templates/Function.h"
 #include "T66ActorRegistrySubsystem.generated.h"
 
 class AT66EnemyBase;
+class AT66MobBase;
 class AT66BossBase;
 class AT66HouseNPCBase;
 class AT66StageGate;
 class AT66MiasmaBoundary;
 class AT66WorldInteractableBase;
 class AT66LootBagPickup;
+
+DECLARE_MULTICAST_DELEGATE(FOnT66RegisteredEnemiesChanged);
 
 /**
  * [GOLD] Actor Registry: actors register on BeginPlay and unregister on EndPlay.
@@ -29,6 +33,16 @@ public:
 	void RegisterEnemy(AT66EnemyBase* Enemy);
 	void UnregisterEnemy(AT66EnemyBase* Enemy);
 	const TArray<TWeakObjectPtr<AT66EnemyBase>>& GetEnemies() const { return Enemies; }
+	FOnT66RegisteredEnemiesChanged& OnEnemiesChanged() { return EnemiesChanged; }
+
+	// --------------- Lightweight Mobs ---------------
+	void RegisterMob(AT66MobBase* Mob);
+	void UnregisterMob(AT66MobBase* Mob);
+	const TArray<TWeakObjectPtr<AT66MobBase>>& GetActiveMobs() const { return ActiveMobs; }
+	int32 GetLiveMobCount() const;
+	int32 GetCombinedLiveEnemyCount() const;
+	TArray<AActor*> GetAllDamageableTargets() const;
+	void ForEachDamageableTarget(TFunctionRef<void(AActor*)> Func) const;
 
 	// --------------- Bosses ---------------
 	void RegisterBoss(AT66BossBase* Boss);
@@ -62,6 +76,8 @@ public:
 
 private:
 	TArray<TWeakObjectPtr<AT66EnemyBase>> Enemies;
+	TArray<TWeakObjectPtr<AT66MobBase>> ActiveMobs;
+	FOnT66RegisteredEnemiesChanged EnemiesChanged;
 	TArray<TWeakObjectPtr<AT66BossBase>> Bosses;
 	TArray<TWeakObjectPtr<AT66HouseNPCBase>> NPCs;
 	TArray<TWeakObjectPtr<AT66StageGate>> StageGates;

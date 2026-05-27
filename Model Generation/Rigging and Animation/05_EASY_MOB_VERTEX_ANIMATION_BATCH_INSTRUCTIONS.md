@@ -48,7 +48,7 @@ Current source GLB locations:
 
 ## Runtime Behavior Caveat
 
-`Enemies.csv` already records richer archetypes such as `Exploder`, `Turret`, `Necromancer`, and `Stutterer`, but the current runtime family resolver only maps the implemented families:
+`Enemies.csv` records a small active archetype set for the current demo-era runtime. Ranged subsections were intentionally collapsed into `Archetype=Ranged`; the current runtime family resolver maps these implemented families:
 
 - `Melee`
 - `Rush`
@@ -57,9 +57,8 @@ Current source GLB locations:
 
 Do not claim that animation completes missing gameplay behavior. For example:
 
-- `StoneSentinel` can receive turret-like visual idle and recoil, but the current runtime still falls back through ranged behavior until a turret class exists.
 - `MimicLure` can receive an explosion wind-up cue, but the current runtime still falls back through rush behavior until an exploder class exists.
-- `BoneConjurer` can receive conjuring/casting visuals, but the current runtime still falls back through ranged behavior until a summoner class exists.
+- `StoneSentinel` and `BoneConjurer` can receive stone-sentry or caster-flavored animation cues, but they are still normal `Ranged` runtime enemies unless a future ranged-design pass explicitly reintroduces ranged subsections.
 - `CryptWraith` can receive a stutter/glide visual, but the current runtime still falls back through melee behavior until a stutterer class exists.
 
 Track this distinction in QA notes and in `Source/T66/Gameplay/Enemies/pending_issues_Enemies.md` if implementation discovers new gaps.
@@ -145,8 +144,8 @@ Track this distinction in QA notes and in `Source/T66/Gameplay/Enemies/pending_i
 
 ### StoneSentinel
 
-- Gameplay row: `FamilyID=Ranged`, `Archetype=Turret`, `Feeling=DodgeThreat`, `Rarity=Rare`
-- Runtime caveat: turret behavior is not implemented yet; current runtime falls back through ranged behavior
+- Gameplay row: `FamilyID=Ranged`, `Archetype=Ranged`, `Feeling=DodgeThreat`, `Rarity=Rare`
+- Runtime caveat: this is a normal ranged runtime enemy for now; stone-sentry presentation is animation flavor, not a separate turret class
 - Body read: heavy stone statue/sentry
 - Idle: almost still, weighty breathing/stone settling
 - Move: if runtime moves it, use a slow heavy slide or stomp; otherwise prefer idle/aim/recoil clips
@@ -169,8 +168,8 @@ Track this distinction in QA notes and in `Source/T66/Gameplay/Enemies/pending_i
 
 ### BoneConjurer
 
-- Gameplay row: `FamilyID=Ranged`, `Archetype=Necromancer`, `Feeling=Specialist`, `StageTag=Late`
-- Runtime caveat: necromancer summon behavior is not implemented yet; current runtime falls back through ranged behavior
+- Gameplay row: `FamilyID=Ranged`, `Archetype=Ranged`, `Feeling=Specialist`, `StageTag=Late`
+- Runtime caveat: this is a normal ranged runtime enemy for now; conjuring/casting presentation is animation flavor, not a separate summoner class
 - Body read: skeletal or robed caster
 - Idle: chant loop, hand hover, robe/bone sway
 - Move: controlled shuffle or glide
@@ -201,7 +200,7 @@ Run the first batch in this order:
 4. `RatPack`: proves swarm-like multi-part offset motion.
 5. `TombSpider`: proves many-leg crawl and contact QA.
 6. `HexSlinger`: proves ranged/caster cues.
-7. `StoneSentinel`: proves heavy low-motion statue/turret-like presentation.
+7. `StoneSentinel`: proves heavy low-motion statue/ranged-sentry presentation.
 8. `MimicLure`: proves rush/disruptor anticipation without claiming exploder gameplay.
 9. `BoneConjurer`: proves specialist caster presentation without claiming summoner gameplay.
 10. `CryptWraith`: proves stutter/glide presentation without claiming stutterer gameplay.

@@ -22,6 +22,7 @@
 #include "UI/T66MiniUIStyle.h"
 #include "UI/T66UITypes.h"
 #include "UI/Style/T66FlatStyle.h"
+#include "UI/WidgetGames/T66WidgetGameResult.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -610,6 +611,7 @@ public:
 	bool IsInitialized() const { return bInitialized; }
 	ET66MiniWidgetTransition GetPendingTransition() const { return PendingTransition; }
 	FString GetStatus() const { return Status; }
+	void SaveWidgetGameState() { PersistActiveRunSnapshot(true); }
 
 	FText GetWaveText() const
 	{
@@ -2299,6 +2301,10 @@ private:
 		{
 			SaveSubsystem->DeleteRunFromSlot(RunState->GetActiveSaveSlot());
 		}
+		if (Owner.IsValid())
+		{
+			Owner->ReportWidgetGameResult(bVictory, FMath::Max(0, Summary.MaterialsCollected));
+		}
 		RunState->ResetActiveRun();
 		PendingTransition = ET66MiniWidgetTransition::Summary;
 	}
@@ -2983,6 +2989,62 @@ UT66MiniBattleScreen::UT66MiniBattleScreen(const FObjectInitializer& ObjectIniti
 	bIsModal = false;
 }
 
+void UT66MiniBattleScreen::ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext)
+{
+	WidgetGameHostContext = HostContext;
+}
+
+void UT66MiniBattleScreen::DeactivateWidgetGame()
+{
+	WidgetGameHostContext = FT66WidgetGameHostContext();
+}
+
+void UT66MiniBattleScreen::PauseWidgetGame()
+{
+}
+
+void UT66MiniBattleScreen::ResumeWidgetGame()
+{
+}
+
+void UT66MiniBattleScreen::RequestWidgetGameExit()
+{
+	if (WidgetGameHostContext.ReturnNavigationCallback)
+	{
+		WidgetGameHostContext.RequestExit(ET66WidgetGameExitReason::PlayerCancelled);
+		return;
+	}
+
+	if (BattleSimulation)
+	{
+		BattleSimulation->SaveAndExit();
+	}
+}
+
+void UT66MiniBattleScreen::SaveWidgetGameState()
+{
+	if (BattleSimulation)
+	{
+		BattleSimulation->SaveWidgetGameState();
+	}
+}
+
+void UT66MiniBattleScreen::LoadWidgetGameState()
+{
+	ReleaseRetainedSlateState();
+	EnsureBattleSimulation();
+}
+
+void UT66MiniBattleScreen::FlushWidgetGamePersistence()
+{
+	SaveWidgetGameState();
+}
+
+void UT66MiniBattleScreen::RefreshWidgetGamePersistence()
+{
+	LoadWidgetGameState();
+}
+
 void UT66MiniBattleScreen::BeginDestroy()
 {
 	ReleaseRetainedSlateState();
@@ -3153,6 +3215,18 @@ void UT66MiniBattleScreen::ReleaseRetainedSlateState()
 		delete BattleSimulation;
 		BattleSimulation = nullptr;
 	}
+}
+
+void UT66MiniBattleScreen::ReportWidgetGameResult(const bool bSuccessful, const int32 FinalScore)
+{
+	FT66WidgetGameResult Result;
+	Result.GameID = FName(TEXT("Frontend_Mini"));
+	Result.ExitReason = ET66WidgetGameExitReason::Completed;
+	Result.FinalScore = FinalScore;
+	Result.bHasFinalScore = true;
+	Result.bSuccessful = bSuccessful;
+	Result.ResultID = Result.GameID;
+	WidgetGameHostContext.ReportResult(Result);
 }
 
 void UT66MiniBattleScreen::TickWidgetBattle(const float DeltaSeconds)

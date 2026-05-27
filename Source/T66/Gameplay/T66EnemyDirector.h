@@ -4,9 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Gameplay/Enemies/T66EnemyFamilyTypes.h"
 #include "T66EnemyDirector.generated.h"
 
 class AT66EnemyBase;
+class AT66MobBase;
 class UT66RunStateSubsystem;
 
 UENUM(BlueprintType)
@@ -25,6 +27,8 @@ struct FPendingEnemySpawn
 	FVector GroundLocation = FVector::ZeroVector;
 	TSubclassOf<AT66EnemyBase> ClassToSpawn;
 	FName MobID;
+	ET66EnemyFamily Family = ET66EnemyFamily::Special;
+	FName Archetype = NAME_None;
 	bool bIsMiniBoss = false;
 	bool bSpawnFromWall = false;
 	float DifficultyScalar = 1.f;
@@ -117,6 +121,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Director")
 	void NotifyEnemyDied(AT66EnemyBase* Enemy);
 
+	void NotifyMobDied(AT66MobBase* Mob);
+
 	UFUNCTION(BlueprintCallable, Category = "Director")
 	void SetSpawningPaused(bool bPaused);
 
@@ -125,6 +131,15 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Director|Tower")
 	int32 SpawnInitialPopulationForTowerFloor(int32 FloorNumber);
+
+	int32 GetAliveEnemyCount() const { return AliveCount + LightweightAliveCount; }
+	int32 GetAliveRichEnemyCount() const { return AliveCount; }
+	int32 GetAliveLightweightMobCount() const { return LightweightAliveCount; }
+	int32 GetAliveLightweightMeleeMobCount() const { return LightweightMeleeAliveCount; }
+	int32 GetAliveLightweightRushMobCount() const { return LightweightRushAliveCount; }
+	int32 GetAliveLightweightFlyingMobCount() const { return LightweightFlyingAliveCount; }
+	int32 GetAliveLightweightRangedMobCount() const { return LightweightRangedAliveCount; }
+	int32 GetPendingSpawnCount() const { return PendingSpawns.Num(); }
 
 protected:
 	virtual void BeginPlay() override;
@@ -137,6 +152,8 @@ protected:
 	void SpawnNextStaggeredBatch();
 
 	void ScheduleNextTowerRuntimeWave(float DelaySeconds);
+	bool ShouldRouteSpawnToLightweightMob(FName MobID, ET66EnemyFamily Family, bool bIsMiniBoss, bool bIsSpecialSpawn, bool bUseLightweightRouting) const;
+	int32 GetAliveEnemyCountForSpawnBudget();
 
 	UFUNCTION()
 	void HandleStageTimerChanged();
@@ -144,7 +161,13 @@ protected:
 	FTimerHandle SpawnTimerHandle;
 	FTimerHandle StaggeredSpawnTimerHandle;
 	int32 AliveCount = 0;
+	int32 LightweightAliveCount = 0;
+	int32 LightweightMeleeAliveCount = 0;
+	int32 LightweightRushAliveCount = 0;
+	int32 LightweightFlyingAliveCount = 0;
+	int32 LightweightRangedAliveCount = 0;
 	bool bSpawningArmed = false;
+	bool bLoggedLightweightCountWidening = false;
 
 	TArray<FPendingEnemySpawn> PendingSpawns;
 	float ActiveStaggeredSpawnIntervalSeconds = 0.05f;

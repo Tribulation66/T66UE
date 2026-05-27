@@ -1,5 +1,12 @@
 # Pending Issues - Core
 
+## Retire Unused Hero Move Speed Multiplier Formula
+
+- Severity tag: [Minor]
+- What's wrong: `UT66RunStateSubsystem::GetHeroMoveSpeedMultiplier()` remains declared and defined as a legacy formula, but live hero walking speed now reads the raw `Speed` stat through `UT66HeroMovementComponent` instead of consuming this multiplier.
+- Why it's out of scope now: The current pass changes movement authority to the user-approved Speed-stat model and updates docs; broad stat API deletion could affect UI/reference code and should be handled as a separate cleanup.
+- What fixing it would entail: Remove or repurpose `GetHeroMoveSpeedMultiplier()`, audit any Blueprint or external references, and update stats documentation once the API is no longer needed for compatibility.
+
 ## Legacy Lab Unlock IDs In Existing Save Games
 
 - Severity tag: [Minor]

@@ -592,24 +592,6 @@ TArray<FString> UT66CommunityContentSubsystem::BuildRuleSummaryLines(const FT66C
 {
 	TArray<FString> Lines;
 
-	if (Entry.Rules.bSetMaxHeroStats)
-	{
-		Lines.Add(TEXT("Start at level 99 with maxed hero stats."));
-	}
-	else if (Entry.Rules.StartLevelOverride > 0)
-	{
-		Lines.Add(FString::Printf(TEXT("Start at level %d."), Entry.Rules.StartLevelOverride));
-	}
-
-	AppendStatBonusLine(Lines, TEXT("Damage"), Entry.Rules.BonusStats.Damage);
-	AppendStatBonusLine(Lines, TEXT("Attack Speed"), Entry.Rules.BonusStats.AttackSpeed);
-	AppendStatBonusLine(Lines, TEXT("Attack Scale"), Entry.Rules.BonusStats.AttackScale);
-	AppendStatBonusLine(Lines, TEXT("Accuracy"), Entry.Rules.BonusStats.Accuracy);
-	AppendStatBonusLine(Lines, TEXT("Armor"), Entry.Rules.BonusStats.Armor);
-	AppendStatBonusLine(Lines, TEXT("Evasion"), Entry.Rules.BonusStats.Evasion);
-	AppendStatBonusLine(Lines, TEXT("Luck"), Entry.Rules.BonusStats.Luck);
-	AppendStatBonusLine(Lines, TEXT("Speed"), Entry.Rules.BonusStats.Speed);
-
 	if (!Entry.Rules.StartingItemId.IsNone())
 	{
 		Lines.Add(FString::Printf(TEXT("Start with %s."), *Entry.Rules.StartingItemId.ToString()));
@@ -633,18 +615,6 @@ TArray<FString> UT66CommunityContentSubsystem::BuildRuleSummaryLines(const FT66C
 	if (!FMath::IsNearlyEqual(Entry.Rules.TrapDamageMultiplier, 1.0f))
 	{
 		Lines.Add(FString::Printf(TEXT("Trap damage x%.2f."), Entry.Rules.TrapDamageMultiplier));
-	}
-	if (!FMath::IsNearlyEqual(Entry.Rules.HeroHealthMultiplier, 1.0f))
-	{
-		Lines.Add(FString::Printf(TEXT("Hero health x%.2f."), Entry.Rules.HeroHealthMultiplier));
-	}
-	if (!FMath::IsNearlyEqual(Entry.Rules.HeroDamageMultiplier, 1.0f))
-	{
-		Lines.Add(FString::Printf(TEXT("Hero damage x%.2f."), Entry.Rules.HeroDamageMultiplier));
-	}
-	if (Entry.Rules.HeroLuckFlat != 0)
-	{
-		Lines.Add(FString::Printf(TEXT("Hero luck %+d."), Entry.Rules.HeroLuckFlat));
 	}
 	if (!FMath::IsNearlyEqual(Entry.Rules.EnemyLootBagCountMultiplier, 1.0f))
 	{
@@ -857,27 +827,14 @@ void UT66CommunityContentSubsystem::SeedOfficialContent()
 	SpeedClear.Rules.MaxRunTimeSeconds = 420;
 	OfficialChallenges.Add(SpeedClear);
 
-	FT66CommunityContentEntry MaxPower;
-	MaxPower.LocalId = MakeOfficialEntryId(TEXT("Mod_MaxHeroStats"));
-	MaxPower.Kind = ET66CommunityContentKind::Mod;
-	MaxPower.Origin = ET66CommunityContentOrigin::Official;
-	MaxPower.Title = TEXT("Max Power");
-	MaxPower.Description = TEXT("Start at full level with every stat slammed to the ceiling.");
-	MaxPower.AuthorDisplayName = TEXT("Tribulation 66");
-	MaxPower.ModerationStatus = TEXT("approved");
-	MaxPower.Rules.bSetMaxHeroStats = true;
-	MaxPower.Rules.StartLevelOverride = 99;
-	OfficialMods.Add(MaxPower);
-
 	FT66CommunityContentEntry LoadedDice;
 	LoadedDice.LocalId = MakeOfficialEntryId(TEXT("Mod_LoadedDice"));
 	LoadedDice.Kind = ET66CommunityContentKind::Mod;
 	LoadedDice.Origin = ET66CommunityContentOrigin::Official;
 	LoadedDice.Title = TEXT("Loaded Dice");
-	LoadedDice.Description = TEXT("Push a luck-heavy build from the first room.");
+	LoadedDice.Description = TEXT("Start with a gambler token in the first room.");
 	LoadedDice.AuthorDisplayName = TEXT("Tribulation 66");
 	LoadedDice.ModerationStatus = TEXT("approved");
-	LoadedDice.Rules.BonusStats.Luck = 25;
 	LoadedDice.Rules.StartingItemId = FName(TEXT("Item_GamblersToken"));
 	OfficialMods.Add(LoadedDice);
 

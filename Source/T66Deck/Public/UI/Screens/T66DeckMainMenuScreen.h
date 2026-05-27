@@ -6,15 +6,26 @@
 #include "Data/T66DeckDataTypes.h"
 #include "UI/Components/T66MinigameMenuLayout.h"
 #include "UI/T66ScreenBase.h"
+#include "UI/WidgetGames/T66WidgetGamePersistence.h"
+#include "UI/WidgetGames/T66WidgetGameSession.h"
 #include "T66DeckMainMenuScreen.generated.h"
 
 UCLASS(Blueprintable)
-class T66DECK_API UT66DeckMainMenuScreen : public UT66ScreenBase
+class T66DECK_API UT66DeckMainMenuScreen : public UT66ScreenBase, public IT66WidgetGameSession, public IT66WidgetGamePersistence
 {
 	GENERATED_BODY()
 
 public:
 	UT66DeckMainMenuScreen(const FObjectInitializer& ObjectInitializer);
+	virtual void ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext) override;
+	virtual void DeactivateWidgetGame() override;
+	virtual void PauseWidgetGame() override;
+	virtual void ResumeWidgetGame() override;
+	virtual void RequestWidgetGameExit() override;
+	virtual void SaveWidgetGameState() override;
+	virtual void LoadWidgetGameState() override;
+	virtual void FlushWidgetGamePersistence() override;
+	virtual void RefreshWidgetGamePersistence() override;
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
@@ -74,7 +85,9 @@ private:
 	void FinishRun(bool bWasVictory);
 	void RefreshCurrentStageFromFloor();
 	void SaveCurrentRunState();
+	bool LoadFirstAvailableRunState();
 	bool RestoreRunFromSave(const class UT66DeckRunSaveGame* RunSave);
+	void ReportWidgetGameResult(bool bSuccessful, int32 FinalScore);
 	void SubmitLeaderboardProgressIfNeeded();
 	void RefreshEnemyIntent();
 	bool IsRunActive() const;
@@ -140,4 +153,5 @@ private:
 	TArray<FName> DeckCardIDs;
 	TArray<FName> RewardCardIDs;
 	TArray<FName> RewardItemIDs;
+	FT66WidgetGameHostContext WidgetGameHostContext;
 };

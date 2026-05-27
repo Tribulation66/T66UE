@@ -17,6 +17,7 @@ class UMaterial;
 class UMaterialInstanceDynamic;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
+class UT66HeroSpeedSubsystem;
 class UAnimationAsset;
 class AT66PilotableTractor;
 class UT66HeroMovementComponent;
@@ -88,15 +89,14 @@ public:
 	void RefreshAttackRangeRing();
 
 	void SetVehicleMounted(bool bMounted, AT66PilotableTractor* MountedTractor = nullptr, const FVector& VisualOffset = FVector::ZeroVector, const FRotator& VisualRotation = FRotator::ZeroRotator);
-	void SetQuickReviveDowned(bool bDowned);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Movement|Vehicle")
 	bool IsVehicleMounted() const { return bVehicleMounted; }
 
 	AT66PilotableTractor* GetMountedTractor() const { return MountedTractor.Get(); }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hero|QuickRevive")
-	bool IsQuickReviveDowned() const { return bQuickReviveDowned; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Downed Quick Revive was removed. This compatibility wrapper always returns false."))
+	bool IsQuickReviveDowned() const { return false; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Movement")
 	UT66HeroMovementComponent* GetHeroMovementComponent() const { return HeroMovementComponent; }
@@ -234,6 +234,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
 
+	UPROPERTY()
+	TObjectPtr<UT66HeroSpeedSubsystem> CachedHeroSpeedSubsystem;
+
 	/** Cached idle/walk/jump/roll anims for the current hero visual. */
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CachedIdleAnim = nullptr;
@@ -258,7 +261,6 @@ private:
 	void PlayRollAnimation();
 
 	bool bVehicleMounted = false;
-	bool bQuickReviveDowned = false;
 	bool bVehicleDefaultVisualTransformsCached = false;
 	FVector DefaultPlaceholderRelativeLocation = FVector::ZeroVector;
 	FRotator DefaultPlaceholderRelativeRotation = FRotator::ZeroRotator;
@@ -267,9 +269,6 @@ private:
 	FVector DefaultStaticVisualRelativeLocation = FVector::ZeroVector;
 	FRotator DefaultStaticVisualRelativeRotation = FRotator::ZeroRotator;
 	TWeakObjectPtr<AT66PilotableTractor> MountedTractor;
-
-	FVector QuickReviveDownedVisualOffset = FVector(0.f, 0.f, -58.f);
-	FRotator QuickReviveDownedVisualRotation = FRotator(0.f, 0.f, 90.f);
 
 	// Stage slide tuning/state
 	float BaseGroundFriction = 8.f;

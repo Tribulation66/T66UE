@@ -1,8 +1,8 @@
 # T66 Master Combat
 
-**Last updated:** 2026-04-18  
-**Scope:** Single-source handoff for combat runtime flow, targeting, damage routing, hit feedback, and the implementation plan for spatial headshots, accuracy-driven aiming, and boss body-part combat.  
-**Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`
+**Last updated:** 2026-05-26
+**Scope:** Single-source handoff for combat runtime flow, targeting, damage routing, damage provenance logging, combat collision roles, debug visibility, hit feedback, spatial headshots, accuracy-driven aiming, and boss body-part combat.
+**Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`, `Gameplay/Combat/CombatVFXAuthoringProcedure.md`
 **Maintenance rule:** Update this file after every material combat, targeting, damage-model, hitbox, projectile, boss-health, or combat-UI change.
 
 ## 1. Executive Summary
@@ -12,9 +12,24 @@
 - Standard enemy combat is now split across family classes:
   - `Melee` for direct chase/touch damage
   - `Rush` for burst charge movement
-  - `Ranged` for projectile spit attacks
+  - `Ranged` for projectile spit attacks with line-of-sight gating before firing
   - `Flying` for hovering chase behavior
 - Bosses can now expose multipart hit zones with per-part HP snapshots and per-part HUD bars.
+- Combat now has an explicit debug-draw role taxonomy:
+  - `Hurtbox`: targetable enemy/boss hit zones.
+  - `PlayerHurtbox`: the hero capsule that receives damage overlaps/queries.
+  - `DamageVolume`: a primitive or query shape that can remove HP from a hero, enemy, or boss.
+  - movement blockers, sensors, interact triggers, and visual-only actors are not part of the default combat debug view.
+- Non-shipping builds now default to showing both combat hitboxes and damage volumes through `T66.Combat.DebugView=3`; Shipping builds default to `0`.
+- Every successful hero HP loss now writes one `[CombatDamage]` line to the Unreal log from the shared `UT66RunStateSubsystem::ApplyDamage(...)` path.
+- Backrooms chaser contact uses delivery method `BackroomsChaserTouch`. It bypasses Quick Revive, Saint Blessing, evasion, and invulnerability gates, restores the temporarily hidden inventory/weapon first, then kills the hero through the shared damage path.
+- Last Stand, Survival Charge, and the legacy downed Quick Revive flow are removed from live lethal-save behavior. Reflected compatibility wrappers remain inert for old Blueprint/API callers. The only current quick-revive behavior is the reward-only `Item_BackroomsQuickRevive` inventory item, consumed by normal lethal damage for a one-heart revive.
+- Unique unkillable chasers are authored through `Content/Data/UniqueEnemies.csv` and `/Game/Data/DT_UniqueEnemies`; the first row is `BackroomsChaser`, currently visualized with the existing `Slime` character visual.
+- Hostile projectile damage now requires overlap with the actual hero capsule hurtbox. Hero-owned sensors such as the combat range sphere are logged as `RejectedNonHeroHurtbox` and cannot remove HP.
+- Enemy, trap, unique/debuff, and boss projectile paths now emit `[ProjectileFired]` and `[ProjectileImpact]` logs with projectile/component locations, overlapped component identity, sweep/impact points, velocity, owner, source, and damage result.
+- Temporary projectile presentation is centralized in `Source/T66/Gameplay/T66TemporaryProjectileSystem.*` so hero, idol, enemy, and trap ranged attacks use clear shape profiles until authored models replace them. Non-boss team colors are intentionally constrained: hero/idol projectiles are blue, enemy/trap projectiles are red.
+- Hero auto-attacks now require an unblocked world-static line from the hero attack origin to the selected combat target handle before they fire. This prevents attacks, visual projectiles, pierce hits, AOE splash, and bounce chains from resolving through dungeon walls or around blocked corners.
+- Hero 1 AOE axe attacks now resolve secondary splash targets through a target-anchored 180-degree frontal sector query, oriented from the hero toward the primary target, instead of an omnidirectional target-centered sphere. The primary target is still damaged through the normal target handle path.
 - `Accuracy` now exists as a full primary hero stat and its secondary family feeds untargeted auto-attack head selection.
 - The existing `Headshot` passive is no longer a random proc; it currently adds `+20%` accuracy weighting.
 - `Alchemy`, `HpRegen`, and `LifeSteal` are now deprecated legacy secondary stats kept only for save/data compatibility and old authored rows.
@@ -160,14 +175,170 @@
 ### 2.7 Projectile and overlap path
 
 - `Source/T66/Gameplay/T66HeroProjectile.h/.cpp`
-  - Projectiles home to the target actor's root component.
-  - Overlap handling is actor-based.
-  - There is no projectile support for:
-    - homing to a subcomponent/socket
-    - carrying hit-zone intent
-    - preferring head/body on impact
+  - Hero projectile actors can be true damage projectiles or visual-only projectile bodies.
+  - Auto-attack projectile visuals spawned by `T66CombatComponent` are normally visual-only; the combat component has already resolved the hit and damage path.
+  - Auto-attack target acquisition runs `HasUnblockedAutoAttackPath(...)` before a locked or range-sphere target can fire. The trace checks world-static blockers, ignores the hero and target actor, and uses the target handle aim point rather than only the actor root.
+  - Visual-only weapon shots now use the temporary projectile system:
+    - `Pierce`: blue cone
+    - `AOE`: blue sphere
+    - `Bounce`: blue cube
+    - `DOT`: blue cylinder
+    - idol payloads add a smaller blue overlay shape on top of the weapon attack shape.
+  - The active hero/idol auto-attack path no longer emits separate particle-only attack/idol VFX. The blue temporary projectile body and optional blue idol overlay are the readable attack presentation.
+  - Non-visual-only hero projectiles still own a sphere damage volume and actor-based overlap fallback.
+  - Hero 1 AOE axe splash target selection is now a query-only sector DamageVolume: a broad-phase pawn overlap around the primary impact point followed by a 2D frontal sector test. The sector is oriented from the hero attack origin toward the primary target, and secondary hits still preserve `HasUnblockedAutoAttackPath(...)`.
+  - Current projectile limitations:
+    - visual projectiles still home to the target actor/root rather than a hit-zone component
+    - old overlap fallback paths are actor-based and default to body damage
+    - hit-zone intent is still strongest in `T66CombatComponent` target handles, not in projectile payloads
 
-### 2.8 Combat UI and feedback
+### 2.8 Combat collision roles and debug visibility
+
+The current standard is to debug combat semantics, not raw Unreal collision.
+
+- `Hurtbox`
+  - Means "where this actor can be targeted or receive hero combat damage."
+  - Runtime owner:
+    - `Source/T66/Gameplay/T66CombatHitZoneComponent.h/.cpp`
+  - Current users:
+    - enemy body/head zones in `AT66EnemyBase`
+    - boss part zones in `AT66BossBase`
+  - Debug color examples:
+    - body: cyan/blue
+    - head: yellow
+    - core/weak point: pink/purple
+    - inactive/dead part: grey
+
+- `PlayerHurtbox`
+  - Means "the hero body shape that receives hostile overlap/query damage."
+  - Current owner:
+    - `AT66HeroBase` capsule
+  - Debug color:
+    - bright cyan
+
+- `DamageVolume`
+  - Means "this primitive or query shape can apply damage when active."
+  - Current debug-enabled examples:
+    - enemy touch capsule intent in `AT66EnemyBase`
+    - non-visual-only hero projectile sphere in `AT66HeroProjectile`
+    - Hero 1 AOE axe sector query in `UT66CombatComponent`
+    - enemy projectile sphere in `AT66EnemyProjectileBase`
+    - boss projectile sphere in `AT66BossProjectile`
+    - unique debuff projectile sphere in `AT66UniqueDebuffProjectile`
+    - trap arrow projectile box in `AT66TrapArrowProjectile`
+    - boss ground AOE sphere in `AT66BossGroundAOE`
+    - boss lane blocker box in `AT66BossLaneBlockerHazard`
+    - floor flame and spike patch trap spheres
+    - lava patch box
+    - miasma tile box
+  - Debug color examples:
+    - active damage: red
+    - warning/telegraph shape before activation: orange
+
+Temporary projectile visuals:
+
+- Runtime owner:
+  - `Source/T66/Gameplay/T66TemporaryProjectileSystem.h/.cpp`
+- Purpose:
+  - provide a shared, obvious, non-particle visual language for ranged attacks during development
+  - keep temporary shape profiles centralized so they can be replaced by authored projectile meshes without rewriting every attack source
+- Current users:
+  - hero weapon auto-attack visuals
+  - idol overlay payload visuals
+  - ranged enemy spit projectiles
+  - unique/debuff enemy projectiles
+  - wall-arrow trap projectiles
+- Current non-boss color contract:
+  - hero and idol projectile profiles resolve to blue inside `FT66TemporaryProjectileSystem`
+  - enemy, unique/debuff, and trap projectile profiles resolve to red inside `FT66TemporaryProjectileSystem`
+  - callers may pass legacy tint values for compatibility, but known temporary projectile profiles override those values to the team color
+- Hostile temporary projectile profiles are intentionally oversized relative to their damage volumes so fast enemy/trap shots remain readable before authored projectile meshes replace them.
+- These visuals are presentation, not authority. Damage still comes from the owning `DamageVolume` or already-resolved combat path.
+- Transient query-only DamageVolumes, such as the Hero 1 AOE axe sector, use parameter-based debug drawing rather than hidden collision components.
+
+- `TriggerContainer`
+  - Means "this trap-owned primitive does not deal damage directly, but it arms or triggers a trap that can deal damage."
+  - Current debug-enabled example:
+    - pressure-plate trigger box in `AT66TrapPressurePlate`
+  - Debug color examples:
+    - armed trigger: green
+    - pressed/resetting trigger: grey-green
+
+- `VisualOnly`
+  - Means "combat-looking actor with no authority to apply damage."
+  - Current example:
+    - auto-attack projectile visuals spawned after `T66CombatComponent` has already resolved damage.
+  - These are intentionally not drawn as damage volumes.
+
+- Hidden by default:
+  - movement/blocking colliders
+  - terrain/world collision
+  - generic interaction triggers
+  - pickup sensors
+  - camera/support volumes
+
+Debug controls:
+
+- `T66.Combat.DebugView`
+  - `0`: off
+  - `1`: hitboxes and hero hurtbox only
+  - `2`: damage volumes only
+  - `3`: both hitboxes and damage volumes
+- `T66.Combat.DebugLabels`
+  - `0`: no labels
+  - `1`: label visible combat debug shapes
+- `T66.Combat.DebugThickness`
+  - line thickness for debug draw
+
+Damage provenance logging:
+
+- Runtime owner:
+  - `Source/T66/Core/RunState/T66RunStateSubsystem_Combat.cpp`
+- Every successful `UT66RunStateSubsystem::ApplyDamage(...)` call emits one `LogT66DamageReceived` line tagged `[CombatDamage]`.
+- Hostile projectile sources also emit projectile-specific logs before damage routing:
+  - `[ProjectileFired]` records the projectile actor, owner/source, spawn location, direction, speed, damage shape size, and whether the temporary visual meshes are visible.
+  - `[ProjectileImpact] Result=HeroHit` records the exact overlap component, projectile actor location, damage primitive location, hero location, sweep location, impact point, normal, velocity, and requested damage.
+  - `[ProjectileImpact] Result=RejectedNonHeroHurtbox` records ignored overlaps against hero-owned sensors or non-hurtbox components. These events must not call `ApplyDamage(...)`.
+- The line records:
+  - applied HP loss after reductions
+  - requested HP from the caller
+  - incoming HP after difficulty/passive pre-armor modifiers
+  - source ID
+  - delivery method, e.g. `EnemyTouch`, `EnemyProjectile`, `TrapProjectile`, `TrapFloorBurst`, `MiasmaTile`
+  - source actor name/class
+  - damage causer actor/class, e.g. projectile actor when the owning enemy gets source credit
+  - hero HP before/after
+  - hero/source/causer world locations
+  - source-to-hero and causer-to-hero 2D/3D distances
+  - causer line-of-sight status and blocker name for impossible-through-wall or stale-overlap diagnosis
+  - stage and world time
+- Current explicitly tagged direct/abstract sources:
+  - `MiasmaBoundary`
+  - `MiasmaCoverage`
+  - `MiasmaTile`
+  - `LavaPatch`
+  - `LoanShark`
+  - `TutorialScriptedDamage`
+- Non-shipping verification hook:
+  - `-T66GameplayAutoCapture=combatdamagelog` applies one controlled 20 HP hit through `ApplyDamage(...)` so agents can prove the log line in a staged run.
+  - `-T66GameplayAutoCapture=trapprojectilehitbox` spawns a stationary trap projectile so agents can verify the drawn damage box against the projectile body.
+  - `-T66GameplayAutoCapture=trapcontainers` spawns representative wall projectile, floor burst, area-control, and pressure-plate trap visuals so agents can verify visual layer plus container layer together.
+  - `-T66GameplayAutoCapture=hero1axeaoehitbox` equips the Hero 1 black AOE weapon, spawns fixed inside/outside proof targets, fires one real auto-attack AOE, draws the sector `DamageVolume`, and logs HP before/after pass/fail results for each target.
+
+Implementation rule for future agents:
+
+- New combat damage sources must either:
+  - expose a clear `DamageVolume` debug draw at the owning actor/component, or
+  - be documented as direct/abstract damage in `Source/T66/Gameplay/pending_issues_Gameplay.md` until a debug provider exists.
+- New hostile projectile or touch paths must pass an explicit delivery method and damage causer into `UT66RunStateSubsystem::ApplyDamage(...)`; do not rely on source-actor-only logs.
+- New hostile projectile damage must validate the overlapped hero component with `T66CombatShared::IsHeroHurtboxComponent(...)` before applying HP loss. Do not damage the hero from overlaps with `CombatRangeSphere`, range rings, pickup sensors, interaction triggers, or other hero-owned non-hurtbox components.
+- New hostile projectile paths must emit `[ProjectileFired]` and `[ProjectileImpact]` logs at the projectile owner/path, including `OtherComp`, primitive location, sweep location, impact point, and velocity, so `[CombatDamage]` can be correlated with the exact visible projectile contact.
+- New temporary projectile visuals must use `FT66TemporaryProjectileSystem` profiles first. Do not add one-off particle-only ranged attacks while this replacement layer is active, and do not reintroduce non-boss per-idol/per-element projectile colors outside the blue-hero/red-hostile contract.
+- New hero auto-attack, chain, or splash logic must preserve the `HasUnblockedAutoAttackPath(...)` gate, or explicitly document why that attack is allowed to ignore dungeon wall line of sight.
+- New irregular attack visuals, such as slashes or arcs, must keep VFX as presentation and use an explicit logical query shape for damage. Do not use Niagara particle collision, render-mesh per-poly collision, or visual material opacity as combat authority.
+- New targetable sub-parts must use `UT66CombatHitZoneComponent` or a compatible hurtbox abstraction, not a generic hidden collider with ad hoc trace handling.
+
+### 2.9 Combat UI and feedback
 
 - `Source/T66/UI/T66GameplayHUDWidget.h/.cpp`
   - Owns the center crosshair, aggregate boss bar, and per-part boss bar presentation sourced from `BossPartSnapshots`.
@@ -343,6 +514,7 @@ Bosses can use:
 - `Source/T66/Gameplay/T66HeroProjectile.h/.cpp`
   - add support for targeting a scene component or explicit aim point, not only an actor root
   - carry hit-zone intent so impact resolution knows whether this is a head/body/part shot
+  - keep visual-only projectiles visually readable but excluded from `DamageVolume` debug draw
 
 ## 6.5 Enemy runtime surface
 
@@ -391,6 +563,14 @@ Bosses can use:
 - `Source/T66/UI/T66FloatingCombatTextWidget.cpp`
   - add explicit `Headshot` event text if desired
   - differentiate spatial headshots from crits
+
+## 6.10 Combat debug role layer
+
+- `Source/T66/Gameplay/T66CombatDebugDraw.h/.cpp`
+  - owns the debug role vocabulary and cvars
+  - draws hurtbox spheres, player hurtbox capsules, damage spheres, damage boxes, damage capsules, and transient query-only damage sectors
+  - defaults on in non-shipping builds for this combat-readability pass
+  - remains off in Shipping builds
 
 ## 7. Recommended Implementation Phases
 
@@ -470,9 +650,16 @@ Completed:
 3. `Accuracy` is now a full primary stat with item, buff, summary, backend, and UI integration.
 4. Random passive `Headshot` proc logic was replaced with spatial head-targeting support plus accuracy weighting.
 5. Bosses now support multipart targeting, per-part HP snapshots, authored part profiles, and per-part HUD bars.
+6. Combat debug visibility now follows explicit roles instead of raw colliders:
+   - hitboxes/hurtboxes
+   - player hurtbox
+   - active or warning damage volumes
+   - visual-only projectiles excluded from damage-volume rendering
 
 Remaining follow-up work is tuning and specialization rather than core plumbing:
 
 1. audit remaining projectile / ultimate helper paths for full hit-zone parity
 2. tune per-hero `BaseAccuracy` and per-boss part weighting
 3. add deeper boss-part break-state gameplay and visuals where desired
+4. consolidate direct/global damage rules into the same debug-provider/event contract as geometric damage volumes
+5. resolve the enemy touch-damage overlap/proximity split documented in `Source/T66/Gameplay/pending_issues_Gameplay.md`

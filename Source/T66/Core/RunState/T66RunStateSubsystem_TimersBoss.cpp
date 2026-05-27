@@ -501,6 +501,9 @@ void UT66RunStateSubsystem::AddStructuredEvent(ET66RunEventType EventType, const
 			if (Loc) Short = FText::Format(Loc->GetText_RunLog_PickedUpFormat(), FText::FromString(Payload)).ToString();
 			else Short = FString::Printf(TEXT("Picked up %s"), *Payload);
 			break;
+		case ET66RunEventType::ItemConsumed:
+			Short = FString::Printf(TEXT("Consumed %s"), *Payload);
+			break;
 		case ET66RunEventType::GoldGained:
 			if (Loc) Short = FText::Format(Loc->GetText_RunLog_GoldFormat(), FText::FromString(Payload)).ToString();
 			else Short = FString::Printf(TEXT("Gold: %s"), *Payload);

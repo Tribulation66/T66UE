@@ -23,6 +23,7 @@ public:
 	void ApplyDefaultMovementConfig();
 	void RefreshWalkSpeedFromRunState();
 	void SetHeroBaseWalkSpeed(float InBaseWalkSpeed);
+	void SetHeroBaseSpeedStat(int32 InBaseSpeedStat);
 
 	void SetMoveInputAxes(float ForwardValue, float RightValue);
 

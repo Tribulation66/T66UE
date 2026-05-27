@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66CombatComponent.h"
+#include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyAIController.h"
 #include "Gameplay/T66ArcadeMachineInteractable.h"
@@ -47,6 +48,8 @@ namespace
 	const FName T66MobVATClip_AttackCue(TEXT("AttackCue"));
 	const FName T66MobVATClip_HitReact(TEXT("HitReact"));
 	const FName T66MobVATClip_Death(TEXT("Death"));
+	const FName T66TowerDescentGuardianTag(TEXT("T66_Tower_DescentGuardian"));
+	const TCHAR* T66TowerFloorTagPrefix = TEXT("T66_Floor_Tower_");
 
 	const TCHAR* T66EnemyFamilyAudioSuffix(const ET66EnemyFamily Family)
 	{
@@ -953,6 +956,11 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	bEmergingFromWall = false;
 	RiseElapsed = 0.f;
 	WallEmergeElapsed = 0.f;
+	Tags.RemoveAll([](const FName& Tag)
+	{
+		const FString TagString = Tag.ToString();
+		return Tag == T66TowerDescentGuardianTag || TagString.StartsWith(T66TowerFloorTagPrefix);
+	});
 	SetLockedIndicator(false);
 	RefreshCombatHitZoneState();
 
@@ -1060,6 +1068,10 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	TickMobVertexAnimationState(DeltaSeconds);
 	if (CurrentHP <= 0) return;
+
+	T66CombatDebugDraw::DrawHitZone(BodyHitZone, ET66HitZoneType::Body, bUsesCombatHitZones && BodyHitZone && BodyHitZone->bTargetable, TEXT("Enemy Hurtbox: Body"));
+	T66CombatDebugDraw::DrawHitZone(HeadHitZone, ET66HitZoneType::Head, bUsesCombatHitZones && HeadHitZone && HeadHitZone->bTargetable, TEXT("Enemy Hurtbox: Head"));
+	T66CombatDebugDraw::DrawDamageCapsule(GetCapsuleComponent(), TEXT("Enemy Damage Volume: Touch"), GetActorEnableCollision() && TouchDamageHearts > 0);
 
 	FLagScopedScope LagScope(GetWorld(), TEXT("EnemyBase::Tick"));
 
@@ -1315,6 +1327,38 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	if (!Hero) return;
 	if (Hero->IsVehicleMounted()) return;
 	if (Hero->IsInSafeZone()) return;
+	UCapsuleComponent* HeroCapsule = Hero->GetCapsuleComponent();
+	if (!HeroCapsule || OtherComp != HeroCapsule)
+	{
+		UE_LOG(
+			LogT66Enemy,
+			Verbose,
+			TEXT("[EnemyTouch] RejectedNonHeroCapsule Enemy=%s MobID=%s OtherComp=%s"),
+			*GetName(),
+			*MobID.ToString(),
+			OtherComp ? *OtherComp->GetName() : TEXT("None"));
+		return;
+	}
+
+	const UCapsuleComponent* EnemyCapsule = GetCapsuleComponent();
+	const float HeroRadius = HeroCapsule->GetScaledCapsuleRadius();
+	const float EnemyRadius = EnemyCapsule ? EnemyCapsule->GetScaledCapsuleRadius() : 42.f;
+	const float MaxTouchDistance2D = HeroRadius + EnemyRadius + 18.f;
+	const float TouchDistance2D = FVector::Dist2D(GetActorLocation(), Hero->GetActorLocation());
+	if (TouchDistance2D > MaxTouchDistance2D)
+	{
+		UE_LOG(
+			LogT66Enemy,
+			Warning,
+			TEXT("[EnemyTouch] RejectedFarTouch Enemy=%s MobID=%s Hero=%s Dist2D=%.1f MaxTouchDist2D=%.1f OtherComp=%s"),
+			*GetName(),
+			*MobID.ToString(),
+			*Hero->GetName(),
+			TouchDistance2D,
+			MaxTouchDistance2D,
+			OtherComp ? *OtherComp->GetName() : TEXT("None"));
+		return;
+	}
 
 	UWorld* World = GetWorld();
 	if (!World) return;
@@ -1328,8 +1372,8 @@ void AT66EnemyBase::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 
 	LastTouchDamageTime = Now;
 	SetMobVertexAnimationClip(T66MobVATClip_AttackCue, 0.25f);
-	const int32 DamageHP = 20;
-	RunState->ApplyDamage(DamageHP, this);
+	const int32 DamageHP = FMath::Max(1, TouchDamageHearts) * 20;
+	RunState->ApplyDamage(DamageHP, this, FName(TEXT("EnemyTouch")), this);
 }
 
 bool AT66EnemyBase::ApplyResolvedDamage(int32 Damage, const bool bCreditHeroKill, FName DamageSourceID, FName EventType)
@@ -1583,17 +1627,8 @@ void AT66EnemyBase::OnDeath()
 	if (RunState)
 	{
 		const int32 AwardPoints = FMath::Max(0, ResolvedScoreAward);
-		int32 AwardXP = XPValue;
-		if (AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr)
-		{
-			if (GameMode->IsUsingTowerMainMapLayout())
-			{
-				AwardXP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(XPValue) * 0.5f));
-			}
-		}
 		RunState->AddEnemyKillScore(AwardPoints);
-		RunState->AddHeroXP(AwardXP);
-		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("Score=%d,XP=%d"), AwardPoints, AwardXP));
+		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("Score=%d"), AwardPoints));
 	}
 	if (Achievements)
 	{
@@ -1608,6 +1643,14 @@ void AT66EnemyBase::OnDeath()
 	if (OwningDirector)
 	{
 		OwningDirector->NotifyEnemyDied(this);
+	}
+
+	if (World && ActorHasTag(T66TowerDescentGuardianTag))
+	{
+		if (AT66GameMode* GameMode = World->GetAuthGameMode<AT66GameMode>())
+		{
+			GameMode->HandleTowerGateGuardianDefeated(this);
+		}
 	}
 
 	if (!World) return;

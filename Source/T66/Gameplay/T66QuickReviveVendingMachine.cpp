@@ -2,7 +2,6 @@
 
 #include "Gameplay/T66QuickReviveVendingMachine.h"
 
-#include "Core/T66RunStateSubsystem.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Components/BoxComponent.h"
@@ -31,21 +30,11 @@ void AT66QuickReviveVendingMachine::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (UT66RunStateSubsystem* RunState = GetRunState())
-	{
-		RunState->QuickReviveChanged.AddDynamic(this, &AT66QuickReviveVendingMachine::HandleQuickReviveStateChanged);
-	}
-
 	RefreshInteractionPrompt();
 }
 
 void AT66QuickReviveVendingMachine::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (UT66RunStateSubsystem* RunState = GetRunState())
-	{
-		RunState->QuickReviveChanged.RemoveDynamic(this, &AT66QuickReviveVendingMachine::HandleQuickReviveStateChanged);
-	}
-
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -64,50 +53,12 @@ void AT66QuickReviveVendingMachine::ApplyRarityVisuals()
 	FT66VisualUtil::ApplyT66Color(VisualMesh, this, FLinearColor(0.70f, 0.12f, 0.12f, 1.f));
 }
 
-bool AT66QuickReviveVendingMachine::ShouldShowInteractionPrompt(const AT66HeroBase* LocalHero) const
+bool AT66QuickReviveVendingMachine::ShouldShowInteractionPrompt(const AT66HeroBase* /*LocalHero*/) const
 {
-	if (!LocalHero || !IsLocalHeroOverlapping())
-	{
-		return false;
-	}
-
-	if (IsShowcaseReusable())
-	{
-		return true;
-	}
-
-	const UT66RunStateSubsystem* RunState = GetRunState();
-	return RunState && !RunState->HasQuickReviveCharge() && !RunState->IsInQuickReviveDownedState();
+	return false;
 }
 
-bool AT66QuickReviveVendingMachine::Interact(APlayerController* PC)
+bool AT66QuickReviveVendingMachine::Interact(APlayerController* /*PC*/)
 {
-	if (!PC)
-	{
-		return false;
-	}
-
-	UT66RunStateSubsystem* RunState = GetRunState();
-	if (!RunState)
-	{
-		return false;
-	}
-
-	const bool bGranted = RunState->GrantQuickReviveCharge();
-	if (bGranted)
-	{
-		RefreshInteractionPrompt();
-	}
-	return bGranted || IsShowcaseReusable();
-}
-
-void AT66QuickReviveVendingMachine::HandleQuickReviveStateChanged()
-{
-	RefreshInteractionPrompt();
-}
-
-UT66RunStateSubsystem* AT66QuickReviveVendingMachine::GetRunState() const
-{
-	UGameInstance* GI = GetGameInstance();
-	return GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	return false;
 }

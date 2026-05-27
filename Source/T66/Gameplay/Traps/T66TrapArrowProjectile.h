@@ -6,11 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "T66TrapArrowProjectile.generated.h"
 
-class USphereComponent;
+class UBoxComponent;
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
 class UPrimitiveComponent;
-class UNiagaraSystem;
 struct FHitResult;
 
 UCLASS(Blueprintable)
@@ -21,6 +20,8 @@ class T66_API AT66TrapArrowProjectile : public AActor
 public:
 	AT66TrapArrowProjectile();
 
+	static int32 GetActiveTrapProjectileCount();
+
 	void InitializeProjectile(
 		const FVector& Direction,
 		int32 InDamageHP,
@@ -30,13 +31,14 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 
 private:
 	void UpdateVisuals();
 
 	UFUNCTION()
-	void OnSphereOverlap(
+	void OnDamageBoxOverlap(
 		UPrimitiveComponent* OverlappedComponent,
 		AActor* OtherActor,
 		UPrimitiveComponent* OtherComp,
@@ -45,10 +47,13 @@ private:
 		const FHitResult& SweepResult);
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
-	TObjectPtr<USphereComponent> CollisionSphere;
+	TObjectPtr<UBoxComponent> DamageBox;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UStaticMeshComponent> AccentMesh;
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
@@ -57,14 +62,11 @@ private:
 	int32 DamageHP = 10;
 
 	UPROPERTY(EditAnywhere, Category = "Trap")
-	FLinearColor ProjectileTint = FLinearColor(0.95f, 0.78f, 0.20f, 1.f);
+	FLinearColor ProjectileTint = FLinearColor(1.f, 0.04f, 0.02f, 1.f);
 
 	UPROPERTY(EditAnywhere, Category = "Trap")
-	FLinearColor TrailColor = FLinearColor(1.f, 0.78f, 0.25f, 0.95f);
+	FLinearColor TrailColor = FLinearColor(1.f, 0.04f, 0.02f, 1.f);
 
 	float ProjectileSpeed = 2400.f;
-	float VFXAccum = 0.f;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UNiagaraSystem> CachedPixelVFX = nullptr;
+	bool bCountedAsActiveProjectile = false;
 };

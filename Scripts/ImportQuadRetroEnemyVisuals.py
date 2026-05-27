@@ -447,9 +447,9 @@ def _upsert_visual_rows(csv_path, import_reports):
         row["SkeletalMesh"] = ""
         row["StaticMesh"] = report["destination"]
         row["PixelatedTextureAssetPath"] = report.get("pixelated_texture", "")
-        row["LoopingAnimation"] = ""
-        row["AlertAnimation"] = ""
-        row["RunAnimation"] = ""
+        row["WalkAnimation"] = ""
+        row["IdleAnimation"] = ""
+        row["JumpAnimation"] = ""
         row["MeshRelativeLocation"] = "(X=0,Y=0,Z=0)"
         row["MeshRelativeRotation"] = _format_rotation(90.0)
         row["MeshRelativeScale"] = _format_vector(scale)

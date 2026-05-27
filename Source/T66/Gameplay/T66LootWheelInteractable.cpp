@@ -2,7 +2,6 @@
 
 #include "Gameplay/T66LootWheelInteractable.h"
 
-#include "Core/T66AudioSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66InteractionPromptSubsystem.h"
 #include "Core/T66PlayerExperienceSubSystem.h"
@@ -16,13 +15,6 @@
 
 namespace
 {
-	enum class ET66LootWheelRewardType : uint8
-	{
-		Gold,
-		Item,
-		Boost,
-	};
-
 	static ET66ItemRarity T66LootRarityToItemRarity(const ET66Rarity Rarity)
 	{
 		switch (Rarity)
@@ -35,7 +27,7 @@ namespace
 		}
 	}
 
-	static ET66LootWheelRewardType T66RollLootWheelReward(const FT66LootWheelRewardWeights& Weights, FRandomStream& Rng)
+	static AT66LootWheelInteractable::ELockedLootWheelRewardType T66RollLootWheelReward(const FT66LootWheelRewardWeights& Weights, FRandomStream& Rng)
 	{
 		const float GoldWeight = FMath::Max(0.f, Weights.Gold);
 		const float ItemWeight = FMath::Max(0.f, Weights.Item);
@@ -43,19 +35,19 @@ namespace
 		const float Total = GoldWeight + ItemWeight + BoostWeight;
 		if (Total <= KINDA_SMALL_NUMBER)
 		{
-			return ET66LootWheelRewardType::Gold;
+			return AT66LootWheelInteractable::ELockedLootWheelRewardType::Gold;
 		}
 
 		const float Roll = Rng.FRandRange(0.f, Total);
 		if (Roll < GoldWeight)
 		{
-			return ET66LootWheelRewardType::Gold;
+			return AT66LootWheelInteractable::ELockedLootWheelRewardType::Gold;
 		}
 		if (Roll < GoldWeight + ItemWeight)
 		{
-			return ET66LootWheelRewardType::Item;
+			return AT66LootWheelInteractable::ELockedLootWheelRewardType::Item;
 		}
-		return ET66LootWheelRewardType::Boost;
+		return AT66LootWheelInteractable::ELockedLootWheelRewardType::Boost;
 	}
 
 	static const TArray<ET66HeroStatType>& T66GetLootWheelBoostStatPool()
@@ -72,11 +64,25 @@ namespace
 		};
 		return StatPool;
 	}
+
+	static ET66LootWheelRewardVisualType T66LootWheelRewardTypeToVisualType(const AT66LootWheelInteractable::ELockedLootWheelRewardType RewardType)
+	{
+		switch (RewardType)
+		{
+		case AT66LootWheelInteractable::ELockedLootWheelRewardType::Gold:
+			return ET66LootWheelRewardVisualType::Gold;
+		case AT66LootWheelInteractable::ELockedLootWheelRewardType::Item:
+			return ET66LootWheelRewardVisualType::Item;
+		case AT66LootWheelInteractable::ELockedLootWheelRewardType::Boost:
+			return ET66LootWheelRewardVisualType::Boost;
+		default:
+			return ET66LootWheelRewardVisualType::Gold;
+		}
+	}
 }
 
 AT66LootWheelInteractable::AT66LootWheelInteractable()
 {
-	PrimaryActorTick.bCanEverTick = true;
 	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D.SM_LootWheel_Pixal3D")));
 
 	if (VisualMesh)
@@ -86,16 +92,6 @@ AT66LootWheelInteractable::AT66LootWheelInteractable()
 	ApplyRarityVisuals();
 }
 
-void AT66LootWheelInteractable::Tick(const float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	if (VisualMesh)
-	{
-		VisualMesh->AddRelativeRotation(FRotator(0.f, 90.f * DeltaSeconds, 0.f));
-	}
-}
-
 bool AT66LootWheelInteractable::Interact(APlayerController* PC)
 {
 	if (!PC || bConsumed)
@@ -103,51 +99,21 @@ bool AT66LootWheelInteractable::Interact(APlayerController* PC)
 		return false;
 	}
 
-	UWorld* World = GetWorld();
-	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
-	UT66RngSubsystem* RngSub = T66GI ? T66GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
-	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI ? T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
-	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!RunState)
+	if (!LockLootWheelReward(PC))
 	{
 		return false;
 	}
 
-	FRandomStream LocalRng(FMath::Rand());
-	FRandomStream& Rng = RngSub ? RngSub->GetRunStream() : LocalRng;
-	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
-	const FT66LootWheelRewardWeights RewardWeights = PlayerExperience
-		? PlayerExperience->GetDifficultyLootWheelRewardWeights(Difficulty, Rarity)
-		: FT66LootWheelRewardWeights{};
-	const ET66LootWheelRewardType RewardType = T66RollLootWheelReward(RewardWeights, Rng);
-
-	switch (RewardType)
-	{
-	case ET66LootWheelRewardType::Gold:
-		GrantGoldReward(PC);
-		break;
-	case ET66LootWheelRewardType::Item:
-		GrantItemReward(PC);
-		break;
-	case ET66LootWheelRewardType::Boost:
-		GrantBoostReward(PC, Rng);
-		break;
-	default:
-		GrantGoldReward(PC);
-		break;
-	}
-
-	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("LootWheel.Spin")), GetActorLocation(), this);
-	if (IsShowcaseReusable())
-	{
-		bConsumed = false;
-		RefreshInteractionPrompt();
-		return true;
-	}
-
 	bConsumed = true;
-	Destroy();
+	RefreshInteractionPrompt();
+	PresentLockedLootWheelReward();
 	return true;
+}
+
+void AT66LootWheelInteractable::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	CommitLockedLootWheelRewardIfNeeded();
+	Super::EndPlay(EndPlayReason);
 }
 
 void AT66LootWheelInteractable::ApplyRarityVisuals()
@@ -178,6 +144,270 @@ FText AT66LootWheelInteractable::BuildInteractionPromptTargetName() const
 	return NSLOCTEXT("T66.LootWheel", "LootWheelTargetName", "Loot Wheel");
 }
 
+bool AT66LootWheelInteractable::LockLootWheelReward(APlayerController* PC)
+{
+	if (LockedReward.bLocked)
+	{
+		return true;
+	}
+
+	UWorld* World = GetWorld();
+	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66RngSubsystem* RngSub = T66GI ? T66GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI ? T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState)
+	{
+		return false;
+	}
+
+	FRandomStream LocalRng(FMath::Rand());
+	FRandomStream& Rng = RngSub ? RngSub->GetRunStream() : LocalRng;
+	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
+	const FT66LootWheelRewardWeights RewardWeights = PlayerExperience
+		? PlayerExperience->GetDifficultyLootWheelRewardWeights(Difficulty, Rarity)
+		: FT66LootWheelRewardWeights{};
+
+	LockedReward = FLockedLootWheelReward{};
+	LockedReward.bLocked = true;
+	LockedReward.WheelRarity = Rarity;
+	LockedReward.PlayerController = PC;
+	LockedReward.RewardType = T66RollLootWheelReward(RewardWeights, Rng);
+
+	switch (LockedReward.RewardType)
+	{
+	case ELockedLootWheelRewardType::Gold:
+	{
+		FT66IntRange GoldRange = PlayerExperience
+			? PlayerExperience->GetDifficultyLootWheelGoldRange(Difficulty, Rarity)
+			: FT66IntRange{ 35, 80 };
+		if (FMath::Max(GoldRange.Min, GoldRange.Max) <= 0)
+		{
+			GoldRange = FT66IntRange{ 35, 80 };
+		}
+		LockedReward.MinGold = FMath::Max(0, FMath::Min(GoldRange.Min, GoldRange.Max));
+		LockedReward.MaxGold = FMath::Max(LockedReward.MinGold, FMath::Max(GoldRange.Min, GoldRange.Max));
+		if (RngSub)
+		{
+			LockedReward.Gold = FMath::Max(0, RngSub->RollIntRangeBiased(GoldRange, Rng));
+			LockedReward.DrawIndex = RngSub->GetLastRunDrawIndex();
+			LockedReward.PreDrawSeed = RngSub->GetLastRunPreDrawSeed();
+		}
+		else
+		{
+			LockedReward.Gold = FMath::RandRange(LockedReward.MinGold, LockedReward.MaxGold);
+		}
+		break;
+	}
+	case ELockedLootWheelRewardType::Item:
+		LockedReward.ItemID = T66GI ? T66GI->GetRandomItemIDForLootRarityFromStream(Rarity, Rng) : NAME_None;
+		LockedReward.ItemRarity = T66LootRarityToItemRarity(Rarity);
+		break;
+	case ELockedLootWheelRewardType::Boost:
+	{
+		const TArray<ET66HeroStatType>& StatPool = T66GetLootWheelBoostStatPool();
+		LockedReward.BoostStatType = StatPool.IsValidIndex(0)
+			? StatPool[Rng.RandRange(0, StatPool.Num() - 1)]
+			: ET66HeroStatType::Damage;
+		LockedReward.BoostBonusStatPoints = 8;
+		LockedReward.BoostDurationSeconds = 10.f;
+		break;
+	}
+	default:
+		break;
+	}
+
+	return true;
+}
+
+void AT66LootWheelInteractable::CommitLockedLootWheelRewardIfNeeded()
+{
+	if (!LockedReward.bLocked || LockedReward.bCommitAttempted)
+	{
+		return;
+	}
+
+	LockedReward.bCommitAttempted = true;
+	UWorld* World = GetWorld();
+	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	APlayerController* PC = LockedReward.PlayerController.Get();
+	if (!RunState && LockedReward.RewardType != ELockedLootWheelRewardType::Boost)
+	{
+		return;
+	}
+
+	switch (LockedReward.RewardType)
+	{
+	case ELockedLootWheelRewardType::Gold:
+		RunState->AddGold(LockedReward.Gold);
+		RunState->RecordLuckQuantityRoll(
+			FName(TEXT("LootWheelGold")),
+			LockedReward.Gold,
+			LockedReward.MinGold,
+			LockedReward.MaxGold,
+			LockedReward.DrawIndex,
+			LockedReward.PreDrawSeed);
+		UE_LOG(LogTemp, Display, TEXT("[LootWheelUI] committed gold amount=%d drawIndex=%d preDrawSeed=%d"),
+			LockedReward.Gold,
+			LockedReward.DrawIndex,
+			LockedReward.PreDrawSeed);
+		break;
+	case ELockedLootWheelRewardType::Item:
+		if (!LockedReward.ItemID.IsNone())
+		{
+			RunState->AddItemWithRarity(LockedReward.ItemID, LockedReward.ItemRarity);
+			UE_LOG(LogTemp, Display, TEXT("[LootWheelUI] committed item item=%s rarity=%d"),
+				*LockedReward.ItemID.ToString(),
+				static_cast<int32>(LockedReward.ItemRarity));
+		}
+		break;
+	case ELockedLootWheelRewardType::Boost:
+		if (World)
+		{
+			const FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, 80.f);
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			if (AT66BoostInteractable* Boost = World->SpawnActor<AT66BoostInteractable>(AT66BoostInteractable::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams))
+			{
+				Boost->ConfigureBoost(LockedReward.BoostStatType, LockedReward.BoostBonusStatPoints, LockedReward.BoostDurationSeconds);
+				Boost->Interact(PC);
+				UE_LOG(LogTemp, Display, TEXT("[LootWheelUI] committed boost stat=%d points=%d duration=%.1f"),
+					static_cast<int32>(LockedReward.BoostStatType),
+					LockedReward.BoostBonusStatPoints,
+					LockedReward.BoostDurationSeconds);
+			}
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void AT66LootWheelInteractable::PresentLockedLootWheelReward()
+{
+	if (!LockedReward.bLocked || bWheelResultPresented)
+	{
+		return;
+	}
+
+	bWheelResultPresented = true;
+	AT66PlayerController* T66PC = Cast<AT66PlayerController>(LockedReward.PlayerController.Get());
+	if (T66PC)
+	{
+		FT66LootWheelPresentationParams PresentationParams;
+		PresentationParams.WheelRarity = LockedReward.WheelRarity;
+		PresentationParams.RewardType = T66LootWheelRewardTypeToVisualType(LockedReward.RewardType);
+		PresentationParams.Gold = LockedReward.Gold;
+		PresentationParams.ItemID = LockedReward.ItemID;
+		PresentationParams.ItemRarity = LockedReward.ItemRarity;
+		PresentationParams.BoostStatType = LockedReward.BoostStatType;
+		PresentationParams.BoostBonusStatPoints = LockedReward.BoostBonusStatPoints;
+		PresentationParams.BoostDurationSeconds = LockedReward.BoostDurationSeconds;
+
+		TWeakObjectPtr<AT66LootWheelInteractable> WeakThis(this);
+		PresentationParams.OnLandingCommit = [WeakThis]()
+		{
+			if (AT66LootWheelInteractable* Self = WeakThis.Get())
+			{
+				Self->HandleLootWheelSpinCommit();
+			}
+		};
+		PresentationParams.OnFinished = [WeakThis]()
+		{
+			if (AT66LootWheelInteractable* Self = WeakThis.Get())
+			{
+				Self->HandleLootWheelSpinFinished();
+			}
+		};
+
+		if (T66PC->StartLootWheelSpinHUD(MoveTemp(PresentationParams)))
+		{
+			UE_LOG(LogTemp, Display, TEXT("[LootWheelUI] started radial spin rewardType=%d rarity=%d"),
+				static_cast<int32>(LockedReward.RewardType),
+				static_cast<int32>(LockedReward.WheelRarity));
+			return;
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[LootWheelUI] radial spin unavailable; committing and finishing fallback rewardType=%d"),
+		static_cast<int32>(LockedReward.RewardType));
+	CommitLockedLootWheelRewardIfNeeded();
+	PresentLockedLootWheelRewardAfterSpin();
+}
+
+void AT66LootWheelInteractable::HandleLootWheelSpinCommit()
+{
+	UE_LOG(LogTemp, Display, TEXT("[LootWheelUI] landing commit rewardType=%d committedBefore=%d"),
+		static_cast<int32>(LockedReward.RewardType),
+		LockedReward.bCommitAttempted ? 1 : 0);
+	CommitLockedLootWheelRewardIfNeeded();
+}
+
+void AT66LootWheelInteractable::HandleLootWheelSpinFinished()
+{
+	PresentLockedLootWheelRewardAfterSpin();
+}
+
+void AT66LootWheelInteractable::PresentLockedLootWheelRewardAfterSpin()
+{
+	if (!LockedReward.bLocked)
+	{
+		FinishLootWheelInteraction();
+		return;
+	}
+
+	AT66PlayerController* T66PC = Cast<AT66PlayerController>(LockedReward.PlayerController.Get());
+	if (T66PC)
+	{
+		switch (LockedReward.RewardType)
+		{
+		case ELockedLootWheelRewardType::Gold:
+		{
+			TWeakObjectPtr<AT66LootWheelInteractable> WeakThis(this);
+			if (T66PC->StartChestRewardHUD(
+				LockedReward.WheelRarity,
+				LockedReward.Gold,
+				nullptr,
+				[WeakThis]()
+				{
+					if (AT66LootWheelInteractable* Self = WeakThis.Get())
+					{
+						Self->FinishLootWheelInteraction();
+					}
+				}))
+			{
+				return;
+			}
+			break;
+		}
+		case ELockedLootWheelRewardType::Item:
+			T66PC->ShowPickupItemCardHUD(LockedReward.ItemID, LockedReward.ItemRarity);
+			break;
+		case ELockedLootWheelRewardType::Boost:
+		default:
+			break;
+		}
+	}
+
+	FinishLootWheelInteraction();
+}
+
+void AT66LootWheelInteractable::FinishLootWheelInteraction()
+{
+	if (IsShowcaseReusable())
+	{
+		LockedReward = FLockedLootWheelReward{};
+		bConsumed = false;
+		bWheelResultPresented = false;
+		RefreshInteractionPrompt();
+		return;
+	}
+
+	Destroy();
+}
+
 void AT66LootWheelInteractable::GrantGoldReward(APlayerController* PC)
 {
 	UWorld* World = GetWorld();
@@ -191,9 +421,13 @@ void AT66LootWheelInteractable::GrantGoldReward(APlayerController* PC)
 	}
 
 	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
-	const FT66IntRange GoldRange = PlayerExperience
+	FT66IntRange GoldRange = PlayerExperience
 		? PlayerExperience->GetDifficultyLootWheelGoldRange(Difficulty, Rarity)
 		: FT66IntRange{ 35, 80 };
+	if (FMath::Max(GoldRange.Min, GoldRange.Max) <= 0)
+	{
+		GoldRange = FT66IntRange{ 35, 80 };
+	}
 	const int32 MinGold = FMath::Max(0, FMath::Min(GoldRange.Min, GoldRange.Max));
 	const int32 MaxGold = FMath::Max(MinGold, FMath::Max(GoldRange.Min, GoldRange.Max));
 	int32 Gold = MaxGold;

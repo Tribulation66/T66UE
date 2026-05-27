@@ -984,7 +984,7 @@ void UT66CombatComponent::SpawnPierceVFX(const FVector& Start, const FVector& En
 	}
 }
 
-void UT66CombatComponent::SpawnHeroOnePierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation)
+void UT66CombatComponent::SpawnHeroOnePierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation, const FLinearColor& Color)
 {
 	UWorld* World = GetWorld();
 	if (!World)
@@ -1031,7 +1031,8 @@ void UT66CombatComponent::SpawnHeroOnePierceVFX(const FVector& Start, const FVec
 				*Effect->GetName(),
 				GetOwner() ? *GetOwner()->GetName() : TEXT("None"));
 		}
-		Effect->InitEffect(Start, End, ImpactLocation, FLinearColor(1.f, 0.97f, 0.88f, 1.f), RequestId, FName(TEXT("Hero_5")));
+		Effect->SetPaletteOverride(Color, Color, Color, Color, 1.95f, FName(TEXT("HeroProjectileBlue")));
+		Effect->InitEffect(Start, End, ImpactLocation, Color, RequestId, FName(TEXT("Hero_5")));
 		return;
 	}
 
@@ -1379,7 +1380,7 @@ void UT66CombatComponent::SpawnHeroPierceVFX(const FVector& Start, const FVector
 
 	if (HeroID == FName(TEXT("Hero_5")))
 	{
-		SpawnHeroOnePierceVFX(Start, End, ImpactLocation);
+		SpawnHeroOnePierceVFX(Start, End, ImpactLocation, Color);
 		return;
 	}
 	if (!TrySpawnHeroPierceVariantPixels(World, VFX, Start, End, ColorVec, HeroID))

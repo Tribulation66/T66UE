@@ -33,15 +33,15 @@ struct FT66ResolvedCharacterVisual
 	TObjectPtr<UStaticMesh> OutlineStaticMesh = nullptr;
 
 	UPROPERTY()
-	TObjectPtr<UAnimationAsset> LoopingAnim = nullptr;
+	TObjectPtr<UAnimationAsset> WalkAnim = nullptr;
 
-	/** Optional alert/stand animation (preview). */
+	/** Optional idle/stand animation (preview and stationary gameplay). */
 	UPROPERTY()
-	TObjectPtr<UAnimationAsset> AlertAnim = nullptr;
+	TObjectPtr<UAnimationAsset> IdleAnim = nullptr;
 
-	/** Optional run animation (gameplay; when moving fast). */
+	/** Optional one-shot jump animation. */
 	UPROPERTY()
-	TObjectPtr<UAnimationAsset> RunAnim = nullptr;
+	TObjectPtr<UAnimationAsset> JumpAnim = nullptr;
 
 	/** Optional one-shot roll animation. */
 	UPROPERTY()
@@ -58,7 +58,7 @@ struct FT66ResolvedCharacterVisual
  * Centralized character visuals resolver + applier.
  *
  * Goals:
- * - data-driven mapping: ID -> skeletal mesh + optional looping animation + per-character transform
+ * - data-driven mapping: ID -> skeletal mesh + optional animations + per-character transform
  * - avoid repeated sync loads: load once per ID and cache
  */
 UCLASS()
@@ -76,7 +76,7 @@ public:
 		USkeletalMeshComponent* TargetMesh,
 		USceneComponent* PlaceholderToHide = nullptr,
 		bool bEnableSingleNodeAnimation = true,
-		bool bUseAlertAnimation = false,
+		bool bUseIdleAnimation = false,
 		bool bIsPreviewContext = false,
 		UStaticMeshComponent* TargetStaticMesh = nullptr);
 
@@ -102,9 +102,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
 	bool IsCharacterVisualReady(FName VisualID) const;
 
-	/** Get walk, run/jump, alert/idle, and roll animations for a visual. OutRun/OutAlert/OutRoll may be null. */
+	/** Get walk, jump, idle, and roll animations for a visual. OutJump/OutIdle/OutRoll may be null. */
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
-	void GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutRun, UAnimationAsset*& OutAlert, UAnimationAsset*& OutRoll);
+	void GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutJump, UAnimationAsset*& OutIdle, UAnimationAsset*& OutRoll);
 
 	/** Returns true when a visual row exists for this ID or its fallback ID. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")
@@ -117,7 +117,7 @@ private:
 	FT66ResolvedCharacterVisual ResolveVisual(FName VisualID);
 	UDataTable* GetVisualsDataTable() const;
 	UDataTable* GetMobVertexAnimationsDataTable() const;
-	UAnimationAsset* FindFallbackLoopingAnim(USkeleton* Skeleton) const;
+	UAnimationAsset* FindFallbackWalkAnim(USkeleton* Skeleton) const;
 	const FT66CharacterVisualRow* FindVisualRow(FName VisualID, FName* OutResolvedVisualID = nullptr) const;
 	void HandleCharacterVisualPreloadCompleted(FName VisualID);
 

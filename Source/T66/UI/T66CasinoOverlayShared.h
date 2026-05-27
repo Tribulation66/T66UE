@@ -9,8 +9,8 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Input/DragAndDrop.h"
 #include "Styling/CoreStyle.h"
-#include "UI/T66GamblerOverlayWidget.h"
-#include "UI/T66CasinoShopTabWidget.h"
+#include "UI/T66CasinoGamblerTabWidget.h"
+#include "UI/T66CasinoVendorTabWidget.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/Images/SImage.h"
@@ -84,8 +84,8 @@ namespace T66CasinoOverlayShared
 	template<typename TOwner, typename TConfigureGamblerFn, typename TConfigureShopFn>
 	void EnsureShellTabWidgets(
 		TOwner* Owner,
-		TObjectPtr<UT66GamblerOverlayWidget>& GamblerTabWidget,
-		TObjectPtr<UT66CasinoShopTabWidget>& ShopTabWidget,
+		TObjectPtr<UT66CasinoGamblerTabWidget>& CasinoGamblerTabWidget,
+		TObjectPtr<UT66CasinoVendorTabWidget>& VendorTabWidget,
 		TConfigureGamblerFn&& ConfigureGambler,
 		TConfigureShopFn&& ConfigureShop)
 	{
@@ -94,21 +94,21 @@ namespace T66CasinoOverlayShared
 			return;
 		}
 
-		if (!GamblerTabWidget)
+		if (!CasinoGamblerTabWidget)
 		{
-			GamblerTabWidget = CreateWidget<UT66GamblerOverlayWidget>(Owner->GetOwningPlayer(), UT66GamblerOverlayWidget::StaticClass());
-			if (GamblerTabWidget)
+			CasinoGamblerTabWidget = CreateWidget<UT66CasinoGamblerTabWidget>(Owner->GetOwningPlayer(), UT66CasinoGamblerTabWidget::StaticClass());
+			if (CasinoGamblerTabWidget)
 			{
-				ConfigureGambler(GamblerTabWidget);
+				ConfigureGambler(CasinoGamblerTabWidget);
 			}
 		}
 
-		if (!ShopTabWidget)
+		if (!VendorTabWidget)
 		{
-			ShopTabWidget = CreateWidget<UT66CasinoShopTabWidget>(Owner->GetOwningPlayer(), UT66CasinoShopTabWidget::StaticClass());
-			if (ShopTabWidget)
+			VendorTabWidget = CreateWidget<UT66CasinoVendorTabWidget>(Owner->GetOwningPlayer(), UT66CasinoVendorTabWidget::StaticClass());
+			if (VendorTabWidget)
 			{
-				ConfigureShop(ShopTabWidget);
+				ConfigureShop(VendorTabWidget);
 			}
 		}
 	}
@@ -140,22 +140,22 @@ namespace T66CasinoOverlayShared
 	}
 
 	template<typename TActivateTabFn>
-	void OpenGamblingTab(UT66GamblerOverlayWidget* GamblerTabWidget, TActivateTabFn&& ActivateTab)
+	void OpenGamblerTab(UT66CasinoGamblerTabWidget* CasinoGamblerTabWidget, TActivateTabFn&& ActivateTab)
 	{
-		if (GamblerTabWidget)
+		if (CasinoGamblerTabWidget)
 		{
-			GamblerTabWidget->OpenCasinoPage();
+			CasinoGamblerTabWidget->OpenCasinoPage();
 		}
 
 		ActivateTab();
 	}
 
 	template<typename TActivateTabFn>
-	void OpenShopTab(UT66CasinoShopTabWidget* ShopTabWidget, TActivateTabFn&& ActivateTab)
+	void OpenVendorTab(UT66CasinoVendorTabWidget* VendorTabWidget, TActivateTabFn&& ActivateTab)
 	{
-		if (ShopTabWidget)
+		if (VendorTabWidget)
 		{
-			ShopTabWidget->OpenShopPage();
+			VendorTabWidget->OpenShopPage();
 		}
 
 		ActivateTab();

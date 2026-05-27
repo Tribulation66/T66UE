@@ -45,19 +45,11 @@ Measurement method: visual inspection of the reference image at native resolutio
 | HeroSelection.LeftColumn.SkinsPanel.SkinRow.Default.Portrait | `(0.019, 0.140, 0.066, 0.104)` | `±0.006` | Thumbnail fills row height. |
 | HeroSelection.LeftColumn.SkinsPanel.SkinRow.Default.Name | `(0.097, 0.162, 0.096, 0.032)` | `±0.006` | `Default`; row text lane includes breathing room, not tight glyph pixels. |
 | HeroSelection.LeftColumn.SkinsPanel.SkinRow.Default.EquippedBadge | `(0.205, 0.190, 0.063, 0.040)` | `±0.006` | `EQUIPPED`. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer | `(0.019, 0.256, 0.258, 0.103)` | `±0.008` | Default purple row. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer.Portrait | `(0.019, 0.257, 0.066, 0.102)` | `±0.006` | Thumbnail fills row height. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer.Name | `(0.097, 0.278, 0.096, 0.032)` | `±0.006` | `Beachgoer`; row text lane includes breathing room, not tight glyph pixels. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer.PreviewButton | `(0.096, 0.308, 0.070, 0.039)` | `±0.006` | Preview button under name. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.Beachgoer.Cost | `(0.205, 0.308, 0.063, 0.039)` | `±0.006` | `50` cost button. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.Crusader | `(0.019, 0.372, 0.258, 0.103)` | `±0.008` | Default purple row. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.Crusader.Portrait | `(0.019, 0.372, 0.066, 0.103)` | `±0.006` | Thumbnail fills row height. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.Crusader.Name | `(0.097, 0.394, 0.096, 0.032)` | `±0.006` | `Crusader`; row text lane includes breathing room, not tight glyph pixels. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.Crusader.Cost | `(0.205, 0.424, 0.063, 0.039)` | `±0.006` | `100` cost button. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.GoldenPaladin | `(0.019, 0.488, 0.258, 0.102)` | `±0.008` | Default purple row. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.GoldenPaladin.Portrait | `(0.019, 0.488, 0.066, 0.102)` | `±0.006` | Thumbnail fills row height. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.GoldenPaladin.Name | `(0.096, 0.507, 0.093, 0.031)` | `±0.006` | `Golden Paladin`. |
-| HeroSelection.LeftColumn.SkinsPanel.SkinRow.GoldenPaladin.Cost | `(0.205, 0.538, 0.063, 0.039)` | `±0.006` | `150` cost button. |
+| HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin | `(0.020, 0.257, 0.258, 0.103)` | `±0.010` | Live demo skin row. |
+| HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin.Portrait | `(0.021, 0.259, 0.066, 0.103)` | `±0.010` | Demo skin portrait. |
+| HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin.Name | `(0.097, 0.278, 0.096, 0.031)` | `±0.010` | `DEMO`. |
+| HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin.PreviewButton | `(0.097, 0.311, 0.070, 0.039)` | `±0.010` | `PREVIEW`. |
+| HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin.Cost | `(0.207, 0.311, 0.063, 0.039)` | `±0.010` | `50`. |
 | HeroSelection.LeftColumn.DrugsPanel | `(0.009, 0.632, 0.278, 0.111)` | `±0.012` | Six controls are one horizontal row; panel moved down after column expansion. |
 | HeroSelection.LeftColumn.DrugsPanel.Header | `(0.022, 0.644, 0.063, 0.030)` | `±0.006` | `DRUGS`; corrected after overlay sanity pass. |
 | HeroSelection.LeftColumn.DrugsPanel.EquipSlot01 | `(0.020, 0.676, 0.028, 0.045)` | `±0.005` | Empty plus slot. |
@@ -84,34 +76,29 @@ Measurement method: visual inspection of the reference image at native resolutio
 | HeroSelection.RightColumn.HeaderRow.HeroName | `(0.700, 0.047, 0.097, 0.046)` | `±0.006` | Plain ARTHUR title label. |
 | HeroSelection.RightColumn.HeaderRow.LabButton | `(0.921, 0.040, 0.062, 0.046)` | `±0.006` | Red selected LAB button. |
 | HeroSelection.RightColumn.Subtitle | `(0.700, 0.107, 0.189, 0.022)` | `±0.006` | `A KING. A CRUSADE. AN APOCALYPSE.` |
-| HeroSelection.RightColumn.RankPanel | `(0.692, 0.158, 0.290, 0.052)` | `±0.006` | Begins at `y≈0.158`. |
-| HeroSelection.RightColumn.RankPanel.InfoIcon | `(0.699, 0.172, 0.013, 0.023)` | `±0.005` | Question icon. |
-| HeroSelection.RightColumn.RankPanel.Label | `(0.719, 0.174, 0.035, 0.027)` | `±0.006` | `RANK`. |
-| HeroSelection.RightColumn.RankPanel.LockIcon | `(0.757, 0.173, 0.011, 0.021)` | `±0.005` | Yellow lock. |
-| HeroSelection.RightColumn.RankPanel.Value | `(0.963, 0.177, 0.013, 0.028)` | `±0.006` | `--`; layout box includes label line height. |
-| HeroSelection.RightColumn.MasteryPanel | `(0.692, 0.224, 0.290, 0.056)` | `±0.006` | Mastery row. |
-| HeroSelection.RightColumn.MasteryPanel.InfoIcon | `(0.699, 0.239, 0.013, 0.023)` | `±0.005` | Question icon. |
-| HeroSelection.RightColumn.MasteryPanel.Label | `(0.719, 0.239, 0.051, 0.027)` | `±0.006` | `MASTERY`. |
-| HeroSelection.RightColumn.MasteryPanel.ProgressBar | `(0.786, 0.248, 0.092, 0.018)` | `±0.008` | Small status fill bar. |
-| HeroSelection.RightColumn.MasteryPanel.Level | `(0.908, 0.243, 0.030, 0.028)` | `±0.006` | `LV 1`. |
-| HeroSelection.RightColumn.MasteryPanel.XP | `(0.944, 0.243, 0.048, 0.028)` | `±0.006` | `0 / 100 XP`. |
-| HeroSelection.RightColumn.StatsPanel | `(0.691, 0.310, 0.291, 0.203)` | `±0.010` | Stats panel with decorative header. |
-| HeroSelection.RightColumn.StatsPanel.Header | `(0.807, 0.309, 0.060, 0.030)` | `±0.008` | `STATS`. |
-| HeroSelection.RightColumn.StatsPanel.Damage | `(0.705, 0.351, 0.103, 0.026)` | `±0.008` | `Damage 4/99`. |
-| HeroSelection.RightColumn.StatsPanel.AttSpeed | `(0.705, 0.390, 0.103, 0.026)` | `±0.008` | `ATT Speed 2/99`. |
-| HeroSelection.RightColumn.StatsPanel.AttScale | `(0.705, 0.429, 0.103, 0.026)` | `±0.008` | `ATT Scale 2/99`. |
-| HeroSelection.RightColumn.StatsPanel.Accuracy | `(0.705, 0.466, 0.103, 0.026)` | `±0.008` | `Accuracy 2/99`. |
-| HeroSelection.RightColumn.StatsPanel.Armor | `(0.845, 0.351, 0.126, 0.026)` | `±0.008` | `Armor 7/99`. |
-| HeroSelection.RightColumn.StatsPanel.Evasion | `(0.845, 0.390, 0.126, 0.026)` | `±0.008` | `Evasion 1/99`. |
-| HeroSelection.RightColumn.StatsPanel.Luck | `(0.845, 0.429, 0.126, 0.026)` | `±0.008` | `Luck 2/99`. |
-| HeroSelection.RightColumn.StatsPanel.Speed | `(0.845, 0.466, 0.126, 0.026)` | `±0.008` | `Speed 2/99`. |
-| HeroSelection.RightColumn.WeaponUltimatePanel | `(0.691, 0.528, 0.291, 0.153)` | `±0.010` | Weapon/Ultimate split panel. |
-| HeroSelection.RightColumn.WeaponUltimatePanel.WeaponColumn | `(0.693, 0.529, 0.143, 0.151)` | `±0.010` | Left half. |
-| HeroSelection.RightColumn.WeaponUltimatePanel.WeaponColumn.Label | `(0.785, 0.545, 0.055, 0.026)` | `±0.008` | `WEAPON`. |
-| HeroSelection.RightColumn.WeaponUltimatePanel.WeaponIcon | `(0.742, 0.568, 0.061, 0.068)` | `±0.015` | Content icon. |
-| HeroSelection.RightColumn.WeaponUltimatePanel.UltimateColumn | `(0.836, 0.529, 0.145, 0.151)` | `±0.010` | Right half. |
-| HeroSelection.RightColumn.WeaponUltimatePanel.UltimateColumn.Label | `(0.873, 0.545, 0.071, 0.026)` | `±0.008` | `ULTIMATE`. |
-| HeroSelection.RightColumn.WeaponUltimatePanel.UltimateIcon | `(0.883, 0.556, 0.076, 0.075)` | `±0.015` | Content icon. |
+| HeroSelection.RightColumn.VideoPanel | `(0.691, 0.143, 0.291, 0.167)` | `±0.012` | Character video/poster panel below subtitle. |
+| HeroSelection.RightColumn.VideoPanel.Video | `(0.695, 0.150, 0.283, 0.152)` | `±0.015` | Scaled character video/poster. |
+| HeroSelection.RightColumn.RankPanel | `(0.692, 0.324, 0.290, 0.052)` | `±0.008` | Begins below video panel. |
+| HeroSelection.RightColumn.RankPanel.InfoIcon | `(0.699, 0.338, 0.013, 0.023)` | `±0.006` | Question icon. |
+| HeroSelection.RightColumn.RankPanel.Label | `(0.719, 0.339, 0.078, 0.027)` | `±0.012` | `GLOBAL RANK`. |
+| HeroSelection.RightColumn.RankPanel.LockIcon | `(0.799, 0.338, 0.011, 0.021)` | `±0.006` | Yellow lock. |
+| HeroSelection.RightColumn.RankPanel.Value | `(0.961, 0.339, 0.013, 0.028)` | `±0.008` | `--`; layout box includes label line height. |
+| HeroSelection.RightColumn.MasteryPanel | `(0.692, 0.390, 0.290, 0.056)` | `±0.008` | Hero Mastery row. |
+| HeroSelection.RightColumn.MasteryPanel.InfoIcon | `(0.699, 0.405, 0.013, 0.023)` | `±0.006` | Question icon. |
+| HeroSelection.RightColumn.MasteryPanel.Label | `(0.719, 0.405, 0.083, 0.027)` | `±0.012` | `HERO MASTERY`. |
+| HeroSelection.RightColumn.MasteryPanel.ProgressBar | `(0.806, 0.410, 0.082, 0.018)` | `±0.010` | Small status fill bar. |
+| HeroSelection.RightColumn.MasteryPanel.Level | `(0.906, 0.405, 0.030, 0.028)` | `±0.008` | `LV 1`. |
+| HeroSelection.RightColumn.MasteryPanel.XP | `(0.942, 0.405, 0.048, 0.028)` | `±0.008` | `0 / 100 XP`. |
+| HeroSelection.RightColumn.StatsPanel | `(0.691, 0.476, 0.291, 0.203)` | `±0.012` | Stats panel with decorative header. |
+| HeroSelection.RightColumn.StatsPanel.Header | `(0.807, 0.476, 0.060, 0.030)` | `±0.010` | `STATS`. |
+| HeroSelection.RightColumn.StatsPanel.Damage | `(0.705, 0.517, 0.103, 0.026)` | `±0.010` | `Damage 4/99`. |
+| HeroSelection.RightColumn.StatsPanel.AttSpeed | `(0.705, 0.556, 0.103, 0.026)` | `±0.010` | `ATT Speed 2/99`. |
+| HeroSelection.RightColumn.StatsPanel.AttScale | `(0.705, 0.594, 0.103, 0.026)` | `±0.010` | `ATT Scale 2/99`. |
+| HeroSelection.RightColumn.StatsPanel.Accuracy | `(0.705, 0.631, 0.103, 0.026)` | `±0.010` | `Accuracy 2/99`. |
+| HeroSelection.RightColumn.StatsPanel.Armor | `(0.845, 0.517, 0.126, 0.026)` | `±0.010` | `Armor 7/99`. |
+| HeroSelection.RightColumn.StatsPanel.Evasion | `(0.845, 0.556, 0.126, 0.026)` | `±0.010` | `Evasion 1/99`. |
+| HeroSelection.RightColumn.StatsPanel.Luck | `(0.845, 0.594, 0.126, 0.026)` | `±0.010` | `Luck 2/99`. |
+| HeroSelection.RightColumn.StatsPanel.Speed | `(0.845, 0.631, 0.126, 0.026)` | `±0.010` | `Speed 2/99`. |
 
 ## Bottom Row
 
@@ -136,11 +123,11 @@ Measurement method: visual inspection of the reference image at native resolutio
 | HeroSelection.BottomRow.CompanionPanel.ChadButton | `(0.386, 0.776, 0.109, 0.054)` | `±0.010` | Selected red. |
 | HeroSelection.BottomRow.CompanionPanel.StacyButton | `(0.510, 0.778, 0.105, 0.054)` | `±0.010` | Default purple. |
 | HeroSelection.BottomRow.CompanionPanel.ChooseCompanionButton | `(0.386, 0.861, 0.195, 0.067)` | `±0.010` | Wide lower button. |
-| HeroSelection.BottomRow.RightCluster | `(0.651, 0.755, 0.341, 0.201)` | `±0.012` | Difficulty, Enter, Challenges, Mods cluster. |
+| HeroSelection.BottomRow.RightCluster | `(0.651, 0.736, 0.341, 0.256)` | `±0.012` | Difficulty, Enter, Challenges, Mods cluster. |
 | HeroSelection.BottomRow.DifficultyPanel | `(0.662, 0.787, 0.081, 0.101)` | `±0.015` | Difficulty label plus dropdown frame. |
 | HeroSelection.BottomRow.DifficultyPanel.Label | `(0.674, 0.796, 0.065, 0.030)` | `±0.012` | `DIFFICULTY`. |
 | HeroSelection.BottomRow.DifficultyPanel.Dropdown | `(0.662, 0.833, 0.081, 0.052)` | `±0.015` | `Easy`. |
-| HeroSelection.BottomRow.DifficultyPanel.EnterButton | `(0.759, 0.776, 0.106, 0.148)` | `±0.012` | Prominent red CTA. |
-| HeroSelection.BottomRow.ChallengesButton | `(0.880, 0.776, 0.100, 0.065)` | `±0.010` | `CHALLENGES`; independent button. |
-| HeroSelection.BottomRow.ModsButton | `(0.880, 0.861, 0.100, 0.065)` | `±0.010` | `MODS`; independent button. |
+| HeroSelection.BottomRow.DifficultyPanel.EnterButton | `(0.759, 0.759, 0.106, 0.148)` | `±0.012` | Prominent red CTA. |
+| HeroSelection.BottomRow.ChallengesButton | `(0.880, 0.759, 0.100, 0.065)` | `±0.010` | `CHALLENGES`; independent button. |
+| HeroSelection.BottomRow.ModsButton | `(0.880, 0.869, 0.100, 0.044)` | `±0.010` | `MODS`; independent button. |
 

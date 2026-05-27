@@ -4,11 +4,22 @@
 
 #include "PerformanceSystem/T66PerformanceSystemSettings.h"
 
+#include "Core/T66LagTrackerSubsystem.h"
+#include "Gameplay/Enemies/Projectiles/T66EnemyProjectileBase.h"
+#include "Gameplay/T66UniqueDebuffProjectile.h"
+#include "Gameplay/Traps/T66TrapArrowProjectile.h"
+#include "Containers/Queue.h"
 #include "Dom/JsonObject.h"
+#include "HAL/Event.h"
 #include "HAL/FileManager.h"
+#include "HAL/IConsoleManager.h"
 #include "HAL/PlatformFileManager.h"
 #include "HAL/PlatformMemory.h"
 #include "HAL/PlatformProcess.h"
+#include "HAL/Runnable.h"
+#include "HAL/RunnableThread.h"
+#include "HAL/ThreadSafeBool.h"
+#include "HAL/ThreadSafeCounter.h"
 #include "Internationalization/Internationalization.h"
 #include "Misc/App.h"
 #include "Misc/ConfigCacheIni.h"
@@ -29,9 +40,62 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PerformanceSystem, Log, All);
 
 namespace
 {
-constexpr int32 T66PerformanceSchemaVersion = 1;
+constexpr int32 T66PerformanceSchemaVersion = 8;
 constexpr int32 T66PerformanceMaxRecentEvents = 100;
+constexpr int32 T66PerformanceWriteQueueCapacity = 4096;
+constexpr double T66PerformanceWriteQueueShutdownTimeoutSeconds = 10.0;
 constexpr double BytesToMegabytes = 1.0 / (1024.0 * 1024.0);
+
+static TAutoConsoleVariable<int32> CVarT66PerfSubstepAttributionEnabled(
+	TEXT("T66.Performance.Diagnostics.SubstepAttribution"),
+	0,
+	TEXT("Non-shipping diagnostic: when 1, records PerformanceSystem TickPerformanceSystem substep timing for B.10.1 overhead attribution. Default 0."),
+#if UE_BUILD_SHIPPING
+	ECVF_ReadOnly
+#else
+	ECVF_Default
+#endif
+);
+
+bool IsPerfSubstepAttributionEnabled()
+{
+#if !UE_BUILD_SHIPPING
+	return CVarT66PerfSubstepAttributionEnabled.GetValueOnGameThread() != 0;
+#else
+	return false;
+#endif
+}
+
+double MeasureSubstepUs(TFunctionRef<void()> Work)
+{
+	const double StartSeconds = FPlatformTime::Seconds();
+	Work();
+	return (FPlatformTime::Seconds() - StartSeconds) * 1000000.0;
+}
+
+int32 GetPerformanceWriteQueueCapacityForRun()
+{
+#if !UE_BUILD_SHIPPING
+	int32 TestCapacity = 0;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66PerfWriteQueueTestCapacity="), TestCapacity) && TestCapacity > 0)
+	{
+		return FMath::Clamp(TestCapacity, 1, T66PerformanceWriteQueueCapacity);
+	}
+#endif
+	return T66PerformanceWriteQueueCapacity;
+}
+
+double GetPerformanceWriteQueueTestDelayMs()
+{
+#if !UE_BUILD_SHIPPING
+	double TestDelayMs = 0.0;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66PerfWriteQueueTestDelayMs="), TestDelayMs))
+	{
+		return FMath::Clamp(TestDelayMs, 0.0, 1000.0);
+	}
+#endif
+	return 0.0;
+}
 
 FString SeverityToString(const ET66PerformanceSeverity Severity)
 {
@@ -139,12 +203,516 @@ void SetNumberOrUnavailable(const TSharedRef<FJsonObject>& Object, const TCHAR* 
 }
 }
 
+class UT66PerformanceSubsystem::FPerformanceWriteWorker final : public FRunnable
+{
+public:
+	enum class EWriteOperation : uint8
+	{
+		Append,
+		AtomicReplace
+	};
+
+	FPerformanceWriteWorker(const int32 InCapacity, const double InTestDelayMs)
+		: Capacity(FMath::Max(1, InCapacity))
+		, TestDelayMs(FMath::Max(0.0, InTestDelayMs))
+	{
+		Stats.Capacity = Capacity;
+		WorkEvent = FPlatformProcess::GetSynchEventFromPool(false);
+		FlushEvent = FPlatformProcess::GetSynchEventFromPool(true);
+		if (FlushEvent)
+		{
+			FlushEvent->Trigger();
+		}
+		Thread = FRunnableThread::Create(this, TEXT("T66PerfWriteWorker"));
+		if (Thread)
+		{
+			bWorkerRunning = true;
+			UpdateSnapshotState();
+		}
+	}
+
+	virtual ~FPerformanceWriteWorker() override
+	{
+		StopAndJoin(T66PerformanceWriteQueueShutdownTimeoutSeconds);
+		if (WorkEvent)
+		{
+			FPlatformProcess::ReturnSynchEventToPool(WorkEvent);
+			WorkEvent = nullptr;
+		}
+		if (FlushEvent)
+		{
+			FPlatformProcess::ReturnSynchEventToPool(FlushEvent);
+			FlushEvent = nullptr;
+		}
+	}
+
+	virtual uint32 Run() override
+	{
+		while (true)
+		{
+			FQueuedWriteCommand Command;
+			bool bDidWork = false;
+			while (Queue.Dequeue(Command))
+			{
+				ActiveWrites.Increment();
+				CurrentQueueDepth.Decrement();
+				bDidWork = true;
+				if (TestDelayMs > 0.0)
+				{
+					FPlatformProcess::Sleep(TestDelayMs / 1000.0);
+				}
+				WriteCommand(Command, false, true);
+			}
+
+			if (IsIdle())
+			{
+				if (FlushEvent)
+				{
+					FlushEvent->Trigger();
+				}
+				UpdateSnapshotState();
+			}
+
+			if (bStopRequested && IsIdle())
+			{
+				break;
+			}
+
+			if (!bDidWork && WorkEvent)
+			{
+				WorkEvent->Wait(10);
+			}
+		}
+
+		bWorkerRunning = false;
+		UpdateSnapshotState();
+		if (FlushEvent)
+		{
+			FlushEvent->Trigger();
+		}
+		return 0;
+	}
+
+	virtual void Stop() override
+	{
+		bStopRequested = true;
+		if (WorkEvent)
+		{
+			WorkEvent->Trigger();
+		}
+	}
+
+	void BeginClosing()
+	{
+		bClosing = true;
+		UpdateSnapshotState();
+	}
+
+	void SubmitAppend(const FString& TargetPath, const FString& Payload, const TCHAR* StreamName)
+	{
+		SubmitWrite(EWriteOperation::Append, TargetPath, Payload, StreamName);
+	}
+
+	void SubmitAtomicReplace(const FString& TargetPath, const FString& Payload, const TCHAR* StreamName)
+	{
+		SubmitWrite(EWriteOperation::AtomicReplace, TargetPath, Payload, StreamName);
+	}
+
+	bool FlushAndWait(const double TimeoutSeconds, const TCHAR* Reason)
+	{
+		(void)Reason;
+		const double StartSeconds = FPlatformTime::Seconds();
+		if (IsIdle())
+		{
+			RecordFlushWait(StartSeconds);
+			return true;
+		}
+
+		const bool bBounded = TimeoutSeconds >= 0.0;
+		while (!IsIdle())
+		{
+			if (!bWorkerRunning && CurrentQueueDepth.GetValue() > 0)
+			{
+				RecordFlushWait(StartSeconds);
+				return false;
+			}
+
+			uint32 WaitMilliseconds = 10;
+			if (bBounded)
+			{
+				const double ElapsedSeconds = FPlatformTime::Seconds() - StartSeconds;
+				if (ElapsedSeconds >= TimeoutSeconds)
+				{
+					RecordFlushWait(StartSeconds);
+					return false;
+				}
+				WaitMilliseconds = FMath::Max(1u, static_cast<uint32>(FMath::Min(10.0, (TimeoutSeconds - ElapsedSeconds) * 1000.0)));
+			}
+
+			if (FlushEvent)
+			{
+				FlushEvent->Wait(WaitMilliseconds);
+			}
+			else
+			{
+				FPlatformProcess::Sleep(static_cast<float>(WaitMilliseconds) / 1000.0f);
+			}
+		}
+
+		RecordFlushWait(StartSeconds);
+		return true;
+	}
+
+	bool StopAndJoin(const double TimeoutSeconds)
+	{
+		if (!Thread)
+		{
+			return true;
+		}
+
+		BeginClosing();
+		const double StartSeconds = FPlatformTime::Seconds();
+		const bool bFlushed = FlushAndWait(TimeoutSeconds, TEXT("Shutdown"));
+		{
+			FScopeLock Lock(&StatsCriticalSection);
+			Stats.ShutdownFlushWaitMs = (FPlatformTime::Seconds() - StartSeconds) * 1000.0;
+			if (!bFlushed)
+			{
+				Stats.AbandonedWrites += static_cast<uint64>(FMath::Max(0, CurrentQueueDepth.GetValue()));
+			}
+		}
+
+		if (!bFlushed)
+		{
+			Stop();
+			Thread->Kill(false);
+			delete Thread;
+			Thread = nullptr;
+			bWorkerRunning = false;
+			UpdateSnapshotState();
+			return false;
+		}
+
+		Stop();
+		Thread->WaitForCompletion();
+		delete Thread;
+		Thread = nullptr;
+		bWorkerRunning = false;
+		UpdateSnapshotState();
+		return true;
+	}
+
+	FPerformanceWriteQueueStats GetStats() const
+	{
+		FScopeLock Lock(&StatsCriticalSection);
+		FPerformanceWriteQueueStats Copy = Stats;
+		Copy.CurrentQueueDepth = CurrentQueueDepth.GetValue();
+		Copy.bWorkerRunning = bWorkerRunning;
+		Copy.bClosing = bClosing;
+		return Copy;
+	}
+
+private:
+	struct FQueuedWriteCommand
+	{
+		EWriteOperation Operation = EWriteOperation::Append;
+		FString TargetPath;
+		FString Payload;
+		FString StreamName;
+		uint64 Sequence = 0;
+	};
+
+	void SubmitWrite(const EWriteOperation Operation, const FString& TargetPath, const FString& Payload, const TCHAR* StreamName)
+	{
+		FQueuedWriteCommand Command;
+		Command.Operation = Operation;
+		Command.TargetPath = TargetPath;
+		Command.Payload = Payload;
+		Command.StreamName = StreamName ? FString(StreamName) : FString(TEXT("Unknown"));
+		Command.Sequence = ++NextSequence;
+
+		RecordAttempt(Operation);
+
+		if (!Thread || !bWorkerRunning)
+		{
+			RecordFallback(EFallbackKind::WorkerUnavailable);
+			WriteCommand(Command, true);
+			return;
+		}
+
+		if (bClosing)
+		{
+			RecordFallback(EFallbackKind::Closing);
+			FlushAndWait(-1.0, TEXT("ClosingFallback"));
+			WriteCommand(Command, true);
+			return;
+		}
+
+		if (CurrentQueueDepth.GetValue() >= Capacity)
+		{
+			RecordFallback(EFallbackKind::QueueFull);
+			FlushAndWait(-1.0, TEXT("QueueFullFallback"));
+			WriteCommand(Command, true);
+			return;
+		}
+
+		if (FlushEvent)
+		{
+			FlushEvent->Reset();
+		}
+		Queue.Enqueue(MoveTemp(Command));
+		const int32 NewDepth = CurrentQueueDepth.Increment();
+		{
+			FScopeLock Lock(&StatsCriticalSection);
+			++Stats.QueuedWrites;
+			Stats.MaxQueueDepth = FMath::Max<uint64>(Stats.MaxQueueDepth, static_cast<uint64>(FMath::Max(0, NewDepth)));
+			Stats.CurrentQueueDepth = NewDepth;
+		}
+		if (WorkEvent)
+		{
+			WorkEvent->Trigger();
+		}
+	}
+
+	enum class EFallbackKind : uint8
+	{
+		QueueFull,
+		Closing,
+		WorkerUnavailable
+	};
+
+	void RecordAttempt(const EWriteOperation Operation)
+	{
+		FScopeLock Lock(&StatsCriticalSection);
+		++Stats.AttemptedWrites;
+		if (Operation == EWriteOperation::Append)
+		{
+			++Stats.AppendWrites;
+		}
+		else
+		{
+			++Stats.AtomicReplaceWrites;
+		}
+	}
+
+	void RecordFallback(const EFallbackKind Kind)
+	{
+		FScopeLock Lock(&StatsCriticalSection);
+		++Stats.FallbackWrites;
+		switch (Kind)
+		{
+		case EFallbackKind::QueueFull:
+			++Stats.QueueFullFallbackWrites;
+			break;
+		case EFallbackKind::Closing:
+			++Stats.ClosingFallbackWrites;
+			break;
+		case EFallbackKind::WorkerUnavailable:
+			++Stats.WorkerUnavailableFallbackWrites;
+			break;
+		}
+	}
+
+	bool WriteCommand(const FQueuedWriteCommand& Command, const bool bFallback, const bool bActiveWriteAlreadyCounted = false)
+	{
+		if (!bActiveWriteAlreadyCounted)
+		{
+			ActiveWrites.Increment();
+		}
+		const double StartSeconds = FPlatformTime::Seconds();
+		bool bSuccess = false;
+		{
+			FScopeLock WriteLock(&FileWriteCriticalSection);
+			switch (Command.Operation)
+			{
+			case EWriteOperation::Append:
+				IFileManager::Get().MakeDirectory(*FPaths::GetPath(Command.TargetPath), true);
+				bSuccess = FFileHelper::SaveStringToFile(
+					Command.Payload,
+					*Command.TargetPath,
+					FFileHelper::EEncodingOptions::AutoDetect,
+					&IFileManager::Get(),
+					FILEWRITE_Append);
+				break;
+			case EWriteOperation::AtomicReplace:
+				bSuccess = SaveStringAtomic(Command.TargetPath, Command.Payload);
+				break;
+			}
+		}
+
+		const double CostUs = (FPlatformTime::Seconds() - StartSeconds) * 1000000.0;
+		ActiveWrites.Decrement();
+		{
+			FScopeLock Lock(&StatsCriticalSection);
+			if (bSuccess)
+			{
+				++Stats.CompletedWrites;
+			}
+			else
+			{
+				++Stats.FailedWrites;
+			}
+
+			if (bFallback)
+			{
+				Stats.LastFallbackWriteUs = CostUs;
+				Stats.FallbackWritePeakUs = FMath::Max(Stats.FallbackWritePeakUs, CostUs);
+			}
+			else
+			{
+				Stats.LastWorkerWriteUs = CostUs;
+				Stats.WorkerWritePeakUs = FMath::Max(Stats.WorkerWritePeakUs, CostUs);
+			}
+			Stats.CurrentQueueDepth = CurrentQueueDepth.GetValue();
+		}
+
+		if (IsIdle() && FlushEvent)
+		{
+			FlushEvent->Trigger();
+		}
+		return bSuccess;
+	}
+
+	bool IsIdle() const
+	{
+		return CurrentQueueDepth.GetValue() <= 0 && ActiveWrites.GetValue() <= 0;
+	}
+
+	void RecordFlushWait(const double StartSeconds)
+	{
+		FScopeLock Lock(&StatsCriticalSection);
+		Stats.LastFlushWaitMs = (FPlatformTime::Seconds() - StartSeconds) * 1000.0;
+		Stats.CurrentQueueDepth = CurrentQueueDepth.GetValue();
+	}
+
+	void UpdateSnapshotState()
+	{
+		FScopeLock Lock(&StatsCriticalSection);
+		Stats.CurrentQueueDepth = CurrentQueueDepth.GetValue();
+		Stats.bWorkerRunning = bWorkerRunning;
+		Stats.bClosing = bClosing;
+	}
+
+	const int32 Capacity = T66PerformanceWriteQueueCapacity;
+	const double TestDelayMs = 0.0;
+	TQueue<FQueuedWriteCommand, EQueueMode::Spsc> Queue;
+	FThreadSafeCounter CurrentQueueDepth;
+	FThreadSafeCounter ActiveWrites;
+	FThreadSafeBool bStopRequested = false;
+	FThreadSafeBool bWorkerRunning = false;
+	FThreadSafeBool bClosing = false;
+	FEvent* WorkEvent = nullptr;
+	FEvent* FlushEvent = nullptr;
+	FRunnableThread* Thread = nullptr;
+	uint64 NextSequence = 0;
+	mutable FCriticalSection StatsCriticalSection;
+	FCriticalSection FileWriteCriticalSection;
+	FPerformanceWriteQueueStats Stats;
+};
+
 void UT66PerformanceSubsystem::FPerformanceLogOutputDevice::Serialize(
 	const TCHAR* V,
 	ELogVerbosity::Type Verbosity,
 	const FName& Category)
 {
 	Owner.CaptureLogLine(Category.ToString(), Verbosity, V ? FString(V) : FString());
+}
+
+void UT66PerformanceSubsystem::StartPerformanceWriteWorker()
+{
+	if (WriteWorker)
+	{
+		return;
+	}
+
+	WriteWorker = new FPerformanceWriteWorker(GetPerformanceWriteQueueCapacityForRun(), GetPerformanceWriteQueueTestDelayMs());
+}
+
+void UT66PerformanceSubsystem::BeginPerformanceWriteShutdown()
+{
+	if (WriteWorker)
+	{
+		WriteWorker->BeginClosing();
+	}
+}
+
+void UT66PerformanceSubsystem::StopPerformanceWriteWorker()
+{
+	if (WriteWorker)
+	{
+		WriteWorker->StopAndJoin(T66PerformanceWriteQueueShutdownTimeoutSeconds);
+		delete WriteWorker;
+		WriteWorker = nullptr;
+	}
+}
+
+bool UT66PerformanceSubsystem::FlushPerformanceWrites(const double TimeoutSeconds, const TCHAR* Reason)
+{
+	return !WriteWorker || WriteWorker->FlushAndWait(TimeoutSeconds, Reason);
+}
+
+bool UT66PerformanceSubsystem::EnsurePerformanceProducerGameThread(const TCHAR* FunctionName) const
+{
+#if !UE_BUILD_SHIPPING
+	if (!IsInGameThread())
+	{
+		ensureMsgf(false, TEXT("UT66PerformanceSubsystem::%s must run on the game thread for the B.10.1B write queue producer contract."), FunctionName ? FunctionName : TEXT("Unknown"));
+		return false;
+	}
+#endif
+	return true;
+}
+
+void UT66PerformanceSubsystem::QueuePerformanceAppend(const FString& TargetPath, const FString& Payload, const TCHAR* StreamName)
+{
+	if (WriteWorker)
+	{
+		WriteWorker->SubmitAppend(TargetPath, Payload, StreamName);
+		return;
+	}
+
+	IFileManager::Get().MakeDirectory(*FPaths::GetPath(TargetPath), true);
+	FFileHelper::SaveStringToFile(
+		Payload,
+		*TargetPath,
+		FFileHelper::EEncodingOptions::AutoDetect,
+		&IFileManager::Get(),
+		FILEWRITE_Append);
+}
+
+void UT66PerformanceSubsystem::QueuePerformanceAtomicReplace(const FString& TargetPath, const FString& Payload, const TCHAR* StreamName)
+{
+	if (WriteWorker)
+	{
+		WriteWorker->SubmitAtomicReplace(TargetPath, Payload, StreamName);
+		return;
+	}
+
+	SaveStringAtomic(TargetPath, Payload);
+}
+
+void UT66PerformanceSubsystem::RunWriteQueueOrderingSelfTest()
+{
+#if !UE_BUILD_SHIPPING
+	if (!FParse::Param(FCommandLine::Get(), TEXT("T66PerfWriteQueueOrderingSelfTest")))
+	{
+		return;
+	}
+
+	for (int32 Index = 0; Index < 8; ++Index)
+	{
+		EmitPerformanceEvent(
+			TEXT("PerformanceSystem"),
+			TEXT("WriteQueueOrderingSelfTest"),
+			ET66PerformanceSeverity::Info,
+			ET66PerformanceConfidence::Exact,
+			FString::Printf(TEXT("Write queue ordering self-test event %d."), Index),
+			{
+				{ TEXT("SelfTestIndex"), FString::FromInt(Index), ET66PerformanceConfidence::Exact, TEXT("T66PerfWriteQueueOrderingSelfTest"), 0.0 }
+			});
+	}
+	FlushPerformanceWrites(T66PerformanceWriteQueueShutdownTimeoutSeconds, TEXT("WriteQueueOrderingSelfTest"));
+#endif
 }
 
 void UT66PerformanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -157,6 +725,17 @@ void UT66PerformanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		return;
 	}
 
+#if !UE_BUILD_SHIPPING
+	int32 SubstepAttributionOverride = 0;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66PerfSubstepAttribution="), SubstepAttributionOverride))
+	{
+		if (IConsoleVariable* SubstepAttributionCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Performance.Diagnostics.SubstepAttribution")))
+		{
+			SubstepAttributionCVar->Set(SubstepAttributionOverride != 0 ? 1 : 0, ECVF_SetByCommandline);
+		}
+	}
+#endif
+
 	SessionStartedUtc = FDateTime::UtcNow();
 	SessionId = FString::Printf(
 		TEXT("%s_%s"),
@@ -167,10 +746,12 @@ void UT66PerformanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	SessionsRootDir = FPaths::Combine(PerformanceRootDir, TEXT("Sessions"));
 	SessionDir = FPaths::Combine(SessionsRootDir, SessionId);
 	EventsJsonlPath = FPaths::Combine(SessionDir, TEXT("events.jsonl"));
+	BoardSaturationSamplesJsonlPath = FPaths::Combine(SessionDir, TEXT("board_saturation_samples.jsonl"));
 	SnapshotCurrentPath = FPaths::Combine(PerformanceRootDir, TEXT("snapshot.current.json"));
 	SnapshotPreviousPath = FPaths::Combine(PerformanceRootDir, TEXT("snapshot.previous.json"));
 
 	IFileManager::Get().MakeDirectory(*SessionDir, true);
+	StartPerformanceWriteWorker();
 
 	FrameTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
 		FTickerDelegate::CreateUObject(this, &UT66PerformanceSubsystem::TickPerformanceSystem));
@@ -202,6 +783,7 @@ void UT66PerformanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		});
 
 	WritePeriodicSnapshot(true);
+	RunWriteQueueOrderingSelfTest();
 	EnforceRetentionBudget();
 }
 
@@ -209,7 +791,14 @@ void UT66PerformanceSubsystem::Deinitialize()
 {
 	if (bInitialized)
 	{
+		BeginPerformanceWriteShutdown();
+		FlushPerformanceWrites(T66PerformanceWriteQueueShutdownTimeoutSeconds, TEXT("PreFinalReport"));
 		WriteFinalReport(TEXT("SubsystemDeinitialize"));
+		StopPerformanceWriteWorker();
+	}
+	else
+	{
+		StopPerformanceWriteWorker();
 	}
 
 	if (FrameTickerHandle.IsValid())
@@ -251,10 +840,21 @@ void UT66PerformanceSubsystem::RecordMeasuredOperation(
 	const double DurationMs,
 	const FString& Source)
 {
+	if (!EnsurePerformanceProducerGameThread(TEXT("RecordMeasuredOperation")))
+	{
+		return;
+	}
+
 	if (!bInitialized || !Settings || DurationMs < Settings->ProjectOperationWarningMs)
 	{
 		return;
 	}
+
+	TArray<FT66PerformanceAttribution> Attributions = {
+		{ TEXT("OperationName"), OperationName, ET66PerformanceConfidence::Exact, Source, 0.0 },
+		{ TEXT("DurationMs"), FString::Printf(TEXT("%.3f"), DurationMs), ET66PerformanceConfidence::Sampled, Source, 0.0 }
+	};
+	AppendBoardSaturationAttributions(Attributions);
 
 	EmitPerformanceEvent(
 		TEXT("ProjectOperationStallDetector"),
@@ -262,10 +862,7 @@ void UT66PerformanceSubsystem::RecordMeasuredOperation(
 		ET66PerformanceSeverity::Warning,
 		ET66PerformanceConfidence::Sampled,
 		FString::Printf(TEXT("%s took %.2f ms."), *OperationName, DurationMs),
-		{
-			{ TEXT("OperationName"), OperationName, ET66PerformanceConfidence::Exact, Source, 0.0 },
-			{ TEXT("DurationMs"), FString::Printf(TEXT("%.3f"), DurationMs), ET66PerformanceConfidence::Sampled, Source, 0.0 }
-		});
+		Attributions);
 }
 
 bool UT66PerformanceSubsystem::TickPerformanceSystem(const float DeltaSeconds)
@@ -277,42 +874,151 @@ bool UT66PerformanceSubsystem::TickPerformanceSystem(const float DeltaSeconds)
 
 	const double TickStartSeconds = FPlatformTime::Seconds();
 	const double NowSeconds = TickStartSeconds;
+	const bool bSubstepAttributionEnabled = IsPerfSubstepAttributionEnabled();
 
-	FrameSamples.Add({ NowSeconds, static_cast<double>(DeltaSeconds) * 1000.0 });
-	PruneRollingSamples(NowSeconds);
+	double FrameSampleAppendUs = 0.0;
+	double BoardSampleCaptureUs = 0.0;
+	double PruneSamplesUs = 0.0;
+	double SingleFrameHitchUs = 0.0;
+	double FramePacingDetectorUs = 0.0;
+	double MemoryGrowthDetectorUs = 0.0;
+	double BasicHangDetectorUs = 0.0;
+	double PeriodicSnapshotUs = 0.0;
 
-	RunDetector(TEXT("FramePacingDetector"), Settings->DetectorBudgetUs, 1.0, [this, DeltaSeconds]()
+	if (bSubstepAttributionEnabled)
 	{
-		CheckFrameDetectors(DeltaSeconds);
-	});
-
-	RunDetector(TEXT("MemoryGrowthDetector"), Settings->DetectorBudgetUs, 1.0, [this]()
+		FrameSampleAppendUs = MeasureSubstepUs([this, NowSeconds, DeltaSeconds]()
+		{
+			FrameSamples.Add({ NowSeconds, static_cast<double>(DeltaSeconds) * 1000.0 });
+		});
+		BoardSampleCaptureUs = MeasureSubstepUs([this, NowSeconds, DeltaSeconds]()
+		{
+			CaptureBoardSaturationFrameSample(NowSeconds, static_cast<double>(DeltaSeconds) * 1000.0);
+		});
+		PruneSamplesUs = MeasureSubstepUs([this, NowSeconds]()
+		{
+			PruneRollingSamples(NowSeconds);
+		});
+		SingleFrameHitchUs = MeasureSubstepUs([this, DeltaSeconds]()
+		{
+			CheckSingleFrameHitch(DeltaSeconds);
+		});
+		FramePacingDetectorUs = MeasureSubstepUs([this, DeltaSeconds]()
+		{
+			RunDetector(TEXT("FramePacingDetector"), Settings->DetectorBudgetUs, 1.0, [this, DeltaSeconds]()
+			{
+				CheckFrameDetectors(DeltaSeconds);
+			});
+		});
+		MemoryGrowthDetectorUs = MeasureSubstepUs([this]()
+		{
+			RunDetector(TEXT("MemoryGrowthDetector"), Settings->DetectorBudgetUs, 1.0, [this]()
+			{
+				CheckMemoryDetector();
+			});
+		});
+		BasicHangDetectorUs = MeasureSubstepUs([this, DeltaSeconds]()
+		{
+			RunDetector(TEXT("BasicHangDetector"), Settings->DetectorBudgetUs, 0.0, [this, DeltaSeconds]()
+			{
+				CheckBasicHangDetector(DeltaSeconds);
+			});
+		});
+		PeriodicSnapshotUs = MeasureSubstepUs([this]()
+		{
+			WritePeriodicSnapshot(false);
+		});
+	}
+	else
 	{
-		CheckMemoryDetector();
-	});
+		FrameSamples.Add({ NowSeconds, static_cast<double>(DeltaSeconds) * 1000.0 });
+		CaptureBoardSaturationFrameSample(NowSeconds, static_cast<double>(DeltaSeconds) * 1000.0);
+		PruneRollingSamples(NowSeconds);
+		CheckSingleFrameHitch(DeltaSeconds);
 
-	RunDetector(TEXT("BasicHangDetector"), Settings->DetectorBudgetUs, 0.0, [this, DeltaSeconds]()
-	{
-		CheckBasicHangDetector(DeltaSeconds);
-	});
+		RunDetector(TEXT("FramePacingDetector"), Settings->DetectorBudgetUs, 1.0, [this, DeltaSeconds]()
+		{
+			CheckFrameDetectors(DeltaSeconds);
+		});
 
-	WritePeriodicSnapshot(false);
+		RunDetector(TEXT("MemoryGrowthDetector"), Settings->DetectorBudgetUs, 1.0, [this]()
+		{
+			CheckMemoryDetector();
+		});
+
+		RunDetector(TEXT("BasicHangDetector"), Settings->DetectorBudgetUs, 0.0, [this, DeltaSeconds]()
+		{
+			CheckBasicHangDetector(DeltaSeconds);
+		});
+
+		WritePeriodicSnapshot(false);
+	}
 
 	const double FrameworkCostUs = (FPlatformTime::Seconds() - TickStartSeconds) * 1000000.0;
+	double InstrumentationProbeCostUs = 0.0;
+	if (bSubstepAttributionEnabled)
+	{
+		const double MeasuredSubstepUs =
+			FrameSampleAppendUs
+			+ BoardSampleCaptureUs
+			+ PruneSamplesUs
+			+ SingleFrameHitchUs
+			+ FramePacingDetectorUs
+			+ MemoryGrowthDetectorUs
+			+ BasicHangDetectorUs
+			+ PeriodicSnapshotUs;
+		InstrumentationProbeCostUs = FMath::Max(0.0, FrameworkCostUs - MeasuredSubstepUs);
+		++FrameworkSubstepTimingStats.SampleCount;
+		FrameworkSubstepTimingStats.LastFrameSampleAppendUs = FrameSampleAppendUs;
+		FrameworkSubstepTimingStats.LastBoardSampleCaptureUs = BoardSampleCaptureUs;
+		FrameworkSubstepTimingStats.LastPruneSamplesUs = PruneSamplesUs;
+		FrameworkSubstepTimingStats.LastSingleFrameHitchUs = SingleFrameHitchUs;
+		FrameworkSubstepTimingStats.LastFramePacingDetectorUs = FramePacingDetectorUs;
+		FrameworkSubstepTimingStats.LastMemoryGrowthDetectorUs = MemoryGrowthDetectorUs;
+		FrameworkSubstepTimingStats.LastBasicHangDetectorUs = BasicHangDetectorUs;
+		FrameworkSubstepTimingStats.LastPeriodicSnapshotUs = PeriodicSnapshotUs;
+		FrameworkSubstepTimingStats.LastFrameworkTotalUs = FrameworkCostUs;
+		FrameworkSubstepTimingStats.LastInstrumentationProbeUs = InstrumentationProbeCostUs;
+		FrameworkSubstepTimingStats.FrameSampleAppendPeakUs = FMath::Max(FrameworkSubstepTimingStats.FrameSampleAppendPeakUs, FrameSampleAppendUs);
+		FrameworkSubstepTimingStats.BoardSampleCapturePeakUs = FMath::Max(FrameworkSubstepTimingStats.BoardSampleCapturePeakUs, BoardSampleCaptureUs);
+		FrameworkSubstepTimingStats.PruneSamplesPeakUs = FMath::Max(FrameworkSubstepTimingStats.PruneSamplesPeakUs, PruneSamplesUs);
+		FrameworkSubstepTimingStats.SingleFrameHitchPeakUs = FMath::Max(FrameworkSubstepTimingStats.SingleFrameHitchPeakUs, SingleFrameHitchUs);
+		FrameworkSubstepTimingStats.FramePacingDetectorPeakUs = FMath::Max(FrameworkSubstepTimingStats.FramePacingDetectorPeakUs, FramePacingDetectorUs);
+		FrameworkSubstepTimingStats.MemoryGrowthDetectorPeakUs = FMath::Max(FrameworkSubstepTimingStats.MemoryGrowthDetectorPeakUs, MemoryGrowthDetectorUs);
+		FrameworkSubstepTimingStats.BasicHangDetectorPeakUs = FMath::Max(FrameworkSubstepTimingStats.BasicHangDetectorPeakUs, BasicHangDetectorUs);
+		FrameworkSubstepTimingStats.PeriodicSnapshotPeakUs = FMath::Max(FrameworkSubstepTimingStats.PeriodicSnapshotPeakUs, PeriodicSnapshotUs);
+		FrameworkSubstepTimingStats.FrameworkTotalPeakUs = FMath::Max(FrameworkSubstepTimingStats.FrameworkTotalPeakUs, FrameworkCostUs);
+		FrameworkSubstepTimingStats.InstrumentationProbePeakUs = FMath::Max(FrameworkSubstepTimingStats.InstrumentationProbePeakUs, InstrumentationProbeCostUs);
+	}
 	if (FrameworkCostUs > Settings->FrameworkFrameBudgetUs
 		&& NowSeconds - LastFrameworkBudgetEventSeconds > Settings->FrameDetectorCooldownSeconds)
 	{
 		LastFrameworkBudgetEventSeconds = NowSeconds;
+		TArray<FT66PerformanceAttribution> Attributions = {
+			{ TEXT("FrameworkCostUs"), FString::Printf(TEXT("%.3f"), FrameworkCostUs), ET66PerformanceConfidence::Exact, TEXT("FPlatformTime"), 0.0 },
+			{ TEXT("BudgetUs"), FString::Printf(TEXT("%.3f"), Settings->FrameworkFrameBudgetUs), ET66PerformanceConfidence::Exact, TEXT("UT66PerformanceSystemSettings"), 0.0 }
+		};
+		if (bSubstepAttributionEnabled)
+		{
+			Attributions.Append({
+				{ TEXT("FrameSampleAppendUs"), FString::Printf(TEXT("%.3f"), FrameSampleAppendUs), ET66PerformanceConfidence::Sampled, TEXT("TickPerformanceSystem"), 0.0 },
+				{ TEXT("BoardSampleCaptureUs"), FString::Printf(TEXT("%.3f"), BoardSampleCaptureUs), ET66PerformanceConfidence::Sampled, TEXT("TickPerformanceSystem"), 0.0 },
+				{ TEXT("PruneSamplesUs"), FString::Printf(TEXT("%.3f"), PruneSamplesUs), ET66PerformanceConfidence::Sampled, TEXT("TickPerformanceSystem"), 0.0 },
+				{ TEXT("SingleFrameHitchCheckUs"), FString::Printf(TEXT("%.3f"), SingleFrameHitchUs), ET66PerformanceConfidence::Sampled, TEXT("TickPerformanceSystem"), 0.0 },
+				{ TEXT("FramePacingDetectorUs"), FString::Printf(TEXT("%.3f"), FramePacingDetectorUs), ET66PerformanceConfidence::Sampled, TEXT("TickPerformanceSystem"), 0.0 },
+				{ TEXT("MemoryGrowthDetectorUs"), FString::Printf(TEXT("%.3f"), MemoryGrowthDetectorUs), ET66PerformanceConfidence::Sampled, TEXT("TickPerformanceSystem"), 0.0 },
+				{ TEXT("BasicHangDetectorUs"), FString::Printf(TEXT("%.3f"), BasicHangDetectorUs), ET66PerformanceConfidence::Sampled, TEXT("TickPerformanceSystem"), 0.0 },
+				{ TEXT("PeriodicSnapshotUs"), FString::Printf(TEXT("%.3f"), PeriodicSnapshotUs), ET66PerformanceConfidence::Sampled, TEXT("TickPerformanceSystem"), 0.0 },
+				{ TEXT("InstrumentationProbeCostUs"), FString::Printf(TEXT("%.3f"), InstrumentationProbeCostUs), ET66PerformanceConfidence::Inferred, TEXT("TickPerformanceSystem"), 0.0 }
+			});
+		}
 		EmitPerformanceEvent(
 			TEXT("PerformanceSystemOverhead"),
 			TEXT("FrameworkBudgetExceeded"),
 			ET66PerformanceSeverity::Warning,
 			ET66PerformanceConfidence::Exact,
 			FString::Printf(TEXT("PerformanceSystem frame cost was %.2f us."), FrameworkCostUs),
-			{
-				{ TEXT("FrameworkCostUs"), FString::Printf(TEXT("%.3f"), FrameworkCostUs), ET66PerformanceConfidence::Exact, TEXT("FPlatformTime"), 0.0 },
-				{ TEXT("BudgetUs"), FString::Printf(TEXT("%.3f"), Settings->FrameworkFrameBudgetUs), ET66PerformanceConfidence::Exact, TEXT("UT66PerformanceSystemSettings"), 0.0 }
-			});
+			Attributions);
 	}
 
 	return true;
@@ -457,23 +1163,6 @@ void UT66PerformanceSubsystem::HandleSystemError()
 void UT66PerformanceSubsystem::CheckFrameDetectors(const float DeltaSeconds)
 {
 	const double NowSeconds = FPlatformTime::Seconds();
-	const double FrameMs = static_cast<double>(DeltaSeconds) * 1000.0;
-
-	if (FrameMs >= Settings->HitchThresholdMs && NowSeconds - LastHitchEventSeconds >= Settings->FrameDetectorCooldownSeconds)
-	{
-		LastHitchEventSeconds = NowSeconds;
-		EmitPerformanceEvent(
-			TEXT("FramePacingDetector"),
-			TEXT("SingleFrameHitch"),
-			ET66PerformanceSeverity::Warning,
-			ET66PerformanceConfidence::Exact,
-			FString::Printf(TEXT("Frame took %.2f ms."), FrameMs),
-			{
-				{ TEXT("FrameTimeMs"), FString::Printf(TEXT("%.3f"), FrameMs), ET66PerformanceConfidence::Exact, TEXT("FTSTicker DeltaSeconds"), 0.0 },
-				{ TEXT("ThresholdMs"), FString::Printf(TEXT("%.3f"), Settings->HitchThresholdMs), ET66PerformanceConfidence::Exact, TEXT("UT66PerformanceSystemSettings"), 0.0 }
-			});
-	}
-
 	const FFrameSummary Summary = CalculateFrameSummary(Settings->SustainedLowFpsWindowSeconds);
 	if (Summary.SampleCount <= 1)
 	{
@@ -485,35 +1174,61 @@ void UT66PerformanceSubsystem::CheckFrameDetectors(const float DeltaSeconds)
 		&& NowSeconds - LastLowFpsEventSeconds >= Settings->FrameDetectorCooldownSeconds)
 	{
 		LastLowFpsEventSeconds = NowSeconds;
+		TArray<FT66PerformanceAttribution> LowFpsAttributions = {
+			{ TEXT("AverageFps"), FString::Printf(TEXT("%.3f"), Summary.AverageFps), ET66PerformanceConfidence::Sampled, TEXT("FrameWindow"), Settings->SustainedLowFpsWindowSeconds },
+			{ TEXT("ThresholdFps"), FString::Printf(TEXT("%.3f"), Settings->SustainedLowFpsThreshold), ET66PerformanceConfidence::Exact, TEXT("UT66PerformanceSystemSettings"), 0.0 },
+			{ TEXT("OnePercentLowFps"), FString::Printf(TEXT("%.3f"), Summary.OnePercentLowFps), ET66PerformanceConfidence::Sampled, TEXT("FrameWindow"), Settings->SustainedLowFpsWindowSeconds },
+			{ TEXT("PointOnePercentLowFps"), FString::Printf(TEXT("%.3f"), Summary.PointOnePercentLowFps), ET66PerformanceConfidence::Sampled, TEXT("FrameWindow"), Settings->SustainedLowFpsWindowSeconds }
+		};
+		AppendBoardSaturationAttributions(LowFpsAttributions);
 		EmitPerformanceEvent(
 			TEXT("FramePacingDetector"),
 			TEXT("SustainedLowFps"),
 			ET66PerformanceSeverity::Warning,
 			ET66PerformanceConfidence::Sampled,
 			FString::Printf(TEXT("Rolling FPS was %.2f over %.1f seconds."), Summary.AverageFps, Settings->SustainedLowFpsWindowSeconds),
-			{
-				{ TEXT("AverageFps"), FString::Printf(TEXT("%.3f"), Summary.AverageFps), ET66PerformanceConfidence::Sampled, TEXT("FrameWindow"), Settings->SustainedLowFpsWindowSeconds },
-				{ TEXT("ThresholdFps"), FString::Printf(TEXT("%.3f"), Settings->SustainedLowFpsThreshold), ET66PerformanceConfidence::Exact, TEXT("UT66PerformanceSystemSettings"), 0.0 },
-				{ TEXT("OnePercentLowFps"), FString::Printf(TEXT("%.3f"), Summary.OnePercentLowFps), ET66PerformanceConfidence::Sampled, TEXT("FrameWindow"), Settings->SustainedLowFpsWindowSeconds },
-				{ TEXT("PointOnePercentLowFps"), FString::Printf(TEXT("%.3f"), Summary.PointOnePercentLowFps), ET66PerformanceConfidence::Sampled, TEXT("FrameWindow"), Settings->SustainedLowFpsWindowSeconds }
-			});
+			LowFpsAttributions);
 	}
 
 	if (Summary.StdDevMs >= Settings->StutterStdDevThresholdMs
 		&& NowSeconds - LastStutterEventSeconds >= Settings->FrameDetectorCooldownSeconds)
 	{
 		LastStutterEventSeconds = NowSeconds;
+		TArray<FT66PerformanceAttribution> StutterAttributions = {
+			{ TEXT("StdDevMs"), FString::Printf(TEXT("%.3f"), Summary.StdDevMs), ET66PerformanceConfidence::Sampled, TEXT("FrameWindow"), Settings->SustainedLowFpsWindowSeconds },
+			{ TEXT("ThresholdMs"), FString::Printf(TEXT("%.3f"), Settings->StutterStdDevThresholdMs), ET66PerformanceConfidence::Exact, TEXT("UT66PerformanceSystemSettings"), 0.0 }
+		};
+		AppendBoardSaturationAttributions(StutterAttributions);
 		EmitPerformanceEvent(
 			TEXT("FramePacingDetector"),
 			TEXT("FrameVarianceStutter"),
 			ET66PerformanceSeverity::Warning,
 			ET66PerformanceConfidence::Sampled,
 			FString::Printf(TEXT("Frame-time standard deviation was %.2f ms over %.1f seconds."), Summary.StdDevMs, Settings->SustainedLowFpsWindowSeconds),
-			{
-				{ TEXT("StdDevMs"), FString::Printf(TEXT("%.3f"), Summary.StdDevMs), ET66PerformanceConfidence::Sampled, TEXT("FrameWindow"), Settings->SustainedLowFpsWindowSeconds },
-				{ TEXT("ThresholdMs"), FString::Printf(TEXT("%.3f"), Settings->StutterStdDevThresholdMs), ET66PerformanceConfidence::Exact, TEXT("UT66PerformanceSystemSettings"), 0.0 }
-			});
+			StutterAttributions);
 	}
+}
+
+void UT66PerformanceSubsystem::CheckSingleFrameHitch(const float DeltaSeconds)
+{
+	const double FrameMs = static_cast<double>(DeltaSeconds) * 1000.0;
+	if (!Settings || FrameMs < Settings->HitchThresholdMs)
+	{
+		return;
+	}
+
+	TArray<FT66PerformanceAttribution> HitchAttributions;
+	HitchAttributions.Reserve(6);
+	HitchAttributions.Add({ TEXT("FrameTimeMs"), FString::Printf(TEXT("%.3f"), FrameMs), ET66PerformanceConfidence::Exact, TEXT("FTSTicker DeltaSeconds"), 0.0 });
+	HitchAttributions.Add({ TEXT("ThresholdMs"), FString::Printf(TEXT("%.3f"), Settings->HitchThresholdMs), ET66PerformanceConfidence::Exact, TEXT("UT66PerformanceSystemSettings"), 0.0 });
+	AppendBoardSaturationAttributions(HitchAttributions);
+	EmitPerformanceEvent(
+		TEXT("FramePacingDetector"),
+		TEXT("SingleFrameHitch"),
+		ET66PerformanceSeverity::Warning,
+		ET66PerformanceConfidence::Exact,
+		FString::Printf(TEXT("Frame took %.2f ms."), FrameMs),
+		HitchAttributions);
 }
 
 void UT66PerformanceSubsystem::CheckMemoryDetector()
@@ -585,8 +1300,97 @@ void UT66PerformanceSubsystem::CheckBasicHangDetector(const float DeltaSeconds)
 		});
 }
 
+void UT66PerformanceSubsystem::CaptureBoardSaturationFrameSample(const double NowSeconds, const double FrameMs)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	FBoardSaturationFrameSample Sample;
+	Sample.SessionTimeSeconds = (FDateTime::UtcNow() - SessionStartedUtc).GetTotalSeconds();
+	Sample.GameTimeSeconds = World->GetTimeSeconds();
+	Sample.FrameTimeMs = FrameMs;
+	Sample.WorldName = SanitizeForReport(World->GetName());
+	Sample.MapName = SanitizeForReport(World->GetMapName());
+
+	UGameInstance* GameInstance = GetGameInstance();
+	const UT66LagTrackerSubsystem* LagTracker = GameInstance ? GameInstance->GetSubsystem<UT66LagTrackerSubsystem>() : nullptr;
+	FT66LagTrackerBoardSaturationSample BoardSample;
+	if (LagTracker && LagTracker->GetLatestBoardSaturationSample(BoardSample))
+	{
+		Sample.LiveRegularEnemies = BoardSample.LiveRegularEnemies;
+		Sample.LiveRichEnemies = BoardSample.LiveRichEnemies;
+		Sample.LiveLightweightMobs = BoardSample.LiveLightweightMobs;
+		Sample.LiveLightweightMeleeMobs = BoardSample.LiveLightweightMeleeMobs;
+		Sample.LiveLightweightRushMobs = BoardSample.LiveLightweightRushMobs;
+		Sample.LiveLightweightFlyingMobs = BoardSample.LiveLightweightFlyingMobs;
+		Sample.LiveLightweightRangedMobs = BoardSample.LiveLightweightRangedMobs;
+		Sample.PendingSpawns = BoardSample.PendingSpawns;
+		Sample.ActiveEnemyProjectiles = BoardSample.ActiveEnemyProjectiles;
+		Sample.LightweightPoolReuseAcquires = BoardSample.LightweightPoolReuseAcquires;
+		Sample.LightweightPoolReleases = BoardSample.LightweightPoolReleases;
+		Sample.LightweightPoolInactive = BoardSample.LightweightPoolInactive;
+		Sample.LightweightPoolInactivePeak = BoardSample.LightweightPoolInactivePeak;
+		Sample.BoardSaturationSampleAgeSeconds = FMath::Max(0.0, NowSeconds - BoardSample.TimestampSeconds);
+		Sample.bBoardSaturationValid = true;
+	}
+	Sample.ActiveEnemyProjectiles =
+		AT66EnemyProjectileBase::GetActiveEnemyProjectileCount()
+		+ AT66UniqueDebuffProjectile::GetActiveEnemyProjectileCount()
+		+ AT66TrapArrowProjectile::GetActiveTrapProjectileCount();
+
+	BoardSaturationFrameSamples.Add(MoveTemp(Sample));
+}
+
+void UT66PerformanceSubsystem::WriteBoardSaturationFrameSamples() const
+{
+	if (BoardSaturationSamplesJsonlPath.IsEmpty() || BoardSaturationFrameSamples.Num() <= 0)
+	{
+		return;
+	}
+
+	FString Jsonl;
+	Jsonl.Reserve(BoardSaturationFrameSamples.Num() * 560);
+	for (const FBoardSaturationFrameSample& Sample : BoardSaturationFrameSamples)
+	{
+		const TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
+		Object->SetNumberField(TEXT("SchemaVersion"), T66PerformanceSchemaVersion);
+		Object->SetNumberField(TEXT("SessionTimeSeconds"), Sample.SessionTimeSeconds);
+		Object->SetNumberField(TEXT("GameTimeSeconds"), Sample.GameTimeSeconds);
+		Object->SetNumberField(TEXT("FrameTimeMs"), Sample.FrameTimeMs);
+		Object->SetBoolField(TEXT("BoardSaturationValid"), Sample.bBoardSaturationValid);
+		Object->SetNumberField(TEXT("LiveRegularEnemies"), Sample.LiveRegularEnemies);
+		Object->SetNumberField(TEXT("LiveRichEnemies"), Sample.LiveRichEnemies);
+		Object->SetNumberField(TEXT("LiveLightweightMobs"), Sample.LiveLightweightMobs);
+		Object->SetNumberField(TEXT("LiveLightweightMeleeMobs"), Sample.LiveLightweightMeleeMobs);
+		Object->SetNumberField(TEXT("LiveLightweightRushMobs"), Sample.LiveLightweightRushMobs);
+		Object->SetNumberField(TEXT("LiveLightweightFlyingMobs"), Sample.LiveLightweightFlyingMobs);
+		Object->SetNumberField(TEXT("LiveLightweightRangedMobs"), Sample.LiveLightweightRangedMobs);
+		Object->SetNumberField(TEXT("PendingSpawns"), Sample.PendingSpawns);
+		Object->SetNumberField(TEXT("ActiveEnemyProjectiles"), Sample.ActiveEnemyProjectiles);
+		Object->SetNumberField(TEXT("LightweightPoolReuseAcquires"), Sample.LightweightPoolReuseAcquires);
+		Object->SetNumberField(TEXT("LightweightPoolReleases"), Sample.LightweightPoolReleases);
+		Object->SetNumberField(TEXT("LightweightPoolInactive"), Sample.LightweightPoolInactive);
+		Object->SetNumberField(TEXT("LightweightPoolInactivePeak"), Sample.LightweightPoolInactivePeak);
+		Object->SetNumberField(TEXT("BoardSaturationSampleAgeSeconds"), Sample.BoardSaturationSampleAgeSeconds);
+		Object->SetStringField(TEXT("WorldName"), Sample.WorldName);
+		Object->SetStringField(TEXT("MapName"), Sample.MapName);
+		Jsonl += JsonObjectToString(Object, false);
+		Jsonl += LINE_TERMINATOR;
+	}
+
+	SaveStringAtomic(BoardSaturationSamplesJsonlPath, Jsonl);
+}
+
 void UT66PerformanceSubsystem::WritePeriodicSnapshot(const bool bForce)
 {
+	if (!EnsurePerformanceProducerGameThread(TEXT("WritePeriodicSnapshot")))
+	{
+		return;
+	}
+
 	if (!Settings || !bInitialized)
 	{
 		return;
@@ -600,15 +1404,23 @@ void UT66PerformanceSubsystem::WritePeriodicSnapshot(const bool bForce)
 
 	LastSnapshotSeconds = NowSeconds;
 
-	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-	if (PlatformFile.FileExists(*SnapshotCurrentPath))
+	if (bForce)
 	{
-		PlatformFile.DeleteFile(*SnapshotPreviousPath);
-		PlatformFile.MoveFile(*SnapshotPreviousPath, *SnapshotCurrentPath);
+		FlushPerformanceWrites(T66PerformanceWriteQueueShutdownTimeoutSeconds, TEXT("ForcedSnapshot"));
+		IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+		if (PlatformFile.FileExists(*SnapshotCurrentPath))
+		{
+			PlatformFile.DeleteFile(*SnapshotPreviousPath);
+			PlatformFile.MoveFile(*SnapshotPreviousPath, *SnapshotCurrentPath);
+		}
+
+		const TSharedRef<FJsonObject> Snapshot = CreateSnapshotJson(TEXT("Running"), false, 50);
+		SaveStringAtomic(SnapshotCurrentPath, JsonObjectToString(Snapshot, false));
+		return;
 	}
 
-	const TSharedRef<FJsonObject> Snapshot = CreateSnapshotJson(TEXT("Running"));
-	SaveStringAtomic(SnapshotCurrentPath, JsonObjectToString(Snapshot, true));
+	const TSharedRef<FJsonObject> Snapshot = CreateRunningSnapshotJson();
+	QueuePerformanceAtomicReplace(SnapshotCurrentPath, JsonObjectToString(Snapshot, false), TEXT("SnapshotCurrent"));
 }
 
 void UT66PerformanceSubsystem::WriteFinalReport(const FString& ExitReason)
@@ -617,6 +1429,9 @@ void UT66PerformanceSubsystem::WriteFinalReport(const FString& ExitReason)
 	{
 		return;
 	}
+
+	FlushPerformanceWrites(T66PerformanceWriteQueueShutdownTimeoutSeconds, TEXT("FinalReport"));
+	WriteBoardSaturationFrameSamples();
 
 	const TSharedRef<FJsonObject> Report = CreateSnapshotJson(ExitReason);
 	const FString JsonPath = FPaths::Combine(SessionDir, TEXT("session_summary.json"));
@@ -655,6 +1470,24 @@ void UT66PerformanceSubsystem::WriteFinalReport(const FString& ExitReason)
 	Markdown += FString::Printf(TEXT("- 1%% low FPS: %.2f\n"), FrameSummary.OnePercentLowFps);
 	Markdown += FString::Printf(TEXT("- 0.1%% low FPS: %.2f\n"), FrameSummary.PointOnePercentLowFps);
 
+	const FPerformanceWriteQueueStats WriteStats = WriteWorker ? WriteWorker->GetStats() : FPerformanceWriteQueueStats{};
+	Markdown += TEXT("\n## Performance Write Queue\n\n");
+	Markdown += FString::Printf(TEXT("- Capacity: %d\n"), WriteStats.Capacity);
+	Markdown += FString::Printf(TEXT("- Attempted writes: %llu\n"), WriteStats.AttemptedWrites);
+	Markdown += FString::Printf(TEXT("- Queued writes: %llu\n"), WriteStats.QueuedWrites);
+	Markdown += FString::Printf(TEXT("- Completed writes: %llu\n"), WriteStats.CompletedWrites);
+	Markdown += FString::Printf(TEXT("- Failed writes: %llu\n"), WriteStats.FailedWrites);
+	Markdown += FString::Printf(TEXT("- Fallback writes: %llu\n"), WriteStats.FallbackWrites);
+	Markdown += FString::Printf(TEXT("- Queue-full fallback writes: %llu\n"), WriteStats.QueueFullFallbackWrites);
+	Markdown += FString::Printf(TEXT("- Abandoned writes: %llu\n"), WriteStats.AbandonedWrites);
+	Markdown += FString::Printf(TEXT("- Max queue depth: %llu\n"), WriteStats.MaxQueueDepth);
+	Markdown += FString::Printf(TEXT("- Worker write peak: %.3f us\n"), WriteStats.WorkerWritePeakUs);
+	Markdown += FString::Printf(TEXT("- Fallback write peak: %.3f us\n"), WriteStats.FallbackWritePeakUs);
+	Markdown += FString::Printf(TEXT("- Shutdown flush wait: %.3f ms\n"), WriteStats.ShutdownFlushWaitMs);
+	Markdown += FString::Printf(
+		TEXT("- Accounting balanced: %s\n"),
+		WriteStats.AttemptedWrites == WriteStats.CompletedWrites + WriteStats.FailedWrites + WriteStats.AbandonedWrites ? TEXT("true") : TEXT("false"));
+
 	Markdown += TEXT("\n## Recent Events\n\n");
 	if (RecentEventSummaries.Num() == 0)
 	{
@@ -673,6 +1506,47 @@ void UT66PerformanceSubsystem::WriteFinalReport(const FString& ExitReason)
 	EnforceRetentionBudget();
 }
 
+void UT66PerformanceSubsystem::AppendBoardSaturationAttributions(TArray<FT66PerformanceAttribution>& Attributions) const
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	const UT66LagTrackerSubsystem* LagTracker = GameInstance ? GameInstance->GetSubsystem<UT66LagTrackerSubsystem>() : nullptr;
+
+	FT66LagTrackerBoardSaturationSample Sample;
+	if (!LagTracker || !LagTracker->GetLatestBoardSaturationSample(Sample))
+	{
+		Attributions.Add({ TEXT("LiveRegularEnemies"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("LiveRichEnemies"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("LiveLightweightMobs"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("LiveLightweightMeleeMobs"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("LiveLightweightRushMobs"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("LiveLightweightFlyingMobs"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("LiveLightweightRangedMobs"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("PendingSpawns"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("ActiveEnemyProjectiles"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("LightweightPoolReuseAcquires"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("LightweightPoolReleases"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("LightweightPoolInactive"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		Attributions.Add({ TEXT("LightweightPoolInactivePeak"), TEXT("Unavailable"), ET66PerformanceConfidence::Unavailable, TEXT("UT66LagTrackerSubsystem"), 0.0 });
+		return;
+	}
+
+	const double SampleAgeSeconds = FMath::Max(0.0, FPlatformTime::Seconds() - Sample.TimestampSeconds);
+	Attributions.Add({ TEXT("LiveRegularEnemies"), FString::FromInt(Sample.LiveRegularEnemies), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("LiveRichEnemies"), FString::FromInt(Sample.LiveRichEnemies), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("LiveLightweightMobs"), FString::FromInt(Sample.LiveLightweightMobs), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("LiveLightweightMeleeMobs"), FString::FromInt(Sample.LiveLightweightMeleeMobs), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("LiveLightweightRushMobs"), FString::FromInt(Sample.LiveLightweightRushMobs), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("LiveLightweightFlyingMobs"), FString::FromInt(Sample.LiveLightweightFlyingMobs), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("LiveLightweightRangedMobs"), FString::FromInt(Sample.LiveLightweightRangedMobs), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("PendingSpawns"), FString::FromInt(Sample.PendingSpawns), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("ActiveEnemyProjectiles"), FString::FromInt(Sample.ActiveEnemyProjectiles), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("LightweightPoolReuseAcquires"), FString::FromInt(Sample.LightweightPoolReuseAcquires), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("LightweightPoolReleases"), FString::FromInt(Sample.LightweightPoolReleases), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("LightweightPoolInactive"), FString::FromInt(Sample.LightweightPoolInactive), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("LightweightPoolInactivePeak"), FString::FromInt(Sample.LightweightPoolInactivePeak), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+	Attributions.Add({ TEXT("BoardSaturationSampleAgeSeconds"), FString::Printf(TEXT("%.3f"), SampleAgeSeconds), ET66PerformanceConfidence::Sampled, TEXT("UT66LagTrackerSubsystem"), 1.0 });
+}
+
 void UT66PerformanceSubsystem::EmitPerformanceEvent(
 	const FString& DetectorName,
 	const FString& EventName,
@@ -681,6 +1555,11 @@ void UT66PerformanceSubsystem::EmitPerformanceEvent(
 	const FString& Summary,
 	const TArray<FT66PerformanceAttribution>& Attributions)
 {
+	if (!EnsurePerformanceProducerGameThread(TEXT("EmitPerformanceEvent")))
+	{
+		return;
+	}
+
 	if (!bInitialized)
 	{
 		return;
@@ -694,14 +1573,33 @@ void UT66PerformanceSubsystem::EmitPerformanceEvent(
 		RecentEventSummaries.RemoveAt(0, 1, EAllowShrinking::No);
 	}
 
+	if (IsPerfSubstepAttributionEnabled())
+	{
+		TSharedPtr<FJsonObject> Event;
+		const double EventJsonBuildUs = MeasureSubstepUs([this, &Event, &DetectorName, &EventName, Severity, Confidence, &Summary, &Attributions]()
+		{
+			Event = CreateBaseEventJson(DetectorName, EventName, Severity, Confidence, Summary, Attributions);
+		});
+		FString JsonLine;
+		const double EventJsonSerializeUs = MeasureSubstepUs([&Event, &JsonLine]()
+		{
+			if (Event.IsValid())
+			{
+				JsonLine = JsonObjectToString(Event.ToSharedRef(), false) + LINE_TERMINATOR;
+			}
+		});
+		const double EventJsonAppendUs = MeasureSubstepUs([this, &JsonLine]()
+		{
+			QueuePerformanceAppend(EventsJsonlPath, JsonLine, TEXT("EventsJsonl"));
+		});
+		FrameworkSubstepTimingStats.EventJsonBuildPeakUs = FMath::Max(FrameworkSubstepTimingStats.EventJsonBuildPeakUs, EventJsonBuildUs + EventJsonSerializeUs);
+		FrameworkSubstepTimingStats.EventJsonAppendPeakUs = FMath::Max(FrameworkSubstepTimingStats.EventJsonAppendPeakUs, EventJsonAppendUs);
+		return;
+	}
+
 	const TSharedRef<FJsonObject> Event = CreateBaseEventJson(DetectorName, EventName, Severity, Confidence, Summary, Attributions);
 	const FString JsonLine = JsonObjectToString(Event, false) + LINE_TERMINATOR;
-	FFileHelper::SaveStringToFile(
-		JsonLine,
-		*EventsJsonlPath,
-		FFileHelper::EEncodingOptions::AutoDetect,
-		&IFileManager::Get(),
-		FILEWRITE_Append);
+	QueuePerformanceAppend(EventsJsonlPath, JsonLine, TEXT("EventsJsonl"));
 }
 
 TSharedRef<FJsonObject> UT66PerformanceSubsystem::CreateBaseEventJson(
@@ -751,7 +1649,7 @@ TSharedRef<FJsonObject> UT66PerformanceSubsystem::CreateBaseEventJson(
 	return Root;
 }
 
-TSharedRef<FJsonObject> UT66PerformanceSubsystem::CreateSnapshotJson(const FString& ExitReason) const
+TSharedRef<FJsonObject> UT66PerformanceSubsystem::CreateSnapshotJson(const FString& ExitReason, const bool bFullFrameSummary, const int32 RecentLogLimit) const
 {
 	const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetNumberField(TEXT("SchemaVersion"), T66PerformanceSchemaVersion);
@@ -762,11 +1660,38 @@ TSharedRef<FJsonObject> UT66PerformanceSubsystem::CreateSnapshotJson(const FStri
 	Root->SetObjectField(TEXT("Build"), CreateBuildJson());
 	Root->SetStringField(TEXT("WorldName"), GetWorldNameForReports());
 	Root->SetStringField(TEXT("MapName"), GetMapNameForReports());
-	Root->SetObjectField(TEXT("FrameSummary"), CreateFrameSummaryJson(CalculateFrameSummary(Settings ? Settings->FrameWindowSeconds : 60.0)));
+	Root->SetObjectField(TEXT("FrameSummary"), CreateFrameSummaryJson(CalculateFrameSummary(Settings ? Settings->FrameWindowSeconds : 60.0, bFullFrameSummary)));
 	Root->SetObjectField(TEXT("MemorySummary"), CreateMemorySummaryJson());
-	Root->SetArrayField(TEXT("RecentLogs"), CreateRecentLogsJson());
+	Root->SetObjectField(TEXT("FrameworkSubstepAttribution"), CreateFrameworkSubstepAttributionJson());
+	Root->SetObjectField(TEXT("PerformanceWriteQueue"), CreateWriteQueueStatsJson());
+	Root->SetArrayField(TEXT("RecentLogs"), CreateRecentLogsJson(RecentLogLimit));
 	Root->SetArrayField(TEXT("RecentEvents"), CreateRecentEventsJson());
 	Root->SetArrayField(TEXT("DetectorRuntime"), CreateDetectorRuntimeJson());
+
+	const TSharedRef<FJsonObject> EventCounts = MakeShared<FJsonObject>();
+	for (const TPair<FString, int32>& Pair : EventCountsByName)
+	{
+		EventCounts->SetNumberField(Pair.Key, Pair.Value);
+	}
+	Root->SetObjectField(TEXT("EventCounts"), EventCounts);
+
+	return Root;
+}
+
+TSharedRef<FJsonObject> UT66PerformanceSubsystem::CreateRunningSnapshotJson() const
+{
+	const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetNumberField(TEXT("SchemaVersion"), T66PerformanceSchemaVersion);
+	Root->SetStringField(TEXT("SessionId"), SessionId);
+	Root->SetStringField(TEXT("StartedUtc"), SessionStartedUtc.ToIso8601());
+	Root->SetStringField(TEXT("UpdatedUtc"), FDateTime::UtcNow().ToIso8601());
+	Root->SetStringField(TEXT("SnapshotKind"), TEXT("Running"));
+	Root->SetStringField(TEXT("WorldName"), GetWorldNameForReports());
+	Root->SetStringField(TEXT("MapName"), GetMapNameForReports());
+	Root->SetObjectField(TEXT("FrameSummary"), CreateFrameSummaryJson(CalculateFrameSummary(Settings ? Settings->FrameWindowSeconds : 60.0, false)));
+	Root->SetObjectField(TEXT("MemorySummary"), CreateMemorySummaryJson());
+	Root->SetObjectField(TEXT("FrameworkSubstepAttribution"), CreateFrameworkSubstepAttributionJson());
+	Root->SetObjectField(TEXT("PerformanceWriteQueue"), CreateWriteQueueStatsJson());
 
 	const TSharedRef<FJsonObject> EventCounts = MakeShared<FJsonObject>();
 	for (const TPair<FString, int32>& Pair : EventCountsByName)
@@ -841,13 +1766,78 @@ TSharedRef<FJsonObject> UT66PerformanceSubsystem::CreateMemorySummaryJson() cons
 	return Root;
 }
 
-TArray<TSharedPtr<FJsonValue>> UT66PerformanceSubsystem::CreateRecentLogsJson() const
+TSharedRef<FJsonObject> UT66PerformanceSubsystem::CreateFrameworkSubstepAttributionJson() const
+{
+	const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetBoolField(TEXT("Enabled"), IsPerfSubstepAttributionEnabled());
+	Root->SetNumberField(TEXT("SampleCount"), FrameworkSubstepTimingStats.SampleCount);
+	Root->SetNumberField(TEXT("FrameSampleAppendPeakUs"), FrameworkSubstepTimingStats.FrameSampleAppendPeakUs);
+	Root->SetNumberField(TEXT("BoardSampleCapturePeakUs"), FrameworkSubstepTimingStats.BoardSampleCapturePeakUs);
+	Root->SetNumberField(TEXT("PruneSamplesPeakUs"), FrameworkSubstepTimingStats.PruneSamplesPeakUs);
+	Root->SetNumberField(TEXT("SingleFrameHitchPeakUs"), FrameworkSubstepTimingStats.SingleFrameHitchPeakUs);
+	Root->SetNumberField(TEXT("FramePacingDetectorPeakUs"), FrameworkSubstepTimingStats.FramePacingDetectorPeakUs);
+	Root->SetNumberField(TEXT("MemoryGrowthDetectorPeakUs"), FrameworkSubstepTimingStats.MemoryGrowthDetectorPeakUs);
+	Root->SetNumberField(TEXT("BasicHangDetectorPeakUs"), FrameworkSubstepTimingStats.BasicHangDetectorPeakUs);
+	Root->SetNumberField(TEXT("PeriodicSnapshotPeakUs"), FrameworkSubstepTimingStats.PeriodicSnapshotPeakUs);
+	Root->SetNumberField(TEXT("EventJsonBuildPeakUs"), FrameworkSubstepTimingStats.EventJsonBuildPeakUs);
+	Root->SetNumberField(TEXT("EventJsonAppendPeakUs"), FrameworkSubstepTimingStats.EventJsonAppendPeakUs);
+	Root->SetNumberField(TEXT("FrameworkTotalPeakUs"), FrameworkSubstepTimingStats.FrameworkTotalPeakUs);
+	Root->SetNumberField(TEXT("InstrumentationProbePeakUs"), FrameworkSubstepTimingStats.InstrumentationProbePeakUs);
+	Root->SetNumberField(TEXT("LastFrameSampleAppendUs"), FrameworkSubstepTimingStats.LastFrameSampleAppendUs);
+	Root->SetNumberField(TEXT("LastBoardSampleCaptureUs"), FrameworkSubstepTimingStats.LastBoardSampleCaptureUs);
+	Root->SetNumberField(TEXT("LastPruneSamplesUs"), FrameworkSubstepTimingStats.LastPruneSamplesUs);
+	Root->SetNumberField(TEXT("LastSingleFrameHitchUs"), FrameworkSubstepTimingStats.LastSingleFrameHitchUs);
+	Root->SetNumberField(TEXT("LastFramePacingDetectorUs"), FrameworkSubstepTimingStats.LastFramePacingDetectorUs);
+	Root->SetNumberField(TEXT("LastMemoryGrowthDetectorUs"), FrameworkSubstepTimingStats.LastMemoryGrowthDetectorUs);
+	Root->SetNumberField(TEXT("LastBasicHangDetectorUs"), FrameworkSubstepTimingStats.LastBasicHangDetectorUs);
+	Root->SetNumberField(TEXT("LastPeriodicSnapshotUs"), FrameworkSubstepTimingStats.LastPeriodicSnapshotUs);
+	Root->SetNumberField(TEXT("LastFrameworkTotalUs"), FrameworkSubstepTimingStats.LastFrameworkTotalUs);
+	Root->SetNumberField(TEXT("LastInstrumentationProbeUs"), FrameworkSubstepTimingStats.LastInstrumentationProbeUs);
+	return Root;
+}
+
+TSharedRef<FJsonObject> UT66PerformanceSubsystem::CreateWriteQueueStatsJson() const
+{
+	const FPerformanceWriteQueueStats Stats = WriteWorker ? WriteWorker->GetStats() : FPerformanceWriteQueueStats{};
+	const TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
+	Root->SetNumberField(TEXT("Capacity"), Stats.Capacity);
+	Root->SetNumberField(TEXT("AttemptedWrites"), static_cast<double>(Stats.AttemptedWrites));
+	Root->SetNumberField(TEXT("QueuedWrites"), static_cast<double>(Stats.QueuedWrites));
+	Root->SetNumberField(TEXT("CompletedWrites"), static_cast<double>(Stats.CompletedWrites));
+	Root->SetNumberField(TEXT("FailedWrites"), static_cast<double>(Stats.FailedWrites));
+	Root->SetNumberField(TEXT("FallbackWrites"), static_cast<double>(Stats.FallbackWrites));
+	Root->SetNumberField(TEXT("QueueFullFallbackWrites"), static_cast<double>(Stats.QueueFullFallbackWrites));
+	Root->SetNumberField(TEXT("ClosingFallbackWrites"), static_cast<double>(Stats.ClosingFallbackWrites));
+	Root->SetNumberField(TEXT("WorkerUnavailableFallbackWrites"), static_cast<double>(Stats.WorkerUnavailableFallbackWrites));
+	Root->SetNumberField(TEXT("AbandonedWrites"), static_cast<double>(Stats.AbandonedWrites));
+	Root->SetNumberField(TEXT("AppendWrites"), static_cast<double>(Stats.AppendWrites));
+	Root->SetNumberField(TEXT("AtomicReplaceWrites"), static_cast<double>(Stats.AtomicReplaceWrites));
+	Root->SetNumberField(TEXT("MaxQueueDepth"), static_cast<double>(Stats.MaxQueueDepth));
+	Root->SetNumberField(TEXT("CurrentQueueDepth"), Stats.CurrentQueueDepth);
+	Root->SetNumberField(TEXT("LastWorkerWriteUs"), Stats.LastWorkerWriteUs);
+	Root->SetNumberField(TEXT("WorkerWritePeakUs"), Stats.WorkerWritePeakUs);
+	Root->SetNumberField(TEXT("LastFallbackWriteUs"), Stats.LastFallbackWriteUs);
+	Root->SetNumberField(TEXT("FallbackWritePeakUs"), Stats.FallbackWritePeakUs);
+	Root->SetNumberField(TEXT("LastFlushWaitMs"), Stats.LastFlushWaitMs);
+	Root->SetNumberField(TEXT("ShutdownFlushWaitMs"), Stats.ShutdownFlushWaitMs);
+	Root->SetBoolField(TEXT("WorkerRunning"), Stats.bWorkerRunning);
+	Root->SetBoolField(TEXT("Closing"), Stats.bClosing);
+	Root->SetBoolField(
+		TEXT("AccountingBalanced"),
+		Stats.AttemptedWrites == Stats.CompletedWrites + Stats.FailedWrites + Stats.AbandonedWrites);
+	return Root;
+}
+
+TArray<TSharedPtr<FJsonValue>> UT66PerformanceSubsystem::CreateRecentLogsJson(const int32 MaxLines) const
 {
 	TArray<TSharedPtr<FJsonValue>> Values;
 	FScopeLock Lock(&LogLinesCriticalSection);
-	for (const FString& Line : RecentLogLines)
+	const int32 StartIndex = (MaxLines > 0 && RecentLogLines.Num() > MaxLines)
+		? RecentLogLines.Num() - MaxLines
+		: 0;
+	for (int32 Index = StartIndex; Index < RecentLogLines.Num(); ++Index)
 	{
-		Values.Add(MakeShared<FJsonValueString>(Line));
+		Values.Add(MakeShared<FJsonValueString>(RecentLogLines[Index]));
 	}
 	return Values;
 }
@@ -881,41 +1871,60 @@ TArray<TSharedPtr<FJsonValue>> UT66PerformanceSubsystem::CreateDetectorRuntimeJs
 	return Values;
 }
 
-UT66PerformanceSubsystem::FFrameSummary UT66PerformanceSubsystem::CalculateFrameSummary(const double WindowSeconds) const
+UT66PerformanceSubsystem::FFrameSummary UT66PerformanceSubsystem::CalculateFrameSummary(const double WindowSeconds, const bool bIncludePercentiles) const
 {
 	FFrameSummary Summary;
 	const double NowSeconds = FPlatformTime::Seconds();
 	TArray<double> FrameTimesMs;
+	if (bIncludePercentiles)
+	{
+		FrameTimesMs.Reserve(FrameSamples.Num());
+	}
 	double TotalFrameMs = 0.0;
 	double LastFrameMs = 0.0;
+	int32 SampleCount = 0;
 
 	for (const FFrameSample& Sample : FrameSamples)
 	{
 		if (NowSeconds - Sample.TimeSeconds <= WindowSeconds)
 		{
-			FrameTimesMs.Add(Sample.FrameTimeMs);
+			if (bIncludePercentiles)
+			{
+				FrameTimesMs.Add(Sample.FrameTimeMs);
+			}
+			++SampleCount;
 			TotalFrameMs += Sample.FrameTimeMs;
 			LastFrameMs = Sample.FrameTimeMs;
 		}
 	}
 
-	Summary.SampleCount = FrameTimesMs.Num();
+	Summary.SampleCount = SampleCount;
 	Summary.LastFrameMs = LastFrameMs;
-	if (FrameTimesMs.Num() == 0)
+	if (SampleCount == 0)
 	{
 		return Summary;
 	}
 
-	Summary.AverageFrameMs = TotalFrameMs / static_cast<double>(FrameTimesMs.Num());
+	Summary.AverageFrameMs = TotalFrameMs / static_cast<double>(SampleCount);
 	Summary.AverageFps = Summary.AverageFrameMs > 0.0 ? 1000.0 / Summary.AverageFrameMs : 0.0;
 
 	double Variance = 0.0;
-	for (const double FrameTimeMs : FrameTimesMs)
+	for (const FFrameSample& Sample : FrameSamples)
 	{
+		if (NowSeconds - Sample.TimeSeconds > WindowSeconds)
+		{
+			continue;
+		}
+		const double FrameTimeMs = Sample.FrameTimeMs;
 		const double Delta = FrameTimeMs - Summary.AverageFrameMs;
 		Variance += Delta * Delta;
 	}
-	Summary.StdDevMs = FMath::Sqrt(Variance / static_cast<double>(FrameTimesMs.Num()));
+	Summary.StdDevMs = FMath::Sqrt(Variance / static_cast<double>(SampleCount));
+
+	if (!bIncludePercentiles)
+	{
+		return Summary;
+	}
 
 	FrameTimesMs.Sort([](const double A, const double B)
 	{

@@ -81,6 +81,44 @@ def pulsed_progress_values(frames: int, hop_frames: int = 8) -> list[float]:
     return progress
 
 
+def preview_front_sign(spec) -> float:
+    if spec.enemy_id == "BoneWalker":
+        return -1.0
+    return 1.0
+
+
+def preview_camera_profile(spec) -> dict[str, float]:
+    if spec.enemy_id == "BoneWalker":
+        return {
+            "lens": 58.0,
+            "distance": 4.00,
+            "height": 1.04,
+            "look_offset": 0.10,
+        }
+    return {
+        "lens": 38.0,
+        "distance": 5.65,
+        "height": 1.18,
+        "look_offset": -0.42,
+    }
+
+
+def preview_travel_profile(spec) -> dict[str, float]:
+    if spec.enemy_id == "BoneWalker":
+        return {
+            "start": 2.15,
+            "end": 0.40,
+            "lift": 0.035,
+            "sink": 0.012,
+        }
+    return {
+        "start": 2.45,
+        "end": 0.72,
+        "lift": 0.13,
+        "sink": 0.030,
+    }
+
+
 def bounds_for_objects(objects) -> tuple[Vector, Vector, Vector]:
     coords = []
     for obj in objects:
@@ -158,15 +196,15 @@ def apply_unlit_preview_materials(mesh: bpy.types.Object) -> None:
             convert_material_to_unlit_emissive(material)
 
 
-def add_floor_and_markers(center: Vector, radius: float, floor_z: float) -> None:
+def add_floor_and_markers(spec, center: Vector, radius: float, floor_z: float, front_sign: float) -> None:
     floor_mat = make_material("Preview_Floor_Matte", (0.22, 0.24, 0.25, 1.0))
     marker_mat = make_material("Preview_Movement_Markers", (0.85, 0.70, 0.24, 1.0))
     bpy.ops.mesh.primitive_plane_add(size=radius * 8.0, location=(center.x, center.y, floor_z))
     floor = bpy.context.object
-    floor.name = "Slime_MoveToward_Floor"
+    floor.name = f"{spec.enemy_id}_MoveToward_Floor"
     floor.data.materials.append(floor_mat)
     for index, y in enumerate([radius * 2.2, radius * 1.2, radius * 0.2, -radius * 0.8]):
-        bpy.ops.mesh.primitive_cube_add(size=1.0, location=(center.x - radius * 0.85, center.y + y, floor_z + 0.01))
+        bpy.ops.mesh.primitive_cube_add(size=1.0, location=(center.x - radius * 0.85, center.y + y * front_sign, floor_z + 0.01))
         marker = bpy.context.object
         marker.name = f"Approach_Depth_Marker_{index + 1:02d}"
         marker.dimensions = (radius * 0.08, radius * 0.04, 0.012)
@@ -237,28 +275,35 @@ def render_preview(enemy_id: str, out_root: Path, frames: int, width: int, heigh
     radius = max(size.x, size.y, size.z, 0.5)
     focus_z = min_v.z + max(size.z, 0.1) * 0.48
     floor_z = min_v.z - radius * 0.035
+    front_sign = preview_front_sign(spec)
+    camera_profile = preview_camera_profile(spec)
+    travel_profile = preview_travel_profile(spec)
 
-    add_floor_and_markers(center, radius, floor_z)
+    add_floor_and_markers(spec, center, radius, floor_z, front_sign)
 
     mover = bpy.data.objects.new(f"{spec.enemy_id}_MoveToward_Mover", None)
     bpy.context.collection.objects.link(mover)
     armature.parent = mover
-    # Slime source faces +Y, so forward movement needs to advance along +Y.
-    start_y = center.y - radius * 2.45
-    end_y = center.y + radius * 0.72
+    start_y = center.y - front_sign * radius * travel_profile["start"]
+    end_y = center.y + front_sign * radius * travel_profile["end"]
     progress_values = pulsed_progress_values(frames)
     for frame, progress in enumerate(progress_values, start=1):
         hop_u = ((frame - 1) % 8) / 8.0
         lift = max(0.0, math.sin(math.pi * hop_u))
         contact = max(0.0, math.cos(math.tau * hop_u)) ** 2
         y = (start_y - center.y) + ((end_y - start_y) * progress)
-        mover.location = (0.0, y, radius * (0.13 * lift - 0.030 * contact))
+        mover.location = (0.0, y, radius * (travel_profile["lift"] * lift - travel_profile["sink"] * contact))
         mover.keyframe_insert("location", frame=frame)
     if mover.animation_data and mover.animation_data.action:
         set_constant_keys(mover.animation_data.action)
 
-    camera.location = Vector((center.x + radius * 0.22, center.y + radius * 5.65, focus_z + radius * 1.18))
-    look_at(camera, Vector((center.x, center.y - radius * 0.42, focus_z)))
+    camera.data.lens = camera_profile["lens"]
+    camera.location = Vector((
+        center.x + radius * 0.22,
+        center.y + front_sign * radius * camera_profile["distance"],
+        focus_z + radius * camera_profile["height"],
+    ))
+    look_at(camera, Vector((center.x, center.y + front_sign * radius * camera_profile["look_offset"], focus_z)))
 
     scene = bpy.context.scene
     scene.frame_start = 1
@@ -280,7 +325,11 @@ def render_preview(enemy_id: str, out_root: Path, frames: int, width: int, heigh
         "movement": {
             "start_location": [0.0, start_y - center.y, 0.0],
             "end_location": [0.0, end_y - center.y, 0.0],
-            "description": "Slime actor moves toward the fixed camera with pulsed per-frame travel while the bouncy Move deformation loops.",
+            "description": f"{spec.enemy_id} actor moves toward the fixed camera with pulsed per-frame travel while the local Move deformation loops.",
+            "front_sign_y": front_sign,
+            "front_axis_note": "+Y camera for Slime baseline; -Y camera for BoneWalker source front.",
+            "camera_profile": camera_profile,
+            "travel_profile": travel_profile,
         },
         "style": {
             "pose_interpolation": "CONSTANT",

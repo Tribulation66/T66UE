@@ -16,8 +16,8 @@ class SWidgetSwitcher;
 class FDragDropEvent;
 struct FGeometry;
 struct FPointerEvent;
-class UT66GamblerOverlayWidget;
-class UT66CasinoShopTabWidget;
+class UT66CasinoGamblerTabWidget;
+class UT66CasinoVendorTabWidget;
 class UT66LocalizationSubsystem;
 class UT66RunStateSubsystem;
 
@@ -27,14 +27,23 @@ class T66_API UT66CasinoOverlayWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+	enum class ECasinoOverlayMode : uint8
+	{
+		Full = 0,
+		GamblerOnly = 1,
+		VendorOnly = 2,
+	};
+
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeDestruct() override;
+	virtual void ReleaseSlateResources(bool bReleaseChildren) override;
 
 	void CloseOverlay();
-	void OpenGamblingTab();
-	void OpenShopTab();
+	void OpenGamblerTab();
+	void OpenVendorTab();
 	void OpenAlchemyTab();
-	void SetGamblingWinGoldAmount(int32 InAmount);
+	void SetOverlayMode(ECasinoOverlayMode InMode);
+	void SetCasinoGamblerWinGoldAmount(int32 InAmount);
 	void SetShopAllowsSteal(bool bInAllowsSteal);
 
 private:
@@ -45,6 +54,7 @@ private:
 	};
 
 	TSharedRef<SWidget> BuildAlchemyPage(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc);
+	void ReleaseCachedSlateResources();
 	void SetActiveTab(ECasinoTab NewTab);
 	void RefreshHeaderSummary();
 	void RefreshAlchemy();
@@ -81,10 +91,10 @@ private:
 	void HandleStageTimerChanged();
 
 	UPROPERTY()
-	TObjectPtr<UT66GamblerOverlayWidget> GamblerTabWidget;
+	TObjectPtr<UT66CasinoGamblerTabWidget> CasinoGamblerTabWidget;
 
 	UPROPERTY()
-	TObjectPtr<UT66CasinoShopTabWidget> ShopTabWidget;
+	TObjectPtr<UT66CasinoVendorTabWidget> VendorTabWidget;
 
 	TSharedPtr<SWidgetSwitcher> TabSwitcher;
 	TSharedPtr<STextBlock> HeaderTimerText;
@@ -119,8 +129,9 @@ private:
 	int32 AlchemyTargetInventoryIndex = INDEX_NONE;
 	int32 AlchemySacrificeInventoryIndex = INDEX_NONE;
 	ECasinoTab ActiveTab = ECasinoTab::Shop;
+	ECasinoOverlayMode OverlayMode = ECasinoOverlayMode::Full;
 	FText AlchemyStatusMessage;
 	FLinearColor AlchemyStatusColor = FLinearColor::White;
-	int32 PendingGamblingWinGoldAmount = 10;
+	int32 PendingCasinoGamblerWinGoldAmount = 10;
 	bool bShopAllowsSteal = true;
 };

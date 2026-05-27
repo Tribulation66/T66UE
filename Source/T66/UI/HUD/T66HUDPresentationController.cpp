@@ -2,6 +2,7 @@
 
 #include "UI/HUD/T66HUDPresentationController.h"
 #include "UI/HUD/T66GameplayHUDWidget_Private.h"
+#include "UI/T66LootWheelOverlayWidget.h"
 
 FT66HUDPresentationController::FT66HUDPresentationController(UT66GameplayHUDWidget& InOwner)
 	: Owner(InOwner)
@@ -12,6 +13,7 @@ FT66HUDPresentationController::FT66HUDPresentationController(UT66GameplayHUDWidg
 void FT66HUDPresentationController::Tick(float InDeltaTime)
 {
 	TickChestRewardPresentation(InDeltaTime);
+	TickLootBagRevealPresentation(InDeltaTime);
 	TryShowQueuedPresentation();
 }
 
@@ -24,7 +26,9 @@ void FT66HUDPresentationController::Reset()
 	}
 
 	HidePickupCard();
+	HideLootBagReveal();
 	HideChestReward();
+	DrainQueuedChestRewardsForTeardown();
 	QueuedChestRewards.Reset();
 	QueuedPickupCards.Reset();
 	AchievementNotificationQueue.Reset();
@@ -34,6 +38,11 @@ void FT66HUDPresentationController::Reset()
 		Overlay->RemoveFromParent();
 	}
 	ActiveCrateOverlay.Reset();
+	if (UT66LootWheelOverlayWidget* Overlay = ActiveLootWheelOverlay.Get())
+	{
+		Overlay->RemoveFromParent();
+	}
+	ActiveLootWheelOverlay.Reset();
 
 	if (Owner.AchievementNotificationBox.IsValid())
 	{
@@ -135,6 +144,50 @@ void FT66HUDPresentationController::QueueActivePickupCardToFront()
 		FQueuedPickupCard& QueuedPickup = QueuedPickupCards[0];
 		QueuedPickup.ItemID = ActivePickupCardItemID;
 		QueuedPickup.ItemRarity = ActivePickupCardRarity;
+		QueuedPickup.bLootBagReveal = false;
+	}
+}
+
+void FT66HUDPresentationController::DispatchChestRewardCommitIfNeeded()
+{
+	if (bChestRewardCommitDispatched)
+	{
+		return;
+	}
+
+	bChestRewardCommitDispatched = true;
+	ChestRewardDisplayedGold = ChestRewardTargetGold;
+	ChestRewardMinimumDisplayedGold = ChestRewardTargetGold;
+	if (ActiveChestRewardCommitCallback)
+	{
+		ActiveChestRewardCommitCallback();
+		ActiveChestRewardCommitCallback = nullptr;
+	}
+}
+
+void FT66HUDPresentationController::DispatchChestRewardFinishedIfNeeded()
+{
+	if (ActiveChestRewardFinishedCallback)
+	{
+		ActiveChestRewardFinishedCallback();
+		ActiveChestRewardFinishedCallback = nullptr;
+	}
+}
+
+void FT66HUDPresentationController::DrainQueuedChestRewardsForTeardown()
+{
+	for (FQueuedChestReward& QueuedReward : QueuedChestRewards)
+	{
+		if (QueuedReward.OnCommit)
+		{
+			QueuedReward.OnCommit();
+			QueuedReward.OnCommit = nullptr;
+		}
+		if (QueuedReward.OnFinished)
+		{
+			QueuedReward.OnFinished();
+			QueuedReward.OnFinished = nullptr;
+		}
 	}
 }
 
@@ -148,7 +201,7 @@ void FT66HUDPresentationController::StartCrateOpen(const ET66Rarity SourceCrateR
 	}
 
 	HidePickupCard();
-	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible)
+	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible)
 	{
 		return;
 	}
@@ -164,20 +217,80 @@ void FT66HUDPresentationController::StartCrateOpen(const ET66Rarity SourceCrateR
 	}
 }
 
+bool FT66HUDPresentationController::StartLootWheelSpin(FT66LootWheelPresentationParams Params)
+{
+	APlayerController* PC = Owner.GetOwningPlayer();
+	if (!PC)
+	{
+		if (Params.OnLandingCommit)
+		{
+			Params.OnLandingCommit();
+		}
+		if (Params.OnFinished)
+		{
+			Params.OnFinished();
+		}
+		return false;
+	}
 
-void FT66HUDPresentationController::StartChestReward(const ET66Rarity ChestRarity, const int32 GoldAmount)
+	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible)
+	{
+		return false;
+	}
+
+	QueueActivePickupCardToFront();
+	HidePickupCard();
+
+	UT66LootWheelOverlayWidget* Overlay = CreateWidget<UT66LootWheelOverlayWidget>(PC, UT66LootWheelOverlayWidget::StaticClass());
+	if (!Overlay)
+	{
+		if (Params.OnLandingCommit)
+		{
+			Params.OnLandingCommit();
+		}
+		if (Params.OnFinished)
+		{
+			Params.OnFinished();
+		}
+		return false;
+	}
+
+	Overlay->SetPresentationHost(&Owner);
+	Overlay->Configure(MoveTemp(Params));
+	Overlay->SetVisibility(ESlateVisibility::HitTestInvisible);
+	Overlay->AddToViewport(100);
+	ActiveLootWheelOverlay = Overlay;
+	return true;
+}
+
+
+bool FT66HUDPresentationController::StartChestReward(
+	const ET66Rarity ChestRarity,
+	const int32 GoldAmount,
+	TFunction<void()> OnCommit,
+	TFunction<void()> OnFinished)
 {
 	if (!Owner.ChestRewardBox.IsValid())
 	{
-		return;
+		if (OnCommit)
+		{
+			OnCommit();
+		}
+		if (OnFinished)
+		{
+			OnFinished();
+		}
+		return false;
 	}
 
-	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible)
+	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible)
 	{
 		FQueuedChestReward& QueuedReward = QueuedChestRewards.AddDefaulted_GetRef();
 		QueuedReward.Rarity = ChestRarity;
 		QueuedReward.GoldAmount = GoldAmount;
-		return;
+		QueuedReward.OnCommit = MoveTemp(OnCommit);
+		QueuedReward.OnFinished = MoveTemp(OnFinished);
+		return true;
 	}
 
 	QueueActivePickupCardToFront();
@@ -187,31 +300,40 @@ void FT66HUDPresentationController::StartChestReward(const ET66Rarity ChestRarit
 	{
 		BindRuntimeHudBrush(Owner.GoldCurrencyBrush, GetGoldCurrencyRelativePath(), FVector2D(32.f, 32.f));
 	}
+	if (Owner.ChestRewardCoinBrush.IsValid())
+	{
+		BindRuntimeHudBrush(Owner.ChestRewardCoinBrush, GetChestRewardCoinRelativePath(), FVector2D(40.f, 40.f));
+		if (!Owner.ChestRewardCoinBrush->GetResourceObject())
+		{
+			BindRuntimeHudBrush(Owner.ChestRewardCoinBrush, GetGoldCurrencyRelativePath(), FVector2D(40.f, 40.f));
+		}
+	}
 
-	const FVector2D ChestImageSize(108.f, 108.f);
+	const FVector2D ChestClosedImageSize(312.f, 240.f);
+	const FVector2D ChestOpenImageSize(360.f, 308.f);
 	static constexpr ET66Rarity ChestPresentationArtRarity = ET66Rarity::Yellow;
 	if (Owner.ChestRewardClosedBrush.IsValid())
 	{
-		BindRuntimeHudBrush(Owner.ChestRewardClosedBrush, GetChestRewardClosedRelativePath(ChestPresentationArtRarity), ChestImageSize);
+		BindRuntimeHudBrush(Owner.ChestRewardClosedBrush, GetChestRewardClosedRelativePath(ChestPresentationArtRarity), ChestClosedImageSize);
 		if (!Owner.ChestRewardClosedBrush->GetResourceObject())
 		{
-			BindHudAssetBrush(Owner.ChestRewardClosedBrush, GetChestRewardFallbackAssetPath(ChestPresentationArtRarity), ChestImageSize);
+			BindHudAssetBrush(Owner.ChestRewardClosedBrush, GetChestRewardFallbackAssetPath(ChestPresentationArtRarity), ChestClosedImageSize);
 		}
 		if (!Owner.ChestRewardClosedBrush->GetResourceObject())
 		{
-			BindRuntimeHudBrush(Owner.ChestRewardClosedBrush, GetChestRewardFallbackRelativePath(ChestPresentationArtRarity), ChestImageSize);
+			BindRuntimeHudBrush(Owner.ChestRewardClosedBrush, GetChestRewardFallbackRelativePath(ChestPresentationArtRarity), ChestClosedImageSize);
 		}
 	}
 	if (Owner.ChestRewardOpenBrush.IsValid())
 	{
-		BindRuntimeHudBrush(Owner.ChestRewardOpenBrush, GetChestRewardOpenRelativePath(ChestPresentationArtRarity), ChestImageSize);
+		BindRuntimeHudBrush(Owner.ChestRewardOpenBrush, GetChestRewardOpenRelativePath(ChestPresentationArtRarity), ChestOpenImageSize);
 		if (!Owner.ChestRewardOpenBrush->GetResourceObject())
 		{
-			BindHudAssetBrush(Owner.ChestRewardOpenBrush, GetChestRewardFallbackAssetPath(ChestPresentationArtRarity), ChestImageSize);
+			BindHudAssetBrush(Owner.ChestRewardOpenBrush, GetChestRewardFallbackAssetPath(ChestPresentationArtRarity), ChestOpenImageSize);
 		}
 		if (!Owner.ChestRewardOpenBrush->GetResourceObject())
 		{
-			BindRuntimeHudBrush(Owner.ChestRewardOpenBrush, GetChestRewardFallbackRelativePath(ChestPresentationArtRarity), ChestImageSize);
+			BindRuntimeHudBrush(Owner.ChestRewardOpenBrush, GetChestRewardFallbackRelativePath(ChestPresentationArtRarity), ChestOpenImageSize);
 		}
 	}
 
@@ -226,19 +348,55 @@ void FT66HUDPresentationController::StartChestReward(const ET66Rarity ChestRarit
 	if (Owner.ChestRewardClosedBox.IsValid())
 	{
 		Owner.ChestRewardClosedBox->SetRenderOpacity(1.f);
+		Owner.ChestRewardClosedBox->SetWidthOverride(312.f);
+		Owner.ChestRewardClosedBox->SetHeightOverride(240.f);
+		Owner.ChestRewardClosedBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
 	}
 	if (Owner.ChestRewardOpenBox.IsValid())
 	{
 		Owner.ChestRewardOpenBox->SetRenderOpacity(0.f);
+		Owner.ChestRewardOpenBox->SetWidthOverride(360.f);
+		Owner.ChestRewardOpenBox->SetHeightOverride(308.f);
+		Owner.ChestRewardOpenBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
 	}
 
 	ActiveChestRewardRarity = ChestRarity;
 	ChestRewardTargetGold = FMath::Max(0, GoldAmount);
 	ChestRewardDisplayedGold = 0;
 	ChestRewardMinimumDisplayedGold = 0;
+	bChestRewardCommitDispatched = false;
+	bChestRewardCountTimelineStarted = false;
+	ActiveChestRewardCommitCallback = MoveTemp(OnCommit);
+	ActiveChestRewardFinishedCallback = MoveTemp(OnFinished);
 	ChestRewardElapsedSeconds = 0.f;
 	ChestRewardRemainingSeconds = UT66GameplayHUDWidget::ChestRewardDisplaySeconds;
 	bChestRewardVisible = true;
+	ChestRewardMarkerDispatcher.ClearHandlers();
+	ChestRewardMarkerDispatcher.RegisterHandler(
+		FName(TEXT("Chest.InventoryCommit")),
+		[this](const FT66AnimationMarkerEvent&)
+		{
+			DispatchChestRewardCommitIfNeeded();
+			RefreshChestRewardVisualState();
+		});
+
+	ChestRewardCountTimeline = FT66AnimationTimeline(FName(TEXT("Chest.RewardCount")));
+	ChestRewardCountTimeline.SetDuration(0.80f);
+	ChestRewardCountTimeline.SetCurve(FT66AnimationCurveSpec(ET66AnimationCurve::EaseOutCubic));
+	ChestRewardCountTimeline.SetProgressCallback([this](const float CurveValue)
+	{
+		ChestRewardDisplayedGold = FMath::RoundToInt(static_cast<float>(ChestRewardTargetGold) * FMath::Clamp(CurveValue, 0.f, 1.f));
+		ChestRewardDisplayedGold = FMath::Max(ChestRewardDisplayedGold, ChestRewardMinimumDisplayedGold);
+	});
+	ChestRewardCountTimeline.AddMarker({
+		FName(TEXT("Chest.InventoryCommit")),
+		ET66AnimationMarkerType::ProgressBased,
+		1.f,
+		0.f,
+		ET66AnimationMarkerFirePolicy::Once,
+		FName(TEXT("Chest.InventoryCommit"))
+	});
+	ChestRewardCountTimeline.Cancel();
 
 	if (Owner.ChestRewardCounterText.IsValid())
 	{
@@ -264,15 +422,41 @@ void FT66HUDPresentationController::StartChestReward(const ET66Rarity ChestRarit
 		}
 		if (Owner.ChestRewardCoinImages.IsValidIndex(CoinIndex) && Owner.ChestRewardCoinImages[CoinIndex].IsValid())
 		{
-			Owner.ChestRewardCoinImages[CoinIndex]->SetImage(Owner.GoldCurrencyBrush.Get());
+			Owner.ChestRewardCoinImages[CoinIndex]->SetImage(Owner.ChestRewardCoinBrush.IsValid() ? Owner.ChestRewardCoinBrush.Get() : Owner.GoldCurrencyBrush.Get());
 		}
 	}
+	for (const TSharedPtr<SBox>& BeamBox : Owner.ChestRewardBeamBoxes)
+	{
+		if (BeamBox.IsValid())
+		{
+			BeamBox->SetVisibility(EVisibility::Visible);
+			BeamBox->SetRenderOpacity(0.f);
+			BeamBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+		}
+	}
+	for (const TSharedPtr<SBox>& SparkleBox : Owner.ChestRewardSparkleBoxes)
+	{
+		if (SparkleBox.IsValid())
+		{
+			SparkleBox->SetVisibility(EVisibility::Visible);
+			SparkleBox->SetRenderOpacity(0.f);
+			SparkleBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+		}
+	}
+
+	return true;
 }
 
 
 bool FT66HUDPresentationController::TrySkipActivePresentation()
 {
 	if (UT66CrateOverlayWidget* Overlay = ActiveCrateOverlay.Get())
+	{
+		Overlay->RequestSkip();
+		return true;
+	}
+
+	if (UT66LootWheelOverlayWidget* Overlay = ActiveLootWheelOverlay.Get())
 	{
 		Overlay->RequestSkip();
 		return true;
@@ -285,6 +469,7 @@ bool FT66HUDPresentationController::TrySkipActivePresentation()
 		{
 			ChestRewardDisplayedGold = ChestRewardTargetGold;
 			ChestRewardMinimumDisplayedGold = ChestRewardTargetGold;
+			DispatchChestRewardCommitIfNeeded();
 			RefreshChestRewardVisualState();
 			HideChestReward();
 		}
@@ -297,6 +482,12 @@ bool FT66HUDPresentationController::TrySkipActivePresentation()
 			ChestRewardDisplayedGold = FMath::Max(ChestRewardDisplayedGold, ChestRewardMinimumDisplayedGold);
 			RefreshChestRewardVisualState();
 		}
+		return true;
+	}
+
+	if (bLootBagRevealVisible)
+	{
+		CompleteLootBagRevealToPickupCard();
 		return true;
 	}
 
@@ -315,6 +506,14 @@ void FT66HUDPresentationController::ClearActiveCratePresentation(UT66CrateOverla
 	if (!Overlay || ActiveCrateOverlay.Get() == Overlay)
 	{
 		ActiveCrateOverlay.Reset();
+	}
+}
+
+void FT66HUDPresentationController::ClearActiveLootWheelPresentation(UT66LootWheelOverlayWidget* Overlay)
+{
+	if (!Overlay || ActiveLootWheelOverlay.Get() == Overlay)
+	{
+		ActiveLootWheelOverlay.Reset();
 	}
 }
 
@@ -405,13 +604,18 @@ void FT66HUDPresentationController::TickChestRewardPresentation(const float InDe
 	ChestRewardElapsedSeconds += InDeltaTime;
 	ChestRewardRemainingSeconds = FMath::Max(0.f, ChestRewardRemainingSeconds - InDeltaTime);
 
-	const float CounterProgress = FMath::Clamp(ChestRewardElapsedSeconds / 1.05f, 0.f, 1.f);
-	const float CounterEase = FMath::InterpEaseOut(0.f, 1.f, CounterProgress, 2.5f);
-	ChestRewardDisplayedGold = FMath::RoundToInt(static_cast<float>(ChestRewardTargetGold) * CounterEase);
-	ChestRewardDisplayedGold = FMath::Max(ChestRewardDisplayedGold, ChestRewardMinimumDisplayedGold);
+	TArray<FT66AnimationMarkerEvent> MarkerEvents;
+	static constexpr float CountStartSeconds = 0.52f;
+	if (!bChestRewardCountTimelineStarted && ChestRewardElapsedSeconds >= CountStartSeconds)
+	{
+		bChestRewardCountTimelineStarted = true;
+		ChestRewardCountTimeline.Play();
+	}
+	ChestRewardCountTimeline.Tick(InDeltaTime, MarkerEvents);
+	ChestRewardMarkerDispatcher.Dispatch(MarkerEvents);
 	if (ChestRewardRemainingSeconds <= 0.f)
 	{
-		ChestRewardDisplayedGold = ChestRewardTargetGold;
+		DispatchChestRewardCommitIfNeeded();
 	}
 
 	RefreshChestRewardVisualState();
@@ -425,25 +629,50 @@ void FT66HUDPresentationController::TickChestRewardPresentation(const float InDe
 		: FMath::Clamp(ChestRewardRemainingSeconds / UT66GameplayHUDWidget::ChestRewardFadeOutSeconds, 0.f, 1.f);
 	Owner.ChestRewardBox->SetRenderOpacity(FadeAlpha);
 
-	const float OpenAlpha = FMath::Clamp((ChestRewardElapsedSeconds - 0.08f) / 0.16f, 0.f, 1.f);
+	const float PreOpenPulse = FMath::Sin(FMath::Clamp(ChestRewardElapsedSeconds / 0.28f, 0.f, 1.f) * PI);
+	const float OpenAlpha = FMath::Clamp((ChestRewardElapsedSeconds - 0.26f) / 0.22f, 0.f, 1.f);
+	const float OpenPopAlpha = FMath::Clamp((ChestRewardElapsedSeconds - 0.22f) / 0.36f, 0.f, 1.f);
+	const float OpenOvershoot = FMath::Sin(OpenPopAlpha * PI) * 18.f;
 	if (Owner.ChestRewardClosedBox.IsValid())
 	{
 		Owner.ChestRewardClosedBox->SetRenderOpacity(1.f - OpenAlpha);
-		Owner.ChestRewardClosedBox->SetWidthOverride(92.f + (1.f - OpenAlpha) * 12.f);
-		Owner.ChestRewardClosedBox->SetHeightOverride(92.f + (1.f - OpenAlpha) * 12.f);
-		Owner.ChestRewardClosedBox->SetRenderTransform(FSlateRenderTransform(FVector2D(0.f, (1.f - OpenAlpha) * 4.f)));
+		Owner.ChestRewardClosedBox->SetWidthOverride(312.f + PreOpenPulse * 18.f);
+		Owner.ChestRewardClosedBox->SetHeightOverride(240.f + PreOpenPulse * 10.f);
+		Owner.ChestRewardClosedBox->SetRenderTransform(FSlateRenderTransform(FVector2D(0.f, -PreOpenPulse * 7.f)));
 	}
 	if (Owner.ChestRewardOpenBox.IsValid())
 	{
-		const float OpenScaleAlpha = FMath::Clamp((ChestRewardElapsedSeconds - 0.02f) / 0.22f, 0.f, 1.f);
 		Owner.ChestRewardOpenBox->SetRenderOpacity(OpenAlpha);
-		Owner.ChestRewardOpenBox->SetWidthOverride(96.f + OpenScaleAlpha * 16.f);
-		Owner.ChestRewardOpenBox->SetHeightOverride(96.f + OpenScaleAlpha * 16.f);
-		Owner.ChestRewardOpenBox->SetRenderTransform(FSlateRenderTransform(FVector2D(0.f, (1.f - OpenScaleAlpha) * 8.f)));
+		Owner.ChestRewardOpenBox->SetWidthOverride(360.f + OpenOvershoot);
+		Owner.ChestRewardOpenBox->SetHeightOverride(308.f + OpenOvershoot * 0.85f);
+		Owner.ChestRewardOpenBox->SetRenderTransform(FSlateRenderTransform(FVector2D(0.f, (1.f - OpenPopAlpha) * 18.f - OpenOvershoot * 0.18f)));
 	}
 
-	const float CoinStartTime = 0.12f;
-	const float CoinLoopSeconds = 1.1f;
+	const float BeamAlpha = FMath::Clamp((ChestRewardElapsedSeconds - 0.30f) / 0.22f, 0.f, 1.f);
+	for (int32 BeamIndex = 0; BeamIndex < Owner.ChestRewardBeamBoxes.Num(); ++BeamIndex)
+	{
+		TSharedPtr<SBox> BeamBox = Owner.ChestRewardBeamBoxes[BeamIndex];
+		if (!BeamBox.IsValid())
+		{
+			continue;
+		}
+
+		const float BeamSpread = static_cast<float>(BeamIndex) - (static_cast<float>(Owner.ChestRewardBeamBoxes.Num() - 1) * 0.5f);
+		const float SweepDegrees = BeamSpread * 13.f + FMath::Sin(ChestRewardElapsedSeconds * 2.2f + BeamIndex * 0.7f) * 2.5f;
+		const float BeamPulse = 0.62f + 0.38f * FMath::Sin(ChestRewardElapsedSeconds * 5.4f + BeamIndex);
+		const float BeamWidth = 34.f + FMath::Abs(BeamSpread) * 9.f + BeamPulse * 18.f;
+		BeamBox->SetWidthOverride(BeamWidth);
+		BeamBox->SetHeightOverride(330.f + BeamPulse * 54.f);
+		BeamBox->SetRenderOpacity(BeamAlpha * FadeAlpha * (0.20f + BeamPulse * 0.22f));
+		BeamBox->SetRenderTransform(FSlateRenderTransform(FQuat2D(FMath::DegreesToRadians(SweepDegrees))));
+		if (Owner.ChestRewardBeamBorders.IsValidIndex(BeamIndex) && Owner.ChestRewardBeamBorders[BeamIndex].IsValid())
+		{
+			Owner.ChestRewardBeamBorders[BeamIndex]->SetBorderBackgroundColor(FLinearColor(1.f, 0.74f + BeamPulse * 0.18f, 0.18f, 0.20f + BeamPulse * 0.18f));
+		}
+	}
+
+	const float CoinStartTime = 0.42f;
+	const float CoinLifeSeconds = 1.58f;
 	for (int32 CoinIndex = 0; CoinIndex < Owner.ChestRewardCoinBoxes.Num(); ++CoinIndex)
 	{
 		TSharedPtr<SBox> CoinBox = Owner.ChestRewardCoinBoxes[CoinIndex];
@@ -454,23 +683,63 @@ void FT66HUDPresentationController::TickChestRewardPresentation(const float InDe
 
 		const float PerCoinDelay = CoinStartTime + (CoinIndex * 0.06f);
 		const float LocalTime = ChestRewardElapsedSeconds - PerCoinDelay;
-		if (LocalTime <= 0.f || ChestRewardRemainingSeconds <= 0.08f)
+		if (LocalTime <= 0.f || LocalTime >= CoinLifeSeconds || ChestRewardRemainingSeconds <= 0.08f)
 		{
 			CoinBox->SetRenderOpacity(0.f);
 			continue;
 		}
 
-		const float LoopProgress = FMath::Fmod(LocalTime, CoinLoopSeconds) / CoinLoopSeconds;
-		const float ArcAlpha = FMath::Sin(LoopProgress * PI);
-		const float Spread = 10.f + CoinIndex * 4.f;
-		const float LateralDrift = FMath::Sin((CoinIndex * 0.85f) + (LoopProgress * PI * 2.1f)) * Spread;
-		const float VerticalDrift = -58.f * LoopProgress - (CoinIndex % 2 == 0 ? 8.f : 0.f);
-		const float CoinSize = 10.f + (ArcAlpha * 12.f);
+		const float Progress = FMath::Clamp(LocalTime / CoinLifeSeconds, 0.f, 1.f);
+		const float EaseOut = 1.f - FMath::Pow(1.f - Progress, 2.6f);
+		const float ArcAlpha = FMath::Sin(Progress * PI);
+		const float FanIndex = static_cast<float>((CoinIndex % 14) - 6);
+		const float WaveIndex = static_cast<float>(CoinIndex / 14);
+		const float Direction = (FanIndex / 6.f) * 1.05f;
+		const float Spread = 110.f + (CoinIndex % 5) * 22.f + WaveIndex * 36.f;
+		const float LateralDrift = Direction * Spread * EaseOut + FMath::Sin(Progress * PI * 2.f + CoinIndex) * 18.f * ArcAlpha;
+		const float VerticalDrift = -42.f - (165.f + (CoinIndex % 7) * 22.f) * EaseOut + FMath::Sin(Progress * PI) * -64.f;
+		const float CoinSize = 22.f + ArcAlpha * 18.f + (CoinIndex % 3) * 2.f;
 
 		CoinBox->SetWidthOverride(CoinSize);
-		CoinBox->SetHeightOverride(CoinSize);
+		CoinBox->SetHeightOverride(FMath::Max(8.f, CoinSize * (0.62f + 0.38f * FMath::Abs(FMath::Sin(Progress * PI * 4.f + CoinIndex)))));
 		CoinBox->SetRenderTransform(FSlateRenderTransform(FVector2D(LateralDrift, VerticalDrift)));
 		CoinBox->SetRenderOpacity(ArcAlpha * OpenAlpha * FadeAlpha);
+	}
+
+	const float SparkleStartTime = 0.34f;
+	const float SparkleLifeSeconds = 1.45f;
+	for (int32 SparkleIndex = 0; SparkleIndex < Owner.ChestRewardSparkleBoxes.Num(); ++SparkleIndex)
+	{
+		TSharedPtr<SBox> SparkleBox = Owner.ChestRewardSparkleBoxes[SparkleIndex];
+		if (!SparkleBox.IsValid())
+		{
+			continue;
+		}
+
+		const float PerSparkleDelay = SparkleStartTime + SparkleIndex * 0.045f;
+		const float LocalTime = FMath::Fmod(FMath::Max(0.f, ChestRewardElapsedSeconds - PerSparkleDelay), SparkleLifeSeconds);
+		if (ChestRewardElapsedSeconds < PerSparkleDelay || ChestRewardRemainingSeconds <= 0.08f)
+		{
+			SparkleBox->SetRenderOpacity(0.f);
+			continue;
+		}
+
+		const float Progress = FMath::Clamp(LocalTime / SparkleLifeSeconds, 0.f, 1.f);
+		const float GlowAlpha = FMath::Sin(Progress * PI);
+		const float Angle = static_cast<float>(SparkleIndex) * 2.399963f;
+		const float Radius = (70.f + SparkleIndex * 9.f) * (0.35f + Progress * 0.88f);
+		const float X = FMath::Cos(Angle) * Radius;
+		const float Y = -72.f - FMath::Abs(FMath::Sin(Angle)) * 130.f - Progress * 96.f;
+		const float SparkleSize = 4.f + GlowAlpha * (8.f + (SparkleIndex % 4) * 2.f);
+		SparkleBox->SetWidthOverride(SparkleSize);
+		SparkleBox->SetHeightOverride(SparkleSize);
+		SparkleBox->SetRenderTransform(FSlateRenderTransform(FVector2D(X, Y)));
+		SparkleBox->SetRenderOpacity(GlowAlpha * OpenAlpha * FadeAlpha);
+		if (Owner.ChestRewardSparkleBorders.IsValidIndex(SparkleIndex) && Owner.ChestRewardSparkleBorders[SparkleIndex].IsValid())
+		{
+			const float Warm = 0.72f + 0.28f * GlowAlpha;
+			Owner.ChestRewardSparkleBorders[SparkleIndex]->SetBorderBackgroundColor(FLinearColor(1.f, Warm, 0.38f, 0.55f + GlowAlpha * 0.38f));
+		}
 	}
 
 	if (ChestRewardRemainingSeconds <= 0.f)
@@ -482,12 +751,21 @@ void FT66HUDPresentationController::TickChestRewardPresentation(const float InDe
 
 void FT66HUDPresentationController::HideChestReward()
 {
+	if (bChestRewardVisible)
+	{
+		DispatchChestRewardCommitIfNeeded();
+	}
+
 	bChestRewardVisible = false;
 	ChestRewardRemainingSeconds = 0.f;
 	ChestRewardElapsedSeconds = 0.f;
 	ChestRewardTargetGold = 0;
 	ChestRewardDisplayedGold = 0;
 	ChestRewardMinimumDisplayedGold = 0;
+	bChestRewardCommitDispatched = false;
+	bChestRewardCountTimelineStarted = false;
+	ChestRewardCountTimeline.Cancel();
+	ChestRewardMarkerDispatcher.ClearHandlers();
 	if (Owner.ChestRewardBox.IsValid())
 	{
 		Owner.ChestRewardBox->SetVisibility(EVisibility::Collapsed);
@@ -496,11 +774,15 @@ void FT66HUDPresentationController::HideChestReward()
 	if (Owner.ChestRewardClosedBox.IsValid())
 	{
 		Owner.ChestRewardClosedBox->SetRenderOpacity(1.f);
+		Owner.ChestRewardClosedBox->SetWidthOverride(312.f);
+		Owner.ChestRewardClosedBox->SetHeightOverride(240.f);
 		Owner.ChestRewardClosedBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
 	}
 	if (Owner.ChestRewardOpenBox.IsValid())
 	{
 		Owner.ChestRewardOpenBox->SetRenderOpacity(0.f);
+		Owner.ChestRewardOpenBox->SetWidthOverride(360.f);
+		Owner.ChestRewardOpenBox->SetHeightOverride(308.f);
 		Owner.ChestRewardOpenBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
 	}
 	if (Owner.ChestRewardCounterText.IsValid())
@@ -520,21 +802,45 @@ void FT66HUDPresentationController::HideChestReward()
 			CoinBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
 		}
 	}
+	for (const TSharedPtr<SBox>& BeamBox : Owner.ChestRewardBeamBoxes)
+	{
+		if (BeamBox.IsValid())
+		{
+			BeamBox->SetVisibility(EVisibility::Collapsed);
+			BeamBox->SetRenderOpacity(0.f);
+			BeamBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+		}
+	}
+	for (const TSharedPtr<SBox>& SparkleBox : Owner.ChestRewardSparkleBoxes)
+	{
+		if (SparkleBox.IsValid())
+		{
+			SparkleBox->SetVisibility(EVisibility::Collapsed);
+			SparkleBox->SetRenderOpacity(0.f);
+			SparkleBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+		}
+	}
+
+	DispatchChestRewardFinishedIfNeeded();
 }
 
 
 void FT66HUDPresentationController::TryShowQueuedPresentation()
 {
-	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bPickupCardVisible)
+	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible || bPickupCardVisible)
 	{
 		return;
 	}
 
 	if (QueuedChestRewards.Num() > 0)
 	{
-		const FQueuedChestReward NextChestReward = QueuedChestRewards[0];
+		FQueuedChestReward NextChestReward = MoveTemp(QueuedChestRewards[0]);
 		QueuedChestRewards.RemoveAt(0);
-		StartChestReward(NextChestReward.Rarity, NextChestReward.GoldAmount);
+		StartChestReward(
+			NextChestReward.Rarity,
+			NextChestReward.GoldAmount,
+			MoveTemp(NextChestReward.OnCommit),
+			MoveTemp(NextChestReward.OnFinished));
 		return;
 	}
 
@@ -542,42 +848,37 @@ void FT66HUDPresentationController::TryShowQueuedPresentation()
 	{
 		const FQueuedPickupCard NextPickup = QueuedPickupCards[0];
 		QueuedPickupCards.RemoveAt(0);
-		ShowPickupItemCard(NextPickup.ItemID, NextPickup.ItemRarity);
+		if (NextPickup.bLootBagReveal)
+		{
+			ShowLootBagItemReveal(NextPickup.ItemID, NextPickup.ItemRarity);
+		}
+		else
+		{
+			ShowPickupItemCard(NextPickup.ItemID, NextPickup.ItemRarity);
+		}
 	}
 }
 
 
-void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const ET66ItemRarity ItemRarity)
+void FT66HUDPresentationController::PopulatePickupCardContent(const FName ItemID, const ET66ItemRarity ItemRarity, const bool bPopulateLootBagProxy)
 {
-	if (ItemID.IsNone() || !Owner.PickupCardBox.IsValid())
-	{
-		return;
-	}
-	if (ActiveCrateOverlay.IsValid() || bChestRewardVisible || bPickupCardVisible)
-	{
-		FQueuedPickupCard& QueuedPickup = QueuedPickupCards.AddDefaulted_GetRef();
-		QueuedPickup.ItemID = ItemID;
-		QueuedPickup.ItemRarity = ItemRarity;
-		return;
-	}
-
-	UWorld* World = Owner.GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
 	UT66GameInstance* GI = Cast<UT66GameInstance>(Owner.GetGameInstance());
 	UT66LocalizationSubsystem* Loc = Owner.GetGameInstance() ? Owner.GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
 	UT66RunStateSubsystem* RunState = Owner.GetRunState();
 
 	FItemData ItemData;
 	const bool bHasData = GI && GI->GetItemData(ItemID, ItemData);
+	const FText ItemNameText = Loc ? Loc->GetText_ItemDisplayNameForRarity(ItemID, ItemRarity) : FText::FromName(ItemID);
 
 	if (Owner.PickupCardNameText.IsValid())
 	{
-		Owner.PickupCardNameText->SetText(Loc ? Loc->GetText_ItemDisplayNameForRarity(ItemID, ItemRarity) : FText::FromName(ItemID));
+		Owner.PickupCardNameText->SetText(ItemNameText);
 	}
+	if (Owner.LootBagRevealCardNameText.IsValid() && bPopulateLootBagProxy)
+	{
+		Owner.LootBagRevealCardNameText->SetText(ItemNameText);
+	}
+
 	if (Owner.PickupCardDescText.IsValid())
 	{
 		if (!bHasData)
@@ -605,12 +906,20 @@ void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const
 			Owner.PickupCardDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, ItemData, ItemRarity, MainValue, ScaleMult, Line2Multiplier));
 		}
 	}
+
 	if (!Owner.PickupCardIconBrush.IsValid())
 	{
 		Owner.PickupCardIconBrush = MakeShared<FSlateBrush>();
 		Owner.PickupCardIconBrush->DrawAs = ESlateBrushDrawType::Image;
 		Owner.PickupCardIconBrush->ImageSize = FVector2D(UT66GameplayHUDWidget::PickupCardWidth, UT66GameplayHUDWidget::PickupCardWidth);
 	}
+	if (!Owner.LootBagRevealCardIconBrush.IsValid())
+	{
+		Owner.LootBagRevealCardIconBrush = MakeShared<FSlateBrush>();
+		Owner.LootBagRevealCardIconBrush->DrawAs = ESlateBrushDrawType::Image;
+		Owner.LootBagRevealCardIconBrush->ImageSize = FVector2D(84.f, 84.f);
+	}
+
 	const TSoftObjectPtr<UTexture2D> PickupIconSoft = bHasData ? ItemData.GetIconForRarity(ItemRarity) : TSoftObjectPtr<UTexture2D>();
 	if (!PickupIconSoft.IsNull())
 	{
@@ -618,6 +927,10 @@ void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const
 		if (TexPool)
 		{
 			T66SlateTexture::BindSharedBrushAsync(TexPool, PickupIconSoft, &Owner, Owner.PickupCardIconBrush, FName(TEXT("HUDPickupCard")), true);
+			if (bPopulateLootBagProxy)
+			{
+				T66SlateTexture::BindSharedBrushAsync(TexPool, PickupIconSoft, &Owner, Owner.LootBagRevealCardIconBrush, FName(TEXT("HUDLootBagRevealCard")), true);
+			}
 		}
 	}
 	if (Owner.PickupCardIconImage.IsValid())
@@ -625,16 +938,30 @@ void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const
 		Owner.PickupCardIconImage->SetImage(Owner.PickupCardIconBrush.Get());
 		Owner.PickupCardIconImage->SetVisibility(!PickupIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Collapsed);
 	}
+	if (Owner.LootBagRevealCardIconImage.IsValid() && bPopulateLootBagProxy)
+	{
+		Owner.LootBagRevealCardIconImage->SetImage(Owner.LootBagRevealCardIconBrush.Get());
+		Owner.LootBagRevealCardIconImage->SetVisibility(!PickupIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Collapsed);
+	}
+
+	const FLinearColor AccentColor = bHasData
+		? (FItemData::GetItemRarityColor(ItemRarity) * 0.52f + FLinearColor(0.05f, 0.05f, 0.06f, 0.48f))
+		: FT66FlatStyle::Tokens::Panel;
 	if (Owner.PickupCardTileBorder.IsValid())
 	{
-		const FLinearColor AccentColor = bHasData
-			? (FItemData::GetItemRarityColor(ItemRarity) * 0.52f + FLinearColor(0.05f, 0.05f, 0.06f, 0.48f))
-			: FT66FlatStyle::Tokens::Panel;
 		Owner.PickupCardTileBorder->SetBorderBackgroundColor(AccentColor);
+	}
+	if (Owner.LootBagRevealCardTileBorder.IsValid() && bPopulateLootBagProxy)
+	{
+		Owner.LootBagRevealCardTileBorder->SetBorderBackgroundColor(AccentColor);
 	}
 	if (Owner.PickupCardIconBorder.IsValid())
 	{
 		Owner.PickupCardIconBorder->SetBorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.05f, 1.f));
+	}
+	if (Owner.LootBagRevealCardIconBorder.IsValid() && bPopulateLootBagProxy)
+	{
+		Owner.LootBagRevealCardIconBorder->SetBorderBackgroundColor(FLinearColor(0.04f, 0.04f, 0.05f, 1.f));
 	}
 	if (Owner.PickupCardSkipText.IsValid())
 	{
@@ -644,12 +971,320 @@ void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const
 				? NSLOCTEXT("T66.Presentation", "PickupCardCloseInteract", "Interact to close")
 				: FText::Format(NSLOCTEXT("T66.Presentation", "PickupCardCloseKey", "Close: {0}"), KeyText));
 	}
+}
+
+
+void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const ET66ItemRarity ItemRarity)
+{
+	if (ItemID.IsNone() || !Owner.PickupCardBox.IsValid())
+	{
+		return;
+	}
+	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible || bPickupCardVisible)
+	{
+		FQueuedPickupCard& QueuedPickup = QueuedPickupCards.AddDefaulted_GetRef();
+		QueuedPickup.ItemID = ItemID;
+		QueuedPickup.ItemRarity = ItemRarity;
+		QueuedPickup.bLootBagReveal = false;
+		return;
+	}
+
+	UWorld* World = Owner.GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	PopulatePickupCardContent(ItemID, ItemRarity, false);
 
 	ActivePickupCardItemID = ItemID;
 	ActivePickupCardRarity = ItemRarity;
 	bPickupCardVisible = true;
 	Owner.PickupCardBox->SetVisibility(EVisibility::Visible);
 	Owner.PickupCardBox->SetRenderOpacity(1.f);
+	Owner.PickupCardBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+}
+
+
+void FT66HUDPresentationController::ShowLootBagItemReveal(const FName ItemID, const ET66ItemRarity ItemRarity)
+{
+	if (ItemID.IsNone() || !Owner.LootBagRevealBox.IsValid() || !Owner.PickupCardBox.IsValid())
+	{
+		ShowPickupItemCard(ItemID, ItemRarity);
+		return;
+	}
+	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible || bPickupCardVisible)
+	{
+		FQueuedPickupCard& QueuedPickup = QueuedPickupCards.AddDefaulted_GetRef();
+		QueuedPickup.ItemID = ItemID;
+		QueuedPickup.ItemRarity = ItemRarity;
+		QueuedPickup.bLootBagReveal = true;
+		return;
+	}
+
+	UWorld* World = Owner.GetWorld();
+	if (!World)
+	{
+		ShowPickupItemCard(ItemID, ItemRarity);
+		return;
+	}
+
+	QueueActivePickupCardToFront();
+	HidePickupCard();
+	ResetLootBagRevealWidgets();
+	PopulatePickupCardContent(ItemID, ItemRarity, true);
+
+	const FVector2D ClosedSize(260.f, 246.f);
+	const FVector2D OpenSize(286.f, 270.f);
+	if (Owner.LootBagRevealClosedBrush.IsValid())
+	{
+		BindRuntimeHudBrush(Owner.LootBagRevealClosedBrush, GetLootBagRevealClosedRelativePath(), ClosedSize);
+	}
+	if (Owner.LootBagRevealOpenBrush.IsValid())
+	{
+		BindRuntimeHudBrush(Owner.LootBagRevealOpenBrush, GetLootBagRevealOpenRelativePath(), OpenSize);
+	}
+
+	const bool bHasClosedBag = Owner.LootBagRevealClosedBrush.IsValid() && Owner.LootBagRevealClosedBrush->GetResourceObject();
+	const bool bHasOpenBag = Owner.LootBagRevealOpenBrush.IsValid() && Owner.LootBagRevealOpenBrush->GetResourceObject();
+	if (!bHasClosedBag || !bHasOpenBag)
+	{
+		UE_LOG(LogT66HUD, Warning, TEXT("[LootBagReveal] Missing generated bag art (closed=%d open=%d); falling back to direct item card. This does not satisfy the LootBag animation gate."), bHasClosedBag ? 1 : 0, bHasOpenBag ? 1 : 0);
+		ShowPickupItemCard(ItemID, ItemRarity);
+		return;
+	}
+
+	if (Owner.LootBagRevealClosedImage.IsValid())
+	{
+		Owner.LootBagRevealClosedImage->SetImage(Owner.LootBagRevealClosedBrush.Get());
+	}
+	if (Owner.LootBagRevealOpenImage.IsValid())
+	{
+		Owner.LootBagRevealOpenImage->SetImage(Owner.LootBagRevealOpenBrush.Get());
+	}
+
+	ActiveLootBagRevealItemID = ItemID;
+	ActiveLootBagRevealRarity = ItemRarity;
+	ActivePickupCardItemID = ItemID;
+	ActivePickupCardRarity = ItemRarity;
+	LootBagRevealElapsedSeconds = 0.f;
+	LootBagRevealRemainingSeconds = UT66GameplayHUDWidget::LootBagRevealDisplaySeconds;
+	bLootBagRevealVisible = true;
+	bLootBagRevealHandoffComplete = false;
+
+	if (Owner.PickupCardBox.IsValid())
+	{
+		Owner.PickupCardBox->SetVisibility(EVisibility::Collapsed);
+		Owner.PickupCardBox->SetRenderOpacity(1.f);
+		Owner.PickupCardBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+	}
+	if (Owner.LootBagRevealBox.IsValid())
+	{
+		Owner.LootBagRevealBox->SetVisibility(EVisibility::Visible);
+		Owner.LootBagRevealBox->SetRenderOpacity(1.f);
+	}
+	if (Owner.LootBagRevealCardBox.IsValid())
+	{
+		Owner.LootBagRevealCardBox->SetVisibility(EVisibility::Visible);
+	}
+	if (Owner.LootBagRevealClosedBox.IsValid())
+	{
+		Owner.LootBagRevealClosedBox->SetVisibility(EVisibility::Visible);
+	}
+	if (Owner.LootBagRevealOpenBox.IsValid())
+	{
+		Owner.LootBagRevealOpenBox->SetVisibility(EVisibility::Visible);
+	}
+	for (const TSharedPtr<SBox>& SparkleBox : Owner.LootBagRevealSparkleBoxes)
+	{
+		if (SparkleBox.IsValid())
+		{
+			SparkleBox->SetVisibility(EVisibility::Visible);
+		}
+	}
+
+	UE_LOG(LogT66HUD, Display, TEXT("[LootBagReveal] started item=%s rarity=%d via ShowLootBagItemReveal."), *ItemID.ToString(), static_cast<int32>(ItemRarity));
+}
+
+
+void FT66HUDPresentationController::TickLootBagRevealPresentation(const float InDeltaTime)
+{
+	if (!bLootBagRevealVisible || !Owner.LootBagRevealBox.IsValid())
+	{
+		return;
+	}
+
+	LootBagRevealElapsedSeconds += InDeltaTime;
+	LootBagRevealRemainingSeconds = FMath::Max(0.f, LootBagRevealRemainingSeconds - InDeltaTime);
+
+	static constexpr float OpenStartSeconds = 0.24f;
+	static constexpr float OpenDurationSeconds = 0.24f;
+	static constexpr float CardStartSeconds = 0.38f;
+	static constexpr float CardTravelSeconds = 0.74f;
+	static constexpr float HandoffSeconds = 1.28f;
+
+	const float FadeAlpha = (LootBagRevealRemainingSeconds > UT66GameplayHUDWidget::LootBagRevealFadeOutSeconds)
+		? 1.f
+		: FMath::Clamp(LootBagRevealRemainingSeconds / UT66GameplayHUDWidget::LootBagRevealFadeOutSeconds, 0.f, 1.f);
+	Owner.LootBagRevealBox->SetRenderOpacity(FadeAlpha);
+
+	const float PreOpenPulse = FMath::Sin(FMath::Clamp(LootBagRevealElapsedSeconds / OpenStartSeconds, 0.f, 1.f) * PI);
+	const float OpenAlpha = FMath::Clamp((LootBagRevealElapsedSeconds - OpenStartSeconds) / OpenDurationSeconds, 0.f, 1.f);
+	const float OpenPopAlpha = 1.f - FMath::Pow(1.f - OpenAlpha, 3.f);
+	if (Owner.LootBagRevealClosedBox.IsValid())
+	{
+		Owner.LootBagRevealClosedBox->SetRenderOpacity((1.f - OpenAlpha) * FadeAlpha);
+		Owner.LootBagRevealClosedBox->SetWidthOverride(260.f + PreOpenPulse * 14.f);
+		Owner.LootBagRevealClosedBox->SetHeightOverride(246.f + PreOpenPulse * 10.f);
+		Owner.LootBagRevealClosedBox->SetRenderTransform(FSlateRenderTransform(FVector2D(0.f, -PreOpenPulse * 8.f)));
+	}
+	if (Owner.LootBagRevealOpenBox.IsValid())
+	{
+		const float OpenOvershoot = FMath::Sin(OpenAlpha * PI) * 18.f;
+		Owner.LootBagRevealOpenBox->SetRenderOpacity(OpenAlpha * FadeAlpha);
+		Owner.LootBagRevealOpenBox->SetWidthOverride(286.f + OpenOvershoot);
+		Owner.LootBagRevealOpenBox->SetHeightOverride(270.f + OpenOvershoot * 0.85f);
+		Owner.LootBagRevealOpenBox->SetRenderTransform(FSlateRenderTransform(FVector2D(0.f, (1.f - OpenPopAlpha) * 18.f - OpenOvershoot * 0.12f)));
+	}
+
+	const float CardProgress = FMath::Clamp((LootBagRevealElapsedSeconds - CardStartSeconds) / CardTravelSeconds, 0.f, 1.f);
+	const float CardEase = 1.f - FMath::Pow(1.f - CardProgress, 3.f);
+	if (Owner.LootBagRevealCardBox.IsValid())
+	{
+		const float CardY = (1.f - CardEase) * 126.f;
+		const float CardOpacity = FMath::Clamp((CardProgress - 0.04f) / 0.22f, 0.f, 1.f);
+		Owner.LootBagRevealCardBox->SetRenderOpacity(CardOpacity * FadeAlpha);
+		Owner.LootBagRevealCardBox->SetRenderTransform(FSlateRenderTransform(FVector2D(0.f, CardY)));
+		Owner.LootBagRevealCardBox->SetWidthOverride(UT66GameplayHUDWidget::PickupCardWidth);
+		Owner.LootBagRevealCardBox->SetHeightOverride(UT66GameplayHUDWidget::PickupCardHeight);
+	}
+
+	for (int32 SparkleIndex = 0; SparkleIndex < Owner.LootBagRevealSparkleBoxes.Num(); ++SparkleIndex)
+	{
+		TSharedPtr<SBox> SparkleBox = Owner.LootBagRevealSparkleBoxes[SparkleIndex];
+		if (!SparkleBox.IsValid())
+		{
+			continue;
+		}
+
+		const float Delay = OpenStartSeconds + SparkleIndex * 0.045f;
+		const float LocalTime = LootBagRevealElapsedSeconds - Delay;
+		if (LocalTime <= 0.f)
+		{
+			SparkleBox->SetRenderOpacity(0.f);
+			continue;
+		}
+
+		const float Progress = FMath::Clamp(LocalTime / 0.92f, 0.f, 1.f);
+		const float GlowAlpha = FMath::Sin(Progress * PI);
+		const float Angle = static_cast<float>(SparkleIndex) * 2.399963f;
+		const float Radius = 30.f + Progress * (58.f + SparkleIndex * 4.f);
+		const float X = FMath::Cos(Angle) * Radius;
+		const float Y = -74.f - FMath::Abs(FMath::Sin(Angle)) * 72.f - Progress * 82.f;
+		const float Size = 5.f + GlowAlpha * (9.f + static_cast<float>(SparkleIndex % 3) * 2.f);
+		SparkleBox->SetWidthOverride(Size);
+		SparkleBox->SetHeightOverride(Size);
+		SparkleBox->SetRenderTransform(FSlateRenderTransform(FVector2D(X, Y)));
+		SparkleBox->SetRenderOpacity(GlowAlpha * OpenAlpha * FadeAlpha);
+		if (Owner.LootBagRevealSparkleBorders.IsValidIndex(SparkleIndex) && Owner.LootBagRevealSparkleBorders[SparkleIndex].IsValid())
+		{
+			Owner.LootBagRevealSparkleBorders[SparkleIndex]->SetBorderBackgroundColor(FLinearColor(1.f, 0.78f + GlowAlpha * 0.18f, 0.26f, 0.58f + GlowAlpha * 0.28f));
+		}
+	}
+
+	if (LootBagRevealElapsedSeconds >= HandoffSeconds || LootBagRevealRemainingSeconds <= 0.f)
+	{
+		CompleteLootBagRevealToPickupCard();
+	}
+}
+
+
+void FT66HUDPresentationController::CompleteLootBagRevealToPickupCard()
+{
+	if (!bLootBagRevealVisible || bLootBagRevealHandoffComplete)
+	{
+		return;
+	}
+
+	bLootBagRevealHandoffComplete = true;
+	bLootBagRevealVisible = false;
+
+	ResetLootBagRevealWidgets();
+	if (Owner.PickupCardBox.IsValid())
+	{
+		Owner.PickupCardBox->SetVisibility(EVisibility::Visible);
+		Owner.PickupCardBox->SetRenderOpacity(1.f);
+		Owner.PickupCardBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+	}
+
+	bPickupCardVisible = true;
+	ActivePickupCardItemID = ActiveLootBagRevealItemID;
+	ActivePickupCardRarity = ActiveLootBagRevealRarity;
+	ActiveLootBagRevealItemID = NAME_None;
+	ActiveLootBagRevealRarity = ET66ItemRarity::Black;
+	LootBagRevealElapsedSeconds = 0.f;
+	LootBagRevealRemainingSeconds = 0.f;
+
+	UE_LOG(LogT66HUD, Display, TEXT("[LootBagReveal] handoff complete to pickup card."));
+}
+
+
+void FT66HUDPresentationController::HideLootBagReveal()
+{
+	bLootBagRevealVisible = false;
+	bLootBagRevealHandoffComplete = false;
+	ActiveLootBagRevealItemID = NAME_None;
+	ActiveLootBagRevealRarity = ET66ItemRarity::Black;
+	LootBagRevealElapsedSeconds = 0.f;
+	LootBagRevealRemainingSeconds = 0.f;
+	ResetLootBagRevealWidgets();
+}
+
+
+void FT66HUDPresentationController::ResetLootBagRevealWidgets()
+{
+	if (Owner.LootBagRevealBox.IsValid())
+	{
+		Owner.LootBagRevealBox->SetVisibility(EVisibility::Collapsed);
+		Owner.LootBagRevealBox->SetRenderOpacity(1.f);
+	}
+	if (Owner.LootBagRevealClosedBox.IsValid())
+	{
+		Owner.LootBagRevealClosedBox->SetVisibility(EVisibility::Collapsed);
+		Owner.LootBagRevealClosedBox->SetRenderOpacity(1.f);
+		Owner.LootBagRevealClosedBox->SetWidthOverride(260.f);
+		Owner.LootBagRevealClosedBox->SetHeightOverride(246.f);
+		Owner.LootBagRevealClosedBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+	}
+	if (Owner.LootBagRevealOpenBox.IsValid())
+	{
+		Owner.LootBagRevealOpenBox->SetVisibility(EVisibility::Collapsed);
+		Owner.LootBagRevealOpenBox->SetRenderOpacity(0.f);
+		Owner.LootBagRevealOpenBox->SetWidthOverride(286.f);
+		Owner.LootBagRevealOpenBox->SetHeightOverride(270.f);
+		Owner.LootBagRevealOpenBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+	}
+	if (Owner.LootBagRevealCardBox.IsValid())
+	{
+		Owner.LootBagRevealCardBox->SetVisibility(EVisibility::Collapsed);
+		Owner.LootBagRevealCardBox->SetRenderOpacity(0.f);
+		Owner.LootBagRevealCardBox->SetWidthOverride(UT66GameplayHUDWidget::PickupCardWidth);
+		Owner.LootBagRevealCardBox->SetHeightOverride(UT66GameplayHUDWidget::PickupCardHeight);
+		Owner.LootBagRevealCardBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+	}
+	for (const TSharedPtr<SBox>& SparkleBox : Owner.LootBagRevealSparkleBoxes)
+	{
+		if (SparkleBox.IsValid())
+		{
+			SparkleBox->SetVisibility(EVisibility::Collapsed);
+			SparkleBox->SetRenderOpacity(0.f);
+			SparkleBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
+		}
+	}
+	if (Owner.LootBagRevealCardNameText.IsValid())
+	{
+		Owner.LootBagRevealCardNameText->SetText(FText::GetEmpty());
+	}
 }
 
 
@@ -662,6 +1297,7 @@ void FT66HUDPresentationController::HidePickupCard()
 	{
 		Owner.PickupCardBox->SetVisibility(EVisibility::Collapsed);
 		Owner.PickupCardBox->SetRenderOpacity(1.f);
+		Owner.PickupCardBox->SetRenderTransform(FSlateRenderTransform(FVector2D::ZeroVector));
 	}
 	if (Owner.PickupCardSkipText.IsValid())
 	{

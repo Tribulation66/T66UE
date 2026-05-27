@@ -88,6 +88,7 @@ private:
 	void SpawnRiseBurst() const;
 	void SpawnRiseNiagaraBurst() const;
 	bool ShouldTickForAnimation() const;
+	void RefreshTickEnabledForDebug();
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<USphereComponent> DamageZone;

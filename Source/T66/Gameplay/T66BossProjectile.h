@@ -36,10 +36,12 @@ public:
 	int32 DamageHearts = 1;
 
 	void ConfigureVisualStyle(ET66BossAttackProfile InAttackProfile, const FLinearColor& InPrimaryColor, const FLinearColor& InSecondaryColor, bool bInUseSecondaryTint = false);
+	void SetVisualScaleMultiplier(float InMultiplier);
 	void SetTargetLocation(const FVector& TargetLoc, float Speed);
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -53,6 +55,7 @@ private:
 	FLinearColor PrimaryColor = FLinearColor(0.95f, 0.16f, 0.12f, 1.f);
 	FLinearColor SecondaryColor = FLinearColor(1.f, 0.72f, 0.18f, 1.f);
 	bool bUseSecondaryTint = false;
+	float VisualScaleMultiplier = 1.f;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> TrailComponent = nullptr;

@@ -31,8 +31,8 @@ TSharedRef<SWidget> UT66HeroSelectionPreviewController::CreateHeroPreviewWidget(
 	const TSharedRef<SImage> PreviewVideoImageWidgetRef =
 		SAssignNew(PreviewVideoImageWidget, SImage)
 		.Image_UObject(this, &UT66HeroSelectionPreviewController::GetHeroPreviewVideoBrush);
-	HeroPreviewColorBox = PreviewColorBoxWidget;
-	HeroPreviewVideoImage = PreviewVideoImageWidget;
+	HeroPreviewColorBoxes.Add(PreviewColorBoxWidget);
+	HeroPreviewVideoImages.Add(PreviewVideoImageWidget);
 	return SNew(SOverlay)
 		+ SOverlay::Slot()
 		[
@@ -50,11 +50,14 @@ void UT66HeroSelectionPreviewController::BindPreviewPanelWidgets(
 	const TSharedPtr<SScaleBox>& InCompanionPreviewScaleBox,
 	const TSharedPtr<STextBlock>& InCompanionPreviewPlaceholderText)
 {
-	HeroPreviewVideoImage = InHeroPreviewVideoImage;
+	if (InHeroPreviewVideoImage.IsValid())
+	{
+		HeroPreviewVideoImages.Add(InHeroPreviewVideoImage);
+	}
 	HeroPreviewPlaceholderText = InHeroPreviewPlaceholderText;
 	CompanionInfoPortraitScaleBox = InCompanionPreviewScaleBox;
 	CompanionPreviewPlaceholderText = InCompanionPreviewPlaceholderText;
-	if (TSharedPtr<SImage> PreviewVideoImage = HeroPreviewVideoImage.Pin())
+	if (TSharedPtr<SImage> PreviewVideoImage = InHeroPreviewVideoImage)
 	{
 		PreviewVideoImage->SetVisibility(EVisibility::Collapsed);
 	}
@@ -203,14 +206,20 @@ void UT66HeroSelectionPreviewController::ApplyHeroPreviewVideo(
 		HeroPreviewVideoPlayer->CloseVideo();
 	}
 
-	if (TSharedPtr<SBorder> PreviewColorBox = HeroPreviewColorBox.Pin())
+	for (const TWeakPtr<SBorder>& WeakColorBox : HeroPreviewColorBoxes)
 	{
-		PreviewColorBox->SetBorderBackgroundColor(bVideoOpened ? FLinearColor::Transparent : FallbackColor);
+		if (TSharedPtr<SBorder> PreviewColorBox = WeakColorBox.Pin())
+		{
+			PreviewColorBox->SetBorderBackgroundColor(bVideoOpened ? FLinearColor::Transparent : FallbackColor);
+		}
 	}
-	if (TSharedPtr<SImage> PreviewVideoImage = HeroPreviewVideoImage.Pin())
+	for (const TWeakPtr<SImage>& WeakVideoImage : HeroPreviewVideoImages)
 	{
-		PreviewVideoImage->SetImage(GetHeroPreviewVideoBrush());
-		PreviewVideoImage->Invalidate(EInvalidateWidgetReason::Paint);
+		if (TSharedPtr<SImage> PreviewVideoImage = WeakVideoImage.Pin())
+		{
+			PreviewVideoImage->SetImage(GetHeroPreviewVideoBrush());
+			PreviewVideoImage->Invalidate(EInvalidateWidgetReason::Paint);
+		}
 	}
 }
 

@@ -15,7 +15,12 @@ int32 FT66TrapDamageUtils::ResolveScaledDamage(const AT66TrapBase* Trap, const i
 	return Trap ? Trap->ScaleTrapDamage(BaseDamage) : FMath::Max(1, BaseDamage);
 }
 
-bool FT66TrapDamageUtils::ApplyTrapDamageToActor(AT66TrapBase* Trap, AActor* TargetActor, const int32 BaseDamage)
+bool FT66TrapDamageUtils::ApplyTrapDamageToActor(
+	AT66TrapBase* Trap,
+	AActor* TargetActor,
+	const int32 BaseDamage,
+	const FName DeliveryMethod,
+	AActor* DamageCauser)
 {
 	if (!Trap || !TargetActor || BaseDamage <= 0)
 	{
@@ -34,7 +39,7 @@ bool FT66TrapDamageUtils::ApplyTrapDamageToActor(AT66TrapBase* Trap, AActor* Tar
 		{
 			if (UT66RunStateSubsystem* RunState = GameInstance->GetSubsystem<UT66RunStateSubsystem>())
 			{
-				RunState->ApplyDamage(DamageAmount, Trap);
+				RunState->ApplyDamage(DamageAmount, Trap, DeliveryMethod.IsNone() ? FName(TEXT("TrapDamage")) : DeliveryMethod, DamageCauser ? DamageCauser : Trap);
 				return true;
 			}
 		}
@@ -55,7 +60,12 @@ bool FT66TrapDamageUtils::ApplyTrapDamageToActor(AT66TrapBase* Trap, AActor* Tar
 	return false;
 }
 
-int32 FT66TrapDamageUtils::ApplyTrapDamageToOverlaps(AT66TrapBase* Trap, UPrimitiveComponent* DamageZone, const int32 BaseDamage)
+int32 FT66TrapDamageUtils::ApplyTrapDamageToOverlaps(
+	AT66TrapBase* Trap,
+	UPrimitiveComponent* DamageZone,
+	const int32 BaseDamage,
+	const FName DeliveryMethod,
+	AActor* DamageCauser)
 {
 	if (!Trap || !DamageZone)
 	{
@@ -68,7 +78,7 @@ int32 FT66TrapDamageUtils::ApplyTrapDamageToOverlaps(AT66TrapBase* Trap, UPrimit
 	int32 DamagedActors = 0;
 	for (AActor* OverlappingActor : OverlappingActors)
 	{
-		DamagedActors += ApplyTrapDamageToActor(Trap, OverlappingActor, BaseDamage) ? 1 : 0;
+		DamagedActors += ApplyTrapDamageToActor(Trap, OverlappingActor, BaseDamage, DeliveryMethod, DamageCauser ? DamageCauser : Trap) ? 1 : 0;
 	}
 
 	return DamagedActors;

@@ -30,4 +30,27 @@ The first runtime slice generated placeholder MP4s directly on the RunPod host w
 - writes encoded H.264 clips under `OutputsAI/.../RuntimeEncoded` using the same relative movie paths as `Content/Movies`;
 - writes a JSONL status file so local manifests can be updated after download.
 
+`kling_client.py` and `run_kling_reference_pilot.py` are the native Kling API
+smoke/capability helpers:
+
+- read local credentials from `Model Generation/LOCAL_ACCESS.env`;
+- write run evidence under `Video Generation/Runs/KlingReferencePilot_*`;
+- check image-to-video, text-to-video, and image-generation endpoints before
+  spending credits;
+- submit a single explicit smoke task only with `--submit-smoke-task`;
+- accept a project-local source image override with `--source-image` and a
+  run-specific prompt with `--prompt-file` for imagegen-first tests;
+- keep downloaded and encoded candidates in the run folder until a clip is
+  hand-approved for copying into `Content/Movies`.
+
+`run_kling_demo_idle_roster.py` is the demo-roster idle-loop installer:
+
+- reads `Video Generation/Manifests/kling_demo_idle_roster.json`;
+- uses run-local first-frame images as Kling image-to-video anchors;
+- writes one evidence folder per target under `Video Generation/Runs`;
+- encodes review/runtime candidates to 712x680 H.264/yuv420p/30fps/no-audio;
+- writes contact sheets and first/last-frame loop metrics;
+- only copies successful outputs into `Content/Movies` and flips
+  `posterOnly=false` when explicitly run with `--install --update-manifests`.
+
 Current durable scripts are intentionally kept even after a run completes because they encode reusable setup, catalog, validation, and roster-batch behavior. One-off commands and pod-local throwaway scripts should instead be folded into these helpers or into a run README.

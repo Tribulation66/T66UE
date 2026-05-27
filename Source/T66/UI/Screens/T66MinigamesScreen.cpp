@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66MinigamesScreen.h"
 
+#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Engine/Texture2D.h"
 #include "Kismet/GameplayStatics.h"
@@ -136,6 +137,8 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 	TSharedRef<SConstraintCanvas> MinigamesCanvas = SNew(SConstraintCanvas);
 	const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder"));
 	const bool bDemoMinigamePlayLocked = T66DemoModeUI::IsDemoModeActive(this);
+	const bool bMinigamesDisabled = T66DeprecatedFeatures::AreMinigamesDisabled();
+	const bool bArcadeGamesDisabled = T66DeprecatedFeatures::AreArcadeGamesDisabled();
 
 	auto DTag = [](const TCHAR* Tag) -> FName
 	{
@@ -297,35 +300,35 @@ TSharedRef<SWidget> UT66MinigamesScreen::BuildSlateUI()
 		NSLOCTEXT("T66.MiniGames", "FlatVersusBody", "A direct arcade prototype launcher for the 13 current copy-game experiments."),
 		TEXT("RuntimeDependencies/T66/Arcade/Selector/arcade_selector_front_cabinet.png"),
 		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenVersusClicked),
-		false
+		bMinigamesDisabled || bArcadeGamesDisabled
 	});
 	Cards.Add({
 		NSLOCTEXT("T66.MiniGames", "FlatMiniTitle", "CHADPOCALYPSE MINI"),
 		NSLOCTEXT("T66.MiniGames", "FlatMiniBody", "A 2D survivor minigame with its own saves, heroes, idols, enemies, and progression."),
 		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card01_art.png"),
 		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked),
-		bDemoMinigamePlayLocked
+		bMinigamesDisabled || bDemoMinigamePlayLocked
 	});
 	Cards.Add({
 		NSLOCTEXT("T66.MiniGames", "FlatTDTitle", "CHADPOCALYPSE TD"),
 		NSLOCTEXT("T66.MiniGames", "FlatTDBody", "A tower defense minigame with hero placement, enemy waves, upgrades, and rotating maps."),
 		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card02_art.png"),
 		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked),
-		bDemoMinigamePlayLocked
+		bMinigamesDisabled || bDemoMinigamePlayLocked
 	});
 	Cards.Add({
 		NSLOCTEXT("T66.MiniGames", "FlatDeckTitle", "CHADPOCALYPSE DECKBUILDER"),
 		NSLOCTEXT("T66.MiniGames", "FlatDeckBody", "A dungeon-descent deckbuilder with card combat, route choices, relics, and reward drafts."),
 		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card03_art.png"),
 		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked),
-		bDemoMinigamePlayLocked
+		bMinigamesDisabled || bDemoMinigamePlayLocked
 	});
 	Cards.Add({
 		NSLOCTEXT("T66.MiniGames", "FlatIdleTitle", "CHADPOCALYPSE IDLE"),
 		NSLOCTEXT("T66.MiniGames", "FlatIdleBody", "An offline-progress idle minigame with heroes, upgrades, stage pushing, and comeback rewards."),
 		TEXT("RuntimeDependencies/T66/UI/Minigames/FlatReference/minigames_card04_art.png"),
 		FOnClicked::CreateUObject(this, &UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked),
-		bDemoMinigamePlayLocked
+		bMinigamesDisabled || bDemoMinigamePlayLocked
 	});
 
 	const int32 TotalPages = FMath::Max(1, FMath::DivideAndRoundUp(Cards.Num(), CardsPerPage));
@@ -475,30 +478,55 @@ FReply UT66MinigamesScreen::HandleBackClicked()
 
 FReply UT66MinigamesScreen::HandleOpenVersusClicked()
 {
+	if (T66DeprecatedFeatures::AreMinigamesDisabled() || T66DeprecatedFeatures::AreArcadeGamesDisabled())
+	{
+		return FReply::Handled();
+	}
+
 	NavigateTo(ET66ScreenType::VersusMainMenu);
 	return FReply::Handled();
 }
 
 FReply UT66MinigamesScreen::HandleOpenMiniChadpocalypseClicked()
 {
+	if (T66DeprecatedFeatures::AreMinigamesDisabled())
+	{
+		return FReply::Handled();
+	}
+
 	NavigateTo(ET66ScreenType::MiniMainMenu);
 	return FReply::Handled();
 }
 
 FReply UT66MinigamesScreen::HandleOpenChadpocalypseTDClicked()
 {
+	if (T66DeprecatedFeatures::AreMinigamesDisabled())
+	{
+		return FReply::Handled();
+	}
+
 	NavigateTo(ET66ScreenType::TDMainMenu);
 	return FReply::Handled();
 }
 
 FReply UT66MinigamesScreen::HandleOpenIdleChadpocalypseClicked()
 {
+	if (T66DeprecatedFeatures::AreMinigamesDisabled())
+	{
+		return FReply::Handled();
+	}
+
 	NavigateTo(ET66ScreenType::IdleMainMenu);
 	return FReply::Handled();
 }
 
 FReply UT66MinigamesScreen::HandleOpenChadpocalypseDeckbuilderClicked()
 {
+	if (T66DeprecatedFeatures::AreMinigamesDisabled())
+	{
+		return FReply::Handled();
+	}
+
 	NavigateTo(ET66ScreenType::DeckMainMenu);
 	return FReply::Handled();
 }

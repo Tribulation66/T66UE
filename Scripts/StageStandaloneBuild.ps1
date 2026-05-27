@@ -197,6 +197,8 @@ function Copy-LooseRuntimeContentRoot {
                     }
                 }
             } else {
+                $ChildDestinationParent = Split-Path -Parent $ChildDestinationPath
+                New-Item -ItemType Directory -Force -Path $ChildDestinationParent | Out-Null
                 Copy-Item -LiteralPath $ChildItem.FullName -Destination $ChildDestinationPath -Force
             }
         }

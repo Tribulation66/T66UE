@@ -2,12 +2,13 @@
 
 #include "UI/Screens/T66VersusArcadeScreen.h"
 
-#include "Gameplay/T66ArcadeGameCatalog.h"
+#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Styling/CoreStyle.h"
 #include "UI/T66DemoModeUIUtils.h"
 #include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Style/T66FlatStyle.h"
+#include "UI/WidgetGames/T66WidgetGameRegistry.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
@@ -19,6 +20,24 @@
 namespace
 {
 	constexpr int32 GVersusArcadeColumns = 4;
+
+	FLinearColor ResolveArcadeAccentColor(const ET66ArcadeGameType GameType, const int32 Index)
+	{
+		if (const FT66WidgetGameDescriptor* Descriptor = T66WidgetGames::Registry::FindByArcadeGameType(GameType))
+		{
+			return Descriptor->AccentColor;
+		}
+
+		static const FLinearColor Palette[] =
+		{
+			FLinearColor(0.16f, 0.82f, 0.78f, 1.f),
+			FLinearColor(0.94f, 0.56f, 0.18f, 1.f),
+			FLinearColor(0.62f, 0.72f, 1.f, 1.f),
+			FLinearColor(0.90f, 0.32f, 0.56f, 1.f),
+			FLinearColor(0.72f, 0.92f, 0.28f, 1.f),
+		};
+		return Palette[FMath::Abs(Index) % UE_ARRAY_COUNT(Palette)];
+	}
 
 	TSharedRef<SWidget> MakeVersusText(
 		const FText& Text,
@@ -48,15 +67,21 @@ UT66VersusArcadeScreen::UT66VersusArcadeScreen(const FObjectInitializer& ObjectI
 
 TSharedRef<SWidget> UT66VersusArcadeScreen::BuildSlateUI()
 {
-	const TArray<FT66ArcadeGameCatalogEntry>& Entries = T66ArcadeGameCatalog::GetPlayableEntries();
+	TArray<const FT66WidgetGameDescriptor*> ArcadeDescriptors;
+	T66WidgetGames::Registry::GetArcadeDescriptors(ArcadeDescriptors);
 	TSharedRef<SUniformGridPanel> ArcadeGrid = SNew(SUniformGridPanel)
 		.SlotPadding(FMargin(10.f));
 
-	for (int32 Index = 0; Index < Entries.Num(); ++Index)
+	for (int32 Index = 0; Index < ArcadeDescriptors.Num(); ++Index)
 	{
+		if (!ArcadeDescriptors[Index])
+		{
+			continue;
+		}
+
 		ArcadeGrid->AddSlot(Index % GVersusArcadeColumns, Index / GVersusArcadeColumns)
 		[
-			BuildArcadeTile(Entries[Index].GameType, Index)
+			BuildArcadeTile(ArcadeDescriptors[Index]->ArcadeGameType, Index)
 		];
 	}
 
@@ -167,9 +192,13 @@ TSharedRef<SWidget> UT66VersusArcadeScreen::BuildSlateUI()
 
 TSharedRef<SWidget> UT66VersusArcadeScreen::BuildArcadeTile(const ET66ArcadeGameType GameType, const int32 Index)
 {
-	const FLinearColor Accent = T66ArcadeGameCatalog::GetAccentColor(GameType, Index);
+	const FT66WidgetGameDescriptor* Descriptor = T66WidgetGames::Registry::FindByArcadeGameType(GameType);
+	const FLinearColor Accent = ResolveArcadeAccentColor(GameType, Index);
 	const FName TileTag(*FString::Printf(TEXT("Versus.ArcadeTile.%02d"), Index + 1));
 	const bool bArcadeAllowed = IsArcadeGameAllowed(GameType);
+	const FText ShortCode = Descriptor ? Descriptor->ShortCode : NSLOCTEXT("T66.ArcadeCatalog", "UnknownCode", "???");
+	const FText DisplayName = Descriptor ? Descriptor->DisplayName : NSLOCTEXT("T66.ArcadeCatalog", "UnknownPrototypeName", "ARCADE COPY");
+	const FText Description = Descriptor ? Descriptor->Description : NSLOCTEXT("T66.ArcadeCatalog", "UnknownDescription", "Boot the selected arcade machine cartridge.");
 
 	const TSharedRef<SWidget> TileContent =
 		SNew(SBorder)
@@ -190,7 +219,7 @@ TSharedRef<SWidget> UT66VersusArcadeScreen::BuildArcadeTile(const ET66ArcadeGame
 					FT66FlatStyle::MakeFlatPanel(
 						ET66FlatState::Selected,
 						FMargin(10.f, 6.f),
-						MakeVersusText(T66ArcadeGameCatalog::GetShortCode(GameType), 17, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center),
+						MakeVersusText(ShortCode, 17, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center),
 						nullptr,
 						NAME_None)
 				]
@@ -198,7 +227,7 @@ TSharedRef<SWidget> UT66VersusArcadeScreen::BuildArcadeTile(const ET66ArcadeGame
 				.FillWidth(1.f)
 				.VAlign(VAlign_Center)
 				[
-					MakeVersusText(T66ArcadeGameCatalog::GetPrototypeDisplayName(GameType), 20, FT66FlatStyle::PrimaryText(), true, ETextJustify::Left, true)
+					MakeVersusText(DisplayName, 20, FT66FlatStyle::PrimaryText(), true, ETextJustify::Left, true)
 				]
 			]
 			+ SVerticalBox::Slot()
@@ -218,7 +247,7 @@ TSharedRef<SWidget> UT66VersusArcadeScreen::BuildArcadeTile(const ET66ArcadeGame
 			.FillHeight(1.f)
 			.Padding(0.f, 12.f, 0.f, 0.f)
 			[
-				MakeVersusText(T66ArcadeGameCatalog::GetDescription(GameType), 16, FT66FlatStyle::SecondaryText(), false, ETextJustify::Left, true)
+				MakeVersusText(Description, 16, FT66FlatStyle::SecondaryText(), false, ETextJustify::Left, true)
 			]
 			+ SVerticalBox::Slot()
 			.AutoHeight()
@@ -254,7 +283,13 @@ TSharedRef<SWidget> UT66VersusArcadeScreen::BuildArcadeTile(const ET66ArcadeGame
 
 bool UT66VersusArcadeScreen::IsArcadeGameAllowed(const ET66ArcadeGameType GameType) const
 {
-	return T66DemoModeUI::IsArcadeGameAllowed(this, T66ArcadeGameCatalog::GetRowID(GameType));
+	if (T66DeprecatedFeatures::AreArcadeGamesDisabled())
+	{
+		return false;
+	}
+
+	const FT66WidgetGameDescriptor* Descriptor = T66WidgetGames::Registry::FindByArcadeGameType(GameType);
+	return !Descriptor || T66WidgetGames::Registry::IsAvailable(this, *Descriptor);
 }
 
 bool UT66VersusArcadeScreen::LaunchArcadeGame(const ET66ArcadeGameType GameType)
@@ -265,7 +300,7 @@ bool UT66VersusArcadeScreen::LaunchArcadeGame(const ET66ArcadeGameType GameType)
 	}
 
 	FT66ArcadeInteractableData ArcadeData;
-	if (!T66ArcadeGameCatalog::BuildSessionDataForGame(this, GameType, ArcadeData))
+	if (!T66WidgetGames::Registry::BuildArcadeSessionDataForGame(this, GameType, ArcadeData))
 	{
 		return false;
 	}
@@ -280,6 +315,12 @@ bool UT66VersusArcadeScreen::LaunchArcadeGame(const ET66ArcadeGameType GameType)
 
 void UT66VersusArcadeScreen::OnBackClicked()
 {
+	if (T66DeprecatedFeatures::AreMinigamesDisabled())
+	{
+		NavigateTo(ET66ScreenType::MainMenu);
+		return;
+	}
+
 	NavigateTo(ET66ScreenType::Minigames);
 }
 
@@ -291,14 +332,15 @@ FReply UT66VersusArcadeScreen::HandleBackClicked()
 
 FReply UT66VersusArcadeScreen::HandlePlayRandomClicked()
 {
-	const TArray<FT66ArcadeGameCatalogEntry>& Entries = T66ArcadeGameCatalog::GetPlayableEntries();
+	TArray<const FT66WidgetGameDescriptor*> ArcadeDescriptors;
+	T66WidgetGames::Registry::GetArcadeDescriptors(ArcadeDescriptors);
 	TArray<ET66ArcadeGameType> AllowedGameTypes;
-	AllowedGameTypes.Reserve(Entries.Num());
-	for (const FT66ArcadeGameCatalogEntry& Entry : Entries)
+	AllowedGameTypes.Reserve(ArcadeDescriptors.Num());
+	for (const FT66WidgetGameDescriptor* Descriptor : ArcadeDescriptors)
 	{
-		if (IsArcadeGameAllowed(Entry.GameType))
+		if (Descriptor && IsArcadeGameAllowed(Descriptor->ArcadeGameType))
 		{
-			AllowedGameTypes.Add(Entry.GameType);
+			AllowedGameTypes.Add(Descriptor->ArcadeGameType);
 		}
 	}
 

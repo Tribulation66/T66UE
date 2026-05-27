@@ -2,6 +2,8 @@
 
 #include "UI/HUD/T66GameplayHUDWidget_Private.h"
 
+#include "Gameplay/T66MobBase.h"
+
 void UT66GameplayHUDWidget::SetFullMapOpen(bool bOpen)
 {
 	bFullMapOpen = bOpen;
@@ -11,6 +13,7 @@ void UT66GameplayHUDWidget::SetFullMapOpen(bool bOpen)
 	}
 	if (bFullMapOpen)
 	{
+		bForceMapRefreshRequested = true;
 		RefreshMapData();
 	}
 }
@@ -21,6 +24,43 @@ void UT66GameplayHUDWidget::ToggleFullMap()
 	SetFullMapOpen(!bFullMapOpen);
 }
 
+void UT66GameplayHUDWidget::BindMapRegistryEvents()
+{
+	UWorld* World = GetWorld();
+	UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+	if (BoundMapRegistry.Get() == Registry && MapEnemyRegistryChangedHandle.IsValid())
+	{
+		return;
+	}
+
+	UnbindMapRegistryEvents();
+
+	BoundMapRegistry = Registry;
+	if (Registry)
+	{
+		MapEnemyRegistryChangedHandle = Registry->OnEnemiesChanged().AddUObject(this, &UT66GameplayHUDWidget::HandleMapEnemyRegistryChanged);
+		bMapEnemyMarkersDirty = true;
+	}
+}
+
+void UT66GameplayHUDWidget::UnbindMapRegistryEvents()
+{
+	if (UT66ActorRegistrySubsystem* Registry = BoundMapRegistry.Get())
+	{
+		if (MapEnemyRegistryChangedHandle.IsValid())
+		{
+			Registry->OnEnemiesChanged().Remove(MapEnemyRegistryChangedHandle);
+		}
+	}
+
+	MapEnemyRegistryChangedHandle.Reset();
+	BoundMapRegistry.Reset();
+}
+
+void UT66GameplayHUDWidget::HandleMapEnemyRegistryChanged()
+{
+	bMapEnemyMarkersDirty = true;
+}
 
 void UT66GameplayHUDWidget::UpdateTowerMapReveal(const FVector& PlayerLocation)
 {
@@ -71,7 +111,6 @@ bool UT66GameplayHUDWidget::IsTowerMapRevealPointVisible(int32 FloorNumber, cons
 
 void UT66GameplayHUDWidget::RefreshMapData()
 {
-	FLagScopedScope LagScope(GetWorld(), TEXT("GameplayHUD::RefreshMapData"));
 	static constexpr float MinimapEnemyMarkerRadius = 2400.f;
 	static constexpr float MinimapEnemyMarkerRadiusSq = MinimapEnemyMarkerRadius * MinimapEnemyMarkerRadius;
 	static constexpr int32 MaxMinimapEnemyMarkers = 48;
@@ -81,7 +120,6 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		return;
 	}
 
-	// If neither minimap nor full map is visible, skip all work.
 	const bool bMinimapVisible = MinimapPanelBox.IsValid() && (MinimapPanelBox->GetVisibility() != EVisibility::Collapsed);
 	if (!bMinimapVisible && !bFullMapOpen)
 	{
@@ -93,6 +131,20 @@ void UT66GameplayHUDWidget::RefreshMapData()
 	{
 		return;
 	}
+
+	const float Now = static_cast<float>(World->GetTimeSeconds());
+	const bool bForceRefresh = bForceMapRefreshRequested;
+	bForceMapRefreshRequested = false;
+	if (!bForceRefresh
+		&& LastMapVisibleRefreshTime >= 0.f
+		&& (Now - LastMapVisibleRefreshTime) < MapVisibleRefreshIntervalSeconds)
+	{
+		return;
+	}
+	LastMapVisibleRefreshTime = Now;
+
+	FLagScopedScope LagScope(World, TEXT("GameplayHUD::RefreshMapData.Rebuild"));
+	BindMapRegistryEvents();
 
 	// Try multiple paths to find the player pawn - GetOwningPlayerPawn can return null
 	// if the pawn hasn't been possessed yet when the HUD widget was first created.
@@ -112,8 +164,8 @@ void UT66GameplayHUDWidget::RefreshMapData()
 	const FVector2D PlayerXY(PL.X, PL.Y);
 	UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
 	AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode());
-	T66TowerMapTerrain::FLayout TowerLayout;
-	const bool bTowerLayout = GameMode && GameMode->GetTowerMainMapLayout(TowerLayout);
+	const bool bTowerLayout = GameMode && GameMode->IsUsingTowerMainMapLayout();
+	T66TowerMapTerrain::FFloor ActiveTowerFloorData;
 	const T66TowerMapTerrain::FFloor* ActiveTowerFloor = nullptr;
 	int32 ActiveTowerFloorNumber = INDEX_NONE;
 	FVector2D ActiveTowerFloorCenter = FVector2D::ZeroVector;
@@ -131,8 +183,6 @@ void UT66GameplayHUDWidget::RefreshMapData()
 	static constexpr float TowerMapRevealRadius = 2600.0f;
 	static constexpr float TowerMapObjectMarkerVisibilityRadius = 3400.0f;
 	const TArray<FVector2D>* ActiveTowerRevealPoints = nullptr;
-	const FSlateBrush* ActiveTowerBackgroundBrush = nullptr;
-	const FSlateBrush* ActiveTowerWallBrush = nullptr;
 	FLinearColor ActiveTowerMapTint = FLinearColor::White;
 	FLinearColor ActiveTowerWallFillColor = FLinearColor(0.14f, 0.11f, 0.09f, 1.0f);
 	FLinearColor ActiveTowerWallStrokeColor = FLinearColor(0.92f, 0.86f, 0.72f, 1.0f);
@@ -180,17 +230,15 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			UpdateTowerMapReveal(PL);
 		}
 
-		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
+		if (ActiveTowerFloorNumber != INDEX_NONE && GameMode->GetTowerFloorLayout(ActiveTowerFloorNumber, ActiveTowerFloorData))
 		{
-			if (Floor.FloorNumber != ActiveTowerFloorNumber)
-			{
-				continue;
-			}
-
-			ActiveTowerFloor = &Floor;
+			const T66TowerMapTerrain::FFloor& Floor = ActiveTowerFloorData;
+			ActiveTowerFloor = &ActiveTowerFloorData;
 			ActiveTowerFloorCenter = FVector2D(Floor.Center.X, Floor.Center.Y);
 			ActiveTowerFloorHalfExtents = FVector2D(Floor.BoundsHalfExtent, Floor.BoundsHalfExtent);
-			T66TowerMapTerrain::TryGetFloorPolygon(TowerLayout, Floor.FloorNumber, ActiveTowerPolygon);
+			T66TowerMapTerrain::FLayout ActiveTowerFloorLayout;
+			ActiveTowerFloorLayout.Floors.Add(Floor);
+			T66TowerMapTerrain::TryGetFloorPolygon(ActiveTowerFloorLayout, Floor.FloorNumber, ActiveTowerPolygon);
 			ActiveTowerWalkableFloorBoxes = Floor.WalkableFloorBoxes;
 			if (ActiveTowerWalkableFloorBoxes.Num() > 0)
 			{
@@ -216,12 +264,9 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			ActiveTowerHoleCenter = FVector2D(Floor.HoleCenter.X, Floor.HoleCenter.Y);
 			ActiveTowerHoleHalfExtents = Floor.HoleHalfExtent;
 			const FT66TowerMinimapArtStyle TowerArtStyle = GetTowerMinimapArtStyle(Floor.Theme);
-			ActiveTowerBackgroundBrush = GetTowerMinimapBackgroundBrush(Floor.Theme);
-			ActiveTowerWallBrush = GetTowerMinimapWallBrush(Floor.Theme);
 			ActiveTowerMapTint = TowerArtStyle.MapTint;
 			ActiveTowerWallFillColor = TowerArtStyle.WallFill;
 			ActiveTowerWallStrokeColor = TowerArtStyle.WallStroke;
-			break;
 		}
 
 		ActiveTowerRevealPoints = TowerRevealPointsByFloor.Find(ActiveTowerFloorNumber);
@@ -245,8 +290,8 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			MinimapWidget->SetTowerHole(bHasActiveTowerHole, ActiveTowerHoleCenter, ActiveTowerHoleHalfExtents);
 			MinimapWidget->SetTowerWalkableFloorBoxes(ActiveTowerWalkableFloorBoxes);
 			MinimapWidget->SetThemedFloorArt(
-				ActiveTowerBackgroundBrush,
-				ActiveTowerWallBrush,
+				nullptr,
+				nullptr,
 				ActiveTowerMazeWallBoxes,
 				ActiveTowerMapTint,
 				ActiveTowerWallFillColor,
@@ -265,11 +310,13 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		}
 	}
 
-	if (FullMapWidget.IsValid())
+	if (bFullMapOpen && FullMapWidget.IsValid())
 	{
 		FullMapWidget->SetPlayerDirectionWorldXY(PlayerDirectionWorldXY);
 		if (bTowerLayout && ActiveTowerFloor)
 		{
+			const FSlateBrush* ActiveTowerBackgroundBrush = GetTowerMinimapBackgroundBrush(ActiveTowerFloor->Theme);
+			const FSlateBrush* ActiveTowerWallBrush = GetTowerMinimapWallBrush(ActiveTowerFloor->Theme);
 			FullMapWidget->SetFullWorldBounds(
 				ActiveTowerFloorCenter - ActiveTowerFloorHalfExtents,
 				ActiveTowerFloorCenter + ActiveTowerFloorHalfExtents);
@@ -328,13 +375,48 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		return FVector2D::DistSquared(PlayerXY, FVector2D(Location.X, Location.Y)) <= FMath::Square(TowerMapObjectMarkerVisibilityRadius);
 	};
 
-	const float Now = static_cast<float>(World->GetTimeSeconds());
 	const bool bWorldChanged = (MapCacheWorld.Get() != World);
 	const bool bNeedsFullRefresh = bWorldChanged || (MapCacheLastRefreshTime < 0.f) || ((Now - MapCacheLastRefreshTime) >= MapCacheRefreshIntervalSeconds);
+	const bool bNeedsEnemyCacheRefresh = bWorldChanged || bMapEnemyMarkersDirty;
+
+	if (bWorldChanged)
+	{
+		BindMapRegistryEvents();
+		bMapEnemyMarkersDirty = true;
+	}
+
+	if (bNeedsEnemyCacheRefresh)
+	{
+		MapEnemyCache.Reset();
+		MapMobCache.Reset();
+		if (Registry)
+		{
+			MapEnemyCache.Reserve(Registry->GetEnemies().Num());
+			for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
+			{
+				if (WeakEnemy.IsValid())
+				{
+					MapEnemyCache.Add(WeakEnemy);
+				}
+			}
+
+			MapMobCache.Reserve(Registry->GetActiveMobs().Num());
+			for (const TWeakObjectPtr<AT66MobBase>& WeakMob : Registry->GetActiveMobs())
+			{
+				const AT66MobBase* Mob = WeakMob.Get();
+				if (Mob && Mob->IsAliveAndActive())
+				{
+					MapMobCache.Add(WeakMob);
+				}
+			}
+		}
+		bMapEnemyMarkersDirty = false;
+	}
 
 	TArray<FT66MapMarker> Markers;
+	const int32 EnemyMarkerCacheCount = MapEnemyCache.Num() + MapMobCache.Num();
 	const int32 EnemyReserve = bFullMapOpen
-		? (Registry ? Registry->GetEnemies().Num() : 0)
+		? EnemyMarkerCacheCount
 		: MaxMinimapEnemyMarkers;
 	Markers.Reserve(MapCache.Num() + EnemyReserve + 8);
 
@@ -398,9 +480,9 @@ void UT66GameplayHUDWidget::RefreshMapData()
 				MapCache.Add({ LootBag, EMapCacheMarkerType::POI, FT66FlatStyle::Accent2(), FText::GetEmpty(), FName(TEXT("LootBag")) });
 			}
 
-			UE_LOG(LogT66HUD, Verbose, TEXT("[GOLD] RefreshMapData: used ActorRegistry (NPCs=%d, Gates=%d, Enemies=%d, Miasma=%d, Interactables=%d, LootBags=%d)"),
+			UE_LOG(LogT66HUD, Verbose, TEXT("[GOLD] RefreshMapData: used ActorRegistry (NPCs=%d, Gates=%d, Enemies=%d, Mobs=%d, Miasma=%d, Interactables=%d, LootBags=%d)"),
 				Registry->GetNPCs().Num(), Registry->GetStageGates().Num(),
-				Registry->GetEnemies().Num(), Registry->GetMiasmaBoundaries().Num(),
+				Registry->GetEnemies().Num(), Registry->GetActiveMobs().Num(), Registry->GetMiasmaBoundaries().Num(),
 				Registry->GetWorldInteractables().Num(), Registry->GetLootBags().Num());
 		}
 	}
@@ -465,26 +547,19 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		Markers.Add(M);
 	}
 
-	if (Registry)
 	{
 		int32 AddedEnemyMarkers = 0;
-		for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
+		auto AddEnemyMarkerFromLocation = [&](const FVector& EnemyLoc) -> bool
 		{
-			AT66EnemyBase* Enemy = WeakEnemy.Get();
-			if (!IsValid(Enemy))
-			{
-				continue;
-			}
-
-			const FVector EnemyLoc = Enemy->GetActorLocation();
 			if (!ShouldShowTowerFloorLocation(EnemyLoc))
 			{
-				continue;
+				return false;
 			}
+
 			const FVector2D EnemyXY(EnemyLoc.X, EnemyLoc.Y);
 			if (!bFullMapOpen && FVector2D::DistSquared(PlayerXY, EnemyXY) > MinimapEnemyMarkerRadiusSq)
 			{
-				continue;
+				return false;
 			}
 
 			FT66MapMarker EnemyMarker;
@@ -496,9 +571,38 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			Markers.Add(MoveTemp(EnemyMarker));
 
 			++AddedEnemyMarkers;
+			return true;
+		};
+
+		const int32 MaxCandidateCount = FMath::Max(MapEnemyCache.Num(), MapMobCache.Num());
+		for (int32 Index = 0; Index < MaxCandidateCount; ++Index)
+		{
 			if (!bFullMapOpen && AddedEnemyMarkers >= MaxMinimapEnemyMarkers)
 			{
 				break;
+			}
+
+			if (MapEnemyCache.IsValidIndex(Index))
+			{
+				AT66EnemyBase* Enemy = MapEnemyCache[Index].Get();
+				if (IsValid(Enemy))
+				{
+					AddEnemyMarkerFromLocation(Enemy->GetActorLocation());
+				}
+			}
+
+			if (!bFullMapOpen && AddedEnemyMarkers >= MaxMinimapEnemyMarkers)
+			{
+				break;
+			}
+
+			if (MapMobCache.IsValidIndex(Index))
+			{
+				const AT66MobBase* Mob = MapMobCache[Index].Get();
+				if (Mob && Mob->IsAliveAndActive())
+				{
+					AddEnemyMarkerFromLocation(Mob->GetActorLocation());
+				}
 			}
 		}
 	}

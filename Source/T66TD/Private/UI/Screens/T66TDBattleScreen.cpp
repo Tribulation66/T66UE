@@ -24,6 +24,7 @@
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
+#include "UI/WidgetGames/T66WidgetGameResult.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -673,6 +674,7 @@ namespace
 			, _EnemyBrushes()
 			, _BossBrushes()
 			, _OwningGameInstance(nullptr)
+			, _OwnerScreen(nullptr)
 		{}
 			SLATE_ARGUMENT(FT66TDMapDefinition, MapDefinition)
 			SLATE_ARGUMENT(FT66TDDifficultyDefinition, DifficultyDefinition)
@@ -687,6 +689,7 @@ namespace
 			SLATE_ARGUMENT(FT66TDEnemyBrushMap, EnemyBrushes)
 			SLATE_ARGUMENT(FT66TDEnemyBrushMap, BossBrushes)
 			SLATE_ARGUMENT(TWeakObjectPtr<UGameInstance>, OwningGameInstance)
+			SLATE_ARGUMENT(TWeakObjectPtr<UT66TDBattleScreen>, OwnerScreen)
 		SLATE_END_ARGS()
 
 		~ST66TDBattleBoardWidget() override
@@ -713,6 +716,7 @@ namespace
 			EnemyBrushes = InArgs._EnemyBrushes;
 			BossBrushes = InArgs._BossBrushes;
 			OwningGameInstance = InArgs._OwningGameInstance;
+			OwnerScreen = InArgs._OwnerScreen;
 
 			for (const FT66TDHeroCombatDefinition& CombatDefinition : HeroCombatDefinitions)
 			{
@@ -757,6 +761,11 @@ namespace
 				StartNextWave();
 			}
 			ActiveTimerHandle = RegisterActiveTimer(0.f, FWidgetActiveTimerDelegate::CreateSP(this, &ST66TDBattleBoardWidget::HandleActiveTimer));
+		}
+
+		void SaveWidgetGameState()
+		{
+			PersistRunState(MatchState == ET66TDMatchState::Victory);
 		}
 
 		virtual FVector2D ComputeDesiredSize(const float) const override
@@ -1527,6 +1536,10 @@ namespace
 				}
 			}
 			PersistRunState(bVictory);
+			if (UT66TDBattleScreen* Screen = OwnerScreen.Get())
+			{
+				Screen->ReportWidgetGameResult(bVictory, Score);
+			}
 		}
 
 		void SubmitLeaderboardResultIfNeeded()
@@ -2666,6 +2679,7 @@ namespace
 		TArray<FT66TDBeamEffect> BeamEffects;
 		TSharedPtr<FActiveTimerHandle> ActiveTimerHandle;
 		TWeakObjectPtr<UGameInstance> OwningGameInstance;
+		TWeakObjectPtr<UT66TDBattleScreen> OwnerScreen;
 		ET66TDMatchState MatchState = ET66TDMatchState::AwaitingWave;
 		int32 Materials = 0;
 		int32 Gold = 0;
@@ -2687,6 +2701,70 @@ UT66TDBattleScreen::UT66TDBattleScreen(const FObjectInitializer& ObjectInitializ
 {
 	ScreenType = ET66ScreenType::TDBattle;
 	bIsModal = false;
+}
+
+void UT66TDBattleScreen::ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext)
+{
+	WidgetGameHostContext = HostContext;
+}
+
+void UT66TDBattleScreen::DeactivateWidgetGame()
+{
+	WidgetGameHostContext = FT66WidgetGameHostContext();
+}
+
+void UT66TDBattleScreen::PauseWidgetGame()
+{
+}
+
+void UT66TDBattleScreen::ResumeWidgetGame()
+{
+}
+
+void UT66TDBattleScreen::RequestWidgetGameExit()
+{
+	if (WidgetGameHostContext.ReturnNavigationCallback)
+	{
+		WidgetGameHostContext.RequestExit(ET66WidgetGameExitReason::PlayerCancelled);
+		return;
+	}
+
+	HandleBackClicked();
+}
+
+void UT66TDBattleScreen::SaveWidgetGameState()
+{
+	if (const TSharedPtr<ST66TDBattleBoardWidget> BattleBoard = StaticCastSharedPtr<ST66TDBattleBoardWidget>(BattleBoardRoot))
+	{
+		BattleBoard->SaveWidgetGameState();
+	}
+}
+
+void UT66TDBattleScreen::LoadWidgetGameState()
+{
+	EnsureRunSelectionState();
+}
+
+void UT66TDBattleScreen::FlushWidgetGamePersistence()
+{
+	SaveWidgetGameState();
+}
+
+void UT66TDBattleScreen::RefreshWidgetGamePersistence()
+{
+	LoadWidgetGameState();
+}
+
+void UT66TDBattleScreen::ReportWidgetGameResult(const bool bSuccessful, const int32 FinalScore)
+{
+	FT66WidgetGameResult Result;
+	Result.GameID = FName(TEXT("Frontend_TD"));
+	Result.ExitReason = ET66WidgetGameExitReason::Completed;
+	Result.FinalScore = FinalScore;
+	Result.bHasFinalScore = true;
+	Result.bSuccessful = bSuccessful;
+	Result.ResultID = Result.GameID;
+	WidgetGameHostContext.ReportResult(Result);
 }
 
 void UT66TDBattleScreen::OnScreenActivated_Implementation()
@@ -2824,7 +2902,8 @@ TSharedRef<SWidget> UT66TDBattleScreen::BuildSlateUI()
 		.HeroBrushes(HeroSpriteBrushes)
 		.EnemyBrushes(EnemySpriteBrushes)
 		.BossBrushes(BossSpriteBrushes)
-		.OwningGameInstance(TWeakObjectPtr<UGameInstance>(GameInstance));
+		.OwningGameInstance(TWeakObjectPtr<UGameInstance>(GameInstance))
+		.OwnerScreen(TWeakObjectPtr<UT66TDBattleScreen>(this));
 	FT66AnimatedStyle::AttachMetadata(BattleBoard.ToSharedRef(), FName(TEXT("TDBattle.Board.PlayArea")), TEXT("TD.Board"));
 	BattleBoardRoot = BattleBoard;
 

@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "UI/Components/T66MinigameMenuLayout.h"
 #include "UI/T66ScreenBase.h"
+#include "UI/WidgetGames/T66WidgetGamePersistence.h"
+#include "UI/WidgetGames/T66WidgetGameSession.h"
 #include "T66IdleMainMenuScreen.generated.h"
 
 class UT66IdleDataSubsystem;
@@ -12,12 +14,21 @@ class UT66IdleProfileSaveGame;
 class ST66MinigameMenuLayout;
 
 UCLASS(Blueprintable)
-class T66IDLE_API UT66IdleMainMenuScreen : public UT66ScreenBase
+class T66IDLE_API UT66IdleMainMenuScreen : public UT66ScreenBase, public IT66WidgetGameSession, public IT66WidgetGamePersistence
 {
 	GENERATED_BODY()
 
 public:
 	UT66IdleMainMenuScreen(const FObjectInitializer& ObjectInitializer);
+	virtual void ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext) override;
+	virtual void DeactivateWidgetGame() override;
+	virtual void PauseWidgetGame() override;
+	virtual void ResumeWidgetGame() override;
+	virtual void RequestWidgetGameExit() override;
+	virtual void SaveWidgetGameState() override;
+	virtual void LoadWidgetGameState() override;
+	virtual void FlushWidgetGamePersistence() override;
+	virtual void RefreshWidgetGamePersistence() override;
 
 protected:
 	virtual void OnScreenActivated_Implementation() override;
@@ -50,6 +61,7 @@ private:
 
 	void EnsureProfileLoaded();
 	void SaveProfileState(bool bSubmitLeaderboard = true);
+	void ReportWidgetGameResult(bool bSuccessful, int32 FinalScore);
 	void ResetClosedLoopRunState();
 	void StartPlayableRun();
 	void FinishIdleRun(bool bWasVictory);
@@ -126,4 +138,5 @@ private:
 	FString CurrentEnemyDisplayName;
 	FString CurrentHeroDisplayName;
 	FString CurrentZoneDisplayName;
+	FT66WidgetGameHostContext WidgetGameHostContext;
 };

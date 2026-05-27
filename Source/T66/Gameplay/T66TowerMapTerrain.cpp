@@ -29,6 +29,7 @@ namespace
 	static const FName T66TowerMapTerrainMaterialsReadyTag(TEXT("T66_MainMapTerrain_MaterialsReady"));
 	static const FName T66TowerMapTerrainCollisionProxyTag(TEXT("T66_MainMapTerrain_CollisionProxy"));
 	static const FName T66TowerMapTraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
+	static const FName T66TowerMapCameraOccludingWallVisualTag(TEXT("T66_CameraOccludingWallVisual"));
 	static const FName T66TowerMapCeilingTag(TEXT("T66_Tower_Ceiling"));
 	static const FName T66TowerMapFloorStartTag(TEXT("T66_Floor_Start"));
 	static const FName T66TowerMapFloorMainTag(TEXT("T66_Floor_Main"));
@@ -155,7 +156,7 @@ namespace
 
 	static bool T66IsCameraOccludingTowerWallVisual(const TArray<FName>& Tags)
 	{
-		return Tags.Contains(T66TowerMapTraversalBarrierTag) && !Tags.Contains(T66TowerMapCeilingTag);
+		return Tags.Contains(T66TowerMapCameraOccludingWallVisualTag) && !Tags.Contains(T66TowerMapCeilingTag);
 	}
 
 	static float T66GetGeneratedKitWallVisualTargetSegmentLength()
@@ -210,13 +211,30 @@ namespace
 
 		if (UStaticMeshComponent* MeshComponent = Actor->GetStaticMeshComponent())
 		{
+			const bool bCameraOccludingWallVisual = T66IsCameraOccludingTowerWallVisual(ExtraTags);
 			MeshComponent->SetMobility(EComponentMobility::Movable);
 			MeshComponent->SetStaticMesh(Mesh);
 			MeshComponent->SetGenerateOverlapEvents(false);
 			MeshComponent->SetRelativeScale3D(T66ComputeMeshScaleForHalfExtents(Mesh, DesiredHalfExtents));
+			for (const FName& Tag : ExtraTags)
+			{
+				if (!Tag.IsNone())
+				{
+					MeshComponent->ComponentTags.AddUnique(Tag);
+				}
+			}
 			MeshComponent->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 			T66ConfigureTowerCollisionResponses(MeshComponent, bIgnoreCameraChannel);
 			MeshComponent->SetCollisionEnabled(bEnableCollision ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+			if (bCameraOccludingWallVisual)
+			{
+				if (!bEnableCollision)
+				{
+					MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+					MeshComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
+				}
+				MeshComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
+			}
 			T66OptimizeTowerMeshComponent(MeshComponent);
 			MeshComponent->SetMobility(EComponentMobility::Static);
 			if (Material)
@@ -400,6 +418,13 @@ namespace
 		MeshComponent->SetStaticMesh(Mesh);
 		MeshComponent->SetGenerateOverlapEvents(false);
 		MeshComponent->SetRelativeScale3D(Scale);
+		for (const FName& Tag : ExtraTags)
+		{
+			if (!Tag.IsNone())
+			{
+				MeshComponent->ComponentTags.AddUnique(Tag);
+			}
+		}
 		FT66VisualUtil::GroundMeshToActorOrigin(MeshComponent, Mesh);
 		if (bCenterBoundsAtActorXY)
 		{
@@ -413,6 +438,15 @@ namespace
 		MeshComponent->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 		T66ConfigureTowerCollisionResponses(MeshComponent, bIgnoreCameraChannel);
 		MeshComponent->SetCollisionEnabled(bEnableCollision ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+		if (T66IsCameraOccludingTowerWallVisual(ExtraTags))
+		{
+			if (!bEnableCollision)
+			{
+				MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+				MeshComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
+			}
+			MeshComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
+		}
 		T66OptimizeTowerMeshComponent(MeshComponent);
 		if (Material)
 		{
@@ -727,6 +761,7 @@ namespace
 		}
 
 		TArray<FName> VisualTags = Tags;
+		VisualTags.AddUnique(T66TowerMapCameraOccludingWallVisualTag);
 		VisualTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedDungeonKit")));
 		VisualTags.AddUnique(FName(TEXT("T66_Floor_Tower_GeneratedDungeonKit_Wall")));
 
@@ -3706,11 +3741,6 @@ namespace
 
 		const float HalfThickness = FMath::Max(Layout.WallThickness * 0.25f, Layout.PlacementCellSize * T66TowerMazeWallHalfThicknessScale);
 		const float RoomHalfExtent = T66TowerStartRoomSquareSize * 0.5f;
-		const float DoorHalfWidth = FMath::Max(Layout.GridDoorWidth * 0.5f, Layout.PlacementCellSize * 0.50f);
-		const float ConnectorLength = Layout.PlacementCellSize * 1.40f;
-		const float ConnectorHalfWidth = FMath::Max(DoorHalfWidth, Layout.PlacementCellSize * 0.62f);
-		const float GalleryAcrossHalfExtent = Layout.PlacementCellSize * 3.70f;
-		const float GalleryDepthHalfExtent = Layout.PlacementCellSize * 3.40f;
 		const float RoomBoundsInset = Layout.WallThickness + (Layout.PlacementCellSize * 0.20f);
 		const float BoundsMinX = Floor.Center.X - (Floor.BoundsHalfExtent - RoomBoundsInset);
 		const float BoundsMaxX = Floor.Center.X + (Floor.BoundsHalfExtent - RoomBoundsInset);
@@ -3725,72 +3755,10 @@ namespace
 		const float MaxY = RoomCenterY + RoomHalfExtent;
 
 		Floor.WalkableFloorBoxes.Add(FBox2D(FVector2D(MinX, MinY), FVector2D(MaxX, MaxY)));
-		T66EmitVerticalWallWithGap(Floor.MazeWallBoxes, MinX, MinY, MaxY, HalfThickness, RoomCenterY, DoorHalfWidth);
-		T66EmitVerticalWallWithGap(Floor.MazeWallBoxes, MaxX, MinY, MaxY, HalfThickness, RoomCenterY, DoorHalfWidth);
-		T66EmitHorizontalWallWithGap(Floor.MazeWallBoxes, MinX, MaxX, MinY, HalfThickness, RoomCenterX, DoorHalfWidth);
-		T66EmitHorizontalWallWithGap(Floor.MazeWallBoxes, MinX, MaxX, MaxY, HalfThickness, RoomCenterX, DoorHalfWidth);
-
-		const FVector2D HubCenter(RoomCenterX, RoomCenterY);
-		T66AddStartGalleryWing(
-			Layout,
-			Floor,
-			T66TowerMapTerrain::ET66TowerStartGalleryCategory::Heroes,
-			FName(TEXT("Heroes")),
-			FVector(0.0f, 1.0f, 0.0f),
-			FVector(1.0f, 0.0f, 0.0f),
-			HubCenter,
-			RoomHalfExtent,
-			ConnectorLength,
-			ConnectorHalfWidth,
-			GalleryAcrossHalfExtent,
-			GalleryDepthHalfExtent,
-			HalfThickness,
-			DoorHalfWidth);
-		T66AddStartGalleryWing(
-			Layout,
-			Floor,
-			T66TowerMapTerrain::ET66TowerStartGalleryCategory::Enemies,
-			FName(TEXT("Enemies")),
-			FVector(1.0f, 0.0f, 0.0f),
-			FVector(0.0f, -1.0f, 0.0f),
-			HubCenter,
-			RoomHalfExtent,
-			ConnectorLength,
-			ConnectorHalfWidth,
-			GalleryAcrossHalfExtent,
-			GalleryDepthHalfExtent,
-			HalfThickness,
-			DoorHalfWidth);
-		T66AddStartGalleryWing(
-			Layout,
-			Floor,
-			T66TowerMapTerrain::ET66TowerStartGalleryCategory::Bosses,
-			FName(TEXT("Bosses")),
-			FVector(0.0f, -1.0f, 0.0f),
-			FVector(-1.0f, 0.0f, 0.0f),
-			HubCenter,
-			RoomHalfExtent,
-			ConnectorLength,
-			ConnectorHalfWidth,
-			GalleryAcrossHalfExtent,
-			GalleryDepthHalfExtent,
-			HalfThickness,
-			DoorHalfWidth);
-		T66AddStartGalleryWing(
-			Layout,
-			Floor,
-			T66TowerMapTerrain::ET66TowerStartGalleryCategory::World,
-			FName(TEXT("NPCsInteractablesTraps")),
-			FVector(-1.0f, 0.0f, 0.0f),
-			FVector(0.0f, 1.0f, 0.0f),
-			HubCenter,
-			RoomHalfExtent,
-			ConnectorLength,
-			ConnectorHalfWidth,
-			GalleryAcrossHalfExtent,
-			GalleryDepthHalfExtent,
-			HalfThickness,
-			DoorHalfWidth);
+		T66EmitWallRect(Floor.MazeWallBoxes, MinX - HalfThickness, MinY, MinX + HalfThickness, MaxY);
+		T66EmitWallRect(Floor.MazeWallBoxes, MaxX - HalfThickness, MinY, MaxX + HalfThickness, MaxY);
+		T66EmitWallRect(Floor.MazeWallBoxes, MinX, MinY - HalfThickness, MaxX, MinY + HalfThickness);
+		T66EmitWallRect(Floor.MazeWallBoxes, MinX, MaxY - HalfThickness, MaxX, MaxY + HalfThickness);
 		T66FinalizeFloorMazeMetadata(Layout, Floor);
 	}
 
@@ -4256,6 +4224,8 @@ namespace
 		const float DepthOffset = (DepthRowCount > 1) ? FMath::Max(90.0f, WallThickness * 0.28f) : 0.0f;
 		const FVector2D AlongAxis = bVertical ? FVector2D(0.0f, 1.0f) : FVector2D(1.0f, 0.0f);
 		const FVector2D CrossAxis = bVertical ? FVector2D(1.0f, 0.0f) : FVector2D(0.0f, 1.0f);
+		TArray<FName> VisualTags = Tags;
+		VisualTags.AddUnique(T66TowerMapCameraOccludingWallVisualTag);
 
 		FRandomStream Rng(Seed);
 		const FVector2D LineStart = bVertical
@@ -4306,7 +4276,7 @@ namespace
 					Scale,
 					SpawnParams,
 					bEnableCollision,
-					Tags);
+					VisualTags);
 			}
 		}
 	}
@@ -4426,6 +4396,8 @@ namespace
 		const float WallHalfHeight = DesiredHeight * 0.5f;
 		const FVector WallLocation(WallCenter.X, WallCenter.Y, BaseZ + WallHalfHeight);
 		const FVector WallExtents(WallHalfExtents.X, WallHalfExtents.Y, WallHalfHeight);
+		TArray<FName> VisualTags = Tags;
+		VisualTags.AddUnique(T66TowerMapCameraOccludingWallVisualTag);
 
 		switch (Theme.WallFamily)
 		{
@@ -4442,7 +4414,7 @@ namespace
 					WallExtents,
 					SpawnParams,
 					true,
-					Tags,
+					VisualTags,
 					bIgnoreCameraChannel);
 			}
 			return;
@@ -4481,7 +4453,7 @@ namespace
 					WallExtents,
 					SpawnParams,
 					true,
-					Tags,
+					VisualTags,
 					bIgnoreCameraChannel);
 			}
 			return;
@@ -4500,7 +4472,7 @@ namespace
 					WallExtents,
 					SpawnParams,
 					true,
-					Tags,
+					VisualTags,
 					bIgnoreCameraChannel);
 			}
 			return;
@@ -4777,115 +4749,6 @@ namespace
 		}
 	}
 
-	static void T66SpawnPropActors(
-		UWorld* World,
-		UStaticMesh* CubeMesh,
-		const T66TowerThemeVisuals::FResolvedTheme& Theme,
-		const T66TowerMapTerrain::FLayout& Layout,
-		const T66TowerMapTerrain::FFloor& Floor,
-		const FActorSpawnParameters& SpawnParams)
-	{
-		if (!World || !CubeMesh || !Floor.bGameplayFloor)
-		{
-			return;
-		}
-
-		if (Floor.WalkableFloorBoxes.Num() > 0)
-		{
-			return;
-		}
-
-		UMaterialInterface* StoneMaterial = Theme.DecorationMaterialOverride
-			? Theme.DecorationMaterialOverride
-			: (Theme.WallMaterial ? Theme.WallMaterial : Theme.FloorMaterial);
-		FRandomStream Rng(Layout.Preset.Seed + Floor.FloorNumber * 911);
-		static constexpr float T66TowerFloodRockFootprintScale = 0.25f;
-		const float MajorStoneHalfExtent = FMath::Clamp(Layout.PlacementCellSize * 0.72f, 760.0f, 960.0f) * T66TowerFloodRockFootprintScale;
-		const float MinorStoneHalfExtent = MajorStoneHalfExtent * 0.82f;
-		const float MajorStoneHalfHeight = FMath::Clamp(Layout.PlacementCellSize * 0.16f, 150.0f, 220.0f);
-		const float MinorStoneHalfHeight = MajorStoneHalfHeight * 0.78f;
-		const float ConnectionOffset = FMath::Clamp((Layout.GridCellSize * 0.5f) - MajorStoneHalfExtent - 180.0f, 1850.0f, 2250.0f);
-		const TArray<FName> PropTags = {
-			FName(*FString::Printf(TEXT("T66_Floor_Tower_Deco_%02d"), Floor.FloorNumber)),
-			FName(*FString::Printf(TEXT("T66_Floor_Tower_Rock_%02d"), Floor.FloorNumber))
-		};
-
-		auto SpawnStoneAt = [&](const FVector& SurfaceLocation, const float HalfExtentXY, const float HalfHeight) -> bool
-		{
-			if (!T66IsWalkableTowerLocation(Floor, SurfaceLocation, HalfExtentXY * 0.18f, HalfExtentXY * 0.45f, 180.0f))
-			{
-				return false;
-			}
-
-			const FVector SpawnLocation = SurfaceLocation + FVector(0.0f, 0.0f, HalfHeight);
-			return T66SpawnStaticMeshActor(
-				World,
-				CubeMesh,
-				StoneMaterial,
-				SpawnLocation,
-				FRotator(0.0f, Rng.FRandRange(0.0f, 360.0f), 0.0f),
-				FVector(HalfExtentXY, HalfExtentXY, HalfHeight),
-				SpawnParams,
-				true,
-				PropTags) != nullptr;
-		};
-
-		bool bSpawnedAny = false;
-		if (Floor.GridCells.Num() > 0)
-		{
-			for (const T66TowerMapTerrain::FGridCell& Cell : Floor.GridCells)
-			{
-				if (Cell.Semantic == ET66TowerGridCellSemantic::Unused)
-				{
-					continue;
-				}
-
-				const bool bOptionalCell = Cell.Semantic == ET66TowerGridCellSemantic::OptionalLoop;
-				if (bOptionalCell && Rng.FRand() > 0.55f)
-				{
-					continue;
-				}
-
-				bSpawnedAny |= SpawnStoneAt(Cell.WorldCenter, MajorStoneHalfExtent, MajorStoneHalfHeight);
-
-				auto SpawnConnectionStone = [&](const uint8 ConnectionMask, const FVector& Direction)
-				{
-					if ((Cell.ConnectionMask & ConnectionMask) == 0)
-					{
-						return;
-					}
-
-					if (bOptionalCell && Rng.FRand() > 0.45f)
-					{
-						return;
-					}
-
-					bSpawnedAny |= SpawnStoneAt(Cell.WorldCenter + (Direction * ConnectionOffset), MinorStoneHalfExtent, MinorStoneHalfHeight);
-				};
-
-				SpawnConnectionStone(T66TowerMapTerrain::GridNorth, FVector(0.0f, -1.0f, 0.0f));
-				SpawnConnectionStone(T66TowerMapTerrain::GridEast, FVector(1.0f, 0.0f, 0.0f));
-				SpawnConnectionStone(T66TowerMapTerrain::GridSouth, FVector(0.0f, 1.0f, 0.0f));
-				SpawnConnectionStone(T66TowerMapTerrain::GridWest, FVector(-1.0f, 0.0f, 0.0f));
-			}
-		}
-
-		if (bSpawnedAny || Floor.CachedMainPathSpawnSlots.Num() <= 0)
-		{
-			return;
-		}
-
-		TArray<FVector> FallbackSlots = Floor.CachedMainPathSpawnSlots;
-		FallbackSlots.Sort([&Floor](const FVector& A, const FVector& B)
-		{
-			return FVector::DistSquared2D(A, Floor.ArrivalPoint) < FVector::DistSquared2D(B, Floor.ArrivalPoint);
-		});
-
-		for (int32 SlotIndex = 0; SlotIndex < FallbackSlots.Num(); SlotIndex += 2)
-		{
-			SpawnStoneAt(FallbackSlots[SlotIndex], MajorStoneHalfExtent, MajorStoneHalfHeight);
-		}
-	}
 }
 
 namespace T66TowerMapTerrain
@@ -5704,7 +5567,6 @@ namespace T66TowerMapTerrain
 				T66SpawnPolygonFloor(World, CubeMesh, Theme.FloorMaterial, Layout, Floor, SpawnParams, FloorTags);
 			}
 			T66SpawnMazeWalls(World, CubeMesh, Theme, Layout, Floor, ModuleWallHeight, SpawnParams);
-			T66SpawnPropActors(World, CubeMesh, Theme, Layout, Floor, SpawnParams);
 			T66TowerLighting::SpawnFloorTorchLights(World, Floor, Layout, StageTheme, nullptr);
 
 			if (bUsingGeneratedDungeonKitForTheme)

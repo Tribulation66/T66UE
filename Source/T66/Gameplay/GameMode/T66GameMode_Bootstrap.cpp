@@ -456,13 +456,12 @@ SpawnStartGateForPlayer(PC);
 
 if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
 {
-SpawnIdolAltarForPlayer(PC);
 SpawnWeaponAltarForPlayer(PC);
 }
 
 if (!IsUsingTowerMainMapLayout())
 {
-SpawnGamblerNPCIfNeeded();
+SpawnCasinoInteractableIfNeeded();
 SpawnGuaranteedStartAreaInteractables();
 }
 else
@@ -481,11 +480,11 @@ SpawnTutorialIfNeeded();
 
 void AT66GameMode::PrepareMainMapStage(UWorld* World)
 {
-SpawnTricksterAndCowardiceGate();
 SpawnBossForCurrentStage();
 if (IsUsingTowerMainMapLayout())
 {
 SpawnTowerDescentHolesIfNeeded();
+SpawnBackroomsPocketIfNeeded();
 SyncTowerBossEntryState();
 }
 
@@ -737,6 +736,7 @@ void AT66GameMode::FinalizeStandardStageCombatBootstrap()
 	if (IsUsingTowerMainMapLayout())
 	{
 		SpawnTowerDescentHolesIfNeeded();
+		SpawnBackroomsPocketIfNeeded();
 		SyncTowerBossEntryState();
 	}
 	else

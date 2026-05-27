@@ -3,6 +3,7 @@
 #include "UI/T66FrontendTopBarWidget.h"
 
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66BuffSubsystem.h"
@@ -930,7 +931,6 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		const FText HomeText = NSLOCTEXT("T66.MainMenu", "TopBarHome", "HOME");
 		const FText PowerUpText = NSLOCTEXT("T66.MainMenu", "PowerUp", "POWER UP");
 		const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.MainMenu", "Achievements", "ACHIEVEMENTS");
-		const FText MiniGamesText = NSLOCTEXT("T66.MainMenu", "MiniGames", "MINIGAMES");
 		const FText BackToMainMenuText = NSLOCTEXT("T66.MainMenu", "BackToMainMenu", "BACK TO MAIN MENU");
 		const FText QuitTooltipText = Loc ? Loc->GetText_Quit() : NSLOCTEXT("T66.MainMenu", "Quit", "QUIT");
 		const ETopBarSection ActiveSection = GetActiveSection();
@@ -966,10 +966,9 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		const FNormalizedTopBarRect SettingsRect{ 0.013f, TopBarControlY, 0.046f, TopBarControlH };
 		const FNormalizedTopBarRect LanguageRect{ 0.073f, TopBarControlY, 0.046f, TopBarControlH };
 		const FNormalizedTopBarRect AccountRect{ 0.133f, TopBarControlY, 0.148f, TopBarControlH };
-		const FNormalizedTopBarRect ProfileRect{ 0.294f, TopBarControlY, 0.051f, TopBarControlH };
-		const FNormalizedTopBarRect PowerUpRect{ 0.359f, TopBarControlY, 0.142f, TopBarControlH };
-		const FNormalizedTopBarRect AchievementsRect{ 0.513f, TopBarControlY, 0.153f, TopBarControlH };
-		const FNormalizedTopBarRect MiniGamesRect{ 0.679f, TopBarControlY, 0.126f, TopBarControlH };
+		const FNormalizedTopBarRect ProfileRect{ 0.294f, TopBarControlY, 0.177f, TopBarControlH };
+		const FNormalizedTopBarRect PowerUpRect{ 0.485f, TopBarControlY, 0.142f, TopBarControlH };
+		const FNormalizedTopBarRect AchievementsRect{ 0.639f, TopBarControlY, 0.153f, TopBarControlH };
 		const FNormalizedTopBarRect TicketRect{ 0.819f, TopBarControlY, 0.087f, TopBarControlH };
 		const FNormalizedTopBarRect QuitRect{ 0.923f, TopBarControlY, 0.063f, TopBarControlH };
 
@@ -1137,16 +1136,17 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		CategoryGroup.GroupName = TEXT("FrontendCategorySelection");
 		CategoryGroup.bMutuallyExclusive = true;
 
-		auto MakeCategoryItem = [this](const FText& Label, FReply (UT66FrontendTopBarWidget::*ClickFunc)(), const FName Tag, const FNormalizedTopBarRect& Rect, const bool bSelected) -> FT66FlatToggleGroupItem
+		auto MakeCategoryItem = [this](const FText& Label, FReply (UT66FrontendTopBarWidget::*ClickFunc)(), const FName Tag, const FNormalizedTopBarRect& Rect, const bool bSelected, const bool bEnabled = true) -> FT66FlatToggleGroupItem
 		{
 			FT66FlatToggleGroupItem Item;
-			Item.State = ET66FlatState::Default;
-			Item.bIsSelected = bSelected;
+			Item.State = bEnabled ? ET66FlatState::Default : ET66FlatState::Disabled;
+			Item.bIsSelected = bEnabled && bSelected;
 			Item.Label = Label;
-			Item.OnClicked = FOnClicked::CreateUObject(this, ClickFunc);
+			Item.OnClicked = bEnabled ? FOnClicked::CreateUObject(this, ClickFunc) : FOnClicked();
 			Item.Padding = FMargin(12.f, 8.f);
 			Item.MinWidth = Rect.ReferenceWidth();
 			Item.Height = Rect.ReferenceHeight();
+			Item.IsEnabled = bEnabled;
 			Item.FontSize = 30;
 			Item.Tag = Tag;
 			return Item;
@@ -1170,12 +1170,6 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			TEXT("FrontendTopBar.AchievementsButton"),
 			AchievementsRect,
 			ActiveSection == ETopBarSection::Achievements));
-		CategoryGroup.Items.Add(MakeCategoryItem(
-			MiniGamesText,
-			&UT66FrontendTopBarWidget::HandleMiniGamesClicked,
-			TEXT("FrontendTopBar.MinigamesButton"),
-			MiniGamesRect,
-			ActiveSection == ETopBarSection::MiniGames));
 		const TArray<TSharedRef<SWidget>> CategoryButtons = FT66FlatStyle::MakeFlatToggleGroup(CategoryGroup);
 
 		const TSharedRef<SWidget> SettingsButtonWidget = MakeIconActionButton(
@@ -1275,7 +1269,6 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		AddControl(ProfileRect, ProfileButtonWidget);
 		AddControl(PowerUpRect, CategoryButtons[1]);
 		AddControl(AchievementsRect, CategoryButtons[2]);
-		AddControl(MiniGamesRect, CategoryButtons[3]);
 		AddControl(TicketRect, TicketBadgeWidget);
 		AddControl(QuitRect, PowerButtonWidget);
 
@@ -1408,6 +1401,11 @@ FReply UT66FrontendTopBarWidget::HandlePowerUpClicked()
 
 FReply UT66FrontendTopBarWidget::HandleMiniGamesClicked()
 {
+	if (T66DeprecatedFeatures::AreMinigamesDisabled())
+	{
+		return FReply::Handled();
+	}
+
 	NavigateWithTopBar(ET66ScreenType::Minigames);
 	return FReply::Handled();
 }

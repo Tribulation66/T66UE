@@ -19,7 +19,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66TowerLighting, Log, All);
 
 namespace
 {
-	static const FName T66AtmosphereSparedTag(TEXT("T66_AtmosphereSpared"));
+	static const FName T66TowerLightingAtmosphereSparedTag(TEXT("T66_AtmosphereSpared"));
 	static const FName T66TowerTorchLightingTag(TEXT("T66_TowerTorchLighting"));
 	static constexpr float T66TorchWallOffsetUU = 80.0f;
 
@@ -384,7 +384,7 @@ AT66TowerLightingActor* T66TowerLighting::SpawnFloorTorchLights(
 		return nullptr;
 	}
 
-	LightingActor->Tags.AddUnique(T66AtmosphereSparedTag);
+	LightingActor->Tags.AddUnique(T66TowerLightingAtmosphereSparedTag);
 	LightingActor->Tags.AddUnique(T66TowerTorchLightingTag);
 	LightingActor->SetFloorNumber(Floor.FloorNumber);
 	if (!Floor.FloorTag.IsNone())

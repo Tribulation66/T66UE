@@ -313,6 +313,11 @@ TSharedRef<SWidget> UT66GoldMinerArcadeWidget::RebuildWidget()
 void UT66GoldMinerArcadeWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+}
+
+void UT66GoldMinerArcadeWidget::ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext)
+{
+	Super::ActivateWidgetGame(HostContext);
 	StartRound();
 }
 

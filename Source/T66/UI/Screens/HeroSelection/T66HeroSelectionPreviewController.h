@@ -73,8 +73,8 @@ private:
 	UT66HeroSelectionScreen* GetOwnerScreen() const;
 
 	TWeakObjectPtr<UT66HeroSelectionScreen> OwnerScreen;
-	TWeakPtr<SBorder> HeroPreviewColorBox;
-	TWeakPtr<SImage> HeroPreviewVideoImage;
+	TArray<TWeakPtr<SBorder>> HeroPreviewColorBoxes;
+	TArray<TWeakPtr<SImage>> HeroPreviewVideoImages;
 	TWeakPtr<STextBlock> HeroPreviewPlaceholderText;
 	TWeakPtr<SScaleBox> CompanionInfoPortraitScaleBox;
 	TWeakPtr<STextBlock> CompanionPreviewPlaceholderText;

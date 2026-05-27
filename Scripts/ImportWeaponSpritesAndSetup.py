@@ -75,7 +75,7 @@ def import_texture(source_path, dest_dir, dest_name):
     except Exception:
         pass
     try:
-        asset.set_editor_property("filter", unreal.TextureFilter.TF_NEAREST)
+        asset.set_editor_property("filter", unreal.TextureFilter.TF_TRILINEAR)
     except Exception:
         pass
     try:
@@ -125,7 +125,6 @@ def main():
         suffix = "" if len(missing_sources) <= 10 else f"\n...and {len(missing_sources) - 10} more"
         raise RuntimeError(f"Missing source weapon sprites:\n{preview}{suffix}")
 
-    imported_count = 0
     desired_paths = set()
     for row in rows:
         weapon_id = row["WeaponID"].strip()
@@ -133,6 +132,20 @@ def main():
         folder_name = RARITY_FOLDERS.get(rarity, "Black")
         dest_dir = f"{DEST_ROOT}/{folder_name}"
         desired_paths.add(f"{dest_dir}/{weapon_id}")
+
+    # Delete case-mismatched legacy packages before import. Unreal resolves package
+    # paths case-insensitively, so importing over Hero_1_Black_AOE cannot create
+    # Hero_1_black_aoe until the old package is gone.
+    predeleted = delete_obsolete_assets(desired_paths)
+    if predeleted:
+        unreal.log(f"[ImportWeaponSpritesAndSetup] Pre-deleted {len(predeleted)} obsolete weapon sprite assets.")
+
+    imported_count = 0
+    for row in rows:
+        weapon_id = row["WeaponID"].strip()
+        rarity = row.get("Rarity", "Black").strip() or "Black"
+        folder_name = RARITY_FOLDERS.get(rarity, "Black")
+        dest_dir = f"{DEST_ROOT}/{folder_name}"
         import_texture(os.path.join(source_dir, f"{weapon_id}.png"), dest_dir, weapon_id)
         imported_count += 1
 

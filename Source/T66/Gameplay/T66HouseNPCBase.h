@@ -52,7 +52,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	FLinearColor NPCColor = FLinearColor::White;
 
-	/** Row ID in DT_NPCs (e.g. Gambler, Saint, Ouroboros). */
+	/** Row ID in DT_NPCs (e.g. CasinoNPC, Saint, Ouroboros). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Data")
 	FName NPCID;
 

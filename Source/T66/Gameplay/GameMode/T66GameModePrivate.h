@@ -11,7 +11,7 @@
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66MiasmaManager.h"
 #include "Gameplay/T66MiasmaBoundary.h"
-#include "Gameplay/T66GamblerNPC.h"
+#include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66SaintNPC.h"
 #include "Gameplay/T66OuroborosNPC.h"
 #include "Gameplay/T66LoanShark.h"
@@ -29,7 +29,9 @@
 #include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66WeaponAltar.h"
+#include "Gameplay/T66GameplayInteractable.h"
 #include "Gameplay/T66FountainInteractable.h"
+#include "Gameplay/T66WorldInteractableBase.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66CrateInteractable.h"
@@ -37,7 +39,7 @@
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66ArcadeMachineInteractable.h"
 #include "Gameplay/T66VehicleInteractable.h"
-#include "Gameplay/T66QuickReviveVendingMachine.h"
+#include "Gameplay/T66VendorInteractable.h"
 #include "Gameplay/T66StageEffects.h"
 #include "Gameplay/T66SpawnPlateau.h"
 #include "Gameplay/T66LabCollector.h"
@@ -143,7 +145,7 @@ namespace T66GameModePrivate
 	AActor* T66FindTaggedActor(UWorld* World, FName Tag);
 	void T66RememberTaggedActor(AActor* Actor, FName Tag);
 	void T66ForgetTaggedActor(UWorld* World, FName Tag);
-	bool T66HasRegisteredGambler(UWorld* World);
+	bool T66HasRegisteredCasinoInteractable(UWorld* World);
 	bool T66ShouldIgnoreTowerCeilingHit(const FHitResult& Hit);
 	FName T66MakeTowerFloorTag(int32 FloorNumber);
 	int32 T66ReadTowerFloorTag(const AActor* Actor);

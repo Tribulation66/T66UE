@@ -15,7 +15,6 @@ struct FStreamableHandle;
 /**
  * Simple music state manager.
  * - Plays Theme music immediately (including frontend).
- * - Switches to Survival music during Last Stand (0 hearts but still alive).
  *
  * Note: Unreal must import audio into SoundWave/SoundCue assets.
  * Dropping .ogg files into Content/ is not enough until the editor imports them.
@@ -46,31 +45,20 @@ private:
 	//   /Game/Audio/OSTS/Theme
 	//   /Game/Audio/Music/Theme
 	//   /Game/Audio/Theme
-	// Survival:
-	//   /Game/Audio/OSTS/Survival
-	//   /Game/Audio/Music/Survival
-	//   /Game/Audio/Survival
 	UPROPERTY()
 	TSoftObjectPtr<USoundBase> MainThemeSound;
 
 	UPROPERTY()
 	TSoftObjectPtr<USoundBase> ThemeSound;
 
-	UPROPERTY()
-	TSoftObjectPtr<USoundBase> SurvivalSound;
-
 	TArray<FSoftObjectPath> MainThemeCandidates;
 	TArray<FSoftObjectPath> ThemeCandidates;
-	TArray<FSoftObjectPath> SurvivalCandidates;
 
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> MainThemeComp;
 
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> ThemeComp;
-
-	UPROPERTY()
-	TObjectPtr<UAudioComponent> SurvivalComp;
 
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> BossComp;
@@ -80,13 +68,11 @@ private:
 
 	bool bThemeStarted = false;
 	bool bMainThemeStarted = false;
-	bool bSurvivalActive = false;
 	bool bBossMusicActive = false;
 
 	// Prevent "FadeOut -> OnAudioFinished -> loop again" while switching tracks.
 	bool bAllowThemeLoop = true;
 	bool bAllowMainThemeLoop = true;
-	bool bAllowSurvivalLoop = true;
 	bool bAllowBossLoop = true;
 
 	ET66BaseTrack DesiredBaseTrack = ET66BaseTrack::None;
@@ -96,9 +82,6 @@ private:
 
 	void HandlePostWorldInit(UWorld* World, const UWorld::InitializationValues IVS);
 	void HandlePostLoadMap(UWorld* World);
-
-	UFUNCTION()
-	void HandleSurvivalChanged();
 
 	UFUNCTION()
 	void HandleBossChanged();
@@ -114,28 +97,23 @@ private:
 
 	USoundBase* ResolveAndLoadMainThemeSound();
 	USoundBase* ResolveAndLoadThemeSound();
-	USoundBase* ResolveAndLoadSurvivalSound();
 	USoundBase* ResolveAndLoadGameplayThemeSound(UWorld* World);
 	USoundBase* ResolveAndLoadBossThemeSound(UWorld* World);
 	void QueueBaseMusicPreloads();
 	void QueueMainThemePreload();
 	void QueueThemePreload();
-	void QueueSurvivalPreload();
 	void HandleMainThemePreloaded();
 	void HandleThemePreloaded();
-	void HandleSurvivalPreloaded();
 	USoundBase* ResolveFirstResidentSoundInFolder(const FString& FolderPath);
 	void QueueFolderSoundPreload(const FString& FolderPath, const TArray<FSoftObjectPath>& CandidatePaths);
 	void HandleFolderSoundPreloaded(FString FolderPath);
 
 	void EnsureMainThemePlaying(UWorld* World);
 	void EnsureThemePlaying(UWorld* World);
-	void EnsureSurvivalPlaying(UWorld* World);
 	void EnsureBossPlaying(UWorld* World);
 
 	void StopMainTheme(float FadeSeconds);
 	void StopTheme(float FadeSeconds);
-	void StopSurvival(float FadeSeconds);
 	void StopBoss(float FadeSeconds);
 
 	UFUNCTION()
@@ -145,14 +123,10 @@ private:
 	void HandleMainThemeFinished();
 
 	UFUNCTION()
-	void HandleSurvivalFinished();
-
-	UFUNCTION()
 	void HandleBossFinished();
 
 	TSharedPtr<FStreamableHandle> MainThemeLoadHandle;
 	TSharedPtr<FStreamableHandle> ThemeLoadHandle;
-	TSharedPtr<FStreamableHandle> SurvivalLoadHandle;
 	TMap<FString, TObjectPtr<USoundBase>> CachedFolderSounds;
 	TMap<FString, TSharedPtr<FStreamableHandle>> PendingFolderSoundLoads;
 	TMap<FString, TArray<FSoftObjectPath>> FolderSoundCandidatePaths;

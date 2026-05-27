@@ -33,6 +33,11 @@ MANIFEST_PATH = RUN_ROOT / "easy_mob_vat_manifest.json"
 CHARACTER_VISUALS_CSV = PROJECT_DIR / "Content" / "Data" / "CharacterVisuals.csv"
 MOB_VAT_CSV = PROJECT_DIR / "Content" / "Data" / "MobVertexAnimations.csv"
 REPORT_PATH = PROJECT_DIR / "Saved" / "EasyMobVATImportReport.json"
+ONLY_MOBS = {
+    item.strip().lower()
+    for item in os.environ.get("T66_EASY_MOB_VAT_ONLY", "").split(",")
+    if item.strip()
+}
 
 DEST_ROOT = os.environ.get("T66_EASY_MOB_VAT_DEST_ROOT", "/Game/Characters/MobsVAT")
 MASTER_MATERIAL_DIR = "/Game/Materials"
@@ -107,6 +112,12 @@ def object_path(package_path):
     return f"{package_path}.{name}"
 
 
+def clip_play_rate(mob, clip):
+    if mob.get("profile") == "walker" and clip == "Move":
+        return "1.600000"
+    return "1.000000"
+
+
 def load_asset(path):
     asset = unreal.EditorAssetLibrary.load_asset(path)
     if not asset:
@@ -129,6 +140,13 @@ def read_character_visual_rows():
     with CHARACTER_VISUALS_CSV.open("r", encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
     return {row["---"]: row for row in rows}
+
+
+def read_existing_mob_vat_rows():
+    if not MOB_VAT_CSV.is_file():
+        return []
+    with MOB_VAT_CSV.open("r", encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
 
 
 def load_manifest():
@@ -608,7 +626,7 @@ def bake_mob(mob, visual_row, master_material, clip_frames):
         start, end = ranges[clip]
         row[f"{clip}StartFrame"] = str(start)
         row[f"{clip}EndFrame"] = str(end)
-        row[f"{clip}PlayRate"] = "1.000000"
+        row[f"{clip}PlayRate"] = clip_play_rate(mob, clip)
 
     return {
         "enemy_id": enemy_id,
@@ -644,7 +662,16 @@ def main():
 
     import_report = []
     csv_rows = []
-    for mob in manifest["mobs"]:
+    selected_mobs = [
+        mob for mob in manifest["mobs"]
+        if not ONLY_MOBS or mob["enemy_id"].strip().lower() in ONLY_MOBS
+    ]
+    if not selected_mobs:
+        raise RuntimeError(f"No manifest mobs matched T66_EASY_MOB_VAT_ONLY={sorted(ONLY_MOBS)}")
+    if ONLY_MOBS:
+        log(f"Focused import filter active: {', '.join(sorted(ONLY_MOBS))}")
+
+    for mob in selected_mobs:
         enemy_id = mob["enemy_id"]
         visual_row = visual_rows.get(enemy_id)
         if not visual_row:
@@ -653,7 +680,26 @@ def main():
         import_report.append(report)
         csv_rows.append(row)
 
-    write_csv(csv_rows)
+    if ONLY_MOBS:
+        existing_rows = read_existing_mob_vat_rows()
+        rows_by_id = {row["---"]: row for row in existing_rows if row.get("---")}
+        for row in csv_rows:
+            rows_by_id[row["---"]] = row
+        merged_rows = []
+        seen_ids = set()
+        for row in existing_rows:
+            enemy_id = row.get("---", "")
+            if enemy_id in rows_by_id and enemy_id not in seen_ids:
+                merged_rows.append(rows_by_id[enemy_id])
+                seen_ids.add(enemy_id)
+        for row in csv_rows:
+            enemy_id = row["---"]
+            if enemy_id not in seen_ids:
+                merged_rows.append(row)
+                seen_ids.add(enemy_id)
+        write_csv(merged_rows)
+    else:
+        write_csv(csv_rows)
     SetupMobVertexAnimationsDataTable.main()
 
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)

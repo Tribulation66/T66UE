@@ -27,6 +27,9 @@ struct T66_API FT66WidgetGameDescriptor
 	ET66ScreenType FrontendScreenType = ET66ScreenType::None;
 	ET66ArcadeGameType ArcadeGameType = ET66ArcadeGameType::None;
 	FName CasinoPageID = NAME_None;
+	// Declared convention root for future WidgetGames asset organization.
+	// It does not prove assets currently live there, and runtime loading only
+	// changes after widgets are explicitly migrated to read this field.
 	FName AssetRoot = NAME_None;
 	FName BackendGameToken = NAME_None;
 	int32 SortOrder = 0;

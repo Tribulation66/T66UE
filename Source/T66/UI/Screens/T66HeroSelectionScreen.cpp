@@ -194,6 +194,11 @@ FReply UT66HeroSelectionScreen::HandleLabClicked()
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
+		if (!GI->IsRunCategoryPlayable(ET66RunCategory::Lab))
+		{
+			return FReply::Handled();
+		}
+
 		PreviewedHeroID = GI->ResolvePlayableHeroID(PreviewedHeroID);
 		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
 		GI->SelectedHeroID = PreviewedHeroID;

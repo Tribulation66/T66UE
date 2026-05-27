@@ -6,7 +6,9 @@
 #include "Data/T66DataTypes.h"
 
 class AActor;
+class AT66HeroBase;
 class UT66RunStateSubsystem;
+class UPrimitiveComponent;
 class UWorld;
 
 namespace T66CombatShared
@@ -15,6 +17,8 @@ namespace T66CombatShared
 	float GetCategorySubScaleMultiplier(const UT66RunStateSubsystem* RunState, ET66AttackCategory Category);
 	float GetIdolRarityVisualScale(ET66ItemRarity Rarity);
 	float GetIdolRarityVisualQuantity(ET66ItemRarity Rarity);
+	bool IsHeroHurtboxComponent(const AT66HeroBase* Hero, const UPrimitiveComponent* Component);
+	FString DescribePrimitiveComponentForCombatLog(const UPrimitiveComponent* Component);
 	FVector ResolveGroundAnchor(UWorld* World, const FVector& ApproxLocation, const AActor* IgnoreActor);
 	FVector ResolveProcVFXAnchor(AActor* TargetActor, UWorld* World);
 }

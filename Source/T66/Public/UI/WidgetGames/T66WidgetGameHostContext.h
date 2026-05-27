@@ -21,7 +21,7 @@ struct T66_API FT66WidgetGameHostContext
 	TFunction<void(ET66WidgetGameExitReason)> ReturnNavigationCallback;
 	TFunction<bool(FName)> AvailabilityQueryCallback;
 	TFunction<void(FName)> AudioEventCallback;
-	TFunction<void(int32)> WagerCallback;
+	TFunction<int32()> WagerCallback;
 	TFunction<void(int32)> PayoutCallback;
 
 	bool IsGameAvailable(const FName GameID) const
@@ -42,6 +42,35 @@ struct T66_API FT66WidgetGameHostContext
 		if (StatusTextCallback)
 		{
 			StatusTextCallback(StatusText);
+		}
+	}
+
+	void ReportResult(const FT66WidgetGameResult& Result) const
+	{
+		if (ResultCallback)
+		{
+			ResultCallback(Result);
+		}
+	}
+
+	void RequestExit(const ET66WidgetGameExitReason ExitReason) const
+	{
+		if (ReturnNavigationCallback)
+		{
+			ReturnNavigationCallback(ExitReason);
+		}
+	}
+
+	int32 GetWager() const
+	{
+		return WagerCallback ? WagerCallback() : 0;
+	}
+
+	void SubmitPayout(const int32 Payout) const
+	{
+		if (PayoutCallback)
+		{
+			PayoutCallback(Payout);
 		}
 	}
 };

@@ -46,10 +46,10 @@ public:
 	FLinearColor WindupColor = FLinearColor(1.f, 0.80f, 0.25f, 1.f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
-	FLinearColor ProjectileTint = FLinearColor(1.f, 0.88f, 0.30f, 1.f);
+	FLinearColor ProjectileTint = FLinearColor(1.f, 0.04f, 0.02f, 1.f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trap|Visual")
-	FLinearColor ProjectileTrailColor = FLinearColor(1.f, 0.78f, 0.25f, 0.95f);
+	FLinearColor ProjectileTrailColor = FLinearColor(1.f, 0.04f, 0.02f, 1.f);
 
 protected:
 	virtual void BeginPlay() override;

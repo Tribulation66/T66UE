@@ -804,90 +804,24 @@ int32 UT66BuffSubsystem::GetUnlockedFillStepCount(ET66HeroStatType StatType) con
 
 int32 UT66BuffSubsystem::GetTotalStatBonus(ET66HeroStatType StatType) const
 {
-	return GetUnlockedFillStepCount(StatType) + GetRandomBonusForStat(StatType);
+	static_cast<void>(StatType);
+	return 0;
 }
 
 int32 UT66BuffSubsystem::GetCostForNextFillStepUnlock(ET66HeroStatType StatType) const
 {
-	return (IsStatMaxed(StatType) || IsDemoDiplomaUpgradeLimitReached(StatType)) ? 0 : PermanentBuffUnlockCostCC;
+	static_cast<void>(StatType);
+	return 0;
 }
 
 bool UT66BuffSubsystem::UnlockNextFillStep(ET66HeroStatType StatType)
 {
-	TArray<uint8>* Arr = GetFillStepStatesForStat(StatType);
-	if (!SaveData || !Arr) return false;
-	EnsureFillStepStatesSize(*Arr);
-
-	if (IsDemoDiplomaUpgradeLimitReached(StatType))
-	{
-		return false;
-	}
-
-	const int32 Cost = GetCostForNextFillStepUnlock(StatType);
-	if (Cost <= 0)
-	{
-		return false;
-	}
-
-	for (int32 i = 0; i < MaxFillStepsPerStat; ++i)
-	{
-		if ((*Arr)[i] == static_cast<uint8>(ET66BuffFillStepState::Locked))
-		{
-			if (!SpendChadCoupons(Cost))
-			{
-				return false;
-			}
-			(*Arr)[i] = static_cast<uint8>(ET66BuffFillStepState::Unlocked);
-			Save();
-			return true;
-		}
-	}
-
+	static_cast<void>(StatType);
 	return false;
 }
 
 bool UT66BuffSubsystem::UnlockRandomStat()
 {
-	if (!SaveData) return false;
-	static const TArray<ET66HeroStatType> AllStats = {
-		ET66HeroStatType::Damage,
-		ET66HeroStatType::AttackSpeed,
-		ET66HeroStatType::AttackScale,
-		ET66HeroStatType::Accuracy,
-		ET66HeroStatType::Armor,
-		ET66HeroStatType::Evasion,
-		ET66HeroStatType::Luck,
-		ET66HeroStatType::Speed
-	};
-	TArray<ET66HeroStatType> Shuffled = AllStats;
-	for (int32 i = Shuffled.Num() - 1; i > 0; --i)
-	{
-		Swap(Shuffled[i], Shuffled[FMath::RandRange(0, i)]);
-	}
-	for (ET66HeroStatType Stat : Shuffled)
-	{
-		if (IsDemoDiplomaUpgradeLimitReached(Stat))
-		{
-			continue;
-		}
-
-		TArray<uint8>* Arr = GetFillStepStatesForStat(Stat);
-		if (!Arr) continue;
-		EnsureFillStepStatesSize(*Arr);
-		for (int32 i = 0; i < MaxFillStepsPerStat; ++i)
-		{
-			if ((*Arr)[i] == static_cast<uint8>(ET66BuffFillStepState::Locked))
-			{
-				if (!SpendChadCoupons(PermanentBuffUnlockCostCC))
-				{
-					return false;
-				}
-				(*Arr)[i] = static_cast<uint8>(ET66BuffFillStepState::Unlocked);
-				Save();
-				return true;
-			}
-		}
-	}
 	return false;
 }
 
@@ -920,17 +854,7 @@ bool UT66BuffSubsystem::IsDemoDiplomaUpgradeLimitReached(ET66HeroStatType StatTy
 
 FT66HeroStatBonuses UT66BuffSubsystem::GetPermanentBuffStatBonuses() const
 {
-	FT66HeroStatBonuses Out;
-	if (!SaveData) return Out;
-	Out.Damage = GetTotalStatBonus(ET66HeroStatType::Damage);
-	Out.AttackSpeed = GetTotalStatBonus(ET66HeroStatType::AttackSpeed);
-	Out.AttackScale = GetTotalStatBonus(ET66HeroStatType::AttackScale);
-	Out.Accuracy = GetTotalStatBonus(ET66HeroStatType::Accuracy);
-	Out.Armor = GetTotalStatBonus(ET66HeroStatType::Armor);
-	Out.Evasion = GetTotalStatBonus(ET66HeroStatType::Evasion);
-	Out.Luck = GetTotalStatBonus(ET66HeroStatType::Luck);
-	Out.Speed = GetTotalStatBonus(ET66HeroStatType::Speed);
-	return Out;
+	return FT66HeroStatBonuses{};
 }
 
 FT66HeroStatBonuses UT66BuffSubsystem::GetPowerupStatBonuses() const
@@ -1119,15 +1043,7 @@ int32 UT66BuffSubsystem::GetSelectedSingleUseBuffSlotAssignedCountForStat(ET66Se
 
 bool UT66BuffSubsystem::AreSingleUseBuffPurchasesAllowed() const
 {
-	if (const UGameInstance* GI = GetGameInstance())
-	{
-		if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GI->GetSubsystem<UT66ReleaseVariantSubsystem>())
-		{
-			return ReleaseVariant->AreDrugPurchasesAllowed();
-		}
-	}
-
-	return true;
+	return false;
 }
 
 bool UT66BuffSubsystem::PurchaseSelectedSingleUseBuffSlot(int32 SlotIndex)

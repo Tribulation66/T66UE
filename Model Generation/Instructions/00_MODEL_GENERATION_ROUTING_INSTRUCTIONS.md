@@ -5,6 +5,7 @@ This workspace owns model-generation process, not runtime game content. A model 
 ## Decision Tree
 
 1. For a new source image or character direction, start with `02_SOURCE_IMAGE_RULES_INSTRUCTIONS.md`.
+   - For humanoid heroes, companions, or manually rigged characters, continue with `10_HUMANOID_IMAGE_GENERATION_GUIDELINES.md` before writing the live prompt.
 2. For TRELLIS RunPod setup, use `01_TRELLIS_RUNPOD_SETUP_INSTRUCTIONS.md`.
 3. For Quad Retro processing, use `03_QUAD_RETRO_PIPELINE_INSTRUCTIONS.md`.
 4. For Blender cleanup, rigging, or retopo policy, use `04_BLENDER_PROCESSING_AND_RIGGING_INSTRUCTIONS.md`.

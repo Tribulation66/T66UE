@@ -20,7 +20,7 @@ namespace
 			.Padding(0.f, 0.f, 0.f, 6.f)
 			[
 				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoHeader", "MASTERY / RANK"))
+				.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoHeader", "HERO MASTERY / GLOBAL RANK"))
 				.Font(FT66Style::Tokens::FontBold(18))
 				.ColorAndOpacity(FT66Style::Tokens::TextMuted)
 				.Justification(ETextJustify::Center)
@@ -40,7 +40,7 @@ namespace
 					.Padding(0.f, 0.f, 0.f, 3.f)
 					[
 						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoMaestryTitle", "Mastery"))
+						.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoMaestryTitle", "Hero Mastery"))
 						.Font(HeaderFont)
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
@@ -63,7 +63,7 @@ namespace
 					.Padding(0.f, 0.f, 0.f, 3.f)
 					[
 						SNew(STextBlock)
-						.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoRankTitle", "Rank"))
+						.Text(NSLOCTEXT("T66.HeroSelection", "RecordInfoRankTitle", "Global Rank"))
 						.Font(HeaderFont)
 						.ColorAndOpacity(FT66Style::Tokens::Text)
 					]
@@ -271,6 +271,7 @@ void UT66HeroSelectionScreen::EnsureHeroStatsSnapshot()
 
 void UT66HeroSelectionScreen::PopulateHeroStatsSnapshot(const FHeroData& HeroData, const FT66HeroStatBlock& BaseStats, const FT66HeroStatBonuses& PermanentBuffBonuses)
 {
+	static_cast<void>(PermanentBuffBonuses);
 	EnsureHeroStatsSnapshot();
 	if (!HeroStatsSnapshot)
 	{
@@ -279,14 +280,14 @@ void UT66HeroSelectionScreen::PopulateHeroStatsSnapshot(const FHeroData& HeroDat
 	UT66LeaderboardRunSummarySaveGame* Snapshot = HeroStatsSnapshot.Get();
 	Snapshot->HeroID = HeroData.HeroID;
 	Snapshot->HeroLevel = 1;
-	Snapshot->DamageStat = BaseStats.Damage + PermanentBuffBonuses.Damage;
-	Snapshot->AttackSpeedStat = BaseStats.AttackSpeed + PermanentBuffBonuses.AttackSpeed;
-	Snapshot->AttackScaleStat = BaseStats.AttackScale + PermanentBuffBonuses.AttackScale;
-	Snapshot->AccuracyStat = BaseStats.Accuracy + PermanentBuffBonuses.Accuracy;
-	Snapshot->ArmorStat = BaseStats.Armor + PermanentBuffBonuses.Armor;
-	Snapshot->EvasionStat = BaseStats.Evasion + PermanentBuffBonuses.Evasion;
-	Snapshot->LuckStat = BaseStats.Luck + PermanentBuffBonuses.Luck;
-	Snapshot->SpeedStat = BaseStats.Speed + PermanentBuffBonuses.Speed;
+	Snapshot->DamageStat = BaseStats.Damage;
+	Snapshot->AttackSpeedStat = BaseStats.AttackSpeed;
+	Snapshot->AttackScaleStat = BaseStats.AttackScale;
+	Snapshot->AccuracyStat = BaseStats.Accuracy;
+	Snapshot->ArmorStat = BaseStats.Armor;
+	Snapshot->EvasionStat = BaseStats.Evasion;
+	Snapshot->LuckStat = BaseStats.Luck;
+	Snapshot->SpeedStat = BaseStats.Speed;
 	Snapshot->SecondaryStatValues.Reset();
 
 	auto SetSecondaryValue = [Snapshot](const ET66SecondaryStatType Type, const float Value)
@@ -294,18 +295,18 @@ void UT66HeroSelectionScreen::PopulateHeroStatsSnapshot(const FHeroData& HeroDat
 		Snapshot->SecondaryStatValues.Add(Type, Value);
 	};
 
-	SetSecondaryValue(ET66SecondaryStatType::AoeDamage, static_cast<float>(HeroData.BaseAoeDmg + PermanentBuffBonuses.AoeDmg));
-	SetSecondaryValue(ET66SecondaryStatType::BounceDamage, static_cast<float>(HeroData.BaseBounceDmg + PermanentBuffBonuses.BounceDmg));
-	SetSecondaryValue(ET66SecondaryStatType::PierceDamage, static_cast<float>(HeroData.BasePierceDmg + PermanentBuffBonuses.PierceDmg));
-	SetSecondaryValue(ET66SecondaryStatType::DotDamage, static_cast<float>(HeroData.BaseDotDmg + PermanentBuffBonuses.DotDmg));
-	SetSecondaryValue(ET66SecondaryStatType::AoeSpeed, static_cast<float>(HeroData.BaseAoeAtkSpd + PermanentBuffBonuses.AoeAtkSpd));
-	SetSecondaryValue(ET66SecondaryStatType::BounceSpeed, static_cast<float>(HeroData.BaseBounceAtkSpd + PermanentBuffBonuses.BounceAtkSpd));
-	SetSecondaryValue(ET66SecondaryStatType::PierceSpeed, static_cast<float>(HeroData.BasePierceAtkSpd + PermanentBuffBonuses.PierceAtkSpd));
-	SetSecondaryValue(ET66SecondaryStatType::DotSpeed, static_cast<float>(HeroData.BaseDotAtkSpd + PermanentBuffBonuses.DotAtkSpd));
-	SetSecondaryValue(ET66SecondaryStatType::AoeScale, static_cast<float>(HeroData.BaseAoeAtkScale + PermanentBuffBonuses.AoeAtkScale));
-	SetSecondaryValue(ET66SecondaryStatType::BounceScale, static_cast<float>(HeroData.BaseBounceAtkScale + PermanentBuffBonuses.BounceAtkScale));
-	SetSecondaryValue(ET66SecondaryStatType::PierceScale, static_cast<float>(HeroData.BasePierceAtkScale + PermanentBuffBonuses.PierceAtkScale));
-	SetSecondaryValue(ET66SecondaryStatType::DotScale, static_cast<float>(HeroData.BaseDotAtkScale + PermanentBuffBonuses.DotAtkScale));
+	SetSecondaryValue(ET66SecondaryStatType::AoeDamage, static_cast<float>(HeroData.BaseAoeDmg));
+	SetSecondaryValue(ET66SecondaryStatType::BounceDamage, static_cast<float>(HeroData.BaseBounceDmg));
+	SetSecondaryValue(ET66SecondaryStatType::PierceDamage, static_cast<float>(HeroData.BasePierceDmg));
+	SetSecondaryValue(ET66SecondaryStatType::DotDamage, static_cast<float>(HeroData.BaseDotDmg));
+	SetSecondaryValue(ET66SecondaryStatType::AoeSpeed, static_cast<float>(HeroData.BaseAoeAtkSpd));
+	SetSecondaryValue(ET66SecondaryStatType::BounceSpeed, static_cast<float>(HeroData.BaseBounceAtkSpd));
+	SetSecondaryValue(ET66SecondaryStatType::PierceSpeed, static_cast<float>(HeroData.BasePierceAtkSpd));
+	SetSecondaryValue(ET66SecondaryStatType::DotSpeed, static_cast<float>(HeroData.BaseDotAtkSpd));
+	SetSecondaryValue(ET66SecondaryStatType::AoeScale, static_cast<float>(HeroData.BaseAoeAtkScale));
+	SetSecondaryValue(ET66SecondaryStatType::BounceScale, static_cast<float>(HeroData.BaseBounceAtkScale));
+	SetSecondaryValue(ET66SecondaryStatType::PierceScale, static_cast<float>(HeroData.BasePierceAtkScale));
+	SetSecondaryValue(ET66SecondaryStatType::DotScale, static_cast<float>(HeroData.BaseDotAtkScale));
 	SetSecondaryValue(ET66SecondaryStatType::CritDamage, HeroData.BaseCritDamage);
 	SetSecondaryValue(ET66SecondaryStatType::CritChance, HeroData.BaseCritChance);
 	SetSecondaryValue(ET66SecondaryStatType::AttackRange, HeroData.BaseAttackRange);
@@ -392,7 +393,7 @@ void UT66HeroSelectionScreen::RefreshHeroStatsPanels()
 			FullOptions.bExtended = true;
 			FullOptions.bShowAdjectiveSummaries = false;
 			FullOptions.bIncludeHeader = true;
-			FullOptions.bIncludeLevel = true;
+			FullOptions.bIncludeLevel = false;
 			FullOptions.FontSizeAdjustment = -4;
 			FullOptions.HeadingFontSizeAdjustment = -4;
 			FullOptions.ScrollHeightOverride = FT66Style::Tokens::NPCStatsPanelContentHeight + 48.f;

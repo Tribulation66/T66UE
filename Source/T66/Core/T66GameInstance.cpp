@@ -48,10 +48,11 @@ namespace
 
 	static bool IsRandomItemPoolEligible(FName ItemID)
 	{
-		return !ItemID.IsNone()
-			&& ItemID != GamblersTokenItemID
-			&& ItemID != CloseRangeItemID
-			&& ItemID != LongRangeItemID
+	return !ItemID.IsNone()
+		&& ItemID != GamblersTokenItemID
+		&& ItemID != FName(TEXT("Item_BackroomsQuickRevive"))
+		&& ItemID != CloseRangeItemID
+		&& ItemID != LongRangeItemID
 			&& ItemID != SpinWheelItemID
 			&& ItemID != MovementSpeedItemID;
 	}
@@ -189,6 +190,7 @@ UT66GameInstance::UT66GameInstance()
 	BossEncounterMembersDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossEncounterMembers.DT_BossEncounterMembers")));
 	ArcadeInteractablesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables")));
 	NPCsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_NPCs.DT_NPCs")));
+	UniqueEnemiesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_UniqueEnemies.DT_UniqueEnemies")));
 
 	// Default selections
 	SelectedPartySize = ET66PartySize::Solo;
@@ -351,6 +353,7 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	AddDT(BossEncounterMembersDataTable);
 	AddDT(NPCsDataTable);
 	AddDT(LoanSharkDataTable);
+	AddDT(UniqueEnemiesDataTable);
 	AddDT(CharacterVisualsDataTable);
 	AddDT(ArcadeInteractablesDataTable);
 
@@ -389,6 +392,7 @@ void UT66GameInstance::HandleCoreDataTablesLoaded()
 	if (!CachedBossEncounterMembersDataTable) CachedBossEncounterMembersDataTable = BossEncounterMembersDataTable.Get();
 	if (!CachedNPCsDataTable) CachedNPCsDataTable = NPCsDataTable.Get();
 	if (!CachedLoanSharkDataTable) CachedLoanSharkDataTable = LoanSharkDataTable.Get();
+	if (!CachedUniqueEnemiesDataTable) CachedUniqueEnemiesDataTable = UniqueEnemiesDataTable.Get();
 	if (!CachedCharacterVisualsDataTable) CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
 	if (!CachedArcadeInteractablesDataTable) CachedArcadeInteractablesDataTable = ArcadeInteractablesDataTable.Get();
 
@@ -502,9 +506,9 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
 		AddPath(VisualRow->StaticMesh.ToSoftObjectPath());
 		AddPath(VisualRow->PixelatedTextureAssetPath.ToSoftObjectPath());
-		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
-		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
-		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->WalkAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->IdleAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->JumpAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->RollAnimation.ToSoftObjectPath());
 	};
 
@@ -628,9 +632,9 @@ void UT66GameInstance::PrimeHeroSelectionPreviewVisualsAsync()
 		AddPath(VisualRow->SkeletalMesh.ToSoftObjectPath());
 		AddPath(VisualRow->StaticMesh.ToSoftObjectPath());
 		AddPath(VisualRow->PixelatedTextureAssetPath.ToSoftObjectPath());
-		AddPath(VisualRow->LoopingAnimation.ToSoftObjectPath());
-		AddPath(VisualRow->AlertAnimation.ToSoftObjectPath());
-		AddPath(VisualRow->RunAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->WalkAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->IdleAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->JumpAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->RollAnimation.ToSoftObjectPath());
 	}
 
@@ -869,6 +873,7 @@ UDataTable* UT66GameInstance::GetBossEncountersDataTable() { return ResolveCache
 UDataTable* UT66GameInstance::GetBossEncounterMembersDataTable() { return ResolveCachedDataTable(CachedBossEncounterMembersDataTable, BossEncounterMembersDataTable); }
 UDataTable* UT66GameInstance::GetNPCsDataTable() { return ResolveCachedDataTable(CachedNPCsDataTable, NPCsDataTable); }
 UDataTable* UT66GameInstance::GetLoanSharkDataTable() { return ResolveCachedDataTable(CachedLoanSharkDataTable, LoanSharkDataTable); }
+UDataTable* UT66GameInstance::GetUniqueEnemiesDataTable() { return ResolveCachedDataTable(CachedUniqueEnemiesDataTable, UniqueEnemiesDataTable); }
 UDataTable* UT66GameInstance::GetCharacterVisualsDataTable() { return ResolveCachedDataTable(CachedCharacterVisualsDataTable, CharacterVisualsDataTable); }
 UDataTable* UT66GameInstance::GetArcadeInteractablesDataTable() { return ResolveCachedDataTable(CachedArcadeInteractablesDataTable, ArcadeInteractablesDataTable); }
 
@@ -969,6 +974,11 @@ bool UT66GameInstance::GetLoanSharkData(FName LoanSharkID, FLoanSharkData& OutDa
 	return FindDataRow(GetLoanSharkDataTable(), LoanSharkID, OutData, TEXT("GetLoanSharkData"));
 }
 
+bool UT66GameInstance::GetUniqueEnemyData(FName UniqueEnemyID, FUniqueEnemyData& OutData)
+{
+	return FindDataRow(GetUniqueEnemiesDataTable(), UniqueEnemyID, OutData, TEXT("GetUniqueEnemyData"));
+}
+
 TArray<FName> UT66GameInstance::GetAllHeroIDs()
 {
 	UDataTable* DataTable = GetHeroDataTable();
@@ -1053,6 +1063,33 @@ ET66Difficulty UT66GameInstance::ResolvePlayableDifficulty(ET66Difficulty Diffic
 		return ReleaseVariant->ResolvePlayableDifficulty(Difficulty);
 	}
 	return Difficulty;
+}
+
+bool UT66GameInstance::IsRunCategoryPlayable(const ET66RunCategory RunCategory) const
+{
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->IsRunCategoryAllowed(RunCategory);
+	}
+	return true;
+}
+
+ET66RunCategory UT66GameInstance::ResolvePlayableRunCategory(const ET66RunCategory RunCategory) const
+{
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->ResolvePlayableRunCategory(RunCategory);
+	}
+	return RunCategory;
+}
+
+bool UT66GameInstance::IsCollectorPlayable() const
+{
+	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
+	{
+		return ReleaseVariant->IsCollectorAllowed();
+	}
+	return true;
 }
 
 TArray<FName> UT66GameInstance::GetAllCompanionIDs()

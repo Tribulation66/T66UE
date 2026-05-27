@@ -20,6 +20,7 @@
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
+#include "UI/WidgetGames/T66WidgetGameResult.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
@@ -245,6 +246,58 @@ UT66DeckMainMenuScreen::UT66DeckMainMenuScreen(const FObjectInitializer& ObjectI
 	ScreenType = ET66ScreenType::DeckMainMenu;
 	bIsModal = false;
 	StatusText = NSLOCTEXT("T66Deck.Gameplay", "MenuStatus", "Choose Play to descend.");
+}
+
+void UT66DeckMainMenuScreen::ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext)
+{
+	WidgetGameHostContext = HostContext;
+}
+
+void UT66DeckMainMenuScreen::DeactivateWidgetGame()
+{
+	WidgetGameHostContext = FT66WidgetGameHostContext();
+}
+
+void UT66DeckMainMenuScreen::PauseWidgetGame()
+{
+}
+
+void UT66DeckMainMenuScreen::ResumeWidgetGame()
+{
+}
+
+void UT66DeckMainMenuScreen::RequestWidgetGameExit()
+{
+	if (WidgetGameHostContext.ReturnNavigationCallback)
+	{
+		WidgetGameHostContext.RequestExit(ET66WidgetGameExitReason::PlayerCancelled);
+		return;
+	}
+
+	HandleBackClicked();
+}
+
+void UT66DeckMainMenuScreen::SaveWidgetGameState()
+{
+	SaveCurrentRunState();
+}
+
+void UT66DeckMainMenuScreen::LoadWidgetGameState()
+{
+	if (LoadFirstAvailableRunState())
+	{
+		ForceRebuildSlate();
+	}
+}
+
+void UT66DeckMainMenuScreen::FlushWidgetGamePersistence()
+{
+	SaveWidgetGameState();
+}
+
+void UT66DeckMainMenuScreen::RefreshWidgetGamePersistence()
+{
+	LoadWidgetGameState();
 }
 
 void UT66DeckMainMenuScreen::OnScreenActivated_Implementation()
@@ -1316,6 +1369,7 @@ void UT66DeckMainMenuScreen::FinishRun(const bool bWasVictory)
 	SubmitLeaderboardProgressIfNeeded();
 	ViewMode = EDeckViewMode::Summary;
 	SaveCurrentRunState();
+	ReportWidgetGameResult(bWasVictory, FMath::Max(0, (FloorIndex * 1000) + Gold));
 	bRunStarted = false;
 	ForceRebuildSlate();
 }
@@ -1371,6 +1425,34 @@ void UT66DeckMainMenuScreen::SaveCurrentRunState()
 	RunSave->SavedViewMode = static_cast<int32>(ViewMode);
 	RunSave->bRunDefeated = bRunDefeated;
 	SaveSubsystem->SaveRunToSlot(ActiveSaveSlotIndex, RunSave);
+}
+
+bool UT66DeckMainMenuScreen::LoadFirstAvailableRunState()
+{
+	const UT66DeckSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66DeckSaveSubsystem>() : nullptr;
+	if (!SaveSubsystem)
+	{
+		return false;
+	}
+
+	for (const FT66DeckSaveSlotSummary& Summary : SaveSubsystem->BuildRunSlotSummaries())
+	{
+		if (!Summary.bOccupied)
+		{
+			continue;
+		}
+
+		if (const UT66DeckRunSaveGame* RunSave = SaveSubsystem->LoadRunFromSlot(Summary.SlotIndex))
+		{
+			ActiveSaveSlotIndex = Summary.SlotIndex;
+			if (RestoreRunFromSave(RunSave))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 bool UT66DeckMainMenuScreen::RestoreRunFromSave(const UT66DeckRunSaveGame* RunSave)
@@ -1429,6 +1511,18 @@ bool UT66DeckMainMenuScreen::RestoreRunFromSave(const UT66DeckRunSaveGame* RunSa
 
 	StatusText = NSLOCTEXT("T66Deck.Gameplay", "LoadedRunStatus", "Loaded saved descent.");
 	return true;
+}
+
+void UT66DeckMainMenuScreen::ReportWidgetGameResult(const bool bSuccessful, const int32 FinalScore)
+{
+	FT66WidgetGameResult Result;
+	Result.GameID = FName(TEXT("Frontend_Deck"));
+	Result.ExitReason = ET66WidgetGameExitReason::Completed;
+	Result.FinalScore = FinalScore;
+	Result.bHasFinalScore = true;
+	Result.bSuccessful = bSuccessful;
+	Result.ResultID = Result.GameID;
+	WidgetGameHostContext.ReportResult(Result);
 }
 
 void UT66DeckMainMenuScreen::SubmitLeaderboardProgressIfNeeded()
@@ -1633,28 +1727,9 @@ FReply UT66DeckMainMenuScreen::HandlePlayClicked()
 
 FReply UT66DeckMainMenuScreen::HandleLoadClicked()
 {
-	const UT66DeckSaveSubsystem* SaveSubsystem = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66DeckSaveSubsystem>() : nullptr;
-	if (!SaveSubsystem)
+	if (LoadFirstAvailableRunState())
 	{
-		return FReply::Handled();
-	}
-
-	for (const FT66DeckSaveSlotSummary& Summary : SaveSubsystem->BuildRunSlotSummaries())
-	{
-		if (!Summary.bOccupied)
-		{
-			continue;
-		}
-
-		if (const UT66DeckRunSaveGame* RunSave = SaveSubsystem->LoadRunFromSlot(Summary.SlotIndex))
-		{
-			ActiveSaveSlotIndex = Summary.SlotIndex;
-			if (RestoreRunFromSave(RunSave))
-			{
-				ForceRebuildSlate();
-				return FReply::Handled();
-			}
-		}
+		ForceRebuildSlate();
 	}
 
 	return FReply::Handled();

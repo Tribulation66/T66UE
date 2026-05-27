@@ -8,6 +8,7 @@ namespace
 {
 	static const FName T66TowerMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
 	static const FName T66TowerMapTerrainCollisionProxyTag(TEXT("T66_MainMapTerrain_CollisionProxy"));
+	static const FName T66TowerDescentGuardianTag(TEXT("T66_Tower_DescentGuardian"));
 	static const TCHAR* T66TowerTerrainFloorTagPrefix = TEXT("T66_Floor_Tower_");
 
 	static int32 T66ReadTerrainFloorTag(const AActor* Actor)
@@ -99,6 +100,170 @@ namespace
 				ChangedVisualActors,
 				ChangedCollisionProxyActors);
 		}
+	}
+
+	static FName T66PickTowerGateGuardianMob(UT66GameInstance* T66GI, const int32 StageNum, const int32 FromFloorNumber)
+	{
+		if (!T66GI)
+		{
+			return FName(TEXT("RegularEnemy"));
+		}
+
+		FStageData StageData;
+		if (!T66GI->GetStageData(StageNum, StageData))
+		{
+			return FName(TEXT("RegularEnemy"));
+		}
+
+		const FName MobIDs[] =
+		{
+			StageData.EnemyA,
+			StageData.EnemyB,
+			StageData.EnemyC,
+			StageData.EnemyD,
+			StageData.EnemyE,
+			StageData.EnemyF,
+			StageData.EnemyG,
+			StageData.EnemyH,
+			StageData.EnemyI,
+			StageData.EnemyJ,
+		};
+
+		int32 ValidCount = 0;
+		for (const FName MobID : MobIDs)
+		{
+			if (!MobID.IsNone())
+			{
+				++ValidCount;
+			}
+		}
+		if (ValidCount <= 0)
+		{
+			return FName(TEXT("RegularEnemy"));
+		}
+
+		const int32 DesiredValidIndex = FMath::Max(0, FromFloorNumber - 2) % ValidCount;
+		int32 CurrentValidIndex = 0;
+		for (const FName MobID : MobIDs)
+		{
+			if (MobID.IsNone())
+			{
+				continue;
+			}
+			if (CurrentValidIndex == DesiredValidIndex)
+			{
+				return MobID;
+			}
+			++CurrentValidIndex;
+		}
+
+		return FName(TEXT("RegularEnemy"));
+	}
+
+	static bool T66ValidateTowerGuardianCandidate(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FVector& Candidate,
+		FVector& OutLocation)
+	{
+		FVector AdjustedCandidate(Candidate.X, Candidate.Y, Floor.SurfaceZ + 120.0f);
+		if (T66TowerMapTerrain::FindFloorIndexForLocation(Layout, AdjustedCandidate) != Floor.FloorNumber)
+		{
+			return false;
+		}
+
+		OutLocation = AdjustedCandidate;
+		return true;
+	}
+
+	static FVector T66ResolveTowerGateGuardianLocation(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor)
+	{
+		FVector SpawnLocation = FVector::ZeroVector;
+		if (Floor.bHasDropHole && T66ValidateTowerGuardianCandidate(Layout, Floor, Floor.HoleCenter, SpawnLocation))
+		{
+			return SpawnLocation;
+		}
+
+		if (!Floor.ExitPoint.IsNearlyZero() && T66ValidateTowerGuardianCandidate(Layout, Floor, Floor.ExitPoint, SpawnLocation))
+		{
+			return SpawnLocation;
+		}
+
+		return FVector(Floor.Center.X, Floor.Center.Y, Floor.SurfaceZ + 120.0f);
+	}
+
+	static AT66EnemyBase* T66SpawnTowerGateGuardian(
+		UWorld* World,
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor)
+	{
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		UGameInstance* GI = World->GetGameInstance();
+		UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
+		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
+		const FName MobID = T66PickTowerGateGuardianMob(T66GI, StageNum, Floor.FloorNumber);
+		const TSubclassOf<AT66EnemyBase> GuardianClass = FT66EnemyFamilyResolver::ResolveEnemyClass(MobID, AT66EnemyBase::StaticClass());
+		const FVector SpawnLocation = T66ResolveTowerGateGuardianLocation(Layout, Floor);
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AT66EnemyBase* Guardian = World->SpawnActor<AT66EnemyBase>(GuardianClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+		if (!Guardian)
+		{
+			UE_LOG(LogT66GameMode, Warning, TEXT("[MAP] Tower gate guardian spawn failed on floor %d (mob=%s)."), Floor.FloorNumber, *MobID.ToString());
+			return nullptr;
+		}
+
+		Guardian->Tags.AddUnique(T66TowerDescentGuardianTag);
+		Guardian->bDropsLoot = false;
+		if (!MobID.IsNone())
+		{
+			Guardian->ConfigureAsMob(MobID);
+		}
+		if (RunState)
+		{
+			Guardian->ApplyStageScaling(StageNum);
+			Guardian->ApplyDifficultyScalar(RunState->GetDifficultyScalar());
+		}
+		Guardian->ApplyMiniBossMultipliers(2.75f, 1.65f, 1.9f);
+
+		T66TrySnapActorToTowerFloor(World, Guardian, Layout, Floor.FloorNumber, Guardian->GetActorLocation());
+		if (AT66GameMode* GameMode = World->GetAuthGameMode<AT66GameMode>())
+		{
+			const int32 ResolvedFloor = GameMode->GetTowerFloorIndexForLocation(Guardian->GetActorLocation());
+			if (ResolvedFloor != Floor.FloorNumber)
+			{
+				UE_LOG(
+					LogT66GameMode,
+					Warning,
+					TEXT("[MAP] Tower gate guardian rejected after snap: requested floor=%d resolved floor=%d mob=%s loc=%s."),
+					Floor.FloorNumber,
+					ResolvedFloor,
+					*MobID.ToString(),
+					*Guardian->GetActorLocation().ToCompactString());
+				Guardian->Destroy();
+				return nullptr;
+			}
+		}
+
+		T66AssignTowerFloorTag(Guardian, Floor.FloorNumber);
+		UE_LOG(
+			LogT66GameMode,
+			Log,
+			TEXT("[MAP] Tower gate guardian spawned floor=%d mob=%s hp=%d scale=%.2f loc=%s."),
+			Floor.FloorNumber,
+			*MobID.ToString(),
+			Guardian->MaxHP,
+			Guardian->GetActorScale3D().X,
+			*Guardian->GetActorLocation().ToCompactString());
+		return Guardian;
 	}
 }
 
@@ -233,7 +398,12 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 			FRotator::ZeroRotator,
 			SpawnParams))
 		{
-			HoleActor->InitializeHole(StartFloor->FloorNumber, BossFloor->FloorNumber, BoxExtent);
+			HoleActor->InitializeHole(
+				StartFloor->FloorNumber,
+				BossFloor->FloorNumber,
+				BoxExtent,
+				/*bInRequiresWeaponSelection*/ true,
+				/*bInRequiresGuardianDefeated*/ false);
 			HoleActor->Tags.AddUnique(FName(TEXT("T66_Tower_DescentHole")));
 			TowerDescentHoles.Add(HoleActor);
 		}
@@ -279,10 +449,65 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 			continue;
 		}
 
-		HoleActor->InitializeHole(Floor.FloorNumber, DestinationFloor->FloorNumber, BoxExtent);
+		const bool bRequiresWeaponSelection = Floor.FloorNumber == CachedTowerMainMapLayout.StartFloorNumber;
+		const bool bRequiresGuardianDefeated = Floor.FloorNumber != CachedTowerMainMapLayout.StartFloorNumber;
+		HoleActor->InitializeHole(
+			Floor.FloorNumber,
+			DestinationFloor->FloorNumber,
+			BoxExtent,
+			bRequiresWeaponSelection,
+			bRequiresGuardianDefeated);
+		if (bRequiresGuardianDefeated)
+		{
+			AT66EnemyBase* Guardian = T66SpawnTowerGateGuardian(World, CachedTowerMainMapLayout, Floor);
+			HoleActor->SetGuardianEnemy(Guardian);
+			if (!Guardian)
+			{
+				UE_LOG(LogT66GameMode, Warning, TEXT("[MAP] Tower descent hole floor %d has no guardian after spawn attempt."), Floor.FloorNumber);
+			}
+		}
 		HoleActor->Tags.AddUnique(FName(TEXT("T66_Tower_DescentHole")));
 		TowerDescentHoles.Add(HoleActor);
 	}
+}
+
+void AT66GameMode::HandleTowerGateGuardianDefeated(AT66EnemyBase* Guardian)
+{
+	if (!IsUsingTowerMainMapLayout() || !Guardian || !Guardian->ActorHasTag(T66TowerDescentGuardianTag))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	int32 GuardianFloorNumber = T66ReadTowerFloorTag(Guardian);
+	if (GuardianFloorNumber == INDEX_NONE)
+	{
+		GuardianFloorNumber = GetTowerFloorIndexForLocation(Guardian->GetActorLocation());
+	}
+
+	const FVector DropLocation = Guardian->GetActorLocation();
+	Guardian->Tags.Remove(T66TowerDescentGuardianTag);
+
+	AT66IdolAltar* SpawnedAltar = SpawnIdolAltarAtLocation(DropLocation, /*bAllowMultiple*/ true);
+	if (SpawnedAltar && GuardianFloorNumber != INDEX_NONE)
+	{
+		T66TrySnapActorToTowerFloor(World, SpawnedAltar, CachedTowerMainMapLayout, GuardianFloorNumber, SpawnedAltar->GetActorLocation());
+		T66AssignTowerFloorTag(SpawnedAltar, GuardianFloorNumber);
+		SyncTowerMiasmaSourceAnchor(GuardianFloorNumber, SpawnedAltar->GetActorLocation());
+	}
+
+	UE_LOG(
+		LogT66GameMode,
+		Log,
+		TEXT("[MAP] Tower gate guardian defeated floor=%d; idol altar %s at %s."),
+		GuardianFloorNumber,
+		SpawnedAltar ? TEXT("spawned") : TEXT("failed"),
+		SpawnedAltar ? *SpawnedAltar->GetActorLocation().ToCompactString() : TEXT("None"));
 }
 
 bool AT66GameMode::IsUsingTowerMainMapLayout() const
@@ -299,6 +524,25 @@ bool AT66GameMode::GetTowerMainMapLayout(T66TowerMapTerrain::FLayout& OutLayout)
 
 	OutLayout = CachedTowerMainMapLayout;
 	return true;
+}
+
+bool AT66GameMode::GetTowerFloorLayout(const int32 FloorNumber, T66TowerMapTerrain::FFloor& OutFloor) const
+{
+	if (!IsUsingTowerMainMapLayout())
+	{
+		return false;
+	}
+
+	for (const T66TowerMapTerrain::FFloor& Floor : CachedTowerMainMapLayout.Floors)
+	{
+		if (Floor.FloorNumber == FloorNumber)
+		{
+			OutFloor = Floor;
+			return true;
+		}
+	}
+
+	return false;
 }
 
 int32 AT66GameMode::GetTowerFloorIndexForLocation(const FVector& Location) const

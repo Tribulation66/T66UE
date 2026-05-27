@@ -19,6 +19,7 @@ The goal is not "smooth animation." The current T66 mob style should feel delibe
 - motion should read clearly from gameplay camera distance
 - actor translation is gameplay-owned
 - VAT should sell local bounce, drag, flap, recoil, jitter, squash, stretch, or impact
+- movement cadence should match the actor's actual map speed well enough that the enemy does not appear to glide, moonwalk, or hop through a gravity-free world
 
 ## Preview Rules
 
@@ -26,9 +27,24 @@ The goal is not "smooth animation." The current T66 mob style should feel delibe
 - Use unlit/emissive preview materials unless the user is reviewing lighting.
 - Show the mob from its true front first.
 - For source meshes that face `+Y`, put the front camera on `+Y`.
+- For source meshes whose front is uncertain, perform a front-axis proof from `+Y`, `-Y`, `+X`, and `-X` before choosing the review camera.
 - Include actual travel in review videos when the user asks to see movement, even if runtime translation will be gameplay-owned.
 - Prefer a longer preview than a tiny loop. The current Slime accepted pass used 72 frames at 15 fps.
 - Keep the camera zoomed in enough to judge contact and deformation.
+
+## Mandatory Visual QA Gates
+
+Every non-trivial mob animation pass needs these gates before user handoff:
+
+| Gate | Pass condition | Fail examples |
+| --- | --- | --- |
+| front-axis proof | true front is identified from multi-axis evidence and the preview moves front-first | back-first motion, sideways face, blind yaw fix |
+| body-type deformation | authoring method matches the body plan | rubber wobble on a skeleton, biped gait on a bat, invisible legs on a blob |
+| no-stretch | side-loop evidence preserves limb length, volume, and readable contacts | stretched bones, rubber smear, flat 2D leg collapse, volume popping |
+| map-speed match | Unreal preview shows local body motion aligned with manager-owned travel speed | treadmill glide, back-first roll, excessive hop while actor slides, no gravity/contact read |
+| Visual QA table | PASS/FAIL table exists for front/back axis, method match, limb stretch, rubber smear, volume loss, contact slide, map-speed match, and gameplay-camera readability | single still, no side view, no written gate result |
+
+Codex owns visual-perception claims from rendered frames. Claude can review the text/process packet and accessible artifact evidence, but do not claim Claude visually confirmed a defect unless Claude actually received viewable frames.
 
 ## Slime Baseline
 
@@ -69,12 +85,17 @@ Reject a Slime pass if:
 4. Render a native Blender MP4 and contact sheet.
 5. Inspect the video before handing it off:
    - is it facing the right direction?
+   - was front-axis proof performed if the source direction was uncertain?
    - does every frame move?
    - does the motion fit that creature's body?
+   - does the body-type deformation method match the body plan?
+   - does the side loop pass the no-stretch gate?
    - is actor travel separated from local deformation?
    - does the gameplay camera read the intended threat?
-6. Fix obvious issues before asking the user for visual review.
-7. Document accepted settings and caveats in this file or the batch doc.
+6. If the pass is being considered for runtime readiness, bake/import the focused VAT row and capture it with `Scripts\CaptureT66EnemyAnimationPreview.ps1`; the Unreal video must show one configured `AT66MobBase` moving under `UT66MobManagerSubsystem`, not a hand-moved debug actor. Use `-PostCaptureDelaySeconds` for post-setup warm-up so camera, textures, and spawned mob are settled before frame 0. Do not use `-DelaySeconds` for that purpose.
+7. Fill the Visual QA table and fix obvious issues before asking the user for visual review.
+8. For process-failure recovery passes like BoneWalker, send the QA packet through Claude or the approved Codex CLI fallback and require a valid first-line `Verdict: APPROVE` before presenting a video as a candidate.
+9. Document accepted settings and caveats in this file or the batch doc.
 
 ## VAT Performance Position
 

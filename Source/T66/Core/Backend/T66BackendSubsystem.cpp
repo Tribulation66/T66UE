@@ -158,7 +158,7 @@ namespace
 		Summary->SpeedRunRankWeekly = (Identity.Type == TEXT("speedrun") && Identity.Time == TEXT("weekly")) ? Entry.Rank : 0;
 		Summary->HeroID = Entry.HeroID;
 		Summary->CompanionID = NAME_None;
-		Summary->HeroLevel = 18 - Entry.Rank;
+		Summary->HeroLevel = 1;
 		Summary->DamageStat = 6;
 		Summary->AttackSpeedStat = 5;
 		Summary->AttackScaleStat = 4;

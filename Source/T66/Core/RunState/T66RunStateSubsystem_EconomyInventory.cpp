@@ -4,6 +4,8 @@
 
 using namespace T66RunStatePrivate;
 
+const FName UT66RunStateSubsystem::BackroomsQuickReviveItemID(TEXT("Item_BackroomsQuickRevive"));
+
 float UT66RunStateSubsystem::AddGamblerAngerFromBet(int32 BetGold)
 {
 	return AddCasinoAngerFromGold(BetGold);
@@ -106,7 +108,7 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 				continue;
 			}
 
-			if (!T66_IsGamblersTokenItem(ItemID) && T66IsLiveSecondaryStatType(ItemData.SecondaryStatType))
+			if (!T66_IsRewardOnlySpecialItem(ItemID) && T66IsLiveSecondaryStatType(ItemData.SecondaryStatType))
 			{
 				TemplatePool.Add(ItemID);
 			}
@@ -434,6 +436,7 @@ bool UT66RunStateSubsystem::TryBuybackSlot(int32 DisplayIndex)
 
 	const FT66InventorySlot Slot = BuybackPool[PoolIndex];
 	if (!Slot.IsValid()) return false;
+	if (T66_IsRewardOnlySpecialItem(Slot.ItemTemplateID)) return false;
 
 	FItemData ItemData;
 	int32 BuyPrice = 0;
@@ -621,15 +624,72 @@ void UT66RunStateSubsystem::AddItemSlot(const FT66InventorySlot& Slot)
 	RecomputeItemDerivedStats();
 	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ItemID=%s,Source=LootBag"), *NormalizedSlot.ItemTemplateID.ToString()));
 	// Lab unlock: mark item as unlocked for The Lab (any run type including Lab).
-	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
+	if (!T66_IsRewardOnlySpecialItem(NormalizedSlot.ItemTemplateID))
 	{
-		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
+		if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
 		{
-			Achieve->AddLabUnlockedItem(NormalizedSlot.ItemTemplateID);
+			if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
+			{
+				Achieve->AddLabUnlockedItem(NormalizedSlot.ItemTemplateID);
+			}
 		}
 	}
 	InventoryChanged.Broadcast();
+	if (T66_IsBackroomsQuickReviveItem(NormalizedSlot.ItemTemplateID))
+	{
+		QuickReviveChanged.Broadcast();
+	}
 	LogAdded.Broadcast();
+}
+
+bool UT66RunStateSubsystem::HasBackroomsQuickReviveItem() const
+{
+	for (const FT66InventorySlot& Slot : InventorySlots)
+	{
+		if (Slot.IsValid() && T66_IsBackroomsQuickReviveItem(Slot.ItemTemplateID))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool UT66RunStateSubsystem::ConsumeBackroomsQuickReviveItem()
+{
+	for (int32 Index = 0; Index < InventorySlots.Num(); ++Index)
+	{
+		if (InventorySlots[Index].IsValid() && T66_IsBackroomsQuickReviveItem(InventorySlots[Index].ItemTemplateID))
+		{
+			InventorySlots.RemoveAt(Index);
+			RecomputeItemDerivedStats();
+			AddStructuredEvent(ET66RunEventType::ItemConsumed, TEXT("ItemID=Item_BackroomsQuickRevive,Source=QuickReviveConsumed"));
+			InventoryChanged.Broadcast();
+			QuickReviveChanged.Broadcast();
+			LogAdded.Broadcast();
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void UT66RunStateSubsystem::SnapshotAndClearInventoryForBackrooms(TArray<FT66InventorySlot>& OutSnapshot)
+{
+	OutSnapshot = InventorySlots;
+	InventorySlots.Empty();
+	ActiveGamblersTokenLevel = 0;
+	RecomputeItemDerivedStats();
+	InventoryChanged.Broadcast();
+	QuickReviveChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::RestoreInventoryFromBackroomsSnapshot(const TArray<FT66InventorySlot>& Snapshot)
+{
+	InventorySlots = Snapshot;
+	RecomputeItemDerivedStats();
+	InventoryChanged.Broadcast();
+	QuickReviveChanged.Broadcast();
 }
 
 
@@ -665,7 +725,7 @@ float UT66RunStateSubsystem::GetCurrentSellFraction() const
 
 int32 UT66RunStateSubsystem::GetSellGoldForInventorySlot(const FT66InventorySlot& Slot) const
 {
-	if (!Slot.IsValid() || T66_IsGamblersTokenItem(Slot.ItemTemplateID))
+	if (!Slot.IsValid() || T66_IsRewardOnlySpecialItem(Slot.ItemTemplateID))
 	{
 		return 0;
 	}
@@ -708,6 +768,11 @@ bool UT66RunStateSubsystem::SellInventoryItemAt(int32 InventoryIndex)
 	if (InventoryIndex < 0 || InventoryIndex >= InventorySlots.Num()) return false;
 
 	const FT66InventorySlot Slot = InventorySlots[InventoryIndex];
+	if (T66_IsRewardOnlySpecialItem(Slot.ItemTemplateID))
+	{
+		return false;
+	}
+
 	const int32 SellGold = GetSellGoldForInventorySlot(Slot);
 
 	CurrentGold += SellGold;
@@ -958,7 +1023,7 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 		FItemData D;
 		const bool bHasRow = (GI && GI->GetItemData(Slot.ItemTemplateID, D));
 		if (!bHasRow) continue;
-		if (T66_IsGamblersTokenItem(Slot.ItemTemplateID) || D.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
+		if (T66_IsRewardOnlySpecialItem(Slot.ItemTemplateID) || D.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
 		{
 			continue;
 		}

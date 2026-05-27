@@ -7,11 +7,13 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66VisualUtil.h"
 
 AT66MiasmaTile::AT66MiasmaTile()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = 0.25f;
 
 	Box = CreateDefaultSubobject<UBoxComponent>(TEXT("Box"));
 	Box->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -52,6 +54,13 @@ void AT66MiasmaTile::BeginPlay()
 	Box->OnComponentEndOverlap.AddDynamic(this, &AT66MiasmaTile::OnBoxEndOverlap);
 }
 
+void AT66MiasmaTile::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	T66CombatDebugDraw::DrawDamageBox(Box, TEXT("Miasma Damage"), true);
+}
+
 void AT66MiasmaTile::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -88,7 +97,7 @@ void AT66MiasmaTile::ApplyMiasmaDamageTick()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState)
 	{
-		RunState->ApplyDamage(20);
+		RunState->ApplyDamage(20, this, FName(TEXT("MiasmaTile")), this);
 	}
 }
 

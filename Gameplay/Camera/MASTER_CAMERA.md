@@ -1,6 +1,6 @@
 # T66 Master Camera
 
-**Last updated:** 2026-04-17  
+**Last updated:** 2026-05-23
 **Scope:** Single-source handoff for gameplay camera ownership, zoom behavior, scoped-camera overrides, occluder fading, and frontend preview cameras. Mini battle now runs in Slate and does not own a world camera path.  
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Movement/MASTER_MOVEMENT.md`, `Gameplay/Combat/MASTER_COMBAT.md`
 **Maintenance rule:** Update this file after every material camera change to gameplay framing, boom collision behavior, zoom/FOV tuning, camera-driven aiming, or frontend preview framing.
@@ -109,11 +109,14 @@
   - only considers actors tagged `T66_Map_TraversalBarrier` or `T66_Tower_Ceiling`
   - fades matching mesh materials toward opacity `0.22`
   - interpolates with speed `10`
+- The current player-controller wall fade path traces from the gameplay camera to the hero and swaps only qualifying generated wall visuals to `/Game/Materials/M_CameraWallOccluderFade`.
+- A visual must be tagged `T66_CameraOccludingWallVisual`, must also be a traversal barrier, must not be a tower ceiling, and must have vertical wall-like bounds before the fade material can be applied. Floors, ceilings, and hidden collision proxies are intentionally excluded.
+- Generated tower wall visual components with `T66_CameraOccludingWallVisual` keep `ECC_Camera` query blocking even when gameplay camera collision is otherwise ignored, so the fade trace can discover the specific visible wall section without relying on hard hiding.
 - `ResetCameraOccluderFade()` restores full opacity when the path clears or the camera-fade path is not valid.
 - Current implication:
-  - tagged traversal blockers and tower ceilings can fade
-  - ordinary world blockers still rely on spring-arm pull-in unless they are also tagged for fade
-- `T66TowerMapTerrain.cpp` also configures many generated terrain meshes to block `ECC_Camera` unless explicitly told to ignore that channel.
+  - only tagged vertical wall visuals can fade
+  - ordinary world blockers still rely on spring-arm pull-in unless they are explicitly authored as camera wall visuals
+- `T66TowerMapTerrain.cpp` configures camera-wall visuals to block `ECC_Camera` for visibility tracing while leaving non-wall terrain out of the fade path.
 
 ## 4. Frontend Preview Cameras
 

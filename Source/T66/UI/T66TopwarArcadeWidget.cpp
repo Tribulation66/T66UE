@@ -343,6 +343,11 @@ TSharedRef<SWidget> UT66TopwarArcadeWidget::RebuildWidget()
 void UT66TopwarArcadeWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+}
+
+void UT66TopwarArcadeWidget::ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext)
+{
+	Super::ActivateWidgetGame(HostContext);
 	StartRound();
 }
 

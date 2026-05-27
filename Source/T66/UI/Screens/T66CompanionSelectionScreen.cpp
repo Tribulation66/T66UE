@@ -146,7 +146,8 @@ namespace
 			SNew(SBorder)
 			.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
 			.BorderBackgroundColor(Color)
-			.Clipping(EWidgetClipping::ClipToBounds),
+			.Clipping(EWidgetClipping::ClipToBounds)
+			.Visibility(EVisibility::HitTestInvisible),
 			Tag,
 			Role,
 			ET66FlatState::Default);
@@ -252,8 +253,8 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 	const FText EquippedText = NSLOCTEXT("T66.HeroSelection", "Equipped", "EQUIPPED");
 	const FText PreviewText = Loc ? Loc->GetText_Preview() : NSLOCTEXT("T66.Common", "Preview", "PREVIEW");
 	const FText BuyText = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
-	static constexpr int32 BeachgoerPriceAC = UT66SkinSubsystem::DefaultSkinPriceAC;
-	const FText BeachgoerPriceText = T66SelectionScreenUtils::FormatAchievementCoinBalance(Loc, BeachgoerPriceAC);
+	static constexpr int32 SkinPriceAC = UT66SkinSubsystem::DefaultSkinPriceAC;
+	const FText SkinPriceText = T66SelectionScreenUtils::FormatAchievementCoinBalance(Loc, SkinPriceAC);
 
 	for (const FSkinData& Skin : PlaceholderSkins)
 	{
@@ -261,14 +262,15 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 		bool bIsDefault = Skin.bIsDefault;
 		bool bIsOwned = Skin.bIsOwned;
 		bool bIsEquipped = Skin.bIsEquipped;
+		const bool bIsDemoSkin = SkinIDCopy == UT66SkinSubsystem::DemoSkinID;
 		FName CID = PreviewedCompanionID.IsNone() && AllCompanionIDs.Num() > 0 ? AllCompanionIDs[0] : PreviewedCompanionID;
 		const FName RowTag = bIsDefault
 			? CompanionSelectionTag(TEXT("CompanionSelection.Skins.DefaultRow"))
-			: CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerRow"));
+			: CompanionSelectionTag(TEXT("CompanionSelection.Skins.DemoSkinRow"));
 
 		const FLinearColor SkinSwatchFill = bIsDefault
 			? FLinearColor(0.13f, 0.08f, 0.04f, 1.0f)
-			: FLinearColor(0.02f, 0.20f, 0.28f, 1.0f);
+			: (bIsDemoSkin ? FLinearColor(0.07f, 0.18f, 0.25f, 1.0f) : FLinearColor(0.02f, 0.20f, 0.28f, 1.0f));
 
 		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
@@ -282,7 +284,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 				[
 					MakeCompanionSelectionSwatch(
 						SkinSwatchFill,
-						bIsDefault ? CompanionSelectionTag(TEXT("CompanionSelection.Skins.DefaultSwatch")) : CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerSwatch")))
+						bIsDefault ? CompanionSelectionTag(TEXT("CompanionSelection.Skins.DefaultSwatch")) : CompanionSelectionTag(TEXT("CompanionSelection.Skins.DemoSkinSwatch")))
 				]
 			]
 			+ SHorizontalBox::Slot()
@@ -292,7 +294,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 				MakeCompanionSelectionLabel(
 					Loc ? Loc->GetText_SkinName(SkinIDCopy) : FText::FromName(SkinIDCopy),
 					ET66FlatLabelRole::Body,
-					bIsDefault ? CompanionSelectionTag(TEXT("CompanionSelection.Skins.DefaultName")) : CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerName")))
+					bIsDefault ? CompanionSelectionTag(TEXT("CompanionSelection.Skins.DefaultName")) : CompanionSelectionTag(TEXT("CompanionSelection.Skins.DemoSkinName")))
 			];
 
 		if (bIsDefault)
@@ -354,10 +356,10 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 					36.f,
 					true,
 					15,
-					CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerPreviewButton")))
+					CompanionSelectionTag(TEXT("CompanionSelection.Skins.DemoSkinPreviewButton")))
 				];
 			const FText ActionText = !bIsOwned
-				? FText::Format(NSLOCTEXT("T66.CompanionSelection", "BuyWithPrice", "{0} {1}"), BuyText, BeachgoerPriceText)
+				? FText::Format(NSLOCTEXT("T66.CompanionSelection", "BuyWithPrice", "{0} {1}"), BuyText, SkinPriceText)
 				: (bIsEquipped ? EquippedText : EquipText);
 			if (bIsEquipped)
 			{
@@ -368,7 +370,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 					MakeCompanionSelectionLabel(
 						ActionText,
 						ET66FlatLabelRole::StatValue,
-						CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerEquipped")),
+						CompanionSelectionTag(TEXT("CompanionSelection.Skins.DemoSkinEquipped")),
 						ETextJustify::Center)
 				];
 			}
@@ -386,7 +388,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 							{
 								if (CID.IsNone()) return FReply::Handled();
 								UT66SkinSubsystem* SkinSub = UGameplayStatics::GetGameInstance(this)->GetSubsystem<UT66SkinSubsystem>();
-								if (!SkinSub || !SkinSub->PurchaseCompanionSkin(CID, SkinIDCopy, BeachgoerPriceAC)) return FReply::Handled();
+								if (!SkinSub || !SkinSub->PurchaseCompanionSkin(CID, SkinIDCopy, SkinPriceAC)) return FReply::Handled();
 								SkinSub->SetEquippedCompanionSkinID(CID, SkinIDCopy);
 								PreviewedCompanionSkinIDOverride = NAME_None;
 								RefreshSkinsList();
@@ -410,7 +412,7 @@ void UT66CompanionSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBo
 						36.f,
 						true,
 						14,
-						CompanionSelectionTag(TEXT("CompanionSelection.Skins.BeachgoerBuyButton")))
+						CompanionSelectionTag(TEXT("CompanionSelection.Skins.DemoSkinBuyButton")))
 				];
 			}
 		}
@@ -820,22 +822,36 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 
 	AddSlot(17.f, 815.f, 660.f, 216.f,
 		MakeBottomPanel(TEXT("CompanionSelection.BottomRow.SteamPartyPanel"), ET66FlatState::Default, PartySlots, FMargin(12.f)));
-	AddSlot(710.f, 815.f, 511.f, 216.f,
-		FT66FlatStyle::MakeFlatPanel(ET66FlatState::Default, FMargin(26.f),
-			FT66FlatStyle::MakeFlatButton(
-				ET66FlatState::Selected,
-				ConfirmText,
-				FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked),
-				nullptr,
-				nullptr,
-				FMargin(20.f, 12.f),
-				0.f,
-				126.f,
-				TAttribute<bool>::CreateLambda([this]() { return !PreviewedCompanionID.IsNone() && IsCompanionUnlocked(PreviewedCompanionID) && IsCompanionPlayable(PreviewedCompanionID); }),
-				24,
-				CompanionSelectionTag(TEXT("CompanionSelection.ConfirmButton"))),
+
+	const TSharedRef<SConstraintCanvas> ConfirmActionsCanvas = MakeBottomCanvas();
+	AddBottomSlot(ConfirmActionsCanvas, 26.f, 26.f, 214.f, 164.f,
+		FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Default,
+			BackText,
+			FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleBackClicked),
 			nullptr,
-			CompanionSelectionTag(TEXT("CompanionSelection.ConfirmPanel"))));
+			nullptr,
+			FMargin(18.f, 10.f),
+			0.f,
+			164.f,
+			true,
+			22,
+			CompanionSelectionTag(TEXT("CompanionSelection.ConfirmPanel.BackButton"))));
+	AddBottomSlot(ConfirmActionsCanvas, 270.f, 26.f, 214.f, 164.f,
+		FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Selected,
+			ConfirmText,
+			FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleConfirmClicked),
+			nullptr,
+			nullptr,
+			FMargin(16.f, 10.f),
+			0.f,
+			164.f,
+			TAttribute<bool>::CreateLambda([this]() { return !PreviewedCompanionID.IsNone() && IsCompanionUnlocked(PreviewedCompanionID) && IsCompanionPlayable(PreviewedCompanionID); }),
+			20,
+			CompanionSelectionTag(TEXT("CompanionSelection.ConfirmButton"))));
+	AddSlot(710.f, 815.f, 511.f, 216.f,
+		MakeBottomPanel(TEXT("CompanionSelection.ConfirmPanel"), ET66FlatState::Default, ConfirmActionsCanvas, FMargin(0.f)));
 
 	auto MakeDifficultyMenu = [this, MakeBottomPanel, T66GI, Difficulties]() -> TSharedRef<SWidget>
 	{
@@ -905,6 +921,11 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		];
 
 	const TSharedRef<SConstraintCanvas> RightClusterCanvas = MakeBottomCanvas();
+	AddBottomSlot(RightClusterCanvas, 0.f, 0.f, 655.f, 216.f,
+		MakeCompanionSelectionColorRect(
+			FLinearColor(0.f, 0.f, 0.f, 0.88f),
+			CompanionSelectionTag(TEXT("CompanionSelection.BottomRow.RightCluster.BlackPanel")),
+			TEXT("BlackPanel")));
 	AddBottomSlot(RightClusterCanvas, 21.f, 35.f, 156.f, 109.f,
 		MakeBottomPanel(TEXT("CompanionSelection.BottomRow.DifficultyPanel"), ET66FlatState::Default, DifficultyPanel, FMargin(10.f)));
 	AddBottomSlot(RightClusterCanvas, 209.f, 23.f, 204.f, 160.f,

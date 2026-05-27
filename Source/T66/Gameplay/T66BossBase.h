@@ -11,7 +11,9 @@
 #include "T66BossBase.generated.h"
 
 class UStaticMeshComponent;
+class AT66BossAttackTelegraph;
 class AT66BossGroundAOE;
+class AT66BossLaneBlockerHazard;
 class UT66CombatHitZoneComponent;
 class UPrimitiveComponent;
 
@@ -153,6 +155,7 @@ public:
 
 	/** Coliseum: start the fight immediately (bypasses proximity). */
 	void ForceAwaken() { Awaken(); }
+	void ForceSewerSlimeKingAttackForAutomation(FName AttackPartID);
 	void RefreshRunStateBossState() const;
 
 	int32 GetPointValue() const { return PointValue; }
@@ -173,9 +176,11 @@ protected:
 private:
 	APawn* ResolvePlayerPawn();
 	void AssignBossPartDefinitionsForProfile(ET66BossPartProfile InProfile);
+	void AssignSewerSlimeKingPartDefinitions();
 	void ConfigureAttackProfileFromBossPartProfile(ET66BossPartProfile InProfile);
 	void EnsureDefaultBossPartDefinitions();
 	void RefreshCombatHitZoneState();
+	void DrawCombatDebug() const;
 	void RebuildBossPartState(bool bPreserveCurrentPercent);
 	void BuildBossPartSnapshots(TArray<FT66BossPartSnapshot>& OutBossParts) const;
 	bool RestoreBossPartStateFromRunState();
@@ -188,11 +193,21 @@ private:
 	FVector ResolveGroundLocation(const FVector& PreferredLocation) const;
 	void SpawnGroundAOEAtLocation(const FVector& WorldLocation, float RadiusScale = 1.f, float WarningScale = 1.f, bool bUseSecondaryTint = false);
 	void SpawnProjectileInDirection(const FVector& Direction, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false);
+	void SpawnScaledProjectileInDirection(const FVector& Direction, float SpeedScale, const FVector& SpawnOffset, bool bUseSecondaryTint, float VisualScaleMultiplier);
 	void QueueTimedAttackLambda(FTimerDelegate&& Delegate, float DelaySeconds);
 	void QueueProjectileShotTowards(const FVector& TargetLocation, float DelaySeconds, float YawOffsetDegrees = 0.f, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false);
 	void QueueProjectileShotDirection(const FVector& Direction, float DelaySeconds, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false);
 	void QueueProjectileFanBurst(const FVector& TargetLocation, int32 ShotCount, float SpreadDegrees, float DelayStepSeconds, float SpeedScale = 1.f, float InitialDelaySeconds = 0.f, float SideOffsetDistance = 0.f, bool bUseSecondaryTint = false);
 	void QueueRadialBurst(int32 ShotCount, float DelayStepSeconds, float StartAngleDegrees, float SpeedScale = 1.f, float InitialDelaySeconds = 0.f, bool bUseSecondaryTint = false);
+	bool IsSewerSlimeKingBoss() const;
+	bool IsBossPartAlive(FName PartID) const;
+	FVector GetBossPartWorldLocation(FName PartID) const;
+	FName PickSewerSlimeKingAttackPart() const;
+	void FireSewerSlimeKingAttack(APawn* PlayerPawn, FName ForcedAttackPartID = NAME_None);
+	void QueueSewerSlimeKingLobeVolley(FName AttackPartID, APawn* InitialPlayerPawn, bool bUseSecondaryTint);
+	void SpawnSewerSlimeKingLaneBlocker(FName AttackPartID, const FVector& TargetLocation);
+	void SpawnSewerSlimeKingMouthProjectile(const FVector& TargetLocation);
+	void SpawnSewerSlimeKingTelegraph(FName AttackPartID, const FVector& Location, float DurationSeconds, float ScaleMultiplier, bool bCylinder);
 	void ClearPendingAttackTimers();
 
 	bool bBaseTuningInitialized = false;
@@ -218,5 +233,7 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<FTimerHandle> PendingAttackTimerHandles;
+
+	FName LastSewerSlimeKingAttackPart = NAME_None;
 };
 

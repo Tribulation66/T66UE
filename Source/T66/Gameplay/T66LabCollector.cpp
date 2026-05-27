@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66LabCollector.h"
+#include "Core/T66GameInstance.h"
 #include "Gameplay/T66PlayerController.h"
 
 AT66LabCollector::AT66LabCollector()
@@ -14,6 +15,10 @@ bool AT66LabCollector::Interact(APlayerController* PC)
 {
 	AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC);
 	if (!T66PC) return false;
+	if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(T66PC->GetGameInstance()); T66GI && !T66GI->IsCollectorPlayable())
+	{
+		return false;
+	}
 	T66PC->OpenCollectorOverlay();
 	return true;
 }

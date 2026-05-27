@@ -8,7 +8,10 @@ Run from the editor or command line:
 import csv
 import os
 
-import unreal
+try:
+    import unreal
+except ImportError:
+    unreal = None
 
 
 DT_PATH = "/Game/Data/DT_Weapons"
@@ -69,6 +72,20 @@ RARITY_TUNING = {
 }
 
 BRANCHES = ("Pierce", "Bounce", "AOE", "DOT")
+
+RARITY_ID_SLUGS = {
+    "Black": "black",
+    "Red": "red",
+    "Yellow": "yellow",
+    "White": "white",
+}
+
+BRANCH_ID_SLUGS = {
+    "Pierce": "pierce",
+    "Bounce": "bounce",
+    "AOE": "aoe",
+    "DOT": "dot",
+}
 
 CSV_FIELDS = (
     "---",
@@ -136,26 +153,201 @@ WEAPON_NAMES = {
     },
 }
 
+DEMO_HERO_WEAPON_FAMILIES = {
+    "Hero_1": {
+        "family": "axe",
+        "names": {
+            "Black": {
+                "Pierce": "Iron Hewing Axe",
+                "Bounce": "Rebound Hatchet",
+                "AOE": "Ashfall Cleaver",
+                "DOT": "Gravebite Axe",
+            },
+            "Red": {
+                "Pierce": "Demon Splitter",
+                "Bounce": "Blood Orbit Axe",
+                "AOE": "Hellburst Labrys",
+                "DOT": "Rotfang Cleaver",
+            },
+            "Yellow": {
+                "Pierce": "Sunforged Reaver",
+                "Bounce": "Solar Tomahawk",
+                "AOE": "Radiant War Axe",
+                "DOT": "Blightgold Hatchet",
+            },
+            "White": {
+                "Pierce": "Void Hewing Axe",
+                "Bounce": "Astral Throwing Axe",
+                "AOE": "Singularity Cleaver",
+                "DOT": "Pale Plague Axe",
+            },
+        },
+    },
+    "Hero_2": {
+        "family": "lance",
+        "names": {
+            "Black": {
+                "Pierce": "Iron Lance",
+                "Bounce": "Returning Javelin",
+                "AOE": "Ashburst Pike",
+                "DOT": "Venom Lance",
+            },
+            "Red": {
+                "Pierce": "Blood Pike",
+                "Bounce": "Crimson Throwing Lance",
+                "AOE": "Hellfire Halberd",
+                "DOT": "Rot Spear",
+            },
+            "Yellow": {
+                "Pierce": "Sunpiercer Lance",
+                "Bounce": "Solar Glaive",
+                "AOE": "Radiant Halberd",
+                "DOT": "Blightgold Javelin",
+            },
+            "White": {
+                "Pierce": "Void Lance",
+                "Bounce": "Astral Pike",
+                "AOE": "Singularity Spear",
+                "DOT": "Pale Plague Lance",
+            },
+        },
+    },
+    "Hero_3": {
+        "family": "boxing glove",
+        "names": {
+            "Black": {
+                "Pierce": "Iron Knuckle Glove",
+                "Bounce": "Rebound Mitt",
+                "AOE": "Ashburst Glove",
+                "DOT": "Venom Wraps",
+            },
+            "Red": {
+                "Pierce": "Demon Knuckles",
+                "Bounce": "Bloodwork Gloves",
+                "AOE": "Hellfire Mitts",
+                "DOT": "Rotwrap Gloves",
+            },
+            "Yellow": {
+                "Pierce": "Sunstrike Gloves",
+                "Bounce": "Solar Rebound Mitts",
+                "AOE": "Radiant Knuckles",
+                "DOT": "Blightgold Wraps",
+            },
+            "White": {
+                "Pierce": "Void Knuckles",
+                "Bounce": "Astral Gloves",
+                "AOE": "Singularity Mitts",
+                "DOT": "Pale Plague Wraps",
+            },
+        },
+    },
+    "Hero_4": {
+        "family": "pistol",
+        "names": {
+            "Black": {
+                "Pierce": "Iron Peacemaker",
+                "Bounce": "Ricochet Revolver",
+                "AOE": "Ashburst Sidearm",
+                "DOT": "Venom Derringer",
+            },
+            "Red": {
+                "Pierce": "Bloodline Revolver",
+                "Bounce": "Demon Repeater",
+                "AOE": "Hellfire Handgun",
+                "DOT": "Rotshot Pistol",
+            },
+            "Yellow": {
+                "Pierce": "Sunpiercer Pistol",
+                "Bounce": "Solar Ricochet",
+                "AOE": "Radiant Hand Cannon",
+                "DOT": "Blightgold Revolver",
+            },
+            "White": {
+                "Pierce": "Void Peacemaker",
+                "Bounce": "Astral Repeater",
+                "AOE": "Singularity Sidearm",
+                "DOT": "Pale Plague Pistol",
+            },
+        },
+    },
+    "Hero_5": {
+        "family": "flask",
+        "names": {
+            "Black": {
+                "Pierce": "Iron Tonic Flask",
+                "Bounce": "Rebound Ampoule",
+                "AOE": "Ashburst Beaker",
+                "DOT": "Venom Vial",
+            },
+            "Red": {
+                "Pierce": "Blood Flask",
+                "Bounce": "Demon Phial",
+                "AOE": "Hellfire Beaker",
+                "DOT": "Rot Vial",
+            },
+            "Yellow": {
+                "Pierce": "Solar Flask",
+                "Bounce": "Sunlit Ampoule",
+                "AOE": "Radiant Alembic",
+                "DOT": "Blightgold Vial",
+            },
+            "White": {
+                "Pierce": "Void Flask",
+                "Bounce": "Astral Phial",
+                "AOE": "Singularity Beaker",
+                "DOT": "Pale Plague Vial",
+            },
+        },
+    },
+}
 
-def _branch_description(branch, rarity):
+BRANCH_DESCRIPTIONS = {
+    "Pierce": "piercing",
+    "Bounce": "chaining",
+    "AOE": "splash",
+    "DOT": "damage-over-time",
+}
+
+
+def _weapon_id(hero_id, rarity, branch):
+    rarity_slug = RARITY_ID_SLUGS.get(rarity, rarity.lower())
+    branch_slug = BRANCH_ID_SLUGS.get(branch, branch.lower())
+    return f"{hero_id}_{rarity_slug}_{branch_slug}"
+
+
+def _weapon_family(hero_id):
+    family_config = DEMO_HERO_WEAPON_FAMILIES.get(hero_id)
+    return family_config.get("family") if family_config else "weapon"
+
+
+def _weapon_display_name(hero_id, rarity, branch):
+    family_config = DEMO_HERO_WEAPON_FAMILIES.get(hero_id)
+    if family_config:
+        return family_config["names"].get(rarity, {}).get(branch, f"{rarity} {branch} {family_config['family']}")
+    return WEAPON_NAMES.get(rarity, {}).get(branch, f"{rarity} {branch} Weapon")
+
+
+def _branch_description(branch, rarity, hero_id=None):
+    family = _weapon_family(hero_id) if hero_id else "weapon"
+    branch_kind = BRANCH_DESCRIPTIONS.get(branch, branch.lower())
     if branch == "Pierce":
-        return f"{rarity} tier. A piercing auto-attack branch that cuts through lined-up targets."
+        return f"{rarity} tier. A {branch_kind} {family} auto-attack that cuts through lined-up targets."
     if branch == "Bounce":
-        return f"{rarity} tier. A chaining auto-attack branch that jumps between nearby targets."
+        return f"{rarity} tier. A {branch_kind} {family} auto-attack that jumps between nearby targets."
     if branch == "AOE":
-        return f"{rarity} tier. A splash auto-attack branch that detonates around the impact point."
-    return f"{rarity} tier. A damage-over-time auto-attack branch that leaves a lingering wound."
+        return f"{rarity} tier. A {branch_kind} {family} auto-attack that detonates around the impact point."
+    return f"{rarity} tier. A {branch_kind} {family} auto-attack that leaves a lingering wound."
 
 
 def _upgrade_row(hero, rarity, branch, tuning):
     hero_id = hero["HeroID"]
-    weapon_id = f"{hero_id}_{rarity}_{branch}"
+    weapon_id = _weapon_id(hero_id, rarity, branch)
     return {
         "---": weapon_id,
         "WeaponID": weapon_id,
         "HeroID": hero_id,
-        "DisplayName": WEAPON_NAMES.get(rarity, {}).get(branch, f"{rarity} {branch} Weapon"),
-        "Description": _branch_description(branch, rarity),
+        "DisplayName": _weapon_display_name(hero_id, rarity, branch),
+        "Description": _branch_description(branch, rarity, hero_id),
         "Icon": f"/Game/Weapons/Sprites/{rarity}/{weapon_id}.{weapon_id}",
         "Rarity": rarity,
         "Branch": branch,
@@ -233,6 +425,9 @@ def load_or_create_datatable(row_struct):
 
 
 def main():
+    if unreal is None:
+        raise RuntimeError("Unreal Python module is required to create or reload DT_Weapons.")
+
     unreal.log("=== SetupWeaponsDataTable ===")
 
     project_dir = unreal.SystemLibrary.get_project_directory().replace("\\", "/").rstrip("/")
@@ -261,4 +456,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if unreal is None:
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        csv_path, row_count = generate_weapons_csv(project_root)
+        print(f"Generated {row_count} weapon rows at {csv_path}")
+    else:
+        main()

@@ -18,7 +18,7 @@ class T66_API AT66ArcadeMachineInteractable : public AT66ArcadeInteractableBase
 
 public:
 	AT66ArcadeMachineInteractable();
-	float GetProtectionAuraRadius() const { return bProtectionAuraEnabled && !bConsumed ? ProtectionAuraRadius : 0.f; }
+	float GetProtectionAuraRadius() const;
 
 protected:
 	virtual void BeginPlay() override;

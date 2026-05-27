@@ -3,10 +3,12 @@
 #include "Gameplay/T66CombatShared.h"
 
 #include "Components/CapsuleComponent.h"
+#include "Components/PrimitiveComponent.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "CollisionQueryParams.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
+#include "Gameplay/T66HeroBase.h"
 
 namespace
 {
@@ -78,6 +80,28 @@ namespace T66CombatShared
 		case ET66ItemRarity::White:  return 2.20f;
 		default:                     return 1.00f;
 		}
+	}
+
+	bool IsHeroHurtboxComponent(const AT66HeroBase* Hero, const UPrimitiveComponent* Component)
+	{
+		return Hero && Component && Component == Hero->GetCapsuleComponent();
+	}
+
+	FString DescribePrimitiveComponentForCombatLog(const UPrimitiveComponent* Component)
+	{
+		if (!Component)
+		{
+			return TEXT("None");
+		}
+
+		const AActor* Owner = Component->GetOwner();
+		return FString::Printf(
+			TEXT("%s.%s/%s Collision=%d ObjectType=%d"),
+			Owner ? *Owner->GetName() : TEXT("NoOwner"),
+			*Component->GetName(),
+			Component->GetClass() ? *Component->GetClass()->GetName() : TEXT("None"),
+			static_cast<int32>(Component->GetCollisionEnabled()),
+			static_cast<int32>(Component->GetCollisionObjectType()));
 	}
 
 	FVector ResolveGroundAnchor(UWorld* World, const FVector& ApproxLocation, const AActor* IgnoreActor)

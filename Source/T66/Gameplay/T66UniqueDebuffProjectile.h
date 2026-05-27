@@ -9,7 +9,7 @@
 
 class USphereComponent;
 class UProjectileMovementComponent;
-class UNiagaraSystem;
+class UStaticMeshComponent;
 
 /** Fast straight projectile fired by a Unique enemy. Disappears on hit and applies a hero status effect. */
 UCLASS(Blueprintable)
@@ -19,12 +19,20 @@ class T66_API AT66UniqueDebuffProjectile : public AActor
 
 public:
 	AT66UniqueDebuffProjectile();
+	static int32 GetActiveEnemyProjectileCount();
+	void SetVisualOnly(bool bInVisualOnly);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
 	TObjectPtr<USphereComponent> Sphere;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
+	TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
+	TObjectPtr<UStaticMeshComponent> AccentMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Debuff")
 	ET66HeroStatusEffectType EffectType = ET66HeroStatusEffectType::Burn;
@@ -37,6 +45,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 
 	UFUNCTION()
@@ -44,10 +53,6 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 private:
-	float VFXAccum = 0.f;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UNiagaraSystem> CachedPixelVFX = nullptr;
-
-	FLinearColor TrailColor = FLinearColor(0.9f, 0.2f, 0.2f, 1.f);
+	bool bVisualOnly = false;
+	bool bCountedAsActiveProjectile = false;
 };

@@ -10,17 +10,37 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SceneComponent.h"
+#include "Animation/AnimationAsset.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/ConstructorHelpers.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Misc/CommandLine.h"
 
 namespace
 {
 	static const FVector T66CompanionGameplayPlaceholderScale(0.42f, 0.42f, 1.00f);
 	static const FVector T66CompanionPreviewPlaceholderScale(0.78f, 0.78f, 1.32f);
+
+	bool T66CompanionAnimDebugEnabled()
+	{
+		static const bool bEnabled = FParse::Param(FCommandLine::Get(), TEXT("T66CompanionAnimDebug"));
+		return bEnabled;
+	}
+
+	FString T66CompanionAnimDebugAssetName(const UAnimationAsset* Anim)
+	{
+		return Anim ? Anim->GetPathName() : FString(TEXT("(null)"));
+	}
+
+	FString T66CompanionAnimDebugMeshName(const USkeletalMeshComponent* Mesh)
+	{
+		const USkeletalMesh* SkeletalAsset = Mesh ? Mesh->GetSkeletalMeshAsset() : nullptr;
+		return SkeletalAsset ? SkeletalAsset->GetPathName() : FString(TEXT("(null)"));
+	}
 
 	APawn* T66ResolveCompanionFollowHero(const AActor* CompanionActor)
 	{
@@ -202,6 +222,9 @@ void AT66CompanionBase::InitializeCompanion(const FCompanionData& InData, FName 
 	CompanionHealAccumulatorSeconds = 0.f;
 	bHasCachedGroundZ = false;
 	GroundTraceTickCounter = 0;
+	bCompanionAnimDebugLoggedGuardFailure = false;
+	bCompanionAnimDebugLoggedMissingStateSource = false;
+	bCompanionAnimDebugLoggedNullSelection = false;
 	if (CachedAchievementsSubsystem)
 	{
 		CachedUnionStagesCleared = CachedAchievementsSubsystem->GetCompanionUnionStagesCleared(CompanionID);
@@ -222,9 +245,9 @@ bool AT66CompanionBase::ApplyCurrentCharacterVisual()
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
 			const FName VisualID = UT66CharacterVisualSubsystem::GetCompanionVisualID(CompanionID, ActiveSkinID.IsNone() ? FName(TEXT("Default")) : ActiveSkinID);
-			const bool bUseAlertAnimation = bIsPreviewMode;
+			const bool bUseIdleAnimation = bIsPreviewMode;
 			const bool bIsPreviewContext = bIsPreviewMode;
-			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(VisualID, SkeletalMesh, PlaceholderMesh, true, bUseAlertAnimation, bIsPreviewContext, PlaceholderMesh);
+			bUsingCharacterVisual = Visuals->ApplyCharacterVisual(VisualID, SkeletalMesh, PlaceholderMesh, true, bUseIdleAnimation, bIsPreviewContext, PlaceholderMesh);
 			bUsingStaticCharacterVisual = bUsingCharacterVisual
 				&& PlaceholderMesh
 				&& PlaceholderMesh->IsVisible()
@@ -236,16 +259,35 @@ bool AT66CompanionBase::ApplyCurrentCharacterVisual()
 			else if (!bIsPreviewMode)
 			{
 				UAnimationAsset* WalkRaw = nullptr;
-				UAnimationAsset* RunRaw = nullptr;
-				UAnimationAsset* AlertRaw = nullptr;
-				UAnimationAsset* UnusedRollRaw = nullptr;
-				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, RunRaw, AlertRaw, UnusedRollRaw);
+				UAnimationAsset* JumpRaw = nullptr;
+				UAnimationAsset* IdleRaw = nullptr;
+				UAnimationAsset* RollRaw = nullptr;
+				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, JumpRaw, IdleRaw, RollRaw);
 				CachedWalkAnim = WalkRaw;
-				CachedRunAnim = RunRaw;
-				CachedAlertAnim = AlertRaw;
-				// Match hero: ApplyCharacterVisual just played LoopingAnim (walk), so store Walk (1).
-				// Then when hero is Idle (0) we see a state change and play Alert.
-				LastMovementAnimState = 1;
+				CachedJumpAnim = JumpRaw;
+				CachedIdleAnim = IdleRaw;
+				CachedRollAnim = RollRaw;
+				// Match hero: force the first movement-state tick to refresh the clip.
+				LastMovementAnimState = 255;
+			}
+			if (T66CompanionAnimDebugEnabled())
+			{
+				UE_LOG(LogTemp, Display,
+					TEXT("[CompanionAnimDebug] ApplyVisual CompanionID=%s Skin=%s VisualID=%s Preview=%d UsingCharacter=%d StaticFallback=%d MeshVisible=%d MeshHidden=%d AnimMode=%d Mesh=%s Idle=%s Walk=%s Jump=%s Roll=%s"),
+					*CompanionID.ToString(),
+					*ActiveSkinID.ToString(),
+					*VisualID.ToString(),
+					bIsPreviewMode ? 1 : 0,
+					bUsingCharacterVisual ? 1 : 0,
+					bUsingStaticCharacterVisual ? 1 : 0,
+					(SkeletalMesh && SkeletalMesh->IsVisible()) ? 1 : 0,
+					(SkeletalMesh && SkeletalMesh->bHiddenInGame) ? 1 : 0,
+					SkeletalMesh ? static_cast<int32>(SkeletalMesh->GetAnimationMode()) : -1,
+					*T66CompanionAnimDebugMeshName(SkeletalMesh),
+					*T66CompanionAnimDebugAssetName(CachedIdleAnim),
+					*T66CompanionAnimDebugAssetName(CachedWalkAnim),
+					*T66CompanionAnimDebugAssetName(CachedJumpAnim),
+					*T66CompanionAnimDebugAssetName(CachedRollAnim));
 			}
 		}
 	}
@@ -270,7 +312,23 @@ void AT66CompanionBase::SetPlaceholderColor(FLinearColor Color)
 
 void AT66CompanionBase::SetPreviewMode(bool bPreview)
 {
+	const bool bWasPreviewMode = bIsPreviewMode;
 	bIsPreviewMode = bPreview;
+	if (T66CompanionAnimDebugEnabled())
+	{
+		UE_LOG(LogTemp, Display,
+			TEXT("[CompanionAnimDebug] SetPreviewMode CompanionID=%s WasPreview=%d NewPreview=%d UsingCharacter=%d StaticFallback=%d WillReapply=%d Idle=%s Walk=%s Jump=%s Roll=%s"),
+			*CompanionID.ToString(),
+			bWasPreviewMode ? 1 : 0,
+			bIsPreviewMode ? 1 : 0,
+			bUsingCharacterVisual ? 1 : 0,
+			bUsingStaticCharacterVisual ? 1 : 0,
+			bUsingStaticCharacterVisual ? 1 : 0,
+			*T66CompanionAnimDebugAssetName(CachedIdleAnim),
+			*T66CompanionAnimDebugAssetName(CachedWalkAnim),
+			*T66CompanionAnimDebugAssetName(CachedJumpAnim),
+			*T66CompanionAnimDebugAssetName(CachedRollAnim));
+	}
 	if (bUsingStaticCharacterVisual)
 	{
 		ApplyCurrentCharacterVisual();
@@ -336,23 +394,110 @@ void AT66CompanionBase::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (bIsPreviewMode) return;
 
-	// Animation: two states only — Alert (idle) and Run (any movement). Match hero.
-	if (bUsingCharacterVisual && SkeletalMesh && SkeletalMesh->IsVisible() && (CachedAlertAnim || CachedRunAnim || CachedWalkAnim))
+	// Animation: mirror the hero's idle/walk/jump/roll movement state.
+	const bool bAnimGuardPasses = bUsingCharacterVisual && SkeletalMesh && SkeletalMesh->IsVisible() && (CachedIdleAnim || CachedJumpAnim || CachedWalkAnim || CachedRollAnim);
+	if (!bAnimGuardPasses && T66CompanionAnimDebugEnabled() && !bCompanionAnimDebugLoggedGuardFailure)
+	{
+		bCompanionAnimDebugLoggedGuardFailure = true;
+		UE_LOG(LogTemp, Warning,
+			TEXT("[CompanionAnimDebug] GuardFailed CompanionID=%s Preview=%d UsingCharacter=%d StaticFallback=%d HasSkeletal=%d MeshVisible=%d MeshHidden=%d AnimMode=%d Mesh=%s Idle=%s Walk=%s Jump=%s Roll=%s"),
+			*CompanionID.ToString(),
+			bIsPreviewMode ? 1 : 0,
+			bUsingCharacterVisual ? 1 : 0,
+			bUsingStaticCharacterVisual ? 1 : 0,
+			SkeletalMesh ? 1 : 0,
+			(SkeletalMesh && SkeletalMesh->IsVisible()) ? 1 : 0,
+			(SkeletalMesh && SkeletalMesh->bHiddenInGame) ? 1 : 0,
+			SkeletalMesh ? static_cast<int32>(SkeletalMesh->GetAnimationMode()) : -1,
+			*T66CompanionAnimDebugMeshName(SkeletalMesh),
+			*T66CompanionAnimDebugAssetName(CachedIdleAnim),
+			*T66CompanionAnimDebugAssetName(CachedWalkAnim),
+			*T66CompanionAnimDebugAssetName(CachedJumpAnim),
+			*T66CompanionAnimDebugAssetName(CachedRollAnim));
+	}
+	if (bAnimGuardPasses)
 	{
 		if (CachedHeroSpeedSubsystem)
 		{
-			const int32 NewState = CachedHeroSpeedSubsystem->GetMovementAnimState(); // 0=Idle, 2=Run
+			const int32 NewState = CachedHeroSpeedSubsystem->GetMovementAnimState(); // 0=Idle, 1=Walk, 2=Jump, 3=Roll
 			if (NewState != LastMovementAnimState)
 			{
 				LastMovementAnimState = static_cast<uint8>(NewState);
 				UAnimationAsset* ToPlay = nullptr;
+				bool bLoop = true;
 				if (NewState == 0)
-					ToPlay = CachedAlertAnim;
+				{
+					ToPlay = CachedIdleAnim;
+				}
+				else if (NewState == 2)
+				{
+					ToPlay = CachedJumpAnim ? CachedJumpAnim : (CachedWalkAnim ? CachedWalkAnim : CachedIdleAnim);
+					bLoop = false;
+				}
+				else if (NewState == 3)
+				{
+					ToPlay = CachedRollAnim ? CachedRollAnim : (CachedWalkAnim ? CachedWalkAnim : CachedIdleAnim);
+					bLoop = false;
+				}
 				else
-					ToPlay = CachedRunAnim ? CachedRunAnim : CachedWalkAnim;
+				{
+					ToPlay = CachedWalkAnim ? CachedWalkAnim : CachedIdleAnim;
+				}
 				if (ToPlay)
-					SkeletalMesh->PlayAnimation(ToPlay, true);
+				{
+					if (T66CompanionAnimDebugEnabled())
+					{
+						UE_LOG(LogTemp, Display,
+							TEXT("[CompanionAnimDebug] PlayStateChange CompanionID=%s Source=HeroSpeedSubsystem State=%d Selected=%s Loop=%d BeforePlaying=%d Position=%.3f AnimMode=%d Mesh=%s"),
+							*CompanionID.ToString(),
+							NewState,
+							*T66CompanionAnimDebugAssetName(ToPlay),
+							bLoop ? 1 : 0,
+							SkeletalMesh->IsPlaying() ? 1 : 0,
+							SkeletalMesh->GetPosition(),
+							static_cast<int32>(SkeletalMesh->GetAnimationMode()),
+							*T66CompanionAnimDebugMeshName(SkeletalMesh));
+					}
+					SkeletalMesh->PlayAnimation(ToPlay, bLoop);
+					if (T66CompanionAnimDebugEnabled())
+					{
+						UE_LOG(LogTemp, Display,
+							TEXT("[CompanionAnimDebug] PlayStateApplied CompanionID=%s Source=HeroSpeedSubsystem State=%d Selected=%s AfterPlaying=%d Position=%.3f AnimMode=%d PlayRate=%.3f"),
+							*CompanionID.ToString(),
+							NewState,
+							*T66CompanionAnimDebugAssetName(ToPlay),
+							SkeletalMesh->IsPlaying() ? 1 : 0,
+							SkeletalMesh->GetPosition(),
+							static_cast<int32>(SkeletalMesh->GetAnimationMode()),
+							SkeletalMesh->GetPlayRate());
+					}
+				}
+				else if (T66CompanionAnimDebugEnabled() && !bCompanionAnimDebugLoggedNullSelection)
+				{
+					bCompanionAnimDebugLoggedNullSelection = true;
+					UE_LOG(LogTemp, Warning,
+						TEXT("[CompanionAnimDebug] NullSelection CompanionID=%s State=%d Idle=%s Walk=%s Jump=%s Roll=%s"),
+						*CompanionID.ToString(),
+						NewState,
+						*T66CompanionAnimDebugAssetName(CachedIdleAnim),
+						*T66CompanionAnimDebugAssetName(CachedWalkAnim),
+						*T66CompanionAnimDebugAssetName(CachedJumpAnim),
+						*T66CompanionAnimDebugAssetName(CachedRollAnim));
+				}
 			}
+		}
+		else if (T66CompanionAnimDebugEnabled() && !bCompanionAnimDebugLoggedMissingStateSource)
+		{
+			bCompanionAnimDebugLoggedMissingStateSource = true;
+			UE_LOG(LogTemp, Warning,
+				TEXT("[CompanionAnimDebug] MissingHeroSpeedSubsystem CompanionID=%s UsingCharacter=%d MeshVisible=%d Idle=%s Walk=%s Jump=%s Roll=%s"),
+				*CompanionID.ToString(),
+				bUsingCharacterVisual ? 1 : 0,
+				(SkeletalMesh && SkeletalMesh->IsVisible()) ? 1 : 0,
+				*T66CompanionAnimDebugAssetName(CachedIdleAnim),
+				*T66CompanionAnimDebugAssetName(CachedWalkAnim),
+				*T66CompanionAnimDebugAssetName(CachedJumpAnim),
+				*T66CompanionAnimDebugAssetName(CachedRollAnim));
 		}
 	}
 

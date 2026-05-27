@@ -1,6 +1,6 @@
 # T66 Master Movement
 
-**Last updated:** 2026-05-14  
+**Last updated:** 2026-05-26  
 **Scope:** Single-source handoff for player-hero movement runtime: input, locomotion, jump, one-button forward roll, speed multipliers, velocity-affecting stage effects, and current movement blockers and overrides.  
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Combat/MASTER_COMBAT.md`
 **Maintenance rule:** Update this file after every material change to hero movement input, locomotion tuning, jump or roll rules, stage-effect movement, movement-state gating, or run-state speed modifiers.
@@ -10,7 +10,7 @@
 - `AT66PlayerController` currently owns raw movement input capture and still applies normal walking via `AddMovementInput`.
 - `UT66HeroMovementComponent` owns movement configuration, cached move intent, jump routing, one-button forward roll routing, and final `MaxWalkSpeed` refreshes, but it is not yet the sole owner of locomotion.
 - `UCharacterMovementComponent` on `AT66HeroBase` remains the live movement authority for walking, falling, friction, rotation-to-movement, and impulse response.
-- Base walk speed starts at `1800`, then is overwritten with `InHeroData.MaxSpeed` only on the successful non-preview hero-initialize path, then multiplied by RunState-derived movement modifiers.
+- Base walk speed starts at `1800`, then is seeded from the hero foundational `Speed` stat on the successful non-preview hero-initialize path. Live walking speed is `Speed * 840 UU/s`, with explicit item, stage, secondary, and status movement modifiers layered on top.
 - Jump is currently single-jump only and uses standard forward carry from the live movement state; it is not currently suppressing forward movement on takeoff.
 - Roll is a one-button forward burst bound to `Roll`; it uses the hero actor's facing direction and does not require a movement-input chord.
 - Movement state is split:
@@ -107,23 +107,22 @@
 
 - The live base walk-speed variable is `UT66HeroMovementComponent::BaseWalkSpeed`, not `FT66HeroMovementTuning::DefaultWalkSpeed`.
 - `BaseWalkSpeed` starts at `1800`.
-- During `AT66HeroBase::InitializeHero()`, current runtime sets hero base walk speed with:
-  - `HeroMovementComponent->SetHeroBaseWalkSpeed(InHeroData.MaxSpeed)`
+- During `AT66HeroBase::InitializeHero()`, current runtime seeds fallback hero walk speed with:
+  - `HeroMovementComponent->SetHeroBaseSpeedStat(InHeroData.BaseSpeed)`
   - this currently happens only when character visual application succeeds and the hero is not in preview mode
 - `RefreshWalkSpeedFromRunState()` then computes live `MaxWalkSpeed` as:
-  - `BaseWalkSpeed`
-  - multiplied by `GetHeroMoveSpeedMultiplier()`
+  - `RunState->GetSpeedStat() * 840 UU/s` when RunState exists, otherwise fallback `BaseWalkSpeed`
   - multiplied by `GetItemMoveSpeedMultiplier()`
   - multiplied by `GetMovementSpeedSecondaryMultiplier()`
-  - multiplied by `GetLastStandMoveSpeedMultiplier()`
   - multiplied by `GetStageMoveSpeedMultiplier()`
   - multiplied by `GetStatusMoveSpeedMultiplier()`
 - The final result is clamped to `[200, 10000]`.
 
 ### 3.6 RunState hooks that currently affect movement speed
 
-- Hero foundational `Speed` stat currently feeds `GetHeroMoveSpeedMultiplier()` with:
-  - `1.0 + (SpeedStat - 1) * 0.01`
+- Hero foundational `Speed` stat is the base movement-speed authority.
+- `HeroData.MaxSpeed` is reserved metadata for future cap semantics and is not part of the current live walking-speed stack.
+- `GetHeroMoveSpeedMultiplier()` still exists for now as compatibility/dead formula code, but it is not consumed by live walking speed.
 - Item-derived movement speed is represented by `ItemMoveSpeedMultiplier`.
 - Stage speed boosts are live:
   - `ApplyStageSpeedBoost()` clamps multiplier to `[0.25, 5.0]`
@@ -133,7 +132,6 @@
 - When stage speed boost time expires, RunState resets `StageMoveSpeedMultiplier` to `1.0` and broadcasts `HeroProgressChanged`.
 - `AT66HeroBase` currently refreshes movement speed whenever RunState fires:
   - `HeroProgressChanged`
-  - `SurvivalChanged`
   - `InventoryChanged`
 - The declared secondary-stat movement hook is not live yet:
   - `GetMovementSpeedSecondaryMultiplier()` currently returns `1.0f`
@@ -244,7 +242,7 @@
 
 - `UT66HeroSpeedSubsystem` currently does not own actual locomotion.
 - It only stores:
-  - `MaxSpeed`
+  - resolved movement speed under a legacy `MaxSpeed` API name
   - `CurrentSpeed`
   - binary last-input movement state
 - Current behavior is intentionally simple:
@@ -295,8 +293,9 @@
 
 ## 9. Current Live Numbers
 
-- Base walk speed fallback: `1800`
-- Hero initialize walk speed assignment on successful non-preview visual setup: `HeroData.MaxSpeed * 2.0`
+- Base walk speed fallback: `1800` before hero data is applied
+- Speed conversion: `1 Speed` = `840 UU/s`
+- Hero initialize walk speed assignment on successful non-preview visual setup: `HeroData.BaseSpeed * 840`
 - Walk speed clamp after multiplier stack: `200` to `10000`
 - Max acceleration: `9000`
 - Walking braking deceleration: `12000`
@@ -326,7 +325,7 @@
 - Ordinary locomotion authority is split between controller and movement component.
   - this is the biggest architectural simplification target if movement is refactored
 - `FT66HeroMovementTuning::DefaultWalkSpeed` is currently dead configuration.
-  - live speed authority uses `BaseWalkSpeed`
+  - live speed authority uses the hero `Speed` stat converted through `UT66HeroMovementComponent`
 - `UT66RunStateSubsystem::GetMovementSpeedSecondaryMultiplier()` advertises item-driven movement-speed secondary behavior but currently returns `1.0f`
 - Status-effect move-speed plumbing exists structurally, but current public status application functions are stubs
 - Hero Speed subsystem comments imply movement-speed ownership, but current live behavior is cosmetic or animation-facing only

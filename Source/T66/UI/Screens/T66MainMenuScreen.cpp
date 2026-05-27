@@ -8,6 +8,7 @@
 #include "UI/Style/T66ReferenceLayout.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
+#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -2059,6 +2060,11 @@ void UT66MainMenuScreen::OnPowerUpClicked()
 
 void UT66MainMenuScreen::OnMinigamesClicked()
 {
+	if (T66DeprecatedFeatures::AreMinigamesDisabled())
+	{
+		return;
+	}
+
 	NavigateTo(ET66ScreenType::Minigames);
 }
 

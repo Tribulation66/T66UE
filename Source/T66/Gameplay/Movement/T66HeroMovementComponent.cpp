@@ -10,6 +10,16 @@
 #include "GameFramework/Controller.h"
 #include "Engine/World.h"
 
+namespace
+{
+	constexpr float T66HeroWalkSpeedUnitsPerSpeedPoint = 840.f;
+
+	float T66ResolveWalkSpeedFromSpeedStat(const int32 SpeedStat)
+	{
+		return FMath::Max(1, SpeedStat) * T66HeroWalkSpeedUnitsPerSpeedPoint;
+	}
+}
+
 UT66HeroMovementComponent::UT66HeroMovementComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
@@ -93,6 +103,7 @@ void UT66HeroMovementComponent::RefreshWalkSpeedFromRunState()
 		return;
 	}
 
+	float ResolvedBaseWalkSpeed = BaseWalkSpeed;
 	float Multiplier = 1.f;
 	if (!CachedRunState)
 	{
@@ -107,27 +118,43 @@ void UT66HeroMovementComponent::RefreshWalkSpeedFromRunState()
 
 	if (CachedRunState)
 	{
+		// The foundational Speed stat owns base locomotion speed. MaxSpeed is reserved for future cap semantics.
+		ResolvedBaseWalkSpeed = T66ResolveWalkSpeedFromSpeedStat(CachedRunState->GetSpeedStat());
 		Multiplier =
-			CachedRunState->GetHeroMoveSpeedMultiplier() *
 			CachedRunState->GetItemMoveSpeedMultiplier() *
 			CachedRunState->GetMovementSpeedSecondaryMultiplier() *
-			CachedRunState->GetLastStandMoveSpeedMultiplier() *
 			CachedRunState->GetStageMoveSpeedMultiplier() *
 			CachedRunState->GetStatusMoveSpeedMultiplier();
 	}
 
-	Movement->MaxWalkSpeed = FMath::Clamp(BaseWalkSpeed * Multiplier, 200.f, 10000.f);
+	Movement->MaxWalkSpeed = FMath::Clamp(ResolvedBaseWalkSpeed * Multiplier, 200.f, 10000.f);
+
+	if (!CachedHeroSpeedSubsystem)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UGameInstance* GI = World->GetGameInstance())
+			{
+				CachedHeroSpeedSubsystem = GI->GetSubsystem<UT66HeroSpeedSubsystem>();
+			}
+		}
+	}
+	if (CachedHeroSpeedSubsystem)
+	{
+		CachedHeroSpeedSubsystem->SetParams(Movement->MaxWalkSpeed);
+	}
 }
 
 void UT66HeroMovementComponent::SetHeroBaseWalkSpeed(const float InBaseWalkSpeed)
 {
 	BaseWalkSpeed = FMath::Max(200.f, InBaseWalkSpeed);
 
-	if (CachedHeroSpeedSubsystem)
-	{
-		CachedHeroSpeedSubsystem->SetParams(BaseWalkSpeed);
-	}
+	RefreshWalkSpeedFromRunState();
+}
 
+void UT66HeroMovementComponent::SetHeroBaseSpeedStat(const int32 InBaseSpeedStat)
+{
+	BaseWalkSpeed = T66ResolveWalkSpeedFromSpeedStat(InBaseSpeedStat);
 	RefreshWalkSpeedFromRunState();
 }
 
@@ -173,8 +200,7 @@ bool UT66HeroMovementComponent::CanUseMovementAbilities() const
 	}
 
 	return !Hero->IsPreviewMode()
-		&& !Hero->IsVehicleMounted()
-		&& !Hero->IsQuickReviveDowned();
+		&& !Hero->IsVehicleMounted();
 }
 
 float UT66HeroMovementComponent::ResolveDashCooldownSeconds() const

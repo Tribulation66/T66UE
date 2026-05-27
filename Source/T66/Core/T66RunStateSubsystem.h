@@ -110,12 +110,9 @@ public:
 	static constexpr int32 MaxHeroLevel = 99;
 	static constexpr int32 MaxHeroStatValue = 99;
 	static constexpr int32 HeroStatTenthsScale = 10;
-	static constexpr int32 DefaultXPToLevel = 100;
+	static constexpr int32 DefaultXPToLevel = 0;
 	static constexpr float UltimateCooldownSeconds = 30.f;
 	static constexpr int32 UltimateDamage = 200;
-	static constexpr float SurvivalChargePerHeart = 0.20f; // 5 hearts of damage -> full
-	static constexpr float LastStandDurationSeconds = 10.f;
-	static constexpr float QuickReviveDownedDurationSeconds = 3.f;
 	static constexpr int32 ShopAngerThresholdGold = 100;
 	static constexpr int32 ShopDisplaySlotCount = 5;
 	static constexpr int32 BuybackDisplaySlotCount = 5;
@@ -193,7 +190,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnIdolsChanged IdolsChanged;
 
-	/** Hero XP/Level changed (used for HUD + derived stats). */
+	/** Hero-derived stat display changed. Legacy XP/level changes no longer occur. */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnHeroProgressChanged HeroProgressChanged;
 
@@ -201,11 +198,11 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnUltimateChanged UltimateChanged;
 
-	/** Survival charge / last-stand state changed (used for HUD + derived stats). */
+	/** Deprecated compatibility delegate; Last Stand survival state no longer has live runtime behavior. */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnSurvivalChanged SurvivalChanged;
 
-	/** Quick revive token / downed state changed. */
+	/** Quick Revive item ownership changed. */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnQuickReviveChanged QuickReviveChanged;
 
@@ -319,6 +316,9 @@ public:
 	/** Upgrade N heart slots by one tier and also grant the added HP immediately (clamped). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddMaxHearts(int32 DeltaHearts);
+
+	/** Automation-only measurement hook. Does not persist and is gated by callers to autocapture modes. */
+	float ApplyAutomationHeroHPOverride(float RequestedHP, const TCHAR* Reason);
 
 	/** World Interactables: difficulty totems activated this run (for visual stack growth). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -567,8 +567,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState|SpeedRun")
 	void ResetSpeedRunTimer();
 
-	/** Call every frame from GameMode Tick to tick ultimate + last-stand timers. */
+	/** Call every frame from GameMode Tick to tick hero timers. */
 	void TickHeroTimers(float DeltaTime);
+
+	void SetBackroomsGameplayPaused(bool bPaused);
+	bool IsBackroomsGameplayPaused() const { return bBackroomsGameplayPaused; }
 
 	/** Mark the run as ended and cache the final active run duration. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -661,7 +664,7 @@ public:
 
 	/** Apply numerical damage (HP). Optional Attacker: if set and reflect > 0, reflect fraction back and optionally Crush (OHKO). Returns true if damage was applied (not blocked by i-frames). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
-	bool ApplyDamage(int32 DamageHP, AActor* Attacker = nullptr);
+	bool ApplyDamage(int32 DamageHP, AActor* Attacker = nullptr, FName DeliveryMethod = NAME_None, AActor* DamageCauser = nullptr);
 
 	/** Heal to full HP. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -697,6 +700,16 @@ public:
 	/** Add a fully specified item slot (template + rarity + rolled value). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddItemSlot(const FT66InventorySlot& Slot);
+
+	/** Reward-only quick revive item granted by a successful Backrooms escape. */
+	static const FName BackroomsQuickReviveItemID;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
+	bool HasBackroomsQuickReviveItem() const;
+
+	bool ConsumeBackroomsQuickReviveItem();
+	void SnapshotAndClearInventoryForBackrooms(TArray<FT66InventorySlot>& OutSnapshot);
+	void RestoreInventoryFromBackroomsSnapshot(const TArray<FT66InventorySlot>& Snapshot);
 
 	/** Activates the Gambler's Token for the current run (1..5 => 50%..90% sell value). */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Items")
@@ -751,7 +764,7 @@ public:
 	bool HasInventorySpace() const { return true; }
 
 	// ============================================
-	// Hero Level / Stats
+	// Hero Stats. Hero XP/level fields are retained only for save/backend compatibility.
 	// ============================================
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero")
@@ -766,7 +779,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero")
 	float GetHeroXP01() const { return (XPToNextLevel <= 0) ? 0.f : FMath::Clamp(static_cast<float>(HeroXP) / static_cast<float>(XPToNextLevel), 0.f, 1.f); }
 
-	/** Add XP and auto-level (v0: 100 XP per level). */
+	/** Deprecated compatibility no-op: in-run hero leveling no longer grants stats. */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Hero")
 	void AddHeroXP(int32 Amount);
 
@@ -1260,42 +1273,41 @@ public:
 	bool HasFrostbite() const { return PassiveType == ET66PassiveType::Frostbite; }
 
 	// ============================================
-	// Survival / Last Stand
+	// Deprecated compatibility wrappers for removed Survival / Last Stand behavior.
 	// ============================================
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival")
-	float GetSurvivalCharge01() const { return SurvivalCharge01; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival", meta=(DeprecatedFunction, DeprecationMessage="Last Stand survival charge was removed. This compatibility wrapper always returns 0."))
+	float GetSurvivalCharge01() const { return 0.f; }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival")
-	bool IsInLastStand() const { return bInLastStand; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival", meta=(DeprecatedFunction, DeprecationMessage="Last Stand was removed. This compatibility wrapper always returns false."))
+	bool IsInLastStand() const { return false; }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival")
-	float GetLastStandSecondsRemaining() const { return FMath::Max(0.f, LastStandSecondsRemaining); }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival", meta=(DeprecatedFunction, DeprecationMessage="Last Stand was removed. This compatibility wrapper always returns 0."))
+	float GetLastStandSecondsRemaining() const { return 0.f; }
 
-	/** Additional multiplier during last stand (v0: 2x speed + 2x attack speed). */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival")
-	float GetLastStandMoveSpeedMultiplier() const { return bInLastStand ? 2.f : 1.f; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival", meta=(DeprecatedFunction, DeprecationMessage="Last Stand was removed. This compatibility wrapper always returns 1."))
+	float GetLastStandMoveSpeedMultiplier() const { return 1.f; }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival")
-	float GetLastStandAttackSpeedMultiplier() const { return bInLastStand ? 2.f : 1.f; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival", meta=(DeprecatedFunction, DeprecationMessage="Last Stand was removed. This compatibility wrapper always returns 1."))
+	float GetLastStandAttackSpeedMultiplier() const { return 1.f; }
 
 	// ============================================
 	// Quick Revive
 	// ============================================
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive")
-	bool HasQuickReviveCharge() const { return bQuickReviveChargeReady; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Quick Revive is now the Backrooms Quick Revive inventory item. Use HasBackroomsQuickReviveItem()."))
+	bool HasQuickReviveCharge() const { return HasBackroomsQuickReviveItem(); }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive")
-	bool IsInQuickReviveDownedState() const { return bInQuickReviveDowned; }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Downed Quick Revive was removed. This compatibility wrapper always returns false."))
+	bool IsInQuickReviveDownedState() const { return false; }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive")
-	float GetQuickReviveDownedSecondsRemaining() const { return FMath::Max(0.f, QuickReviveDownedSecondsRemaining); }
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Downed Quick Revive was removed. This compatibility wrapper always returns 0."))
+	float GetQuickReviveDownedSecondsRemaining() const { return 0.f; }
 
-	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|QuickRevive")
+	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Quick Revive charges were removed. This compatibility wrapper is inert and returns false."))
 	bool GrantQuickReviveCharge();
 
-	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|QuickRevive")
+	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Quick Revive charges were removed. This compatibility wrapper is inert."))
 	void ClearQuickReviveCharge();
 
 	// ============================================
@@ -1466,12 +1478,7 @@ private:
 	void ResetScoreBudgetContext();
 	void RefreshScoreBudgetOverflowState();
 	void RecomputeItemDerivedStats();
-	void HandleLethalDamage(AActor* Attacker);
-	void EnterLastStand();
-	void EndLastStandAndDie();
-	void EnterQuickReviveDowned();
-	void EndQuickReviveDownedAndRevive();
-	void EndQuickReviveDownedAndDie();
+	void HandleLethalDamage(AActor* Attacker, FName DeliveryMethod = NAME_None);
 	void InitializeHeroStatTuningForSelectedHero();
 	void InitializeHeroStatsForNewRun();
 	void ApplyOneHeroLevelUp();
@@ -1738,7 +1745,7 @@ private:
 	int32 ItemBonusLuckFlat = 0;
 
 	// ============================================
-	// Hero XP / Level + timers
+	// Deprecated hero XP / level compatibility fields + timers.
 	// ============================================
 
 	int32 HeroLevel = DefaultHeroLevel;
@@ -1751,7 +1758,7 @@ private:
 	/** Authoritative foundational hero stats stored in fixed-point tenths. */
 	FT66HeroPreciseStatBlock HeroPreciseStats = FT66HeroPreciseStatBlock{};
 
-	/** Current hero's per-level gain ranges sourced from hero tuning. */
+	/** Deprecated per-level gain ranges retained for hero row compatibility. */
 	FT66HeroPerLevelStatGains HeroPerLevelGains = FT66HeroPerLevelStatGains{};
 
 	/** Category-specific base stats (loaded from Heroes DataTable, not leveled). */
@@ -1816,14 +1823,7 @@ private:
 	// Evasive
 	bool bEvasiveNextAttackBonusDOT = false;
 
-	float SurvivalCharge01 = 0.f;
-	bool bInLastStand = false;
-	float LastStandSecondsRemaining = 0.f;
-	int32 LastBroadcastLastStandSecond = 0;
-	bool bQuickReviveChargeReady = false;
-	bool bInQuickReviveDowned = false;
-	float QuickReviveDownedSecondsRemaining = 0.f;
-	int32 LastBroadcastQuickReviveSecond = 0;
+	bool bBackroomsGameplayPaused = false;
 
 	// ============================================
 	// Shop state (per-stage)

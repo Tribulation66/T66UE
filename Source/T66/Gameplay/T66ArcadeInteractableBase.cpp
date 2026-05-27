@@ -3,19 +3,20 @@
 #include "Gameplay/T66ArcadeInteractableBase.h"
 
 #include "Core/T66AudioSubsystem.h"
+#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66InteractionPromptSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
-#include "Gameplay/T66ArcadeGameCatalog.h"
 #include "Gameplay/T66BoostInteractable.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66VisualUtil.h"
+#include "UI/WidgetGames/T66WidgetGameRegistry.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
 
@@ -42,22 +43,32 @@ namespace
 			return false;
 		}
 
-		return T66ArcadeGameCatalog::TryResolveRowData(Actor, ArcadeRowID, OutData);
+		return T66WidgetGames::Registry::TryResolveArcadeRowData(Actor, ArcadeRowID, OutData);
 	}
 
 	static FName T66GetArcadeRowIDForGameType(const ET66ArcadeGameType GameType)
 	{
-		return T66ArcadeGameCatalog::GetRowID(GameType);
+		return T66WidgetGames::Registry::GetArcadeRowID(GameType);
 	}
 
 	static FText T66GetArcadeDisplayNameForGameType(const ET66ArcadeGameType GameType)
 	{
-		return T66ArcadeGameCatalog::GetPrototypeDisplayName(GameType);
+		if (const FT66WidgetGameDescriptor* Descriptor = T66WidgetGames::Registry::FindByArcadeGameType(GameType))
+		{
+			return Descriptor->DisplayName;
+		}
+
+		return NSLOCTEXT("T66.ArcadeCatalog", "UnknownPrototypeName", "ARCADE COPY");
 	}
 
 	static bool T66IsPlayableArcadeGameType(const ET66ArcadeGameType GameType)
 	{
-		return T66ArcadeGameCatalog::IsPlayable(GameType);
+		if (T66DeprecatedFeatures::AreArcadeGamesDisabled())
+		{
+			return false;
+		}
+
+		return T66WidgetGames::Registry::FindByArcadeGameType(GameType) != nullptr;
 	}
 
 	static const TArray<ET66HeroStatType>& T66GetBoostStatPool()
@@ -115,6 +126,12 @@ void AT66ArcadeInteractableBase::OnConstruction(const FTransform& Transform)
 
 bool AT66ArcadeInteractableBase::Interact(APlayerController* PC)
 {
+	if (T66DeprecatedFeatures::AreArcadeInteractablesDisabled()
+		|| T66DeprecatedFeatures::AreArcadeGamesDisabled())
+	{
+		return false;
+	}
+
 	const FT66ArcadeInteractableData& Data = GetArcadeData();
 	if (bConsumed
 		|| bArcadeSessionActive
@@ -129,9 +146,8 @@ bool AT66ArcadeInteractableBase::Interact(APlayerController* PC)
 		return false;
 	}
 
-	const bool bOpenSelector = Data.ArcadeGameType == ET66ArcadeGameType::Random;
-	const FT66ArcadeInteractableData SessionData = bOpenSelector ? Data : BuildArcadeSessionData();
-	if ((!bOpenSelector && !T66IsPlayableArcadeGameType(SessionData.ArcadeGameType))
+	const FT66ArcadeInteractableData SessionData = BuildArcadeSessionData();
+	if (!T66IsPlayableArcadeGameType(SessionData.ArcadeGameType)
 		|| !T66PC->OpenArcadePopup(SessionData, this))
 	{
 		return false;
@@ -144,6 +160,11 @@ bool AT66ArcadeInteractableBase::Interact(APlayerController* PC)
 
 TArray<FT66ArcadeInteractableData> AT66ArcadeInteractableBase::BuildArcadeSelectionOptions() const
 {
+	if (T66DeprecatedFeatures::AreArcadeGamesDisabled())
+	{
+		return {};
+	}
+
 	const FT66ArcadeInteractableData& Data = GetArcadeData();
 	TArray<ET66ArcadeGameType> GameTypes;
 	if (Data.ArcadeGameType == ET66ArcadeGameType::Random)
@@ -163,9 +184,14 @@ TArray<FT66ArcadeInteractableData> AT66ArcadeInteractableBase::BuildArcadeSelect
 
 	if (GameTypes.Num() == 0)
 	{
-		for (const FT66ArcadeGameCatalogEntry& Entry : T66ArcadeGameCatalog::GetPlayableEntries())
+		TArray<const FT66WidgetGameDescriptor*> ArcadeDescriptors;
+		T66WidgetGames::Registry::GetArcadeDescriptors(ArcadeDescriptors);
+		for (const FT66WidgetGameDescriptor* Descriptor : ArcadeDescriptors)
 		{
-			GameTypes.Add(Entry.GameType);
+			if (Descriptor)
+			{
+				GameTypes.Add(Descriptor->ArcadeGameType);
+			}
 		}
 	}
 
@@ -185,12 +211,17 @@ TArray<FT66ArcadeInteractableData> AT66ArcadeInteractableBase::BuildArcadeSelect
 
 bool AT66ArcadeInteractableBase::BuildArcadeSessionDataForGame(const ET66ArcadeGameType GameType, FT66ArcadeInteractableData& OutData) const
 {
+	if (T66DeprecatedFeatures::AreArcadeGamesDisabled())
+	{
+		return false;
+	}
+
 	if (!T66IsPlayableArcadeGameType(GameType))
 	{
 		return false;
 	}
 
-	return T66ArcadeGameCatalog::BuildSessionDataForGame(this, GameType, OutData);
+	return T66WidgetGames::Registry::BuildArcadeSessionDataForGame(this, GameType, OutData);
 }
 
 void AT66ArcadeInteractableBase::HandleArcadePopupClosed(const bool bSucceeded, const int32 FinalScore)
@@ -221,7 +252,7 @@ void AT66ArcadeInteractableBase::HandleArcadePopupClosed(const bool bSucceeded, 
 		}
 
 		bConsumed = true;
-		Destroy();
+		RefreshInteractionPrompt();
 		return;
 	}
 
@@ -263,6 +294,12 @@ void AT66ArcadeInteractableBase::ApplyRarityVisuals()
 
 bool AT66ArcadeInteractableBase::ShouldShowInteractionPrompt(const AT66HeroBase* LocalHero) const
 {
+	if (T66DeprecatedFeatures::AreArcadeInteractablesDisabled()
+		|| T66DeprecatedFeatures::AreArcadeGamesDisabled())
+	{
+		return false;
+	}
+
 	return !bArcadeSessionActive && AT66WorldInteractableBase::ShouldShowInteractionPrompt(LocalHero);
 }
 
@@ -344,9 +381,14 @@ ET66ArcadeGameType AT66ArcadeInteractableBase::ResolveRandomGameType(const FT66A
 
 	if (Candidates.Num() == 0)
 	{
-		for (const FT66ArcadeGameCatalogEntry& Entry : T66ArcadeGameCatalog::GetPlayableEntries())
+		TArray<const FT66WidgetGameDescriptor*> ArcadeDescriptors;
+		T66WidgetGames::Registry::GetArcadeDescriptors(ArcadeDescriptors);
+		for (const FT66WidgetGameDescriptor* Descriptor : ArcadeDescriptors)
 		{
-			Candidates.Add(Entry.GameType);
+			if (Descriptor)
+			{
+				Candidates.Add(Descriptor->ArcadeGameType);
+			}
 		}
 	}
 

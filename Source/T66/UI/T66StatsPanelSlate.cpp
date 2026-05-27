@@ -520,7 +520,7 @@ void T66StatsPanelSlate::FT66LiveStatsPanel::Update(UT66RunStateSubsystem* RunSt
 		return;
 	}
 
-	for (int32 Index = 0; Index < 9; ++Index)
+	for (int32 Index = 1; Index < 9; ++Index)
 	{
 		SetPrimaryLine(Index);
 	}
@@ -578,7 +578,6 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 
 	if (RunState)
 	{
-		const int32 HeroLevel = RunState->GetHeroLevel();
 		const int32 DamageStat = RunState->GetDamageStat();
 		const int32 AttackSpeedStat = RunState->GetAttackSpeedStat();
 		const int32 AttackScaleStat = RunState->GetScaleStat();
@@ -626,7 +625,6 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanel(
 			];
 		};
 
-		AddStatLine(0, GetPrimaryStatLabel(Loc, 0), HeroLevel,       GetPrimaryStatLabel(Loc, 0), Loc ? Loc->GetText_PrimaryStatDescription(0) : FText::GetEmpty());
 		AddStatLine(1, GetPrimaryStatLabel(Loc, 1), DamageStat,      GetPrimaryStatLabel(Loc, 1), Loc ? Loc->GetText_PrimaryStatDescription(1) : FText::GetEmpty());
 		AddStatLine(2, GetPrimaryStatLabel(Loc, 2), AttackSpeedStat, GetPrimaryStatLabel(Loc, 2), Loc ? Loc->GetText_PrimaryStatDescription(2) : FText::GetEmpty());
 		AddStatLine(3, GetPrimaryStatLabel(Loc, 3), AttackScaleStat, GetPrimaryStatLabel(Loc, 3), Loc ? Loc->GetText_PrimaryStatDescription(3) : FText::GetEmpty());
@@ -763,7 +761,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeLiveEssentialStatsPanel(
 		];
 	};
 
-	for (int32 Index = 0; Index < 9; ++Index)
+	for (int32 Index = 1; Index < 9; ++Index)
 	{
 		AddPrimaryLine(Index);
 	}
@@ -989,7 +987,7 @@ TSharedRef<SWidget> T66StatsPanelSlate::MakeEssentialStatsPanelFromSnapshotWithO
 			];
 		};
 
-		for (int32 Index = 0; Index < 9; ++Index)
+		for (int32 Index = 1; Index < 9; ++Index)
 		{
 			AddPrimaryLine(Index);
 		}

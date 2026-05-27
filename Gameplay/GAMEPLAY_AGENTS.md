@@ -13,6 +13,7 @@ Combat, boss, enemy, stats, XP, movement, dash, camera, trap, audio, tower, worl
 - `Gameplay/README.md`
 - Then the owning subfolder router if it exists.
 - If no subfolder router exists, read the relevant `MASTER_*` or implementation reference file before editing source.
+- For combat VFX authoring, read `Gameplay/Combat/CombatVFXAuthoringProcedure.md` before per-effect packets or Unreal asset work.
 
 ## Hard Rules
 

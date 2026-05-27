@@ -6,8 +6,6 @@
 #include "Gameplay/T66WorldInteractableBase.h"
 #include "T66QuickReviveVendingMachine.generated.h"
 
-class UT66RunStateSubsystem;
-
 UCLASS(Blueprintable)
 class T66_API AT66QuickReviveVendingMachine : public AT66WorldInteractableBase
 {
@@ -25,10 +23,4 @@ protected:
 	virtual bool ShouldShowInteractionPrompt(const AT66HeroBase* LocalHero) const override;
 	virtual float GetInteractionPromptWorldSize() const override { return 78.f; }
 	virtual float GetInteractionPromptVerticalPadding() const override { return 170.f; }
-
-private:
-	UFUNCTION()
-	void HandleQuickReviveStateChanged();
-
-	UT66RunStateSubsystem* GetRunState() const;
 };

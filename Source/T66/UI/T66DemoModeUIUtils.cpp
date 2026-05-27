@@ -26,26 +26,6 @@ bool T66DemoModeUI::IsDemoModeActive(const UObject* WorldContextObject)
 	return false;
 }
 
-bool T66DemoModeUI::IsArcadeGameAllowed(const UObject* WorldContextObject, const FName ArcadeGameID)
-{
-	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetDemoModeSubsystem(WorldContextObject))
-	{
-		return ReleaseVariant->IsArcadeGameAllowed(ArcadeGameID);
-	}
-
-	return true;
-}
-
-bool T66DemoModeUI::IsCasinoGameAllowed(const UObject* WorldContextObject, const FName CasinoGameID)
-{
-	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetDemoModeSubsystem(WorldContextObject))
-	{
-		return ReleaseVariant->IsCasinoGameAllowed(CasinoGameID);
-	}
-
-	return true;
-}
-
 FText T66DemoModeUI::GetUnavailableContentText(const UObject* WorldContextObject)
 {
 	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetDemoModeSubsystem(WorldContextObject))

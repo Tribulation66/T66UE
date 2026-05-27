@@ -30,13 +30,17 @@ protected:
 	float FireIntervalSeconds = 1.6f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ranged")
+	float FireRangeGrace = 150.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ranged")
 	float ProjectileSpawnHeight = 80.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ranged")
 	TSubclassOf<AT66EnemyProjectileBase> ProjectileClass;
 
 private:
-	void FireProjectileAtPlayer(APawn* PlayerPawn);
+	bool FireProjectileAtPlayer(APawn* PlayerPawn);
+	bool HasProjectileLineOfSightToPlayer(const APawn* PlayerPawn, const FVector& Start, const FVector& End, FString& OutBlockerName) const;
 
 	float FireCooldownRemaining = 0.6f;
 };

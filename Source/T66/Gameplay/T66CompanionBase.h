@@ -106,18 +106,21 @@ protected:
 	UPROPERTY(Transient)
 	bool bLockedVisual = false;
 
-	/** Cached alert/walk/run anims; companion uses hero speed subsystem (same rules: idle=alert, walk, run). */
+	/** Cached movement anims; companions mirror the hero's idle/walk/jump/roll state. */
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimationAsset> CachedAlertAnim = nullptr;
+	TObjectPtr<UAnimationAsset> CachedIdleAnim = nullptr;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CachedWalkAnim = nullptr;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimationAsset> CachedRunAnim = nullptr;
+	TObjectPtr<UAnimationAsset> CachedJumpAnim = nullptr;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimationAsset> CachedRollAnim = nullptr;
 
 	/** Last animation state so we only call PlayAnimation on change. */
-	uint8 LastMovementAnimState = 0; // 0=Idle, 1=Walk, 2=Run
+	uint8 LastMovementAnimState = 255; // 0=Idle, 1=Walk, 2=Jump, 3=Roll, 255=ForceRefresh
 
 	/** Run ground LineTrace only every Nth tick to reduce per-frame cost. */
 	int32 GroundTraceTickCounter = 0;
@@ -137,6 +140,15 @@ protected:
 	float CompanionHealAccumulatorSeconds = 0.f;
 	bool bHasCachedGroundZ = false;
 	float CachedGroundZ = 0.f;
+
+	UPROPERTY(Transient)
+	bool bCompanionAnimDebugLoggedGuardFailure = false;
+
+	UPROPERTY(Transient)
+	bool bCompanionAnimDebugLoggedMissingStateSource = false;
+
+	UPROPERTY(Transient)
+	bool bCompanionAnimDebugLoggedNullSelection = false;
 
 	UFUNCTION()
 	void HandleAchievementsUnlocked(const TArray<FName>& NewlyUnlockedIDs);

@@ -16,6 +16,7 @@
 #include "Modules/ModuleManager.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h"
+#include "Gameplay/T66MobBase.h"
 #include "Components/CapsuleComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -33,6 +34,26 @@ static const TCHAR* T66_FbxBaseMaterialPath = TEXT("/Game/Materials/M_FBX_Unlit.
 static const TCHAR* T66_QuadRetroSharedMaterialPath = TEXT("/Game/Materials/MI_GLB_Unlit_Character_Shared.MI_GLB_Unlit_Character_Shared");
 static const FName T66_OutlineSidecarTag(TEXT("T66OutlineSidecar"));
 static constexpr float T66_CharacterVisualBrightness = 0.8f;
+
+static const UCapsuleComponent* T66ResolveVisualOwnerCapsule(const UStaticMeshComponent* TargetStaticMesh)
+{
+	if (!TargetStaticMesh)
+	{
+		return nullptr;
+	}
+
+	if (const ACharacter* OwnerChar = Cast<ACharacter>(TargetStaticMesh->GetOwner()))
+	{
+		return OwnerChar->GetCapsuleComponent();
+	}
+
+	if (const AT66MobBase* OwnerMob = Cast<AT66MobBase>(TargetStaticMesh->GetOwner()))
+	{
+		return OwnerMob->GetCollisionCapsule();
+	}
+
+	return nullptr;
+}
 
 struct FT66ResolvedImportedTextureSet
 {
@@ -131,13 +152,13 @@ static void T66AppendCharacterVisualAssetPaths(const FT66CharacterVisualRow& Row
 	T66AddUniqueCharacterVisualPath(Row.StaticMesh.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.OutlineStaticMesh.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.PixelatedTextureAssetPath.ToSoftObjectPath(), OutPaths);
-	T66AddUniqueCharacterVisualPath(Row.LoopingAnimation.ToSoftObjectPath(), OutPaths);
-	T66AddUniqueCharacterVisualPath(Row.AlertAnimation.ToSoftObjectPath(), OutPaths);
-	T66AddUniqueCharacterVisualPath(Row.RunAnimation.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.WalkAnimation.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.IdleAnimation.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.JumpAnimation.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.RollAnimation.ToSoftObjectPath(), OutPaths);
-	T66AppendAnimationFallbackPreloadPaths(Row.LoopingAnimation, OutPaths);
-	T66AppendAnimationFallbackPreloadPaths(Row.AlertAnimation, OutPaths);
-	T66AppendAnimationFallbackPreloadPaths(Row.RunAnimation, OutPaths);
+	T66AppendAnimationFallbackPreloadPaths(Row.WalkAnimation, OutPaths);
+	T66AppendAnimationFallbackPreloadPaths(Row.IdleAnimation, OutPaths);
+	T66AppendAnimationFallbackPreloadPaths(Row.JumpAnimation, OutPaths);
 	T66AppendAnimationFallbackPreloadPaths(Row.RollAnimation, OutPaths);
 }
 
@@ -847,7 +868,7 @@ void UT66CharacterVisualSubsystem::AppendCharacterVisualPreloadPaths(const FT66C
 	T66AppendCharacterVisualAssetPaths(Row, OutPaths);
 }
 
-UAnimationAsset* UT66CharacterVisualSubsystem::FindFallbackLoopingAnim(USkeleton* Skeleton) const
+UAnimationAsset* UT66CharacterVisualSubsystem::FindFallbackWalkAnim(USkeleton* Skeleton) const
 {
 	if (!Skeleton)
 	{
@@ -874,7 +895,7 @@ UAnimationAsset* UT66CharacterVisualSubsystem::FindFallbackLoopingAnim(USkeleton
 
 	const FString SkeletonPath = Skeleton->GetPathName();
 
-	// Prefer an Idle if present, otherwise Walk/Run, otherwise first match.
+	// Prefer a Walk if present, otherwise Idle/Jump, otherwise first match.
 	int32 BestScore = -1;
 	FAssetData BestAsset;
 
@@ -893,9 +914,9 @@ UAnimationAsset* UT66CharacterVisualSubsystem::FindFallbackLoopingAnim(USkeleton
 
 		const FString Name = A.AssetName.ToString().ToLower();
 		int32 Score = 0;
-		if (Name.Contains("idle")) Score += 100;
-		if (Name.Contains("walk")) Score += 50;
-		if (Name.Contains("run")) Score += 40;
+		if (Name.Contains("walk")) Score += 100;
+		if (Name.Contains("idle")) Score += 50;
+		if (Name.Contains("jump")) Score += 40;
 		if (Name.Contains("loop")) Score += 10;
 
 		if (Score > BestScore)
@@ -1066,14 +1087,11 @@ bool UT66CharacterVisualSubsystem::ApplyMobVertexAnimationVisual(
 	TargetStaticMesh->SetRelativeScale3D(Scale);
 
 	FVector RelLoc = OutRow.MeshRelativeLocation;
-	if (const ACharacter* OwnerChar = Cast<ACharacter>(TargetStaticMesh->GetOwner()))
+	if (const UCapsuleComponent* OwnerCapsule = T66ResolveVisualOwnerCapsule(TargetStaticMesh))
 	{
-		if (const UCapsuleComponent* Cap = OwnerChar->GetCapsuleComponent())
-		{
-			const FBoxSphereBounds Bounds = StaticMesh->GetBounds();
-			const float BottomZ = (Bounds.Origin.Z - Bounds.BoxExtent.Z) * Scale.Z;
-			RelLoc.Z += -Cap->GetScaledCapsuleHalfHeight() - BottomZ;
-		}
+		const FBoxSphereBounds Bounds = StaticMesh->GetBounds();
+		const float BottomZ = (Bounds.Origin.Z - Bounds.BoxExtent.Z) * Scale.Z;
+		RelLoc.Z += -OwnerCapsule->GetScaledCapsuleHalfHeight() - BottomZ;
 	}
 	TargetStaticMesh->SetRelativeLocation(RelLoc);
 	TargetStaticMesh->SetHiddenInGame(false, true);
@@ -1278,35 +1296,35 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 		{
 			UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[MESH] ResolveVisual VisualID=%s ResolvedRow=%s has no SkeletalMesh or StaticMesh in DataTable row!"), *VisualID.ToString(), *ResolvedVisualID.ToString());
 		}
-		if (!Res.Row.LoopingAnimation.IsNull())
+		if (!Res.Row.WalkAnimation.IsNull())
 		{
-			Res.LoopingAnim = ResolveSoftObjectIfPackageExists(Res.Row.LoopingAnimation);
-			if (!Res.LoopingAnim)
-				Res.LoopingAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.LoopingAnimation);
-			if (!Res.LoopingAnim)
-				Res.LoopingAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.LoopingAnimation);
+			Res.WalkAnim = ResolveSoftObjectIfPackageExists(Res.Row.WalkAnimation);
+			if (!Res.WalkAnim)
+				Res.WalkAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.WalkAnimation);
+			if (!Res.WalkAnim)
+				Res.WalkAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.WalkAnimation);
 		}
-		if (!Res.Row.AlertAnimation.IsNull())
+		if (!Res.Row.IdleAnimation.IsNull())
 		{
-			Res.AlertAnim = ResolveSoftObjectIfPackageExists(Res.Row.AlertAnimation);
-			if (!Res.AlertAnim)
-				Res.AlertAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.AlertAnimation);
-			if (!Res.AlertAnim)
-				Res.AlertAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.AlertAnimation);
-			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[ANIM] ResolveVisual VisualID=%s ResolvedRow=%s AlertAnimation path=%s AlertAnim=%s"),
-				*VisualID.ToString(), *ResolvedVisualID.ToString(), *Res.Row.AlertAnimation.ToString(), Res.AlertAnim ? *Res.AlertAnim->GetName() : TEXT("(null)"));
+			Res.IdleAnim = ResolveSoftObjectIfPackageExists(Res.Row.IdleAnimation);
+			if (!Res.IdleAnim)
+				Res.IdleAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.IdleAnimation);
+			if (!Res.IdleAnim)
+				Res.IdleAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.IdleAnimation);
+			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[ANIM] ResolveVisual VisualID=%s ResolvedRow=%s IdleAnimation path=%s IdleAnim=%s"),
+				*VisualID.ToString(), *ResolvedVisualID.ToString(), *Res.Row.IdleAnimation.ToString(), Res.IdleAnim ? *Res.IdleAnim->GetName() : TEXT("(null)"));
 		}
 		else
 		{
-			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[ANIM] ResolveVisual VisualID=%s ResolvedRow=%s AlertAnimation is null (no alert anim row)"), *VisualID.ToString(), *ResolvedVisualID.ToString());
+			UE_LOG(LogT66CharacterVisuals, Log, TEXT("[ANIM] ResolveVisual VisualID=%s ResolvedRow=%s IdleAnimation is null (no idle anim row)"), *VisualID.ToString(), *ResolvedVisualID.ToString());
 		}
-		if (!Res.Row.RunAnimation.IsNull())
+		if (!Res.Row.JumpAnimation.IsNull())
 		{
-			Res.RunAnim = ResolveSoftObjectIfPackageExists(Res.Row.RunAnimation);
-			if (!Res.RunAnim)
-				Res.RunAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.RunAnimation);
-			if (!Res.RunAnim)
-				Res.RunAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.RunAnimation);
+			Res.JumpAnim = ResolveSoftObjectIfPackageExists(Res.Row.JumpAnimation);
+			if (!Res.JumpAnim)
+				Res.JumpAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.JumpAnimation);
+			if (!Res.JumpAnim)
+				Res.JumpAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.JumpAnimation);
 		}
 		if (!Res.Row.RollAnimation.IsNull())
 		{
@@ -1327,9 +1345,9 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 			return FT66ResolvedCharacterVisual();
 		}
 		// If no explicit animation is set, try to find any AnimSequence for this Skeleton (cached).
-		if (!Res.LoopingAnim && Res.Mesh && Res.Mesh->GetSkeleton())
+		if (!Res.WalkAnim && Res.Mesh && Res.Mesh->GetSkeleton())
 		{
-			Res.LoopingAnim = FindFallbackLoopingAnim(Res.Mesh->GetSkeleton());
+			Res.WalkAnim = FindFallbackWalkAnim(Res.Mesh->GetSkeleton());
 		}
 	}
 
@@ -1463,17 +1481,17 @@ FName UT66CharacterVisualSubsystem::GetCompanionVisualID(FName CompanionID, FNam
 	return FName(*(CompanionID.ToString() + TEXT("_") + SkinID.ToString()));
 }
 
-void UT66CharacterVisualSubsystem::GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutRun, UAnimationAsset*& OutAlert, UAnimationAsset*& OutRoll)
+void UT66CharacterVisualSubsystem::GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutJump, UAnimationAsset*& OutIdle, UAnimationAsset*& OutRoll)
 {
 	OutWalk = nullptr;
-	OutRun = nullptr;
-	OutAlert = nullptr;
+	OutJump = nullptr;
+	OutIdle = nullptr;
 	OutRoll = nullptr;
 	const FT66ResolvedCharacterVisual Res = ResolveVisual(VisualID);
 	if (!Res.bHasRow) return;
-	OutWalk = Res.LoopingAnim;
-	OutRun = Res.RunAnim;
-	OutAlert = Res.AlertAnim;
+	OutWalk = Res.WalkAnim;
+	OutJump = Res.JumpAnim;
+	OutIdle = Res.IdleAnim;
 	OutRoll = Res.RollAnim;
 }
 
@@ -1487,7 +1505,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 	USkeletalMeshComponent* TargetMesh,
 	USceneComponent* PlaceholderToHide,
 	bool bEnableSingleNodeAnimation,
-	bool bUseAlertAnimation,
+	bool bUseIdleAnimation,
 	bool bIsPreviewContext,
 	UStaticMeshComponent* TargetStaticMesh)
 {
@@ -1517,18 +1535,12 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 		TargetStaticMesh->SetRelativeScale3D(Scale);
 
 		FVector RelLoc = Res.Row.MeshRelativeLocation;
-		const bool bIsCharacterOwner = Cast<ACharacter>(TargetStaticMesh->GetOwner()) != nullptr;
+		const UCapsuleComponent* OwnerCapsule = T66ResolveVisualOwnerCapsule(TargetStaticMesh);
 		const FBoxSphereBounds B = Res.StaticMesh->GetBounds();
 		const float BottomZ = (B.Origin.Z - B.BoxExtent.Z) * Scale.Z;
-		if (bIsCharacterOwner)
+		if (OwnerCapsule)
 		{
-			if (const ACharacter* OwnerChar = Cast<ACharacter>(TargetStaticMesh->GetOwner()))
-			{
-				if (const UCapsuleComponent* Cap = OwnerChar->GetCapsuleComponent())
-				{
-					RelLoc.Z += -Cap->GetScaledCapsuleHalfHeight() - BottomZ;
-				}
-			}
+			RelLoc.Z += -OwnerCapsule->GetScaledCapsuleHalfHeight() - BottomZ;
 		}
 		else if (Res.Row.bAutoGroundToActorOrigin)
 		{
@@ -1670,7 +1682,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 
 	if (bEnableSingleNodeAnimation)
 	{
-		UAnimationAsset* AnimToPlay = (bUseAlertAnimation && Res.AlertAnim) ? Res.AlertAnim : Res.LoopingAnim;
+		UAnimationAsset* AnimToPlay = Res.IdleAnim ? Res.IdleAnim : Res.WalkAnim;
 		// Log animation type and duration for debugging
 		float AnimDuration = 0.f;
 		FString AnimClass = TEXT("(null)");
@@ -1679,10 +1691,10 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 			AnimClass = AnimToPlay->GetClass()->GetName();
 			AnimDuration = AnimToPlay->GetPlayLength();
 		}
-		UE_LOG(LogT66CharacterVisuals, Verbose, TEXT("[ANIM] ApplyCharacterVisual VisualID=%s bUseAlertAnimation=%d bIsPreviewContext=%d Res.AlertAnim=%s Res.LoopingAnim=%s AnimToPlay=%s Class=%s Duration=%.3f"),
-			*VisualID.ToString(), bUseAlertAnimation ? 1 : 0, bIsPreviewContext ? 1 : 0,
-			Res.AlertAnim ? *Res.AlertAnim->GetName() : TEXT("(null)"),
-			Res.LoopingAnim ? *Res.LoopingAnim->GetName() : TEXT("(null)"),
+		UE_LOG(LogT66CharacterVisuals, Verbose, TEXT("[ANIM] ApplyCharacterVisual VisualID=%s bUseIdleAnimation=%d bIsPreviewContext=%d Res.IdleAnim=%s Res.WalkAnim=%s AnimToPlay=%s Class=%s Duration=%.3f"),
+			*VisualID.ToString(), bUseIdleAnimation ? 1 : 0, bIsPreviewContext ? 1 : 0,
+			Res.IdleAnim ? *Res.IdleAnim->GetName() : TEXT("(null)"),
+			Res.WalkAnim ? *Res.WalkAnim->GetName() : TEXT("(null)"),
 			AnimToPlay ? *AnimToPlay->GetName() : TEXT("(null)"),
 			*AnimClass, AnimDuration);
 		if (AnimToPlay)
@@ -1698,8 +1710,9 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 			// Reinitialize animation state after mesh change (otherwise PlayAnimation fails after SetSkeletalMesh).
 			TargetMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 			TargetMesh->InitAnim(true);
-			// In preview we use alert anim and want it to loop; otherwise use row's loop setting.
-			const bool bLoop = bUseAlertAnimation ? true : Res.Row.bLoopAnimation;
+			// ApplyCharacterVisual only establishes the initial pose/state. Runtime Tick chooses
+			// walk, jump, and roll from movement/input state.
+			const bool bLoop = true;
 			TargetMesh->PlayAnimation(AnimToPlay, bLoop);
 			TargetMesh->SetPosition(0.f);
 			UE_LOG(LogT66CharacterVisuals, Verbose, TEXT("[ANIM] PlayAnimation called: AnimMode=%d IsPlaying=%d Position=%.3f bLoop=%d"),

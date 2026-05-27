@@ -8,13 +8,32 @@
 
 void UT66IdolManagerSubsystem::NormalizeEquippedArrays()
 {
-	if (EquippedIdolIDs.Num() != MaxEquippedIdolSlots)
+	if (EquippedIdolIDs.Num() < MaxEquippedIdolSlots)
 	{
-		EquippedIdolIDs.Init(NAME_None, MaxEquippedIdolSlots);
+		const int32 OldNum = EquippedIdolIDs.Num();
+		EquippedIdolIDs.SetNum(MaxEquippedIdolSlots);
+		for (int32 Index = OldNum; Index < EquippedIdolIDs.Num(); ++Index)
+		{
+			EquippedIdolIDs[Index] = NAME_None;
+		}
 	}
-	if (EquippedIdolLevels.Num() != MaxEquippedIdolSlots)
+	else if (EquippedIdolIDs.Num() > MaxEquippedIdolSlots)
 	{
-		EquippedIdolLevels.Init(0, MaxEquippedIdolSlots);
+		EquippedIdolIDs.SetNum(MaxEquippedIdolSlots);
+	}
+
+	if (EquippedIdolLevels.Num() < MaxEquippedIdolSlots)
+	{
+		const int32 OldNum = EquippedIdolLevels.Num();
+		EquippedIdolLevels.SetNum(MaxEquippedIdolSlots);
+		for (int32 Index = OldNum; Index < EquippedIdolLevels.Num(); ++Index)
+		{
+			EquippedIdolLevels[Index] = 0;
+		}
+	}
+	else if (EquippedIdolLevels.Num() > MaxEquippedIdolSlots)
+	{
+		EquippedIdolLevels.SetNum(MaxEquippedIdolSlots);
 	}
 }
 
@@ -120,18 +139,14 @@ const TArray<FName>& UT66IdolManagerSubsystem::GetAllIdolIDs()
 		FName(TEXT("Idol_Light")),
 		FName(TEXT("Idol_Steel")),
 		FName(TEXT("Idol_Wood")),
-		FName(TEXT("Idol_Bone")),
-		FName(TEXT("Idol_BlackHole")),
 		FName(TEXT("Idol_Earth")),
 		FName(TEXT("Idol_Water")),
 		FName(TEXT("Idol_Storm")),
 		FName(TEXT("Idol_Electric")),
 		FName(TEXT("Idol_Ice")),
 		FName(TEXT("Idol_Shadow")),
-		FName(TEXT("Idol_Star")),
 		FName(TEXT("Idol_Lava")),
 		FName(TEXT("Idol_Poison")),
-		FName(TEXT("Idol_Bleed")),
 		FName(TEXT("Idol_Curse")),
 	};
 	return Idols;
@@ -211,14 +226,7 @@ bool UT66IdolManagerSubsystem::SelectIdolFromAltar(const FName IdolID)
 	for (int32 Index = 0; Index < EquippedIdolIDs.Num(); ++Index)
 	{
 		if (EquippedIdolIDs[Index] != IdolID) continue;
-
-		const int32 CurrentTier = FMath::Clamp(static_cast<int32>(EquippedIdolLevels[Index]), 1, MaxIdolLevel);
-		const int32 NextTier = FMath::Clamp(CurrentTier + 1, 1, MaxIdolLevel);
-		if (NextTier == CurrentTier) return false;
-
-		EquippedIdolLevels[Index] = static_cast<uint8>(NextTier);
-		BroadcastIdolStateChanged();
-		return true;
+		return false;
 	}
 
 	for (int32 Index = 0; Index < EquippedIdolIDs.Num(); ++Index)
@@ -276,34 +284,27 @@ void UT66IdolManagerSubsystem::RerollIdolStock()
 	IdolStockStage = GetCurrentStage();
 
 	const TArray<FName>& AllIdols = GetAllIdolIDs();
-	int32 BaseTierValue = 1;
-	if (const UGameInstance* GI = GetGameInstance())
-	{
-		if (const UT66DifficultyTuningSubsystem* DifficultyTuning = GI->GetSubsystem<UT66DifficultyTuningSubsystem>())
-		{
-			BaseTierValue = IdolRarityToTierValue(DifficultyTuning->GetDifficultyIdolBaseRarity(CurrentDifficulty));
-		}
-	}
-	BaseTierValue = FMath::Clamp(BaseTierValue, 1, MaxIdolLevel);
+	const UGameInstance* GI = GetGameInstance();
+	const UT66DifficultyTuningSubsystem* DifficultyTuning = GI ? GI->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
+	const ET66ItemRarity BaseRarity = DifficultyTuning
+		? DifficultyTuning->GetDifficultyIdolBaseRarity(CurrentDifficulty)
+		: ET66ItemRarity::Black;
+	const int32 BaseTierValue = IdolRarityToTierValue(BaseRarity);
 
 	for (const FName& IdolID : AllIdols)
 	{
-		int32 OwnedTierValue = 0;
+		bool bOwned = false;
 		for (int32 SlotIndex = 0; SlotIndex < EquippedIdolIDs.Num(); ++SlotIndex)
 		{
 			if (EquippedIdolIDs[SlotIndex] != IdolID) continue;
 
-			OwnedTierValue = EquippedIdolLevels.IsValidIndex(SlotIndex)
-				? FMath::Clamp(static_cast<int32>(EquippedIdolLevels[SlotIndex]), 1, MaxIdolLevel)
-				: 1;
+			bOwned = true;
 			break;
 		}
 
 		IdolStockIDs.Add(IdolID);
-		IdolStockTierValues.Add(static_cast<uint8>(OwnedTierValue > 0
-			? FMath::Clamp(FMath::Max(BaseTierValue, OwnedTierValue + 1), 1, MaxIdolLevel)
-			: BaseTierValue));
-		IdolStockSelected.Add(false);
+		IdolStockTierValues.Add(static_cast<uint8>(BaseTierValue));
+		IdolStockSelected.Add(bOwned);
 	}
 
 	while (IdolStockIDs.Num() < IdolStockSlotCount)
@@ -345,18 +346,7 @@ bool UT66IdolManagerSubsystem::ApplyStockOfferToEquipped(const int32 SlotIndex)
 	for (int32 Index = 0; Index < EquippedIdolIDs.Num(); ++Index)
 	{
 		if (EquippedIdolIDs[Index] != OfferedIdolID) continue;
-
-		const int32 CurrentTierValue = EquippedIdolLevels.IsValidIndex(Index)
-			? FMath::Clamp(static_cast<int32>(EquippedIdolLevels[Index]), 1, MaxIdolLevel)
-			: 1;
-		if (OfferedTierValue <= CurrentTierValue)
-		{
-			return false;
-		}
-
-		EquippedIdolLevels[Index] = static_cast<uint8>(OfferedTierValue);
-		bApplied = true;
-		break;
+		return false;
 	}
 
 	if (!bApplied)
@@ -433,15 +423,8 @@ bool UT66IdolManagerSubsystem::SellEquippedIdolInSlot(const int32 SlotIndex)
 		IdolStockSelected[StockIndex] = false;
 		if (TierValue == OfferedTierValue)
 		{
-			if (OfferedTierValue > 1)
-			{
-				EquippedIdolLevels[SlotIndex] = static_cast<uint8>(OfferedTierValue - 1);
-			}
-			else
-			{
-				EquippedIdolIDs[SlotIndex] = NAME_None;
-				EquippedIdolLevels[SlotIndex] = 0;
-			}
+			EquippedIdolIDs[SlotIndex] = NAME_None;
+			EquippedIdolLevels[SlotIndex] = 0;
 
 			bRevertedCurrentOffer = true;
 		}
@@ -467,6 +450,22 @@ void UT66IdolManagerSubsystem::RestoreState(
 	EquippedIdolIDs = InEquippedIdols;
 	EquippedIdolLevels = InEquippedIdolTiers;
 	NormalizeEquippedArrays();
+	const TArray<FName>& LiveIdolIDs = GetAllIdolIDs();
+	TSet<FName> SeenIds;
+	for (int32 Index = 0; Index < EquippedIdolIDs.Num(); ++Index)
+	{
+		FName& IdolID = EquippedIdolIDs[Index];
+		if (IdolID.IsNone() || !LiveIdolIDs.Contains(IdolID) || SeenIds.Contains(IdolID))
+		{
+			IdolID = NAME_None;
+			EquippedIdolLevels[Index] = 0;
+			continue;
+		}
+
+		SeenIds.Add(IdolID);
+		EquippedIdolLevels[Index] = static_cast<uint8>(
+			FMath::Clamp(static_cast<int32>(EquippedIdolLevels[Index]), 1, MaxIdolLevel));
+	}
 	ClearIdolStock();
 	BroadcastIdolStateChanged();
 }
@@ -489,4 +488,3 @@ void UT66IdolManagerSubsystem::HandleStageChanged(const int32 /*NewStage*/)
 	ClearIdolStock();
 	BroadcastIdolStateChanged();
 }
-

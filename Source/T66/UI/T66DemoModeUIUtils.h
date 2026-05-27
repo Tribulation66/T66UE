@@ -8,8 +8,6 @@
 namespace T66DemoModeUI
 {
 	bool IsDemoModeActive(const UObject* WorldContextObject);
-	bool IsArcadeGameAllowed(const UObject* WorldContextObject, FName ArcadeGameID);
-	bool IsCasinoGameAllowed(const UObject* WorldContextObject, FName CasinoGameID);
 	FText GetUnavailableContentText(const UObject* WorldContextObject);
 	TSharedRef<SWidget> WrapWithComingSoonOverlay(
 		const TSharedRef<SWidget>& Content,

@@ -256,6 +256,11 @@ TSharedRef<SWidget> UT66WhackAMoleArcadeWidget::RebuildWidget()
 void UT66WhackAMoleArcadeWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+}
+
+void UT66WhackAMoleArcadeWidget::ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext)
+{
+	Super::ActivateWidgetGame(HostContext);
 	StartRound();
 }
 
@@ -831,9 +836,9 @@ FName UT66WhackAMoleArcadeWidget::ResolveEffectSpriteName(const FWhackAMoleSlotR
 
 const FSlateBrush* UT66WhackAMoleArcadeWidget::FindOrLoadSpriteBrush(const FName SpriteName)
 {
-	if (FSlateBrush* ExistingBrush = SpriteBrushes.Find(SpriteName))
+	if (TSharedPtr<FSlateBrush>* ExistingBrush = SpriteBrushes.Find(SpriteName))
 	{
-		return ExistingBrush;
+		return ExistingBrush->IsValid() ? ExistingBrush->Get() : FCoreStyle::Get().GetBrush("NoBrush");
 	}
 
 	const FString SpriteFileName = FString::Printf(TEXT("%s.png"), *SpriteName.ToString());
@@ -845,12 +850,13 @@ const FSlateBrush* UT66WhackAMoleArcadeWidget::FindOrLoadSpriteBrush(const FName
 		if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(CandidatePath, TextureFilter::TF_Nearest, true, *DebugLabel))
 		{
 			SpriteTextures.Add(SpriteName, Texture);
-			FSlateBrush& NewBrush = SpriteBrushes.Add(SpriteName);
-			NewBrush.SetResourceObject(Texture);
-			NewBrush.DrawAs = ESlateBrushDrawType::Image;
-			NewBrush.Tiling = ESlateBrushTileType::NoTile;
-			NewBrush.ImageSize = FVector2D(Texture->GetSizeX(), Texture->GetSizeY());
-			return &NewBrush;
+			TSharedPtr<FSlateBrush> NewBrush = MakeShared<FSlateBrush>();
+			NewBrush->SetResourceObject(Texture);
+			NewBrush->DrawAs = ESlateBrushDrawType::Image;
+			NewBrush->Tiling = ESlateBrushTileType::NoTile;
+			NewBrush->ImageSize = FVector2D(Texture->GetSizeX(), Texture->GetSizeY());
+			SpriteBrushes.Add(SpriteName, NewBrush);
+			return NewBrush.Get();
 		}
 	}
 

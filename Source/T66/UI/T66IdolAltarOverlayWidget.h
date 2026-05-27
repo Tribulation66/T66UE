@@ -4,9 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Core/Animation/T66AnimationGroup.h"
+#include "Core/Animation/T66AnimationSequence.h"
 #include "Input/Reply.h"
+#include "UI/Animation/T66AnimationMarkerDispatch.h"
 #include "T66IdolAltarOverlayWidget.generated.h"
 
+class FActiveTimerHandle;
 class SBorder;
 class SBox;
 class SImage;
@@ -28,8 +32,8 @@ public:
 	void SetSourceAltar(AT66IdolAltar* InSourceAltar) { SourceAltar = InSourceAltar; }
 
 private:
-	static constexpr int32 OfferSlotCount = 16;
-	static constexpr int32 OfferSlotsPerCategory = 4;
+	static constexpr int32 OfferSlotCount = 12;
+	static constexpr int32 OfferSlotsPerCategory = 3;
 	static constexpr int32 OfferCategoryCount = 4;
 
 	TArray<TSharedPtr<SBox>> OfferCardBoxes;
@@ -42,6 +46,12 @@ private:
 	TArray<TSharedPtr<SWidget>> OfferButtons;
 	TArray<TSharedPtr<SBorder>> OfferButtonBorders;
 	TArray<TSharedPtr<STextBlock>> OfferButtonTexts;
+	TArray<float> OfferRevealAlphas;
+	TArray<float> OfferLiftOffsets;
+	TArray<float> OfferGlowAlphas;
+	TArray<float> OfferSelectionAlphas;
+	TArray<FLinearColor> OfferBaseBorderColors;
+	TArray<FLinearColor> OfferGlowColors;
 
 	TSharedPtr<STextBlock> StatusText;
 	TSharedPtr<SWidget> RerollButton;
@@ -49,6 +59,25 @@ private:
 	TSharedPtr<STextBlock> RerollButtonText;
 	TWeakObjectPtr<AT66IdolAltar> SourceAltar;
 	int32 ActiveOfferCategoryIndex = 0;
+	FT66AnimationGroup RevealAnimationGroup;
+	FT66AnimationSequence SelectionAnimationSequence;
+	FT66AnimationMarkerDispatcher MarkerDispatcher;
+	TWeakPtr<SWidget> AnimationActiveTimerWidget;
+	TSharedPtr<FActiveTimerHandle> AnimationActiveTimerHandle;
+	bool bRevealAnimationActive = false;
+	bool bSelectionAnimationActive = false;
+
+	struct FPendingSelection
+	{
+		bool bPending = false;
+		bool bCommitAttempted = false;
+		bool bTutorialSingleOffer = false;
+		bool bWasUpgrade = false;
+		int32 VisibleSlotIndex = INDEX_NONE;
+		int32 StockIndex = INDEX_NONE;
+		FName IdolID = NAME_None;
+	};
+	FPendingSelection PendingSelection;
 
 	FReply OnReroll();
 	FReply OnToggleSlot(int32 SlotIndex);
@@ -61,6 +90,16 @@ private:
 	int32 GetOfferStockIndexForVisibleSlot(int32 VisibleSlotIndex) const;
 	bool IsTutorialSingleOfferMode() const;
 	FName GetTutorialOfferedIdolID() const;
+	void StartRevealAnimation(const TSharedRef<SWidget>& OwningWidget);
+	void StartSelectionAnimation(int32 VisibleSlotIndex, int32 StockIndex, FName IdolID, bool bTutorialSingleOffer, bool bWasUpgrade);
+	void StartAnimationActiveTimer(const TSharedRef<SWidget>& OwningWidget);
+	void StopAnimationActiveTimer();
+	EActiveTimerReturnType HandleAnimationActiveTimer(double CurrentTime, float DeltaTime);
+	void TickAnimations(float DeltaSeconds);
+	void ApplyOfferAnimationVisuals();
+	void RegisterMarkerHandlers();
+	void CommitPendingSelectionIfNeeded();
+	void ClearPendingSelection();
 
 	UFUNCTION()
 	void HandleIdolsChanged();

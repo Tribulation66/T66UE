@@ -2,6 +2,9 @@
 
 #include "UI/HUD/T66GameplayHUDWidget_Private.h"
 
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+
 void UT66GameplayHUDWidget::RefreshHeroStats()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
@@ -744,20 +747,20 @@ void UT66GameplayHUDWidget::RefreshQuickReviveState()
 
 	if (QuickReviveIconRowBox.IsValid())
 	{
-		QuickReviveIconRowBox->SetVisibility(RunState->HasQuickReviveCharge() ? EVisibility::Visible : EVisibility::Collapsed);
+		QuickReviveIconRowBox->SetVisibility(RunState->HasBackroomsQuickReviveItem() ? EVisibility::Visible : EVisibility::Collapsed);
 	}
 
-	if (QuickReviveDownedOverlayBorder.IsValid())
+	FString BackroomsQAMode;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66BackroomsAutoQA="), BackroomsQAMode))
 	{
-		const bool bDowned = RunState->IsInQuickReviveDownedState();
-		QuickReviveDownedOverlayBorder->SetVisibility(bDowned ? EVisibility::Visible : EVisibility::Collapsed);
-		if (QuickReviveDownedText.IsValid())
-		{
-			const int32 SecondsRemaining = FMath::Max(1, FMath::CeilToInt(RunState->GetQuickReviveDownedSecondsRemaining()));
-			QuickReviveDownedText->SetText(FText::Format(
-				NSLOCTEXT("T66.GameplayHUD", "QuickReviveDownedCountdown", "REVIVING IN {0}"),
-				FText::AsNumber(SecondsRemaining)));
-		}
+		const bool bIconVisible = QuickReviveIconRowBox.IsValid() && QuickReviveIconRowBox->GetVisibility() == EVisibility::Visible;
+		UE_LOG(
+			LogT66HUD,
+			Log,
+			TEXT("[BackroomsQA] Phase=QuickReviveHUD Mode=%s Item=%d IconVisible=%d DownedOverlayPresent=0"),
+			*BackroomsQAMode,
+			RunState->HasBackroomsQuickReviveItem() ? 1 : 0,
+			bIconVisible ? 1 : 0);
 	}
 }
 
@@ -859,7 +862,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	FHeroData SelectedHeroData;
 	const bool bHasSelectedHeroData = GIAsT66 && GIAsT66->GetSelectedHeroData(SelectedHeroData);
 	const FName DesiredAbilityHeroID = bHasSelectedHeroData ? SelectedHeroData.HeroID : NAME_None;
-	ET66UltimateType DesiredUltimateType = bHasSelectedHeroData ? SelectedHeroData.UltimateType : ET66UltimateType::None;
+	ET66UltimateType DesiredUltimateType = ET66UltimateType::None;
 	ET66PassiveType DesiredPassiveType = RunState->GetPassiveType();
 	FWeaponData DesiredWeaponData;
 	bool bHasDesiredWeaponData = false;
@@ -868,12 +871,6 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	{
 		if (const UT66CommunityContentSubsystem* Community = GIAsT66->GetSubsystem<UT66CommunityContentSubsystem>())
 		{
-			const ET66UltimateType OverrideUltimateType = Community->GetActiveUltimateOverride();
-			if (OverrideUltimateType != ET66UltimateType::None)
-			{
-				DesiredUltimateType = OverrideUltimateType;
-			}
-
 			const ET66PassiveType OverridePassiveType = Community->GetActivePassiveOverride();
 			if (OverridePassiveType != ET66PassiveType::None)
 			{
@@ -904,15 +901,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 		if (UltimateBrush.IsValid())
 		{
-			const TSoftObjectPtr<UTexture2D> UltimateSoft = ResolveGameplayUltimateIcon(DesiredAbilityHeroID, DesiredUltimateType);
-			if (TexPool && !UltimateSoft.IsNull())
-			{
-				T66SlateTexture::BindSharedBrushAsync(TexPool, UltimateSoft, this, UltimateBrush, FName(TEXT("HUDUltimate")), false);
-			}
-			else
-			{
-				UltimateBrush->SetResourceObject(nullptr);
-			}
+			UltimateBrush->SetResourceObject(nullptr);
 		}
 
 		if (PassiveBrush.IsValid())
@@ -942,39 +931,34 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 	if (UltimateInputHintText.IsValid())
 	{
-		UltimateInputHintText->SetText(ResolveGameplayUltimateInputHint(DesiredUltimateType));
+		UltimateInputHintText->SetText(FText::GetEmpty());
 	}
 
-	// Hero level + XP progress ring
+	// Item inventory progress ring. Hero XP/level growth is deprecated.
 	if (LevelRingWidget.IsValid())
 	{
-		LevelRingWidget->SetPercent(RunState->GetHeroXP01());
+		LevelRingWidget->SetPercent(static_cast<float>(RunState->GetInventorySlots().Num()) / static_cast<float>(UT66RunStateSubsystem::MaxInventorySlots));
 	}
 	if (LevelText.IsValid())
 	{
 		LevelText->SetText(FText::Format(
-			NSLOCTEXT("T66.HUD", "LevelOutOf99", "{0}/99"),
-			FText::AsNumber(FMath::Clamp(RunState->GetHeroLevel(), 0, UT66RunStateSubsystem::MaxHeroLevel))));
+			NSLOCTEXT("T66.HUD", "ItemsOutOfMax", "{0}/{1}"),
+			FText::AsNumber(FMath::Clamp(RunState->GetInventorySlots().Num(), 0, UT66RunStateSubsystem::MaxInventorySlots)),
+			FText::AsNumber(UT66RunStateSubsystem::MaxInventorySlots)));
 	}
 
-	// Ultimate (R) � show cooldown overlay with countdown when on cooldown, hide when ready
 	{
-		const bool bReady = RunState->IsUltimateReady();
 		if (UltimateCooldownOverlay.IsValid())
 		{
-			UltimateCooldownOverlay->SetVisibility(bReady ? EVisibility::Collapsed : EVisibility::Visible);
+			UltimateCooldownOverlay->SetVisibility(EVisibility::Collapsed);
 		}
-		if (UltimateText.IsValid() && !bReady)
+		if (UltimateText.IsValid())
 		{
-			const int32 Sec = FMath::CeilToInt(RunState->GetUltimateCooldownRemainingSeconds());
-			UltimateText->SetText(FText::AsNumber(FMath::Max(0, Sec)));
+			UltimateText->SetText(FText::GetEmpty());
 		}
 		if (UltimateBorder.IsValid())
 		{
-			// Subtle glow tint when ready, neutral border otherwise
-			UltimateBorder->SetBorderBackgroundColor(bReady
-				? FLinearColor(0.86f, 0.05f, 0.10f, 0.96f)
-				: FT66FlatStyle::DefaultBorder());
+			UltimateBorder->SetVisibility(EVisibility::Collapsed);
 		}
 	}
 
@@ -1068,7 +1052,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		PowerButtonText->SetColorAndOpacity(bOn ? FLinearColor(0.95f, 0.80f, 0.20f, 1.f) : FT66FlatStyle::Tokens::Text);
 	}
 
-	// Idol slots: rarity-colored when equipped, dark teal when empty.
+	// Idol slots: element-colored when equipped, dark teal when empty.
 	UT66IdolManagerSubsystem* IdolManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
 	const TArray<FName>& EquippedIdols = IdolManager ? IdolManager->GetEquippedIdols() : RunState->GetEquippedIdols();
 	const TArray<FName>& Idols = EquippedIdols;
@@ -1080,14 +1064,13 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		TSharedPtr<IToolTip> IdolTooltipWidget;
 		if (i < Idols.Num() && !Idols[i].IsNone())
 		{
-			const ET66ItemRarity IdolRarity = IdolManager ? IdolManager->GetEquippedIdolRarityInSlot(i) : RunState->GetEquippedIdolRarityInSlot(i);
-			C = FItemData::GetItemRarityColor(IdolRarity);
+			C = UT66IdolManagerSubsystem::GetIdolColor(Idols[i]);
 			if (GIAsT66)
 			{
 				FIdolData IdolData;
 				if (GIAsT66->GetIdolData(Idols[i], IdolData))
 				{
-					IdolIconSoft = IdolData.GetIconForRarity(IdolRarity);
+					IdolIconSoft = IdolData.Icon;
 					if (Loc)
 					{
 						IdolTooltipWidget = CreateRichTooltip(

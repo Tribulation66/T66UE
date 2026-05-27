@@ -10,6 +10,7 @@
 #include "T66CombatComponent.generated.h"
 
 class AT66EnemyBase;
+class AT66MobBase;
 class AT66BossBase;
 class UT66RunStateSubsystem;
 class UT66FloatingCombatTextSubsystem;
@@ -37,6 +38,9 @@ public:
 	void SetAutoAttackSuppressed(bool bSuppressed) { bSuppressAutoAttack = bSuppressed; }
 	bool IsAutoAttackSuppressed() const { return bSuppressAutoAttack; }
 	void PerformScopedPiercingShot(const FVector& Start, const FVector& End);
+#if !UE_BUILD_SHIPPING
+	void PerformAutomationAutoAttackNow();
+#endif
 
 	/** Cooldown progress 0..1 (0 = just fired, 1 = ready). For UI cooldown bar below hero. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Combat")
@@ -124,6 +128,7 @@ protected:
 	FT66CombatTargetHandle MakeActorTargetHandle(AActor* Actor, ET66HitZoneType PreferredHitZone = ET66HitZoneType::Body) const;
 	FT66CombatTargetHandle ResolveAutoAttackTargetHandle(AActor* Actor, bool bFavorLockedZone, class UT66RngSubsystem* RngSub) const;
 	static FVector GetTargetAimPoint(const FT66CombatTargetHandle& TargetHandle);
+	bool HasUnblockedAutoAttackPath(const FVector& FromLocation, const FT66CombatTargetHandle& TargetHandle) const;
 
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
@@ -184,7 +189,7 @@ protected:
 
 	void SpawnSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color);
 	void SpawnPierceVFX(const FVector& Start, const FVector& End, const FLinearColor& Color);
-	void SpawnHeroOnePierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation);
+	void SpawnHeroOnePierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation, const FLinearColor& Color);
 	void SpawnArthurUltimateSwordVFX(const FVector& Start, const FVector& End);
 	void SpawnBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color);
 	void SpawnDOTVFX(const FVector& Location, float Duration, float Radius, const FLinearColor& Color);

@@ -34,7 +34,7 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Companion Selection")
 	ET66Difficulty SelectedDifficulty = ET66Difficulty::Easy;
 
-	/** When set, video preview shows this skin instead of equipped (e.g. Beachgoer preview). */
+	/** When set, video preview shows this skin instead of equipped (for example, DemoSkin preview). */
 	FName PreviewedCompanionSkinIDOverride = NAME_None;
 
 	UFUNCTION(BlueprintCallable, Category = "Companion Selection")

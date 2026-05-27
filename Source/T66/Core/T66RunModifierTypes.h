@@ -13,6 +13,7 @@ struct T66_API FT66RunModifierSnapshot
 	float EnemyHealthMultiplier = 1.0f;
 	float EnemyDamageMultiplier = 1.0f;
 	float TrapDamageMultiplier = 1.0f;
+	// Deprecated compatibility fields. Hero stat modifiers no longer apply at runtime.
 	float HeroHealthMultiplier = 1.0f;
 	float HeroDamageMultiplier = 1.0f;
 	int32 HeroLuckFlat = 0;

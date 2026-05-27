@@ -6,6 +6,7 @@
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -246,6 +247,7 @@ void AT66BossGroundAOE::BeginPlay()
 void AT66BossGroundAOE::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	T66CombatDebugDraw::DrawDamageSphere(DamageZone, bDamageActivated ? TEXT("Boss AOE Damage") : TEXT("Boss AOE Warning"), bDamageActivated);
 
 	if (!bDamageActivated)
 	{
@@ -318,7 +320,7 @@ void AT66BossGroundAOE::ActivateDamage()
 			UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 			if (RunState)
 			{
-				RunState->ApplyDamage(DamageHP, GetOwner());
+				RunState->ApplyDamage(DamageHP, GetOwner(), FName(TEXT("BossGroundAOE")), this);
 			}
 		}
 	}

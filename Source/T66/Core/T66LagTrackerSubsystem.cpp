@@ -5,6 +5,15 @@
 #include "Containers/Ticker.h"
 #include "Engine/GameInstance.h"
 #include "HAL/IConsoleManager.h"
+#include "Core/T66ActorRegistrySubsystem.h"
+#include "Gameplay/Enemies/Projectiles/T66EnemyProjectileBase.h"
+#include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66EnemyDirector.h"
+#include "Gameplay/T66GameMode.h"
+#include "Gameplay/T66MobBase.h"
+#include "Gameplay/T66MobManagerSubsystem.h"
+#include "Gameplay/T66UniqueDebuffProjectile.h"
+#include "Gameplay/Traps/T66TrapArrowProjectile.h"
 #include "PerformanceSystem/T66PerformanceSubsystem.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66LagTracker, Log, All);
@@ -196,6 +205,8 @@ void UT66LagTrackerSubsystem::ResetSession()
 {
 	SessionStartSeconds = FPlatformTime::Seconds();
 	LastFrameTimestampSeconds = SessionStartSeconds;
+	LastBoardSaturationSampleSeconds = -DBL_MAX;
+	LatestBoardSaturationSample = FT66LagTrackerBoardSaturationSample{};
 	TotalRecordedOperations = 0;
 	TotalLoggedSlowOperations = 0;
 	HitchCount = 0;
@@ -317,6 +328,7 @@ bool UT66LagTrackerSubsystem::TickFrame(float DeltaSeconds)
 	}
 
 	const double NowSeconds = FPlatformTime::Seconds();
+	SampleBoardSaturation(NowSeconds);
 	if (LastFrameTimestampSeconds > 0.0)
 	{
 		const double FrameMs = (NowSeconds - LastFrameTimestampSeconds) * 1000.0;
@@ -328,6 +340,108 @@ bool UT66LagTrackerSubsystem::TickFrame(float DeltaSeconds)
 
 	LastFrameTimestampSeconds = NowSeconds;
 	return true;
+}
+
+bool UT66LagTrackerSubsystem::GetLatestBoardSaturationSample(FT66LagTrackerBoardSaturationSample& OutSample) const
+{
+	if (!LatestBoardSaturationSample.bValid)
+	{
+		return false;
+	}
+
+	OutSample = LatestBoardSaturationSample;
+	return true;
+}
+
+void UT66LagTrackerSubsystem::SampleBoardSaturation(const double NowSeconds)
+{
+	if ((NowSeconds - LastBoardSaturationSampleSeconds) < 1.0)
+	{
+		return;
+	}
+
+	LastBoardSaturationSampleSeconds = NowSeconds;
+
+	FT66LagTrackerBoardSaturationSample Sample;
+	Sample.bValid = true;
+	Sample.TimestampSeconds = NowSeconds;
+	Sample.ActiveEnemyProjectiles =
+		AT66EnemyProjectileBase::GetActiveEnemyProjectileCount()
+		+ AT66UniqueDebuffProjectile::GetActiveEnemyProjectileCount()
+		+ AT66TrapArrowProjectile::GetActiveTrapProjectileCount();
+
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		bool bPopulatedFromDirector = false;
+		if (AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode()))
+		{
+			if (const AT66EnemyDirector* Director = GameMode->GetEnemyDirectorForDiagnostics())
+			{
+				Sample.LiveRegularEnemies = Director->GetAliveEnemyCount();
+				Sample.LiveRichEnemies = Director->GetAliveRichEnemyCount();
+				Sample.LiveLightweightMobs = Director->GetAliveLightweightMobCount();
+				Sample.LiveLightweightMeleeMobs = Director->GetAliveLightweightMeleeMobCount();
+				Sample.LiveLightweightRushMobs = Director->GetAliveLightweightRushMobCount();
+				Sample.LiveLightweightFlyingMobs = Director->GetAliveLightweightFlyingMobCount();
+				Sample.LiveLightweightRangedMobs = Director->GetAliveLightweightRangedMobCount();
+				Sample.PendingSpawns = Director->GetPendingSpawnCount();
+				bPopulatedFromDirector = true;
+			}
+		}
+
+		if (!bPopulatedFromDirector)
+		{
+			if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+			{
+				for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
+				{
+					if (WeakEnemy.IsValid())
+					{
+						++Sample.LiveRegularEnemies;
+						++Sample.LiveRichEnemies;
+					}
+				}
+				Sample.LiveLightweightMobs = Registry->GetLiveMobCount();
+				for (const TWeakObjectPtr<AT66MobBase>& WeakMob : Registry->GetActiveMobs())
+				{
+					const AT66MobBase* Mob = WeakMob.Get();
+					if (!Mob || !Mob->IsAliveAndActive())
+					{
+						continue;
+					}
+
+					if (Mob->GetEnemyFamily() == ET66EnemyFamily::Melee)
+					{
+						++Sample.LiveLightweightMeleeMobs;
+					}
+					else if (Mob->GetEnemyFamily() == ET66EnemyFamily::Rush)
+					{
+						++Sample.LiveLightweightRushMobs;
+					}
+					else if (Mob->GetEnemyFamily() == ET66EnemyFamily::Flying)
+					{
+						++Sample.LiveLightweightFlyingMobs;
+					}
+					else if (Mob->GetEnemyFamily() == ET66EnemyFamily::Ranged)
+					{
+						++Sample.LiveLightweightRangedMobs;
+					}
+				}
+				Sample.LiveRegularEnemies += Sample.LiveLightweightMobs;
+			}
+		}
+
+		if (const UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>())
+		{
+			Sample.LightweightPoolReuseAcquires = MobManager->GetPoolReuseAcquireCount();
+			Sample.LightweightPoolReleases = MobManager->GetPoolReleaseCount();
+			Sample.LightweightPoolInactive = MobManager->GetInactiveMobCount();
+			Sample.LightweightPoolInactivePeak = MobManager->GetPeakInactiveMobCount();
+		}
+	}
+
+	LatestBoardSaturationSample = Sample;
 }
 
 void UT66LagTrackerSubsystem::PruneRecentOperations(double NowSeconds)
@@ -418,7 +532,21 @@ void UT66LagTrackerSubsystem::LogFrameHitch(double FrameMs, double NowSeconds)
 	UE_LOG(
 		LogT66LagTracker,
 		Verbose,
-		TEXT("[HITCH] Frame=%.2fms %s"),
+		TEXT("[HITCH] Frame=%.2fms %s Board=LiveRegularEnemies:%d LiveRichEnemies:%d LiveLightweightMobs:%d LiveLightweightMeleeMobs:%d LiveLightweightRushMobs:%d LiveLightweightFlyingMobs:%d LiveLightweightRangedMobs:%d PendingSpawns:%d ActiveEnemyProjectiles:%d LightweightPoolReuseAcquires:%d LightweightPoolReleases:%d LightweightPoolInactive:%d LightweightPoolInactivePeak:%d SampleAge:%.2fs"),
 		FrameMs,
-		*RecentSummaryText);
+		*RecentSummaryText,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LiveRegularEnemies : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LiveRichEnemies : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LiveLightweightMobs : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LiveLightweightMeleeMobs : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LiveLightweightRushMobs : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LiveLightweightFlyingMobs : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LiveLightweightRangedMobs : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.PendingSpawns : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.ActiveEnemyProjectiles : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LightweightPoolReuseAcquires : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LightweightPoolReleases : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LightweightPoolInactive : -1,
+		LatestBoardSaturationSample.bValid ? LatestBoardSaturationSample.LightweightPoolInactivePeak : -1,
+		LatestBoardSaturationSample.bValid ? FMath::Max(0.0, NowSeconds - LatestBoardSaturationSample.TimestampSeconds) : -1.0);
 }

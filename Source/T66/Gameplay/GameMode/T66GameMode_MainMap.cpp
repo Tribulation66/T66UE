@@ -767,6 +767,8 @@ void AT66GameMode::SpawnMainMapTerrain()
 		return;
 	}
 
+	DestroyBackroomsPocket();
+
 	TArray<AActor*> CleanupActors;
 	// Terrain regeneration cleanup only. Runtime terrain actors are remembered by
 	// tag after spawn; this scan removes stale authored/fallback floor pieces.
@@ -973,6 +975,8 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 {
 	UWorld* World = GetWorld();
 	if (!World) return;
+
+	DestroyBackroomsPocket();
 
 	if (UT66TrapSubsystem* TrapSubsystem = World->GetSubsystem<UT66TrapSubsystem>())
 	{

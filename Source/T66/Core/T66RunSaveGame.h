@@ -418,24 +418,30 @@ struct T66_API FT66SavedRunSnapshot
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FT66ScoreBudget ScoreBudgetContext;
 
+	/** Deprecated: retained only so old run saves can deserialize. Live hero level is fixed at 1. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 HeroLevel = 1;
 
+	/** Deprecated: retained only so old run saves can deserialize. Live hero XP is ignored. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 HeroXP = 0;
 
+	/** Deprecated: retained only so old run saves can deserialize. Live XP thresholds are disabled. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 XPToNextLevel = 100;
+	int32 XPToNextLevel = 0;
 
+	/** Deprecated: retained for save compatibility; import rebuilds base hero stats from current data. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FT66HeroStatBlock HeroStats;
 
+	/** Deprecated: retained for save compatibility; import rebuilds base hero stats from current data. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	FT66HeroPreciseStatBlock HeroPreciseStats;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 HeroStatRngCurrentSeed = 0;
 
+	/** Deprecated: old level-up secondary gains are no longer imported. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	TArray<FT66SavedSecondaryStatBonusEntry> PersistentSecondaryStatBonusEntries;
 

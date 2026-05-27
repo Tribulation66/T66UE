@@ -16,6 +16,7 @@
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "Styling/SlateStyle.h"
+#include "Types/WidgetActiveTimerDelegate.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Layout/SBorder.h"
@@ -25,6 +26,7 @@
 #include "Widgets/Layout/SWrapBox.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/SWidget.h"
 #include "Widgets/Text/SRichTextBlock.h"
 #include "Widgets/Text/STextBlock.h"
 
@@ -198,6 +200,9 @@ namespace
 
 void UT66IdolAltarOverlayWidget::NativeDestruct()
 {
+	CommitPendingSelectionIfNeeded();
+	StopAnimationActiveTimer();
+
 	if (UWorld* World = GetWorld())
 	{
 		if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))
@@ -314,6 +319,12 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 	OfferButtons.SetNum(OfferSlotsPerCategory);
 	OfferButtonBorders.SetNum(OfferSlotsPerCategory);
 	OfferButtonTexts.SetNum(OfferSlotsPerCategory);
+	OfferRevealAlphas.Init(1.f, OfferSlotsPerCategory);
+	OfferLiftOffsets.Init(0.f, OfferSlotsPerCategory);
+	OfferGlowAlphas.Init(0.f, OfferSlotsPerCategory);
+	OfferSelectionAlphas.Init(0.f, OfferSlotsPerCategory);
+	OfferBaseBorderColors.Init(FT66FlatStyle::DefaultBorder(), OfferSlotsPerCategory);
+	OfferGlowColors.Init(FT66FlatStyle::SelectedBorder(), OfferSlotsPerCategory);
 
 	for (int32 SlotIndex = 0; SlotIndex < OfferSlotsPerCategory; ++SlotIndex)
 	{
@@ -564,7 +575,9 @@ TSharedRef<SWidget> UT66IdolAltarOverlayWidget::RebuildWidget()
 	}
 
 	RefreshStock();
-	return FT66FlatStyle::MakeResponsiveRoot(Root);
+	TSharedRef<SWidget> ResponsiveRoot = FT66FlatStyle::MakeResponsiveRoot(Root);
+	StartRevealAnimation(ResponsiveRoot);
+	return ResponsiveRoot;
 }
 
 void UT66IdolAltarOverlayWidget::RefreshStock()
@@ -606,15 +619,19 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 		const bool bSelected = bTutorialSingleOffer
 			? (bOwned && !HasSelectionsRemaining())
 			: IdolManager->IsIdolStockSlotSelected(SlotIndex);
-		const int32 CurrentTierValue = bOwned ? IdolManager->GetEquippedIdolLevelInSlot(EquippedSlot) : 0;
-		const ET66ItemRarity OfferedRarity = bTutorialSingleOffer
-			? ET66ItemRarity::Black
-			: (bHasItem ? IdolManager->GetIdolStockRarityInSlot(SlotIndex) : ET66ItemRarity::Black);
-		const bool bAtMaxRarity = bOwned && CurrentTierValue >= UT66IdolManagerSubsystem::MaxIdolLevel;
 		const bool bCanTake = bHasItem
 			&& !bSelected
 			&& bHasSelectionAllowance
-			&& ((bOwned && !bAtMaxRarity) || (!bOwned && bHasEmptySlot));
+			&& !bOwned
+			&& bHasEmptySlot;
+		const ET66ItemRarity OfferRarity = bTutorialSingleOffer
+			? ET66ItemRarity::Black
+			: IdolManager->GetIdolStockRarityInSlot(SlotIndex);
+		const FLinearColor RarityColor = bHasItem ? FItemData::GetItemRarityColor(OfferRarity) : FT66FlatStyle::Tokens::Panel2;
+		if (OfferBaseBorderColors.IsValidIndex(VisibleSlotIndex))
+		{
+			OfferBaseBorderColors[VisibleSlotIndex] = bSelected ? FT66FlatStyle::SelectedBorder() : RarityColor;
+		}
 
 		if (OfferCardBoxes.IsValidIndex(VisibleSlotIndex) && OfferCardBoxes[VisibleSlotIndex].IsValid())
 		{
@@ -623,15 +640,24 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 
 		FIdolData IdolData;
 		const bool bHasData = bHasItem && GI && GI->GetIdolData(IdolID, IdolData);
-		const TSoftObjectPtr<UTexture2D> IdolIconSoft = bHasData ? IdolData.GetIconForRarity(OfferedRarity) : TSoftObjectPtr<UTexture2D>();
-		const FLinearColor RarityColor = bHasItem ? FItemData::GetItemRarityColor(OfferedRarity) : FT66FlatStyle::Tokens::Panel2;
+		const TSoftObjectPtr<UTexture2D> IdolIconSoft = bHasData ? IdolData.GetIconForRarity(OfferRarity) : TSoftObjectPtr<UTexture2D>();
+		if (OfferGlowColors.IsValidIndex(VisibleSlotIndex))
+		{
+			OfferGlowColors[VisibleSlotIndex] = RarityColor;
+		}
 
 		if (OfferNameTexts.IsValidIndex(VisibleSlotIndex) && OfferNameTexts[VisibleSlotIndex].IsValid())
 		{
-			OfferNameTexts[VisibleSlotIndex]->SetText(
-				bHasItem
-					? (Loc ? Loc->GetText_IdolDisplayName(IdolID) : FText::FromName(IdolID))
-					: FText::GetEmpty());
+			FText NameText = FText::GetEmpty();
+			if (bHasItem)
+			{
+				const FText IdolName = Loc ? Loc->GetText_IdolDisplayName(IdolID) : FText::FromName(IdolID);
+				const FText RarityName = Loc ? Loc->GetText_ItemRarityName(OfferRarity) : FText::GetEmpty();
+				NameText = RarityName.IsEmpty()
+					? IdolName
+					: FText::Format(NSLOCTEXT("T66.IdolAltar", "IdolNameWithRarity", "{0}\n{1}"), IdolName, RarityName);
+			}
+			OfferNameTexts[VisibleSlotIndex]->SetText(NameText);
 		}
 
 		if (OfferDescriptionTexts.IsValidIndex(VisibleSlotIndex) && OfferDescriptionTexts[VisibleSlotIndex].IsValid())
@@ -645,7 +671,7 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 
 		if (OfferTileBorders.IsValidIndex(VisibleSlotIndex) && OfferTileBorders[VisibleSlotIndex].IsValid())
 		{
-			OfferTileBorders[VisibleSlotIndex]->SetBorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::DefaultBorder());
+			OfferTileBorders[VisibleSlotIndex]->SetBorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : RarityColor);
 			OfferTileBorders[VisibleSlotIndex]->SetToolTip(nullptr);
 		}
 
@@ -685,13 +711,20 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 			OfferButtons.IsValidIndex(VisibleSlotIndex) ? OfferButtons[VisibleSlotIndex] : TSharedPtr<SWidget>(),
 			OfferButtonBorders.IsValidIndex(VisibleSlotIndex) ? OfferButtonBorders[VisibleSlotIndex] : TSharedPtr<SBorder>(),
 			OfferButtonTexts.IsValidIndex(VisibleSlotIndex) ? OfferButtonTexts[VisibleSlotIndex] : TSharedPtr<STextBlock>(),
-			bSelected || bCanTake,
+			!bSelectionAnimationActive && (bSelected || bCanTake),
 			bSelected);
 	}
+
+	ApplyOfferAnimationVisuals();
 }
 
 FReply UT66IdolAltarOverlayWidget::OnToggleSlot(int32 SlotIndex)
 {
+	if (bSelectionAnimationActive)
+	{
+		return FReply::Handled();
+	}
+
 	UWorld* World = GetWorld();
 	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
@@ -751,12 +784,18 @@ FReply UT66IdolAltarOverlayWidget::OnToggleSlot(int32 SlotIndex)
 	}
 
 	const TArray<FName>& EquippedBefore = IdolManager->GetEquippedIdols();
-	const bool bWasUpgrade = EquippedBefore.Contains(IdolID);
-
-	const bool bSelectionApplied = bTutorialSingleOffer
-		? IdolManager->SelectIdolFromAltar(IdolID)
-		: IdolManager->SelectIdolFromStock(StockIndex);
-	if (!bSelectionApplied)
+	const bool bWasUpgrade = false;
+	const int32 ExistingEquippedSlot = FindEquippedSlotByIdolID(IdolManager, IdolID);
+	const bool bHasEmptySlot = EquippedBefore.Contains(NAME_None);
+	if (ExistingEquippedSlot != INDEX_NONE)
+	{
+		if (StatusText.IsValid())
+		{
+			StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "AlreadyOwned", "That idol is already bound."));
+		}
+		return FReply::Handled();
+	}
+	if (!bHasEmptySlot)
 	{
 		if (StatusText.IsValid())
 		{
@@ -765,18 +804,281 @@ FReply UT66IdolAltarOverlayWidget::OnToggleSlot(int32 SlotIndex)
 		return FReply::Handled();
 	}
 
-	ConsumeSelectionBudget(StockIndex);
+	if (StatusText.IsValid())
+	{
+		StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "SelectionRevealing", "Binding idol..."));
+	}
 
+	StartSelectionAnimation(SlotIndex, StockIndex, IdolID, bTutorialSingleOffer, bWasUpgrade);
+	return FReply::Handled();
+}
+
+void UT66IdolAltarOverlayWidget::RegisterMarkerHandlers()
+{
+	MarkerDispatcher.ClearHandlers();
+	MarkerDispatcher.RegisterAudioMarker(FName(TEXT("Idol.CardReveal")), FName(TEXT("UI.Click")), this);
+	MarkerDispatcher.RegisterAudioMarker(FName(TEXT("Idol.SelectionPulse")), FName(TEXT("UI.Confirm")), this);
+	MarkerDispatcher.RegisterHandler(
+		FName(TEXT("Idol.SelectionCommit")),
+		[this](const FT66AnimationMarkerEvent&)
+		{
+			CommitPendingSelectionIfNeeded();
+		});
+}
+
+void UT66IdolAltarOverlayWidget::StartRevealAnimation(const TSharedRef<SWidget>& OwningWidget)
+{
+	RegisterMarkerHandlers();
+	RevealAnimationGroup = FT66AnimationGroup();
+	bRevealAnimationActive = true;
+
+	for (int32 SlotIndex = 0; SlotIndex < OfferSlotsPerCategory; ++SlotIndex)
+	{
+		if (OfferRevealAlphas.IsValidIndex(SlotIndex))
+		{
+			OfferRevealAlphas[SlotIndex] = 0.f;
+		}
+		if (OfferLiftOffsets.IsValidIndex(SlotIndex))
+		{
+			OfferLiftOffsets[SlotIndex] = IsTutorialSingleOfferMode() && SlotIndex == 0 ? 30.f : 18.f;
+		}
+		if (OfferGlowAlphas.IsValidIndex(SlotIndex))
+		{
+			OfferGlowAlphas[SlotIndex] = 0.f;
+		}
+
+		FT66AnimationSequence CardSequence;
+		const float Delay = IsTutorialSingleOfferMode() ? (SlotIndex == 0 ? 0.f : 0.16f) : static_cast<float>(SlotIndex) * 0.10f;
+		if (Delay > KINDA_SMALL_NUMBER)
+		{
+			FT66AnimationTimeline Hold(FName(*FString::Printf(TEXT("Idol.Card%d.RevealDelay"), SlotIndex)));
+			Hold.SetDuration(Delay);
+			Hold.SetCurve(FT66AnimationCurveSpec(ET66AnimationCurve::Linear));
+			CardSequence.AddTimeline(MoveTemp(Hold));
+		}
+
+		FT66AnimationTimeline Reveal(FName(*FString::Printf(TEXT("Idol.Card%d.Reveal"), SlotIndex)));
+		Reveal.SetDuration(IsTutorialSingleOfferMode() && SlotIndex == 0 ? 0.55f : 0.40f);
+		Reveal.SetCurve(FT66AnimationCurveSpec(ET66AnimationCurve::EaseOutCubic));
+		TWeakObjectPtr<UT66IdolAltarOverlayWidget> WeakThis(this);
+		Reveal.SetProgressCallback([WeakThis, SlotIndex](const float CurveValue)
+		{
+			if (UT66IdolAltarOverlayWidget* Self = WeakThis.Get())
+			{
+				const float Alpha = FMath::Clamp(CurveValue, 0.f, 1.f);
+				if (Self->OfferRevealAlphas.IsValidIndex(SlotIndex))
+				{
+					Self->OfferRevealAlphas[SlotIndex] = Alpha;
+				}
+				if (Self->OfferLiftOffsets.IsValidIndex(SlotIndex))
+				{
+					Self->OfferLiftOffsets[SlotIndex] = FMath::Lerp(18.f, 0.f, Alpha);
+				}
+				if (Self->OfferGlowAlphas.IsValidIndex(SlotIndex))
+				{
+					Self->OfferGlowAlphas[SlotIndex] = 0.45f * Alpha;
+				}
+			}
+		});
+		Reveal.AddMarker({ FName(TEXT("Idol.CardReveal")), ET66AnimationMarkerType::ProgressBased, 0.05f, 0.f, ET66AnimationMarkerFirePolicy::Once, FName(TEXT("UI.Click")) });
+		CardSequence.AddTimeline(MoveTemp(Reveal));
+		RevealAnimationGroup.AddSequence(MoveTemp(CardSequence));
+	}
+
+	RevealAnimationGroup.Play();
+	StartAnimationActiveTimer(OwningWidget);
+	ApplyOfferAnimationVisuals();
+}
+
+void UT66IdolAltarOverlayWidget::StartSelectionAnimation(
+	const int32 VisibleSlotIndex,
+	const int32 StockIndex,
+	const FName IdolID,
+	const bool bTutorialSingleOffer,
+	const bool bWasUpgrade)
+{
+	if (!OfferCardBoxes.IsValidIndex(VisibleSlotIndex))
+	{
+		return;
+	}
+
+	PendingSelection = FPendingSelection{};
+	PendingSelection.bPending = true;
+	PendingSelection.VisibleSlotIndex = VisibleSlotIndex;
+	PendingSelection.StockIndex = StockIndex;
+	PendingSelection.IdolID = IdolID;
+	PendingSelection.bTutorialSingleOffer = bTutorialSingleOffer;
+	PendingSelection.bWasUpgrade = bWasUpgrade;
+
+	RegisterMarkerHandlers();
+	bSelectionAnimationActive = true;
+	SelectionAnimationSequence = FT66AnimationSequence();
+
+	TWeakObjectPtr<UT66IdolAltarOverlayWidget> WeakThis(this);
+	FT66AnimationTimeline Pulse(FName(TEXT("Idol.SelectionPulse")));
+	Pulse.SetDuration(0.42f);
+	Pulse.SetCurve(FT66AnimationCurveSpec(ET66AnimationCurve::EaseOutCubic));
+	Pulse.SetProgressCallback([WeakThis, VisibleSlotIndex](const float CurveValue)
+	{
+		if (UT66IdolAltarOverlayWidget* Self = WeakThis.Get())
+		{
+			const float Alpha = FMath::Clamp(CurveValue, 0.f, 1.f);
+			for (int32 SlotIndex = 0; SlotIndex < Self->OfferSelectionAlphas.Num(); ++SlotIndex)
+			{
+				Self->OfferSelectionAlphas[SlotIndex] = (SlotIndex == VisibleSlotIndex) ? Alpha : 0.f;
+			}
+			if (Self->OfferGlowAlphas.IsValidIndex(VisibleSlotIndex))
+			{
+				Self->OfferGlowAlphas[VisibleSlotIndex] = FMath::Lerp(Self->OfferGlowAlphas[VisibleSlotIndex], 1.f, Alpha);
+			}
+		}
+	});
+	Pulse.AddMarker({ FName(TEXT("Idol.SelectionPulse")), ET66AnimationMarkerType::ProgressBased, 0.05f, 0.f, ET66AnimationMarkerFirePolicy::Once, FName(TEXT("UI.Confirm")) });
+	Pulse.AddMarker({ FName(TEXT("Idol.SelectionCommit")), ET66AnimationMarkerType::ProgressBased, 1.f, 0.f, ET66AnimationMarkerFirePolicy::Once, FName(TEXT("Idol.SelectionCommit")) });
+	SelectionAnimationSequence.AddTimeline(MoveTemp(Pulse));
+	SelectionAnimationSequence.Play();
+
+	if (TSharedPtr<SWidget> Widget = AnimationActiveTimerWidget.Pin())
+	{
+		StartAnimationActiveTimer(Widget.ToSharedRef());
+	}
+	ApplyOfferAnimationVisuals();
+	RefreshStock();
+}
+
+void UT66IdolAltarOverlayWidget::StartAnimationActiveTimer(const TSharedRef<SWidget>& OwningWidget)
+{
+	StopAnimationActiveTimer();
+	AnimationActiveTimerWidget = OwningWidget;
+	AnimationActiveTimerHandle = OwningWidget->RegisterActiveTimer(
+		0.f,
+		FWidgetActiveTimerDelegate::CreateUObject(this, &UT66IdolAltarOverlayWidget::HandleAnimationActiveTimer));
+}
+
+void UT66IdolAltarOverlayWidget::StopAnimationActiveTimer()
+{
+	TSharedPtr<SWidget> Widget = AnimationActiveTimerWidget.Pin();
+	if (Widget.IsValid() && AnimationActiveTimerHandle.IsValid())
+	{
+		Widget->UnRegisterActiveTimer(AnimationActiveTimerHandle.ToSharedRef());
+	}
+
+	AnimationActiveTimerHandle.Reset();
+	AnimationActiveTimerWidget.Reset();
+}
+
+EActiveTimerReturnType UT66IdolAltarOverlayWidget::HandleAnimationActiveTimer(double CurrentTime, const float DeltaTime)
+{
+	(void)CurrentTime;
+
+	TickAnimations(DeltaTime);
+	if (TSharedPtr<SWidget> Widget = AnimationActiveTimerWidget.Pin())
+	{
+		Widget->Invalidate(EInvalidateWidgetReason::Paint);
+	}
+
+	return (bRevealAnimationActive || bSelectionAnimationActive) ? EActiveTimerReturnType::Continue : EActiveTimerReturnType::Stop;
+}
+
+void UT66IdolAltarOverlayWidget::TickAnimations(const float DeltaSeconds)
+{
+	TArray<FT66AnimationMarkerEvent> MarkerEvents;
+	if (bRevealAnimationActive)
+	{
+		RevealAnimationGroup.Tick(FMath::Clamp(DeltaSeconds, 0.f, 0.05f), MarkerEvents);
+		if (T66Animation::IsTerminalState(RevealAnimationGroup.GetState()))
+		{
+			bRevealAnimationActive = false;
+		}
+	}
+	if (bSelectionAnimationActive)
+	{
+		SelectionAnimationSequence.Tick(FMath::Clamp(DeltaSeconds, 0.f, 0.05f), MarkerEvents);
+		if (T66Animation::IsTerminalState(SelectionAnimationSequence.GetState()))
+		{
+			bSelectionAnimationActive = false;
+			CommitPendingSelectionIfNeeded();
+			ClearPendingSelection();
+			RefreshStock();
+		}
+	}
+
+	MarkerDispatcher.Dispatch(MarkerEvents);
+	ApplyOfferAnimationVisuals();
+}
+
+void UT66IdolAltarOverlayWidget::ApplyOfferAnimationVisuals()
+{
+	for (int32 SlotIndex = 0; SlotIndex < OfferSlotsPerCategory; ++SlotIndex)
+	{
+		const float RevealAlpha = OfferRevealAlphas.IsValidIndex(SlotIndex) ? OfferRevealAlphas[SlotIndex] : 1.f;
+		const float SelectionAlpha = OfferSelectionAlphas.IsValidIndex(SlotIndex) ? OfferSelectionAlphas[SlotIndex] : 0.f;
+		const bool bOtherDimmed = bSelectionAnimationActive
+			&& PendingSelection.bPending
+			&& SlotIndex != PendingSelection.VisibleSlotIndex;
+		const float DimAlpha = bOtherDimmed ? 0.60f : 1.f;
+		if (OfferCardBoxes.IsValidIndex(SlotIndex) && OfferCardBoxes[SlotIndex].IsValid())
+		{
+			const float Lift = (OfferLiftOffsets.IsValidIndex(SlotIndex) ? OfferLiftOffsets[SlotIndex] : 0.f) - (20.f * SelectionAlpha);
+			OfferCardBoxes[SlotIndex]->SetRenderOpacity(RevealAlpha * DimAlpha);
+			OfferCardBoxes[SlotIndex]->SetRenderTransform(FSlateRenderTransform(FVector2D(0.f, Lift)));
+		}
+		if (OfferTileBorders.IsValidIndex(SlotIndex) && OfferTileBorders[SlotIndex].IsValid())
+		{
+			const FLinearColor BaseColor = OfferBaseBorderColors.IsValidIndex(SlotIndex) ? OfferBaseBorderColors[SlotIndex] : FT66FlatStyle::DefaultBorder();
+			const FLinearColor GlowColor = OfferGlowColors.IsValidIndex(SlotIndex) ? OfferGlowColors[SlotIndex] : FT66FlatStyle::SelectedBorder();
+			const float GlowAlpha = OfferGlowAlphas.IsValidIndex(SlotIndex) ? FMath::Clamp(OfferGlowAlphas[SlotIndex] + SelectionAlpha * 0.5f, 0.f, 1.f) : 0.f;
+			OfferTileBorders[SlotIndex]->SetBorderBackgroundColor(FMath::Lerp(BaseColor, GlowColor, GlowAlpha));
+		}
+	}
+}
+
+void UT66IdolAltarOverlayWidget::CommitPendingSelectionIfNeeded()
+{
+	if (!PendingSelection.bPending || PendingSelection.bCommitAttempted)
+	{
+		return;
+	}
+
+	PendingSelection.bCommitAttempted = true;
+	UWorld* World = GetWorld();
+	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+	UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World);
+	if (!IdolManager || PendingSelection.IdolID.IsNone())
+	{
+		return;
+	}
+
+	const bool bSelectionApplied = PendingSelection.bTutorialSingleOffer
+		? IdolManager->SelectIdolFromAltar(PendingSelection.IdolID)
+		: IdolManager->SelectIdolFromStock(PendingSelection.StockIndex);
+	if (!bSelectionApplied)
+	{
+		if (StatusText.IsValid())
+		{
+			StatusText->SetText(Loc ? Loc->GetText_IdolAltarNoEmptySlot() : NSLOCTEXT("T66.IdolAltar", "NoEmptySlot", "No empty idol slot."));
+		}
+		return;
+	}
+
+	ConsumeSelectionBudget(PendingSelection.StockIndex);
 	if (StatusText.IsValid())
 	{
 		StatusText->SetText(
-			bWasUpgrade
+			PendingSelection.bWasUpgrade
 				? NSLOCTEXT("T66.IdolAltar", "UpgradeApplied", "Upgraded idol.")
 				: (Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped.")));
 	}
+}
 
-	RefreshStock();
-	return FReply::Handled();
+void UT66IdolAltarOverlayWidget::ClearPendingSelection()
+{
+	PendingSelection = FPendingSelection{};
+	for (float& SelectionAlpha : OfferSelectionAlphas)
+	{
+		SelectionAlpha = 0.f;
+	}
 }
 
 FReply UT66IdolAltarOverlayWidget::OnReroll()
@@ -788,11 +1090,17 @@ FReply UT66IdolAltarOverlayWidget::OnReroll()
 
 	ActiveOfferCategoryIndex = (ActiveOfferCategoryIndex + 1) % OfferCategoryCount;
 	RefreshStock();
+	if (TSharedPtr<SWidget> Widget = AnimationActiveTimerWidget.Pin())
+	{
+		StartRevealAnimation(Widget.ToSharedRef());
+	}
 	return FReply::Handled();
 }
 
 FReply UT66IdolAltarOverlayWidget::OnBack()
 {
+	CommitPendingSelectionIfNeeded();
+
 	if (UWorld* World = GetWorld())
 	{
 		if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager(World))

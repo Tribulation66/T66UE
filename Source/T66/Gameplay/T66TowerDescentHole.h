@@ -8,6 +8,9 @@
 
 class UBoxComponent;
 class UPrimitiveComponent;
+class UStaticMeshComponent;
+class AT66EnemyBase;
+class AT66HeroBase;
 
 UCLASS(Blueprintable)
 class T66_API AT66TowerDescentHole : public AActor
@@ -20,7 +23,17 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Collision")
 	TObjectPtr<UBoxComponent> TriggerBox;
 
-	void InitializeHole(int32 InFromFloorNumber, int32 InToFloorNumber, const FVector& InTriggerExtent);
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
+	TObjectPtr<UStaticMeshComponent> GateCoverMesh;
+
+	void InitializeHole(
+		int32 InFromFloorNumber,
+		int32 InToFloorNumber,
+		const FVector& InTriggerExtent,
+		bool bInRequiresWeaponSelection,
+		bool bInRequiresGuardianDefeated);
+	void SetGuardianEnemy(AT66EnemyBase* InGuardianEnemy);
+	bool Interact(AT66HeroBase* Hero);
 
 protected:
 	virtual void BeginPlay() override;
@@ -34,7 +47,16 @@ protected:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 private:
+	void RefreshGateVisualState();
+	bool CanOpenGate(const AT66HeroBase* Hero) const;
+	bool IsGuardianDefeated() const;
+	void TriggerDescentForHero(AT66HeroBase* Hero);
+
 	int32 FromFloorNumber = INDEX_NONE;
 	int32 ToFloorNumber = INDEX_NONE;
+	bool bGateOpen = false;
+	bool bRequiresWeaponSelection = false;
+	bool bRequiresGuardianDefeated = false;
 	TSet<TWeakObjectPtr<AActor>> ActiveActors;
+	TWeakObjectPtr<AT66EnemyBase> GuardianEnemy;
 };

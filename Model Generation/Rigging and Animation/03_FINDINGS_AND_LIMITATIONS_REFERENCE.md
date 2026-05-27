@@ -7,6 +7,7 @@ This file records repo-proven findings that matter to the current mob/VAT animat
 - Blender 5.1.1 is installed at `C:\Program Files\Blender Foundation\Blender 5.1\blender.exe`.
 - Native Blender MP4 rendering works for mob previews.
 - Use unlit/emissive preview materials for mob QA so dark faces are not mistaken for texture or orientation problems.
+- 2026-05-22 Slime King telegraph preview pass found this Blender 5.1.1 install did not expose `FFMPEG` in `scene.render.image_settings.file_format`; fallback is Blender-rendered PNG sequences encoded to MP4 with local ffmpeg/imageio so the visual frames still come from Blender.
 
 ## 2026-05-14 Enemy VAT Pipeline Exploration
 
@@ -56,7 +57,8 @@ Source findings:
 Runtime behavior finding:
 
 - The implemented enemy families currently resolve to `Melee`, `Rush`, `Ranged`, and `Flying`.
-- Data archetypes such as `Exploder`, `Turret`, `Necromancer`, and `Stutterer` exist in the roster data, but matching runtime subclasses are currently missing.
+- Data archetypes such as `Exploder` and `Stutterer` exist in the roster data, but matching runtime subclasses are currently missing.
+- Ranged subsections (`Turret`, `Strafer`, `Necromancer`) were intentionally collapsed into `Archetype=Ranged` on 2026-05-25 after the user clarified that there should be one ranged class with no ranged subsections for now. Reintroduce them only through an explicit future ranged-design pass.
 - VAT animation can provide visual cues for those archetypes, but it does not implement missing gameplay behavior.
 
 ## UE 5.7 AnimToTexture Notes
@@ -111,6 +113,31 @@ Current style finding:
 - The user prefers enemy movement where every authored frame visibly changes the silhouette or contact state.
 - The desired read is intentionally crunchy and slightly stuttered, like a lower-frame animation, not a smooth physically interpolated glide.
 - For Slime specifically, the motion should bounce more than the first pass while still reading as ground-dragging blob motion, not invisible legs.
+
+## 2026-05-25 BoneWalker Process Failure And New Gates
+
+The current BoneWalker movement pass is rejected as a process failure, not a polish issue. Codex visually identified leg stretching/smearing in the side-loop evidence, while Claude reviewed the text/process evidence only and did not independently inspect the frames. Keep that distinction in future reports.
+
+Required gates before the next BoneWalker handoff:
+
+- front-axis proof: render or inspect the source from `+Y`, `-Y`, `+X`, and `-X` before deciding which direction is the true front; do not fix backwards movement with a blind yaw flip
+- body-type deformation: classify the mob's body plan first, then choose a matching authoring method; stripped skeleton humanoids need simple bones or rigid segment controls instead of broad coordinate wobble
+- no-stretch gate: side-view loop evidence must show limb length, volume, and contact are preserved; rubbery smears, flat 2D leg collapses, or major volume loss fail the pass
+- Visual QA table: record PASS/FAIL for front/back axis, method match, limb stretch, rubber smear, volume loss, foot/contact slide, and gameplay-camera readability
+
+The next BoneWalker preview may be authored only as a candidate. Do not present a BoneWalker video as acceptable until a separate QA packet receives its own valid first-line `Verdict: APPROVE`.
+
+## 2026-05-26 BoneWalker Runtime Movement-Match Gate
+
+The 2026-05-25 rigid BoneWalker candidate solved the large failure class: mechanical anatomical movement with no visible stretching. The remaining gap is not just Blender polish; it is matching local gait cadence against actual on-map travel speed so the mob does not look like it is hopping, gliding, or moving through a gravity-free world.
+
+New reusable proof path:
+
+- Blender candidate proof remains required for front-axis, body-type method, and no-stretch review.
+- Runtime movement proof uses `Scripts\CaptureT66EnemyAnimationPreview.ps1`.
+- That wrapper reaches `-T66GameplayAutoCapture=enemyanimpreview`, spawns a configured `AT66MobBase`, and lets `UT66MobManagerSubsystem` move it toward the hidden hero target while the camera frames the path.
+- The log evidence must include `[EnemyAnimPreview]` time samples with changing location and non-zero `StoredVelocity`.
+- The Visual QA table must include `map-speed match` before a movement pass is called runtime-ready.
 
 ## Performance Status
 

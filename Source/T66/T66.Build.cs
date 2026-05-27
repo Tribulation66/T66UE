@@ -43,8 +43,18 @@ public class T66 : ModuleRules
 			"Media",
 			"ProceduralMeshComponent",
 			"Projects",
-			"RenderCore"
+			"RenderCore",
+			"MeshDescription",
+			"StaticMeshDescription"
 		});
+
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.AddRange(new string[]
+			{
+				"NiagaraEditor"
+			});
+		}
 
 		if (Target.Platform == UnrealTargetPlatform.Win64)
 		{

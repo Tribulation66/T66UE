@@ -1,18 +1,57 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/RunState/T66RunStateSubsystem_Private.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66AudioSubsystem.h"
+#include "Gameplay/T66GameMode.h"
+#include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66MobBase.h"
 #include "Gameplay/Traps/T66TrapBase.h"
+#include "Gameplay/T66LavaPatch.h"
+#include "Gameplay/T66LoanShark.h"
+#include "Gameplay/T66MiasmaBoundary.h"
+#include "Gameplay/T66MiasmaManager.h"
+#include "Gameplay/T66MiasmaTile.h"
+#include "Gameplay/T66TutorialManager.h"
+#include "CollisionQueryParams.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
 
 using namespace T66RunStatePrivate;
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66DamageReceived, Log, All);
+DEFINE_LOG_CATEGORY_STATIC(LogT66RunState, Log, All);
+
 namespace
 {
+	static const FName T66BackroomsChaserTouchDelivery(TEXT("BackroomsChaserTouch"));
+
+	FString T66FormatDamageActorLocation(const AActor* Actor)
+	{
+		return Actor ? Actor->GetActorLocation().ToCompactString() : FString(TEXT("None"));
+	}
+
+	FString T66FormatDamageActorName(const AActor* Actor)
+	{
+		return Actor ? Actor->GetName() : FString(TEXT("None"));
+	}
+
+	FString T66FormatDamageActorClass(const AActor* Actor)
+	{
+		return Actor && Actor->GetClass() ? Actor->GetClass()->GetName() : FString(TEXT("None"));
+	}
+
 	FName T66ResolveDamageReceivedSourceID(AActor* Attacker)
 	{
 		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Attacker))
 		{
 			return Enemy->MobID.IsNone() ? FName(TEXT("Enemy")) : Enemy->MobID;
+		}
+
+		if (AT66MobBase* Mob = Cast<AT66MobBase>(Attacker))
+		{
+			return Mob->GetMobID().IsNone() ? FName(TEXT("Mob")) : Mob->GetMobID();
 		}
 
 		if (AT66BossBase* Boss = Cast<AT66BossBase>(Attacker))
@@ -37,12 +76,145 @@ namespace
 			return FName(TEXT("Trap"));
 		}
 
+		if (Cast<AT66MiasmaBoundary>(Attacker))
+		{
+			return FName(TEXT("MiasmaBoundary"));
+		}
+
+		if (Cast<AT66MiasmaManager>(Attacker))
+		{
+			return FName(TEXT("MiasmaCoverage"));
+		}
+
+		if (Cast<AT66MiasmaTile>(Attacker))
+		{
+			return FName(TEXT("MiasmaTile"));
+		}
+
+		if (Cast<AT66LavaPatch>(Attacker))
+		{
+			return FName(TEXT("LavaPatch"));
+		}
+
+		if (Cast<AT66LoanShark>(Attacker))
+		{
+			return FName(TEXT("LoanShark"));
+		}
+
+		if (Cast<AT66TutorialManager>(Attacker))
+		{
+			return FName(TEXT("TutorialScriptedDamage"));
+		}
+
 		if (Attacker && Attacker->GetClass())
 		{
 			return FName(*Attacker->GetClass()->GetName());
 		}
 
 		return UT66DamageLogSubsystem::SourceID_Environment;
+	}
+
+	FName T66ResolveDeliveryMethod(AActor* Attacker, const FName RequestedMethod)
+	{
+		if (!RequestedMethod.IsNone())
+		{
+			return RequestedMethod;
+		}
+
+		if (Cast<AT66EnemyBase>(Attacker))
+		{
+			return FName(TEXT("EnemyUnspecified"));
+		}
+
+		if (Cast<AT66MobBase>(Attacker))
+		{
+			return FName(TEXT("EnemyUnspecified"));
+		}
+
+		if (Cast<AT66BossBase>(Attacker))
+		{
+			return FName(TEXT("BossUnspecified"));
+		}
+
+		if (Cast<AT66TrapBase>(Attacker))
+		{
+			return FName(TEXT("TrapUnspecified"));
+		}
+
+		if (Cast<AT66MiasmaBoundary>(Attacker))
+		{
+			return FName(TEXT("MiasmaBoundary"));
+		}
+
+		if (Cast<AT66MiasmaManager>(Attacker))
+		{
+			return FName(TEXT("MiasmaCoverage"));
+		}
+
+		if (Cast<AT66MiasmaTile>(Attacker))
+		{
+			return FName(TEXT("MiasmaTile"));
+		}
+
+		if (Cast<AT66LavaPatch>(Attacker))
+		{
+			return FName(TEXT("LavaPatch"));
+		}
+
+		if (Cast<AT66LoanShark>(Attacker))
+		{
+			return FName(TEXT("LoanSharkTouch"));
+		}
+
+		if (Cast<AT66TutorialManager>(Attacker))
+		{
+			return FName(TEXT("TutorialScriptedDamage"));
+		}
+
+		return FName(TEXT("Unspecified"));
+	}
+
+	float T66Distance2DOrNegative(const AActor* A, const AActor* B)
+	{
+		return (A && B) ? FVector::Dist2D(A->GetActorLocation(), B->GetActorLocation()) : -1.f;
+	}
+
+	float T66Distance3DOrNegative(const AActor* A, const AActor* B)
+	{
+		return (A && B) ? FVector::Dist(A->GetActorLocation(), B->GetActorLocation()) : -1.f;
+	}
+
+	FString T66ResolveLineOfSightStatus(
+		UWorld* World,
+		const AActor* SourceActor,
+		const AActor* HeroActor,
+		const AActor* Attacker,
+		const AActor* DamageCauser,
+		FString& OutBlockerName)
+	{
+		OutBlockerName = TEXT("None");
+		if (!World || !SourceActor || !HeroActor)
+		{
+			return TEXT("Unknown");
+		}
+
+		const FVector Start = SourceActor->GetActorLocation();
+		const FVector End = HeroActor->GetActorLocation();
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(T66DamageProvenanceLOS), false);
+		Params.AddIgnoredActor(Attacker);
+		Params.AddIgnoredActor(DamageCauser);
+		Params.AddIgnoredActor(HeroActor);
+
+		FHitResult Hit;
+		if (!World->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+		{
+			return TEXT("Clear");
+		}
+
+		OutBlockerName = Hit.GetActor()
+			? FString::Printf(TEXT("%s/%s"), *Hit.GetActor()->GetName(), Hit.GetActor()->GetClass() ? *Hit.GetActor()->GetClass()->GetName() : TEXT("None"))
+			: FString(TEXT("WorldStatic"));
+		return TEXT("Blocked");
 	}
 }
 
@@ -108,7 +280,7 @@ void UT66RunStateSubsystem::ResetHeartSlotTiers()
 void UT66RunStateSubsystem::SyncMaxHPToHeartTiers()
 {
 	const float BaseMaxHP = FMath::Max(DefaultMaxHP, GetTotalHeartCapacity());
-	MaxHP = FMath::Max(1.0f, BaseMaxHP * FMath::Max(0.1f, ActiveRunModifiers.HeroHealthMultiplier));
+	MaxHP = FMath::Max(1.0f, BaseMaxHP);
 }
 
 
@@ -225,6 +397,42 @@ void UT66RunStateSubsystem::AddMaxHearts(int32 DeltaHearts)
 	SyncMaxHPToHeartTiers();
 	CurrentHP = FMath::Clamp(CurrentHP + (MaxHP - PreviousMaxHP), 0.f, MaxHP);
 	HeartsChanged.Broadcast();
+}
+
+
+float UT66RunStateSubsystem::ApplyAutomationHeroHPOverride(const float RequestedHP, const TCHAR* Reason)
+{
+	static constexpr float MaxAutomationHeroHPOverride = 1000.f;
+	if (RequestedHP <= 0.f)
+	{
+		return CurrentHP;
+	}
+
+	const float AppliedHP = FMath::Clamp(RequestedHP, 1.f, MaxAutomationHeroHPOverride);
+	if (!FMath::IsNearlyEqual(AppliedHP, RequestedHP))
+	{
+		UE_LOG(
+			LogT66RunState,
+			Warning,
+			TEXT("[PerfAutomation] Requested hero HP override %.1f exceeded packet cap %.1f; applying %.1f. Reason=%s"),
+			RequestedHP,
+			MaxAutomationHeroHPOverride,
+			AppliedHP,
+			Reason ? Reason : TEXT("Unknown"));
+	}
+
+	MaxHP = AppliedHP;
+	CurrentHP = AppliedHP;
+	if (HeartSlotTiers.Num() != DefaultMaxHearts)
+	{
+		ResetHeartSlotTiers();
+	}
+	for (uint8& Tier : HeartSlotTiers)
+	{
+		Tier = static_cast<uint8>(MaxHeartTier);
+	}
+	HeartsChanged.Broadcast();
+	return AppliedHP;
 }
 
 
@@ -354,18 +562,9 @@ void UT66RunStateSubsystem::ApplyTemporaryPrimaryStatAmplifier(
 	const int32 BonusStatPoints,
 	const float DurationSeconds)
 {
-	const int32 BonusTenths = WholeStatToTenths(FMath::Max(1, BonusStatPoints));
-	const float Duration = FMath::Clamp(DurationSeconds, 0.f, 60.f);
-	if (BonusTenths <= 0 || Duration <= 0.f)
-	{
-		return;
-	}
-
-	FT66TemporaryPrimaryStatAmplifier& Amplifier = TemporaryPrimaryStatAmplifiers.AddDefaulted_GetRef();
-	Amplifier.StatType = StatType;
-	Amplifier.BonusTenths = BonusTenths;
-	Amplifier.SecondsRemaining = Duration;
-	HeroProgressChanged.Broadcast();
+	static_cast<void>(StatType);
+	static_cast<void>(BonusStatPoints);
+	static_cast<void>(DurationSeconds);
 }
 
 
@@ -386,60 +585,31 @@ void UT66RunStateSubsystem::ApplyStatusCurse(float /*DurationSeconds*/) {}
 
 bool UT66RunStateSubsystem::TryActivateUltimate()
 {
-	if (UltimateCooldownRemainingSeconds > 0.f) return false;
-	UltimateCooldownRemainingSeconds = UltimateCooldownSeconds;
-	LastBroadcastUltimateSecond = FMath::CeilToInt(UltimateCooldownRemainingSeconds);
-	UltimateChanged.Broadcast();
-	return true;
+	if (UltimateCooldownRemainingSeconds > 0.f || LastBroadcastUltimateSecond != 0)
+	{
+		UltimateCooldownRemainingSeconds = 0.f;
+		LastBroadcastUltimateSecond = 0;
+		UltimateChanged.Broadcast();
+	}
+	return false;
 }
 
 
 void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 {
+	if (bBackroomsGameplayPaused)
+	{
+		return;
+	}
+
 	// HP regen (numerical)
 	ApplyHpRegen(DeltaTime);
 
-	// Ultimate cooldown
 	if (UltimateCooldownRemainingSeconds > 0.f)
 	{
-		UltimateCooldownRemainingSeconds = FMath::Max(0.f, UltimateCooldownRemainingSeconds - DeltaTime);
-		const int32 Cur = FMath::CeilToInt(UltimateCooldownRemainingSeconds);
-		if (Cur != LastBroadcastUltimateSecond)
-		{
-			LastBroadcastUltimateSecond = Cur;
-			UltimateChanged.Broadcast();
-		}
-	}
-
-	// Last stand timer
-	if (bInLastStand && LastStandSecondsRemaining > 0.f)
-	{
-		LastStandSecondsRemaining = FMath::Max(0.f, LastStandSecondsRemaining - DeltaTime);
-		const int32 Cur = FMath::CeilToInt(LastStandSecondsRemaining);
-		if (Cur != LastBroadcastLastStandSecond)
-		{
-			LastBroadcastLastStandSecond = Cur;
-			SurvivalChanged.Broadcast();
-		}
-		if (LastStandSecondsRemaining <= 0.f)
-		{
-			EndLastStandAndDie();
-		}
-	}
-
-	if (bInQuickReviveDowned && QuickReviveDownedSecondsRemaining > 0.f)
-	{
-		QuickReviveDownedSecondsRemaining = FMath::Max(0.f, QuickReviveDownedSecondsRemaining - DeltaTime);
-		const int32 Cur = FMath::CeilToInt(QuickReviveDownedSecondsRemaining);
-		if (Cur != LastBroadcastQuickReviveSecond)
-		{
-			LastBroadcastQuickReviveSecond = Cur;
-			QuickReviveChanged.Broadcast();
-		}
-		if (QuickReviveDownedSecondsRemaining <= 0.f)
-		{
-			EndQuickReviveDownedAndRevive();
-		}
+		UltimateCooldownRemainingSeconds = 0.f;
+		LastBroadcastUltimateSecond = 0;
+		UltimateChanged.Broadcast();
 	}
 
 	// Stage speed boost timer
@@ -472,29 +642,25 @@ void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 	// Status effects removed — enemies no longer apply Burn/Chill/Curse.
 }
 
+void UT66RunStateSubsystem::SetBackroomsGameplayPaused(const bool bPaused)
+{
+	if (bBackroomsGameplayPaused == bPaused)
+	{
+		return;
+	}
+
+	bBackroomsGameplayPaused = bPaused;
+}
+
 
 bool UT66RunStateSubsystem::GrantQuickReviveCharge()
 {
-	if (bQuickReviveChargeReady || bInQuickReviveDowned)
-	{
-		return false;
-	}
-
-	bQuickReviveChargeReady = true;
-	QuickReviveChanged.Broadcast();
-	return true;
+	return false;
 }
 
 
 void UT66RunStateSubsystem::ClearQuickReviveCharge()
 {
-	if (!bQuickReviveChargeReady)
-	{
-		return;
-	}
-
-	bQuickReviveChargeReady = false;
-	QuickReviveChanged.Broadcast();
 }
 
 
@@ -504,20 +670,9 @@ bool UT66RunStateSubsystem::IsBossDamageSource(const AActor* Attacker)
 }
 
 
-void UT66RunStateSubsystem::HandleLethalDamage(AActor* Attacker)
+void UT66RunStateSubsystem::HandleLethalDamage(AActor* Attacker, const FName DeliveryMethod)
 {
-	if (bInQuickReviveDowned)
-	{
-		EndQuickReviveDownedAndDie();
-		return;
-	}
-
-	if (bInLastStand)
-	{
-		EndLastStandAndDie();
-		return;
-	}
-
+	const bool bBackroomsChaserTouch = DeliveryMethod == T66BackroomsChaserTouchDelivery;
 	// Dev Immortality: never end the run.
 	if (bDevImmortality)
 	{
@@ -527,16 +682,23 @@ void UT66RunStateSubsystem::HandleLethalDamage(AActor* Attacker)
 		return;
 	}
 
-	if (bQuickReviveChargeReady)
+	if (!bBackroomsChaserTouch && ConsumeBackroomsQuickReviveItem())
 	{
-		EnterQuickReviveDowned();
-		return;
-	}
+		if (HeartSlotTiers.Num() != DefaultMaxHearts)
+		{
+			RebuildHeartSlotTiersFromMaxHP();
+		}
 
-	// If charged, trigger last-stand instead of dying.
-	if (SurvivalCharge01 >= 1.f)
-	{
-		EnterLastStand();
+		CurrentHP = FMath::Clamp(GetHeartSlotCapacity(0), 1.f, MaxHP);
+		if (UWorld* World = GetWorld())
+		{
+			LastDamageTime = static_cast<float>(World->GetTimeSeconds());
+		}
+		else
+		{
+			LastDamageTime = 0.f;
+		}
+		HeartsChanged.Broadcast();
 		return;
 	}
 
@@ -547,149 +709,28 @@ void UT66RunStateSubsystem::HandleLethalDamage(AActor* Attacker)
 }
 
 
-void UT66RunStateSubsystem::EnterLastStand()
+bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker, const FName DeliveryMethod, AActor* DamageCauser)
 {
-	bInLastStand = true;
-	LastStandSecondsRemaining = LastStandDurationSeconds;
-	LastBroadcastLastStandSecond = FMath::CeilToInt(LastStandSecondsRemaining);
+	if (DamageHP <= 0) return false;
+	const int32 RequestedDamageHP = DamageHP;
+	const bool bBackroomsChaserTouch = DeliveryMethod == T66BackroomsChaserTouchDelivery;
 
-	// Consume the charge.
-	SurvivalCharge01 = 0.f;
-
-	// HP stays at 0, but the run continues.
-	HeartsChanged.Broadcast();
-	SurvivalChanged.Broadcast();
-}
-
-
-void UT66RunStateSubsystem::EnterQuickReviveDowned()
-{
-	bQuickReviveChargeReady = false;
-	bInQuickReviveDowned = true;
-	QuickReviveDownedSecondsRemaining = QuickReviveDownedDurationSeconds;
-	LastBroadcastQuickReviveSecond = FMath::CeilToInt(QuickReviveDownedSecondsRemaining);
-	CurrentHP = 0.f;
-	LastDamageTime = -9999.f;
-
-	if (UWorld* World = GetWorld())
+	if (UGameInstance* GIForBackrooms = GetGameInstance())
 	{
-		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		if (UWorld* WorldForBackrooms = GIForBackrooms->GetWorld())
 		{
-			for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
+			if (AT66GameMode* GameMode = WorldForBackrooms->GetAuthGameMode<AT66GameMode>())
 			{
-				if (AT66EnemyBase* Enemy = WeakEnemy.Get())
+				if (GameMode->IsBackroomsChallengeActive() && !bBackroomsChaserTouch)
 				{
-					Enemy->ApplyForcedRunAway(QuickReviveDownedDurationSeconds);
+					return false;
 				}
 			}
 		}
 	}
 
-	HeartsChanged.Broadcast();
-	QuickReviveChanged.Broadcast();
-}
-
-
-void UT66RunStateSubsystem::EndQuickReviveDownedAndRevive()
-{
-	if (!bInQuickReviveDowned)
+	if (!bBackroomsChaserTouch && bSaintBlessingActive)
 	{
-		return;
-	}
-
-	bInQuickReviveDowned = false;
-	QuickReviveDownedSecondsRemaining = 0.f;
-	LastBroadcastQuickReviveSecond = 0;
-
-	if (HeartSlotTiers.Num() != DefaultMaxHearts)
-	{
-		RebuildHeartSlotTiersFromMaxHP();
-	}
-
-	CurrentHP = FMath::Clamp(GetHeartSlotCapacity(0), 1.f, MaxHP);
-
-	if (UWorld* World = GetWorld())
-	{
-		LastDamageTime = static_cast<float>(World->GetTimeSeconds());
-	}
-	else
-	{
-		LastDamageTime = 0.f;
-	}
-
-	HeartsChanged.Broadcast();
-	QuickReviveChanged.Broadcast();
-}
-
-
-void UT66RunStateSubsystem::EndQuickReviveDownedAndDie()
-{
-	if (!bInQuickReviveDowned)
-	{
-		return;
-	}
-
-	bInQuickReviveDowned = false;
-	QuickReviveDownedSecondsRemaining = 0.f;
-	LastBroadcastQuickReviveSecond = 0;
-	QuickReviveChanged.Broadcast();
-
-	if (bDevImmortality)
-	{
-		CurrentHP = 0.f;
-		HeartsChanged.Broadcast();
-		return;
-	}
-
-	CurrentHP = 0.f;
-	LastDamageTime = -9999.f;
-	HeartsChanged.Broadcast();
-	OnPlayerDied.Broadcast();
-}
-
-
-void UT66RunStateSubsystem::EndLastStandAndDie()
-{
-	bInLastStand = false;
-	LastStandSecondsRemaining = 0.f;
-	LastBroadcastLastStandSecond = 0;
-	SurvivalChanged.Broadcast();
-
-	// Dev Immortality: never end the run.
-	if (bDevImmortality)
-	{
-		CurrentHP = 0.f;
-		HeartsChanged.Broadcast();
-		return;
-	}
-
-	// Die as normal now.
-	CurrentHP = 0.f;
-	HeartsChanged.Broadcast();
-	OnPlayerDied.Broadcast();
-}
-
-
-bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
-{
-	if (DamageHP <= 0) return false;
-
-	if (bSaintBlessingActive)
-	{
-		return false;
-	}
-
-	// If we're in last-stand, we ignore damage (invincible).
-	if (bInLastStand) return false;
-
-	// Quick Revive downed state only ends if a boss lands the finishing hit.
-	if (bInQuickReviveDowned)
-	{
-		if (IsBossDamageSource(Attacker))
-		{
-			EndQuickReviveDownedAndDie();
-			return true;
-		}
 		return false;
 	}
 
@@ -716,7 +757,7 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 	const float Evade = GetEvasionChance01();
 	AntiCheatIncomingHitChecks = FMath::Clamp(AntiCheatIncomingHitChecks + 1, 0, 1000000);
 	AntiCheatTotalEvasionChance = FMath::Clamp(AntiCheatTotalEvasionChance + FMath::Clamp(Evade, 0.f, 1.f), 0.f, 1000000.f);
-	const bool bDodged = Evade > 0.f && (RngSub ? (RngSub->GetRunStream().GetFraction() < Evade) : (FMath::FRand() < Evade));
+	const bool bDodged = !bBackroomsChaserTouch && Evade > 0.f && (RngSub ? (RngSub->GetRunStream().GetFraction() < Evade) : (FMath::FRand() < Evade));
 	if (bDodged)
 	{
 		RecordAntiCheatHitCheckEvent(Evade, true, false);
@@ -761,11 +802,13 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 	// Armor: reduce the hit (still at least 1 HP if hit > 0).
 	const float Armor = GetArmorReduction01();
 	const float Reduced = static_cast<float>(FMath::Max(1, FMath::CeilToInt(static_cast<float>(DamageHP) * (1.f - Armor))));
+	const int32 IncomingDamageHP = DamageHP;
+	const int32 AppliedDamageHP = FMath::RoundToInt(Reduced);
 
 	UGameInstance* GI = GetGameInstance();
 	UWorld* World = GI ? GI->GetWorld() : nullptr;
 	const float Now = World ? static_cast<float>(World->GetTimeSeconds()) : 0.f;
-	if (Now - LastDamageTime < InvulnDurationSeconds)
+	if (!bBackroomsChaserTouch && Now - LastDamageTime < InvulnDurationSeconds)
 	{
 		// Any resolved non-dodge hit check breaks the consecutive dodge streak,
 		// even when invulnerability prevents damage from being applied.
@@ -818,11 +861,71 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 	}
 
 	LastDamageTime = Now;
+	const float PreviousHP = CurrentHP;
 	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
+	const FName DamageSourceID = T66ResolveDamageReceivedSourceID(Attacker);
 	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
 	{
-		DamageLog->RecordDamageReceived(T66ResolveDamageReceivedSourceID(Attacker), FMath::RoundToInt(Reduced));
+		DamageLog->RecordDamageReceived(DamageSourceID, AppliedDamageHP);
 	}
+
+	APawn* HeroPawn = nullptr;
+	FString HeroLocation(TEXT("None"));
+	if (World)
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			HeroPawn = PC->GetPawn();
+			if (HeroPawn)
+			{
+				HeroLocation = HeroPawn->GetActorLocation().ToCompactString();
+			}
+		}
+	}
+
+	AActor* ResolvedDamageCauser = DamageCauser ? DamageCauser : Attacker;
+	const FName ResolvedDeliveryMethod = T66ResolveDeliveryMethod(Attacker, DeliveryMethod);
+	FString LOSBlockerName;
+	const FString LOSStatus = T66ResolveLineOfSightStatus(
+		World,
+		ResolvedDamageCauser,
+		HeroPawn,
+		Attacker,
+		ResolvedDamageCauser,
+		LOSBlockerName);
+	const float SourceDist2D = T66Distance2DOrNegative(Attacker, HeroPawn);
+	const float SourceDist3D = T66Distance3DOrNegative(Attacker, HeroPawn);
+	const float CauserDist2D = T66Distance2DOrNegative(ResolvedDamageCauser, HeroPawn);
+	const float CauserDist3D = T66Distance3DOrNegative(ResolvedDamageCauser, HeroPawn);
+
+	UE_LOG(
+		LogT66DamageReceived,
+		Log,
+		TEXT("[CombatDamage] AppliedHP=%d RequestedHP=%d IncomingHP=%d SourceID=%s Delivery=%s SourceActor=%s SourceClass=%s DamageCauser=%s CauserClass=%s HeroHP=%.1f->%.1f MaxHP=%.1f HeroLoc=%s SourceLoc=%s CauserLoc=%s SourceDist2D=%.1f SourceDist3D=%.1f CauserDist2D=%.1f CauserDist3D=%.1f CauserLOS=%s LOSBlocker=%s Stage=%d WorldTime=%.2f"),
+		AppliedDamageHP,
+		RequestedDamageHP,
+		IncomingDamageHP,
+		*DamageSourceID.ToString(),
+		*ResolvedDeliveryMethod.ToString(),
+		*T66FormatDamageActorName(Attacker),
+		*T66FormatDamageActorClass(Attacker),
+		*T66FormatDamageActorName(ResolvedDamageCauser),
+		*T66FormatDamageActorClass(ResolvedDamageCauser),
+		PreviousHP,
+		CurrentHP,
+		MaxHP,
+		*HeroLocation,
+		*T66FormatDamageActorLocation(Attacker),
+		*T66FormatDamageActorLocation(ResolvedDamageCauser),
+		SourceDist2D,
+		SourceDist3D,
+		CauserDist2D,
+		CauserDist3D,
+		*LOSStatus,
+		*LOSBlockerName,
+		GetCurrentStage(),
+		Now);
+
 	UT66AudioSubsystem::PlayEventFromWorldContext(World, FName(TEXT("Hero.Damage")), FVector::ZeroVector, nullptr);
 	AntiCheatDamageTakenHitCount = FMath::Clamp(AntiCheatDamageTakenHitCount + 1, 0, 1000000);
 	AntiCheatCurrentConsecutiveDodges = 0;
@@ -834,28 +937,19 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 		BrawlersFuryEndWorldTime = World->GetTimeSeconds() + 3.0;
 	}
 
-	if (World)
+	if (HeroPawn)
 	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
+		if (UT66FloatingCombatTextSubsystem* FCT = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
 		{
-			if (APawn* HeroPawn = PC->GetPawn())
-			{
-				if (UT66FloatingCombatTextSubsystem* FCT = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
-				{
-					FCT->ShowDamageTaken(HeroPawn, FMath::RoundToInt(Reduced));
-				}
-			}
+			FCT->ShowDamageTaken(HeroPawn, FMath::RoundToInt(Reduced));
 		}
 	}
 
-	// Survival charge: 100 HP damage = full (5 hearts * 20 HP). So 1 HP = 0.01 charge.
-	SurvivalCharge01 = FMath::Clamp(SurvivalCharge01 + (Reduced / DefaultMaxHP), 0.f, 1.f);
-	SurvivalChanged.Broadcast();
 	HeartsChanged.Broadcast();
 
 	if (CurrentHP <= 0.f)
 	{
-		HandleLethalDamage(Attacker);
+		HandleLethalDamage(Attacker, ResolvedDeliveryMethod);
 	}
 	return true;
 }
@@ -863,7 +957,6 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker)
 
 void UT66RunStateSubsystem::HealToFull()
 {
-	if (bInLastStand || bInQuickReviveDowned) return;
 	CurrentHP = MaxHP;
 	HeartsChanged.Broadcast();
 }
@@ -871,7 +964,6 @@ void UT66RunStateSubsystem::HealToFull()
 
 void UT66RunStateSubsystem::HealHP(float Amount)
 {
-	if (bInLastStand || bInQuickReviveDowned) return;
 	if (Amount <= 0.f) return;
 
 	const float NewHP = FMath::Clamp(CurrentHP + Amount, 0.f, MaxHP);
@@ -883,7 +975,6 @@ void UT66RunStateSubsystem::HealHP(float Amount)
 
 void UT66RunStateSubsystem::HealHPFromCompanion(float Amount)
 {
-	if (bInLastStand || bInQuickReviveDowned) return;
 	if (Amount <= 0.f) return;
 
 	const float PreviousHP = CurrentHP;
@@ -905,7 +996,6 @@ void UT66RunStateSubsystem::HealHearts(int32 Hearts)
 
 void UT66RunStateSubsystem::ApplyHpRegen(float DeltaTime)
 {
-	if (bInLastStand || bInQuickReviveDowned) return;
 	const float Rate = GetHpRegenPerSecond();
 	if (Rate <= 0.f || DeltaTime <= 0.f) return;
 

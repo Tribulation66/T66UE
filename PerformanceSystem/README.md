@@ -38,6 +38,7 @@ Runtime output is local-only:
 - `Saved/PerformanceSystem/snapshot.current.json`
 - `Saved/PerformanceSystem/snapshot.previous.json`
 - `Saved/PerformanceSystem/Sessions/<session>/events.jsonl`
+- `Saved/PerformanceSystem/Sessions/<session>/board_saturation_samples.jsonl`
 - `Saved/PerformanceSystem/Sessions/<session>/session_summary.json`
 - `Saved/PerformanceSystem/Sessions/<session>/session_summary.md`
 
@@ -56,3 +57,4 @@ Hardware model strings are config-gated and default off in Shipping builds.
 
 Versioned schemas live in `PerformanceSystem/schema/`. Every persisted event/report carries a monotonic integer `SchemaVersion`.
 
+Current runtime schema version is `4`. Version 4 adds rich-actor versus lightweight-mob board-saturation split counts for the Lightweight Actor migration captures.

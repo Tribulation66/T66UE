@@ -1,9 +1,9 @@
 """
-Import the live idol sprite set into /Game/Idols/Sprites, then reload DT_Idols from Content/Data/Idols.csv.
+Import the live rarity-specific idol sprite set into /Game/Idols/Sprites, then reload DT_Idols from Content/Data/Idols.csv.
 
 This script:
 1. Reads live idol IDs from Content/Data/Idols.csv
-2. Imports black/red/yellow/white PNGs for each live idol
+2. Imports Black/Red/Yellow/White PNGs for each live idol
 3. Applies UI texture settings
 4. Reloads DT_Idols from Content/Data/Idols.csv
 5. Deletes obsolete legacy idol sprite assets
@@ -14,18 +14,16 @@ Run with:
 
 import csv
 import os
-import re
 import unreal
 
 
-RARITY_TO_FOLDER = {
-    "black": "Black",
-    "red": "Red",
-    "yellow": "Yellow",
-    "white": "White",
-}
-RARITIES = ("black", "red", "yellow", "white")
 DEST_ROOT = "/Game/Idols/Sprites"
+RARITY_SPECS = [
+    ("Black", "black", "BlackIcon"),
+    ("Red", "red", "RedIcon"),
+    ("Yellow", "yellow", "YellowIcon"),
+    ("White", "white", "WhiteIcon"),
+]
 
 
 def ensure_directory(path):
@@ -58,8 +56,32 @@ def get_live_idol_ids(csv_path):
     return idol_ids
 
 
-def desired_asset_names(idol_ids):
-    return [f"{idol_id}_{rarity}" for idol_id in idol_ids for rarity in RARITIES]
+def source_path_for(source_dir, idol_id, rarity_folder, rarity_suffix):
+    return os.path.join(source_dir, rarity_folder, f"{idol_id}_{rarity_suffix}.png")
+
+
+def dest_dir_for(rarity_folder):
+    return f"{DEST_ROOT}/{rarity_folder}"
+
+
+def dest_name_for(idol_id, rarity_suffix):
+    return f"{idol_id}_{rarity_suffix}"
+
+
+def desired_asset_entries(idol_ids):
+    entries = []
+    for idol_id in idol_ids:
+        for rarity_folder, rarity_suffix, _csv_column in RARITY_SPECS:
+            entries.append(
+                {
+                    "idol_id": idol_id,
+                    "rarity_folder": rarity_folder,
+                    "rarity_suffix": rarity_suffix,
+                    "dest_dir": dest_dir_for(rarity_folder),
+                    "dest_name": dest_name_for(idol_id, rarity_suffix),
+                }
+            )
+    return entries
 
 
 def import_texture(source_path, dest_dir, dest_name):
@@ -123,11 +145,11 @@ def reload_idol_data_table(project_dir):
     unreal.log("[ImportIdolSpritesAndSetup] Reloaded /Game/Data/DT_Idols")
 
 
-def delete_obsolete_assets(desired_names):
+def delete_obsolete_assets(desired_entries):
     existing_paths = unreal.EditorAssetLibrary.list_assets(DEST_ROOT, recursive=True, include_folder=False) or []
     desired_paths = {
-        f"{DEST_ROOT}/{RARITY_TO_FOLDER[name.rsplit('_', 1)[1]]}/{name}"
-        for name in desired_names
+        f"{entry['dest_dir']}/{entry['dest_name']}"
+        for entry in desired_entries
     }
 
     deleted = []
@@ -157,10 +179,15 @@ def main():
     if not idol_ids:
         raise RuntimeError("No live idol IDs found in Idols.csv")
 
-    desired_names = desired_asset_names(idol_ids)
+    desired_entries = desired_asset_entries(idol_ids)
     missing_sources = []
-    for asset_name in desired_names:
-        source_path = os.path.join(source_dir, f"{asset_name}.png")
+    for entry in desired_entries:
+        source_path = source_path_for(
+            source_dir,
+            entry["idol_id"],
+            entry["rarity_folder"],
+            entry["rarity_suffix"],
+        )
         if not os.path.exists(source_path):
             missing_sources.append(source_path)
 
@@ -169,24 +196,20 @@ def main():
         suffix = "" if len(missing_sources) <= 10 else f"\n...and {len(missing_sources) - 10} more"
         raise RuntimeError(f"Missing source idol sprites:\n{preview}{suffix}")
 
-    pattern = re.compile(r"^(Idol_.+)_(black|red|yellow|white)\.png$", re.IGNORECASE)
     imported_count = 0
 
-    for entry in desired_names:
-        png_name = f"{entry}.png"
-        match = pattern.match(png_name)
-        if not match:
-            continue
-
-        rarity_key = match.group(2).lower()
-        folder_name = RARITY_TO_FOLDER[rarity_key]
-        source_path = os.path.join(source_dir, png_name)
-        dest_dir = f"{DEST_ROOT}/{folder_name}"
-        import_texture(source_path, dest_dir, entry)
+    for entry in desired_entries:
+        source_path = source_path_for(
+            source_dir,
+            entry["idol_id"],
+            entry["rarity_folder"],
+            entry["rarity_suffix"],
+        )
+        import_texture(source_path, entry["dest_dir"], entry["dest_name"])
         imported_count += 1
 
     reload_idol_data_table(project_dir)
-    deleted = delete_obsolete_assets(desired_names)
+    deleted = delete_obsolete_assets(desired_entries)
     unreal.log(f"[ImportIdolSpritesAndSetup] Imported {imported_count} idol rarity textures.")
     unreal.log(f"[ImportIdolSpritesAndSetup] Deleted {len(deleted)} obsolete idol sprite assets.")
     unreal.log("=== ImportIdolSpritesAndSetup DONE ===")

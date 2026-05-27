@@ -26,5 +26,28 @@ public:
 	virtual bool Interact(APlayerController* PC) override;
 
 protected:
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void ApplyRarityVisuals() override;
+
+private:
+	struct FLockedChestReward
+	{
+		bool bLocked = false;
+		bool bCommitAttempted = false;
+		ET66Rarity RewardRarity = ET66Rarity::Black;
+		int32 Gold = 0;
+		int32 MinGold = 0;
+		int32 MaxGold = 0;
+		int32 DrawIndex = INDEX_NONE;
+		int32 PreDrawSeed = 0;
+		TWeakObjectPtr<APlayerController> PlayerController;
+	};
+
+	bool LockChestReward(APlayerController* PC);
+	void PresentLockedChestReward();
+	void CommitLockedChestRewardIfNeeded();
+	void FinishChestInteraction();
+
+	FLockedChestReward LockedReward;
+	bool bChestRewardPresentationStarted = false;
 };

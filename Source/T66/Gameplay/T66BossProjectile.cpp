@@ -4,6 +4,8 @@
 
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Gameplay/T66CombatDebugDraw.h"
+#include "Gameplay/T66CombatShared.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
@@ -19,8 +21,15 @@
 #include "NiagaraSystem.h"
 #include "UObject/SoftObjectPath.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66BossProjectile, Log, All);
+
 namespace
 {
+	FString T66BossProjectileVectorForLog(const FVector& Vector)
+	{
+		return Vector.ToCompactString();
+	}
+
 	static TAutoConsoleVariable<int32> CVarT66BossProjectileVFXMaxPerFrame(
 		TEXT("T66.VFX.BossProjectileMaxPerFrame"),
 		28,
@@ -219,7 +228,7 @@ namespace
 
 AT66BossProjectile::AT66BossProjectile()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	InitialLifeSpan = 6.0f;
 	if (!HasAnyFlags(RF_ClassDefaultObject))
 	{
@@ -249,6 +258,13 @@ AT66BossProjectile::AT66BossProjectile()
 	UpdateVisualStyle();
 }
 
+void AT66BossProjectile::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	T66CombatDebugDraw::DrawDamageSphere(CollisionSphere, TEXT("Boss Projectile Damage"), DamageHearts > 0);
+}
+
 void AT66BossProjectile::ConfigureVisualStyle(
 	const ET66BossAttackProfile InAttackProfile,
 	const FLinearColor& InPrimaryColor,
@@ -259,6 +275,12 @@ void AT66BossProjectile::ConfigureVisualStyle(
 	PrimaryColor = InPrimaryColor;
 	SecondaryColor = InSecondaryColor;
 	bUseSecondaryTint = bInUseSecondaryTint;
+	UpdateVisualStyle();
+}
+
+void AT66BossProjectile::SetVisualScaleMultiplier(const float InMultiplier)
+{
+	VisualScaleMultiplier = FMath::Clamp(InMultiplier, 0.35f, 5.f);
 	UpdateVisualStyle();
 }
 
@@ -274,7 +296,11 @@ void AT66BossProjectile::UpdateVisualStyle()
 		VisualMesh->SetStaticMesh(Mesh);
 	}
 
-	VisualMesh->SetRelativeScale3D(T66GetBossProjectileScale(AttackProfile));
+	VisualMesh->SetRelativeScale3D(T66GetBossProjectileScale(AttackProfile) * VisualScaleMultiplier);
+	if (CollisionSphere)
+	{
+		CollisionSphere->SetSphereRadius(24.f * FMath::Max(1.f, VisualScaleMultiplier));
+	}
 	if (AttackProfile == ET66BossAttackProfile::Sharpshooter || AttackProfile == ET66BossAttackProfile::Duelist)
 	{
 		VisualMesh->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
@@ -326,6 +352,21 @@ void AT66BossProjectile::SetTargetLocation(const FVector& TargetLoc, const float
 	ProjectileMovement->MaxSpeed = Speed;
 	const FVector Dir = (TargetLoc - GetActorLocation()).GetSafeNormal();
 	ProjectileMovement->Velocity = Dir * Speed;
+
+	UE_LOG(
+		LogT66BossProjectile,
+		Log,
+		TEXT("[ProjectileFired] Type=BossProjectile Projectile=%s Owner=%s Loc=%s SphereLoc=%s Target=%s Direction=%s Speed=%.1f Radius=%.1f Visual=%s VisualVisible=%d"),
+		*GetName(),
+		GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
+		*T66BossProjectileVectorForLog(GetActorLocation()),
+		CollisionSphere ? *T66BossProjectileVectorForLog(CollisionSphere->GetComponentLocation()) : TEXT("None"),
+		*T66BossProjectileVectorForLog(TargetLoc),
+		*T66BossProjectileVectorForLog(Dir),
+		Speed,
+		CollisionSphere ? CollisionSphere->GetScaledSphereRadius() : 0.f,
+		VisualMesh ? *VisualMesh->GetName() : TEXT("None"),
+		(VisualMesh && VisualMesh->IsVisible() && !VisualMesh->bHiddenInGame) ? 1 : 0);
 }
 
 void AT66BossProjectile::SpawnImpactEffect()
@@ -357,6 +398,8 @@ void AT66BossProjectile::OnSphereOverlap(
 	bool bFromSweep,
 	const FHitResult& SweepResult)
 {
+	(void)OtherBodyIndex;
+
 	if (!OtherActor || OtherActor == GetOwner())
 	{
 		return;
@@ -365,8 +408,46 @@ void AT66BossProjectile::OnSphereOverlap(
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(OtherActor);
 	if (!Hero)
 	{
+		UE_LOG(
+			LogT66BossProjectile,
+			Verbose,
+			TEXT("[ProjectileImpact] Type=BossProjectile Result=NonHero Projectile=%s Owner=%s OtherActor=%s OtherComp=%s ProjectileLoc=%s SphereLoc=%s OverlapComp=%s bFromSweep=%d SweepLoc=%s ImpactPoint=%s Velocity=%s"),
+			*GetName(),
+			GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
+			OtherActor ? *OtherActor->GetName() : TEXT("None"),
+			*T66CombatShared::DescribePrimitiveComponentForCombatLog(OtherComp),
+			*T66BossProjectileVectorForLog(GetActorLocation()),
+			CollisionSphere ? *T66BossProjectileVectorForLog(CollisionSphere->GetComponentLocation()) : TEXT("None"),
+			*T66CombatShared::DescribePrimitiveComponentForCombatLog(OverlappedComponent),
+			bFromSweep ? 1 : 0,
+			*T66BossProjectileVectorForLog(SweepResult.Location),
+			*T66BossProjectileVectorForLog(SweepResult.ImpactPoint),
+			ProjectileMovement ? *T66BossProjectileVectorForLog(ProjectileMovement->Velocity) : TEXT("None"));
 		SpawnImpactEffect();
 		Destroy();
+		return;
+	}
+
+	if (!T66CombatShared::IsHeroHurtboxComponent(Hero, OtherComp))
+	{
+		UE_LOG(
+			LogT66BossProjectile,
+			Log,
+			TEXT("[ProjectileImpact] Type=BossProjectile Result=RejectedNonHeroHurtbox Projectile=%s Owner=%s Hero=%s OtherComp=%s ProjectileLoc=%s SphereLoc=%s HeroLoc=%s HeroDist2D=%.1f SphereToHeroDist2D=%.1f OverlapComp=%s bFromSweep=%d SweepLoc=%s ImpactPoint=%s Velocity=%s"),
+			*GetName(),
+			GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
+			*Hero->GetName(),
+			*T66CombatShared::DescribePrimitiveComponentForCombatLog(OtherComp),
+			*T66BossProjectileVectorForLog(GetActorLocation()),
+			CollisionSphere ? *T66BossProjectileVectorForLog(CollisionSphere->GetComponentLocation()) : TEXT("None"),
+			*T66BossProjectileVectorForLog(Hero->GetActorLocation()),
+			FVector::Dist2D(GetActorLocation(), Hero->GetActorLocation()),
+			CollisionSphere ? FVector::Dist2D(CollisionSphere->GetComponentLocation(), Hero->GetActorLocation()) : -1.f,
+			*T66CombatShared::DescribePrimitiveComponentForCombatLog(OverlappedComponent),
+			bFromSweep ? 1 : 0,
+			*T66BossProjectileVectorForLog(SweepResult.Location),
+			*T66BossProjectileVectorForLog(SweepResult.ImpactPoint),
+			ProjectileMovement ? *T66BossProjectileVectorForLog(ProjectileMovement->Velocity) : TEXT("None"));
 		return;
 	}
 
@@ -376,7 +457,27 @@ void AT66BossProjectile::OnSphereOverlap(
 	if (RunState)
 	{
 		const int32 DamageHP = FMath::Max(1, DamageHearts) * 20;
-		RunState->ApplyDamage(DamageHP, GetOwner());
+		UE_LOG(
+			LogT66BossProjectile,
+			Log,
+			TEXT("[ProjectileImpact] Type=BossProjectile Result=HeroHit Projectile=%s Owner=%s OwnerClass=%s Hero=%s HeroComp=%s DamageHP=%d ProjectileLoc=%s SphereLoc=%s HeroLoc=%s HeroDist2D=%.1f SphereToHeroDist2D=%.1f bFromSweep=%d SweepLoc=%s ImpactPoint=%s Normal=%s Velocity=%s"),
+			*GetName(),
+			GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
+			GetOwner() && GetOwner()->GetClass() ? *GetOwner()->GetClass()->GetName() : TEXT("None"),
+			*Hero->GetName(),
+			*T66CombatShared::DescribePrimitiveComponentForCombatLog(OtherComp),
+			DamageHP,
+			*T66BossProjectileVectorForLog(GetActorLocation()),
+			CollisionSphere ? *T66BossProjectileVectorForLog(CollisionSphere->GetComponentLocation()) : TEXT("None"),
+			*T66BossProjectileVectorForLog(Hero->GetActorLocation()),
+			FVector::Dist2D(GetActorLocation(), Hero->GetActorLocation()),
+			CollisionSphere ? FVector::Dist2D(CollisionSphere->GetComponentLocation(), Hero->GetActorLocation()) : -1.f,
+			bFromSweep ? 1 : 0,
+			*T66BossProjectileVectorForLog(SweepResult.Location),
+			*T66BossProjectileVectorForLog(SweepResult.ImpactPoint),
+			*T66BossProjectileVectorForLog(SweepResult.ImpactNormal),
+			ProjectileMovement ? *T66BossProjectileVectorForLog(ProjectileMovement->Velocity) : TEXT("None"));
+		RunState->ApplyDamage(DamageHP, GetOwner(), FName(TEXT("BossProjectile")), this);
 	}
 
 	SpawnImpactEffect();

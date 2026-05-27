@@ -6,7 +6,9 @@
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Gameplay/T66CombatTargetTypes.h"
 #include "GameFramework/PlayerController.h"
+#include "UI/T66LootWheelPresentationTypes.h"
 #include "UI/T66UITypes.h"
+#include "UI/WidgetGames/T66WidgetGameHostContext.h"
 #include "T66PlayerController.generated.h"
 
 class UT66UIManager;
@@ -26,7 +28,9 @@ class UT66ArcadePopupWidget;
 class UT66LoadingScreenWidget;
 class AT66LootBagPickup;
 class AT66HouseNPCBase;
-class AT66GamblerNPC;
+class AT66CasinoNPC;
+class AT66CasinoInteractable;
+class AT66VendorInteractable;
 class AT66RecruitableCompanion;
 class AT66HeroBase;
 class AT66ArcadeInteractableBase;
@@ -34,8 +38,10 @@ class UT66CombatComponent;
 class UT66CombatHitZoneComponent;
 enum class ET66Rarity : uint8;
 struct FT66ArcadeInteractableData;
+struct FT66WidgetGameResult;
 class SWidget;
 class SWeakWidget;
+class STextBlock;
 class UInputAction;
 class UInputMappingContext;
 class UMaterialInterface;
@@ -149,14 +155,17 @@ public:
 	/** Close the shared casino shell overlay and return to gameplay input. */
 	void CloseCasinoOverlay();
 
-	void SwitchCasinoOverlayToGambling();
-	void SwitchCasinoOverlayToShopTab();
+	void SwitchCasinoOverlayToGamblerTab();
+	void SwitchCasinoOverlayToVendorTab();
 	void SwitchCasinoOverlayToAlchemy();
 	bool IsCasinoOverlayOpen() const;
 	bool TriggerCasinoBossIfAngry();
 	void ApplyCasinoOverlayInputMode(bool bReassertNextTick = true);
 
-	void OpenCasinoShopTab();
+	void OpenCasinoVendorTab();
+	bool OpenCasinoGamblerInteractable(AT66CasinoInteractable* SourceInteractable);
+	bool OpenVendorInteractable(AT66VendorInteractable* SourceInteractable);
+	void HandleCasinoInteractableGambleResolved(FName GameID, bool bSuccessful, int32 PayoutGold);
 
 	/** Open the Lab Collector full-screen overlay (non-pausing). */
 	void OpenCollectorOverlay();
@@ -169,8 +178,8 @@ public:
 	void CloseArcadePopup(bool bSucceeded, int32 FinalScore = 0);
 	bool IsArcadePopupOpen() const;
 
-	/** In-world dialogue (open-world) for gambler/companion interactions (non-pausing). */
-	void OpenWorldDialogueGambler(AT66GamblerNPC* Gambler);
+	/** In-world dialogue (open-world) for casino/companion interactions (non-pausing). */
+	void OpenWorldDialogueCasino(AT66CasinoNPC* CasinoNPC);
 	void OpenWorldDialogueCompanion(AT66RecruitableCompanion* Companion);
 
 	/** HUD-rendered world interaction prompt. */
@@ -184,10 +193,16 @@ public:
 	void StartCrateOpenHUD(ET66Rarity SourceCrateRarity);
 
 	/** Chest open: play an above-inventory gold reward HUD presentation. */
-	void StartChestRewardHUD(ET66Rarity Rarity, int32 GoldAmount);
+	bool StartChestRewardHUD(ET66Rarity Rarity, int32 GoldAmount, TFunction<void()> OnCommit = nullptr, TFunction<void()> OnFinished = nullptr);
+
+	/** Loot wheel: play radial wheel reward HUD presentation. */
+	bool StartLootWheelSpinHUD(FT66LootWheelPresentationParams Params);
 
 	/** Item reward: play an above-inventory item reward HUD presentation. */
 	void ShowPickupItemCardHUD(FName ItemID, ET66ItemRarity ItemRarity);
+
+	/** Loot bag item reward: play bag-opening reveal before the item reward card. */
+	void ShowLootBagItemRevealHUD(FName ItemID, ET66ItemRarity ItemRarity);
 
 	/** Open the Run Summary after a full-clear victory. */
 	void ShowVictoryRunSummary();
@@ -285,9 +300,6 @@ protected:
 	UFUNCTION()
 	void OnPlayerDied();
 
-	UFUNCTION()
-	void HandleQuickReviveStateChanged();
-
 	UFUNCTION(Server, Reliable)
 	void ServerSubmitLobbyProfile(const FT66LobbyPlayerInfo& LobbyInfo);
 
@@ -315,6 +327,11 @@ private:
 	TSubclassOf<UT66IdolAltarOverlayWidget> ResolveIdolAltarOverlayClass() const;
 	TSubclassOf<UT66WeaponAltarOverlayWidget> ResolveWeaponAltarOverlayClass() const;
 	bool SpawnArcadePopupWidget(const FT66ArcadeInteractableData& ArcadeData, AT66ArcadeInteractableBase* SourceInteractable);
+	void StartArcadePopupCountdown(UT66ArcadePopupWidget* PopupWidget, const FT66WidgetGameHostContext& HostContext);
+	void TickArcadePopupCountdown();
+	void FinishArcadePopupCountdown();
+	void ClearArcadePopupCountdown();
+	void HandleArcadeWidgetGameResult(const FT66WidgetGameResult& Result);
 
 	/** Gameplay HUD (hearts, gold, inventory, minimap); created in gameplay BeginPlay */
 	UPROPERTY()
@@ -328,10 +345,13 @@ private:
 	TObjectPtr<UT66CasinoOverlayWidget> CasinoOverlayWidget;
 
 	UPROPERTY()
-	TObjectPtr<UT66CowardicePromptWidget> CowardicePromptWidget;
+	TWeakObjectPtr<AT66CasinoInteractable> ActiveCasinoInteractable;
 
-	/** Quick revive input suppression must be applied on state transitions only. */
-	bool bQuickReviveInputSuppressed = false;
+	UPROPERTY()
+	TWeakObjectPtr<AT66VendorInteractable> ActiveVendorInteractable;
+
+	UPROPERTY()
+	TObjectPtr<UT66CowardicePromptWidget> CowardicePromptWidget;
 
 	/** Lab Collector full-screen UI (opened by interacting with The Collector NPC). */
 	UPROPERTY()
@@ -339,6 +359,17 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66ArcadePopupWidget> ArcadePopupWidget;
+
+	FT66WidgetGameHostContext PendingArcadeWidgetGameHostContext;
+	FTimerHandle ArcadeCountdownTimerHandle;
+	TSharedPtr<SWidget> ArcadeCountdownOverlayWidget;
+	TSharedPtr<STextBlock> ArcadeCountdownText;
+	double ArcadeCountdownStartTimeSeconds = 0.0;
+	float ArcadeCountdownDurationSeconds = 3.0f;
+
+	FName LastArcadeWidgetGameResultID = NAME_None;
+	int32 LastArcadeWidgetGameFinalScore = 0;
+	bool bLastArcadeWidgetGameSuccessful = false;
 
 	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
 
@@ -385,6 +416,7 @@ private:
 	void QueueGameplayAutomationScreenshotIfRequested();
 	void HandleGameplayAutomationPrepare();
 	void HandleGameplayAutomationScreenshot();
+	void HandleGameplayAutomationSequenceScreenshot();
 	void HandleGameplayAutomationWidgetDump();
 	void HandleGameplayAutomationQuit();
 	void ApplyGameplayAutomationCaptureMode();
@@ -407,11 +439,17 @@ private:
 	FTimerHandle FrontendAutomationWidgetDumpTimerHandle;
 	FTimerHandle FrontendAutomationQuitTimerHandle;
 	FString GameplayAutomationScreenshotPath;
+	FString GameplayAutomationScreenshotSequenceDir;
+	FString GameplayAutomationScreenshotSequencePrefix;
 	FString GameplayAutomationWidgetDumpTarget;
 	FString GameplayAutomationWidgetDumpPath;
 	FString GameplayAutomationCaptureMode;
 	float GameplayAutomationScreenshotDelaySeconds = 0.f;
 	float GameplayAutomationWidgetDumpDelaySeconds = 0.f;
+	float GameplayAutomationPostCaptureScreenshotDelaySeconds = 0.f;
+	float GameplayAutomationScreenshotSequenceIntervalSeconds = 0.f;
+	int32 GameplayAutomationScreenshotSequenceCount = 0;
+	int32 GameplayAutomationScreenshotSequenceIndex = 0;
 	bool bGameplayAutomationKeepAliveAfterScreenshot = false;
 	FTimerHandle GameplayAutomationPrepareTimerHandle;
 	FTimerHandle GameplayAutomationScreenshotTimerHandle;
@@ -484,6 +522,7 @@ private:
 	float SavedPreLockedChaseCameraArmLength = 0.0f;
 	FVector SavedPreLockedChaseCameraBoomRelativeLocation = FVector::ZeroVector;
 	TWeakObjectPtr<AT66HeroBase> LockedChaseCameraInitializedHero;
+	bool bGameplayAutomationCameraZoomLocked = false;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> CameraWallOccluderFadeMaterial = nullptr;
@@ -519,12 +558,12 @@ private:
 	float RawMoveRightValue = 0.f;
 
 	// ============================================================
-	// In-world NPC dialogue (Gambler/Companion)
+	// In-world NPC dialogue (Casino/Companion)
 	// ============================================================
 	enum class ET66WorldDialogueKind : uint8
 	{
 		None,
-		Gambler,
+		Casino,
 		Companion,
 	};
 

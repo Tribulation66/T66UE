@@ -192,7 +192,7 @@ def validate_character_visuals(import_manifest):
     expected = {
         entry["row_id"]: entry["unreal_asset_path"]
         for entry in import_manifest.get("entries", [])
-        if entry.get("row_id") in {"Gambler", "Saint", "Ouroboros"}
+        if entry.get("row_id") in {"CasinoNPC", "Saint", "Ouroboros"}
     }
     rows = []
     errors = []

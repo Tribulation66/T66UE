@@ -51,6 +51,11 @@ void UT66RunStateSubsystem::ApplyDOT(AActor* Target, float Duration, float TickI
 
 void UT66RunStateSubsystem::TickDOT()
 {
+	if (bBackroomsGameplayPaused)
+	{
+		return;
+	}
+
 	UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
 	const double Now = World ? World->GetTimeSeconds() : 0.0;
 

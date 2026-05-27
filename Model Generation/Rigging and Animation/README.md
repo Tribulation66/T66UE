@@ -1,6 +1,6 @@
-# T66 Mob Rigging And Animation
+# T66 Rigging And Animation
 
-This folder owns the repo-native process for regular enemy and mob animation source work. The current runtime target is vertex animation texture playback, not live skeletal animation.
+This folder owns the repo-native process for regular enemy/mob animation source work and the animated ToonStyle hero import bridge.
 
 ## Scope
 
@@ -10,14 +10,14 @@ In scope:
 - Blender source scenes used to author mob motion
 - VAT source generation, import, verification, and preview videos
 - batch guidance for Stage 1 / Easy mobs
+- animated ToonStyle skeletal import/export for approved demo hero and companion visual rows
 
 Out of scope:
 
-- player heroes
-- humanoid companions
 - manual hero or companion rigging
+- buying or authoring new humanoid animation packs outside the accepted Quaternius source
 
-Hero and companion rigging is intentionally handled outside this automation path. Do not recreate the retired humanoid bakeoff workflow unless the user explicitly reopens that research track.
+Manual hero and companion rigging remains outside this automation path. The only active humanoid automation here is the reusable Animated ToonStyle bridge that turns approved Pixal3D humanoid meshes into skeletal ToonStyle game assets with `Idle/Walk/Jump/Roll` rows.
 
 ## Primary Docs
 
@@ -27,6 +27,7 @@ Hero and companion rigging is intentionally handled outside this automation path
 - `04_MOB_VERTEX_ANIMATION_PIPELINE_INSTRUCTIONS.md`: full mob VAT pipeline contract
 - `05_EASY_MOB_VERTEX_ANIMATION_BATCH_INSTRUCTIONS.md`: Easy / Stage 1 enemy roster directions
 - `06_MOB_ANIMATION_GUIDELINES.md`: running creative and technical guidelines for future mob animation passes
+- `07_ANIMATED_TOONSTYLE_HERO_PIPELINE_INSTRUCTIONS.md`: skeletal ToonStyle import bridge for demo-scope heroes and companions
 
 ## Current Accepted Baseline
 
@@ -44,6 +45,7 @@ That pass established the following direction:
 - movement should feel crunchy and slightly stuttered, as if authored for a lower frame rate
 - gameplay owns actor translation; VAT sells body deformation, bounce, drag, and contact
 - preview videos may add travel/root hop so the user can judge the motion without opening Unreal
+- runtime-ready movement also needs an Unreal map preview so cadence can be judged against actual mob travel speed
 
 ## Kept Tools
 
@@ -55,9 +57,14 @@ Active mob tools live under `Tools/`:
 - `import_easy_mob_vat_to_unreal.py`
 - `verify_easy_mob_vat_in_unreal.py`
 
-## Removed Humanoid Automation
+Active animated hero tools live under `Tools/`:
 
-The old humanoid rigging bakeoff scripts, iteration docs, and generated run folders were removed on 2026-05-21 because heroes and humanoid companions are no longer part of this automated rigging path. Durable lessons that still affect mobs were kept in the mob pipeline and findings docs.
+- `create_animated_toonstyle_hero_sources.py`
+- `import_animated_toonstyle_heroes_to_unreal.py`
+
+## Humanoid Automation Boundary
+
+The old exploratory humanoid bakeoff workflow remains retired. The current humanoid path is narrower: use the accepted Hero 1 Rigify/Quaternius template and the production ToonStyle materials to generate importable skeletal assets for approved demo hero and companion visual rows.
 
 ## Runtime Boundary
 
@@ -68,5 +75,7 @@ A mob animation is not playable just because Blender preview looks good. The pro
 3. verify material/data-table playback
 4. test many live instances with desynchronized timing
 5. promote the data only after visual and performance acceptance
+
+For movement-readiness checks, use `Scripts\CaptureT66EnemyAnimationPreview.ps1` after the VAT row is baked/imported. It captures one configured `AT66MobBase` moving under `UT66MobManagerSubsystem`, so the proof covers both local VAT motion and real map-speed match. Set warm-up with `-PostCaptureDelaySeconds`, not `-DelaySeconds`, because the latter delays preview setup rather than giving the spawned mob and camera time to settle.
 
 If playable content changes, follow the root standalone shortcut rule and refresh the staged build.

@@ -86,6 +86,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	CachedInventorySlotIDs.SetNum(InventorySlotWidgetCount);
 	ChestRewardCoinBoxes.SetNum(ChestRewardCoinCount);
 	ChestRewardCoinImages.SetNum(ChestRewardCoinCount);
+	ChestRewardBeamBoxes.SetNum(ChestRewardBeamCount);
+	ChestRewardBeamBorders.SetNum(ChestRewardBeamCount);
+	ChestRewardSparkleBoxes.SetNum(ChestRewardSparkleCount);
+	ChestRewardSparkleBorders.SetNum(ChestRewardSparkleCount);
+	LootBagRevealSparkleBoxes.SetNum(LootBagRevealSparkleCount);
+	LootBagRevealSparkleBorders.SetNum(LootBagRevealSparkleCount);
 	WorldDialogueOptionBorders.SetNum(3);
 	WorldDialogueOptionTexts.SetNum(3);
 	static constexpr float BossBarWidth = 560.f;
@@ -130,6 +136,39 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		ChestRewardOpenBrush->ImageSize = FVector2D(108.f, 108.f);
 		ChestRewardOpenBrush->Tiling = ESlateBrushTileType::NoTile;
 		ChestRewardOpenBrush->SetResourceObject(nullptr);
+	}
+	if (!ChestRewardCoinBrush.IsValid())
+	{
+		ChestRewardCoinBrush = MakeShared<FSlateBrush>();
+		ChestRewardCoinBrush->DrawAs = ESlateBrushDrawType::Image;
+		ChestRewardCoinBrush->ImageSize = FVector2D(36.f, 36.f);
+		ChestRewardCoinBrush->Tiling = ESlateBrushTileType::NoTile;
+		ChestRewardCoinBrush->SetResourceObject(nullptr);
+	}
+	BindRuntimeHudBrush(ChestRewardCoinBrush, GetChestRewardCoinRelativePath(), FVector2D(36.f, 36.f));
+	if (!LootBagRevealClosedBrush.IsValid())
+	{
+		LootBagRevealClosedBrush = MakeShared<FSlateBrush>();
+		LootBagRevealClosedBrush->DrawAs = ESlateBrushDrawType::Image;
+		LootBagRevealClosedBrush->ImageSize = FVector2D(260.f, 246.f);
+		LootBagRevealClosedBrush->Tiling = ESlateBrushTileType::NoTile;
+		LootBagRevealClosedBrush->SetResourceObject(nullptr);
+	}
+	if (!LootBagRevealOpenBrush.IsValid())
+	{
+		LootBagRevealOpenBrush = MakeShared<FSlateBrush>();
+		LootBagRevealOpenBrush->DrawAs = ESlateBrushDrawType::Image;
+		LootBagRevealOpenBrush->ImageSize = FVector2D(286.f, 270.f);
+		LootBagRevealOpenBrush->Tiling = ESlateBrushTileType::NoTile;
+		LootBagRevealOpenBrush->SetResourceObject(nullptr);
+	}
+	if (!LootBagRevealCardIconBrush.IsValid())
+	{
+		LootBagRevealCardIconBrush = MakeShared<FSlateBrush>();
+		LootBagRevealCardIconBrush->DrawAs = ESlateBrushDrawType::Image;
+		LootBagRevealCardIconBrush->ImageSize = FVector2D(84.f, 84.f);
+		LootBagRevealCardIconBrush->Tiling = ESlateBrushTileType::NoTile;
+		LootBagRevealCardIconBrush->SetResourceObject(nullptr);
 	}
 	if (!PortraitBrush.IsValid())
 	{
@@ -220,7 +259,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 		if (TexPool)
 		{
-			const TSoftObjectPtr<UTexture2D> QuickReviveSoft(FSoftObjectPath(TEXT("/Game/UI/Sprites/Interactables/QuickReviveIcon.QuickReviveIcon")));
+			const TSoftObjectPtr<UTexture2D> QuickReviveSoft(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
 			T66SlateTexture::BindSharedBrushAsync(TexPool, QuickReviveSoft, this, QuickReviveBrush, FName(TEXT("HUDQuickRevive")), false);
 		}
 	}
@@ -892,7 +931,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 
 	const TAttribute<FMargin> BottomRightInventoryPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
 	{
-		return FMargin(0.f, 0.f, 12.f, 12.f);
+		return FMargin(0.f, 0.f, UT66GameplayHUDWidget::BottomRightRewardLaneRightPadding, 12.f);
 	});
 
 	const TAttribute<FMargin> BottomCenterAchievementPadding = TAttribute<FMargin>::CreateLambda([]() -> FMargin
@@ -905,8 +944,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		return FMargin(
 			0.f,
 			0.f,
-			12.f,
-			UT66GameplayHUDWidget::BottomRightInventoryPanelHeight + UT66GameplayHUDWidget::BottomRightPresentationGap);
+			UT66GameplayHUDWidget::BottomRightRewardLaneRightPadding,
+			UT66GameplayHUDWidget::BottomRightRewardLaneBottomPadding);
 	});
 
 	const TAttribute<FOptionalSize> FullMapWidthAttr = TAttribute<FOptionalSize>::CreateLambda([]() -> FOptionalSize
@@ -924,13 +963,52 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	});
 
 	TSharedRef<SOverlay> ChestRewardArtOverlay = SNew(SOverlay);
+	for (int32 BeamIndex = 0; BeamIndex < ChestRewardBeamCount; ++BeamIndex)
+	{
+		ChestRewardArtOverlay->AddSlot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Bottom)
+		.Padding(0.f, 0.f, 0.f, 48.f)
+		[
+			SAssignNew(ChestRewardBeamBoxes[BeamIndex], SBox)
+			.WidthOverride(46.f)
+			.HeightOverride(360.f)
+			.Visibility(EVisibility::Collapsed)
+			.RenderTransformPivot(FVector2D(0.5f, 1.f))
+			[
+				SAssignNew(ChestRewardBeamBorders[BeamIndex], SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(1.f, 0.78f, 0.22f, 0.30f))
+			]
+		];
+	}
+	for (int32 SparkleIndex = 0; SparkleIndex < ChestRewardSparkleCount; ++SparkleIndex)
+	{
+		ChestRewardArtOverlay->AddSlot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SAssignNew(ChestRewardSparkleBoxes[SparkleIndex], SBox)
+			.WidthOverride(8.f)
+			.HeightOverride(8.f)
+			.Visibility(EVisibility::Collapsed)
+			.RenderTransformPivot(FVector2D(0.5f, 0.5f))
+			[
+				SAssignNew(ChestRewardSparkleBorders[SparkleIndex], SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(1.f, 0.92f, 0.52f, 0.78f))
+			]
+		];
+	}
 	ChestRewardArtOverlay->AddSlot()
 	.HAlign(HAlign_Center)
-	.VAlign(VAlign_Center)
+	.VAlign(VAlign_Bottom)
+	.Padding(0.f, 0.f, 0.f, 32.f)
 	[
 		SAssignNew(ChestRewardClosedBox, SBox)
-		.WidthOverride(104.f)
-		.HeightOverride(104.f)
+		.WidthOverride(312.f)
+		.HeightOverride(240.f)
+		.RenderTransformPivot(FVector2D(0.5f, 0.5f))
 		[
 			SAssignNew(ChestRewardClosedImage, SImage)
 			.Image(ChestRewardClosedBrush.Get())
@@ -939,17 +1017,19 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	];
 	ChestRewardArtOverlay->AddSlot()
 	.HAlign(HAlign_Center)
-	.VAlign(VAlign_Center)
+	.VAlign(VAlign_Bottom)
+	.Padding(0.f, 0.f, 0.f, 22.f)
+	[
+		SAssignNew(ChestRewardOpenBox, SBox)
+		.WidthOverride(360.f)
+		.HeightOverride(308.f)
+		.RenderTransformPivot(FVector2D(0.5f, 0.5f))
 		[
-			SAssignNew(ChestRewardOpenBox, SBox)
-			.WidthOverride(112.f)
-			.HeightOverride(112.f)
-			[
-				SAssignNew(ChestRewardOpenImage, SImage)
-				.Image(ChestRewardOpenBrush.Get())
-				.ColorAndOpacity(FLinearColor::White)
-			]
-		];
+			SAssignNew(ChestRewardOpenImage, SImage)
+			.Image(ChestRewardOpenBrush.Get())
+			.ColorAndOpacity(FLinearColor::White)
+		]
+	];
 	for (int32 CoinIndex = 0; CoinIndex < ChestRewardCoinCount; ++CoinIndex)
 	{
 		ChestRewardArtOverlay->AddSlot()
@@ -957,16 +1037,126 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.VAlign(VAlign_Center)
 		[
 			SAssignNew(ChestRewardCoinBoxes[CoinIndex], SBox)
-			.WidthOverride(18.f)
-			.HeightOverride(18.f)
+			.WidthOverride(36.f)
+			.HeightOverride(36.f)
 			.Visibility(EVisibility::Collapsed)
+			.RenderTransformPivot(FVector2D(0.5f, 0.5f))
 			[
 				SAssignNew(ChestRewardCoinImages[CoinIndex], SImage)
-				.Image(GoldCurrencyBrush.Get())
+				.Image(ChestRewardCoinBrush.Get())
 				.ColorAndOpacity(FLinearColor::White)
 			]
 		];
 	}
+
+	TSharedRef<SOverlay> LootBagRevealOverlay = SNew(SOverlay);
+	for (int32 SparkleIndex = 0; SparkleIndex < LootBagRevealSparkleCount; ++SparkleIndex)
+	{
+		LootBagRevealOverlay->AddSlot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SAssignNew(LootBagRevealSparkleBoxes[SparkleIndex], SBox)
+			.WidthOverride(8.f)
+			.HeightOverride(8.f)
+			.Visibility(EVisibility::Collapsed)
+			.RenderTransformPivot(FVector2D(0.5f, 0.5f))
+			[
+				SAssignNew(LootBagRevealSparkleBorders[SparkleIndex], SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(1.f, 0.88f, 0.36f, 0.82f))
+			]
+		];
+	}
+	LootBagRevealOverlay->AddSlot()
+	.HAlign(HAlign_Center)
+	.VAlign(VAlign_Bottom)
+	[
+		SAssignNew(LootBagRevealCardBox, SBox)
+		.WidthOverride(PickupCardWidth)
+		.HeightOverride(PickupCardHeight)
+		.Visibility(EVisibility::Collapsed)
+		.RenderTransformPivot(FVector2D(0.5f, 1.f))
+		[
+			SAssignNew(LootBagRevealCardTileBorder, SBorder)
+			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+			.BorderBackgroundColor(FLinearColor(0.58f, 0.42f, 0.22f, 0.96f))
+			.Padding(2.f)
+			[
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.030f, 0.025f, 0.021f, 0.98f))
+				.Padding(0.f)
+				[
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().FillHeight(1.f)
+					[
+						SAssignNew(LootBagRevealCardIconBorder, SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.028f, 0.026f, 0.032f, 0.98f))
+						.Padding(FMargin(8.f))
+						[
+							SNew(SScaleBox)
+							.Stretch(EStretch::ScaleToFit)
+							.StretchDirection(EStretchDirection::Both)
+							[
+								SAssignNew(LootBagRevealCardIconImage, SImage)
+								.Image(LootBagRevealCardIconBrush.Get())
+								.ColorAndOpacity(FLinearColor::White)
+								.Visibility(EVisibility::Collapsed)
+							]
+						]
+					]
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SNew(SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.055f, 0.043f, 0.032f, 0.98f))
+						.Padding(FMargin(10.f, 8.f))
+						[
+							SAssignNew(LootBagRevealCardNameText, STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66FlatStyle::Tokens::FontBold(12))
+							.ColorAndOpacity(FLinearColor::White)
+							.Justification(ETextJustify::Center)
+							.AutoWrapText(true)
+							.WrapTextAt(PickupCardWidth - 20.f)
+						]
+					]
+				]
+			]
+		]
+	];
+	LootBagRevealOverlay->AddSlot()
+	.HAlign(HAlign_Center)
+	.VAlign(VAlign_Bottom)
+	.Padding(0.f, 0.f, 0.f, -8.f)
+	[
+		SAssignNew(LootBagRevealClosedBox, SBox)
+		.WidthOverride(260.f)
+		.HeightOverride(246.f)
+		.RenderTransformPivot(FVector2D(0.5f, 0.5f))
+		[
+			SAssignNew(LootBagRevealClosedImage, SImage)
+			.Image(LootBagRevealClosedBrush.Get())
+			.ColorAndOpacity(FLinearColor::White)
+		]
+	];
+	LootBagRevealOverlay->AddSlot()
+	.HAlign(HAlign_Center)
+	.VAlign(VAlign_Bottom)
+	.Padding(0.f, 0.f, 0.f, -8.f)
+	[
+		SAssignNew(LootBagRevealOpenBox, SBox)
+		.WidthOverride(286.f)
+		.HeightOverride(270.f)
+		.RenderTransformPivot(FVector2D(0.5f, 0.5f))
+		[
+			SAssignNew(LootBagRevealOpenImage, SImage)
+			.Image(LootBagRevealOpenBrush.Get())
+			.ColorAndOpacity(FLinearColor::White)
+		]
+	];
 
 	TSharedRef<SOverlay> Root = SNew(SOverlay)
 		+ SOverlay::Slot()
@@ -1491,11 +1681,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 												SNew(SVerticalBox)
 												+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, GT66BottomLeftAbilityGap)
 												[
-													SNew(SBox)
-													.WidthOverride(AbilityIconSize)
-													.HeightOverride(AbilityIconSize)
-													[
-														SAssignNew(UltimateBorder, SBorder)
+											SNew(SBox)
+											.WidthOverride(AbilityIconSize)
+											.HeightOverride(0.f)
+											.Visibility(EVisibility::Collapsed)
+											[
+												SAssignNew(UltimateBorder, SBorder)
 														.BorderImage(bUseAlternateHudChrome ? FCoreStyle::Get().GetBrush("WhiteBrush") : GetGameplayHudSlotBrush(false))
 														.BorderBackgroundColor(bUseAlternateHudChrome ? FLinearColor(0.03f, 0.03f, 0.05f, 1.f) : T66HudBorderRed)
 														.Padding(0.f)
@@ -1938,7 +2129,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				]
 			]
 		]
-		// Chest reward presentation (same lane as pickup card, non-pausing)
+		// Chest reward presentation (target-owned post-interaction UI, non-pausing)
 		+ SOverlay::Slot()
 		.HAlign(HAlign_Right)
 		.VAlign(VAlign_Bottom)
@@ -1946,74 +2137,101 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		[
 			SAssignNew(ChestRewardBox, SBox)
 			.Visibility(EVisibility::Collapsed)
-			.WidthOverride(PickupCardWidth)
-			.HeightOverride(PickupCardHeight)
+			.WidthOverride(BottomRightRewardLaneWidth)
+			.HeightOverride(BottomRightRewardLaneHeight)
+			.RenderTransformPivot(FVector2D(0.5f, 0.5f))
 			[
-				SAssignNew(ChestRewardTileBorder, SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.58f, 0.42f, 0.22f, 0.96f))
-				.Padding(2.f)
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
 				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-					.BorderBackgroundColor(FLinearColor(0.030f, 0.025f, 0.021f, 0.98f))
-					.Padding(0.f)
+					SNew(SBox)
+					.WidthOverride(ChestRewardPanelWidth)
+					.HeightOverride(ChestRewardPanelHeight)
 					[
-						SNew(SVerticalBox)
-						+ SVerticalBox::Slot().AutoHeight()
+						SAssignNew(ChestRewardTileBorder, SBorder)
+						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+						.BorderBackgroundColor(FLinearColor(0.58f, 0.42f, 0.22f, 0.72f))
+						.Padding(3.f)
 						[
 							SNew(SBorder)
 							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.055f, 0.043f, 0.032f, 0.98f))
-							.Padding(FMargin(8.f, 6.f))
+							.BorderBackgroundColor(FLinearColor(0.018f, 0.014f, 0.012f, 0.82f))
+							.Padding(FMargin(14.f, 10.f))
 							[
-								SNew(SHorizontalBox)
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight()
+								.HAlign(HAlign_Center)
 								[
-									SNew(SBox)
-									.WidthOverride(18.f)
-									.HeightOverride(18.f)
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.055f, 0.043f, 0.032f, 0.86f))
+									.Padding(FMargin(18.f, 7.f))
 									[
-										SNew(SImage)
-										.Image(GoldCurrencyBrush.Get())
-										.ColorAndOpacity(FLinearColor::White)
+										SNew(SHorizontalBox)
+										+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+										[
+											SNew(SBox)
+											.WidthOverride(28.f)
+											.HeightOverride(28.f)
+											[
+												SNew(SImage)
+												.Image(ChestRewardCoinBrush.Get())
+												.ColorAndOpacity(FLinearColor::White)
+											]
+										]
+										+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(10.f, 0.f, 0.f, 0.f)
+										[
+											SAssignNew(ChestRewardCounterText, STextBlock)
+											.Text(FText::GetEmpty())
+											.Font(FT66FlatStyle::Tokens::FontBold(32))
+											.ColorAndOpacity(FLinearColor(0.98f, 0.83f, 0.24f, 1.f))
+										]
 									]
 								]
-								+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(6.f, 0.f, 0.f, 0.f)
+								+ SVerticalBox::Slot().FillHeight(1.f)
 								[
-									SAssignNew(ChestRewardCounterText, STextBlock)
-									.Text(FText::GetEmpty())
-									.Font(FT66FlatStyle::Tokens::FontBold(18))
-									.ColorAndOpacity(FLinearColor(0.98f, 0.83f, 0.24f, 1.f))
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.020f, 0.015f, 0.010f, 0.58f))
+									.Padding(FMargin(0.f))
+									[
+										ChestRewardArtOverlay
+									]
 								]
-							]
-						]
-						+ SVerticalBox::Slot().FillHeight(1.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.040f, 0.032f, 0.024f, 0.98f))
-							.Padding(FMargin(4.f, 6.f))
-							[
-								ChestRewardArtOverlay
-							]
-						]
-						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f, 0.f, 0.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(FLinearColor(0.070f, 0.055f, 0.032f, 0.95f))
-							.Padding(FMargin(8.f, 4.f))
-							[
-								SAssignNew(ChestRewardSkipText, STextBlock)
-								.Text(FText::GetEmpty())
-								.Font(FT66FlatStyle::Tokens::FontBold(11))
-								.ColorAndOpacity(FLinearColor::White)
-								.Justification(ETextJustify::Center)
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
+								.HAlign(HAlign_Center)
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.070f, 0.055f, 0.032f, 0.78f))
+									.Padding(FMargin(14.f, 5.f))
+									[
+										SAssignNew(ChestRewardSkipText, STextBlock)
+										.Text(FText::GetEmpty())
+										.Font(FT66FlatStyle::Tokens::FontBold(11))
+										.ColorAndOpacity(FLinearColor::White)
+										.Justification(ETextJustify::Center)
+									]
+								]
 							]
 						]
 					]
 				]
+			]
+		]
+		// Loot bag reveal: bag opens, card emerges, then hands off to the real pickup card.
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Bottom)
+		.Padding(BottomRightPickupPadding)
+		[
+			SAssignNew(LootBagRevealBox, SBox)
+			.Visibility(EVisibility::Collapsed)
+			.WidthOverride(PickupCardWidth)
+			.HeightOverride(LootBagRevealPanelHeight)
+			[
+				LootBagRevealOverlay
 			]
 		]
 		// Pickup item card (right side, bottom of card just above inventory)
@@ -2238,25 +2456,6 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						.ColorAndOpacity(FT66FlatStyle::Tokens::Text),
 						FMargin(14.f, 8.f))
 				]
-			]
-		]
-		// Quick Revive downed overlay
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
-			SAssignNew(QuickReviveDownedOverlayBorder, SBorder)
-			.Visibility(EVisibility::Collapsed)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.42f, 0.42f, 0.42f, 0.58f))
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				SAssignNew(QuickReviveDownedText, STextBlock)
-				.Text(FText::GetEmpty())
-				.Font(FT66FlatStyle::Tokens::FontBold(28))
-				.ColorAndOpacity(FLinearColor::White)
-				.Justification(ETextJustify::Center)
 			]
 		]
 		// Curse (visibility) overlay (always on top)

@@ -17,6 +17,12 @@ value structure, so source approval is primarily a color and brightness gate.
 
 ## Color Discipline
 
+These are the default source-image color rules for non-humanoid characters,
+creatures, props, and interactables. Humanoid heroes and companions have a
+family-specific color-section rule in
+`10_HUMANOID_IMAGE_GENERATION_GUIDELINES.md`; use that file after this one for
+humanoid prompts.
+
 Use two primary colors across the character. The two colors must have hard
 edges between them, no gradients between regions, and clear separation on both
 hue and value axes.
@@ -72,9 +78,10 @@ experiments as a required house style.
 
 ## Chad/Stacy Direction
 
-Use explicit Chad/Stacy identity prompts when generating hero sources. Keep
-silhouettes exaggerated enough for readable low-poly conversion, but preserve
-outfit color discipline before any palette, dither, or pixel pass.
+Use `10_HUMANOID_IMAGE_GENERATION_GUIDELINES.md` for current Chad/Stacy hero and
+companion source images. It owns the locked A-pose 1.5, forward-feet stance,
+thigh-gap rule, detail-parity rule, demo clothing rule, and current hero and
+companion identity slots.
 
 ## Detail Leakage Caveat
 

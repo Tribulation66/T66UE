@@ -27,6 +27,7 @@ public:
 
 	FName GetEquippedWeaponID() const { return EquippedWeaponID; }
 	bool GetEquippedWeaponData(FWeaponData& OutWeaponData) const;
+	void ResetForStageWeaponSelection(FName HeroID);
 
 	const TArray<FName>& GetWeaponOfferIDs() const { return WeaponOfferIDs; }
 	ET66WeaponRarity GetCurrentOfferRarity() const { return CurrentOfferRarity; }

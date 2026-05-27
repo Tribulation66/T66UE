@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/T66DataTypes.h"
 #include "GameFramework/GameModeBase.h"
 #include "Gameplay/T66StartGate.h"
 #include "Gameplay/T66TowerMapTerrain.h"
@@ -23,6 +24,8 @@ class AT66BossGate;
 class AT66IdolAltar;
 class AT66WeaponAltar;
 class AT66TowerDescentHole;
+class AT66BackroomsDoorInteractable;
+class AT66BackroomsChaser;
 class AT66Shroom;
 class AT66SpawnPlateau;
 class AT66TutorialManager;
@@ -36,6 +39,7 @@ class APlayerStart;
 class UMaterialInterface;
 class UStaticMesh;
 class UTexture2D;
+class UActorComponent;
 struct FStreamableHandle;
 
 /**
@@ -157,12 +161,19 @@ public:
 
 	bool IsUsingTowerMainMapLayout() const;
 	bool GetTowerMainMapLayout(T66TowerMapTerrain::FLayout& OutLayout) const;
+	bool GetTowerFloorLayout(int32 FloorNumber, T66TowerMapTerrain::FFloor& OutFloor) const;
 	int32 GetTowerFloorIndexForLocation(const FVector& Location) const;
 	int32 GetCurrentTowerFloorIndex() const;
 	bool TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation) const;
 	bool TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation, FVector& OutWallNormal) const;
 	void HandleTowerDescentHoleTriggered(APawn* Pawn, int32 FromFloorNumber, int32 ToFloorNumber);
+	void HandleTowerGateGuardianDefeated(AT66EnemyBase* Guardian);
 	void SetEnemyDirectorSpawningPaused(bool bPaused);
+	AT66EnemyDirector* GetEnemyDirectorForDiagnostics();
+	bool IsBackroomsChallengeActive() const { return bBackroomsChallengeActive; }
+	void HandleBackroomsDoorInteracted(AT66BackroomsDoorInteractable* Door, AT66HeroBase* Hero);
+	void HandleBackroomsChaserTouchedHero(AT66BackroomsChaser* Chaser, AT66HeroBase* Hero);
+	bool GetBackroomsChaserMoveTarget(const FVector& ChaserLocation, const FVector& HeroLocation, FVector& OutTarget) const;
 
 protected:
 	virtual void BeginPlay() override;
@@ -211,7 +222,7 @@ protected:
 	/** Spawn the stage-entry idol altar near the start area. */
 	void SpawnIdolAltarForPlayer(AController* Player);
 	void SpawnWeaponAltarForPlayer(AController* Player);
-	void SpawnIdolAltarAtLocation(const FVector& Location);
+	AT66IdolAltar* SpawnIdolAltarAtLocation(const FVector& Location, bool bAllowMultiple = false);
 	void SpawnIdolVFXTestTargets();
 	void SpawnPixalTestDisplayModelsNearIdolAltar(AT66IdolAltar* AnchorAltar, bool bTrackAsLabSpawned = false);
 
@@ -234,7 +245,7 @@ protected:
 	void SpawnBossForCurrentStage();
 	void SpawnBossBeaconIfNeeded();
 
-	void SpawnGamblerNPCIfNeeded();
+	void SpawnCasinoInteractableIfNeeded();
 
 	/** Called one frame after BeginPlay so the landscape/collision is ready. Spawns all ground-dependent content (NPCs, interactables, tiles, boss, etc.). */
 	void SpawnLevelContentAfterLandscapeReady();
@@ -247,6 +258,8 @@ protected:
 
 	void SpawnTricksterAndCowardiceGate();
 	void SpawnTowerDescentHolesIfNeeded();
+	void SpawnBackroomsPocketIfNeeded();
+	void DestroyBackroomsPocket();
 	void EnsureGameplayStartupInitialized(const TCHAR* TriggerContext);
 	void InitializeRunStateForBeginPlay();
 	bool HandleSpecialModeBeginPlay();
@@ -292,6 +305,20 @@ protected:
 	float GetTowerMiasmaElapsedSeconds() const;
 
 	void TrySpawnLoanSharkIfNeeded();
+	void EnterBackrooms(AT66HeroBase* Hero, AT66BackroomsDoorInteractable* EntryDoor);
+	void CompleteBackrooms(bool bSucceeded, AT66HeroBase* Hero, AT66BackroomsChaser* Chaser = nullptr);
+	void ApplyBackroomsPauseState(bool bPaused);
+	void RestoreBackroomsInventoryAndWeapon();
+	bool HasBackroomsQuickReviveReward() const;
+	bool TryBuildBackroomsMaze();
+	bool IsBackroomsMazeOpen(int32 X, int32 Y) const;
+	FVector GetBackroomsCellCenter(int32 X, int32 Y, float ZOffset = 90.f) const;
+	FIntPoint WorldToBackroomsCell(const FVector& Location) const;
+#if !UE_BUILD_SHIPPING
+	void ScheduleBackroomsAutomationIfRequested();
+	void RunBackroomsAutomationStart(FString Mode);
+	void RunBackroomsAutomationFinish(FString Mode, int32 InventoryCountBeforeEntry, FName SeedItemID, FName WeaponIDBeforeEntry, float ChaserDistanceAtEntry);
+#endif
 
 public:
 	// ============================================
@@ -360,6 +387,21 @@ private:
 	UPROPERTY()
 	TArray<TObjectPtr<AT66TowerDescentHole>> TowerDescentHoles;
 
+	UPROPERTY()
+	TArray<TObjectPtr<AActor>> BackroomsActors;
+
+	UPROPERTY()
+	TObjectPtr<AT66BackroomsDoorInteractable> BackroomsEntryDoor;
+
+	UPROPERTY()
+	TObjectPtr<AT66BackroomsDoorInteractable> BackroomsExitDoor;
+
+	UPROPERTY()
+	TObjectPtr<AT66BackroomsDoorInteractable> BackroomsClosedEntranceDoor;
+
+	UPROPERTY()
+	TObjectPtr<AT66BackroomsChaser> BackroomsChaser;
+
 	// Async load tracking (prevents gameplay hitching from sync loads).
 	TArray<TSharedPtr<FStreamableHandle>> ActiveAsyncLoadHandles;
 
@@ -415,6 +457,21 @@ private:
 	bool bTowerBossEntryTriggered = false;
 	bool bTowerBossEntryApplied = false;
 	float TowerTerrainSafetyAccumulator = 0.f;
+	bool bBackroomsPocketSpawned = false;
+	bool bBackroomsChallengeActive = false;
+	bool bBackroomsInventorySuppressed = false;
+	bool bBackroomsStageTimerWasActive = false;
+	bool bBackroomsSpeedRunWasActive = false;
+	FTransform BackroomsReturnTransform;
+	FName BackroomsSavedWeaponID = NAME_None;
+	TArray<FT66InventorySlot> BackroomsSavedInventory;
+	TMap<TWeakObjectPtr<AActor>, bool> BackroomsTickSnapshot;
+	TMap<TWeakObjectPtr<UActorComponent>, bool> BackroomsComponentTickSnapshot;
+	FVector BackroomsOrigin = FVector::ZeroVector;
+	float BackroomsCellSize = 600.f;
+	int32 BackroomsMazeWidth = 0;
+	int32 BackroomsMazeHeight = 0;
+	TArray<uint8> BackroomsMazeOpenCells;
 	float TowerTrapActivationAccumulator = 0.f;
 	bool bTowerMiasmaActive = false;
 	float TowerMiasmaStartWorldSeconds = 0.f;

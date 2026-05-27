@@ -45,7 +45,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
-#include "Gameplay/T66GamblerNPC.h"
+#include "Gameplay/T66CasinoNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
@@ -356,7 +356,6 @@ void AT66PlayerController::SetupInputComponent()
 		InputComponent->BindAction(TEXT("TogglePower"), IE_Pressed, this, &AT66PlayerController::HandleTogglePowerPressed);
 		InputComponent->BindAction(TEXT("ToggleTikTok"), IE_Pressed, this, &AT66PlayerController::HandleToggleTikTokPressed);
 		InputComponent->BindAction(TEXT("Interact"), IE_Pressed, this, &AT66PlayerController::HandleInteractPressed);
-		InputComponent->BindAction(TEXT("Ultimate"), IE_Pressed, this, &AT66PlayerController::HandleUltimatePressed);
 		InputComponent->BindAction(TEXT("ToggleMediaViewer"), IE_Pressed, this, &AT66PlayerController::HandleToggleMediaViewerPressed);
 		InputComponent->BindAction(TEXT("OpenFullMap"), IE_Pressed, this, &AT66PlayerController::HandleOpenFullMapPressed);
 		InputComponent->BindAction(TEXT("InspectInventory"), IE_Pressed, this, &AT66PlayerController::HandleInspectInventoryPressed);
@@ -640,6 +639,7 @@ void AT66PlayerController::HandleTurn(float Value)
 void AT66PlayerController::HandleZoom(float Value)
 {
 	if (!IsGameplayLevel() || FMath::IsNearlyZero(Value)) return;
+	if (bGameplayAutomationCameraZoomLocked) return;
 
 	const bool bAdjustPitch =
 		IsInputKeyDown(EKeys::LeftControl) ||

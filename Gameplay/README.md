@@ -6,7 +6,7 @@ Gameplay-owned documentation now lives here instead of `MASTER DOCS` or `Docs`.
 
 - [Audio](Audio): data-authored audio infrastructure and cook notes.
 - [Camera](Camera): gameplay camera ownership, zoom overrides, occluders, and frontend preview camera behavior.
-- [Combat](Combat): combat runtime, enemy/boss roster contracts, targeting, damage routing, and boss-part combat planning.
+- [Combat](Combat): combat runtime, enemy/boss roster contracts, targeting, damage routing, [combat VFX authoring procedure](Combat/CombatVFXAuthoringProcedure.md), and boss-part combat planning.
 - [Minigames](Minigames): Mini, TD, Deck, Idle, and shared minigame process docs.
 - [Movement](Movement): player locomotion, jump, dash, velocity-affecting effects, and movement drift notes.
 - [Stats](Stats): stats, player experience, item/temp-buff audit notes, and progression pressure.

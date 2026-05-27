@@ -1,15 +1,24 @@
 # T66 Master Player Experience
 
-**Last updated:** 2026-04-18  
-**Scope:** Single-source handoff for the T66 player-experience system: expected outcomes, progression pacing, tower stage structure, miasma pressure, interactable frequency, hero growth, item/alchemy stat pressure, UI presentation rules, and the current anti-cheat linkage.  
+**Last updated:** 2026-05-23
+**Scope:** Single-source handoff for the T66 player-experience system: expected outcomes, progression pacing, tower stage structure, miasma pressure, interactable frequency, item/alchemy stat pressure, UI presentation rules, and the current anti-cheat linkage.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Stats/MASTER_STATS.md`, `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md`, `Gameplay/Combat/MASTER_COMBAT.md`, `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`
-**Maintenance rule:** Update this file after every material change to stage structure, pacing targets, difficulty starts, miasma timing, interactable frequency, hero XP curves, hero level-up behavior, item/alchemy stat grants, or expected-outcome telemetry.
+**Maintenance rule:** Update this file after every material change to stage structure, pacing targets, difficulty starts, miasma timing, interactable frequency, item/alchemy stat grants, or expected-outcome telemetry.
+
+## May 2026 Status: Hero XP And Levels Deprecated
+
+- In-run hero XP, level gain, boss XP grants, enemy XP grants, level-up healing, level-up burst kills, and level-up floating text are deprecated.
+- `UT66RunStateSubsystem::AddHeroXP` is now a compatibility no-op.
+- Boss and regular enemy kills award score/loot/telemetry without adding XP.
+- Live combat stats come from hero base stats plus item-derived bonuses only.
+- Old save fields for hero level/XP remain readable, but imported runtime state is normalized to level `1`, XP `0`, and XP threshold `0`.
+- Difficulty and stage pacing should now be balanced through enemy budget, item availability, altar rewards, loot, and stage timers instead of expected hero levels.
 
 ## 1. Executive Summary
 
 - `UT66PlayerExperienceSubSystem` is the authored tuning surface for expected player outcomes.
-- `UT66RunStateSubsystem` is the live run-state authority for hero level, hero XP, primary and secondary stats, timers, anti-cheat expectations, and saved-run persistence.
-- `AT66GameMode` is the runtime integrator for tower layout rules, interactable/NPC spawning, boss XP, timer activation, and tower miasma activation.
+- `UT66RunStateSubsystem` is the live run-state authority for primary and secondary stats, timers, anti-cheat expectations, and saved-run persistence. Hero level/XP fields are compatibility-only.
+- `AT66GameMode` is the runtime integrator for tower layout rules, interactable/NPC spawning, timer activation, and tower miasma activation.
 - `AT66EnemyDirector` is the main enemy pacing controller.
 - `AT66MiasmaManager` is the flood-pressure controller.
 - `AT66TowerMapTerrain` is the tower floor/theme/prop layout controller.
@@ -18,10 +27,9 @@
 The current intended run shape is:
 
 - Stages `1-20` are the full level climb.
-- The run should gain `98` levels across those `20` stages on average.
-- Average target is `4.9` levels per stage, not a forced exact `5`.
-- Bosses should always contribute `1` full level.
-- Stage `21` should begin at level `99`.
+- The run no longer has an expected hero-level curve.
+- Bosses and regular enemies do not grant XP.
+- Stage pacing should be balanced through items, altar rewards, enemy budget, timers, and loot.
 
 The current implemented tower stage shape is:
 
@@ -105,11 +113,11 @@ The current implemented pressure rule is:
 - Owns tower-only overrides:
   - floor restrictions
   - guaranteed and excluded interactables
-  - quick revive placement
+  - archived quick revive exclusion
   - saint placement
   - circus placement
   - miasma start condition
-  - boss XP grant
+  - boss reward pacing
 
 ### 3.4 EnemyDirector
 
@@ -150,13 +158,13 @@ Practical pacing target:
 
 The tower runtime is now a fixed `5`-floor stage:
 
-- floor `1` is the idol floor
+- floor `1` is the weapon-altar start floor
 - floors `2-4` are the only mob floors
 - floor `5` is the boss floor
 
 Rules:
 
-- no interactables or NPCs are allowed on the idol floor
+- no miscellaneous interactables or NPCs are allowed on the start floor
 - no interactables or NPCs are allowed on the boss floor
 - gameplay floors are the only floors that can host normal tower content
 
@@ -214,7 +222,8 @@ Important implementation note:
 - loot crates: `1-3` per gameplay floor
 - fountains: `0-1` per gameplay floor
   - current implementation uses a per-floor deterministic roll and does not force one every stage
-- quick revive: exactly once, always on floor `2`
+- difficulty totems: exactly one per gameplay floor, tagged as `T66_Tower_DifficultyTotem_##`
+- quick revive: archived; no tower floor should spawn or grant it
 - saint: exactly once per stage, random gameplay floor
 - casino: once per gameplay floor
   - runtime object is currently `Circus`
@@ -237,55 +246,54 @@ Important implementation note:
 - idol floor: no NPCs or interactables
 - boss floor: no NPCs or interactables
 
-### 7.4 Tower-specific suppressions
+### 7.4 Tower-specific overrides
 
-The current tower path also suppresses:
+The current tower path overrides generic interactable quantity rules in `AT66GameMode`:
 
-- wheel spawns
-- tower totem spawns
+- difficulty totem quantity is gameplay-floor driven, not random; tower places one totem on each gameplay floor where totems are enabled by `PlayerExperience`
+- wheel quantity still comes from the authored range but is clamped to the gameplay-floor count
+- chest/crate quantities are rolled per gameplay floor instead of by old global stage scatter
 
-That suppression is runtime-local in `AT66GameMode`. The authored `PlayerExperience` config still contains general wheel/chest/crate ranges for the non-tower path.
+The authored `PlayerExperience` config still contains general wheel/chest/crate/totem ranges for the non-tower path and for totem behavior such as uses and skull-color pacing.
 
-## 8. XP And Spawn Pacing
+## 8. Deprecated XP And Spawn Pacing
 
 ### 8.1 Boss XP
 
-Current implemented boss rule:
+Deprecated boss rule:
 
-- on boss defeat, `GameMode` grants `RunState->GetHeroXPToNextLevel()`
-- this guarantees one full level from the boss
+- boss defeat no longer grants XP
+- boss rewards should be authored through loot, items, or altar unlocks
 
 ### 8.2 Regular enemy XP
 
-Current tower regular-enemy rule:
+Deprecated tower regular-enemy rule:
 
-- enemy data default is still `XPValue = 20`
-- tower runtime halves that award
-- effective tower regular kill XP is therefore `10`
+- enemy `XPValue` is legacy data
+- tower runtime does not add XP for regular kills
 
 ### 8.3 Tower director budget
 
-Current tower pacing constants in `T66EnemyDirector.cpp`:
+Current tower pacing budget from `Content/Data/PlayerExperience.json` and `DT_PlayerExperience`:
 
 - initial enemies per gameplay floor: `4`
-- runtime spawn interval: `9.0s`
-- enemies per runtime wave: `1`
-- max alive enemies: `12`
+- runtime wave stagger window: `5.0s`
+- runtime spawn interval: `5.0s`
+- enemies per runtime wave: `30`
+- max alive enemies: `90`
 
 This is a deliberate move away from the old density-scaled tower behavior.
 
 Why this matters:
 
 - `3` gameplay floors x `4` initial enemies = `12` guaranteed regular enemies
-- a perfect `300s` stage with a `9s` runtime cadence can inject roughly `33` additional regular enemies if the player keeps the board clear
-- that yields an upper-end regular-kill budget of roughly `45` enemies per stage
-- `45 x 10 XP = 450 XP`, or `~4.5` levels
-- boss adds `100 XP`, or `1` level
-- total upper-end pressure lands around `5.5` levels per stage, which is close enough to the intended `4.9` average once dead time, missed kills, pathing, pickups, and imperfect clears are accounted for
+- a perfect `300s` stage with a `5s` runtime cadence and `30` enemies per runtime wave can inject roughly `1,800` additional regular enemies if the player keeps the board clear
+- the `90` max-alive cap prevents all of that budget from existing simultaneously
+- this enemy budget now controls score, loot pressure, hazard pressure, and time pressure without feeding a hero XP curve
 
-This is the current balancing basis for tower pacing.
+This is the current balancing basis for tower pacing. Stat pressure is handled by item availability and altar rewards.
 
-## 9. Hero Growth Model
+## 9. Deprecated Hero Growth Model
 
 ### 9.1 Internal precision
 
@@ -299,27 +307,25 @@ Rules:
 
 ### 9.2 Primary growth rules
 
-Current implemented runtime rules:
+Deprecated runtime rules:
 
-- `Damage` defaults to `+0.5` to `+1.0` per level for every hero
-- `Damage` is still uniform by design, but it is now authored through the hero table path as decimal ranges
-- all other primaries, including `Speed`, use the authored hero gain ranges from hero tuning
-- those ranges are stored as floats and rolled in tenths
-- luck bias can push the roll toward the high end through `UT66RngSubsystem`
+- per-level primary growth ranges are retained only for schema compatibility
+- `AddHeroXP(...)` no longer rolls or applies primary growth
+- luck bias no longer affects level-up rolls because level-up rolls no longer run
 
 ### 9.3 Secondary proxy growth rules
 
-When a primary stat gains value, secondary bonus tenths are also granted.
+When an item adds primary stat value, item secondary bonus tenths may also be granted.
 
 Rules:
 
 - if the primary is `Damage`, `AttackSpeed`, or `AttackScale`:
-  - the hero's main attack-family secondary gains `70%-100%` of the primary gain
-  - the other attack-family secondaries gain `10%-50%` of the primary gain
+  - the hero's main attack-family secondary can receive the item's authored/rolled secondary value
+  - the other attack-family secondaries do not receive level-up proxy gains
 - if the primary is non-attack-family:
-  - matching secondaries gain `50%-100%` of the primary gain
+  - matching secondaries come from item secondary lines
 
-This is the current runtime implementation of the desired main-specialty versus off-specialty pattern.
+Level-up proxy gains are deprecated.
 
 ### 9.4 Authored proficiency intent
 
@@ -334,9 +340,8 @@ The design intent is:
 Important current-state note:
 
 - hero base stats and per-level growth ranges are sourced through the cooked Heroes DataTable path via `FHeroData`, `UT66GameInstance::GetHeroData`, and `UT66GameInstance::GetHeroStatTuning`
-- runtime now supports tenths and range-based growth
-- the hero row schema now supports decimal-authored primary gain ranges for all foundational stats, including `Speed`
-- the current first-pass authoring rule seeds non-damage primary growth from the hero's current base proficiency and keeps `Damage` at `0.5-1.0`
+- runtime now supports tenths for base stats and item-derived bonuses
+- the hero row schema still supports decimal-authored primary gain ranges for all foundational stats, including `Speed`, but those ranges are compatibility-only
 - the final authored hero tables still need to be reviewed to fully align all heroes with the intended `1-10` base-proficiency story
 
 ## 10. Item And Alchemy Stat Pressure
@@ -366,36 +371,33 @@ Items do not only add their explicit secondary.
 When an item adds primary stat value:
 
 - the direct secondary gets its flat item bonus
-- secondary proxy gains are also rolled from the primary increase
-- this mirrors the same primary-to-secondary behavior used by level-ups
+- secondary gains come from the item's authored/rolled secondary line
 
 Implementation note:
 
 - inventory slots now store deterministic roll seeds and optional explicit secondary-flat overrides
-- saved runs now persist precise stats, the hero-stat RNG seed, and persistent secondary bonus entries
+- saved runs still persist legacy precise stats, the hero-stat RNG seed, and persistent secondary bonus entries for compatibility, but imported runtime state rebuilds from hero base plus items
 
-## 11. Level-Up Presentation And Burst
+## 11. Deprecated Level-Up Presentation And Burst
 
-Current implemented level-up effects:
+Deprecated level-up effects:
 
 - full heal to max HP
 - `P_Bifrost` spawned at the hero location
 - nearby enemies killed in a `375 UU` radius
 - floating combat text level-up event shown
 
-Important gameplay note:
+Current runtime rule:
 
-- the current nearby-kill implementation uses normal enemy death routing
-- nearby kills still award score, XP, loot, and telemetry
-- this means level-up burst chaining can still amplify room clears if a level-up happens inside a dense pack
-
-That is currently accepted behavior, but it is a known exploit-pressure point.
+- `ApplyOneHeroLevelUp()` only normalizes compatibility fields
+- level-up floating text returns without display
+- level-up burst chaining is removed because XP no longer advances levels
 
 ## 12. UI Presentation Rules
 
 Current implemented visual rules:
 
-- `Level` now displays as `current/99`
+- HUD level text has been replaced by item inventory progress (`items/max`)
 - displayed primary stats show `current/99`
 - primary-stat adjectives are back visually for the primary stat lines only
 - secondary stat rows do not show adjectives

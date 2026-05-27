@@ -22,9 +22,6 @@ void FT66RunModifierSnapshot::Merge(const FT66RunModifierSnapshot& Other)
 	EnemyHealthMultiplier *= Other.EnemyHealthMultiplier;
 	EnemyDamageMultiplier *= Other.EnemyDamageMultiplier;
 	TrapDamageMultiplier *= Other.TrapDamageMultiplier;
-	HeroHealthMultiplier *= Other.HeroHealthMultiplier;
-	HeroDamageMultiplier *= Other.HeroDamageMultiplier;
-	HeroLuckFlat += Other.HeroLuckFlat;
 	EnemyLootBagCountMultiplier *= Other.EnemyLootBagCountMultiplier;
 	Sanitize();
 }
@@ -36,9 +33,6 @@ bool FT66RunModifierSnapshot::HasAnyGameplayModifier() const
 		|| !FMath::IsNearlyEqual(EnemyHealthMultiplier, 1.0f)
 		|| !FMath::IsNearlyEqual(EnemyDamageMultiplier, 1.0f)
 		|| !FMath::IsNearlyEqual(TrapDamageMultiplier, 1.0f)
-		|| !FMath::IsNearlyEqual(HeroHealthMultiplier, 1.0f)
-		|| !FMath::IsNearlyEqual(HeroDamageMultiplier, 1.0f)
-		|| HeroLuckFlat != 0
 		|| !FMath::IsNearlyEqual(EnemyLootBagCountMultiplier, 1.0f);
 }
 
@@ -65,13 +59,10 @@ FT66RunModifierSnapshot FT66RunModifierCatalog::FromDailyChallenge(const FT66Dai
 			Snapshot.TrapDamageMultiplier *= Rule.FloatValue > 0.0f ? Rule.FloatValue : 1.0f;
 			break;
 		case ET66DailyClimbRuleType::HeroHealthMultiplier:
-			Snapshot.HeroHealthMultiplier *= Rule.FloatValue > 0.0f ? Rule.FloatValue : 1.0f;
 			break;
 		case ET66DailyClimbRuleType::HeroDamageMultiplier:
-			Snapshot.HeroDamageMultiplier *= Rule.FloatValue > 0.0f ? Rule.FloatValue : 1.0f;
 			break;
 		case ET66DailyClimbRuleType::HeroLuckFlat:
-			Snapshot.HeroLuckFlat += Rule.IntValue;
 			break;
 		case ET66DailyClimbRuleType::EnemyLootBagCountMultiplier:
 			Snapshot.EnemyLootBagCountMultiplier *= Rule.FloatValue >= 0.0f ? Rule.FloatValue : 1.0f;
@@ -92,9 +83,6 @@ FT66RunModifierSnapshot FT66RunModifierCatalog::FromCommunityRules(const FT66Com
 	Snapshot.EnemyHealthMultiplier = Rules.EnemyHealthMultiplier;
 	Snapshot.EnemyDamageMultiplier = Rules.EnemyDamageMultiplier;
 	Snapshot.TrapDamageMultiplier = Rules.TrapDamageMultiplier;
-	Snapshot.HeroHealthMultiplier = Rules.HeroHealthMultiplier;
-	Snapshot.HeroDamageMultiplier = Rules.HeroDamageMultiplier;
-	Snapshot.HeroLuckFlat = Rules.HeroLuckFlat;
 	Snapshot.EnemyLootBagCountMultiplier = Rules.EnemyLootBagCountMultiplier;
 	Snapshot.Sanitize();
 	return Snapshot;

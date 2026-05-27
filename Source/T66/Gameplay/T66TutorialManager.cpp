@@ -257,7 +257,7 @@ void AT66TutorialManager::StartFountainLessonStep()
 	MaxHPBeforeFountainUse = RunState ? RunState->GetMaxHP() : 0.f;
 	if (RunState)
 	{
-		RunState->ApplyDamage(20);
+		RunState->ApplyDamage(20, this, FName(TEXT("TutorialScriptedDamage")), this);
 	}
 
 	if (TutorialFountain)

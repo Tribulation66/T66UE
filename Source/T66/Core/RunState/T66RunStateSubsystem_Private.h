@@ -20,12 +20,10 @@
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
-#include "Core/T66ActorRegistrySubsystem.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Actor.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
-#include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66GamblerBoss.h"
 #include "Core/T66DamageLogSubsystem.h"
@@ -34,51 +32,9 @@
 namespace T66RunStatePrivate
 {
 	static const FName T66GamblersTokenItemID(TEXT("Item_GamblersToken"));
-	static const FName T66MaxHeroStatsRunModifierID(TEXT("Mod_MaxHeroStats"));
-
 	static int32 T66_GetDefaultInventoryRollSeed()
 	{
 		return static_cast<int32>(FPlatformTime::Cycles());
-	}
-
-	static void T66SpawnLevelUpBifrost(UWorld* World, const FVector& Location)
-	{
-		(void)World;
-		(void)Location;
-		// Disabled for now. This cosmetic Niagara spawn is causing packaged-runtime
-		// crash paths on repeated boss clears/stage transitions.
-	}
-
-	static void T66KillEnemiesNearPoint(UWorld* World, const FVector& Origin, const float Radius)
-	{
-		if (!World || Radius <= 0.f)
-		{
-			return;
-		}
-
-		UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
-		if (!Registry)
-		{
-			return;
-		}
-
-		const TArray<TWeakObjectPtr<AT66EnemyBase>> Enemies = Registry->GetEnemies();
-		const float RadiusSq = FMath::Square(Radius);
-		for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Enemies)
-		{
-			AT66EnemyBase* Enemy = WeakEnemy.Get();
-			if (!Enemy || Enemy->IsPendingKillPending())
-			{
-				continue;
-			}
-
-			if (FVector::DistSquared(Enemy->GetActorLocation(), Origin) > RadiusSq)
-			{
-				continue;
-			}
-
-			Enemy->TakeDamageFromEnvironment(1000000, nullptr, FName(TEXT("LevelUpBurst")));
-		}
 	}
 
 	static int32 T66_CombineInventorySeed(const FT66InventorySlot& Slot, const int32 SeedSalt)
@@ -297,6 +253,16 @@ namespace T66RunStatePrivate
 		return ItemID == T66GamblersTokenItemID;
 	}
 
+	static bool T66_IsBackroomsQuickReviveItem(const FName ItemID)
+	{
+		return ItemID == UT66RunStateSubsystem::BackroomsQuickReviveItemID;
+	}
+
+	static bool T66_IsRewardOnlySpecialItem(const FName ItemID)
+	{
+		return T66_IsGamblersTokenItem(ItemID) || T66_IsBackroomsQuickReviveItem(ItemID);
+	}
+
 	static int32 T66_ClampGamblersTokenLevel(const int32 Level)
 	{
 		return FMath::Clamp(Level, 0, UT66RunStateSubsystem::MaxGamblersTokenLevel);
@@ -304,7 +270,7 @@ namespace T66RunStatePrivate
 
 	static bool T66_IsAlchemyEligibleSlot(const FT66InventorySlot& Slot, const UT66GameInstance* GI)
 	{
-		if (!Slot.IsValid() || Slot.Rarity == ET66ItemRarity::White || T66_IsGamblersTokenItem(Slot.ItemTemplateID))
+		if (!Slot.IsValid() || Slot.Rarity == ET66ItemRarity::White || T66_IsRewardOnlySpecialItem(Slot.ItemTemplateID))
 		{
 			return false;
 		}

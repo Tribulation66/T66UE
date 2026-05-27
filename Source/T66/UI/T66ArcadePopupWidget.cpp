@@ -4,6 +4,30 @@
 
 #include "Gameplay/T66ArcadeInteractableBase.h"
 #include "Gameplay/T66PlayerController.h"
+#include "UI/WidgetGames/T66WidgetGameRegistry.h"
+#include "UI/WidgetGames/T66WidgetGameResult.h"
+
+void UT66ArcadePopupWidget::ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext)
+{
+	WidgetGameHostContext = HostContext;
+}
+
+void UT66ArcadePopupWidget::DeactivateWidgetGame()
+{
+	WidgetGameHostContext = FT66WidgetGameHostContext();
+}
+
+void UT66ArcadePopupWidget::PauseWidgetGame()
+{
+}
+
+void UT66ArcadePopupWidget::ResumeWidgetGame()
+{
+}
+
+void UT66ArcadePopupWidget::RequestWidgetGameExit()
+{
+}
 
 void UT66ArcadePopupWidget::InitializeArcadePopup(
 	const FT66ArcadeInteractableData& InArcadeData,
@@ -21,6 +45,20 @@ void UT66ArcadePopupWidget::StartCloseSequence(const bool bSucceeded, const int3
 	}
 
 	bCloseSequenceStarted = true;
+
+	if (ReportsArcadeResult())
+	{
+		FT66WidgetGameResult Result;
+		Result.GameID = ArcadeData.ArcadeID.IsNone()
+			? T66WidgetGames::Registry::GetArcadeRowID(ArcadeData.ArcadeGameType)
+			: ArcadeData.ArcadeID;
+		Result.ExitReason = bSucceeded ? ET66WidgetGameExitReason::Completed : ET66WidgetGameExitReason::PlayerCancelled;
+		Result.FinalScore = FinalScore;
+		Result.bHasFinalScore = true;
+		Result.bSuccessful = bSucceeded;
+		Result.ResultID = Result.GameID;
+		WidgetGameHostContext.ReportResult(Result);
+	}
 
 	if (AT66PlayerController* T66PC = GetOwningPlayer<AT66PlayerController>())
 	{

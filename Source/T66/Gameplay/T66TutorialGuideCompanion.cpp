@@ -101,8 +101,8 @@ void AT66TutorialGuideCompanion::UpdateGuideAnimation(const bool bIsMoving)
 
 	LastMovementAnimState = DesiredState;
 	UAnimationAsset* DesiredAnimation = bIsMoving
-		? (CachedRunAnim ? CachedRunAnim : CachedWalkAnim)
-		: CachedAlertAnim;
+		? (CachedWalkAnim ? CachedWalkAnim : CachedIdleAnim)
+		: CachedIdleAnim;
 	if (DesiredAnimation)
 	{
 		SkeletalMesh->PlayAnimation(DesiredAnimation, true);

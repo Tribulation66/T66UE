@@ -325,11 +325,6 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 			RunState->AddBossKillScore(AwardPoints, Boss->BossID);
 		}
 
-		const int32 BossXPAmount = RunState->GetHeroXPToNextLevel();
-		if (BossXPAmount > 0)
-		{
-			RunState->AddHeroXP(BossXPAmount);
-		}
 	}
 
 	// Lab unlock + achievement: mark this boss as unlocked for The Lab and notify boss killed.
@@ -495,12 +490,13 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		return;
 	}
 
+	SpawnIdolAltarAtLocation(Location);
 	SpawnStageGateAtLocation(Location);
 
 	if (RunState)
 	{
 		const int32 ClearedStage = RunState->GetCurrentStage();
-		UE_LOG(LogT66GameMode, Verbose, TEXT("Stage %d cleared; idol altar progression now happens at stage entry."), ClearedStage);
+		UE_LOG(LogT66GameMode, Verbose, TEXT("Stage %d cleared; post-boss idol altar and stage gate spawned."), ClearedStage);
 	}
 }
 

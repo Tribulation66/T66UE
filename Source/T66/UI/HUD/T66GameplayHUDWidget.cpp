@@ -256,7 +256,6 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	}
 	RunState->HeroProgressChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
-	RunState->SurvivalChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 	RunState->QuickReviveChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshQuickReviveState);
 	RunState->TutorialHintChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
 	RunState->TutorialSubtitleChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialSubtitle);
@@ -293,7 +292,8 @@ void UT66GameplayHUDWidget::NativeConstruct()
 	// Map/minimap refresh (lightweight, throttled timer; no per-frame UI thinking).
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().SetTimer(MapRefreshTimerHandle, this, &UT66GameplayHUDWidget::RefreshMapData, 0.5f, true);
+		BindMapRegistryEvents();
+		World->GetTimerManager().SetTimer(MapRefreshTimerHandle, this, &UT66GameplayHUDWidget::RefreshMapData, MapVisibleRefreshIntervalSeconds, true);
 		if (FPSText.IsValid() || ElevationText.IsValid())
 		{
 			World->GetTimerManager().SetTimer(FPSTimerHandle, this, &UT66GameplayHUDWidget::RefreshFPS, 0.25f, true);
@@ -340,6 +340,8 @@ void UT66GameplayHUDWidget::NativeConstruct()
 
 void UT66GameplayHUDWidget::NativeDestruct()
 {
+	UnbindMapRegistryEvents();
+
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(MapRefreshTimerHandle);
@@ -379,7 +381,6 @@ void UT66GameplayHUDWidget::NativeDestruct()
 		}
 		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->UltimateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
-		RunState->SurvivalChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
 		RunState->QuickReviveChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshQuickReviveState);
 		RunState->TutorialHintChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
 		RunState->TutorialSubtitleChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialSubtitle);

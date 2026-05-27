@@ -1,8 +1,10 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66HeroProjectile.h"
+#include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66TemporaryProjectileSystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -28,18 +30,14 @@ AT66HeroProjectile::AT66HeroProjectile()
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
 	VisualMesh->SetupAttachment(RootComponent);
 	VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere();
-	if (Sphere)
-	{
-		VisualMesh->SetStaticMesh(Sphere);
-		VisualMesh->SetRelativeScale3D(FVector(BaseVisualScale, BaseVisualScale, BaseVisualScale));
-	}
-	if (UMaterialInstanceDynamic* Mat = VisualMesh->CreateAndSetMaterialInstanceDynamic(0))
-	{
-		// Engine basic-shape materials typically use "Color"; keep "BaseColor" as fallback.
-		Mat->SetVectorParameterValue(TEXT("Color"), TintColor);
-		Mat->SetVectorParameterValue(TEXT("BaseColor"), TintColor);
-	}
+	VisualMesh->SetCastShadow(false);
+
+	AccentMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("AccentMesh"));
+	AccentMesh->SetupAttachment(RootComponent);
+	AccentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AccentMesh->SetCastShadow(false);
+	FT66TemporaryProjectileSystem::ApplyProfileToMesh(VisualMesh, this, FT66TemporaryProjectileSystem::ProfileHeroAOE(), FT66TemporaryProjectileSystem::HeroProjectileColor());
+	FT66TemporaryProjectileSystem::HideMesh(AccentMesh);
 
 	TrailVFXComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("TrailVFX"));
 	TrailVFXComponent->SetupAttachment(VisualMesh);
@@ -74,6 +72,11 @@ void AT66HeroProjectile::BeginPlay()
 void AT66HeroProjectile::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (!bVisualOnly && Damage > 0)
+	{
+		T66CombatDebugDraw::DrawDamageSphere(CollisionSphere, TEXT("Hero Projectile Damage"), true);
+	}
 
 	// If we have an intended target, keep steering to it and guarantee impact.
 	AActor* T = TargetActor.Get();
@@ -153,11 +156,6 @@ void AT66HeroProjectile::SetTargetActor(AActor* InTargetActor)
 void AT66HeroProjectile::SetScaleMultiplier(float InScaleMultiplier)
 {
 	ScaleMultiplier = FMath::Clamp(InScaleMultiplier, 0.1f, 10.f);
-	if (VisualMesh)
-	{
-		const float S = BaseVisualScale * ScaleMultiplier;
-		VisualMesh->SetRelativeScale3D(FVector(S, S, S));
-	}
 	// Keep collision roughly in sync with visuals for fairness.
 	if (CollisionSphere)
 	{
@@ -196,16 +194,44 @@ void AT66HeroProjectile::SetTrailVFX(UNiagaraSystem* InTrailSystem, const FLinea
 		return;
 	}
 
+	static_cast<void>(InTrailColor);
+	const FLinearColor TrailColor = FT66TemporaryProjectileSystem::HeroProjectileColor();
 	TrailVFXComponent->SetAsset(InTrailSystem);
-	TrailVFXComponent->SetVariableLinearColor(FName(TEXT("User.Color")), InTrailColor);
-	TrailVFXComponent->SetVariableLinearColor(FName(TEXT("User.Tint")), InTrailColor);
-	TrailVFXComponent->SetVariableLinearColor(FName(TEXT("Color")), InTrailColor);
+	TrailVFXComponent->SetVariableLinearColor(FName(TEXT("User.Color")), TrailColor);
+	TrailVFXComponent->SetVariableLinearColor(FName(TEXT("User.Tint")), TrailColor);
+	TrailVFXComponent->SetVariableLinearColor(FName(TEXT("Color")), TrailColor);
 	TrailVFXComponent->Activate(true);
 }
 
 void AT66HeroProjectile::SetVisualOnly(bool bInVisualOnly)
 {
 	bVisualOnly = bInVisualOnly;
+}
+
+void AT66HeroProjectile::ConfigureTemporaryProjectileVisual(
+	const FName ProfileID,
+	const FLinearColor& CoreColor,
+	const float CoreScaleMultiplier,
+	const FName OverlayProfileID,
+	const FLinearColor& OverlayColor,
+	const float OverlayScaleMultiplier)
+{
+	TintColor = CoreColor;
+	ScaleMultiplier = FMath::Clamp(CoreScaleMultiplier, 0.1f, 10.f);
+	FT66TemporaryProjectileSystem::ApplyProfileToMesh(VisualMesh, this, ProfileID, CoreColor, ScaleMultiplier);
+	if (!OverlayProfileID.IsNone())
+	{
+		FT66TemporaryProjectileSystem::ApplyProfileToMesh(AccentMesh, this, OverlayProfileID, OverlayColor, ScaleMultiplier * FMath::Max(0.1f, OverlayScaleMultiplier));
+	}
+	else
+	{
+		FT66TemporaryProjectileSystem::HideMesh(AccentMesh);
+	}
+
+	if (CollisionSphere)
+	{
+		CollisionSphere->SetSphereRadius(32.f * FMath::Max(1.f, ScaleMultiplier));
+	}
 }
 
 void AT66HeroProjectile::SetTintColor(const FLinearColor& InColor)

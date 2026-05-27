@@ -13,6 +13,7 @@
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66SteamHelper.h"
 #include "Gameplay/T66PlayerController.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "OnlineSubsystem.h"
 #include "OnlineSubsystemUtils.h"
@@ -934,6 +935,16 @@ bool UT66SessionSubsystem::SaveCurrentRunAndReturnToFrontend()
 	if (!World || !GI || World->GetNetMode() == NM_Client)
 	{
 		return false;
+	}
+
+	if (const AT66GameMode* GameMode = World->GetAuthGameMode<AT66GameMode>())
+	{
+		if (GameMode->IsBackroomsChallengeActive())
+		{
+			BroadcastStateChanged(TEXT("Cannot save and return while inside the Backrooms."));
+			UE_LOG(LogT66Session, Warning, TEXT("SaveCurrentRunAndReturnToFrontend rejected while Backrooms challenge is active."));
+			return false;
+		}
 	}
 
 	UT66SaveSubsystem* SaveSub = GI->GetSubsystem<UT66SaveSubsystem>();
@@ -2043,7 +2054,7 @@ void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* L
 	GI->SelectedCompanionID = GI->ResolvePlayableCompanionID(LoadedSave->CompanionID);
 	GI->SelectedDifficulty = GI->ResolvePlayableDifficulty(LoadedSave->Difficulty);
 	GI->SelectedRunMode = LoadedSave->RunMode;
-	GI->SelectedRunCategory = LoadedSave->RunCategory;
+	GI->SelectedRunCategory = GI->ResolvePlayableRunCategory(LoadedSave->RunCategory);
 	GI->SelectedPartySize = LoadedSave->PartySize;
 	GI->RunSeed = LoadedSave->RunSeed;
 	if (LoadedSave->bIsDailyClimbRun && LoadedSave->DailyClimbChallenge.IsValid())

@@ -49,5 +49,6 @@ private:
 	void RefreshOffers();
 	bool HasSelectionsRemaining() const;
 	void ConsumeSelectionBudget();
+	void CloseAndReturnToGameplay();
 	void HandleWeaponsChanged();
 };

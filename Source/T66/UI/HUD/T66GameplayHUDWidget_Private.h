@@ -358,6 +358,21 @@ namespace
 		}
 	}
 
+	static FString GetChestRewardCoinRelativePath()
+	{
+		return TEXT("RuntimeDependencies/T66/UI/ChestRewards/chest_reward_coin.png");
+	}
+
+	static FString GetLootBagRevealClosedRelativePath()
+	{
+		return TEXT("RuntimeDependencies/T66/UI/LootBagRewards/loot_bag_closed.png");
+	}
+
+	static FString GetLootBagRevealOpenRelativePath()
+	{
+		return TEXT("RuntimeDependencies/T66/UI/LootBagRewards/loot_bag_open.png");
+	}
+
 	static FString GetChestRewardFallbackRelativePath(const ET66Rarity Rarity)
 	{
 		switch (Rarity)
@@ -463,7 +478,7 @@ namespace
 	{
 		static const TMap<FName, FT66LooseMinimapIconSpec> Specs = {
 			{ FName(TEXT("NPC")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/npc.png"), FVector2D(22.f, 18.f) } },
-			{ FName(TEXT("Gambler")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/gambler.png"), FVector2D(20.f, 20.f) } },
+			{ FName(TEXT("CasinoNPC")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/gambler.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Saint")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/saint.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Ouroboros")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/ouroboros.png"), FVector2D(20.f, 20.f) } },
 			{ FName(TEXT("Collector")), { TEXT("RuntimeDependencies/T66/UI/Minimap/Icons/collector.png"), FVector2D(20.f, 20.f) } },

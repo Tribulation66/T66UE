@@ -10,7 +10,7 @@ class UT66LocalizationSubsystem;
 class UT66LeaderboardRunSummarySaveGame;
 
 /**
- * Shared Slate builder for the essential stats panel (Level + 8 displayed stats).
+ * Shared Slate builder for the essential stats panel (8 item-scaled primary stats).
  * Used by Pause menu, Shop, Gambler casino, and gameplay HUD.
  */
 namespace T66StatsPanelSlate
@@ -23,7 +23,7 @@ namespace T66StatsPanelSlate
 		int32 HeadingFontSizeAdjustment = 0;
 		bool bShowAdjectiveSummaries = false;
 		bool bIncludeHeader = true;
-		bool bIncludeLevel = true;
+		bool bIncludeLevel = false;
 		float ScrollHeightOverride = 400.f;
 	};
 
@@ -39,7 +39,7 @@ namespace T66StatsPanelSlate
 		void Update(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc) const;
 	};
 
-	/** Build the standard stats panel: header + Level + 8 displayed stats; if bExtended, also all secondary stats in a scrollable list. Returns a fixed-width panel; if RunState is null, returns an empty placeholder. */
+	/** Build the standard stats panel: header + 8 displayed stats; if bExtended, also all secondary stats in a scrollable list. Returns a fixed-width panel; if RunState is null, returns an empty placeholder. */
 	TSharedRef<class SWidget> MakeEssentialStatsPanel(
 		UT66RunStateSubsystem* RunState,
 		UT66LocalizationSubsystem* Loc,

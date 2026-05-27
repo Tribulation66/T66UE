@@ -41,7 +41,7 @@ GI->CurrentMainMapLayoutVariant);
 
 if (GI && GI->IsTestRoomRun())
 {
-T66TestRoom::ScheduleVATSlimeChase(GetWorld());
+T66TestRoom::ScheduleCombatZones(GetWorld());
 }
 
 MaintainPlayerTerrainSafety();

@@ -1,9 +1,19 @@
 # T66 Master Stats
 
-**Last updated:** 2026-04-18  
-**Scope:** Single-source handoff for the T66 stat system: authored data, live runtime ownership, primary and secondary formulas, item and buff stacking, stat UI, persistence, and current deprecated or inert stat paths.  
+**Last updated:** 2026-05-26
+**Scope:** Single-source handoff for the T66 stat system: authored data, live runtime ownership, primary and secondary formulas, item and buff stacking, stat UI, persistence, and current deprecated or inert stat paths.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Combat/MASTER_COMBAT.md`, `Gameplay/Movement/MASTER_MOVEMENT.md`
 **Maintenance rule:** Update this file after every material change to hero stat schema, hero level curves, item stat rules, buff progression, stat UI, run-summary stat snapshots, or secondary-stat activation/deprecation.
+
+## May 2026 Status: Run Leveling Deprecated
+
+- In-run hero XP and level-up stat growth are deprecated.
+- `HeroLevel`, `HeroXP`, `XPToNextLevel`, saved precise hero stats, and persistent secondary gain entries remain only as save/backend compatibility fields.
+- New runs and imported saves clamp live hero level to `1`, hero XP to `0`, and XP threshold to `0`.
+- Primary stat totals are now hero base stats plus item line-1 bonuses only.
+- Secondary/category stat bonuses are now item-derived only beyond hero-authored base values.
+- Permanent diploma bonuses, single-use drug multipliers, temporary boost pickups, community start-level overrides, community direct stat bonuses, and max-stat run modifiers no longer affect live combat stats.
+- The shared gameplay stats panel no longer shows the `Level` row.
 
 ## 1. Executive Summary
 
@@ -27,17 +37,14 @@
   - `Evasion`
   - `Luck`
   - `Speed`
-- `HeroStats` stores the selected hero's base primary stats plus all level-up gains.
+- `HeroStats` stores the selected hero's base primary stats. Level-up gains are deprecated.
 - Effective live primary getters add:
-  - hero base + level-ups
+  - hero base
   - item line-1 flat bonuses
-  - permanent buff flat bonuses
 - `Speed` is currently the exception:
-  - it levels normally
+  - it no longer levels
   - it affects movement normally
-  - it is not increased by normal item line-1 application
-  - it is not part of permanent buff progression
-  - it is not shown on the default stats panel
+  - it is increased by supported item stat paths
 - Live item templates use a two-line model:
   - line 1 = flat additive primary stat bonus
   - line 2 = multiplicative secondary stat scalar
@@ -105,6 +112,8 @@
   - `BaseBuyGold`
   - `BaseSellGold`
   - rarity-specific icons
+- `Item_BackroomsQuickRevive` is a reward-only inventory item. It is intentionally excluded from random item pools, shop stock, buyback/sell value, alchemy, lab unlock progression, and stat aggregation.
+- Quick Revive is no longer a perk/charge/downed-state flow. Normal lethal damage consumes the Backrooms Quick Revive item once, restores one heart, and removes the item from inventory.
 - Runtime normalizes item rows through `T66ResolveEffectivePrimaryStatType(...)`.
 - Accuracy-family secondaries always resolve the effective primary to `Accuracy`.
 - `UT66GameInstance::BuildSyntheticSpecialItemData()` can synthesize `Item_Accuracy` if that row is missing from the DataTable.
@@ -121,7 +130,7 @@
   - `Evasion`
   - `Luck`
 - There is no permanent `Speed` track.
-- Single-use buffs track selected secondary stat multipliers for the next run.
+- Single-use buffs are deprecated. Their save/load state remains for compatibility, but they no longer produce run stat multipliers.
 
 ## 4. Runtime Ownership And Fresh-Run Flow
 
@@ -130,34 +139,30 @@
   - `RunState->ActivatePendingSingleUseBuffsForRunStart()`
 - `ResetForNewRun()` clears run inventory, clears active dot state, clears single-use secondary multipliers, resets score and timers, and zeroes all item-derived accumulators.
 - `ResetForNewRun()` then:
-  - sets `HeroLevel = 1`
-  - applies any difficulty start bonus levels from `UT66PlayerExperienceSubSystem`
+  - normalizes `HeroLevel = 1`, `HeroXP = 0`, and `XPToNextLevel = 0`
+  - ignores deprecated difficulty start bonus levels and community direct-stat overrides
   - reloads the selected hero's primary and secondary baselines
-  - seeds the run's hero-stat RNG
-  - replays level-up rolls if the run starts above level 1
-  - refreshes permanent buff flat bonuses from `UT66BuffSubsystem`
-- `ActivatePendingSingleUseBuffsForRunStart()` consumes the selected single-use buff loadout and turns it into per-secondary multipliers for this run.
+  - seeds the run's hero-stat RNG for compatibility-only deterministic fields
+- `ActivatePendingSingleUseBuffsForRunStart()` clears deprecated single-use multiplier state and does not consume a stat buff loadout.
 - The authoritative live stat state therefore lives in:
-  - `HeroStats`
-  - `HeroPerLevelGains`
+  - selected hero base primary stats
+  - selected hero base secondary stats
   - hero secondary baselines
   - `ItemStatBonuses`
   - `SecondaryMultipliers`
-  - `PermanentBuffStatBonuses`
-  - `SingleUseSecondaryMultipliers`
 
 ## 5. Foundational Primary Stats
 
 ### 5.1 Effective primary getters
 
-- `GetDamageStat() = HeroStats.Damage + ItemStatBonuses.Damage + PermanentBuffStatBonuses.Damage`
-- `GetAttackSpeedStat() = HeroStats.AttackSpeed + ItemStatBonuses.AttackSpeed + PermanentBuffStatBonuses.AttackSpeed`
-- `GetScaleStat() = HeroStats.AttackScale + ItemStatBonuses.AttackScale + PermanentBuffStatBonuses.AttackScale`
-- `GetAccuracyStat() = HeroStats.Accuracy + ItemStatBonuses.Accuracy + PermanentBuffStatBonuses.Accuracy`
-- `GetArmorStat() = HeroStats.Armor + ItemStatBonuses.Armor + PermanentBuffStatBonuses.Armor`
-- `GetEvasionStat() = HeroStats.Evasion + ItemStatBonuses.Evasion + PermanentBuffStatBonuses.Evasion`
-- `GetLuckStat() = HeroStats.Luck + ItemStatBonuses.Luck + PermanentBuffStatBonuses.Luck`
-- `GetSpeedStat() = HeroStats.Speed`
+- `GetDamageStat() = BaseDamage + ItemStatBonuses.Damage`
+- `GetAttackSpeedStat() = BaseAttackSpeed + ItemStatBonuses.AttackSpeed`
+- `GetScaleStat() = BaseAttackScale + ItemStatBonuses.AttackScale`
+- `GetAccuracyStat() = BaseAccuracy + ItemStatBonuses.Accuracy`
+- `GetArmorStat() = BaseArmor + ItemStatBonuses.Armor`
+- `GetEvasionStat() = BaseEvasion + ItemStatBonuses.Evasion`
+- `GetLuckStat() = BaseLuck + ItemStatBonuses.Luck`
+- `GetSpeedStat() = BaseSpeed + ItemStatBonuses.Speed`
 
 ### 5.2 Primary-derived multipliers
 
@@ -166,6 +171,8 @@
 - `GetHeroScaleMultiplier() = 1.0 + (AttackScale - 1) * 0.008`
 - `GetHeroAccuracyMultiplier() = 1.0 + (Accuracy - 1) * 0.010`
 - `GetHeroMoveSpeedMultiplier() = 1.0 + (Speed - 1) * 0.010`
+  - retained as a compatibility/stat formula, but no longer consumed by live hero walking speed
+  - live walking speed uses raw `GetSpeedStat() * 840 UU/s`; see `Gameplay/Movement/MASTER_MOVEMENT.md`
 
 ### 5.3 Defensive totals
 
@@ -192,21 +199,16 @@
 - Current passive hook:
   - `Headshot` adds `+0.20`
 
-## 6. Leveling And Starting Levels
+## 6. Deprecated Leveling And Starting Levels
 
 - `DefaultHeroLevel = 1`
-- `DefaultXPToLevel = 100`
-- XP per level is currently fixed at `100`.
-- On level-up:
-  - `Damage`, `AttackSpeed`, `AttackScale`, `Accuracy`, `Armor`, `Evasion`, `Luck`, and `Speed` all roll their selected hero's decimal inclusive min/max gain ranges
-  - `Damage` is authored uniformly at `0.5-1.0` across heroes in the current first pass
-  - the other primaries are currently seeded from each hero's base proficiency values in `Heroes.csv`
-- Luck bias is applied through `UT66RngSubsystem::BiasHigh01(...)`, so Luck can push rolls toward the top of each range without changing the authored min/max values.
-- If a run starts above level 1 because of difficulty bonuses, `InitializeHeroStatsForNewRun()` replays those level-up rolls immediately so the run begins with a fully materialized stat block.
+- `DefaultXPToLevel = 0`
+- XP per level, level-up stat rolls, level-up healing, and start-above-level-1 replays are deprecated.
+- `AddHeroXP(...)` is a compatibility no-op that resets level fields to `1/0/0`.
+- Hero per-level gain ranges remain in schemas so older data can load, but live run stats do not consume them.
 - Safe defaults still exist if hero data fails to load:
   - all base primaries default to `2`
-  - `Damage` defaults to `0.5..1.0`
-  - other primary gain ranges default to low decimal bands and runtime fallback ranges
+  - deprecated primary gain ranges default to low decimal bands for schema compatibility
 
 ## 7. Secondary Stat Model
 
@@ -216,9 +218,8 @@
 - For any secondary type, runtime starts with:
   - the hero's base secondary value from `Heroes.csv`
   - multiplied by matching item line-2 multipliers
-  - multiplied by matching single-use buff multipliers for the run
 - Let:
-  - `M = product of item multipliers for this secondary * product of selected single-use multipliers for this secondary`
+  - `M = product of item multipliers for this secondary`
 
 ### 7.2 Damage family
 
@@ -439,13 +440,13 @@
 
 - `UT66RunStateSubsystem::ApplyDamage(...)` currently resolves damage in this order:
   - saint blessing immunity
-  - last-stand immunity
-  - quick-revive special handling
   - `IronWill` passive flat reduction using `ArmorStat * 2`
   - `Unflinching` passive `15%` reduction
   - full-hit dodge from `EvasionChance01`
   - percent reduction from `ArmorReduction01`
   - reflect and crush checks
+  - HP loss through the shared damage path
+  - normal lethal damage consumes `Item_BackroomsQuickRevive` once if owned; Backrooms chaser contact bypasses Quick Revive
 - `Assassinate` and `CounterAttack` are live on successful dodge.
 - Important caveat:
   - old tooltip language says Armor subtracts flat damage
@@ -455,16 +456,17 @@
 ### 12.3 Movement
 
 - `UT66HeroMovementComponent` multiplies:
-  - `GetHeroMoveSpeedMultiplier()`
+  - raw primary `Speed` converted at `840 UU/s` per Speed point
   - `GetItemMoveSpeedMultiplier()`
   - `GetMovementSpeedSecondaryMultiplier()`
-  - `GetLastStandMoveSpeedMultiplier()`
   - `GetStageMoveSpeedMultiplier()`
   - `GetStatusMoveSpeedMultiplier()`
 - Current caveat:
+  - primary `Speed` is now the base live hero walking-speed stat
+  - `HeroData.MaxSpeed` is reserved metadata for future cap semantics and is not currently part of live walking speed
   - the item move-speed multiplier path is still at its default `1.0`
   - the secondary move-speed path is still hardcoded to `1.0`
-  - current live movement scaling therefore mainly comes from primary `Speed`, last stand, stage effects, and status effects
+  - current live movement scaling comes from `Speed` plus explicit item, secondary, stage, and status effects
 
 ### 12.4 Range caveat
 
@@ -484,6 +486,7 @@
   - `HeroLevel`
   - all 8 primaries, including `Speed`
   - `SecondaryStatValues` for every live secondary stat
+- `HeroLevel` is retained as a compatibility/backend field and should be written as `1`.
 - Current local run-summary schema is `15`.
 - `UT66BackendSubsystem` serializes those stats into:
   - `stats`

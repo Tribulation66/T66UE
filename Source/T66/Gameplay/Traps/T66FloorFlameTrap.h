@@ -76,6 +76,7 @@ private:
 	void SpawnActivePulseBurst() const;
 	bool ShouldUseFireNiagara() const;
 	void UpdateMarkerVisuals();
+	void RefreshTickEnabledForDebug();
 
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<USphereComponent> DamageZone;

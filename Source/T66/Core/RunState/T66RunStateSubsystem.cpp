@@ -109,11 +109,6 @@ void UT66RunStateSubsystem::ActivatePendingSingleUseBuffsForRunStart()
 
 	if (UGameInstance* GI = GetGameInstance())
 	{
-		if (UT66BuffSubsystem* PowerUp = GI->GetSubsystem<UT66BuffSubsystem>())
-		{
-			SingleUseSecondaryMultipliers = PowerUp->ConsumePendingSingleUseBuffMultipliers();
-		}
-
 		if (UT66RngSubsystem* Rng = GI->GetSubsystem<UT66RngSubsystem>())
 		{
 			Rng->UpdateLuckStat(GetEffectiveLuckBiasStat());
@@ -130,7 +125,8 @@ void UT66RunStateSubsystem::SetSaintBlessingActive(const bool bActive)
 	}
 
 	bSaintBlessingActive = bActive;
-	SurvivalChanged.Broadcast();
+	HeartsChanged.Broadcast();
+	HeroProgressChanged.Broadcast();
 }
 
 
@@ -521,68 +517,12 @@ void UT66RunStateSubsystem::ResetForNewRun()
 		if (bHasCommunityEntry)
 		{
 			const FT66CommunityRuleSet& Rules = ActiveCommunityEntry.Rules;
-			UE_LOG(LogTemp, Log, TEXT("[Community] ResetForNewRun applying '%s' (kind=%d startLevel=%d maxStats=%d startItem=%s passive=%d ultimate=%d)."),
+			UE_LOG(LogTemp, Log, TEXT("[Community] ResetForNewRun applying '%s' (kind=%d startItem=%s passive=%d ultimate=%d). Deprecated stat/level overrides ignored."),
 				*ActiveCommunityEntry.Title,
 				static_cast<int32>(ActiveCommunityEntry.Kind),
-				Rules.StartLevelOverride,
-				Rules.bSetMaxHeroStats ? 1 : 0,
 				*Rules.StartingItemId.ToString(),
 				static_cast<int32>(Rules.PassiveOverride),
 				static_cast<int32>(Rules.UltimateOverride));
-			const int32 TargetLevel = Rules.bSetMaxHeroStats
-				? MaxHeroLevel
-				: FMath::Clamp(Rules.StartLevelOverride, 0, MaxHeroLevel);
-			while (HeroLevel < TargetLevel)
-			{
-				HeroLevel = FMath::Clamp(HeroLevel + 1, DefaultHeroLevel, MaxHeroLevel);
-				ApplyOneHeroLevelUp();
-			}
-
-			if (Rules.bSetMaxHeroStats)
-			{
-				HeroLevel = MaxHeroLevel;
-
-				FT66HeroStatBlock MaxHeroStats;
-				MaxHeroStats.Damage = MaxHeroLevel;
-				MaxHeroStats.AttackSpeed = MaxHeroLevel;
-				MaxHeroStats.AttackScale = MaxHeroLevel;
-				MaxHeroStats.Accuracy = MaxHeroLevel;
-				MaxHeroStats.Armor = MaxHeroLevel;
-				MaxHeroStats.Evasion = MaxHeroLevel;
-				MaxHeroStats.Luck = MaxHeroLevel;
-				MaxHeroStats.Speed = MaxHeroLevel;
-				HeroPreciseStats.SetFromWholeStatBlock(MaxHeroStats);
-				SyncLegacyHeroStatsFromPrecise();
-
-				ClearPersistentSecondaryStatBonuses();
-				const int32 MaxStatTenths = WholeStatToTenths(MaxHeroLevel);
-				for (uint8 RawStatType = static_cast<uint8>(ET66SecondaryStatType::None) + 1;
-					RawStatType <= static_cast<uint8>(ET66SecondaryStatType::Accuracy);
-					++RawStatType)
-				{
-					const ET66SecondaryStatType StatType = static_cast<ET66SecondaryStatType>(RawStatType);
-					if (T66IsLiveSecondaryStatType(StatType))
-					{
-						AddPersistentSecondaryStatBonusTenths(StatType, MaxStatTenths);
-					}
-				}
-			}
-			else
-			{
-				auto ApplyPrimaryBonus = [this](int32& StatTenths, const int32 Bonus)
-				{
-					StatTenths = ClampHeroStatTenths(StatTenths + (Bonus * HeroStatTenthsScale));
-				};
-
-				ApplyPrimaryBonus(HeroPreciseStats.DamageTenths, Rules.BonusStats.Damage);
-				ApplyPrimaryBonus(HeroPreciseStats.AttackSpeedTenths, Rules.BonusStats.AttackSpeed);
-				ApplyPrimaryBonus(HeroPreciseStats.AttackScaleTenths, Rules.BonusStats.AttackScale);
-				ApplyPrimaryBonus(HeroPreciseStats.AccuracyTenths, Rules.BonusStats.Accuracy);
-				ApplyPrimaryBonus(HeroPreciseStats.ArmorTenths, Rules.BonusStats.Armor);
-				ApplyPrimaryBonus(HeroPreciseStats.EvasionTenths, Rules.BonusStats.Evasion);
-				ApplyPrimaryBonus(HeroPreciseStats.LuckTenths, Rules.BonusStats.Luck);
-				ApplyPrimaryBonus(HeroPreciseStats.SpeedTenths, Rules.BonusStats.Speed);
-			}
 
 			if (Rules.PassiveOverride != ET66PassiveType::None)
 			{
@@ -597,35 +537,6 @@ void UT66RunStateSubsystem::ResetForNewRun()
 				UE_LOG(LogTemp, Log, TEXT("[Community] Deferred run-start item grant for '%s': %s"),
 					*ActiveCommunityEntry.Title,
 					*DeferredRunStartItemId.ToString());
-			}
-		}
-		else if (T66GI->HasSelectedRunMod() && T66GI->SelectedRunModifierID == T66MaxHeroStatsRunModifierID)
-		{
-			HeroLevel = MaxHeroLevel;
-
-			FT66HeroStatBlock MaxHeroStats;
-			MaxHeroStats.Damage = MaxHeroLevel;
-			MaxHeroStats.AttackSpeed = MaxHeroLevel;
-			MaxHeroStats.AttackScale = MaxHeroLevel;
-			MaxHeroStats.Accuracy = MaxHeroLevel;
-			MaxHeroStats.Armor = MaxHeroLevel;
-			MaxHeroStats.Evasion = MaxHeroLevel;
-			MaxHeroStats.Luck = MaxHeroLevel;
-			MaxHeroStats.Speed = MaxHeroLevel;
-			HeroPreciseStats.SetFromWholeStatBlock(MaxHeroStats);
-			SyncLegacyHeroStatsFromPrecise();
-
-			ClearPersistentSecondaryStatBonuses();
-			const int32 MaxStatTenths = WholeStatToTenths(MaxHeroLevel);
-			for (uint8 RawStatType = static_cast<uint8>(ET66SecondaryStatType::None) + 1;
-				RawStatType <= static_cast<uint8>(ET66SecondaryStatType::Accuracy);
-				++RawStatType)
-			{
-				const ET66SecondaryStatType StatType = static_cast<ET66SecondaryStatType>(RawStatType);
-				if (T66IsLiveSecondaryStatType(StatType))
-				{
-					AddPersistentSecondaryStatBonusTenths(StatType, MaxStatTenths);
-				}
 			}
 		}
 	}
@@ -645,14 +556,6 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	XPToNextLevel = DefaultXPToLevel;
 	UltimateCooldownRemainingSeconds = 0.f;
 	LastBroadcastUltimateSecond = 0;
-	SurvivalCharge01 = 0.f;
-	bInLastStand = false;
-	LastStandSecondsRemaining = 0.f;
-	LastBroadcastLastStandSecond = 0;
-	bQuickReviveChargeReady = false;
-	bInQuickReviveDowned = false;
-	QuickReviveDownedSecondsRemaining = 0.f;
-	LastBroadcastQuickReviveSecond = 0;
 	ResetBossState();
 	HeartsChanged.Broadcast();
 	GoldChanged.Broadcast();
@@ -669,7 +572,6 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	BossChanged.Broadcast();
 	HeroProgressChanged.Broadcast();
 	UltimateChanged.Broadcast();
-	SurvivalChanged.Broadcast();
 	QuickReviveChanged.Broadcast();
 	StatusEffectsChanged.Broadcast();
 }

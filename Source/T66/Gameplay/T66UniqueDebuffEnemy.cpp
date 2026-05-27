@@ -10,6 +10,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66UniqueDebuffEnemy, Log, All);
+
 namespace
 {
 	AT66HeroBase* T66ResolveClosestDebuffTargetHero(const AActor* ContextActor)
@@ -151,4 +153,18 @@ void AT66UniqueDebuffEnemy::FireAtPlayer()
 		Proj->ProjectileMovement->Velocity = Dir * Proj->ProjectileMovement->InitialSpeed;
 	}
 	Proj->SetActorRotation(Dir.Rotation());
+
+	UE_LOG(
+		LogT66UniqueDebuffEnemy,
+		Log,
+		TEXT("[ProjectileFired] Type=UniqueDebuffProjectile Enemy=%s MobID=%s Projectile=%s Hero=%s Start=%s Target=%s Direction=%s Speed=%.1f Effect=%d"),
+		*GetName(),
+		*MobID.ToString(),
+		*Proj->GetName(),
+		*Hero->GetName(),
+		*Start.ToCompactString(),
+		*Target.ToCompactString(),
+		*Dir.ToCompactString(),
+		Proj->ProjectileMovement ? Proj->ProjectileMovement->InitialSpeed : 0.f,
+		static_cast<int32>(Proj->EffectType));
 }

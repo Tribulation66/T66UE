@@ -6,6 +6,7 @@
 #include "Engine/DeveloperSettings.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Data/T66DataTypes.h"
+#include "Core/T66RunTypes.h"
 #include "T66ReleaseVariantSubsystem.generated.h"
 
 UENUM(BlueprintType)
@@ -51,6 +52,12 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Content")
 	TArray<FName> AllowedCasinoGameIDs;
 
+	UPROPERTY(Config, EditAnywhere, Category = "Content")
+	bool bAllowLabRun = false;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Content")
+	bool bAllowCollector = false;
+
 	UPROPERTY(Config, EditAnywhere, Category = "Economy", meta = (ClampMin = "0"))
 	int32 MaxDiplomaUpgradesPerStat = 1;
 
@@ -91,11 +98,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
 	bool IsCasinoGameAllowed(FName CasinoGameID) const;
 
+	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
+	bool IsRunCategoryAllowed(ET66RunCategory RunCategory) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
+	bool IsCollectorAllowed() const;
+
 	TArray<FName> FilterHeroIDs(const TArray<FName>& HeroIDs) const;
 	TArray<FName> FilterCompanionIDs(const TArray<FName>& CompanionIDs) const;
 	TArray<ET66Difficulty> GetPlayableDifficulties() const;
 	TArray<ET66Difficulty> GetVisibleDifficulties() const;
 	ET66Difficulty ResolvePlayableDifficulty(ET66Difficulty Difficulty) const;
+	ET66RunCategory ResolvePlayableRunCategory(ET66RunCategory RunCategory) const;
 	bool IsDiplomaUpgradeAllowed(int32 CurrentUnlockedSteps) const;
 	bool AreDrugPurchasesAllowed() const;
 	FText GetUnavailableContentText() const;

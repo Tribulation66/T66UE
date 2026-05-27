@@ -284,6 +284,174 @@ namespace
 		return Out.IsEmpty() ? FString(TEXT("Unknown")) : Out;
 	}
 
+	bool T66TryResolveKnownTrapDamageSourceName(const FName SourceID, FText& OutName)
+	{
+		if (SourceID == FName(TEXT("DungeonWallArrow")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_DungeonWallArrow", "Dungeon Wall Arrow Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("DungeonFloorFlame")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_DungeonFloorFlame", "Dungeon Floor Flame Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("DungeonFloorSpikePatch")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_DungeonFloorSpikePatch", "Dungeon Floor Spike Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("ForestThornVolley")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_ForestThornVolley", "Forest Thorn Volley Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("ForestSporeBurst")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_ForestSporeBurst", "Forest Spore Burst Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("ForestBramblePatch")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_ForestBramblePatch", "Forest Bramble Patch Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("OceanHarpoonVolley")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_OceanHarpoonVolley", "Ocean Harpoon Volley Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("OceanSteamBurst")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_OceanSteamBurst", "Ocean Steam Burst Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("OceanUrchinPatch")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_OceanUrchinPatch", "Ocean Urchin Patch Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("MartianShardVolley")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_MartianShardVolley", "Martian Shard Volley Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("MartianPlasmaBurst")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_MartianPlasmaBurst", "Martian Plasma Burst Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("MartianCrystalPatch")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_MartianCrystalPatch", "Martian Crystal Patch Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("HellSoulBoltVolley")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_HellSoulBoltVolley", "Hell Soul Bolt Volley Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("HellEmberBurst")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_HellEmberBurst", "Hell Ember Burst Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("HellBrimstonePatch")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_HellBrimstonePatch", "Hell Brimstone Patch Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("WallArrow")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_WallArrow", "Wall Arrow Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("FloorFlame")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_FloorFlame", "Floor Flame Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("FloorSpikePatch")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_FloorSpikePatch", "Floor Spike Patch Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("WallProjectile")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_WallProjectile", "Wall Projectile Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("FloorBurst")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_FloorBurst", "Floor Burst Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("AreaControl")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_AreaControl", "Area Control Trap");
+			return true;
+		}
+		if (SourceID == FName(TEXT("Trap")))
+		{
+			OutName = NSLOCTEXT("T66.RunSummary", "DamageSource_Trap", "Trap");
+			return true;
+		}
+
+		return false;
+	}
+
+	TArray<FDamageLogEntry> T66BuildRunSummaryDamageRowsFromMap(const TMap<FName, int32>& DamageMap)
+	{
+		TArray<FDamageLogEntry> Rows;
+		Rows.Reserve(DamageMap.Num());
+		for (const auto& Pair : DamageMap)
+		{
+			if (Pair.Key.IsNone() || Pair.Value <= 0)
+			{
+				continue;
+			}
+
+			FDamageLogEntry Entry;
+			Entry.SourceID = Pair.Key;
+			Entry.TotalDamage = Pair.Value;
+			Rows.Add(Entry);
+		}
+
+		Rows.Sort([](const FDamageLogEntry& A, const FDamageLogEntry& B)
+		{
+			if (A.TotalDamage != B.TotalDamage)
+			{
+				return A.TotalDamage > B.TotalDamage;
+			}
+			return A.SourceID.LexicalLess(B.SourceID);
+		});
+		return Rows;
+	}
+
+	void T66CollectRunSummaryDamageRows(
+		UGameInstance* GI,
+		const UT66LeaderboardRunSummarySaveGame* LoadedSavedSummary,
+		const bool bViewingSavedLeaderboardRunSummary,
+		TArray<FDamageLogEntry>& OutDamageDealtRows,
+		TArray<FDamageLogEntry>& OutDamageReceivedRows)
+	{
+		OutDamageDealtRows.Reset();
+		OutDamageReceivedRows.Reset();
+
+		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
+		{
+			OutDamageDealtRows = T66BuildRunSummaryDamageRowsFromMap(LoadedSavedSummary->DamageBySource);
+			OutDamageReceivedRows = T66BuildRunSummaryDamageRowsFromMap(LoadedSavedSummary->DamageReceivedBySource);
+			return;
+		}
+
+		if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
+		{
+			OutDamageDealtRows = DamageLog->GetDamageBySourceSorted();
+			OutDamageReceivedRows = DamageLog->GetDamageReceivedBySourceSorted();
+		}
+	}
+
 	FText T66ResolveRunSummaryDamageSourceName(UGameInstance* GI, const FName SourceID)
 	{
 		if (SourceID.IsNone())
@@ -309,6 +477,12 @@ namespace
 		if (SourceID == UT66DamageLogSubsystem::SourceID_Environment)
 		{
 			return NSLOCTEXT("T66.RunSummary", "DamageSource_Environment", "Environment");
+		}
+
+		FText KnownTrapName;
+		if (T66TryResolveKnownTrapDamageSourceName(SourceID, KnownTrapName))
+		{
+			return KnownTrapName;
 		}
 
 		const FString SourceString = SourceID.ToString();
@@ -1464,10 +1638,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->RunDurationSeconds :
 		(RunState ? RunState->GetFinalRunElapsedSeconds() : 0.f);
 
-	const int32 HeroLevel =
-		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->HeroLevel :
-		(RunState ? RunState->GetHeroLevel() : 1);
-
 	const int32 DamageStat =
 		(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary->DamageStat :
 		(RunState ? RunState->GetDamageStat() : 1);
@@ -1568,7 +1738,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		const FText FlatSpeedRunRankLabelText = NSLOCTEXT("T66.RunSummary", "SpeedRunRankLabel", "Speed Run");
 		FString AutoDumpPathForReferenceFixture;
 		const bool bFlatReferenceCapture = FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpScreen="), AutoDumpPathForReferenceFixture);
-		const int32 FlatHeroLevel = bFlatReferenceCapture ? 1 : HeroLevel;
 		const int32 FlatDamageStat = bFlatReferenceCapture ? 1 : DamageStat;
 		const int32 FlatAttackSpeedStat = bFlatReferenceCapture ? 1 : AttackSpeedStat;
 		const int32 FlatAttackScaleStat = bFlatReferenceCapture ? 1 : AttackScaleStat;
@@ -1626,6 +1795,38 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			FText::AsNumber(FMath::Max(1, FlatHeroMasteryLevel)),
 			FText::AsNumber(FMath::Max(0, FlatHeroMasteryXP) % 100));
 		const FText FlatRankText = FormatRunSummaryRankText(FlatDisplayedRank);
+		TArray<FDamageLogEntry> FlatDamageDealtRows;
+		TArray<FDamageLogEntry> FlatDamageReceivedRows;
+		T66CollectRunSummaryDamageRows(
+			GI,
+			(bViewingSavedLeaderboardRunSummary && LoadedSavedSummary) ? LoadedSavedSummary.Get() : nullptr,
+			bViewingSavedLeaderboardRunSummary,
+			FlatDamageDealtRows,
+			FlatDamageReceivedRows);
+
+		const TArray<FName>* FlatIdolsPtr = nullptr;
+		TArray<FName> FlatInventoryLocal;
+		const TArray<FT66InventorySlot>* FlatInventorySlotsPtr = nullptr;
+		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
+		{
+			FlatIdolsPtr = &LoadedSavedSummary->EquippedIdols;
+			FlatInventoryLocal = LoadedSavedSummary->Inventory;
+		}
+		else if (RunState)
+		{
+			if (UT66IdolManagerSubsystem* IdolManager = GIBase ? GIBase->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr)
+			{
+				FlatIdolsPtr = &IdolManager->GetEquippedIdols();
+			}
+			else
+			{
+				FlatIdolsPtr = &RunState->GetEquippedIdols();
+			}
+			FlatInventoryLocal = RunState->GetInventory();
+			FlatInventorySlotsPtr = &RunState->GetInventorySlots();
+		}
+		const TArray<FName> EmptyFlatIdols;
+		const TArray<FName>& FlatIdols = FlatIdolsPtr ? *FlatIdolsPtr : EmptyFlatIdols;
 
 		auto DTag = [](const TCHAR* Name) -> FName
 		{
@@ -1654,6 +1855,23 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			.Offset(FMargin(X * CanvasW, Y * CanvasH, W * CanvasW, H * CanvasH))
 			[
 				Widget
+			];
+		};
+		auto AddNTab = [&Canvas, this](const int32 TabIndex, const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
+		{
+			Canvas->AddSlot()
+			.Anchors(FAnchors(0.f, 0.f))
+			.Alignment(FVector2D(0.f, 0.f))
+			.Offset(FMargin(X * CanvasW, Y * CanvasH, W * CanvasW, H * CanvasH))
+			[
+				SNew(SBox)
+				.Visibility_Lambda([this, TabIndex]()
+				{
+					return FlatRunSummaryStatTabIndex == TabIndex ? EVisibility::Visible : EVisibility::Collapsed;
+				})
+				[
+					Widget
+				]
 			];
 		};
 		auto MakeLabel = [](
@@ -1714,6 +1932,81 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				Tag,
 				ToggleGroup);
 		};
+		auto MakeStatTabButton = [this, &MakeButtonShell, StatTabsGroup](
+			const FName Tag,
+			const int32 TabIndex) -> TSharedRef<SWidget>
+		{
+			const FString TagString = Tag.ToString();
+			TSharedRef<SOverlay> ButtonOverlay = SNew(SOverlay)
+				+ SOverlay::Slot()
+				[
+					SNew(SBox)
+					.Visibility_Lambda([this, TabIndex]()
+					{
+						return FlatRunSummaryStatTabIndex == TabIndex ? EVisibility::Visible : EVisibility::Collapsed;
+					})
+					[
+						MakeButtonShell(
+							ET66FlatState::Selected,
+							FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleFlatRunSummaryStatTabClicked, TabIndex),
+							FName(*(TagString + TEXT(".SelectedShell"))),
+							StatTabsGroup)
+					]
+				]
+				+ SOverlay::Slot()
+				[
+					SNew(SBox)
+					.Visibility_Lambda([this, TabIndex]()
+					{
+						return FlatRunSummaryStatTabIndex == TabIndex ? EVisibility::Collapsed : EVisibility::Visible;
+					})
+					[
+						MakeButtonShell(
+							ET66FlatState::Default,
+							FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleFlatRunSummaryStatTabClicked, TabIndex),
+							FName(*(TagString + TEXT(".DefaultShell"))),
+							StatTabsGroup)
+					]
+				];
+
+			return FT66FlatStyle::AttachMetadata(
+				ButtonOverlay,
+				Tag,
+				TEXT("ToggleButton"),
+				ET66FlatState::Default,
+				TOptional<FLinearColor>(),
+				true,
+				StatTabsGroup,
+				false,
+				true);
+		};
+		auto MakeStatTabLabel = [this, Red, Purple](
+			const FName Tag,
+			const FText& Text,
+			const int32 FontSize,
+			const int32 TabIndex) -> TSharedRef<SWidget>
+		{
+			TSharedRef<STextBlock> Label = SNew(STextBlock)
+				.Text(Text)
+				.Font(FT66FlatStyle::MakeBoldFont(FontSize))
+				.ColorAndOpacity_Lambda([this, TabIndex, Red, Purple]()
+				{
+					return FlatRunSummaryStatTabIndex == TabIndex ? Red : Purple;
+				})
+				.Justification(ETextJustify::Center)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.Clipping(EWidgetClipping::ClipToBounds)
+				.Visibility(EVisibility::HitTestInvisible);
+			return FT66FlatStyle::AttachMetadata(
+				Label,
+				Tag,
+				TEXT("Label"),
+				ET66FlatState::Default,
+				TOptional<FLinearColor>(),
+				false,
+				NAME_None,
+				true);
+		};
 		auto MakeTaggedBox = [](const FName Tag, const FString& Role = TEXT("Region")) -> TSharedRef<SWidget>
 		{
 			return FT66FlatStyle::AttachMetadata(SNew(SBox), Tag, Role, ET66FlatState::Default);
@@ -1764,6 +2057,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		{
 			AddN(X, Y, W, 0.002f, MakeRect(DimLine, NAME_None, TEXT("Divider")));
 		};
+		auto AddDividerTab = [&](const int32 TabIndex, const float X, const float Y, const float W)
+		{
+			AddNTab(TabIndex, X, Y, W, 0.002f, MakeRect(DimLine, NAME_None, TEXT("Divider")));
+		};
 		auto AddStatRow = [&](const float Y, const TCHAR* RowTag, const FText& Label, const FText& Value)
 		{
 			const FString Prefix(RowTag);
@@ -1775,6 +2072,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		{
 			AddN(0.688f, Y, 0.260f, 0.036f, MakeLabel(DTag(Tag), Text, 28, White, false));
 			AddDivider(0.684f, Y + 0.043f, 0.286f);
+		};
+		auto AddRightStatLineTab = [&](const int32 TabIndex, const float Y, const TCHAR* Tag, const FText& Text)
+		{
+			AddNTab(TabIndex, 0.688f, Y, 0.260f, 0.036f, MakeLabel(DTag(Tag), Text, 28, White, false));
+			AddDividerTab(TabIndex, 0.684f, Y + 0.043f, 0.286f);
 		};
 		auto AddTopStatPanel = [&](const float X, const TCHAR* PanelTag, const TCHAR* IconPath, const FText& Label, const FText& Value, const FText& Fallback)
 		{
@@ -1837,13 +2139,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		AddDivider(0.031f, 0.712f, 0.264f);
 		AddN(0.091f, 0.726f, 0.150f, 0.036f, MakeLabel(DTag(TEXT("RunSummary.Left.SeedLuckPanel.Value")), FlatSeedLuckText, 24, White, true, ETextJustify::Center));
 
-		AddN(0.018f, 0.755f, 0.286f, 0.082f, MakeButtonShell(ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleRestartClicked), DTag(TEXT("RunSummary.Actions.GoAgainButton"))));
-		AddN(0.052f, 0.779f, 0.033f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Actions.GoAgainButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/refresh.png"), FVector2D(52.f, 52.f), Red, FText::FromString(TEXT("R"))));
-		AddN(0.095f, 0.785f, 0.130f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Actions.GoAgainButton.Label")), NSLOCTEXT("T66.RunSummary", "GoAgain", "GO AGAIN!"), 28, Red, true, ETextJustify::Center));
-		AddN(0.018f, 0.849f, 0.286f, 0.085f, MakeButtonShell(ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleMainMenuClicked), DTag(TEXT("RunSummary.Actions.MainMenuButton"))));
-		AddN(0.052f, 0.874f, 0.033f, 0.044f, MakeIcon(DTag(TEXT("RunSummary.Actions.MainMenuButton.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/home.png"), FVector2D(52.f, 52.f), Purple, FText::FromString(TEXT("H"))));
-		AddN(0.095f, 0.879f, 0.130f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Actions.MainMenuButton.Label")), NSLOCTEXT("T66.RunSummary", "MainMenu", "MAIN MENU"), 27, Purple, true, ETextJustify::Center));
-
 		AddN(0.319f, 0.113f, 0.338f, 0.368f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Middle.CharacterPreviewPanel"))));
 		AddN(0.335f, 0.140f, 0.306f, 0.320f,
 			GetRunSummaryPreviewVideoBrush()
@@ -1853,18 +2148,41 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		AddN(0.319f, 0.498f, 0.338f, 0.176f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Middle.IdolsPanel"))));
 		AddN(0.331f, 0.508f, 0.024f, 0.042f, MakeIcon(DTag(TEXT("RunSummary.Middle.IdolsPanel.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/favorite_star_outline.png"), FVector2D(44.f, 44.f), Purple, FText::FromString(TEXT("*"))));
 		AddN(0.354f, 0.512f, 0.070f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Middle.IdolsPanel.Header")), NSLOCTEXT("T66.RunSummary", "IdolsHeader", "IDOLS"), 28, White, true));
-		const TCHAR* IdolIconPaths[4] =
-		{
-			TEXT("RuntimeDependencies/T66/UI/Icons/Flat/horned_skull.png"),
-			TEXT("RuntimeDependencies/T66/UI/Icons/Flat/diamond_spiral_idol.png"),
-			TEXT("RuntimeDependencies/T66/UI/Icons/Flat/eye_wings.png"),
-			TEXT("RuntimeDependencies/T66/UI/Icons/Flat/chalice_grail.png"),
-		};
-		for (int32 IdolIndex = 0; IdolIndex < 4; ++IdolIndex)
+		constexpr int32 FlatIdolSlotCount = 4;
+		constexpr float FlatIdolIconSize = 90.f;
+		for (int32 IdolIndex = 0; IdolIndex < FlatIdolSlotCount; ++IdolIndex)
 		{
 			const FString IdolTag = FString::Printf(TEXT("RunSummary.Middle.IdolsPanel.Idol%02d"), IdolIndex + 1);
 			AddN(0.330f + IdolIndex * 0.083f, 0.542f, 0.070f, 0.115f, MakePanel(ET66FlatState::Default, FName(*IdolTag)));
-			AddN(0.341f + IdolIndex * 0.083f, 0.553f, 0.048f, 0.090f, MakeIcon(NAME_None, IdolIconPaths[IdolIndex], FVector2D(90.f, 90.f), Purple, FText::FromString(TEXT("*"))));
+			const FName IdolID = FlatIdols.IsValidIndex(IdolIndex) ? FlatIdols[IdolIndex] : NAME_None;
+			if (!IdolID.IsNone() && GI && TexPool)
+			{
+				FIdolData IdolData;
+				if (GI->GetIdolData(IdolID, IdolData))
+				{
+					const TSoftObjectPtr<UTexture2D> IdolIconSoft = IdolData.Icon;
+					if (!IdolIconSoft.IsNull())
+					{
+						TSharedPtr<FSlateBrush> IdolBrush = MakeShared<FSlateBrush>();
+						IdolBrush->DrawAs = ESlateBrushDrawType::Image;
+						IdolBrush->ImageSize = FVector2D(FlatIdolIconSize, FlatIdolIconSize);
+						IdolBrush->SetResourceObject(nullptr);
+						IdolIconBrushes.Add(IdolBrush);
+						T66SlateTexture::BindSharedBrushAsync(TexPool, IdolIconSoft, this, IdolBrush, IdolID, true);
+
+						const FName IdolIconTag = FName(*(IdolTag + TEXT(".Icon")));
+						AddN(0.341f + IdolIndex * 0.083f, 0.553f, 0.048f, 0.090f,
+							FT66FlatStyle::AttachMetadata(
+								SNew(SImage)
+								.Image(IdolBrush.Get())
+								.ColorAndOpacity(FLinearColor::White)
+								.Visibility(EVisibility::HitTestInvisible),
+								IdolIconTag,
+								TEXT("Icon"),
+								ET66FlatState::Default));
+					}
+				}
+			}
 		}
 
 		AddN(0.319f, 0.687f, 0.338f, 0.255f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Middle.InventoryPanel"))));
@@ -1879,45 +2197,125 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		AddN(0.604f, 0.704f, 0.060f, 0.024f, MakeLabel(DTag(TEXT("RunSummary.Middle.InventoryPanel.NetWorthLabel")), NSLOCTEXT("T66.RunSummary", "NetWorthLabel", "NET WORTH"), 16, Purple, true, ETextJustify::Center));
 		AddN(0.607f, 0.727f, 0.050f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Middle.InventoryPanel.NetWorthValue")), bHasFlatLiveContext ? FormatIntWithCommas(FlatNetWorth) : FText::FromString(TEXT("955")), 24, White, true, ETextJustify::Center));
 		AddN(0.327f, 0.760f, 0.322f, 0.139f, MakeTaggedBox(DTag(TEXT("RunSummary.Middle.InventorySlotGrid")), TEXT("InventoryGrid")));
-		for (int32 SlotIndex = 0; SlotIndex < 16; ++SlotIndex)
+		constexpr int32 FlatInventorySlotCount = 16;
+		InventoryItemIconBrushes.SetNum(FlatInventorySlotCount);
+		for (int32 SlotIndex = 0; SlotIndex < FlatInventorySlotCount; ++SlotIndex)
 		{
 			const int32 Row = SlotIndex / 8;
 			const int32 Col = SlotIndex % 8;
 			const FString SlotTag = FString::Printf(TEXT("RunSummary.Middle.InventorySlot%02d"), SlotIndex + 1);
 			AddN(0.327f + Col * 0.041f, 0.760f + Row * 0.080f, 0.034f, 0.059f, MakePanel(ET66FlatState::Default, FName(*SlotTag)));
+			const FName ItemID = FlatInventoryLocal.IsValidIndex(SlotIndex) ? FlatInventoryLocal[SlotIndex] : NAME_None;
+			if (!ItemID.IsNone() && GI && TexPool)
+			{
+				FItemData ItemData;
+				const ET66ItemRarity SlotRarity = (FlatInventorySlotsPtr && FlatInventorySlotsPtr->IsValidIndex(SlotIndex))
+					? (*FlatInventorySlotsPtr)[SlotIndex].Rarity
+					: ET66ItemRarity::Black;
+				if (GI->GetItemData(ItemID, ItemData))
+				{
+					const TSoftObjectPtr<UTexture2D> ItemIconSoft = ItemData.GetIconForRarity(SlotRarity);
+					if (!ItemIconSoft.IsNull())
+					{
+						if (!InventoryItemIconBrushes[SlotIndex].IsValid())
+						{
+							InventoryItemIconBrushes[SlotIndex] = MakeShared<FSlateBrush>();
+						}
+						InventoryItemIconBrushes[SlotIndex]->DrawAs = ESlateBrushDrawType::Image;
+						InventoryItemIconBrushes[SlotIndex]->ImageSize = FVector2D(56.f, 56.f);
+						InventoryItemIconBrushes[SlotIndex]->SetResourceObject(nullptr);
+						T66SlateTexture::BindSharedBrushAsync(TexPool, ItemIconSoft, this, InventoryItemIconBrushes[SlotIndex], ItemID, true);
+
+						const FName ItemIconTag = FName(*(SlotTag + TEXT(".Icon")));
+						AddN(0.331f + Col * 0.041f, 0.766f + Row * 0.080f, 0.026f, 0.047f,
+							FT66FlatStyle::AttachMetadata(
+								SNew(SImage)
+								.Image(InventoryItemIconBrushes[SlotIndex].Get())
+								.ColorAndOpacity(FLinearColor::White)
+								.Visibility(EVisibility::HitTestInvisible),
+								ItemIconTag,
+								TEXT("Icon"),
+								ET66FlatState::Default));
+					}
+				}
+			}
 		}
 
-		const ET66FlatState StatsState = FlatRunSummaryStatTabIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default;
-		const ET66FlatState DamageDealtState = FlatRunSummaryStatTabIndex == 1 ? ET66FlatState::Selected : ET66FlatState::Default;
-		const ET66FlatState DamageReceivedState = FlatRunSummaryStatTabIndex == 2 ? ET66FlatState::Selected : ET66FlatState::Default;
-		AddN(0.678f, 0.124f, 0.089f, 0.049f, MakeButtonShell(StatsState, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleFlatRunSummaryStatTabClicked, 0), DTag(TEXT("RunSummary.Right.StatTabs.StatsButton")), StatTabsGroup));
-		AddN(0.704f, 0.135f, 0.040f, 0.028f, MakeLabel(DTag(TEXT("RunSummary.Right.StatTabs.StatsButton.Label")), NSLOCTEXT("T66.RunSummary", "StatsTab", "STATS"), 22, StatsState == ET66FlatState::Selected ? Red : Purple, true, ETextJustify::Center));
-		AddN(0.774f, 0.124f, 0.098f, 0.049f, MakeButtonShell(DamageDealtState, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleFlatRunSummaryStatTabClicked, 1), DTag(TEXT("RunSummary.Right.StatTabs.DamageDealtButton")), StatTabsGroup));
-		AddN(0.786f, 0.135f, 0.074f, 0.028f, MakeLabel(DTag(TEXT("RunSummary.Right.StatTabs.DamageDealtButton.Label")), NSLOCTEXT("T66.RunSummary", "DamageDealtTab", "DAMAGE DEALT"), 18, DamageDealtState == ET66FlatState::Selected ? Red : Purple, true, ETextJustify::Center));
-		AddN(0.879f, 0.124f, 0.098f, 0.049f, MakeButtonShell(DamageReceivedState, FOnClicked::CreateUObject(this, &UT66RunSummaryScreen::HandleFlatRunSummaryStatTabClicked, 2), DTag(TEXT("RunSummary.Right.StatTabs.DamageReceivedButton")), StatTabsGroup));
-		AddN(0.887f, 0.135f, 0.086f, 0.028f, MakeLabel(DTag(TEXT("RunSummary.Right.StatTabs.DamageReceivedButton.Label")), NSLOCTEXT("T66.RunSummary", "DamageReceivedTab", "DAMAGE RECEIVED"), 16, DamageReceivedState == ET66FlatState::Selected ? Red : Purple, true, ETextJustify::Center));
+		AddN(0.678f, 0.124f, 0.089f, 0.049f, MakeStatTabButton(DTag(TEXT("RunSummary.Right.StatTabs.StatsButton")), 0));
+		AddN(0.704f, 0.135f, 0.040f, 0.028f, MakeStatTabLabel(DTag(TEXT("RunSummary.Right.StatTabs.StatsButton.Label")), NSLOCTEXT("T66.RunSummary", "StatsTab", "STATS"), 22, 0));
+		AddN(0.774f, 0.124f, 0.098f, 0.049f, MakeStatTabButton(DTag(TEXT("RunSummary.Right.StatTabs.DamageDealtButton")), 1));
+		AddN(0.786f, 0.135f, 0.074f, 0.028f, MakeStatTabLabel(DTag(TEXT("RunSummary.Right.StatTabs.DamageDealtButton.Label")), NSLOCTEXT("T66.RunSummary", "DamageDealtTab", "DAMAGE DEALT"), 18, 1));
+		AddN(0.879f, 0.124f, 0.098f, 0.049f, MakeStatTabButton(DTag(TEXT("RunSummary.Right.StatTabs.DamageReceivedButton")), 2));
+		AddN(0.887f, 0.135f, 0.086f, 0.028f, MakeStatTabLabel(DTag(TEXT("RunSummary.Right.StatTabs.DamageReceivedButton.Label")), NSLOCTEXT("T66.RunSummary", "DamageReceivedTab", "DAMAGE RECEIVED"), 16, 2));
 
 		AddN(0.672f, 0.189f, 0.310f, 0.483f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Right.StatsPanel"))));
-		if (FlatRunSummaryStatTabIndex == 0)
+		const FText StatFmt = NSLOCTEXT("T66.RunSummary", "FlatStatLineFormat", "{0}: {1}");
+		AddRightStatLineTab(0, 0.210f, TEXT("RunSummary.Right.StatsPanel.DamageRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Damage", "Damage"), FText::AsNumber(FlatDamageStat)));
+		AddRightStatLineTab(0, 0.258f, TEXT("RunSummary.Right.StatsPanel.AttackSpeedRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed"), FText::AsNumber(FlatAttackSpeedStat)));
+		AddRightStatLineTab(0, 0.306f, TEXT("RunSummary.Right.StatsPanel.AttackScaleRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale"), FText::AsNumber(FlatAttackScaleStat)));
+		AddRightStatLineTab(0, 0.354f, TEXT("RunSummary.Right.StatsPanel.AccuracyRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Accuracy", "Accuracy"), FText::AsNumber(FlatAccuracyStat)));
+		AddRightStatLineTab(0, 0.402f, TEXT("RunSummary.Right.StatsPanel.ArmorRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Armor", "Armor"), FText::AsNumber(FlatArmorStat)));
+		AddRightStatLineTab(0, 0.450f, TEXT("RunSummary.Right.StatsPanel.EvasionRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Evasion", "Evasion"), FText::AsNumber(FlatEvasionStat)));
+		AddRightStatLineTab(0, 0.498f, TEXT("RunSummary.Right.StatsPanel.LuckRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Luck", "Luck"), FText::AsNumber(FlatLuckStat)));
+		AddRightStatLineTab(0, 0.546f, TEXT("RunSummary.Right.StatsPanel.SpeedRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Speed", "Speed"), FText::AsNumber(FlatSpeedStat)));
+
+		auto AddDamageRowsForTab = [&](
+			const int32 TabIndex,
+			const FString& DamageTagPrefix,
+			const TArray<FDamageLogEntry>& FlatDamageRows,
+			const FText& DamagePlaceholder)
 		{
-			const FText StatFmt = NSLOCTEXT("T66.RunSummary", "FlatStatLineFormat", "{0}: {1}");
-			AddRightStatLine(0.210f, TEXT("RunSummary.Right.StatsPanel.LevelRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Common", "Level", "LEVEL"), FText::AsNumber(FlatHeroLevel)));
-			AddRightStatLine(0.258f, TEXT("RunSummary.Right.StatsPanel.DamageRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Damage", "Damage"), FText::AsNumber(FlatDamageStat)));
-			AddRightStatLine(0.306f, TEXT("RunSummary.Right.StatsPanel.AttackSpeedRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed"), FText::AsNumber(FlatAttackSpeedStat)));
-			AddRightStatLine(0.354f, TEXT("RunSummary.Right.StatsPanel.AttackScaleRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale"), FText::AsNumber(FlatAttackScaleStat)));
-			AddRightStatLine(0.402f, TEXT("RunSummary.Right.StatsPanel.AccuracyRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Accuracy", "Accuracy"), FText::AsNumber(FlatAccuracyStat)));
-			AddRightStatLine(0.450f, TEXT("RunSummary.Right.StatsPanel.ArmorRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Armor", "Armor"), FText::AsNumber(FlatArmorStat)));
-			AddRightStatLine(0.498f, TEXT("RunSummary.Right.StatsPanel.EvasionRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Evasion", "Evasion"), FText::AsNumber(FlatEvasionStat)));
-			AddRightStatLine(0.546f, TEXT("RunSummary.Right.StatsPanel.LuckRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Luck", "Luck"), FText::AsNumber(FlatLuckStat)));
-			AddRightStatLine(0.594f, TEXT("RunSummary.Right.StatsPanel.SpeedRow"), FText::Format(StatFmt, NSLOCTEXT("T66.Stats", "Speed", "Speed"), FText::AsNumber(FlatSpeedStat)));
-		}
-		else
-		{
-			const FText DamagePlaceholder = FlatRunSummaryStatTabIndex == 1
-				? NSLOCTEXT("T66.RunSummary", "NoDamageDealt", "No damage dealt.")
-				: NSLOCTEXT("T66.RunSummary", "NoDamageReceived", "No damage received.");
-			AddN(0.700f, 0.390f, 0.220f, 0.040f, MakeLabel(DTag(TEXT("RunSummary.Right.StatsPanel.DamagePlaceholder")), DamagePlaceholder, 24, White, false, ETextJustify::Center));
-		}
+			AddNTab(TabIndex, 0.690f, 0.216f, 0.170f, 0.026f, MakeLabel(FName(*(DamageTagPrefix + TEXT(".SourceHeader"))), NSLOCTEXT("T66.RunSummary", "DamageTableSourceFlat", "SOURCE"), 16, Purple, true));
+			AddNTab(TabIndex, 0.882f, 0.216f, 0.070f, 0.026f, MakeLabel(FName(*(DamageTagPrefix + TEXT(".ValueHeader"))), NSLOCTEXT("T66.RunSummary", "DamageTableDamageFlat", "DAMAGE"), 16, Purple, true, ETextJustify::Right));
+			AddDividerTab(TabIndex, 0.684f, 0.248f, 0.286f);
+
+			if (FlatDamageRows.Num() <= 0)
+			{
+				AddNTab(TabIndex, 0.700f, 0.390f, 0.220f, 0.040f, MakeLabel(FName(*(DamageTagPrefix + TEXT(".Placeholder"))), DamagePlaceholder, 24, White, false, ETextJustify::Center));
+			}
+			else
+			{
+				constexpr int32 MaxFlatDamageRows = 8;
+				const int32 RowsToDisplay = FMath::Min(MaxFlatDamageRows, FlatDamageRows.Num());
+				for (int32 RowIndex = 0; RowIndex < RowsToDisplay; ++RowIndex)
+				{
+					const FDamageLogEntry& Entry = FlatDamageRows[RowIndex];
+					const float RowY = 0.262f + static_cast<float>(RowIndex) * 0.047f;
+					const FString RowPrefix = FString::Printf(TEXT("%s.Row%02d"), *DamageTagPrefix, RowIndex + 1);
+					AddNTab(TabIndex, 0.690f, RowY, 0.180f, 0.032f, MakeLabel(FName(*(RowPrefix + TEXT(".Source"))), T66ResolveRunSummaryDamageSourceName(GI, Entry.SourceID), 22, White, false));
+					AddNTab(TabIndex, 0.882f, RowY, 0.070f, 0.032f, MakeLabel(FName(*(RowPrefix + TEXT(".Value"))), FText::AsNumber(Entry.TotalDamage), 22, White, false, ETextJustify::Right));
+					AddDividerTab(TabIndex, 0.684f, RowY + 0.039f, 0.286f);
+				}
+
+				if (FlatDamageRows.Num() > RowsToDisplay)
+				{
+					AddNTab(
+						TabIndex,
+						0.690f,
+						0.640f,
+						0.260f,
+						0.028f,
+						MakeLabel(
+							FName(*(DamageTagPrefix + TEXT(".MoreRows"))),
+							FText::Format(NSLOCTEXT("T66.RunSummary", "DamageMoreRows", "+ {0} more"), FText::AsNumber(FlatDamageRows.Num() - RowsToDisplay)),
+							18,
+							Purple,
+							true,
+							ETextJustify::Center));
+				}
+			}
+		};
+
+		AddDamageRowsForTab(
+			1,
+			FString(TEXT("RunSummary.Right.StatsPanel.DamageDealt")),
+			FlatDamageDealtRows,
+			NSLOCTEXT("T66.RunSummary", "NoDamageDealt", "No damage dealt."));
+		AddDamageRowsForTab(
+			2,
+			FString(TEXT("RunSummary.Right.StatsPanel.DamageReceived")),
+			FlatDamageReceivedRows,
+			NSLOCTEXT("T66.RunSummary", "NoDamageReceived", "No damage received."));
 
 		if (bShowFlatProofActions)
 		{
@@ -2693,7 +3091,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		{
 			AddStatLineText(Label, FText::AsNumber(Value));
 		};
-		AddStatLine(Loc ? Loc->GetText_Level() : NSLOCTEXT("T66.Common", "Level", "LEVEL"), HeroLevel);
 		AddStatLine(Loc ? Loc->GetText_Stat_Damage() : NSLOCTEXT("T66.Stats", "Damage", "Damage"), DamageStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_AttackSpeed() : NSLOCTEXT("T66.Stats", "AttackSpeed", "Attack Speed"), AttackSpeedStat);
 		AddStatLine(Loc ? Loc->GetText_Stat_AttackScale() : NSLOCTEXT("T66.Stats", "AttackScale", "Attack Scale"), AttackScaleStat);
@@ -2799,14 +3196,12 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 
 	// Idols: one row, 6 columns, with simple border under hero.
 	const TArray<FName>* IdolsPtr = nullptr;
-	const TArray<uint8>* IdolTiersPtr = nullptr;
 	TArray<FName> InventoryLocal;
 	const TArray<FT66InventorySlot>* InvSlotsPtr = nullptr;
 	TArray<ET66SecondaryStatType> TemporaryBuffSlots;
 	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 	{
 		IdolsPtr = &LoadedSavedSummary->EquippedIdols;
-		IdolTiersPtr = &LoadedSavedSummary->EquippedIdolTiers;
 		InventoryLocal = LoadedSavedSummary->Inventory;
 		TemporaryBuffSlots = LoadedSavedSummary->TemporaryBuffSlots;
 	}
@@ -2815,12 +3210,10 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		if (UT66IdolManagerSubsystem* IdolManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr)
 		{
 			IdolsPtr = &IdolManager->GetEquippedIdols();
-			IdolTiersPtr = &IdolManager->GetEquippedIdolTierValues();
 		}
 		else
 		{
 			IdolsPtr = &RunState->GetEquippedIdols();
-			IdolTiersPtr = &RunState->GetEquippedIdolTierValues();
 		}
 		InventoryLocal = RunState->GetInventory();
 		InvSlotsPtr = &RunState->GetInventorySlots();
@@ -2831,8 +3224,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	}
 	const TArray<FName> Empty;
 	const TArray<FName>& Idols = IdolsPtr ? *IdolsPtr : Empty;
-	const TArray<uint8> EmptyIdolTiers;
-	const TArray<uint8>& IdolTiers = IdolTiersPtr ? *IdolTiersPtr : EmptyIdolTiers;
 
 	static constexpr float IdolSlotPad = 10.f;
 	static constexpr float IdolSlotSize = 100.f;
@@ -2840,17 +3231,14 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	for (int32 i = 0; i < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++i)
 	{
 		const FName IdolID = Idols.IsValidIndex(i) ? Idols[i] : NAME_None;
-		const int32 IdolTierValue = IdolTiers.IsValidIndex(i)
-			? FMath::Clamp(static_cast<int32>(IdolTiers[i]), 1, UT66IdolManagerSubsystem::MaxIdolLevel)
-			: 1;
 		const FLinearColor IdolColor = !IdolID.IsNone()
-			? FItemData::GetItemRarityColor(UT66IdolManagerSubsystem::IdolTierValueToRarity(IdolTierValue))
+			? UT66IdolManagerSubsystem::GetIdolColor(IdolID)
 			: FLinearColor(0.45f, 0.55f, 0.50f, 0.5f);
 		FIdolData IdolData;
 		const bool bHasIdolData = GI && !IdolID.IsNone() && GI->GetIdolData(IdolID, IdolData);
 		TSharedPtr<FSlateBrush> IdolBrush;
 		const TSoftObjectPtr<UTexture2D> IdolIconSoft = bHasIdolData
-			? IdolData.GetIconForRarity(UT66IdolManagerSubsystem::IdolTierValueToRarity(IdolTierValue))
+			? IdolData.Icon
 			: TSoftObjectPtr<UTexture2D>();
 		if (!IdolIconSoft.IsNull())
 		{
@@ -3594,8 +3982,22 @@ FReply UT66RunSummaryScreen::HandleMainMenuClicked() { OnMainMenuClicked(); retu
 FReply UT66RunSummaryScreen::HandleViewLogClicked() { OnViewLogClicked(); return FReply::Handled(); }
 FReply UT66RunSummaryScreen::HandleFlatRunSummaryStatTabClicked(const int32 TabIndex)
 {
-	FlatRunSummaryStatTabIndex = FMath::Clamp(TabIndex, 0, 2);
-	RequestDeferredSlateRebuild();
+	const int32 NewTabIndex = FMath::Clamp(TabIndex, 0, 2);
+	if (FlatRunSummaryStatTabIndex == NewTabIndex)
+	{
+		return FReply::Handled();
+	}
+
+	FlatRunSummaryStatTabIndex = NewTabIndex;
+	InvalidateLayoutAndVolatility();
+	if (TSharedPtr<SWidget> CachedWidget = GetCachedWidget())
+	{
+		CachedWidget->Invalidate(EInvalidateWidgetReason::Layout);
+	}
+	if (UIManager)
+	{
+		UIManager->RequestFrontendRootPaintRefresh();
+	}
 	return FReply::Handled();
 }
 

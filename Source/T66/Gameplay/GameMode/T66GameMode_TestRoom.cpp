@@ -6,6 +6,10 @@
 #include "Components/SkyLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "Core/T66DeprecatedFeatureSettings.h"
+#include "Core/T66GameInstance.h"
+#include "Core/T66RunStateSubsystem.h"
+#include "Data/T66DataTypes.h"
 #include "Engine/DirectionalLight.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/Scene.h"
@@ -17,8 +21,12 @@
 #include "EngineUtils.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66ChestInteractable.h"
+#include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66ThemeAtmosphereData.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66LootWheelInteractable.h"
 #include "Gameplay/T66TowerMapTerrain.h"
 #include "Gameplay/T66PerActorLightDirection.h"
 #include "Gameplay/T66WorldVisualSetup.h"
@@ -58,16 +66,22 @@ static TAutoConsoleVariable<int32> CVarT66TestRoomTestPerActorLightOverride(
 	TEXT("Temporarily attaches UT66PerActorLightDirection to Lu Bu in TestRoom for ToonStyle smoke verification."),
 	ECVF_Default);
 
-static TAutoConsoleVariable<int32> CVarT66TestRoomSpawnVATSlimeChase(
-	TEXT("t66.TestRoom.SpawnVATSlimeChase"),
+static TAutoConsoleVariable<int32> CVarT66TestRoomEnableCombatZones(
+	TEXT("t66.TestRoom.EnableCombatZones"),
 	1,
-	TEXT("Spawns a VAT Slime chase target in TestRoom after the player spawns. Disable with t66.TestRoom.SpawnVATSlimeChase=0."),
+	TEXT("Enables TestRoom side-room combat zones. Mobs and boss activate only while the player is inside their rooms."),
 	ECVF_Default);
 
-static TAutoConsoleVariable<float> CVarT66TestRoomVATSlimeDelaySeconds(
-	TEXT("t66.TestRoom.VATSlimeDelaySeconds"),
-	2.0f,
-	TEXT("Delay before spawning the TestRoom VAT Slime chase target."),
+static TAutoConsoleVariable<float> CVarT66TestRoomMobSpawnIntervalSeconds(
+	TEXT("t66.TestRoom.MobRoomSpawnIntervalSeconds"),
+	1.15f,
+	TEXT("Seconds between TestRoom mob-room spawns while the player stays in the room."),
+	ECVF_Default);
+
+static TAutoConsoleVariable<int32> CVarT66TestRoomMobRoomMaxEnemies(
+	TEXT("t66.TestRoom.MobRoomMaxEnemies"),
+	8,
+	TEXT("Maximum active TestRoom mob-room enemies."),
 	ECVF_Default);
 
 namespace T66TestRoom
@@ -108,9 +122,21 @@ namespace T66TestRoom
 		return Tag;
 	}
 
-	FName VATSlimeChaseActorTag()
+	FName MobRoomEnemyActorTag()
 	{
-		static const FName Tag(TEXT("T66_TestRoom_VATSlimeChase"));
+		static const FName Tag(TEXT("T66_TestRoom_MobRoomEnemy"));
+		return Tag;
+	}
+
+	FName BossRoomActorTag()
+	{
+		static const FName Tag(TEXT("T66_TestRoom_BossRoomActor"));
+		return Tag;
+	}
+
+	FName LiveInteractableShowcaseActorTag()
+	{
+		static const FName Tag(TEXT("T66_TestRoom_LiveInteractable_Showcase"));
 		return Tag;
 	}
 
@@ -121,10 +147,47 @@ namespace T66TestRoom
 
 	namespace
 	{
+		constexpr float TestRoomCenterHalfExtent = 5000.f;
+		constexpr float TestRoomSideRoomHalfExtent = 3600.f;
+		constexpr float TestRoomCorridorLength = 2600.f;
+		constexpr float TestRoomCorridorHalfWidth = 1500.f;
+		constexpr float TestRoomInteriorHeight = 600.f;
+		constexpr float TestRoomWallThickness = 40.f;
+		constexpr float TestRoomCubeSize = 100.f;
+		constexpr float TestRoomSideRoomOffset = TestRoomCenterHalfExtent + TestRoomCorridorLength + TestRoomSideRoomHalfExtent;
+		constexpr float TestRoomCorridorCenterOffset = TestRoomCenterHalfExtent + (TestRoomCorridorLength * 0.5f);
+
 		FName LineupOutlineActorTag()
 		{
 			static const FName Tag(TEXT("T66_TestRoom_Lineup_Outline"));
 			return Tag;
+		}
+
+		FBox2D MakeTestRoomBox(const FVector2D Center, const FVector2D HalfExtent)
+		{
+			return FBox2D(Center - HalfExtent, Center + HalfExtent);
+		}
+
+		FBox2D TestRoomMobRoomBox()
+		{
+			return MakeTestRoomBox(
+				FVector2D(0.f, TestRoomSideRoomOffset),
+				FVector2D(TestRoomSideRoomHalfExtent, TestRoomSideRoomHalfExtent));
+		}
+
+		FBox2D TestRoomBossRoomBox()
+		{
+			return MakeTestRoomBox(
+				FVector2D(TestRoomSideRoomOffset, 0.f),
+				FVector2D(TestRoomSideRoomHalfExtent, TestRoomSideRoomHalfExtent));
+		}
+
+		bool IsInsideBox2D(const FVector& Location, const FBox2D& Box)
+		{
+			return Location.X >= Box.Min.X
+				&& Location.X <= Box.Max.X
+				&& Location.Y >= Box.Min.Y
+				&& Location.Y <= Box.Max.Y;
 		}
 
 		UStaticMesh* LoadCubeMesh()
@@ -235,6 +298,100 @@ namespace T66TestRoom
 				FT66WorldVisualSetup::RegisterToonMaterial(MeshComponent, ET66ToonMaterialKind::Environment);
 				MeshComponent->SetMobility(EComponentMobility::Static);
 			}
+		}
+
+		void SpawnRectSurface(
+			UWorld* World,
+			UStaticMesh* CubeMesh,
+			UMaterialInterface* Material,
+			const FString& Label,
+			const FBox2D& Rect,
+			const float Z,
+			const float Thickness)
+		{
+			const FVector Location(
+				(Rect.Min.X + Rect.Max.X) * 0.5f,
+				(Rect.Min.Y + Rect.Max.Y) * 0.5f,
+				Z);
+			const FVector Scale(
+				(Rect.Max.X - Rect.Min.X) / TestRoomCubeSize,
+				(Rect.Max.Y - Rect.Min.Y) / TestRoomCubeSize,
+				Thickness / TestRoomCubeSize);
+			SpawnCubeSurface(World, CubeMesh, Material, *Label, Location, Scale);
+		}
+
+		void SpawnHorizontalWallSegment(
+			UWorld* World,
+			UStaticMesh* CubeMesh,
+			UMaterialInterface* WallMaterial,
+			const FString& Label,
+			const float XMin,
+			const float XMax,
+			const float Y)
+		{
+			if (XMax <= XMin + 1.f)
+			{
+				return;
+			}
+
+			const FVector Location((XMin + XMax) * 0.5f, Y, TestRoomInteriorHeight * 0.5f);
+			const FVector Scale(
+				(XMax - XMin) / TestRoomCubeSize,
+				TestRoomWallThickness / TestRoomCubeSize,
+				TestRoomInteriorHeight / TestRoomCubeSize);
+			SpawnCubeSurface(World, CubeMesh, WallMaterial, *Label, Location, Scale);
+		}
+
+		void SpawnVerticalWallSegment(
+			UWorld* World,
+			UStaticMesh* CubeMesh,
+			UMaterialInterface* WallMaterial,
+			const FString& Label,
+			const float X,
+			const float YMin,
+			const float YMax)
+		{
+			if (YMax <= YMin + 1.f)
+			{
+				return;
+			}
+
+			const FVector Location(X, (YMin + YMax) * 0.5f, TestRoomInteriorHeight * 0.5f);
+			const FVector Scale(
+				TestRoomWallThickness / TestRoomCubeSize,
+				(YMax - YMin) / TestRoomCubeSize,
+				TestRoomInteriorHeight / TestRoomCubeSize);
+			SpawnCubeSurface(World, CubeMesh, WallMaterial, *Label, Location, Scale);
+		}
+
+		void SpawnHorizontalWallWithGap(
+			UWorld* World,
+			UStaticMesh* CubeMesh,
+			UMaterialInterface* WallMaterial,
+			const FString& LabelPrefix,
+			const float XMin,
+			const float XMax,
+			const float Y,
+			const float GapCenterX,
+			const float GapHalfWidth)
+		{
+			SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, LabelPrefix + TEXT("_A"), XMin, GapCenterX - GapHalfWidth, Y);
+			SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, LabelPrefix + TEXT("_B"), GapCenterX + GapHalfWidth, XMax, Y);
+		}
+
+		void SpawnVerticalWallWithGap(
+			UWorld* World,
+			UStaticMesh* CubeMesh,
+			UMaterialInterface* WallMaterial,
+			const FString& LabelPrefix,
+			const float X,
+			const float YMin,
+			const float YMax,
+			const float GapCenterY,
+			const float GapHalfWidth)
+		{
+			SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, LabelPrefix + TEXT("_A"), X, YMin, GapCenterY - GapHalfWidth);
+			SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, LabelPrefix + TEXT("_B"), X, GapCenterY + GapHalfWidth, YMax);
 		}
 
 		struct FLineupEntry
@@ -519,7 +676,6 @@ namespace T66TestRoom
 				{ TEXT("/Game/World/Interactables/Chests/ChestModel"), TEXT("Chest_Pixal3D"), TEXT("Chest"), FVector(3950.0f, -2450.0f, 0.f) },
 				{ TEXT("/Game/World/Interactables/Fountain"), TEXT("Fountain_Pixal3D"), TEXT("Fountain"), FVector(3950.0f, -1750.0f, 0.f) },
 				{ TEXT("/Game/World/Interactables/DifficultyTotem"), TEXT("DifficultyTotem_Pixal3D"), TEXT("Difficulty Totem"), FVector(3950.0f, -1050.0f, 0.f) },
-				{ TEXT("/Game/World/Interactables/Vending"), TEXT("QuickReviveVending_Pixal3D"), TEXT("Quick Revive"), FVector(3950.0f, -350.0f, 0.f) },
 				{ TEXT("/Game/World/Interactables/LootWheel"), TEXT("LootWheel_Pixal3D"), TEXT("Loot Wheel"), FVector(3950.0f, 350.0f, 0.f) },
 				{ TEXT("/Game/World/LootBags/Shared"), TEXT("LootBag_Shared_Pixal3D"), TEXT("Loot Bag"), FVector(3950.0f, 1050.0f, 0.f) },
 				{ TEXT("/Game/World/Interactables/IdolAltar"), TEXT("IdolAltar_Pixal3D"), TEXT("Idol Altar"), FVector(3950.0f, 1750.0f, 0.f) },
@@ -557,6 +713,12 @@ namespace T66TestRoom
 			int32 SpawnedLineupCount = 0;
 			for (const FLineupEntry& Entry : Entries)
 			{
+				if (T66DeprecatedFeatures::AreArcadeInteractablesDisabled()
+					&& FCString::Stricmp(Entry.AssetID, TEXT("Arcade_Machine_Pixal3D")) == 0)
+				{
+					continue;
+				}
+
 				if (bRepresentativeOnly && !IsRepresentativeLineupAsset(Entry.AssetID))
 				{
 					continue;
@@ -570,6 +732,86 @@ namespace T66TestRoom
 			UE_LOG(LogTemp, Display, TEXT("ToonStyle TestRoom spawned %d lineup entries (RepresentativeOnly=%d)."),
 				SpawnedLineupCount,
 				bRepresentativeOnly ? 1 : 0);
+		}
+
+		template<typename TInteractable>
+		TInteractable* SpawnLiveInteractableShowcaseActor(
+			UWorld* World,
+			const TCHAR* Label,
+			const FVector& Location,
+			const FRotator& Rotation)
+		{
+			if (!World)
+			{
+				return nullptr;
+			}
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			TInteractable* Interactable = World->SpawnActor<TInteractable>(
+				TInteractable::StaticClass(),
+				Location,
+				Rotation,
+				SpawnParams);
+			if (!Interactable)
+			{
+				return nullptr;
+			}
+
+			Interactable->SetShowcaseReusable(true);
+			Interactable->SetRarity(ET66Rarity::White);
+			Interactable->Tags.AddUnique(LiveInteractableShowcaseActorTag());
+			TagTestRoomActor(Interactable, false, false);
+
+			#if WITH_EDITOR
+			Interactable->SetActorLabel(Label);
+			#endif
+
+			return Interactable;
+		}
+
+		void SpawnLiveInteractableShowcase(UWorld* World)
+		{
+			if (!World)
+			{
+				return;
+			}
+
+			DestroyTestRoomActorsWithTag(World, LiveInteractableShowcaseActorTag());
+
+			const FVector SpawnCenter = PlayerStartLocation() + FVector(900.f, 0.f, 0.f);
+			const FRotator FacePlayerRotation(0.f, 180.f, 0.f);
+			static constexpr float SpacingY = 520.f;
+
+			AT66CrateInteractable* Crate = SpawnLiveInteractableShowcaseActor<AT66CrateInteractable>(
+				World,
+				TEXT("DEV_TestRoom_LiveCrate"),
+				SpawnCenter + FVector(0.f, -SpacingY, 0.f),
+				FacePlayerRotation);
+			AT66LootWheelInteractable* LootWheel = SpawnLiveInteractableShowcaseActor<AT66LootWheelInteractable>(
+				World,
+				TEXT("DEV_TestRoom_LiveLootWheel"),
+				SpawnCenter,
+				FacePlayerRotation);
+			AT66ChestInteractable* Chest = SpawnLiveInteractableShowcaseActor<AT66ChestInteractable>(
+				World,
+				TEXT("DEV_TestRoom_LiveChest"),
+				SpawnCenter + FVector(0.f, SpacingY, 0.f),
+				FacePlayerRotation);
+
+			if (Chest)
+			{
+				Chest->bIsMimic = false;
+				Chest->SetRarity(ET66Rarity::White);
+			}
+
+			UE_LOG(
+				LogTemp,
+				Display,
+				TEXT("TestRoom spawned live interactable showcase in front of player start. Crate=%d LootWheel=%d Chest=%d"),
+				Crate ? 1 : 0,
+				LootWheel ? 1 : 0,
+				Chest ? 1 : 0);
 		}
 
 		void SpawnPostProcessVolume(UWorld* World)
@@ -625,28 +867,213 @@ namespace T66TestRoom
 		}
 	}
 
-	void ScheduleVATSlimeChase(UWorld* World)
+	void ScheduleCombatZones(UWorld* World)
 	{
 		if (!World)
 		{
 			return;
 		}
 
-		const bool bRequested = CVarT66TestRoomSpawnVATSlimeChase.GetValueOnGameThread() != 0
-			|| FParse::Param(FCommandLine::Get(), TEXT("T66TestRoomSpawnVATSlime"));
+		static FTimerHandle CombatZoneTimerHandle;
+		World->GetTimerManager().ClearTimer(CombatZoneTimerHandle);
+		DestroyTestRoomActorsWithTag(World, MobRoomEnemyActorTag());
+		DestroyTestRoomActorsWithTag(World, BossRoomActorTag());
+
+		const bool bRequested = CVarT66TestRoomEnableCombatZones.GetValueOnGameThread() != 0
+			&& !FParse::Param(FCommandLine::Get(), TEXT("T66DisableTestRoomCombatZones"));
 		if (!bRequested)
 		{
 			return;
 		}
 
-		DestroyTestRoomActorsWithTag(World, VATSlimeChaseActorTag());
+		struct FCombatZoneState
+		{
+			bool bPlayerInMobRoom = false;
+			bool bPlayerInBossRoom = false;
+			double NextMobSpawnTime = 0.0;
+			int32 MobSequenceIndex = 0;
+#if !UE_BUILD_SHIPPING
+			bool bAutoVisitCombatZones = false;
+			double AutoVisitStartTime = 0.0;
+			int32 AutoVisitStep = 0;
+#endif
+		};
 
-		FTimerHandle SpawnTimerHandle;
+		TSharedRef<FCombatZoneState> State = MakeShared<FCombatZoneState>();
 		TWeakObjectPtr<UWorld> WeakWorld(World);
-		const float DelaySeconds = FMath::Max(0.f, CVarT66TestRoomVATSlimeDelaySeconds.GetValueOnGameThread());
+#if !UE_BUILD_SHIPPING
+		State->bAutoVisitCombatZones = FParse::Param(FCommandLine::Get(), TEXT("T66TestRoomAutoVisitCombatZones"));
+		State->AutoVisitStartTime = World->GetTimeSeconds();
+#endif
+
+		const auto CountActorsWithTag = [](UWorld* TimerWorld, const FName Tag)
+		{
+			int32 Count = 0;
+			if (!TimerWorld || Tag.IsNone())
+			{
+				return Count;
+			}
+
+			for (TActorIterator<AActor> It(TimerWorld); It; ++It)
+			{
+				if (It->Tags.Contains(Tag))
+				{
+					++Count;
+				}
+			}
+			return Count;
+		};
+
+		const auto ClearBossRunState = [](UWorld* TimerWorld)
+		{
+			if (UGameInstance* GI = TimerWorld ? TimerWorld->GetGameInstance() : nullptr)
+			{
+				if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+				{
+					RunState->ResetBossState();
+				}
+			}
+		};
+
+		const auto SpawnMobRoomEnemy = [State, CountActorsWithTag](UWorld* TimerWorld, APawn* PlayerPawn)
+		{
+			const int32 MaxEnemies = FMath::Max(1, CVarT66TestRoomMobRoomMaxEnemies.GetValueOnGameThread());
+			if (CountActorsWithTag(TimerWorld, MobRoomEnemyActorTag()) >= MaxEnemies)
+			{
+				return;
+			}
+
+			static const FName EasyMobIDs[] =
+			{
+				FName(TEXT("Slime")),
+				FName(TEXT("BoneWalker")),
+				FName(TEXT("RatPack")),
+				FName(TEXT("CaveBat")),
+				FName(TEXT("HexSlinger")),
+				FName(TEXT("TombSpider")),
+				FName(TEXT("StoneSentinel")),
+				FName(TEXT("MimicLure")),
+				FName(TEXT("BoneConjurer")),
+				FName(TEXT("CryptWraith"))
+			};
+
+			const FName MobID = EasyMobIDs[State->MobSequenceIndex % UE_ARRAY_COUNT(EasyMobIDs)];
+			const int32 SpawnIndex = State->MobSequenceIndex++;
+			const float AngleRadians = (2.0f * PI * static_cast<float>(SpawnIndex % 8)) / 8.0f;
+			const FVector RoomCenter(0.f, TestRoomSideRoomOffset, PlayerStartLocation().Z);
+			const FVector SpawnOffset(
+				FMath::Cos(AngleRadians) * (TestRoomSideRoomHalfExtent * 0.56f),
+				FMath::Sin(AngleRadians) * (TestRoomSideRoomHalfExtent * 0.56f),
+				0.f);
+			const FVector SpawnLocation = RoomCenter + SpawnOffset;
+			const FVector TargetLocation = PlayerPawn ? PlayerPawn->GetActorLocation() : PlayerStartLocation();
+			FVector ToPlayer = TargetLocation - SpawnLocation;
+			ToPlayer.Z = 0.f;
+			const FRotator SpawnRotation = ToPlayer.IsNearlyZero() ? FRotator::ZeroRotator : ToPlayer.Rotation();
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			AT66EnemyBase* Enemy = TimerWorld->SpawnActor<AT66EnemyBase>(
+				AT66EnemyBase::StaticClass(),
+				SpawnLocation,
+				SpawnRotation,
+				SpawnParams);
+			if (!Enemy)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("TestRoom mob room failed to spawn %s."), *MobID.ToString());
+				return;
+			}
+
+			TagTestRoomActor(Enemy, false, false);
+			Enemy->Tags.AddUnique(MobRoomEnemyActorTag());
+			Enemy->ConfigureAsMob(MobID);
+			Enemy->TouchDamageHearts = 0;
+			Enemy->PointValue = 0;
+			Enemy->XPValue = 0;
+			Enemy->bDropsLoot = false;
+			if (MobID == FName(TEXT("CaveBat")))
+			{
+				Enemy->EnemyFamily = ET66EnemyFamily::Flying;
+			}
+			else if (MobID == FName(TEXT("RatPack")) || MobID == FName(TEXT("MimicLure")))
+			{
+				Enemy->EnemyFamily = ET66EnemyFamily::Rush;
+			}
+			else if (MobID == FName(TEXT("HexSlinger")) || MobID == FName(TEXT("StoneSentinel")) || MobID == FName(TEXT("BoneConjurer")))
+			{
+				Enemy->EnemyFamily = ET66EnemyFamily::Ranged;
+			}
+			else
+			{
+				Enemy->EnemyFamily = ET66EnemyFamily::Melee;
+			}
+			if (!Enemy->GetController())
+			{
+				Enemy->SpawnDefaultController();
+			}
+#if !UE_BUILD_SHIPPING
+			Enemy->ForceMobVertexAnimationClipForAutomation(FName(TEXT("Move")), 30.f);
+#endif
+
+			UE_LOG(LogTemp, Display, TEXT("TestRoom mob room spawned %s at %s."), *MobID.ToString(), *SpawnLocation.ToCompactString());
+		};
+
+		const auto SpawnBossRoomBoss = [ClearBossRunState](UWorld* TimerWorld, APawn* PlayerPawn)
+		{
+			DestroyTestRoomActorsWithTag(TimerWorld, BossRoomActorTag());
+			ClearBossRunState(TimerWorld);
+
+			UT66GameInstance* T66GI = TimerWorld ? Cast<UT66GameInstance>(TimerWorld->GetGameInstance()) : nullptr;
+			FBossData BossData;
+			if (!T66GI || !T66GI->GetBossData(FName(TEXT("Dungeon_SewerSlimeKing")), BossData))
+			{
+				BossData.BossID = FName(TEXT("Dungeon_SewerSlimeKing"));
+				BossData.MaxHP = 1250;
+				BossData.AwakenDistance = 2400.f;
+				BossData.MoveSpeed = 180.f;
+				BossData.FireIntervalSeconds = 2.4f;
+				BossData.ProjectileSpeed = 760.f;
+				BossData.ProjectileDamageHearts = 1;
+				BossData.BossPartProfile = ET66BossPartProfile::Juggernaut;
+				BossData.PlaceholderColor = FLinearColor(0.20f, 0.92f, 0.08f, 1.f);
+			}
+
+			BossData.AwakenDistance = 2400.f;
+			BossData.MoveSpeed = FMath::Max(120.f, BossData.MoveSpeed * 0.5f);
+			BossData.FireIntervalSeconds = FMath::Clamp(BossData.FireIntervalSeconds, 1.8f, 3.2f);
+
+			const FVector RoomCenter(TestRoomSideRoomOffset, 0.f, PlayerStartLocation().Z);
+			const FVector TargetLocation = PlayerPawn ? PlayerPawn->GetActorLocation() : PlayerStartLocation();
+			FVector ToPlayer = TargetLocation - RoomCenter;
+			ToPlayer.Z = 0.f;
+			const FRotator SpawnRotation = ToPlayer.IsNearlyZero() ? FRotator(0.f, 180.f, 0.f) : ToPlayer.Rotation();
+
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AT66BossBase* Boss = TimerWorld->SpawnActor<AT66BossBase>(
+				AT66BossBase::StaticClass(),
+				RoomCenter,
+				SpawnRotation,
+				SpawnParams);
+			if (!Boss)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("TestRoom boss room failed to spawn Dungeon_SewerSlimeKing."));
+				return;
+			}
+
+			TagTestRoomActor(Boss, false, false);
+			Boss->Tags.AddUnique(BossRoomActorTag());
+			Boss->InitializeBoss(BossData);
+			Boss->SetActorRotation(SpawnRotation);
+			Boss->ForceAwaken();
+
+			UE_LOG(LogTemp, Display, TEXT("TestRoom boss room spawned and awakened Dungeon_SewerSlimeKing at %s."), *RoomCenter.ToCompactString());
+		};
+
 		World->GetTimerManager().SetTimer(
-			SpawnTimerHandle,
-			FTimerDelegate::CreateLambda([WeakWorld]()
+			CombatZoneTimerHandle,
+			FTimerDelegate::CreateLambda([WeakWorld, State, SpawnMobRoomEnemy, SpawnBossRoomBoss, ClearBossRunState]()
 			{
 				UWorld* TimerWorld = WeakWorld.Get();
 				if (!TimerWorld)
@@ -654,55 +1081,93 @@ namespace T66TestRoom
 					return;
 				}
 
-				DestroyTestRoomActorsWithTag(TimerWorld, VATSlimeChaseActorTag());
-
 				APlayerController* PlayerController = TimerWorld->GetFirstPlayerController();
 				APawn* PlayerPawn = PlayerController ? PlayerController->GetPawn() : nullptr;
-				const FVector PlayerLocation = PlayerPawn ? PlayerPawn->GetActorLocation() : PlayerStartLocation();
-				FVector SpawnLocation = PlayerLocation + FVector(850.f, 0.f, 0.f);
-				SpawnLocation.Z = PlayerStartLocation().Z;
-
-				FVector ToPlayer = PlayerLocation - SpawnLocation;
-				ToPlayer.Z = 0.f;
-				const FRotator SpawnRotation = ToPlayer.IsNearlyZero() ? FRotator::ZeroRotator : ToPlayer.Rotation();
-
-				FActorSpawnParameters SpawnParams;
-				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-				AT66EnemyBase* Slime = TimerWorld->SpawnActor<AT66EnemyBase>(
-					AT66EnemyBase::StaticClass(),
-					SpawnLocation,
-					SpawnRotation,
-					SpawnParams);
-				if (!Slime)
-				{
-					UE_LOG(LogTemp, Warning, TEXT("TestRoom VAT Slime QA spawn failed."));
-					return;
-				}
-
-				TagTestRoomActor(Slime, false, false);
-				Slime->Tags.AddUnique(VATSlimeChaseActorTag());
-				Slime->ConfigureAsMob(FName(TEXT("Slime")));
-				Slime->TouchDamageHearts = 0;
-				Slime->PointValue = 0;
-				Slime->XPValue = 0;
-				Slime->bDropsLoot = false;
-				Slime->EnemyFamily = ET66EnemyFamily::Melee;
-				if (!Slime->GetController())
-				{
-					Slime->SpawnDefaultController();
-				}
 #if !UE_BUILD_SHIPPING
-				Slime->ForceMobVertexAnimationClipForAutomation(FName(TEXT("Move")), 30.f);
-#endif
+				if (State->bAutoVisitCombatZones && PlayerPawn)
+				{
+					const double Elapsed = TimerWorld->GetTimeSeconds() - State->AutoVisitStartTime;
+					FVector AutoVisitLocation = PlayerPawn->GetActorLocation();
+					bool bMoveForSmoke = false;
+					if (State->AutoVisitStep == 0 && Elapsed >= 1.0)
+					{
+						AutoVisitLocation = FVector(0.f, TestRoomSideRoomOffset, PlayerStartLocation().Z);
+						State->AutoVisitStep = 1;
+						bMoveForSmoke = true;
+						UE_LOG(LogTemp, Display, TEXT("TestRoom combat-zone smoke moved player to mob room."));
+					}
+					else if (State->AutoVisitStep == 1 && Elapsed >= 4.5)
+					{
+						AutoVisitLocation = PlayerStartLocation();
+						State->AutoVisitStep = 2;
+						bMoveForSmoke = true;
+						UE_LOG(LogTemp, Display, TEXT("TestRoom combat-zone smoke moved player back to center from mob room."));
+					}
+					else if (State->AutoVisitStep == 2 && Elapsed >= 5.8)
+					{
+						AutoVisitLocation = FVector(TestRoomSideRoomOffset, 0.f, PlayerStartLocation().Z);
+						State->AutoVisitStep = 3;
+						bMoveForSmoke = true;
+						UE_LOG(LogTemp, Display, TEXT("TestRoom combat-zone smoke moved player to boss room."));
+					}
+					else if (State->AutoVisitStep == 3 && Elapsed >= 7.1)
+					{
+						AutoVisitLocation = PlayerStartLocation();
+						State->AutoVisitStep = 4;
+						bMoveForSmoke = true;
+						UE_LOG(LogTemp, Display, TEXT("TestRoom combat-zone smoke moved player back to center from boss room."));
+					}
 
-				UE_LOG(LogTemp, Display, TEXT("TestRoom VAT Slime QA spawned at %.1f %.1f %.1f and configured to chase the player."),
-					SpawnLocation.X,
-					SpawnLocation.Y,
-					SpawnLocation.Z);
+					if (bMoveForSmoke)
+					{
+						PlayerPawn->SetActorLocation(AutoVisitLocation, false, nullptr, ETeleportType::TeleportPhysics);
+					}
+				}
+#endif
+				const FVector PlayerLocation = PlayerPawn ? PlayerPawn->GetActorLocation() : PlayerStartLocation();
+				const bool bInMobRoom = PlayerPawn && IsInsideBox2D(PlayerLocation, TestRoomMobRoomBox());
+				const bool bInBossRoom = PlayerPawn && IsInsideBox2D(PlayerLocation, TestRoomBossRoomBox());
+
+				if (bInMobRoom && !State->bPlayerInMobRoom)
+				{
+					State->NextMobSpawnTime = 0.0;
+					UE_LOG(LogTemp, Display, TEXT("TestRoom mob room entered; mob spawning enabled."));
+				}
+				else if (!bInMobRoom && State->bPlayerInMobRoom)
+				{
+					DestroyTestRoomActorsWithTag(TimerWorld, MobRoomEnemyActorTag());
+					UE_LOG(LogTemp, Display, TEXT("TestRoom mob room exited; mob spawning stopped and active mobs destroyed."));
+				}
+
+				if (bInMobRoom)
+				{
+					const double Now = TimerWorld->GetTimeSeconds();
+					if (Now >= State->NextMobSpawnTime)
+					{
+						SpawnMobRoomEnemy(TimerWorld, PlayerPawn);
+						const float Interval = FMath::Max(0.2f, CVarT66TestRoomMobSpawnIntervalSeconds.GetValueOnGameThread());
+						State->NextMobSpawnTime = Now + Interval;
+					}
+				}
+
+				if (bInBossRoom && !State->bPlayerInBossRoom)
+				{
+					SpawnBossRoomBoss(TimerWorld, PlayerPawn);
+					UE_LOG(LogTemp, Display, TEXT("TestRoom boss room entered; boss aggro enabled."));
+				}
+				else if (!bInBossRoom && State->bPlayerInBossRoom)
+				{
+					DestroyTestRoomActorsWithTag(TimerWorld, BossRoomActorTag());
+					ClearBossRunState(TimerWorld);
+					UE_LOG(LogTemp, Display, TEXT("TestRoom boss room exited; boss stopped and removed."));
+				}
+
+				State->bPlayerInMobRoom = bInMobRoom;
+				State->bPlayerInBossRoom = bInBossRoom;
 			}),
-			DelaySeconds,
-			false);
+			0.2f,
+			true,
+			0.2f);
 	}
 
 	void SpawnRoom(UWorld* World)
@@ -720,19 +1185,6 @@ namespace T66TestRoom
 			return;
 		}
 
-		constexpr float InteriorHalfWidth = 5000.f;
-		constexpr float InteriorHalfDepth = 5000.f;
-		constexpr float InteriorHeight = 600.f;
-		constexpr float WallThickness = 40.f;
-		constexpr float CubeSize = 100.f;
-
-		const float TotalWidth = (InteriorHalfWidth * 2.f) + (WallThickness * 2.f);
-		const float TotalDepth = (InteriorHalfDepth * 2.f) + (WallThickness * 2.f);
-		const float WallCenterZ = InteriorHeight * 0.5f;
-		const FVector FloorCeilingScale(TotalWidth / CubeSize, TotalDepth / CubeSize, WallThickness / CubeSize);
-		const FVector NorthSouthWallScale(TotalWidth / CubeSize, WallThickness / CubeSize, InteriorHeight / CubeSize);
-		const FVector EastWestWallScale(WallThickness / CubeSize, (InteriorHalfDepth * 2.f) / CubeSize, InteriorHeight / CubeSize);
-
 		UMaterialInterface* FloorMaterial = LoadFloorMaterial();
 		UMaterialInterface* WallMaterial = LoadWallMaterial();
 		UMaterialInterface* CeilingMaterial = LoadCeilingMaterial();
@@ -741,14 +1193,93 @@ namespace T66TestRoom
 			CeilingMaterial = WallMaterial;
 		}
 
-		SpawnCubeSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_Floor"), FVector(0.f, 0.f, -WallThickness * 0.5f), FloorCeilingScale);
-		SpawnCubeSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_Ceiling"), FVector(0.f, 0.f, InteriorHeight + (WallThickness * 0.5f)), FloorCeilingScale);
-		SpawnCubeSurface(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_NorthWall"), FVector(0.f, InteriorHalfDepth + (WallThickness * 0.5f), WallCenterZ), NorthSouthWallScale);
-		SpawnCubeSurface(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_SouthWall"), FVector(0.f, -InteriorHalfDepth - (WallThickness * 0.5f), WallCenterZ), NorthSouthWallScale);
-		SpawnCubeSurface(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_EastWall"), FVector(InteriorHalfWidth + (WallThickness * 0.5f), 0.f, WallCenterZ), EastWestWallScale);
-		SpawnCubeSurface(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_WestWall"), FVector(-InteriorHalfWidth - (WallThickness * 0.5f), 0.f, WallCenterZ), EastWestWallScale);
-		SpawnLuBuMatrix(World);
-		SpawnFullLineup(World);
+		const FBox2D CenterBox = MakeTestRoomBox(
+			FVector2D::ZeroVector,
+			FVector2D(TestRoomCenterHalfExtent, TestRoomCenterHalfExtent));
+		const FBox2D NorthRoomBox = TestRoomMobRoomBox();
+		const FBox2D EastRoomBox = TestRoomBossRoomBox();
+		const FBox2D SouthRoomBox = MakeTestRoomBox(
+			FVector2D(0.f, -TestRoomSideRoomOffset),
+			FVector2D(TestRoomSideRoomHalfExtent, TestRoomSideRoomHalfExtent));
+		const FBox2D WestRoomBox = MakeTestRoomBox(
+			FVector2D(-TestRoomSideRoomOffset, 0.f),
+			FVector2D(TestRoomSideRoomHalfExtent, TestRoomSideRoomHalfExtent));
+		const FBox2D NorthCorridorBox = MakeTestRoomBox(
+			FVector2D(0.f, TestRoomCorridorCenterOffset),
+			FVector2D(TestRoomCorridorHalfWidth, TestRoomCorridorLength * 0.5f));
+		const FBox2D SouthCorridorBox = MakeTestRoomBox(
+			FVector2D(0.f, -TestRoomCorridorCenterOffset),
+			FVector2D(TestRoomCorridorHalfWidth, TestRoomCorridorLength * 0.5f));
+		const FBox2D EastCorridorBox = MakeTestRoomBox(
+			FVector2D(TestRoomCorridorCenterOffset, 0.f),
+			FVector2D(TestRoomCorridorLength * 0.5f, TestRoomCorridorHalfWidth));
+		const FBox2D WestCorridorBox = MakeTestRoomBox(
+			FVector2D(-TestRoomCorridorCenterOffset, 0.f),
+			FVector2D(TestRoomCorridorLength * 0.5f, TestRoomCorridorHalfWidth));
+
+		const float FloorZ = -TestRoomWallThickness * 0.5f;
+		const float CeilingZ = TestRoomInteriorHeight + (TestRoomWallThickness * 0.5f);
+		const float WallOffset = TestRoomWallThickness * 0.5f;
+		const float DoorHalfWidth = TestRoomCorridorHalfWidth;
+
+		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_CenterFloor"), CenterBox, FloorZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_MobRoomFloor"), NorthRoomBox, FloorZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_BossRoomFloor"), EastRoomBox, FloorZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_SouthEmptyRoomFloor"), SouthRoomBox, FloorZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_WestEmptyRoomFloor"), WestRoomBox, FloorZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_NorthCorridorFloor"), NorthCorridorBox, FloorZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_SouthCorridorFloor"), SouthCorridorBox, FloorZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_EastCorridorFloor"), EastCorridorBox, FloorZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_WestCorridorFloor"), WestCorridorBox, FloorZ, TestRoomWallThickness);
+
+		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_CenterCeiling"), CenterBox, CeilingZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_MobRoomCeiling"), NorthRoomBox, CeilingZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_BossRoomCeiling"), EastRoomBox, CeilingZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_SouthEmptyRoomCeiling"), SouthRoomBox, CeilingZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_WestEmptyRoomCeiling"), WestRoomBox, CeilingZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_NorthCorridorCeiling"), NorthCorridorBox, CeilingZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_SouthCorridorCeiling"), SouthCorridorBox, CeilingZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_EastCorridorCeiling"), EastCorridorBox, CeilingZ, TestRoomWallThickness);
+		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_WestCorridorCeiling"), WestCorridorBox, CeilingZ, TestRoomWallThickness);
+
+		SpawnHorizontalWallWithGap(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_CenterNorthWall"), CenterBox.Min.X, CenterBox.Max.X, CenterBox.Max.Y + WallOffset, 0.f, DoorHalfWidth);
+		SpawnHorizontalWallWithGap(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_CenterSouthWall"), CenterBox.Min.X, CenterBox.Max.X, CenterBox.Min.Y - WallOffset, 0.f, DoorHalfWidth);
+		SpawnVerticalWallWithGap(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_CenterEastWall"), CenterBox.Max.X + WallOffset, CenterBox.Min.Y, CenterBox.Max.Y, 0.f, DoorHalfWidth);
+		SpawnVerticalWallWithGap(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_CenterWestWall"), CenterBox.Min.X - WallOffset, CenterBox.Min.Y, CenterBox.Max.Y, 0.f, DoorHalfWidth);
+
+		SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_MobRoomNorthWall"), NorthRoomBox.Min.X, NorthRoomBox.Max.X, NorthRoomBox.Max.Y + WallOffset);
+		SpawnHorizontalWallWithGap(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_MobRoomSouthWall"), NorthRoomBox.Min.X, NorthRoomBox.Max.X, NorthRoomBox.Min.Y - WallOffset, 0.f, DoorHalfWidth);
+		SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_MobRoomWestWall"), NorthRoomBox.Min.X - WallOffset, NorthRoomBox.Min.Y, NorthRoomBox.Max.Y);
+		SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_MobRoomEastWall"), NorthRoomBox.Max.X + WallOffset, NorthRoomBox.Min.Y, NorthRoomBox.Max.Y);
+
+		SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_BossRoomEastWall"), EastRoomBox.Max.X + WallOffset, EastRoomBox.Min.Y, EastRoomBox.Max.Y);
+		SpawnVerticalWallWithGap(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_BossRoomWestWall"), EastRoomBox.Min.X - WallOffset, EastRoomBox.Min.Y, EastRoomBox.Max.Y, 0.f, DoorHalfWidth);
+		SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_BossRoomNorthWall"), EastRoomBox.Min.X, EastRoomBox.Max.X, EastRoomBox.Max.Y + WallOffset);
+		SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_BossRoomSouthWall"), EastRoomBox.Min.X, EastRoomBox.Max.X, EastRoomBox.Min.Y - WallOffset);
+
+		SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_SouthRoomSouthWall"), SouthRoomBox.Min.X, SouthRoomBox.Max.X, SouthRoomBox.Min.Y - WallOffset);
+		SpawnHorizontalWallWithGap(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_SouthRoomNorthWall"), SouthRoomBox.Min.X, SouthRoomBox.Max.X, SouthRoomBox.Max.Y + WallOffset, 0.f, DoorHalfWidth);
+		SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_SouthRoomWestWall"), SouthRoomBox.Min.X - WallOffset, SouthRoomBox.Min.Y, SouthRoomBox.Max.Y);
+		SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_SouthRoomEastWall"), SouthRoomBox.Max.X + WallOffset, SouthRoomBox.Min.Y, SouthRoomBox.Max.Y);
+
+		SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_WestRoomWestWall"), WestRoomBox.Min.X - WallOffset, WestRoomBox.Min.Y, WestRoomBox.Max.Y);
+		SpawnVerticalWallWithGap(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_WestRoomEastWall"), WestRoomBox.Max.X + WallOffset, WestRoomBox.Min.Y, WestRoomBox.Max.Y, 0.f, DoorHalfWidth);
+		SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_WestRoomNorthWall"), WestRoomBox.Min.X, WestRoomBox.Max.X, WestRoomBox.Max.Y + WallOffset);
+		SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_WestRoomSouthWall"), WestRoomBox.Min.X, WestRoomBox.Max.X, WestRoomBox.Min.Y - WallOffset);
+
+		SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_NorthCorridorWestWall"), -DoorHalfWidth - WallOffset, CenterBox.Max.Y, NorthRoomBox.Min.Y);
+		SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_NorthCorridorEastWall"), DoorHalfWidth + WallOffset, CenterBox.Max.Y, NorthRoomBox.Min.Y);
+		SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_SouthCorridorWestWall"), -DoorHalfWidth - WallOffset, SouthRoomBox.Max.Y, CenterBox.Min.Y);
+		SpawnVerticalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_SouthCorridorEastWall"), DoorHalfWidth + WallOffset, SouthRoomBox.Max.Y, CenterBox.Min.Y);
+		SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_EastCorridorNorthWall"), CenterBox.Max.X, EastRoomBox.Min.X, DoorHalfWidth + WallOffset);
+		SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_EastCorridorSouthWall"), CenterBox.Max.X, EastRoomBox.Min.X, -DoorHalfWidth - WallOffset);
+		SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_WestCorridorNorthWall"), WestRoomBox.Max.X, CenterBox.Min.X, DoorHalfWidth + WallOffset);
+		SpawnHorizontalWallSegment(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_WestCorridorSouthWall"), WestRoomBox.Max.X, CenterBox.Min.X, -DoorHalfWidth - WallOffset);
+
+		SpawnTextLabel(World, TEXT("DEV_TestRoom_RoomLabel"), TEXT("MOBS"), FVector(0.f, TestRoomSideRoomOffset, 540.f), RoomActorTag());
+		SpawnTextLabel(World, TEXT("DEV_TestRoom_RoomLabel"), TEXT("BOSS"), FVector(TestRoomSideRoomOffset, 0.f, 540.f), RoomActorTag());
+		SpawnTextLabel(World, TEXT("DEV_TestRoom_RoomLabel"), TEXT("EMPTY"), FVector(0.f, -TestRoomSideRoomOffset, 540.f), RoomActorTag());
+		SpawnTextLabel(World, TEXT("DEV_TestRoom_RoomLabel"), TEXT("EMPTY"), FVector(-TestRoomSideRoomOffset, 0.f, 540.f), RoomActorTag());
 
 		const int32 DungeonInitialCount = FT66WorldVisualSetup::ApplyToonCelAtmosphereToRegisteredMaterials(T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon);
 		const int32 HellProbeCount = FT66WorldVisualSetup::ApplyToonCelAtmosphereToRegisteredMaterials(T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell);

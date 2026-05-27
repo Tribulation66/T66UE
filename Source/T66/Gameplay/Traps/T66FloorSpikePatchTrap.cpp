@@ -7,6 +7,7 @@
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66TrapTuningConfig.h"
+#include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/SphereComponent.h"
@@ -91,6 +92,7 @@ void AT66FloorSpikePatchTrap::BeginPlay()
 	{
 		ScheduleNextCycle(InitialCycleDelaySeconds);
 	}
+	RefreshTickEnabledForDebug();
 }
 
 void AT66FloorSpikePatchTrap::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -136,7 +138,7 @@ void AT66FloorSpikePatchTrap::HandleTrapEnabledChanged()
 	bRetracting = false;
 	PhaseElapsed = 0.f;
 	WarningVFXAccum = 0.f;
-	SetActorTickEnabled(false);
+	RefreshTickEnabledForDebug();
 	UpdateSpikeTransforms(0.f);
 	UpdateMarkerVisuals();
 
@@ -171,7 +173,7 @@ void AT66FloorSpikePatchTrap::BeginWarningCycle()
 	bRetracting = false;
 	PhaseElapsed = 0.f;
 	WarningVFXAccum = 0.f;
-	SetActorTickEnabled(true);
+	RefreshTickEnabledForDebug();
 	UpdateMarkerVisuals();
 	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Spike.Warning")), GetActorLocation(), this);
 
@@ -196,7 +198,7 @@ void AT66FloorSpikePatchTrap::BeginRiseCycle()
 	UpdateMarkerVisuals();
 	SpawnRiseNiagaraBurst();
 	SpawnRiseBurst();
-	SetActorTickEnabled(true);
+	RefreshTickEnabledForDebug();
 	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Spike.Rise")), GetActorLocation(), this);
 
 	if (UWorld* World = GetWorld())
@@ -265,7 +267,7 @@ void AT66FloorSpikePatchTrap::FinishRetractCycle()
 	bRetracting = false;
 	UpdateSpikeTransforms(0.f);
 	UpdateMarkerVisuals();
-	SetActorTickEnabled(false);
+	RefreshTickEnabledForDebug();
 	if (UsesTimedActivation())
 	{
 		ScheduleNextCycle(CooldownDurationSeconds);
@@ -288,20 +290,34 @@ void AT66FloorSpikePatchTrap::ApplyDamagePulse()
 		return;
 	}
 
-	FT66TrapDamageUtils::ApplyTrapDamageToOverlaps(this, DamageZone, DamageHP);
+	FT66TrapDamageUtils::ApplyTrapDamageToOverlaps(this, DamageZone, DamageHP, FName(TEXT("TrapAreaControl")), this);
 }
 
 bool AT66FloorSpikePatchTrap::ShouldTickForAnimation() const
 {
-	return bWarningActive || bRising || bRetracting;
+	return bWarningActive || bRising || bRaised || bRetracting;
+}
+
+void AT66FloorSpikePatchTrap::RefreshTickEnabledForDebug()
+{
+	SetActorTickEnabled(ShouldTickForAnimation() || T66CombatDebugDraw::ShouldDrawDamageVolumes());
 }
 
 void AT66FloorSpikePatchTrap::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	const bool bShouldDrawDebugContainer = T66CombatDebugDraw::ShouldDrawDamageVolumes();
+	if (bShouldDrawDebugContainer || bWarningActive || bRising || bRaised || bRetracting)
+	{
+		const FString Label = bRaised
+			? TEXT("Trap Spike Damage")
+			: ((bWarningActive || bRising || bRetracting) ? TEXT("Trap Spike Warning") : TEXT("Trap Spike Container"));
+		T66CombatDebugDraw::DrawDamageSphere(DamageZone, Label, bRaised);
+	}
 
 	if (!ShouldTickForAnimation())
 	{
+		RefreshTickEnabledForDebug();
 		return;
 	}
 

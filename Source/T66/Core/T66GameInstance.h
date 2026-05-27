@@ -113,6 +113,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> LoanSharkDataTable;
 
+	/** Reference to unique, authored enemies that do not participate in regular waves. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> UniqueEnemiesDataTable;
+
 	/** Reference to the Character Visuals DataTable (ID -> SkeletalMesh + optional looping anim + transform). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> CharacterVisualsDataTable;
@@ -371,6 +375,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetLoanSharkDataTable();
 
+	/** Get the loaded Unique Enemies DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetUniqueEnemiesDataTable();
+
 	/** Get the loaded Character Visuals DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetCharacterVisualsDataTable();
@@ -423,6 +431,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetLoanSharkData(FName LoanSharkID, FLoanSharkData& OutData);
 
+	/** Get unique enemy tuning data. Returns false if not found. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	bool GetUniqueEnemyData(FName UniqueEnemyID, FUniqueEnemyData& OutData);
+
 	/** Get hero data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetHeroData(FName HeroID, FHeroData& OutHeroData);
@@ -466,6 +478,18 @@ public:
 	/** Resolve to the requested difficulty if playable, otherwise the first playable difficulty. */
 	UFUNCTION(BlueprintCallable, Category = "Release")
 	ET66Difficulty ResolvePlayableDifficulty(ET66Difficulty Difficulty) const;
+
+	/** Returns true when the run category is playable for this release variant. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	bool IsRunCategoryPlayable(ET66RunCategory RunCategory) const;
+
+	/** Resolve to the requested run category if playable, otherwise the default tower run. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	ET66RunCategory ResolvePlayableRunCategory(ET66RunCategory RunCategory) const;
+
+	/** Returns true when the Lab Collector is playable for this release variant. */
+	UFUNCTION(BlueprintCallable, Category = "Release")
+	bool IsCollectorPlayable() const;
 
 	/** Get all companion IDs from the DataTable */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -531,7 +555,7 @@ public:
 	bool IsOfflineRun() const { return SelectedRunMode == ET66RunMode::Offline; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Run")
-	bool IsLabRun() const { return SelectedRunCategory == ET66RunCategory::Lab; }
+	bool IsLabRun() const { return SelectedRunCategory == ET66RunCategory::Lab && IsRunCategoryPlayable(ET66RunCategory::Lab); }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Run")
 	bool IsTutorialRun() const { return SelectedRunCategory == ET66RunCategory::Tutorial; }
@@ -743,6 +767,10 @@ private:
 	/** Cached loaded Loan Shark DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedLoanSharkDataTable;
+
+	/** Cached loaded Unique Enemies DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedUniqueEnemiesDataTable;
 
 	/** Cached loaded Character Visuals DataTable */
 	UPROPERTY(Transient)

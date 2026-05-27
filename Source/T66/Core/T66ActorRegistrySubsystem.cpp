@@ -2,6 +2,7 @@
 
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66MobBase.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66StageGate.h"
@@ -46,6 +47,7 @@ void UT66ActorRegistrySubsystem::RegisterEnemy(AT66EnemyBase* Enemy)
 {
 	if (!Enemy) return;
 	AddUniqueWeak(Enemies, Enemy);
+	EnemiesChanged.Broadcast();
 	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: registered enemy %s (total: %d)"), *Enemy->GetName(), Enemies.Num());
 }
 
@@ -53,7 +55,91 @@ void UT66ActorRegistrySubsystem::UnregisterEnemy(AT66EnemyBase* Enemy)
 {
 	if (!Enemy) return;
 	RemoveWeak(Enemies, Enemy);
+	EnemiesChanged.Broadcast();
 	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: unregistered enemy %s (total: %d)"), *Enemy->GetName(), Enemies.Num());
+}
+
+// --------------- Lightweight Mobs ---------------
+
+void UT66ActorRegistrySubsystem::RegisterMob(AT66MobBase* Mob)
+{
+	if (!Mob) return;
+	AddUniqueWeak(ActiveMobs, Mob);
+	EnemiesChanged.Broadcast();
+	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: registered lightweight mob %s (total: %d)"), *Mob->GetName(), ActiveMobs.Num());
+}
+
+void UT66ActorRegistrySubsystem::UnregisterMob(AT66MobBase* Mob)
+{
+	if (!Mob) return;
+	RemoveWeak(ActiveMobs, Mob);
+	EnemiesChanged.Broadcast();
+	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: unregistered lightweight mob %s (total: %d)"), *Mob->GetName(), ActiveMobs.Num());
+}
+
+int32 UT66ActorRegistrySubsystem::GetLiveMobCount() const
+{
+	int32 LiveCount = 0;
+	for (const TWeakObjectPtr<AT66MobBase>& WeakMob : ActiveMobs)
+	{
+		const AT66MobBase* Mob = WeakMob.Get();
+		if (Mob && Mob->IsAliveAndActive())
+		{
+			++LiveCount;
+		}
+	}
+
+	return LiveCount;
+}
+
+int32 UT66ActorRegistrySubsystem::GetCombinedLiveEnemyCount() const
+{
+	int32 LiveCount = 0;
+	for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Enemies)
+	{
+		if (WeakEnemy.IsValid())
+		{
+			++LiveCount;
+		}
+	}
+
+	return LiveCount + GetLiveMobCount();
+}
+
+TArray<AActor*> UT66ActorRegistrySubsystem::GetAllDamageableTargets() const
+{
+	TArray<AActor*> Targets;
+	Targets.Reserve(Enemies.Num() + ActiveMobs.Num());
+	ForEachDamageableTarget([&Targets](AActor* Target)
+	{
+		if (Target)
+		{
+			Targets.Add(Target);
+		}
+	});
+	return Targets;
+}
+
+void UT66ActorRegistrySubsystem::ForEachDamageableTarget(TFunctionRef<void(AActor*)> Func) const
+{
+	for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Enemies)
+	{
+		if (AT66EnemyBase* Enemy = WeakEnemy.Get())
+		{
+			Func(Enemy);
+		}
+	}
+
+	for (const TWeakObjectPtr<AT66MobBase>& WeakMob : ActiveMobs)
+	{
+		if (AT66MobBase* Mob = WeakMob.Get())
+		{
+			if (Mob->IsAliveAndActive())
+			{
+				Func(Mob);
+			}
+		}
+	}
 }
 
 // --------------- Bosses ---------------

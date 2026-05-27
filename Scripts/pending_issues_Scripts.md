@@ -34,3 +34,10 @@
 - What's wrong: `Scripts/CaptureT66UIWidget.ps1` builds a gameplay widget dump argument as `-T66AutoDumpWidget="GameplayHUD:<path>"`, but the runtime dump parser rejects `GameplayHUD` with `Invalid target 'GameplayHUD'. Expected Class=, Tag=, ViewportIndex=, or Actor=.` Screenshots are still produced, but the script exits nonzero when the dump file is missing.
 - Why it's out of scope now: The current fix is limited to restoring gameplay input/HUD after the atmosphere pass; changing the automation selector contract could affect other UI capture workflows.
 - What fixing it would entail: Update the script to use a valid selector for the gameplay HUD, likely `Class=<UT66GameplayHUDWidget class path>` or a dedicated runtime tag, then add a smoke check that confirms both screenshot and JSON dump are created.
+
+## Frontend Capture Has No Tag-Click Step
+
+- Severity tag: [Minor]
+- What's wrong: `Scripts/CaptureT66UIScreen.ps1` can open a frontend screen, capture it, and dump its widget tree, but it cannot perform a deterministic Unreal-owned click on a tagged Slate widget before capture. Ad hoc OS mouse injection is unreliable with off-screen/DPI-scaled automation windows, which makes tab/dropdown/button interaction regressions harder to prove without manual input.
+- Why it's out of scope now: The current pass fixes Run Summary tab/button wiring and only needs a normal Run Summary capture/log smoke; adding reusable click automation would touch the frontend automation contract.
+- What fixing it would entail: Add a command-line automation path such as `-T66AutoClickTag=<Tag>` with an optional delay, resolve the tag through the widget tree/geometry, inject the click through Unreal/Slate, then capture/dump after the interaction and update `CaptureT66UIScreen.ps1` to expose it.

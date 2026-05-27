@@ -217,6 +217,33 @@ bool UT66ReleaseVariantSubsystem::IsCasinoGameAllowed(FName CasinoGameID) const
 	return Settings->AllowedCasinoGameIDs.Contains(CasinoGameID);
 }
 
+bool UT66ReleaseVariantSubsystem::IsRunCategoryAllowed(const ET66RunCategory RunCategory) const
+{
+	if (!IsSteamDemoBuild())
+	{
+		return true;
+	}
+
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	if (RunCategory == ET66RunCategory::Lab)
+	{
+		return Settings ? Settings->bAllowLabRun : false;
+	}
+
+	return true;
+}
+
+bool UT66ReleaseVariantSubsystem::IsCollectorAllowed() const
+{
+	if (!IsSteamDemoBuild())
+	{
+		return true;
+	}
+
+	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
+	return Settings ? Settings->bAllowCollector : false;
+}
+
 TArray<FName> UT66ReleaseVariantSubsystem::FilterHeroIDs(const TArray<FName>& HeroIDs) const
 {
 	if (!IsSteamDemoBuild())
@@ -308,6 +335,11 @@ ET66Difficulty UT66ReleaseVariantSubsystem::ResolvePlayableDifficulty(ET66Diffic
 	}
 
 	return PlayableDifficulties.Num() > 0 ? PlayableDifficulties[0] : ET66Difficulty::Easy;
+}
+
+ET66RunCategory UT66ReleaseVariantSubsystem::ResolvePlayableRunCategory(const ET66RunCategory RunCategory) const
+{
+	return IsRunCategoryAllowed(RunCategory) ? RunCategory : ET66RunCategory::Tower;
 }
 
 bool UT66ReleaseVariantSubsystem::IsDiplomaUpgradeAllowed(int32 CurrentUnlockedSteps) const

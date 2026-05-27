@@ -5,6 +5,7 @@
 #include "Gameplay/Traps/T66TrapBase.h"
 
 #include "Core/T66AudioSubsystem.h"
+#include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroBase.h"
@@ -18,7 +19,12 @@
 
 AT66TrapPressurePlate::AT66TrapPressurePlate()
 {
+#if UE_BUILD_SHIPPING
 	PrimaryActorTick.bCanEverTick = false;
+#else
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bStartWithTickEnabled = true;
+#endif
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
@@ -62,6 +68,15 @@ void AT66TrapPressurePlate::BeginPlay()
 		TriggerZone->OnComponentBeginOverlap.AddDynamic(this, &AT66TrapPressurePlate::HandleTriggerZoneBeginOverlap);
 		TriggerZone->OnComponentEndOverlap.AddDynamic(this, &AT66TrapPressurePlate::HandleTriggerZoneEndOverlap);
 	}
+}
+
+void AT66TrapPressurePlate::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	T66CombatDebugDraw::DrawTriggerBox(
+		TriggerZone,
+		bArmed ? TEXT("Trap Trigger Zone") : TEXT("Trap Trigger Zone: Pressed"),
+		bArmed);
 }
 
 void AT66TrapPressurePlate::HandleTriggerZoneBeginOverlap(

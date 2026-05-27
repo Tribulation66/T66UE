@@ -20,6 +20,7 @@ class T66_API UT66WhackAMoleArcadeWidget : public UT66ArcadePopupWidget
 
 public:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext) override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
@@ -117,7 +118,7 @@ private:
 	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<UTexture2D>> SpriteTextures;
 
-	TMap<FName, FSlateBrush> SpriteBrushes;
+	TMap<FName, TSharedPtr<FSlateBrush>> SpriteBrushes;
 	TArray<FWhackAMoleSlotRuntime> MoleSlots;
 	TArray<TSharedPtr<SButton>> SlotButtons;
 	TArray<TSharedPtr<SImage>> HoleImages;

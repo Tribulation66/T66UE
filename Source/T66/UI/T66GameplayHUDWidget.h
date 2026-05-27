@@ -10,13 +10,16 @@
 #include "Styling/SlateBrush.h"
 #include "Templates/UniquePtr.h"
 #include "UI/HUD/T66HUDPresentationController.h"
+#include "UI/T66LootWheelPresentationTypes.h"
 #include "T66GameplayHUDWidget.generated.h"
 
 class UT66RunStateSubsystem;
 class UT66DamageLogSubsystem;
 class UT66PlayerSettingsSubsystem;
 class UT66MediaViewerSubsystem;
+class UT66ActorRegistrySubsystem;
 class UT66CrateOverlayWidget;
+class UT66LootWheelOverlayWidget;
 class STextBlock;
 class SBorder;
 class SBox;
@@ -29,6 +32,8 @@ struct FSlateBrush;
 class ST66RingWidget;
 class ST66WorldMapWidget;
 class AActor;
+class AT66EnemyBase;
+class AT66MobBase;
 class AT66LootBagPickup;
 enum class ET66ItemRarity : uint8;
 enum class ET66Rarity : uint8;
@@ -107,10 +112,15 @@ public:
 	/** Show the item card popup for a just-picked-up item above inventory. */
 	void ShowPickupItemCard(FName ItemID, ET66ItemRarity ItemRarity);
 
+	/** Show the loot bag reveal before handing off to the item card popup. */
+	void ShowLootBagItemReveal(FName ItemID, ET66ItemRarity ItemRarity);
+
 	/** Show the chest gold reward presentation in the same above-inventory lane. */
-	void StartChestReward(ET66Rarity ChestRarity, int32 GoldAmount);
+	bool StartChestReward(ET66Rarity ChestRarity, int32 GoldAmount, TFunction<void()> OnCommit = nullptr, TFunction<void()> OnFinished = nullptr);
+	bool StartLootWheelSpin(FT66LootWheelPresentationParams Params);
 	bool TrySkipActivePresentation();
 	void ClearActiveCratePresentation(UT66CrateOverlayWidget* Overlay);
+	void ClearActiveLootWheelPresentation(UT66LootWheelOverlayWidget* Overlay);
 
 	/** Full-screen map overlay (M / OpenFullMap). */
 	void SetFullMapOpen(bool bOpen);
@@ -151,6 +161,11 @@ public:
 	static constexpr float BottomRightPresentationGap = 8.f;
 	static constexpr float BottomRightInventorySlotSize = 50.f;
 	static constexpr float BottomRightInventoryInspectScale = 2.f;
+	static constexpr float BottomRightRewardLaneRightPadding = 12.f;
+	static constexpr float BottomRightRewardLaneBottomPadding = BottomRightInventoryPanelHeight + BottomRightPresentationGap;
+	static constexpr float BottomRightRewardLaneWidth = BottomRightInventoryPanelWidth;
+	static constexpr float BottomRightRewardLaneHeight = 420.f;
+	static constexpr float BottomRightCrateRewardLaneHeight = 112.f;
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
@@ -165,6 +180,9 @@ protected:
 	void RefreshMapData();
 	void UpdateTowerMapReveal(const FVector& PlayerLocation);
 	bool IsTowerMapRevealPointVisible(int32 FloorNumber, const FVector2D& WorldXY) const;
+	void BindMapRegistryEvents();
+	void UnbindMapRegistryEvents();
+	void HandleMapEnemyRegistryChanged();
 	void RefreshFPS();
 	bool IsPausePresentationActive() const;
 	void RefreshPausePresentation();
@@ -224,12 +242,28 @@ protected:
 	TSharedPtr<STextBlock> PickupCardNameText;
 	TSharedPtr<STextBlock> PickupCardDescText;
 	TSharedPtr<STextBlock> PickupCardSkipText;
+	TSharedPtr<SBox> LootBagRevealBox;
+	TSharedPtr<SBox> LootBagRevealClosedBox;
+	TSharedPtr<SBox> LootBagRevealOpenBox;
+	TSharedPtr<FSlateBrush> LootBagRevealClosedBrush;
+	TSharedPtr<FSlateBrush> LootBagRevealOpenBrush;
+	TSharedPtr<SImage> LootBagRevealClosedImage;
+	TSharedPtr<SImage> LootBagRevealOpenImage;
+	TSharedPtr<SBox> LootBagRevealCardBox;
+	TSharedPtr<SBorder> LootBagRevealCardTileBorder;
+	TSharedPtr<SBorder> LootBagRevealCardIconBorder;
+	TSharedPtr<FSlateBrush> LootBagRevealCardIconBrush;
+	TSharedPtr<SImage> LootBagRevealCardIconImage;
+	TSharedPtr<STextBlock> LootBagRevealCardNameText;
+	TArray<TSharedPtr<SBox>> LootBagRevealSparkleBoxes;
+	TArray<TSharedPtr<SBorder>> LootBagRevealSparkleBorders;
 	TSharedPtr<SBox> ChestRewardBox;
 	TSharedPtr<SBorder> ChestRewardTileBorder;
 	TSharedPtr<SBox> ChestRewardClosedBox;
 	TSharedPtr<SBox> ChestRewardOpenBox;
 	TSharedPtr<FSlateBrush> ChestRewardClosedBrush;
 	TSharedPtr<FSlateBrush> ChestRewardOpenBrush;
+	TSharedPtr<FSlateBrush> ChestRewardCoinBrush;
 	TSharedPtr<FSlateBrush> GoldCurrencyBrush;
 	TSharedPtr<FSlateBrush> DebtCurrencyBrush;
 	TSharedPtr<SImage> ChestRewardClosedImage;
@@ -238,11 +272,23 @@ protected:
 	TSharedPtr<STextBlock> ChestRewardSkipText;
 	TArray<TSharedPtr<SBox>> ChestRewardCoinBoxes;
 	TArray<TSharedPtr<SImage>> ChestRewardCoinImages;
+	TArray<TSharedPtr<SBox>> ChestRewardBeamBoxes;
+	TArray<TSharedPtr<SBorder>> ChestRewardBeamBorders;
+	TArray<TSharedPtr<SBox>> ChestRewardSparkleBoxes;
+	TArray<TSharedPtr<SBorder>> ChestRewardSparkleBorders;
 	static constexpr float PickupCardWidth = MinimapPanelWidth;
 	static constexpr float PickupCardHeight = 216.f;
-	static constexpr float ChestRewardDisplaySeconds = 2.4f;
+	static constexpr float LootBagRevealPanelHeight = 420.f;
+	static constexpr float LootBagRevealDisplaySeconds = 1.42f;
+	static constexpr float LootBagRevealFadeOutSeconds = 0.18f;
+	static constexpr int32 LootBagRevealSparkleCount = 14;
+	static constexpr float ChestRewardPanelWidth = 560.f;
+	static constexpr float ChestRewardPanelHeight = 520.f;
+	static constexpr float ChestRewardDisplaySeconds = 3.15f;
 	static constexpr float ChestRewardFadeOutSeconds = 0.35f;
-	static constexpr int32 ChestRewardCoinCount = 7;
+	static constexpr int32 ChestRewardCoinCount = 28;
+	static constexpr int32 ChestRewardBeamCount = 7;
+	static constexpr int32 ChestRewardSparkleCount = 18;
 	void HidePickupCard();
 	void ApplyInventoryInspectMode();
 	TSharedPtr<SBorder> TutorialHintBorder;
@@ -256,8 +302,6 @@ protected:
 	TSharedPtr<SBorder> ScopedSniperOverlayBorder;
 	TSharedPtr<STextBlock> ScopedUltTimerText;
 	TSharedPtr<STextBlock> ScopedShotCooldownText;
-	TSharedPtr<SBorder> QuickReviveDownedOverlayBorder;
-	TSharedPtr<STextBlock> QuickReviveDownedText;
 	TArray<TSharedPtr<SBorder>> IdolLevelDotBorders; // legacy; rarity is now shown via sprite + border color
 	TSharedPtr<ST66RingWidget> LevelRingWidget;
 	TSharedPtr<STextBlock> LevelText;
@@ -391,9 +435,17 @@ protected:
 		FName MarkerKey = NAME_None;
 	};
 	TArray<FMapCacheEntry> MapCache;
+	TArray<TWeakObjectPtr<AT66EnemyBase>> MapEnemyCache;
+	TArray<TWeakObjectPtr<AT66MobBase>> MapMobCache;
 	float MapCacheLastRefreshTime = -1.f;
+	float LastMapVisibleRefreshTime = -1.f;
 	TWeakObjectPtr<UWorld> MapCacheWorld;
 	static constexpr float MapCacheRefreshIntervalSeconds = 1.5f;
+	static constexpr float MapVisibleRefreshIntervalSeconds = 0.10f;
+	bool bMapEnemyMarkersDirty = true;
+	bool bForceMapRefreshRequested = false;
+	TWeakObjectPtr<UT66ActorRegistrySubsystem> BoundMapRegistry;
+	FDelegateHandle MapEnemyRegistryChangedHandle;
 	TMap<int32, TArray<FVector2D>> TowerRevealPointsByFloor;
 	int32 LastTowerRevealFloorNumber = INDEX_NONE;
 	float TowerRevealAccumSeconds = 0.f;

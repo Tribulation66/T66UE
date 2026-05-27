@@ -43,7 +43,7 @@
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
-#include "Gameplay/T66GamblerNPC.h"
+#include "Gameplay/T66CasinoNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
@@ -86,11 +86,11 @@
 #include "Widgets/Views/SListView.h"
 #include "Styling/CoreStyle.h"
 
-void AT66PlayerController::OpenWorldDialogueGambler(AT66GamblerNPC* Gambler)
+void AT66PlayerController::OpenWorldDialogueCasino(AT66CasinoNPC* CasinoNPC)
 {
 	if (!IsGameplayLevel()) return;
 	if (!GameplayHUDWidget) return;
-	if (!Gambler) return;
+	if (!CasinoNPC) return;
 	if (bInventoryInspectOpen)
 	{
 		SetInventoryInspectOpen(false);
@@ -104,8 +104,8 @@ void AT66PlayerController::OpenWorldDialogueGambler(AT66GamblerNPC* Gambler)
 		Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "Back"),
 	};
 
-	WorldDialogueKind = ET66WorldDialogueKind::Gambler;
-	WorldDialogueTargetNPC = Gambler;
+	WorldDialogueKind = ET66WorldDialogueKind::Casino;
+	WorldDialogueTargetNPC = CasinoNPC;
 	WorldDialogueTargetCompanion.Reset();
 	WorldDialogueSelectedIndex = 0;
 	WorldDialogueNumOptions = 2;
@@ -188,8 +188,8 @@ void AT66PlayerController::ConfirmWorldDialogue()
 	const int32 Choice = WorldDialogueSelectedIndex;
 	AT66HouseNPCBase* TargetNPC = WorldDialogueTargetNPC.Get();
 	AT66RecruitableCompanion* TargetCompanion = WorldDialogueTargetCompanion.Get();
-	const int32 GamblerWinGoldAmount = (Kind == ET66WorldDialogueKind::Gambler)
-		? (Cast<AT66GamblerNPC>(TargetNPC) ? Cast<AT66GamblerNPC>(TargetNPC)->GetWinGoldAmount() : 0)
+	const int32 CasinoGamblerWinGoldAmount = (Kind == ET66WorldDialogueKind::Casino)
+		? (Cast<AT66CasinoNPC>(TargetNPC) ? Cast<AT66CasinoNPC>(TargetNPC)->GetWinGoldAmount() : 0)
 		: 0;
 
 	CloseWorldDialogue();
@@ -218,20 +218,20 @@ void AT66PlayerController::ConfirmWorldDialogue()
 		return;
 	}
 
-	// Gambler: 0: main action, 1: back
+	// Casino: 0: main action, 1: back
 	if (Choice == 1)
 	{
 		return;
 	}
 
 	// Choice == 0
-	if (Kind == ET66WorldDialogueKind::Gambler)
+	if (Kind == ET66WorldDialogueKind::Casino)
 	{
 		OpenCasinoOverlay();
 		if (CasinoOverlayWidget)
 		{
-			CasinoOverlayWidget->SetGamblingWinGoldAmount(GamblerWinGoldAmount);
-			CasinoOverlayWidget->OpenGamblingTab();
+			CasinoOverlayWidget->SetCasinoGamblerWinGoldAmount(CasinoGamblerWinGoldAmount);
+			CasinoOverlayWidget->OpenGamblerTab();
 		}
 	}
 }

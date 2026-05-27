@@ -24,18 +24,6 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 
 private:
-	enum class EDraftStatField : uint8
-	{
-		Damage,
-		AttackSpeed,
-		AttackScale,
-		Accuracy,
-		Armor,
-		Evasion,
-		Luck,
-		Speed,
-	};
-
 	class UT66CommunityContentSubsystem* GetCommunitySubsystem() const;
 	ET66CommunityContentKind GetActiveKind() const;
 	TArray<FT66CommunityContentEntry> GetEntriesForView(int32 TabIndex, int32 SourceTabIndex) const;
@@ -57,7 +45,6 @@ private:
 	void CycleDraftPassive(int32 Direction);
 	void CycleDraftUltimate(int32 Direction);
 	void CycleDraftStartingItem(int32 Direction);
-	void AdjustDraftStat(EDraftStatField Field, int32 Delta);
 
 	FReply HandleBackClicked();
 	FReply HandleTabSelected(int32 TabIndex);
@@ -72,11 +59,8 @@ private:
 	FReply HandleSubmitDraftClicked();
 	FReply HandleCancelDraftEditorClicked();
 	FReply HandleAdjustDraftReward(int32 Delta);
-	FReply HandleAdjustDraftStartLevel(int32 Delta);
 	FReply HandleAdjustDraftRequiredStage(int32 Delta);
 	FReply HandleAdjustDraftMaxRunTime(int32 Delta);
-	FReply HandleToggleDraftMaxStats();
-	FReply HandleAdjustDraftStatClicked(EDraftStatField Field, int32 Delta);
 	FReply HandleCycleDraftPassiveClicked(int32 Direction);
 	FReply HandleCycleDraftUltimateClicked(int32 Direction);
 	FReply HandleCycleDraftStartingItemClicked(int32 Direction);

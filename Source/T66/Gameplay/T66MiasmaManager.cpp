@@ -817,7 +817,7 @@ void AT66MiasmaManager::TickDamageOverActiveTiles(float DeltaTime)
 			&& FMath::Abs(HeroLocation.X - TileCenter.X) <= HalfExtent
 			&& FMath::Abs(HeroLocation.Y - TileCenter.Y) <= HalfExtent)
 		{
-			RunState->ApplyDamage(20, this);
+			RunState->ApplyDamage(20, this, FName(TEXT("MiasmaCoverage")), this);
 			return;
 		}
 	}

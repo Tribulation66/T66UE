@@ -129,6 +129,18 @@ void UT66WeaponAltarOverlayWidget::ConsumeSelectionBudget()
 	}
 }
 
+void UT66WeaponAltarOverlayWidget::CloseAndReturnToGameplay()
+{
+	RemoveFromParent();
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		if (PC->IsGameplayLevel() && !PC->IsPaused())
+		{
+			PC->RestoreGameplayInputMode();
+		}
+	}
+}
+
 void UT66WeaponAltarOverlayWidget::HandleWeaponsChanged()
 {
 	RefreshOffers();
@@ -480,23 +492,12 @@ FReply UT66WeaponAltarOverlayWidget::OnChooseSlot(const int32 SlotIndex)
 	}
 
 	ConsumeSelectionBudget();
-	if (StatusText.IsValid())
-	{
-		StatusText->SetText(FText::Format(NSLOCTEXT("T66.WeaponAltar", "SelectionApplied", "Equipped {0}."), WeaponData.DisplayName));
-	}
-	RefreshOffers();
+	CloseAndReturnToGameplay();
 	return FReply::Handled();
 }
 
 FReply UT66WeaponAltarOverlayWidget::OnBack()
 {
-	RemoveFromParent();
-	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
-	{
-		if (PC->IsGameplayLevel() && !PC->IsPaused())
-		{
-			PC->RestoreGameplayInputMode();
-		}
-	}
+	CloseAndReturnToGameplay();
 	return FReply::Handled();
 }

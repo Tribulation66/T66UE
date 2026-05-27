@@ -20,6 +20,7 @@ class T66_API UT66GoldMinerArcadeWidget : public UT66ArcadePopupWidget
 
 public:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext) override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 

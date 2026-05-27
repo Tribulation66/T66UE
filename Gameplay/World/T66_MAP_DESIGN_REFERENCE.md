@@ -1,6 +1,6 @@
 # T66 Master Map Design
 
-**Last updated:** 2026-04-12  
+**Last updated:** 2026-05-26
 **Scope:** Single-source handoff for the live tower-only Tribulation map runtime, stage-space flow, traversal structure, minimap behavior, miasma/blood pressure design, and the historical implementation plan that led to the tower layout.  
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/World/T66_LIGHTING_REFERENCE.md`  
 **Maintenance rule:** Update this file after every material map-layout, terrain-generation, stage-space, minimap, traversal-gate, floor-transition, miasma/blood-pressure, or preset-selection change.
@@ -49,20 +49,22 @@
   - scopes minimap/full-map display to the current floor with floor-local reveal memory and polygon floor bounds
   - removes the old boss beacon pillar-of-light from tower runs
   - no longer spawns teleporter-pad interactables in stage population
-  - allows compact casino/circus and quick-revive opportunities to roll per gameplay floor
+  - allows compact casino/vendor utility opportunities to roll on gameplay floors only; quick revive is archived and should not spawn
+  - can spawn a rare Backrooms entrance door on a tower wall when the run does not already own the Backrooms Quick Revive item; the Backrooms maze is spawned with the stage as a hidden pocket space, not loaded later
   - spawns exactly one saint on one gameplay floor per tower stage
+  - spawns exactly one difficulty totem on every gameplay floor using floor-specific `T66_Tower_DifficultyTotem_##` tags, independent of the randomized saint floor selection
   - guarantees tower chest/crate rules by floor instead of using the old global stage scatter for those two interactables:
     - `Start Level`: no chest, no crate
-    - gameplay `Levels 1-5`: `1-3` chests and `1-3` crates per floor
+    - gameplay floors: `1-3` chests and `1-3` crates per floor
     - `Boss Level`: no chest, no crate
   - now rejects cross-floor tower placement traces and retries tower floor placement more aggressively, so gameplay-floor chest/crate/casino/utility placement stays on the intended floor instead of bleeding through floor gaps to another level
   - snaps tower NPC/interactable spawns to an explicit requested floor and tags them with explicit tower-floor identity so floor-local placement and safety logic do not rely only on raw actor Z
   - re-snaps tower chest/crate/totem/wheel placements after rarity/configuration work so floor-local mesh swaps cannot pull those actors back onto the wrong floor
   - tower boss clears now spawn the next-stage gate at the dedicated tower boss exit location instead of trusting the exact boss death point
   - tower visuals are now stage-aware:
-    - `Stage 1`: dungeon floor/wall/roof materials, rock-only decorative props, no stray tree props
-    - `Stage 2`: forest ground/roof materials plus giant tree-wall replacements for both inner maze walls and the outer perimeter shell
-  - uses denser tower-only tree/rock scatter on gameplay floors while keeping the start floor clean
+    - `Stage 1`: dungeon floor/wall/roof materials and no runtime rock/tree scatter props
+    - `Stage 2`: forest ground/roof materials plus theme wall replacements for both inner maze walls and the outer perimeter shell
+  - old tower-only collidable rock/deco scatter on gameplay floors has been disabled; keep floor dressing out of the map/runtime terrain path unless a new generated-prop pass is explicitly approved
   - uses tower-only dungeon material instances for floor, wall, and roof surfaces instead of the inherited green/brown legacy terrain look
   - uses dedicated tower descent-hole trigger actors for floor-to-floor progression while keeping the existing boss-kill `StageGate` portal for actual stage-to-stage travel
   - replaces the legacy boss-threshold gate on tower with final-hole boss entry, so dropping from `Level 5` into `Boss Level` pauses normal wave spawning and starts boss flow
@@ -73,7 +75,7 @@
   - resets run-state and damage-log state on pause-menu restart so tower restarts follow the same reset path as the run-summary restart
   - no longer relies on stale static raw mesh pointers for tower prop decoration, fixing the packaged tower reload/restart crash that could happen while rebuilding the tower after a gameplay-level restart
 - The tower preset is still not complete:
-  - broader tower-specific NPC/vendor pacing beyond circus, quick revive, and saint is still open
+  - broader tower-specific casino/vendor/NPC pacing beyond saint is still open
 
 ## 2. Current Map Runtime Spine
 
@@ -167,7 +169,7 @@
 
 - `Source/T66/Gameplay/T66GameMode.cpp`
   - `SpawnGuaranteedStartAreaInteractables()`
-    - places fixed start-area interactables such as quick revive, fountain, chest, loot bag, and crate
+    - places fixed classic start-area interactables such as fountain, chest, loot bag, crate, vehicle, and arcade machine
   - `SpawnWorldInteractablesForStage()`
     - scatters world interactables across the stage, excluding reserved start/boss zones
   - `SpawnSupportVendorAtStartIfNeeded()`
@@ -180,6 +182,10 @@
   - current circus/casino spawns at most once per stage
   - current circus safe zone radius is large (`1100`)
   - current circus mesh is `/Game/World/Interactables/Casino/Casino.Casino`
+- Backrooms entrance doors are tower-wall interactables placed by the tower GameMode bootstrap. The spawned pocket uses `/Game/World/Backrooms/Textures/T_Backrooms_Wall`, `T_Backrooms_Floor`, and `T_Backrooms_Door`, with a closed entrance door behind the player and a separate exit door inside the maze.
+- Entering the Backrooms pauses stage pressure, timers, enemies, traps, projectiles, miasma, and save-and-return. The hero and Backrooms chaser remain active; inventory and weapon state are temporarily hidden and restored on exit or death resolution.
+- A successful Backrooms exit grants the reward-only `Item_BackroomsQuickRevive` item. Owning that item makes later Backrooms door rolls ineligible.
+- Non-shipping QA uses `T66.Backrooms.ForceSpawn 1` plus `-T66BackroomsAutoQA=Exit|Death|Consume`. `-T66BackroomsAutoQAScreenshot=<path>` is requested by `AT66GameMode` only after the entry interaction has made `bBackroomsChallengeActive` true, so the proof image captures the active hidden pocket rather than the pre-entry tower wall.
 - `SpawnTricksterAndCowardiceGate()`
   - places Trickster + cowardice gate before the boss area on non-boss stages
 - `SpawnIdolAltarForPlayer()` / `SpawnIdolAltarAtLocation(...)`
@@ -273,7 +279,7 @@
   - one altar
   - one descent hole
   - side-wall enemy spawn anchors
-  - optional small casino / vendor / quick revive opportunities
+  - optional small casino / vendor opportunities
 - `Level 5` should also own:
   - baby gate directly beside the boss-hole descent
 - `Boss Level` should own:
@@ -328,10 +334,10 @@
   - reuse the same texture/material family already used by the current main map
   - do not block the preset on new texture work
 - Props:
-  - reuse the existing trees and rocks already used by the current map/prop pipeline
-  - use them as sparse floor dressing, not as heavy clutter
+  - do not reuse old tree, dirt, or rock clutter from the legacy map/prop pipeline
+  - use only current approved generated visual props or a future explicitly reviewed generated-prop pass
 - Practical implication:
-  - the tower preset should be shippable with current tower terrain textures plus current tree/rock props
+  - the tower preset should be shippable with current tower terrain textures and latest approved generated visual props
   - no new environment-art dependency is required for the first playable version
 
 ## 5. Recommended Technical Approach
@@ -477,7 +483,7 @@
   - `4` gameplay floors
   - `1` boss floor
   - existing textures/materials only
-  - existing tree/rock props only
+  - current terrain/material assets only; no old tree, dirt, or rock clutter props
 
 ### Phase 2. Get tower geometry playable without full feature parity
 
@@ -544,7 +550,7 @@
   - only on the last gameplay floor, beside boss descent hole
 - Art source:
   - reuse current terrain textures/materials
-  - reuse current tree and rock props
+  - do not reuse old tree, dirt, or rock clutter props
 
 ## 9. Open Questions Still To Lock
 
@@ -552,7 +558,7 @@
 2. Does altar interaction immediately arm blood pressure, or should blood begin after a short grace delay on that floor?
 3. Should the timer remain frozen on `Start Level` and only begin once the player descends into `Level 1`, matching the current start-area philosophy?
 4. Should the casino be allowed on `Level 5`, or should that floor be reserved for baby-gate / boss-entry setup?
-5. Do we want quick revive to remain guaranteed only on the start floor, or become a chance on some gameplay floors after the prototype is stable?
+5. Quick revive is archived; no tower floor should spawn or grant it.
 6. Do we want one altar on every gameplay floor, or only on selected floors after pacing tests?
 
 ## 10. Bottom Line

@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66ChestInteractable.h"
+
 #include "Gameplay/T66ChestMimicEnemy.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Core/T66GameInstance.h"
@@ -20,6 +21,12 @@ AT66ChestInteractable::AT66ChestInteractable()
 	ApplyRarityVisuals();
 }
 
+void AT66ChestInteractable::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	CommitLockedChestRewardIfNeeded();
+	Super::EndPlay(EndPlayReason);
+}
+
 void AT66ChestInteractable::ApplyRarityVisuals()
 {
 	if (TryApplyImportedMesh()) return;
@@ -37,8 +44,6 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 	UWorld* World = GetWorld();
 	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI ? T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
-	UT66RngSubsystem* RngSub = T66GI ? T66GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
 	if (!RunState) return false;
 
 	if (bIsMimic)
@@ -57,6 +62,34 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 		bConsumed = true;
 		Destroy();
 		return true;
+	}
+
+	if (!LockChestReward(PC))
+	{
+		return false;
+	}
+
+	bConsumed = true;
+	RefreshInteractionPrompt();
+	PresentLockedChestReward();
+	return true;
+}
+
+bool AT66ChestInteractable::LockChestReward(APlayerController* PC)
+{
+	if (LockedReward.bLocked)
+	{
+		return true;
+	}
+
+	UWorld* World = GetWorld();
+	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI ? T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	UT66RngSubsystem* RngSub = T66GI ? T66GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+	if (!RunState)
+	{
+		return false;
 	}
 
 	const ET66Difficulty Difficulty = T66GI ? T66GI->SelectedDifficulty : ET66Difficulty::Easy;
@@ -90,20 +123,90 @@ bool AT66ChestInteractable::Interact(APlayerController* PC)
 		Gold = FMath::RandRange(MinGold, MaxGold);
 	}
 
-	RunState->AddGold(Gold);
-	RunState->RecordLuckQuantityRoll(FName(TEXT("ChestGold")), Gold, MinGold, MaxGold, DrawIndex, PreDrawSeed);
-	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC))
+	LockedReward.bLocked = true;
+	LockedReward.bCommitAttempted = false;
+	LockedReward.RewardRarity = RewardRarity;
+	LockedReward.Gold = Gold;
+	LockedReward.MinGold = MinGold;
+	LockedReward.MaxGold = MaxGold;
+	LockedReward.DrawIndex = DrawIndex;
+	LockedReward.PreDrawSeed = PreDrawSeed;
+	LockedReward.PlayerController = PC;
+	return true;
+}
+
+void AT66ChestInteractable::PresentLockedChestReward()
+{
+	if (!LockedReward.bLocked || bChestRewardPresentationStarted)
 	{
-		T66PC->StartChestRewardHUD(RewardRarity, Gold);
-	}
-	if (IsShowcaseReusable())
-	{
-		bConsumed = false;
-		RefreshInteractionPrompt();
-		return true;
+		return;
 	}
 
-	bConsumed = true;
+	bChestRewardPresentationStarted = true;
+	TWeakObjectPtr<AT66ChestInteractable> WeakThis(this);
+	AT66PlayerController* T66PC = Cast<AT66PlayerController>(LockedReward.PlayerController.Get());
+	const bool bPresentationStarted = T66PC
+		&& T66PC->StartChestRewardHUD(
+			LockedReward.RewardRarity,
+			LockedReward.Gold,
+			[WeakThis]()
+			{
+				if (AT66ChestInteractable* Self = WeakThis.Get())
+				{
+					Self->CommitLockedChestRewardIfNeeded();
+				}
+			},
+			[WeakThis]()
+			{
+				if (AT66ChestInteractable* Self = WeakThis.Get())
+				{
+					Self->FinishChestInteraction();
+				}
+			});
+
+	if (!bPresentationStarted)
+	{
+		CommitLockedChestRewardIfNeeded();
+		FinishChestInteraction();
+	}
+}
+
+void AT66ChestInteractable::CommitLockedChestRewardIfNeeded()
+{
+	if (!LockedReward.bLocked || LockedReward.bCommitAttempted)
+	{
+		return;
+	}
+
+	LockedReward.bCommitAttempted = true;
+	UWorld* World = GetWorld();
+	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	UT66RunStateSubsystem* RunState = T66GI ? T66GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!RunState)
+	{
+		return;
+	}
+
+	RunState->AddGold(LockedReward.Gold);
+	RunState->RecordLuckQuantityRoll(
+		FName(TEXT("ChestGold")),
+		LockedReward.Gold,
+		LockedReward.MinGold,
+		LockedReward.MaxGold,
+		LockedReward.DrawIndex,
+		LockedReward.PreDrawSeed);
+}
+
+void AT66ChestInteractable::FinishChestInteraction()
+{
+	if (IsShowcaseReusable())
+	{
+		LockedReward = FLockedChestReward{};
+		bConsumed = false;
+		bChestRewardPresentationStarted = false;
+		RefreshInteractionPrompt();
+		return;
+	}
+
 	Destroy();
-	return true;
 }

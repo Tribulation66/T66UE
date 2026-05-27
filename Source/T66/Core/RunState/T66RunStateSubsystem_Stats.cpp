@@ -87,21 +87,16 @@ int32 UT66RunStateSubsystem::GetPrecisePrimaryStatTenths(const ET66HeroStatType 
 	}
 
 	TotalTenths += GetItemPrimaryStatTenths(StatType);
-	TotalTenths += GetPermanentPrimaryBuffTenths(StatType);
-	TotalTenths += GetTemporaryPrimaryStatAmplifierTenths(StatType);
 	return ClampHeroStatTenths(TotalTenths);
 }
 
 
 int32 UT66RunStateSubsystem::GetSecondaryStatBonusTenths(const ET66SecondaryStatType StatType) const
 {
-	const int32 PersistentTenths = PersistentSecondaryStatBonusTenths.Contains(StatType)
-		? FMath::Max(0, PersistentSecondaryStatBonusTenths.FindRef(StatType))
-		: 0;
 	const int32 ItemTenths = ItemSecondaryStatBonusTenths.Contains(StatType)
 		? FMath::Max(0, ItemSecondaryStatBonusTenths.FindRef(StatType))
 		: 0;
-	return FMath::Max(0, PersistentTenths + ItemTenths);
+	return FMath::Max(0, ItemTenths);
 }
 
 
@@ -360,56 +355,14 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 void UT66RunStateSubsystem::RefreshPermanentBuffBonusesFromProfile()
 {
 	PermanentBuffStatBonuses = FT66HeroStatBonuses{};
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
-		{
-			PermanentBuffStatBonuses = Buffs->GetPermanentBuffStatBonuses();
-		}
-	}
 }
 
 
 void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 {
-	UT66RngSubsystem* RngSub = nullptr;
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		RngSub = GI->GetSubsystem<UT66RngSubsystem>();
-		if (RngSub)
-		{
-			// Luck influences how often we roll the high end, but the min/max ranges themselves stay fixed.
-			RngSub->UpdateLuckStat(GetEffectiveLuckBiasStat());
-		}
-	}
-
-	auto ApplyPrimaryGain = [&](const ET66HeroStatType StatType, int32& TargetTenths, const FT66HeroStatGainRange& Range, const FName Category)
-	{
-		const int32 RolledGainTenths = RollHeroPrimaryGainTenthsBiased(Range, Category);
-		if (RolledGainTenths <= 0)
-		{
-			return;
-		}
-
-		const int32 PreviousTenths = TargetTenths;
-		TargetTenths = ClampHeroStatTenths(TargetTenths + RolledGainTenths);
-		const int32 AppliedGainTenths = FMath::Max(0, TargetTenths - PreviousTenths);
-		if (AppliedGainTenths > 0)
-		{
-			ApplyPrimaryGainToSecondaryBonuses(StatType, AppliedGainTenths, PersistentSecondaryStatBonusTenths, HeroStatRng.GetCurrentSeed());
-		}
-	};
-
-	// Foundational stats roll within the hero's authored per-level gain ranges.
-	ApplyPrimaryGain(ET66HeroStatType::Damage, HeroPreciseStats.DamageTenths, HeroPerLevelGains.Damage, FName(TEXT("LevelUp_DamageGain")));
-	ApplyPrimaryGain(ET66HeroStatType::AttackSpeed, HeroPreciseStats.AttackSpeedTenths, HeroPerLevelGains.AttackSpeed, FName(TEXT("LevelUp_AttackSpeedGain")));
-	ApplyPrimaryGain(ET66HeroStatType::AttackScale, HeroPreciseStats.AttackScaleTenths, HeroPerLevelGains.AttackScale, FName(TEXT("LevelUp_AttackScaleGain")));
-	ApplyPrimaryGain(ET66HeroStatType::Accuracy, HeroPreciseStats.AccuracyTenths, HeroPerLevelGains.Accuracy, FName(TEXT("LevelUp_AccuracyGain")));
-	ApplyPrimaryGain(ET66HeroStatType::Armor, HeroPreciseStats.ArmorTenths, HeroPerLevelGains.Armor, FName(TEXT("LevelUp_ArmorGain")));
-	ApplyPrimaryGain(ET66HeroStatType::Evasion, HeroPreciseStats.EvasionTenths, HeroPerLevelGains.Evasion, FName(TEXT("LevelUp_EvasionGain")));
-	ApplyPrimaryGain(ET66HeroStatType::Luck, HeroPreciseStats.LuckTenths, HeroPerLevelGains.Luck, FName(TEXT("LevelUp_LuckGain")));
-	ApplyPrimaryGain(ET66HeroStatType::Speed, HeroPreciseStats.SpeedTenths, HeroPerLevelGains.Speed, FName(TEXT("LevelUp_SpeedGain")));
-	SyncLegacyHeroStatsFromPrecise();
+	HeroLevel = DefaultHeroLevel;
+	HeroXP = 0;
+	XPToNextLevel = 0;
 }
 
 
@@ -429,14 +382,9 @@ void UT66RunStateSubsystem::InitializeHeroStatsForNewRun()
 	InitializeHeroStatTuningForSelectedHero();
 	ClearPersistentSecondaryStatBonuses();
 
-	// Apply level-up gains for any non-1 starting level (difficulty boosts start at +10 levels per step).
-	const int32 TargetLevel = FMath::Clamp(HeroLevel, DefaultHeroLevel, MaxHeroLevel);
-	HeroLevel = TargetLevel;
-	for (int32 L = 2; L <= TargetLevel; ++L)
-	{
-		ApplyOneHeroLevelUp();
-	}
-
+	HeroLevel = DefaultHeroLevel;
+	HeroXP = 0;
+	XPToNextLevel = 0;
 	SyncLegacyHeroStatsFromPrecise();
 }
 
@@ -485,25 +433,13 @@ int32 UT66RunStateSubsystem::GetEvasionStat() const
 
 int32 UT66RunStateSubsystem::GetLuckStat() const
 {
-	return ClampHeroStatValue(TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Luck)) + ActiveRunModifiers.HeroLuckFlat);
+	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Luck));
 }
 
 
 float UT66RunStateSubsystem::GetSingleUseLuckModifierPercent() const
 {
-	float ModifierPercent = 0.f;
-	for (const ET66SecondaryStatType StatType : T66_GetLuckSecondaryTypes())
-	{
-		const float* SingleUseMult = SingleUseSecondaryMultipliers.Find(StatType);
-		if (!SingleUseMult || *SingleUseMult <= 1.f)
-		{
-			continue;
-		}
-
-		ModifierPercent += (*SingleUseMult - 1.f) * 100.f;
-	}
-
-	return FMath::Max(0.f, ModifierPercent);
+	return 0.f;
 }
 
 
@@ -581,10 +517,6 @@ float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatTyp
 	if (const float* Mult = SecondaryMultipliers.Find(StatType); Mult && *Mult > 0.f)
 	{
 		M *= *Mult;
-	}
-	if (const float* SingleUseMult = SingleUseSecondaryMultipliers.Find(StatType); SingleUseMult && *SingleUseMult > 0.f)
-	{
-		M *= *SingleUseMult;
 	}
 	const float DamageMult = GetHeroDamageMultiplier();
 	const float AttackSpeedMult = GetHeroAttackSpeedMultiplier();
@@ -800,7 +732,7 @@ float UT66RunStateSubsystem::GetHeroMoveSpeedMultiplier() const
 float UT66RunStateSubsystem::GetHeroDamageMultiplier() const
 {
 	const float D = TenthsToFloatStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Damage));
-	return (1.f + FMath::Max(0.f, D - 1.f) * 0.015f) * FMath::Max(0.1f, ActiveRunModifiers.HeroDamageMultiplier);
+	return 1.f + FMath::Max(0.f, D - 1.f) * 0.015f;
 }
 
 
@@ -852,57 +784,8 @@ float UT66RunStateSubsystem::GetAccuracyChance01() const
 
 void UT66RunStateSubsystem::AddHeroXP(int32 Amount)
 {
-	if (Amount <= 0) return;
-	if (HeroLevel <= 0) HeroLevel = DefaultHeroLevel;
-	if (XPToNextLevel <= 0) XPToNextLevel = DefaultXPToLevel;
-	HeroLevel = FMath::Clamp(HeroLevel, DefaultHeroLevel, MaxHeroLevel);
-	if (HeroLevel >= MaxHeroLevel)
-	{
-		HeroXP = 0;
-		HeroProgressChanged.Broadcast();
-		return;
-	}
-
-	HeroXP = FMath::Clamp(HeroXP + Amount, 0, 1000000000);
-	bool bLeveled = false;
-	int32 LevelsGained = 0;
-	while (HeroXP >= XPToNextLevel && XPToNextLevel > 0 && HeroLevel < MaxHeroLevel)
-	{
-		HeroXP -= XPToNextLevel;
-		HeroLevel = FMath::Clamp(HeroLevel + 1, DefaultHeroLevel, MaxHeroLevel);
-		ApplyOneHeroLevelUp();
-		bLeveled = true;
-		++LevelsGained;
-	}
-	if (HeroLevel >= MaxHeroLevel)
-	{
-		HeroXP = 0;
-	}
-	if (bLeveled)
-	{
-		HealToFull();
-	}
-	HeroProgressChanged.Broadcast();
-	if (bLeveled)
-	{
-		LogAdded.Broadcast();
-		UGameInstance* GI = GetGameInstance();
-		UWorld* World = GI ? GI->GetWorld() : nullptr;
-		APawn* HeroPawn = World && World->GetFirstPlayerController() ? World->GetFirstPlayerController()->GetPawn() : nullptr;
-		if (HeroPawn && World)
-		{
-			T66SpawnLevelUpBifrost(World, HeroPawn->GetActorLocation());
-			T66KillEnemiesNearPoint(World, HeroPawn->GetActorLocation(), 375.f);
-		}
-		if (HeroPawn && GI)
-		{
-			if (UT66FloatingCombatTextSubsystem* FCT = GI->GetSubsystem<UT66FloatingCombatTextSubsystem>())
-			{
-				for (int32 LevelUpIndex = 0; LevelUpIndex < FMath::Max(1, LevelsGained); ++LevelUpIndex)
-				{
-					FCT->ShowStatusEvent(HeroPawn, UT66FloatingCombatTextSubsystem::EventType_LevelUp);
-				}
-			}
-		}
-	}
+	static_cast<void>(Amount);
+	HeroLevel = DefaultHeroLevel;
+	HeroXP = 0;
+	XPToNextLevel = 0;
 }

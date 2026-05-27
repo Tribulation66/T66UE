@@ -9,10 +9,10 @@
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/T66CasinoOverlayShared.h"
-#include "UI/T66GamblerOverlayWidget.h"
+#include "UI/T66CasinoGamblerTabWidget.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
-#include "UI/T66CasinoShopTabWidget.h"
+#include "UI/T66CasinoVendorTabWidget.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "Input/DragAndDrop.h"
 #include "Styling/CoreStyle.h"
@@ -100,14 +100,15 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 
 	SharedOverlay::EnsureShellTabWidgets(
 		this,
-		GamblerTabWidget,
-		ShopTabWidget,
-		[this](UT66GamblerOverlayWidget* Widget)
+		CasinoGamblerTabWidget,
+		VendorTabWidget,
+		[this](UT66CasinoGamblerTabWidget* Widget)
 		{
 			Widget->SetEmbeddedInCasinoShell(true);
-			Widget->SetWinGoldAmount(PendingGamblingWinGoldAmount);
+			Widget->SetGamblingOnlyKiosk(OverlayMode == ECasinoOverlayMode::GamblerOnly);
+			Widget->SetWinGoldAmount(PendingCasinoGamblerWinGoldAmount);
 		},
-		[this](UT66CasinoShopTabWidget* Widget)
+		[this](UT66CasinoVendorTabWidget* Widget)
 		{
 			Widget->SetEmbeddedInCasinoShell(true);
 			Widget->SetShopAllowsSteal(bShopAllowsSteal);
@@ -121,15 +122,21 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 		RunState->StageTimerChanged.AddDynamic(this, &UT66CasinoOverlayWidget::HandleStageTimerChanged);
 	}
 
-	const FText GamblingTabText = NSLOCTEXT("T66.Casino", "TabGambling", "GAMBLING");
+	const FText GamblerTabText = NSLOCTEXT("T66.Casino", "TabGambler", "GAMBLER");
 	const FText ShopTabText = NSLOCTEXT("T66.Casino", "TabVendor", "VENDOR");
 	const FText CloseText = NSLOCTEXT("T66.Casino", "Close", "CLOSE");
-	const FText StatusText = ActiveTab == ECasinoTab::Gambling
-		? NSLOCTEXT("T66.Casino", "GamblerStatus", "WELCOME TO THE GAMBLER. FORTUNE FAVORS THE BOLD. CHOOSE YOUR GAME.")
-		: NSLOCTEXT("T66.Casino", "VendorStatus", "VENDOR IS OPEN. BROWSE GOODS, BUY UPGRADES, OR MANAGE DEBT.");
+	const bool bGamblerOnly = OverlayMode == ECasinoOverlayMode::GamblerOnly;
+	const bool bVendorOnly = OverlayMode == ECasinoOverlayMode::VendorOnly;
+	const FText StatusText = bGamblerOnly
+		? NSLOCTEXT("T66.Casino", "GamblerOnlyStatus", "CHOOSE A GAME. THIS CASINO CAN BE PLAYED ONCE.")
+		: ActiveTab == ECasinoTab::Gambling
+			? NSLOCTEXT("T66.Casino", "GamblerStatus", "WELCOME TO THE GAMBLER. FORTUNE FAVORS THE BOLD. CHOOSE YOUR GAME.")
+			: bVendorOnly
+				? NSLOCTEXT("T66.Casino", "VendorOnlyStatus", "VENDOR IS OPEN. BROWSE GOODS OR STEAL AT YOUR OWN RISK.")
+				: NSLOCTEXT("T66.Casino", "VendorStatus", "VENDOR IS OPEN. BROWSE GOODS, BUY UPGRADES, OR MANAGE DEBT.");
 
-	TSharedRef<SWidget> ShopPage = ShopTabWidget ? ShopTabWidget->TakeWidget() : SNullWidget::NullWidget;
-	TSharedRef<SWidget> GamblingPage = GamblerTabWidget ? GamblerTabWidget->TakeWidget() : SNullWidget::NullWidget;
+	TSharedRef<SWidget> ShopPage = VendorTabWidget ? VendorTabWidget->TakeWidget() : SNullWidget::NullWidget;
+	TSharedRef<SWidget> GamblerPage = CasinoGamblerTabWidget ? CasinoGamblerTabWidget->TakeWidget() : SNullWidget::NullWidget;
 
 	TSharedRef<SConstraintCanvas> RootCanvas = SNew(SConstraintCanvas);
 	AddVendorCanvasSlot(
@@ -159,7 +166,7 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 		]
 		+ SWidgetSwitcher::Slot()
 		[
-			GamblingPage
+			GamblerPage
 		]);
 
 	AddVendorCanvasSlot(
@@ -227,23 +234,31 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::RebuildWidget()
 		20.f,
 		518.f,
 		79.f,
-		MakeVendorHeaderButton(
-			ActiveTab == ECasinoTab::Shop ? ET66FlatState::Selected : ET66FlatState::Default,
-			ShopTabText,
-			FOnClicked::CreateLambda([this]() { OpenShopTab(); return FReply::Handled(); }),
-			FName(TEXT("CasinoOverlay.VendorTabButton"))));
+		SNew(SBox)
+		.Visibility(bGamblerOnly ? EVisibility::Collapsed : EVisibility::Visible)
+		[
+			MakeVendorHeaderButton(
+				ActiveTab == ECasinoTab::Shop ? ET66FlatState::Selected : ET66FlatState::Default,
+				ShopTabText,
+				FOnClicked::CreateLambda([this]() { OpenVendorTab(); return FReply::Handled(); }),
+				FName(TEXT("CasinoOverlay.VendorTabButton")))
+		]);
 
 	AddVendorCanvasSlot(
 		RootCanvas,
-		912.f,
+		bGamblerOnly ? 702.f : 912.f,
 		20.f,
-		477.f,
+		bGamblerOnly ? 518.f : 477.f,
 		79.f,
-		MakeVendorHeaderButton(
-			ActiveTab == ECasinoTab::Gambling ? ET66FlatState::Selected : ET66FlatState::Default,
-			GamblingTabText,
-			FOnClicked::CreateLambda([this]() { OpenGamblingTab(); return FReply::Handled(); }),
-			FName(TEXT("CasinoOverlay.GamblingTabButton"))));
+		SNew(SBox)
+		.Visibility(bVendorOnly ? EVisibility::Collapsed : EVisibility::Visible)
+		[
+			MakeVendorHeaderButton(
+				ActiveTab == ECasinoTab::Gambling ? ET66FlatState::Selected : ET66FlatState::Default,
+				GamblerTabText,
+				FOnClicked::CreateLambda([this]() { OpenGamblerTab(); return FReply::Handled(); }),
+				FName(TEXT("CasinoOverlay.GamblingTabButton")))
+		]);
 
 	AddVendorCanvasSlot(
 		RootCanvas,
@@ -295,10 +310,53 @@ void UT66CasinoOverlayWidget::NativeDestruct()
 		RunState->StageTimerChanged.RemoveDynamic(this, &UT66CasinoOverlayWidget::HandleStageTimerChanged);
 	}
 
-	SharedOverlay::RemoveFromParentAndReset(ShopTabWidget);
-	SharedOverlay::RemoveFromParentAndReset(GamblerTabWidget);
+	SharedOverlay::RemoveFromParentAndReset(VendorTabWidget);
+	SharedOverlay::RemoveFromParentAndReset(CasinoGamblerTabWidget);
+	ReleaseCachedSlateResources();
 
 	Super::NativeDestruct();
+}
+
+void UT66CasinoOverlayWidget::ReleaseSlateResources(bool bReleaseChildren)
+{
+	ReleaseCachedSlateResources();
+	Super::ReleaseSlateResources(bReleaseChildren);
+}
+
+void UT66CasinoOverlayWidget::ReleaseCachedSlateResources()
+{
+	TabSwitcher.Reset();
+	HeaderTimerText.Reset();
+	HeaderScoreText.Reset();
+
+	AlchemyNetWorthText.Reset();
+	AlchemyGoldText.Reset();
+	AlchemyDebtText.Reset();
+	AlchemyAngerText.Reset();
+	AlchemyStatusText.Reset();
+	AlchemyTargetText.Reset();
+	AlchemyTargetDetailText.Reset();
+	AlchemySacrificeText.Reset();
+	AlchemySacrificeDetailText.Reset();
+	AlchemyEmptyStateText.Reset();
+	AlchemyResultText.Reset();
+	AlchemyCardsRowContainer.Reset();
+	AlchemyUpgradeButton.Reset();
+	AlchemyTargetBorder.Reset();
+	AlchemySacrificeBorder.Reset();
+	AlchemyTargetIconImage.Reset();
+	AlchemySacrificeIconImage.Reset();
+	AlchemyTargetIconBrush.Reset();
+	AlchemySacrificeIconBrush.Reset();
+
+	AlchemyInventorySlotBorders.Reset();
+	AlchemyInventorySlotCountTexts.Reset();
+	AlchemyInventorySlotTexts.Reset();
+	AlchemyInventorySlotImages.Reset();
+	AlchemyInventorySlotBrushes.Reset();
+
+	AlchemyTargetInventoryIndex = INDEX_NONE;
+	AlchemySacrificeInventoryIndex = INDEX_NONE;
 }
 
 void UT66CasinoOverlayWidget::CloseOverlay()
@@ -306,18 +364,30 @@ void UT66CasinoOverlayWidget::CloseOverlay()
 	SharedOverlay::CloseOverlay(this);
 }
 
-void UT66CasinoOverlayWidget::OpenGamblingTab()
+void UT66CasinoOverlayWidget::OpenGamblerTab()
 {
-	SharedOverlay::OpenGamblingTab(GamblerTabWidget, [this]() { SetActiveTab(ECasinoTab::Gambling); });
+	if (OverlayMode == ECasinoOverlayMode::VendorOnly)
+	{
+		OpenVendorTab();
+		return;
+	}
+
+	SharedOverlay::OpenGamblerTab(CasinoGamblerTabWidget, [this]() { SetActiveTab(ECasinoTab::Gambling); });
 	if (IsInViewport())
 	{
 		FT66FlatStyle::DeferRebuild(this, 100);
 	}
 }
 
-void UT66CasinoOverlayWidget::OpenShopTab()
+void UT66CasinoOverlayWidget::OpenVendorTab()
 {
-	SharedOverlay::OpenShopTab(ShopTabWidget, [this]() { SetActiveTab(ECasinoTab::Shop); });
+	if (OverlayMode == ECasinoOverlayMode::GamblerOnly)
+	{
+		OpenGamblerTab();
+		return;
+	}
+
+	SharedOverlay::OpenVendorTab(VendorTabWidget, [this]() { SetActiveTab(ECasinoTab::Shop); });
 	if (IsInViewport())
 	{
 		FT66FlatStyle::DeferRebuild(this, 100);
@@ -326,24 +396,43 @@ void UT66CasinoOverlayWidget::OpenShopTab()
 
 void UT66CasinoOverlayWidget::OpenAlchemyTab()
 {
-	OpenShopTab();
+	OpenVendorTab();
 }
 
-void UT66CasinoOverlayWidget::SetGamblingWinGoldAmount(int32 InAmount)
+void UT66CasinoOverlayWidget::SetOverlayMode(const ECasinoOverlayMode InMode)
 {
-	PendingGamblingWinGoldAmount = FMath::Max(0, InAmount);
-	if (GamblerTabWidget)
+	OverlayMode = InMode;
+
+	if (CasinoGamblerTabWidget)
 	{
-		GamblerTabWidget->SetWinGoldAmount(PendingGamblingWinGoldAmount);
+		CasinoGamblerTabWidget->SetGamblingOnlyKiosk(OverlayMode == ECasinoOverlayMode::GamblerOnly);
+	}
+
+	if (OverlayMode == ECasinoOverlayMode::GamblerOnly && ActiveTab != ECasinoTab::Gambling)
+	{
+		SetActiveTab(ECasinoTab::Gambling);
+	}
+	else if (OverlayMode == ECasinoOverlayMode::VendorOnly && ActiveTab != ECasinoTab::Shop)
+	{
+		SetActiveTab(ECasinoTab::Shop);
+	}
+}
+
+void UT66CasinoOverlayWidget::SetCasinoGamblerWinGoldAmount(int32 InAmount)
+{
+	PendingCasinoGamblerWinGoldAmount = FMath::Max(0, InAmount);
+	if (CasinoGamblerTabWidget)
+	{
+		CasinoGamblerTabWidget->SetWinGoldAmount(PendingCasinoGamblerWinGoldAmount);
 	}
 }
 
 void UT66CasinoOverlayWidget::SetShopAllowsSteal(bool bInAllowsSteal)
 {
 	bShopAllowsSteal = bInAllowsSteal;
-	if (ShopTabWidget)
+	if (VendorTabWidget)
 	{
-		ShopTabWidget->SetShopAllowsSteal(bShopAllowsSteal);
+		VendorTabWidget->SetShopAllowsSteal(bShopAllowsSteal);
 	}
 }
 
@@ -569,6 +658,15 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 void UT66CasinoOverlayWidget::SetActiveTab(const ECasinoTab NewTab)
 {
 	ActiveTab = NewTab;
+	if (OverlayMode == ECasinoOverlayMode::GamblerOnly)
+	{
+		ActiveTab = ECasinoTab::Gambling;
+	}
+	else if (OverlayMode == ECasinoOverlayMode::VendorOnly)
+	{
+		ActiveTab = ECasinoTab::Shop;
+	}
+
 	if (TabSwitcher.IsValid())
 	{
 		TabSwitcher->SetActiveWidgetIndex(static_cast<int32>(ActiveTab));

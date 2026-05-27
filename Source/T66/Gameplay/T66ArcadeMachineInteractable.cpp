@@ -5,12 +5,13 @@
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Engine/StaticMesh.h"
-#include "Gameplay/T66ArcadeGameCatalog.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "UI/WidgetGames/T66WidgetGameRegistry.h"
 #include "UObject/SoftObjectPath.h"
 
 namespace
@@ -33,9 +34,14 @@ AT66ArcadeMachineInteractable::AT66ArcadeMachineInteractable()
 	ArcadeData.InteractionVerb = NSLOCTEXT("T66.Arcade", "MachineInteractVerb", "play arcade");
 	ArcadeData.ArcadeClass = ET66ArcadeInteractableClass::PopupArcade;
 	ArcadeData.ArcadeGameType = ET66ArcadeGameType::Random;
-	for (const FT66ArcadeGameCatalogEntry& Entry : T66ArcadeGameCatalog::GetPlayableEntries())
+	TArray<const FT66WidgetGameDescriptor*> ArcadeDescriptors;
+	T66WidgetGames::Registry::GetArcadeDescriptors(ArcadeDescriptors);
+	for (const FT66WidgetGameDescriptor* Descriptor : ArcadeDescriptors)
 	{
-		ArcadeData.RandomGameTypes.Add(Entry.GameType);
+		if (Descriptor)
+		{
+			ArcadeData.RandomGameTypes.Add(Descriptor->ArcadeGameType);
+		}
 	}
 	ArcadeData.bConsumeOnSuccess = true;
 	ArcadeData.bConsumeOnFailure = true;
@@ -65,6 +71,16 @@ void AT66ArcadeMachineInteractable::BeginPlay()
 {
 	Super::BeginPlay();
 	CreateProtectionAuraComponents();
+}
+
+float AT66ArcadeMachineInteractable::GetProtectionAuraRadius() const
+{
+	if (T66DeprecatedFeatures::AreArcadeInteractablesDisabled())
+	{
+		return 0.f;
+	}
+
+	return bProtectionAuraEnabled && !bConsumed ? ProtectionAuraRadius : 0.f;
 }
 
 void AT66ArcadeMachineInteractable::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -98,7 +114,10 @@ void AT66ArcadeMachineInteractable::EndPlay(const EEndPlayReason::Type EndPlayRe
 
 void AT66ArcadeMachineInteractable::CreateProtectionAuraComponents()
 {
-	if (!bProtectionAuraEnabled || ProtectionAuraRadius <= KINDA_SMALL_NUMBER || !GetRootComponent())
+	if (T66DeprecatedFeatures::AreArcadeInteractablesDisabled()
+		|| !bProtectionAuraEnabled
+		|| ProtectionAuraRadius <= KINDA_SMALL_NUMBER
+		|| !GetRootComponent())
 	{
 		return;
 	}
@@ -209,6 +228,11 @@ void AT66ArcadeMachineInteractable::HandleProtectionAuraBeginOverlap(
 
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(OtherActor))
 	{
+		if (T66DeprecatedFeatures::AreArcadeInteractablesDisabled())
+		{
+			return;
+		}
+
 		Hero->AddSafeZoneOverlap(+1);
 	}
 }
@@ -225,6 +249,11 @@ void AT66ArcadeMachineInteractable::HandleProtectionAuraEndOverlap(
 
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(OtherActor))
 	{
+		if (T66DeprecatedFeatures::AreArcadeInteractablesDisabled())
+		{
+			return;
+		}
+
 		Hero->AddSafeZoneOverlap(-1);
 	}
 }

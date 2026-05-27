@@ -148,6 +148,10 @@ bool UT66UIManager::SwitchToScreen(ET66ScreenType ScreenType, const bool bAddCur
 	if (!CanShowScreenForReleaseVariant(ScreenType))
 	{
 		UE_LOG(LogT66UIManager, Log, TEXT("Blocked screen %s for current release variant"), *T66ScreenTypeToDebugName(ScreenType));
+		if (!CurrentScreen && ScreenType != ET66ScreenType::MainMenu)
+		{
+			return SwitchToScreen(ET66ScreenType::MainMenu, false);
+		}
 		return false;
 	}
 

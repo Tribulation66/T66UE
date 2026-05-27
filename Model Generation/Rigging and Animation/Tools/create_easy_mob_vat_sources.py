@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import sys
+import argparse
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -18,7 +21,10 @@ from mathutils import Vector
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
-RUN_ROOT = PROJECT_ROOT / "Model Generation" / "Rigging and Animation" / "Runs" / "Easy_Mob_VAT_20260514"
+RUN_ROOT = Path(os.environ.get(
+    "T66_EASY_MOB_VAT_RUN_ROOT",
+    PROJECT_ROOT / "Model Generation" / "Rigging and Animation" / "Runs" / "Easy_Mob_VAT_20260514",
+))
 EXPORT_ROOT = RUN_ROOT / "Exports"
 PREVIEW_ROOT = RUN_ROOT / "PreviewFrames"
 BLEND_PATH = RUN_ROOT / "Easy_Mob_VAT_Source.blend"
@@ -200,6 +206,29 @@ def create_armature(spec: MobSpec, mesh: bpy.types.Object) -> bpy.types.Object:
     add_bone("wing_left", Vector((center.x - sx * 0.05, center.y, min_v.z + height * 0.55)), Vector((min_v.x - sx * 0.35, center.y, min_v.z + height * 0.62)))
     add_bone("wing_right", Vector((center.x + sx * 0.05, center.y, min_v.z + height * 0.55)), Vector((max_v.x + sx * 0.35, center.y, min_v.z + height * 0.62)))
 
+    if spec.profile == "walker":
+        x_left = center.x - sx * 0.20
+        x_right = center.x + sx * 0.20
+        z_foot = min_v.z + height * 0.03
+        z_ankle = min_v.z + height * 0.13
+        z_knee = min_v.z + height * 0.34
+        z_hip = min_v.z + height * 0.54
+        z_chest = min_v.z + height * 0.76
+        z_head = min_v.z + height * 0.95
+        foot_forward = sy * 0.32
+
+        add_bone("pelvis", Vector((center.x, center.y, z_hip - height * 0.08)), Vector((center.x, center.y, z_hip + height * 0.05)))
+        add_bone("spine", Vector((center.x, center.y, z_hip + height * 0.02)), Vector((center.x, center.y, z_chest)), "pelvis")
+        add_bone("head", Vector((center.x, center.y, z_chest)), Vector((center.x, center.y, z_head)), "spine")
+        add_bone("left_thigh", Vector((x_left, center.y, z_hip)), Vector((x_left, center.y, z_knee)), "pelvis")
+        add_bone("left_shin", Vector((x_left, center.y, z_knee)), Vector((x_left, center.y, z_ankle)), "left_thigh")
+        add_bone("left_foot", Vector((x_left, center.y, z_ankle)), Vector((x_left, center.y + foot_forward, z_foot)), "left_shin")
+        add_bone("right_thigh", Vector((x_right, center.y, z_hip)), Vector((x_right, center.y, z_knee)), "pelvis")
+        add_bone("right_shin", Vector((x_right, center.y, z_knee)), Vector((x_right, center.y, z_ankle)), "right_thigh")
+        add_bone("right_foot", Vector((x_right, center.y, z_ankle)), Vector((x_right, center.y + foot_forward, z_foot)), "right_shin")
+        add_bone("left_arm_rigid", Vector((center.x - sx * 0.28, center.y, z_chest)), Vector((center.x - sx * 0.42, center.y, z_hip)), "spine")
+        add_bone("right_arm_rigid", Vector((center.x + sx * 0.28, center.y, z_chest)), Vector((center.x + sx * 0.42, center.y, z_hip)), "spine")
+
     bpy.ops.object.mode_set(mode="OBJECT")
     mesh.parent = arm_obj
     modifier = mesh.modifiers.new("EasyMobVAT_Armature", "ARMATURE")
@@ -225,6 +254,13 @@ def assign_weights(spec: MobSpec, mesh: bpy.types.Object) -> dict[str, int]:
         "body", "top", "lower", "front", "back", "left", "right", "left_low", "right_low",
         "left_front", "right_front", "left_back", "right_back", "wing_left", "wing_right",
     ]
+    if spec.profile == "walker":
+        bone_names.extend([
+            "pelvis", "spine", "head",
+            "left_thigh", "left_shin", "left_foot",
+            "right_thigh", "right_shin", "right_foot",
+            "left_arm_rigid", "right_arm_rigid",
+        ])
     groups = {name: mesh.vertex_groups.new(name=name) for name in bone_names}
     counts = {name: 0 for name in bone_names}
 
@@ -233,6 +269,34 @@ def assign_weights(spec: MobSpec, mesh: bpy.types.Object) -> dict[str, int]:
         nx = (world.x - center.x) / half_x
         ny = (world.y - center.y) / half_y
         nz = (world.z - min_v.z) / height
+
+        if spec.profile == "walker":
+            if nz > 0.79:
+                group_name = "head"
+            elif abs(nx) > 0.62 and 0.28 < nz < 0.80:
+                group_name = "left_arm_rigid" if nx < 0.0 else "right_arm_rigid"
+            elif nz > 0.55:
+                group_name = "spine"
+            elif nz > 0.44:
+                group_name = "pelvis"
+            elif nx < 0.0:
+                if nz > 0.29:
+                    group_name = "left_thigh"
+                elif nz > 0.11:
+                    group_name = "left_shin"
+                else:
+                    group_name = "left_foot"
+            else:
+                if nz > 0.29:
+                    group_name = "right_thigh"
+                elif nz > 0.11:
+                    group_name = "right_shin"
+                else:
+                    group_name = "right_foot"
+            groups[group_name].add([vertex.index], 1.0, "REPLACE")
+            counts[group_name] += 1
+            continue
+
         weights: dict[str, float] = {"body": 0.34}
 
         lower = 1.0 - smoothstep(nz, 0.20, 0.55)
@@ -272,7 +336,12 @@ def assign_weights(spec: MobSpec, mesh: bpy.types.Object) -> dict[str, int]:
             weights["left_low"] *= 1.35
             weights["right_low"] *= 1.35
             weights["lower"] *= 0.52
-        elif spec.profile in {"walker", "caster", "conjurer"}:
+        elif spec.profile == "walker":
+            weights["left_low"] *= 2.25
+            weights["right_low"] *= 2.25
+            weights["lower"] *= 0.34
+            weights["top"] *= 1.08
+        elif spec.profile in {"caster", "conjurer"}:
             weights["left_low"] *= 1.10
             weights["right_low"] *= 1.10
             weights["top"] *= 1.05
@@ -406,6 +475,103 @@ def create_action(spec: MobSpec, armature: bpy.types.Object, clip: str, length: 
                 scale=(1.0 + 0.04 * landing, 1.0 + 0.08 * landing, 1.0 - 0.05 * contact),
             )
             key_bone(armature, frame, "lower", scale=(1.0 + 0.20 * contact, 1.0 + 0.16 * contact, 1.0 - 0.22 * contact))
+
+            for pbone in armature.pose.bones:
+                if pbone.name == "root":
+                    continue
+                pbone.keyframe_insert("location", frame=frame)
+                pbone.keyframe_insert("rotation_euler", frame=frame)
+                pbone.keyframe_insert("scale", frame=frame)
+
+        for fcurve in iter_action_fcurves(action):
+            for key in fcurve.keyframe_points:
+                key.interpolation = "CONSTANT"
+        return action
+
+    if spec.profile == "walker" and clip == "Move":
+        stride_frames = float(length)
+        for frame in range(1, length + 1):
+            set_pose_defaults(armature)
+            stride_u = ((frame - 1) % stride_frames) / stride_frames
+            phase = math.tau * stride_u
+            side = math.sin(phase)
+            counter = math.cos(phase)
+            left_forward = max(0.0, side)
+            right_forward = max(0.0, -side)
+            left_back = max(0.0, -side)
+            right_back = max(0.0, side)
+            left_lift = max(0.0, math.sin(phase))
+            right_lift = max(0.0, -math.sin(phase))
+            weight_shift = math.sin(phase + math.pi * 0.5)
+
+            key_bone(
+                armature,
+                frame,
+                "pelvis",
+                loc=(0.010 * side, 0.0, 0.006 * abs(counter)),
+                rot=(0.020 * counter, 0.0, 0.045 * weight_shift),
+            )
+            key_bone(
+                armature,
+                frame,
+                "spine",
+                loc=(-0.006 * side, 0.0, 0.004 * abs(counter)),
+                rot=(-0.035 * counter, 0.0, -0.040 * weight_shift),
+            )
+            key_bone(
+                armature,
+                frame,
+                "head",
+                rot=(0.012 * counter, 0.0, 0.0),
+            )
+            key_bone(
+                armature,
+                frame,
+                "left_thigh",
+                rot=(0.42 * left_forward - 0.16 * left_back, 0.0, 0.0),
+            )
+            key_bone(
+                armature,
+                frame,
+                "left_shin",
+                rot=(-0.32 * left_lift + 0.04 * left_back, 0.0, 0.0),
+            )
+            key_bone(
+                armature,
+                frame,
+                "left_foot",
+                rot=(0.12 * left_lift - 0.045 * left_back, 0.0, 0.0),
+            )
+            key_bone(
+                armature,
+                frame,
+                "right_thigh",
+                rot=(0.42 * right_forward - 0.16 * right_back, 0.0, 0.0),
+            )
+            key_bone(
+                armature,
+                frame,
+                "right_shin",
+                rot=(-0.32 * right_lift + 0.04 * right_back, 0.0, 0.0),
+            )
+            key_bone(
+                armature,
+                frame,
+                "right_foot",
+                rot=(0.12 * right_lift - 0.045 * right_back, 0.0, 0.0),
+            )
+            key_bone(
+                armature,
+                frame,
+                "left_arm_rigid",
+                rot=(-0.18 * right_forward + 0.08 * right_back, 0.0, -0.035),
+            )
+            key_bone(
+                armature,
+                frame,
+                "right_arm_rigid",
+                rot=(-0.18 * left_forward + 0.08 * left_back, 0.0, 0.035),
+            )
 
             for pbone in armature.pose.bones:
                 if pbone.name == "root":
@@ -660,12 +826,21 @@ def render_preview_frames(records) -> dict:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--only", default="", help="Comma-separated EnemyID filter for focused iteration.")
+    argv = sys.argv
+    args = parser.parse_args(argv[argv.index("--") + 1 :] if "--" in argv else [])
+    only_ids = {item.strip().lower() for item in args.only.split(",") if item.strip()}
+    selected_mobs = [spec for spec in MOBS if not only_ids or spec.enemy_id.lower() in only_ids]
+    if not selected_mobs:
+        raise RuntimeError(f"No Easy mob specs matched --only={args.only!r}")
+
     ensure_dirs()
     reset_scene()
     setup_render_scene()
 
     records = []
-    for spec in MOBS:
+    for spec in selected_mobs:
         print(f"[EasyMobVAT] Building {spec.enemy_id}")
         mesh = import_glb(spec.source_glb)
         mesh.name = f"{MESH_PREFIX}{spec.enemy_id}_Mesh"

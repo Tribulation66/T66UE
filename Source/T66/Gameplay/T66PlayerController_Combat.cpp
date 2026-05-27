@@ -48,7 +48,8 @@
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66WeaponAltar.h"
-#include "Gameplay/T66GamblerNPC.h"
+#include "Gameplay/T66TowerDescentHole.h"
+#include "Gameplay/T66CasinoNPC.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
@@ -670,6 +671,12 @@ void AT66PlayerController::RefreshGameplayMouseMappings()
 
 bool AT66PlayerController::TryHandleMouseTriggeredUltimate()
 {
+	static bool bT66UltimateAttacksEnabled = false;
+	if (!bT66UltimateAttacksEnabled)
+	{
+		return false;
+	}
+
 	if (bHeroOneScopedUltActive || !CanUseCombatMouseInput())
 	{
 		return false;
@@ -704,6 +711,12 @@ bool AT66PlayerController::TryHandleMouseTriggeredUltimate()
 
 void AT66PlayerController::HandleUltimatePressed()
 {
+	static bool bT66UltimateAttacksEnabled = false;
+	if (!bT66UltimateAttacksEnabled)
+	{
+		return;
+	}
+
 	if (!IsGameplayLevel()) return;
 	if (IsPaused()) return;
 
@@ -1140,6 +1153,10 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			InteractionPrimitive = WeaponAltar->InteractTrigger.Get();
 		}
+		else if (const AT66TowerDescentHole* TowerDescentHole = Cast<AT66TowerDescentHole>(Actor))
+		{
+			InteractionPrimitive = TowerDescentHole->TriggerBox.Get();
+		}
 		else if (const AT66LootBagPickup* LootBag = Cast<AT66LootBagPickup>(Actor))
 		{
 			InteractionPrimitive = LootBag->SphereComponent.Get();
@@ -1180,6 +1197,7 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66TutorialGate* ClosestTutorialGate = nullptr;
 	AT66IdolAltar* ClosestIdolAltar = nullptr;
 	AT66WeaponAltar* ClosestWeaponAltar = nullptr;
+	AT66TowerDescentHole* ClosestTowerDescentHole = nullptr;
 	AT66PilotableTractor* ClosestTractor = nullptr;
 	AT66FountainInteractable* ClosestFountain = nullptr;
 	AT66ChestInteractable* ClosestChest = nullptr;
@@ -1195,6 +1213,7 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestTutorialGateDistSq = InteractRadius * InteractRadius;
 	float ClosestIdolAltarDistSq = InteractRadius * InteractRadius;
 	float ClosestWeaponAltarDistSq = InteractRadius * InteractRadius;
+	float ClosestTowerDescentHoleDistSq = InteractRadius * InteractRadius;
 	float ClosestTractorDistSq = InteractRadius * InteractRadius;
 	float ClosestFountainDistSq = InteractRadius * InteractRadius;
 	float ClosestChestDistSq = InteractRadius * InteractRadius;
@@ -1242,6 +1261,10 @@ void AT66PlayerController::HandleInteractPressed()
 		else if (AT66WeaponAltar* WeaponAltar = Cast<AT66WeaponAltar>(A))
 		{
 			if (DistSq < ClosestWeaponAltarDistSq) { ClosestWeaponAltarDistSq = DistSq; ClosestWeaponAltar = WeaponAltar; }
+		}
+		else if (AT66TowerDescentHole* TowerDescentHole = Cast<AT66TowerDescentHole>(A))
+		{
+			if (DistSq < ClosestTowerDescentHoleDistSq) { ClosestTowerDescentHoleDistSq = DistSq; ClosestTowerDescentHole = TowerDescentHole; }
 		}
 		else if (AT66PilotableTractor* Tractor = Cast<AT66PilotableTractor>(A))
 		{
@@ -1334,8 +1357,9 @@ void AT66PlayerController::HandleInteractPressed()
 		LootBag = 0,
 		SpecificWorld = 1,
 		GenericWorld = 2,
-		WeaponAltar = 3,
-		IdolAltar = 4,
+		TowerDescentGate = 3,
+		WeaponAltar = 4,
+		IdolAltar = 5,
 	};
 
 	struct FSecondaryInteractCandidate
@@ -1377,6 +1401,7 @@ void AT66PlayerController::HandleInteractPressed()
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestChest, ClosestChestDistSq, ComputeActorDistSq(ClosestChest), ESecondaryInteractPriority::SpecificWorld);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestCrate, ClosestCrateDistSq, ComputeActorDistSq(ClosestCrate), ESecondaryInteractPriority::SpecificWorld);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestWorldInteractable, ClosestWorldInteractableDistSq, ComputeActorDistSq(ClosestWorldInteractable), ESecondaryInteractPriority::GenericWorld);
+	ConsiderSecondaryCandidate(SecondaryInteract, ClosestTowerDescentHole, ClosestTowerDescentHoleDistSq, ComputeActorDistSq(ClosestTowerDescentHole), ESecondaryInteractPriority::TowerDescentGate);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestWeaponAltar, ClosestWeaponAltarDistSq, ComputeActorDistSq(ClosestWeaponAltar), ESecondaryInteractPriority::WeaponAltar);
 	ConsiderSecondaryCandidate(SecondaryInteract, ClosestIdolAltar, ClosestIdolAltarDistSq, ComputeActorDistSq(ClosestIdolAltar), ESecondaryInteractPriority::IdolAltar);
 	if (AT66LootBagPickup* NearbyBag = NearbyLootBag.Get())
@@ -1400,7 +1425,7 @@ void AT66PlayerController::HandleInteractPressed()
 				ClearNearbyLootBag(SelectedLootBag);
 				if (GameplayHUDWidget)
 				{
-					GameplayHUDWidget->ShowPickupItemCard(PickedItemID, PickedItemRarity);
+					GameplayHUDWidget->ShowLootBagItemReveal(PickedItemID, PickedItemRarity);
 				}
 			}
 			else if (RunState->HasInventorySpace())
@@ -1411,7 +1436,7 @@ void AT66PlayerController::HandleInteractPressed()
 				ClearNearbyLootBag(SelectedLootBag);
 				if (GameplayHUDWidget)
 				{
-					GameplayHUDWidget->ShowPickupItemCard(PickedItemID, PickedItemRarity);
+					GameplayHUDWidget->ShowLootBagItemReveal(PickedItemID, PickedItemRarity);
 				}
 			}
 		}
@@ -1448,6 +1473,14 @@ void AT66PlayerController::HandleInteractPressed()
 			PlayInteractAudio(FName(TEXT("Interact.Crate.Open")), SelectedCrate);
 			return;
 		}
+	}
+	if (AT66TowerDescentHole* SelectedTowerDescentHole = Cast<AT66TowerDescentHole>(SecondaryInteract.Actor))
+	{
+		if (SelectedTowerDescentHole->Interact(HeroPawn))
+		{
+			PlayInteractAudio(FName(TEXT("Interact.Generic")), SelectedTowerDescentHole);
+		}
+		return;
 	}
 	if (AT66WeaponAltar* SelectedWeaponAltar = Cast<AT66WeaponAltar>(SecondaryInteract.Actor))
 	{

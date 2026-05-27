@@ -405,7 +405,7 @@ if (!World || GT66PlayerStartCache.World.Get() == World)
 		}
 	}
 
-	bool T66HasRegisteredGambler(UWorld* World)
+	bool T66HasRegisteredCasinoInteractable(UWorld* World)
 	{
 		if (!World)
 		{
@@ -414,9 +414,9 @@ if (!World || GT66PlayerStartCache.World.Get() == World)
 
 		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
 		{
-			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			for (const TWeakObjectPtr<AT66WorldInteractableBase>& WeakInteractable : Registry->GetWorldInteractables())
 			{
-				if (Cast<AT66GamblerNPC>(WeakNPC.Get()))
+				if (Cast<AT66CasinoInteractable>(WeakInteractable.Get()))
 				{
 					return true;
 				}
@@ -1019,6 +1019,11 @@ void AT66GameMode::SetEnemyDirectorSpawningPaused(const bool bPaused)
 	}
 }
 
+AT66EnemyDirector* AT66GameMode::GetEnemyDirectorForDiagnostics()
+{
+	return FindOrCacheEnemyDirector(GetWorld());
+}
+
 AT66EnemyDirector* AT66GameMode::EnsureEnemyDirector(UWorld* World)
 {
 	if (!World)
@@ -1083,6 +1088,8 @@ UStaticMesh* AT66GameMode::GetCubeMesh()
 }
 void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	DestroyBackroomsPocket();
+
 	// Unbind from long-lived RunState delegates (RunState is a GameInstanceSubsystem).
 	if (UGameInstance* GI = GetGameInstance())
 	{
@@ -1122,6 +1129,11 @@ void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AT66GameMode::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (bBackroomsChallengeActive)
+	{
+		return;
+	}
+
 	const bool bTowerLayout = IsUsingTowerMainMapLayout();
 	const float TerrainSafetyIntervalSeconds = bTowerLayout ? 0.10f : 0.15f;
 	TowerTerrainSafetyAccumulator += DeltaTime;
@@ -1170,8 +1182,7 @@ void AT66GameMode::Tick(float DeltaTime)
 			// Skill Rating: time is driven here; damage is an input event from RunState.
 			if (UT66SkillRatingSubsystem* Skill = GI->GetSubsystem<UT66SkillRatingSubsystem>())
 			{
-				// Track only during combat time (stage timer active) and not during last-stand invulnerability.
-				Skill->SetTrackingActive(RunState->GetStageTimerActive() && !RunState->IsInLastStand());
+				Skill->SetTrackingActive(RunState->GetStageTimerActive());
 				Skill->TickSkillRating(DeltaTime);
 			}
 
@@ -1217,6 +1228,7 @@ void AT66GameMode::Logout(AController* Exiting)
 
 void AT66GameMode::HandleStageTimerChanged()
 {
+	if (bBackroomsChallengeActive) return;
 	if (IsLabRun()) return;
 	UGameInstance* GI = GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
@@ -1726,6 +1738,7 @@ void AT66GameMode::SnapPlayersToTerrain()
 		}
 	}
 }
+
 // Console command: T66.MainMap [seed]
 static FAutoConsoleCommandWithWorldAndArgs T66MainMapCmd(
 	TEXT("T66.MainMap"),

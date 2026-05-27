@@ -19,6 +19,7 @@
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66UITypes.h"
+#include "UI/WidgetGames/T66WidgetGameResult.h"
 #include "UObject/StrongObjectPtr.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
@@ -153,6 +154,55 @@ UT66IdleMainMenuScreen::UT66IdleMainMenuScreen(const FObjectInitializer& ObjectI
 {
 	ScreenType = ET66ScreenType::IdleMainMenu;
 	bIsModal = false;
+}
+
+void UT66IdleMainMenuScreen::ActivateWidgetGame(const FT66WidgetGameHostContext& HostContext)
+{
+	WidgetGameHostContext = HostContext;
+}
+
+void UT66IdleMainMenuScreen::DeactivateWidgetGame()
+{
+	WidgetGameHostContext = FT66WidgetGameHostContext();
+}
+
+void UT66IdleMainMenuScreen::PauseWidgetGame()
+{
+}
+
+void UT66IdleMainMenuScreen::ResumeWidgetGame()
+{
+}
+
+void UT66IdleMainMenuScreen::RequestWidgetGameExit()
+{
+	if (WidgetGameHostContext.ReturnNavigationCallback)
+	{
+		WidgetGameHostContext.RequestExit(ET66WidgetGameExitReason::PlayerCancelled);
+		return;
+	}
+
+	HandleBackClicked();
+}
+
+void UT66IdleMainMenuScreen::SaveWidgetGameState()
+{
+	SaveProfileState();
+}
+
+void UT66IdleMainMenuScreen::LoadWidgetGameState()
+{
+	EnsureProfileLoaded();
+}
+
+void UT66IdleMainMenuScreen::FlushWidgetGamePersistence()
+{
+	SaveWidgetGameState();
+}
+
+void UT66IdleMainMenuScreen::RefreshWidgetGamePersistence()
+{
+	LoadWidgetGameState();
 }
 
 void UT66IdleMainMenuScreen::OnScreenActivated_Implementation()
@@ -802,8 +852,21 @@ void UT66IdleMainMenuScreen::FinishIdleRun(const bool bWasVictory)
 	ViewMode = EIdleViewMode::Summary;
 	SubmitLeaderboardProgressIfNeeded();
 	SaveProfileState();
+	ReportWidgetGameResult(bWasVictory, FMath::Clamp<int64>(static_cast<int64>(CurrentStage) * 1000LL + static_cast<int64>(FMath::FloorToDouble(LifetimeGold)), 0, MAX_int32));
 	IdleRunTickAccumulator = 0.f;
 	ForceRebuildSlate();
+}
+
+void UT66IdleMainMenuScreen::ReportWidgetGameResult(const bool bSuccessful, const int32 FinalScore)
+{
+	FT66WidgetGameResult Result;
+	Result.GameID = FName(TEXT("Frontend_Idle"));
+	Result.ExitReason = ET66WidgetGameExitReason::Completed;
+	Result.FinalScore = FinalScore;
+	Result.bHasFinalScore = true;
+	Result.bSuccessful = bSuccessful;
+	Result.ResultID = Result.GameID;
+	WidgetGameHostContext.ReportResult(Result);
 }
 
 void UT66IdleMainMenuScreen::SubmitLeaderboardProgressIfNeeded()

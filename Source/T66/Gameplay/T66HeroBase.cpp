@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -9,6 +10,7 @@
 #include "Gameplay/Movement/T66HeroMovementComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66HeroSpeedSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -229,8 +231,6 @@ void AT66HeroBase::UpdateGroundAttachmentOffsets()
 	{
 		LongRangeRingISM->SetRelativeLocation(FVector(0.f, 0.f, -CapsuleHalfHeight + 2.f));
 	}
-
-	QuickReviveDownedVisualOffset.Z = -(GetDesiredHeroHeightUU() * 0.33f);
 }
 
 void AT66HeroBase::ApplyBodyTypeDimensions(const bool bKeepFeetWorldPosition)
@@ -348,14 +348,14 @@ void AT66HeroBase::BeginPlay()
 		UE_LOG(LogT66Hero, Error, TEXT("HeroBase - FollowCamera is NULL!"));
 	}
 
-	// Cache run state for derived stats (level + last-stand).
+	// Cache run state for derived stats.
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		CachedRunState = GI->GetSubsystem<UT66RunStateSubsystem>();
+		CachedHeroSpeedSubsystem = GI->GetSubsystem<UT66HeroSpeedSubsystem>();
 		if (CachedRunState)
 		{
 			CachedRunState->HeroProgressChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
-			CachedRunState->SurvivalChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
 			CachedRunState->InventoryChanged.AddDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
 			CachedRunState->PanelVisibilityChanged.AddDynamic(this, &AT66HeroBase::HandleHUDPanelVisibilityChanged);
 		}
@@ -562,64 +562,18 @@ void AT66HeroBase::SetVehicleMounted(bool bMounted, AT66PilotableTractor* InMoun
 	UpdateAttackRangeRing();
 }
 
-void AT66HeroBase::SetQuickReviveDowned(bool bDowned)
-{
-	if (bQuickReviveDowned == bDowned)
-	{
-		return;
-	}
-
-	CacheVehicleVisualDefaults();
-	bQuickReviveDowned = bDowned;
-
-	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
-	{
-		if (bQuickReviveDowned)
-		{
-			Movement->StopMovementImmediately();
-			Movement->DisableMovement();
-			ConsumeMovementInputVector();
-		}
-		else if (!bVehicleMounted)
-		{
-			Movement->SetMovementMode(MOVE_Walking);
-			if (HeroMovementComponent)
-			{
-				HeroMovementComponent->RefreshWalkSpeedFromRunState();
-			}
-		}
-	}
-
-	if (PlaceholderMesh)
-	{
-		PlaceholderMesh->SetRelativeLocation(DefaultPlaceholderRelativeLocation + (bQuickReviveDowned ? QuickReviveDownedVisualOffset : FVector::ZeroVector));
-		PlaceholderMesh->SetRelativeRotation(DefaultPlaceholderRelativeRotation + (bQuickReviveDowned ? QuickReviveDownedVisualRotation : FRotator::ZeroRotator));
-	}
-
-	if (USkeletalMeshComponent* Skel = GetMesh())
-	{
-		Skel->SetRelativeLocation(DefaultSkeletalMeshRelativeLocation + (bQuickReviveDowned ? QuickReviveDownedVisualOffset : FVector::ZeroVector));
-		Skel->SetRelativeRotation(DefaultSkeletalMeshRelativeRotation + (bQuickReviveDowned ? QuickReviveDownedVisualRotation : FRotator::ZeroRotator));
-		Skel->GlobalAnimRateScale = (bQuickReviveDowned || bVehicleMounted) ? 0.f : 1.f;
-	}
-
-	if (StaticVisualMesh)
-	{
-		StaticVisualMesh->SetRelativeLocation(DefaultStaticVisualRelativeLocation + (bQuickReviveDowned ? QuickReviveDownedVisualOffset : FVector::ZeroVector));
-		StaticVisualMesh->SetRelativeRotation(DefaultStaticVisualRelativeRotation + (bQuickReviveDowned ? QuickReviveDownedVisualRotation : FRotator::ZeroRotator));
-	}
-
-	UpdateAttackRangeRing();
-}
-
-
 void AT66HeroBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
 	FLagScopedScope LagScope(GetWorld(), TEXT("HeroBase::Tick"));
 
-	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
+	if (!bIsPreviewMode && !bVehicleMounted)
+	{
+		T66CombatDebugDraw::DrawPlayerHurtCapsule(GetCapsuleComponent(), TEXT("Hero Hurtbox"));
+	}
+
+	if (!bIsPreviewMode && !bVehicleMounted)
 	{
 		if (!bLobbyDrivenVisualsApplied)
 		{
@@ -715,7 +669,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 	}
 
 	// Hero animation: roll while its one-shot clip is active, jump while airborne, idle/walk otherwise.
-	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
+	if (!bIsPreviewMode && !bVehicleMounted)
 	{
 		const bool bHasMovementInput = HeroMovementComponent
 			? HeroMovementComponent->HasMovementInput()
@@ -751,6 +705,11 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 				NewState = EMovementAnimState::Walk;
 			}
 
+			if (CachedHeroSpeedSubsystem)
+			{
+				CachedHeroSpeedSubsystem->SetMovementAnimState(static_cast<int32>(NewState));
+			}
+
 			if (LastMovementAnimState != NewState)
 			{
 				LastMovementAnimState = NewState;
@@ -782,7 +741,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 	}
 
 	// Enemy touch damage + bounce: proximity check (enemies block so no overlap events; we query range and apply damage + launch).
-	if (!bIsPreviewMode && !bVehicleMounted && !bQuickReviveDowned)
+	if (!bIsPreviewMode && !bVehicleMounted)
 	{
 		UWorld* World = GetWorld();
 		EnemyTouchCheckAccumSeconds += DeltaSeconds;
@@ -897,7 +856,6 @@ void AT66HeroBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	if (CachedRunState)
 	{
 		CachedRunState->HeroProgressChanged.RemoveDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
-		CachedRunState->SurvivalChanged.RemoveDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
 		CachedRunState->InventoryChanged.RemoveDynamic(this, &AT66HeroBase::HandleHeroDerivedStatsChanged);
 		CachedRunState->PanelVisibilityChanged.RemoveDynamic(this, &AT66HeroBase::HandleHUDPanelVisibilityChanged);
 	}
@@ -921,7 +879,7 @@ void AT66HeroBase::UpdateAttackRangeRing()
 	};
 
 	// Hide in preview mode.
-	if (bIsPreviewMode || bVehicleMounted || bQuickReviveDowned)
+	if (bIsPreviewMode || bVehicleMounted)
 	{
 		HideAllRings();
 		return;
@@ -1082,7 +1040,7 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 				LastMovementAnimState = EMovementAnimState::Walk;
 				if (HeroMovementComponent)
 				{
-					HeroMovementComponent->SetHeroBaseWalkSpeed(InHeroData.MaxSpeed);
+					HeroMovementComponent->SetHeroBaseSpeedStat(InHeroData.BaseSpeed);
 				}
 			}
 		}

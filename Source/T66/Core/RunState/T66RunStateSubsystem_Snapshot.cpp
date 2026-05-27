@@ -41,23 +41,12 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.bRunEndedAsVictory = bRunEndedAsVictory;
 	OutSnapshot.CurrentScore = CurrentScore;
 	OutSnapshot.ScoreBudgetContext = ScoreBudgetContext;
-	OutSnapshot.HeroLevel = HeroLevel;
-	OutSnapshot.HeroXP = HeroXP;
-	OutSnapshot.XPToNextLevel = XPToNextLevel;
+	OutSnapshot.HeroLevel = DefaultHeroLevel;
+	OutSnapshot.HeroXP = 0;
+	OutSnapshot.XPToNextLevel = DefaultXPToLevel;
 	OutSnapshot.HeroPreciseStats = HeroPreciseStats;
 	OutSnapshot.HeroStatRngCurrentSeed = HeroStatRng.GetCurrentSeed();
 	OutSnapshot.PersistentSecondaryStatBonusEntries.Reset();
-	for (const TPair<ET66SecondaryStatType, int32>& Pair : PersistentSecondaryStatBonusTenths)
-	{
-		if (Pair.Key == ET66SecondaryStatType::None || Pair.Value <= 0)
-		{
-			continue;
-		}
-
-		FT66SavedSecondaryStatBonusEntry& SavedBonus = OutSnapshot.PersistentSecondaryStatBonusEntries.AddDefaulted_GetRef();
-		SavedBonus.StatType = Pair.Key;
-		SavedBonus.BonusTenths = Pair.Value;
-	}
 	OutSnapshot.HeroStats = HeroPreciseStats.ToDisplayStatBlock();
 	OutSnapshot.PowerCrystalsEarnedThisRun = PowerCrystalsEarnedThisRun;
 	OutSnapshot.PowerCrystalsGrantedToWalletThisRun = PowerCrystalsGrantedToWalletThisRun;
@@ -206,32 +195,12 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	AntiCheatCurrentPressureExpectedDodges = FMath::Clamp(Snapshot.AntiCheatCurrentPressureExpectedDodges, 0.f, 1000000.f);
 	CurrentScore = FMath::Max(0, Snapshot.CurrentScore);
 	ScoreBudgetContext = Snapshot.ScoreBudgetContext;
-	HeroLevel = FMath::Clamp(Snapshot.HeroLevel, DefaultHeroLevel, MaxHeroLevel);
-	HeroXP = FMath::Max(0, Snapshot.HeroXP);
-	XPToNextLevel = FMath::Max(1, Snapshot.XPToNextLevel);
-	HeroStats = Snapshot.HeroStats;
-	if (Snapshot.HeroPreciseStats.HasAnyPositiveValue())
-	{
-		HeroPreciseStats = Snapshot.HeroPreciseStats;
-	}
-	else
-	{
-		HeroPreciseStats.SetFromWholeStatBlock(HeroStats);
-	}
-	HeroPreciseStats.DamageTenths = ClampHeroStatTenths(HeroPreciseStats.DamageTenths);
-	HeroPreciseStats.AttackSpeedTenths = ClampHeroStatTenths(HeroPreciseStats.AttackSpeedTenths);
-	HeroPreciseStats.AttackScaleTenths = ClampHeroStatTenths(HeroPreciseStats.AttackScaleTenths);
-	HeroPreciseStats.AccuracyTenths = ClampHeroStatTenths(HeroPreciseStats.AccuracyTenths);
-	HeroPreciseStats.ArmorTenths = ClampHeroStatTenths(HeroPreciseStats.ArmorTenths);
-	HeroPreciseStats.EvasionTenths = ClampHeroStatTenths(HeroPreciseStats.EvasionTenths);
-	HeroPreciseStats.LuckTenths = ClampHeroStatTenths(HeroPreciseStats.LuckTenths);
-	HeroPreciseStats.SpeedTenths = ClampHeroStatTenths(HeroPreciseStats.SpeedTenths);
+	HeroLevel = DefaultHeroLevel;
+	HeroXP = 0;
+	XPToNextLevel = DefaultXPToLevel;
+	InitializeHeroStatTuningForSelectedHero();
 	HeroStatRng.Initialize(Snapshot.HeroStatRngCurrentSeed != 0 ? Snapshot.HeroStatRngCurrentSeed : static_cast<int32>(FPlatformTime::Cycles()));
 	ClearPersistentSecondaryStatBonuses();
-	for (const FT66SavedSecondaryStatBonusEntry& SavedBonus : Snapshot.PersistentSecondaryStatBonusEntries)
-	{
-		AddPersistentSecondaryStatBonusTenths(SavedBonus.StatType, SavedBonus.BonusTenths);
-	}
 	SyncLegacyHeroStatsFromPrecise();
 	PowerCrystalsEarnedThisRun = FMath::Max(0, Snapshot.PowerCrystalsEarnedThisRun);
 	PowerCrystalsGrantedToWalletThisRun = FMath::Clamp(Snapshot.PowerCrystalsGrantedToWalletThisRun, 0, PowerCrystalsEarnedThisRun);
@@ -313,7 +282,6 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	SpeedRunTimerChanged.Broadcast();
 	BossChanged.Broadcast();
 	HeroProgressChanged.Broadcast();
-	SurvivalChanged.Broadcast();
 	ShopChanged.Broadcast();
 	StatusEffectsChanged.Broadcast();
 }

@@ -133,18 +133,20 @@ For each mob:
 1. Resolve the live `EnemyID`, `CharacterVisuals.csv` row, static mesh path, texture, and mesh scale.
 2. Locate the approved source mesh. Prefer the production source GLB or Blender file that generated the live static mesh.
 3. Confirm promotion status before using generated GLBs as final source. If the source report says exploratory, document the remaining visual or runtime gate before export.
-4. Import the source mesh into Blender and verify mesh count, material count, texture assignment, forward axis, ground contact, and scale.
-5. Build the animation authoring rig appropriate to the silhouette:
+4. Import the source mesh into Blender and verify mesh count, material count, texture assignment, forward axis, ground contact, and scale. For new or ambiguous mobs, perform a front-axis proof by inspecting or rendering `+Y`, `-Y`, `+X`, and `-X` before choosing the review camera or applying an orientation fix.
+5. Build the animation authoring rig appropriate to the silhouette and body-type deformation class:
    - simple bones for humanoids and spiders
    - lattice, bend bones, and shape keys for blobs
    - wing bones and body hover controls for flying enemies
    - local object controls for swarms or multi-part fused mobs
-   - recoil/aim controls for statues or turret-like enemies
+   - recoil/aim controls for statues or ranged sentry enemies
+   - rigid segment controls for skeletal, stone, or mechanical bodies that should move through joints rather than rubbery volume deformation
 6. Keep world translation actor-driven. Local motion should sell gait, drag, hover, flap, recoil, squash, or impact without moving the mesh across the level.
 7. Bake deformations to a stable mesh with unchanged topology. VAT requires the same vertex order and vertex count for every frame in a clip.
 8. Render QA sheets from front, side, three-quarter, and gameplay-camera views.
-9. Fix silhouette, clipping, contact, timing, bounds, and scale issues in Blender before Unreal export.
-10. Export the bake source and manifest only after the multi-view QA pass is acceptable.
+9. Fill a Visual QA table for front/back axis, body-type method match, limb stretch, rubber smear, volume loss, foot/contact slide, and gameplay-camera readability.
+10. Fix silhouette, clipping, contact, timing, bounds, scale, front-axis, and no-stretch issues in Blender before Unreal export.
+11. Export the bake source and manifest only after the multi-view QA pass is acceptable.
 
 ## Required Clips
 
@@ -181,6 +183,9 @@ Reject the pass if:
 - only one camera angle exists
 - motion is recognizable but not behavior-correct
 - the source mesh is not proven to match the live visual
+- the true front axis is unproven or the preview moves back-first
+- the body-type deformation class is wrong, such as rubber-wobbling a rigid skeleton or stone body
+- side-loop evidence shows limb stretch, rubber smear, flat leg collapse, or major volume loss
 - topology changes across frames
 - ground mobs slide without a visual reason
 - flying mobs read as walking or falling

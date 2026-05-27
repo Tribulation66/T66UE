@@ -98,11 +98,6 @@ void UT66MusicSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		FSoftObjectPath(TEXT("/Game/Audio/Music/Theme.Theme")),
 		FSoftObjectPath(TEXT("/Game/Audio/Theme.Theme")),
 	};
-	SurvivalCandidates = {
-		FSoftObjectPath(TEXT("/Game/Audio/OSTS/Survival.Survival")),
-		FSoftObjectPath(TEXT("/Game/Audio/Music/Survival.Survival")),
-		FSoftObjectPath(TEXT("/Game/Audio/Survival.Survival")),
-	};
 	QueueBaseMusicPreloads();
 
 	// Listen for world creation so we can start Theme even on FrontendLevel.
@@ -110,12 +105,10 @@ void UT66MusicSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	// Reliable for PIE: map-load hook (fires after the PIE map is loaded).
 	PostLoadMapHandle = FCoreUObjectDelegates::PostLoadMapWithWorld.AddUObject(this, &UT66MusicSubsystem::HandlePostLoadMap);
 
-	// Listen for last-stand changes.
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
-			RunState->SurvivalChanged.AddDynamic(this, &UT66MusicSubsystem::HandleSurvivalChanged);
 			RunState->BossChanged.AddDynamic(this, &UT66MusicSubsystem::HandleBossChanged);
 		}
 		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
@@ -159,7 +152,6 @@ void UT66MusicSubsystem::Deinitialize()
 	{
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
-			RunState->SurvivalChanged.RemoveDynamic(this, &UT66MusicSubsystem::HandleSurvivalChanged);
 			RunState->BossChanged.RemoveDynamic(this, &UT66MusicSubsystem::HandleBossChanged);
 		}
 		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
@@ -177,11 +169,6 @@ void UT66MusicSubsystem::Deinitialize()
 	{
 		ThemeLoadHandle->CancelHandle();
 		ThemeLoadHandle.Reset();
-	}
-	if (SurvivalLoadHandle.IsValid())
-	{
-		SurvivalLoadHandle->CancelHandle();
-		SurvivalLoadHandle.Reset();
 	}
 	for (TPair<FString, TSharedPtr<FStreamableHandle>>& Pair : PendingFolderSoundLoads)
 	{
@@ -234,11 +221,6 @@ void UT66MusicSubsystem::HandlePostLoadMap(UWorld* World)
 	UpdateMusicState();
 }
 
-void UT66MusicSubsystem::HandleSurvivalChanged()
-{
-	UpdateMusicState();
-}
-
 void UT66MusicSubsystem::HandleBossChanged()
 {
 	UpdateMusicState();
@@ -257,78 +239,45 @@ void UT66MusicSubsystem::UpdateMusicState()
 	const bool bBossActive = RunState->GetBossActive();
 	const FName ActiveBossID = RunState->GetActiveBossID();
 
-	const bool bShouldSurvival =
-		RunState->IsInLastStand()
-		&& (RunState->GetCurrentHearts() <= 0)
-		&& (RunState->GetLastStandSecondsRemaining() > 0.f);
-
-	if (bShouldSurvival)
+	const bool bShouldBossMusic = bBossActive && !ActiveBossID.IsNone();
+	if (bShouldBossMusic)
 	{
-		if (!bSurvivalActive)
+		USoundBase* BossTrack = ResolveAndLoadBossThemeSound(World);
+		if (BossTrack)
 		{
-			bSurvivalActive = true;
-			bBossMusicActive = false;
+			bBossMusicActive = true;
+			bAllowBossLoop = true;
 			bAllowMainThemeLoop = false;
 			bAllowThemeLoop = false;
-			bAllowSurvivalLoop = true;
-			bAllowBossLoop = false;
 			StopMainTheme(0.25f);
 			StopTheme(0.25f);
-			StopBoss(0.15f);
-			EnsureSurvivalPlaying(World);
+			EnsureBossPlaying(World);
+			ApplyMusicVolumes();
+			return;
 		}
 	}
-	else
+
+	if (bBossMusicActive)
 	{
-		if (bSurvivalActive)
-		{
-			bSurvivalActive = false;
-			bAllowSurvivalLoop = false;
-			StopSurvival(0.25f);
-		}
+		bBossMusicActive = false;
+		bAllowBossLoop = false;
+		StopBoss(0.25f);
+	}
 
-		// Boss music has priority over base tracks (but below survival).
-		const bool bShouldBossMusic = bBossActive && !ActiveBossID.IsNone();
-		if (bShouldBossMusic)
-		{
-			USoundBase* BossTrack = ResolveAndLoadBossThemeSound(World);
-			if (BossTrack)
-			{
-				bBossMusicActive = true;
-				bAllowBossLoop = true;
-				bAllowMainThemeLoop = false;
-				bAllowThemeLoop = false;
-				StopMainTheme(0.25f);
-				StopTheme(0.25f);
-				EnsureBossPlaying(World);
-				ApplyMusicVolumes();
-				return;
-			}
-		}
-
-		if (bBossMusicActive)
-		{
-			bBossMusicActive = false;
-			bAllowBossLoop = false;
-			StopBoss(0.25f);
-		}
-
-		// Base music should play only when not in survival.
-		switch (DesiredBaseTrack)
-		{
-		case ET66BaseTrack::MainTheme:
-			bAllowMainThemeLoop = true;
-			bAllowThemeLoop = false;
-			EnsureMainThemePlaying(World);
-			break;
-		case ET66BaseTrack::Theme:
-			bAllowMainThemeLoop = false;
-			bAllowThemeLoop = true;
-			EnsureThemePlaying(World);
-			break;
-		default:
-			break;
-		}
+	switch (DesiredBaseTrack)
+	{
+	case ET66BaseTrack::MainTheme:
+		bAllowMainThemeLoop = true;
+		bAllowThemeLoop = false;
+		EnsureMainThemePlaying(World);
+		break;
+	case ET66BaseTrack::Theme:
+		bAllowMainThemeLoop = false;
+		bAllowThemeLoop = true;
+		EnsureThemePlaying(World);
+		break;
+	default:
+		break;
 	}
 
 	ApplyMusicVolumes();
@@ -350,7 +299,6 @@ void UT66MusicSubsystem::ApplyMusicVolumes()
 
 	if (MainThemeComp) MainThemeComp->SetVolumeMultiplier(EffectiveMusic);
 	if (ThemeComp) ThemeComp->SetVolumeMultiplier(EffectiveMusic);
-	if (SurvivalComp) SurvivalComp->SetVolumeMultiplier(EffectiveMusic);
 	if (BossComp) BossComp->SetVolumeMultiplier(EffectiveMusic);
 }
 
@@ -396,7 +344,7 @@ void UT66MusicSubsystem::EnsureMainThemePlaying(UWorld* World)
 		MainThemeComp->SetSound(Sound);
 	}
 
-	if (MainThemeComp && !MainThemeComp->IsPlaying() && !bSurvivalActive)
+	if (MainThemeComp && !MainThemeComp->IsPlaying())
 	{
 		MainThemeComp->Play(0.0f);
 	}
@@ -439,42 +387,12 @@ void UT66MusicSubsystem::EnsureThemePlaying(UWorld* World)
 		ThemeComp->SetSound(Sound);
 	}
 
-	if (ThemeComp && !ThemeComp->IsPlaying() && !bSurvivalActive)
+	if (ThemeComp && !ThemeComp->IsPlaying())
 	{
 		ThemeComp->Play(0.0f);
 	}
 
 	ApplyMusicVolumes();
-}
-
-void UT66MusicSubsystem::EnsureSurvivalPlaying(UWorld* World)
-{
-	if (!World) return;
-
-	USoundBase* Sound = ResolveAndLoadSurvivalSound();
-	if (!Sound)
-	{
-		if (!SurvivalLoadHandle.IsValid())
-		{
-			UE_LOG(LogT66Music, Warning, TEXT("Survival music not found. Import the Survival asset into UE (SoundWave/SoundCue) so one of these exists: /Game/Audio/OSTS/Survival, /Game/Audio/Music/Survival, /Game/Audio/Survival."));
-		}
-		return;
-	}
-
-	if (!SurvivalComp)
-	{
-		SurvivalComp = UGameplayStatics::SpawnSound2D(World, Sound, 1.0f, 1.0f, 0.0f, nullptr, true, false);
-		if (SurvivalComp)
-		{
-			SurvivalComp->bIsUISound = true;
-			SurvivalComp->OnAudioFinished.AddDynamic(this, &UT66MusicSubsystem::HandleSurvivalFinished);
-		}
-	}
-
-	if (SurvivalComp && !SurvivalComp->IsPlaying())
-	{
-		SurvivalComp->FadeIn(0.25f, 1.0f, 0.0f);
-	}
 }
 
 void UT66MusicSubsystem::EnsureBossPlaying(UWorld* World)
@@ -530,16 +448,6 @@ void UT66MusicSubsystem::StopMainTheme(float FadeSeconds)
 	}
 }
 
-void UT66MusicSubsystem::StopSurvival(float FadeSeconds)
-{
-	if (!SurvivalComp) return;
-	bAllowSurvivalLoop = false;
-	if (SurvivalComp->IsPlaying())
-	{
-		SurvivalComp->FadeOut(FMath::Max(0.f, FadeSeconds), 0.0f);
-	}
-}
-
 void UT66MusicSubsystem::StopBoss(float FadeSeconds)
 {
 	if (!BossComp) return;
@@ -553,7 +461,7 @@ void UT66MusicSubsystem::StopBoss(float FadeSeconds)
 void UT66MusicSubsystem::HandleThemeFinished()
 {
 	// Poor-man looping without requiring a SoundCue asset.
-	if (ThemeComp && !bSurvivalActive && bAllowThemeLoop && DesiredBaseTrack == ET66BaseTrack::Theme)
+	if (ThemeComp && bAllowThemeLoop && DesiredBaseTrack == ET66BaseTrack::Theme)
 	{
 		ThemeComp->Play(0.0f);
 	}
@@ -561,17 +469,9 @@ void UT66MusicSubsystem::HandleThemeFinished()
 
 void UT66MusicSubsystem::HandleMainThemeFinished()
 {
-	if (MainThemeComp && !bSurvivalActive && bAllowMainThemeLoop && DesiredBaseTrack == ET66BaseTrack::MainTheme)
+	if (MainThemeComp && bAllowMainThemeLoop && DesiredBaseTrack == ET66BaseTrack::MainTheme)
 	{
 		MainThemeComp->Play(0.0f);
-	}
-}
-
-void UT66MusicSubsystem::HandleSurvivalFinished()
-{
-	if (SurvivalComp && bSurvivalActive && bAllowSurvivalLoop)
-	{
-		SurvivalComp->Play(0.0f);
 	}
 }
 
@@ -601,16 +501,6 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadThemeSound()
 	}
 	QueueThemePreload();
 	return ResolveFirstResidentSoundAsset(ThemeCandidates, ThemeSound);
-}
-
-USoundBase* UT66MusicSubsystem::ResolveAndLoadSurvivalSound()
-{
-	if (USoundBase* Existing = SurvivalSound.Get())
-	{
-		return Existing;
-	}
-	QueueSurvivalPreload();
-	return ResolveFirstResidentSoundAsset(SurvivalCandidates, SurvivalSound);
 }
 
 USoundBase* UT66MusicSubsystem::ResolveAndLoadGameplayThemeSound(UWorld* World)
@@ -684,7 +574,6 @@ void UT66MusicSubsystem::QueueBaseMusicPreloads()
 {
 	QueueMainThemePreload();
 	QueueThemePreload();
-	QueueSurvivalPreload();
 }
 
 void UT66MusicSubsystem::QueueMainThemePreload()
@@ -711,18 +600,6 @@ void UT66MusicSubsystem::QueueThemePreload()
 		FStreamableDelegate::CreateUObject(this, &UT66MusicSubsystem::HandleThemePreloaded));
 }
 
-void UT66MusicSubsystem::QueueSurvivalPreload()
-{
-	if (SurvivalLoadHandle.IsValid() || SurvivalSound.Get())
-	{
-		return;
-	}
-
-	SurvivalLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
-		SurvivalCandidates,
-		FStreamableDelegate::CreateUObject(this, &UT66MusicSubsystem::HandleSurvivalPreloaded));
-}
-
 void UT66MusicSubsystem::HandleMainThemePreloaded()
 {
 	MainThemeLoadHandle.Reset();
@@ -739,16 +616,6 @@ void UT66MusicSubsystem::HandleThemePreloaded()
 	if (!ResolveFirstResidentSoundAsset(ThemeCandidates, ThemeSound))
 	{
 		UE_LOG(LogT66Music, Warning, TEXT("Theme music async preload completed but no candidate resolved as a USoundBase."));
-	}
-	UpdateMusicState();
-}
-
-void UT66MusicSubsystem::HandleSurvivalPreloaded()
-{
-	SurvivalLoadHandle.Reset();
-	if (!ResolveFirstResidentSoundAsset(SurvivalCandidates, SurvivalSound))
-	{
-		UE_LOG(LogT66Music, Warning, TEXT("Survival music async preload completed but no candidate resolved as a USoundBase."));
 	}
 	UpdateMusicState();
 }

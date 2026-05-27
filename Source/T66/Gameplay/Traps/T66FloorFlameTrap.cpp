@@ -7,6 +7,7 @@
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66TrapTuningConfig.h"
+#include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -131,6 +132,7 @@ void AT66FloorFlameTrap::BeginPlay()
 	{
 		ScheduleNextCycle(InitialCycleDelaySeconds);
 	}
+	RefreshTickEnabledForDebug();
 }
 
 void AT66FloorFlameTrap::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -175,7 +177,7 @@ void AT66FloorFlameTrap::HandleTrapEnabledChanged()
 	WarningElapsed = 0.f;
 	WarningVFXAccum = 0.f;
 	ActiveVFXAccum = 0.f;
-	SetActorTickEnabled(false);
+	RefreshTickEnabledForDebug();
 
 	DestroyActiveFireVisuals();
 
@@ -211,7 +213,7 @@ void AT66FloorFlameTrap::BeginWarningCycle()
 	WarningElapsed = 0.f;
 	WarningVFXAccum = 0.f;
 	ActiveVFXAccum = 0.f;
-	SetActorTickEnabled(true);
+	RefreshTickEnabledForDebug();
 	UpdateMarkerVisuals();
 	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Flame.Warning")), GetActorLocation(), this);
 
@@ -232,7 +234,7 @@ void AT66FloorFlameTrap::ActivateFlames()
 	bFlamesActive = true;
 	ActiveVFXAccum = 0.f;
 	const bool bUseNiagaraThisCycle = ShouldUseFireNiagara();
-	SetActorTickEnabled(!bUseNiagaraThisCycle);
+	RefreshTickEnabledForDebug();
 	UpdateMarkerVisuals();
 	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Trap.Flame.Activate")), GetActorLocation(), this);
 
@@ -274,7 +276,7 @@ void AT66FloorFlameTrap::DeactivateFlames()
 
 	DestroyActiveFireVisuals();
 
-	SetActorTickEnabled(false);
+	RefreshTickEnabledForDebug();
 	UpdateMarkerVisuals();
 	if (UsesTimedActivation())
 	{
@@ -349,7 +351,7 @@ void AT66FloorFlameTrap::ApplyDamagePulse()
 		return;
 	}
 
-	FT66TrapDamageUtils::ApplyTrapDamageToOverlaps(this, DamageZone, DamageHP);
+	FT66TrapDamageUtils::ApplyTrapDamageToOverlaps(this, DamageZone, DamageHP, FName(TEXT("TrapFloorBurst")), this);
 
 	if (!ShouldUseFireNiagara())
 	{
@@ -415,12 +417,28 @@ bool AT66FloorFlameTrap::ShouldUseFireNiagara() const
 	return bUseFireNiagaraVFX && CachedFireSystem != nullptr;
 }
 
+void AT66FloorFlameTrap::RefreshTickEnabledForDebug()
+{
+	const bool bNeedsAnimationTick = bWarningActive || (bFlamesActive && !ShouldUseFireNiagara());
+	const bool bNeedsDebugTick = T66CombatDebugDraw::ShouldDrawDamageVolumes();
+	SetActorTickEnabled(bNeedsAnimationTick || bNeedsDebugTick);
+}
+
 void AT66FloorFlameTrap::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	const bool bShouldDrawDebugContainer = T66CombatDebugDraw::ShouldDrawDamageVolumes();
+	if (bShouldDrawDebugContainer || bWarningActive || bFlamesActive)
+	{
+		const FString Label = bFlamesActive
+			? TEXT("Trap Flame Damage")
+			: (bWarningActive ? TEXT("Trap Flame Warning") : TEXT("Trap Flame Container"));
+		T66CombatDebugDraw::DrawDamageSphere(DamageZone, Label, bFlamesActive);
+	}
 
 	if (!bWarningActive && !(bFlamesActive && !ShouldUseFireNiagara()))
 	{
+		RefreshTickEnabledForDebug();
 		return;
 	}
 

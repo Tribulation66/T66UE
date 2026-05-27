@@ -10,6 +10,7 @@
 #include "Engine/Texture.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
+#include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -127,6 +128,10 @@ void AT66LavaPatch::BeginPlay()
 void AT66LavaPatch::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	if (bDamageHero && DamagePerTick > 0)
+	{
+		T66CombatDebugDraw::DrawDamageBox(DamageBox, TEXT("Lava Damage"), true);
+	}
 
 	if (!LavaMID)
 	{
@@ -503,14 +508,14 @@ void AT66LavaPatch::ApplyDamageTick()
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	if (RunState)
 	{
-		RunState->ApplyDamage(DamagePerTick, this);
+		RunState->ApplyDamage(DamagePerTick, this, FName(TEXT("LavaPatch")), this);
 	}
 }
 
 void AT66LavaPatch::UpdateAnimationTickState()
 {
 	const bool bShouldAnimate = GeneratedFrames.Num() > 1 && AnimationFPS > KINDA_SMALL_NUMBER;
-	SetActorTickEnabled(bShouldAnimate);
+	SetActorTickEnabled(bShouldAnimate || T66CombatDebugDraw::ShouldDrawDamageVolumes());
 
 	if (bShouldAnimate)
 	{
