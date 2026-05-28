@@ -1,0 +1,3 @@
+Evidence bundle: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\AutoFrameSelection_Hero1AxeAOE_EdgeFinal
+Contact sheet: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\contact_sheet.png
+Manifest: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\manifest.json

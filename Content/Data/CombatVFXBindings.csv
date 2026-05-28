@@ -1,0 +1,2 @@
+"---","BindingID","SourceType","SourceID","AttackCategory","NiagaraSystem","EffectPacketID","VFXProfile","bSuppressTemporaryProjectile","bDevelopmentFallbackAllowed","BaseVisualRadius","BasePlaybackSeconds","VisualScaleMultiplier","Notes"
+"Hero1Axe_AOE_Base","Hero1Axe_AOE_Base","WeaponBase","Hero_1_black_aoe","AOE","/Game/VFX/Hero1/Axe/AOE/NS_Hero1AxeAOE_MeshSlash.NS_Hero1AxeAOE_MeshSlash","Hero1AxeAOESlashMechanismPacket","MeshSlashAOE","True","True","411.4","0.46","1.0","Accepted Hero 1 AOE slash production binding; idol overlays deferred."

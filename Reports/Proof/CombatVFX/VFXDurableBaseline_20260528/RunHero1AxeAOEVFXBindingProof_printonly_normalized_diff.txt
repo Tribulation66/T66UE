@@ -1,0 +1,1 @@
+Normalized print-only output matches pre-change proof.

@@ -1,0 +1,501 @@
+{
+  "schema": "t66.vfx.video_evidence_bundle.v1",
+  "label": "Hero1AxeAOE_AutoFrameSelectorProof",
+  "capture_mode": "hero1axeaoe_hitbox_cleanup",
+  "video": "C:\\UE\\T66\\Saved\\VideoCaptures\\Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810\\Hero1AxeAOE_HitboxCleanup.mp4",
+  "frame_dir": "C:\\UE\\T66\\Saved\\VideoCaptures\\Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810\\frames",
+  "frame_prefix": "frame",
+  "frame_count": 72,
+  "frame_rate": 12.0,
+  "resolution": {
+    "x": 1280,
+    "y": 720
+  },
+  "selection": {
+    "selection_method": "auto_activity",
+    "activity_window": {
+      "start": 51,
+      "peak": 62,
+      "end": 71
+    },
+    "scores": [
+      2602.0,
+      2602.0,
+      2599.0,
+      2780.2,
+      2783.2,
+      2784.2,
+      2782.2,
+      3059.4,
+      3059.4,
+      2798.2,
+      2794.2,
+      2834.2,
+      2935.3,
+      2939.3500000000004,
+      2927.3500000000004,
+      3198.8,
+      2941.4,
+      2947.4,
+      2940.4,
+      2928.6000000000004,
+      2926.6000000000004,
+      2914.2,
+      2920.3,
+      2951.3,
+      2958.65,
+      2953.3,
+      2959.0,
+      2984.0,
+      2992.0,
+      3022.0,
+      3026.0,
+      3305.1000000000004,
+      3294.1000000000004,
+      3294.1000000000004,
+      3280.1000000000004,
+      3292.95,
+      3291.95,
+      3285.95,
+      3293.95,
+      3307.95,
+      3308.95,
+      3309.8,
+      3310.95,
+      3311.95,
+      3314.95,
+      3301.95,
+      3309.95,
+      3337.1000000000004,
+      3355.1000000000004,
+      3354.1000000000004,
+      3362.1000000000004,
+      3938.25,
+      3958.2000000000003,
+      3991.9,
+      4013.9,
+      4049.6,
+      4043.6,
+      4040.6,
+      4035.6,
+      4049.6,
+      4036.9,
+      4281.9,
+      5634.9,
+      4656.200000000001,
+      4534.200000000001,
+      4568.9,
+      4551.55,
+      4546.55,
+      4547.55,
+      4548.9,
+      4705.0,
+      4812.0
+    ],
+    "metrics": [
+      {
+        "active_pixels": 1306.0,
+        "bbox_area": 25920.0,
+        "score": 2602.0
+      },
+      {
+        "active_pixels": 1306.0,
+        "bbox_area": 25920.0,
+        "score": 2602.0
+      },
+      {
+        "active_pixels": 1303.0,
+        "bbox_area": 25920.0,
+        "score": 2599.0
+      },
+      {
+        "active_pixels": 1333.0,
+        "bbox_area": 28944.0,
+        "score": 2780.2
+      },
+      {
+        "active_pixels": 1336.0,
+        "bbox_area": 28944.0,
+        "score": 2783.2
+      },
+      {
+        "active_pixels": 1337.0,
+        "bbox_area": 28944.0,
+        "score": 2784.2
+      },
+      {
+        "active_pixels": 1335.0,
+        "bbox_area": 28944.0,
+        "score": 2782.2
+      },
+      {
+        "active_pixels": 1425.0,
+        "bbox_area": 32688.0,
+        "score": 3059.4
+      },
+      {
+        "active_pixels": 1425.0,
+        "bbox_area": 32688.0,
+        "score": 3059.4
+      },
+      {
+        "active_pixels": 1351.0,
+        "bbox_area": 28944.0,
+        "score": 2798.2
+      },
+      {
+        "active_pixels": 1347.0,
+        "bbox_area": 28944.0,
+        "score": 2794.2
+      },
+      {
+        "active_pixels": 1387.0,
+        "bbox_area": 28944.0,
+        "score": 2834.2
+      },
+      {
+        "active_pixels": 1468.0,
+        "bbox_area": 29346.0,
+        "score": 2935.3
+      },
+      {
+        "active_pixels": 1462.0,
+        "bbox_area": 29547.0,
+        "score": 2939.3500000000004
+      },
+      {
+        "active_pixels": 1450.0,
+        "bbox_area": 29547.0,
+        "score": 2927.3500000000004
+      },
+      {
+        "active_pixels": 1519.0,
+        "bbox_area": 33596.0,
+        "score": 3198.8
+      },
+      {
+        "active_pixels": 1454.0,
+        "bbox_area": 29748.0,
+        "score": 2941.4
+      },
+      {
+        "active_pixels": 1460.0,
+        "bbox_area": 29748.0,
+        "score": 2947.4
+      },
+      {
+        "active_pixels": 1453.0,
+        "bbox_area": 29748.0,
+        "score": 2940.4
+      },
+      {
+        "active_pixels": 1456.0,
+        "bbox_area": 29452.0,
+        "score": 2928.6000000000004
+      },
+      {
+        "active_pixels": 1454.0,
+        "bbox_area": 29452.0,
+        "score": 2926.6000000000004
+      },
+      {
+        "active_pixels": 1449.0,
+        "bbox_area": 29304.0,
+        "score": 2914.2
+      },
+      {
+        "active_pixels": 1465.0,
+        "bbox_area": 29106.0,
+        "score": 2920.3
+      },
+      {
+        "active_pixels": 1496.0,
+        "bbox_area": 29106.0,
+        "score": 2951.3
+      },
+      {
+        "active_pixels": 1496.0,
+        "bbox_area": 29253.0,
+        "score": 2958.65
+      },
+      {
+        "active_pixels": 1498.0,
+        "bbox_area": 29106.0,
+        "score": 2953.3
+      },
+      {
+        "active_pixels": 1499.0,
+        "bbox_area": 29200.0,
+        "score": 2959.0
+      },
+      {
+        "active_pixels": 1524.0,
+        "bbox_area": 29200.0,
+        "score": 2984.0
+      },
+      {
+        "active_pixels": 1532.0,
+        "bbox_area": 29200.0,
+        "score": 2992.0
+      },
+      {
+        "active_pixels": 1562.0,
+        "bbox_area": 29200.0,
+        "score": 3022.0
+      },
+      {
+        "active_pixels": 1566.0,
+        "bbox_area": 29200.0,
+        "score": 3026.0
+      },
+      {
+        "active_pixels": 1575.0,
+        "bbox_area": 34602.0,
+        "score": 3305.1000000000004
+      },
+      {
+        "active_pixels": 1564.0,
+        "bbox_area": 34602.0,
+        "score": 3294.1000000000004
+      },
+      {
+        "active_pixels": 1564.0,
+        "bbox_area": 34602.0,
+        "score": 3294.1000000000004
+      },
+      {
+        "active_pixels": 1550.0,
+        "bbox_area": 34602.0,
+        "score": 3280.1000000000004
+      },
+      {
+        "active_pixels": 1551.0,
+        "bbox_area": 34839.0,
+        "score": 3292.95
+      },
+      {
+        "active_pixels": 1550.0,
+        "bbox_area": 34839.0,
+        "score": 3291.95
+      },
+      {
+        "active_pixels": 1544.0,
+        "bbox_area": 34839.0,
+        "score": 3285.95
+      },
+      {
+        "active_pixels": 1552.0,
+        "bbox_area": 34839.0,
+        "score": 3293.95
+      },
+      {
+        "active_pixels": 1566.0,
+        "bbox_area": 34839.0,
+        "score": 3307.95
+      },
+      {
+        "active_pixels": 1567.0,
+        "bbox_area": 34839.0,
+        "score": 3308.95
+      },
+      {
+        "active_pixels": 1556.0,
+        "bbox_area": 35076.0,
+        "score": 3309.8
+      },
+      {
+        "active_pixels": 1569.0,
+        "bbox_area": 34839.0,
+        "score": 3310.95
+      },
+      {
+        "active_pixels": 1570.0,
+        "bbox_area": 34839.0,
+        "score": 3311.95
+      },
+      {
+        "active_pixels": 1573.0,
+        "bbox_area": 34839.0,
+        "score": 3314.95
+      },
+      {
+        "active_pixels": 1560.0,
+        "bbox_area": 34839.0,
+        "score": 3301.95
+      },
+      {
+        "active_pixels": 1568.0,
+        "bbox_area": 34839.0,
+        "score": 3309.95
+      },
+      {
+        "active_pixels": 1607.0,
+        "bbox_area": 34602.0,
+        "score": 3337.1000000000004
+      },
+      {
+        "active_pixels": 1625.0,
+        "bbox_area": 34602.0,
+        "score": 3355.1000000000004
+      },
+      {
+        "active_pixels": 1624.0,
+        "bbox_area": 34602.0,
+        "score": 3354.1000000000004
+      },
+      {
+        "active_pixels": 1632.0,
+        "bbox_area": 34602.0,
+        "score": 3362.1000000000004
+      },
+      {
+        "active_pixels": 1669.0,
+        "bbox_area": 45385.0,
+        "score": 3938.25
+      },
+      {
+        "active_pixels": 1666.0,
+        "bbox_area": 45844.0,
+        "score": 3958.2000000000003
+      },
+      {
+        "active_pixels": 1684.0,
+        "bbox_area": 46158.0,
+        "score": 3991.9
+      },
+      {
+        "active_pixels": 1706.0,
+        "bbox_area": 46158.0,
+        "score": 4013.9
+      },
+      {
+        "active_pixels": 1726.0,
+        "bbox_area": 46472.0,
+        "score": 4049.6
+      },
+      {
+        "active_pixels": 1720.0,
+        "bbox_area": 46472.0,
+        "score": 4043.6
+      },
+      {
+        "active_pixels": 1717.0,
+        "bbox_area": 46472.0,
+        "score": 4040.6
+      },
+      {
+        "active_pixels": 1712.0,
+        "bbox_area": 46472.0,
+        "score": 4035.6
+      },
+      {
+        "active_pixels": 1726.0,
+        "bbox_area": 46472.0,
+        "score": 4049.6
+      },
+      {
+        "active_pixels": 1729.0,
+        "bbox_area": 46158.0,
+        "score": 4036.9
+      },
+      {
+        "active_pixels": 1974.0,
+        "bbox_area": 46158.0,
+        "score": 4281.9
+      },
+      {
+        "active_pixels": 3327.0,
+        "bbox_area": 46158.0,
+        "score": 5634.9
+      },
+      {
+        "active_pixels": 2363.0,
+        "bbox_area": 45864.0,
+        "score": 4656.200000000001
+      },
+      {
+        "active_pixels": 2241.0,
+        "bbox_area": 45864.0,
+        "score": 4534.200000000001
+      },
+      {
+        "active_pixels": 2261.0,
+        "bbox_area": 46158.0,
+        "score": 4568.9
+      },
+      {
+        "active_pixels": 2251.0,
+        "bbox_area": 46011.0,
+        "score": 4551.55
+      },
+      {
+        "active_pixels": 2246.0,
+        "bbox_area": 46011.0,
+        "score": 4546.55
+      },
+      {
+        "active_pixels": 2247.0,
+        "bbox_area": 46011.0,
+        "score": 4547.55
+      },
+      {
+        "active_pixels": 2264.0,
+        "bbox_area": 45698.0,
+        "score": 4548.9
+      },
+      {
+        "active_pixels": 2369.0,
+        "bbox_area": 46720.0,
+        "score": 4705.0
+      },
+      {
+        "active_pixels": 2476.0,
+        "bbox_area": 46720.0,
+        "score": 4812.0
+      }
+    ]
+  },
+  "artifacts": {
+    "contact_sheet": "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\contact_sheet.png",
+    "selected_frames": [
+      "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\selected_frames\\00_start_frame_0051.png",
+      "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\selected_frames\\01_mid_frame_0056.png",
+      "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\selected_frames\\02_impact_frame_0062.png",
+      "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\selected_frames\\03_dissipate_frame_0071.png"
+    ],
+    "selected_notes": "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\selected_frames.md",
+    "visibility_checklist": "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\visibility_checklist.md",
+    "ffprobe_json": null
+  },
+  "selected": [
+    {
+      "label": "start",
+      "sequence_index": 51,
+      "timestamp_seconds": 4.25,
+      "source": "C:\\UE\\T66\\Saved\\VideoCaptures\\Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810\\frames\\frame_0051.png",
+      "copied": "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\selected_frames\\00_start_frame_0051.png"
+    },
+    {
+      "label": "mid",
+      "sequence_index": 56,
+      "timestamp_seconds": 4.666666666666667,
+      "source": "C:\\UE\\T66\\Saved\\VideoCaptures\\Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810\\frames\\frame_0056.png",
+      "copied": "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\selected_frames\\01_mid_frame_0056.png"
+    },
+    {
+      "label": "impact",
+      "sequence_index": 62,
+      "timestamp_seconds": 5.166666666666667,
+      "source": "C:\\UE\\T66\\Saved\\VideoCaptures\\Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810\\frames\\frame_0062.png",
+      "copied": "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\selected_frames\\02_impact_frame_0062.png"
+    },
+    {
+      "label": "dissipate",
+      "sequence_index": 71,
+      "timestamp_seconds": 5.916666666666667,
+      "source": "C:\\UE\\T66\\Saved\\VideoCaptures\\Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810\\frames\\frame_0071.png",
+      "copied": "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\AutoFrameSelection_Hero1AxeAOE_EdgeFinal\\selected_frames\\03_dissipate_frame_0071.png"
+    }
+  ],
+  "ffprobe": null
+}

@@ -1,0 +1,6 @@
+{
+  "schema": "t66.report_run.v1",
+  "createdDate": "2026-05-28",
+  "expiresAfterDays": 15,
+  "durableSummary": "Reports/Proof/CombatVFX/VFXDurableBaseline_20260528/PROOF_SUMMARY.md"
+}

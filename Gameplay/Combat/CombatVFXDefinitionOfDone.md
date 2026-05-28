@@ -1,0 +1,31 @@
+# Combat VFX Definition Of Done
+
+**Status:** Checklist and status matrix. This file indexes existing gates; it does not create a parallel process.
+
+This validator proves Combat VFX binding structure, required assets, source guards, and declared data contracts. It does not prove visual fidelity, temporal mechanism quality, final player-facing readability, or Pablo visual approval.
+
+## Matrix
+
+| Gate | Required evidence | Owner |
+|---|---|---|
+| Working goal | Full end-state goal and durable decision block when decisions are needed | `AGENTS.md` |
+| Source/reference | Pablo-provided transcript, saved written source, or approved internal packet | `CombatVFXAuthoringProcedure.md` |
+| Effect packet | Filled packet with PPF, artifact parity, mechanism manifest, anti-lookalike test, and proof plan | per-effect packet |
+| Visual target | Approved saved mockup/contact sheet when imagegen gate is active | per-effect packet |
+| Lab isolation | `/Game/VFXLab` cook isolation and validator guard when lab assets exist | validator/script |
+| Editor-isolation visual proof | Same-view top-down/black-background capture when packet requires it | `CaptureT66NiagaraMRQIsolation.ps1` |
+| Gameplay capture | Unreal-owned MP4/frame evidence; desktop screenshots do not satisfy this | `CaptureT66GameplayVideo.ps1` |
+| Temporal evidence | Start/mid/impact/dissipate frames or equivalent frame range; stills alone do not prove motion | evidence bundle |
+| Hitbox/damage authority | Combat query/log proof; Niagara collision/render mesh/material opacity cannot be authority | combat runtime |
+| Production binding | CSV/DataTable row, production asset path, GameInstance assignment, no `/Game/VFXLab` dependency | `ValidateCombatVFXProductionBindings.py` |
+| Item/stat proof | Production-path automation or literal UI proof that stats affect combat values and VFX presentation | proof wrapper |
+| Idol overlay | Architecture/effect packet plus active rows only after user approval | `CombatVFXIdolOverlayArchitecture.md` |
+| Staged commit | Staged manifest, LFS/pointer checks where relevant, Claude staged-diff review | reports |
+
+## Completion Labels
+
+- `FULL`: every required gate for that effect/status is present with evidence.
+- `PARTIAL`: one or more required gates are missing, deferred, or diagnostic only.
+- `DEFERRED`: intentionally out of scope and documented with the next owning step.
+
+Do not call an effect production-ready until Pablo approves captured visual evidence.

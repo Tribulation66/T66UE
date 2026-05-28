@@ -1,0 +1,2 @@
+---,BindingID,SourceType,SourceID,AttackCategory,NiagaraSystem,EffectPacketID,VFXProfile,BaseVisualRadius,BasePlaybackSeconds,bSuppressTemporaryProjectile,bDevelopmentFallbackAllowed,VisualScaleMultiplier,Notes
+Hero1Axe_AOE_Base,Malformed_Active,WeaponBase,Hero_1_black_aoe,AOE,/Game/VFX/Hero1/Axe/AOE/NS_Test.NS_Test,,MeshSlashAOE,411.4,0.46,True,True,1.0,active synthetic row

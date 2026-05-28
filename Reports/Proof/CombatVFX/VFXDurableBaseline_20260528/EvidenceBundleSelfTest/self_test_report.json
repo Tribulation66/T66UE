@@ -1,0 +1,24 @@
+{
+  "schema": "t66.vfx.video_evidence_bundle.self_test.v1",
+  "default_indices": {
+    "start": 0,
+    "mid": 3,
+    "impact": 6,
+    "dissipate": 9
+  },
+  "auto_indices": {
+    "start": 4,
+    "mid": 6,
+    "impact": 7,
+    "dissipate": 8
+  },
+  "manual_indices": {
+    "start": 1,
+    "mid": 2,
+    "impact": 3,
+    "dissipate": 4
+  },
+  "default_manifest": "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\EvidenceBundleSelfTest\\evidence_default\\manifest.json",
+  "auto_manifest": "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\EvidenceBundleSelfTest\\evidence_auto\\manifest.json",
+  "manual_manifest": "C:\\UE\\T66\\Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\EvidenceBundleSelfTest\\evidence_manual\\manifest.json"
+}

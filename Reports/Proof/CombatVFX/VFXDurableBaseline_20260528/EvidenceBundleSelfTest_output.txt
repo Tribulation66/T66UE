@@ -1,0 +1,10 @@
+Evidence bundle: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\EvidenceBundleSelfTest\evidence_default
+Contact sheet: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\EvidenceBundleSelfTest\evidence_default\contact_sheet.png
+Manifest: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\EvidenceBundleSelfTest\evidence_default\manifest.json
+Evidence bundle: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\EvidenceBundleSelfTest\evidence_auto
+Contact sheet: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\EvidenceBundleSelfTest\evidence_auto\contact_sheet.png
+Manifest: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\EvidenceBundleSelfTest\evidence_auto\manifest.json
+Evidence bundle: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\EvidenceBundleSelfTest\evidence_manual
+Contact sheet: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\EvidenceBundleSelfTest\evidence_manual\contact_sheet.png
+Manifest: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\EvidenceBundleSelfTest\evidence_manual\manifest.json
+SELF TEST PASSED

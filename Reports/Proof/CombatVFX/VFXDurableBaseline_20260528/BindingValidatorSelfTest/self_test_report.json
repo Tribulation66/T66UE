@@ -1,0 +1,17 @@
+{
+  "schema": "t66.combat_vfx_binding_validator.self_test.v1",
+  "disclaimer": "This validator proves Combat VFX binding structure, required assets, source guards, and declared data contracts. It does not prove visual fidelity, temporal mechanism quality, final player-facing readability, or Pablo visual approval.",
+  "positive_csv": "Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\BindingValidatorSelfTest\\positive_bindings.csv",
+  "negative_csv": "Reports\\Proof\\CombatVFX\\VFXDurableBaseline_20260528\\BindingValidatorSelfTest\\negative_bindings.csv",
+  "positive_summary": {
+    "active": [
+      "Hero1Axe_AOE_Base"
+    ],
+    "deferred": [
+      "Hero1Axe_DOT_Scaffold"
+    ],
+    "active_count": 1,
+    "deferred_count": 1
+  },
+  "negative_failed": true
+}

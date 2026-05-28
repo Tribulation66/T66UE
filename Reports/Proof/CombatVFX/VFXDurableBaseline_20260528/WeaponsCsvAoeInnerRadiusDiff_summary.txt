@@ -1,0 +1,20 @@
+Structured Weapons.csv diff check
+Date: 2026-05-28
+
+Compared HEAD:Content/Data/Weapons.csv against the working Content/Data/Weapons.csv using csv.DictReader keyed by WeaponID.
+
+Result:
+- Old columns: 21
+- New columns: 22
+- Added columns: AoeInnerRadiusRatio
+- Removed columns: none
+- Old rows: 192
+- New rows: 192
+- Added rows: none
+- Removed rows: none
+- Non-added-column value changes: 0
+- Non-zero AoeInnerRadiusRatio values: 1
+- Non-zero row: Hero_1_black_aoe = 0.54
+
+Interpretation:
+The textual weapon source-data change is limited to adding AoeInnerRadiusRatio and setting the Hero 1 black AOE inner-radius value used by the crescent-band VFX hitbox contract. No other weapon rows or pre-existing columns changed.

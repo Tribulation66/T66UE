@@ -3,11 +3,12 @@
 ## 1. Project Contract
 
 - Treat this file as the root process router for `C:\UE\T66`. It defines global behavior, accepted process classes, and where to find deeper folder-owned instructions.
-- Before answering or acting on every new user request or question, derive the current working goal in one sentence. Use the native goal/set_goal mechanism when available; otherwise state the working goal in the conversation.
-- Use the working goal to decide what files/systems to inspect, what changes are in scope, and what verification proves the request is done.
+- Before answering or acting on every new user request or question, derive the current working goal in one sentence. When a native goal function is available (`/goal`, `set_goal`, `create_goal`, or an equivalent tool), call it to create or set that goal before planning, review, implementation, or substantive answers. If no goal function is available, state the working goal in the conversation.
+- Treat the function-created or conversation-stated working goal as the active task contract. Use it to decide what files/systems to inspect, what changes are in scope, and what verification proves the request is done.
 - Start from the live repo, current folder instructions, current assets, current scripts, and current machine state. Do not answer from stale docs or memory when the live project can be checked.
 - Default scope excludes Mini/minigame systems. Unless the user explicitly names Mini, minigames, a specific minigame, or a Mini-owned path, do not inspect, change, recommend, capture, validate, or include Mini/minigame code, UI, assets, docs, checklists, or generated outputs. Do not treat unrelated terms such as minimap or mini-stat as Mini scope. If a task appears impossible without Mini/minigame work, ask before including it.
-- User constraints, planning-only boundaries, and repository instructions override convenience. If the user changes scope, replace the working goal and discard stale assumptions.
+- User constraints, planning-only boundaries, and repository instructions override convenience. If the user changes scope, update, close, or replace the active function-created goal with the available goal controls before proceeding; if the environment cannot update the function goal, state the replacement working goal in the conversation and discard stale assumptions.
+- Working goals must describe the full requested end state, not a temporary clarification gate. If a decision gate is needed, ask it once and, for durable work, save it as `Reports/AgentReviews/<TaskSlug>/decision_block.md`; on continuations, reference the saved gate instead of repeating questions. Mark `blocked` only when no safe default, instruction, or user-approved decision can move the full goal forward.
 - For each completed change, report the exact verification performed, or state clearly why verification was skipped.
 - Do not silently swap an accepted process for a faster or simpler method. If the process matters to the quality target, the process is part of the task.
 - For solved-category visual, animation, rigging, VFX, import, UI fidelity, generated-media, and comparable production tasks, use the research-first replication rule in Section 2 before implementation.
@@ -205,6 +206,13 @@ Reported status: FULL/PARTIAL
 - Avoid broad `git status`, `git diff`, or similar Git scans over Unreal binary asset folders such as `Content/`, `SourceAssets/`, and staged build outputs unless the task specifically requires that scope.
 - Prefer narrow path checks against the specific files being inspected. Broad scans can spawn many `git-lfs.exe` workers that hash large `.uasset` or generated asset files, saturating disk I/O and freezing the desktop.
 - If a broad Git/LFS scan is necessary, warn the user first and explain that it may temporarily hammer disk. Treat high disk usage with many `git-lfs.exe` processes and little or no network activity as local LFS hashing/comparison, not a push or pull.
+
+### Report Artifact Routing
+
+- Store agent-authored reports, handoff packets, proof summaries, review packets, cleanup manifests, and temporary report runs under `Reports/`, following `Reports/AGENTS.md`.
+- Use `Audit/` only for user-requested audits or existing audit lifecycle workflows. Do not put ordinary reports there.
+- Report-only ToonStyle artifacts belong under `Reports/ToonStyle`, not under production ToonStyle folders.
+- Raw report/proof run folders expire after 15 days. Delete whole run folders only after confirming a durable summary exists outside the raw folder and no active references still point at that run. New raw run folders should include `.report-run.json` with `expiresAfterDays: 15` for unambiguous future cleanup.
 
 ### Script Lifecycle
 

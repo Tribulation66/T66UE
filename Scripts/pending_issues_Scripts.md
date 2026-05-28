@@ -41,3 +41,16 @@
 - What's wrong: `Scripts/CaptureT66UIScreen.ps1` can open a frontend screen, capture it, and dump its widget tree, but it cannot perform a deterministic Unreal-owned click on a tagged Slate widget before capture. Ad hoc OS mouse injection is unreliable with off-screen/DPI-scaled automation windows, which makes tab/dropdown/button interaction regressions harder to prove without manual input.
 - Why it's out of scope now: The current pass fixes Run Summary tab/button wiring and only needs a normal Run Summary capture/log smoke; adding reusable click automation would touch the frontend automation contract.
 - What fixing it would entail: Add a command-line automation path such as `-T66AutoClickTag=<Tag>` with an optional delay, resolve the tag through the widget tree/geometry, inject the click through Unreal/Slate, then capture/dump after the interaction and update `CaptureT66UIScreen.ps1` to expose it.
+
+## Resolved: Gameplay VFX Capture Timeout After Writing Nearly All Frames
+
+- Severity tag: [Minor]
+- What's wrong: The first Hero 1 AOE hitbox proof attempt wrote 71 Unreal-owned PNG frames and logged the complete `[Hero1AxeAOEHitboxProof]` hit/miss proof, but `Scripts/CaptureT66GameplayVideo.ps1` timed out waiting for the requested 72-frame capture to finish.
+- Resolution: The final evidence was replaced by a clean 50-frame capture at `Saved/VideoCaptures/Hero1AxeAOE_Candidate03_NorthAuraHitbox_20260527_Clean50/`, which completed, encoded, and generated the evidence bundle without timeout.
+- Remaining note: A future generic wrapper enhancement could still add retained-frame recovery metadata, but it is no longer blocking this Hero 1 AOE lab proof.
+
+## Resolved: VFX Evidence Bundle Has Opt-In Auto Frame Selection [Minor]
+
+- Severity tag: [Minor]
+- Resolution: `Scripts/BuildT66VideoEvidenceBundle.py` now has an explicit `--auto-select-frames` mode that selects `start`, `mid`, `impact`, and `dissipate` from saturated/non-background frame activity while preserving manual `--selected-frames` overrides and the previous default fixed-index behavior. `Scripts/CaptureT66GameplayVideo.ps1` exposes this as `-EvidenceAutoSelectFrames`.
+- Remaining note: Existing proof scripts keep manual/default frame selection unless the opt-in switch is passed. This preserves earlier proof reproducibility while giving future VFX packets an automated best-frame evidence path.

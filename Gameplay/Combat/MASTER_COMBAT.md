@@ -1,9 +1,11 @@
 # T66 Master Combat
 
-**Last updated:** 2026-05-26
+**Last updated:** 2026-05-28
 **Scope:** Single-source handoff for combat runtime flow, targeting, damage routing, damage provenance logging, combat collision roles, debug visibility, hit feedback, spatial headshots, accuracy-driven aiming, and boss body-part combat.
-**Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`, `Gameplay/Combat/CombatVFXAuthoringProcedure.md`
+**Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`, `Gameplay/Combat/VFX_PROCESS_INDEX.md`, `Gameplay/Combat/CombatVFXAuthoringProcedure.md`
 **Maintenance rule:** Update this file after every material combat, targeting, damage-model, hitbox, projectile, boss-health, or combat-UI change.
+
+Combat VFX process note: start future VFX work from `VFX_PROCESS_INDEX.md` and `CombatVFXDefinitionOfDone.md`. Production-path automation proof must use real weapon selection, RunState inventory/item stats, combat fire, VFX binding lookup, and damage paths; it is not the same as literal UI-click proof unless a packet requires UI-click validation.
 
 ## 1. Executive Summary
 

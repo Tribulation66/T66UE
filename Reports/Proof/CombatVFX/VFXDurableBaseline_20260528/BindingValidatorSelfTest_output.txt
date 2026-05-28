@@ -1,0 +1,4 @@
+[CombatVFXProductionBindingsValidate] Active binding rows: ['Hero1Axe_AOE_Base']; deferred scaffold rows: ['Hero1Axe_DOT_Scaffold']
+[CombatVFXProductionBindingsValidate] This validator proves Combat VFX binding structure, required assets, source guards, and declared data contracts. It does not prove visual fidelity, temporal mechanism quality, final player-facing readability, or Pablo visual approval.
+[CombatVFXProductionBindingsValidate] SELF TEST PASSED
+[CombatVFXProductionBindingsValidate] Self-test report: Reports\Proof\CombatVFX\VFXDurableBaseline_20260528\BindingValidatorSelfTest\self_test_report.json
