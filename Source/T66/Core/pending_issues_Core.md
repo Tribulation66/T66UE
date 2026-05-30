@@ -1,11 +1,17 @@
 # Pending Issues - Core
 
-## Retire Unused Hero Move Speed Multiplier Formula
+## Resolved 2026-05-29 - RetroFX Default-On Recurrence And Low-Resolution Pixelation
 
-- Severity tag: [Minor]
-- What's wrong: `UT66RunStateSubsystem::GetHeroMoveSpeedMultiplier()` remains declared and defined as a legacy formula, but live hero walking speed now reads the raw `Speed` stat through `UT66HeroMovementComponent` instead of consuming this multiplier.
-- Why it's out of scope now: The current pass changes movement authority to the user-approved Speed-stat model and updates docs; broad stat API deletion could affect UI/reference code and should be handled as a separate cleanup.
-- What fixing it would entail: Remove or repurpose `GetHeroMoveSpeedMultiplier()`, audit any Blueprint or external references, and update stats documentation once the API is no longer needed for compatibility.
+- Former severity tag: [Major]
+- What was wrong: `FT66RetroFXSettings` and the saved duplicate master flag recreated gameplay RetroFX, real low resolution, and frontend CRT as enabled through settings defaults, migration, reset, safe-mode, UI reset, save load, and world-startup application. The visible pixelation was primarily `r.ScreenPercentage` being reduced by real-low-resolution mode.
+- Resolution: RetroFX/CRT now defaults off from the settings struct, the duplicate saved master flag was removed, schema 24 migration forces existing saves off, all named recreation paths were sealed by verification, and the off path restores `r.ScreenPercentage=100`.
+- Evidence: `Reports/AgentReviews/20260529_RetroFXOffByDefaultFix/completion_packet.md`
+
+## Resolved 2026-05-28 - Staged Standalone Build Blocked By Undeclared Accuracy Item ID
+
+- Former severity tag: [Blocker]
+- What was wrong: `Scripts\StageStandaloneBuild.ps1` failed during the Win64 `T66` target build on 2026-05-28 because `Source/T66/Core/T66GameInstance.cpp` referenced `AccuracyItemID` around lines 774, 775, 777, and 779, but that identifier was undeclared in the compile unit.
+- Resolution: The item taxonomy pass retired the old secondary `Accuracy` item, replaced the random-pool fallback with `Execute`, and rebuilt `T66Editor` successfully. The remaining proof gate is the staged standalone refresh for this pass.
 
 ## Legacy Lab Unlock IDs In Existing Save Games
 

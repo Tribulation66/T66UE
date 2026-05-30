@@ -1,6 +1,6 @@
 # T66 Master Movement
 
-**Last updated:** 2026-05-26  
+**Last updated:** 2026-05-27
 **Scope:** Single-source handoff for player-hero movement runtime: input, locomotion, jump, one-button forward roll, speed multipliers, velocity-affecting stage effects, and current movement blockers and overrides.  
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Combat/MASTER_COMBAT.md`
 **Maintenance rule:** Update this file after every material change to hero movement input, locomotion tuning, jump or roll rules, stage-effect movement, movement-state gating, or run-state speed modifiers.
@@ -10,7 +10,7 @@
 - `AT66PlayerController` currently owns raw movement input capture and still applies normal walking via `AddMovementInput`.
 - `UT66HeroMovementComponent` owns movement configuration, cached move intent, jump routing, one-button forward roll routing, and final `MaxWalkSpeed` refreshes, but it is not yet the sole owner of locomotion.
 - `UCharacterMovementComponent` on `AT66HeroBase` remains the live movement authority for walking, falling, friction, rotation-to-movement, and impulse response.
-- Base walk speed starts at `1800`, then is seeded from the hero foundational `Speed` stat on the successful non-preview hero-initialize path. Live walking speed is `Speed * 840 UU/s`, with explicit item, stage, secondary, and status movement modifiers layered on top.
+- Base walk speed starts at `1800`, then is seeded from the hero foundational `Speed` stat on the successful non-preview hero-initialize path. Live walking speed is `Speed * 840 UU/s`, with explicit item, stage, and status movement modifiers layered on top.
 - Jump is currently single-jump only and uses standard forward carry from the live movement state; it is not currently suppressing forward movement on takeoff.
 - Roll is a one-button forward burst bound to `Roll`; it uses the hero actor's facing direction and does not require a movement-input chord.
 - Movement state is split:
@@ -18,8 +18,6 @@
   - the Hero Speed subsystem only tracks binary move intent for visuals and companion state
   - hero animation state also consults falling state, actual velocity, replicated velocity, and remote location delta
 - Several movement-adjacent hooks exist but are not fully live:
-  - `FT66HeroMovementTuning::DefaultWalkSpeed` is declared but not used by current speed authority
-  - `UT66RunStateSubsystem::GetMovementSpeedSecondaryMultiplier()` currently returns `1.0f`
   - `ApplyStatusBurn`, `ApplyStatusChill`, and `ApplyStatusCurse` are currently stubs, and the tick path says those enemy-applied status effects were removed
 
 ## 2. Canonical Files
@@ -105,7 +103,7 @@
 
 ### 3.5 Walk-speed ownership
 
-- The live base walk-speed variable is `UT66HeroMovementComponent::BaseWalkSpeed`, not `FT66HeroMovementTuning::DefaultWalkSpeed`.
+- The live base walk-speed variable is `UT66HeroMovementComponent::BaseWalkSpeed`.
 - `BaseWalkSpeed` starts at `1800`.
 - During `AT66HeroBase::InitializeHero()`, current runtime seeds fallback hero walk speed with:
   - `HeroMovementComponent->SetHeroBaseSpeedStat(InHeroData.BaseSpeed)`
@@ -113,7 +111,6 @@
 - `RefreshWalkSpeedFromRunState()` then computes live `MaxWalkSpeed` as:
   - `RunState->GetSpeedStat() * 840 UU/s` when RunState exists, otherwise fallback `BaseWalkSpeed`
   - multiplied by `GetItemMoveSpeedMultiplier()`
-  - multiplied by `GetMovementSpeedSecondaryMultiplier()`
   - multiplied by `GetStageMoveSpeedMultiplier()`
   - multiplied by `GetStatusMoveSpeedMultiplier()`
 - The final result is clamped to `[200, 10000]`.
@@ -122,7 +119,6 @@
 
 - Hero foundational `Speed` stat is the base movement-speed authority.
 - `HeroData.MaxSpeed` is reserved metadata for future cap semantics and is not part of the current live walking-speed stack.
-- `GetHeroMoveSpeedMultiplier()` still exists for now as compatibility/dead formula code, but it is not consumed by live walking speed.
 - Item-derived movement speed is represented by `ItemMoveSpeedMultiplier`.
 - Stage speed boosts are live:
   - `ApplyStageSpeedBoost()` clamps multiplier to `[0.25, 5.0]`
@@ -133,8 +129,6 @@
 - `AT66HeroBase` currently refreshes movement speed whenever RunState fires:
   - `HeroProgressChanged`
   - `InventoryChanged`
-- The declared secondary-stat movement hook is not live yet:
-  - `GetMovementSpeedSecondaryMultiplier()` currently returns `1.0f`
 - Status-move slowdown is structurally present through `GetStatusMoveSpeedMultiplier()`, but the current public status application functions are stubs.
 
 ## 4. Jump
@@ -158,7 +152,6 @@
 - Current ability-gate blockers for jump are:
   - preview mode
   - vehicle-mounted state
-  - quick-revive downed state
 - World dialogue does not currently add a separate jump block in the movement component.
 
 ## 5. Roll
@@ -280,11 +273,6 @@
   - movement input vector is consumed
   - capsule collision is disabled
   - on exit, movement mode is restored to `MOVE_Walking` and walk speed is refreshed
-- Quick-revive downed:
-  - hero movement stops immediately
-  - character movement is disabled
-  - movement input vector is consumed
-  - on recovery, movement mode is restored to `MOVE_Walking` if not vehicle-mounted and walk speed is refreshed
 - World dialogue:
   - normal move intent is zeroed
   - normal walking input path early-returns
@@ -324,9 +312,6 @@
 
 - Ordinary locomotion authority is split between controller and movement component.
   - this is the biggest architectural simplification target if movement is refactored
-- `FT66HeroMovementTuning::DefaultWalkSpeed` is currently dead configuration.
-  - live speed authority uses the hero `Speed` stat converted through `UT66HeroMovementComponent`
-- `UT66RunStateSubsystem::GetMovementSpeedSecondaryMultiplier()` advertises item-driven movement-speed secondary behavior but currently returns `1.0f`
 - Status-effect move-speed plumbing exists structurally, but current public status application functions are stubs
 - Hero Speed subsystem comments imply movement-speed ownership, but current live behavior is cosmetic or animation-facing only
 - Roll currently reuses dash-named tuning/stat internals (`DashCooldownSeconds`, `DashStrength`, `GetDashCooldownMultiplier()`).

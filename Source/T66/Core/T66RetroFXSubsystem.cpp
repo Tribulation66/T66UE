@@ -1028,16 +1028,8 @@ void UT66RetroFXSubsystem::ApplyResolutionRuntime(const FT66RetroFXSettings& Set
 
 	if (!Settings.bUseRealLowResolution)
 	{
-		if (bResolutionRuntimeActive)
-		{
-			UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyResolutionRuntime: restoring original runtime resolution defaults"));
-			RestoreResolutionRuntimeDefaults();
-			bResolutionRuntimeActive = false;
-		}
-		else
-		{
-			UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyResolutionRuntime: real low resolution disabled; runtime override inactive"));
-		}
+		UE_LOG(LogT66RetroFXRuntime, Verbose, TEXT("ApplyResolutionRuntime: real low resolution disabled; enforcing full-resolution defaults"));
+		RestoreResolutionRuntimeDefaults();
 		return;
 	}
 
@@ -1890,12 +1882,17 @@ void UT66RetroFXSubsystem::RestoreResolutionRuntimeDefaults()
 		return;
 	}
 
-	// Project-owned AA/upscaler/min-resolution CVars are restored by config on
-	// boot; only runtime-owned resolution overrides are reset here.
-	SetRetroCVarFloat(TEXT("r.ScreenPercentage"), OriginalScreenPercentage);
+	// RetroFX off is explicitly full-resolution. Do not replay a previously
+	// captured lowered value from a device profile, old save, or prior runtime
+	// real-low-res pass.
+	SetRetroCVarFloat(TEXT("r.ScreenPercentage"), 100.0f);
 	if (bHasOriginalScreenPercentageMinResolutionFraction)
 	{
 		SetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolutionFraction"), OriginalScreenPercentageMinResolutionFraction);
+	}
+	else
+	{
+		SetRetroCVarFloat(TEXT("r.ScreenPercentage.MinResolutionFraction"), 0.0f);
 	}
 	bResolutionRuntimeActive = false;
 }

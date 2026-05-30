@@ -173,7 +173,7 @@ namespace
 		return Thresholds;
 	}
 
-	const TArray<int32>& GetExtraGamblerTokenThresholds()
+	const TArray<int32>& GetExtraVendorTokenThresholds()
 	{
 		static const TArray<int32> Thresholds = { 1, 2, 3, 4, 5 };
 		return Thresholds;
@@ -310,7 +310,7 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 	Profile->LifetimeRunsCompleted = FMath::Max(0, Profile->LifetimeRunsCompleted);
 	Profile->LifetimeShopPurchases = FMath::Max(0, Profile->LifetimeShopPurchases);
 	Profile->LifetimeGamblerWins = FMath::Max(0, Profile->LifetimeGamblerWins);
-	Profile->GamblersTokenUnlockedLevel = FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 5);
+	Profile->VendorTokenUnlockedLevel = FMath::Clamp(Profile->VendorTokenUnlockedLevel, 0, 5);
 
 	// Historical migration: early hero renumbering (Hero_1 removed, Hero_2..5 -> Hero_1..4). SaveVersion 9.
 	if (LoadedSaveVersion < 9)
@@ -867,7 +867,7 @@ void UT66AchievementsSubsystem::RebuildDefinitions()
 			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraUnionDesc", "Clear {0} stages with the same companion."), FText::AsNumber(Requirement)));
 	}
 
-	const TArray<int32>& ExtraTokenThresholds = GetExtraGamblerTokenThresholds();
+	const TArray<int32>& ExtraTokenThresholds = GetExtraVendorTokenThresholds();
 	for (int32 Index = 0; Index < ExtraTokenThresholds.Num(); ++Index)
 	{
 		const int32 Requirement = ExtraTokenThresholds[Index];
@@ -878,7 +878,7 @@ void UT66AchievementsSubsystem::RebuildDefinitions()
 			ExtraTokenThresholds.Num(),
 			Requirement,
 			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraTokenTitle", "Token Rank {0}"), FText::AsNumber(Requirement)),
-			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraTokenDesc", "Unlock Gambler's Token level {0}."), FText::AsNumber(Requirement)));
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraTokenDesc", "Unlock Vendor Token level {0}."), FText::AsNumber(Requirement)));
 	}
 
 	ApplyRuntimeStateToCachedDefinitions(CachedDefinitions);
@@ -1208,18 +1208,18 @@ void UT66AchievementsSubsystem::NotifyGamblerWin()
 	if (bAnyChanged) { MarkDirtyAndMaybeSave(true); AchievementsStateChanged.Broadcast(); BroadcastAchievementsUnlocked(NewlyUnlocked); }
 }
 
-int32 UT66AchievementsSubsystem::GetGamblersTokenUnlockedLevel() const
+int32 UT66AchievementsSubsystem::GetVendorTokenUnlockedLevel() const
 {
-	return Profile ? FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 5) : 0;
+	return Profile ? FMath::Clamp(Profile->VendorTokenUnlockedLevel, 0, 5) : 0;
 }
 
-int32 UT66AchievementsSubsystem::GetGamblersTokenDifficultyFloor(ET66Difficulty Difficulty)
+int32 UT66AchievementsSubsystem::GetVendorTokenDifficultyFloor(ET66Difficulty Difficulty)
 {
 	const int32 DifficultyIndex = static_cast<int32>(Difficulty);
 	return FMath::Clamp(DifficultyIndex + 1, 1, 5);
 }
 
-int32 UT66AchievementsSubsystem::UpgradeGamblersTokenForDifficulty(ET66Difficulty Difficulty)
+int32 UT66AchievementsSubsystem::UpgradeVendorTokenForDifficulty(ET66Difficulty Difficulty)
 {
 	if (!Profile) LoadOrCreateProfile();
 	if (!Profile)
@@ -1227,9 +1227,9 @@ int32 UT66AchievementsSubsystem::UpgradeGamblersTokenForDifficulty(ET66Difficult
 		return 0;
 	}
 
-	const int32 CurrentLevel = FMath::Clamp(Profile->GamblersTokenUnlockedLevel, 0, 5);
+	const int32 CurrentLevel = FMath::Clamp(Profile->VendorTokenUnlockedLevel, 0, 5);
 	const int32 NextSequentialLevel = FMath::Clamp(CurrentLevel + 1, 1, 5);
-	const int32 DifficultyFloor = GetGamblersTokenDifficultyFloor(Difficulty);
+	const int32 DifficultyFloor = GetVendorTokenDifficultyFloor(Difficulty);
 	const int32 NewLevel = FMath::Clamp(FMath::Max(NextSequentialLevel, DifficultyFloor), 1, 5);
 
 	if (NewLevel == CurrentLevel)
@@ -1237,11 +1237,11 @@ int32 UT66AchievementsSubsystem::UpgradeGamblersTokenForDifficulty(ET66Difficult
 		return CurrentLevel;
 	}
 
-	Profile->GamblersTokenUnlockedLevel = NewLevel;
+	Profile->VendorTokenUnlockedLevel = NewLevel;
 	TArray<FName> NewlyUnlocked;
 	const bool bExtraAchievementsChanged = UpdateMilestoneAchievements(
 		TEXT("ACH_EXT_TOKEN_"),
-		GetExtraGamblerTokenThresholds(),
+		GetExtraVendorTokenThresholds(),
 		NewLevel,
 		&NewlyUnlocked);
 	MarkDirtyAndMaybeSave(true);

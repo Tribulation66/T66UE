@@ -17,7 +17,7 @@ struct T66_API FT66RetroFXSettings
 	GENERATED_BODY()
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	bool bEnableRetroFXMaster = true;
+	bool bEnableRetroFXMaster = false;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
 	float PS1BlendPercent = 0.0f;
@@ -50,7 +50,7 @@ struct T66_API FT66RetroFXSettings
 	float PS1SceneDepthFogPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	bool bUseRealLowResolution = true;
+	bool bUseRealLowResolution = false;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
 	float FakeResolutionSwitchSizePercent = 0.0f;
@@ -59,7 +59,7 @@ struct T66_API FT66RetroFXSettings
 	float FakeResolutionSwitchUVPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
-	float TargetResolutionHeightPercent = 40.0f;
+	float TargetResolutionHeightPercent = 100.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX")
 	float N64BlurBlendPercent = 0.0f;
@@ -158,7 +158,7 @@ struct T66_API FT66RetroFXSettings
 	float UIBackgroundImageChromaticAberrationPercent = 0.0f;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT")
-	bool UIFullScreenCRTEnabled = true;
+	bool UIFullScreenCRTEnabled = false;
 
 	UPROPERTY(SaveGame, EditAnywhere, BlueprintReadWrite, Category = "Retro FX|UI|CRT", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float UICRTScanlineStrength = 0.4f;

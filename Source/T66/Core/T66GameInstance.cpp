@@ -30,8 +30,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66GameInstance, Log, All);
 
 namespace
 {
-	static const FName GamblersTokenItemID(TEXT("Item_GamblersToken"));
-	static const FName AccuracyItemID(TEXT("Item_Accuracy"));
+	static const FName VendorTokenItemID(TEXT("Item_VendorToken"));
 	static const FName CloseRangeItemID(TEXT("Item_CloseRangeDmg"));
 	static const FName LongRangeItemID(TEXT("Item_LongRangeDmg"));
 	static const FName SpinWheelItemID(TEXT("Item_SpinWheel"));
@@ -49,7 +48,7 @@ namespace
 	static bool IsRandomItemPoolEligible(FName ItemID)
 	{
 	return !ItemID.IsNone()
-		&& ItemID != GamblersTokenItemID
+		&& ItemID != VendorTokenItemID
 		&& ItemID != FName(TEXT("Item_BackroomsQuickRevive"))
 		&& ItemID != CloseRangeItemID
 		&& ItemID != LongRangeItemID
@@ -104,36 +103,20 @@ namespace
 
 	static bool BuildSyntheticSpecialItemData(FName ItemID, FItemData& OutItemData)
 	{
-		if (ItemID == AccuracyItemID)
-		{
-			OutItemData = FItemData{};
-			OutItemData.ItemID = AccuracyItemID;
-			OutItemData.Icon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Accuracy_black.Item_Accuracy_black")));
-			OutItemData.BlackIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Accuracy_black.Item_Accuracy_black")));
-			OutItemData.RedIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Accuracy_red.Item_Accuracy_red")));
-			OutItemData.YellowIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Accuracy_yellow.Item_Accuracy_yellow")));
-			OutItemData.WhiteIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_Accuracy_white.Item_Accuracy_white")));
-			OutItemData.PrimaryStatType = ET66HeroStatType::Accuracy;
-			OutItemData.SecondaryStatType = ET66SecondaryStatType::Accuracy;
-			OutItemData.BaseBuyGold = 55;
-			OutItemData.BaseSellGold = 27;
-			return true;
-		}
-
-		if (ItemID != GamblersTokenItemID)
+		if (ItemID != VendorTokenItemID)
 		{
 			return false;
 		}
 
 		OutItemData = FItemData{};
-		OutItemData.ItemID = GamblersTokenItemID;
-		OutItemData.Icon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_GamblersToken_black.Item_GamblersToken_black")));
-		OutItemData.BlackIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_GamblersToken_black.Item_GamblersToken_black")));
-		OutItemData.RedIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_GamblersToken_red.Item_GamblersToken_red")));
-		OutItemData.YellowIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_GamblersToken_yellow.Item_GamblersToken_yellow")));
-		OutItemData.WhiteIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_GamblersToken_white.Item_GamblersToken_white")));
-		OutItemData.PrimaryStatType = ET66HeroStatType::Luck;
-		OutItemData.SecondaryStatType = ET66SecondaryStatType::GamblerToken;
+		OutItemData.ItemID = VendorTokenItemID;
+		OutItemData.Icon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
+		OutItemData.BlackIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
+		OutItemData.RedIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
+		OutItemData.YellowIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
+		OutItemData.WhiteIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
+		OutItemData.PrimaryStatType = ET66HeroStatType::Special;
+		OutItemData.SecondaryStatType = ET66SecondaryStatType::VendorToken;
 		OutItemData.BaseBuyGold = 100;
 		OutItemData.BaseSellGold = 0;
 		return true;
@@ -182,6 +165,7 @@ namespace
 UT66GameInstance::UT66GameInstance()
 {
 	WeaponsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Weapons.DT_Weapons")));
+	CombatVFXBindingsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_CombatVFXBindings.DT_CombatVFXBindings")));
 	BossesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Bosses.DT_Bosses")));
 	StagesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Stages.DT_Stages")));
 	EnemiesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Enemies.DT_Enemies")));
@@ -345,6 +329,7 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	AddDT(ItemsDataTable);
 	AddDT(IdolsDataTable);
 	AddDT(WeaponsDataTable);
+	AddDT(CombatVFXBindingsDataTable);
 	AddDT(BossesDataTable);
 	AddDT(StagesDataTable);
 	AddDT(EnemiesDataTable);
@@ -384,6 +369,7 @@ void UT66GameInstance::HandleCoreDataTablesLoaded()
 	if (!CachedItemsDataTable) CachedItemsDataTable = ItemsDataTable.Get();
 	if (!CachedIdolsDataTable) CachedIdolsDataTable = IdolsDataTable.Get();
 	if (!CachedWeaponsDataTable) CachedWeaponsDataTable = WeaponsDataTable.Get();
+	if (!CachedCombatVFXBindingsDataTable) CachedCombatVFXBindingsDataTable = CombatVFXBindingsDataTable.Get();
 	if (!CachedBossesDataTable) CachedBossesDataTable = BossesDataTable.Get();
 	if (!CachedStagesDataTable) CachedStagesDataTable = StagesDataTable.Get();
 	if (!CachedEnemiesDataTable) CachedEnemiesDataTable = EnemiesDataTable.Get();
@@ -711,6 +697,7 @@ UDataTable* UT66GameInstance::GetHeroDataTable() { return ResolveCachedDataTable
 UDataTable* UT66GameInstance::GetCompanionDataTable() { return ResolveCachedDataTable(CachedCompanionDataTable, CompanionDataTable); }
 UDataTable* UT66GameInstance::GetIdolsDataTable() { return ResolveCachedDataTable(CachedIdolsDataTable, IdolsDataTable); }
 UDataTable* UT66GameInstance::GetWeaponsDataTable() { return ResolveCachedDataTable(CachedWeaponsDataTable, WeaponsDataTable); }
+UDataTable* UT66GameInstance::GetCombatVFXBindingsDataTable() { return ResolveCachedDataTable(CachedCombatVFXBindingsDataTable, CombatVFXBindingsDataTable); }
 
 bool UT66GameInstance::GetHeroData(FName HeroID, FHeroData& OutHeroData)
 {
@@ -777,21 +764,12 @@ void UT66GameInstance::EnsureCachedItemIDs()
 		}
 	}
 
-	FItemData AccuracyItemData;
-	if (GetItemData(AccuracyItemID, AccuracyItemData)
-		&& IsRandomItemPoolEligible(AccuracyItemID)
-		&& T66IsLiveSecondaryStatType(AccuracyItemData.SecondaryStatType)
-		&& !CachedItemIDs.Contains(AccuracyItemID))
-	{
-		CachedItemIDs.Add(AccuracyItemID);
-	}
-
 	// Fallback (keeps game functional even if DT isn't wired yet).
 	if (CachedItemIDs.Num() == 0)
 	{
 		CachedItemIDs.Add(FName(TEXT("Item_AoeDamage")));
 		CachedItemIDs.Add(FName(TEXT("Item_CritDamage")));
-		CachedItemIDs.Add(AccuracyItemID);
+		CachedItemIDs.Add(FName(TEXT("Item_Execute")));
 		CachedItemIDs.Add(FName(TEXT("Item_DamageReduction")));
 	}
 }
@@ -907,6 +885,65 @@ bool UT66GameInstance::GetIdolData(FName IdolID, FIdolData& OutIdolData)
 bool UT66GameInstance::GetWeaponData(FName WeaponID, FWeaponData& OutWeaponData)
 {
 	return FindDataRow(GetWeaponsDataTable(), WeaponID, OutWeaponData, TEXT("GetWeaponData"));
+}
+
+bool UT66GameInstance::GetCombatVFXBindingData(
+	ET66CombatVFXBindingSourceType SourceType,
+	FName SourceID,
+	ET66AttackCategory AttackCategory,
+	FT66CombatVFXBindingData& OutBindingData)
+{
+	UDataTable* DataTable = GetCombatVFXBindingsDataTable();
+	if (!DataTable || SourceID.IsNone())
+	{
+		return false;
+	}
+
+	bool bFoundSourceTypeAndID = false;
+	FName MismatchedBindingID = NAME_None;
+	ET66AttackCategory MismatchedCategory = ET66AttackCategory::Pierce;
+	for (const FName& RowName : DataTable->GetRowNames())
+	{
+		const FT66CombatVFXBindingData* Row = DataTable->FindRow<FT66CombatVFXBindingData>(RowName, TEXT("GetCombatVFXBindingData"), false);
+		if (!Row)
+		{
+			continue;
+		}
+
+		if (Row->SourceType == SourceType && Row->SourceID == SourceID && Row->AttackCategory == AttackCategory)
+		{
+			OutBindingData = *Row;
+			if (OutBindingData.BindingID.IsNone())
+			{
+				OutBindingData.BindingID = RowName;
+			}
+			return true;
+		}
+
+		if (!bFoundSourceTypeAndID && Row->SourceType == SourceType && Row->SourceID == SourceID)
+		{
+			bFoundSourceTypeAndID = true;
+			MismatchedBindingID = Row->BindingID.IsNone() ? RowName : Row->BindingID;
+			MismatchedCategory = Row->AttackCategory;
+		}
+	}
+
+	if (bFoundSourceTypeAndID)
+	{
+		const UEnum* AttackEnum = StaticEnum<ET66AttackCategory>();
+		const FString ExpectedCategory = AttackEnum ? AttackEnum->GetNameStringByValue(static_cast<int64>(AttackCategory)) : FString::FromInt(static_cast<int32>(AttackCategory));
+		const FString FoundCategory = AttackEnum ? AttackEnum->GetNameStringByValue(static_cast<int64>(MismatchedCategory)) : FString::FromInt(static_cast<int32>(MismatchedCategory));
+		UE_LOG(
+			LogT66GameInstance,
+			Warning,
+			TEXT("CombatVFXBindingMismatch SourceID=%s ExpectedAttackCategory=%s FoundAttackCategory=%s Binding=%s"),
+			*SourceID.ToString(),
+			*ExpectedCategory,
+			*FoundCategory,
+			*MismatchedBindingID.ToString());
+	}
+
+	return false;
 }
 
 bool UT66GameInstance::GetBossData(FName BossID, FBossData& OutBossData)
@@ -1490,10 +1527,6 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof")));
 		AddCoherentThemeKitAssets();
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile2.MI_HillTile2")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile3.MI_HillTile3")));
-		AddPath(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile4.MI_HillTile4")));
 	};
 
 	auto AddVisualAssets = [this, &AddPath](FName VisualID)
@@ -1576,6 +1609,8 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 			AddVisualAssets(StageData.EnemyH);
 			AddVisualAssets(StageData.EnemyI);
 			AddVisualAssets(StageData.EnemyJ);
+			AddVisualAssets(StageData.EnemyK);
+			AddVisualAssets(StageData.EnemyL);
 			AddVisualAssets(StageData.BossID);
 
 			TArray<FT66BossEncounterMemberData> EncounterMembers;

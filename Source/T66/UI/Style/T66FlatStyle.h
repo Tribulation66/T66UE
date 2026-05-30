@@ -303,7 +303,6 @@ public:
 		static constexpr float NPCShopCardHeight = 500.f;
 		static constexpr float NPCCompactShopCardWidth = 148.f;
 		static constexpr float NPCCompactShopCardHeight = 264.f;
-		static constexpr float NPCAngerCircleSize = 170.f;
 		static constexpr float NPCBankSpinBoxWidth = 110.f;
 		static constexpr float NPCBankSpinBoxHeight = 44.f;
 		static constexpr float NPCOverlayPadding = 24.f;

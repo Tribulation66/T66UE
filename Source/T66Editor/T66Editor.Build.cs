@@ -28,10 +28,19 @@ public class T66Editor : ModuleRules
 			"EditorSubsystem",
 			"AssetTools",
 			"AssetRegistry",
+			"AdvancedPreviewScene",
+			"ImageCore",
+			"ImageWrapper",
 			"Landscape",
 			"LandscapeEditor",
 			"Foliage",
+			"Json",
+			"JsonUtilities",
 			"LevelEditor",
+			"Niagara",
+			"NiagaraCore",
+			"RenderCore",
+			"RHI",
 			"ToolMenus"
 		});
 

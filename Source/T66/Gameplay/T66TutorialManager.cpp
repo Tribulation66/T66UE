@@ -16,6 +16,7 @@
 #include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66LootBagPickup.h"
+#include "Gameplay/T66MobManagerSubsystem.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66TutorialGuideCompanion.h"
 #include "Kismet/GameplayStatics.h"
@@ -717,6 +718,13 @@ AT66EnemyBase* AT66TutorialManager::SpawnTutorialEnemyAt(const FVector& InLocati
 	if (bMiniBoss)
 	{
 		Enemy->ApplyMiniBossMultipliers(3.0f, 2.0f, 2.5f);
+	}
+	if (UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>())
+	{
+		MobManager->RecordRouteAttribution(
+			Enemy->EnemyFamily,
+			ET66RouteAttributionReason::RoutedRich_NonDirectorPath,
+			ET66RouteAttributionChannel::NonDirector);
 	}
 
 	return Enemy;

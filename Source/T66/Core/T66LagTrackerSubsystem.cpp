@@ -12,7 +12,7 @@
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66MobBase.h"
 #include "Gameplay/T66MobManagerSubsystem.h"
-#include "Gameplay/T66UniqueDebuffProjectile.h"
+#include "Gameplay/T66ProjectileManagerSubsystem.h"
 #include "Gameplay/Traps/T66TrapArrowProjectile.h"
 #include "PerformanceSystem/T66PerformanceSubsystem.h"
 
@@ -365,9 +365,10 @@ void UT66LagTrackerSubsystem::SampleBoardSaturation(const double NowSeconds)
 	FT66LagTrackerBoardSaturationSample Sample;
 	Sample.bValid = true;
 	Sample.TimestampSeconds = NowSeconds;
+	const UT66ProjectileManagerSubsystem* ProjectileManager = GetWorld() ? GetWorld()->GetSubsystem<UT66ProjectileManagerSubsystem>() : nullptr;
 	Sample.ActiveEnemyProjectiles =
-		AT66EnemyProjectileBase::GetActiveEnemyProjectileCount()
-		+ AT66UniqueDebuffProjectile::GetActiveEnemyProjectileCount()
+		(ProjectileManager ? ProjectileManager->GetActiveProjectileCount() : 0)
+		+ AT66EnemyProjectileBase::GetActiveEnemyProjectileCount()
 		+ AT66TrapArrowProjectile::GetActiveTrapProjectileCount();
 
 	UWorld* World = GetWorld();

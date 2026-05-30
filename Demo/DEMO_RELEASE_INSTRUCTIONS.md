@@ -97,7 +97,7 @@ Current first-pass scope:
 - Locked heroes: every hero after `Hero_5`.
 - Companion unlocks: one companion unlocks after each cleared stage through the first four difficulties; the final difficulty does not add companion unlocks. Because the demo allows only `Easy`, demo progression can unlock `Companion_01`, `Companion_02`, `Companion_03`, and `Companion_04`.
 - Rigging/animation planning for the demo should focus on available hero visuals, demo-reachable companions, and regular Easy mobs. Bosses are excluded unless explicitly re-added to scope.
-- Demo-mode content locks are authored in `Config/DefaultDemoMode.ini`; unavailable visible UI should use the shared `COMING SOON` overlay instead of hiding the option.
+- Demo-mode content locks are authored in `Config/DefaultDemoMode.ini`. After Demo Gating Visibility Phase 3, demo-gated content is **hidden** from visible non-Mini UI (omitted from carousels, grids, dropdowns, and CTA buttons) rather than shown with a `COMING SOON` overlay. Backend and navigation guards stay in place so the gate still holds if an entry is reached by any other path. The shared overlay helper (`WrapWithComingSoonOverlay`) remains available for any case that should still intentionally show a label, but demo gating no longer uses it on these surfaces.
 
 Implementation rule:
 

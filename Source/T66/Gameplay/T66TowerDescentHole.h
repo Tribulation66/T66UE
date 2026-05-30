@@ -34,6 +34,11 @@ public:
 		bool bInRequiresGuardianDefeated);
 	void SetGuardianEnemy(AT66EnemyBase* InGuardianEnemy);
 	bool Interact(AT66HeroBase* Hero);
+	int32 GetFromFloorNumber() const { return FromFloorNumber; }
+#if !UE_BUILD_SHIPPING
+	bool AutomationCanOpenForHero(const AT66HeroBase* Hero) const;
+	AT66EnemyBase* AutomationGetGuardianEnemy() const;
+#endif
 
 protected:
 	virtual void BeginPlay() override;

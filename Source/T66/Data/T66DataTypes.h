@@ -12,6 +12,7 @@ class UStaticMesh;
 class UAnimationAsset;
 class UTexture2D;
 class UMaterialInterface;
+class UNiagaraSystem;
 
 /**
  * Attack category (defines the fundamental behavior of a hero's primary attack and weapon branch).
@@ -23,6 +24,65 @@ enum class ET66AttackCategory : uint8
 	Bounce UMETA(DisplayName = "Bounce"),
 	AOE UMETA(DisplayName = "AOE"),
 	DOT UMETA(DisplayName = "DOT"),
+};
+
+/** Source row family for combat VFX bindings. */
+UENUM(BlueprintType)
+enum class ET66CombatVFXBindingSourceType : uint8
+{
+	WeaponBase UMETA(DisplayName = "Weapon Base"),
+	IdolModifier UMETA(DisplayName = "Idol Modifier"),
+};
+
+/**
+ * Runtime binding from gameplay rows to production combat VFX.
+ *
+ * The binding is presentation-only. Combat components pass already-resolved
+ * damage/radius/speed context into the VFX; this row never overrides gameplay.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66CombatVFXBindingData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX")
+	FName BindingID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX")
+	ET66CombatVFXBindingSourceType SourceType = ET66CombatVFXBindingSourceType::WeaponBase;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX")
+	FName SourceID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX")
+	ET66AttackCategory AttackCategory = ET66AttackCategory::AOE;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX")
+	TSoftObjectPtr<UNiagaraSystem> NiagaraSystem;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Metadata")
+	FName EffectPacketID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Metadata")
+	FName VFXProfile = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX")
+	bool bSuppressTemporaryProjectile = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX")
+	bool bDevelopmentFallbackAllowed = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Scale")
+	float BaseVisualRadius = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Timing")
+	float BasePlaybackSeconds = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Scale")
+	float VisualScaleMultiplier = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Metadata")
+	FText Notes;
 };
 
 /** Auto-attack weapon rarity. Difficulty tuning chooses the offer tier at run start. */
@@ -455,6 +515,10 @@ struct T66_API FWeaponData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
 	float BonusAoeRadius = 0.0f;
 
+	/** Ratio of the AOE outer radius reserved as a hollow center. 0.0 means a filled-sector/sphere AOE. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
+	float AoeInnerRadiusRatio = 0.0f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
 	float BonusDotDuration = 0.0f;
 
@@ -779,7 +843,7 @@ enum class ET66ItemEffectType : uint8
 	BonusLuckFlat UMETA(DisplayName = "BonusLuckFlat"),
 };
 
-/** Foundational hero stats that items can roll as their primary stat line (Line 1). */
+/** Foundational hero stats that items can roll as their primary stat line (Line 1). Special is reward-only/non-stat. */
 UENUM(BlueprintType)
 enum class ET66HeroStatType : uint8
 {
@@ -790,8 +854,9 @@ enum class ET66HeroStatType : uint8
 	Evasion UMETA(DisplayName = "Evasion"),
 	Luck UMETA(DisplayName = "Luck"),
 	Speed UMETA(DisplayName = "Speed"),
-	/** Appended to preserve serialized enum values for existing save data and data tables. */
+	/** Appended values preserve serialized enum values for existing save data and data tables. */
 	Accuracy UMETA(DisplayName = "Accuracy"),
+	Special UMETA(DisplayName = "Special"),
 };
 
 /**
@@ -823,22 +888,22 @@ enum class ET66SecondaryStatType : uint8
 	// Range-conditional (3)
 	CloseRangeDamage UMETA(DisplayName = "Close Range Damage"),
 	LongRangeDamage UMETA(DisplayName = "Long Range Damage"),
-	AttackRange UMETA(DisplayName = "Range"),
+	AttackRange UMETA(DisplayName = "Attack Range"),
 	// Armor-defensive (4)
-	Taunt UMETA(DisplayName = "Taunt"),
-	ReflectDamage UMETA(DisplayName = "Damage Reflection"),
+	Taunt UMETA(DisplayName = "Taunt Chance"),
+	ReflectDamage UMETA(DisplayName = "Reflect Chance"),
 	HpRegen UMETA(DisplayName = "HP Regen"),
-	Crush UMETA(DisplayName = "Crush"),
+	Crush UMETA(DisplayName = "Crush Chance"),
 	// Evasion-offensive (4)
-	Invisibility UMETA(DisplayName = "Invisibility"),
-	CounterAttack UMETA(DisplayName = "Counter Attack"),
+	Invisibility UMETA(DisplayName = "Invisibility Chance"),
+	CounterAttack UMETA(DisplayName = "Counter Chance"),
 	LifeSteal UMETA(DisplayName = "Life Steal"),
-	Assassinate UMETA(DisplayName = "Assassinate"),
+	Assassinate UMETA(DisplayName = "Assassinate Chance"),
 	// Luck-world live (5) + compatibility (2)
 	SpinWheel UMETA(DisplayName = "Spin Wheel"),
 	Goblin UMETA(Hidden),
 	Leprechaun UMETA(Hidden),
-	TreasureChest UMETA(DisplayName = "Treasure Chest"),
+	TreasureChest UMETA(DisplayName = "Loot Chest"),
 	Fountain UMETA(Hidden),
 	Cheating UMETA(DisplayName = "Cheating"),
 	Stealing UMETA(DisplayName = "Stealing"),
@@ -848,11 +913,14 @@ enum class ET66SecondaryStatType : uint8
 	LootCrate UMETA(DisplayName = "Loot Crate"),
 	// Defensive item-only bonuses that scale from their parent primary stat.
 	DamageReduction UMETA(DisplayName = "Damage Reduction"),
-	EvasionChance UMETA(DisplayName = "Dodge"),
-	GamblerToken UMETA(DisplayName = "Gambler's Token"),
+	EvasionChance UMETA(DisplayName = "Dodge Chance"),
 	Alchemy UMETA(DisplayName = "Alchemy"),
 	/** Appended to preserve serialized enum values for existing save data and data tables. */
 	Accuracy UMETA(DisplayName = "Accuracy"),
+	Execute UMETA(DisplayName = "Execute Chance"),
+	LootBag UMETA(DisplayName = "Loot Bag"),
+	LootWheel UMETA(DisplayName = "Loot Wheel"),
+	VendorToken UMETA(DisplayName = "Vendor Token"),
 };
 
 FORCEINLINE bool T66IsDeprecatedSecondaryStatType(ET66SecondaryStatType StatType)
@@ -864,10 +932,13 @@ FORCEINLINE bool T66IsDeprecatedSecondaryStatType(ET66SecondaryStatType StatType
 		|| StatType == ET66SecondaryStatType::LongRangeDamage
 		|| StatType == ET66SecondaryStatType::SpinWheel
 		|| StatType == ET66SecondaryStatType::MovementSpeed
-		|| StatType == ET66SecondaryStatType::GamblerToken
 		|| StatType == ET66SecondaryStatType::HpRegen
 		|| StatType == ET66SecondaryStatType::LifeSteal
-		|| StatType == ET66SecondaryStatType::Alchemy;
+		|| StatType == ET66SecondaryStatType::Alchemy
+		|| StatType == ET66SecondaryStatType::Accuracy
+		|| StatType == ET66SecondaryStatType::Cheating
+		|| StatType == ET66SecondaryStatType::Stealing
+		|| StatType == ET66SecondaryStatType::VendorToken;
 }
 
 FORCEINLINE bool T66IsLiveSecondaryStatType(ET66SecondaryStatType StatType)
@@ -880,7 +951,7 @@ FORCEINLINE bool T66IsAccuracyFamilySecondaryStatType(ET66SecondaryStatType Stat
 	return StatType == ET66SecondaryStatType::CritDamage
 		|| StatType == ET66SecondaryStatType::CritChance
 		|| StatType == ET66SecondaryStatType::AttackRange
-		|| StatType == ET66SecondaryStatType::Accuracy;
+		|| StatType == ET66SecondaryStatType::Execute;
 }
 
 FORCEINLINE ET66HeroStatType T66ResolveEffectivePrimaryStatType(ET66HeroStatType PrimaryStatType, ET66SecondaryStatType SecondaryStatType)
@@ -946,7 +1017,7 @@ struct T66_API FItemData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSoftObjectPtr<UTexture2D> WhiteIcon;
 
-	/** Line 1: Primary stat this item boosts (additive flat bonus, rolled at drop time). */
+	/** Line 1: Primary stat this item boosts (additive flat bonus, rolled at drop time), or Special for reward-only/non-stat templates. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	ET66HeroStatType PrimaryStatType = ET66HeroStatType::Damage;
 
@@ -1285,6 +1356,10 @@ struct T66_API FT66EnemyData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	FString SecondaryColor;
 
+	/** XP awarded when this mob is killed by the hero. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Progression")
+	int32 XPValue = 20;
+
 	FT66EnemyData()
 		: EnemyID(NAME_None)
 		, FamilyID(TEXT("Melee"))
@@ -1495,6 +1570,12 @@ struct T66_API FStageData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
 	FName EnemyJ;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyK;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stage|Enemies")
+	FName EnemyL;
 
 	FStageData()
 		: StageNumber(1)

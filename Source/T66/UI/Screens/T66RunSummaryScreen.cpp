@@ -3135,7 +3135,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "ReflectDamage", "Reflect Damage"), FormatPercent(RunState->GetReflectDamageFraction()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CrushChance", "Crush Chance"), FormatPercent(RunState->GetCrushChance01()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "AssassinateChance", "Assassinate Chance"), FormatPercent(RunState->GetAssassinateChance01()));
-				AddStatLineText(NSLOCTEXT("T66.RunSummary", "MoveSpeedMultiplier", "Move Speed Mult"), FormatMultiplier(RunState->GetMovementSpeedSecondaryMultiplier()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "RollCooldown", "Roll Cooldown"), FormatMultiplier(RunState->GetDashCooldownMultiplier()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "AttackRange", "Attack Range"), FormatFloat(RunState->GetHeroBaseAttackRange(), 0));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CloseRange", "Close Range"), FormatFloat(RunState->GetCloseRangeThreshold(), 0));

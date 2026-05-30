@@ -32,8 +32,8 @@ namespace
 			&& A.TotemRules.GameplayStagesWithTotems == B.TotemRules.GameplayStagesWithTotems
 			&& A.TotemRules.SkullColorBandSize == B.TotemRules.SkullColorBandSize
 			&& A.TotemRules.bDifficultyPersistsAcrossStages == B.TotemRules.bDifficultyPersistsAcrossStages
-			&& A.SpawnBudget.GameplayFloorsPerStage == B.SpawnBudget.GameplayFloorsPerStage
-			&& A.SpawnBudget.InitialEnemiesPerGameplayFloor == B.SpawnBudget.InitialEnemiesPerGameplayFloor
+			&& A.SpawnBudget.MobFloorsPerStage == B.SpawnBudget.MobFloorsPerStage
+			&& A.SpawnBudget.InitialEnemiesPerMobFloor == B.SpawnBudget.InitialEnemiesPerMobFloor
 			&& A.SpawnBudget.TotalInitialEnemiesPerStage == B.SpawnBudget.TotalInitialEnemiesPerStage
 			&& A.SpawnBudget.RuntimeEnemiesPerWave == B.SpawnBudget.RuntimeEnemiesPerWave
 			&& A.SpawnBudget.RuntimeMaxAliveEnemies == B.SpawnBudget.RuntimeMaxAliveEnemies

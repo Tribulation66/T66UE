@@ -835,7 +835,7 @@ void UT66CommunityContentSubsystem::SeedOfficialContent()
 	LoadedDice.Description = TEXT("Start with a gambler token in the first room.");
 	LoadedDice.AuthorDisplayName = TEXT("Tribulation 66");
 	LoadedDice.ModerationStatus = TEXT("approved");
-	LoadedDice.Rules.StartingItemId = FName(TEXT("Item_GamblersToken"));
+	LoadedDice.Rules.StartingItemId = FName(TEXT("Item_VendorToken"));
 	OfficialMods.Add(LoadedDice);
 
 	SanitizeBucket(OfficialChallenges);

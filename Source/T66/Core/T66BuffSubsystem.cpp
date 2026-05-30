@@ -12,7 +12,7 @@ const FString UT66BuffSubsystem::BuffSaveSlotName(TEXT("T66_PowerUp"));
 
 namespace
 {
-	static const ET66SecondaryStatType GSingleUseBuffStats[31] = {
+	static const ET66SecondaryStatType GSingleUseBuffStats[34] = {
 		ET66SecondaryStatType::AoeDamage,
 		ET66SecondaryStatType::BounceDamage,
 		ET66SecondaryStatType::PierceDamage,
@@ -43,7 +43,10 @@ namespace
 		ET66SecondaryStatType::Stealing,
 		ET66SecondaryStatType::LootCrate,
 		ET66SecondaryStatType::Alchemy,
-		ET66SecondaryStatType::Accuracy
+		ET66SecondaryStatType::Accuracy,
+		ET66SecondaryStatType::Execute,
+		ET66SecondaryStatType::LootBag,
+		ET66SecondaryStatType::LootWheel
 	};
 }
 
@@ -804,8 +807,7 @@ int32 UT66BuffSubsystem::GetUnlockedFillStepCount(ET66HeroStatType StatType) con
 
 int32 UT66BuffSubsystem::GetTotalStatBonus(ET66HeroStatType StatType) const
 {
-	static_cast<void>(StatType);
-	return 0;
+	return FMath::Max(0, GetUnlockedFillStepCount(StatType)) + FMath::Max(0, GetRandomBonusForStat(StatType));
 }
 
 int32 UT66BuffSubsystem::GetCostForNextFillStepUnlock(ET66HeroStatType StatType) const
@@ -854,7 +856,16 @@ bool UT66BuffSubsystem::IsDemoDiplomaUpgradeLimitReached(ET66HeroStatType StatTy
 
 FT66HeroStatBonuses UT66BuffSubsystem::GetPermanentBuffStatBonuses() const
 {
-	return FT66HeroStatBonuses{};
+	FT66HeroStatBonuses Bonuses;
+	Bonuses.Damage = GetTotalStatBonus(ET66HeroStatType::Damage);
+	Bonuses.AttackSpeed = GetTotalStatBonus(ET66HeroStatType::AttackSpeed);
+	Bonuses.AttackScale = GetTotalStatBonus(ET66HeroStatType::AttackScale);
+	Bonuses.Accuracy = GetTotalStatBonus(ET66HeroStatType::Accuracy);
+	Bonuses.Armor = GetTotalStatBonus(ET66HeroStatType::Armor);
+	Bonuses.Evasion = GetTotalStatBonus(ET66HeroStatType::Evasion);
+	Bonuses.Luck = GetTotalStatBonus(ET66HeroStatType::Luck);
+	Bonuses.Speed = GetTotalStatBonus(ET66HeroStatType::Speed);
+	return Bonuses;
 }
 
 FT66HeroStatBonuses UT66BuffSubsystem::GetPowerupStatBonuses() const
@@ -1043,6 +1054,14 @@ int32 UT66BuffSubsystem::GetSelectedSingleUseBuffSlotAssignedCountForStat(ET66Se
 
 bool UT66BuffSubsystem::AreSingleUseBuffPurchasesAllowed() const
 {
+	if (const UGameInstance* GI = GetGameInstance())
+	{
+		if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GI->GetSubsystem<UT66ReleaseVariantSubsystem>())
+		{
+			return ReleaseVariant->AreDrugPurchasesAllowed();
+		}
+	}
+
 	return false;
 }
 
@@ -1250,6 +1269,54 @@ TMap<ET66SecondaryStatType, float> UT66BuffSubsystem::ConsumePendingSingleUseBuf
 
 	return Bonuses;
 }
+
+#if !UE_BUILD_SHIPPING
+void UT66BuffSubsystem::DebugSetDiplomaUnlockedSteps(const ET66HeroStatType StatType, const int32 Count)
+{
+	LoadOrCreateSave();
+	TArray<uint8>* Steps = GetFillStepStatesForStat(StatType);
+	if (!SaveData || !Steps)
+	{
+		return;
+	}
+
+	Steps->SetNumZeroed(MaxFillStepsPerStat);
+	const int32 ClampedCount = FMath::Clamp(Count, 0, MaxFillStepsPerStat);
+	for (int32 Index = 0; Index < ClampedCount; ++Index)
+	{
+		(*Steps)[Index] = static_cast<uint8>(ET66BuffFillStepState::Unlocked);
+	}
+}
+
+void UT66BuffSubsystem::DebugGrantSingleUseBuff(const ET66SecondaryStatType StatType, const int32 Count, const bool bSelectForNextRun)
+{
+	LoadOrCreateSave();
+	if (!SaveData || !T66IsLiveSecondaryStatType(StatType))
+	{
+		return;
+	}
+
+	const int32 StatIndex = GetSingleUseBuffIndex(StatType);
+	if (StatIndex == INDEX_NONE)
+	{
+		return;
+	}
+
+	EnsurePendingSingleUseStatesSize(SaveData->PendingSingleUseBuffStates);
+	SaveData->PendingSingleUseBuffStates[StatIndex] = static_cast<uint8>(FMath::Clamp(Count, 0, 255));
+
+	if (bSelectForNextRun)
+	{
+		SaveData->SelectedSingleUseBuffSlots.Init(ET66SecondaryStatType::None, MaxSelectedSingleUseBuffs);
+		const int32 SelectedCount = FMath::Clamp(Count, 0, MaxSelectedSingleUseBuffs);
+		for (int32 SlotIndex = 0; SlotIndex < SelectedCount; ++SlotIndex)
+		{
+			SaveData->SelectedSingleUseBuffSlots[SlotIndex] = StatType;
+		}
+		RebuildSelectedSingleUseStatesFromLoadout();
+	}
+}
+#endif
 
 int32 UT66BuffSubsystem::GetRandomBonusForStat(ET66HeroStatType StatType) const
 {

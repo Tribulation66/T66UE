@@ -1093,7 +1093,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 	const FText ActiveTabInfoText = bShowingSecret
 		? NSLOCTEXT("T66.Achievements", "SecretTabInfo", "Reveal hidden achievements by discovering secret conditions in runs.")
 		: NSLOCTEXT("T66.Achievements", "SteamTabInfo", "Track Steam achievements, rewards, and completion progress.");
-	const bool bDemoAchievementRowsLocked = T66DemoModeUI::IsDemoModeActive(this);
+	const bool bDemoAchievementRowsLocked = false;
 	SetAchievementsActiveStateFolder(bShowingSecret);
 
 	if (!bShowingSecret)
@@ -1287,7 +1287,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		const TArray<FFlatSteamAchievementRow> Rows = {
 			{ FText::FromString(TEXT("01")), NSLOCTEXT("T66.Achievements", "FlatSteamCollector1", "Collector 1"), NSLOCTEXT("T66.Achievements", "FlatSteamCollector1Desc", "[Discover 1 items]") },
 			{ FText::FromString(TEXT("02")), NSLOCTEXT("T66.Achievements", "FlatSteamFieldNotes1", "Field Notes 1"), NSLOCTEXT("T66.Achievements", "FlatSteamFieldNotes1Desc", "[Discover 1 enemies]") },
-			{ FText::FromString(TEXT("03")), NSLOCTEXT("T66.Achievements", "FlatSteamTokenRank1", "Token Rank 1"), NSLOCTEXT("T66.Achievements", "FlatSteamTokenRank1Desc", "[Unlock Gambler's Token level 1]") },
+			{ FText::FromString(TEXT("03")), NSLOCTEXT("T66.Achievements", "FlatSteamTokenRank1", "Token Rank 1"), NSLOCTEXT("T66.Achievements", "FlatSteamTokenRank1Desc", "[Unlock Vendor Token level 1]") },
 			{ FText::FromString(TEXT("04")), NSLOCTEXT("T66.Achievements", "FlatSteamFirstWin1", "First Win 1"), NSLOCTEXT("T66.Achievements", "FlatSteamFirstWin1Desc", "[Win 1 match in any mode]") }
 		};
 

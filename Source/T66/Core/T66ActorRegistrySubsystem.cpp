@@ -109,7 +109,7 @@ int32 UT66ActorRegistrySubsystem::GetCombinedLiveEnemyCount() const
 TArray<AActor*> UT66ActorRegistrySubsystem::GetAllDamageableTargets() const
 {
 	TArray<AActor*> Targets;
-	Targets.Reserve(Enemies.Num() + ActiveMobs.Num());
+	Targets.Reserve(Enemies.Num() + ActiveMobs.Num() + Bosses.Num());
 	ForEachDamageableTarget([&Targets](AActor* Target)
 	{
 		if (Target)
@@ -140,6 +140,14 @@ void UT66ActorRegistrySubsystem::ForEachDamageableTarget(TFunctionRef<void(AActo
 			}
 		}
 	}
+
+	for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Bosses)
+	{
+		if (AT66BossBase* Boss = WeakBoss.Get())
+		{
+			Func(Boss);
+		}
+	}
 }
 
 // --------------- Bosses ---------------
@@ -148,6 +156,7 @@ void UT66ActorRegistrySubsystem::RegisterBoss(AT66BossBase* Boss)
 {
 	if (!Boss) return;
 	AddUniqueWeak(Bosses, Boss);
+	EnemiesChanged.Broadcast();
 	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: registered boss %s (total: %d)"), *Boss->GetName(), Bosses.Num());
 }
 
@@ -155,6 +164,7 @@ void UT66ActorRegistrySubsystem::UnregisterBoss(AT66BossBase* Boss)
 {
 	if (!Boss) return;
 	RemoveWeak(Bosses, Boss);
+	EnemiesChanged.Broadcast();
 	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: unregistered boss %s (total: %d)"), *Boss->GetName(), Bosses.Num());
 }
 

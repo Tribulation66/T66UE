@@ -51,27 +51,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	TSubclassOf<AT66EnemyBase> EnemyClass;
 
-	/** Special: Goblin Thief (steals gold on touch) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	TSubclassOf<AT66EnemyBase> GoblinThiefClass;
-
-	/** Chance per spawned enemy to be a Goblin Thief */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	float GoblinThiefChance = 0.05f;
-
-	/** Chance per spawn wave to spawn a mini-boss (one of this stage's mobs, scaled up). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	float MiniBossChancePerWave = 0.10f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	float MiniBossScale = 1.75f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	float MiniBossHPScalar = 3.0f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
-	float MiniBossDamageScalar = 2.0f;
-
 	/** Seconds between spawn ticks (continuous spawning). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spawning")
 	float SpawnIntervalSeconds = 2.f;
@@ -105,7 +84,7 @@ public:
 	float MinimumPlayerSpawnClearance = 2000.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tower")
-	int32 InitialTowerEnemiesPerGameplayFloor = 3;
+	int32 InitialTowerEnemiesPerMobFloor = 3;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tower")
 	float InitialTowerSpawnEdgePadding = 1500.f;
@@ -152,7 +131,7 @@ protected:
 	void SpawnNextStaggeredBatch();
 
 	void ScheduleNextTowerRuntimeWave(float DelaySeconds);
-	bool ShouldRouteSpawnToLightweightMob(FName MobID, ET66EnemyFamily Family, bool bIsMiniBoss, bool bIsSpecialSpawn, bool bUseLightweightRouting) const;
+	bool ShouldRouteSpawnToLightweightMob(FName MobID, ET66EnemyFamily Family, bool bIsMiniBoss, bool bIsSpecialSpawn) const;
 	int32 GetAliveEnemyCountForSpawnBudget();
 
 	UFUNCTION()
@@ -175,8 +154,6 @@ protected:
 	int32 ActiveMaxSpawnsPerStaggeredBatch = 1;
 
 	TSet<int32> TowerFloorsWithInitialPopulation;
-
-	TWeakObjectPtr<AT66EnemyBase> ActiveMiniBoss;
 
 	// Cache base spawn counts so difficulty scaling doesn't compound.
 	int32 BaseEnemiesPerWave = 0;

@@ -59,10 +59,10 @@ struct T66_API FT66SpawnBudget
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Spawning", meta = (ClampMin = "0"))
-	int32 GameplayFloorsPerStage = 0;
+	int32 MobFloorsPerStage = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Spawning", meta = (ClampMin = "0"))
-	int32 InitialEnemiesPerGameplayFloor = 0;
+	int32 InitialEnemiesPerMobFloor = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Spawning", meta = (ClampMin = "0"))
 	int32 TotalInitialEnemiesPerStage = 0;

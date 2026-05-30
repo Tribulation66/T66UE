@@ -3,6 +3,7 @@
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66CombatComponent.h"
+#include "Gameplay/T66CombatShared.h"
 #include "Animation/AnimSequence.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -57,6 +58,7 @@
 #include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/T66BuffSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66GameInstance.h"
@@ -64,6 +66,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
+#include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -76,11 +79,11 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66MobBase.h"
 #include "Gameplay/T66MobManagerSubsystem.h"
+#include "Gameplay/T66ProjectileManagerSubsystem.h"
 #include "Gameplay/T66BossBase.h"
-#include "Gameplay/T66GamblerBoss.h"
+#include "Gameplay/T66VendorBoss.h"
 #include "Gameplay/T66HeroProjectile.h"
 #include "Gameplay/T66TemporaryProjectileSystem.h"
-#include "Gameplay/T66UniqueDebuffProjectile.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/Enemies/Projectiles/T66EnemyProjectileBase.h"
 #include "Gameplay/Enemies/Projectiles/T66SpitProjectile.h"
@@ -103,6 +106,7 @@
 #include "Gameplay/T66BossGroundAOE.h"
 #include "Gameplay/T66Hero1AxeAOEVFXLabActor.h"
 #include "Gameplay/T66HeroPlagueCloud.h"
+#include "Gameplay/Enemies/T66RangedEnemy.h"
 #include "Gameplay/Traps/T66FloorFlameTrap.h"
 #include "Gameplay/Traps/T66FloorSpikePatchTrap.h"
 #include "Gameplay/Traps/T66TrapArrowProjectile.h"
@@ -122,7 +126,9 @@
 #include "HAL/FileManager.h"
 #include "HAL/IConsoleManager.h"
 #include "Framework/Application/SlateApplication.h"
+#include "Misc/App.h"
 #include "Misc/CommandLine.h"
+#include "Misc/FileHelper.h"
 #include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "UnrealClient.h"
@@ -159,6 +165,502 @@ namespace
 #endif
 	);
 
+#if !UE_BUILD_SHIPPING
+	static FString T66SmokeJsonEscape(FString Value)
+	{
+		Value.ReplaceInline(TEXT("\\"), TEXT("\\\\"));
+		Value.ReplaceInline(TEXT("\""), TEXT("\\\""));
+		Value.ReplaceInline(TEXT("\r"), TEXT("\\r"));
+		Value.ReplaceInline(TEXT("\n"), TEXT("\\n"));
+		return Value;
+	}
+
+	static void T66AppendSmokeCheck(TArray<FString>& OutChecks, bool& bAllPassed, const TCHAR* Name, const bool bPassed, const FString& Detail)
+	{
+		bAllPassed = bAllPassed && bPassed;
+		OutChecks.Add(FString::Printf(
+			TEXT("    { \"name\": \"%s\", \"ok\": %s, \"detail\": \"%s\" }"),
+			Name,
+			bPassed ? TEXT("true") : TEXT("false"),
+			*T66SmokeJsonEscape(Detail)));
+	}
+
+	static int32 T66SmokeRarityIndex(const ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black: return 0;
+		case ET66ItemRarity::Red: return 1;
+		case ET66ItemRarity::Yellow: return 2;
+		case ET66ItemRarity::White: return 3;
+		default: return 0;
+		}
+	}
+
+	static ET66ItemRarity T66SmokeUpgradeRarityByMultiplier(const ET66ItemRarity BaseRarity, const float Multiplier)
+	{
+		const int32 BaseIndex = T66SmokeRarityIndex(BaseRarity);
+		const int32 BonusTiers = FMath::Clamp(FMath::FloorToInt(FMath::Max(1.f, Multiplier) - 1.f), 0, 3);
+		switch (FMath::Clamp(BaseIndex + BonusTiers, 0, 3))
+		{
+		case 1: return ET66ItemRarity::Red;
+		case 2: return ET66ItemRarity::Yellow;
+		case 3: return ET66ItemRarity::White;
+		default: return ET66ItemRarity::Black;
+		}
+	}
+
+	static void T66RunItemTaxonomySmoke(AT66PlayerController* PC, const FString& OutputPath)
+	{
+		bool bAllPassed = true;
+		TArray<FString> Checks;
+		UWorld* World = PC ? PC->GetWorld() : nullptr;
+		UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Context available"), World && GI && RunState, TEXT("World, GameInstance, and RunState are required."));
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.ObjectFlags |= RF_Transient;
+
+		auto SpawnBoss = [&]() -> AT66BossBase*
+		{
+			if (!World)
+			{
+				return nullptr;
+			}
+			AT66VendorBoss* Boss = World->SpawnActor<AT66VendorBoss>(
+				AT66VendorBoss::StaticClass(),
+				FVector(50000.f, 0.f, 100.f),
+				FRotator::ZeroRotator,
+				SpawnParams);
+			if (Boss)
+			{
+				FBossData BossData;
+				BossData.BossID = FName(TEXT("Dungeon_SewerSlimeKing"));
+				BossData.MaxHP = 1000;
+				BossData.BossPartProfile = ET66BossPartProfile::Juggernaut;
+				Boss->InitializeBoss(BossData);
+				Boss->ForceAwaken();
+			}
+			return Boss;
+		};
+
+		auto SpawnMiniBossEnemy = [&](const float OffsetY) -> AT66EnemyBase*
+		{
+			if (!World)
+			{
+				return nullptr;
+			}
+			AT66EnemyBase* Enemy = World->SpawnActor<AT66EnemyBase>(
+				AT66EnemyBase::StaticClass(),
+				FVector(50100.f, OffsetY, 100.f),
+				FRotator::ZeroRotator,
+				SpawnParams);
+			if (Enemy)
+			{
+				Enemy->MaxHP = 100;
+				Enemy->CurrentHP = 100;
+				Enemy->bIsMiniBoss = true;
+			}
+			return Enemy;
+		};
+
+		auto SpawnMiniBossMob = [&](const float OffsetY) -> AT66MobBase*
+		{
+			if (!World)
+			{
+				return nullptr;
+			}
+			AT66MobBase* Mob = World->SpawnActor<AT66MobBase>(
+				AT66MobBase::StaticClass(),
+				FVector(50200.f, OffsetY, 100.f),
+				FRotator::ZeroRotator,
+				SpawnParams);
+			if (Mob)
+			{
+				Mob->MaxHP = 100.f;
+				Mob->CurrentHP = 100.f;
+				Mob->bIsMiniBoss = true;
+				Mob->LifecycleState = ET66MobLifecycleState::Active;
+			}
+			return Mob;
+		};
+
+		const FName OHKOSources[] =
+		{
+			FName(TEXT("Execute")),
+			FName(TEXT("Assassinate")),
+			FName(TEXT("Crush")),
+		};
+
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(OHKOSources); ++Index)
+		{
+			const FName SourceID = OHKOSources[Index];
+			AT66BossBase* Boss = SpawnBoss();
+			const bool bBossRejected = Boss
+				&& !T66CombatShared::TryApplyNonBossOHKO(Boss, nullptr, SourceID, FName(TEXT("ItemTaxonomySmoke")))
+				&& Boss->CurrentHP == Boss->MaxHP;
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				*FString::Printf(TEXT("%s rejects boss"), *SourceID.ToString()),
+				bBossRejected,
+				Boss ? FString::Printf(TEXT("Boss HP=%d/%d."), Boss->CurrentHP, Boss->MaxHP) : TEXT("Boss spawn failed."));
+
+			AT66EnemyBase* Enemy = SpawnMiniBossEnemy(static_cast<float>(Index) * 140.f);
+			const bool bEnemyExecuted = Enemy
+				&& T66CombatShared::TryApplyNonBossOHKO(Enemy, nullptr, SourceID, FName(TEXT("ItemTaxonomySmoke")))
+				&& Enemy->CurrentHP <= 0;
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				*FString::Printf(TEXT("%s allows miniboss enemy"), *SourceID.ToString()),
+				bEnemyExecuted,
+				Enemy ? FString::Printf(TEXT("Enemy HP=%d/%d MiniBoss=%d."), Enemy->CurrentHP, Enemy->MaxHP, Enemy->bIsMiniBoss ? 1 : 0) : TEXT("Enemy spawn failed."));
+
+			AT66MobBase* Mob = SpawnMiniBossMob(static_cast<float>(Index) * 140.f);
+			const bool bMobExecuted = Mob
+				&& T66CombatShared::TryApplyNonBossOHKO(Mob, nullptr, SourceID, FName(TEXT("ItemTaxonomySmoke")))
+				&& Mob->CurrentHP <= 0.f;
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				*FString::Printf(TEXT("%s allows miniboss mob"), *SourceID.ToString()),
+				bMobExecuted,
+				Mob ? FString::Printf(TEXT("Mob HP=%.1f/%.1f MiniBoss=%d."), Mob->CurrentHP, Mob->MaxHP, Mob->bIsMiniBoss ? 1 : 0) : TEXT("Mob spawn failed."));
+		}
+
+		AT66BossBase* CounterBoss = SpawnBoss();
+		const int32 CounterBossStartHP = CounterBoss ? CounterBoss->CurrentHP : 0;
+		if (CounterBoss)
+		{
+			CounterBoss->TakeDamageFromHeroHit(5, FName(TEXT("CounterAttack")), FName(TEXT("ItemTaxonomySmoke")));
+		}
+		const bool bCounterBossDamaged = CounterBoss
+			&& CounterBoss->CurrentHP > 0
+			&& CounterBoss->CurrentHP < CounterBossStartHP;
+		T66AppendSmokeCheck(
+			Checks,
+			bAllPassed,
+			TEXT("Counter damages boss non-lethally"),
+			bCounterBossDamaged,
+			CounterBoss ? FString::Printf(TEXT("Boss HP %d -> %d."), CounterBossStartHP, CounterBoss->CurrentHP) : TEXT("Boss spawn failed."));
+
+		AT66BossBase* ReflectBoss = SpawnBoss();
+		const int32 ReflectBossStartHP = ReflectBoss ? ReflectBoss->CurrentHP : 0;
+		if (ReflectBoss)
+		{
+			ReflectBoss->TakeDamageFromHeroHit(5, FName(TEXT("Reflect")), FName(TEXT("ItemTaxonomySmoke")));
+		}
+		const bool bReflectBossDamaged = ReflectBoss
+			&& ReflectBoss->CurrentHP > 0
+			&& ReflectBoss->CurrentHP < ReflectBossStartHP;
+		T66AppendSmokeCheck(
+			Checks,
+			bAllPassed,
+			TEXT("Reflect damages boss non-lethally"),
+			bReflectBossDamaged,
+			ReflectBoss ? FString::Printf(TEXT("Boss HP %d -> %d."), ReflectBossStartHP, ReflectBoss->CurrentHP) : TEXT("Boss spawn failed."));
+
+		if (RunState)
+		{
+			RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_LootBag")), ET66ItemRarity::White, 40));
+			RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_LootWheel")), ET66ItemRarity::White, 40));
+
+			const float LootBagMultiplier = RunState->GetLootBagRewardMultiplier();
+			const float LootWheelMultiplier = RunState->GetLootWheelRewardMultiplier();
+			const bool bLootBagImproves = LootBagMultiplier > 1.f
+				&& T66SmokeRarityIndex(T66SmokeUpgradeRarityByMultiplier(ET66ItemRarity::Black, LootBagMultiplier)) > T66SmokeRarityIndex(ET66ItemRarity::Black);
+			const bool bLootWheelImproves = LootWheelMultiplier > 1.f
+				&& T66SmokeRarityIndex(T66SmokeUpgradeRarityByMultiplier(ET66ItemRarity::Black, LootWheelMultiplier)) > T66SmokeRarityIndex(ET66ItemRarity::Black);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Loot Bag improves interactable reward"),
+				bLootBagImproves,
+				FString::Printf(TEXT("LootBagMultiplier=%.3f."), LootBagMultiplier));
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Loot Wheel improves interactable reward"),
+				bLootWheelImproves,
+				FString::Printf(TEXT("LootWheelMultiplier=%.3f."), LootWheelMultiplier));
+
+			const int32 InventoryBeforeRetired = RunState->GetInventorySlots().Num();
+			const FName RetiredItems[] =
+			{
+				FName(TEXT("Item_Accuracy")),
+				FName(TEXT("Item_Cheating")),
+				FName(TEXT("Item_Stealing")),
+				FName(TEXT("Item_HpRegen")),
+				FName(TEXT("Item_LifeSteal")),
+			};
+			for (const FName RetiredItem : RetiredItems)
+			{
+				RunState->AddItem(RetiredItem);
+			}
+			const int32 InventoryAfterRetired = RunState->GetInventorySlots().Num();
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Retired item IDs skip inventory"),
+				InventoryBeforeRetired == InventoryAfterRetired,
+				FString::Printf(TEXT("Inventory %d -> %d."), InventoryBeforeRetired, InventoryAfterRetired));
+		}
+
+		const FString Json = FString::Printf(
+			TEXT("{\n  \"ok\": %s,\n  \"checks\": [\n%s\n  ]\n}\n"),
+			bAllPassed ? TEXT("true") : TEXT("false"),
+			*FString::Join(Checks, TEXT(",\n")));
+
+		IFileManager::Get().MakeDirectory(*FPaths::GetPath(OutputPath), true);
+		const bool bSaved = FFileHelper::SaveStringToFile(Json, *OutputPath);
+		UE_LOG(LogTemp, Display, TEXT("[ItemTaxonomySmoke] ok=%d saved=%d output=%s"), bAllPassed ? 1 : 0, bSaved ? 1 : 0, *OutputPath);
+		FPlatformMisc::RequestExitWithStatus(false, (bAllPassed && bSaved) ? 0 : 70, TEXT("T66ItemTaxonomySmokeComplete"));
+	}
+
+	static void T66RunStatPipelineSmoke(AT66PlayerController* PC, const FString& OutputPath)
+	{
+		bool bAllPassed = true;
+		TArray<FString> Checks;
+		UWorld* World = PC ? PC->GetWorld() : nullptr;
+		UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		UT66BuffSubsystem* Buffs = GI ? GI->GetSubsystem<UT66BuffSubsystem>() : nullptr;
+		APawn* PlayerPawn = PC ? PC->GetPawn() : nullptr;
+
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Context available"), World && GI && RunState && Buffs && PlayerPawn, TEXT("World, GI, RunState, Buffs, and pawn are required."));
+
+		auto SumDamageSecondaries = [RunState]() -> int32
+		{
+			return RunState
+				? RunState->GetAoeDmgStat() + RunState->GetBounceDmgStat() + RunState->GetPierceDmgStat() + RunState->GetDotDmgStat()
+				: 0;
+		};
+
+		auto SumPrimaryStats = [RunState]() -> int32
+		{
+			return RunState
+				? RunState->GetDamageStat() + RunState->GetAttackSpeedStat() + RunState->GetScaleStat() + RunState->GetAccuracyStat()
+					+ RunState->GetArmorStat() + RunState->GetEvasionStat() + RunState->GetLuckStat() + RunState->GetSpeedStat()
+				: 0;
+		};
+
+		auto SumTrackedSecondaryStats = [RunState]() -> int32
+		{
+			return RunState
+				? RunState->GetAoeDmgStat() + RunState->GetBounceDmgStat() + RunState->GetPierceDmgStat() + RunState->GetDotDmgStat()
+					+ RunState->GetAoeAtkSpdStat() + RunState->GetBounceAtkSpdStat() + RunState->GetPierceAtkSpdStat() + RunState->GetDotAtkSpdStat()
+					+ RunState->GetAoeAtkScaleStat() + RunState->GetBounceAtkScaleStat() + RunState->GetPierceAtkScaleStat() + RunState->GetDotAtkScaleStat()
+				: 0;
+		};
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnParams.ObjectFlags |= RF_Transient;
+
+		auto SpawnRichEnemy = [&](const FVector& Location, const int32 XPValue) -> AT66EnemyBase*
+		{
+			AT66EnemyBase* Enemy = World ? World->SpawnActor<AT66EnemyBase>(AT66EnemyBase::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams) : nullptr;
+			if (Enemy)
+			{
+				Enemy->MaxHP = 1;
+				Enemy->CurrentHP = 1;
+				Enemy->XPValue = FMath::Max(0, XPValue);
+				Enemy->bDropsLoot = false;
+			}
+			return Enemy;
+		};
+
+		auto SpawnLightweightMob = [&](const FVector& Location, const int32 XPValue) -> AT66MobBase*
+		{
+			AT66MobBase* Mob = World ? World->SpawnActor<AT66MobBase>(AT66MobBase::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams) : nullptr;
+			if (Mob)
+			{
+				Mob->MaxHP = 1.f;
+				Mob->CurrentHP = 1.f;
+				Mob->XPValue = FMath::Max(0, XPValue);
+				Mob->LifecycleState = ET66MobLifecycleState::Active;
+			}
+			return Mob;
+		};
+
+		if (RunState)
+		{
+			RunState->ResetForNewRun();
+			RunState->ClearInventory();
+			const int32 DamageBeforeItem = RunState->GetDamageStat();
+			const int32 AoeDamageBeforeItem = RunState->GetAoeDmgStat();
+			RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_AoeDamage")), ET66ItemRarity::White, 99));
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Items do not raise primary stats"),
+				RunState->GetDamageStat() == DamageBeforeItem,
+				FString::Printf(TEXT("Damage %d -> %d."), DamageBeforeItem, RunState->GetDamageStat()));
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Items raise secondary stats"),
+				RunState->GetAoeDmgStat() > AoeDamageBeforeItem,
+				FString::Printf(TEXT("AOE damage %d -> %d."), AoeDamageBeforeItem, RunState->GetAoeDmgStat()));
+		}
+
+		if (RunState && Buffs)
+		{
+			Buffs->DebugSetDiplomaUnlockedSteps(ET66HeroStatType::Damage, 0);
+			RunState->ResetForNewRun();
+			const int32 DamageBeforeDiploma = RunState->GetDamageStat();
+			const int32 DamageSecondaryBeforeDiploma = SumDamageSecondaries();
+
+			Buffs->DebugSetDiplomaUnlockedSteps(ET66HeroStatType::Damage, 2);
+			RunState->ResetForNewRun();
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Diplomas raise primary stats"),
+				RunState->GetDamageStat() > DamageBeforeDiploma,
+				FString::Printf(TEXT("Damage %d -> %d."), DamageBeforeDiploma, RunState->GetDamageStat()));
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Diplomas propagate to secondary stats"),
+				SumDamageSecondaries() > DamageSecondaryBeforeDiploma,
+				FString::Printf(TEXT("Damage-secondary sum %d -> %d."), DamageSecondaryBeforeDiploma, SumDamageSecondaries()));
+		}
+
+		if (RunState && Buffs)
+		{
+			RunState->ResetForNewRun();
+			const float AoeValueBeforeDrug = RunState->GetSecondaryStatValue(ET66SecondaryStatType::AoeDamage);
+			Buffs->DebugGrantSingleUseBuff(ET66SecondaryStatType::AoeDamage, 1, true);
+			RunState->DebugActivatePendingSingleUseBuffsForRunStartWithoutConsuming();
+			const float AoeValueAfterDrug = RunState->GetSecondaryStatValue(ET66SecondaryStatType::AoeDamage);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Selected drugs multiply secondary stats"),
+				AoeValueAfterDrug > AoeValueBeforeDrug,
+				FString::Printf(TEXT("AOE value %.3f -> %.3f."), AoeValueBeforeDrug, AoeValueAfterDrug));
+		}
+
+		if (RunState)
+		{
+			RunState->ResetForNewRun();
+			RunState->ApplyAutomationHeroHPOverride(1.f, TEXT("StatPipelineSmoke"));
+			const int32 LevelBefore = RunState->GetHeroLevel();
+			const int32 PrimaryBefore = SumPrimaryStats();
+			const int32 SecondaryBefore = SumTrackedSecondaryStats();
+			const int32 Threshold = RunState->GetHeroXPToNextLevel();
+			RunState->AddHeroXP(Threshold);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("XP triggers level up"),
+				RunState->GetHeroLevel() == LevelBefore + 1,
+				FString::Printf(TEXT("Level %d -> %d threshold=%d."), LevelBefore, RunState->GetHeroLevel(), Threshold));
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Level up heals to full"),
+				FMath::IsNearlyEqual(RunState->GetCurrentHP(), RunState->GetMaxHP()),
+				FString::Printf(TEXT("HP %.1f/%.1f."), RunState->GetCurrentHP(), RunState->GetMaxHP()));
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Level up raises primary stats"),
+				SumPrimaryStats() > PrimaryBefore,
+				FString::Printf(TEXT("Primary sum %d -> %d."), PrimaryBefore, SumPrimaryStats()));
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Level up propagates to secondary stats"),
+				SumTrackedSecondaryStats() > SecondaryBefore,
+				FString::Printf(TEXT("Tracked secondary sum %d -> %d."), SecondaryBefore, SumTrackedSecondaryStats()));
+		}
+
+		if (RunState && World && PlayerPawn)
+		{
+			RunState->ResetForNewRun();
+			const FVector BaseLocation = PlayerPawn->GetActorLocation();
+			const int32 XPBeforeKills = RunState->GetHeroXP();
+			const int32 LevelBeforeKills = RunState->GetHeroLevel();
+			AT66EnemyBase* Enemy = SpawnRichEnemy(BaseLocation + FVector(5000.f, 0.f, 100.f), 5);
+			if (Enemy)
+			{
+				Enemy->TakeDamageFromHero(9999, FName(TEXT("StatPipelineSmoke")), FName(TEXT("StatPipelineSmoke")));
+			}
+			AT66MobBase* Mob = SpawnLightweightMob(BaseLocation + FVector(5200.f, 0.f, 100.f), 7);
+			if (Mob)
+			{
+				Mob->TakeDamageFromHeroHitZone(
+					9999,
+					Mob->ResolveCombatTargetHandle(nullptr, ET66HitZoneType::Body),
+					FName(TEXT("StatPipelineSmoke")),
+					FName(TEXT("StatPipelineSmoke")));
+			}
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Rich and lightweight enemies grant XP"),
+				RunState->GetHeroLevel() == LevelBeforeKills && RunState->GetHeroXP() == XPBeforeKills + 12,
+				FString::Printf(TEXT("XP %d -> %d level %d -> %d."), XPBeforeKills, RunState->GetHeroXP(), LevelBeforeKills, RunState->GetHeroLevel()));
+		}
+
+		if (RunState && World && PlayerPawn)
+		{
+			RunState->ResetForNewRun();
+			const FVector BaseLocation = PlayerPawn->GetActorLocation();
+			const int32 Threshold = RunState->GetHeroXPToNextLevel();
+			AT66EnemyBase* WaveEnemy = SpawnRichEnemy(BaseLocation + FVector(150.f, 0.f, 100.f), Threshold);
+			AT66MobBase* WaveMob = SpawnLightweightMob(BaseLocation + FVector(250.f, 0.f, 100.f), Threshold);
+			const int32 LevelBeforeWave = RunState->GetHeroLevel();
+			RunState->AddHeroXP(Threshold);
+			const bool bWaveKilledTargets = (!WaveEnemy || WaveEnemy->CurrentHP <= 0) && (!WaveMob || WaveMob->CurrentHP <= 0.f);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Level-up wave does not chain XP"),
+				bWaveKilledTargets && RunState->GetHeroLevel() == LevelBeforeWave + 1,
+				FString::Printf(
+					TEXT("Level %d -> %d enemyHP=%d mobHP=%.1f threshold=%d."),
+					LevelBeforeWave,
+					RunState->GetHeroLevel(),
+					WaveEnemy ? WaveEnemy->CurrentHP : -1,
+					WaveMob ? WaveMob->CurrentHP : -1.f,
+					Threshold));
+		}
+
+		const FString Json = FString::Printf(
+			TEXT("{\n  \"ok\": %s,\n  \"checks\": [\n%s\n  ]\n}\n"),
+			bAllPassed ? TEXT("true") : TEXT("false"),
+			*FString::Join(Checks, TEXT(",\n")));
+
+		IFileManager::Get().MakeDirectory(*FPaths::GetPath(OutputPath), true);
+		const bool bSaved = FFileHelper::SaveStringToFile(Json, *OutputPath);
+		UE_LOG(LogTemp, Display, TEXT("[StatPipelineSmoke] ok=%d saved=%d output=%s"), bAllPassed ? 1 : 0, bSaved ? 1 : 0, *OutputPath);
+		FPlatformMisc::RequestExitWithStatus(false, (bAllPassed && bSaved) ? 0 : 71, TEXT("T66StatPipelineSmokeComplete"));
+	}
+#endif
+
+	static void T66RecordNonDirectorRouteAttribution(UWorld* World, const AT66EnemyBase* Enemy)
+	{
+		if (!World || !Enemy)
+		{
+			return;
+		}
+
+		if (UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>())
+		{
+			MobManager->RecordRouteAttribution(
+				Enemy->EnemyFamily,
+				ET66RouteAttributionReason::RoutedRich_NonDirectorPath,
+				ET66RouteAttributionChannel::NonDirector);
+		}
+	}
+
 	template <typename TInteractableType>
 	TInteractableType* T66FindRegisteredWorldInteractable(UWorld* World)
 	{
@@ -181,7 +683,7 @@ namespace
 		return nullptr;
 	}
 
-	bool T66HasRegisteredGamblerBoss(UWorld* World)
+	bool T66HasRegisteredVendorBoss(UWorld* World)
 	{
 		if (!World)
 		{
@@ -192,7 +694,7 @@ namespace
 		{
 			for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
 			{
-				if (Cast<AT66GamblerBoss>(WeakBoss.Get()) != nullptr)
+				if (Cast<AT66VendorBoss>(WeakBoss.Get()) != nullptr)
 				{
 					return true;
 				}
@@ -354,6 +856,51 @@ void AT66PlayerController::QueueGameplayAutomationScreenshotIfRequested()
 
 	FString RequestedWidgetDumpSpec;
 	const bool bWidgetDumpRequested = FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpWidget="), RequestedWidgetDumpSpec);
+
+	bool bItemTaxonomySmokeRequested = false;
+	FString RequestedItemTaxonomySmokePath;
+	bool bStatPipelineSmokeRequested = false;
+	FString RequestedStatPipelineSmokePath;
+#if !UE_BUILD_SHIPPING
+	bItemTaxonomySmokeRequested = FParse::Value(FCommandLine::Get(), TEXT("T66ItemTaxonomySmoke="), RequestedItemTaxonomySmokePath);
+	bStatPipelineSmokeRequested = FParse::Value(FCommandLine::Get(), TEXT("T66StatPipelineSmoke="), RequestedStatPipelineSmokePath);
+#endif
+
+	if (!bScreenshotRequested && !bScreenshotSequenceRequested && !bWidgetDumpRequested && !bItemTaxonomySmokeRequested && !bStatPipelineSmokeRequested)
+	{
+		return;
+	}
+
+#if !UE_BUILD_SHIPPING
+	if (bItemTaxonomySmokeRequested)
+	{
+		const FString SmokeOutputPath = FPaths::ConvertRelativePathToFull(RequestedItemTaxonomySmokePath);
+		FTimerHandle ItemTaxonomySmokeTimerHandle;
+		FTimerDelegate SmokeDelegate = FTimerDelegate::CreateLambda([WeakThis = TWeakObjectPtr<AT66PlayerController>(this), SmokeOutputPath]()
+		{
+			if (AT66PlayerController* StrongThis = WeakThis.Get())
+			{
+				T66RunItemTaxonomySmoke(StrongThis, SmokeOutputPath);
+			}
+		});
+		GetWorldTimerManager().SetTimer(ItemTaxonomySmokeTimerHandle, SmokeDelegate, 1.0f, false);
+	}
+
+	if (bStatPipelineSmokeRequested)
+	{
+		const FString SmokeOutputPath = FPaths::ConvertRelativePathToFull(RequestedStatPipelineSmokePath);
+		FTimerHandle StatPipelineSmokeTimerHandle;
+		FTimerDelegate SmokeDelegate = FTimerDelegate::CreateLambda([WeakThis = TWeakObjectPtr<AT66PlayerController>(this), SmokeOutputPath]()
+		{
+			if (AT66PlayerController* StrongThis = WeakThis.Get())
+			{
+				T66RunStatPipelineSmoke(StrongThis, SmokeOutputPath);
+			}
+		});
+		GetWorldTimerManager().SetTimer(StatPipelineSmokeTimerHandle, SmokeDelegate, 1.0f, false);
+	}
+#endif
+
 	if (!bScreenshotRequested && !bScreenshotSequenceRequested && !bWidgetDumpRequested)
 	{
 		return;
@@ -755,12 +1302,12 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 			const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 			for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 			{
-				if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+				if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 				{
 					TargetFloor = &Floor;
 					break;
 				}
-				if (!TargetFloor && Floor.bGameplayFloor)
+				if (!TargetFloor && Floor.bMobFloor)
 				{
 					TargetFloor = &Floor;
 				}
@@ -794,7 +1341,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				{
 					RunState->SetStageTimerActive(true);
 				}
-				UE_LOG(LogTemp, Display, TEXT("[MobCombatSmoke] Entered gameplay floor=%d location=%s with director paused."),
+				UE_LOG(LogTemp, Display, TEXT("[MobCombatSmoke] Entered mob floor=%d location=%s with director paused."),
 					TargetFloor->FloorNumber,
 					*HeroPawn->GetActorLocation().ToCompactString());
 			}
@@ -965,12 +1512,12 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 			const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 			for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 			{
-				if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+				if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 				{
 					TargetFloor = &Floor;
 					break;
 				}
-				if (!TargetFloor && Floor.bGameplayFloor)
+				if (!TargetFloor && Floor.bMobFloor)
 				{
 					TargetFloor = &Floor;
 				}
@@ -1004,7 +1551,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				{
 					RunState->SetStageTimerActive(true);
 				}
-				UE_LOG(LogTemp, Display, TEXT("[MobDataBindingSmoke] Entered gameplay floor=%d location=%s with director paused."),
+				UE_LOG(LogTemp, Display, TEXT("[MobDataBindingSmoke] Entered mob floor=%d location=%s with director paused."),
 					TargetFloor->FloorNumber,
 					*HeroPawn->GetActorLocation().ToCompactString());
 			}
@@ -1168,12 +1715,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 
 	if (Mode == TEXT("mobdirectorroutingsmoke") || Mode == TEXT("lightweightactorb6"))
 	{
-		if (IConsoleVariable* UseLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.UseLightweight")))
-		{
-			UseLightweightCVar->Set(1, ECVF_SetByConsole);
-			UE_LOG(LogTemp, Display, TEXT("[MobDirectorRoutingSmoke] T66.Mob.UseLightweight set to 1 before director routing."));
-		}
-
 		if (bInventoryInspectOpen)
 		{
 			SetInventoryInspectOpen(false);
@@ -1201,19 +1742,19 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 		{
-			if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+			if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 			{
 				TargetFloor = &Floor;
 				break;
 			}
-			if (!TargetFloor && Floor.bGameplayFloor)
+			if (!TargetFloor && Floor.bMobFloor)
 			{
 				TargetFloor = &Floor;
 			}
 		}
 		if (!TargetFloor)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[MobDirectorRoutingSmoke] Failed: no gameplay floor in tower layout."));
+			UE_LOG(LogTemp, Warning, TEXT("[MobDirectorRoutingSmoke] Failed: no mob floor in tower layout."));
 			return;
 		}
 
@@ -1320,20 +1861,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 			8.0f,
 			false);
 
-		FTimerHandle DirectorSmokeToggleOffHandle;
-		World->GetTimerManager().SetTimer(
-			DirectorSmokeToggleOffHandle,
-			FTimerDelegate::CreateLambda([]()
-			{
-				if (IConsoleVariable* UseLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.UseLightweight")))
-				{
-					UseLightweightCVar->Set(0, ECVF_SetByConsole);
-					UE_LOG(LogTemp, Display, TEXT("[MobDirectorRoutingSmoke] T66.Mob.UseLightweight set to 0 after routing sample."));
-				}
-			}),
-			18.0f,
-			false);
-
 		UE_LOG(LogTemp, Display, TEXT("[MobDirectorRoutingSmoke] Lightweight Actor B.6 director-routing smoke sequence armed on floor=%d location=%s."),
 			TargetFloor->FloorNumber,
 			*HeroPawn->GetActorLocation().ToCompactString());
@@ -1342,12 +1869,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 
 	if (Mode == TEXT("rushsmoke") || Mode == TEXT("lightweightactorb8"))
 	{
-		if (IConsoleVariable* UseLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.UseLightweight")))
-		{
-			UseLightweightCVar->Set(1, ECVF_SetByConsole);
-			UE_LOG(LogTemp, Display, TEXT("[RushSmoke] T66.Mob.UseLightweight set to 1 before Rush smoke."));
-		}
-
 		if (bInventoryInspectOpen)
 		{
 			SetInventoryInspectOpen(false);
@@ -1375,19 +1896,19 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 		{
-			if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+			if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 			{
 				TargetFloor = &Floor;
 				break;
 			}
-			if (!TargetFloor && Floor.bGameplayFloor)
+			if (!TargetFloor && Floor.bMobFloor)
 			{
 				TargetFloor = &Floor;
 			}
 		}
 		if (!TargetFloor)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[RushSmoke] Failed: no gameplay floor in tower layout."));
+			UE_LOG(LogTemp, Warning, TEXT("[RushSmoke] Failed: no mob floor in tower layout."));
 			return;
 		}
 
@@ -1545,12 +2066,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 
 	if (Mode == TEXT("flyingsmoke") || Mode == TEXT("lightweightactorb9"))
 	{
-		if (IConsoleVariable* UseLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.UseLightweight")))
-		{
-			UseLightweightCVar->Set(1, ECVF_SetByConsole);
-			UE_LOG(LogTemp, Display, TEXT("[FlyingSmoke] T66.Mob.UseLightweight set to 1 before Flying smoke."));
-		}
-
 		if (bInventoryInspectOpen)
 		{
 			SetInventoryInspectOpen(false);
@@ -1578,19 +2093,19 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 		{
-			if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+			if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 			{
 				TargetFloor = &Floor;
 				break;
 			}
-			if (!TargetFloor && Floor.bGameplayFloor)
+			if (!TargetFloor && Floor.bMobFloor)
 			{
 				TargetFloor = &Floor;
 			}
 		}
 		if (!TargetFloor)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[FlyingSmoke] Failed: no gameplay floor in tower layout."));
+			UE_LOG(LogTemp, Warning, TEXT("[FlyingSmoke] Failed: no mob floor in tower layout."));
 			return;
 		}
 
@@ -1764,16 +2279,9 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 
 	if (Mode == TEXT("rangedsmoke") || Mode == TEXT("lightweightactorb10"))
 	{
-		if (IConsoleVariable* UseLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.UseLightweight")))
-		{
-			UseLightweightCVar->Set(1, ECVF_SetByConsole);
-			UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] T66.Mob.UseLightweight set to 1 before Ranged smoke."));
-		}
-		if (IConsoleVariable* RouteRangedCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.Diagnostics.RouteRangedLightweight")))
-		{
-			RouteRangedCVar->Set(1, ECVF_SetByConsole);
-			UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] T66.Mob.Diagnostics.RouteRangedLightweight set to 1 before Ranged smoke."));
-		}
+		int32 RangedSmokeUseLightweight = 1;
+		FParse::Value(FCommandLine::Get(), TEXT("T66MobUseLightweight="), RangedSmokeUseLightweight);
+		const bool bUseLightweightRangedSmoke = RangedSmokeUseLightweight != 0;
 
 		if (bInventoryInspectOpen)
 		{
@@ -1801,19 +2309,19 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 		{
-			if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+			if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 			{
 				TargetFloor = &Floor;
 				break;
 			}
-			if (!TargetFloor && Floor.bGameplayFloor)
+			if (!TargetFloor && Floor.bMobFloor)
 			{
 				TargetFloor = &Floor;
 			}
 		}
 		if (!TargetFloor)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[RangedSmoke] Failed: no gameplay floor in tower layout."));
+			UE_LOG(LogTemp, Warning, TEXT("[RangedSmoke] Failed: no mob floor in tower layout."));
 			return;
 		}
 
@@ -1854,6 +2362,14 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		{
 			EnemyDirector->RefreshSpawningFromProgression();
 		}
+		if (UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>())
+		{
+			MobManager->ResetRangedPressureDiagnostics(TEXT("RangedSmokeStart"));
+		}
+		if (UT66ProjectileManagerSubsystem* ProjectileManager = World->GetSubsystem<UT66ProjectileManagerSubsystem>())
+		{
+			ProjectileManager->ResetProjectileDiagnostics(TEXT("RangedSmokeStart"));
+		}
 		if (GameplayHUDWidget)
 		{
 			GameplayHUDWidget->RefreshHUD();
@@ -1861,100 +2377,146 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 
 		const FVector RangedSpawnLocation = TargetLocation + FVector(1000.0f, 0.0f, 0.0f);
 		const FTransform RangedSpawnTransform(FRotator::ZeroRotator, RangedSpawnLocation);
-		AT66MobBase* RangedMob = World->SpawnActorDeferred<AT66MobBase>(
-			AT66MobBase::StaticClass(),
-			RangedSpawnTransform,
-			nullptr,
-			nullptr,
-			ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-		if (RangedMob)
+		int32 StageNum = 1;
+		float DifficultyScalar = 1.f;
+		float EnemyProgressionScalar = 1.f;
+		float FinaleScalar = 1.f;
+		if (UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 		{
-			RangedMob->Tags.AddUnique(FName(TEXT("T66_TestMob")));
-			RangedMob->MobID = FName(TEXT("HexSlinger"));
-			RangedMob->CharacterVisualID = FName(TEXT("HexSlinger"));
-			RangedMob->LifecycleState = ET66MobLifecycleState::Active;
-			UGameplayStatics::FinishSpawningActor(RangedMob, RangedSpawnTransform);
-
-			int32 StageNum = 1;
-			float DifficultyScalar = 1.f;
-			float EnemyProgressionScalar = 1.f;
-			float FinaleScalar = 1.f;
-			if (UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
+			StageNum = FMath::Max(1, RunState->GetCurrentStage());
+			DifficultyScalar = RunState->GetDifficultyScalar();
+			FinaleScalar = RunState->GetFinalSurvivalEnemyScalar();
+		}
+		AT66MobBase* RangedMob = nullptr;
+		AT66RangedEnemy* RichRangedEnemy = nullptr;
+		AActor* RangedSmokeActor = nullptr;
+		if (bUseLightweightRangedSmoke)
+		{
+			RangedMob = World->SpawnActorDeferred<AT66MobBase>(
+				AT66MobBase::StaticClass(),
+				RangedSpawnTransform,
+				nullptr,
+				nullptr,
+				ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+			if (RangedMob)
 			{
-				StageNum = FMath::Max(1, RunState->GetCurrentStage());
-				DifficultyScalar = RunState->GetDifficultyScalar();
-				FinaleScalar = RunState->GetFinalSurvivalEnemyScalar();
+				RangedMob->Tags.AddUnique(FName(TEXT("T66_TestMob")));
+				RangedMob->MobID = FName(TEXT("HexSlinger"));
+				RangedMob->CharacterVisualID = FName(TEXT("HexSlinger"));
+				RangedMob->LifecycleState = ET66MobLifecycleState::Active;
+				UGameplayStatics::FinishSpawningActor(RangedMob, RangedSpawnTransform);
+				RangedMob->ConfigureAsMob(FName(TEXT("HexSlinger")), ET66EnemyFamily::Ranged, NAME_None, StageNum, DifficultyScalar, EnemyProgressionScalar, FinaleScalar, false);
+				RangedMob->ForceMobVertexAnimationClipForAutomation(FName(TEXT("Move")), 8.f);
+				if (UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>())
+				{
+					MobManager->RecordRouteAttribution(
+						RangedMob->GetEnemyFamily(),
+						ET66RouteAttributionReason::RoutedLightweight_BasicFamily,
+						ET66RouteAttributionChannel::NonDirector);
+				}
+				RangedSmokeActor = RangedMob;
 			}
-			RangedMob->ConfigureAsMob(FName(TEXT("HexSlinger")), ET66EnemyFamily::Ranged, NAME_None, StageNum, DifficultyScalar, EnemyProgressionScalar, FinaleScalar, false);
-			RangedMob->ForceMobVertexAnimationClipForAutomation(FName(TEXT("Move")), 8.f);
+		}
+		else
+		{
+			RichRangedEnemy = World->SpawnActorDeferred<AT66RangedEnemy>(
+				AT66RangedEnemy::StaticClass(),
+				RangedSpawnTransform,
+				nullptr,
+				nullptr,
+				ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+			if (RichRangedEnemy)
+			{
+				RichRangedEnemy->Tags.AddUnique(FName(TEXT("T66_TestMob")));
+				RichRangedEnemy->MobID = FName(TEXT("HexSlinger"));
+				RichRangedEnemy->CharacterVisualID = FName(TEXT("HexSlinger"));
+				RichRangedEnemy->EnemyFamily = ET66EnemyFamily::Ranged;
+				UGameplayStatics::FinishSpawningActor(RichRangedEnemy, RangedSpawnTransform);
+				RichRangedEnemy->ConfigureAsMob(FName(TEXT("HexSlinger")));
+				RichRangedEnemy->ForceMobVertexAnimationClipForAutomation(FName(TEXT("Move")), 8.f);
+				T66RecordNonDirectorRouteAttribution(World, RichRangedEnemy);
+				RangedSmokeActor = RichRangedEnemy;
+			}
 		}
 
 		TWeakObjectPtr<AT66MobBase> WeakRangedMob(RangedMob);
+		TWeakObjectPtr<AT66RangedEnemy> WeakRichRangedEnemy(RichRangedEnemy);
 		TWeakObjectPtr<AT66PlayerController> WeakThis(this);
 		const float LogTimes[] = { 0.35f, 0.85f, 1.35f, 2.15f, 3.0f };
 		for (int32 Index = 0; Index < UE_ARRAY_COUNT(LogTimes); ++Index)
 		{
 			FTimerHandle RangedLogHandle;
 			const float LogTime = LogTimes[Index];
-			World->GetTimerManager().SetTimer(
-				RangedLogHandle,
-				FTimerDelegate::CreateLambda([WeakRangedMob, LogTime]()
-				{
-					const AT66MobBase* Mob = WeakRangedMob.Get();
-					if (!Mob)
+			if (bUseLightweightRangedSmoke)
+			{
+				World->GetTimerManager().SetTimer(
+					RangedLogHandle,
+					FTimerDelegate::CreateLambda([WeakRangedMob, LogTime]()
 					{
-						UE_LOG(LogTemp, Warning, TEXT("[RangedSmoke] t=%.2fs test Ranged mob missing."), LogTime);
+						const AT66MobBase* Mob = WeakRangedMob.Get();
+						if (Mob)
+						{
+							UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] t=%.2fs MobID=%s path=Lightweight loc=%s velocity=%s fireCooldown=%.2f minRange=%.1f maxRange=%.1f projectileHeight=%.1f"),
+								LogTime,
+								Mob->MobID.IsNone() ? TEXT("unset") : *Mob->MobID.ToString(),
+								*Mob->GetActorLocation().ToCompactString(),
+								*Mob->StoredVelocity.ToCompactString(),
+								Mob->FireCooldownRemaining,
+								Mob->DesiredMinRange,
+								Mob->DesiredMaxRange,
+								Mob->ProjectileSpawnHeight);
+							return;
+						}
+						UE_LOG(LogTemp, Warning, TEXT("[RangedSmoke] t=%.2fs lightweight test Ranged mob missing."), LogTime);
+					}),
+					LogTime,
+					false);
+			}
+			else
+			{
+				World->GetTimerManager().SetTimer(
+					RangedLogHandle,
+					FTimerDelegate::CreateLambda([WeakRichRangedEnemy, LogTime]()
+					{
+					const AT66RangedEnemy* Enemy = WeakRichRangedEnemy.Get();
+					if (!Enemy)
+					{
+						UE_LOG(LogTemp, Warning, TEXT("[RangedSmoke] t=%.2fs rich test Ranged enemy missing."), LogTime);
 						return;
 					}
-
-					UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] t=%.2fs MobID=%s loc=%s velocity=%s fireCooldown=%.2f minRange=%.1f maxRange=%.1f projectileHeight=%.1f"),
+					UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] t=%.2fs MobID=%s path=Rich loc=%s class=%s"),
 						LogTime,
-						Mob->MobID.IsNone() ? TEXT("unset") : *Mob->MobID.ToString(),
-						*Mob->GetActorLocation().ToCompactString(),
-						*Mob->StoredVelocity.ToCompactString(),
-						Mob->FireCooldownRemaining,
-						Mob->DesiredMinRange,
-						Mob->DesiredMaxRange,
-						Mob->ProjectileSpawnHeight);
-				}),
-				LogTime,
-				false);
+						Enemy->MobID.IsNone() ? TEXT("unset") : *Enemy->MobID.ToString(),
+						*Enemy->GetActorLocation().ToCompactString(),
+						*GetNameSafe(Enemy->GetClass()));
+					}),
+					LogTime,
+					false);
+			}
 		}
 
 		FTimerHandle ProjectileAssertionHandle;
 		World->GetTimerManager().SetTimer(
 			ProjectileAssertionHandle,
-			FTimerDelegate::CreateLambda([WeakThis, WeakRangedMob]()
+			FTimerDelegate::CreateLambda([WeakThis]()
 			{
 				AT66PlayerController* PC = WeakThis.Get();
 				UWorld* SmokeWorld = PC ? PC->GetWorld() : nullptr;
-				const AT66MobBase* Mob = WeakRangedMob.Get();
-				if (!SmokeWorld || !Mob)
+				const UT66ProjectileManagerSubsystem* ProjectileManager = SmokeWorld ? SmokeWorld->GetSubsystem<UT66ProjectileManagerSubsystem>() : nullptr;
+				if (!SmokeWorld || !ProjectileManager)
 				{
-					UE_LOG(LogTemp, Warning, TEXT("[RangedSmoke] ProjectileTravelAssertion skipped: missing world or ranged mob."));
+					UE_LOG(LogTemp, Warning, TEXT("[RangedSmoke] ProjectileTravelAssertion skipped: missing world or projectile manager."));
 					return;
 				}
 
-				const FVector SpawnReference = Mob->GetActorLocation() + FVector(0.f, 0.f, Mob->ProjectileSpawnHeight);
-				int32 OwnedProjectileCount = 0;
-				float MaxTravelDistance = 0.f;
-				for (TActorIterator<AT66EnemyProjectileBase> It(SmokeWorld); It; ++It)
-				{
-					const AT66EnemyProjectileBase* Projectile = *It;
-					if (!Projectile || Projectile->GetOwner() != Mob)
-					{
-						continue;
-					}
-
-					++OwnedProjectileCount;
-					MaxTravelDistance = FMath::Max(MaxTravelDistance, FVector::Dist(Projectile->GetActorLocation(), SpawnReference));
-				}
-
-				UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] ProjectileTravelAssertion spawnHeight=%.1f ownedProjectiles=%d maxTravel=%.1f result=%s"),
-					Mob->ProjectileSpawnHeight,
-					OwnedProjectileCount,
-					MaxTravelDistance,
-					(OwnedProjectileCount > 0 && MaxTravelDistance > 80.f) ? TEXT("PASS") : TEXT("CHECK"));
+				const FT66ProjectileManagerDiagnostics& Diagnostics = ProjectileManager->GetDiagnostics();
+				UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] ProjectileTravelAssertion managerFired=%d active=%d hitHero=%d hitWorld=%d expired=%d result=%s"),
+					Diagnostics.ProjectilesFired,
+					ProjectileManager->GetActiveProjectileCount(),
+					Diagnostics.ProjectilesHitHero,
+					Diagnostics.ProjectilesHitWorld,
+					Diagnostics.ProjectilesExpired,
+					(Diagnostics.ProjectilesFired > 0) ? TEXT("PASS") : TEXT("CHECK"));
 			}),
 			0.85f,
 			false);
@@ -1979,13 +2541,20 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		FTimerHandle DamageHandle;
 		World->GetTimerManager().SetTimer(
 			DamageHandle,
-			FTimerDelegate::CreateLambda([WeakRangedMob]()
+			FTimerDelegate::CreateLambda([WeakRangedMob, WeakRichRangedEnemy]()
 			{
 				if (AT66MobBase* Mob = WeakRangedMob.Get())
 				{
 					const FT66CombatTargetHandle TargetHandle = Mob->ResolveCombatTargetHandle();
 					Mob->TakeDamageFromHeroHitZone(9999, TargetHandle, FName(TEXT("RangedSmoke")), FName(TEXT("AutomationKill")));
 					UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] Applied automation lethal damage to Ranged mob; death path should release it."));
+					return;
+				}
+				if (AT66RangedEnemy* Enemy = WeakRichRangedEnemy.Get())
+				{
+					const FT66CombatTargetHandle TargetHandle = Enemy->ResolveCombatTargetHandle();
+					Enemy->TakeDamageFromHeroHitZone(9999, TargetHandle, FName(TEXT("RangedSmoke")), FName(TEXT("AutomationKill")));
+					UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] Applied automation lethal damage to rich Ranged enemy."));
 				}
 			}),
 			3.5f,
@@ -2022,21 +2591,16 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 			5.5f,
 			false);
 
-		UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] Lightweight Actor B.10 Ranged smoke sequence armed on floor=%d hero=%s rangedMob=%s."),
+		UE_LOG(LogTemp, Display, TEXT("[RangedSmoke] B.10.1D Ranged smoke sequence armed path=%s floor=%d hero=%s rangedMob=%s."),
+			bUseLightweightRangedSmoke ? TEXT("Lightweight") : TEXT("Rich"),
 			TargetFloor->FloorNumber,
 			*HeroPawn->GetActorLocation().ToCompactString(),
-			*GetNameSafe(RangedMob));
+			*GetNameSafe(RangedSmokeActor));
 		return;
 	}
 
 	if (Mode == TEXT("mobpoolhudsmoke") || Mode == TEXT("lightweightactorb7"))
 	{
-		if (IConsoleVariable* UseLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.UseLightweight")))
-		{
-			UseLightweightCVar->Set(1, ECVF_SetByConsole);
-			UE_LOG(LogTemp, Display, TEXT("[MobPoolHudSmoke] T66.Mob.UseLightweight set to 1 before pool/HUD smoke."));
-		}
-
 		if (bInventoryInspectOpen)
 		{
 			SetInventoryInspectOpen(false);
@@ -2065,19 +2629,19 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 		{
-			if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+			if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 			{
 				TargetFloor = &Floor;
 				break;
 			}
-			if (!TargetFloor && Floor.bGameplayFloor)
+			if (!TargetFloor && Floor.bMobFloor)
 			{
 				TargetFloor = &Floor;
 			}
 		}
 		if (!TargetFloor)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[MobPoolHudSmoke] Failed: no gameplay floor in tower layout."));
+			UE_LOG(LogTemp, Warning, TEXT("[MobPoolHudSmoke] Failed: no mob floor in tower layout."));
 			return;
 		}
 
@@ -2214,20 +2778,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				false);
 		}
 
-		FTimerHandle ToggleOffHandle;
-		World->GetTimerManager().SetTimer(
-			ToggleOffHandle,
-			FTimerDelegate::CreateLambda([]()
-			{
-				if (IConsoleVariable* UseLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.UseLightweight")))
-				{
-					UseLightweightCVar->Set(0, ECVF_SetByConsole);
-					UE_LOG(LogTemp, Display, TEXT("[MobPoolHudSmoke] T66.Mob.UseLightweight set to 0; subsequent spawns use rich path."));
-				}
-			}),
-			50.0f,
-			false);
-
 		UE_LOG(LogTemp, Display, TEXT("[MobPoolHudSmoke] Lightweight Actor B.7 pool/HUD smoke sequence armed on floor=%d location=%s."),
 			TargetFloor->FloorNumber,
 			*HeroPawn->GetActorLocation().ToCompactString());
@@ -2236,51 +2786,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 
 	if (Mode == TEXT("enemywaveperf") || Mode == TEXT("mainboardenemywave") || Mode == TEXT("phaseaperf"))
 	{
-		int32 LightweightMobOverride = 0;
-		if (FParse::Value(FCommandLine::Get(), TEXT("T66MobUseLightweight="), LightweightMobOverride))
-		{
-			if (IConsoleVariable* UseLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.UseLightweight")))
-			{
-				UseLightweightCVar->Set(LightweightMobOverride != 0 ? 1 : 0, ECVF_SetByCommandline);
-				UE_LOG(LogTemp, Display, TEXT("[PerfAutomation] T66.Mob.UseLightweight set to %d from command line."), LightweightMobOverride != 0 ? 1 : 0);
-			}
-		}
-		int32 RouteRushLightweightOverride = 1;
-		if (FParse::Value(FCommandLine::Get(), TEXT("T66MobRouteRushLightweight="), RouteRushLightweightOverride))
-		{
-			if (IConsoleVariable* RouteRushLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.Diagnostics.RouteRushLightweight")))
-			{
-				RouteRushLightweightCVar->Set(RouteRushLightweightOverride != 0 ? 1 : 0, ECVF_SetByCommandline);
-				UE_LOG(LogTemp, Display, TEXT("[PerfAutomation] T66.Mob.Diagnostics.RouteRushLightweight set to %d from command line."), RouteRushLightweightOverride != 0 ? 1 : 0);
-			}
-		}
-		int32 RouteFlyingLightweightOverride = 1;
-		if (FParse::Value(FCommandLine::Get(), TEXT("T66MobRouteFlyingLightweight="), RouteFlyingLightweightOverride))
-		{
-			if (IConsoleVariable* RouteFlyingLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.Diagnostics.RouteFlyingLightweight")))
-			{
-				RouteFlyingLightweightCVar->Set(RouteFlyingLightweightOverride != 0 ? 1 : 0, ECVF_SetByCommandline);
-				UE_LOG(LogTemp, Display, TEXT("[PerfAutomation] T66.Mob.Diagnostics.RouteFlyingLightweight set to %d from command line."), RouteFlyingLightweightOverride != 0 ? 1 : 0);
-			}
-		}
-		int32 RouteRangedLightweightOverride = 1;
-		if (FParse::Value(FCommandLine::Get(), TEXT("T66MobRouteRangedLightweight="), RouteRangedLightweightOverride))
-		{
-			if (IConsoleVariable* RouteRangedLightweightCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.Diagnostics.RouteRangedLightweight")))
-			{
-				RouteRangedLightweightCVar->Set(RouteRangedLightweightOverride != 0 ? 1 : 0, ECVF_SetByCommandline);
-				UE_LOG(LogTemp, Display, TEXT("[PerfAutomation] T66.Mob.Diagnostics.RouteRangedLightweight set to %d from command line."), RouteRangedLightweightOverride != 0 ? 1 : 0);
-			}
-		}
-		int32 UseTouchDamageOverlapOverride = 1;
-		if (FParse::Value(FCommandLine::Get(), TEXT("T66MobUseTouchDamageOverlap="), UseTouchDamageOverlapOverride))
-		{
-			if (IConsoleVariable* UseTouchDamageOverlapCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Mob.Diagnostics.UseTouchDamageOverlap")))
-			{
-				UseTouchDamageOverlapCVar->Set(UseTouchDamageOverlapOverride != 0 ? 1 : 0, ECVF_SetByCommandline);
-				UE_LOG(LogTemp, Display, TEXT("[PerfAutomation] T66.Mob.Diagnostics.UseTouchDamageOverlap set to %d from command line."), UseTouchDamageOverlapOverride != 0 ? 1 : 0);
-			}
-		}
 		int32 ManagerTickProfileOverride = 0;
 		if (FParse::Value(FCommandLine::Get(), TEXT("T66MobManagerTickProfileEnabled="), ManagerTickProfileOverride))
 		{
@@ -2324,12 +2829,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		UE_LOG(
 			LogTemp,
 			Log,
-			TEXT("[PerfAutomation] MobRoutingFlags UseLightweight=%d RouteRush=%d RouteFlying=%d RouteRanged=%d UseTouchDamageOverlap=%d ManagerTickProfile=%d RangedDiagnosticLogging=%d HeroHPOverride=%.1f"),
-			ReadIntCVar(TEXT("T66.Mob.UseLightweight"), 0),
-			ReadIntCVar(TEXT("T66.Mob.Diagnostics.RouteRushLightweight"), 1),
-			ReadIntCVar(TEXT("T66.Mob.Diagnostics.RouteFlyingLightweight"), 1),
-			ReadIntCVar(TEXT("T66.Mob.Diagnostics.RouteRangedLightweight"), 1),
-			ReadIntCVar(TEXT("T66.Mob.Diagnostics.UseTouchDamageOverlap"), 1),
+			TEXT("[PerfAutomation] MobRoutingFlags ManagerTickProfile=%d RangedDiagnosticLogging=%d HeroHPOverride=%.1f"),
 			ReadIntCVar(TEXT("T66.Mob.ManagerTickProfileEnabled"), 0),
 			ReadIntCVar(TEXT("T66.Ranged.DiagnosticLogging"), 0),
 			ReadFloatCVar(TEXT("T66.AutoCapture.HeroHPOverride"), 0.0f));
@@ -2338,6 +2838,10 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 			if (UT66MobManagerSubsystem* MobManager = ResetWorld->GetSubsystem<UT66MobManagerSubsystem>())
 			{
 				MobManager->ResetRangedPressureDiagnostics(TEXT("EnemyWavePerfStart"));
+			}
+			if (UT66ProjectileManagerSubsystem* ProjectileManager = ResetWorld->GetSubsystem<UT66ProjectileManagerSubsystem>())
+			{
+				ProjectileManager->ResetProjectileDiagnostics(TEXT("EnemyWavePerfStart"));
 			}
 		}
 
@@ -2367,19 +2871,19 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 		{
-			if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+			if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 			{
 				TargetFloor = &Floor;
 				break;
 			}
-			if (!TargetFloor && Floor.bGameplayFloor)
+			if (!TargetFloor && Floor.bMobFloor)
 			{
 				TargetFloor = &Floor;
 			}
 		}
 		if (!TargetFloor)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[PerfAutomation] Enemy wave perf mode failed: no gameplay floor in tower layout."));
+			UE_LOG(LogTemp, Warning, TEXT("[PerfAutomation] Enemy wave perf mode failed: no mob floor in tower layout."));
 			return;
 		}
 
@@ -2697,7 +3201,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		return;
 	}
 
-	if (Mode == TEXT("hero1axeaoe") || Mode == TEXT("vfxlabhero1axeaoe") || Mode == TEXT("hero1axeaoehitbox"))
+	if (Mode == TEXT("hero1axeaoe") || Mode == TEXT("vfxlabhero1axeaoe") || Mode == TEXT("hero1axeaoehitbox") || Mode == TEXT("hero1axeaoevfxbinding") || Mode == TEXT("hero1axepiercevfxbinding") || Mode == TEXT("hero1axebouncevfxbinding") || Mode == TEXT("hero1axedotvfxbinding") || Mode == TEXT("hero1axeaoewateridolimpact"))
 	{
 		if (bInventoryInspectOpen)
 		{
@@ -2711,7 +3215,17 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 
 		if (UWorld* World = GetWorld())
 		{
-			const bool bHitboxProofMode = Mode == TEXT("hero1axeaoehitbox");
+			const bool bAoeVFXBindingProofMode = Mode == TEXT("hero1axeaoevfxbinding");
+			const bool bPierceVFXBindingProofMode = Mode == TEXT("hero1axepiercevfxbinding");
+			const bool bBounceVFXBindingProofMode = Mode == TEXT("hero1axebouncevfxbinding");
+			// DOT is a temporary placeholder structure proof: it equips the DOT proof weapon and
+			// fires through the normal auto-attack path, but is intentionally NOT a
+			// bProductionVFXBindingProofMode member because it has no production Niagara binding or
+			// item/stat gate yet. It reuses the hitbox-proof target/equip scaffolding only.
+			const bool bDotVFXBindingProofMode = Mode == TEXT("hero1axedotvfxbinding");
+			const bool bProductionVFXBindingProofMode = bAoeVFXBindingProofMode || bPierceVFXBindingProofMode || bBounceVFXBindingProofMode;
+			const bool bWaterIdolImpactProofMode = Mode == TEXT("hero1axeaoewateridolimpact");
+			const bool bHitboxProofMode = Mode == TEXT("hero1axeaoehitbox") || bProductionVFXBindingProofMode || bDotVFXBindingProofMode || bWaterIdolImpactProofMode;
 			static const FName Hero1AxeTargetTag(TEXT("T66Automation_Hero1AxeAOETarget"));
 			if (AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode()))
 			{
@@ -2748,12 +3262,12 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 							const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 							for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 							{
-								if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+								if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 								{
 									TargetFloor = &Floor;
 									break;
 								}
-								if (!TargetFloor && Floor.bGameplayFloor)
+								if (!TargetFloor && Floor.bMobFloor)
 								{
 									TargetFloor = &Floor;
 								}
@@ -2812,17 +3326,163 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				}
 
 				const FName HeroID = HeroPawn->HeroID.IsNone() ? FName(TEXT("Hero_1")) : HeroPawn->HeroID;
-				const FName AoeWeaponID = UT66WeaponManagerSubsystem::MakeWeaponID(HeroID, ET66WeaponRarity::Black, ET66AttackCategory::AOE);
-				bool bSelectedAoeWeapon = false;
+				ET66AttackCategory ProofWeaponCategory = ET66AttackCategory::AOE;
+				if (bPierceVFXBindingProofMode)
+				{
+					ProofWeaponCategory = ET66AttackCategory::Pierce;
+				}
+				else if (bBounceVFXBindingProofMode)
+				{
+					ProofWeaponCategory = ET66AttackCategory::Bounce;
+				}
+				else if (bDotVFXBindingProofMode)
+				{
+					ProofWeaponCategory = ET66AttackCategory::DOT;
+				}
+				const FName ProofWeaponID = UT66WeaponManagerSubsystem::MakeWeaponID(HeroID, ET66WeaponRarity::Black, ProofWeaponCategory);
+				bool bSelectedProofWeapon = false;
 				if (UT66WeaponManagerSubsystem* WeaponManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr)
 				{
 					WeaponManager->BuildWeaponOffers(HeroID, ET66WeaponRarity::Black);
-					bSelectedAoeWeapon = WeaponManager->SelectWeapon(AoeWeaponID);
+					bSelectedProofWeapon = WeaponManager->SelectWeapon(ProofWeaponID);
 				}
-				UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] EquippedAoeWeapon=%s Success=%d HeroID=%s"),
-					*AoeWeaponID.ToString(),
-					bSelectedAoeWeapon ? 1 : 0,
-					*HeroID.ToString());
+				UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] EquippedProofWeapon=%s Success=%d HeroID=%s AttackCategory=%s"),
+					*ProofWeaponID.ToString(),
+					bSelectedProofWeapon ? 1 : 0,
+					*HeroID.ToString(),
+					*UEnum::GetValueAsString(ProofWeaponCategory));
+
+				FName ImpactProofIdolID = NAME_None;
+				TArray<FName> PreProofEquippedIdols;
+				TArray<uint8> PreProofEquippedIdolTiers;
+				ET66Difficulty PreProofDifficulty = ET66Difficulty::Easy;
+				bool bProofIdolStateCaptured = false;
+				TWeakObjectPtr<UT66IdolManagerSubsystem> WeakProofIdolManager;
+				if (bWaterIdolImpactProofMode)
+				{
+					FString ProofIdolString(TEXT("Idol_Water"));
+					FParse::Value(FCommandLine::Get(), TEXT("T66Hero1AxeAOEProofIdol="), ProofIdolString);
+					ImpactProofIdolID = FName(*ProofIdolString.TrimStartAndEnd());
+					// Centralized in T66CombatShared so the proof-idol allowlist cannot drift
+					// from the runtime impact-presentation lane. Members: Idol_Water (AOE,
+					// preserved reference), Idol_Light (Pierce), Idol_Electric (Bounce),
+					// Idol_Poison (DOT), plus Idol_Earth (neutral/alternate control).
+					if (!T66CombatShared::GetSupportedProofIdols().Contains(ImpactProofIdolID))
+					{
+						UE_LOG(LogTemp, Warning, TEXT("[Hero1AxeAOEIdolImpactProof] Unsupported proof idol %s; using Idol_Water."), *ImpactProofIdolID.ToString());
+						ImpactProofIdolID = FName(TEXT("Idol_Water"));
+					}
+
+					if (UT66IdolManagerSubsystem* IdolManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr)
+					{
+						WeakProofIdolManager = IdolManager;
+						PreProofEquippedIdols = IdolManager->GetEquippedIdols();
+						PreProofEquippedIdolTiers = IdolManager->GetEquippedIdolTierValues();
+						PreProofDifficulty = IdolManager->GetCurrentDifficulty();
+						bProofIdolStateCaptured = true;
+
+						TArray<FName> ProofEquippedIdols;
+						ProofEquippedIdols.SetNum(UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
+						TArray<uint8> ProofEquippedIdolTiers;
+						ProofEquippedIdolTiers.SetNum(UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
+						for (int32 SlotIndex = 0; SlotIndex < UT66IdolManagerSubsystem::MaxEquippedIdolSlots; ++SlotIndex)
+						{
+							ProofEquippedIdols[SlotIndex] = NAME_None;
+							ProofEquippedIdolTiers[SlotIndex] = 0;
+						}
+						ProofEquippedIdols[0] = ImpactProofIdolID;
+						ProofEquippedIdolTiers[0] = 1;
+						IdolManager->RestoreState(ProofEquippedIdols, ProofEquippedIdolTiers, PreProofDifficulty);
+						if (UGameInstance* GI = GetGameInstance())
+						{
+							if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+							{
+								DamageLog->ResetForNewRun();
+							}
+						}
+						UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEIdolImpactProof] EquippedProofIdol=%s CapturedPreviousCount=%d ResetDamageLog=1"),
+							*ImpactProofIdolID.ToString(),
+							PreProofEquippedIdols.Num());
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("[Hero1AxeAOEIdolImpactProof] Missing IdolManager; proof idol not equipped."));
+					}
+				}
+				if (bWaterIdolImpactProofMode)
+				{
+					if (UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
+					{
+						const float AppliedProofHP = RunState->ApplyAutomationHeroHPOverride(20000.f, TEXT("Hero1AxeAOEIdolImpactProof"));
+						UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEIdolImpactProof] AppliedProofHeroHP=%.1f"), AppliedProofHP);
+					}
+				}
+
+				if (bAoeVFXBindingProofMode)
+				{
+					if (UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
+					{
+						if (!FParse::Param(FCommandLine::Get(), TEXT("T66Hero1AxeAOEKeepProofInventory")))
+						{
+							RunState->ClearInventory();
+						}
+
+						FString ProofItemsString;
+						FParse::Value(FCommandLine::Get(), TEXT("T66Hero1AxeAOEProofItems="), ProofItemsString);
+						if (ProofItemsString.TrimStartAndEnd().IsEmpty())
+						{
+							FParse::Value(FCommandLine::Get(), TEXT("T66Hero1AxeAOEProofItem="), ProofItemsString);
+						}
+
+						int32 ProofLine1Roll = 8;
+						FParse::Value(FCommandLine::Get(), TEXT("T66Hero1AxeAOEProofLine1="), ProofLine1Roll);
+						ProofLine1Roll = FMath::Clamp(ProofLine1Roll, 1, 99);
+
+						int32 ProofSecondaryBonus = 1;
+						FParse::Value(FCommandLine::Get(), TEXT("T66Hero1AxeAOEProofSecondary="), ProofSecondaryBonus);
+						ProofSecondaryBonus = FMath::Clamp(ProofSecondaryBonus, 0, 99);
+
+						TArray<FString> ProofItemIDs;
+						ProofItemsString.ParseIntoArray(ProofItemIDs, TEXT(","), true);
+						int32 ProofGrantIndex = 0;
+						for (FString ProofItemIDString : ProofItemIDs)
+						{
+							ProofItemIDString = ProofItemIDString.TrimStartAndEnd();
+							if (ProofItemIDString.IsEmpty())
+							{
+								continue;
+							}
+
+							const FName ProofItemID(*ProofItemIDString);
+							RunState->AddItemSlot(FT66InventorySlot(
+								ProofItemID,
+								ET66ItemRarity::Black,
+								ProofLine1Roll,
+								0.f,
+								ProofSecondaryBonus,
+								660100 + ProofGrantIndex));
+							UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEVFXBindingProof] GrantedItem=%s Rarity=Black Line1=%d Secondary=%d"),
+								*ProofItemID.ToString(),
+								ProofLine1Roll,
+								ProofSecondaryBonus);
+							++ProofGrantIndex;
+						}
+
+						UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEVFXBindingProof] InventoryReady GrantedCount=%d InventoryCount=%d AoeDamageValue=%.3f AoeSpeedValue=%.3f AoeScaleValue=%.3f HeroDamageMult=%.3f HeroAttackSpeedMult=%.3f HeroScaleMult=%.3f"),
+							ProofGrantIndex,
+							RunState->GetInventorySlots().Num(),
+							RunState->GetSecondaryStatValue(ET66SecondaryStatType::AoeDamage),
+							RunState->GetSecondaryStatValue(ET66SecondaryStatType::AoeSpeed),
+							RunState->GetSecondaryStatValue(ET66SecondaryStatType::AoeScale),
+							RunState->GetHeroDamageMultiplier(),
+							RunState->GetHeroAttackSpeedMultiplier(),
+							RunState->GetHeroScaleMultiplier());
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("[Hero1AxeAOEVFXBindingProof] Missing RunState; item proof grants skipped."));
+					}
+				}
 
 				if (UCharacterMovementComponent* Movement = HeroPawn->GetCharacterMovement())
 				{
@@ -2844,20 +3504,135 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 
 				const FVector HeroLocation = HeroPawn->GetActorLocation();
 				const FVector PrimaryLocation = HeroLocation + Forward * 360.0f;
+				// Category-native idol proof selectors. The AOE weapon is always the upstream
+				// driver; only the equipped proof idol changes the downstream category behaviour.
+				const bool bIdolPierceProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Light"));
+				const bool bIdolBounceProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Electric"));
+				const bool bIdolDotProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Poison"));
 				struct FHitboxProofTargetSpec
 				{
 					const TCHAR* Label = TEXT("");
 					FVector Offset = FVector::ZeroVector;
 					bool bExpectedHit = false;
 				};
-				const FHitboxProofTargetSpec TargetSpecs[] =
+				TArray<FHitboxProofTargetSpec> TargetSpecs;
+				if (bPierceVFXBindingProofMode)
 				{
-					{ TEXT("Primary"), FVector::ZeroVector, true },
-					{ TEXT("InsideForward"), Forward * 150.0f, true },
-					{ TEXT("InsideSide"), Forward * 85.0f + Right * 150.0f, true },
-					{ TEXT("OutsideBehind"), -Forward * 180.0f, false },
-					{ TEXT("OutsideBackSide"), -Forward * 90.0f + Right * 180.0f, false },
-				};
+					TargetSpecs = {
+						{ TEXT("Primary"), FVector::ZeroVector, true },
+						{ TEXT("InLineNear"), Forward * 120.0f, true },
+						{ TEXT("InLineFar"), Forward * 520.0f, true },
+						{ TEXT("InsideTubeSide"), Forward * 420.0f + Right * 60.0f, true },
+						{ TEXT("OutsideTubeSide"), Forward * 420.0f + Right * 180.0f, false },
+						{ TEXT("OutsideBehind"), -Forward * 520.0f, false },
+						{ TEXT("OutsideFarSide"), Forward * 900.0f + Right * 260.0f, false },
+					};
+				}
+				else if (bBounceVFXBindingProofMode)
+				{
+					// Bounce projectile-travel proof intentionally stages the user's requested
+					// two-link sequence only: hero -> primary, then primary -> ChainSecond. The
+					// remaining controls sit out of chain range so the capture cannot show a third
+					// projectile and accidentally prove the older multi-target setup.
+					TargetSpecs = {
+						{ TEXT("Primary"), FVector::ZeroVector, true },
+						{ TEXT("ChainSecond"), Right * 150.0f, true },
+						{ TEXT("OutOfChainRangeForward"), Forward * 4200.0f + Right * 150.0f, false },
+						{ TEXT("OutOfChainRangeSide"), Forward * 4200.0f + Right * 4200.0f, false },
+						{ TEXT("OutsideBehind"), -Forward * 4200.0f, false },
+					};
+				}
+				else if (bDotVFXBindingProofMode)
+				{
+					// DOT is single-target: one primary that takes the contact hit + the single
+					// authoritative DOT payload (and the three placeholder applicator markers). The
+					// out-of-range controls stay hidden and unhit so the capture cannot read the DOT
+					// as an AOE/multi-lane effect.
+					TargetSpecs = {
+						{ TEXT("Primary"), FVector::ZeroVector, true },
+						{ TEXT("OutOfRangeForward"), Forward * 4200.0f, false },
+						{ TEXT("OutOfRangeSide"), Forward * 4200.0f + Right * 4200.0f, false },
+					};
+				}
+				else if (bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Water")))
+				{
+					TargetSpecs = {
+						{ TEXT("Primary"), FVector::ZeroVector, true },
+						{ TEXT("WaterOnlyInnerHollow"), Forward * 120.0f, true },
+						{ TEXT("WeaponOnlyOuterBand"), Forward * 320.0f, true },
+						{ TEXT("InsideBandSide"), Forward * 270.0f + Right * 170.0f, true },
+						{ TEXT("WaterOnlyOuterRadius"), Forward * 520.0f, true },
+						{ TEXT("OutsideAngleEdge"), -Forward * 30.0f + Right * 360.0f, false },
+						{ TEXT("OutsideBehind"), -Forward * 380.0f, false },
+						{ TEXT("OutsideAllRadius"), Forward * 760.0f, false },
+					};
+				}
+				else if (bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Earth")))
+				{
+					TargetSpecs = {
+						{ TEXT("Primary"), FVector::ZeroVector, true },
+						{ TEXT("InsideBandForward"), Forward * 320.0f, true },
+						{ TEXT("InsideBandSide"), Forward * 270.0f + Right * 170.0f, true },
+						{ TEXT("InsideAngleEdge"), Forward * 30.0f + Right * 360.0f, true },
+						{ TEXT("InnerHollow"), Forward * 120.0f, false },
+						{ TEXT("OutsideAngleEdge"), -Forward * 30.0f + Right * 360.0f, false },
+						{ TEXT("OutsideBehind"), -Forward * 760.0f, false },
+						{ TEXT("OutsideRadius"), Forward * 520.0f, false },
+					};
+				}
+				else if (bIdolPierceProof)
+				{
+					// Pierce idol (Idol_Light, property=1 => 2 line targets) read off the AOE
+					// impact point along forward: primary + one in-line second target are pierced.
+					// PierceInLineSecond sits beyond the parent AOE outer radius so only the pierce
+					// line can reach it (isolates pierce reach from the parent weapon AOE). All
+					// ExpectedHit=0 controls sit far outside both the parent AOE radius and the pierce
+					// tube/length so neither the parent AOE nor the pierce capsule can touch them.
+					TargetSpecs = {
+						{ TEXT("Primary"), FVector::ZeroVector, true },
+						{ TEXT("PierceInLineSecond"), Forward * 600.0f, true },
+						{ TEXT("PierceOffLineFar"), Forward * 220.0f + Right * 4200.0f, false },
+						{ TEXT("PierceBeyondReach"), Forward * 4200.0f, false },
+						{ TEXT("OutsideBehind"), -Forward * 4200.0f, false },
+					};
+				}
+				else if (bIdolBounceProof)
+				{
+					// Bounce idol (Idol_Electric, property=1 => 2 chain links) read off the AOE
+					// impact point: primary + one nearby chain link; the remaining controls sit far
+					// out of chain range so the capture cannot read a third link.
+					TargetSpecs = {
+						{ TEXT("Primary"), FVector::ZeroVector, true },
+						{ TEXT("ChainSecond"), Right * 160.0f, true },
+						{ TEXT("OutOfChainRangeForward"), Forward * 4200.0f, false },
+						{ TEXT("OutOfChainRangeSide"), Forward * 4200.0f + Right * 4200.0f, false },
+						{ TEXT("OutsideBehind"), -Forward * 4200.0f, false },
+					};
+				}
+				else if (bIdolDotProof)
+				{
+					// DOT idol (Idol_Poison) is single-target: the idol owns ticking damage on the
+					// AOE impact primary. Out-of-range controls stay hidden and unhit so the capture
+					// cannot read the DOT as a multi-target lane.
+					TargetSpecs = {
+						{ TEXT("Primary"), FVector::ZeroVector, true },
+						{ TEXT("OutOfRangeForward"), Forward * 4200.0f, false },
+						{ TEXT("OutOfRangeSide"), Forward * 4200.0f + Right * 4200.0f, false },
+					};
+				}
+				else
+				{
+					TargetSpecs = {
+						{ TEXT("Primary"), FVector::ZeroVector, true },
+						{ TEXT("InsideBandForward"), Forward * 320.0f, true },
+						{ TEXT("InsideBandSide"), Forward * 270.0f + Right * 170.0f, true },
+						{ TEXT("InsideAngleEdge"), Forward * 30.0f + Right * 360.0f, true },
+						{ TEXT("InnerHollow"), Forward * 120.0f, false },
+						{ TEXT("OutsideAngleEdge"), -Forward * 30.0f + Right * 360.0f, false },
+						{ TEXT("OutsideBehind"), -Forward * 300.0f, false },
+						{ TEXT("OutsideRadius"), Forward * 520.0f, false },
+					};
+				}
 
 				FString TargetMobIDString(TEXT("Slime"));
 				FParse::Value(FCommandLine::Get(), TEXT("T66Hero1AxeAOETargetMob="), TargetMobIDString);
@@ -2887,6 +3662,11 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 					Enemy->Tags.AddUnique(Hero1AxeTargetTag);
 					Enemy->SetActorEnableCollision(true);
 					Enemy->ConfigureAsMob(TargetMobID);
+					if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+					{
+						Registry->RegisterEnemy(Enemy);
+					}
+					T66RecordNonDirectorRouteAttribution(World, Enemy);
 					Enemy->MaxHP = 20000;
 					Enemy->CurrentHP = 20000;
 					Enemy->TouchDamageHearts = 0;
@@ -2894,6 +3674,10 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 					Enemy->XPValue = 0;
 					Enemy->bDropsLoot = false;
 					Enemy->OwningDirector = nullptr;
+					if ((bBounceVFXBindingProofMode || bDotVFXBindingProofMode || bIdolBounceProof || bIdolDotProof) && !TargetSpec.bExpectedHit)
+					{
+						Enemy->SetActorHiddenInGame(true);
+					}
 					if (UCharacterMovementComponent* EnemyMovement = Enemy->GetCharacterMovement())
 					{
 						EnemyMovement->StopMovementImmediately();
@@ -2912,10 +3696,11 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 					ProofTargets.Add(Enemy);
 					ProofLabels.Add(FString(TargetSpec.Label));
 					ProofExpectedHits.Add(TargetSpec.bExpectedHit);
-					UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] Spawned Target=%s ExpectedHit=%d Location=%s"),
+					UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] Spawned Target=%s ExpectedHit=%d Location=%s ProofIdol=%s"),
 						TargetSpec.Label,
 						TargetSpec.bExpectedHit ? 1 : 0,
-						*Enemy->GetActorLocation().ToCompactString());
+						*Enemy->GetActorLocation().ToCompactString(),
+						*ImpactProofIdolID.ToString());
 				}
 
 				if (!PrimaryTarget)
@@ -2926,6 +3711,49 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 
 				HeroPawn->CombatComponent->SetAutoAttackSuppressed(true);
 				HeroPawn->CombatComponent->SetLockedTarget(PrimaryTarget);
+
+				if (bBounceVFXBindingProofMode)
+				{
+					static const TCHAR* BounceWarmupSystemPath = TEXT("/Game/VFX/Hero1/Axe/Bounce/NS_Hero1AxeBounce_MeshSlash.NS_Hero1AxeBounce_MeshSlash");
+					UNiagaraSystem* BounceWarmupSystem = LoadObject<UNiagaraSystem>(nullptr, BounceWarmupSystemPath);
+					if (BounceWarmupSystem)
+					{
+						const FVector WarmupLocation = HeroPawn->GetActorLocation() + FVector(0.0f, 0.0f, -50000.0f);
+						UNiagaraComponent* WarmupComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+							World,
+							BounceWarmupSystem,
+							WarmupLocation,
+							FRotator::ZeroRotator,
+							FVector(1.0f),
+							true,
+							true,
+							ENCPoolMethod::None,
+							true);
+						if (WarmupComponent)
+						{
+							WarmupComponent->SetAutoDestroy(true);
+							WarmupComponent->SetTranslucentSortPriority(14);
+							FTimerHandle BounceWarmupDestroyHandle;
+							World->GetTimerManager().SetTimer(
+								BounceWarmupDestroyHandle,
+								FTimerDelegate::CreateWeakLambda(this, [WarmupComponent]()
+								{
+									if (IsValid(WarmupComponent))
+									{
+										WarmupComponent->DeactivateImmediate();
+										WarmupComponent->DestroyComponent();
+									}
+								}),
+								1.0f,
+								false);
+							UE_LOG(LogTemp, Display, TEXT("[Hero1AxeBounceProof] WarmedCarrier System=%s Location=%s"), BounceWarmupSystemPath, *WarmupLocation.ToCompactString());
+						}
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("[Hero1AxeBounceProof] WarmedCarrierSkipped MissingSystem=%s"), BounceWarmupSystemPath);
+					}
+				}
 
 				float FireDelaySeconds = 5.4f;
 				FParse::Value(FCommandLine::Get(), TEXT("T66Hero1AxeAOEHitboxFireDelay="), FireDelaySeconds);
@@ -2938,54 +3766,62 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				TWeakObjectPtr<AT66EnemyBase> WeakPrimaryTarget(PrimaryTarget);
 				const float ScheduledFireDelaySeconds = FireDelaySeconds;
 				const float ScheduledVFXLeadSeconds = VFXLeadSeconds;
-				FTimerHandle HitboxProofVFXHandle;
-				World->GetTimerManager().SetTimer(
-					HitboxProofVFXHandle,
-					FTimerDelegate::CreateWeakLambda(this, [this, WeakHero, WeakPrimaryTarget, ScheduledFireDelaySeconds, ScheduledVFXLeadSeconds]()
-					{
-						AT66HeroBase* CapturedHero = WeakHero.Get();
-						AT66EnemyBase* CapturedPrimary = WeakPrimaryTarget.Get();
-						UWorld* CapturedWorld = GetWorld();
-						if (!CapturedHero || !CapturedPrimary || !CapturedWorld)
+				if (!bProductionVFXBindingProofMode && !bWaterIdolImpactProofMode && !bDotVFXBindingProofMode)
+				{
+					FTimerHandle HitboxProofVFXHandle;
+					World->GetTimerManager().SetTimer(
+						HitboxProofVFXHandle,
+						FTimerDelegate::CreateWeakLambda(this, [this, WeakHero, WeakPrimaryTarget, ScheduledFireDelaySeconds, ScheduledVFXLeadSeconds]()
 						{
-							UE_LOG(LogTemp, Warning, TEXT("[Hero1AxeAOEHitboxProof] VFX spawn skipped: missing hero, primary target, or world."));
-							return;
-						}
+							AT66HeroBase* CapturedHero = WeakHero.Get();
+							AT66EnemyBase* CapturedPrimary = WeakPrimaryTarget.Get();
+							UWorld* CapturedWorld = GetWorld();
+							if (!CapturedHero || !CapturedPrimary || !CapturedWorld)
+							{
+								UE_LOG(LogTemp, Warning, TEXT("[Hero1AxeAOEHitboxProof] VFX spawn skipped: missing hero, primary target, or world."));
+								return;
+							}
 
-						FVector VFXForward = (CapturedPrimary->GetActorLocation() - CapturedHero->GetActorLocation()).GetSafeNormal2D();
-						if (VFXForward.IsNearlyZero())
-						{
-							VFXForward = CapturedHero->GetActorForwardVector().GetSafeNormal2D();
-						}
-						if (VFXForward.IsNearlyZero())
-						{
-							VFXForward = FVector::ForwardVector;
-						}
+							FVector VFXForward = (CapturedPrimary->GetActorLocation() - CapturedHero->GetActorLocation()).GetSafeNormal2D();
+							if (VFXForward.IsNearlyZero())
+							{
+								VFXForward = CapturedHero->GetActorForwardVector().GetSafeNormal2D();
+							}
+							if (VFXForward.IsNearlyZero())
+							{
+								VFXForward = FVector::ForwardVector;
+							}
 
-						FActorSpawnParameters VFXSpawnParameters;
-						VFXSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-						VFXSpawnParameters.Owner = CapturedHero;
-						const FVector VFXLocation = CapturedPrimary->GetActorLocation() - VFXForward * 28.0f + FVector(0.0f, 0.0f, -82.0f);
-						const FRotator VFXRotation = VFXForward.Rotation();
-						AT66Hero1AxeAOEVFXLabActor* LabVFXActor = CapturedWorld->SpawnActor<AT66Hero1AxeAOEVFXLabActor>(
-							AT66Hero1AxeAOEVFXLabActor::StaticClass(),
-							VFXLocation,
-							VFXRotation,
-							VFXSpawnParameters);
-						UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] VFXSpawned=%d WorldTime=%.3f FireDelay=%.2f VFXLead=%.2f Location=%s Rotation=%s"),
-							LabVFXActor ? 1 : 0,
-							CapturedWorld->GetTimeSeconds(),
-							ScheduledFireDelaySeconds,
-							ScheduledVFXLeadSeconds,
-							*VFXLocation.ToCompactString(),
-							*VFXRotation.ToCompactString());
-					}),
-					VFXSpawnDelaySeconds,
-					false);
+							FActorSpawnParameters VFXSpawnParameters;
+							VFXSpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+							VFXSpawnParameters.Owner = CapturedHero;
+							const FVector VFXLocation = CapturedPrimary->GetActorLocation() - VFXForward * 28.0f + FVector(0.0f, 0.0f, -82.0f);
+							const FRotator VFXRotation = VFXForward.Rotation();
+							AT66Hero1AxeAOEVFXLabActor* LabVFXActor = CapturedWorld->SpawnActor<AT66Hero1AxeAOEVFXLabActor>(
+								AT66Hero1AxeAOEVFXLabActor::StaticClass(),
+								VFXLocation,
+								VFXRotation,
+								VFXSpawnParameters);
+							UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] VFXSpawned=%d WorldTime=%.3f FireDelay=%.2f VFXLead=%.2f Location=%s Rotation=%s"),
+								LabVFXActor ? 1 : 0,
+								CapturedWorld->GetTimeSeconds(),
+								ScheduledFireDelaySeconds,
+								ScheduledVFXLeadSeconds,
+								*VFXLocation.ToCompactString(),
+								*VFXRotation.ToCompactString());
+						}),
+						VFXSpawnDelaySeconds,
+						false);
+				}
+				else
+				{
+					UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEVFXBindingProof] ManualLabVFX=0 Reason=ProductionBindingDispatcherWillSpawnOnFire IdolImpactProof=%d"),
+						bWaterIdolImpactProofMode ? 1 : 0);
+				}
 				FTimerHandle HitboxProofFireHandle;
 				World->GetTimerManager().SetTimer(
 					HitboxProofFireHandle,
-					FTimerDelegate::CreateWeakLambda(this, [this, WeakHero, WeakPrimaryTarget, ProofTargets, ProofLabels, ProofExpectedHits, ScheduledFireDelaySeconds, ScheduledVFXLeadSeconds]()
+					FTimerDelegate::CreateWeakLambda(this, [this, WeakHero, WeakPrimaryTarget, ProofTargets, ProofLabels, ProofExpectedHits, ScheduledFireDelaySeconds, ScheduledVFXLeadSeconds, ImpactProofIdolID, bWaterIdolImpactProofMode, bBounceVFXBindingProofMode, bDotVFXBindingProofMode, bIdolBounceProof, bIdolDotProof, WeakProofIdolManager, bProofIdolStateCaptured, PreProofEquippedIdols, PreProofEquippedIdolTiers, PreProofDifficulty]()
 					{
 						AT66HeroBase* CapturedHero = WeakHero.Get();
 						AT66EnemyBase* CapturedPrimary = WeakPrimaryTarget.Get();
@@ -2996,11 +3832,13 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 						}
 						if (UWorld* FireWorld = GetWorld())
 						{
-							UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] Fire WorldTime=%.3f FireDelay=%.2f VFXLead=%.2f Primary=%s"),
+							UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] Fire WorldTime=%.3f FireDelay=%.2f VFXLead=%.2f Primary=%s ProofIdol=%s IdolImpactProof=%d"),
 								FireWorld->GetTimeSeconds(),
 								ScheduledFireDelaySeconds,
 								ScheduledVFXLeadSeconds,
-								*GetNameSafe(CapturedPrimary));
+								*GetNameSafe(CapturedPrimary),
+								*ImpactProofIdolID.ToString(),
+								bWaterIdolImpactProofMode ? 1 : 0);
 						}
 
 						TArray<int32> HPBefore;
@@ -3010,17 +3848,224 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 							HPBefore.Add(WeakTarget.IsValid() ? WeakTarget.Get()->CurrentHP : INDEX_NONE);
 						}
 
+						// Bounce two-link proof isolation: the normal Bounce chain search
+						// (FindClosestTargetHandleInRange) walks the actor registry's enemies,
+						// lightweight mobs, and bosses. The preamble destroys AT66EnemyBase world
+						// actors but does not clear lightweight AT66MobBase mobs or bosses, so a
+						// surviving non-proof/world enemy can become an unintended third bounce
+						// link (LinkCount=3). Immediately before firing, remove every damageable
+						// target that is not a staged proof target (tagged HitboxProofTag) so the
+						// chain can only find Primary -> ChainSecond. The negative controls keep the
+						// proof tag and stay registered far out of range for HP-delta checking.
+						if (bBounceVFXBindingProofMode || bIdolBounceProof)
+						{
+							if (UWorld* IsolateWorld = GetWorld())
+							{
+								int32 ReleasedMobCount = 0;
+								int32 DestroyedEnemyCount = 0;
+								int32 RemovedBossCount = 0;
+								int32 RemovedHazardCount = 0;
+								UT66MobManagerSubsystem* MobManager = IsolateWorld->GetSubsystem<UT66MobManagerSubsystem>();
+								if (UT66ActorRegistrySubsystem* Registry = IsolateWorld->GetSubsystem<UT66ActorRegistrySubsystem>())
+								{
+									TArray<AT66MobBase*> NonProofMobs;
+									for (const TWeakObjectPtr<AT66MobBase>& WeakMob : Registry->GetActiveMobs())
+									{
+										if (AT66MobBase* Mob = WeakMob.Get())
+										{
+											if (!Mob->Tags.Contains(HitboxProofTag))
+											{
+												NonProofMobs.Add(Mob);
+											}
+										}
+									}
+									for (AT66MobBase* Mob : NonProofMobs)
+									{
+										if (MobManager)
+										{
+											MobManager->UnregisterMob(Mob);
+										}
+										Registry->UnregisterMob(Mob);
+										Mob->Destroy();
+										++ReleasedMobCount;
+									}
+
+									// Some pooled or director-created mobs can miss the registry snapshot
+									// used above. Destroy any remaining non-proof mob actors for this proof
+									// instead of releasing them to the pool; pooled actors have shown up as
+									// brown/orange capture clutter and can be mistaken for Bounce projectiles.
+									for (TActorIterator<AT66MobBase> It(IsolateWorld); It; ++It)
+									{
+										AT66MobBase* Mob = *It;
+										if (Mob && !Mob->Tags.Contains(HitboxProofTag))
+										{
+											if (MobManager)
+											{
+												MobManager->UnregisterMob(Mob);
+											}
+											Registry->UnregisterMob(Mob);
+											Mob->Destroy();
+											++ReleasedMobCount;
+										}
+									}
+
+									TArray<AT66EnemyBase*> NonProofEnemies;
+									for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
+									{
+										if (AT66EnemyBase* Enemy = WeakEnemy.Get())
+										{
+											if (!Enemy->Tags.Contains(HitboxProofTag))
+											{
+												NonProofEnemies.Add(Enemy);
+											}
+										}
+									}
+									for (AT66EnemyBase* Enemy : NonProofEnemies)
+									{
+										Registry->UnregisterEnemy(Enemy);
+										Enemy->Destroy();
+										++DestroyedEnemyCount;
+									}
+
+									TArray<AT66BossBase*> NonProofBosses;
+									for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
+									{
+										if (AT66BossBase* Boss = WeakBoss.Get())
+										{
+											NonProofBosses.Add(Boss);
+										}
+									}
+									for (AT66BossBase* Boss : NonProofBosses)
+									{
+										Registry->UnregisterBoss(Boss);
+										Boss->Destroy();
+										++RemovedBossCount;
+									}
+								}
+								for (TActorIterator<AT66BossGroundAOE> It(IsolateWorld); It; ++It)
+								{
+									if (AT66BossGroundAOE* GroundAOE = *It)
+									{
+										GroundAOE->Destroy();
+										++RemovedHazardCount;
+									}
+								}
+								for (TActorIterator<AT66EnemyProjectileBase> It(IsolateWorld); It; ++It)
+								{
+									if (AT66EnemyProjectileBase* EnemyProjectile = *It)
+									{
+										EnemyProjectile->Destroy();
+										++RemovedHazardCount;
+									}
+								}
+								for (TActorIterator<AT66TrapArrowProjectile> It(IsolateWorld); It; ++It)
+								{
+									if (AT66TrapArrowProjectile* TrapProjectile = *It)
+									{
+										TrapProjectile->Destroy();
+										++RemovedHazardCount;
+									}
+								}
+								UE_LOG(LogTemp, Display, TEXT("[Hero1AxeBounceProof] IsolatedTargetPopulation ReleasedMobs=%d DestroyedEnemies=%d RemovedBosses=%d RemovedHazards=%d ProofTargets=%d"),
+									ReleasedMobCount,
+									DestroyedEnemyCount,
+									RemovedBossCount,
+									RemovedHazardCount,
+									ProofTargets.Num());
+							}
+
+							// Capture-only readability: keep each Bounce link on screen for the same
+							// 0.60s presentation window used by the production readable-travel floor.
+							// The authored Bounce Niagara carrier is visible from spawn and its layer
+							// lifetimes now cover that full travel, so the proof samples a real moving
+							// slash instead of only a target-impact flash.
+							static const float BounceProofLinkTravelSeconds = 0.60f;
+							if (IConsoleVariable* ProofTravelCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Bounce.ProofReadableTravelSeconds")))
+							{
+								ProofTravelCVar->Set(BounceProofLinkTravelSeconds, ECVF_SetByCode);
+								UE_LOG(LogTemp, Display, TEXT("[Hero1AxeBounceProof] SetBounceProofLinkTravelSeconds=%.2f"), BounceProofLinkTravelSeconds);
+							}
+
+							// Deterministic capture: at normal speed the screenshot sequence advances
+							// ~0.2s of game time per rendered frame (the engine uses the real frame
+							// time, which is dominated by per-frame PNG writes), so the short Bounce
+							// travel window lands in too few frames. Switch the engine to a fixed
+							// time step for the bounce so the game clock advances a constant small DT
+							// per rendered frame regardless of PNG-write stalls. The visual mover
+							// (game-time lerp) and the authored carrier (Niagara, game-time aged)
+							// then advance in lockstep, so the readable slash is sampled across many
+							// frames as it travels hero->primary (link 0) and primary->second
+							// (link 1). Global time dilation is intentionally NOT used: it slowed the
+							// Niagara reveal but not the mover, desyncing the slash from its travel.
+							static const double BounceProofFixedDeltaSeconds = 0.04; // 25 game-fps clock
+							static const float BounceProofFixedStepGameSeconds = 1.5f;
+							FApp::SetFixedDeltaTime(BounceProofFixedDeltaSeconds);
+							FApp::SetUseFixedTimeStep(true);
+							UE_LOG(LogTemp, Display, TEXT("[Hero1AxeBounceProof] SetFixedTimeStep DT=%.3f for %.2fs game-time"), BounceProofFixedDeltaSeconds, BounceProofFixedStepGameSeconds);
+							if (UWorld* FixedStepWorld = GetWorld())
+							{
+								FTimerHandle BounceProofFixedStepResetHandle;
+								FixedStepWorld->GetTimerManager().SetTimer(
+									BounceProofFixedStepResetHandle,
+									FTimerDelegate::CreateWeakLambda(this, []()
+									{
+										FApp::SetUseFixedTimeStep(false);
+										UE_LOG(LogTemp, Display, TEXT("[Hero1AxeBounceProof] ResetFixedTimeStep"));
+									}),
+									BounceProofFixedStepGameSeconds,
+									false);
+							}
+						}
+
+						if (bDotVFXBindingProofMode || bIdolDotProof)
+						{
+							// Capture-only readability: stretch the single DOT shot's hero->target
+							// travel so the frame-rate-limited capture samples the moving projectile,
+							// the marker reveal at impact, and the first DOT ticks. Runtime DOT
+							// damage/targeting are resolved independently and unaffected.
+							static const float DotProofTravelSeconds = 0.60f;
+							if (IConsoleVariable* DotProofTravelCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.DOT.ProofReadableTravelSeconds")))
+							{
+								DotProofTravelCVar->Set(DotProofTravelSeconds, ECVF_SetByCode);
+								UE_LOG(LogTemp, Display, TEXT("[Hero1AxeDOTProof] SetDotProofTravelSeconds=%.2f"), DotProofTravelSeconds);
+							}
+							// Fixed timestep so the game clock advances a constant small DT per rendered
+							// frame regardless of PNG-write stalls, matching the Bounce proof approach.
+							static const double DotProofFixedDeltaSeconds = 0.04; // 25 game-fps clock
+							static const float DotProofFixedStepGameSeconds = 4.0f; // cover DOT duration + ticks
+							FApp::SetFixedDeltaTime(DotProofFixedDeltaSeconds);
+							FApp::SetUseFixedTimeStep(true);
+							UE_LOG(LogTemp, Display, TEXT("[Hero1AxeDOTProof] SetFixedTimeStep DT=%.3f for %.2fs game-time"), DotProofFixedDeltaSeconds, DotProofFixedStepGameSeconds);
+							if (UWorld* FixedStepWorld = GetWorld())
+							{
+								FTimerHandle DotProofFixedStepResetHandle;
+								FixedStepWorld->GetTimerManager().SetTimer(
+									DotProofFixedStepResetHandle,
+									FTimerDelegate::CreateWeakLambda(this, []()
+									{
+										FApp::SetUseFixedTimeStep(false);
+										UE_LOG(LogTemp, Display, TEXT("[Hero1AxeDOTProof] ResetFixedTimeStep"));
+									}),
+									DotProofFixedStepGameSeconds,
+									false);
+							}
+						}
+
 						CapturedHero->CombatComponent->SetLockedTarget(CapturedPrimary);
 						CapturedHero->CombatComponent->SetAutoAttackSuppressed(false);
 						CapturedHero->CombatComponent->PerformAutomationAutoAttackNow();
 						CapturedHero->CombatComponent->SetAutoAttackSuppressed(true);
 
 						FTimerHandle HitboxProofLogHandle;
+						// DOT idol damage ticks over its duration, so the HP-delta + DamageBySource
+						// snapshot must wait past the final tick (DotDuration=3.0s) under the fixed
+						// timestep; immediate-damage categories sample shortly after the contact hit.
+						const float ProofLogDelaySeconds = bIdolDotProof ? 3.6f : 0.2f;
 						if (UWorld* CapturedWorld = GetWorld())
 						{
 							CapturedWorld->GetTimerManager().SetTimer(
 								HitboxProofLogHandle,
-								FTimerDelegate::CreateWeakLambda(this, [this, ProofTargets, ProofLabels, ProofExpectedHits, HPBefore]()
+								FTimerDelegate::CreateWeakLambda(this, [this, ProofTargets, ProofLabels, ProofExpectedHits, HPBefore, ImpactProofIdolID, bWaterIdolImpactProofMode, WeakProofIdolManager, bProofIdolStateCaptured, PreProofEquippedIdols, PreProofEquippedIdolTiers, PreProofDifficulty]()
 								{
 									UT66FloatingCombatTextSubsystem* FloatingText = GetGameInstance()
 										? GetGameInstance()->GetSubsystem<UT66FloatingCombatTextSubsystem>()
@@ -3069,20 +4114,53 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 											After,
 											(bActualHit == bExpectedHit) ? TEXT("PASS") : TEXT("FAIL"));
 									}
+
+									if (bWaterIdolImpactProofMode)
+									{
+										if (UT66DamageLogSubsystem* DamageLog = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
+										{
+											const TArray<FDamageLogEntry> DamageRows = DamageLog->GetDamageBySourceSorted();
+											for (const FDamageLogEntry& Entry : DamageRows)
+											{
+												UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEIdolImpactProof] DamageBySource SourceID=%s TotalDamage=%d ProofIdol=%s"),
+													*Entry.SourceID.ToString(),
+													Entry.TotalDamage,
+													*ImpactProofIdolID.ToString());
+											}
+										}
+									}
+
+									if (bProofIdolStateCaptured)
+									{
+										if (UT66IdolManagerSubsystem* IdolManager = WeakProofIdolManager.Get())
+										{
+											IdolManager->RestoreState(PreProofEquippedIdols, PreProofEquippedIdolTiers, PreProofDifficulty);
+											UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEIdolImpactProof] RestoredIdolState PreviousCount=%d Difficulty=%s"),
+												PreProofEquippedIdols.Num(),
+												*UEnum::GetValueAsString(PreProofDifficulty));
+										}
+										else
+										{
+											UE_LOG(LogTemp, Warning, TEXT("[Hero1AxeAOEIdolImpactProof] RestoreSkipped Reason=MissingIdolManager"));
+										}
+									}
 								}),
-								0.2f,
+								ProofLogDelaySeconds,
 								false);
 						}
 					}),
 					FireDelaySeconds,
 					false);
 
-				UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] Armed FireDelay=%.2f VFXLead=%.2f VFXSpawnDelay=%.2f Targets=%d Primary=%s"),
+				UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] Armed FireDelay=%.2f VFXLead=%.2f VFXSpawnDelay=%.2f Targets=%d Primary=%s ProductionBindingProof=%d IdolImpactProof=%d ProofIdol=%s"),
 					FireDelaySeconds,
 					VFXLeadSeconds,
 					VFXSpawnDelaySeconds,
 					ProofTargets.Num(),
-					*GetNameSafe(PrimaryTarget));
+					*GetNameSafe(PrimaryTarget),
+					bProductionVFXBindingProofMode ? 1 : 0,
+					bWaterIdolImpactProofMode ? 1 : 0,
+					*ImpactProofIdolID.ToString());
 				return;
 			}
 
@@ -3191,6 +4269,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 						Enemy->bDropsLoot = false;
 						Enemy->OwningDirector = nullptr;
 						Enemy->ConfigureAsMob(TargetMobID);
+						T66RecordNonDirectorRouteAttribution(World, Enemy);
 						if (UCharacterMovementComponent* Movement = Enemy->GetCharacterMovement())
 						{
 							Movement->StopMovementImmediately();
@@ -3280,19 +4359,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 					0.f,
 					FT66TemporaryProjectileSystem::HostileProjectileColor(),
 					FT66TemporaryProjectileSystem::HostileProjectileColor());
-			}
-
-			const FTransform DebuffProjectileTransform(Forward.Rotation(), Origin + Right * 240.f);
-			if (AT66UniqueDebuffProjectile* DebuffProjectile = World->SpawnActorDeferred<AT66UniqueDebuffProjectile>(
-				AT66UniqueDebuffProjectile::StaticClass(),
-				DebuffProjectileTransform,
-				this,
-				nullptr,
-				ESpawnActorCollisionHandlingMethod::AlwaysSpawn))
-			{
-				DebuffProjectile->EffectType = ET66HeroStatusEffectType::Curse;
-				DebuffProjectile->SetVisualOnly(true);
-				DebuffProjectile->FinishSpawning(DebuffProjectileTransform);
 			}
 		}
 		return;
@@ -3495,6 +4561,223 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 	}
 
 #if !UE_BUILD_SHIPPING
+	if (Mode == TEXT("bossprojectilemanager") || Mode == TEXT("bossprojectilemanagersmoke"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetFullMapOpen(false);
+			GameplayHUDWidget->RefreshHUD();
+		}
+
+		UWorld* World = GetWorld();
+		AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+		UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+		UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+		if (!World || !GameMode || !T66GI || !RunState || !Registry)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossProjectileManagerSmoke] Missing world/game mode/game instance/run state/registry."));
+			return;
+		}
+
+		FString BossSmokeMode;
+		FParse::Value(FCommandLine::Get(), TEXT("T66BossProjectileSmoke="), BossSmokeMode);
+		const bool bFourHorsemenSmoke = BossSmokeMode.TrimStartAndEnd().Equals(TEXT("FourHorsemen"), ESearchCase::IgnoreCase);
+		float BossSmokeHeroHP = 20000.f;
+		FParse::Value(FCommandLine::Get(), TEXT("T66BossProjectileSmokeHeroHP="), BossSmokeHeroHP);
+		RunState->ApplyAutomationHeroHPOverride(FMath::Clamp(BossSmokeHeroHP, 100.f, 50000.f), TEXT("BossProjectileManagerSmoke"));
+		if (UT66ProjectileManagerSubsystem* ProjectileManager = World->GetSubsystem<UT66ProjectileManagerSubsystem>())
+		{
+			ProjectileManager->ResetProjectileDiagnostics(TEXT("BossProjectileManagerSmokeStart"));
+		}
+
+		if (bFourHorsemenSmoke)
+		{
+			const TArray<TWeakObjectPtr<AT66BossBase>> ExistingBosses = Registry->GetBosses();
+			for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : ExistingBosses)
+			{
+				if (AT66BossBase* ExistingBoss = WeakBoss.Get())
+				{
+					ExistingBoss->Destroy();
+				}
+			}
+			T66GI->SelectedDifficulty = ET66Difficulty::Impossible;
+			RunState->SetCurrentStage(17);
+			GameMode->RunBossProjectileManagerSmokeSpawnBossForCurrentStage();
+			UE_LOG(LogTemp, Display, TEXT("[BossProjectileManagerSmoke] Stage17FourHorsemenSetup SelectedDifficulty=Impossible CurrentStage=%d"), RunState->GetCurrentStage());
+		}
+
+		auto ConfigureBossesForSmoke = [Registry]()
+		{
+			const TArray<TWeakObjectPtr<AT66BossBase>> Bosses = Registry->GetBosses();
+			for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Bosses)
+			{
+				if (AT66BossBase* Boss = WeakBoss.Get())
+				{
+					Boss->GroundAOEIntervalSeconds = 0.f;
+					Boss->GroundAOEBaseDamageHP = 0;
+				}
+			}
+		};
+		ConfigureBossesForSmoke();
+
+		APawn* ControlledPawn = GetPawn();
+		if (ControlledPawn)
+		{
+			if (ACharacter* CharacterPawn = Cast<ACharacter>(ControlledPawn))
+			{
+				if (UCharacterMovementComponent* Movement = CharacterPawn->GetCharacterMovement())
+				{
+					Movement->StopMovementImmediately();
+				}
+			}
+
+			T66TowerMapTerrain::FLayout TowerLayout;
+			const bool bHasTowerLayout = GameMode->IsUsingTowerMainMapLayout() && GameMode->GetTowerMainMapLayout(TowerLayout);
+			const T66TowerMapTerrain::FFloor* BossFloor = nullptr;
+			if (bHasTowerLayout)
+			{
+				for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
+				{
+					if (Floor.FloorNumber == TowerLayout.BossFloorNumber)
+					{
+						BossFloor = &Floor;
+						break;
+					}
+				}
+			}
+
+			FVector BossEntryLocation = BossFloor
+				? (BossFloor->ArrivalPoint.IsNearlyZero() ? FVector(BossFloor->Center.X, BossFloor->Center.Y, BossFloor->SurfaceZ) : BossFloor->ArrivalPoint)
+				: T66GameplayLayout::GetBossGateLocation();
+			float PawnHalfHeight = 100.f;
+			if (const ACharacter* CharacterPawn = Cast<ACharacter>(ControlledPawn))
+			{
+				if (const UCapsuleComponent* Capsule = CharacterPawn->GetCapsuleComponent())
+				{
+					PawnHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+				}
+			}
+			if (BossFloor)
+			{
+				BossEntryLocation.Z = BossFloor->SurfaceZ + PawnHalfHeight + 24.f;
+			}
+			else
+			{
+				FHitResult GateHit;
+				if (World->LineTraceSingleByChannel(GateHit, BossEntryLocation + FVector(0.f, 0.f, 3000.f), BossEntryLocation - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+				{
+					BossEntryLocation.Z = GateHit.ImpactPoint.Z + PawnHalfHeight + 24.f;
+				}
+			}
+			ControlledPawn->SetActorLocation(BossEntryLocation, false, nullptr, ETeleportType::TeleportPhysics);
+			ControlledPawn->SetActorRotation(FRotator(0.f, 0.f, 0.f), ETeleportType::TeleportPhysics);
+			SetControlRotation(FRotator(-10.f, 0.f, 0.f));
+
+			if (bHasTowerLayout && BossFloor)
+			{
+				GameMode->HandleTowerDescentHoleTriggered(ControlledPawn, FMath::Max(TowerLayout.StartFloorNumber, TowerLayout.BossFloorNumber - 1), TowerLayout.BossFloorNumber);
+			}
+
+			for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
+			{
+				if (AT66BossBase* Boss = WeakBoss.Get())
+				{
+					const FVector SmokeHeroLocation = Boss->GetActorLocation() + FVector(0.f, 650.f, 0.f);
+					ControlledPawn->SetActorLocation(SmokeHeroLocation, false, nullptr, ETeleportType::TeleportPhysics);
+					break;
+				}
+			}
+		}
+
+		GameMode->RunBossProjectileManagerSmokeSpawnBossGateIfNeeded();
+		GameMode->SetEnemyDirectorSpawningPaused(true);
+		UE_LOG(LogTemp, Display, TEXT("[BossProjectileManagerSmoke] BossGatePathArmed BossCount=%d FourHorsemen=%d"), Registry->GetBosses().Num(), bFourHorsemenSmoke ? 1 : 0);
+
+		const bool bKillMidFlight = FParse::Param(FCommandLine::Get(), TEXT("T66BossProjectileSmokeKillMidFlight"));
+		float BossSmokeDuration = 18.f;
+		FParse::Value(FCommandLine::Get(), TEXT("T66BossProjectileSmokeDuration="), BossSmokeDuration);
+		BossSmokeDuration = FMath::Clamp(BossSmokeDuration, 4.f, 60.f);
+		if (bKillMidFlight)
+		{
+			TWeakObjectPtr<AT66PlayerController> WeakThis(this);
+			FTimerHandle KillTimerHandle;
+			World->GetTimerManager().SetTimer(
+				KillTimerHandle,
+				FTimerDelegate::CreateLambda([WeakThis]()
+				{
+					AT66PlayerController* PC = WeakThis.Get();
+					UWorld* TimerWorld = PC ? PC->GetWorld() : nullptr;
+					UT66ActorRegistrySubsystem* TimerRegistry = TimerWorld ? TimerWorld->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+					if (!TimerRegistry)
+					{
+						return;
+					}
+					const TArray<TWeakObjectPtr<AT66BossBase>> Bosses = TimerRegistry->GetBosses();
+					for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Bosses)
+					{
+						AT66BossBase* Boss = WeakBoss.Get();
+						if (Boss && Boss->IsAwakened() && Boss->IsAlive())
+						{
+							const int32 LethalDamage = Boss->CurrentHP + (Boss->MaxHP * 100) + 100000;
+							Boss->TakeDamageFromHeroHit(LethalDamage, FName(TEXT("BossProjectileSmokeKillMidFlight")), FName(TEXT("BossProjectileSmokeKillMidFlight")));
+							if (Boss->IsAlive())
+							{
+								Boss->CurrentHP = 0;
+								Boss->RefreshRunStateBossState();
+							}
+							UE_LOG(LogTemp, Display, TEXT("[BossProjectileManagerSmoke] KillMidFlightApplied BossID=%s Damage=%d AliveAfter=%d"), *Boss->BossID.ToString(), LethalDamage, Boss->IsAlive() ? 1 : 0);
+							break;
+						}
+					}
+				}),
+				FMath::Min(2.5f, BossSmokeDuration * 0.5f),
+				false);
+		}
+
+		TWeakObjectPtr<AT66PlayerController> WeakThis(this);
+		FTimerHandle SummaryTimerHandle;
+		World->GetTimerManager().SetTimer(
+			SummaryTimerHandle,
+			FTimerDelegate::CreateLambda([WeakThis]()
+			{
+				AT66PlayerController* PC = WeakThis.Get();
+				UWorld* TimerWorld = PC ? PC->GetWorld() : nullptr;
+				if (!TimerWorld)
+				{
+					return;
+				}
+				if (UT66ActorRegistrySubsystem* TimerRegistry = TimerWorld->GetSubsystem<UT66ActorRegistrySubsystem>())
+				{
+					const TArray<TWeakObjectPtr<AT66BossBase>> Bosses = TimerRegistry->GetBosses();
+					for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Bosses)
+					{
+						if (AT66BossBase* Boss = WeakBoss.Get())
+						{
+							UE_LOG(LogTemp, Display, TEXT("[BossProjectileManagerSmoke] BossState BossID=%s Awakened=%d Alive=%d HP=%d Loc=%s"),
+								*Boss->BossID.ToString(),
+								Boss->IsAwakened() ? 1 : 0,
+								Boss->IsAlive() ? 1 : 0,
+								Boss->CurrentHP,
+								*Boss->GetActorLocation().ToCompactString());
+						}
+					}
+				}
+				if (UT66ProjectileManagerSubsystem* ProjectileManager = TimerWorld->GetSubsystem<UT66ProjectileManagerSubsystem>())
+				{
+					ProjectileManager->EmitProjectileManagerSummary(TEXT("BossProjectileManagerSmoke"), true);
+				}
+				FPlatformMisc::RequestExitWithStatus(false, 0, TEXT("T66BossProjectileManagerSmokeComplete"));
+			}),
+			BossSmokeDuration,
+			false);
+		return;
+	}
+
 	if (Mode == TEXT("slimekingbossqa") || Mode == TEXT("slimekingtelegraphqa") || Mode == TEXT("bosstelegraphqa"))
 	{
 		if (bInventoryInspectOpen)
@@ -3637,19 +4920,19 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 		{
-			if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+			if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 			{
 				TargetFloor = &Floor;
 				break;
 			}
-			if (!TargetFloor && Floor.bGameplayFloor)
+			if (!TargetFloor && Floor.bMobFloor)
 			{
 				TargetFloor = &Floor;
 			}
 		}
 		if (!TargetFloor)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[HeroMovementQA] Failed: no gameplay floor in tower layout."));
+			UE_LOG(LogTemp, Warning, TEXT("[HeroMovementQA] Failed: no mob floor in tower layout."));
 			return;
 		}
 
@@ -4021,19 +5304,19 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const T66TowerMapTerrain::FFloor* TargetFloor = nullptr;
 		for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 		{
-			if (Floor.bGameplayFloor && Floor.FloorNumber == TowerLayout.FirstGameplayFloorNumber)
+			if (Floor.bMobFloor && Floor.FloorNumber == TowerLayout.FirstMobFloorNumber)
 			{
 				TargetFloor = &Floor;
 				break;
 			}
-			if (!TargetFloor && Floor.bGameplayFloor)
+			if (!TargetFloor && Floor.bMobFloor)
 			{
 				TargetFloor = &Floor;
 			}
 		}
 		if (!TargetFloor)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[EnemyAnimPreview] Failed: no gameplay floor in tower layout."));
+			UE_LOG(LogTemp, Warning, TEXT("[EnemyAnimPreview] Failed: no mob floor in tower layout."));
 			return;
 		}
 
@@ -4315,6 +5598,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				Enemy->bDropsLoot = false;
 				Enemy->OwningDirector = nullptr;
 				Enemy->ConfigureAsMob(EasyMobIDs[Index]);
+				T66RecordNonDirectorRouteAttribution(World, Enemy);
 				if (UCharacterMovementComponent* Movement = Enemy->GetCharacterMovement())
 				{
 					Movement->StopMovementImmediately();
@@ -4755,6 +6039,10 @@ void AT66PlayerController::HandleGameplayAutomationQuit()
 		{
 			MobManager->EmitRangedPressureSummary(TEXT("GameplayAutomationQuit"), true);
 		}
+		if (UT66ProjectileManagerSubsystem* ProjectileManager = World->GetSubsystem<UT66ProjectileManagerSubsystem>())
+		{
+			ProjectileManager->EmitProjectileManagerSummary(TEXT("GameplayAutomationQuit"), true);
+		}
 	}
 	ConsoleCommand(TEXT("quit"));
 }
@@ -4895,7 +6183,7 @@ void AT66PlayerController::ApplyCasinoOverlayInputMode(const bool bReassertNextT
 	}
 }
 
-bool AT66PlayerController::TriggerCasinoBossIfAngry()
+bool AT66PlayerController::SpawnVendorBoss()
 {
 	if (!IsGameplayLevel()) return false;
 
@@ -4903,12 +6191,12 @@ bool AT66PlayerController::TriggerCasinoBossIfAngry()
 	if (!World) return false;
 
 	UT66RunStateSubsystem* RunState = World->GetGameInstance() ? World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (!RunState || RunState->GetCasinoAnger01() < 1.f || RunState->GetBossActive())
+	if (!RunState || RunState->GetBossActive())
 	{
 		return false;
 	}
 
-	if (T66HasRegisteredGamblerBoss(World))
+	if (T66HasRegisteredVendorBoss(World))
 	{
 		return false;
 	}
@@ -4964,7 +6252,7 @@ bool AT66PlayerController::TriggerCasinoBossIfAngry()
 
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	World->SpawnActor<AT66GamblerBoss>(AT66GamblerBoss::StaticClass(), SpawnLoc + FVector(0.f, 0.f, 200.f), FRotator::ZeroRotator, Params);
+	World->SpawnActor<AT66VendorBoss>(AT66VendorBoss::StaticClass(), SpawnLoc + FVector(0.f, 0.f, 200.f), FRotator::ZeroRotator, Params);
 
 	if (CasinoOverlayWidget && CasinoOverlayWidget->IsInViewport())
 	{
@@ -5551,6 +6839,10 @@ void AT66PlayerController::OnPlayerDied()
 		if (UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>())
 		{
 			MobManager->EmitRangedPressureSummary(TEXT("OnPlayerDied"), true);
+		}
+		if (UT66ProjectileManagerSubsystem* ProjectileManager = World->GetSubsystem<UT66ProjectileManagerSubsystem>())
+		{
+			ProjectileManager->EmitProjectileManagerSummary(TEXT("OnPlayerDied"), true);
 		}
 	}
 #if !UE_BUILD_SHIPPING

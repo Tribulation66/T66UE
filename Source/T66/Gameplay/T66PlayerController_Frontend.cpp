@@ -54,7 +54,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66BackendSubsystem.h"
-#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
@@ -73,7 +72,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
-#include "Gameplay/T66GamblerBoss.h"
+#include "Gameplay/T66VendorBoss.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "EngineUtils.h"
@@ -377,39 +376,8 @@ namespace
 
 namespace
 {
-	bool T66IsDeprecatedMinigameScreenType(const ET66ScreenType ScreenType)
+	bool ResolveMinigameScreen(const ET66ScreenType ScreenType, ET66ScreenType& OutScreenType)
 	{
-		switch (ScreenType)
-		{
-		case ET66ScreenType::Minigames:
-		case ET66ScreenType::VersusMainMenu:
-		case ET66ScreenType::MiniMainMenu:
-		case ET66ScreenType::MiniSaveSlots:
-		case ET66ScreenType::MiniCharacterSelect:
-		case ET66ScreenType::MiniCompanionSelect:
-		case ET66ScreenType::MiniDifficultySelect:
-		case ET66ScreenType::MiniIdolSelect:
-		case ET66ScreenType::MiniShop:
-		case ET66ScreenType::MiniRunSummary:
-		case ET66ScreenType::MiniBattle:
-		case ET66ScreenType::TDMainMenu:
-		case ET66ScreenType::TDDifficultySelect:
-		case ET66ScreenType::TDBattle:
-		case ET66ScreenType::IdleMainMenu:
-		case ET66ScreenType::DeckMainMenu:
-			return true;
-		default:
-			return false;
-		}
-	}
-
-	bool TryResolveDeprecatedMinigameScreen(const ET66ScreenType ScreenType, ET66ScreenType& OutScreenType)
-	{
-		if (T66DeprecatedFeatures::AreMinigamesDisabled())
-		{
-			return false;
-		}
-
 		OutScreenType = ScreenType;
 		return true;
 	}
@@ -485,12 +453,12 @@ namespace
 		}
 		if (Normalized.Equals(TEXT("Minigames"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::Minigames, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::Minigames, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("Versus"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("VersusMainMenu"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::VersusMainMenu, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::VersusMainMenu, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("PauseMenu"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("Pause"), ESearchCase::IgnoreCase))
@@ -563,62 +531,62 @@ namespace
 		}
 		if (Normalized.Equals(TEXT("MiniMainMenu"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniMainMenu, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::MiniMainMenu, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("MiniCharacterSelect"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniCharacterSelect, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::MiniCharacterSelect, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("MiniCompanionSelect"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniCompanionSelect, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::MiniCompanionSelect, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("MiniDifficultySelect"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniDifficultySelect, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::MiniDifficultySelect, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("MiniIdolSelect"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniIdolSelect, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::MiniIdolSelect, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("MiniSaveSlots"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniSaveSlots, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::MiniSaveSlots, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("MiniShop"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniShop, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::MiniShop, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("MiniRunSummary"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniRunSummary, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::MiniRunSummary, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("MiniBattle"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniBattle, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::MiniBattle, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("TDMainMenu"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::TDMainMenu, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::TDMainMenu, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("TDDifficultySelect"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::TDDifficultySelect, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::TDDifficultySelect, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("TDBattle"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::TDBattle, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::TDBattle, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("IdleMainMenu"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("IdleChadpocalypse"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::IdleMainMenu, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::IdleMainMenu, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("DeckMainMenu"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("Deckbuilder"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("ChadpocalypseDeckbuilder"), ESearchCase::IgnoreCase))
 		{
-			return TryResolveDeprecatedMinigameScreen(ET66ScreenType::DeckMainMenu, OutScreenType);
+			return ResolveMinigameScreen(ET66ScreenType::DeckMainMenu, OutScreenType);
 		}
 		if (Normalized.Equals(TEXT("Challenges"), ESearchCase::IgnoreCase))
 		{
@@ -686,11 +654,6 @@ namespace
 
 TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenType ScreenType) const
 {
-	if (T66DeprecatedFeatures::AreMinigamesDisabled() && T66IsDeprecatedMinigameScreenType(ScreenType))
-	{
-		return nullptr;
-	}
-
 	if (ScreenType == ET66ScreenType::HeroSelection)
 	{
 		return UT66HeroSelectionScreen::StaticClass();

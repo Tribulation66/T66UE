@@ -333,7 +333,16 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 				// Build description from primary + secondary stat types.
 				const FText PrimaryStat = StaticEnum<ET66HeroStatType>()->GetDisplayNameTextByValue(static_cast<int64>(ItemData.PrimaryStatType));
 				const FText SecondaryStat = StaticEnum<ET66SecondaryStatType>()->GetDisplayNameTextByValue(static_cast<int64>(ItemData.SecondaryStatType));
-				DescText = FText::Format(LOCTEXT("DescLine", "Line 1: +{0}\nLine 2: {1}"), PrimaryStat, SecondaryStat);
+				if (ItemData.PrimaryStatType == ET66HeroStatType::Special)
+				{
+					DescText = ItemData.SecondaryStatType != ET66SecondaryStatType::None
+						? FText::Format(LOCTEXT("SpecialDescLineWithSecondary", "Primary: {0}\nLine 2: {1}"), PrimaryStat, SecondaryStat)
+						: FText::Format(LOCTEXT("SpecialDescLine", "Primary: {0}"), PrimaryStat);
+				}
+				else
+				{
+					DescText = FText::Format(LOCTEXT("DescLine", "Line 1: +{0}\nLine 2: {1}"), PrimaryStat, SecondaryStat);
+				}
 			}
 			AddItemCard(ItemID, NameText, DescText);
 		}
@@ -354,9 +363,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 			FName(TEXT("TombSpider")),
 			FName(TEXT("TuskerBoar")),
 			FName(TEXT("JellyHover")),
-			FName(TEXT("Gargoyle")),
-			FName(TEXT("GoblinThief")),
-			FName(TEXT("UniqueEnemy"))
+			FName(TEXT("Gargoyle"))
 		};
 		TArray<FName> EnemyIDs = GetUnlockedEnemyIDs();
 		for (const FName& M : MobIDs)

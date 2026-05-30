@@ -200,7 +200,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	if (T66GI)
 	{
-		AllHeroIDs = T66GI->GetAllHeroIDs();
+		AllHeroIDs = T66GI->GetPlayableHeroIDs();
 		if (!PreviewedHeroID.IsNone() && !AllHeroIDs.Contains(PreviewedHeroID))
 		{
 			PreviewedHeroID = T66GI->ResolvePlayableHeroID(PreviewedHeroID);
@@ -217,7 +217,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	}
 
 	DifficultyOptions.Empty();
-	const TArray<ET66Difficulty> Difficulties = T66GI ? T66GI->GetVisibleDifficulties() : TArray<ET66Difficulty>{
+	const TArray<ET66Difficulty> Difficulties = T66GI ? T66GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
 		ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 	};
 	for (ET66Difficulty Diff : Difficulties)
@@ -442,11 +442,7 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			FName(*Tag),
 			HeroCarouselGroup);
 		HSAddCanvasSlot(CarouselCanvas, X, Index < 5 ? 1.f : 2.f, 67.f, Index < 5 ? 72.f : 71.f,
-			T66DemoModeUI::WrapWithComingSoonOverlay(
-				HeroCarouselButton,
-				!SlotHeroID.IsNone() && !bHeroPlayable,
-				this,
-				FName(*(Tag + TEXT(".DemoOverlay")))));
+			HeroCarouselButton);
 	}
 	HSAddCanvasSlot(CarouselCanvas, 644.f, 0.f, 44.f, 70.f,
 		MakeButton(TEXT("HeroSelection.TopRow.HeroCarousel.RightArrow"), FText::FromString(TEXT(">")), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleNextClicked), 44.f, 70.f, 24));
@@ -642,22 +638,21 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 			ET66FlatLabelRole::Title,
 			ETextJustify::Left,
 			HSName(TEXT("HeroSelection.RightColumn.HeaderRow.HeroName"))));
-	HSAddCanvasSlot(RightContent, 455.f, 24.f, 119.f, 50.f,
-		T66DemoModeUI::WrapWithComingSoonOverlay(
+	if (bLabPlayable)
+	{
+		HSAddCanvasSlot(RightContent, 455.f, 24.f, 119.f, 50.f,
 			MakeButton(
 				TEXT("HeroSelection.RightColumn.HeaderRow.LabButton"),
 				NSLOCTEXT("T66.HeroSelection", "FlatLab", "LAB"),
-				bLabPlayable ? ET66FlatState::Selected : ET66FlatState::Disabled,
-				bLabPlayable ? FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLabClicked) : FOnClicked(),
+				ET66FlatState::Selected,
+				FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleLabClicked),
 				119.f,
 				50.f,
 				22,
 				MakeIconWidget(LabBrush, FVector2D(22.f, 22.f), FT66FlatStyle::PrimaryText()),
 				NAME_None,
-				bLabPlayable),
-			!bLabPlayable,
-			this,
-			HSName(TEXT("HeroSelection.RightColumn.HeaderRow.LabButton.DemoOverlay"))));
+				true));
+	}
 	HSAddCanvasSlot(RightContent, 31.f, 97.f, 363.f, 24.f,
 		FT66FlatStyle::MakeFlatLabel(
 			TAttribute<FText>::Create(TAttribute<FText>::FGetter::CreateUObject(this, &UT66HeroSelectionScreen::GetPreviewedHeroSubtitleText)),

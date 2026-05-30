@@ -737,7 +737,7 @@ void UT66GameplayHUDWidget::RefreshHearts()
 }
 
 
-void UT66GameplayHUDWidget::RefreshQuickReviveState()
+void UT66GameplayHUDWidget::RefreshBackroomsQuickReviveState()
 {
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState)
@@ -745,15 +745,15 @@ void UT66GameplayHUDWidget::RefreshQuickReviveState()
 		return;
 	}
 
-	if (QuickReviveIconRowBox.IsValid())
+	if (BackroomsReviveIconRowBox.IsValid())
 	{
-		QuickReviveIconRowBox->SetVisibility(RunState->HasBackroomsQuickReviveItem() ? EVisibility::Visible : EVisibility::Collapsed);
+		BackroomsReviveIconRowBox->SetVisibility(RunState->HasBackroomsQuickReviveItem() ? EVisibility::Visible : EVisibility::Collapsed);
 	}
 
 	FString BackroomsQAMode;
 	if (FParse::Value(FCommandLine::Get(), TEXT("T66BackroomsAutoQA="), BackroomsQAMode))
 	{
-		const bool bIconVisible = QuickReviveIconRowBox.IsValid() && QuickReviveIconRowBox->GetVisibility() == EVisibility::Visible;
+		const bool bIconVisible = BackroomsReviveIconRowBox.IsValid() && BackroomsReviveIconRowBox->GetVisibility() == EVisibility::Visible;
 		UE_LOG(
 			LogT66HUD,
 			Log,

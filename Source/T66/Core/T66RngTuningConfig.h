@@ -86,16 +86,6 @@ public:
 	/** Strength of "better outcome" bias for Bernoulli events (e.g. loot bag drop) at LuckMax01. */
 	float BernoulliBiasStrength = 1.25f;
 
-	// ================================
-	// Specials (Goblin Thief) per-wave
-	// ================================
-
-	/** Chance a wave includes Goblin Thief spawns (before count roll). */
-	float GoblinWaveChanceBase = 0.10f;
-
-	/** Count range for Goblins when they spawn in a wave. */
-	FT66IntRange GoblinCountPerWave = { 1, 3 };
-
 	/** Baseline rarity distribution for special enemies (their variant rarity). */
 	FT66RarityWeights SpecialEnemyRarityBase;
 

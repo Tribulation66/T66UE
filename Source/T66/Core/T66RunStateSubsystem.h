@@ -27,7 +27,6 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBossChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDebtChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDifficultyChanged);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGamblerAngerChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnIdolsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnHeroProgressChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUltimateChanged);
@@ -110,10 +109,9 @@ public:
 	static constexpr int32 MaxHeroLevel = 99;
 	static constexpr int32 MaxHeroStatValue = 99;
 	static constexpr int32 HeroStatTenthsScale = 10;
-	static constexpr int32 DefaultXPToLevel = 0;
+	static constexpr int32 DefaultXPToLevel = 100;
 	static constexpr float UltimateCooldownSeconds = 30.f;
 	static constexpr int32 UltimateDamage = 200;
-	static constexpr int32 ShopAngerThresholdGold = 100;
 	static constexpr int32 ShopDisplaySlotCount = 5;
 	static constexpr int32 BuybackDisplaySlotCount = 5;
 	// Safety: keep logs bounded so low-end machines never accumulate unbounded memory / UI work.
@@ -182,15 +180,11 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnCowardiceGatesTakenChanged CowardiceGatesTakenChanged;
 
-	/** Gambler anger meter changed (0..1). */
-	UPROPERTY(BlueprintAssignable, Category = "RunState")
-	FOnGamblerAngerChanged GamblerAngerChanged;
-
 	/** Compatibility delegate: idol state now lives in UT66IdolManagerSubsystem. */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnIdolsChanged IdolsChanged;
 
-	/** Hero-derived stat display changed. Legacy XP/level changes no longer occur. */
+	/** Hero-derived stat display, XP, and level progress changed. */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnHeroProgressChanged HeroProgressChanged;
 
@@ -237,6 +231,11 @@ public:
 	/** Max HP (numerical). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetMaxHP() const { return MaxHP; }
+
+#if !UE_BUILD_SHIPPING
+	/** Non-shipping AutoQA: clear the post-hit invulnerability window so the next ApplyDamage is not gated. */
+	void AutomationResetDamageInvuln() { LastDamageTime = -9999.f; }
+#endif
 
 	const FT66RunModifierSnapshot& GetActiveRunModifiers() const { return ActiveRunModifiers; }
 	int32 GetRunModifierStartRandomItems() const { return ActiveRunModifiers.StartRandomItems; }
@@ -327,23 +326,6 @@ public:
 	/** Register an activated difficulty totem. Returns the new activation index (1-based). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	int32 RegisterTotemActivated();
-
-	UFUNCTION(BlueprintCallable, Category = "RunState")
-	float GetGamblerAnger01() const { return GamblerAnger01; }
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Casino")
-	float GetCasinoAnger01() const { return GamblerAnger01; }
-
-	/** Add anger using the shared casino threshold (100 anger-gold = full bar). */
-	UFUNCTION(BlueprintCallable, Category = "RunState|Casino")
-	float AddCasinoAngerFromGold(int32 AngerGold);
-
-	/** Add anger based on bet size: +min(1, Bet/100). Returns new anger. */
-	UFUNCTION(BlueprintCallable, Category = "RunState")
-	float AddGamblerAngerFromBet(int32 BetGold);
-
-	UFUNCTION(BlueprintCallable, Category = "RunState")
-	void ResetGamblerAnger();
 
 	/** Bosses skipped via Cowardice Gate; owed bosses are repaid together on the difficulty's final stage. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -711,13 +693,13 @@ public:
 	void SnapshotAndClearInventoryForBackrooms(TArray<FT66InventorySlot>& OutSnapshot);
 	void RestoreInventoryFromBackroomsSnapshot(const TArray<FT66InventorySlot>& Snapshot);
 
-	/** Activates the Gambler's Token for the current run (1..5 => 50%..90% sell value). */
+	/** Activates the canonical Vendor Token (1..5 => 50%..90% sell value). */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Items")
-	void ApplyGamblersTokenPickup(int32 TokenLevel);
+	void ApplyVendorTokenPickup(int32 TokenLevel);
 
-	/** Active Gambler's Token level for this run (0 = inactive). */
+	/** Active Vendor Token level for this run (0 = inactive). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
-	int32 GetActiveGamblersTokenLevel() const { return ActiveGamblersTokenLevel; }
+	int32 GetActiveVendorTokenLevel() const { return ActiveVendorTokenLevel; }
 
 	/** Current sell fraction for regular items in this run (0.4 base, up to 1.0 with the token). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Economy")
@@ -727,7 +709,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Economy")
 	int32 GetSellGoldForInventorySlot(const FT66InventorySlot& Slot) const;
 
-	static constexpr int32 MaxGamblersTokenLevel = 5;
+	static constexpr int32 MaxVendorTokenLevel = 5;
 
 	/** Clear inventory only (e.g. Lab "Reset Items"). Recomputes stats and broadcasts. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -764,7 +746,7 @@ public:
 	bool HasInventorySpace() const { return true; }
 
 	// ============================================
-	// Hero Stats. Hero XP/level fields are retained only for save/backend compatibility.
+	// Hero Stats. Items are secondary-only; level-up and diplomas are the primary stat growth sources.
 	// ============================================
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero")
@@ -779,7 +761,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero")
 	float GetHeroXP01() const { return (XPToNextLevel <= 0) ? 0.f : FMath::Clamp(static_cast<float>(HeroXP) / static_cast<float>(XPToNextLevel), 0.f, 1.f); }
 
-	/** Deprecated compatibility no-op: in-run hero leveling no longer grants stats. */
+	/** Add XP and apply data-driven in-run hero level-ups. */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Hero")
 	void AddHeroXP(int32 Amount);
 
@@ -873,13 +855,25 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetHpRegenPerSecond() const;
 
-	/** Movement speed secondary multiplier (1.0 = no bonus; items can add). */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
-	float GetMovementSpeedSecondaryMultiplier() const;
-
 	/** Crate reward rarity multiplier (1.0 = no bonus; higher shifts crate rewards upward). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetLootCrateRewardMultiplier() const;
+
+	/** Chest gold reward multiplier (1.0 = no bonus; higher scales the locked gold reward). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetLootChestRewardMultiplier() const;
+
+	/** Loot bag item-rarity reward multiplier (1.0 = no bonus; integer thresholds advance rarity tiers). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetLootBagRewardMultiplier() const;
+
+	/** Loot wheel reward multiplier (1.0 = no bonus; higher scales the locked reward quality). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetLootWheelRewardMultiplier() const;
+
+	/** Execute chance on critical hits (0..1); routed through non-boss OHKO rules. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetExecuteChance01() const;
 
 	/** Lucky extra-upgrade chance when using the Alchemy tab (0..1). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
@@ -958,6 +952,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "RunState|PowerUp")
 	void ActivatePendingSingleUseBuffsForRunStart();
+
+#if !UE_BUILD_SHIPPING
+	void DebugActivatePendingSingleUseBuffsForRunStartWithoutConsuming();
+#endif
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
 	bool IsSaintBlessingActive() const { return bSaintBlessingActive; }
@@ -1109,9 +1107,6 @@ public:
 
 	/** Derived multipliers from hero stats (separate from item multipliers). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
-	float GetHeroMoveSpeedMultiplier() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
 	float GetHeroDamageMultiplier() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
@@ -1136,14 +1131,8 @@ public:
 	float GetAccuracyChance01() const;
 
 	// ============================================
-	// Shop (Inventory + Anger + Stealing)
+	// Shop (Inventory + Stealing)
 	// ============================================
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
-	int32 GetShopAngerGold() const { return ShopAngerGold; }
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
-	float GetShopAnger01() const { return FMath::Clamp(static_cast<float>(ShopAngerGold) / static_cast<float>(ShopAngerThresholdGold), 0.f, 1.f); }
 
 	UFUNCTION(BlueprintCallable, Category = "RunState|Shop")
 	void ResetShopForStage();
@@ -1290,25 +1279,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival", meta=(DeprecatedFunction, DeprecationMessage="Last Stand was removed. This compatibility wrapper always returns 1."))
 	float GetLastStandAttackSpeedMultiplier() const { return 1.f; }
-
-	// ============================================
-	// Quick Revive
-	// ============================================
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Quick Revive is now the Backrooms Quick Revive inventory item. Use HasBackroomsQuickReviveItem()."))
-	bool HasQuickReviveCharge() const { return HasBackroomsQuickReviveItem(); }
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Downed Quick Revive was removed. This compatibility wrapper always returns false."))
-	bool IsInQuickReviveDownedState() const { return false; }
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Downed Quick Revive was removed. This compatibility wrapper always returns 0."))
-	float GetQuickReviveDownedSecondsRemaining() const { return 0.f; }
-
-	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Quick Revive charges were removed. This compatibility wrapper is inert and returns false."))
-	bool GrantQuickReviveCharge();
-
-	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Quick Revive charges were removed. This compatibility wrapper is inert."))
-	void ClearQuickReviveCharge();
 
 	// ============================================
 	// Stage effects (ground tiles)
@@ -1483,6 +1453,10 @@ private:
 	void InitializeHeroStatsForNewRun();
 	void ApplyOneHeroLevelUp();
 	void RefreshPermanentBuffBonusesFromProfile();
+	int32 GetDataDrivenLevelUpXPThreshold() const;
+	float GetDataDrivenLevelUpWaveRadiusUU() const;
+	void ApplyLevelUpPrimaryGainTenths(ET66HeroStatType StatType, int32 GainTenths);
+	int32 ApplyLevelUpWave(float RadiusUU);
 	static int32 WholeStatToTenths(int32 WholeValue);
 	static int32 TenthsToDisplayStat(int32 ValueTenths);
 	static float TenthsToFloatStat(int32 ValueTenths);
@@ -1541,9 +1515,6 @@ private:
 	int32 TotemsActivatedCount = 0;
 
 	UPROPERTY()
-	float GamblerAnger01 = 0.f;
-
-	UPROPERTY()
 	TArray<FName> OwedBossIDs;
 
 	/** Cowardice gates taken this segment (resets when ClearOwedBosses is called after the owed-boss payoff stage). */
@@ -1554,8 +1525,8 @@ private:
 	UPROPERTY()
 	TArray<FT66InventorySlot> InventorySlots;
 
-	/** Active Gambler's Token level for this run. It behaves like a special run upgrade, not a regular slot item. */
-	int32 ActiveGamblersTokenLevel = 0;
+	/** Active Vendor Token level for this run. */
+	int32 ActiveVendorTokenLevel = 0;
 
 	/** Active DOTs (idol): one per target+source pair so distinct idols do not overwrite each other. */
 	TMap<FT66DotKey, FT66DotInstance> ActiveDOTs;
@@ -1725,6 +1696,9 @@ private:
 	/** Permanent buff bonuses from the buff subsystem, refreshed at run start. */
 	FT66HeroStatBonuses PermanentBuffStatBonuses = FT66HeroStatBonuses{};
 
+	/** Secondary stat bonuses derived from permanent diploma primary bonuses. */
+	TMap<ET66SecondaryStatType, int32> PermanentSecondaryStatBonusTenths;
+
 	/** Single-use secondary multipliers purchased in the shop and consumed at the start of the current run. */
 	TMap<ET66SecondaryStatType, float> SingleUseSecondaryMultipliers;
 
@@ -1745,7 +1719,7 @@ private:
 	int32 ItemBonusLuckFlat = 0;
 
 	// ============================================
-	// Deprecated hero XP / level compatibility fields + timers.
+	// Hero XP / level fields + timers.
 	// ============================================
 
 	int32 HeroLevel = DefaultHeroLevel;
@@ -1758,17 +1732,17 @@ private:
 	/** Authoritative foundational hero stats stored in fixed-point tenths. */
 	FT66HeroPreciseStatBlock HeroPreciseStats = FT66HeroPreciseStatBlock{};
 
-	/** Deprecated per-level gain ranges retained for hero row compatibility. */
+	/** Data-authored per-level primary gain ranges. */
 	FT66HeroPerLevelStatGains HeroPerLevelGains = FT66HeroPerLevelStatGains{};
 
-	/** Category-specific base stats (loaded from Heroes DataTable, not leveled). */
+	/** Category-specific base stats loaded from Heroes DataTable before item and level-up secondary bonuses. */
 	int32 BasePierceDmg = 1; int32 BasePierceAtkSpd = 1; int32 BasePierceAtkScale = 1;
 	int32 BaseBounceDmg = 1; int32 BaseBounceAtkSpd = 1; int32 BaseBounceAtkScale = 1;
 	int32 BaseAoeDmg = 1;    int32 BaseAoeAtkSpd = 1;    int32 BaseAoeAtkScale = 1;
 	int32 BaseDotDmg = 1;    int32 BaseDotAtkSpd = 1;    int32 BaseDotAtkScale = 1;
 
 	// ============================================
-	// Hero secondary base stats (loaded from Heroes DataTable, multiplied by items)
+	// Hero secondary base stats (loaded from Heroes DataTable, then modified by items, drugs, level-ups, and diplomas)
 	// ============================================
 	float HeroBaseCritDamage = 1.5f;
 	float HeroBaseCritChance = 0.05f;
@@ -1796,6 +1770,9 @@ private:
 	TMap<ET66SecondaryStatType, int32> PersistentSecondaryStatBonusTenths;
 	TMap<ET66SecondaryStatType, int32> ItemSecondaryStatBonusTenths;
 	FT66HeroPreciseStatBlock ItemPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+
+	bool bSuppressLevelUpWaveXP = false;
+	bool bProcessingHeroLevelUps = false;
 
 	/** Run-persistent RNG for hero stat gains (so stage reloads don't reshuffle). */
 	FRandomStream HeroStatRng;
@@ -1829,7 +1806,6 @@ private:
 	// Shop state (per-stage)
 	// ============================================
 
-	int32 ShopAngerGold = 0;
 	int32 ShopStockStage = 0;
 	int32 ShopStockRerollStage = 0;
 	int32 ShopStockRerollCounter = 0;

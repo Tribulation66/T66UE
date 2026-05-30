@@ -332,7 +332,6 @@ void UT66CasinoOverlayWidget::ReleaseCachedSlateResources()
 	AlchemyNetWorthText.Reset();
 	AlchemyGoldText.Reset();
 	AlchemyDebtText.Reset();
-	AlchemyAngerText.Reset();
 	AlchemyStatusText.Reset();
 	AlchemyTargetText.Reset();
 	AlchemyTargetDetailText.Reset();
@@ -574,13 +573,6 @@ TSharedRef<SWidget> UT66CasinoOverlayWidget::BuildAlchemyPage(UT66RunStateSubsys
 						.Text(FText::Format(OweFmt, FText::AsNumber(RunState ? RunState->GetCurrentDebt() : 0)))
 						.Font(FT66FlatStyle::Tokens::FontBold(TopBarFontSize))
 						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-					]
-					+ SHorizontalBox::Slot().AutoWidth()
-					[
-						SAssignNew(AlchemyAngerText, STextBlock)
-						.Text(FText::Format(NSLOCTEXT("T66.Casino", "AngerFormat", "ANGER: {0}%"), FText::AsNumber(RunState ? FMath::RoundToInt(RunState->GetCasinoAnger01() * 100.f) : 0)))
-						.Font(FT66FlatStyle::Tokens::FontBold(TopBarFontSize))
-						.ColorAndOpacity(FLinearColor(0.95f, 0.65f, 0.20f, 1.f))
 					],
 					ET66FlatOverlayChromeBrush::HeaderSummaryBar,
 					FMargin(10.f)
@@ -715,8 +707,7 @@ void UT66CasinoOverlayWidget::RefreshAlchemyTopBar()
 		GetLocalization(),
 		AlchemyNetWorthText,
 		AlchemyGoldText,
-		AlchemyDebtText,
-		AlchemyAngerText);
+		AlchemyDebtText);
 }
 
 void UT66CasinoOverlayWidget::RefreshAlchemyInventory()
@@ -996,11 +987,6 @@ FReply UT66CasinoOverlayWidget::OnAlchemyTransmuteClicked()
 		FText::Format(NSLOCTEXT("T66.Casino", "AlchemySuccess", "{0} upgraded to {1}."), ItemName, RarityName),
 		FLinearColor(0.30f, 1.f, 0.40f, 1.f));
 	RefreshAlchemy();
-
-	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
-	{
-		PC->TriggerCasinoBossIfAngry();
-	}
 	return FReply::Handled();
 }
 
@@ -1037,11 +1023,6 @@ void UT66CasinoOverlayWidget::HandleInventoryChanged()
 }
 
 void UT66CasinoOverlayWidget::HandleGoldOrDebtChanged()
-{
-	RefreshAlchemyTopBar();
-}
-
-void UT66CasinoOverlayWidget::HandleAngerChanged()
 {
 	RefreshAlchemyTopBar();
 }

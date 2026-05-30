@@ -103,16 +103,16 @@ static const int32 CatAttackScale[] =
 };
 static const int32 CatAccuracy[] =
 {
-	static_cast<int32>(ET66SecondaryStatType::CritDamage),
 	static_cast<int32>(ET66SecondaryStatType::CritChance),
+	static_cast<int32>(ET66SecondaryStatType::CritDamage),
 	static_cast<int32>(ET66SecondaryStatType::AttackRange),
-	static_cast<int32>(ET66SecondaryStatType::Accuracy),
+	static_cast<int32>(ET66SecondaryStatType::Execute),
 };
 static const int32 CatArmor[] =
 {
-	static_cast<int32>(ET66SecondaryStatType::Taunt),
 	static_cast<int32>(ET66SecondaryStatType::DamageReduction),
 	static_cast<int32>(ET66SecondaryStatType::ReflectDamage),
+	static_cast<int32>(ET66SecondaryStatType::Taunt),
 	static_cast<int32>(ET66SecondaryStatType::Crush),
 };
 static const int32 CatEvasion[] =
@@ -124,10 +124,10 @@ static const int32 CatEvasion[] =
 };
 static const int32 CatLuck[] =
 {
-	static_cast<int32>(ET66SecondaryStatType::TreasureChest),
-	static_cast<int32>(ET66SecondaryStatType::Cheating),
-	static_cast<int32>(ET66SecondaryStatType::Stealing),
 	static_cast<int32>(ET66SecondaryStatType::LootCrate),
+	static_cast<int32>(ET66SecondaryStatType::TreasureChest),
+	static_cast<int32>(ET66SecondaryStatType::LootBag),
+	static_cast<int32>(ET66SecondaryStatType::LootWheel),
 };
 
 static const FSecondaryStatCategory SecondaryStatCategories[] =
@@ -272,6 +272,7 @@ static bool IsSecondaryPercent(ET66SecondaryStatType SecType)
 		|| SecType == ET66SecondaryStatType::Invisibility
 		|| SecType == ET66SecondaryStatType::CounterAttack
 		|| SecType == ET66SecondaryStatType::Assassinate
+		|| SecType == ET66SecondaryStatType::Execute
 		|| SecType == ET66SecondaryStatType::Cheating
 		|| SecType == ET66SecondaryStatType::Stealing
 		|| SecType == ET66SecondaryStatType::DamageReduction

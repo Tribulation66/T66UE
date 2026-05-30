@@ -8,6 +8,7 @@ decisions do not depend on filenames alone.
 
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 import unreal
@@ -15,6 +16,7 @@ import unreal
 
 PROJECT_ROOT = Path(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()))
 OUTPUT_PATH = PROJECT_ROOT / "Saved" / "Audits" / "WorldAssetAudit.json"
+META_OUTPUT_PATH = PROJECT_ROOT / "Saved" / "Audits" / "WorldAssetAudit.meta.json"
 WORLD_ROOT = "/Game/World"
 TEXT_SCAN_DIRS = ["Source", "Config", "Content/Data"]
 TEXT_EXTENSIONS = {".cpp", ".h", ".hpp", ".inl", ".py", ".ini", ".csv", ".json", ".txt", ".md"}
@@ -45,7 +47,25 @@ def get_referencers(asset_path):
     return sorted(str(ref) for ref in refs)
 
 
+def force_asset_registry_scan():
+    registry = unreal.AssetRegistryHelpers.get_asset_registry()
+    try:
+        registry.scan_paths_synchronous([WORLD_ROOT], True)
+    except TypeError:
+        registry.scan_paths_synchronous([WORLD_ROOT])
+    try:
+        registry.wait_for_completion()
+    except Exception:
+        pass
+    return {
+        "forced_asset_registry_scan": True,
+        "scan_roots": [WORLD_ROOT],
+        "generated_utc": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 def main():
+    metadata = force_asset_registry_scan()
     text_blob = collect_text_blob()
     assets = unreal.EditorAssetLibrary.list_assets(WORLD_ROOT, recursive=True, include_folder=False)
     rows = []
@@ -84,14 +104,20 @@ def main():
                 "referencer_count": len(refs),
                 "text_references": sorted(set(text_refs)),
                 "text_reference_count": len(set(text_refs)),
+                "audit_fresh_scan": metadata["forced_asset_registry_scan"],
+                "audit_generated_utc": metadata["generated_utc"],
             }
         )
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    META_OUTPUT_PATH.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
     orphan_rows = [row for row in rows if row["referencer_count"] == 0 and row["text_reference_count"] == 0]
-    unreal.log(f"[AuditWorldAssets] assets={len(rows)} orphan_candidates={len(orphan_rows)} output={OUTPUT_PATH}")
+    unreal.log(
+        f"[AuditWorldAssets] assets={len(rows)} orphan_candidates={len(orphan_rows)} "
+        f"fresh_scan={metadata['forced_asset_registry_scan']} output={OUTPUT_PATH}"
+    )
     for row in orphan_rows[:100]:
         unreal.log(f"[AuditWorldAssets] ORPHAN {row['class']} {row['asset']}")
 

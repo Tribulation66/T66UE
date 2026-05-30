@@ -101,8 +101,8 @@ namespace
 		{
 		case T66TowerMapTerrain::ET66TowerFloorRole::Start:
 			return TEXT("Start");
-		case T66TowerMapTerrain::ET66TowerFloorRole::Gameplay:
-			return TEXT("Gameplay");
+		case T66TowerMapTerrain::ET66TowerFloorRole::Mob:
+			return TEXT("Mob");
 		case T66TowerMapTerrain::ET66TowerFloorRole::Boss:
 			return TEXT("Boss");
 		default:
@@ -345,7 +345,7 @@ AT66TowerLightingActor* T66TowerLighting::SpawnFloorTorchLights(
 		return nullptr;
 	}
 	if (Floor.FloorRole != T66TowerMapTerrain::ET66TowerFloorRole::Start
-		&& Floor.FloorRole != T66TowerMapTerrain::ET66TowerFloorRole::Gameplay)
+		&& Floor.FloorRole != T66TowerMapTerrain::ET66TowerFloorRole::Mob)
 	{
 		UE_LOG(
 			LogT66TowerLighting,

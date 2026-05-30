@@ -1,6 +1,6 @@
 # T66 Master Map Design
 
-**Last updated:** 2026-05-26
+**Last updated:** 2026-05-28
 **Scope:** Single-source handoff for the live tower-only Tribulation map runtime, stage-space flow, traversal structure, minimap behavior, miasma/blood pressure design, and the historical implementation plan that led to the tower layout.  
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/World/T66_LIGHTING_REFERENCE.md`  
 **Maintenance rule:** Update this file after every material map-layout, terrain-generation, stage-space, minimap, traversal-gate, floor-transition, miasma/blood-pressure, or preset-selection change.
@@ -8,17 +8,14 @@
 ## 1. Executive Summary
 
 - The live Tribulation runtime is now `Tower`-only.
-- Runtime map-layout selection has been removed:
-  - no `Hilly`
-  - no `Flat`
-  - no config or console layout override
+- Runtime map-layout selection has been removed, including the old non-tower layout variants and config/console overrides.
 - New runs and save-load restore now coerce the main gameplay map to the tower layout.
 - The active gameplay map family is the tower generator and floor-based traversal path, not the old one-board terrain preset selection flow.
-- The old `Hilly` / `Flat` discussion below is retained only as historical design context for how the tower split was originally planned.
-- Current tower pacing still follows the same high-level runtime structure:
-  - `1` `Start Level`
-  - `5` gameplay levels
-  - `1` `Boss Level`
+- Current normal tower pacing uses five floors:
+  - `Floor 1 - Start`: weapon altar only; no enemies and no normal interactable scatter
+  - `Floor 2` through `Floor 4`: gameplay floors with enemies and normal floor interactables
+  - `Floor 5 - Boss`: boss flow only
+- Boss-rush finale is a separate two-floor special case; it skips normal tower enemy and interactable population and must not be treated as the normal map-design floor-count contract.
 
 ### 1.1 Current tower implementation status
 
@@ -34,10 +31,10 @@
   - randomizes each floor's square descent-hole position from the run seed instead of keeping the holes on a fixed shared pattern
   - adds full-height internal maze walls on gameplay floors and teaches tower surface placement to treat those wall volumes as blocked space
   - pushes maze-wall spans all the way into the outer shell so gameplay floors no longer keep an open perimeter ring around the tower walls
-  - keeps the `Start Level` on the generic dungeon-tower scaffold again instead of the later enclosed-room pass, while still keeping tree props out of Stage 1
+  - keeps `Floor 1 - Start` on the generic dungeon-tower scaffold again instead of the later enclosed-room pass, while still keeping tree props out of Stage 1
   - restores the original taller Stage 1 tower read by using the roof cap only at the top of the tower instead of adding the later low ceiling caps between floors
-  - keeps the `Start Level` as a clean start floor with the idol and no guaranteed start-area interactable scatter
-  - now places the start-floor idol altar on its own dedicated tower start anchor instead of directly on the player spawn point
+  - keeps `Floor 1 - Start` as a clean start floor with the weapon altar and no guaranteed start-area interactable scatter
+  - keeps the stage-entry idol altar out of the current tower bootstrap path so the start floor remains weapon-altar-only
   - no longer spawns the old idol-area dummy enemy test targets
   - starts real stage combat/timer pressure once the player reaches the gameplay floors
   - builds blood-style miasma coverage across gameplay floors only
@@ -47,17 +44,17 @@
     - reinforcement enemies now emerge from tower wall surfaces instead of appearing from thin air
     - reinforcement enemies are now restricted to the outer tower shell walls, not interior maze walls
   - scopes minimap/full-map display to the current floor with floor-local reveal memory and polygon floor bounds
-  - removes the old boss beacon pillar-of-light from tower runs
-  - no longer spawns teleporter-pad interactables in stage population
-  - allows compact casino/vendor utility opportunities to roll on gameplay floors only; quick revive is archived and should not spawn
+  - removes the old non-tower visual-navigation pillar from tower runs
+  - removes obsolete traversal-pad interactables from stage population
+  - allows compact casino/vendor utility opportunities to roll on gameplay floors only
   - can spawn a rare Backrooms entrance door on a tower wall when the run does not already own the Backrooms Quick Revive item; the Backrooms maze is spawned with the stage as a hidden pocket space, not loaded later
   - spawns exactly one saint on one gameplay floor per tower stage
   - spawns exactly one difficulty totem on every gameplay floor using floor-specific `T66_Tower_DifficultyTotem_##` tags, independent of the randomized saint floor selection
   - guarantees tower chest/crate rules by floor instead of using the old global stage scatter for those two interactables:
-    - `Start Level`: no chest, no crate
-    - gameplay floors: `1-3` chests and `1-3` crates per floor
-    - `Boss Level`: no chest, no crate
-  - now rejects cross-floor tower placement traces and retries tower floor placement more aggressively, so gameplay-floor chest/crate/casino/utility placement stays on the intended floor instead of bleeding through floor gaps to another level
+    - `Floor 1 - Start`: no chest, no crate
+    - floors `2-4`: `1-3` chests and `1-3` crates per floor
+    - `Floor 5 - Boss`: no chest, no crate
+  - now rejects cross-floor tower placement traces and retries tower floor placement more aggressively, so gameplay-floor chest/crate/casino/utility placement stays on the intended floor instead of bleeding through floor gaps to another floor
   - snaps tower NPC/interactable spawns to an explicit requested floor and tags them with explicit tower-floor identity so floor-local placement and safety logic do not rely only on raw actor Z
   - re-snaps tower chest/crate/totem/wheel placements after rarity/configuration work so floor-local mesh swaps cannot pull those actors back onto the wrong floor
   - tower boss clears now spawn the next-stage gate at the dedicated tower boss exit location instead of trusting the exact boss death point
@@ -67,13 +64,14 @@
   - old tower-only collidable rock/deco scatter on gameplay floors has been disabled; keep floor dressing out of the map/runtime terrain path unless a new generated-prop pass is explicitly approved
   - uses tower-only dungeon material instances for floor, wall, and roof surfaces instead of the inherited green/brown legacy terrain look
   - uses dedicated tower descent-hole trigger actors for floor-to-floor progression while keeping the existing boss-kill `StageGate` portal for actual stage-to-stage travel
-  - replaces the legacy boss-threshold gate on tower with final-hole boss entry, so dropping from `Level 5` into `Boss Level` pauses normal wave spawning and starts boss flow
-  - keeps the `Boss Level` as the terminal floor with no further descent hole
+  - gates the `Floor 2`, `Floor 3`, and `Floor 4` descent holes behind fixed placed miniboss encounters: a scaled rich `Slime` spawns when the player enters each floor, and the descent hole cannot be opened until that miniboss is defeated
+  - replaces the legacy boss-threshold gate on tower with final-hole boss entry, so dropping from `Floor 4` into `Floor 5 - Boss` pauses normal wave spawning and starts boss flow
+  - keeps `Floor 5 - Boss` as the terminal floor with no further descent hole
   - uses tower-specific fall-rescue logic so normal hole descent does not snap players back onto upper floors
-  - uses tighter floor-classification tolerance so falling between levels is not misread as standing on a gameplay floor
+  - uses tighter floor-classification tolerance so falling between floors is not misread as standing on a gameplay floor
   - snaps tower bosses after boss initialization so tall boss meshes do not sink into the floor
   - resets run-state and damage-log state on pause-menu restart so tower restarts follow the same reset path as the run-summary restart
-  - no longer relies on stale static raw mesh pointers for tower prop decoration, fixing the packaged tower reload/restart crash that could happen while rebuilding the tower after a gameplay-level restart
+  - no longer relies on stale static raw mesh pointers for tower prop decoration, fixing the packaged tower reload/restart crash that could happen while rebuilding the tower after a gameplay map restart
 - The tower preset is still not complete:
   - broader tower-specific casino/vendor/NPC pacing beyond saint is still open
 
@@ -107,14 +105,11 @@
     - `MainBoard`
     - `BossPath`
     - `BossArea`
-- `BuildPresetForDifficulty(...)`
-  - uses one terrain family for all current presets
-  - only changes hilliness when `Flat` is selected
 - `Generate(...)`
   - expects one contiguous grid footprint
   - not stacked floors
   - not cylindrical walls
-  - not level-to-level descent holes
+  - not floor-to-floor descent holes
 
 ### 2.3 Current stage flow
 
@@ -122,7 +117,7 @@
   - boots one stage as one play space
   - current normal-stage sequence is:
     1. spawn terrain
-    2. place start area content
+    2. place tower start-floor content
     3. player crosses start threshold
     4. stage timer starts
     5. miasma + enemy director activate
@@ -130,7 +125,7 @@
     7. boss awakens
     8. boss dies
     9. stage gate spawns
-    10. stage transition reloads the gameplay level for the next stage
+    10. stage transition reloads the gameplay map for the next stage
 - Current special flow actors:
   - `AT66StartGate`
   - `AT66BossGate`
@@ -167,9 +162,7 @@
 
 ### 2.6 Current NPC / interactable placement
 
-- `Source/T66/Gameplay/T66GameMode.cpp`
-  - `SpawnGuaranteedStartAreaInteractables()`
-    - places fixed classic start-area interactables such as fountain, chest, loot bag, crate, vehicle, and arcade machine
+- `Source/T66/Gameplay/GameMode/T66GameMode_WorldInteractables.cpp`
   - `SpawnWorldInteractablesForStage()`
     - scatters world interactables across the stage, excluding reserved start/boss zones
   - `SpawnSupportVendorAtStartIfNeeded()`
@@ -186,8 +179,6 @@
 - Entering the Backrooms pauses stage pressure, timers, enemies, traps, projectiles, miasma, and save-and-return. The hero and Backrooms chaser remain active; inventory and weapon state are temporarily hidden and restored on exit or death resolution.
 - A successful Backrooms exit grants the reward-only `Item_BackroomsQuickRevive` item. Owning that item makes later Backrooms door rolls ineligible.
 - Non-shipping QA uses `T66.Backrooms.ForceSpawn 1` plus `-T66BackroomsAutoQA=Exit|Death|Consume`. `-T66BackroomsAutoQAScreenshot=<path>` is requested by `AT66GameMode` only after the entry interaction has made `bBackroomsChallengeActive` true, so the proof image captures the active hidden pocket rather than the pre-entry tower wall.
-- `SpawnTricksterAndCowardiceGate()`
-  - places Trickster + cowardice gate before the boss area on non-boss stages
 - `SpawnIdolAltarForPlayer()` / `SpawnIdolAltarAtLocation(...)`
   - currently supports:
     - stage-start altar
@@ -199,8 +190,7 @@
   - normal layouts still spawn around player world positions using min/max distance rings and safe-zone exclusion
   - tower layout now filters by the active floor and spawns from the shell perimeter instead of below-ground rise locations
 - `Source/T66/Gameplay/T66GameMode.cpp`
-  - tower now disables the legacy boss beacon light pillar
-  - teleporter-pad interactables are deprecated from stage population
+  - legacy visual-navigation and traversal-pad runtime paths have been removed
   - tower terrain safety rescue now uses tower-local traces and a below-bottom-floor threshold so falling through holes is not treated as an out-of-bounds recovery
 - `AT66BossGate`
   - currently pauses the enemy director when the player enters the boss threshold
@@ -211,25 +201,20 @@
 
 - Start flow, combat activation, boss activation, miasma coverage, minimap, and interactable scatter all assume one board for one stage.
 
-### 3.2 `Flat` is not a separate map type
-
-- It is just `Hilly` with hilliness zeroed.
-- That means the tower preset should **not** be modeled as "another tweak value" on the current board generator.
-
-### 3.3 Save/load needs new floor-aware state
+### 3.2 Save/load needs new floor-aware state
 
 - Layout variant is already saved.
 - Floor index, current-floor hazard state, and per-floor reveal state are not.
 
-### 3.4 The current minimap is too stage-global
+### 3.3 The current minimap is too stage-global
 
 - Tower requires the minimap to become a current-floor system.
 
-### 3.5 The current miasma system is too footprint-global
+### 3.4 The current miasma system is too footprint-global
 
 - Tower blood pressure needs to care about the active floor only.
 
-### 3.6 The current casino implementation is already a shell/interactable, not a gambler house NPC
+### 3.5 The current casino implementation is already a shell/interactable, not a gambler house NPC
 
 - Recommended path:
   - keep the casino as a variant of `AT66CircusInteractable`
@@ -252,43 +237,54 @@
 
 ### 4.2 Recommended first playable structure
 
-- Initial recommended prototype:
-  - `Start Level`: start floor only, modeled after the current start area, with the idol altar and no normal enemy/wave gameplay
-  - `Level 1`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
-  - `Level 2`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
-  - `Level 3`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
-  - `Level 4`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
-  - `Level 5`: final gameplay floor with monsters, world interactables, and the baby gate placed beside the boss descent hole
-  - `Boss Level`: boss floor
+- Current normal tower structure:
+  - `Floor 1 - Start`: start floor only, modeled after the current start area, with the weapon altar and no normal enemy/wave gameplay
+  - `Floor 2`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+  - `Floor 3`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+  - `Floor 4`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+  - `Floor 5 - Boss`: boss floor
+- Boss-rush finale is an explicit two-floor exception and skips the normal enemy/interactable population rules.
 - Reason for this recommendation:
   - `7:00` total stage time is already established in runtime/UI/save logic
   - `3:00` boss budget leaves `4:00` for non-boss gameplay
   - separating the top floor as a start-only space preserves the current game feel
-  - `5` gameplay floors gives the descent enough weight to feel like a full difficulty ladder instead of just a short vertical corridor
+  - `5` total floors keeps the descent readable without the old seven-floor confusion
 
 ### 4.3 Traversal rules
 
-- `Start Level` should own:
-  - the stage-start idol altar
+- `Floor 1 - Start` should own:
+  - the stage-start weapon altar
   - current start-area feel and breathing room
   - no standard monster spawning
   - no normal world-interactable scatter pass
   - the first descent hole into real gameplay
-- Each gameplay floor (`Level 1` through `Level 5`) should own:
+- Each gameplay floor (`Floor 2` through `Floor 4`) should own:
   - one local exploration space
-  - one altar
   - one descent hole
   - side-wall enemy spawn anchors
   - optional small casino / vendor opportunities
-- `Level 5` should also own:
-  - baby gate directly beside the boss-hole descent
-- `Boss Level` should own:
+- `Floor 5 - Boss` should own:
   - boss entry point
   - boss combat space
   - no further descent hole
 - Live implementation note:
   - between floors in the same stage, traversal is handled by the floor hole
   - after the boss dies, progression to the next stage still uses the existing `AT66StageGate` portal
+
+### 4.3.1 Placed miniboss descent gates
+
+- Normal tower stages use deliberate placed miniboss encounters instead of random per-wave miniboss promotion.
+- The eligible floor exits are:
+  - `Floor 2 -> Floor 3`
+  - `Floor 3 -> Floor 4`
+  - `Floor 4 -> Floor 5 - Boss`
+- `Floor 1 -> Floor 2` has no miniboss gate.
+- Boss-rush finale stages are a two-floor exception and have no placed miniboss gates.
+- The placeholder miniboss is the basic `Slime` mob row, spawned as a rich `AT66EnemyBase` and scaled with the current miniboss multipliers (`3.0x` HP, `2.0x` damage, `1.75x` actor scale).
+- The same slime placeholder appears across all stages until unique miniboss creatures are authored.
+- The placed miniboss spawns when the player enters its floor, is assigned to that floor's `AT66TowerDescentHole`, and must be killed before the hole can open.
+- The existing tower guardian death behavior still runs on defeat, including the idol altar side effect; changing miniboss rewards is a separate design pass.
+- Random miniboss promotion in normal trickle waves is disabled, which keeps basic-mob performance captures free of random rich miniboss routes.
 
 ### 4.4 Hazard rules
 
@@ -316,14 +312,9 @@
 - Casino:
   - use a smaller circus/casino version
   - chance to spawn on each gameplay floor
-- Quick revive:
-  - keep the start-area version on `Start Level`
-  - optional chance on gameplay floors after that
 - Saint:
   - exactly once per stage
   - only on one gameplay floor
-- Trickster:
-  - removed from tower preset
 - Baby gate:
   - placed beside the descent hole before the boss floor
 
@@ -344,14 +335,11 @@
 
 ### 5.1 Keep preset selection shared, but split geometry implementation
 
-- Keep one shared preset enum:
-  - `Hilly`
-  - `Flat`
+- Keep one shared live preset enum value:
   - `Tower`
 - Do **not** force tower geometry into a long chain of `if (LayoutVariant == Tower)` inside `T66MainMapTerrain::Generate(...)`.
 - Recommended implementation:
-  - keep current `T66MainMapTerrain` for `Hilly` and `Flat`
-  - create a separate tower runtime generator for `Tower`
+  - keep tower geometry in the tower runtime generator
 
 ### 5.2 Use one runtime world, stacked vertically
 
@@ -361,7 +349,7 @@
   - descending through a hole moves the player to the next floor in the same map
 - Reason:
   - preserves current stage model
-  - avoids per-floor level streaming as the first implementation burden
+  - avoids per-floor streaming as the first implementation burden
   - keeps one stage timer and one stage save context
 
 ### 5.3 Add floor-aware runtime state
@@ -476,8 +464,7 @@
 
 ### Phase 1. Lock the preset and floor model
 
-- Add `Tower` as a third layout preset.
-- Keep `Hilly` and `Flat` unchanged.
+- Keep the live layout locked to `Tower`.
 - Lock initial stage shape:
   - `1` start floor
   - `4` gameplay floors
@@ -491,20 +478,19 @@
 - Add descent holes.
 - Add active floor tracking.
 - Let the player move from floor to floor.
-- Keep `Start Level` as a start-only floor.
+- Keep `Floor 1 - Start` as a start-only, weapon-altar-only floor.
 
 ### Phase 3. Move combat spawning to tower rules
 
 - Add side-wall spawn anchors.
 - Make enemy spawns floor-aware.
 - Restrict spawns to the active floor.
-- Keep normal monster spawning disabled on `Start Level`.
+- Keep normal monster spawning disabled on `Floor 1 - Start`.
 
 ### Phase 4. Move stage systems to tower rules
 
 - Replace boss-threshold assumptions with boss-floor entry behavior.
 - Move baby gate to final traversal floor.
-- Remove Trickster from tower preset.
 
 ### Phase 5. Move hazard pressure to tower rules
 
@@ -533,7 +519,7 @@
 - Start floor count:
   - `1`
 - Gameplay floor count:
-  - `4`
+  - `3` (`Floor 2` through `Floor 4`)
 - Boss floor count:
   - `1`
 - Circus/casino:
@@ -541,13 +527,8 @@
   - chance per gameplay floor
 - Saint:
   - exactly once per stage
-- Quick revive:
-  - guaranteed on the start floor
-  - optional chance on later gameplay floors
-- Trickster:
-  - disabled for tower preset
 - Baby gate:
-  - only on the last gameplay floor, beside boss descent hole
+  - not part of the current normal five-floor tower contract
 - Art source:
   - reuse current terrain textures/materials
   - do not reuse old tree, dirt, or rock clutter props
@@ -556,10 +537,9 @@
 
 1. Do we want the preset name to stay plain `Tower`, or should it be something more thematic like `Descent` while keeping the same design?
 2. Does altar interaction immediately arm blood pressure, or should blood begin after a short grace delay on that floor?
-3. Should the timer remain frozen on `Start Level` and only begin once the player descends into `Level 1`, matching the current start-area philosophy?
-4. Should the casino be allowed on `Level 5`, or should that floor be reserved for baby-gate / boss-entry setup?
-5. Quick revive is archived; no tower floor should spawn or grant it.
-6. Do we want one altar on every gameplay floor, or only on selected floors after pacing tests?
+3. Should the timer remain frozen on `Floor 1 - Start` and only begin once the player descends into `Floor 2`, matching the current start-area philosophy?
+4. Should the casino be allowed on `Floor 4`, or should that floor stay focused on pre-boss setup?
+5. Do we want one altar on every gameplay floor, or only on selected floors after pacing tests?
 
 ## 10. Bottom Line
 

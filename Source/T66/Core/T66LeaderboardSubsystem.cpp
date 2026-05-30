@@ -862,7 +862,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	Snapshot->Score = FMath::Max(0, Score);
 
 	Snapshot->SecondaryStatValues.Reset();
-	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::Accuracy); ++i)
+	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::VendorToken); ++i)
 	{
 		const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
 		if (!T66IsLiveSecondaryStatType(SecType))

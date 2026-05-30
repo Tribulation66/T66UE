@@ -364,6 +364,7 @@ namespace T66HeroSelectionPrivate
 		case ET66SecondaryStatType::PierceScale: return NSLOCTEXT("T66.HeroSelection", "DrugPierceScale", "DROSTANOLONE PROPIONATE");
 		case ET66SecondaryStatType::DotScale: return NSLOCTEXT("T66.HeroSelection", "DrugDotScale", "METHENOLONE ENANTHATE");
 		case ET66SecondaryStatType::AttackRange: return NSLOCTEXT("T66.HeroSelection", "DrugAttackRange", "CLENBUTEROL HCL");
+		case ET66SecondaryStatType::Execute: return NSLOCTEXT("T66.HeroSelection", "DrugExecute", "ATOMOXETINE HCL");
 		case ET66SecondaryStatType::Taunt: return NSLOCTEXT("T66.HeroSelection", "DrugTaunt", "HYDROCORTISONE");
 		case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.HeroSelection", "DrugDamageReduction", "PREDNISONE");
 		case ET66SecondaryStatType::ReflectDamage: return NSLOCTEXT("T66.HeroSelection", "DrugReflectDamage", "DEXAMETHASONE");
@@ -376,7 +377,10 @@ namespace T66HeroSelectionPrivate
 		case ET66SecondaryStatType::Cheating: return NSLOCTEXT("T66.HeroSelection", "DrugCheating", "SILDENAFIL CITRATE");
 		case ET66SecondaryStatType::Stealing: return NSLOCTEXT("T66.HeroSelection", "DrugStealing", "LOPERAMIDE HCL");
 		case ET66SecondaryStatType::LootCrate: return NSLOCTEXT("T66.HeroSelection", "DrugLootCrate", "METFORMIN HCL");
+		case ET66SecondaryStatType::LootBag: return NSLOCTEXT("T66.HeroSelection", "DrugLootBag", "UBIQUINOL");
+		case ET66SecondaryStatType::LootWheel: return NSLOCTEXT("T66.HeroSelection", "DrugLootWheel", "THEOBROMINE");
 		case ET66SecondaryStatType::Accuracy: return NSLOCTEXT("T66.HeroSelection", "DrugAccuracy", "ATOMOXETINE HCL");
+		case ET66SecondaryStatType::VendorToken: return NSLOCTEXT("T66.HeroSelection", "DrugVendorToken", "VENDOR TOKEN");
 		default: return NSLOCTEXT("T66.HeroSelection", "DrugFallback", "COMPOUND");
 		}
 	}

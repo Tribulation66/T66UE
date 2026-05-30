@@ -65,8 +65,6 @@ void UT66RngTuningConfig::LoadFromConfig()
 	LoadFloatValue(ConfigFilename, TEXT("RangeHighBiasStrength"), RangeHighBiasStrength);
 	LoadFloatValue(ConfigFilename, TEXT("BernoulliBiasStrength"), BernoulliBiasStrength);
 
-	LoadFloatValue(ConfigFilename, TEXT("GoblinWaveChanceBase"), GoblinWaveChanceBase);
-	LoadRngStructValue(ConfigFilename, TEXT("GoblinCountPerWave"), GoblinCountPerWave);
 	LoadRngStructValue(ConfigFilename, TEXT("SpecialEnemyRarityBase"), SpecialEnemyRarityBase);
 
 	LoadRngStructValue(ConfigFilename, TEXT("FountainsPerStage"), FountainsPerStage);

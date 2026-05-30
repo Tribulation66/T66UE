@@ -36,6 +36,12 @@ BP_GAME_INSTANCE_CLASS_PATH = "/Game/Blueprints/Core/BP_T66GameInstance.BP_T66Ga
 
 DT_ASSET = "/Game/Data/DT_CombatVFXBindings.DT_CombatVFXBindings"
 PRODUCTION_NIAGARA = "/Game/VFX/Hero1/Axe/AOE/NS_Hero1AxeAOE_MeshSlash.NS_Hero1AxeAOE_MeshSlash"
+PRODUCTION_PIERCE_NIAGARA = "/Game/VFX/Hero1/Axe/Pierce/NS_Hero1AxePierce_MeshSlash.NS_Hero1AxePierce_MeshSlash"
+PRODUCTION_PIERCE_BLADE_MESH = "/Game/VFX/Hero1/Axe/Pierce/SM_Hero1AxePierce_BladePlane.SM_Hero1AxePierce_BladePlane"
+PRODUCTION_BOUNCE_NIAGARA = "/Game/VFX/Hero1/Axe/Bounce/NS_Hero1AxeBounce_MeshSlash.NS_Hero1AxeBounce_MeshSlash"
+PRODUCTION_BOUNCE_SLASH_MESH = "/Game/VFX/Hero1/Axe/Bounce/SM_Hero1AxeBounce_HorizontalSlash.SM_Hero1AxeBounce_HorizontalSlash"
+PRODUCTION_DOT_NIAGARA = "/Game/VFX/Hero1/Axe/DOT/NS_Hero1AxeDOT_MeshSlash.NS_Hero1AxeDOT_MeshSlash"
+PRODUCTION_DOT_RING_MESH = "/Game/VFX/Hero1/Axe/DOT/SM_Hero1AxeDOT_AuraRing.SM_Hero1AxeDOT_AuraRing"
 PRODUCTION_PREFIX = "/Game/VFX/Hero1/Axe"
 LAB_PREFIX = "/Game/VFXLab"
 
@@ -61,6 +67,12 @@ REQUIRED_ASSETS = [
     "/Game/VFX/Hero1/Axe/Shared/T_Hero1AxeAOE_StreakMask.T_Hero1AxeAOE_StreakMask",
     "/Game/VFX/Hero1/Axe/Shared/T_Hero1AxeAOE_DissolveNoise.T_Hero1AxeAOE_DissolveNoise",
     "/Game/VFX/Hero1/Axe/Shared/T_Hero1AxeAOE_ImpactMask.T_Hero1AxeAOE_ImpactMask",
+    PRODUCTION_PIERCE_NIAGARA,
+    PRODUCTION_PIERCE_BLADE_MESH,
+    PRODUCTION_BOUNCE_NIAGARA,
+    PRODUCTION_BOUNCE_SLASH_MESH,
+    PRODUCTION_DOT_NIAGARA,
+    PRODUCTION_DOT_RING_MESH,
 ]
 
 unreal = None
@@ -182,6 +194,83 @@ def validate_csv_binding():
         fail(f"Hero1Axe_AOE_Base BaseVisualRadius={base_visual_radius:.3f}, expected 411.4")
 
     log("CSV binding row is production-bound, suppresses the temporary projectile, and uses the calibrated visual radius")
+
+
+def validate_pierce_csv_binding():
+    rows = read_binding_rows(CSV_PATH)
+
+    row = next((candidate for candidate in rows if candidate.get("---") == "Hero1Axe_Pierce_Base"), None)
+    if row is None:
+        fail("CombatVFXBindings.csv is missing Hero1Axe_Pierce_Base row")
+
+    expected = {
+        "BindingID": "Hero1Axe_Pierce_Base",
+        "SourceType": "WeaponBase",
+        "SourceID": "Hero_1_black_pierce",
+        "AttackCategory": "Pierce",
+        "NiagaraSystem": PRODUCTION_PIERCE_NIAGARA,
+        "bSuppressTemporaryProjectile": "True",
+    }
+    for key, value in expected.items():
+        if row.get(key) != value:
+            fail(f"Hero1Axe_Pierce_Base {key}={row.get(key)!r}, expected {value!r}")
+
+    log("Pierce CSV binding row is production-bound to the PathAnchored Niagara system and suppresses the temporary projectile")
+
+
+def validate_bounce_csv_binding():
+    rows = read_binding_rows(CSV_PATH)
+
+    row = next((candidate for candidate in rows if candidate.get("---") == "Hero1Axe_Bounce_Base"), None)
+    if row is None:
+        fail("CombatVFXBindings.csv is missing Hero1Axe_Bounce_Base row")
+
+    expected = {
+        "BindingID": "Hero1Axe_Bounce_Base",
+        "SourceType": "WeaponBase",
+        "SourceID": "Hero_1_black_bounce",
+        "AttackCategory": "Bounce",
+        "NiagaraSystem": PRODUCTION_BOUNCE_NIAGARA,
+        "EffectPacketID": "Hero1AxeBounceMechanismPacket",
+        "VFXProfile": "MeshSlashBounce",
+        "bSuppressTemporaryProjectile": "True",
+    }
+    for key, value in expected.items():
+        if row.get(key) != value:
+            fail(f"Hero1Axe_Bounce_Base {key}={row.get(key)!r}, expected {value!r}")
+
+    base_playback = float(row.get("BasePlaybackSeconds") or 0.0)
+    if abs(base_playback - 0.32) > 0.005:
+        fail(f"Hero1Axe_Bounce_Base BasePlaybackSeconds={base_playback:.3f}, expected 0.32")
+
+    log("Bounce CSV binding row is production-bound to the ImpactAnchored per-link Niagara system and suppresses the temporary projectile")
+
+
+def validate_dot_csv_binding():
+    rows = read_binding_rows(CSV_PATH)
+
+    row = next((candidate for candidate in rows if candidate.get("---") == "Hero1Axe_DOT_Base"), None)
+    if row is None:
+        fail("CombatVFXBindings.csv is missing Hero1Axe_DOT_Base row")
+
+    if is_deferred_scaffold_row(row):
+        fail("Hero1Axe_DOT_Base is still a deferred scaffold row; it must be an active production row")
+
+    expected = {
+        "BindingID": "Hero1Axe_DOT_Base",
+        "SourceType": "WeaponBase",
+        "SourceID": "Hero_1_black_dot",
+        "AttackCategory": "DOT",
+        "NiagaraSystem": PRODUCTION_DOT_NIAGARA,
+        "EffectPacketID": "Hero1AxeDOTMechanismPacket",
+        "VFXProfile": "MeshSlashDOT",
+        "bSuppressTemporaryProjectile": "True",
+    }
+    for key, value in expected.items():
+        if row.get(key) != value:
+            fail(f"Hero1Axe_DOT_Base {key}={row.get(key)!r}, expected {value!r}")
+
+    log("DOT CSV binding row is production-bound to the moving aura-ring carrier Niagara system and suppresses the temporary projectile")
 
 
 def validate_weapon_geometry_contract():
@@ -312,6 +401,8 @@ def validate_source_guards():
             "GetCategorySubDamageMultiplier",
             "GetCategorySubAttackSpeedMultiplier",
             "GetCategorySubScaleMultiplier",
+            "bPathAnchoredCarrier",
+            "PathAnchored",
         ],
         "Combat component",
     )
@@ -335,6 +426,8 @@ def validate_source_guards():
             "InnerHollow",
             "OutsideAngleEdge",
             "OutsideRadius",
+            "hero1axebouncevfxbinding",
+            "ET66AttackCategory::Bounce",
         ],
         "Gameplay capture automation",
     )
@@ -344,6 +437,7 @@ def validate_source_guards():
             "hero1axeaoevfxbinding",
             "Hero1AxeProofItems",
             "T66Hero1AxeAOEProofItems",
+            "hero1axebouncevfxbinding",
         ],
         "Gameplay video capture script",
     )
@@ -355,6 +449,9 @@ def run_unreal_validation() -> None:
     log("=== Combat VFX production binding validation ===")
     log(DISCLAIMER)
     validate_csv_binding()
+    validate_pierce_csv_binding()
+    validate_bounce_csv_binding()
+    validate_dot_csv_binding()
     validate_weapon_geometry_contract()
     validate_required_assets()
     validate_game_instance_binding()

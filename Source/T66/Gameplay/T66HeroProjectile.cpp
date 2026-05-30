@@ -44,6 +44,7 @@ AT66HeroProjectile::AT66HeroProjectile()
 	TrailVFXComponent->SetAutoActivate(false);
 
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileMovement"));
+	ProjectileMovement->SetUpdatedComponent(CollisionSphere);
 	ProjectileMovement->InitialSpeed = 2400.f;
 	ProjectileMovement->MaxSpeed = 2400.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
@@ -78,6 +79,42 @@ void AT66HeroProjectile::Tick(float DeltaSeconds)
 		T66CombatDebugDraw::DrawDamageSphere(CollisionSphere, TEXT("Hero Projectile Damage"), true);
 	}
 
+	// Deterministic visual-only travel: interpolate Start->End by accumulated game time
+	// so the authored slash carrier occupies the whole hero->target path across frames.
+	// This cannot collapse into a single tick the way speed-based movement could when a
+	// capture hitch produced a large DeltaSeconds.
+	if (bVisualOnly && bTimedVisualTravel)
+	{
+		// Visual-only Bounce links are proof/readability carriers, not damage authority.
+		// Screenshot capture can deliver one large first DeltaSeconds after the projectile
+		// is spawned, which collapses the whole link to its impact point before any travel
+		// frame is sampled. Cap only this visual interpolation step so hitches cannot skip
+		// the visible hero->target path.
+		constexpr float MaxVisualTravelStepSeconds = 0.04f;
+		VisualTravelElapsed += FMath::Min(FMath::Max(0.f, DeltaSeconds), MaxVisualTravelStepSeconds);
+		const float Alpha = FMath::Clamp(VisualTravelElapsed / VisualTravelDuration, 0.f, 1.f);
+		const FVector NewLoc = FMath::Lerp(VisualTravelStart, TargetLocation, Alpha);
+		SetActorLocation(NewLoc);
+		if (DrivenCarrierComponent)
+		{
+			DrivenCarrierComponent->SetWorldLocation(NewLoc);
+		}
+		if (Alpha >= 1.f)
+		{
+			if (DrivenCarrierComponent)
+			{
+				DrivenCarrierComponent->SetWorldLocation(TargetLocation);
+			}
+			if (VisualArrivalCallback)
+			{
+				TFunction<void()> ArrivalCallback = MoveTemp(VisualArrivalCallback);
+				ArrivalCallback();
+			}
+			Destroy();
+		}
+		return;
+	}
+
 	// If we have an intended target, keep steering to it and guarantee impact.
 	AActor* T = TargetActor.Get();
 	if (T && IsTargetAlive())
@@ -100,11 +137,34 @@ void AT66HeroProjectile::Tick(float DeltaSeconds)
 	const FVector MyLoc = GetActorLocation();
 	const float DistSq = FVector::DistSquared(MyLoc, TargetLocation);
 	const float HitRadius = CollisionSphere ? CollisionSphere->GetScaledSphereRadius() : 30.f;
-	if (DistSq <= (HitRadius * HitRadius))
+	const float Dist = FMath::Sqrt(DistSq);
+	const bool bReachedTarget = Dist <= HitRadius;
+	const float VisualStepThisTick = (bVisualOnly && ProjectileMovement)
+		? ProjectileMovement->InitialSpeed * FMath::Max(0.f, DeltaSeconds)
+		: 0.f;
+	const bool bVisualWillReachTargetThisTick = bVisualOnly
+		&& VisualStepThisTick > KINDA_SMALL_NUMBER
+		&& VisualStepThisTick >= FMath::Max(0.f, Dist - HitRadius);
+	if (bReachedTarget || bVisualWillReachTargetThisTick)
 	{
+		if (bVisualOnly)
+		{
+			SetActorLocation(TargetLocation);
+			// Leave the free-spawned carrier at the impact point so its short remaining
+			// playback completes at the target after this mover is destroyed.
+			if (DrivenCarrierComponent)
+			{
+				DrivenCarrierComponent->SetWorldLocation(TargetLocation);
+			}
+		}
 		if (!bVisualOnly)
 		{
 			ApplyDamageToTarget(T);
+		}
+		else if (VisualArrivalCallback)
+		{
+			TFunction<void()> ArrivalCallback = MoveTemp(VisualArrivalCallback);
+			ArrivalCallback();
 		}
 		Destroy();
 		return;
@@ -120,6 +180,13 @@ void AT66HeroProjectile::Tick(float DeltaSeconds)
 			ProjectileMovement->bIsHomingProjectile = false;
 			ProjectileMovement->HomingTargetComponent = nullptr;
 		}
+	}
+
+	// Drive the authored carrier along the path so the readable horizontal slash
+	// travels with this mover (rotation/scale are fixed at spawn by the combat component).
+	if (DrivenCarrierComponent)
+	{
+		DrivenCarrierComponent->SetWorldLocation(GetActorLocation());
 	}
 }
 
@@ -206,6 +273,49 @@ void AT66HeroProjectile::SetTrailVFX(UNiagaraSystem* InTrailSystem, const FLinea
 void AT66HeroProjectile::SetVisualOnly(bool bInVisualOnly)
 {
 	bVisualOnly = bInVisualOnly;
+}
+
+void AT66HeroProjectile::SetVisualArrivalCallback(TFunction<void()>&& InCallback)
+{
+	VisualArrivalCallback = MoveTemp(InCallback);
+}
+
+void AT66HeroProjectile::SetTimedVisualTravel(const FVector& StartLoc, const FVector& EndLoc, float DurationSeconds)
+{
+	VisualTravelStart = StartLoc;
+	TargetLocation = EndLoc;
+	bHasTargetLocation = true;
+	VisualTravelDuration = FMath::Max(KINDA_SMALL_NUMBER, DurationSeconds);
+	VisualTravelElapsed = 0.f;
+	bTimedVisualTravel = true;
+	SetActorLocation(StartLoc);
+
+	// The carrier is positioned explicitly each tick, so the projectile movement
+	// component must not also drive the root or it would fight the interpolation.
+	if (ProjectileMovement)
+	{
+		ProjectileMovement->StopMovementImmediately();
+		ProjectileMovement->Velocity = FVector::ZeroVector;
+		ProjectileMovement->bIsHomingProjectile = false;
+		ProjectileMovement->HomingTargetComponent = nullptr;
+	}
+}
+
+void AT66HeroProjectile::SetDrivenCarrierComponent(UNiagaraComponent* InComponent)
+{
+	if (!InComponent)
+	{
+		return;
+	}
+
+	// The authored Niagara slash (spawned by the combat component via the proven
+	// SpawnSystemAtLocation path) becomes the visible silhouette; the temporary cube
+	// profile meshes are hidden so they are not the accepted primary carrier.
+	FT66TemporaryProjectileSystem::HideMesh(VisualMesh);
+	FT66TemporaryProjectileSystem::HideMesh(AccentMesh);
+
+	DrivenCarrierComponent = InComponent;
+	DrivenCarrierComponent->SetWorldLocation(GetActorLocation());
 }
 
 void AT66HeroProjectile::ConfigureTemporaryProjectileVisual(
@@ -302,6 +412,11 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	{
 		if (AActor* Intended = TargetActor.Get(); Intended && OtherActor == Intended)
 		{
+			if (VisualArrivalCallback)
+			{
+				TFunction<void()> ArrivalCallback = MoveTemp(VisualArrivalCallback);
+				ArrivalCallback();
+			}
 			Destroy();
 		}
 		return;

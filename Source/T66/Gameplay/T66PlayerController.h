@@ -159,7 +159,7 @@ public:
 	void SwitchCasinoOverlayToVendorTab();
 	void SwitchCasinoOverlayToAlchemy();
 	bool IsCasinoOverlayOpen() const;
-	bool TriggerCasinoBossIfAngry();
+	bool SpawnVendorBoss();
 	void ApplyCasinoOverlayInputMode(bool bReassertNextTick = true);
 
 	void OpenCasinoVendorTab();

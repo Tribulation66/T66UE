@@ -315,12 +315,6 @@ bool UT66VersusArcadeScreen::LaunchArcadeGame(const ET66ArcadeGameType GameType)
 
 void UT66VersusArcadeScreen::OnBackClicked()
 {
-	if (T66DeprecatedFeatures::AreMinigamesDisabled())
-	{
-		NavigateTo(ET66ScreenType::MainMenu);
-		return;
-	}
-
 	NavigateTo(ET66ScreenType::Minigames);
 }
 

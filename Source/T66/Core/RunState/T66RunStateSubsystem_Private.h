@@ -25,13 +25,17 @@
 #include "TimerManager.h"
 #include "Engine/World.h"
 #include "Gameplay/T66BossBase.h"
-#include "Gameplay/T66GamblerBoss.h"
+#include "Gameplay/T66VendorBoss.h"
 #include "Core/T66DamageLogSubsystem.h"
+#include "Core/T66ActorRegistrySubsystem.h"
 #include "Subsystems/SubsystemCollection.h"
+#include "Gameplay/T66CombatShared.h"
+#include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66MobBase.h"
 
 namespace T66RunStatePrivate
 {
-	static const FName T66GamblersTokenItemID(TEXT("Item_GamblersToken"));
+	static const FName T66VendorTokenItemID(TEXT("Item_VendorToken"));
 	static int32 T66_GetDefaultInventoryRollSeed()
 	{
 		return static_cast<int32>(FPlatformTime::Cycles());
@@ -64,9 +68,9 @@ namespace T66RunStatePrivate
 	{
 		static const TArray<ET66SecondaryStatType> Types =
 		{
-			ET66SecondaryStatType::PierceDamage,
-			ET66SecondaryStatType::BounceDamage,
 			ET66SecondaryStatType::AoeDamage,
+			ET66SecondaryStatType::BounceDamage,
+			ET66SecondaryStatType::PierceDamage,
 			ET66SecondaryStatType::DotDamage
 		};
 		return Types;
@@ -76,9 +80,9 @@ namespace T66RunStatePrivate
 	{
 		static const TArray<ET66SecondaryStatType> Types =
 		{
-			ET66SecondaryStatType::PierceSpeed,
-			ET66SecondaryStatType::BounceSpeed,
 			ET66SecondaryStatType::AoeSpeed,
+			ET66SecondaryStatType::BounceSpeed,
+			ET66SecondaryStatType::PierceSpeed,
 			ET66SecondaryStatType::DotSpeed
 		};
 		return Types;
@@ -88,9 +92,9 @@ namespace T66RunStatePrivate
 	{
 		static const TArray<ET66SecondaryStatType> Types =
 		{
-			ET66SecondaryStatType::PierceScale,
-			ET66SecondaryStatType::BounceScale,
 			ET66SecondaryStatType::AoeScale,
+			ET66SecondaryStatType::BounceScale,
+			ET66SecondaryStatType::PierceScale,
 			ET66SecondaryStatType::DotScale
 		};
 		return Types;
@@ -100,10 +104,10 @@ namespace T66RunStatePrivate
 	{
 		static const TArray<ET66SecondaryStatType> Types =
 		{
-			ET66SecondaryStatType::CritDamage,
 			ET66SecondaryStatType::CritChance,
+			ET66SecondaryStatType::CritDamage,
 			ET66SecondaryStatType::AttackRange,
-			ET66SecondaryStatType::Accuracy
+			ET66SecondaryStatType::Execute
 		};
 		return Types;
 	}
@@ -112,11 +116,10 @@ namespace T66RunStatePrivate
 	{
 		static const TArray<ET66SecondaryStatType> Types =
 		{
-			ET66SecondaryStatType::Taunt,
+			ET66SecondaryStatType::DamageReduction,
 			ET66SecondaryStatType::ReflectDamage,
-			ET66SecondaryStatType::HpRegen,
-			ET66SecondaryStatType::Crush,
-			ET66SecondaryStatType::DamageReduction
+			ET66SecondaryStatType::Taunt,
+			ET66SecondaryStatType::Crush
 		};
 		return Types;
 	}
@@ -125,11 +128,10 @@ namespace T66RunStatePrivate
 	{
 		static const TArray<ET66SecondaryStatType> Types =
 		{
-			ET66SecondaryStatType::Invisibility,
+			ET66SecondaryStatType::EvasionChance,
 			ET66SecondaryStatType::CounterAttack,
-			ET66SecondaryStatType::LifeSteal,
-			ET66SecondaryStatType::Assassinate,
-			ET66SecondaryStatType::EvasionChance
+			ET66SecondaryStatType::Invisibility,
+			ET66SecondaryStatType::Assassinate
 		};
 		return Types;
 	}
@@ -138,12 +140,10 @@ namespace T66RunStatePrivate
 	{
 		static const TArray<ET66SecondaryStatType> Types =
 		{
-			ET66SecondaryStatType::SpinWheel,
-			ET66SecondaryStatType::TreasureChest,
-			ET66SecondaryStatType::Cheating,
-			ET66SecondaryStatType::Stealing,
 			ET66SecondaryStatType::LootCrate,
-			ET66SecondaryStatType::Alchemy
+			ET66SecondaryStatType::TreasureChest,
+			ET66SecondaryStatType::LootBag,
+			ET66SecondaryStatType::LootWheel
 		};
 		return Types;
 	}
@@ -248,9 +248,18 @@ namespace T66RunStatePrivate
 		}
 	}
 
-	static bool T66_IsGamblersTokenItem(const FName ItemID)
+	static bool T66_IsVendorTokenItem(const FName ItemID)
 	{
-		return ItemID == T66GamblersTokenItemID;
+		return ItemID == T66VendorTokenItemID;
+	}
+
+	static bool T66_IsRetiredRemovedItemID(const FName ItemID)
+	{
+		return ItemID == FName(TEXT("Item_Accuracy"))
+			|| ItemID == FName(TEXT("Item_Cheating"))
+			|| ItemID == FName(TEXT("Item_Stealing"))
+			|| ItemID == FName(TEXT("Item_HpRegen"))
+			|| ItemID == FName(TEXT("Item_LifeSteal"));
 	}
 
 	static bool T66_IsBackroomsQuickReviveItem(const FName ItemID)
@@ -260,12 +269,12 @@ namespace T66RunStatePrivate
 
 	static bool T66_IsRewardOnlySpecialItem(const FName ItemID)
 	{
-		return T66_IsGamblersTokenItem(ItemID) || T66_IsBackroomsQuickReviveItem(ItemID);
+		return T66_IsVendorTokenItem(ItemID) || T66_IsBackroomsQuickReviveItem(ItemID);
 	}
 
-	static int32 T66_ClampGamblersTokenLevel(const int32 Level)
+	static int32 T66_ClampVendorTokenLevel(const int32 Level)
 	{
-		return FMath::Clamp(Level, 0, UT66RunStateSubsystem::MaxGamblersTokenLevel);
+		return FMath::Clamp(Level, 0, UT66RunStateSubsystem::MaxVendorTokenLevel);
 	}
 
 	static bool T66_IsAlchemyEligibleSlot(const FT66InventorySlot& Slot, const UT66GameInstance* GI)
@@ -282,7 +291,7 @@ namespace T66RunStatePrivate
 
 		FItemData ItemData;
 		return const_cast<UT66GameInstance*>(GI)->GetItemData(Slot.ItemTemplateID, ItemData)
-			&& ItemData.SecondaryStatType != ET66SecondaryStatType::GamblerToken;
+			&& ItemData.SecondaryStatType != ET66SecondaryStatType::VendorToken;
 	}
 
 	static bool T66_IsAlchemyMatch(const FT66InventorySlot& A, const FT66InventorySlot& B)
@@ -416,7 +425,7 @@ namespace T66RunStatePrivate
 
 	static float T66_GetSellFractionForTokenLevel(const int32 TokenLevel)
 	{
-		return FMath::Clamp(0.40f + 0.10f * static_cast<float>(T66_ClampGamblersTokenLevel(TokenLevel)), 0.40f, 1.00f);
+		return FMath::Clamp(0.40f + 0.10f * static_cast<float>(T66_ClampVendorTokenLevel(TokenLevel)), 0.40f, 1.00f);
 	}
 
 	static float T66_RarityTo01(ET66Rarity R)

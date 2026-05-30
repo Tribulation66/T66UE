@@ -750,14 +750,15 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyMenu()
 	{
 		const ET66Difficulty Difficulty = Difficulties[DifficultyIndex];
 		const bool bPlayable = IsDifficultyPlayable(Difficulty);
+		if (!bPlayable)
+		{
+			continue;
+		}
 		FT66FlatDropdownOptionData Option;
 		Option.Label = DifficultyText(Difficulty);
-		Option.State = !bPlayable
-			? ET66FlatState::Disabled
-			: (CurrentDifficulty == Difficulty ? ET66FlatState::Selected : ET66FlatState::Default);
-		Option.bEnabled = bPlayable;
-		Option.bShowUnavailableOverlay = !bPlayable;
-		Option.UnavailableText = T66DemoModeUI::GetUnavailableContentText(GetGameInstance());
+		Option.State = CurrentDifficulty == Difficulty ? ET66FlatState::Selected : ET66FlatState::Default;
+		Option.bEnabled = true;
+		Option.bShowUnavailableOverlay = false;
 		Option.MinWidth = DropdownColumnWidth;
 		Option.Height = 57.f;
 		Option.FontSize = 16;

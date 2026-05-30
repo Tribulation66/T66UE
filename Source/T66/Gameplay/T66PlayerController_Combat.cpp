@@ -54,7 +54,7 @@
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
-#include "Gameplay/T66GamblerBoss.h"
+#include "Gameplay/T66VendorBoss.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "EngineUtils.h"
@@ -114,9 +114,17 @@ namespace
 		}
 	}
 
-	static bool T66_IsGamblersTokenItem(const FName ItemID)
+	static ET66ItemRarity UpgradeItemRarityByRewardMultiplier(const ET66ItemRarity BaseRarity, const float Multiplier)
 	{
-		return ItemID == FName(TEXT("Item_GamblersToken"));
+		const int32 TierAdvance = FMath::Clamp(FMath::FloorToInt(FMath::Clamp(Multiplier, 1.f, 3.f) - 1.f), 0, 2);
+		const int32 BaseTier = static_cast<int32>(BaseRarity);
+		const int32 UpgradedTier = FMath::Clamp(BaseTier + TierAdvance, static_cast<int32>(ET66ItemRarity::Black), static_cast<int32>(ET66ItemRarity::White));
+		return static_cast<ET66ItemRarity>(UpgradedTier);
+	}
+
+	static bool T66_IsVendorTokenItem(const FName ItemID)
+	{
+		return ItemID == FName(TEXT("Item_VendorToken"));
 	}
 
 	static void ApplyUltimateDamageToRegisteredTargets(UWorld* World, int32 DamageAmount)
@@ -1416,27 +1424,28 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			const FName PickedItemID = SelectedLootBag->GetItemID();
 			const ET66ItemRarity PickedItemRarity = LootRarityToItemRarity(SelectedLootBag->GetLootRarity());
-			if (T66_IsGamblersTokenItem(PickedItemID))
+			const ET66ItemRarity FinalItemRarity = UpgradeItemRarityByRewardMultiplier(PickedItemRarity, RunState->GetLootBagRewardMultiplier());
+			if (T66_IsVendorTokenItem(PickedItemID))
 			{
 				const int32 TokenLevel = SelectedLootBag->HasExplicitLine1RolledValue() ? SelectedLootBag->GetExplicitLine1RolledValue() : 1;
-				RunState->ApplyGamblersTokenPickup(TokenLevel);
+				RunState->ApplyVendorTokenPickup(TokenLevel);
 				PlayInteractAudio(FName(TEXT("Pickup.LootBag")), SelectedLootBag);
 				SelectedLootBag->ConsumeAndDestroy();
 				ClearNearbyLootBag(SelectedLootBag);
 				if (GameplayHUDWidget)
 				{
-					GameplayHUDWidget->ShowLootBagItemReveal(PickedItemID, PickedItemRarity);
+					GameplayHUDWidget->ShowLootBagItemReveal(PickedItemID, FinalItemRarity);
 				}
 			}
 			else if (RunState->HasInventorySpace())
 			{
-				RunState->AddItemWithRarity(PickedItemID, PickedItemRarity);
+				RunState->AddItemWithRarity(PickedItemID, FinalItemRarity);
 				PlayInteractAudio(FName(TEXT("Pickup.LootBag")), SelectedLootBag);
 				SelectedLootBag->ConsumeAndDestroy();
 				ClearNearbyLootBag(SelectedLootBag);
 				if (GameplayHUDWidget)
 				{
-					GameplayHUDWidget->ShowLootBagItemReveal(PickedItemID, PickedItemRarity);
+					GameplayHUDWidget->ShowLootBagItemReveal(PickedItemID, FinalItemRarity);
 				}
 			}
 		}

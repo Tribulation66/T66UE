@@ -326,7 +326,7 @@ void UT66HeroSelectionScreen::RefreshCompanionList()
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		AllCompanionIDs = GI->GetAllCompanionIDs();
+		AllCompanionIDs = GI->GetPlayableCompanionIDs();
 	}
 }
 

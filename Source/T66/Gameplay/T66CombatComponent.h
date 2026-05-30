@@ -12,6 +12,7 @@
 class AT66EnemyBase;
 class AT66MobBase;
 class AT66BossBase;
+class AT66HeroProjectile;
 class UT66RunStateSubsystem;
 class UT66FloatingCombatTextSubsystem;
 class UT66IdolManagerSubsystem;
@@ -192,7 +193,26 @@ protected:
 	void SpawnHeroOnePierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation, const FLinearColor& Color);
 	void SpawnArthurUltimateSwordVFX(const FVector& Start, const FVector& End);
 	void SpawnBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color);
+	// Bounce projectile-travel presentation: stage one visible moving link at a time along the
+	// resolved chain (hero attack origin -> primary, then primary -> next target), launching the
+	// next link from the previous visual projectile's arrival callback. Visual-only; Bounce damage and the
+	// per-link impact contexts stay authoritative in PerformBounce.
+	void StageBounceProjectileChain(const TArray<FVector>& ChainPositions, const FLinearColor& Color, float ProjectileSpeed, float ScaleMultiplier, UNiagaraSystem* CarrierSystem, float CarrierVisualScale, float MinLinkTravelSeconds, float CarrierPlaybackSeconds);
+	void SpawnBounceChainLinkSequential(const TArray<FVector>& ChainPositions, const FLinearColor& Color, float ProjectileSpeed, float ScaleMultiplier, int32 LinkIndex, UNiagaraSystem* CarrierSystem, float CarrierVisualScale, float MinLinkTravelSeconds, float CarrierPlaybackSeconds);
+	AT66HeroProjectile* SpawnBounceLinkProjectile(const FVector& Start, const FVector& End, const FLinearColor& Color, float ProjectileSpeed, float ScaleMultiplier, int32 LinkIndex, int32 LinkCount, UNiagaraSystem* CarrierSystem, float CarrierVisualScale, float CarrierPlaybackSeconds);
 	void SpawnDOTVFX(const FVector& Location, float Duration, float Radius, const FLinearColor& Color);
+	// Reusable single-link visual-only mover: spawns one AT66HeroProjectile that travels
+	// Start->End over TravelSeconds using the proven Bounce timed-travel seam, then fires its
+	// arrival callback and self-destructs. Carries NO damage/collision authority. Returns the
+	// projectile so the caller can wire an arrival callback, or nullptr if spawning failed.
+	// When CarrierSystem is non-null, the authored Niagara carrier is attached to the moving
+	// projectile (exactly as the Bounce link carrier seam) and IS the visible silhouette; the
+	// temporary profile meshes are hidden. The carrier only transports the authored silhouette.
+	AT66HeroProjectile* SpawnVisualTravelProjectile(const FVector& Start, const FVector& End, const FLinearColor& Color, FName ProfileID, float ScaleMultiplier, float TravelSeconds, UNiagaraSystem* CarrierSystem = nullptr, float CarrierVisualScale = 1.f);
+	// Temporary Hero 1 DOT placeholder: spawn target-following sphere applicator markers that
+	// persist for the DOT duration. Visual-only — the single authoritative DOT payload stays in
+	// UT66RunStateSubsystem::ApplyDOT; markers never multiply or own DOT damage.
+	void SpawnDOTApplicatorMarkers(AActor* FollowTarget, const FLinearColor& Color, float Duration, float MarkerScale);
 	void SpawnIdolPierceVFX(const FName& IdolID, ET66ItemRarity Rarity, const FVector& Start, const FVector& End, const FVector& ImpactLocation, float StartDelaySeconds);
 	void SpawnIdolAOEVFX(const FName& IdolID, ET66ItemRarity Rarity, const FVector& Location, float Radius, float StartDelaySeconds);
 	void SpawnIdolBounceVFX(const FName& IdolID, ET66ItemRarity Rarity, const TArray<FVector>& ChainPositions, float StartDelaySeconds);
@@ -203,6 +223,38 @@ protected:
 	void SpawnHeroPierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation, const FLinearColor& Color, const FName& HeroID);
 	void SpawnHeroBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color, const FName& HeroID);
 	void SpawnHeroDOTVFX(AActor* FollowTarget, const FVector& Location, float Duration, float Radius, const FLinearColor& Color, const FName& HeroID);
+
+	struct FT66CombatImpactContext
+	{
+		ET66CombatVFXBindingSourceType SourceType = ET66CombatVFXBindingSourceType::WeaponBase;
+		FName SourceID = NAME_None;
+		FName ParentSourceID = NAME_None;
+		FName HeroID = NAME_None;
+		ET66AttackCategory AttackCategory = ET66AttackCategory::AOE;
+		FVector AttackOrigin = FVector::ZeroVector;
+		FVector DamageCenter = FVector::ZeroVector;
+		FVector ImpactPoint = FVector::ZeroVector;
+		FVector Forward = FVector::ForwardVector;
+		float Radius = 0.f;
+		float InnerRadius = 0.f;
+		float HalfAngleDegrees = 0.f;
+		float LineLength = 0.f;
+		float TubeRadius = 0.f;
+		int32 ChainIndex = INDEX_NONE;
+		int32 EffectiveDamage = 0;
+		bool bUsesFrontalSector = false;
+		bool bDamageCenterValid = false;
+		bool bImpactPointValid = false;
+		FT66CombatTargetHandle PrimaryTargetHandle;
+		TArray<FT66CombatTargetHandle> HitTargetHandles;
+	};
+
+	bool ResolveCombatVFXBinding(ET66CombatVFXBindingSourceType SourceType, FName SourceID, ET66AttackCategory AttackCategory, FT66CombatVFXBindingData& OutBindingData, UNiagaraSystem*& OutSystem) const;
+	bool ShouldSuppressWeaponBaseProjectileVisual(ET66AttackCategory AttackCategory) const;
+	bool TrySpawnBoundWeaponBaseSlashVFX(const FT66CombatImpactContext& WeaponImpactContext, int32 EffectiveDamage, FName HeroID, ET66AttackCategory AttackCategory);
+	bool TrySpawnBoundIdolImpactVFX(const FT66CombatImpactContext& IdolImpactContext, FName IdolID, ET66ItemRarity Rarity, float Radius, bool& bOutBindingResolved);
+	void SpawnWaterIdolImpactPlaceholderVFX(const FT66CombatImpactContext& IdolImpactContext, float Radius);
+	void SpawnIdolImpactPlaceholderVFX(const FT66CombatImpactContext& IdolImpactContext, FName IdolID, ET66AttackCategory Category, float LingerSeconds);
 
 	float BaseAttackRange = 0.f;
 	float BaseFireIntervalSeconds = 0.f;

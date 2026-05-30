@@ -2,7 +2,6 @@
 
 #include "Core/T66DirectEntry.h"
 
-#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66GameInstance.h"
 #include "Gameplay/T66PlayerController.h"
 #include "HAL/IConsoleManager.h"
@@ -27,13 +26,8 @@ namespace
 		return Value.ToLower();
 	}
 
-	bool TryResolveDeprecatedMinigameScreen(const ET66ScreenType ScreenType, ET66ScreenType& OutScreenType)
+	bool ResolveMinigameScreen(const ET66ScreenType ScreenType, ET66ScreenType& OutScreenType)
 	{
-		if (T66DeprecatedFeatures::AreMinigamesDisabled())
-		{
-			return false;
-		}
-
 		OutScreenType = ScreenType;
 		return true;
 	}
@@ -243,7 +237,7 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 	}
 	if (Key == TEXT("minigames"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::Minigames, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::Minigames, OutScreenType);
 	}
 	if (Key == TEXT("pausemenu") || Key == TEXT("pause"))
 	{
@@ -302,59 +296,59 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 	}
 	if (Key == TEXT("minimainmenu"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniMainMenu, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::MiniMainMenu, OutScreenType);
 	}
 	if (Key == TEXT("minicharacterselect"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniCharacterSelect, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::MiniCharacterSelect, OutScreenType);
 	}
 	if (Key == TEXT("minicompanionselect"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniCompanionSelect, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::MiniCompanionSelect, OutScreenType);
 	}
 	if (Key == TEXT("minidifficultyselect"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniDifficultySelect, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::MiniDifficultySelect, OutScreenType);
 	}
 	if (Key == TEXT("miniidolselect"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniIdolSelect, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::MiniIdolSelect, OutScreenType);
 	}
 	if (Key == TEXT("minisaveslots"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniSaveSlots, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::MiniSaveSlots, OutScreenType);
 	}
 	if (Key == TEXT("minishop"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniShop, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::MiniShop, OutScreenType);
 	}
 	if (Key == TEXT("minirunsummary"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniRunSummary, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::MiniRunSummary, OutScreenType);
 	}
 	if (Key == TEXT("minibattle"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::MiniBattle, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::MiniBattle, OutScreenType);
 	}
 	if (Key == TEXT("tdmainmenu"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::TDMainMenu, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::TDMainMenu, OutScreenType);
 	}
 	if (Key == TEXT("tddifficultyselect"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::TDDifficultySelect, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::TDDifficultySelect, OutScreenType);
 	}
 	if (Key == TEXT("tdbattle"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::TDBattle, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::TDBattle, OutScreenType);
 	}
 	if (Key == TEXT("idlemainmenu") || Key == TEXT("idlechadpocalypse"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::IdleMainMenu, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::IdleMainMenu, OutScreenType);
 	}
 	if (Key == TEXT("deckmainmenu") || Key == TEXT("deckbuilder") || Key == TEXT("chadpocalypsedeckbuilder"))
 	{
-		return TryResolveDeprecatedMinigameScreen(ET66ScreenType::DeckMainMenu, OutScreenType);
+		return ResolveMinigameScreen(ET66ScreenType::DeckMainMenu, OutScreenType);
 	}
 	if (Key == TEXT("challenges"))
 	{

@@ -898,9 +898,9 @@ void FT66HUDPresentationController::PopulatePickupCardContent(const FName ItemID
 					MainValue = Slots.Last().Line1RolledValue;
 					Line2Multiplier = Slots.Last().GetLine2Multiplier();
 				}
-				if (ItemID == FName(TEXT("Item_GamblersToken")))
+				if (ItemID == FName(TEXT("Item_VendorToken")))
 				{
-					MainValue = RunState->GetActiveGamblersTokenLevel();
+					MainValue = RunState->GetActiveVendorTokenLevel();
 				}
 			}
 			Owner.PickupCardDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, ItemData, ItemRarity, MainValue, ScaleMult, Line2Multiplier));

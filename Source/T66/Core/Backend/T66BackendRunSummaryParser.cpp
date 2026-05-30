@@ -158,6 +158,10 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 				else if (Key == TEXT("EvasionChance")) StatType = ET66SecondaryStatType::EvasionChance;
 				else if (Key == TEXT("Alchemy")) StatType = ET66SecondaryStatType::Alchemy;
 				else if (Key == TEXT("Accuracy")) StatType = ET66SecondaryStatType::Accuracy;
+				else if (Key == TEXT("Execute")) StatType = ET66SecondaryStatType::Execute;
+				else if (Key == TEXT("LootBag")) StatType = ET66SecondaryStatType::LootBag;
+				else if (Key == TEXT("LootWheel")) StatType = ET66SecondaryStatType::LootWheel;
+				else if (Key == TEXT("VendorToken")) StatType = ET66SecondaryStatType::VendorToken;
 				else { bFound = false; }
 
 				if (bFound)

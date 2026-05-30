@@ -56,8 +56,8 @@ namespace
 	static constexpr float T66TowerGridBranchChance = 0.35f;
 	static constexpr int32 T66TowerGridMaxBranchCells = 3;
 	static constexpr int32 T66TowerStartFloorNumber = 1;
-	static constexpr int32 T66TowerFirstGameplayFloorNumber = 2;
-	static constexpr int32 T66TowerLastGameplayFloorNumber = 4;
+	static constexpr int32 T66TowerFirstMobFloorNumber = 2;
+	static constexpr int32 T66TowerLastMobFloorNumber = 4;
 	static constexpr int32 T66TowerBossFloorNumber = 5;
 	static constexpr int32 T66TowerTotalFloorCount = T66TowerBossFloorNumber - T66TowerStartFloorNumber + 1;
 	static TAutoConsoleVariable<int32> CVarT66TowerIgnoreCameraCollision(
@@ -1268,7 +1268,7 @@ namespace
 		FRandomStream& Rng)
 	{
 		Floor.MazeWallBoxes.Reset();
-		if (!Floor.bGameplayFloor
+		if (!Floor.bMobFloor
 			|| Floor.FloorNumber == Layout.StartFloorNumber
 			|| Floor.FloorNumber == Layout.BossFloorNumber)
 		{
@@ -3556,7 +3556,7 @@ namespace
 		FRandomStream& Rng)
 	{
 		T66ResetFloorMazeMetadata(Floor);
-		if (!Floor.bGameplayFloor
+		if (!Floor.bMobFloor
 			|| Floor.FloorNumber == Layout.StartFloorNumber
 			|| Floor.FloorNumber == Layout.BossFloorNumber)
 		{
@@ -4789,17 +4789,17 @@ namespace T66TowerMapTerrain
 		switch (Floor.FloorRole)
 		{
 		case ET66TowerFloorRole::Start:
-			return NSLOCTEXT("T66.Tower", "StartLevel", "Start Level");
+			return FText::Format(
+				NSLOCTEXT("T66.Tower", "StartFloor", "Floor {0} - Start"),
+				FText::AsNumber(Floor.FloorNumber));
 		case ET66TowerFloorRole::Boss:
-			return NSLOCTEXT("T66.Tower", "BossLevel", "Boss Level");
-		case ET66TowerFloorRole::Gameplay:
-			if (Floor.GameplayLevelNumber > 0)
-			{
-				return FText::Format(
-					NSLOCTEXT("T66.Tower", "GameplayLevel", "Level {0}"),
-					FText::AsNumber(Floor.GameplayLevelNumber));
-			}
-			break;
+			return FText::Format(
+				NSLOCTEXT("T66.Tower", "BossFloor", "Floor {0} - Boss"),
+				FText::AsNumber(Floor.FloorNumber));
+		case ET66TowerFloorRole::Mob:
+			return FText::Format(
+				NSLOCTEXT("T66.Tower", "MobFloor", "Floor {0}"),
+				FText::AsNumber(Floor.FloorNumber));
 		default:
 			break;
 		}
@@ -4819,11 +4819,15 @@ namespace T66TowerMapTerrain
 
 		if (FloorNumber == Layout.StartFloorNumber)
 		{
-			return NSLOCTEXT("T66.Tower", "StartLevelByNumber", "Start Level");
+			return FText::Format(
+				NSLOCTEXT("T66.Tower", "StartFloorByNumber", "Floor {0} - Start"),
+				FText::AsNumber(FloorNumber));
 		}
 		if (FloorNumber == Layout.BossFloorNumber)
 		{
-			return NSLOCTEXT("T66.Tower", "BossLevelByNumber", "Boss Level");
+			return FText::Format(
+				NSLOCTEXT("T66.Tower", "BossFloorByNumber", "Floor {0} - Boss"),
+				FText::AsNumber(FloorNumber));
 		}
 
 		return FText::Format(
@@ -4855,8 +4859,8 @@ namespace T66TowerMapTerrain
 		OutLayout.GridDoorWidth = T66TowerGridDefaultDoorWidth;
 		OutLayout.StartFloorNumber = T66TowerStartFloorNumber;
 		OutLayout.BossFloorNumber = bBossRushFinaleStage ? 2 : T66TowerBossFloorNumber;
-		OutLayout.FirstGameplayFloorNumber = bBossRushFinaleStage ? OutLayout.BossFloorNumber : T66TowerFirstGameplayFloorNumber;
-		OutLayout.LastGameplayFloorNumber = bBossRushFinaleStage ? OutLayout.StartFloorNumber : T66TowerLastGameplayFloorNumber;
+		OutLayout.FirstMobFloorNumber = bBossRushFinaleStage ? OutLayout.BossFloorNumber : T66TowerFirstMobFloorNumber;
+		OutLayout.LastMobFloorNumber = bBossRushFinaleStage ? OutLayout.StartFloorNumber : T66TowerLastMobFloorNumber;
 
 		const float TopFloorZ = Preset.BaselineZ + 1600.0f;
 		const float FloorSpacing = OutLayout.FloorSpacing;
@@ -4876,10 +4880,10 @@ namespace T66TowerMapTerrain
 			Floor.FloorRole =
 				(Floor.FloorNumber == OutLayout.StartFloorNumber) ? ET66TowerFloorRole::Start :
 				(Floor.FloorNumber == OutLayout.BossFloorNumber) ? ET66TowerFloorRole::Boss :
-				ET66TowerFloorRole::Gameplay;
-			Floor.bGameplayFloor = Floor.FloorRole == ET66TowerFloorRole::Gameplay;
-			Floor.GameplayLevelNumber = Floor.bGameplayFloor
-				? (Floor.FloorNumber - OutLayout.FirstGameplayFloorNumber + 1)
+				ET66TowerFloorRole::Mob;
+			Floor.bMobFloor = Floor.FloorRole == ET66TowerFloorRole::Mob;
+			Floor.GameplayLevelNumber = Floor.bMobFloor
+				? (Floor.FloorNumber - OutLayout.FirstMobFloorNumber + 1)
 				: INDEX_NONE;
 			Floor.Theme = ET66TowerGameplayLevelTheme::Dungeon;
 			Floor.bHasDropHole = Floor.FloorNumber < OutLayout.BossFloorNumber;
@@ -5005,7 +5009,6 @@ namespace T66TowerMapTerrain
 		OutLayout.BossAreaCenterSurfaceLocation = BossFloor->Center;
 		OutLayout.BossSpawnSurfaceLocation = BossFloor->Center;
 		OutLayout.BossAnchorSurfaceLocation = PreBossFloor->HoleCenter - (BossHoleDirection * 950.0f);
-		OutLayout.BossBeaconSurfaceLocation = BossFloor->Center + (BossHoleDirection * 600.0f);
 
 		OutLayout.RescueAnchorLocations.Reset();
 		OutLayout.RescueAnchorLocations.Reserve(OutLayout.Floors.Num() * 3);
@@ -5132,23 +5135,23 @@ namespace T66TowerMapTerrain
 
 	bool TryGetRandomGameplaySurfaceLocation(UWorld* World, const FLayout& Layout, FRandomStream& Rng, FVector& OutLocation)
 	{
-		TArray<const FFloor*> GameplayFloors;
+		TArray<const FFloor*> MobFloors;
 		for (const FFloor& Floor : Layout.Floors)
 		{
-			if (Floor.bGameplayFloor)
+			if (Floor.bMobFloor)
 			{
-				GameplayFloors.Add(&Floor);
+				MobFloors.Add(&Floor);
 			}
 		}
 
-		if (GameplayFloors.Num() <= 0)
+		if (MobFloors.Num() <= 0)
 		{
 			return false;
 		}
 
 		for (int32 Attempt = 0; Attempt < 36; ++Attempt)
 		{
-			const FFloor& Floor = *GameplayFloors[Rng.RandRange(0, GameplayFloors.Num() - 1)];
+			const FFloor& Floor = *MobFloors[Rng.RandRange(0, MobFloors.Num() - 1)];
 			const TArray<FVector>& PreferredSlots = Floor.CachedContentSpawnSlots.Num() > 0
 				? Floor.CachedContentSpawnSlots
 				: Floor.CachedWalkableSpawnSlots;

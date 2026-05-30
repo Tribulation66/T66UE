@@ -8,7 +8,6 @@
 #include "Gameplay/Enemies/T66RangedEnemy.h"
 #include "Gameplay/Enemies/T66RushEnemy.h"
 #include "Gameplay/T66GameMode.h"
-#include "Gameplay/T66GoblinThiefEnemy.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66MobBase.h"
 #include "Gameplay/T66MobManagerSubsystem.h"
@@ -36,7 +35,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66EnemyDirector, Log, All);
 namespace
 {
 	static constexpr bool T66EnableTowerEnemySpawns = true;
-	static constexpr int32 T66TowerTargetInitialEnemiesPerGameplayFloor = 4;
+	static constexpr int32 T66TowerTargetInitialEnemiesPerMobFloor = 4;
 
 	static TAutoConsoleVariable<int32> CVarT66EnemyDirectorMaxAliveOverride(
 		TEXT("T66.EnemyDirector.MaxAliveOverride"),
@@ -49,84 +48,26 @@ namespace
 #endif
 	);
 
-	static TAutoConsoleVariable<int32> CVarT66MobUseLightweight(
-		TEXT("T66.Mob.UseLightweight"),
-		0,
-		TEXT("When 1, AT66EnemyDirector routes migrated non-mini-boss non-special families to AT66MobBase instead of AT66EnemyBase. B.10 migrated families: Melee, Rush, Flying, and Ranged. All other families and special spawns continue through AT66EnemyBase regardless. Default 0 for safety."),
-#if UE_BUILD_SHIPPING
-		ECVF_ReadOnly
-#else
-		ECVF_Default
-#endif
-	);
-
-	static TAutoConsoleVariable<int32> CVarT66MobDiagnosticsRouteRushLightweight(
-		TEXT("T66.Mob.Diagnostics.RouteRushLightweight"),
-		1,
-		TEXT("Non-shipping diagnostic: when 0, T66.Mob.UseLightweight routes Melee only and leaves Rush on the rich actor path for same-binary B.8.1 comparison. Default 1 preserves production Melee+Rush routing."),
-#if UE_BUILD_SHIPPING
-		ECVF_ReadOnly
-#else
-		ECVF_Default
-#endif
-	);
-
-	static TAutoConsoleVariable<int32> CVarT66MobDiagnosticsRouteFlyingLightweight(
-		TEXT("T66.Mob.Diagnostics.RouteFlyingLightweight"),
-		1,
-		TEXT("Non-shipping diagnostic: when 0, T66.Mob.UseLightweight leaves Flying on the rich actor path while Melee/Rush keep their current routing. Default 1 preserves B.9 Flying routing."),
-#if UE_BUILD_SHIPPING
-		ECVF_ReadOnly
-#else
-		ECVF_Default
-#endif
-	);
-
-	static TAutoConsoleVariable<int32> CVarT66MobDiagnosticsRouteRangedLightweight(
-		TEXT("T66.Mob.Diagnostics.RouteRangedLightweight"),
-		1,
-		TEXT("Non-shipping diagnostic: when 0, T66.Mob.UseLightweight leaves Ranged on the rich actor path while Melee/Rush/Flying keep their current routing. Default 1 preserves B.10 Ranged routing."),
-#if UE_BUILD_SHIPPING
-		ECVF_ReadOnly
-#else
-		ECVF_Default
-#endif
-	);
-
-	static bool T66IsLightweightMobRoutingEnabled()
+	static ET66RouteAttributionReason T66ResolveRouteAttributionReason(
+		const FName MobID,
+		const ET66EnemyFamily Family,
+		const bool bIsMiniBoss,
+		const bool bIsSpecialSpawn)
 	{
-#if !UE_BUILD_SHIPPING
-		return CVarT66MobUseLightweight.GetValueOnGameThread() != 0;
-#else
-		return false;
-#endif
-	}
+		if (bIsMiniBoss)
+		{
+			return ET66RouteAttributionReason::RoutedRich_MiniBossPromotion;
+		}
+		if (MobID.IsNone() || bIsSpecialSpawn)
+		{
+			return ET66RouteAttributionReason::RoutedRich_SpecialOrMiniBoss;
+		}
+		if (Family == ET66EnemyFamily::Special)
+		{
+			return ET66RouteAttributionReason::RoutedRich_FamilyLookupFailed;
+		}
 
-	static bool T66ShouldRouteRushToLightweight()
-	{
-#if !UE_BUILD_SHIPPING
-		return CVarT66MobDiagnosticsRouteRushLightweight.GetValueOnGameThread() != 0;
-#else
-		return true;
-#endif
-	}
-
-	static bool T66ShouldRouteFlyingToLightweight()
-	{
-#if !UE_BUILD_SHIPPING
-		return CVarT66MobDiagnosticsRouteFlyingLightweight.GetValueOnGameThread() != 0;
-#else
-		return true;
-#endif
-	}
-
-	static bool T66ShouldRouteRangedToLightweight()
-	{
-#if !UE_BUILD_SHIPPING
-		return CVarT66MobDiagnosticsRouteRangedLightweight.GetValueOnGameThread() != 0;
-#else
-		return true;
-#endif
+		return ET66RouteAttributionReason::RoutedRich_FallbackBranch;
 	}
 
 	static int32 T66ResolveRuntimeMaxAliveEnemies(const int32 DataMaxAliveEnemies, const int32 FallbackMaxAliveEnemies)
@@ -169,6 +110,8 @@ namespace
 				AddStageMob(StageData.EnemyH);
 				AddStageMob(StageData.EnemyI);
 				AddStageMob(StageData.EnemyJ);
+				AddStageMob(StageData.EnemyK);
+				AddStageMob(StageData.EnemyL);
 			}
 		}
 
@@ -322,7 +265,6 @@ AT66EnemyDirector::AT66EnemyDirector()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	EnemyClass = AT66MeleeEnemy::StaticClass();
-	GoblinThiefClass = AT66GoblinThiefEnemy::StaticClass();
 }
 
 void AT66EnemyDirector::BeginPlay()
@@ -408,8 +350,8 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 	{
 		return 0;
 	}
-	const int32 ActiveGameplayFloorNumber = RequestedFloorNumber;
-	if (ActiveGameplayFloorNumber == INDEX_NONE || TowerFloorsWithInitialPopulation.Contains(ActiveGameplayFloorNumber))
+	const int32 ActiveMobFloorNumber = RequestedFloorNumber;
+	if (ActiveMobFloorNumber == INDEX_NONE || TowerFloorsWithInitialPopulation.Contains(ActiveMobFloorNumber))
 	{
 		return 0;
 	}
@@ -458,20 +400,19 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 	int32 SpawnedCount = 0;
 	for (const T66TowerMapTerrain::FFloor& Floor : TowerLayout.Floors)
 	{
-		if (!Floor.bGameplayFloor)
+		if (!Floor.bMobFloor)
 		{
 			continue;
 		}
-		if (ActiveGameplayFloorNumber != INDEX_NONE && Floor.FloorNumber != ActiveGameplayFloorNumber)
+		if (ActiveMobFloorNumber != INDEX_NONE && Floor.FloorNumber != ActiveMobFloorNumber)
 		{
 			continue;
 		}
 
 		const int32 InitialPopulationCount = FMath::Clamp(
-			SpawnBudget.InitialEnemiesPerGameplayFloor > 0 ? SpawnBudget.InitialEnemiesPerGameplayFloor : T66TowerTargetInitialEnemiesPerGameplayFloor,
+			SpawnBudget.InitialEnemiesPerMobFloor > 0 ? SpawnBudget.InitialEnemiesPerMobFloor : T66TowerTargetInitialEnemiesPerMobFloor,
 			0,
 			128);
-		const bool bUseLightweightRouting = T66IsLightweightMobRoutingEnabled();
 		for (int32 SpawnIndex = 0; SpawnIndex < InitialPopulationCount; ++SpawnIndex)
 		{
 			FVector SpawnLoc = FVector::ZeroVector;
@@ -509,12 +450,17 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 			const FName MobArchetype = T66ResolveStageEnemyArchetype(T66GI, MobID);
 			const TSubclassOf<AT66EnemyBase> MobClass = T66ResolveStageEnemyClass(T66GI, MobID, RegularClass);
 			const FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLoc);
-			if (ShouldRouteSpawnToLightweightMob(MobID, MobFamily, false, false, bUseLightweightRouting))
+			const bool bShouldRouteLightweight = ShouldRouteSpawnToLightweightMob(MobID, MobFamily, false, false);
+			if (bShouldRouteLightweight)
 			{
 				bool bRequiresFinishSpawning = false;
 				AT66MobBase* Mob = MobManager ? MobManager->AcquireMob(AT66MobBase::StaticClass(), SpawnTransform, &bRequiresFinishSpawning) : nullptr;
 				if (!Mob)
 				{
+					if (MobManager)
+					{
+						MobManager->RecordLightweightAcquireFailed(MobFamily, ET66RouteAttributionChannel::InitialPopulation);
+					}
 					continue;
 				}
 
@@ -539,6 +485,10 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 				if (MobManager && Mob->GetEnemyFamily() == ET66EnemyFamily::Ranged)
 				{
 					MobManager->RecordRangedMobSpawn(true, Mob->MobID);
+				}
+				if (MobManager)
+				{
+					MobManager->RecordRouteAttribution(Mob->GetEnemyFamily(), ET66RouteAttributionReason::RoutedLightweight_BasicFamily, ET66RouteAttributionChannel::InitialPopulation);
 				}
 				++SpawnedCount;
 				continue;
@@ -573,15 +523,22 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 			{
 				MobManager->RecordRangedMobSpawn(false, Enemy->MobID);
 			}
+			if (MobManager)
+			{
+				MobManager->RecordRouteAttribution(
+					MobFamily,
+					T66ResolveRouteAttributionReason(MobID, MobFamily, false, false),
+					ET66RouteAttributionChannel::InitialPopulation);
+			}
 			++SpawnedCount;
 		}
 	}
 
 	if (SpawnedCount > 0)
 	{
-		TowerFloorsWithInitialPopulation.Add(ActiveGameplayFloorNumber);
+		TowerFloorsWithInitialPopulation.Add(ActiveMobFloorNumber);
 		UE_LOG(LogT66EnemyDirector, Log, TEXT("[SPAWN] Tower initial enemies floor=%d spawned=%d alive=%d richAlive=%d lightweightAlive=%d."),
-			ActiveGameplayFloorNumber,
+			ActiveMobFloorNumber,
 			SpawnedCount,
 			GetAliveEnemyCount(),
 			AliveCount,
@@ -590,7 +547,7 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 	else
 	{
 		UE_LOG(LogT66EnemyDirector, Warning, TEXT("[SPAWN] Tower initial enemies floor=%d spawned=0; will retry on next floor activation."),
-			ActiveGameplayFloorNumber);
+			ActiveMobFloorNumber);
 	}
 	return SpawnedCount;
 }
@@ -605,10 +562,6 @@ void AT66EnemyDirector::NotifyEnemyDied(AT66EnemyBase* Enemy)
 	if (AliveCount > 0)
 	{
 		AliveCount--;
-	}
-	if (ActiveMiniBoss.IsValid() && ActiveMiniBoss.Get() == Enemy)
-	{
-		ActiveMiniBoss = nullptr;
 	}
 
 	UWorld* World = GetWorld();
@@ -682,22 +635,17 @@ bool AT66EnemyDirector::ShouldRouteSpawnToLightweightMob(
 	const FName MobID,
 	const ET66EnemyFamily Family,
 	const bool bIsMiniBoss,
-	const bool bIsSpecialSpawn,
-	const bool bUseLightweightRouting) const
+	const bool bIsSpecialSpawn) const
 {
-	if (!bUseLightweightRouting)
-	{
-		return false;
-	}
 	if (MobID.IsNone() || bIsMiniBoss || bIsSpecialSpawn)
 	{
 		return false;
 	}
 
 	return Family == ET66EnemyFamily::Melee
-		|| (Family == ET66EnemyFamily::Rush && T66ShouldRouteRushToLightweight())
-		|| (Family == ET66EnemyFamily::Flying && T66ShouldRouteFlyingToLightweight())
-		|| (Family == ET66EnemyFamily::Ranged && T66ShouldRouteRangedToLightweight());
+		|| Family == ET66EnemyFamily::Rush
+		|| Family == ET66EnemyFamily::Flying
+		|| Family == ET66EnemyFamily::Ranged;
 }
 
 int32 AT66EnemyDirector::GetAliveEnemyCountForSpawnBudget()
@@ -1053,7 +1001,7 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		RegularClass = AT66MeleeEnemy::StaticClass();
 	}
 
-	// Stage mobs: pull exact non-empty roster from DT_Stages (EnemyA..EnemyJ). Fallback is deterministic IDs.
+	// Stage mobs: pull exact non-empty roster from DT_Stages (EnemyA..EnemyL). Fallback is deterministic IDs.
 	const int32 StageNum = RunState->GetCurrentStage();
 	TArray<FName> MobIDs;
 	T66ResolveStageMobIDs(GI, StageNum, MobIDs);
@@ -1074,100 +1022,12 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	}
 #endif
 
-	// ================================
-	// Special mobs (Goblin Thief) — per-wave counts (Luck-affected)
-	// ================================
-	int32 GobToSpawn = 0;
-	if (Tuning)
-	{
-		const float GobChance = RngSub ? RngSub->BiasChance01(Tuning->GoblinWaveChanceBase) : FMath::Clamp(Tuning->GoblinWaveChanceBase, 0.f, 1.f);
-		const bool bGoblinWaveSpawned = GoblinThiefClass && (RngSub ? RngSub->RollChance01(GobChance) : (Rng.GetFraction() < GobChance));
-		const int32 GoblinWaveDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
-		const int32 GoblinWavePreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
-		if (RunState)
-		{
-			RunState->RecordLuckQuantityBool(
-				FName(TEXT("GoblinWaveSpawned")),
-				bGoblinWaveSpawned,
-				GobChance,
-				GoblinWaveDrawIndex,
-				GoblinWavePreDrawSeed);
-		}
-
-		if (bGoblinWaveSpawned)
-		{
-			GobToSpawn = RngSub ? RngSub->RollIntRangeBiased(Tuning->GoblinCountPerWave, Rng) : Rng.RandRange(Tuning->GoblinCountPerWave.Min, Tuning->GoblinCountPerWave.Max);
-		}
-
-		GobToSpawn = FMath::Max(0, GobToSpawn);
-		GobToSpawn = FMath::Clamp(GobToSpawn, 0, ToSpawn);
-	}
-
-	// Luck Rating tracking (quantity): per-wave special mob counts.
-	if (RunState && Tuning)
-	{
-		RunState->RecordLuckQuantityRoll(
-			FName(TEXT("GoblinCountPerWave")),
-			GobToSpawn,
-			Tuning->GoblinCountPerWave.Min,
-			Tuning->GoblinCountPerWave.Max,
-			(RngSub && GobToSpawn > 0) ? RngSub->GetLastRunDrawIndex() : INDEX_NONE,
-			(RngSub && GobToSpawn > 0) ? RngSub->GetLastRunPreDrawSeed() : 0);
-	}
-
-	// Build the exact spawn plan for this wave.
-	const int32 MobToSpawn = FMath::Max(0, ToSpawn - GobToSpawn);
+	// Build the exact spawn plan for this wave. All wave enemies are stage mobs;
+	// the Goblin Thief special was removed in the roster restructure.
+	const int32 MobToSpawn = FMath::Max(0, ToSpawn);
 	TArray<TSubclassOf<AT66EnemyBase>> SpawnPlan;
 	SpawnPlan.Reserve(ToSpawn);
 	for (int32 i = 0; i < MobToSpawn; ++i) SpawnPlan.Add(RegularClass);
-	for (int32 i = 0; i < GobToSpawn; ++i) SpawnPlan.Add(GoblinThiefClass);
-
-	// Shuffle plan so specials aren't always in the same slots (this shuffle is not luck-affected; it uses the wave RNG only).
-	for (int32 i = SpawnPlan.Num() - 1; i > 0; --i)
-	{
-		const int32 j = Rng.RandRange(0, i);
-		SpawnPlan.Swap(i, j);
-	}
-
-	// Mini-boss: choose one of the *mob* spawns, not specials.
-	const bool bCanSpawnMiniBoss = !ActiveMiniBoss.IsValid();
-	int32 MiniBossIndex = INDEX_NONE;
-	if (bCanSpawnMiniBoss && MobToSpawn > 0)
-	{
-		const float MiniBossChance = FMath::Clamp(MiniBossChancePerWave, 0.f, 1.f);
-		const int32 MiniBossWaveFallbackPreDrawSeed = RngSub ? 0 : Rng.GetCurrentSeed();
-		const bool bMiniBossWaveSpawned = RngSub
-			? RngSub->RollChance01(MiniBossChance)
-			: (Rng.GetFraction() < MiniBossChance);
-		const int32 MiniBossWaveDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
-		const int32 MiniBossWavePreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : MiniBossWaveFallbackPreDrawSeed;
-		if (RunState)
-		{
-			RunState->RecordLuckQuantityBool(
-				FName(TEXT("MiniBossWaveSpawned")),
-				bMiniBossWaveSpawned,
-				MiniBossChance,
-				MiniBossWaveDrawIndex,
-				MiniBossWavePreDrawSeed);
-		}
-
-		if (bMiniBossWaveSpawned)
-		{
-			TArray<int32> MobIndices;
-			MobIndices.Reserve(MobToSpawn);
-			for (int32 i = 0; i < SpawnPlan.Num(); ++i)
-			{
-				if (SpawnPlan[i] == RegularClass)
-				{
-					MobIndices.Add(i);
-				}
-			}
-			if (MobIndices.Num() > 0)
-			{
-				MiniBossIndex = MobIndices[Rng.RandRange(0, MobIndices.Num() - 1)];
-			}
-		}
-	}
 
 	// Spawn always outside hero attack range (use scaled range so scale stat is respected).
 	float EffectiveSpawnMin = SpawnMinDistance;
@@ -1448,17 +1308,10 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 			}
 		}
 
-		const bool bIsMob = (ClassToSpawn != GoblinThiefClass);
-		const bool bIsMiniBossSlot = bIsMob && (MiniBossIndex == i);
-		const FName MobID = bIsMob ? MobIDs[RngSub ? RngSub->RunRandRange(0, MobIDs.Num() - 1) : Rng.RandRange(0, MobIDs.Num() - 1)] : NAME_None;
-		ET66EnemyFamily MobFamily = ET66EnemyFamily::Special;
-		FName MobArchetype = NAME_None;
-		if (bIsMob)
-		{
-			MobFamily = T66ResolveStageEnemyFamily(T66GI, MobID);
-			MobArchetype = T66ResolveStageEnemyArchetype(T66GI, MobID);
-			ClassToSpawn = T66ResolveStageEnemyClass(T66GI, MobID, RegularClass);
-		}
+		const FName MobID = MobIDs[RngSub ? RngSub->RunRandRange(0, MobIDs.Num() - 1) : Rng.RandRange(0, MobIDs.Num() - 1)];
+		const ET66EnemyFamily MobFamily = T66ResolveStageEnemyFamily(T66GI, MobID);
+		const FName MobArchetype = T66ResolveStageEnemyArchetype(T66GI, MobID);
+		ClassToSpawn = T66ResolveStageEnemyClass(T66GI, MobID, RegularClass);
 
 		FPendingEnemySpawn Slot;
 		Slot.GroundLocation = SpawnLoc;
@@ -1466,7 +1319,7 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		Slot.MobID = MobID;
 		Slot.Family = MobFamily;
 		Slot.Archetype = MobArchetype;
-		Slot.bIsMiniBoss = bIsMiniBossSlot;
+		Slot.bIsMiniBoss = false;
 		Slot.bSpawnFromWall = bTowerLayout && bSpawnFromWall;
 		Slot.DifficultyScalar = Scalar;
 		Slot.FinaleScalar = FinaleScalar;
@@ -1523,7 +1376,6 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 
 	const int32 BatchSize = FMath::Max(1, ActiveMaxSpawnsPerStaggeredBatch);
 	int32 ProcessedCount = 0;
-	const bool bUseLightweightRouting = T66IsLightweightMobRoutingEnabled();
 	while (ProcessedCount < PendingSpawns.Num() && ProcessedCount < BatchSize)
 	{
 		const FPendingEnemySpawn Slot = PendingSpawns[ProcessedCount];
@@ -1532,7 +1384,11 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 		const bool bIsMob = !Slot.MobID.IsNone();
 		AT66EnemyBase* Enemy = nullptr;
 
-		if (ShouldRouteSpawnToLightweightMob(Slot.MobID, Slot.Family, Slot.bIsMiniBoss, !bIsMob, bUseLightweightRouting))
+		const bool bShouldRouteLightweight = ShouldRouteSpawnToLightweightMob(Slot.MobID, Slot.Family, Slot.bIsMiniBoss, !bIsMob);
+		const ET66RouteAttributionChannel RouteChannel = Slot.Channel == ET66EnemySpawnChannel::InitialPopulation
+			? ET66RouteAttributionChannel::InitialPopulation
+			: ET66RouteAttributionChannel::RuntimeTrickle;
+		if (bShouldRouteLightweight)
 		{
 			const FTransform Xform(FRotator::ZeroRotator, Slot.GroundLocation);
 			bool bRequiresFinishSpawning = false;
@@ -1561,6 +1417,10 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 				{
 					MobManager->RecordRangedMobSpawn(true, Mob->MobID);
 				}
+				if (MobManager)
+				{
+					MobManager->RecordRouteAttribution(Mob->GetEnemyFamily(), ET66RouteAttributionReason::RoutedLightweight_BasicFamily, RouteChannel);
+				}
 				UE_LOG(
 					LogT66EnemyDirector,
 					VeryVerbose,
@@ -1579,11 +1439,16 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 				continue;
 			}
 
+			if (MobManager)
+			{
+				MobManager->RecordLightweightAcquireFailed(Slot.Family, RouteChannel);
+			}
 			UE_LOG(
 				LogT66EnemyDirector,
 				Warning,
-				TEXT("[LightweightMob] Failed to spawn lightweight MobID=%s; falling back to AT66EnemyBase path."),
+				TEXT("[LightweightMob] Failed to spawn lightweight MobID=%s; skipping basic-mob spawn because rich basic routing is deprecated."),
 				*Slot.MobID.ToString());
+			continue;
 		}
 
 		if (bIsMob)
@@ -1629,33 +1494,11 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 
 		if (Enemy)
 		{
-			const FT66RarityWeights Weights = Tuning ? Tuning->SpecialEnemyRarityBase : FT66RarityWeights{};
-			const bool bGoblinRarityReplayable = (RngSub && Tuning);
-			const ET66Rarity R = bGoblinRarityReplayable ? RngSub->RollRarityWeighted(Weights, Rng) : FT66RarityUtil::RollDefaultRarity(Rng);
-			if (AT66GoblinThiefEnemy* Gob = Cast<AT66GoblinThiefEnemy>(Enemy))
-			{
-				Gob->SetRarity(R);
-				if (RunState)
-				{
-					RunState->RecordLuckQualityRarity(
-						FName(TEXT("GoblinRarity")),
-						R,
-						bGoblinRarityReplayable ? RngSub->GetLastRunDrawIndex() : INDEX_NONE,
-						bGoblinRarityReplayable ? RngSub->GetLastRunPreDrawSeed() : 0,
-						bGoblinRarityReplayable ? &Weights : nullptr);
-				}
-			}
-
 			if (RunState)
 			{
 				Enemy->ApplyStageScaling(Slot.StageNum);
 				Enemy->ApplyDifficultyScalar(Slot.DifficultyScalar);
 				Enemy->ApplyProgressionEnemyScalar(Slot.EnemyProgressionScalar);
-			}
-			if (Slot.bIsMiniBoss)
-			{
-				Enemy->ApplyMiniBossMultipliers(MiniBossHPScalar, MiniBossDamageScalar, MiniBossScale);
-				ActiveMiniBoss = Enemy;
 			}
 			Enemy->ApplyFinaleScaling(Slot.FinaleScalar);
 			if (RunState)
@@ -1667,6 +1510,13 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 			if (MobManager && Enemy->EnemyFamily == ET66EnemyFamily::Ranged)
 			{
 				MobManager->RecordRangedMobSpawn(false, Enemy->MobID);
+			}
+			if (MobManager)
+			{
+				MobManager->RecordRouteAttribution(
+					Slot.Family,
+					T66ResolveRouteAttributionReason(Slot.MobID, Slot.Family, Slot.bIsMiniBoss, !bIsMob),
+					RouteChannel);
 			}
 			if (Slot.bSpawnFromWall && bTowerLayout)
 			{

@@ -15,8 +15,11 @@ This validator proves Combat VFX binding structure, required assets, source guar
 | Lab isolation | `/Game/VFXLab` cook isolation and validator guard when lab assets exist | validator/script |
 | Editor-isolation visual proof | Same-view top-down/black-background capture when packet requires it | `CaptureT66NiagaraMRQIsolation.ps1` |
 | Gameplay capture | Unreal-owned MP4/frame evidence; desktop screenshots do not satisfy this | `CaptureT66GameplayVideo.ps1` |
+| Capture visibility hygiene | Locked VFX proof camera has the target effect visible and is not contaminated by camera wall-occlusion fade rectangles, unrelated mobs, occluders, or post-proof clutter | capture script/evidence bundle |
 | Temporal evidence | Start/mid/impact/dissipate frames or equivalent frame range; stills alone do not prove motion | evidence bundle |
 | Hitbox/damage authority | Combat query/log proof; Niagara collision/render mesh/material opacity cannot be authority | combat runtime |
+| Visual/damage alignment | Declared alignment block with anchor, pivot, offsets, footprint mapping, and tolerance, plus same-frame VFX and DamageVolume capture/log proof of impact point, visual location, authoritative extents, `BaseVisualRadius`, and `VisualScale`; intentional mismatch requires recorded approval | `CombatVFXVisualDamageAlignmentContract.md` |
+| Impact-context identity and parity | Weapon context publication at the official impact point, downstream/idol context consumption with preserved `ParentSourceID`, own downstream `SourceID`, own downstream impact point, expected-vs-actual context parity, skip/fallback counters, damage/status source proof, and neutral-control proof; video-only proof does not satisfy this gate | `CombatVFXImpactContextContract.md` |
 | Production binding | CSV/DataTable row, production asset path, GameInstance assignment, no `/Game/VFXLab` dependency | `ValidateCombatVFXProductionBindings.py` |
 | Item/stat proof | Production-path automation or literal UI proof that stats affect combat values and VFX presentation | proof wrapper |
 | Idol overlay | Architecture/effect packet plus active rows only after user approval | `CombatVFXIdolOverlayArchitecture.md` |
@@ -25,7 +28,7 @@ This validator proves Combat VFX binding structure, required assets, source guar
 ## Completion Labels
 
 - `FULL`: every required gate for that effect/status is present with evidence.
-- `PARTIAL`: one or more required gates are missing, deferred, or diagnostic only.
+- `PARTIAL`: one or more required gates are missing, deferred, diagnostic only, unevidenced for visual/damage alignment, outside declared alignment tolerance without approval, missing impact-context parity, missing downstream source identity, missing neutral control, or relying on video-only proof for context wiring.
 - `DEFERRED`: intentionally out of scope and documented with the next owning step.
 
 Do not call an effect production-ready until Pablo approves captured visual evidence.

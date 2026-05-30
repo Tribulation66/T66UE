@@ -9,18 +9,18 @@ FT66SpawnBudget UT66PlayerExperienceSubSystem::BuildTowerSpawnBudget(
 	const float StageTimerSeconds) const
 {
 	FT66SpawnBudget Budget = GetDifficultyTuning(Difficulty).TowerSpawnBudgetBase;
-	Budget.GameplayFloorsPerStage = FMath::Max(1, Budget.GameplayFloorsPerStage);
+	Budget.MobFloorsPerStage = FMath::Max(1, Budget.MobFloorsPerStage);
 
 	const float SafeDifficultyScalar = FMath::Max(1.0f, DifficultyScalar);
 	const float SafeInitialScalar = FMath::Max(0.10f, InitialPopulationScalar);
 	const float SafeRuntimeCountScalar = FMath::Max(0.10f, RuntimeTrickleCountScalar);
 	const float SafeRuntimeIntervalScalar = FMath::Max(0.10f, RuntimeTrickleIntervalScalar);
 
-	Budget.InitialEnemiesPerGameplayFloor = FMath::Clamp(
-		FMath::RoundToInt(static_cast<float>(FMath::Max(0, Budget.InitialEnemiesPerGameplayFloor)) * SafeInitialScalar * SafeDifficultyScalar),
+	Budget.InitialEnemiesPerMobFloor = FMath::Clamp(
+		FMath::RoundToInt(static_cast<float>(FMath::Max(0, Budget.InitialEnemiesPerMobFloor)) * SafeInitialScalar * SafeDifficultyScalar),
 		0,
 		128);
-	Budget.TotalInitialEnemiesPerStage = Budget.InitialEnemiesPerGameplayFloor * Budget.GameplayFloorsPerStage;
+	Budget.TotalInitialEnemiesPerStage = Budget.InitialEnemiesPerMobFloor * Budget.MobFloorsPerStage;
 
 	Budget.RuntimeEnemiesPerWave = FMath::Clamp(
 		FMath::RoundToInt(static_cast<float>(FMath::Max(1, Budget.RuntimeEnemiesPerWave)) * SafeRuntimeCountScalar * SafeDifficultyScalar),

@@ -87,6 +87,8 @@ BRANCH_ID_SLUGS = {
     "DOT": "dot",
 }
 
+HERO1_AXE_AOE_CRESCENT_INNER_RADIUS_RATIO = 0.54
+
 CSV_FIELDS = (
     "---",
     "WeaponID",
@@ -106,6 +108,7 @@ CSV_FIELDS = (
     "BonusAoeCount",
     "BonusDotSources",
     "BonusAoeRadius",
+    "AoeInnerRadiusRatio",
     "BonusDotDuration",
     "BonusDotTickDamageMultiplier",
     "FalloffPerHitMultiplier",
@@ -361,6 +364,7 @@ def _upgrade_row(hero, rarity, branch, tuning):
         "BonusAoeCount": "1" if branch == "AOE" else "0",
         "BonusDotSources": "1" if branch == "DOT" else "0",
         "BonusAoeRadius": f"{tuning['aoe_radius'] if branch == 'AOE' else 0.0:.1f}",
+        "AoeInnerRadiusRatio": f"{HERO1_AXE_AOE_CRESCENT_INNER_RADIUS_RATIO if weapon_id == 'Hero_1_black_aoe' else 0.0:.2f}",
         "BonusDotDuration": f"{tuning['dot_duration'] if branch == 'DOT' else 0.0:.2f}",
         "BonusDotTickDamageMultiplier": f"{tuning['dot_tick'] if branch == 'DOT' else 1.0:.2f}",
         "FalloffPerHitMultiplier": f"{tuning['falloff'] if branch in ('Pierce', 'Bounce') else 1.0:.2f}",

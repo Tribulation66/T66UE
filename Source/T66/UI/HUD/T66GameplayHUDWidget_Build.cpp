@@ -247,20 +247,20 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			}
 		}
 	}
-	if (!QuickReviveBrush.IsValid())
+	if (!BackroomsReviveBrush.IsValid())
 	{
-		QuickReviveBrush = MakeShared<FSlateBrush>();
-		QuickReviveBrush->DrawAs = ESlateBrushDrawType::Image;
-		QuickReviveBrush->ImageSize = FVector2D(26.f, 26.f);
-		QuickReviveBrush->Tiling = ESlateBrushTileType::NoTile;
-		QuickReviveBrush->SetResourceObject(nullptr);
+		BackroomsReviveBrush = MakeShared<FSlateBrush>();
+		BackroomsReviveBrush->DrawAs = ESlateBrushDrawType::Image;
+		BackroomsReviveBrush->ImageSize = FVector2D(26.f, 26.f);
+		BackroomsReviveBrush->Tiling = ESlateBrushTileType::NoTile;
+		BackroomsReviveBrush->SetResourceObject(nullptr);
 	}
 	{
 		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 		if (TexPool)
 		{
-			const TSoftObjectPtr<UTexture2D> QuickReviveSoft(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
-			T66SlateTexture::BindSharedBrushAsync(TexPool, QuickReviveSoft, this, QuickReviveBrush, FName(TEXT("HUDQuickRevive")), false);
+			const TSoftObjectPtr<UTexture2D> BackroomsQuickReviveSoft(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
+			T66SlateTexture::BindSharedBrushAsync(TexPool, BackroomsQuickReviveSoft, this, BackroomsReviveBrush, FName(TEXT("HUDBackroomsRevive")), false);
 		}
 	}
 
@@ -455,17 +455,17 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			]
 		];
 
-	TSharedRef<SWidget> QuickReviveIconRowRef =
-		SAssignNew(QuickReviveIconRowBox, SBox)
+	TSharedRef<SWidget> BackroomsReviveIconRowRef =
+		SAssignNew(BackroomsReviveIconRowBox, SBox)
 		.Visibility(EVisibility::Collapsed)
 		.WidthOverride(GT66BottomLeftAbilityBoxSize)
 		.HeightOverride(GT66BottomLeftAbilityBoxSize)
 		[
 			FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
-				SAssignNew(QuickReviveIconImage, SImage)
-				.Image(QuickReviveBrush.Get())
+				SAssignNew(BackroomsReviveIconImage, SImage)
+				.Image(BackroomsReviveBrush.Get())
 				.ColorAndOpacity(FLinearColor::White)),
-				TEXT("GameplayHUD.QuickRevive.Icon"),
+				TEXT("GameplayHUD.BackroomsQuickRevive.Icon"),
 				TEXT("Icon"))
 		];
 
@@ -1667,7 +1667,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 											.VAlign(VAlign_Center)
 											.Visibility(EVisibility::HitTestInvisible)
 											[
-												QuickReviveIconRowRef
+												BackroomsReviveIconRowRef
 											]
 										]
 									]

@@ -81,6 +81,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> WeaponsDataTable;
 
+	/** Reference to combat VFX bindings (weapon/idol row -> production VFX). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> CombatVFXBindingsDataTable;
+
 	/** Reference to the Bosses DataTable. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> BossesDataTable;
@@ -329,6 +333,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetWeaponsDataTable();
 
+	/** Get the loaded Combat VFX Bindings DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetCombatVFXBindingsDataTable();
+
 	/** Get a random item ID from the Items DataTable (cached; never returns NAME_None). */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	FName GetRandomItemID();
@@ -398,6 +406,9 @@ public:
 	/** Get weapon data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetWeaponData(FName WeaponID, FWeaponData& OutWeaponData);
+
+	/** Get combat VFX binding by source/type/category. Returns false if not found. */
+	bool GetCombatVFXBindingData(ET66CombatVFXBindingSourceType SourceType, FName SourceID, ET66AttackCategory AttackCategory, FT66CombatVFXBindingData& OutBindingData);
 
 	/** Get boss data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -711,6 +722,10 @@ private:
 	/** Cached loaded Weapons DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedWeaponsDataTable;
+
+	/** Cached loaded Combat VFX Bindings DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedCombatVFXBindingsDataTable;
 
 
 	/** Cached item row names (built once per runtime session). */

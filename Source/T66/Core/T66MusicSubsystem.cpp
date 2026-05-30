@@ -546,12 +546,12 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadBossThemeSound(UWorld* World)
 	if (BossID.IsNone()) return nullptr;
 
 	const FString BossIdStr = BossID.ToString();
-	// Only special bosses (Gambler/Ouroboros) get automatic folder-based music here.
+	// Only special bosses (Vendor/Ouroboros) get automatic folder-based music here.
 	// All other boss music is assigned individually per boss.
 	const bool bSpecial =
-		BossID == FName(TEXT("GamblerBoss")) ||
+		BossID == FName(TEXT("VendorBoss")) ||
 		BossID == FName(TEXT("OuroborosBoss")) ||
-		BossIdStr.Contains(TEXT("Gambler"), ESearchCase::IgnoreCase) ||
+		BossIdStr.Contains(TEXT("Vendor"), ESearchCase::IgnoreCase) ||
 		BossIdStr.Contains(TEXT("Ouroboros"), ESearchCase::IgnoreCase);
 
 	if (!bSpecial)

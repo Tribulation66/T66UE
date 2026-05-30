@@ -95,9 +95,6 @@ public:
 
 	AT66PilotableTractor* GetMountedTractor() const { return MountedTractor.Get(); }
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Downed Quick Revive was removed. This compatibility wrapper always returns false."))
-	bool IsQuickReviveDowned() const { return false; }
-
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Movement")
 	UT66HeroMovementComponent* GetHeroMovementComponent() const { return HeroMovementComponent; }
 

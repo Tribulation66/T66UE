@@ -59,11 +59,60 @@ Use the row schema from `CombatVFXAuthoringProcedure.md`. Do not copy generic pr
 - Active production row: `YES/NO`
 - If `NO`, explain why this packet is infrastructure-only or deferred.
 
-## 8. Hitbox / Damage Authority
+## 8. Hitbox / Damage Authority And Visual Alignment
 
-State the logical query shape and proof route. VFX remains presentation.
+See `Gameplay/Combat/CombatVFXVisualDamageAlignmentContract.md` for definitions. VFX remains presentation; damage authority stays in the combat query, damage primitive, or impact context.
 
-## 9. Proof Plan
+- Authoritative damage center:
+- Impact point:
+- Damage shape type:
+- Damage extents:
+  - radius:
+  - inner radius:
+  - half-angle:
+  - length / width / height / tube radius:
+- Visual anchor model: `CenterAnchored / ImpactAnchored / BandAnchored / PathAnchored`
+- Visual pivot:
+- Visual offsets:
+  - planar offset:
+  - Z lift:
+  - socket/path offset:
+- Visual footprint:
+- Footprint mapping:
+  - `BaseVisualRadius`:
+  - `VisualScaleMultiplier`:
+  - formula or alternate mapping:
+- Intentional mismatch: `YES/NO`
+- If `YES`, user approval artifact and alternate telegraph/area read:
+- Alignment tolerance:
+- Proof route:
+  - debug DamageVolume overlay:
+  - gameplay capture:
+  - editor-isolation capture:
+  - log fields proving impact point, visual location, extents, `BaseVisualRadius`, and `VisualScale`:
+
+## 9. Impact Context Contract
+
+See `Gameplay/Combat/CombatVFXImpactContextContract.md` when the effect publishes, consumes, or chains a combat impact context.
+
+- Role: `WeaponPublisher / IdolConsumer / DownstreamPublisher / None`
+- Weapon context publication policy:
+- Eligible context rule:
+- Expected downstream context count:
+- SourceType:
+- SourceID:
+- ParentSourceID rule:
+- Impact point rule:
+- Damage/status source proof:
+- Neutral control:
+- Diagnostic schema:
+  - generalized fields:
+  - effect-specific field mapping, if any:
+- Legacy fallback allowed: `YES/NO`
+- Video-only proof accepted: `NO`
+- Intentional exceptions:
+
+## 10. Proof Plan
 
 - editor-isolation capture:
 - gameplay capture:
@@ -72,6 +121,6 @@ State the logical query shape and proof route. VFX remains presentation.
 - validator:
 - staged manifest:
 
-## 10. Close
+## 11. Close
 
 Use the close templates from `CombatVFXAuthoringProcedure.md`.

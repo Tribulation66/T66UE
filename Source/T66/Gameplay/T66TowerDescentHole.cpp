@@ -124,6 +124,18 @@ bool AT66TowerDescentHole::Interact(AT66HeroBase* Hero)
 	return true;
 }
 
+#if !UE_BUILD_SHIPPING
+bool AT66TowerDescentHole::AutomationCanOpenForHero(const AT66HeroBase* Hero) const
+{
+	return CanOpenGate(Hero);
+}
+
+AT66EnemyBase* AT66TowerDescentHole::AutomationGetGuardianEnemy() const
+{
+	return GuardianEnemy.Get();
+}
+#endif
+
 void AT66TowerDescentHole::BeginPlay()
 {
 	Super::BeginPlay();

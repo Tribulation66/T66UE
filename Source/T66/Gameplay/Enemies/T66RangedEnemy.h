@@ -7,6 +7,7 @@
 #include "T66RangedEnemy.generated.h"
 
 class AT66EnemyProjectileBase;
+class UPrimitiveComponent;
 
 UCLASS(Blueprintable)
 class T66_API AT66RangedEnemy : public AT66EnemyBase
@@ -40,7 +41,7 @@ protected:
 
 private:
 	bool FireProjectileAtPlayer(APawn* PlayerPawn);
-	bool HasProjectileLineOfSightToPlayer(const APawn* PlayerPawn, const FVector& Start, const FVector& End, FString& OutBlockerName) const;
+	bool HasProjectileLineOfSightToPlayer(const APawn* PlayerPawn, const FVector& Start, const FVector& End, FString& OutBlockerName, const AActor*& OutBlockerActor, const UPrimitiveComponent*& OutBlockerComponent) const;
 
 	float FireCooldownRemaining = 0.6f;
 };

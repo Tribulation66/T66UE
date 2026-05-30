@@ -178,9 +178,7 @@ TSharedRef<SWidget> UT66LabOverlayWidget::RebuildWidget()
 		FName(TEXT("TombSpider")),
 		FName(TEXT("TuskerBoar")),
 		FName(TEXT("JellyHover")),
-		FName(TEXT("Gargoyle")),
-		FName(TEXT("GoblinThief")),
-		FName(TEXT("UniqueEnemy"))
+		FName(TEXT("Gargoyle"))
 	};
 	TArray<FName> NPCList;
 	NPCList.Add(FountainID);

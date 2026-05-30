@@ -24,14 +24,15 @@ Combat VFX process note: start future VFX work from `VFX_PROCESS_INDEX.md` and `
   - movement blockers, sensors, interact triggers, and visual-only actors are not part of the default combat debug view.
 - Non-shipping builds now default to showing both combat hitboxes and damage volumes through `T66.Combat.DebugView=3`; Shipping builds default to `0`.
 - Every successful hero HP loss now writes one `[CombatDamage]` line to the Unreal log from the shared `UT66RunStateSubsystem::ApplyDamage(...)` path.
-- Backrooms chaser contact uses delivery method `BackroomsChaserTouch`. It bypasses Quick Revive, Saint Blessing, evasion, and invulnerability gates, restores the temporarily hidden inventory/weapon first, then kills the hero through the shared damage path.
-- Last Stand, Survival Charge, and the legacy downed Quick Revive flow are removed from live lethal-save behavior. Reflected compatibility wrappers remain inert for old Blueprint/API callers. The only current quick-revive behavior is the reward-only `Item_BackroomsQuickRevive` inventory item, consumed by normal lethal damage for a one-heart revive.
+- Backrooms chaser contact uses delivery method `BackroomsChaserTouch`. It bypasses the Backrooms Quick Revive item, Saint Blessing, evasion, and invulnerability gates, restores the temporarily hidden inventory/weapon first, then kills the hero through the shared damage path.
+- The current revive behavior is the reward-only `Item_BackroomsQuickRevive` inventory item, consumed by normal lethal damage for a one-heart revive.
 - Unique unkillable chasers are authored through `Content/Data/UniqueEnemies.csv` and `/Game/Data/DT_UniqueEnemies`; the first row is `BackroomsChaser`, currently visualized with the existing `Slime` character visual.
 - Hostile projectile damage now requires overlap with the actual hero capsule hurtbox. Hero-owned sensors such as the combat range sphere are logged as `RejectedNonHeroHurtbox` and cannot remove HP.
-- Enemy, trap, unique/debuff, and boss projectile paths now emit `[ProjectileFired]` and `[ProjectileImpact]` logs with projectile/component locations, overlapped component identity, sweep/impact points, velocity, owner, source, and damage result.
+- Enemy, trap, unique/debuff, and boss projectile paths now emit projectile fire/impact or manager summary logs with projectile/component locations, overlapped component identity, sweep/impact points, velocity, owner, source, and damage result.
 - Temporary projectile presentation is centralized in `Source/T66/Gameplay/T66TemporaryProjectileSystem.*` so hero, idol, enemy, and trap ranged attacks use clear shape profiles until authored models replace them. Non-boss team colors are intentionally constrained: hero/idol projectiles are blue, enemy/trap projectiles are red.
+- Enemy-to-hero basic mob projectiles and boss projectiles now flow through `UT66ProjectileManagerSubsystem`. Basic Ranged and boss actors still own their firing decisions and patterns; the manager owns flat-array projectile lifetime, hero/world collision, damage dispatch, and HISM body rendering.
 - Hero auto-attacks now require an unblocked world-static line from the hero attack origin to the selected combat target handle before they fire. This prevents attacks, visual projectiles, pierce hits, AOE splash, and bounce chains from resolving through dungeon walls or around blocked corners.
-- Hero 1 AOE axe attacks now resolve secondary splash targets through a target-anchored 180-degree frontal sector query, oriented from the hero toward the primary target, instead of an omnidirectional target-centered sphere. The primary target is still damaged through the normal target handle path.
+- Hero 1 AOE axe attacks now resolve secondary splash targets through a target-anchored 180-degree frontal sector query, oriented from the hero toward the primary target, instead of an omnidirectional target-centered sphere. `Hero_1_black_aoe` also uses a crescent-band inner-radius ratio so non-primary secondary targets inside the hollow center are rejected while the primary target still routes through the normal target handle path.
 - `Accuracy` now exists as a full primary hero stat and its secondary family feeds untargeted auto-attack head selection.
 - The existing `Headshot` passive is no longer a random proc; it currently adds `+20%` accuracy weighting.
 - `Alchemy`, `HpRegen`, and `LifeSteal` are now deprecated legacy secondary stats kept only for save/data compatibility and old authored rows.
@@ -187,8 +188,13 @@ Combat VFX process note: start future VFX work from `VFX_PROCESS_INDEX.md` and `
     - `DOT`: blue cylinder
     - idol payloads add a smaller blue overlay shape on top of the weapon attack shape.
   - The active hero/idol auto-attack path no longer emits separate particle-only attack/idol VFX. The blue temporary projectile body and optional blue idol overlay are the readable attack presentation.
+  - Hero DOT is a temporary placeholder structure: `PerformDOT` spawns one visual-only hero->target shot (`SpawnVisualTravelProjectile`, blue cylinder profile) and, on arrival, applies the existing single authoritative DOT payload (one `UT66RunStateSubsystem::ApplyDOT` call, `SourceID=HeroPrimaryDot`) plus three target-following sphere applicator markers (`AT66DotMarkerVFX`). The markers are visual only and never multiply DOT damage. Contact damage, impact-context publish, frostbite, and SFX stay synchronous; only the DOT payload and markers defer to arrival (immediate fallback if the shot fails). Proof: `-CaptureMode hero1axedotvfxbinding`; readable travel via `T66.DOT.ProofReadableTravelSeconds` (gameplay default 0 = near-instant). See `Gameplay/Combat/Hero1AxeDOTMechanismPacket.md`. Final DOT Niagara art remains deferred.
   - Non-visual-only hero projectiles still own a sphere damage volume and actor-based overlap fallback.
-  - Hero 1 AOE axe splash target selection is now a query-only sector DamageVolume: a broad-phase pawn overlap around the primary impact point followed by a 2D frontal sector test. The sector is oriented from the hero attack origin toward the primary target, and secondary hits still preserve `HasUnblockedAutoAttackPath(...)`.
+  - Weapon auto-attacks now publish a `FT66CombatImpactContext` for `Pierce`, `AOE`, `Bounce`, and `DOT`. The context carries `SourceType=WeaponBase`, `SourceID`, attack category, impact point, direction, shape/radius fields, effective damage, and hit target handles. Verbose evidence is gated by `T66.Combat.ImpactSourceVerbose`.
+  - Hero 1 AOE axe splash target selection is now a query-only sector DamageVolume: a broad-phase pawn overlap around the primary impact point followed by a 2D frontal sector test. `Hero_1_black_aoe` uses `AoeInnerRadiusRatio=0.54` to create a crescent-band DamageVolume that matches the current slash visual. The sector is oriented from the hero attack origin toward the primary target, and secondary hits still preserve `HasUnblockedAutoAttackPath(...)`.
+  - `Hero1Axe_AOE_Base` is the current production VFX binding for `Hero_1_black_aoe`. The live binding row is generated/enforced by `Scripts/SetupCombatVFXBindingsDataTable.py` with `BaseVisualRadius=411.4`, then checked by `Scripts/ValidateCombatVFXProductionBindings.py`. In this repository state, `Content/Data/CombatVFXBindings.csv`, `Content/Data/DT_CombatVFXBindings.uasset`, and those two helper scripts may be untracked working-tree files; inspect them directly and include them if committing this VFX pass.
+  - `Idol_Water` is the first idol impact-context consumer: the weapon impact point triggers `SourceType=IdolModifier`, `SourceID=Idol_Water`, a separate idol query using `FIdolData::AoeRadius`, separate idol damage source logging, and its own impact point for future chaining. Until the Water Niagara is authored, the proof path uses a simple blue sphere placeholder and suppresses only Water's old temporary idol projectile lane. Other idols keep the legacy weapon-hit payload behavior.
+  - Future weapon and idol production VFX must follow `Gameplay/Combat/CombatVFXVisualDamageAlignmentContract.md`: declare the authoritative damage center, impact point, visual anchor, offsets, footprint mapping, and tolerance, then prove size/position agreement in a same-frame DamageVolume-plus-VFX capture or record an approved intentional mismatch.
   - Current projectile limitations:
     - visual projectiles still home to the target actor/root rather than a hit-zone component
     - old overlap fallback paths are actor-based and default to body damage
@@ -224,8 +230,8 @@ The current standard is to debug combat semantics, not raw Unreal collision.
     - enemy touch capsule intent in `AT66EnemyBase`
     - non-visual-only hero projectile sphere in `AT66HeroProjectile`
     - Hero 1 AOE axe sector query in `UT66CombatComponent`
-    - enemy projectile sphere in `AT66EnemyProjectileBase`
-    - boss projectile sphere in `AT66BossProjectile`
+    - managed enemy projectile sphere in `UT66ProjectileManagerSubsystem`
+    - managed boss projectile sphere in `UT66ProjectileManagerSubsystem`
     - unique debuff projectile sphere in `AT66UniqueDebuffProjectile`
     - trap arrow projectile box in `AT66TrapArrowProjectile`
     - boss ground AOE sphere in `AT66BossGroundAOE`
@@ -241,13 +247,15 @@ Temporary projectile visuals:
 
 - Runtime owner:
   - `Source/T66/Gameplay/T66TemporaryProjectileSystem.h/.cpp`
+  - `Source/T66/Gameplay/T66ProjectileManagerSubsystem.h/.cpp` for basic enemy and boss projectile instances
 - Purpose:
   - provide a shared, obvious, non-particle visual language for ranged attacks during development
   - keep temporary shape profiles centralized so they can be replaced by authored projectile meshes without rewriting every attack source
 - Current users:
   - hero weapon auto-attack visuals
   - idol overlay payload visuals
-  - ranged enemy spit projectiles
+  - ranged enemy spit projectiles through `UT66ProjectileManagerSubsystem`
+  - boss projectile bodies through `UT66ProjectileManagerSubsystem` with profile mesh/color buckets and manager-owned Niagara trail/impact effects
   - unique/debuff enemy projectiles
   - wall-arrow trap projectiles
 - Current non-boss color contract:
@@ -256,6 +264,7 @@ Temporary projectile visuals:
   - callers may pass legacy tint values for compatibility, but known temporary projectile profiles override those values to the team color
 - Hostile temporary projectile profiles are intentionally oversized relative to their damage volumes so fast enemy/trap shots remain readable before authored projectile meshes replace them.
 - These visuals are presentation, not authority. Damage still comes from the owning `DamageVolume` or already-resolved combat path.
+- Boss projectile pattern scheduling remains in `AT66BossBase`; fan bursts, radial bursts, Sewer Slime King lobe/mouth shots, and other timed pattern helpers now call the manager instead of spawning `AT66BossProjectile` actors. `AT66BossProjectile` remains in source as deprecated compatibility code until a cleanup pass removes stale references.
 - Transient query-only DamageVolumes, such as the Hero 1 AOE axe sector, use parameter-based debug drawing rather than hidden collision components.
 
 - `TriggerContainer`
@@ -298,7 +307,8 @@ Damage provenance logging:
   - `Source/T66/Core/RunState/T66RunStateSubsystem_Combat.cpp`
 - Every successful `UT66RunStateSubsystem::ApplyDamage(...)` call emits one `LogT66DamageReceived` line tagged `[CombatDamage]`.
 - Hostile projectile sources also emit projectile-specific logs before damage routing:
-  - `[ProjectileFired]` records the projectile actor, owner/source, spawn location, direction, speed, damage shape size, and whether the temporary visual meshes are visible.
+  - `[ProjectileFired]` records actor-path projectiles where those paths still exist.
+  - `[ProjectileManagerSummary]` records manager-owned enemy and boss projectile counts, active peak, dropped fires, invalid-source drops, visual bucket overflow, hit/expire/world-impact counts, and HISM/tick timings.
   - `[ProjectileImpact] Result=HeroHit` records the exact overlap component, projectile actor location, damage primitive location, hero location, sweep location, impact point, normal, velocity, and requested damage.
   - `[ProjectileImpact] Result=RejectedNonHeroHurtbox` records ignored overlaps against hero-owned sensors or non-hurtbox components. These events must not call `ApplyDamage(...)`.
 - The line records:
@@ -306,7 +316,7 @@ Damage provenance logging:
   - requested HP from the caller
   - incoming HP after difficulty/passive pre-armor modifiers
   - source ID
-  - delivery method, e.g. `EnemyTouch`, `EnemyProjectile`, `TrapProjectile`, `TrapFloorBurst`, `MiasmaTile`
+  - delivery method, e.g. `EnemyTouch`, `EnemyProjectile`, `BossProjectile`, `TrapProjectile`, `TrapFloorBurst`, `MiasmaTile`
   - source actor name/class
   - damage causer actor/class, e.g. projectile actor when the owning enemy gets source credit
   - hero HP before/after
@@ -338,6 +348,7 @@ Implementation rule for future agents:
 - New temporary projectile visuals must use `FT66TemporaryProjectileSystem` profiles first. Do not add one-off particle-only ranged attacks while this replacement layer is active, and do not reintroduce non-boss per-idol/per-element projectile colors outside the blue-hero/red-hostile contract.
 - New hero auto-attack, chain, or splash logic must preserve the `HasUnblockedAutoAttackPath(...)` gate, or explicitly document why that attack is allowed to ignore dungeon wall line of sight.
 - New irregular attack visuals, such as slashes or arcs, must keep VFX as presentation and use an explicit logical query shape for damage. Do not use Niagara particle collision, render-mesh per-poly collision, or visual material opacity as combat authority.
+- New weapon, idol, projectile, or irregular attack visuals must declare and prove visual/damage alignment per `Gameplay/Combat/CombatVFXVisualDamageAlignmentContract.md`; compact markers over larger AOE damage are temporary proof only unless paired with an approved area read.
 - New targetable sub-parts must use `UT66CombatHitZoneComponent` or a compatible hurtbox abstraction, not a generic hidden collider with ad hoc trace handling.
 
 ### 2.9 Combat UI and feedback

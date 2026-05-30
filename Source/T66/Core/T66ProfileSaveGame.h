@@ -127,9 +127,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	int32 LifetimeGamblerWins = 0;
 
-	/** Highest unlocked Gambler's Token level (0 = locked, 1..6 = 50%..100% sell rate). */
+	/** Highest unlocked Vendor Token level (0 = locked, 1..6 = 50%..100% sell rate). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
-	int32 GamblersTokenUnlockedLevel = 0;
+	int32 VendorTokenUnlockedLevel = 0;
 
 	/** First-time onboarding: set true once the player completes the tutorial area. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tutorial")

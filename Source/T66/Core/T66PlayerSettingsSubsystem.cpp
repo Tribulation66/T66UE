@@ -2,6 +2,8 @@
 
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66PlayerSettingsSaveGame.h"
+#include "Core/T66PixelationSubsystem.h"
+#include "Core/T66RetroFXSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/Style/T66Style.h"
 
@@ -9,7 +11,10 @@
 #include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameUserSettings.h"
+#include "HAL/IConsoleManager.h"
 #include "Misc/App.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Sound/SoundClass.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "UObject/SoftObjectPath.h"
@@ -21,8 +26,46 @@ namespace
 	constexpr float T66LockedChaseTurnSensitivityDefaultPercent = 65.0f;
 	constexpr float T66LockedChaseTurnRateMinDegreesPerSecond = 55.0f;
 	constexpr float T66LockedChaseTurnRateMaxDegreesPerSecond = 165.0f;
+	constexpr int32 T66RetroFXForcedOffSchemaVersion = 24;
 	const TCHAR* T66MusicSoundClassPath = TEXT("/Game/Audio/SC_Music.SC_Music");
 	const TCHAR* T66SfxSoundClassPath = TEXT("/Game/Audio/SC_SFX.SC_SFX");
+	const TCHAR* T66RetroFXSealTempSlotName = TEXT("T66_RetroFXSeal_PreviouslyOn");
+
+	FT66RetroFXSettings MakeRetroFXDisabledDefaults()
+	{
+		FT66RetroFXSettings Settings;
+		Settings.bEnableRetroFXMaster = false;
+		Settings.bUseRealLowResolution = false;
+		Settings.TargetResolutionHeightPercent = 100.0f;
+		Settings.UIFullScreenCRTEnabled = false;
+		return Settings;
+	}
+
+	void ForceRetroFXDisabled(UT66PlayerSettingsSaveGame& Settings)
+	{
+		Settings.RetroFXSettings = MakeRetroFXDisabledDefaults();
+	}
+
+	void ApplyRetroFXForcedOffMigration(UT66PlayerSettingsSaveGame& Settings, bool& bNeedsSave)
+	{
+		if (Settings.SchemaVersion >= T66RetroFXForcedOffSchemaVersion)
+		{
+			return;
+		}
+
+		ForceRetroFXDisabled(Settings);
+		Settings.SchemaVersion = T66RetroFXForcedOffSchemaVersion;
+		bNeedsSave = true;
+	}
+
+	float ReadPlayerSettingsCVarFloat(const TCHAR* Name, const float FallbackValue)
+	{
+		if (IConsoleVariable* CVar = IConsoleManager::Get().FindConsoleVariable(Name))
+		{
+			return CVar->GetFloat();
+		}
+		return FallbackValue;
+	}
 
 	ET66MediaViewerSource SanitizeMediaViewerSourceIndex(int32 RawValue)
 	{
@@ -95,6 +138,23 @@ namespace
 		}
 
 		return INDEX_NONE;
+	}
+
+	void LogRetroFXSealSummary(
+		const TCHAR* Path,
+		const FT66RetroFXSettings& Settings,
+		const UT66PixelationSubsystem* Pixelation)
+	{
+		const float ScreenPercentage = ReadPlayerSettingsCVarFloat(TEXT("r.ScreenPercentage"), -1.0f);
+		UE_LOG(LogTemp, Display,
+			TEXT("RetroFXSealSummary Path=%s EnabledAfter=%d RealLowResAfter=%d UIFullScreenCRTAfter=%d ScreenPercentage=%.2f WorldPixelationLevel=%d CharacterPixelationLevel=%d"),
+			Path,
+			Settings.bEnableRetroFXMaster ? 1 : 0,
+			Settings.bUseRealLowResolution ? 1 : 0,
+			Settings.UIFullScreenCRTEnabled ? 1 : 0,
+			ScreenPercentage,
+			Pixelation ? Pixelation->GetWorldPixelationLevel() : -1,
+			Pixelation ? Pixelation->GetCharacterPixelationLevel() : -1);
 	}
 }
 
@@ -231,7 +291,6 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 	if (SettingsObj->SchemaVersion < 21)
 	{
 		SettingsObj->SchemaVersion = 21;
-		SettingsObj->bRetroFXMasterEnabled = SettingsObj->RetroFXSettings.bEnableRetroFXMaster;
 		bNeedsSave = true;
 	}
 
@@ -239,7 +298,6 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 	{
 		SettingsObj->SchemaVersion = 22;
 		SettingsObj->RetroFXSettings = FT66RetroFXSettings();
-		SettingsObj->bRetroFXMasterEnabled = SettingsObj->RetroFXSettings.bEnableRetroFXMaster;
 		bNeedsSave = true;
 	}
 
@@ -247,11 +305,10 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 	{
 		SettingsObj->SchemaVersion = 23;
 		SettingsObj->RetroFXSettings = FT66RetroFXSettings();
-		SettingsObj->bRetroFXMasterEnabled = SettingsObj->RetroFXSettings.bEnableRetroFXMaster;
 		bNeedsSave = true;
 	}
 
-	SettingsObj->RetroFXSettings.bEnableRetroFXMaster = SettingsObj->bRetroFXMasterEnabled;
+	ApplyRetroFXForcedOffMigration(*SettingsObj, bNeedsSave);
 
 	const float SanitizedLockedChaseTurnSensitivityPercent = FMath::Clamp(SettingsObj->LockedChaseTurnSensitivityPercent, 0.0f, 100.0f);
 	if (!FMath::IsNearlyEqual(SettingsObj->LockedChaseTurnSensitivityPercent, SanitizedLockedChaseTurnSensitivityPercent, 0.01f))
@@ -959,7 +1016,6 @@ void UT66PlayerSettingsSubsystem::SetRetroFXSettings(const FT66RetroFXSettings& 
 {
 	if (!SettingsObj) return;
 	SettingsObj->RetroFXSettings = NewSettings;
-	SettingsObj->bRetroFXMasterEnabled = NewSettings.bEnableRetroFXMaster;
 	Save();
 }
 
@@ -971,17 +1027,98 @@ FT66RetroFXSettings UT66PlayerSettingsSubsystem::GetRetroFXSettings() const
 		return DefaultSettings;
 	}
 
-	FT66RetroFXSettings Result = SettingsObj->RetroFXSettings;
-	Result.bEnableRetroFXMaster = SettingsObj->bRetroFXMasterEnabled;
-	return Result;
+	return SettingsObj->RetroFXSettings;
 }
 
 void UT66PlayerSettingsSubsystem::ResetRetroFXSettingsToDefaults()
 {
 	if (!SettingsObj) return;
-	SettingsObj->RetroFXSettings = FT66RetroFXSettings();
-	SettingsObj->bRetroFXMasterEnabled = SettingsObj->RetroFXSettings.bEnableRetroFXMaster;
+	ForceRetroFXDisabled(*SettingsObj);
 	Save();
+}
+
+void UT66PlayerSettingsSubsystem::RunRetroFXSealVerificationIfRequested(UWorld* World)
+{
+#if UE_BUILD_SHIPPING
+	(void)World;
+	return;
+#else
+	static bool bRanRetroFXSealVerification = false;
+	if (bRanRetroFXSealVerification || !FParse::Param(FCommandLine::Get(), TEXT("T66RetroFXSealVerify")))
+	{
+		return;
+	}
+	bRanRetroFXSealVerification = true;
+
+	UGameInstance* GI = GetGameInstance();
+	UT66RetroFXSubsystem* RetroFX = GI ? GI->GetSubsystem<UT66RetroFXSubsystem>() : nullptr;
+	UT66PixelationSubsystem* Pixelation = GI ? GI->GetSubsystem<UT66PixelationSubsystem>() : nullptr;
+	if (!SettingsObj || !RetroFX)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("RetroFXSealSummary Path=Unavailable EnabledAfter=-1 RealLowResAfter=-1 UIFullScreenCRTAfter=-1 ScreenPercentage=%.2f Reason=%s"),
+			ReadPlayerSettingsCVarFloat(TEXT("r.ScreenPercentage"), -1.0f),
+			!SettingsObj ? TEXT("MissingPlayerSettings") : TEXT("MissingRetroFXSubsystem"));
+		return;
+	}
+
+	auto ApplyAndSummarize = [World, RetroFX, Pixelation](const TCHAR* Path, const FT66RetroFXSettings& Settings)
+	{
+		RetroFX->ApplySettings(Settings, World);
+		LogRetroFXSealSummary(Path, Settings, Pixelation);
+	};
+
+	ApplyAndSummarize(TEXT("FreshLaunch"), GetRetroFXSettings());
+
+	ResetRetroFXSettingsToDefaults();
+	ApplyAndSummarize(TEXT("SettingsReset"), GetRetroFXSettings());
+
+	ApplySafeModeSettings();
+	ApplyAndSummarize(TEXT("SafeMode"), GetRetroFXSettings());
+
+	SetRetroFXSettings(MakeRetroFXDisabledDefaults());
+	ApplyAndSummarize(TEXT("UIReset"), GetRetroFXSettings());
+
+	bool bLegacyLoadMigrated = false;
+	if (UT66PlayerSettingsSaveGame* LegacySettings = Cast<UT66PlayerSettingsSaveGame>(
+		UGameplayStatics::CreateSaveGameObject(UT66PlayerSettingsSaveGame::StaticClass())))
+	{
+		LegacySettings->SchemaVersion = 23;
+		LegacySettings->RetroFXSettings = MakeRetroFXDisabledDefaults();
+		LegacySettings->RetroFXSettings.bEnableRetroFXMaster = true;
+		LegacySettings->RetroFXSettings.bUseRealLowResolution = true;
+		LegacySettings->RetroFXSettings.TargetResolutionHeightPercent = 40.0f;
+		LegacySettings->RetroFXSettings.UIFullScreenCRTEnabled = true;
+
+		if (UGameplayStatics::SaveGameToSlot(LegacySettings, T66RetroFXSealTempSlotName, 0))
+		{
+			if (UT66PlayerSettingsSaveGame* LoadedLegacy = Cast<UT66PlayerSettingsSaveGame>(
+				UGameplayStatics::LoadGameFromSlot(T66RetroFXSealTempSlotName, 0)))
+			{
+				bool bTempNeedsSave = false;
+				ApplyRetroFXForcedOffMigration(*LoadedLegacy, bTempNeedsSave);
+				ApplyAndSummarize(TEXT("LegacySaveLoadMigration"), LoadedLegacy->RetroFXSettings);
+				bLegacyLoadMigrated = LoadedLegacy->SchemaVersion == T66RetroFXForcedOffSchemaVersion
+					&& !LoadedLegacy->RetroFXSettings.bEnableRetroFXMaster
+					&& !LoadedLegacy->RetroFXSettings.bUseRealLowResolution
+					&& !LoadedLegacy->RetroFXSettings.UIFullScreenCRTEnabled;
+			}
+			UGameplayStatics::DeleteGameInSlot(T66RetroFXSealTempSlotName, 0);
+		}
+	}
+	if (!bLegacyLoadMigrated)
+	{
+		UE_LOG(LogTemp, Warning,
+			TEXT("RetroFXSealSummary Path=LegacySaveLoadMigration EnabledAfter=-1 RealLowResAfter=-1 UIFullScreenCRTAfter=-1 ScreenPercentage=%.2f Reason=LegacyLoadMigrationFailed"),
+			ReadPlayerSettingsCVarFloat(TEXT("r.ScreenPercentage"), -1.0f));
+	}
+
+	SetRetroFXSettings(MakeRetroFXDisabledDefaults());
+	ApplyAndSummarize(TEXT("GameplaySettingsApply"), GetRetroFXSettings());
+
+	RetroFX->ApplyCurrentSettings(World);
+	LogRetroFXSealSummary(TEXT("MapWorldLoad"), GetRetroFXSettings(), Pixelation);
+#endif
 }
 
 void UT66PlayerSettingsSubsystem::ApplyUIScale()
@@ -1045,8 +1182,7 @@ void UT66PlayerSettingsSubsystem::ApplySafeModeSettings()
 
 	// Gameplay-side stability toggles.
 	SettingsObj->bIntenseVisuals = false;
-	SettingsObj->RetroFXSettings = FT66RetroFXSettings();
-	SettingsObj->bRetroFXMasterEnabled = SettingsObj->RetroFXSettings.bEnableRetroFXMaster;
+	ForceRetroFXDisabled(*SettingsObj);
 
 	// Audio: keep user master, but enforce mute-unfocused off for stability/debug.
 	SettingsObj->bMuteWhenUnfocused = false;

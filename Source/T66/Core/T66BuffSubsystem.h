@@ -68,19 +68,19 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	int32 GetUnlockedFillStepCount(ET66HeroStatType StatType) const;
 
-	/** Deprecated compatibility value. Permanent stat upgrades no longer apply to runs. */
+	/** Permanent diploma primary-stat bonus for this stat. Purchases remain disabled by gate, but owned bonuses apply. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	int32 GetTotalStatBonus(ET66HeroStatType StatType) const;
 
-	/** Deprecated compatibility value. Permanent stat upgrade purchases are disabled. */
+	/** Permanent stat upgrade purchases are currently disabled. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	int32 GetCostForNextFillStepUnlock(ET66HeroStatType StatType) const;
 
-	/** Deprecated compatibility path. Always returns false. */
+	/** Purchase path is currently disabled by gate. */
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool UnlockNextFillStep(ET66HeroStatType StatType);
 
-	/** Deprecated compatibility path. Always returns false. */
+	/** Random purchase path is currently disabled by gate. */
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool UnlockRandomStat();
 
@@ -94,7 +94,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Buffs")
 	FT66HeroStatBonuses GetPermanentBuffStatBonuses() const;
 
-	/** Deprecated compatibility value. Returns no runtime stat bonuses. */
+	/** Compatibility alias for permanent diploma primary-stat bonuses. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	FT66HeroStatBonuses GetPowerupStatBonuses() const;
 
@@ -179,6 +179,11 @@ public:
 	TMap<ET66SecondaryStatType, float> ConsumePendingSingleUseBuffMultipliers();
 
 	static const TArray<ET66SecondaryStatType>& GetAllSingleUseBuffTypes();
+
+#if !UE_BUILD_SHIPPING
+	void DebugSetDiplomaUnlockedSteps(ET66HeroStatType StatType, int32 Count);
+	void DebugGrantSingleUseBuff(ET66SecondaryStatType StatType, int32 Count, bool bSelectForNextRun);
+#endif
 
 private:
 	static constexpr int32 LegacyV2SlotsPerStat = 10;

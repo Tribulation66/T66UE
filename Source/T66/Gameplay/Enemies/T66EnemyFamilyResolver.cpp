@@ -26,7 +26,12 @@ ET66EnemyFamily FT66EnemyFamilyResolver::ResolveFamily(FName MobID)
 		|| MobID == FName(TEXT("GhostRay"))
 		|| MobID == FName(TEXT("SaucerDrone"))
 		|| MobID == FName(TEXT("FireSkull"))
-		|| MobID == FName(TEXT("Gargoyle")))
+		|| MobID == FName(TEXT("Gargoyle"))
+		|| MobID == FName(TEXT("CursedCrow"))
+		|| MobID == FName(TEXT("WillOWisp"))
+		|| MobID == FName(TEXT("GullDiver"))
+		|| MobID == FName(TEXT("ReconOrb"))
+		|| MobID == FName(TEXT("CinderWraith")))
 	{
 		return ET66EnemyFamily::Flying;
 	}
@@ -59,7 +64,9 @@ ET66EnemyFamily FT66EnemyFamilyResolver::ResolveFamily(FName MobID)
 		|| MobID == FName(TEXT("CrystalBomber"))
 		|| MobID == FName(TEXT("PitImp"))
 		|| MobID == FName(TEXT("Hellhound"))
-		|| MobID == FName(TEXT("SinEater")))
+		|| MobID == FName(TEXT("SinEater"))
+		|| MobID == FName(TEXT("FamishedGhoul"))
+		|| MobID == FName(TEXT("GoreStag")))
 	{
 		return ET66EnemyFamily::Rush;
 	}
@@ -80,7 +87,10 @@ ET66EnemyFamily FT66EnemyFamilyResolver::ResolveFamily(FName MobID)
 		|| MobID == FName(TEXT("SandTunneler"))
 		|| MobID == FName(TEXT("BoneKnight"))
 		|| MobID == FName(TEXT("DemonSentinel"))
-		|| MobID == FName(TEXT("HellWyrm")))
+		|| MobID == FName(TEXT("HellWyrm"))
+		|| MobID == FName(TEXT("Hammerjaw"))
+		|| MobID == FName(TEXT("CarapaceBrute"))
+		|| MobID == FName(TEXT("BrimstoneBrute")))
 	{
 		return ET66EnemyFamily::Melee;
 	}

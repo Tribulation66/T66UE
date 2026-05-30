@@ -213,15 +213,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void NotifyGamblerWin();
 
-	/** Highest unlocked Gambler's Token level in the profile (0 = none, 1..6 = unlocked). */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Gambler")
-	int32 GetGamblersTokenUnlockedLevel() const;
+	/** Highest unlocked Vendor Token level in the profile (0 = none, 1..6 = unlocked). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Vendor")
+	int32 GetVendorTokenUnlockedLevel() const;
 
-	/** Upgrade the persistent Gambler's Token level after defeating the Gambler on a given difficulty. */
-	UFUNCTION(BlueprintCallable, Category = "Profile|Gambler")
-	int32 UpgradeGamblersTokenForDifficulty(ET66Difficulty Difficulty);
+	/** Upgrade the persistent Vendor Token level after defeating the Vendor boss on a given difficulty. */
+	UFUNCTION(BlueprintCallable, Category = "Profile|Vendor")
+	int32 UpgradeVendorTokenForDifficulty(ET66Difficulty Difficulty);
 
-	static int32 GetGamblersTokenDifficultyFloor(ET66Difficulty Difficulty);
+	static int32 GetVendorTokenDifficultyFloor(ET66Difficulty Difficulty);
 
 	// ============================================
 	// Lab unlocks (items/enemies ever obtained or killed)

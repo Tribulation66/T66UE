@@ -941,9 +941,6 @@ public:
 	FText GetText_Games() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Anger() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_GamblerDialoguePrompt() const; // "What do you want?"
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")

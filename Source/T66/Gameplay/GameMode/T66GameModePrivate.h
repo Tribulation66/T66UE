@@ -25,8 +25,6 @@
 #include "Core/T66RunIntegritySubsystem.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/Enemies/T66EnemyFamilyResolver.h"
-#include "Gameplay/T66GoblinThiefEnemy.h"
-#include "Gameplay/T66UniqueDebuffEnemy.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66WeaponAltar.h"
 #include "Gameplay/T66GameplayInteractable.h"

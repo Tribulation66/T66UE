@@ -281,7 +281,7 @@ void AT66GameMode::TryActivateMainMapCombat()
 
 	if (IsUsingTowerMainMapLayout())
 	{
-		bool bAnyPlayerEnteredGameplayFloor = false;
+		bool bAnyPlayerEnteredMobFloor = false;
 		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
 		{
 			const APlayerController* PC = It->Get();
@@ -292,14 +292,14 @@ void AT66GameMode::TryActivateMainMapCombat()
 			}
 
 			const int32 FloorNumber = GetTowerFloorIndexForLocation(PlayerPawn->GetActorLocation());
-			if (FloorNumber >= CachedTowerMainMapLayout.FirstGameplayFloorNumber)
+			if (FloorNumber >= CachedTowerMainMapLayout.FirstMobFloorNumber)
 			{
-				bAnyPlayerEnteredGameplayFloor = true;
+				bAnyPlayerEnteredMobFloor = true;
 				break;
 			}
 		}
 
-		if (!bAnyPlayerEnteredGameplayFloor)
+		if (!bAnyPlayerEnteredMobFloor)
 		{
 			return;
 		}
@@ -818,7 +818,6 @@ void AT66GameMode::SpawnMainMapTerrain()
 	MainMapStartAreaCenterSurfaceLocation = FVector::ZeroVector;
 	MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
 	MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
-	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
 	MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
 	MainMapRescueAnchorLocations.Reset();
 	for (AT66TowerDescentHole* Hole : TowerDescentHoles)
@@ -829,6 +828,8 @@ void AT66GameMode::SpawnMainMapTerrain()
 		}
 	}
 	TowerDescentHoles.Reset();
+	TowerPlacedMinibossSpawnedFloors.Reset();
+	TowerPlacedMinibossDefeatedFloors.Reset();
 
 	UT66GameInstance* GI = GetT66GameInstance();
 	const FT66MapPreset Preset = T66BuildMainMapPreset(GI);
@@ -863,7 +864,6 @@ void AT66GameMode::SpawnMainMapTerrain()
 		MainMapStartAreaCenterSurfaceLocation = CachedTowerMainMapLayout.StartAreaCenterSurfaceLocation;
 		MainMapBossAnchorSurfaceLocation = CachedTowerMainMapLayout.BossAnchorSurfaceLocation;
 		MainMapBossSpawnSurfaceLocation = CachedTowerMainMapLayout.BossSpawnSurfaceLocation;
-		MainMapBossBeaconSurfaceLocation = CachedTowerMainMapLayout.BossBeaconSurfaceLocation;
 		MainMapBossAreaCenterSurfaceLocation = CachedTowerMainMapLayout.BossAreaCenterSurfaceLocation;
 		MainMapRescueAnchorLocations = CachedTowerMainMapLayout.RescueAnchorLocations;
 
@@ -922,16 +922,6 @@ void AT66GameMode::SpawnMainMapTerrain()
 	if (!T66MainMapTerrain::TryGetRegionCenterLocation(Board, T66MainMapTerrain::ECellRegion::BossArea, 0.f, MainMapBossAreaCenterSurfaceLocation))
 	{
 		MainMapBossAreaCenterSurfaceLocation = MainMapBossSpawnSurfaceLocation;
-	}
-
-	FVector BossBeaconLocation = FVector::ZeroVector;
-	if (T66MainMapTerrain::TryGetCellLocation(Board, Board.BossSpawnCell - Board.BossOutwardDirection, 0.f, BossBeaconLocation))
-	{
-		MainMapBossBeaconSurfaceLocation = BossBeaconLocation;
-	}
-	else
-	{
-		MainMapBossBeaconSurfaceLocation = MainMapBossAreaCenterSurfaceLocation;
 	}
 
 	if (!MainMapBossAnchorSurfaceLocation.IsNearlyZero())
@@ -997,7 +987,6 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	MainMapStartAreaCenterSurfaceLocation = FVector::ZeroVector;
 	MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
 	MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
-	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
 	MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
 	MainMapRescueAnchorLocations.Reset();
 	for (AT66TowerDescentHole* Hole : TowerDescentHoles)
@@ -1008,6 +997,8 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 		}
 	}
 	TowerDescentHoles.Reset();
+	TowerPlacedMinibossSpawnedFloors.Reset();
+	TowerPlacedMinibossDefeatedFloors.Reset();
 
 	DestroyActorsWithTag(World, T66MapPlatformTag);
 	DestroyActorsWithTag(World, T66MapRampTag);
@@ -1034,7 +1025,6 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 		ExistingBoss->Destroy();
 	}
 	StageBoss = nullptr;
-	DestroyBossBeacon();
 
 	UT66GameInstance* GI = GetT66GameInstance();
 	if (GI)
@@ -1045,11 +1035,6 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	SpawnMainMapTerrain();
 	if (T66UsesMainMapTerrainStage(World))
 	{
-		SpawnTricksterAndCowardiceGate();
 		SpawnBossForCurrentStage();
-	}
-	else
-	{
-		SpawnBossBeaconIfNeeded();
 	}
 }

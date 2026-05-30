@@ -47,6 +47,25 @@ public:
 	void SetProjectileSpeed(float InSpeed);
 	void SetTrailVFX(UNiagaraSystem* InTrailSystem, const FLinearColor& InTrailColor);
 	void SetVisualOnly(bool bInVisualOnly);
+	void SetVisualArrivalCallback(TFunction<void()>&& InCallback);
+	/**
+	 * Drive an already-spawned authored Niagara carrier along this projectile's path:
+	 * the component keeps its own spawn rotation/scale/playback and is moved to follow
+	 * the projectile each tick, so the readable horizontal slash travels from the
+	 * segment start to the impact point. The temporary cube/profile meshes are hidden.
+	 * Visual-only: no damage/collision authority is moved into the carrier.
+	 */
+	void SetDrivenCarrierComponent(UNiagaraComponent* InComponent);
+	/**
+	 * Drive a visual-only Bounce link by deterministic game-time interpolation from
+	 * StartLoc to EndLoc over DurationSeconds, instead of ProjectileMovement speed.
+	 * Speed-based movement let a single large frame delta (a capture hitch) overshoot
+	 * the whole segment in one tick, so the carrier never occupied the hero->target
+	 * path and the authored age-revealed slash only became visible at the impact point.
+	 * Time-based lerp guarantees intermediate positions across frames so the slash
+	 * reads as travelling. Arrival fires the visual callback when alpha reaches 1.
+	 */
+	void SetTimedVisualTravel(const FVector& StartLoc, const FVector& EndLoc, float DurationSeconds);
 	void ConfigureTemporaryProjectileVisual(
 		FName ProfileID,
 		const FLinearColor& CoreColor,
@@ -76,10 +95,20 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraComponent> TrailVFXComponent = nullptr;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UNiagaraComponent> DrivenCarrierComponent = nullptr;
+
 	FLinearColor TintColor = FLinearColor(0.08f, 0.52f, 1.f, 1.f);
 	FVector TargetLocation = FVector::ZeroVector;
+	TFunction<void()> VisualArrivalCallback;
 	bool bHasTargetLocation = false;
 	bool bVisualOnly = false;
+
+	// Deterministic visual-only travel (Bounce link carrier). Independent of frame delta.
+	FVector VisualTravelStart = FVector::ZeroVector;
+	float VisualTravelDuration = 0.f;
+	float VisualTravelElapsed = 0.f;
+	bool bTimedVisualTravel = false;
 
 	bool IsTargetAlive() const;
 	void ApplyDamageToTarget(AActor* Target);

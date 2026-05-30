@@ -100,7 +100,7 @@ void UT66CompanionGridScreen::OnScreenActivated_Implementation()
 	AllCompanionIDs.Empty();
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		AllCompanionIDs = GI->GetAllCompanionIDs();
+		AllCompanionIDs = GI->GetPlayableCompanionIDs();
 	}
 }
 
@@ -110,7 +110,7 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 	{
 		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 		{
-			AllCompanionIDs = GI->GetAllCompanionIDs();
+			AllCompanionIDs = GI->GetPlayableCompanionIDs();
 		}
 	}
 
@@ -220,11 +220,7 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 			SlotYs[Row],
 			TileSize,
 			TileSize,
-			T66DemoModeUI::WrapWithComingSoonOverlay(
-				Tile,
-				bHasEntry && !CompanionIDCopy.IsNone() && !bCompanionPlayable,
-				this,
-				FName(*FString::Printf(TEXT("CompanionGrid.Slot%02d.DemoOverlay"), Index + 1))));
+			Tile);
 	}
 
 	const TSharedRef<SWidget> RootContent = SNew(SBox)

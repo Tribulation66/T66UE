@@ -125,6 +125,12 @@ struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Spawning")
 	FT66SpawnBudget TowerSpawnBudgetBase;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|LevelUp", meta = (ClampMin = "1"))
+	int32 LevelUpXPThreshold = 100;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|LevelUp", meta = (ClampMin = "0.0"))
+	float LevelUpWaveRadiusUU = 900.0f;
 };
 
 class T66_API FT66PlayerExperienceTuningTable
@@ -177,7 +183,7 @@ public:
 	FT66TotemRules GetDifficultyTotemRules(ET66Difficulty Difficulty) const;
 	int32 GetDifficultyTotemUsesPerTotem(ET66Difficulty Difficulty) const;
 	int32 GetDifficultySkullColorBandSize(ET66Difficulty Difficulty) const;
-	bool ShouldSpawnDifficultyTotemOnTowerFloor(ET66Difficulty Difficulty, bool bBossRushFinaleStage, int32 FloorNumber, int32 FirstGameplayFloorNumber, int32 LastGameplayFloorNumber) const;
+	bool ShouldSpawnDifficultyTotemOnTowerFloor(ET66Difficulty Difficulty, bool bBossRushFinaleStage, int32 FloorNumber, int32 FirstMobFloorNumber, int32 LastMobFloorNumber) const;
 	FT66SpawnBudget BuildTowerSpawnBudget(
 		ET66Difficulty Difficulty,
 		float DifficultyScalar,
@@ -187,6 +193,8 @@ public:
 		float StageTimerSeconds) const;
 	int32 ResolveEnemyScoreAtSpawn(ET66Difficulty Difficulty, int32 BasePointValue, float DifficultyScalar) const;
 	int32 ResolveBossScore(ET66Difficulty Difficulty, int32 BasePointValue, float DifficultyScalar) const;
+	int32 GetDifficultyLevelUpXPThreshold(ET66Difficulty Difficulty) const;
+	float GetDifficultyLevelUpWaveRadiusUU(ET66Difficulty Difficulty) const;
 
 private:
 	void QueueTuningDataTableLoad();

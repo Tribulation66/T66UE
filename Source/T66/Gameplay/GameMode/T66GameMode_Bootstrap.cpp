@@ -462,7 +462,6 @@ SpawnWeaponAltarForPlayer(PC);
 if (!IsUsingTowerMainMapLayout())
 {
 SpawnCasinoInteractableIfNeeded();
-SpawnGuaranteedStartAreaInteractables();
 }
 else
 {
@@ -471,8 +470,6 @@ SpawnWorldInteractablesForStage();
 
 if (!bUsingMainMapTerrain)
 {
-SpawnTricksterAndCowardiceGate();
-SpawnBossBeaconIfNeeded();
 SpawnWorldInteractablesForStage();
 SpawnTutorialIfNeeded();
 }
@@ -571,6 +568,8 @@ void AT66GameMode::PreloadStageCharacterVisuals()
 			if (!StageData.EnemyH.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyH);
 			if (!StageData.EnemyI.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyI);
 			if (!StageData.EnemyJ.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyJ);
+			if (!StageData.EnemyK.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyK);
+			if (!StageData.EnemyL.IsNone()) Visuals->PreloadCharacterVisual(StageData.EnemyL);
 			if (!StageData.BossID.IsNone()) Visuals->PreloadCharacterVisual(StageData.BossID);
 
 			TArray<FT66BossEncounterMemberData> EncounterMembers;
@@ -585,12 +584,13 @@ void AT66GameMode::PreloadStageCharacterVisuals()
 					}
 				}
 			}
-			UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, EnemyD=%s, EnemyE=%s, EnemyF=%s, EnemyG=%s, EnemyH=%s, EnemyI=%s, EnemyJ=%s, Boss=%s, EncounterMembers=%d) in %.1fms"),
+			UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Preload: pre-resolved visuals for stage %d (EnemyA=%s, EnemyB=%s, EnemyC=%s, EnemyD=%s, EnemyE=%s, EnemyF=%s, EnemyG=%s, EnemyH=%s, EnemyI=%s, EnemyJ=%s, EnemyK=%s, EnemyL=%s, Boss=%s, EncounterMembers=%d) in %.1fms"),
 				StageNum,
 				*StageData.EnemyA.ToString(), *StageData.EnemyB.ToString(), *StageData.EnemyC.ToString(),
 				*StageData.EnemyD.ToString(), *StageData.EnemyE.ToString(),
 				*StageData.EnemyF.ToString(), *StageData.EnemyG.ToString(), *StageData.EnemyH.ToString(),
 				*StageData.EnemyI.ToString(), *StageData.EnemyJ.ToString(),
+				*StageData.EnemyK.ToString(), *StageData.EnemyL.ToString(),
 				*StageData.BossID.ToString(),
 				EncounterMembers.Num(),
 				(FPlatformTime::Seconds() - PreloadStart) * 1000.0);

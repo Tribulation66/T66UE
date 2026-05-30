@@ -495,12 +495,6 @@ bool T66WidgetGames::Registry::IsAvailable(
 		return false;
 	}
 
-	if (Descriptor.DemoGateKind == ET66WidgetGameDemoGateKind::FrontendMinigameLocked
-		&& T66DeprecatedFeatures::AreMinigamesDisabled())
-	{
-		return false;
-	}
-
 	const FName DemoGateID = ResolveDemoGateID(Descriptor);
 	switch (Descriptor.DemoGateKind)
 	{

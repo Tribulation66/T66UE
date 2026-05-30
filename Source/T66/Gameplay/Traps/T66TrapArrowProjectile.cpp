@@ -118,7 +118,7 @@ void AT66TrapArrowProjectile::InitializeProjectile(
 
 	UE_LOG(
 		LogT66TrapProjectile,
-		Log,
+		VeryVerbose,
 		TEXT("[ProjectileFired] Type=TrapProjectile Projectile=%s Owner=%s DamageHP=%d Loc=%s BoxLoc=%s Direction=%s Speed=%.1f Extent=%s Visual=%s VisualVisible=%d Accent=%s AccentVisible=%d"),
 		*GetName(),
 		GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
@@ -186,7 +186,7 @@ void AT66TrapArrowProjectile::OnDamageBoxOverlap(
 		{
 			UE_LOG(
 				LogT66TrapProjectile,
-				Log,
+				VeryVerbose,
 				TEXT("[ProjectileImpact] Type=TrapProjectile Result=RejectedNonHeroHurtbox Projectile=%s Owner=%s Hero=%s OtherComp=%s ProjectileLoc=%s BoxLoc=%s HeroLoc=%s HeroDist2D=%.1f BoxToHeroDist2D=%.1f OverlapComp=%s bFromSweep=%d SweepLoc=%s ImpactPoint=%s Velocity=%s"),
 				*GetName(),
 				GetOwner() ? *GetOwner()->GetName() : TEXT("None"),
@@ -216,7 +216,7 @@ void AT66TrapArrowProjectile::OnDamageBoxOverlap(
 	const bool bAppliedDamage = FT66TrapDamageUtils::ApplyTrapDamageToActor(OwningTrap, OtherActor, DamageHP, FName(TEXT("TrapProjectile")), this);
 	UE_LOG(
 		LogT66TrapProjectile,
-		Log,
+		VeryVerbose,
 		TEXT("[ProjectileImpact] Type=TrapProjectile Result=%s Projectile=%s Owner=%s OtherActor=%s OtherComp=%s DamageHP=%d ProjectileLoc=%s BoxLoc=%s OtherLoc=%s Dist2D=%.1f bFromSweep=%d SweepLoc=%s ImpactPoint=%s Normal=%s Velocity=%s"),
 		bAppliedDamage ? TEXT("AppliedDamage") : TEXT("NoDamage"),
 		*GetName(),

@@ -177,6 +177,10 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 		case ET66SecondaryStatType::EvasionChance: KeyName = TEXT("EvasionChance"); break;
 		case ET66SecondaryStatType::Alchemy: KeyName = TEXT("Alchemy"); break;
 		case ET66SecondaryStatType::Accuracy: KeyName = TEXT("Accuracy"); break;
+		case ET66SecondaryStatType::Execute: KeyName = TEXT("Execute"); break;
+		case ET66SecondaryStatType::LootBag: KeyName = TEXT("LootBag"); break;
+		case ET66SecondaryStatType::LootWheel: KeyName = TEXT("LootWheel"); break;
+		case ET66SecondaryStatType::VendorToken: KeyName = TEXT("VendorToken"); break;
 		default: continue;
 		}
 		SecObj->SetNumberField(KeyName, Pair.Value);

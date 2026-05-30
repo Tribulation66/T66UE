@@ -122,6 +122,7 @@ bool AT66ChestInteractable::LockChestReward(APlayerController* PC)
 	{
 		Gold = FMath::RandRange(MinGold, MaxGold);
 	}
+	Gold = FMath::Max(0, FMath::RoundToInt(static_cast<float>(Gold) * RunState->GetLootChestRewardMultiplier()));
 
 	LockedReward.bLocked = true;
 	LockedReward.bCommitAttempted = false;

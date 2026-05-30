@@ -186,7 +186,7 @@ public:
 	/** Apply difficulty tier (Tier 0 = 1.0x, Tier 1 = 1.1x, Tier 2 = 1.2x, ...). */
 	void ApplyDifficultyTier(int32 Tier);
 
-	/** Stage mob ID (data-driven via DT_Stages EnemyA..EnemyJ). NAME_None means "not a stage mob". */
+	/** Stage mob ID (data-driven via DT_Stages EnemyA..EnemyL). NAME_None means "not a stage mob". */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mob")
 	FName MobID;
 
@@ -253,6 +253,7 @@ private:
 	/** Safe-zone check runs every this many seconds (perf: was 0.25, then 0.5; 1.0 reduces N×M cost). */
 	float SafeZoneCheckIntervalSeconds = 1.0f;
 	bool bCachedInsideSafeZone = false;
+	bool bLastDeathCreditedToHero = false;
 	FVector CachedSafeZoneEscapeDir = FVector::ZeroVector;
 	FVector CachedSafeZoneCenter = FVector::ZeroVector;
 	float CachedSafeZoneRadius = 0.f;

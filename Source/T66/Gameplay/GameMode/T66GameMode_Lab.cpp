@@ -2,6 +2,8 @@
 
 #include "Gameplay/GameMode/T66GameModePrivate.h"
 
+#include "Gameplay/T66MobManagerSubsystem.h"
+
 using namespace T66GameModePrivate;
 
 bool AT66GameMode::IsLabRun() const
@@ -152,20 +154,8 @@ AActor* AT66GameMode::SpawnLabMob(FName CharacterVisualID)
 	UWorld* World = GetWorld();
 	if (!World) return nullptr;
 
-	TSubclassOf<AT66EnemyBase> ClassToSpawn = nullptr;
 	const FName NormalizedEnemyID = FT66EnemyFamilyResolver::NormalizeMobID(CharacterVisualID);
-	if (NormalizedEnemyID == FName(TEXT("GoblinThief")))
-	{
-		ClassToSpawn = AT66GoblinThiefEnemy::StaticClass();
-	}
-	else if (NormalizedEnemyID == FName(TEXT("UniqueEnemy")))
-	{
-		ClassToSpawn = AT66UniqueDebuffEnemy::StaticClass();
-	}
-	else
-	{
-		ClassToSpawn = FT66EnemyFamilyResolver::ResolveEnemyClass(NormalizedEnemyID, nullptr);
-	}
+	TSubclassOf<AT66EnemyBase> ClassToSpawn = FT66EnemyFamilyResolver::ResolveEnemyClass(NormalizedEnemyID, nullptr);
 
 	if (!ClassToSpawn)
 	{
@@ -183,11 +173,14 @@ AActor* AT66GameMode::SpawnLabMob(FName CharacterVisualID)
 		{
 			Mob->ConfigureAsMob(NormalizedEnemyID);
 		}
-		else if (NormalizedEnemyID == FName(TEXT("GoblinThief")))
-		{
-			Mob->CharacterVisualID = NormalizedEnemyID;
-		}
 		LabSpawnedActors.Add(Mob);
+		if (UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>())
+		{
+			MobManager->RecordRouteAttribution(
+				Mob->EnemyFamily,
+				ET66RouteAttributionReason::RoutedRich_NonDirectorPath,
+				ET66RouteAttributionChannel::NonDirector);
+		}
 	}
 	return Mob;
 }

@@ -104,7 +104,7 @@ public:
 	void RefreshHearts();
 
 	UFUNCTION()
-	void RefreshQuickReviveState();
+	void RefreshBackroomsQuickReviveState();
 
 	UFUNCTION()
 	void RefreshLootPrompt();
@@ -325,9 +325,9 @@ protected:
 	TSharedPtr<FSlateBrush> HeartBrush;
 	TSharedPtr<FSlateBrush> HeartBlessingBrush;
 	TArray<TSharedPtr<FSlateBrush>> HeartTierBrushes;
-	TSharedPtr<SBox> QuickReviveIconRowBox;
-	TSharedPtr<SImage> QuickReviveIconImage;
-	TSharedPtr<FSlateBrush> QuickReviveBrush;
+	TSharedPtr<SBox> BackroomsReviveIconRowBox;
+	TSharedPtr<SImage> BackroomsReviveIconImage;
+	TSharedPtr<FSlateBrush> BackroomsReviveBrush;
 	TSharedPtr<SBox> DifficultyRowBox;
 	TArray<TSharedPtr<SBorder>> DifficultyBorders;
 	TArray<TSharedPtr<SImage>> DifficultyImages;

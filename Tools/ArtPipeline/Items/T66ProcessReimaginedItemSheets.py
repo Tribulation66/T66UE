@@ -152,12 +152,6 @@ SERIES: tuple[Series, ...] = (
         Variant("yellow", "scratched CD fragment", "Silver Rebuttal"),
         Variant("white", "chrome faucet handle", "Return Star"),
     )),
-    Series("Armor", "HpRegen", "Armor_HpRegen_sheet.png", (
-        Variant("black", "rain gutter seed pod", "Green Returner"),
-        Variant("red", "wilted houseplant tag", "Root Promise"),
-        Variant("yellow", "cracked watering cap", "Gentle Reservoir"),
-        Variant("white", "compostable cup shard", "Second Spring"),
-    )),
     Series("Armor", "Crush", "Armor_Crush_sheet.png", (
         Variant("black", "brick chip", "Pebble Tyrant"),
         Variant("red", "cracked padlock", "Prison Heart"),
@@ -181,12 +175,6 @@ SERIES: tuple[Series, ...] = (
         Variant("red", "snap bracelet strip", "Ambush Band"),
         Variant("yellow", "broken clothespin", "Retort Jaw"),
         Variant("white", "safety pin", "Revenge Hook"),
-    )),
-    Series("Evasion", "LifeSteal", "Evasion_LifeSteal_sheet.png", (
-        Variant("black", "spent straw", "Siphon Reed"),
-        Variant("red", "cracked vacuum nozzle", "Hungry Mouth"),
-        Variant("yellow", "leaky hose connector", "Thief's Valve"),
-        Variant("white", "old juice box straw wrap", "Sweet Theft"),
     )),
     Series("Evasion", "Assassinate", "Evasion_Assassinate_sheet.png", (
         Variant("black", "snapped razor cap", "Silent Edge"),

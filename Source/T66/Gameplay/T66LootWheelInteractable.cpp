@@ -27,6 +27,14 @@ namespace
 		}
 	}
 
+	static ET66ItemRarity T66UpgradeItemRarityByRewardMultiplier(const ET66ItemRarity BaseRarity, const float Multiplier)
+	{
+		const int32 TierAdvance = FMath::Clamp(FMath::FloorToInt(FMath::Clamp(Multiplier, 1.f, 3.f) - 1.f), 0, 2);
+		const int32 BaseTier = static_cast<int32>(BaseRarity);
+		const int32 UpgradedTier = FMath::Clamp(BaseTier + TierAdvance, static_cast<int32>(ET66ItemRarity::Black), static_cast<int32>(ET66ItemRarity::White));
+		return static_cast<ET66ItemRarity>(UpgradedTier);
+	}
+
 	static AT66LootWheelInteractable::ELockedLootWheelRewardType T66RollLootWheelReward(const FT66LootWheelRewardWeights& Weights, FRandomStream& Rng)
 	{
 		const float GoldWeight = FMath::Max(0.f, Weights.Gold);
@@ -173,6 +181,7 @@ bool AT66LootWheelInteractable::LockLootWheelReward(APlayerController* PC)
 	LockedReward.WheelRarity = Rarity;
 	LockedReward.PlayerController = PC;
 	LockedReward.RewardType = T66RollLootWheelReward(RewardWeights, Rng);
+	const float LootWheelMultiplier = RunState->GetLootWheelRewardMultiplier();
 
 	switch (LockedReward.RewardType)
 	{
@@ -197,11 +206,12 @@ bool AT66LootWheelInteractable::LockLootWheelReward(APlayerController* PC)
 		{
 			LockedReward.Gold = FMath::RandRange(LockedReward.MinGold, LockedReward.MaxGold);
 		}
+		LockedReward.Gold = FMath::Max(0, FMath::RoundToInt(static_cast<float>(LockedReward.Gold) * LootWheelMultiplier));
 		break;
 	}
 	case ELockedLootWheelRewardType::Item:
 		LockedReward.ItemID = T66GI ? T66GI->GetRandomItemIDForLootRarityFromStream(Rarity, Rng) : NAME_None;
-		LockedReward.ItemRarity = T66LootRarityToItemRarity(Rarity);
+		LockedReward.ItemRarity = T66UpgradeItemRarityByRewardMultiplier(T66LootRarityToItemRarity(Rarity), LootWheelMultiplier);
 		break;
 	case ELockedLootWheelRewardType::Boost:
 	{
@@ -209,7 +219,7 @@ bool AT66LootWheelInteractable::LockLootWheelReward(APlayerController* PC)
 		LockedReward.BoostStatType = StatPool.IsValidIndex(0)
 			? StatPool[Rng.RandRange(0, StatPool.Num() - 1)]
 			: ET66HeroStatType::Damage;
-		LockedReward.BoostBonusStatPoints = 8;
+		LockedReward.BoostBonusStatPoints = FMath::Max(1, FMath::RoundToInt(8.f * LootWheelMultiplier));
 		LockedReward.BoostDurationSeconds = 10.f;
 		break;
 	}

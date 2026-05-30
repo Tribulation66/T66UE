@@ -98,7 +98,7 @@ void UT66HeroGridScreen::OnScreenActivated_Implementation()
 	AllHeroIDs.Empty();
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
-		AllHeroIDs = GI->GetAllHeroIDs();
+		AllHeroIDs = GI->GetPlayableHeroIDs();
 	}
 }
 
@@ -109,7 +109,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 	{
 		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 		{
-			AllHeroIDs = GI->GetAllHeroIDs();
+			AllHeroIDs = GI->GetPlayableHeroIDs();
 		}
 	}
 
@@ -201,11 +201,7 @@ TSharedRef<SWidget> UT66HeroGridScreen::BuildSlateUI()
 			SlotYs[Row],
 			TileSize,
 			TileSize,
-			T66DemoModeUI::WrapWithComingSoonOverlay(
-				Tile,
-				bHasHero && !bHeroPlayable,
-				this,
-				FName(*FString::Printf(TEXT("HeroGrid.Slot%02d.DemoOverlay"), Index + 1))));
+			Tile);
 	}
 
 	const TSharedRef<SWidget> RootContent = SNew(SBox)

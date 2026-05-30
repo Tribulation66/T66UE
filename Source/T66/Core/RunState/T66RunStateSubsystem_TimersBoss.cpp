@@ -203,8 +203,6 @@ void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 	StatusCurseSecondsRemaining = 0.f;
 	StatusEffectsChanged.Broadcast();
 	HeroProgressChanged.Broadcast();
-	// Bible: gambler anger resets at end of every stage.
-	ResetGamblerAnger();
 	ResetShopForStage();
 	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{

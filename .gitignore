@@ -76,3 +76,14 @@ UI/screens/**/*.jpg
 UI/screens/**/*.jpeg
 UI/screens/**/_capture_results.json
 UI/Reference/**/*.png
+
+# Obsolete generated runtime assets. Keep future regenerated copies local unless
+# a new production path explicitly promotes them back into Content.
+Content/UI/Sprites/Interactables/QuickReviveIcon.uasset
+Content/World/Cliffs/MI_HillTile*.uasset
+Content/World/Cliffs/T_HillTile*.uasset
+Content/World/Interactables/Vending/QuickReviveVending_QuadRetro.uasset
+Content/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D*.uasset
+Content/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D*.uasset
+Content/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro.uasset
+Content/World/Interactables/Vending/Textures/T_QuickReviveVending_*.uasset

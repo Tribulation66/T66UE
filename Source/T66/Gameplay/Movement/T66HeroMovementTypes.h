@@ -24,9 +24,6 @@ struct T66_API FT66HeroMovementTuning
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "100.0"))
-	float DefaultWalkSpeed = 1800.f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
 	float MaxAcceleration = 9000.f;
 

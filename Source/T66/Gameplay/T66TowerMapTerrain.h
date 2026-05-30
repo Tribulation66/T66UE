@@ -14,7 +14,7 @@ namespace T66TowerMapTerrain
 	enum class ET66TowerFloorRole : uint8
 	{
 		Start,
-		Gameplay,
+		Mob,
 		Boss,
 	};
 
@@ -89,10 +89,10 @@ namespace T66TowerMapTerrain
 	struct FFloor
 	{
 		int32 FloorNumber = 0;
-		ET66TowerFloorRole FloorRole = ET66TowerFloorRole::Gameplay;
+		ET66TowerFloorRole FloorRole = ET66TowerFloorRole::Mob;
 		int32 GameplayLevelNumber = INDEX_NONE;
 		ET66TowerGameplayLevelTheme Theme = ET66TowerGameplayLevelTheme::Dungeon;
-		bool bGameplayFloor = false;
+		bool bMobFloor = false;
 		bool bHasDropHole = false;
 		FVector Center = FVector::ZeroVector;
 		float SurfaceZ = 0.0f;
@@ -151,8 +151,8 @@ namespace T66TowerMapTerrain
 		float TraceStartZ = 16000.0f;
 		float TraceEndZ = -32000.0f;
 		int32 StartFloorNumber = 1;
-		int32 FirstGameplayFloorNumber = 2;
-		int32 LastGameplayFloorNumber = 4;
+		int32 FirstMobFloorNumber = 2;
+		int32 LastMobFloorNumber = 4;
 		int32 BossFloorNumber = 5;
 		FVector SpawnSurfaceLocation = FVector::ZeroVector;
 		FVector StartAnchorSurfaceLocation = FVector::ZeroVector;
@@ -160,7 +160,6 @@ namespace T66TowerMapTerrain
 		FVector StartAreaCenterSurfaceLocation = FVector::ZeroVector;
 		FVector BossAnchorSurfaceLocation = FVector::ZeroVector;
 		FVector BossSpawnSurfaceLocation = FVector::ZeroVector;
-		FVector BossBeaconSurfaceLocation = FVector::ZeroVector;
 		FVector BossAreaCenterSurfaceLocation = FVector::ZeroVector;
 		TArray<FVector> RescueAnchorLocations;
 		TArray<FStartGalleryWing> StartGalleryWings;

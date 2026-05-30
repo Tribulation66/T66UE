@@ -81,7 +81,7 @@ class T66_API UT66PlayerSettingsSaveGame : public USaveGame
 public:
 	// Bump when adding/changing fields in a breaking way.
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 23;
+	int32 SchemaVersion = 24;
 
 	// ===== Settings UI =====
 	// Saved as an int so SettingsScreen doesn't need to include UI enums here.
@@ -230,9 +230,6 @@ public:
 	TArray<FT66FavoriteLeaderboardRun> FavoriteLeaderboardRuns;
 
 	// ===== Retro FX =====
-	UPROPERTY(SaveGame)
-	bool bRetroFXMasterEnabled = true;
-
 	UPROPERTY(SaveGame)
 	FT66RetroFXSettings RetroFXSettings;
 };

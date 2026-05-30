@@ -14,20 +14,22 @@ This validator proves Combat VFX binding structure, required assets, source guar
 2. `Gameplay/GAMEPLAY_AGENTS.md`
 3. `Gameplay/Combat/CombatVFXAuthoringProcedure.md`
 4. `Gameplay/Combat/CombatVFXDefinitionOfDone.md`
-5. Per-effect packet, such as `Hero1AxeAOESlashMechanismPacket.md`
-6. `Gameplay/Combat/CombatVFXGeneratedAssetPolicy.md`
-7. Runtime reference in `Gameplay/Combat/MASTER_COMBAT.md`
-8. Inventory/history in `Gameplay/Combat/CombatVFXInfrastructureInventory.md`
+5. `Gameplay/Combat/CombatVFXVisualDamageAlignmentContract.md`
+6. `Gameplay/Combat/CombatVFXImpactContextContract.md`
+7. Per-effect packet, such as `Hero1AxeAOESlashMechanismPacket.md`
+8. `Gameplay/Combat/CombatVFXGeneratedAssetPolicy.md`
+9. Runtime reference in `Gameplay/Combat/MASTER_COMBAT.md`
+10. Inventory/history in `Gameplay/Combat/CombatVFXInfrastructureInventory.md`
 
 ## Current Baseline
 
 | Area | Current status |
 |---|---|
-| Hero 1 AOE | Production binding and crescent-band hitbox backend proof exist for `Hero_1_black_aoe`; final visual-polish approval remains separate. |
-| Hero 1 DOT | Infrastructure packet only. No active production binding row. |
-| Hero 1 Pierce | Infrastructure packet only. No active production binding row. |
-| Hero 1 Bounce | Infrastructure packet only. No active production binding row. |
-| Idol overlays | Architecture document only. No idol overlay assets or active rows. |
+| Hero 1 AOE | Active production binding row (`Hero1Axe_AOE_Base` → `Hero_1_black_aoe`) plus crescent-band hitbox backend proof; final visual-polish approval remains separate. |
+| Hero 1 Pierce | Active production binding row (`Hero1Axe_Pierce_Base` → `Hero_1_black_pierce`, PathAnchored lane); final visual-polish approval remains separate. |
+| Hero 1 Bounce | Active production binding row (`Hero1Axe_Bounce_Base` → `Hero_1_black_bounce`, ImpactAnchored per-link carrier); final visual-polish approval remains separate. |
+| Hero 1 DOT | Active production binding row (`Hero1Axe_DOT_Base` → `Hero_1_black_dot`, moving aura-ring carrier transported by the single hero->target DOT shot); final visual-polish approval remains separate. |
+| Idol overlays | Architecture plus impact-context contract. Idol category proofs are structural/proof placeholder paths only; no production idol Niagara assets or active production idol rows are approved by this baseline. |
 | Generated assets | Combat-VFX-local policy only; repo-wide generated asset policy is out of scope for this baseline. |
 
 ## Standard VFX Flow
@@ -40,7 +42,9 @@ This validator proves Combat VFX binding structure, required assets, source guar
 6. Validate visual mechanisms through editor-isolation and gameplay-capture evidence.
 7. Promote to production only through a reviewed production binding row and runtime proof.
 8. Prove damage/hitbox authority through combat logic, not Niagara collision or visual opacity.
-9. Commit only after validator logs, evidence bundle, staged manifest, and staged-diff review pass.
+9. Prove visual/damage alignment: declare anchor model, footprint mapping, offsets, tolerance, and evidence size/position agreement with the authoritative hitbox, or record an approved intentional mismatch.
+10. Prove impact-context identity and parity: weapon contexts publish at official impact points, idol/downstream contexts preserve `ParentSourceID`, own their `SourceID`, emit parity and skip/fallback counters, and pass a neutral control.
+11. Commit only after validator logs, evidence bundle, staged manifest, and staged-diff review pass.
 
 ## Durable Proof Artifacts
 

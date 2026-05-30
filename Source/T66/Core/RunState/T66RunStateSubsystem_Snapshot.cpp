@@ -21,11 +21,10 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.DifficultyTier = DifficultyTier;
 	OutSnapshot.DifficultySkulls = DifficultySkulls;
 	OutSnapshot.TotemsActivatedCount = TotemsActivatedCount;
-	OutSnapshot.GamblerAnger01 = GamblerAnger01;
 	OutSnapshot.OwedBossIDs = OwedBossIDs;
 	OutSnapshot.CowardiceGatesTakenCount = CowardiceGatesTakenCount;
 	OutSnapshot.InventorySlots = InventorySlots;
-	OutSnapshot.ActiveGamblersTokenLevel = ActiveGamblersTokenLevel;
+	OutSnapshot.ActiveVendorTokenLevel = ActiveVendorTokenLevel;
 	OutSnapshot.EventLog = EventLog;
 	OutSnapshot.StructuredEventLog = StructuredEventLog;
 	OutSnapshot.StagePacingPoints = StagePacingPoints;
@@ -41,12 +40,23 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.bRunEndedAsVictory = bRunEndedAsVictory;
 	OutSnapshot.CurrentScore = CurrentScore;
 	OutSnapshot.ScoreBudgetContext = ScoreBudgetContext;
-	OutSnapshot.HeroLevel = DefaultHeroLevel;
-	OutSnapshot.HeroXP = 0;
-	OutSnapshot.XPToNextLevel = DefaultXPToLevel;
+	OutSnapshot.HeroLevel = HeroLevel;
+	OutSnapshot.HeroXP = HeroXP;
+	OutSnapshot.XPToNextLevel = (XPToNextLevel > 0) ? XPToNextLevel : GetDataDrivenLevelUpXPThreshold();
 	OutSnapshot.HeroPreciseStats = HeroPreciseStats;
 	OutSnapshot.HeroStatRngCurrentSeed = HeroStatRng.GetCurrentSeed();
 	OutSnapshot.PersistentSecondaryStatBonusEntries.Reset();
+	for (const TPair<ET66SecondaryStatType, int32>& Pair : PersistentSecondaryStatBonusTenths)
+	{
+		if (Pair.Key == ET66SecondaryStatType::None || Pair.Value <= 0)
+		{
+			continue;
+		}
+
+		FT66SavedSecondaryStatBonusEntry& Entry = OutSnapshot.PersistentSecondaryStatBonusEntries.AddDefaulted_GetRef();
+		Entry.StatType = Pair.Key;
+		Entry.BonusTenths = Pair.Value;
+	}
 	OutSnapshot.HeroStats = HeroPreciseStats.ToDisplayStatBlock();
 	OutSnapshot.PowerCrystalsEarnedThisRun = PowerCrystalsEarnedThisRun;
 	OutSnapshot.PowerCrystalsGrantedToWalletThisRun = PowerCrystalsGrantedToWalletThisRun;
@@ -147,11 +157,18 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	DifficultyTier = FMath::Max(0, Snapshot.DifficultyTier);
 	DifficultySkulls = FMath::Max(0, Snapshot.DifficultySkulls);
 	TotemsActivatedCount = FMath::Max(0, Snapshot.TotemsActivatedCount);
-	GamblerAnger01 = FMath::Clamp(Snapshot.GamblerAnger01, 0.f, 1.f);
 	OwedBossIDs = Snapshot.OwedBossIDs;
 	CowardiceGatesTakenCount = FMath::Max(0, Snapshot.CowardiceGatesTakenCount);
 	InventorySlots = Snapshot.InventorySlots;
-	ActiveGamblersTokenLevel = T66_ClampGamblersTokenLevel(Snapshot.ActiveGamblersTokenLevel);
+	const int32 RemovedRetiredSlots = InventorySlots.RemoveAll([](const FT66InventorySlot& Slot)
+	{
+		return Slot.IsValid() && T66_IsRetiredRemovedItemID(Slot.ItemTemplateID);
+	});
+	if (RemovedRetiredSlots > 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[Items] Removed %d retired inventory slot(s) from run snapshot."), RemovedRetiredSlots);
+	}
+	ActiveVendorTokenLevel = T66_ClampVendorTokenLevel(Snapshot.ActiveVendorTokenLevel);
 	EventLog = Snapshot.EventLog;
 	StructuredEventLog = Snapshot.StructuredEventLog;
 	StagePacingPoints = Snapshot.StagePacingPoints;
@@ -195,12 +212,35 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	AntiCheatCurrentPressureExpectedDodges = FMath::Clamp(Snapshot.AntiCheatCurrentPressureExpectedDodges, 0.f, 1000000.f);
 	CurrentScore = FMath::Max(0, Snapshot.CurrentScore);
 	ScoreBudgetContext = Snapshot.ScoreBudgetContext;
-	HeroLevel = DefaultHeroLevel;
-	HeroXP = 0;
-	XPToNextLevel = DefaultXPToLevel;
 	InitializeHeroStatTuningForSelectedHero();
+	HeroLevel = FMath::Clamp(Snapshot.HeroLevel, DefaultHeroLevel, MaxHeroLevel);
+	HeroXP = FMath::Max(0, Snapshot.HeroXP);
+	XPToNextLevel = (Snapshot.XPToNextLevel > 0) ? Snapshot.XPToNextLevel : GetDataDrivenLevelUpXPThreshold();
+	if (Snapshot.HeroPreciseStats.DamageTenths > 0
+		|| Snapshot.HeroPreciseStats.AttackSpeedTenths > 0
+		|| Snapshot.HeroPreciseStats.AttackScaleTenths > 0
+		|| Snapshot.HeroPreciseStats.AccuracyTenths > 0
+		|| Snapshot.HeroPreciseStats.ArmorTenths > 0
+		|| Snapshot.HeroPreciseStats.EvasionTenths > 0
+		|| Snapshot.HeroPreciseStats.LuckTenths > 0
+		|| Snapshot.HeroPreciseStats.SpeedTenths > 0)
+	{
+		HeroPreciseStats = Snapshot.HeroPreciseStats;
+		HeroPreciseStats.DamageTenths = ClampHeroStatTenths(HeroPreciseStats.DamageTenths);
+		HeroPreciseStats.AttackSpeedTenths = ClampHeroStatTenths(HeroPreciseStats.AttackSpeedTenths);
+		HeroPreciseStats.AttackScaleTenths = ClampHeroStatTenths(HeroPreciseStats.AttackScaleTenths);
+		HeroPreciseStats.AccuracyTenths = ClampHeroStatTenths(HeroPreciseStats.AccuracyTenths);
+		HeroPreciseStats.ArmorTenths = ClampHeroStatTenths(HeroPreciseStats.ArmorTenths);
+		HeroPreciseStats.EvasionTenths = ClampHeroStatTenths(HeroPreciseStats.EvasionTenths);
+		HeroPreciseStats.LuckTenths = ClampHeroStatTenths(HeroPreciseStats.LuckTenths);
+		HeroPreciseStats.SpeedTenths = ClampHeroStatTenths(HeroPreciseStats.SpeedTenths);
+	}
 	HeroStatRng.Initialize(Snapshot.HeroStatRngCurrentSeed != 0 ? Snapshot.HeroStatRngCurrentSeed : static_cast<int32>(FPlatformTime::Cycles()));
 	ClearPersistentSecondaryStatBonuses();
+	for (const FT66SavedSecondaryStatBonusEntry& Entry : Snapshot.PersistentSecondaryStatBonusEntries)
+	{
+		AddPersistentSecondaryStatBonusTenths(Entry.StatType, Entry.BonusTenths);
+	}
 	SyncLegacyHeroStatsFromPrecise();
 	PowerCrystalsEarnedThisRun = FMath::Max(0, Snapshot.PowerCrystalsEarnedThisRun);
 	PowerCrystalsGrantedToWalletThisRun = FMath::Clamp(Snapshot.PowerCrystalsGrantedToWalletThisRun, 0, PowerCrystalsEarnedThisRun);
@@ -273,7 +313,6 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	GoldChanged.Broadcast();
 	DebtChanged.Broadcast();
 	DifficultyChanged.Broadcast();
-	GamblerAngerChanged.Broadcast();
 	InventoryChanged.Broadcast();
 	IdolsChanged.Broadcast();
 	ScoreChanged.Broadcast();

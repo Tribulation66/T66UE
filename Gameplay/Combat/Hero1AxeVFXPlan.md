@@ -11,7 +11,7 @@ Hero 1 AOE has moved beyond the old static-crescent lab prototype for backend pu
 Current status by attack category:
 
 - `AOE`: production binding and hitbox backend proof exist; final visual-polish approval remains separate.
-- `DOT`: infrastructure-only packet exists; no active production binding row or VFX asset.
+- `DOT`: active production binding row (`Hero1Axe_DOT_Base` → `Hero_1_black_dot`) bound to the moving aura-ring carrier Niagara system; final visual-polish approval remains separate.
 - `Pierce`: infrastructure-only packet exists; no active production binding row or VFX asset.
 - `Bounce`: infrastructure-only packet exists; no active production binding row or VFX asset.
 - Idol overlays: architecture-only seam; no active idol overlay rows or assets.

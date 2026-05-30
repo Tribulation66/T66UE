@@ -1,26 +1,28 @@
 # T66 Master Stats
 
-**Last updated:** 2026-05-26
+**Last updated:** 2026-05-29
 **Scope:** Single-source handoff for the T66 stat system: authored data, live runtime ownership, primary and secondary formulas, item and buff stacking, stat UI, persistence, and current deprecated or inert stat paths.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Combat/MASTER_COMBAT.md`, `Gameplay/Movement/MASTER_MOVEMENT.md`
 **Maintenance rule:** Update this file after every material change to hero stat schema, hero level curves, item stat rules, buff progression, stat UI, run-summary stat snapshots, or secondary-stat activation/deprecation.
 
-## May 2026 Status: Run Leveling Deprecated
+## May 2026 Status: Secondary-Only Items And Active Leveling
 
-- In-run hero XP and level-up stat growth are deprecated.
-- `HeroLevel`, `HeroXP`, `XPToNextLevel`, saved precise hero stats, and persistent secondary gain entries remain only as save/backend compatibility fields.
-- New runs and imported saves clamp live hero level to `1`, hero XP to `0`, and XP threshold to `0`.
-- Primary stat totals are now hero base stats plus item line-1 bonuses only.
-- Secondary/category stat bonuses are now item-derived only beyond hero-authored base values.
-- Permanent diploma bonuses, single-use drug multipliers, temporary boost pickups, community start-level overrides, community direct stat bonuses, and max-stat run modifiers no longer affect live combat stats.
-- The shared gameplay stats panel no longer shows the `Level` row.
+- Items only apply their secondary stat line. Item primary lines remain authored for compatibility/presentation but no longer increase primary stats or proxy secondary gains.
+- In-run hero XP and level-up progression are active again.
+- `HeroLevel`, `HeroXP`, `XPToNextLevel`, saved precise hero stats, and persistent secondary gain entries are live saved-run state.
+- New runs start at level `1`, XP `0`, and the data-driven flat XP threshold from `PlayerExperience` (`100` by current data).
+- Enemy XP is data-driven through `Enemies.csv` / `FT66EnemyData::XPValue`; both rich enemies and lightweight mobs grant XP when killed by the hero.
+- A level-up heals HP to full, rolls hero per-level primary gains from `Heroes.csv`, propagates those gains into secondary stats, and fires a non-boss OHKO wave at the data-driven radius (`900` UU by current data).
+- Level-up wave kills do not award XP, so wave kills cannot recursively chain into another level-up.
+- Permanent diploma bonuses apply as primary stat bonuses and then propagate into secondary stats.
+- Selected single-use drug bonuses apply as secondary multipliers at run start, but drug purchases remain disabled/unpurchasable.
 
 ## 1. Executive Summary
 
 - `UT66RunStateSubsystem` is the live stat authority.
 - Base stat authoring comes from `Content/Data/Heroes.csv` / `DT_Heroes`.
-- Item stat authoring comes from `Content/Data/Items.csv` / `DT_Items`, with one synthetic runtime fallback for `Item_Accuracy`.
-- Permanent buff progression comes from `UT66BuffSubsystem` and adds flat points to the 7 non-Speed primaries:
+- Item stat authoring comes from `Content/Data/Items.csv` / `DT_Items`; live item effects are secondary-only.
+- Permanent diploma progression comes from `UT66BuffSubsystem` and adds flat points to primary stats:
   - `Damage`
   - `AttackSpeed`
   - `AttackScale`
@@ -28,6 +30,7 @@
   - `Armor`
   - `Evasion`
   - `Luck`
+  - `Speed`
 - The foundational primary stat schema is:
   - `Damage`
   - `AttackSpeed`
@@ -37,25 +40,21 @@
   - `Evasion`
   - `Luck`
   - `Speed`
-- `HeroStats` stores the selected hero's base primary stats. Level-up gains are deprecated.
+- `HeroStats` mirrors the selected hero's active primary stats for compatibility and snapshots.
 - Effective live primary getters add:
   - hero base
-  - item line-1 flat bonuses
-- `Speed` is currently the exception:
-  - it no longer levels
-  - it affects movement normally
-  - it is increased by supported item stat paths
-- Live item templates use a two-line model:
-  - line 1 = flat additive primary stat bonus
-  - line 2 = multiplicative secondary stat scalar
-- Matching secondary stats stack multiplicatively, not additively.
-- Secondary stats are not item-only values. They start from hero-authored base values, then item and single-use buff multipliers scale those bases.
+  - in-run level-up primary gains
+  - permanent diploma primary gains
+- `Speed` levels and affects movement directly; it currently has no primary-to-secondary proxy group.
+- Live normal item templates present and apply only one stat effect:
+  - secondary stat line = flat secondary stat points
+- Matching item secondary bonuses stack additively in `ItemSecondaryStatBonusTenths`.
+- Secondary stats start from hero-authored base values, then combine item secondary bonuses, persistent level-up secondary bonuses, permanent diploma secondary bonuses, selected drug multipliers, and primary-derived multipliers.
 - `Accuracy` is now a full primary stat. The Accuracy family is:
-  - `CritDamage`
   - `CritChance`
+  - `CritDamage`
   - `AttackRange`
-  - `Accuracy`
-- Any item row in the Accuracy family is normalized to primary `Accuracy` by runtime code, even if older data was authored differently.
+  - `Execute`
 - The current default stats panel shows `Level` plus 7 primaries:
   - `Damage`
   - `AttackSpeed`
@@ -113,15 +112,15 @@
   - `BaseSellGold`
   - rarity-specific icons
 - `Item_BackroomsQuickRevive` is a reward-only inventory item. It is intentionally excluded from random item pools, shop stock, buyback/sell value, alchemy, lab unlock progression, and stat aggregation.
-- Quick Revive is no longer a perk/charge/downed-state flow. Normal lethal damage consumes the Backrooms Quick Revive item once, restores one heart, and removes the item from inventory.
-- Runtime normalizes item rows through `T66ResolveEffectivePrimaryStatType(...)`.
-- Accuracy-family secondaries always resolve the effective primary to `Accuracy`.
-- `UT66GameInstance::BuildSyntheticSpecialItemData()` can synthesize `Item_Accuracy` if that row is missing from the DataTable.
+- Normal lethal damage consumes the Backrooms Quick Revive item once, restores one heart, and removes the item from inventory.
+- Runtime still normalizes item rows through `T66ResolveEffectivePrimaryStatType(...)` for compatibility and presentation.
+- Accuracy-family secondaries resolve under primary `Accuracy`.
+- `Item_Accuracy` is retired; `Item_Execute` is the live fourth Accuracy-family item.
 
 ### 3.3 Buff progression data
 
 - `UT66BuffSubsystem` persists permanent and single-use stat progression in `UT66BuffSaveGame`.
-- Permanent buffs track only 7 primaries:
+- Permanent diploma buffs track all 8 primaries:
   - `Damage`
   - `AttackSpeed`
   - `AttackScale`
@@ -129,40 +128,41 @@
   - `Armor`
   - `Evasion`
   - `Luck`
-- There is no permanent `Speed` track.
-- Single-use buffs are deprecated. Their save/load state remains for compatibility, but they no longer produce run stat multipliers.
+  - `Speed`
+- Each unlocked fill step and random overflow unit contributes `+1` primary stat point.
+- Single-use drug buffs are selected secondary multipliers. Purchases are currently disabled, but already-owned/selected drugs are wired to activate at run start.
 
 ## 4. Runtime Ownership And Fresh-Run Flow
 
 - `AT66GameMode` starts a fresh run by calling:
   - `RunState->ResetForNewRun()`
   - `RunState->ActivatePendingSingleUseBuffsForRunStart()`
-- `ResetForNewRun()` clears run inventory, clears active dot state, clears single-use secondary multipliers, resets score and timers, and zeroes all item-derived accumulators.
+- `ResetForNewRun()` clears run inventory, clears active dot state, clears single-use secondary multipliers, resets score and timers, and zeroes item-derived accumulators.
 - `ResetForNewRun()` then:
-  - normalizes `HeroLevel = 1`, `HeroXP = 0`, and `XPToNextLevel = 0`
+  - initializes `HeroLevel = 1`, `HeroXP = 0`, and `XPToNextLevel` from `PlayerExperience`
   - ignores deprecated difficulty start bonus levels and community direct-stat overrides
   - reloads the selected hero's primary and secondary baselines
-  - seeds the run's hero-stat RNG for compatibility-only deterministic fields
-- `ActivatePendingSingleUseBuffsForRunStart()` clears deprecated single-use multiplier state and does not consume a stat buff loadout.
+  - seeds the run's hero-stat RNG for deterministic level-up rolls
+- `ActivatePendingSingleUseBuffsForRunStart()` consumes selected owned drug buffs and applies their secondary multipliers for the run.
 - The authoritative live stat state therefore lives in:
   - selected hero base primary stats
   - selected hero base secondary stats
   - hero secondary baselines
-  - `ItemStatBonuses`
-  - `SecondaryMultipliers`
+  - `HeroPreciseStats`
+  - `PersistentSecondaryStatBonusTenths`
+  - `PermanentBuffStatBonuses`
+  - `PermanentSecondaryStatBonusTenths`
+  - `ItemSecondaryStatBonusTenths`
+  - `SingleUseSecondaryMultipliers`
 
 ## 5. Foundational Primary Stats
 
 ### 5.1 Effective primary getters
 
-- `GetDamageStat() = BaseDamage + ItemStatBonuses.Damage`
-- `GetAttackSpeedStat() = BaseAttackSpeed + ItemStatBonuses.AttackSpeed`
-- `GetScaleStat() = BaseAttackScale + ItemStatBonuses.AttackScale`
-- `GetAccuracyStat() = BaseAccuracy + ItemStatBonuses.Accuracy`
-- `GetArmorStat() = BaseArmor + ItemStatBonuses.Armor`
-- `GetEvasionStat() = BaseEvasion + ItemStatBonuses.Evasion`
-- `GetLuckStat() = BaseLuck + ItemStatBonuses.Luck`
-- `GetSpeedStat() = BaseSpeed + ItemStatBonuses.Speed`
+- Primary getters return `HeroPreciseStats + PermanentBuffStatBonuses`, clamped to the stat range.
+- Items do not affect primary getters.
+- Level-up directly increases `HeroPreciseStats`.
+- Diplomas add through `PermanentBuffStatBonuses`.
 
 ### 5.2 Primary-derived multipliers
 
@@ -170,9 +170,7 @@
 - `GetHeroAttackSpeedMultiplier() = 1.0 + (AttackSpeed - 1) * 0.012`
 - `GetHeroScaleMultiplier() = 1.0 + (AttackScale - 1) * 0.008`
 - `GetHeroAccuracyMultiplier() = 1.0 + (Accuracy - 1) * 0.010`
-- `GetHeroMoveSpeedMultiplier() = 1.0 + (Speed - 1) * 0.010`
-  - retained as a compatibility/stat formula, but no longer consumed by live hero walking speed
-  - live walking speed uses raw `GetSpeedStat() * 840 UU/s`; see `Gameplay/Movement/MASTER_MOVEMENT.md`
+- Live walking speed uses raw `GetSpeedStat() * 840 UU/s`; see `Gameplay/Movement/MASTER_MOVEMENT.md`
 
 ### 5.3 Defensive totals
 
@@ -199,16 +197,26 @@
 - Current passive hook:
   - `Headshot` adds `+0.20`
 
-## 6. Deprecated Leveling And Starting Levels
+## 6. Active Leveling
 
 - `DefaultHeroLevel = 1`
-- `DefaultXPToLevel = 0`
-- XP per level, level-up stat rolls, level-up healing, and start-above-level-1 replays are deprecated.
-- `AddHeroXP(...)` is a compatibility no-op that resets level fields to `1/0/0`.
-- Hero per-level gain ranges remain in schemas so older data can load, but live run stats do not consume them.
+- `DefaultXPToLevel = 100`
+- `PlayerExperience` owns the active XP threshold and level-up wave radius per difficulty:
+  - `LevelUpXPThreshold`
+  - `LevelUpWaveRadiusUU`
+- The current XP curve is flat: every level uses the current difficulty's `LevelUpXPThreshold`.
+- `AddHeroXP(...)` accumulates XP, applies as many level-ups as the XP total supports, and preserves leftover XP.
+- Each level-up:
+  - increments `HeroLevel`
+  - heals `CurrentHP` to `MaxHP`
+  - rolls primary stat gains from the selected hero's `Lvl*Min` / `Lvl*Max` ranges
+  - adds those primary gains to `HeroPreciseStats`
+  - distributes proxy secondary gains through `ApplyPrimaryGainToSecondaryBonuses(...)`
+  - runs a non-boss OHKO wave in `LevelUpWaveRadiusUU`
+- Level-up wave XP is suppressed while the wave is resolving.
 - Safe defaults still exist if hero data fails to load:
   - all base primaries default to `2`
-  - deprecated primary gain ranges default to low decimal bands for schema compatibility
+  - primary gain ranges default to low decimal bands
 
 ## 7. Secondary Stat Model
 
@@ -217,9 +225,11 @@
 - Secondary stats are computed from hero-authored baselines, not from zero.
 - For any secondary type, runtime starts with:
   - the hero's base secondary value from `Heroes.csv`
-  - multiplied by matching item line-2 multipliers
+  - plus item, level-up, and diploma secondary bonus points when applicable
+  - multiplied by selected drug multipliers when applicable
 - Let:
-  - `M = product of item multipliers for this secondary`
+  - `BonusPoints = item secondary points + persistent level-up secondary points + permanent diploma secondary points`
+  - `M = active run multipliers for this secondary, including selected drugs`
 
 ### 7.2 Damage family
 
@@ -244,10 +254,10 @@
 
 ### 7.5 Accuracy family
 
-- `CritDamage = HeroBaseCritDamage * M * HeroAccuracyMultiplier`
-- `CritChance = clamp(HeroBaseCritChance * M * HeroAccuracyMultiplier, 0.0, 1.0)`
-- `AttackRange = HeroBaseAttackRange * M * HeroAccuracyMultiplier`
-- `Accuracy = clamp(HeroBaseAccuracy * M * HeroAccuracyMultiplier, 0.0, 1.0)`
+- `CritChance = clamp((HeroBaseCritChance + BonusPoints * 0.01) * M * HeroAccuracyMultiplier, 0.0, 1.0)`
+- `CritDamage = max(1.0, (HeroBaseCritDamage + BonusPoints * 0.05) * M * HeroAccuracyMultiplier)`
+- `AttackRange = max(100.0, (HeroBaseAttackRange + BonusPoints * 25.0) * M * HeroAccuracyMultiplier)`
+- `Execute = clamp(BonusPoints * 0.005 * M, 0.0, 1.0)`
 
 ### 7.6 Armor family
 
@@ -297,39 +307,34 @@
 - `RecomputeItemDerivedStats()` clears all item-derived accumulators and rebuilds them from `InventorySlots`.
 - It skips:
   - invalid slots
-  - `Item_GamblersToken`
-  - any item row whose secondary is `GamblerToken`
+  - reward-only special items
+  - Vendor Token compatibility rows
+  - any item row whose primary is `Special`
 - It then:
-  - adds line-1 flat stat bonuses through `AddPrimaryBonus(...)`
-  - multiplies secondary multipliers into `SecondaryMultipliers`
+  - adds only the item's secondary stat bonus into `ItemSecondaryStatBonusTenths`
 
 ### 8.4 Important current caveats
 
-- `AddPrimaryBonus(...)` intentionally ignores `Speed`.
-- There are no authored `Speed` rows in `Items.csv`, so live item line-1 application currently affects only the other 7 primaries.
+- Item line-1 primary rolls are retained in inventory slots for compatibility and display plumbing but do not affect runtime stats.
 - The legacy `ET66ItemEffectType` enum and the old item-percent fields in `UT66RunStateSubsystem` are currently not populated by live item recompute.
-- Current live item power is therefore the two-line model only:
-  - flat primary line 1
-  - multiplicative secondary line 2
+- Current live item power is therefore secondary-only.
 
 ### 8.5 Accuracy item normalization
 
 - Accuracy-family items are normalized to primary `Accuracy` by runtime code.
-- `Item_Accuracy` is treated specially:
-  - it can be synthesized if the DataTable row is missing
-  - vendor pool and random-item pool code explicitly ensure it can still appear
+- `Item_Accuracy` is retired.
+- `Item_Execute` is explicitly kept in fallback stock and random pools.
 
 ## 9. Buff Progression Rules
 
 ### 9.1 Permanent buffs
 
-- `UT66BuffSubsystem::MaxFillStepsPerStat = 10`
+- `UT66BuffSubsystem::MaxFillStepsPerStat = 4`
 - `UT66BuffSubsystem::PermanentBuffUnlockCostCC = 10`
 - Each unlocked fill step contributes `+1` flat primary stat point.
-- Overflow above the visible 10 steps is stored in the `RandomBonus*` fields and still counts toward the stat's total.
-- Permanent buffs do not apply to:
-  - `Speed`
-  - any secondary stat
+- Overflow above the visible steps is stored in the `RandomBonus*` fields and still counts toward the stat's total.
+- Permanent diploma primary bonuses are then propagated into secondary bonus points by the run state.
+- Diploma purchases remain disabled/unpurchasable while this path is wired.
 
 ### 9.2 Single-use buffs
 
@@ -338,7 +343,8 @@
 - `UT66BuffSubsystem::SingleUseSecondaryBuffMultiplier = 1.10`
 - A selected secondary with `N` owned-and-consumed copies gets:
   - `1.10 ^ N`
-- Single-use buffs are consumed when the run starts.
+- Single-use buffs are consumed when the run starts and stored in `SingleUseSecondaryMultipliers`.
+- Drug purchases remain disabled/unpurchasable while this path is wired.
 - Runtime only exposes live secondaries through `GetAllSingleUseBuffTypes()`, so deprecated secondaries cannot be selected into the modern loadout.
 
 ## 10. Live, Deprecated, And Inert Secondary Stats
@@ -362,7 +368,7 @@
 - `LongRangeDamage`
 - `SpinWheel`
 - `MovementSpeed`
-- `GamblerToken`
+- `VendorToken` / legacy `GamblerToken` enum alias
 - `HpRegen`
 - `LifeSteal`
 - `Alchemy`
@@ -376,7 +382,7 @@
 - `LongRangeDamage` multiplier returns `1.0`
 - `MovementSpeed` secondary multiplier returns `1.0`
 - `Goblin`, `Leprechaun`, `Fountain`, and `SpinWheel` remain in enum and persistence paths but are not live item-facing stats
-- `GamblerToken` is handled as a separate run upgrade through `ActiveGamblersTokenLevel`, not as part of normal item stat recompute
+- `VendorToken` is handled as a separate run upgrade through `ActiveGamblersTokenLevel` (field name retained for save compatibility), not as part of normal item stat recompute
 
 ### 10.4 Hero data columns that still exist but are no longer live stat paths
 
@@ -458,15 +464,13 @@
 - `UT66HeroMovementComponent` multiplies:
   - raw primary `Speed` converted at `840 UU/s` per Speed point
   - `GetItemMoveSpeedMultiplier()`
-  - `GetMovementSpeedSecondaryMultiplier()`
   - `GetStageMoveSpeedMultiplier()`
   - `GetStatusMoveSpeedMultiplier()`
 - Current caveat:
   - primary `Speed` is now the base live hero walking-speed stat
   - `HeroData.MaxSpeed` is reserved metadata for future cap semantics and is not currently part of live walking speed
   - the item move-speed multiplier path is still at its default `1.0`
-  - the secondary move-speed path is still hardcoded to `1.0`
-  - current live movement scaling comes from `Speed` plus explicit item, secondary, stage, and status effects
+  - current live movement scaling comes from `Speed` plus explicit item, stage, and status effects
 
 ### 12.4 Range caveat
 

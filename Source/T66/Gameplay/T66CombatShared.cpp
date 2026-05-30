@@ -8,10 +8,38 @@
 #include "CollisionQueryParams.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
+#include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66CombatTargetTypes.h"
+#include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66MobBase.h"
 
 namespace
 {
+	ET66SecondaryStatType GetDamageSecondaryForCategory(const ET66AttackCategory Category)
+	{
+		switch (Category)
+		{
+		case ET66AttackCategory::AOE:    return ET66SecondaryStatType::AoeDamage;
+		case ET66AttackCategory::Bounce: return ET66SecondaryStatType::BounceDamage;
+		case ET66AttackCategory::Pierce: return ET66SecondaryStatType::PierceDamage;
+		case ET66AttackCategory::DOT:    return ET66SecondaryStatType::DotDamage;
+		default:                         return ET66SecondaryStatType::PierceDamage;
+		}
+	}
+
+	ET66SecondaryStatType GetAttackSpeedSecondaryForCategory(const ET66AttackCategory Category)
+	{
+		switch (Category)
+		{
+		case ET66AttackCategory::AOE:    return ET66SecondaryStatType::AoeSpeed;
+		case ET66AttackCategory::Bounce: return ET66SecondaryStatType::BounceSpeed;
+		case ET66AttackCategory::Pierce: return ET66SecondaryStatType::PierceSpeed;
+		case ET66AttackCategory::DOT:    return ET66SecondaryStatType::DotSpeed;
+		default:                         return ET66SecondaryStatType::PierceSpeed;
+		}
+	}
+
 	ET66SecondaryStatType GetScaleSecondaryForCategory(const ET66AttackCategory Category)
 	{
 		switch (Category)
@@ -22,6 +50,32 @@ namespace
 		case ET66AttackCategory::DOT:    return ET66SecondaryStatType::DotScale;
 		default:                         return ET66SecondaryStatType::AttackRange;
 		}
+	}
+
+	float GetCategorySubMultiplier(
+		const UT66RunStateSubsystem* RunState,
+		const ET66SecondaryStatType StatType,
+		const float HeroMultiplier,
+		const float MaxMultiplier)
+	{
+		if (!RunState)
+		{
+			return 1.f;
+		}
+
+		const float Baseline = RunState->GetSecondaryStatBaselineValue(StatType);
+		if (Baseline <= KINDA_SMALL_NUMBER)
+		{
+			return 1.f;
+		}
+
+		const float Value = RunState->GetSecondaryStatValue(StatType);
+		return FMath::Clamp(Value / (Baseline * FMath::Max(0.01f, HeroMultiplier)), 0.25f, MaxMultiplier);
+	}
+
+	int32 ResolveOHKODamage(const float CurrentHP, const float MaxHP)
+	{
+		return FMath::Max(1, FMath::CeilToInt(CurrentHP + MaxHP + 1.f));
 	}
 }
 
@@ -39,23 +93,56 @@ namespace T66CombatShared
 		}
 	}
 
+	const TSet<FName>& GetImpactPresentationProofIdols()
+	{
+		// Idol_Water=AOE, Idol_Light=Pierce, Idol_Electric=Bounce, Idol_Poison=DOT.
+		// Idol_Earth is intentionally absent (neutral control: it must not enter the lane).
+		static const TSet<FName> ImpactPresentationProofIdols = {
+			FName(TEXT("Idol_Water")),
+			FName(TEXT("Idol_Light")),
+			FName(TEXT("Idol_Electric")),
+			FName(TEXT("Idol_Poison")),
+		};
+		return ImpactPresentationProofIdols;
+	}
+
+	const TSet<FName>& GetSupportedProofIdols()
+	{
+		// Impact-presentation proof idols plus Idol_Earth (neutral/alternate control input).
+		static const TSet<FName> SupportedProofIdols = []()
+		{
+			TSet<FName> Set = GetImpactPresentationProofIdols();
+			Set.Add(FName(TEXT("Idol_Earth")));
+			return Set;
+		}();
+		return SupportedProofIdols;
+	}
+
+	float GetCategorySubDamageMultiplier(const UT66RunStateSubsystem* RunState, const ET66AttackCategory Category)
+	{
+		return GetCategorySubMultiplier(
+			RunState,
+			GetDamageSecondaryForCategory(Category),
+			RunState ? RunState->GetHeroDamageMultiplier() : 1.f,
+			5.f);
+	}
+
+	float GetCategorySubAttackSpeedMultiplier(const UT66RunStateSubsystem* RunState, const ET66AttackCategory Category)
+	{
+		return GetCategorySubMultiplier(
+			RunState,
+			GetAttackSpeedSecondaryForCategory(Category),
+			RunState ? RunState->GetHeroAttackSpeedMultiplier() : 1.f,
+			5.f);
+	}
+
 	float GetCategorySubScaleMultiplier(const UT66RunStateSubsystem* RunState, const ET66AttackCategory Category)
 	{
-		if (!RunState)
-		{
-			return 1.f;
-		}
-
-		const ET66SecondaryStatType StatType = GetScaleSecondaryForCategory(Category);
-		const float Baseline = RunState->GetSecondaryStatBaselineValue(StatType);
-		const float HeroScaleMult = FMath::Max(0.01f, RunState->GetHeroScaleMultiplier());
-		const float Value = RunState->GetSecondaryStatValue(StatType);
-		if (Baseline <= KINDA_SMALL_NUMBER)
-		{
-			return 1.f;
-		}
-
-		return FMath::Clamp(Value / (Baseline * HeroScaleMult), 0.25f, 5.f);
+		return GetCategorySubMultiplier(
+			RunState,
+			GetScaleSecondaryForCategory(Category),
+			RunState ? RunState->GetHeroScaleMultiplier() : 1.f,
+			5.f);
 	}
 
 	float GetIdolRarityVisualScale(const ET66ItemRarity Rarity)
@@ -85,6 +172,54 @@ namespace T66CombatShared
 	bool IsHeroHurtboxComponent(const AT66HeroBase* Hero, const UPrimitiveComponent* Component)
 	{
 		return Hero && Component && Component == Hero->GetCapsuleComponent();
+	}
+
+	bool TryApplyNonBossOHKO(AActor* TargetActor, const FT66CombatTargetHandle* TargetHandle, const FName DamageSourceID, const FName EventType)
+	{
+		if (!TargetActor || Cast<AT66BossBase>(TargetActor))
+		{
+			return false;
+		}
+
+		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(TargetActor))
+		{
+			if (Enemy->CurrentHP <= 0)
+			{
+				return false;
+			}
+
+			const int32 LethalDamage = ResolveOHKODamage(static_cast<float>(Enemy->CurrentHP), static_cast<float>(Enemy->MaxHP));
+			const FT66CombatTargetHandle ResolvedHandle = (TargetHandle && TargetHandle->IsValid())
+				? *TargetHandle
+				: Enemy->ResolveCombatTargetHandle(nullptr, ET66HitZoneType::Body);
+			if (ResolvedHandle.IsValid())
+			{
+				return Enemy->TakeDamageFromHeroHitZone(LethalDamage, ResolvedHandle, DamageSourceID, EventType);
+			}
+
+			return Enemy->TakeDamageFromHero(LethalDamage, DamageSourceID, EventType);
+		}
+
+		if (AT66MobBase* Mob = Cast<AT66MobBase>(TargetActor))
+		{
+			if (Mob->CurrentHP <= 0.f)
+			{
+				return false;
+			}
+
+			const FT66CombatTargetHandle ResolvedHandle = (TargetHandle && TargetHandle->IsValid())
+				? *TargetHandle
+				: Mob->ResolveCombatTargetHandle(nullptr, ET66HitZoneType::Body);
+			if (!ResolvedHandle.IsValid())
+			{
+				return false;
+			}
+
+			const int32 LethalDamage = ResolveOHKODamage(Mob->CurrentHP, Mob->MaxHP);
+			return Mob->TakeDamageFromHeroHitZone(LethalDamage, ResolvedHandle, DamageSourceID, EventType);
+		}
+
+		return false;
 	}
 
 	FString DescribePrimitiveComponentForCombatLog(const UPrimitiveComponent* Component)

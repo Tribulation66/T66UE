@@ -1087,6 +1087,7 @@ namespace
 		case ET66SecondaryStatType::PierceScale:    return TEXT("pierce-scale");
 		case ET66SecondaryStatType::DotScale:       return TEXT("dot-scale");
 		case ET66SecondaryStatType::AttackRange:    return TEXT("range");
+		case ET66SecondaryStatType::Execute:        return TEXT("execute");
 		case ET66SecondaryStatType::Taunt:          return TEXT("taunt");
 		case ET66SecondaryStatType::DamageReduction:return TEXT("damage-reduction");
 		case ET66SecondaryStatType::ReflectDamage:  return TEXT("damage-reflection");
@@ -1101,8 +1102,11 @@ namespace
 		case ET66SecondaryStatType::Cheating:       return TEXT("cheating");
 		case ET66SecondaryStatType::Stealing:       return TEXT("stealing");
 		case ET66SecondaryStatType::LootCrate:      return TEXT("loot-crate");
+		case ET66SecondaryStatType::LootBag:        return TEXT("loot-bag");
+		case ET66SecondaryStatType::LootWheel:      return TEXT("loot-wheel");
 		case ET66SecondaryStatType::Alchemy:        return TEXT("alchemy");
 		case ET66SecondaryStatType::Accuracy:       return TEXT("accuracy");
+		case ET66SecondaryStatType::VendorToken:    return TEXT("vendor-token");
 		default:                                    return FString();
 		}
 	}
@@ -1434,6 +1438,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			case ET66SecondaryStatType::CritDamage:      return NSLOCTEXT("T66.PowerUp", "Drug_CritDamage", "TRENBOLONE ACETATE");
 			case ET66SecondaryStatType::CritChance:      return NSLOCTEXT("T66.PowerUp", "Drug_CritChance", "STANOZOLOL");
 			case ET66SecondaryStatType::AttackRange:     return NSLOCTEXT("T66.PowerUp", "Drug_AttackRange", "CLENBUTEROL HCL");
+			case ET66SecondaryStatType::Execute:         return NSLOCTEXT("T66.PowerUp", "Drug_Execute", "ATOMOXETINE HCL");
 			case ET66SecondaryStatType::Accuracy:        return NSLOCTEXT("T66.PowerUp", "Drug_Accuracy", "ATOMOXETINE HCL");
 			case ET66SecondaryStatType::Taunt:           return NSLOCTEXT("T66.PowerUp", "Drug_Taunt", "HYDROCORTISONE");
 			case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.PowerUp", "Drug_DamageReduction", "PREDNISONE");
@@ -1447,6 +1452,9 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			case ET66SecondaryStatType::Cheating:        return NSLOCTEXT("T66.PowerUp", "Drug_Cheating", "SILDENAFIL CITRATE");
 			case ET66SecondaryStatType::Stealing:        return NSLOCTEXT("T66.PowerUp", "Drug_Stealing", "LOPERAMIDE HCL");
 			case ET66SecondaryStatType::LootCrate:       return NSLOCTEXT("T66.PowerUp", "Drug_LootCrate", "METFORMIN HCL");
+			case ET66SecondaryStatType::LootBag:         return NSLOCTEXT("T66.PowerUp", "Drug_LootBag", "UBIQUINOL");
+			case ET66SecondaryStatType::LootWheel:       return NSLOCTEXT("T66.PowerUp", "Drug_LootWheel", "THEOBROMINE");
+			case ET66SecondaryStatType::VendorToken:     return NSLOCTEXT("T66.PowerUp", "Drug_VendorToken", "VENDOR TOKEN");
 			default:                                     return NSLOCTEXT("T66.PowerUp", "Drug_Unknown", "COMPOUND");
 		}
 	};
@@ -1484,10 +1492,10 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		{ ET66HeroStatType::Damage,      { ET66SecondaryStatType::AoeDamage, ET66SecondaryStatType::BounceDamage, ET66SecondaryStatType::PierceDamage, ET66SecondaryStatType::DotDamage } },
 		{ ET66HeroStatType::AttackSpeed, { ET66SecondaryStatType::AoeSpeed, ET66SecondaryStatType::BounceSpeed, ET66SecondaryStatType::PierceSpeed, ET66SecondaryStatType::DotSpeed } },
 		{ ET66HeroStatType::AttackScale, { ET66SecondaryStatType::AoeScale, ET66SecondaryStatType::BounceScale, ET66SecondaryStatType::PierceScale, ET66SecondaryStatType::DotScale } },
-		{ ET66HeroStatType::Accuracy,    { ET66SecondaryStatType::CritDamage, ET66SecondaryStatType::CritChance, ET66SecondaryStatType::AttackRange, ET66SecondaryStatType::Accuracy } },
-		{ ET66HeroStatType::Armor,       { ET66SecondaryStatType::Taunt, ET66SecondaryStatType::DamageReduction, ET66SecondaryStatType::ReflectDamage, ET66SecondaryStatType::Crush } },
+		{ ET66HeroStatType::Accuracy,    { ET66SecondaryStatType::CritChance, ET66SecondaryStatType::CritDamage, ET66SecondaryStatType::AttackRange, ET66SecondaryStatType::Execute } },
+		{ ET66HeroStatType::Armor,       { ET66SecondaryStatType::DamageReduction, ET66SecondaryStatType::ReflectDamage, ET66SecondaryStatType::Taunt, ET66SecondaryStatType::Crush } },
 		{ ET66HeroStatType::Evasion,     { ET66SecondaryStatType::EvasionChance, ET66SecondaryStatType::CounterAttack, ET66SecondaryStatType::Invisibility, ET66SecondaryStatType::Assassinate } },
-		{ ET66HeroStatType::Luck,        { ET66SecondaryStatType::TreasureChest, ET66SecondaryStatType::Cheating, ET66SecondaryStatType::Stealing, ET66SecondaryStatType::LootCrate } },
+		{ ET66HeroStatType::Luck,        { ET66SecondaryStatType::LootCrate, ET66SecondaryStatType::TreasureChest, ET66SecondaryStatType::LootBag, ET66SecondaryStatType::LootWheel } },
 	};
 	const TArray<ET66HeroStatType> PermanentCardOrder = {
 		ET66HeroStatType::Damage,

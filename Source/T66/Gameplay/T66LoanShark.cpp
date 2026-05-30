@@ -195,6 +195,70 @@ void AT66LoanShark::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompone
 	RunState->ApplyDamage(CurrentDamageHearts * 20, this, FName(TEXT("LoanSharkTouch")), this);
 }
 
+#if !UE_BUILD_SHIPPING
+float AT66LoanShark::AutomationGetMaxWalkSpeed() const
+{
+	const UCharacterMovementComponent* Move = GetCharacterMovement();
+	return Move ? Move->MaxWalkSpeed : 0.f;
+}
+
+bool AT66LoanShark::AutomationIsChasingHero() const
+{
+	APawn* Target = T66ResolveClosestLoanSharkTarget(this);
+	if (!Target)
+	{
+		return false;
+	}
+
+	// Mirror Tick's safe-bubble rule: inside an NPC safe zone the shark flees rather than chases.
+	const UWorld* World = GetWorld();
+	UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
+	const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
+	for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : NPCs)
+	{
+		const AT66HouseNPCBase* NPC = WeakNPC.Get();
+		if (!NPC)
+		{
+			continue;
+		}
+		FVector ToMe = GetActorLocation() - NPC->GetActorLocation();
+		ToMe.Z = 0.f;
+		if (ToMe.Size() < NPC->GetSafeZoneRadius())
+		{
+			return false;
+		}
+	}
+
+	FVector ToPlayer = Target->GetActorLocation() - GetActorLocation();
+	ToPlayer.Z = 0.f;
+	return ToPlayer.Size() > 10.f;
+}
+
+bool AT66LoanShark::AutomationApplyTouchDamageToHero()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	UT66RunStateSubsystem* RunState = GetRunState();
+	if (!RunState || RunState->GetCurrentDebt() <= 0)
+	{
+		return false;
+	}
+
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(T66ResolveClosestLoanSharkTarget(this));
+	if (!Hero || Hero->IsInSafeZone())
+	{
+		return false;
+	}
+
+	// Same damage application as OnCapsuleBeginOverlap.
+	return RunState->ApplyDamage(CurrentDamageHearts * 20, this, FName(TEXT("LoanSharkTouch")), this);
+}
+#endif
+
 UT66RunStateSubsystem* AT66LoanShark::GetRunState() const
 {
 	UWorld* World = GetWorld();

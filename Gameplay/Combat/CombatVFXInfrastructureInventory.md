@@ -1,7 +1,7 @@
 # Combat VFX Infrastructure Inventory
 
 **Created:** 2026-05-26
-**Updated:** 2026-05-28 for the verified MRQ editor-isolation route, shared aura material research plan, Candidate03 north-aura capture, Hero 1 AOE hitbox proof, Hero 1 AOE production VFX binding/item-scaling proof, and Hero 1 AOE crescent-band hitbox alignment proof.
+**Updated:** 2026-05-28 for the verified MRQ editor-isolation route, shared aura material research plan, Candidate03 north-aura capture, Hero 1 AOE hitbox proof, Hero 1 AOE production VFX binding/item-scaling proof, Hero 1 AOE crescent-band hitbox alignment proof, and the generic visual/damage alignment contract.
 **Status:** Infrastructure inventory only. This document is not an authoring procedure, validator contract, or production approval gate.
 
 ## 1. Purpose
@@ -32,6 +32,7 @@ Evidence labels used below:
 | Gameplay router | `Gameplay/GAMEPLAY_AGENTS.md` | Confirmed by file inspection | Routes combat VFX work through `Gameplay/Combat/CombatVFXAuthoringProcedure.md`. |
 | Gameplay index | `Gameplay/README.md` | Confirmed by file inspection | Routes combat docs to `Gameplay/Combat/`. |
 | Generic VFX procedure | `Gameplay/Combat/CombatVFXAuthoringProcedure.md` | Confirmed by file inspection | Already owns source intake, mockup gate, carrier archetypes, staged authoring, mask/material manifest, parameter evidence, editor pitfalls, and close templates. |
+| Visual/damage alignment contract | `Gameplay/Combat/CombatVFXVisualDamageAlignmentContract.md` | Confirmed by file inspection | Owns the generic anchor, footprint, offset, tolerance, and marker-vs-area-read contract for keeping VFX presentation aligned with authoritative damage geometry. |
 | Hero 1 axe plan | `Gameplay/Combat/Hero1AxeVFXPlan.md` | Confirmed by file inspection | Owns isolated Hero 1 axe VFX goals, current canonical source selection, lab boundaries, and future AOE/DOT/Pierce/Bounce direction. |
 | Hero 1 AOE packet | `Gameplay/Combat/Hero1AxeAOESlashMechanismPacket.md` | Confirmed by file inspection | Owns the current AOE American-flag visual target, AOE mechanism gates, hitbox alignment rule, and current verification expectations. |
 | Hero 1 shared aura material plan | `Gameplay/Combat/Hero1AxeSharedAuraMaterialResearchPlan.md` | Confirmed by file inspection | Owns the source-fidelity plan, shared material roles, parameter contract, and editor-isolation material gate for Hero 1 axe base attacks. |
@@ -266,7 +267,7 @@ Implemented and runtime-verified on 2026-05-28:
 | Seam | Current file/path | Status | Notes |
 |---|---|---|---|
 | Binding data type | `Source/T66/Data/T66DataTypes.h` | Implemented | `FT66CombatVFXBindingData` stores binding ID, source type, source ID, attack category, Niagara system path, effect packet ID, VFX profile, visual radius/playback values, and production/fallback flags. |
-| Binding table source | `Content/Data/CombatVFXBindings.csv` | Implemented | Contains `Hero1Axe_AOE_Base`, binding `Hero_1_black_aoe` to the promoted Hero 1 axe AOE Niagara system. |
+| Binding table source | `Content/Data/CombatVFXBindings.csv` | Implemented | Contains active Hero 1 weapon-base rows `Hero1Axe_AOE_Base` (`Hero_1_black_aoe`), `Hero1Axe_Pierce_Base` (`Hero_1_black_pierce`), `Hero1Axe_Bounce_Base` (`Hero_1_black_bounce`), and `Hero1Axe_DOT_Base` (`Hero_1_black_dot`). Idol category proofs are placeholder/proof paths, not production idol rows. |
 | Runtime DataTable asset | `Content/Data/DT_CombatVFXBindings.uasset` | Implemented | Created/refreshed by `Scripts/SetupCombatVFXBindingsDataTable.py`. |
 | GameInstance access | `Source/T66/Core/T66GameInstance.h/.cpp` | Implemented | Loads/caches `DT_CombatVFXBindings` and exposes binding lookup. `BP_T66GameInstance` is assigned by the setup script. |
 | Production slash assets | `Content/VFX/Hero1/Axe/AOE/` and `Content/VFX/Hero1/Axe/Shared/` | Implemented | Promoted from the isolated Hero 1 axe AOE lab asset path. Normal combat must not reference `/Game/VFXLab`. |

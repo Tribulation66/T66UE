@@ -350,7 +350,7 @@ namespace
 
 	int32 ResolveGameplayLevelNumber(const T66TowerMapTerrain::FLayout& Layout, const T66TowerMapTerrain::FFloor& Floor)
 	{
-		if (!Floor.bGameplayFloor || Floor.GameplayLevelNumber == INDEX_NONE)
+		if (!Floor.bMobFloor || Floor.GameplayLevelNumber == INDEX_NONE)
 		{
 			return INDEX_NONE;
 		}
@@ -566,6 +566,7 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 	UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
 	TArray<FUsedTrapLocation> UsedLocations;
 	TMap<FName, int32> SpawnCounts;
+	TMap<int32, int32> TrapCountsByFloor;
 
 	auto IsLocationClear = [&](const FVector& Location, const int32 FloorNumber, const float MinDistance) -> bool
 	{
@@ -629,6 +630,10 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 		AddUniqueWeak(ManagedTrapActors, static_cast<AActor*>(TrapActor));
 		UsedLocations.Add({ TrapActor->GetActorLocation(), FloorNumber });
 		SpawnCounts.FindOrAdd(TrapActor->GetTrapTypeID())++;
+		if (FloorNumber != INDEX_NONE)
+		{
+			TrapCountsByFloor.FindOrAdd(FloorNumber)++;
+		}
 	};
 
 	auto RegisterManagedActor = [&](AActor* Actor)
@@ -1005,10 +1010,30 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 		UE_LOG(LogT66TrapSubsystem, Log, TEXT("[Traps] %s x%d"), *Pair.Key.ToString(), Pair.Value);
 	}
 
+	TArray<int32> TrapFloorNumbers;
+	TrapCountsByFloor.GetKeys(TrapFloorNumbers);
+	TrapFloorNumbers.Sort();
+
+	FString TrapFloorSummary;
+	for (const int32 TrapFloorNumber : TrapFloorNumbers)
+	{
+		if (!TrapFloorSummary.IsEmpty())
+		{
+			TrapFloorSummary += TEXT(", ");
+		}
+
+		TrapFloorSummary += FString::Printf(TEXT("Floor %d x%d"), TrapFloorNumber, TrapCountsByFloor.FindRef(TrapFloorNumber));
+	}
+	if (TrapFloorSummary.IsEmpty())
+	{
+		TrapFloorSummary = TEXT("none");
+	}
+
 	UE_LOG(
 		LogT66TrapSubsystem,
 		Log,
-		TEXT("[Traps] Spawned %d level-driven traps for tower stage %d."),
+		TEXT("[Traps] Spawned %d floor-driven traps for tower stage %d on %s."),
 		TotalSpawned,
-		StageNum);
+		StageNum,
+		*TrapFloorSummary);
 }

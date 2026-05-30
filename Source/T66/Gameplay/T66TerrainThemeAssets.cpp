@@ -83,8 +83,5 @@ UMaterialInterface* FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(UObj
 void FT66TerrainThemeAssets::FillDefaultCliffSideMaterials(TArray<TSoftObjectPtr<UMaterialInterface>>& OutMaterials)
 {
 	OutMaterials.Empty();
-	OutMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile1.MI_HillTile1"))));
-	OutMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile2.MI_HillTile2"))));
-	OutMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile3.MI_HillTile3"))));
-	OutMaterials.Add(TSoftObjectPtr<UMaterialInterface>(FSoftObjectPath(TEXT("/Game/World/Cliffs/MI_HillTile4.MI_HillTile4"))));
+	// Legacy cliff material defaults were removed; keep this empty unless current terrain data authors replacements.
 }

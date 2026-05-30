@@ -25,6 +25,15 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;
 
+#if !UE_BUILD_SHIPPING
+	/** Non-shipping AutoQA accessors. Compiled out of shipping; never invoked by normal play. */
+	void AutomationRefreshTuningFromDebt() { UpdateTuningFromDebt(); }
+	int32 AutomationGetCurrentDamageHearts() const { return CurrentDamageHearts; }
+	float AutomationGetMaxWalkSpeed() const;
+	bool AutomationIsChasingHero() const;
+	bool AutomationApplyTouchDamageToHero();
+#endif
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;

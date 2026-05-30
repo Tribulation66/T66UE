@@ -109,12 +109,37 @@ void UT66RunStateSubsystem::ActivatePendingSingleUseBuffsForRunStart()
 
 	if (UGameInstance* GI = GetGameInstance())
 	{
+		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
+		{
+			SingleUseSecondaryMultipliers = Buffs->ConsumePendingSingleUseBuffMultipliers();
+		}
+
 		if (UT66RngSubsystem* Rng = GI->GetSubsystem<UT66RngSubsystem>())
 		{
 			Rng->UpdateLuckStat(GetEffectiveLuckBiasStat());
 		}
 	}
 }
+
+#if !UE_BUILD_SHIPPING
+void UT66RunStateSubsystem::DebugActivatePendingSingleUseBuffsForRunStartWithoutConsuming()
+{
+	SingleUseSecondaryMultipliers.Reset();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (const UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
+		{
+			SingleUseSecondaryMultipliers = Buffs->GetPendingSingleUseBuffMultipliers();
+		}
+
+		if (UT66RngSubsystem* Rng = GI->GetSubsystem<UT66RngSubsystem>())
+		{
+			Rng->UpdateLuckStat(GetEffectiveLuckBiasStat());
+		}
+	}
+}
+#endif
 
 
 void UT66RunStateSubsystem::SetSaintBlessingActive(const bool bActive)
@@ -167,7 +192,7 @@ void UT66RunStateSubsystem::BeginSaintBlessingEmpowerment()
 	bool bInventoryChanged = false;
 	for (FT66InventorySlot& Slot : InventorySlots)
 	{
-		if (!Slot.IsValid() || T66_IsGamblersTokenItem(Slot.ItemTemplateID))
+		if (!Slot.IsValid() || T66_IsVendorTokenItem(Slot.ItemTemplateID))
 		{
 			continue;
 		}
@@ -387,12 +412,11 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	DifficultyTier = 0;
 	DifficultySkulls = 0;
 	TotemsActivatedCount = 0;
-	GamblerAnger01 = 0.f;
 	ResetShopForStage();
 	OwedBossIDs.Empty();
 	CowardiceGatesTakenCount = 0;
 	InventorySlots.Empty();
-	ActiveGamblersTokenLevel = 0;
+	ActiveVendorTokenLevel = 0;
 	BuybackPool.Empty();
 	BuybackDisplaySlots.Empty();
 	BuybackDisplayPage = 0;
@@ -487,6 +511,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	HeroPreciseStats = FT66HeroPreciseStatBlock{};
 	ItemPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
 	ClearPersistentSecondaryStatBonuses();
+	PermanentSecondaryStatBonusTenths.Reset();
 	ItemSecondaryStatBonusTenths.Reset();
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
@@ -553,7 +578,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	}
 
 	HeroXP = 0;
-	XPToNextLevel = DefaultXPToLevel;
+	XPToNextLevel = GetDataDrivenLevelUpXPThreshold();
 	UltimateCooldownRemainingSeconds = 0.f;
 	LastBroadcastUltimateSecond = 0;
 	ResetBossState();
@@ -561,7 +586,6 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	GoldChanged.Broadcast();
 	DebtChanged.Broadcast();
 	DifficultyChanged.Broadcast();
-	GamblerAngerChanged.Broadcast();
 	ShopChanged.Broadcast();
 	InventoryChanged.Broadcast();
 	IdolsChanged.Broadcast();

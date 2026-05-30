@@ -1,6 +1,6 @@
 # T66 Master Traps
 
-**Last updated:** 2026-05-23
+**Last updated:** 2026-05-27
 **Scope:** Single-source handoff for environmental trap runtime, ownership, procedural spawning, damage routing, trap-family identity, and shipped trap VFX/mesh rules.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md`, `Gameplay/World/T66_Tower_Multi_Agent_Implementation_Plan.md`
 **Maintenance rule:** Update this file after every material trap, trap-subsystem, trap-spawn, trap-damage, trap-VFX, or trap-map-integration change.
@@ -17,7 +17,7 @@
   - `AT66WallArrowTrap`
   - `AT66FloorFlameTrap`
   - `AT66FloorSpikePatchTrap`
-- Tower gameplay floors now use level-driven trap pools instead of the original one-arrow/one-flame-only pass.
+- Tower gameplay floors now use floor-driven trap pools instead of the original one-arrow/one-flame-only pass.
 - Trap damage still routes through `UT66RunStateSubsystem::ApplyDamage()`, so safe-zone checks, invulnerability, floating feedback, and player-death flow stay on the normal runtime path.
 
 ## 2. Runtime Ownership
@@ -30,7 +30,7 @@
 - trap registration
 - cleanup of subsystem-managed trap actors
 - trap progression scalar refresh
-- level-driven tower trap selection
+- floor-driven tower trap selection
 - procedural tower trap spawns
 
 The live spawn hook remains in:
@@ -138,7 +138,7 @@ Rules:
 
 - start floor does not get traps
 - boss floor does not get traps
-- gameplay floors 1 through 5 each use their own level trap pool
+- normal tower gameplay floors `Floor 2` through `Floor 4` each use their own floor trap pool
 - placement avoids:
   - other subsystem-managed trap locations
   - NPC safe zones
@@ -147,28 +147,20 @@ Rules:
 - floor burst and area-control traps use tile-center spawn queries
 - area-control traps can auto-spawn linked pressure plates
 
-Current level trap pools:
+Current normal tower floor trap pools:
 
-- Gameplay Level 1:
+- Floor 2:
   - `DungeonWallArrow`
   - `DungeonFloorFlame`
   - `DungeonFloorSpikePatch`
-- Gameplay Level 2:
+- Floor 3:
   - `ForestThornVolley`
   - `ForestSporeBurst`
   - `ForestBramblePatch`
-- Gameplay Level 3:
+- Floor 4:
   - `OceanHarpoonVolley`
   - `OceanSteamBurst`
   - `OceanUrchinPatch`
-- Gameplay Level 4:
-  - `MartianShardVolley`
-  - `MartianPlasmaBurst`
-  - `MartianCrystalPatch`
-- Gameplay Level 5:
-  - `HellSoulBoltVolley`
-  - `HellEmberBurst`
-  - `HellBrimstonePatch`
 
 Numeric spawn counts and cadence live in `Config/DefaultT66TrapTuning.ini`.
 

@@ -1,23 +1,24 @@
 # T66 Master Player Experience
 
-**Last updated:** 2026-05-23
+**Last updated:** 2026-05-29
 **Scope:** Single-source handoff for the T66 player-experience system: expected outcomes, progression pacing, tower stage structure, miasma pressure, interactable frequency, item/alchemy stat pressure, UI presentation rules, and the current anti-cheat linkage.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Stats/MASTER_STATS.md`, `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md`, `Gameplay/Combat/MASTER_COMBAT.md`, `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`
 **Maintenance rule:** Update this file after every material change to stage structure, pacing targets, difficulty starts, miasma timing, interactable frequency, item/alchemy stat grants, or expected-outcome telemetry.
 
-## May 2026 Status: Hero XP And Levels Deprecated
+## May 2026 Status: Active Hero XP And Data-Driven Leveling
 
-- In-run hero XP, level gain, boss XP grants, enemy XP grants, level-up healing, level-up burst kills, and level-up floating text are deprecated.
-- `UT66RunStateSubsystem::AddHeroXP` is now a compatibility no-op.
-- Boss and regular enemy kills award score/loot/telemetry without adding XP.
-- Live combat stats come from hero base stats plus item-derived bonuses only.
-- Old save fields for hero level/XP remain readable, but imported runtime state is normalized to level `1`, XP `0`, and XP threshold `0`.
-- Difficulty and stage pacing should now be balanced through enemy budget, item availability, altar rewards, loot, and stage timers instead of expected hero levels.
+- In-run hero XP, level gain, level-up healing, level-up primary stat growth, and level-up wave kills are active.
+- `UT66RunStateSubsystem::AddHeroXP` accumulates XP and applies flat-threshold level-ups from `PlayerExperience`.
+- Regular rich enemies and lightweight mobs award data-driven XP from `Enemies.csv`.
+- Boss XP is still not active; boss rewards remain authored through score, loot, items, or altar unlocks.
+- Live combat stats come from hero base stats, level-up primary growth, diploma primary bonuses, item secondary bonuses, and selected drug secondary multipliers.
+- Save fields for hero level/XP/precise stats/persistent secondary gains are live saved-run state again.
+- Difficulty and stage pacing should balance both enemy budget and expected XP gain.
 
 ## 1. Executive Summary
 
 - `UT66PlayerExperienceSubSystem` is the authored tuning surface for expected player outcomes.
-- `UT66RunStateSubsystem` is the live run-state authority for primary and secondary stats, timers, anti-cheat expectations, and saved-run persistence. Hero level/XP fields are compatibility-only.
+- `UT66RunStateSubsystem` is the live run-state authority for primary and secondary stats, XP/leveling, timers, anti-cheat expectations, and saved-run persistence.
 - `AT66GameMode` is the runtime integrator for tower layout rules, interactable/NPC spawning, timer activation, and tower miasma activation.
 - `AT66EnemyDirector` is the main enemy pacing controller.
 - `AT66MiasmaManager` is the flood-pressure controller.
@@ -27,9 +28,9 @@
 The current intended run shape is:
 
 - Stages `1-20` are the full level climb.
-- The run no longer has an expected hero-level curve.
-- Bosses and regular enemies do not grant XP.
-- Stage pacing should be balanced through items, altar rewards, enemy budget, timers, and loot.
+- The current XP curve is flat by difficulty: `LevelUpXPThreshold = 100` in the live data.
+- Regular enemies grant data-driven XP; bosses do not currently grant XP.
+- Stage pacing should be balanced through items, altar rewards, enemy budget, enemy XP, timers, and loot.
 
 The current implemented tower stage shape is:
 
@@ -113,7 +114,7 @@ The current implemented pressure rule is:
 - Owns tower-only overrides:
   - floor restrictions
   - guaranteed and excluded interactables
-  - archived quick revive exclusion
+  - Backrooms reward item exclusion from normal tower-floor spawns
   - saint placement
   - circus placement
   - miasma start condition
@@ -223,7 +224,7 @@ Important implementation note:
 - fountains: `0-1` per gameplay floor
   - current implementation uses a per-floor deterministic roll and does not force one every stage
 - difficulty totems: exactly one per gameplay floor, tagged as `T66_Tower_DifficultyTotem_##`
-- quick revive: archived; no tower floor should spawn or grant it
+- Backrooms Quick Revive item: reward-only; no normal tower floor should spawn or grant it
 - saint: exactly once per stage, random gameplay floor
 - casino: once per gameplay floor
   - runtime object is currently `Circus`
@@ -256,21 +257,19 @@ The current tower path overrides generic interactable quantity rules in `AT66Gam
 
 The authored `PlayerExperience` config still contains general wheel/chest/crate/totem ranges for the non-tower path and for totem behavior such as uses and skull-color pacing.
 
-## 8. Deprecated XP And Spawn Pacing
+## 8. XP And Spawn Pacing
 
 ### 8.1 Boss XP
-
-Deprecated boss rule:
 
 - boss defeat no longer grants XP
 - boss rewards should be authored through loot, items, or altar unlocks
 
 ### 8.2 Regular enemy XP
 
-Deprecated tower regular-enemy rule:
-
-- enemy `XPValue` is legacy data
-- tower runtime does not add XP for regular kills
+- enemy `XPValue` is active data on `FT66EnemyData`
+- both rich `AT66EnemyBase` enemies and lightweight `AT66MobBase` mobs grant XP when killed by the hero
+- current authored default is `20` XP per enemy row
+- level-up wave kills suppress XP so a wave cannot chain into another level-up
 
 ### 8.3 Tower director budget
 
@@ -289,11 +288,11 @@ Why this matters:
 - `3` gameplay floors x `4` initial enemies = `12` guaranteed regular enemies
 - a perfect `300s` stage with a `5s` runtime cadence and `30` enemies per runtime wave can inject roughly `1,800` additional regular enemies if the player keeps the board clear
 - the `90` max-alive cap prevents all of that budget from existing simultaneously
-- this enemy budget now controls score, loot pressure, hazard pressure, and time pressure without feeding a hero XP curve
+- this enemy budget now controls score, loot pressure, hazard pressure, time pressure, and hero XP inflow
 
-This is the current balancing basis for tower pacing. Stat pressure is handled by item availability and altar rewards.
+This is the current balancing basis for tower pacing. Stat pressure is handled by enemy XP, level-up growth, item availability, diplomas, drugs, and altar rewards.
 
-## 9. Deprecated Hero Growth Model
+## 9. Hero Growth Model
 
 ### 9.1 Internal precision
 
@@ -307,25 +306,26 @@ Rules:
 
 ### 9.2 Primary growth rules
 
-Deprecated runtime rules:
-
-- per-level primary growth ranges are retained only for schema compatibility
-- `AddHeroXP(...)` no longer rolls or applies primary growth
-- luck bias no longer affects level-up rolls because level-up rolls no longer run
+- per-level primary growth ranges are active and loaded from the selected hero row
+- `AddHeroXP(...)` rolls and applies primary growth when XP crosses the current threshold
+- level-up heals HP to full
+- level-up triggers a non-boss OHKO wave at the authored radius
+- luck bias can affect level-up rolls through the run state's existing biased primary-gain roll path
 
 ### 9.3 Secondary proxy growth rules
 
-When an item adds primary stat value, item secondary bonus tenths may also be granted.
+When level-up or diploma progression adds primary stat value, secondary bonus tenths may also be granted.
 
 Rules:
 
 - if the primary is `Damage`, `AttackSpeed`, or `AttackScale`:
-  - the hero's main attack-family secondary can receive the item's authored/rolled secondary value
-  - the other attack-family secondaries do not receive level-up proxy gains
+  - the hero's main attack-family secondary receives the strongest share
+  - the other attack-family secondaries can also receive smaller deterministic shares
 - if the primary is non-attack-family:
-  - matching secondaries come from item secondary lines
+  - matching secondaries receive deterministic shares inside that primary's group
+- `Execute`, `Assassinate`, and `Crush` are OHKO chance secondaries; their shared rule can kill regular enemies and minibosses, but not bosses
 
-Level-up proxy gains are deprecated.
+Items do not create primary proxy gains. Items only add their explicit secondary stat.
 
 ### 9.4 Authored proficiency intent
 
@@ -340,8 +340,8 @@ The design intent is:
 Important current-state note:
 
 - hero base stats and per-level growth ranges are sourced through the cooked Heroes DataTable path via `FHeroData`, `UT66GameInstance::GetHeroData`, and `UT66GameInstance::GetHeroStatTuning`
-- runtime now supports tenths for base stats and item-derived bonuses
-- the hero row schema still supports decimal-authored primary gain ranges for all foundational stats, including `Speed`, but those ranges are compatibility-only
+- runtime supports tenths for base stats, level-up gains, diploma bonuses, and item-derived secondary bonuses
+- the hero row schema supports decimal-authored primary gain ranges for all foundational stats, including `Speed`, and those ranges are live
 - the final authored hero tables still need to be reviewed to fully align all heroes with the intended `1-10` base-proficiency story
 
 ## 10. Item And Alchemy Stat Pressure
@@ -350,10 +350,10 @@ Important current-state note:
 
 Current implemented item flat bonuses:
 
-- Black: `+1` primary, `+1` direct secondary
-- Red: `+3` primary, `+3` direct secondary
-- Yellow: `+9` primary, `+9` direct secondary
-- White: `+27` primary, `+27` direct secondary
+- Black: `+1` direct secondary
+- Red: `+3` direct secondary
+- Yellow: `+9` direct secondary
+- White: `+27` direct secondary
 
 ### 10.2 Alchemy rarity flat bonuses
 
@@ -366,38 +366,37 @@ Current implemented alchemy flat bonuses:
 
 ### 10.3 Proxy behavior
 
-Items do not only add their explicit secondary.
+Items only add their explicit secondary.
 
-When an item adds primary stat value:
+Runtime rule:
 
+- item primary rolls are retained in inventory slot data but do not affect primary stats
 - the direct secondary gets its flat item bonus
-- secondary gains come from the item's authored/rolled secondary line
 
 Implementation note:
 
 - inventory slots now store deterministic roll seeds and optional explicit secondary-flat overrides
-- saved runs still persist legacy precise stats, the hero-stat RNG seed, and persistent secondary bonus entries for compatibility, but imported runtime state rebuilds from hero base plus items
+- saved runs persist precise stats, the hero-stat RNG seed, and persistent secondary bonus entries as active level-up state
 
-## 11. Deprecated Level-Up Presentation And Burst
+## 11. Level-Up Presentation And Wave
 
-Deprecated level-up effects:
+Current level-up effects:
 
 - full heal to max HP
-- `P_Bifrost` spawned at the hero location
-- nearby enemies killed in a `375 UU` radius
-- floating combat text level-up event shown
+- nearby non-boss enemies killed in the data-driven `LevelUpWaveRadiusUU` radius (`900` currently)
+- floating combat text uses the existing `LevelUp` event type on wave kills
 
 Current runtime rule:
 
-- `ApplyOneHeroLevelUp()` only normalizes compatibility fields
-- level-up floating text returns without display
-- level-up burst chaining is removed because XP no longer advances levels
+- `ApplyOneHeroLevelUp()` applies primary growth, heals, and runs the wave
+- wave kills can OHKO minibosses but not bosses
+- wave kills suppress XP while resolving to prevent recursive level-up chains
 
 ## 12. UI Presentation Rules
 
 Current implemented visual rules:
 
-- HUD level text has been replaced by item inventory progress (`items/max`)
+- HUD item inventory progress still uses `items/max`; stat panels can show active level where configured
 - displayed primary stats show `current/99`
 - primary-stat adjectives are back visually for the primary stat lines only
 - secondary stat rows do not show adjectives
@@ -422,7 +421,7 @@ Current adjective model:
 That means:
 
 - a hero can start naturally strong in a stat
-- a weak base stat can still become visually strong if itemization and leveling push it far enough
+- a weak base stat can still become visually strong if diplomas and leveling push it far enough
 
 HUD rule:
 

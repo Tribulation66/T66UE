@@ -1,8 +1,8 @@
 # Pending Issues - Enemies
 
-## Missing Production Archetype Classes
+## Missing Production Archetype Classes [RESOLVED 2026-05-29]
 
-- Severity tag: [Major]
-- What's wrong: The production roster still includes non-ranged special archetypes `Exploder`, `Stutterer`, and `Burrower`, but there are no `AT66ExploderEnemy`, `AT66StuttererEnemy`, or `AT66BurrowerEnemy` classes under `Source/T66/Gameplay/Enemies`. Those mobs are mapped through `FamilyID` to existing fallback classes so they can spawn, but they exhibit fallback behavior only. Exploders do not explode, Burrowers do not burrow, and Stutterers do not stutter. Ranged subsections were intentionally collapsed into the single `Ranged` archetype/class path for now; reintroducing ranged subsections later should be a deliberate design pass.
-- Why it's out of scope now: This pass is a roster/data/asset migration, not a three-archetype gameplay implementation pass.
-- What fixing it would entail: Implement three enemy subclasses or shared behavior components, add class resolution by `Archetype`, tune per-archetype parameters, and add runtime tests for each behavior. If ranged subsections return later, add that as a separate ranged-design migration instead of reviving stale `Turret`, `Strafer`, or `Necromancer` assumptions silently.
+- Severity tag: [Resolved]
+- Original concern: The roster was thought to require non-ranged special archetypes `Exploder`, `Stutterer`, and `Burrower` backed by dedicated `AT66ExploderEnemy`/`AT66StuttererEnemy`/`AT66BurrowerEnemy` classes that did not exist, leaving those mobs in fallback behavior only.
+- Resolution: The Enemy Roster Restructure dropped those speculative special archetypes. The live `Content/Data/Enemies.csv` now uses only the `Melee`, `Rush`, `Flying`, and `Ranged` archetypes, each backed by an existing class, so there is no roster entry that resolves to a missing archetype class. No fallback-behavior gap remains.
+- Note: If `Exploder`/`Stutterer`/`Burrower` (or reintroduced ranged subsections such as `Turret`/`Strafer`/`Necromancer`) return later, treat that as a new, deliberate gameplay-implementation pass rather than reviving these stale assumptions.

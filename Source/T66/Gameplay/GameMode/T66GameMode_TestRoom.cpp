@@ -27,6 +27,7 @@
 #include "Gameplay/T66ThemeAtmosphereData.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66LootWheelInteractable.h"
+#include "Gameplay/T66MobManagerSubsystem.h"
 #include "Gameplay/T66TowerMapTerrain.h"
 #include "Gameplay/T66PerActorLightDirection.h"
 #include "Gameplay/T66WorldVisualSetup.h"
@@ -1007,6 +1008,13 @@ namespace T66TestRoom
 			else
 			{
 				Enemy->EnemyFamily = ET66EnemyFamily::Melee;
+			}
+			if (UT66MobManagerSubsystem* MobManager = TimerWorld ? TimerWorld->GetSubsystem<UT66MobManagerSubsystem>() : nullptr)
+			{
+				MobManager->RecordRouteAttribution(
+					Enemy->EnemyFamily,
+					ET66RouteAttributionReason::RoutedRich_NonDirectorPath,
+					ET66RouteAttributionChannel::NonDirector);
 			}
 			if (!Enemy->GetController())
 			{

@@ -2,6 +2,10 @@
 
 #include "Gameplay/GameMode/T66GameModePrivate.h"
 
+#include "Gameplay/T66MobManagerSubsystem.h"
+#include "Gameplay/T66ProjectileManagerSubsystem.h"
+#include "Gameplay/T66VendorBoss.h"
+
 using namespace T66GameModePrivate;
 
 namespace
@@ -9,6 +13,10 @@ namespace
 	static const FName T66TowerMapTerrainVisualTag(TEXT("T66_MainMapTerrain_Visual"));
 	static const FName T66TowerMapTerrainCollisionProxyTag(TEXT("T66_MainMapTerrain_CollisionProxy"));
 	static const FName T66TowerDescentGuardianTag(TEXT("T66_Tower_DescentGuardian"));
+	static const FName T66PlacedTowerMinibossMobID(TEXT("Slime"));
+	static constexpr float T66PlacedTowerMinibossHPScalar = 3.0f;
+	static constexpr float T66PlacedTowerMinibossDamageScalar = 2.0f;
+	static constexpr float T66PlacedTowerMinibossScale = 1.75f;
 	static const TCHAR* T66TowerTerrainFloorTagPrefix = TEXT("T66_Floor_Tower_");
 
 	static int32 T66ReadTerrainFloorTag(const AActor* Actor)
@@ -102,64 +110,6 @@ namespace
 		}
 	}
 
-	static FName T66PickTowerGateGuardianMob(UT66GameInstance* T66GI, const int32 StageNum, const int32 FromFloorNumber)
-	{
-		if (!T66GI)
-		{
-			return FName(TEXT("RegularEnemy"));
-		}
-
-		FStageData StageData;
-		if (!T66GI->GetStageData(StageNum, StageData))
-		{
-			return FName(TEXT("RegularEnemy"));
-		}
-
-		const FName MobIDs[] =
-		{
-			StageData.EnemyA,
-			StageData.EnemyB,
-			StageData.EnemyC,
-			StageData.EnemyD,
-			StageData.EnemyE,
-			StageData.EnemyF,
-			StageData.EnemyG,
-			StageData.EnemyH,
-			StageData.EnemyI,
-			StageData.EnemyJ,
-		};
-
-		int32 ValidCount = 0;
-		for (const FName MobID : MobIDs)
-		{
-			if (!MobID.IsNone())
-			{
-				++ValidCount;
-			}
-		}
-		if (ValidCount <= 0)
-		{
-			return FName(TEXT("RegularEnemy"));
-		}
-
-		const int32 DesiredValidIndex = FMath::Max(0, FromFloorNumber - 2) % ValidCount;
-		int32 CurrentValidIndex = 0;
-		for (const FName MobID : MobIDs)
-		{
-			if (MobID.IsNone())
-			{
-				continue;
-			}
-			if (CurrentValidIndex == DesiredValidIndex)
-			{
-				return MobID;
-			}
-			++CurrentValidIndex;
-		}
-
-		return FName(TEXT("RegularEnemy"));
-	}
-
 	static bool T66ValidateTowerGuardianCandidate(
 		const T66TowerMapTerrain::FLayout& Layout,
 		const T66TowerMapTerrain::FFloor& Floor,
@@ -194,6 +144,52 @@ namespace
 		return FVector(Floor.Center.X, Floor.Center.Y, Floor.SurfaceZ + 120.0f);
 	}
 
+	// Per-gate mega-mob assignment. Each theme owns 12 gate slots (4 local stages x 3 descent gates),
+	// each slot mapped to a distinct one of that theme's 12 mobs (EnemyA..EnemyL). The theme's final
+	// local-stage row in DT_Stages holds the complete 12-mob roster, so the mapping is data-driven from
+	// existing stage data. Slot = (LocalStage-1)*3 + GateIndex, GateIndex from the descent floor.
+	static FName T66ResolveTowerGateGuardianMobID(
+		UWorld* World,
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor,
+		const int32 StageNum)
+	{
+		const int32 GateIndex = Floor.FloorNumber - Layout.FirstMobFloorNumber;
+		if (GateIndex < 0 || GateIndex > 2)
+		{
+			return T66PlacedTowerMinibossMobID;
+		}
+
+		UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+		FStageData StageData;
+		if (!T66GI || !T66GI->GetStageData(StageNum, StageData))
+		{
+			return T66PlacedTowerMinibossMobID;
+		}
+
+		const int32 LocalStage = FMath::Clamp(StageData.LocalStageNumber, 1, 4);
+
+		// Prefer the theme's final local-stage roster (all 12 slots populated); fall back to current stage.
+		FStageData RosterData = StageData;
+		FStageData FinalStageData;
+		if (T66GI->GetStageData(StageNum + (4 - LocalStage), FinalStageData))
+		{
+			RosterData = FinalStageData;
+		}
+
+		const FName ThemeMobs[12] =
+		{
+			RosterData.EnemyA, RosterData.EnemyB, RosterData.EnemyC,
+			RosterData.EnemyD, RosterData.EnemyE, RosterData.EnemyF,
+			RosterData.EnemyG, RosterData.EnemyH, RosterData.EnemyI,
+			RosterData.EnemyJ, RosterData.EnemyK, RosterData.EnemyL,
+		};
+
+		const int32 SlotIndex = (LocalStage - 1) * 3 + GateIndex;
+		const FName SlotMob = ThemeMobs[SlotIndex];
+		return SlotMob.IsNone() ? T66PlacedTowerMinibossMobID : SlotMob;
+	}
+
 	static AT66EnemyBase* T66SpawnTowerGateGuardian(
 		UWorld* World,
 		const T66TowerMapTerrain::FLayout& Layout,
@@ -205,10 +201,9 @@ namespace
 		}
 
 		UGameInstance* GI = World->GetGameInstance();
-		UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
-		const FName MobID = T66PickTowerGateGuardianMob(T66GI, StageNum, Floor.FloorNumber);
+		const FName MobID = T66ResolveTowerGateGuardianMobID(World, Layout, Floor, StageNum);
 		const TSubclassOf<AT66EnemyBase> GuardianClass = FT66EnemyFamilyResolver::ResolveEnemyClass(MobID, AT66EnemyBase::StaticClass());
 		const FVector SpawnLocation = T66ResolveTowerGateGuardianLocation(Layout, Floor);
 
@@ -217,7 +212,7 @@ namespace
 		AT66EnemyBase* Guardian = World->SpawnActor<AT66EnemyBase>(GuardianClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
 		if (!Guardian)
 		{
-			UE_LOG(LogT66GameMode, Warning, TEXT("[MAP] Tower gate guardian spawn failed on floor %d (mob=%s)."), Floor.FloorNumber, *MobID.ToString());
+			UE_LOG(LogT66GameMode, Warning, TEXT("[MAP] Tower placed miniboss spawn failed on floor %d (mob=%s)."), Floor.FloorNumber, *MobID.ToString());
 			return nullptr;
 		}
 
@@ -232,7 +227,14 @@ namespace
 			Guardian->ApplyStageScaling(StageNum);
 			Guardian->ApplyDifficultyScalar(RunState->GetDifficultyScalar());
 		}
-		Guardian->ApplyMiniBossMultipliers(2.75f, 1.65f, 1.9f);
+		Guardian->ApplyMiniBossMultipliers(
+			T66PlacedTowerMinibossHPScalar,
+			T66PlacedTowerMinibossDamageScalar,
+			T66PlacedTowerMinibossScale);
+		if (UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>())
+		{
+			MobManager->RecordBossOrGuardianRouteAttribution(FT66EnemyFamilyResolver::ResolveFamily(MobID));
+		}
 
 		T66TrySnapActorToTowerFloor(World, Guardian, Layout, Floor.FloorNumber, Guardian->GetActorLocation());
 		if (AT66GameMode* GameMode = World->GetAuthGameMode<AT66GameMode>())
@@ -243,7 +245,7 @@ namespace
 				UE_LOG(
 					LogT66GameMode,
 					Warning,
-					TEXT("[MAP] Tower gate guardian rejected after snap: requested floor=%d resolved floor=%d mob=%s loc=%s."),
+					TEXT("[MAP] Tower placed miniboss rejected after snap: requested floor=%d resolved floor=%d mob=%s loc=%s."),
 					Floor.FloorNumber,
 					ResolvedFloor,
 					*MobID.ToString(),
@@ -257,7 +259,7 @@ namespace
 		UE_LOG(
 			LogT66GameMode,
 			Log,
-			TEXT("[MAP] Tower gate guardian spawned floor=%d mob=%s hp=%d scale=%.2f loc=%s."),
+			TEXT("[MAP] Tower placed miniboss spawned floor=%d mob=%s hp=%d scale=%.2f loc=%s."),
 			Floor.FloorNumber,
 			*MobID.ToString(),
 			Guardian->MaxHP,
@@ -366,6 +368,332 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 		return;
 	}
 
+#if !UE_BUILD_SHIPPING
+	auto ScheduleVerificationProofIfRequested = [this, World]()
+	{
+		FString AutomationMode;
+		if (!World || !FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoCapture="), AutomationMode))
+		{
+			return;
+		}
+
+		AutomationMode = AutomationMode.TrimStartAndEnd().ToLower();
+		if (AutomationMode != TEXT("minibosstraversalproof")
+			&& AutomationMode != TEXT("bossprojectilekillmidflightproof")
+			&& AutomationMode != TEXT("vendorfailedstealproof")
+			&& AutomationMode != TEXT("loansharkdebtproof"))
+		{
+			return;
+		}
+
+		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this, AutomationMode]()
+		{
+			UWorld* ProofWorld = GetWorld();
+			if (!ProofWorld)
+			{
+				return;
+			}
+
+			if (AutomationMode == TEXT("bossprojectilekillmidflightproof"))
+			{
+				const bool bPass = [&]()
+				{
+					if (UT66ProjectileManagerSubsystem* ProjectileManager = ProofWorld->GetSubsystem<UT66ProjectileManagerSubsystem>())
+					{
+						return ProjectileManager->RunBossProjectileKillMidFlightProof();
+					}
+					return false;
+				}();
+
+				if (!bPass)
+				{
+					UE_LOG(LogT66GameMode, Warning, TEXT("[BossProjectileKillMidFlightProofSummary] Terminal=1 Pass=0 Reason=MissingProjectileManagerOrProofFailed"));
+				}
+				FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("BossProjectileKillMidFlightProofComplete"));
+				return;
+			}
+
+			if (AutomationMode == TEXT("vendorfailedstealproof"))
+			{
+				UGameInstance* GI = ProofWorld->GetGameInstance();
+				UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+
+				int32 StealAttempted = 0;
+				int32 StealFailed = 0;
+				if (RunState)
+				{
+					// Drive a deterministic failed steal: bTimingHit=false keeps success chance at 0.
+					RunState->EnsureShopStockForCurrentStage();
+					const int32 SlotCount = RunState->GetShopStockSlots().Num();
+					for (int32 SlotIndex = 0; SlotIndex < SlotCount; ++SlotIndex)
+					{
+						RunState->ResolveShopStealAttempt(SlotIndex, /*bTimingHit*/ false, /*bRngSuccess*/ false);
+						const ET66ShopStealOutcome Outcome = RunState->GetLastShopStealOutcome();
+						if (Outcome != ET66ShopStealOutcome::None)
+						{
+							StealAttempted = 1;
+							StealFailed = (Outcome == ET66ShopStealOutcome::Miss || Outcome == ET66ShopStealOutcome::Failed) ? 1 : 0;
+							break;
+						}
+					}
+				}
+
+				// Spawn the Vendor hidden boss directly (the same class the production failure path spawns).
+				FVector SpawnLocation = FVector::ZeroVector;
+				if (APlayerController* PC = ProofWorld->GetFirstPlayerController())
+				{
+					if (APawn* Pawn = PC->GetPawn())
+					{
+						SpawnLocation = Pawn->GetActorLocation() + FVector(600.f, 0.f, 0.f);
+					}
+				}
+				// A clean failed-steal path spawns no casino-anger boss, so before we spawn the vendor
+				// boss there must be zero VendorBoss instances present.
+				int32 PreSpawnVendorBossCount = 0;
+				for (TActorIterator<AT66VendorBoss> It(ProofWorld); It; ++It)
+				{
+					++PreSpawnVendorBossCount;
+				}
+
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+				AT66VendorBoss* VendorBoss = ProofWorld->SpawnActor<AT66VendorBoss>(AT66VendorBoss::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+
+				const int32 VendorBossSpawned = VendorBoss ? 1 : 0;
+				const int32 VendorBossIdentity = (VendorBoss && VendorBoss->BossID == FName(TEXT("VendorBoss"))) ? 1 : 0;
+
+				// After the spawn exactly one hidden VendorBoss must be present.
+				int32 PostSpawnVendorBossCount = 0;
+				for (TActorIterator<AT66VendorBoss> It(ProofWorld); It; ++It)
+				{
+					++PostSpawnVendorBossCount;
+				}
+				const int32 HiddenBossCount = PostSpawnVendorBossCount;
+				const int32 CasinoAngerSpawnedBoss = PreSpawnVendorBossCount;
+
+				int32 VendorBossDefeated = 0;
+				if (VendorBoss)
+				{
+					// Awaken so damage is accepted, then keep hitting: each hit resolves to one alive
+					// hit-zone part, so the boss only dies (and drops its token) once every part is gone.
+					VendorBoss->ForceAwaken();
+					for (int32 Hit = 0; Hit < 24 && !VendorBossDefeated; ++Hit)
+					{
+						if (VendorBoss->TakeDamageFromHeroHit(VendorBoss->MaxHP + 1000, FName(TEXT("VendorFailedStealProof"))))
+						{
+							VendorBossDefeated = 1;
+						}
+					}
+				}
+
+				int32 VendorTokenDropped = 0;
+				for (TActorIterator<AT66LootBagPickup> It(ProofWorld); It; ++It)
+				{
+					if (It->GetItemID() == FName(TEXT("Item_VendorToken")))
+					{
+						VendorTokenDropped = 1;
+						break;
+					}
+				}
+
+				const bool bPass = StealAttempted && StealFailed && VendorBossSpawned && VendorBossIdentity
+					&& VendorBossDefeated && VendorTokenDropped && (HiddenBossCount == 1) && (CasinoAngerSpawnedBoss == 0);
+
+				UE_LOG(
+					LogT66GameMode,
+					Log,
+					TEXT("[VendorFailedStealProofSummary] Terminal=1 StealAttempted=%d StealFailed=%d VendorBossSpawned=%d VendorBossIdentity=%d VendorBossDefeated=%d VendorTokenDropped=%d HiddenBossCount=%d CasinoAngerSpawnedBoss=%d Pass=%d"),
+					StealAttempted,
+					StealFailed,
+					VendorBossSpawned,
+					VendorBossIdentity,
+					VendorBossDefeated,
+					VendorTokenDropped,
+					HiddenBossCount,
+					CasinoAngerSpawnedBoss,
+					bPass ? 1 : 0);
+				FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("VendorFailedStealProofComplete"));
+				return;
+			}
+
+			if (AutomationMode == TEXT("loansharkdebtproof"))
+			{
+				UGameInstance* GI = ProofWorld->GetGameInstance();
+				UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+
+				int32 DebtSet = 0;
+				int32 PendingSet = 0;
+				int32 LoanSharkSpawned = 0;
+				int32 ChasingHero = 0;
+				float LowDebtSpeed = 0.f;
+				float HighDebtSpeed = 0.f;
+				int32 LowDebtDamageHearts = 0;
+				int32 HighDebtDamageHearts = 0;
+				int32 SpeedScaledWithDebt = 0;
+				int32 DamageScaledWithDebt = 0;
+				int32 TouchDamageApplied = 0;
+				int32 LoanSharkDespawned = 0;
+
+				static constexpr int32 LowDebtAmount = 100;
+				static constexpr int32 HighDebtAmount = 600;
+
+				if (RunState)
+				{
+					// Provide net worth so genuine borrowing (CanBorrowGold) succeeds, then incur low debt.
+					RunState->AddGold(HighDebtAmount + 2000);
+					RunState->BorrowGold(LowDebtAmount);
+					DebtSet = (RunState->GetCurrentDebt() > 0) ? 1 : 0;
+
+					RunState->SetLoanSharkPending(true);
+					PendingSet = RunState->GetLoanSharkPending() ? 1 : 0;
+
+					TrySpawnLoanSharkIfNeeded();
+					LoanSharkSpawned = (LoanShark != nullptr) ? 1 : 0;
+
+					if (LoanShark)
+					{
+						LoanShark->AutomationRefreshTuningFromDebt();
+						LowDebtSpeed = LoanShark->AutomationGetMaxWalkSpeed();
+						LowDebtDamageHearts = LoanShark->AutomationGetCurrentDamageHearts();
+						ChasingHero = LoanShark->AutomationIsChasingHero() ? 1 : 0;
+
+						// Raise debt and re-read tuning to prove it scales.
+						RunState->BorrowGold(HighDebtAmount - LowDebtAmount);
+						LoanShark->AutomationRefreshTuningFromDebt();
+						HighDebtSpeed = LoanShark->AutomationGetMaxWalkSpeed();
+						HighDebtDamageHearts = LoanShark->AutomationGetCurrentDamageHearts();
+
+						SpeedScaledWithDebt = (HighDebtSpeed > LowDebtSpeed) ? 1 : 0;
+						DamageScaledWithDebt = (HighDebtDamageHearts > LowDebtDamageHearts) ? 1 : 0;
+
+						// Apply one touch hit through the same gated path as the production capsule
+						// overlap (debt>0, hero outside safe zones). Clear any post-hit invuln window
+						// first, since the shark's spawn overlap may already have landed a touch this tick.
+						RunState->AutomationResetDamageInvuln();
+						const float HeroHPBefore = RunState->GetCurrentHP();
+						const bool bTouchFired = LoanShark->AutomationApplyTouchDamageToHero();
+						const float HeroHPAfter = RunState->GetCurrentHP();
+						TouchDamageApplied = (bTouchFired && HeroHPAfter < HeroHPBefore) ? 1 : 0;
+
+						// Pay debt to 0 and reproduce the production debt-paid despawn check.
+						RunState->PayDebt(RunState->GetCurrentDebt());
+						if (LoanShark && RunState->GetCurrentDebt() <= 0)
+						{
+							LoanShark->Destroy();
+							LoanShark = nullptr;
+						}
+						LoanSharkDespawned = (LoanShark == nullptr) ? 1 : 0;
+					}
+				}
+
+				const bool bPass = DebtSet && PendingSet && LoanSharkSpawned && ChasingHero
+					&& SpeedScaledWithDebt && DamageScaledWithDebt && TouchDamageApplied && LoanSharkDespawned;
+
+				UE_LOG(
+					LogT66GameMode,
+					Log,
+					TEXT("[LoanSharkDebtProofSummary] Terminal=1 DebtSet=%d PendingSet=%d LoanSharkSpawned=%d ChasingHero=%d LowDebtSpeed=%.1f HighDebtSpeed=%.1f LowDebtDamageHearts=%d HighDebtDamageHearts=%d SpeedScaledWithDebt=%d DamageScaledWithDebt=%d TouchDamageApplied=%d LoanSharkDespawned=%d Pass=%d"),
+					DebtSet,
+					PendingSet,
+					LoanSharkSpawned,
+					ChasingHero,
+					LowDebtSpeed,
+					HighDebtSpeed,
+					LowDebtDamageHearts,
+					HighDebtDamageHearts,
+					SpeedScaledWithDebt,
+					DamageScaledWithDebt,
+					TouchDamageApplied,
+					LoanSharkDespawned,
+					bPass ? 1 : 0);
+				FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("LoanSharkDebtProofComplete"));
+				return;
+			}
+
+			AT66HeroBase* Hero = nullptr;
+			if (APlayerController* PC = ProofWorld->GetFirstPlayerController())
+			{
+				Hero = Cast<AT66HeroBase>(PC->GetPawn());
+			}
+
+			int32 GuardianSpawned[3] = { 0, 0, 0 };
+			int32 BlockedWhileAlive[3] = { 0, 0, 0 };
+			int32 UnblockedAfterDeath[3] = { 0, 0, 0 };
+			int32 InteractAfterDeath[3] = { 0, 0, 0 };
+			static constexpr int32 ProofFloors[3] = { 2, 3, 4 };
+
+			if (Hero)
+			{
+				for (int32 Index = 0; Index < UE_ARRAY_COUNT(ProofFloors); ++Index)
+				{
+					const int32 FloorNumber = ProofFloors[Index];
+					const T66TowerMapTerrain::FFloor* Floor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, FloorNumber);
+					if (Floor)
+					{
+						FVector HeroLocation = Floor->ArrivalPoint;
+						if (HeroLocation.IsNearlyZero())
+						{
+							HeroLocation = FVector(Floor->Center.X, Floor->Center.Y, Floor->SurfaceZ);
+						}
+						if (UCapsuleComponent* Capsule = Hero->GetCapsuleComponent())
+						{
+							HeroLocation.Z = Floor->SurfaceZ + Capsule->GetScaledCapsuleHalfHeight() + 24.0f;
+						}
+						Hero->SetActorLocation(HeroLocation, false, nullptr, ETeleportType::TeleportPhysics);
+					}
+
+					AT66TowerDescentHole* Hole = FindTowerDescentHoleForFloor(FloorNumber);
+					AT66EnemyBase* Guardian = EnsurePlacedTowerMinibossForFloor(FloorNumber);
+					if (!Guardian && Hole)
+					{
+						Guardian = Hole->AutomationGetGuardianEnemy();
+					}
+
+					GuardianSpawned[Index] = Guardian && Guardian->CurrentHP > 0 ? 1 : 0;
+					const bool bCanOpenWhileAlive = Hole && Hole->AutomationCanOpenForHero(Hero);
+					BlockedWhileAlive[Index] = GuardianSpawned[Index] && !bCanOpenWhileAlive ? 1 : 0;
+
+					if (Guardian && Guardian->CurrentHP > 0)
+					{
+						Guardian->TakeDamageFromEnvironment(
+							Guardian->CurrentHP + Guardian->MaxHP + 1000,
+							this,
+							FName(TEXT("MinibossTraversalProof")));
+					}
+
+					const bool bCanOpenAfterDeath = Hole && Hole->AutomationCanOpenForHero(Hero);
+					UnblockedAfterDeath[Index] = bCanOpenAfterDeath ? 1 : 0;
+					InteractAfterDeath[Index] = (bCanOpenAfterDeath && Hole->Interact(Hero)) ? 1 : 0;
+				}
+			}
+
+			const bool bPass = Hero
+				&& GuardianSpawned[0] && GuardianSpawned[1] && GuardianSpawned[2]
+				&& BlockedWhileAlive[0] && BlockedWhileAlive[1] && BlockedWhileAlive[2]
+				&& UnblockedAfterDeath[0] && UnblockedAfterDeath[1] && UnblockedAfterDeath[2];
+
+			UE_LOG(
+				LogT66GameMode,
+				Log,
+				TEXT("[MinibossTraversalProofSummary] Terminal=1 Floors=2->3->4 Floor2GuardianSpawned=%d Floor2BlockedWhileAlive=%d Floor2UnblockedAfterDeath=%d Floor2InteractAfterDeath=%d Floor3GuardianSpawned=%d Floor3BlockedWhileAlive=%d Floor3UnblockedAfterDeath=%d Floor3InteractAfterDeath=%d Floor4GuardianSpawned=%d Floor4BlockedWhileAlive=%d Floor4UnblockedAfterDeath=%d Floor4InteractAfterDeath=%d Pass=%d"),
+				GuardianSpawned[0],
+				BlockedWhileAlive[0],
+				UnblockedAfterDeath[0],
+				InteractAfterDeath[0],
+				GuardianSpawned[1],
+				BlockedWhileAlive[1],
+				UnblockedAfterDeath[1],
+				InteractAfterDeath[1],
+				GuardianSpawned[2],
+				BlockedWhileAlive[2],
+				UnblockedAfterDeath[2],
+				InteractAfterDeath[2],
+				bPass ? 1 : 0);
+			FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("MinibossTraversalProofComplete"));
+		}));
+	};
+#endif
+
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
@@ -407,6 +735,9 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 			HoleActor->Tags.AddUnique(FName(TEXT("T66_Tower_DescentHole")));
 			TowerDescentHoles.Add(HoleActor);
 		}
+#if !UE_BUILD_SHIPPING
+		ScheduleVerificationProofIfRequested();
+#endif
 		return;
 	}
 
@@ -450,25 +781,81 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 		}
 
 		const bool bRequiresWeaponSelection = Floor.FloorNumber == CachedTowerMainMapLayout.StartFloorNumber;
-		const bool bRequiresGuardianDefeated = Floor.FloorNumber != CachedTowerMainMapLayout.StartFloorNumber;
+		const bool bRequiresGuardianDefeated = IsPlacedTowerMinibossFloor(Floor.FloorNumber);
 		HoleActor->InitializeHole(
 			Floor.FloorNumber,
 			DestinationFloor->FloorNumber,
 			BoxExtent,
 			bRequiresWeaponSelection,
 			bRequiresGuardianDefeated);
-		if (bRequiresGuardianDefeated)
-		{
-			AT66EnemyBase* Guardian = T66SpawnTowerGateGuardian(World, CachedTowerMainMapLayout, Floor);
-			HoleActor->SetGuardianEnemy(Guardian);
-			if (!Guardian)
-			{
-				UE_LOG(LogT66GameMode, Warning, TEXT("[MAP] Tower descent hole floor %d has no guardian after spawn attempt."), Floor.FloorNumber);
-			}
-		}
 		HoleActor->Tags.AddUnique(FName(TEXT("T66_Tower_DescentHole")));
 		TowerDescentHoles.Add(HoleActor);
 	}
+
+#if !UE_BUILD_SHIPPING
+	ScheduleVerificationProofIfRequested();
+#endif
+}
+
+bool AT66GameMode::IsPlacedTowerMinibossFloor(const int32 FloorNumber) const
+{
+	return IsUsingTowerMainMapLayout()
+		&& !IsBossRushFinaleStage()
+		&& FloorNumber >= CachedTowerMainMapLayout.FirstMobFloorNumber
+		&& FloorNumber <= CachedTowerMainMapLayout.LastMobFloorNumber;
+}
+
+AT66TowerDescentHole* AT66GameMode::FindTowerDescentHoleForFloor(const int32 FloorNumber) const
+{
+	for (AT66TowerDescentHole* Hole : TowerDescentHoles)
+	{
+		if (Hole && Hole->GetFromFloorNumber() == FloorNumber)
+		{
+			return Hole;
+		}
+	}
+	return nullptr;
+}
+
+AT66EnemyBase* AT66GameMode::EnsurePlacedTowerMinibossForFloor(const int32 FloorNumber)
+{
+	if (!IsPlacedTowerMinibossFloor(FloorNumber)
+		|| TowerPlacedMinibossSpawnedFloors.Contains(FloorNumber)
+		|| TowerPlacedMinibossDefeatedFloors.Contains(FloorNumber))
+	{
+		return nullptr;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	const T66TowerMapTerrain::FFloor* Floor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, FloorNumber);
+	if (!Floor)
+	{
+		UE_LOG(LogT66GameMode, Warning, TEXT("[MAP] Tower placed miniboss floor %d was requested but no floor layout was found."), FloorNumber);
+		return nullptr;
+	}
+
+	AT66TowerDescentHole* HoleActor = FindTowerDescentHoleForFloor(FloorNumber);
+	if (!HoleActor)
+	{
+		UE_LOG(LogT66GameMode, Warning, TEXT("[MAP] Tower placed miniboss floor %d was requested but no descent hole was found."), FloorNumber);
+		return nullptr;
+	}
+
+	AT66EnemyBase* Miniboss = T66SpawnTowerGateGuardian(World, CachedTowerMainMapLayout, *Floor);
+	if (!Miniboss)
+	{
+		UE_LOG(LogT66GameMode, Warning, TEXT("[MAP] Tower descent hole floor %d has no placed miniboss after spawn attempt."), FloorNumber);
+		return nullptr;
+	}
+
+	HoleActor->SetGuardianEnemy(Miniboss);
+	TowerPlacedMinibossSpawnedFloors.Add(FloorNumber);
+	return Miniboss;
 }
 
 void AT66GameMode::HandleTowerGateGuardianDefeated(AT66EnemyBase* Guardian)
@@ -492,6 +879,10 @@ void AT66GameMode::HandleTowerGateGuardianDefeated(AT66EnemyBase* Guardian)
 
 	const FVector DropLocation = Guardian->GetActorLocation();
 	Guardian->Tags.Remove(T66TowerDescentGuardianTag);
+	if (GuardianFloorNumber != INDEX_NONE)
+	{
+		TowerPlacedMinibossDefeatedFloors.Add(GuardianFloorNumber);
+	}
 
 	AT66IdolAltar* SpawnedAltar = SpawnIdolAltarAtLocation(DropLocation, /*bAllowMultiple*/ true);
 	if (SpawnedAltar && GuardianFloorNumber != INDEX_NONE)
@@ -639,15 +1030,16 @@ void AT66GameMode::HandleTowerDescentHoleTriggered(APawn* Pawn, const int32 From
 		ActiveTowerTerrainVisualFloorNumber = ToFloorNumber;
 	}
 
-	if (!bTowerMiasmaActive && ToFloorNumber >= CachedTowerMainMapLayout.FirstGameplayFloorNumber)
+	if (!bTowerMiasmaActive && ToFloorNumber >= CachedTowerMainMapLayout.FirstMobFloorNumber)
 	{
 		const FVector FloorAnchor = Pawn->GetActorLocation();
 		TryStartTowerMiasma(&FloorAnchor, ToFloorNumber);
 	}
 
-	if (ToFloorNumber >= CachedTowerMainMapLayout.FirstGameplayFloorNumber
-		&& ToFloorNumber <= CachedTowerMainMapLayout.LastGameplayFloorNumber)
+	if (ToFloorNumber >= CachedTowerMainMapLayout.FirstMobFloorNumber
+		&& ToFloorNumber <= CachedTowerMainMapLayout.LastMobFloorNumber)
 	{
+		EnsurePlacedTowerMinibossForFloor(ToFloorNumber);
 		if (AT66EnemyDirector* ExistingEnemyDirector = FindOrCacheEnemyDirector(GetWorld()))
 		{
 			ExistingEnemyDirector->SpawnInitialPopulationForTowerFloor(ToFloorNumber);
@@ -690,7 +1082,7 @@ void AT66GameMode::SyncTowerBossEntryState()
 			if (AT66BossBase* Boss = WeakBoss.Get())
 			{
 				bHasBoss = true;
-				if (Boss->IsAlive() && !Boss->IsAwakened())
+				if (!Boss->IsAwakened())
 				{
 					Boss->ForceAwaken();
 				}

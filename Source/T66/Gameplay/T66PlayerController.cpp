@@ -54,7 +54,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
-#include "Gameplay/T66GamblerBoss.h"
+#include "Gameplay/T66VendorBoss.h"
 #include "Components/BoxComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PrimitiveComponent.h"

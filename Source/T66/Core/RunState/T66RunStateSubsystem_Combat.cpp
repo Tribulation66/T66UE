@@ -4,6 +4,7 @@
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66AudioSubsystem.h"
 #include "Gameplay/T66GameMode.h"
+#include "Gameplay/T66CombatShared.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66MobBase.h"
 #include "Gameplay/Traps/T66TrapBase.h"
@@ -402,7 +403,9 @@ void UT66RunStateSubsystem::AddMaxHearts(int32 DeltaHearts)
 
 float UT66RunStateSubsystem::ApplyAutomationHeroHPOverride(const float RequestedHP, const TCHAR* Reason)
 {
-	static constexpr float MaxAutomationHeroHPOverride = 1000.f;
+	// Automation-only HP override; cap is high enough for stationary performance captures
+	// to outlast saturated ranged projectile pressure that real gameplay would dodge.
+	static constexpr float MaxAutomationHeroHPOverride = 50000.f;
 	if (RequestedHP <= 0.f)
 	{
 		return CurrentHP;
@@ -653,17 +656,6 @@ void UT66RunStateSubsystem::SetBackroomsGameplayPaused(const bool bPaused)
 }
 
 
-bool UT66RunStateSubsystem::GrantQuickReviveCharge()
-{
-	return false;
-}
-
-
-void UT66RunStateSubsystem::ClearQuickReviveCharge()
-{
-}
-
-
 bool UT66RunStateSubsystem::IsBossDamageSource(const AActor* Attacker)
 {
 	return Cast<AT66BossBase>(Attacker) != nullptr;
@@ -780,15 +772,14 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker, const 
 			const float AssassinateChance = GetAssassinateChance01();
 			if (AssassinateChance > 0.f && (RngSub ? (RngSub->GetRunStream().GetFraction() < AssassinateChance) : (FMath::FRand() < AssassinateChance)))
 			{
-				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker)) { E->TakeDamageFromHero(99999, FName(TEXT("Assassinate")), NAME_None); }
-				else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker)) { B->TakeDamageFromHeroHit(99999, FName(TEXT("Assassinate")), NAME_None); }
+				T66CombatShared::TryApplyNonBossOHKO(Attacker, nullptr, FName(TEXT("Assassinate")), NAME_None);
 			}
 			const float CounterChance = FMath::Clamp(GetCounterAttackFraction(), 0.f, 1.f);
 			if (CounterChance > 0.f && DamageHP > 0 && (RngSub ? (RngSub->GetRunStream().GetFraction() < CounterChance) : (FMath::FRand() < CounterChance)))
 			{
 				const int32 CounterDmg = FMath::Max(1, FMath::RoundToInt(static_cast<float>(DamageHP) * 0.5f));
 				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker)) { if (E->CurrentHP > 0) E->TakeDamageFromHero(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
-				else if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Attacker)) { if (GB->CurrentHP > 0) GB->TakeDamageFromHeroHit(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
+				else if (AT66VendorBoss* GB = Cast<AT66VendorBoss>(Attacker)) { if (GB->CurrentHP > 0) GB->TakeDamageFromHeroHit(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
 				else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker)) { if (B->IsAwakened() && B->IsAlive()) B->TakeDamageFromHeroHit(CounterDmg, FName(TEXT("CounterAttack")), NAME_None); }
 				if (UT66FloatingCombatTextSubsystem* FloatingText = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
 				{
@@ -828,7 +819,7 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker, const 
 			{
 				if (E->CurrentHP > 0) E->TakeDamageFromHero(ReflectedAmount, FName(TEXT("Reflect")), NAME_None);
 			}
-			else if (AT66GamblerBoss* GB = Cast<AT66GamblerBoss>(Attacker))
+			else if (AT66VendorBoss* GB = Cast<AT66VendorBoss>(Attacker))
 			{
 				if (GB->CurrentHP > 0) GB->TakeDamageFromHeroHit(ReflectedAmount, FName(TEXT("Reflect")), NAME_None);
 			}
@@ -847,8 +838,7 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker, const 
 			const float CrushChance = GetCrushChance01();
 			if (CrushChance > 0.f && (RngSub ? (RngSub->GetRunStream().GetFraction() < CrushChance) : (FMath::FRand() < CrushChance)))
 			{
-				if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Attacker)) { E->TakeDamageFromHero(99999, FName(TEXT("Crush")), NAME_None); }
-				else if (AT66BossBase* B = Cast<AT66BossBase>(Attacker)) { B->TakeDamageFromHeroHit(99999, FName(TEXT("Crush")), NAME_None); }
+				T66CombatShared::TryApplyNonBossOHKO(Attacker, nullptr, FName(TEXT("Crush")), NAME_None);
 				if (UGameInstance* CrushGI = GetGameInstance())
 				{
 						if (UT66FloatingCombatTextSubsystem* CrushFloating = CrushGI->GetSubsystem<UT66FloatingCombatTextSubsystem>())

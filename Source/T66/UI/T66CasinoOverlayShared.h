@@ -24,7 +24,6 @@
 		(RunStatePtr)->InventoryChanged.RemoveDynamic((WidgetPtr), &WidgetClass::HandleInventoryChanged); \
 		(RunStatePtr)->GoldChanged.RemoveDynamic((WidgetPtr), &WidgetClass::HandleGoldOrDebtChanged); \
 		(RunStatePtr)->DebtChanged.RemoveDynamic((WidgetPtr), &WidgetClass::HandleGoldOrDebtChanged); \
-		(RunStatePtr)->GamblerAngerChanged.RemoveDynamic((WidgetPtr), &WidgetClass::HandleAngerChanged); \
 		(RunStatePtr)->BossChanged.RemoveDynamic((WidgetPtr), &WidgetClass::HandleBossChanged); \
 	} while (false)
 
@@ -35,7 +34,6 @@
 		(RunStatePtr)->InventoryChanged.AddDynamic((WidgetPtr), &WidgetClass::HandleInventoryChanged); \
 		(RunStatePtr)->GoldChanged.AddDynamic((WidgetPtr), &WidgetClass::HandleGoldOrDebtChanged); \
 		(RunStatePtr)->DebtChanged.AddDynamic((WidgetPtr), &WidgetClass::HandleGoldOrDebtChanged); \
-		(RunStatePtr)->GamblerAngerChanged.AddDynamic((WidgetPtr), &WidgetClass::HandleAngerChanged); \
 		(RunStatePtr)->BossChanged.AddDynamic((WidgetPtr), &WidgetClass::HandleBossChanged); \
 	} while (false)
 
@@ -197,8 +195,7 @@ namespace T66CasinoOverlayShared
 		UT66LocalizationSubsystem* Loc,
 		const TSharedPtr<STextBlock>& NetWorthText,
 		const TSharedPtr<STextBlock>& GoldText,
-		const TSharedPtr<STextBlock>& DebtText,
-		const TSharedPtr<STextBlock>& AngerText)
+		const TSharedPtr<STextBlock>& DebtText)
 	{
 		if (!RunState)
 		{
@@ -225,11 +222,6 @@ namespace T66CasinoOverlayShared
 		{
 			const FText Fmt = Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}");
 			DebtText->SetText(FText::Format(Fmt, FText::AsNumber(RunState->GetCurrentDebt())));
-		}
-		if (AngerText.IsValid())
-		{
-			const int32 Pct = FMath::RoundToInt(RunState->GetCasinoAnger01() * 100.f);
-			AngerText->SetText(FText::Format(NSLOCTEXT("T66.Casino", "AngerFormat", "ANGER: {0}%"), FText::AsNumber(Pct)));
 		}
 	}
 

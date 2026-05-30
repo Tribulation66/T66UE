@@ -24,8 +24,8 @@ bool UT66PlayerExperienceSubSystem::ShouldSpawnDifficultyTotemOnTowerFloor(
 	const ET66Difficulty Difficulty,
 	const bool bBossRushFinaleStage,
 	const int32 FloorNumber,
-	const int32 FirstGameplayFloorNumber,
-	const int32 LastGameplayFloorNumber) const
+	const int32 FirstMobFloorNumber,
+	const int32 LastMobFloorNumber) const
 {
 	if (bBossRushFinaleStage)
 	{
@@ -38,5 +38,5 @@ bool UT66PlayerExperienceSubSystem::ShouldSpawnDifficultyTotemOnTowerFloor(
 		return false;
 	}
 
-	return FloorNumber >= FirstGameplayFloorNumber && FloorNumber <= LastGameplayFloorNumber;
+	return FloorNumber >= FirstMobFloorNumber && FloorNumber <= LastMobFloorNumber;
 }

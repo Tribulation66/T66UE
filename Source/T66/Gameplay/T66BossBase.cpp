@@ -5,10 +5,10 @@
 #include "Gameplay/T66CombatHitZoneComponent.h"
 #include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66BossAttackTelegraph.h"
-#include "Gameplay/T66BossProjectile.h"
 #include "Gameplay/T66BossGroundAOE.h"
 #include "Gameplay/T66BossLaneBlockerHazard.h"
 #include "Gameplay/T66GameMode.h"
+#include "Gameplay/T66ProjectileManagerSubsystem.h"
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -948,16 +948,24 @@ void AT66BossBase::SpawnProjectileInDirection(const FVector& Direction, const fl
 	}
 
 	const FVector SpawnLoc = GetActorLocation() + FVector(0.f, 0.f, 84.f) + SpawnOffset;
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	if (AT66BossProjectile* Proj = World->SpawnActor<AT66BossProjectile>(AT66BossProjectile::StaticClass(), SpawnLoc, ShotDirection.Rotation(), SpawnParams))
+	if (UT66ProjectileManagerSubsystem* ProjectileManager = World->GetSubsystem<UT66ProjectileManagerSubsystem>())
 	{
-		Proj->DamageHearts = ProjectileDamageHearts;
-		Proj->ConfigureVisualStyle(AttackProfile, AttackPrimaryColor, AttackSecondaryColor, bUseSecondaryTint);
-		Proj->SetTargetLocation(SpawnLoc + ShotDirection * 1000.f, ProjectileSpeed * FMath::Max(0.35f, SpeedScale));
-		T66PlayBossProfileAudioEvent(this, TEXT("Boss.Projectile.Fire"), FName(TEXT("Boss.Projectile.Fire")), SpawnLoc);
+		FT66ManagedProjectileFireParams FireParams;
+		FireParams.SourceActor = this;
+		FireParams.SourceID = BossID;
+		FireParams.Origin = SpawnLoc;
+		FireParams.Direction = ShotDirection;
+		FireParams.Speed = ProjectileSpeed * FMath::Max(0.35f, SpeedScale);
+		FireParams.Damage = FMath::Max(1, ProjectileDamageHearts) * 20.f;
+		FireParams.BossAttackProfile = AttackProfile;
+		FireParams.BossPrimaryColor = AttackPrimaryColor;
+		FireParams.BossSecondaryColor = AttackSecondaryColor;
+		FireParams.bUseBossSecondaryTint = bUseSecondaryTint;
+		FireParams.BossVisualScaleMultiplier = 1.f;
+		if (ProjectileManager->FireBossProjectile(FireParams))
+		{
+			T66PlayBossProfileAudioEvent(this, TEXT("Boss.Projectile.Fire"), FName(TEXT("Boss.Projectile.Fire")), SpawnLoc);
+		}
 	}
 }
 
@@ -986,17 +994,24 @@ void AT66BossBase::SpawnScaledProjectileInDirection(
 	}
 
 	const FVector SpawnLoc = GetActorLocation() + FVector(0.f, 0.f, 84.f) + SpawnOffset;
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	if (AT66BossProjectile* Proj = World->SpawnActor<AT66BossProjectile>(AT66BossProjectile::StaticClass(), SpawnLoc, ShotDirection.Rotation(), SpawnParams))
+	if (UT66ProjectileManagerSubsystem* ProjectileManager = World->GetSubsystem<UT66ProjectileManagerSubsystem>())
 	{
-		Proj->DamageHearts = ProjectileDamageHearts;
-		Proj->ConfigureVisualStyle(AttackProfile, AttackPrimaryColor, AttackSecondaryColor, bUseSecondaryTint);
-		Proj->SetVisualScaleMultiplier(VisualScaleMultiplier);
-		Proj->SetTargetLocation(SpawnLoc + ShotDirection * 1000.f, ProjectileSpeed * FMath::Max(0.35f, SpeedScale));
-		T66PlayBossProfileAudioEvent(this, TEXT("Boss.Projectile.Fire"), FName(TEXT("Boss.Projectile.Fire")), SpawnLoc);
+		FT66ManagedProjectileFireParams FireParams;
+		FireParams.SourceActor = this;
+		FireParams.SourceID = BossID;
+		FireParams.Origin = SpawnLoc;
+		FireParams.Direction = ShotDirection;
+		FireParams.Speed = ProjectileSpeed * FMath::Max(0.35f, SpeedScale);
+		FireParams.Damage = FMath::Max(1, ProjectileDamageHearts) * 20.f;
+		FireParams.BossAttackProfile = AttackProfile;
+		FireParams.BossPrimaryColor = AttackPrimaryColor;
+		FireParams.BossSecondaryColor = AttackSecondaryColor;
+		FireParams.bUseBossSecondaryTint = bUseSecondaryTint;
+		FireParams.BossVisualScaleMultiplier = VisualScaleMultiplier;
+		if (ProjectileManager->FireBossProjectile(FireParams))
+		{
+			T66PlayBossProfileAudioEvent(this, TEXT("Boss.Projectile.Fire"), FName(TEXT("Boss.Projectile.Fire")), SpawnLoc);
+		}
 	}
 }
 

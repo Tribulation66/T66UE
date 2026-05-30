@@ -79,9 +79,6 @@ private:
 	void HandleGoldOrDebtChanged();
 
 	UFUNCTION()
-	void HandleAngerChanged();
-
-	UFUNCTION()
 	void HandleBossChanged();
 
 	UFUNCTION()
@@ -103,7 +100,6 @@ private:
 	TSharedPtr<STextBlock> AlchemyNetWorthText;
 	TSharedPtr<STextBlock> AlchemyGoldText;
 	TSharedPtr<STextBlock> AlchemyDebtText;
-	TSharedPtr<STextBlock> AlchemyAngerText;
 	TSharedPtr<STextBlock> AlchemyStatusText;
 	TSharedPtr<STextBlock> AlchemyTargetText;
 	TSharedPtr<STextBlock> AlchemyTargetDetailText;

@@ -10,6 +10,7 @@
 #include "UI/T66UITypes.h"
 
 class USoundClass;
+class UWorld;
 struct FStreamableHandle;
 
 #include "T66PlayerSettingsSubsystem.generated.h"
@@ -274,6 +275,8 @@ public:
 	// ===== Utilities =====
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void ApplySafeModeSettings();
+
+	void RunRetroFXSealVerificationIfRequested(UWorld* World);
 
 	UPROPERTY(BlueprintAssignable, Category = "Settings")
 	FOnT66PlayerSettingsChanged OnSettingsChanged;

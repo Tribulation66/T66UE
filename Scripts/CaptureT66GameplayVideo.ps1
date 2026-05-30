@@ -33,6 +33,7 @@ param(
     [double]$Hero1AxeHitboxFireDelay = 7.6,
     [double]$Hero1AxeHitboxVFXLeadSeconds = 0.12,
     [string]$Hero1AxeProofItems = "",
+    [string]$Hero1AxeProofIdol = "Idol_Water",
     [int]$Hero1AxeProofLine1 = 8,
     [int]$Hero1AxeProofSecondary = 1,
     [switch]$Hero1AxeKeepProofInventory,
@@ -155,14 +156,14 @@ function Join-CommandLineValue {
 
 $repoRoot = Get-RepoRoot
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$reviewCameraExecCmds = "T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch -72,T66.Camera.LockedChaseArmLength 1550,T66.Camera.LockedChasePivotHeight 260,T66.Camera.ConstrainAgainstTowerWalls 0"
+$reviewCameraExecCmds = "T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch -72,T66.Camera.LockedChaseArmLength 1550,T66.Camera.LockedChasePivotHeight 260,T66.Camera.ConstrainAgainstTowerWalls 0,T66.Camera.WallOcclusionEnabled 0"
 
 if ($UseReviewCamera -and -not $ExecCmds) {
     $ExecCmds = $reviewCameraExecCmds
 }
 if ($UseHero1AxePreviewStaging) {
     if (-not $ExecCmds) {
-        $ExecCmds = "T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch $PreviewCameraPitch,T66.Camera.LockedChaseArmLength $PreviewCameraArmLength,T66.Camera.LockedChasePivotHeight $PreviewCameraPivotHeight,T66.Camera.ConstrainAgainstTowerWalls 0"
+        $ExecCmds = "T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch $PreviewCameraPitch,T66.Camera.LockedChaseArmLength $PreviewCameraArmLength,T66.Camera.LockedChasePivotHeight $PreviewCameraPivotHeight,T66.Camera.ConstrainAgainstTowerWalls 0,T66.Camera.WallOcclusionEnabled 0"
     }
     $ExtraArgs += @(
         "-T66Hero1AxeAOECenterPlayer",
@@ -184,7 +185,7 @@ if ($UseHero1AxePreviewStaging) {
 }
 
 $normalizedCaptureMode = $CaptureMode.Trim().ToLowerInvariant()
-if ($normalizedCaptureMode -eq "hero1axeaoehitbox" -or $normalizedCaptureMode -eq "hero1axeaoevfxbinding") {
+if ($normalizedCaptureMode -eq "hero1axeaoehitbox" -or $normalizedCaptureMode -eq "hero1axeaoevfxbinding" -or $normalizedCaptureMode -eq "hero1axepiercevfxbinding" -or $normalizedCaptureMode -eq "hero1axebouncevfxbinding" -or $normalizedCaptureMode -eq "hero1axedotvfxbinding" -or $normalizedCaptureMode -eq "hero1axeaoewateridolimpact") {
     $ExtraArgs += @(
         "-T66Hero1AxeAOEHitboxFireDelay=$Hero1AxeHitboxFireDelay",
         "-T66Hero1AxeAOEHitboxVFXLeadSeconds=$Hero1AxeHitboxVFXLeadSeconds"
@@ -201,11 +202,20 @@ if ($normalizedCaptureMode -eq "hero1axeaoehitbox" -or $normalizedCaptureMode -e
             $ExtraArgs += "-T66Hero1AxeAOEKeepProofInventory"
         }
     }
+    if ($normalizedCaptureMode -eq "hero1axeaoewateridolimpact") {
+        $ExtraArgs += "-T66Hero1AxeAOEProofIdol=$Hero1AxeProofIdol"
+    }
     if (-not $ExecCmds) {
-        $ExecCmds = "T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch $PreviewCameraPitch,T66.Camera.LockedChaseArmLength $PreviewCameraArmLength,T66.Camera.LockedChasePivotHeight $PreviewCameraPivotHeight,T66.Camera.ConstrainAgainstTowerWalls 0,T66.Combat.DebugView 2,T66.Combat.DebugLabels 1"
+        $ExecCmds = "T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch $PreviewCameraPitch,T66.Camera.LockedChaseArmLength $PreviewCameraArmLength,T66.Camera.LockedChasePivotHeight $PreviewCameraPivotHeight,T66.Camera.ConstrainAgainstTowerWalls 0,T66.Camera.WallOcclusionEnabled 0,T66.Combat.DebugView 2,T66.Combat.DebugLabels 1"
     }
     elseif ($ExecCmds -notmatch "T66\.Combat\.DebugView") {
         $ExecCmds = "$ExecCmds,T66.Combat.DebugView 2,T66.Combat.DebugLabels 1"
+    }
+    if ($ExecCmds -notmatch "T66\.Camera\.WallOcclusionEnabled") {
+        $ExecCmds = "$ExecCmds,T66.Camera.WallOcclusionEnabled 0"
+    }
+    if (($normalizedCaptureMode -eq "hero1axeaoewateridolimpact" -or $normalizedCaptureMode -eq "hero1axepiercevfxbinding" -or $normalizedCaptureMode -eq "hero1axebouncevfxbinding" -or $normalizedCaptureMode -eq "hero1axedotvfxbinding") -and $ExecCmds -notmatch "T66\.Combat\.ImpactSourceVerbose") {
+        $ExecCmds = "$ExecCmds,T66.Combat.ImpactSourceVerbose 1"
     }
 }
 

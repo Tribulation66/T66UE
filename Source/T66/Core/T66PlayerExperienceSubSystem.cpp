@@ -239,3 +239,13 @@ float UT66PlayerExperienceSubSystem::GetDifficultyShopStealSuccessChanceOnTiming
 {
 	return FMath::Clamp(GetDifficultyTuning(Difficulty).ShopStealSuccessChanceOnTimingHitBase, 0.f, 1.f);
 }
+
+int32 UT66PlayerExperienceSubSystem::GetDifficultyLevelUpXPThreshold(const ET66Difficulty Difficulty) const
+{
+	return FMath::Max(1, GetDifficultyTuning(Difficulty).LevelUpXPThreshold);
+}
+
+float UT66PlayerExperienceSubSystem::GetDifficultyLevelUpWaveRadiusUU(const ET66Difficulty Difficulty) const
+{
+	return FMath::Max(0.f, GetDifficultyTuning(Difficulty).LevelUpWaveRadiusUU);
+}

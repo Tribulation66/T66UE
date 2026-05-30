@@ -122,7 +122,6 @@ void UT66HeroMovementComponent::RefreshWalkSpeedFromRunState()
 		ResolvedBaseWalkSpeed = T66ResolveWalkSpeedFromSpeedStat(CachedRunState->GetSpeedStat());
 		Multiplier =
 			CachedRunState->GetItemMoveSpeedMultiplier() *
-			CachedRunState->GetMovementSpeedSecondaryMultiplier() *
 			CachedRunState->GetStageMoveSpeedMultiplier() *
 			CachedRunState->GetStatusMoveSpeedMultiplier();
 	}

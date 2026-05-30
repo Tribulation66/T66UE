@@ -5,10 +5,12 @@
 #include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyAIController.h"
+#include "Gameplay/Enemies/T66RangedEnemy.h"
 #include "Gameplay/T66ArcadeMachineInteractable.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66MobManagerSubsystem.h"
 #include "Gameplay/T66HouseNPCBase.h"
 #include "Gameplay/T66CombatHitZoneComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
@@ -393,6 +395,18 @@ void AT66EnemyBase::ConfigureAsMob(FName InMobID)
 {
 	MobID = InMobID;
 	CharacterVisualID = MobID;
+	XPValue = 20;
+	if (const UWorld* World = GetWorld())
+	{
+		if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance()))
+		{
+			FT66EnemyData EnemyData;
+			if (T66GI->GetEnemyData(MobID, EnemyData))
+			{
+				XPValue = FMath::Max(0, EnemyData.XPValue);
+			}
+		}
+	}
 
 	if (!VisualMesh) return;
 
@@ -934,6 +948,7 @@ void AT66EnemyBase::ResetForReuse(const FVector& NewLocation, AT66EnemyDirector*
 	ProgressionEnemyScalarApplied = 1.0f;
 	FinaleScalarApplied = 1.0f;
 	ResolvedScoreAward = 0;
+	bLastDeathCreditedToHero = false;
 	bUsingMobVertexAnimation = false;
 	ActiveMobVertexAnimationMID = nullptr;
 	ActiveMobVertexAnimationClip = NAME_None;
@@ -1118,8 +1133,37 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 	if (!Move) return;
 
+	UT66MobManagerSubsystem* RangedDiagnosticManager = nullptr;
+	float RangedDiagnosticDist2D = -1.f;
+	const bool bTrackRichRangedDecision = (EnemyFamily == ET66EnemyFamily::Ranged || IsA<AT66RangedEnemy>())
+		&& UT66MobManagerSubsystem::IsRangedDiagnosticLoggingEnabled();
+	auto RecordRichRangedFireAttempt = [&]() -> UT66MobManagerSubsystem*
+	{
+		if (!bTrackRichRangedDecision)
+		{
+			return nullptr;
+		}
+		if (!RangedDiagnosticManager)
+		{
+			RangedDiagnosticManager = GetWorld() ? GetWorld()->GetSubsystem<UT66MobManagerSubsystem>() : nullptr;
+		}
+		if (RangedDiagnosticManager)
+		{
+			if (RangedDiagnosticDist2D < 0.f)
+			{
+				RangedDiagnosticDist2D = FVector::Dist2D(GetActorLocation(), PlayerPawn->GetActorLocation());
+			}
+			RangedDiagnosticManager->RecordRangedFireAttempt(false, MobID, RangedDiagnosticDist2D);
+		}
+		return RangedDiagnosticManager;
+	};
+
 	if (AutoAttackKnockbackSecondsRemaining > 0.f)
 	{
+		if (UT66MobManagerSubsystem* Manager = RecordRichRangedFireAttempt())
+		{
+			Manager->RecordRangedStatusBlocked(false, MobID, RangedDiagnosticDist2D);
+		}
 		AutoAttackKnockbackSecondsRemaining = FMath::Max(0.f, AutoAttackKnockbackSecondsRemaining - DeltaSeconds);
 		if (AutoAttackKnockbackSecondsRemaining <= 0.f)
 		{
@@ -1129,6 +1173,10 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 	}
 
 	const float Dist2DToPlayer = FVector::Dist2D(GetActorLocation(), PlayerPawn->GetActorLocation());
+	if (RangedDiagnosticDist2D < 0.f)
+	{
+		RangedDiagnosticDist2D = Dist2DToPlayer;
+	}
 	const bool bPlayerInsideReservedTraversalZone = T66GameplayLayout::IsInsideReservedTraversalZone2D(
 		PlayerPawn->GetActorLocation(),
 		220.f);
@@ -1280,12 +1328,20 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 
 	if (FreezeSecondsRemaining > 0.f || StunSecondsRemaining > 0.f)
 	{
+		if (UT66MobManagerSubsystem* Manager = RecordRichRangedFireAttempt())
+		{
+			Manager->RecordRangedStatusBlocked(false, MobID, RangedDiagnosticDist2D);
+		}
 		Move->StopMovementImmediately();
 		return;
 	}
 
 	if (RootSecondsRemaining > 0.f)
 	{
+		if (UT66MobManagerSubsystem* Manager = RecordRichRangedFireAttempt())
+		{
+			Manager->RecordRangedStatusBlocked(false, MobID, RangedDiagnosticDist2D);
+		}
 		Move->StopMovementImmediately();
 		return;
 	}
@@ -1316,6 +1372,7 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		}
 	}
 
+	(void)RecordRichRangedFireAttempt();
 	TickFamilyBehavior(PlayerPawn, DeltaSeconds, Dist2DToPlayer, bShouldRunAwayFromPlayer);
 }
 
@@ -1409,6 +1466,7 @@ bool AT66EnemyBase::ApplyResolvedDamage(int32 Damage, const bool bCreditHeroKill
 	CurrentHP = FMath::Max(0, CurrentHP - ReducedDamage);
 	if (CurrentHP <= 0)
 	{
+		bLastDeathCreditedToHero = bCreditHeroKill;
 		if (UWorld* World = GetWorld())
 		{
 			if (bCreditHeroKill)
@@ -1628,7 +1686,11 @@ void AT66EnemyBase::OnDeath()
 	{
 		const int32 AwardPoints = FMath::Max(0, ResolvedScoreAward);
 		RunState->AddEnemyKillScore(AwardPoints);
-		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("Score=%d"), AwardPoints));
+		if (bLastDeathCreditedToHero && XPValue > 0)
+		{
+			RunState->AddHeroXP(XPValue);
+		}
+		RunState->AddStructuredEvent(ET66RunEventType::EnemyKilled, FString::Printf(TEXT("Score=%d,XP=%d"), AwardPoints, bLastDeathCreditedToHero ? FMath::Max(0, XPValue) : 0));
 	}
 	if (Achievements)
 	{

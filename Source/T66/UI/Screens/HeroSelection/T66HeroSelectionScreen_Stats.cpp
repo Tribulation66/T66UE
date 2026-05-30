@@ -311,6 +311,7 @@ void UT66HeroSelectionScreen::PopulateHeroStatsSnapshot(const FHeroData& HeroDat
 	SetSecondaryValue(ET66SecondaryStatType::CritChance, HeroData.BaseCritChance);
 	SetSecondaryValue(ET66SecondaryStatType::AttackRange, HeroData.BaseAttackRange);
 	SetSecondaryValue(ET66SecondaryStatType::Accuracy, HeroData.BaseAccuracy);
+	SetSecondaryValue(ET66SecondaryStatType::Execute, 0.f);
 	SetSecondaryValue(ET66SecondaryStatType::Taunt, HeroData.BaseTaunt);
 	SetSecondaryValue(ET66SecondaryStatType::DamageReduction, 0.f);
 	SetSecondaryValue(ET66SecondaryStatType::ReflectDamage, HeroData.BaseReflectDmg);
@@ -323,6 +324,8 @@ void UT66HeroSelectionScreen::PopulateHeroStatsSnapshot(const FHeroData& HeroDat
 	SetSecondaryValue(ET66SecondaryStatType::Cheating, HeroData.BaseCheatChance);
 	SetSecondaryValue(ET66SecondaryStatType::Stealing, HeroData.BaseStealChance);
 	SetSecondaryValue(ET66SecondaryStatType::LootCrate, 0.f);
+	SetSecondaryValue(ET66SecondaryStatType::LootBag, 0.f);
+	SetSecondaryValue(ET66SecondaryStatType::LootWheel, 0.f);
 }
 
 void UT66HeroSelectionScreen::RefreshHeroStatsPanels()

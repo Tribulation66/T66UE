@@ -498,7 +498,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	}
 
 	DifficultyOptions.Empty();
-	const TArray<ET66Difficulty> Difficulties = T66GI ? T66GI->GetVisibleDifficulties() : TArray<ET66Difficulty>{
+	const TArray<ET66Difficulty> Difficulties = T66GI ? T66GI->GetPlayableDifficulties() : TArray<ET66Difficulty>{
 		ET66Difficulty::Easy, ET66Difficulty::Medium, ET66Difficulty::Hard, ET66Difficulty::VeryHard, ET66Difficulty::Impossible
 	};
 	for (const ET66Difficulty Difficulty : Difficulties)
@@ -696,11 +696,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			CompanionSelectionTag(TEXT("CompanionSelectionCarousel")));
 		CarouselRow->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 8.f, 0.f)
 		[
-			T66DemoModeUI::WrapWithComingSoonOverlay(
-				CompanionButton,
-				!CompanionID.IsNone() && !bPlayable,
-				this,
-				FName(*FString::Printf(TEXT("CompanionSelection.Carousel.Slot%02d.DemoOverlay"), SlotIdx + 1)))
+			CompanionButton
 		];
 	}
 	CarouselRow->AddSlot().AutoWidth().VAlign(VAlign_Center)
@@ -1463,7 +1459,7 @@ void UT66CompanionSelectionScreen::RefreshScreen_Implementation()
 void UT66CompanionSelectionScreen::RefreshCompanionList()
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
-		AllCompanionIDs = GI->GetAllCompanionIDs();
+		AllCompanionIDs = GI->GetPlayableCompanionIDs();
 }
 
 TArray<FCompanionData> UT66CompanionSelectionScreen::GetAllCompanions()

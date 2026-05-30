@@ -5,12 +5,15 @@
 
 #include "Gameplay/T66ArthurUltimateSword.h"
 #include "Gameplay/T66HeroOneAttackVFX.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "CollisionQueryParams.h"
+#include "Engine/StaticMesh.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "HAL/IConsoleManager.h"
@@ -95,6 +98,15 @@ namespace
 	int32 GIdolDOTStage9RequestSerial = 0;
 	uint64 GCombatImportedVFXBudgetFrame = MAX_uint64;
 	int32 GCombatImportedVFXEmittedThisFrame = 0;
+
+	bool T66IsCombatImpactSourceVerboseEnabled()
+	{
+		if (IConsoleVariable* VerboseCVar = IConsoleManager::Get().FindConsoleVariable(TEXT("T66.Combat.ImpactSourceVerbose")))
+		{
+			return VerboseCVar->GetInt() != 0;
+		}
+		return false;
+	}
 
 	float GetCombatImportedEffectsQualityScale()
 	{
@@ -1129,6 +1141,273 @@ void UT66CombatComponent::SpawnDOTVFX(const FVector& Location, float Duration, f
 		{
 			OwnerActor->SetLifeSpan(FMath::Max(0.1f, Duration));
 		}
+	}
+}
+
+bool UT66CombatComponent::TrySpawnBoundIdolImpactVFX(
+	const FT66CombatImpactContext& IdolImpactContext,
+	const FName IdolID,
+	const ET66ItemRarity Rarity,
+	const float Radius,
+	bool& bOutBindingResolved)
+{
+	bOutBindingResolved = false;
+	FT66CombatVFXBindingData Binding;
+	UNiagaraSystem* BoundSystem = nullptr;
+	if (!ResolveCombatVFXBinding(
+		ET66CombatVFXBindingSourceType::IdolModifier,
+		IdolID,
+		IdolImpactContext.AttackCategory,
+		Binding,
+		BoundSystem))
+	{
+		if (T66IsCombatImpactSourceVerboseEnabled())
+		{
+			UE_LOG(
+				LogT66Combat,
+				Display,
+				TEXT("CombatVFXIdolImpactBindingLookup SourceType=IdolModifier SourceID=%s ParentSourceID=%s AttackCategory=%s Result=None"),
+				*IdolID.ToString(),
+				*IdolImpactContext.ParentSourceID.ToString(),
+				*UEnum::GetValueAsString(IdolImpactContext.AttackCategory));
+		}
+		return false;
+	}
+
+	bOutBindingResolved = true;
+	UWorld* World = GetWorld();
+	if (!World || !BoundSystem)
+	{
+		return false;
+	}
+
+	const float BaseVisualRadius = FMath::Max(0.f, Binding.BaseVisualRadius);
+	const float VisualScale = FMath::Max(
+		0.01f,
+		(BaseVisualRadius > KINDA_SMALL_NUMBER)
+			? (Radius / BaseVisualRadius) * Binding.VisualScaleMultiplier
+			: T66CombatShared::GetIdolRarityVisualScale(Rarity) * Binding.VisualScaleMultiplier);
+	const FVector VisualAnchor = IdolImpactContext.bDamageCenterValid
+		? IdolImpactContext.DamageCenter
+		: IdolImpactContext.ImpactPoint;
+	const FVector SpawnLocation = VisualAnchor + FVector(0.f, 0.f, 72.f);
+	const FRotator SpawnRotation = IdolImpactContext.Forward.IsNearlyZero()
+		? FRotator::ZeroRotator
+		: IdolImpactContext.Forward.Rotation();
+
+	UNiagaraComponent* Component = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		World,
+		BoundSystem,
+		SpawnLocation,
+		SpawnRotation,
+		FVector(VisualScale),
+		true,
+		true,
+		ENCPoolMethod::AutoRelease,
+		true);
+	if (!Component)
+	{
+		UE_LOG(
+			LogT66Combat,
+			Warning,
+			TEXT("CombatVFXFallbackPlaceholder Reason=IdolImpactSpawnFailed Binding=%s SourceType=IdolModifier SourceID=%s AttackCategory=%s System=%s"),
+			*Binding.BindingID.ToString(),
+			*IdolID.ToString(),
+			*UEnum::GetValueAsString(IdolImpactContext.AttackCategory),
+			*BoundSystem->GetPathName());
+		return false;
+	}
+
+	Component->SetTranslucentSortPriority(13);
+	UE_LOG(
+		LogT66Combat,
+		Display,
+		TEXT("CombatVFXProductionSpawned Binding=%s SourceType=IdolModifier SourceID=%s ParentSourceID=%s AttackCategory=%s System=%s Location=%s VisualAnchor=%s DamageCenter=%s DamageCenterValid=%d ImpactPoint=%s ImpactPointValid=%d Radius=%.2f BaseVisualRadius=%.2f VisualScale=%.3f EffectPacketID=%s"),
+		*Binding.BindingID.ToString(),
+		*IdolID.ToString(),
+		*IdolImpactContext.ParentSourceID.ToString(),
+		*UEnum::GetValueAsString(IdolImpactContext.AttackCategory),
+		*BoundSystem->GetPathName(),
+		*SpawnLocation.ToCompactString(),
+		*VisualAnchor.ToCompactString(),
+		*IdolImpactContext.DamageCenter.ToCompactString(),
+		IdolImpactContext.bDamageCenterValid ? 1 : 0,
+		*IdolImpactContext.ImpactPoint.ToCompactString(),
+		IdolImpactContext.bImpactPointValid ? 1 : 0,
+		Radius,
+		BaseVisualRadius,
+		VisualScale,
+		*Binding.EffectPacketID.ToString());
+	return true;
+}
+
+void UT66CombatComponent::SpawnWaterIdolImpactPlaceholderVFX(const FT66CombatImpactContext& IdolImpactContext, const float Radius)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UStaticMesh* SphereMesh = FT66VisualUtil::GetBasicShapeSphere();
+	if (!SphereMesh)
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = GetOwner();
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	constexpr float BasicShapeSphereRadius = 50.f;
+	const float VisualRadius = FMath::Max(1.f, Radius);
+	const float VisualScale = VisualRadius / BasicShapeSphereRadius;
+	const FVector VisualAnchor = IdolImpactContext.bDamageCenterValid
+		? IdolImpactContext.DamageCenter
+		: IdolImpactContext.ImpactPoint;
+	const FVector SpawnLocation = VisualAnchor;
+	AActor* PlaceholderActor = World->SpawnActor<AActor>(
+		AActor::StaticClass(),
+		SpawnLocation,
+		FRotator::ZeroRotator,
+		SpawnParams);
+	if (!PlaceholderActor)
+	{
+		return;
+	}
+
+	UStaticMeshComponent* MeshComponent = NewObject<UStaticMeshComponent>(PlaceholderActor, TEXT("WaterIdolImpactPlaceholderMesh"));
+	if (!MeshComponent)
+	{
+		PlaceholderActor->Destroy();
+		return;
+	}
+
+	PlaceholderActor->Tags.AddUnique(FName(TEXT("T66CombatVFXWaterIdolImpactPlaceholder")));
+	PlaceholderActor->SetRootComponent(MeshComponent);
+	MeshComponent->SetRelativeLocation(FVector::ZeroVector);
+	MeshComponent->SetStaticMesh(SphereMesh);
+	MeshComponent->SetMobility(EComponentMobility::Movable);
+	MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MeshComponent->SetGenerateOverlapEvents(false);
+	MeshComponent->SetCastShadow(false);
+	MeshComponent->RegisterComponent();
+	PlaceholderActor->SetActorLocation(SpawnLocation);
+	// Temporary proof area read only; final Water idol art still belongs to Niagara.
+	MeshComponent->SetWorldScale3D(FVector(VisualScale));
+	FT66VisualUtil::ApplyT66Color(MeshComponent, PlaceholderActor, FLinearColor(0.035f, 0.30f, 1.0f, 1.0f));
+	PlaceholderActor->SetLifeSpan(1.25f);
+
+	if (T66IsCombatImpactSourceVerboseEnabled())
+	{
+		UE_LOG(
+			LogT66Combat,
+			Display,
+			TEXT("CombatVFXIdolImpactPlaceholderSpawned SourceType=IdolModifier SourceID=Idol_Water ParentSourceID=%s DamageCenter=%s DamageCenterValid=%d ImpactPoint=%s ImpactPointValid=%d VisualAnchor=%s VisualLocation=%s Radius=%.2f VisualRadius=%.2f Placeholder=BlueSphereAreaRead VisualScale=%.3f LifeSpan=1.25"),
+			*IdolImpactContext.ParentSourceID.ToString(),
+			*IdolImpactContext.DamageCenter.ToCompactString(),
+			IdolImpactContext.bDamageCenterValid ? 1 : 0,
+			*IdolImpactContext.ImpactPoint.ToCompactString(),
+			IdolImpactContext.bImpactPointValid ? 1 : 0,
+			*VisualAnchor.ToCompactString(),
+			*PlaceholderActor->GetActorLocation().ToCompactString(),
+			Radius,
+			VisualRadius,
+			VisualScale);
+	}
+}
+
+void UT66CombatComponent::SpawnIdolImpactPlaceholderVFX(const FT66CombatImpactContext& IdolImpactContext, const FName IdolID, const ET66AttackCategory Category, const float LingerSeconds)
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const FLinearColor IdolColor = UT66IdolManagerSubsystem::GetIdolColor(IdolID);
+	const FVector Anchor = IdolImpactContext.bDamageCenterValid
+		? IdolImpactContext.DamageCenter
+		: IdolImpactContext.ImpactPoint;
+	const FVector ElevatedAnchor = Anchor + FVector(0.f, 0.f, 18.f);
+	const TCHAR* CategoryShape = TEXT("Unknown");
+
+	switch (Category)
+	{
+	case ET66AttackCategory::Pierce:
+	{
+		// Line read off the official impact point reusing the base pierce primitive.
+		const float LineLength = FMath::Max(1.f, IdolImpactContext.LineLength);
+		FVector Dir = IdolImpactContext.Forward;
+		if (Dir.IsNearlyZero())
+		{
+			Dir = FVector::ForwardVector;
+		}
+		Dir = Dir.GetSafeNormal();
+		const FVector Start = ElevatedAnchor;
+		const FVector End = ElevatedAnchor + Dir * LineLength;
+		SpawnPierceVFX(Start, End, IdolColor);
+		CategoryShape = TEXT("PierceLine");
+		break;
+	}
+	case ET66AttackCategory::Bounce:
+	{
+		// Chain read from the official impact point through each downstream link target.
+		TArray<FVector> ChainPositions;
+		ChainPositions.Add(ElevatedAnchor);
+		for (const FT66CombatTargetHandle& Handle : IdolImpactContext.HitTargetHandles)
+		{
+			if (Handle.IsValid())
+			{
+				ChainPositions.Add(GetTargetAimPoint(Handle) + FVector(0.f, 0.f, 18.f));
+			}
+		}
+		if (ChainPositions.Num() < 2)
+		{
+			ChainPositions.Add(ElevatedAnchor + IdolImpactContext.Forward.GetSafeNormal() * 64.f);
+		}
+		SpawnBounceVFX(ChainPositions, IdolColor);
+		CategoryShape = TEXT("BounceChain");
+		break;
+	}
+	case ET66AttackCategory::DOT:
+	{
+		// Lingering area read held for the DOT duration reusing the base DOT primitive.
+		const float Radius = FMath::Max(32.f, IdolImpactContext.Radius);
+		SpawnDOTVFX(ElevatedAnchor, FMath::Max(0.1f, LingerSeconds), Radius, IdolColor);
+		CategoryShape = TEXT("DotLingeringArea");
+		break;
+	}
+	default:
+	{
+		// Fallback area read for any other category routed through this placeholder.
+		const float Radius = FMath::Max(32.f, IdolImpactContext.Radius);
+		SpawnDOTVFX(ElevatedAnchor, FMath::Max(0.1f, LingerSeconds), Radius, IdolColor);
+		CategoryShape = TEXT("AreaRead");
+		break;
+	}
+	}
+
+	if (T66IsCombatImpactSourceVerboseEnabled())
+	{
+		UE_LOG(
+			LogT66Combat,
+			Display,
+			TEXT("CombatVFXIdolImpactPlaceholderSpawned SourceType=IdolModifier SourceID=%s ParentSourceID=%s AttackCategory=%s Placeholder=%s DamageCenter=%s DamageCenterValid=%d ImpactPoint=%s ImpactPointValid=%d VisualAnchor=%s LineLength=%.2f Links=%d LingerSeconds=%.2f Color=(%.2f,%.2f,%.2f)"),
+			*IdolID.ToString(),
+			*IdolImpactContext.ParentSourceID.ToString(),
+			*UEnum::GetValueAsString(Category),
+			CategoryShape,
+			*IdolImpactContext.DamageCenter.ToCompactString(),
+			IdolImpactContext.bDamageCenterValid ? 1 : 0,
+			*IdolImpactContext.ImpactPoint.ToCompactString(),
+			IdolImpactContext.bImpactPointValid ? 1 : 0,
+			*Anchor.ToCompactString(),
+			IdolImpactContext.LineLength,
+			IdolImpactContext.HitTargetHandles.Num(),
+			LingerSeconds,
+			IdolColor.R,
+			IdolColor.G,
+			IdolColor.B);
 	}
 }
 

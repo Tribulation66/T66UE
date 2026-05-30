@@ -421,8 +421,6 @@ public:
 		/** Compact embedded casino item card footprint shared by shop, gambling, and alchemy. */
 		static constexpr float NPCCompactShopCardWidth = 148.f;
 		static constexpr float NPCCompactShopCardHeight = 264.f;
-		/** Anger face circle size (Shop and Gambler right panel). */
-		static constexpr float NPCAngerCircleSize = 170.f;
 		/** Bank spinbox width (Borrow/Payback amount). */
 		static constexpr float NPCBankSpinBoxWidth = 110.f;
 		/** Bank spinbox height and similar single-line control height. */

@@ -305,7 +305,6 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	if (Boss && StageBoss.Get() == Boss)
 	{
 		StageBoss = nullptr;
-		DestroyBossBeacon();
 	}
 	UGameInstance* GI = World->GetGameInstance();
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
@@ -527,10 +526,6 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 		{
 			FallbackSpawnLoc = MainMapBossAreaCenterSurfaceLocation;
 		}
-		else if (!MainMapBossBeaconSurfaceLocation.IsNearlyZero())
-		{
-			FallbackSpawnLoc = MainMapBossBeaconSurfaceLocation;
-		}
 	}
 
 	FVector PlayerLocation = FVector::ZeroVector;
@@ -554,7 +549,7 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 	UE_LOG(
 		LogT66GameMode,
 		Warning,
-		TEXT("SpawnStageGateAtLocation: request=(%.0f, %.0f, %.0f) requestFloor=%d anchorSource=%s resolvedAnchor=(%.0f, %.0f, %.0f) anchorFloor=%d player=(%.0f, %.0f, %.0f) playerFloor=%d bossSpawnSurface=(%.0f, %.0f, %.0f) bossAreaCenter=(%.0f, %.0f, %.0f) bossBeacon=(%.0f, %.0f, %.0f)"),
+		TEXT("SpawnStageGateAtLocation: request=(%.0f, %.0f, %.0f) requestFloor=%d anchorSource=%s resolvedAnchor=(%.0f, %.0f, %.0f) anchorFloor=%d player=(%.0f, %.0f, %.0f) playerFloor=%d bossSpawnSurface=(%.0f, %.0f, %.0f) bossAreaCenter=(%.0f, %.0f, %.0f)"),
 		RequestedLocation.X,
 		RequestedLocation.Y,
 		RequestedLocation.Z,
@@ -573,10 +568,7 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 		MainMapBossSpawnSurfaceLocation.Z,
 		MainMapBossAreaCenterSurfaceLocation.X,
 		MainMapBossAreaCenterSurfaceLocation.Y,
-		MainMapBossAreaCenterSurfaceLocation.Z,
-		MainMapBossBeaconSurfaceLocation.X,
-		MainMapBossBeaconSurfaceLocation.Y,
-		MainMapBossBeaconSurfaceLocation.Z);
+		MainMapBossAreaCenterSurfaceLocation.Z);
 
 	// Prefer the exact boss-death location. Only fall back to the boss-room anchor when that
 	// position cannot be grounded (for example if the boss dies above a hole or invalid surface).
@@ -613,8 +605,7 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 			{
 				SpawnAnchorSource =
 					FallbackSpawnLoc.Equals(MainMapBossSpawnSurfaceLocation, 1.0f) ? TEXT("BossSpawnSurface") :
-					(FallbackSpawnLoc.Equals(MainMapBossAreaCenterSurfaceLocation, 1.0f) ? TEXT("BossAreaCenterSurface") :
-						(FallbackSpawnLoc.Equals(MainMapBossBeaconSurfaceLocation, 1.0f) ? TEXT("BossBeaconSurface") : TEXT("TowerFallback")));
+					(FallbackSpawnLoc.Equals(MainMapBossAreaCenterSurfaceLocation, 1.0f) ? TEXT("BossAreaCenterSurface") : TEXT("TowerFallback"));
 			}
 		}
 	}
@@ -822,7 +813,6 @@ void AT66GameMode::SpawnBossForCurrentStage()
 			TrySnapActorToTerrainAtLocation(Boss, StageBossSpawnLocation);
 		}
 		StageBoss = Boss;
-		SpawnBossBeaconIfNeeded();
 		const int32 BossScoreBudget = PlayerExperience
 			? PlayerExperience->ResolveBossScore(T66GI->SelectedDifficulty, Boss->GetPointValue(), RunState->GetDifficultyScalar())
 			: FMath::Max(0, FMath::RoundToInt(static_cast<float>(Boss->GetPointValue()) * RunState->GetDifficultyScalar()));
@@ -877,7 +867,6 @@ void AT66GameMode::SpawnBossForCurrentStage()
 							TrySnapActorToTerrainAtLocation(NewBoss, Loc);
 						}
 						StageBoss = NewBoss;
-						SpawnBossBeaconIfNeeded();
 					}
 				}));
 			if (Handle.IsValid())
@@ -963,279 +952,4 @@ void AT66GameMode::SpawnBossForCurrentStage()
 			UE_LOG(LogT66GameMode, Log, TEXT("Spawned owed boss on final boss floor (BossID=%s)"), *OwedBossData.BossID.ToString());
 		}
 	}
-}
-
-bool AT66GameMode::TryComputeBossBeaconBase(FVector& OutBeaconBase) const
-{
-	if (IsLabRun() || IsUsingTowerMainMapLayout() || !StageBoss.IsValid())
-	{
-		return false;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return false;
-	}
-
-	if (T66UsesMainMapTerrainStage(World))
-	{
-		if (!MainMapBossBeaconSurfaceLocation.IsNearlyZero())
-		{
-			OutBeaconBase = MainMapBossBeaconSurfaceLocation;
-			return true;
-		}
-
-		if (!MainMapBossAreaCenterSurfaceLocation.IsNearlyZero())
-		{
-			OutBeaconBase = MainMapBossAreaCenterSurfaceLocation;
-			return true;
-		}
-	}
-
-	FVector DesiredBase = StageBoss->GetActorLocation() + FVector(3400.f, 0.f, 0.f);
-	DesiredBase.X = FMath::Clamp(DesiredBase.X, T66GameplayLayout::BossAreaWestX + 1000.f, T66GameplayLayout::BossPartitionEastX - 900.f);
-	DesiredBase.Y = FMath::Clamp(DesiredBase.Y, -T66GameplayLayout::AreaHalfHeightY + 600.f, T66GameplayLayout::AreaHalfHeightY - 600.f);
-	const float MinNormalZ = 0.88f;
-
-	auto TryTraceBossBeaconSurface = [&](float X, float Y, FVector& OutLoc) -> bool
-	{
-		FHitResult Hit;
-		const FVector TraceStart(X, Y, 5000.f);
-		const FVector TraceEnd(X, Y, -12000.f);
-		if (!World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
-		{
-			return false;
-		}
-
-		if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal, MinNormalZ))
-		{
-			return false;
-		}
-
-		OutLoc = Hit.ImpactPoint;
-		return true;
-	};
-
-	FVector FallbackLoc = DesiredBase;
-	{
-		FHitResult FallbackHit;
-		const FVector TraceStart = DesiredBase + FVector(0.f, 0.f, 5000.f);
-		const FVector TraceEnd = DesiredBase - FVector(0.f, 0.f, 12000.f);
-		if (World->LineTraceSingleByChannel(FallbackHit, TraceStart, TraceEnd, ECC_WorldStatic))
-		{
-			FallbackLoc = FallbackHit.ImpactPoint;
-		}
-	}
-
-	FVector BeaconBase = DesiredBase;
-	BeaconBase.Z = 0.f;
-	bool bFoundFlatSurface = false;
-	for (float Radius = 0.f; Radius <= 1600.f && !bFoundFlatSurface; Radius += 220.f)
-	{
-		const int32 AngleSteps = (Radius <= KINDA_SMALL_NUMBER) ? 1 : 14;
-		for (int32 AngleIndex = 0; AngleIndex < AngleSteps; ++AngleIndex)
-		{
-			const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(AngleIndex) / static_cast<float>(AngleSteps));
-			const float X = DesiredBase.X + (Radius * FMath::Cos(Angle));
-			const float Y = DesiredBase.Y + (Radius * FMath::Sin(Angle));
-			if (TryTraceBossBeaconSurface(X, Y, BeaconBase))
-			{
-				bFoundFlatSurface = true;
-				break;
-			}
-		}
-	}
-
-	OutBeaconBase = bFoundFlatSurface ? BeaconBase : FallbackLoc;
-	return true;
-}
-
-void AT66GameMode::DestroyBossBeacon()
-{
-	if (AActor* BeaconActor = BossBeaconActor.Get())
-	{
-		BeaconActor->Destroy();
-	}
-	BossBeaconActor = nullptr;
-}
-
-void AT66GameMode::UpdateBossBeaconTransform(bool bForceSpawnIfMissing)
-{
-	if (IsLabRun() || IsUsingTowerMainMapLayout() || !StageBoss.IsValid())
-	{
-		DestroyBossBeacon();
-		return;
-	}
-
-	FVector BeaconBase = FVector::ZeroVector;
-	if (!TryComputeBossBeaconBase(BeaconBase))
-	{
-		return;
-	}
-
-	if (AActor* BeaconActor = BossBeaconActor.Get())
-	{
-		BeaconActor->SetActorLocation(BeaconBase, false, nullptr, ETeleportType::TeleportPhysics);
-		return;
-	}
-
-	if (bForceSpawnIfMissing)
-	{
-		SpawnBossBeaconIfNeeded();
-	}
-}
-
-void AT66GameMode::SpawnBossBeaconIfNeeded()
-{
-	if (IsLabRun() || IsUsingTowerMainMapLayout())
-	{
-		DestroyBossBeacon();
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World) return;
-
-	static const FName BossBeaconTag(TEXT("T66_Boss_Beacon"));
-
-	TArray<AActor*> ExistingBeacons;
-	// Stage-transition cleanup only. BossBeaconActor is cached after spawn, but
-	// this pass removes legacy duplicate beacons from older saved maps.
-	for (TActorIterator<AActor> It(World); It; ++It)
-	{
-		if (It->Tags.Contains(BossBeaconTag))
-		{
-			ExistingBeacons.Add(*It);
-		}
-	}
-	for (AActor* Existing : ExistingBeacons)
-	{
-		if (Existing)
-		{
-			Existing->Destroy();
-		}
-	}
-	BossBeaconActor = nullptr;
-
-	// The beacon is meant to sit behind the live stage boss.
-	// If the boss has not spawned yet, do not place a fallback beam in the arena.
-	FVector BeaconBase = FVector::ZeroVector;
-	if (!TryComputeBossBeaconBase(BeaconBase))
-	{
-		return;
-	}
-
-	constexpr float OuterHeight = 34000.f;
-	constexpr float InnerHeight = 32000.f;
-	constexpr float OuterRadius = 250.f;
-	constexpr float InnerRadius = 90.f;
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	AActor* BeaconActor = World->SpawnActor<AActor>(AActor::StaticClass(), BeaconBase, FRotator::ZeroRotator, SpawnParams);
-	if (!BeaconActor)
-	{
-		return;
-	}
-
-	BeaconActor->Tags.Add(BossBeaconTag);
-
-	USceneComponent* Root = NewObject<USceneComponent>(BeaconActor, TEXT("BossBeaconRoot"));
-	if (!Root)
-	{
-		BeaconActor->Destroy();
-		return;
-	}
-
-	BeaconActor->SetRootComponent(Root);
-	Root->SetMobility(EComponentMobility::Movable);
-	Root->RegisterComponent();
-
-	UStaticMesh* CylinderMesh = FT66VisualUtil::GetBasicShapeCylinder();
-	UMaterialInterface* EnvUnlitBase = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
-	UTexture* WhiteTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
-
-	auto CreateBeamMaterial = [&](const FLinearColor& Tint, float Brightness) -> UMaterialInterface*
-	{
-		if (!EnvUnlitBase)
-		{
-			return nullptr;
-		}
-
-		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(EnvUnlitBase, BeaconActor);
-		if (!MID)
-		{
-			return nullptr;
-		}
-
-		if (WhiteTexture)
-		{
-			MID->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
-			MID->SetTextureParameterValue(TEXT("BaseColorTexture"), WhiteTexture);
-		}
-		MID->SetVectorParameterValue(TEXT("Tint"), Tint);
-		MID->SetVectorParameterValue(TEXT("BaseColor"), Tint);
-		MID->SetScalarParameterValue(TEXT("Brightness"), Brightness);
-		return MID;
-	};
-
-	auto ConfigureBeamMesh = [&](const TCHAR* ComponentName, float Radius, float Height, const FLinearColor& Tint, float Brightness)
-	{
-		if (!CylinderMesh)
-		{
-			return;
-		}
-
-		UStaticMeshComponent* BeamMesh = NewObject<UStaticMeshComponent>(BeaconActor, ComponentName);
-		if (!BeamMesh)
-		{
-			return;
-		}
-
-		BeamMesh->SetStaticMesh(CylinderMesh);
-		BeamMesh->SetRelativeLocation(FVector(0.f, 0.f, Height * 0.5f));
-		BeamMesh->SetRelativeScale3D(FVector(Radius / 50.f, Radius / 50.f, Height / 100.f));
-		BeamMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		BeamMesh->SetCastShadow(false);
-		BeamMesh->SetReceivesDecals(false);
-		BeamMesh->SetCanEverAffectNavigation(false);
-		BeamMesh->SetMobility(EComponentMobility::Movable);
-		BeamMesh->SetupAttachment(Root);
-		if (UMaterialInterface* BeamMaterial = CreateBeamMaterial(Tint, Brightness))
-		{
-			BeamMesh->SetMaterial(0, BeamMaterial);
-		}
-		BeamMesh->RegisterComponent();
-	};
-
-	ConfigureBeamMesh(TEXT("BossBeaconOuter"), OuterRadius, OuterHeight, FLinearColor(0.70f, 0.90f, 1.00f, 1.f), 9.5f);
-	ConfigureBeamMesh(TEXT("BossBeaconInner"), InnerRadius, InnerHeight, FLinearColor(1.00f, 0.93f, 0.60f, 1.f), 26.0f);
-
-	auto ConfigureGlowLight = [&](const TCHAR* ComponentName, float HeightAlpha, float Intensity, float AttenuationRadius)
-	{
-		UPointLightComponent* Glow = NewObject<UPointLightComponent>(BeaconActor, ComponentName);
-		if (!Glow)
-		{
-			return;
-		}
-
-		Glow->SetMobility(EComponentMobility::Movable);
-		Glow->SetupAttachment(Root);
-		Glow->SetRelativeLocation(FVector(0.f, 0.f, OuterHeight * HeightAlpha));
-		Glow->SetIntensity(Intensity);
-		Glow->SetLightColor(FLinearColor(1.00f, 0.92f, 0.72f));
-		Glow->SetAttenuationRadius(AttenuationRadius);
-		Glow->SetCastShadows(false);
-		Glow->bUseInverseSquaredFalloff = false;
-		Glow->LightFalloffExponent = 3.0f;
-		Glow->RegisterComponent();
-	};
-
-	ConfigureGlowLight(TEXT("BossBeaconMidGlow"), 0.42f, 85000.f, 9000.f);
-	ConfigureGlowLight(TEXT("BossBeaconTopGlow"), 0.86f, 125000.f, 14000.f);
-
-	BossBeaconActor = BeaconActor;
-	SpawnedSetupActors.Add(BeaconActor);
 }

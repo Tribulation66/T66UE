@@ -3,6 +3,8 @@
 Date: 2026-04-12  
 Workspace: `C:\UE\T66`
 
+> **Superseded floor-count/nomenclature note (2026-05-27):** This historical execution pack still describes the old seven-floor `Start Level` / `Level 1..5` / `Boss Level` target. That target is no longer the current tower contract. Use `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md` as the source of truth for the live floor/stage model: normal tower stages have `Floor 1 - Start`, gameplay floors `Floor 2` through `Floor 4`, and `Floor 5 - Boss`; boss-rush finale is a separate two-floor special case.
+
 This document is the execution pack for the current tower-expansion work. It is written so you can hand it to another agent with a direct instruction such as:
 
 - `You are Agent 2. Read Gameplay/World/T66_Tower_Multi_Agent_Implementation_Plan.md and implement your part only.`

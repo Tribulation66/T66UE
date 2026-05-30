@@ -43,13 +43,13 @@ class UActorComponent;
 struct FStreamableHandle;
 
 /**
- * Game Mode for Tribulation 66 gameplay levels
+ * Game Mode for Tribulation 66 gameplay maps
  *
  * Responsibilities:
  * - Spawn the correct hero based on Game Instance selection
  * - Initialize hero with data from DataTable
  * - Handle basic game flow
- * - Auto-setup level with floor/lighting if missing (for development)
+ * - Auto-setup map with floor/lighting if missing (for development)
  */
 UCLASS(Blueprintable)
 class T66_API AT66GameMode : public AGameModeBase
@@ -89,10 +89,6 @@ public:
 	/** Cowardice gate spawn is placed before the boss area. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gates")
 	FVector CowardiceGateSpawnOffset = FVector(5200.f, 0.f, 200.f);
-
-	/** Development/test helper: spawn a cow, pig, and goat near the stage-start altar as stationary idol test dummies. */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Idols")
-	bool bSpawnIdolVFXTestTargetsAtStageStart = true;
 
 	/** Development/test helper: show Pixal3D experiment meshes beside Idol Altars without character data-table rows. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
@@ -170,6 +166,10 @@ public:
 	void HandleTowerGateGuardianDefeated(AT66EnemyBase* Guardian);
 	void SetEnemyDirectorSpawningPaused(bool bPaused);
 	AT66EnemyDirector* GetEnemyDirectorForDiagnostics();
+#if !UE_BUILD_SHIPPING
+	void RunBossProjectileManagerSmokeSpawnBossForCurrentStage() { SpawnBossForCurrentStage(); }
+	void RunBossProjectileManagerSmokeSpawnBossGateIfNeeded() { SpawnBossGateIfNeeded(); }
+#endif
 	bool IsBackroomsChallengeActive() const { return bBackroomsChallengeActive; }
 	void HandleBackroomsDoorInteracted(AT66BackroomsDoorInteractable* Door, AT66HeroBase* Hero);
 	void HandleBackroomsChaserTouchedHero(AT66BackroomsChaser* Chaser, AT66HeroBase* Hero);
@@ -188,7 +188,7 @@ protected:
 	/** Get the Game Instance cast to our type */
 	UT66GameInstance* GetT66GameInstance() const;
 
-	/** Set up basic level elements if missing (floor, lighting, player start) */
+	/** Set up basic map elements if missing (floor, lighting, player start) */
 	void EnsureLevelSetup();
 
 	/** Apply configured ground material to all tagged runtime floors (async-load safe). */
@@ -223,14 +223,11 @@ protected:
 	void SpawnIdolAltarForPlayer(AController* Player);
 	void SpawnWeaponAltarForPlayer(AController* Player);
 	AT66IdolAltar* SpawnIdolAltarAtLocation(const FVector& Location, bool bAllowMultiple = false);
-	void SpawnIdolVFXTestTargets();
 	void SpawnPixalTestDisplayModelsNearIdolAltar(AT66IdolAltar* AnchorAltar, bool bTrackAsLabSpawned = false);
 
 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
 	void SpawnBossGateIfNeeded();
 	void SpawnWorldInteractablesForStage();
-	void SpawnGuaranteedStartAreaInteractables();
-	void SpawnModelShowcaseRow();
 	void SpawnStartGalleryShowcase();
 	void SpawnStageEffectsForStage();
 	void SpawnTutorialArenaIfNeeded();
@@ -243,7 +240,6 @@ protected:
 
 	/** Spawn boss for current stage (dormant until player approaches). */
 	void SpawnBossForCurrentStage();
-	void SpawnBossBeaconIfNeeded();
 
 	void SpawnCasinoInteractableIfNeeded();
 
@@ -256,8 +252,10 @@ protected:
 	/** Spawn a flat plateau so its top surface is at TopCenterLoc (used under NPCs and world interactables). */
 	void SpawnPlateauAtLocation(UWorld* World, const FVector& TopCenterLoc);
 
-	void SpawnTricksterAndCowardiceGate();
 	void SpawnTowerDescentHolesIfNeeded();
+	bool IsPlacedTowerMinibossFloor(int32 FloorNumber) const;
+	AT66TowerDescentHole* FindTowerDescentHoleForFloor(int32 FloorNumber) const;
+	AT66EnemyBase* EnsurePlacedTowerMinibossForFloor(int32 FloorNumber);
 	void SpawnBackroomsPocketIfNeeded();
 	void DestroyBackroomsPocket();
 	void EnsureGameplayStartupInitialized(const TCHAR* TriggerContext);
@@ -379,13 +377,16 @@ private:
 	TObjectPtr<AT66WeaponAltar> WeaponAltar;
 
 	UPROPERTY()
-	TArray<TObjectPtr<AT66EnemyBase>> IdolVFXTestTargets;
-
-	UPROPERTY()
 	TArray<TObjectPtr<AStaticMeshActor>> PixalTestDisplayActors;
 
 	UPROPERTY()
 	TArray<TObjectPtr<AT66TowerDescentHole>> TowerDescentHoles;
+
+	UPROPERTY()
+	TSet<int32> TowerPlacedMinibossSpawnedFloors;
+
+	UPROPERTY()
+	TSet<int32> TowerPlacedMinibossDefeatedFloors;
 
 	UPROPERTY()
 	TArray<TObjectPtr<AActor>> BackroomsActors;
@@ -412,8 +413,6 @@ private:
 	TWeakObjectPtr<AT66BossBase> StageBoss;
 	TWeakObjectPtr<AT66EnemyDirector> EnemyDirector;
 	TWeakObjectPtr<AT66TutorialManager> TutorialManager;
-	TWeakObjectPtr<AActor> BossBeaconActor;
-	float BossBeaconUpdateAccumulator = 0.f;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> CachedCubeMesh;
@@ -422,9 +421,6 @@ private:
 	bool TrySnapActorToTerrain(AActor* Actor) const;
 	bool TrySnapActorToTerrainAtLocation(AActor* Actor, const FVector& TraceLocation) const;
 	void RestartPlayersMissingPawns();
-	bool TryComputeBossBeaconBase(FVector& OutBeaconBase) const;
-	void UpdateBossBeaconTransform(bool bForceSpawnIfMissing);
-	void DestroyBossBeacon();
 	void SyncTowerBossEntryState();
 	void SyncTowerTrapActivation(bool bForce = false);
 	void SnapPlayersToTerrain();
@@ -449,7 +445,6 @@ private:
 	FVector MainMapStartAreaCenterSurfaceLocation = FVector::ZeroVector;
 	FVector MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
 	FVector MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
-	FVector MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
 	FVector MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
 	TArray<FVector> MainMapRescueAnchorLocations;
 	bool bUsingTowerMainMapLayout = false;

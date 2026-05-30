@@ -96,6 +96,7 @@ FString T66TemporaryBuffUI::GetSecondaryBuffIconSlug(ET66SecondaryStatType StatT
 	case ET66SecondaryStatType::PierceScale:     return TEXT("pierce-scale");
 	case ET66SecondaryStatType::DotScale:        return TEXT("dot-scale");
 	case ET66SecondaryStatType::AttackRange:     return TEXT("range");
+	case ET66SecondaryStatType::Execute:         return TEXT("execute");
 	case ET66SecondaryStatType::Taunt:           return TEXT("taunt");
 	case ET66SecondaryStatType::DamageReduction: return TEXT("damage-reduction");
 	case ET66SecondaryStatType::ReflectDamage:   return TEXT("damage-reflection");
@@ -110,8 +111,11 @@ FString T66TemporaryBuffUI::GetSecondaryBuffIconSlug(ET66SecondaryStatType StatT
 	case ET66SecondaryStatType::Cheating:        return TEXT("cheating");
 	case ET66SecondaryStatType::Stealing:        return TEXT("stealing");
 	case ET66SecondaryStatType::LootCrate:       return TEXT("loot-crate");
+	case ET66SecondaryStatType::LootBag:         return TEXT("loot-bag");
+	case ET66SecondaryStatType::LootWheel:       return TEXT("loot-wheel");
 	case ET66SecondaryStatType::Alchemy:         return TEXT("alchemy");
 	case ET66SecondaryStatType::Accuracy:        return TEXT("accuracy");
+	case ET66SecondaryStatType::VendorToken:     return TEXT("vendor-token");
 	default:                                     return FString();
 	}
 }

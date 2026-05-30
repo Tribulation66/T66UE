@@ -20,6 +20,7 @@ namespace T66ItemCardTextUtils
 			case ET66HeroStatType::Evasion:     return Loc->GetText_Stat_Evasion();
 			case ET66HeroStatType::Luck:        return Loc->GetText_Stat_Luck();
 			case ET66HeroStatType::Speed:       return Loc->GetText_Stat_Speed();
+			case ET66HeroStatType::Special:     return NSLOCTEXT("T66.Stats", "Special", "Special");
 			default: break;
 			}
 		}
@@ -34,43 +35,9 @@ namespace T66ItemCardTextUtils
 		case ET66HeroStatType::Evasion:     return NSLOCTEXT("T66.Stats", "Evasion", "Evasion");
 		case ET66HeroStatType::Luck:        return NSLOCTEXT("T66.Stats", "Luck", "Luck");
 		case ET66HeroStatType::Speed:       return NSLOCTEXT("T66.Stats", "Speed", "Speed");
+		case ET66HeroStatType::Special:     return NSLOCTEXT("T66.Stats", "Special", "Special");
 		default:                            return FText::GetEmpty();
 		}
-	}
-
-	static FText BuildPrimaryStatLine(
-		const UT66LocalizationSubsystem* Loc,
-		const FItemData& ItemData,
-		int32 MainValue,
-		float CurrentHeroScaleMultiplier)
-	{
-		if (MainValue <= 0)
-		{
-			return FText::GetEmpty();
-		}
-
-		const FText Label = GetPrimaryStatLabel(Loc, ItemData.PrimaryStatType);
-		if (ItemData.PrimaryStatType == ET66HeroStatType::AttackScale)
-		{
-			const FNumberFormattingOptions OneDecimal = []()
-			{
-				FNumberFormattingOptions Options;
-				Options.MinimumFractionalDigits = 1;
-				Options.MaximumFractionalDigits = 1;
-				return Options;
-			}();
-
-			return FText::Format(
-				NSLOCTEXT("T66.ItemTooltip", "AttackScaleLineFormat", "{0}: +{1} ({2})"),
-				Label,
-				FText::AsNumber(MainValue),
-				FText::AsNumber(CurrentHeroScaleMultiplier, &OneDecimal));
-		}
-
-		return FText::Format(
-			NSLOCTEXT("T66.ItemTooltip", "MainStatLineFormat", "{0}: +{1}"),
-			Label,
-			FText::AsNumber(MainValue));
 	}
 
 	static FText BuildSecondaryStatLine(
@@ -80,12 +47,12 @@ namespace T66ItemCardTextUtils
 		int32 MainValue,
 		float Line2MultiplierOverride)
 	{
-		if (ItemData.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
+		if (ItemData.SecondaryStatType == ET66SecondaryStatType::VendorToken)
 		{
 			const int32 TokenLevel = FMath::Clamp(MainValue, 1, 5);
 			const int32 SellPercent = 40 + TokenLevel * 10;
 			return FText::Format(
-				NSLOCTEXT("T66.ItemTooltip", "GamblerTokenLineFormat", "Level {0}: sell items for {1}% of buy value."),
+				NSLOCTEXT("T66.ItemTooltip", "VendorTokenLineFormat", "Level {0}: sell items for {1}% of buy value."),
 				FText::AsNumber(TokenLevel),
 				FText::AsNumber(SellPercent));
 		}
@@ -124,19 +91,22 @@ namespace T66ItemCardTextUtils
 		float CurrentHeroScaleMultiplier,
 		float Line2MultiplierOverride)
 	{
-		if (ItemData.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
+		static_cast<void>(CurrentHeroScaleMultiplier);
+
+		if (ItemData.SecondaryStatType == ET66SecondaryStatType::VendorToken)
 		{
 			return BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
 		}
 
-		const FText Line1 = BuildPrimaryStatLine(Loc, ItemData, MainValue, CurrentHeroScaleMultiplier);
-		const FText Line2 = BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
-
-		if (!Line1.IsEmpty() && !Line2.IsEmpty())
+		if (ItemData.PrimaryStatType == ET66HeroStatType::Special)
 		{
-			return FText::Format(NSLOCTEXT("T66.Shop", "TwoLineDesc", "{0}\n{1}"), Line1, Line2);
+			const FText CategoryLine = GetPrimaryStatLabel(Loc, ItemData.PrimaryStatType);
+			const FText Line2 = BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
+			return !Line2.IsEmpty()
+				? FText::Format(NSLOCTEXT("T66.Shop", "SpecialTwoLineDesc", "{0}\n{1}"), CategoryLine, Line2)
+			: CategoryLine;
 		}
 
-		return !Line1.IsEmpty() ? Line1 : Line2;
+		return BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
 	}
 }

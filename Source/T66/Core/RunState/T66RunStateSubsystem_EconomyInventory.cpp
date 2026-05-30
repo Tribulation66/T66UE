@@ -6,43 +6,8 @@ using namespace T66RunStatePrivate;
 
 const FName UT66RunStateSubsystem::BackroomsQuickReviveItemID(TEXT("Item_BackroomsQuickRevive"));
 
-float UT66RunStateSubsystem::AddGamblerAngerFromBet(int32 BetGold)
-{
-	return AddCasinoAngerFromGold(BetGold);
-}
-
-
-float UT66RunStateSubsystem::AddCasinoAngerFromGold(int32 AngerGold)
-{
-	const float Delta = FMath::Clamp(static_cast<float>(FMath::Max(0, AngerGold)) / static_cast<float>(ShopAngerThresholdGold), 0.f, 1.f);
-	const float NewAnger01 = FMath::Clamp(GamblerAnger01 + Delta, 0.f, 1.f);
-	const int32 NewShopAngerGold = FMath::RoundToInt(NewAnger01 * static_cast<float>(ShopAngerThresholdGold));
-	if (FMath::IsNearlyEqual(NewAnger01, GamblerAnger01) && ShopAngerGold == NewShopAngerGold)
-	{
-		return GamblerAnger01;
-	}
-
-	GamblerAnger01 = NewAnger01;
-	ShopAngerGold = NewShopAngerGold;
-	GamblerAngerChanged.Broadcast();
-	ShopChanged.Broadcast();
-	return GamblerAnger01;
-}
-
-
-void UT66RunStateSubsystem::ResetGamblerAnger()
-{
-	if (FMath::IsNearlyZero(GamblerAnger01) && ShopAngerGold == 0) return;
-	GamblerAnger01 = 0.f;
-	ShopAngerGold = 0;
-	GamblerAngerChanged.Broadcast();
-	ShopChanged.Broadcast();
-}
-
-
 void UT66RunStateSubsystem::ResetShopForStage()
 {
-	ShopAngerGold = 0;
 	ShopStockStage = 0;
 	ShopStockItemIDs.Reset();
 	ShopStockSlots.Reset();
@@ -83,7 +48,7 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 			FT66InventorySlot(FName(TEXT("Item_BounceScale")), ET66ItemRarity::Black, 2),
 			FT66InventorySlot(FName(TEXT("Item_DamageReduction")), ET66ItemRarity::Black, 2),
 			FT66InventorySlot(FName(TEXT("Item_CritDamage")), ET66ItemRarity::Red, 5),
-			FT66InventorySlot(FName(TEXT("Item_Accuracy")), ET66ItemRarity::Yellow, 8),
+			FT66InventorySlot(FName(TEXT("Item_Execute")), ET66ItemRarity::Yellow, 8),
 		};
 		for (const FT66InventorySlot& Slot : FallbackStock)
 		{
@@ -116,13 +81,13 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 	}
 
 	{
-		FItemData AccuracyItemData;
-		const FName AccuracyItemID(TEXT("Item_Accuracy"));
-		if (GI->GetItemData(AccuracyItemID, AccuracyItemData)
-			&& T66IsLiveSecondaryStatType(AccuracyItemData.SecondaryStatType)
-			&& !TemplatePool.Contains(AccuracyItemID))
+		FItemData ExecuteItemData;
+		const FName ExecuteItemID(TEXT("Item_Execute"));
+		if (GI->GetItemData(ExecuteItemID, ExecuteItemData)
+			&& T66IsLiveSecondaryStatType(ExecuteItemData.SecondaryStatType)
+			&& !TemplatePool.Contains(ExecuteItemID))
 		{
-			TemplatePool.Add(AccuracyItemID);
+			TemplatePool.Add(ExecuteItemID);
 		}
 	}
 
@@ -134,7 +99,7 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 			FName(TEXT("Item_BounceScale")),
 			FName(TEXT("Item_DamageReduction")),
 			FName(TEXT("Item_CritDamage")),
-			FName(TEXT("Item_Accuracy"))
+			FName(TEXT("Item_Execute"))
 		};
 	}
 
@@ -364,12 +329,6 @@ bool UT66RunStateSubsystem::ResolveShopStealAttempt(int32 Index, bool bTimingHit
 		ShopStockSold[Index] = true;
 		AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ShopSteal=%s"), *StealSlot.ItemTemplateID.ToString()));
 		bGranted = true;
-		// Success: no anger increase.
-	}
-	else
-	{
-		// Failure: anger increases and the item is not granted.
-		AddCasinoAngerFromGold(BuyPrice);
 	}
 
 	// Luck Rating tracking (quantity): shop steal success means item granted with no anger increase.
@@ -565,9 +524,14 @@ TArray<FName> UT66RunStateSubsystem::GetInventory() const
 
 void UT66RunStateSubsystem::AddItem(FName ItemID)
 {
-	if (T66_IsGamblersTokenItem(ItemID))
+	if (T66_IsRetiredRemovedItemID(ItemID))
 	{
-		ApplyGamblersTokenPickup(1);
+		UE_LOG(LogTemp, Warning, TEXT("[Items] Skipping retired item ID %s."), *ItemID.ToString());
+		return;
+	}
+	if (T66_IsVendorTokenItem(ItemID))
+	{
+		ApplyVendorTokenPickup(1);
 		return;
 	}
 
@@ -578,9 +542,14 @@ void UT66RunStateSubsystem::AddItem(FName ItemID)
 void UT66RunStateSubsystem::AddItemWithRarity(FName ItemID, ET66ItemRarity Rarity)
 {
 	if (ItemID.IsNone()) return;
-	if (T66_IsGamblersTokenItem(ItemID))
+	if (T66_IsRetiredRemovedItemID(ItemID))
 	{
-		ApplyGamblersTokenPickup(1);
+		UE_LOG(LogTemp, Warning, TEXT("[Items] Skipping retired item ID %s."), *ItemID.ToString());
+		return;
+	}
+	if (T66_IsVendorTokenItem(ItemID))
+	{
+		ApplyVendorTokenPickup(1);
 		return;
 	}
 
@@ -601,9 +570,14 @@ void UT66RunStateSubsystem::AddItemWithRarity(FName ItemID, ET66ItemRarity Rarit
 void UT66RunStateSubsystem::AddItemSlot(const FT66InventorySlot& Slot)
 {
 	if (!Slot.IsValid()) return;
-	if (T66_IsGamblersTokenItem(Slot.ItemTemplateID))
+	if (T66_IsRetiredRemovedItemID(Slot.ItemTemplateID))
 	{
-		ApplyGamblersTokenPickup(Slot.Line1RolledValue);
+		UE_LOG(LogTemp, Warning, TEXT("[Items] Skipping retired inventory slot item ID %s."), *Slot.ItemTemplateID.ToString());
+		return;
+	}
+	if (T66_IsVendorTokenItem(Slot.ItemTemplateID))
+	{
+		ApplyVendorTokenPickup(Slot.Line1RolledValue);
 		return;
 	}
 
@@ -678,7 +652,7 @@ void UT66RunStateSubsystem::SnapshotAndClearInventoryForBackrooms(TArray<FT66Inv
 {
 	OutSnapshot = InventorySlots;
 	InventorySlots.Empty();
-	ActiveGamblersTokenLevel = 0;
+	ActiveVendorTokenLevel = 0;
 	RecomputeItemDerivedStats();
 	InventoryChanged.Broadcast();
 	QuickReviveChanged.Broadcast();
@@ -693,22 +667,22 @@ void UT66RunStateSubsystem::RestoreInventoryFromBackroomsSnapshot(const TArray<F
 }
 
 
-void UT66RunStateSubsystem::ApplyGamblersTokenPickup(int32 TokenLevel)
+void UT66RunStateSubsystem::ApplyVendorTokenPickup(int32 TokenLevel)
 {
-	const int32 ClampedLevel = FMath::Clamp(TokenLevel, 1, MaxGamblersTokenLevel);
-	if (ClampedLevel <= 0 || ActiveGamblersTokenLevel >= ClampedLevel)
+	const int32 ClampedLevel = FMath::Clamp(TokenLevel, 1, MaxVendorTokenLevel);
+	if (ClampedLevel <= 0 || ActiveVendorTokenLevel >= ClampedLevel)
 	{
 		return;
 	}
 
-	ActiveGamblersTokenLevel = ClampedLevel;
-	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ItemID=%s,Source=GamblerToken,Level=%d"), *T66GamblersTokenItemID.ToString(), ActiveGamblersTokenLevel));
+	ActiveVendorTokenLevel = ClampedLevel;
+	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ItemID=%s,Source=VendorToken,Level=%d"), *T66VendorTokenItemID.ToString(), ActiveVendorTokenLevel));
 
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
 		if (UT66AchievementsSubsystem* Achieve = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{
-			Achieve->AddLabUnlockedItem(T66GamblersTokenItemID);
+			Achieve->AddLabUnlockedItem(T66VendorTokenItemID);
 		}
 	}
 
@@ -719,7 +693,7 @@ void UT66RunStateSubsystem::ApplyGamblersTokenPickup(int32 TokenLevel)
 
 float UT66RunStateSubsystem::GetCurrentSellFraction() const
 {
-	return T66_GetSellFractionForTokenLevel(ActiveGamblersTokenLevel);
+	return T66_GetSellFractionForTokenLevel(ActiveVendorTokenLevel);
 }
 
 
@@ -750,7 +724,7 @@ int32 UT66RunStateSubsystem::GetSellGoldForInventorySlot(const FT66InventorySlot
 void UT66RunStateSubsystem::ClearInventory()
 {
 	InventorySlots.Empty();
-	ActiveGamblersTokenLevel = 0;
+	ActiveVendorTokenLevel = 0;
 	RecomputeItemDerivedStats();
 	InventoryChanged.Broadcast();
 }
@@ -919,24 +893,6 @@ bool UT66RunStateSubsystem::TryAlchemyUpgradeInventoryItems(int32 TargetIndex, i
 		}
 	}
 
-	int32 AngerGold = 0;
-	if (GI)
-	{
-		for (const int32 SourceIndex : SourceIndices)
-		{
-			if (!InventorySlots.IsValidIndex(SourceIndex))
-			{
-				continue;
-			}
-
-			FItemData SourceItemData;
-			if (GI->GetItemData(InventorySlots[SourceIndex].ItemTemplateID, SourceItemData))
-			{
-				AngerGold += FMath::Max(1, SourceItemData.GetBuyGoldForRarity(InventorySlots[SourceIndex].Rarity));
-			}
-		}
-	}
-
 	int32 InsertIndex = TargetIndex;
 	for (const int32 SourceIndex : SourceIndices)
 	{
@@ -956,7 +912,6 @@ bool UT66RunStateSubsystem::TryAlchemyUpgradeInventoryItems(int32 TargetIndex, i
 	InventorySlots.Insert(UpgradedSlot, InsertIndex);
 
 	RecomputeItemDerivedStats();
-	AddCasinoAngerFromGold(AngerGold);
 	AddStructuredEvent(
 		ET66RunEventType::ItemAcquired,
 		FString::Printf(
@@ -993,28 +948,6 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 	SecondaryMultipliers.Reset();
 	ItemSecondaryStatBonusTenths.Reset();
 
-	auto AddPrimaryBonusTenths = [&](ET66HeroStatType Type, int32 DeltaTenths)
-	{
-		const int32 V = FMath::Clamp(DeltaTenths, 0, MaxHeroStatValue * HeroStatTenthsScale);
-		if (V <= 0)
-		{
-			return;
-		}
-
-		switch (Type)
-		{
-		case ET66HeroStatType::Damage:      ItemPrimaryStatBonusesPrecise.DamageTenths += V; break;
-		case ET66HeroStatType::AttackSpeed: ItemPrimaryStatBonusesPrecise.AttackSpeedTenths += V; break;
-		case ET66HeroStatType::AttackScale: ItemPrimaryStatBonusesPrecise.AttackScaleTenths += V; break;
-		case ET66HeroStatType::Accuracy:    ItemPrimaryStatBonusesPrecise.AccuracyTenths += V; break;
-		case ET66HeroStatType::Armor:       ItemPrimaryStatBonusesPrecise.ArmorTenths += V; break;
-		case ET66HeroStatType::Evasion:     ItemPrimaryStatBonusesPrecise.EvasionTenths += V; break;
-		case ET66HeroStatType::Luck:        ItemPrimaryStatBonusesPrecise.LuckTenths += V; break;
-		case ET66HeroStatType::Speed:       ItemPrimaryStatBonusesPrecise.SpeedTenths += V; break;
-		default: break;
-		}
-	};
-
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	for (const FT66InventorySlot& Slot : InventorySlots)
 	{
@@ -1023,21 +956,17 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 		FItemData D;
 		const bool bHasRow = (GI && GI->GetItemData(Slot.ItemTemplateID, D));
 		if (!bHasRow) continue;
-		if (T66_IsRewardOnlySpecialItem(Slot.ItemTemplateID) || D.SecondaryStatType == ET66SecondaryStatType::GamblerToken)
+		if (T66_IsRewardOnlySpecialItem(Slot.ItemTemplateID)
+			|| D.SecondaryStatType == ET66SecondaryStatType::VendorToken)
+		{
+			continue;
+		}
+		if (D.PrimaryStatType == ET66HeroStatType::Special)
 		{
 			continue;
 		}
 
-		// Line 1: Additive flat bonus to primary stat.
-		const int32 PrimaryGainTenths = WholeStatToTenths(FMath::Max(0, Slot.Line1RolledValue));
-		AddPrimaryBonusTenths(D.PrimaryStatType, PrimaryGainTenths);
-		ApplyPrimaryGainToSecondaryBonuses(
-			D.PrimaryStatType,
-			PrimaryGainTenths,
-			ItemSecondaryStatBonusTenths,
-			T66_CombineInventorySeed(Slot, static_cast<int32>(D.PrimaryStatType)));
-
-		// Line 2: flat secondary stat bonus on the item's tagged secondary.
+		// Items now only apply their secondary line. Primary growth comes from level-up and diplomas.
 		if (D.SecondaryStatType != ET66SecondaryStatType::None)
 		{
 			AddItemSecondaryStatBonusTenths(D.SecondaryStatType, WholeStatToTenths(Slot.GetSecondaryStatBonusValue()));

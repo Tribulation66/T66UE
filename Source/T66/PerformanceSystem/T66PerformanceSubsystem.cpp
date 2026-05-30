@@ -6,7 +6,7 @@
 
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Gameplay/Enemies/Projectiles/T66EnemyProjectileBase.h"
-#include "Gameplay/T66UniqueDebuffProjectile.h"
+#include "Gameplay/T66ProjectileManagerSubsystem.h"
 #include "Gameplay/Traps/T66TrapArrowProjectile.h"
 #include "Containers/Queue.h"
 #include "Dom/JsonObject.h"
@@ -1336,9 +1336,10 @@ void UT66PerformanceSubsystem::CaptureBoardSaturationFrameSample(const double No
 		Sample.BoardSaturationSampleAgeSeconds = FMath::Max(0.0, NowSeconds - BoardSample.TimestampSeconds);
 		Sample.bBoardSaturationValid = true;
 	}
+	const UT66ProjectileManagerSubsystem* ProjectileManager = GetWorld() ? GetWorld()->GetSubsystem<UT66ProjectileManagerSubsystem>() : nullptr;
 	Sample.ActiveEnemyProjectiles =
-		AT66EnemyProjectileBase::GetActiveEnemyProjectileCount()
-		+ AT66UniqueDebuffProjectile::GetActiveEnemyProjectileCount()
+		(ProjectileManager ? ProjectileManager->GetActiveProjectileCount() : 0)
+		+ AT66EnemyProjectileBase::GetActiveEnemyProjectileCount()
 		+ AT66TrapArrowProjectile::GetActiveTrapProjectileCount();
 
 	BoardSaturationFrameSamples.Add(MoveTemp(Sample));

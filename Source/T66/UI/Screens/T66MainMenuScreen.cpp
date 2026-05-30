@@ -8,7 +8,6 @@
 #include "UI/Style/T66ReferenceLayout.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
-#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -1197,11 +1196,12 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 					92.f,
 					Tag(TEXT("MainMenu.Center.LoadGameButton")))
 			];
-		CtaCanvas->AddSlot()
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(117.f, 254.f, 486.f, 92.f))
-			[
-				T66DemoModeUI::WrapWithComingSoonOverlay(
+		if (bDailyDescentAvailable)
+		{
+			CtaCanvas->AddSlot()
+				.Alignment(FVector2D(0.f, 0.f))
+				.Offset(FMargin(117.f, 254.f, 486.f, 92.f))
+				[
 					MakeCtaButton(
 						NSLOCTEXT("T66.MainMenu", "DailyDescent", "DAILY DESCENT"),
 						&UT66MainMenuScreen::HandleDailyDescentClicked,
@@ -1211,11 +1211,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 						Tag(TEXT("MainMenu.Center.DailyDescentButton")),
 						DailyDescentIconBrush.Get(),
 						nullptr,
-						bDailyDescentAvailable),
-					!bDailyDescentAvailable,
-					this,
-					Tag(TEXT("MainMenu.Center.DailyDescentButton.DemoOverlay")))
-			];
+						true)
+				];
+		}
 
 		return FT66FlatStyle::AttachMetadata(
 			MakeSized(720.f, 346.f, CtaCanvas),
@@ -2060,11 +2058,6 @@ void UT66MainMenuScreen::OnPowerUpClicked()
 
 void UT66MainMenuScreen::OnMinigamesClicked()
 {
-	if (T66DeprecatedFeatures::AreMinigamesDisabled())
-	{
-		return;
-	}
-
 	NavigateTo(ET66ScreenType::Minigames);
 }
 

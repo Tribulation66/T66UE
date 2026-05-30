@@ -768,10 +768,36 @@ if (!World || GT66PlayerStartCache.World.Get() == World)
 	{
 		if (const AT66SessionPlayerState* SessionPlayerState = T66GetSessionPlayerState(Controller))
 		{
-			return SessionPlayerState->GetSelectedCompanionID();
+			const FName SessionCompanionID = SessionPlayerState->GetSelectedCompanionID();
+			if (!SessionCompanionID.IsNone())
+			{
+				return SessionCompanionID;
+			}
+
+			// Local gameplay entry can spawn the companion before the fresh
+			// player state receives the lobby profile. Remote per-player None
+			// remains None so host GI state is not reused for another player.
+			if (Controller && !Controller->IsLocalController())
+			{
+				return NAME_None;
+			}
+
+			const FName GameInstanceCompanionID = GI ? GI->SelectedCompanionID : NAME_None;
+			UE_LOG(
+				LogT66GameMode,
+				Log,
+				TEXT("Companion spawn using local game-instance fallback because session companion is None. GICompanion=%s"),
+				*GameInstanceCompanionID.ToString());
+			return GameInstanceCompanionID;
 		}
 
-		return GI ? GI->SelectedCompanionID : NAME_None;
+		const FName GameInstanceCompanionID = GI ? GI->SelectedCompanionID : NAME_None;
+		UE_LOG(
+			LogT66GameMode,
+			Log,
+			TEXT("Companion spawn using game-instance fallback because no session player state. GICompanion=%s"),
+			*GameInstanceCompanionID.ToString());
+		return GameInstanceCompanionID;
 	}
 
 	ET66BodyType T66GetSelectedHeroBodyType(const UT66GameInstance* GI, const AController* Controller)
@@ -1115,8 +1141,6 @@ void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	EnemyDirector = nullptr;
 	TutorialManager = nullptr;
 	IdolAltar = nullptr;
-	BossBeaconActor = nullptr;
-	BossBeaconUpdateAccumulator = 0.f;
 	bTowerMiasmaActive = false;
 	TowerMiasmaStartWorldSeconds = 0.f;
 	TowerMiasmaUpdateAccumulator = 0.f;
@@ -1147,13 +1171,6 @@ void AT66GameMode::Tick(float DeltaTime)
 	TryActivateMainMapCombat();
 	UpdateTowerMiasma(DeltaTime);
 	SyncTowerBossEntryState();
-
-	BossBeaconUpdateAccumulator += DeltaTime;
-	if (BossBeaconUpdateAccumulator >= 0.10f)
-	{
-		BossBeaconUpdateAccumulator = 0.f;
-		UpdateBossBeaconTransform(true);
-	}
 
 	// Frame-level lag: log when a frame exceeded budget (e.g. >20ms).
 	if (DeltaTime > 0.02f)
@@ -1479,6 +1496,7 @@ void AT66GameMode::HandleSettingsChanged()
 					RetroSettings.TargetResolutionHeightPercent = 100.0f;
 				}
 				RetroFX->ApplySettings(RetroSettings, GetWorld());
+				PS->RunRetroFXSealVerificationIfRequested(GetWorld());
 			}
 			else
 			{

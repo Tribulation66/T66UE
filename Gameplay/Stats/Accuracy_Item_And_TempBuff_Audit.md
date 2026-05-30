@@ -53,12 +53,10 @@ Deprecated legacy secondaries:
 
 ## 2. Item Pass
 
-### 2.1 Items to deprecate from the live art/content set
+### 2.1 Legacy item-row status
 
-These item rows still exist for compatibility and old saves, but they should be treated as legacy and excluded from any future live item-art batch:
+`Item_HpRegen` and `Item_LifeSteal` were removed from the main-run item CSV when reward-only special items gained the `Special` primary category. `Item_Alchemy` remains a separate legacy row and should still be excluded from any future live item-art batch:
 
-- `Item_HpRegen`
-- `Item_LifeSteal`
 - `Item_Alchemy`
 
 ### 2.2 Items that stay live but moved families

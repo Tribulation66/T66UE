@@ -14,6 +14,8 @@ class AT66HeroBase;
 class UT66RunStateSubsystem;
 
 UCLASS(Blueprintable)
+// DEPRECATED: Enemy Ranged projectiles are now owned by UT66ProjectileManagerSubsystem.
+// Retained for cleanup and asset-reference safety until a later removal pass.
 class T66_API AT66EnemyProjectileBase : public AActor
 {
 	GENERATED_BODY()
