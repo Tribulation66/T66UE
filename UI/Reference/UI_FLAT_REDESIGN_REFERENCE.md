@@ -64,9 +64,7 @@ The previous PNG-composited direction (Ultrakill reference library, baked glow, 
 - Font access (`T66RuntimeUIFontAccess`).
 - Localization (`FText`, `NSLOCTEXT`, `TAttribute<FText>`).
 - Subsystem data sources (`UT66GameInstance`, save data, leaderboards, settings).
-- Gameplay HUD, in-run overlays, and minigame UIs (those have their own contracts; see audit).
 - The world-facing retro FX subsystem for post-process effects on game rendering (separate from UI chrome).
-- Content artwork: hero portraits, companion portraits, item icons, diploma art, drug art, minigame screenshots, 3D character renders, leaderboard icons, etc.
 
 ---
 
@@ -153,7 +151,6 @@ The locked font is `Jersey10-Regular.ttf` for all text. Resolve via existing `T6
 
 Role conventions (all using Jersey10 at different sizes; the visual hierarchy comes from size and weight, not from face changes):
 
-- **Screen titles** (e.g., "MINIGAMES", "CHALLENGES", "RUN SUMMARY", "LOAD GAME") — large size, primary white. Float above content with no panel.
 - **Section headers within panels** (e.g., "RUN OUTCOME", "STATS", "INVENTORY", "ACCOUNT STATUS") — medium-large size, primary white, ALL CAPS where shown that way.
 - **Sub-headers and label-style accents** (e.g., "MODIFIERS", "WEAPON", "ULTIMATE", "DIFFICULTY", "DATE") — small-medium size, `PurpleAccent`, ALL CAPS. The symbol name is retained for compatibility even though the current value is neutral grey.
 - **Body text and descriptions** — regular size, primary white or `SecondaryText` depending on prominence, sentence case.
@@ -194,14 +191,12 @@ For each tab in a tab row:
 The tooltip content (the description that used to be in the description band) lives in localization and is shown via Slate tooltip on hover. The mockup does not render the tooltip popup itself.
 
 **Per-screen exceptions:**
-- **Minigames**: keeps the description band (no tooltip icons on Minigames sub-tabs). Locked replacement text for the band: `Earn Chad Coupons and compete with friends and the world in the minigames.`
 - **Challenges**: keeps a status notification line ("Community catalog refreshed (3 entries).") which is functionally different from a description band — it's a live state indicator, not a static description.
 
 ### 3.9 Locked content rewrites
 
 These are content changes from the pre-redesign screens, locked in as part of the redesign:
 
-- **Minigames description band**: `Earn Chad Coupons and compete with friends and the world in the minigames.` (replaces previous copy)
 - **Overview Account Status warning paragraph**: `Your account is eligible for the leaderboard. If you cheat or manipulate runs or submissions, your account will be flagged and eternally removed from the leaderboard.`
 - **Overview screen**: removes the bottom "CHADPOCALYPSE" branding strip; renames "Local Player" panel to use the player's actual name (placeholder "RandomChad" in V3); compacts the Account Status header to a single inline row with the status value in green.
 - **Settings (Retro FX)**: removes the bottom warning text ("Adjust Retro FX sliders and press APPLY to save pending changes."), moves light/dark mode toggles from the right side of the sub-tab row to the left side.
@@ -212,7 +207,6 @@ Additional content reconciliation happens per screen during Stage 2.
 
 These are recurring structural patterns observed across the V3 mockups. `FT66FlatStyle` helpers should make them trivial to compose.
 
-**Top bar pattern (meta-progression screens)** — outer default-border container wrapping loose buttons across the top: settings cog, globe, ACCOUNT, profile icon, POWER UP, ACHIEVEMENTS, MINIGAMES, ticket counter badge, power button. The currently active top-level section gets its tab in Selected red state. The settings cog is selected when on a settings screen. The power button is always red-bordered.
 
 **Slim top bar pattern (leaf screens)** — Daily Descent and similar leaf screens have a reduced top bar: settings, globe, BACK TO MAIN MENU (centered, wider), power. Same outer container pattern, fewer elements.
 
@@ -224,7 +218,6 @@ These are recurring structural patterns observed across the V3 mockups. `FT66Fla
 
 **Three-column body** — Daily Descent, Run Summary, Hero Selection. Left/middle/right columns, often with outer containers on the column groups that need them.
 
-**Card row pattern** — Diplomas, Drugs, Minigames. A row of self-contained cards inside an outer default-border container, each card containing artwork + name + description + a red-bordered action button.
 
 **Bottom action row** — BACK + CONFIRM, BACK + ENTER + secondary, PREV + NEXT, etc. Loose buttons positioned at the screen bottom with no outer container.
 
@@ -375,14 +368,12 @@ The order is informed by complexity, dependencies, and what validates the system
 4. **Diplomas** (Power Up → Diplomas) — card row pattern with horizontal pagination.
 5. **Drugs** (Power Up → Drugs) — category-grouped card grid pattern.
 6. **Steam Achievements** (Achievements → Steam) — list-with-progress-summary pattern.
-7. **Minigames** — card row with locked description band (no tooltip).
 8. **Settings → Retro FX** — settings sections with slider sub-panels.
 9. **Daily Descent** — slim top bar, three-column body, leaderboard.
 10. **Challenges** — no top bar, centered sub-tabs, two-column body, BACK/CONFIRM bottom row.
 11. **Load Game** — no top bar, BACK + title top row, 2×2 save slot grid.
 12. **Run Summary** — no top bar, dense three-column body with many sub-panels.
 
-Additional screens (Main Menu, Pause Menu, Quit Confirmation, Report Bug, Hero Grid, Companion Grid, Language Select, Party Invite, Account Status, Player Summary Picker, Save Preview, Companion Selection, minigame-specific screens) get migrated as their V3 references are produced. They are out of scope until their references exist.
 
 ### 5.4 Per-screen handoff template
 
@@ -424,7 +415,6 @@ For each screen, the per-screen spec (already drafted during the V3 iteration se
 - Icons used per element
 - State assignments (which buttons are Selected red, which are Default neutral gray, etc.)
 - Specific size guidance (where the V3 had proportion issues to correct)
-- Per-screen exceptions (e.g., Minigames keeps description band)
 - Live data hookups (which subsystem provides each dynamic value)
 
 ### 5.6 Acceptance criteria for each screen migration
@@ -471,9 +461,7 @@ To keep:
 - `T66ReferenceLayout` and reference rects.
 - `T66RuntimeUIFontAccess` and Jersey10.
 - `T66RuntimeUITextureAccess` (still needed for icons, portraits, content artwork).
-- All gameplay HUD, in-run overlay, and minigame-specific UI helpers.
 - `UT66RetroFXSubsystem` for world-facing post-process (separate from UI chrome).
-- All content artwork: hero portraits, companion portraits, item icons, diploma art, drug art, minigame screenshots, 3D character renders, leaderboard icons, etc.
 
 ### 6.4 Removal sequence
 
@@ -511,7 +499,6 @@ All V3 reference images live in `C:\UE\T66\UI\Screen References\`. Screens with 
 - Diplomas (Power Up → Diplomas)
 - Drugs (Power Up → Drugs)
 - Steam Achievements (Achievements → Steam)
-- Minigames
 - Daily Descent
 - Challenges
 - Settings (Retro FX tab specifically; other settings tabs derive from this pattern)
@@ -536,7 +523,6 @@ Screens still pending V3 reference creation (not in current scope; added to Stag
 - Additional Settings tabs (Gameplay, Graphics, Controls, Media Viewer, Audio)
 - Additional Achievements tabs (Secret)
 - Additional History filter views
-- Minigame-specific screens (Mini, TD, Idle, and Deck main menus + sub-screens)
 
 ### 7.2 Per-screen specifications
 
@@ -560,7 +546,6 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
   - Any V3-listed single-action element without backend infrastructure must still bind a placeholder logging handler so the control is visibly responsive and reports `has_click_handler=true`.
 
 **Overview** (most refined V3, 5 rounds of iteration)
-- Top bar (outer container, loose buttons): settings, globe, ACCOUNT (Default neutral gray because the account sub-tab carries Selected state), profile, POWER UP, ACHIEVEMENTS, MINIGAMES, ticket badge (10), power button.
   - Note: ACCOUNT button is Default state when the user is on an account-section page; sub-tabs handle Selected state.
 - Sub-tab row (no outer container): OVERVIEW (Selected, with "i" tooltip icon) + HISTORY (Default, with "i" tooltip icon).
 - No description band (tooltip handles it).
@@ -575,7 +560,6 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
     - BEST SPEED RUN sub-panel (stopwatch icon + header + 5-row table with same difficulties × Difficulty/Hero/Date/Global Rank/Time).
 - No CHADPOCALYPSE branding strip. No scrollbar.
 - Interactivity:
-  - Top bar single-actions: settings cog -> `OpenSettings`; globe -> `OpenLanguageSelect`; ACCOUNT category button -> no-op/current section; profile -> `OpenPlayerSummary`; POWER UP -> `NavigatePowerUp`; ACHIEVEMENTS -> `NavigateAchievements`; MINIGAMES -> `NavigateMinigames`; ticket badge -> `OpenCouponInfo` or placeholder; power -> `OpenQuitConfirmation`.
   - Sub-tab toggle group `AccountTabs`: OVERVIEW Selected, HISTORY Default; mutually exclusive; drives `ActiveAccountTab`. Info icons on each sub-tab open/hover the tooltip and must have handler or tooltip metadata.
   - Dropdowns: PERSONAL BEST and SOLO; options from leaderboard/account filters; both render forced Selected because they are active controls.
   - Body panels are informational; table rows are non-interactive unless the implementation has an existing details action, in which case bind and document it during migration.
@@ -584,7 +568,6 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
   - Buttons/dropdowns: top bar controls, OVERVIEW/HISTORY sub-tabs, sub-tab info tooltip controls, PERSONAL BEST dropdown, SOLO dropdown.
 - Icon manifest:
   - Existing flat icons: `gear.png`, `globe`/language icon if present or generate via M1, `ticket.png`, `shield.png`, `bar_chart.png`, `trophy_laurel.png`, `stopwatch.png`, `power` icon if present or generate via M1.
-  - Needs M1 reference crop if exact style is missing: account/profile glyph, POWER UP icon, ACHIEVEMENTS icon, MINIGAMES icon, sub-tab info icon.
   - Content art: player avatar is content; use live profile avatar if available, otherwise stub under `SourceAssets\UI\ContentStubs\Overview\`.
 
 **History**
@@ -664,25 +647,14 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
   - Brand asset placeholder: Steam logo requires approved Steam brand asset or live platform asset; do not invent a production logo.
   - Existing flat icons: `starburst.png` or generate favorite outline via M1 if the reference star style is distinct; `ticket.png` for CC if shown as icon.
 
-**Minigames**
-- Top bar with MINIGAMES Selected.
 - No sub-tab row (leaf-level section).
-- Large floating "MINIGAMES" screen title centered.
-- **Description band kept** (this is the locked exception): "Earn Chad Coupons and compete with friends and the world in the minigames." in primary white, regular sans-serif, sentence case, centered.
-- Main content outer default-border container with: left nav arrow + 4 minigame cards + right nav arrow + pagination at bottom.
-- Each minigame card: screenshot preserved + card title (CHADPOCALYPSE MINI / TOWER DEFENSE / DECKBUILDER / IDLE) + description + PLAY GAME button (Selected red, full-width).
 - Interactivity:
-  - Top bar single-actions as standard; MINIGAMES is current/selected.
-  - Left/right nav arrows page the minigame carousel if more than four entries exist.
   - Pagination dots reflect the current page; if clickable, each dot drives page index.
-  - Each PLAY GAME button navigates to that minigame's main menu.
   - Cards themselves are informational unless implementation already treats card click as play/select; if so, bind to the same route and document.
 - Label vs button:
-  - Labels: MINIGAMES screen title, description band text, card titles, card descriptions.
   - Buttons: top bar controls, nav arrows, pagination dots if clickable, PLAY GAME buttons.
 - Icon manifest:
   - Existing flat icons: `pagination_left.png`, `pagination_right.png`, top bar icons.
-  - Minigame screenshots are content art and remain PNG-driven; generate stubs only for missing screenshots.
 
 **Daily Descent**
 - Slim top bar (outer container, 4 loose buttons): settings cog + globe + BACK TO MAIN MENU (centered, wider) + power button (Selected red).
@@ -853,7 +825,6 @@ For Stage 1: capture Hero Selection. For Stage 2: capture each migrated screen. 
 
 ### 8.3 Regression checks
 
-After any change, spot-check that non-target screens still render. Suggested baseline checks: Main Menu opens; Overview opens; a minigame screen opens; gameplay HUD renders during a brief in-run capture.
 
 ### 8.4 Stage acceptance summary
 

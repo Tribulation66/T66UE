@@ -2,9 +2,199 @@
 
 #include "Core/RunState/T66RunStateSubsystem_Private.h"
 
+#include "Gameplay/T66WorldSystemsAPI.h"
+#include "HAL/IConsoleManager.h"
+
 using namespace T66RunStatePrivate;
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66ShopProof, Log, All);
+
+namespace
+{
+	const TCHAR* T66_GetShopRarityName(const ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black:
+			return TEXT("Black");
+		case ET66ItemRarity::Red:
+			return TEXT("Red");
+		case ET66ItemRarity::Yellow:
+			return TEXT("Yellow");
+		case ET66ItemRarity::White:
+			return TEXT("White");
+		default:
+			return TEXT("Unknown");
+		}
+	}
+
+	const TCHAR* T66_GetGoldTransactionSourceName(const ET66GoldTransactionSource Source)
+	{
+		switch (Source)
+		{
+		case ET66GoldTransactionSource::MobLootSale:
+			return TEXT("MobLootSale");
+		case ET66GoldTransactionSource::Gambler:
+		default:
+			return TEXT("Gambler");
+		}
+	}
+
+	const TCHAR* T66_GetMobLootCollectorTypeName(const ET66MobLootCollectorType CollectorType)
+	{
+		switch (CollectorType)
+		{
+		case ET66MobLootCollectorType::Player:
+			return TEXT("Player");
+		case ET66MobLootCollectorType::Pet:
+			return TEXT("Pet");
+		case ET66MobLootCollectorType::System:
+		default:
+			return TEXT("System");
+		}
+	}
+
+	ET66ItemRarity T66_RollShopSlotRarity(FRandomStream& Rng)
+	{
+		return UT66RunStateSubsystem::RollShopSlotRarity(Rng);
+	}
+
+	void T66RunShopWeightedOddsProofCommand(const TArray<FString>& Args, UWorld* World)
+	{
+		(void)World;
+		const int32 Samples = Args.Num() > 0 ? FMath::Max(1000, FCString::Atoi(*Args[0])) : 100000;
+		const int32 Seed = Args.Num() > 1 ? FCString::Atoi(*Args[1]) : 660066;
+		FRandomStream Rng(Seed);
+		int32 BlackCount = 0;
+		int32 RedCount = 0;
+		int32 YellowCount = 0;
+		int32 WhiteCount = 0;
+
+		for (int32 Index = 0; Index < Samples; ++Index)
+		{
+			switch (T66_RollShopSlotRarity(Rng))
+			{
+			case ET66ItemRarity::Black:
+				++BlackCount;
+				break;
+			case ET66ItemRarity::Red:
+				++RedCount;
+				break;
+			case ET66ItemRarity::Yellow:
+				++YellowCount;
+				break;
+			case ET66ItemRarity::White:
+				++WhiteCount;
+				break;
+			default:
+				break;
+			}
+		}
+
+		auto Ratio = [Samples](const int32 Count)
+		{
+			return Samples > 0 ? static_cast<float>(Count) / static_cast<float>(Samples) : 0.f;
+		};
+
+		const float BlackRatio = Ratio(BlackCount);
+		const float RedRatio = Ratio(RedCount);
+		const float YellowRatio = Ratio(YellowCount);
+		const float WhiteRatio = Ratio(WhiteCount);
+		const float ExpectedBlack = UT66RunStateSubsystem::ShopRarityWeightBlack / UT66RunStateSubsystem::ShopRarityWeightTotal;
+		const float ExpectedRed = UT66RunStateSubsystem::ShopRarityWeightRed / UT66RunStateSubsystem::ShopRarityWeightTotal;
+		const float ExpectedYellow = UT66RunStateSubsystem::ShopRarityWeightYellow / UT66RunStateSubsystem::ShopRarityWeightTotal;
+		const float ExpectedWhite = UT66RunStateSubsystem::ShopRarityWeightWhite / UT66RunStateSubsystem::ShopRarityWeightTotal;
+		const bool bPass =
+			FMath::Abs(BlackRatio - ExpectedBlack) <= 0.015f &&
+			FMath::Abs(RedRatio - ExpectedRed) <= 0.015f &&
+			FMath::Abs(YellowRatio - ExpectedYellow) <= 0.004f &&
+			FMath::Abs(WhiteRatio - ExpectedWhite) <= 0.002f;
+
+		if (bPass)
+		{
+			UE_LOG(
+				LogT66ShopProof,
+				Display,
+				TEXT("[T66Proof][ShopWeightedOdds] Result=PASS Samples=%d Seed=%d Black=%d Ratio=%.5f Expected=%.5f Red=%d Ratio=%.5f Expected=%.5f Yellow=%d Ratio=%.5f Expected=%.5f White=%d Ratio=%.5f Expected=%.5f Weights=%.1f/%.1f/%.1f/%.1f"),
+				Samples,
+				Seed,
+				BlackCount,
+				BlackRatio,
+				ExpectedBlack,
+				RedCount,
+				RedRatio,
+				ExpectedRed,
+				YellowCount,
+				YellowRatio,
+				ExpectedYellow,
+				WhiteCount,
+				WhiteRatio,
+				ExpectedWhite,
+				UT66RunStateSubsystem::ShopRarityWeightBlack,
+				UT66RunStateSubsystem::ShopRarityWeightRed,
+				UT66RunStateSubsystem::ShopRarityWeightYellow,
+				UT66RunStateSubsystem::ShopRarityWeightWhite);
+		}
+		else
+		{
+			UE_LOG(
+				LogT66ShopProof,
+				Warning,
+				TEXT("[T66Proof][ShopWeightedOdds] Result=FAIL Samples=%d Seed=%d Black=%d Ratio=%.5f Expected=%.5f Red=%d Ratio=%.5f Expected=%.5f Yellow=%d Ratio=%.5f Expected=%.5f White=%d Ratio=%.5f Expected=%.5f Weights=%.1f/%.1f/%.1f/%.1f"),
+				Samples,
+				Seed,
+				BlackCount,
+				BlackRatio,
+				ExpectedBlack,
+				RedCount,
+				RedRatio,
+				ExpectedRed,
+				YellowCount,
+				YellowRatio,
+				ExpectedYellow,
+				WhiteCount,
+				WhiteRatio,
+				ExpectedWhite,
+				UT66RunStateSubsystem::ShopRarityWeightBlack,
+				UT66RunStateSubsystem::ShopRarityWeightRed,
+				UT66RunStateSubsystem::ShopRarityWeightYellow,
+				UT66RunStateSubsystem::ShopRarityWeightWhite);
+		}
+	}
+
+	FAutoConsoleCommandWithWorldAndArgs T66ShopWeightedOddsProofCommand(
+		TEXT("T66.Proof.ShopWeightedOdds"),
+		TEXT("Runs a deterministic shop rarity weighted-odds proof. Args: <Samples> <Seed>."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66RunShopWeightedOddsProofCommand));
+}
+
 const FName UT66RunStateSubsystem::BackroomsQuickReviveItemID(TEXT("Item_BackroomsQuickRevive"));
+const FName UT66RunStateSubsystem::KromerItemID(TEXT("Item_Kromer"));
+const FName UT66RunStateSubsystem::MobLootItemID(TEXT("Item_MobLoot"));
+
+ET66ItemRarity UT66RunStateSubsystem::RollShopSlotRarity(FRandomStream& Rng)
+{
+	float Roll = Rng.FRandRange(0.f, ShopRarityWeightTotal);
+	Roll -= ShopRarityWeightBlack;
+	if (Roll <= 0.f)
+	{
+		return ET66ItemRarity::Black;
+	}
+
+	Roll -= ShopRarityWeightRed;
+	if (Roll <= 0.f)
+	{
+		return ET66ItemRarity::Red;
+	}
+
+	Roll -= ShopRarityWeightYellow;
+	if (Roll <= 0.f)
+	{
+		return ET66ItemRarity::Yellow;
+	}
+
+	return ET66ItemRarity::White;
+}
 
 void UT66RunStateSubsystem::ResetShopForStage()
 {
@@ -13,6 +203,8 @@ void UT66RunStateSubsystem::ResetShopForStage()
 	ShopStockSlots.Reset();
 	ShopStockSold.Reset();
 	bBoughtFromShopThisStage = false;
+	LastShopStealOutcome = ET66ShopStealOutcome::None;
+	ShopAngerState = FT66ShopAngerState();
 	ShopChanged.Broadcast();
 }
 
@@ -47,8 +239,7 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 			FT66InventorySlot(FName(TEXT("Item_AoeDamage")), ET66ItemRarity::Black, 2),
 			FT66InventorySlot(FName(TEXT("Item_BounceScale")), ET66ItemRarity::Black, 2),
 			FT66InventorySlot(FName(TEXT("Item_DamageReduction")), ET66ItemRarity::Black, 2),
-			FT66InventorySlot(FName(TEXT("Item_CritDamage")), ET66ItemRarity::Red, 5),
-			FT66InventorySlot(FName(TEXT("Item_Execute")), ET66ItemRarity::Yellow, 8),
+			FT66InventorySlot(FName(TEXT("Item_Headshot")), ET66ItemRarity::Red, 5),
 		};
 		for (const FT66InventorySlot& Slot : FallbackStock)
 		{
@@ -98,7 +289,7 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 			FName(TEXT("Item_AoeDamage")),
 			FName(TEXT("Item_BounceScale")),
 			FName(TEXT("Item_DamageReduction")),
-			FName(TEXT("Item_CritDamage")),
+			FName(TEXT("Item_Headshot")),
 			FName(TEXT("Item_Execute"))
 		};
 	}
@@ -121,15 +312,6 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 		const int32 Seen = ShopSeenCounts.FindRef(TemplatePool[TemplateIndex]);
 		Weights[TemplateIndex] = FMath::Max(WeightFloor, 1.0f / (1.0f + static_cast<float>(Seen) * DecayFactor));
 	}
-
-	const ET66ItemRarity SlotRarities[ShopDisplaySlotCount] =
-	{
-		ET66ItemRarity::Black,
-		ET66ItemRarity::Black,
-		ET66ItemRarity::Black,
-		ET66ItemRarity::Red,
-		ET66ItemRarity::Yellow
-	};
 
 	for (int32 SlotIndex = 0; SlotIndex < ShopDisplaySlotCount; ++SlotIndex)
 	{
@@ -179,7 +361,7 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 
 		ShopSeenCounts.FindOrAdd(Chosen)++;
 
-		const ET66ItemRarity Rarity = SlotRarities[SlotIndex];
+		const ET66ItemRarity Rarity = T66_RollShopSlotRarity(Rng);
 		int32 RollMin = 1;
 		int32 RollMax = 3;
 		FItemData::GetLine1RollRange(Rarity, RollMin, RollMax);
@@ -187,6 +369,20 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 
 		ShopStockSlots.Add(FT66InventorySlot(Chosen, Rarity, Rolled));
 		ShopStockItemIDs.Add(Chosen);
+		UE_LOG(
+			LogT66ShopProof,
+			Log,
+			TEXT("[T66Proof][ShopWeightedSlot] Stage=%d Reroll=%d Slot=%d Item=%s Rarity=%s Seed=%d Weights=%.1f/%.1f/%.1f/%.1f"),
+			Stage,
+			ShopStockRerollCounter,
+			SlotIndex,
+			*Chosen.ToString(),
+			T66_GetShopRarityName(Rarity),
+			Seed,
+			ShopRarityWeightBlack,
+			ShopRarityWeightRed,
+			ShopRarityWeightYellow,
+			ShopRarityWeightWhite);
 	}
 
 	ShopStockSold.Init(false, ShopStockSlots.Num());
@@ -231,7 +427,7 @@ bool UT66RunStateSubsystem::TryBuyShopStockSlot(int32 Index)
 	FItemData D;
 	const FT66InventorySlot& Slot = ShopStockSlots[Index];
 	if (!GI || !GI->GetItemData(Slot.ItemTemplateID, D)) return false;
-	const int32 BuyPrice = D.GetBuyGoldForRarity(Slot.Rarity);
+	const int32 BuyPrice = GetBuyGoldForShopStockSlot(Index);
 	if (BuyPrice <= 0) return false;
 	if (!TrySpendGold(BuyPrice)) return false;
 
@@ -247,6 +443,7 @@ bool UT66RunStateSubsystem::TryBuyShopStockSlot(int32 Index)
 bool UT66RunStateSubsystem::ResolveShopStealAttempt(int32 Index, bool bTimingHit, bool bRngSuccess)
 {
 	(void)bRngSuccess;
+	ShopAngerState.bLastAttemptTriggeredVendorBoss = false;
 	EnsureShopStockForCurrentStage();
 	if (Index < 0 || Index >= ShopStockSlots.Num()) return false;
 	if (IsShopStockSlotSold(Index)) return false;
@@ -288,7 +485,8 @@ bool UT66RunStateSubsystem::ResolveShopStealAttempt(int32 Index, bool bTimingHit
 	int32 PreDrawSeed = 0;
 	if (bTimingHit && BaseChance > 0.f)
 	{
-		const float Chance = RngSub ? RngSub->BiasChance01(BaseChance) : BaseChance;
+		const float BiasedChance = RngSub ? RngSub->BiasChance01(BaseChance) : BaseChance;
+		const float Chance = FMath::Clamp(BiasedChance + GetStealingLuckChanceBonus01(), 0.f, 0.95f);
 		AppliedChance = Chance;
 		FRandomStream Local(FPlatformTime::Cycles());
 		FRandomStream& Stream = RngSub ? RngSub->GetRunStream() : Local;
@@ -322,6 +520,11 @@ bool UT66RunStateSubsystem::ResolveShopStealAttempt(int32 Index, bool bTimingHit
 		LastShopStealOutcome = ET66ShopStealOutcome::Success;
 	}
 
+	ShopAngerState.StealAttemptCount = FMath::Max(0, ShopAngerState.StealAttemptCount) + 1;
+	ShopAngerState.LastAttemptSlotIndex = Index;
+	ShopAngerState.LastAttemptBuyValue = BuyPrice;
+	ShopAngerState.bLastAttemptTriggeredVendorBoss = ShopAngerState.bTriggerVendorBossOnAnyAttempt;
+
 	bool bGranted = false;
 	if (LastShopStealOutcome == ET66ShopStealOutcome::Success)
 	{
@@ -331,7 +534,6 @@ bool UT66RunStateSubsystem::ResolveShopStealAttempt(int32 Index, bool bTimingHit
 		bGranted = true;
 	}
 
-	// Luck Rating tracking (quantity): shop steal success means item granted with no anger increase.
 	RecordLuckQuantityBool(
 		FName(TEXT("ShopStealSuccess")),
 		(LastShopStealOutcome == ET66ShopStealOutcome::Success),
@@ -339,7 +541,7 @@ bool UT66RunStateSubsystem::ResolveShopStealAttempt(int32 Index, bool bTimingHit
 		DrawIndex,
 		PreDrawSeed);
 
-	if (LastShopStealOutcome == ET66ShopStealOutcome::Success)
+	if (LastShopStealOutcome == ET66ShopStealOutcome::Success || ShopAngerState.bLastAttemptTriggeredVendorBoss)
 	{
 		ShopChanged.Broadcast();
 	}
@@ -420,12 +622,92 @@ bool UT66RunStateSubsystem::TryBuybackSlot(int32 DisplayIndex)
 
 void UT66RunStateSubsystem::AddGold(int32 Amount)
 {
+	AddGold(Amount, ET66GoldTransactionSource::Gambler);
+}
+
+
+void UT66RunStateSubsystem::AddGold(int32 Amount, const ET66GoldTransactionSource Source)
+{
 	if (Amount == 0) return;
 	CurrentGold = FMath::Max(0, CurrentGold + Amount);
-	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=Gambler"), Amount));
+	AddStructuredEvent(ET66RunEventType::GoldGained, FString::Printf(TEXT("Amount=%d,Source=%s"), Amount, T66_GetGoldTransactionSourceName(Source)));
 	GoldChanged.Broadcast();
 	LogAdded.Broadcast();
 }
+
+
+int32 UT66RunStateSubsystem::AddCollectedMobLootFromCollection(
+	const FT66MobLootCollectResult& Result,
+	const FT66MobLootCollectorRef& Collector)
+{
+	const int32 Amount = FMath::Max(0, Result.GoldValueCollected);
+	if (Amount <= 0)
+	{
+		return 0;
+	}
+
+	const int32 Before = CollectedMobLootStack;
+	CollectedMobLootStack = FMath::Clamp(CollectedMobLootStack + Amount, 0, MaxCollectedMobLootStack);
+	const int32 Added = CollectedMobLootStack - Before;
+	if (Added > 0)
+	{
+		MobLootDropsCollectedThisRun = FMath::Clamp(MobLootDropsCollectedThisRun + FMath::Max(0, Result.DropsCollected), 0, MAX_int32);
+		MobLootQuantityCollectedThisRun = FMath::Clamp(MobLootQuantityCollectedThisRun + Added, 0, MAX_int32);
+		MobLootGoldValueCollectedThisRun = FMath::Clamp(MobLootGoldValueCollectedThisRun + Added, 0, MAX_int32);
+		switch (Collector.CollectorType)
+		{
+		case ET66MobLootCollectorType::Pet:
+			MobLootQuantityCollectedByPetThisRun = FMath::Clamp(MobLootQuantityCollectedByPetThisRun + Added, 0, MAX_int32);
+			MobLootDropsCollectedByPetThisRun = FMath::Clamp(MobLootDropsCollectedByPetThisRun + FMath::Max(0, Result.DropsCollected), 0, MAX_int32);
+			break;
+		case ET66MobLootCollectorType::Player:
+			MobLootQuantityCollectedByPlayerThisRun = FMath::Clamp(MobLootQuantityCollectedByPlayerThisRun + Added, 0, MAX_int32);
+			break;
+		case ET66MobLootCollectorType::System:
+		default:
+			break;
+		}
+	}
+	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(
+		TEXT("ItemID=MobLoot,Source=MobLootCollection,Collector=%s,Amount=%d,Stack=%d,Cap=%d"),
+		T66_GetMobLootCollectorTypeName(Collector.CollectorType),
+		Added,
+		CollectedMobLootStack,
+		MaxCollectedMobLootStack));
+	InventoryChanged.Broadcast();
+	ShopChanged.Broadcast();
+	LogAdded.Broadcast();
+	return Added;
+}
+
+
+bool UT66RunStateSubsystem::SellCollectedMobLoot()
+{
+	if (CollectedMobLootStack <= 0)
+	{
+		return false;
+	}
+
+	const int32 SellGold = CollectedMobLootStack;
+	CollectedMobLootStack = 0;
+	MobLootQuantitySoldThisRun = FMath::Clamp(MobLootQuantitySoldThisRun + SellGold, 0, MAX_int32);
+	MobLootSaleGoldThisRun = FMath::Clamp(MobLootSaleGoldThisRun + SellGold, 0, MAX_int32);
+	AddStructuredEvent(ET66RunEventType::ItemConsumed, FString::Printf(TEXT("ItemID=MobLoot,Source=MobLootSale,Amount=%d"), SellGold));
+	AddGold(SellGold, ET66GoldTransactionSource::MobLootSale);
+	InventoryChanged.Broadcast();
+	ShopChanged.Broadcast();
+	return true;
+}
+
+
+#if !UE_BUILD_SHIPPING
+void UT66RunStateSubsystem::SetCollectedMobLootStackForAutomation(const int32 Amount)
+{
+	CollectedMobLootStack = FMath::Clamp(Amount, 0, MaxCollectedMobLootStack);
+	InventoryChanged.Broadcast();
+	ShopChanged.Broadcast();
+}
+#endif
 
 
 bool UT66RunStateSubsystem::TrySpendGold(int32 Amount)
@@ -648,11 +930,42 @@ bool UT66RunStateSubsystem::ConsumeBackroomsQuickReviveItem()
 	return false;
 }
 
+bool UT66RunStateSubsystem::HasKromerItem() const
+{
+	for (const FT66InventorySlot& Slot : InventorySlots)
+	{
+		if (Slot.IsValid() && T66_IsKromerItem(Slot.ItemTemplateID))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool UT66RunStateSubsystem::ConsumeKromerItem()
+{
+	for (int32 Index = 0; Index < InventorySlots.Num(); ++Index)
+	{
+		if (InventorySlots[Index].IsValid() && T66_IsKromerItem(InventorySlots[Index].ItemTemplateID))
+		{
+			InventorySlots.RemoveAt(Index);
+			RecomputeItemDerivedStats();
+			AddStructuredEvent(ET66RunEventType::ItemConsumed, TEXT("ItemID=Item_Kromer,Source=SaintSecretEnding"));
+			InventoryChanged.Broadcast();
+			LogAdded.Broadcast();
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void UT66RunStateSubsystem::SnapshotAndClearInventoryForBackrooms(TArray<FT66InventorySlot>& OutSnapshot)
 {
 	OutSnapshot = InventorySlots;
 	InventorySlots.Empty();
-	ActiveVendorTokenLevel = 0;
+	ActiveVendorTokenStacks = 0;
 	RecomputeItemDerivedStats();
 	InventoryChanged.Broadcast();
 	QuickReviveChanged.Broadcast();
@@ -667,16 +980,44 @@ void UT66RunStateSubsystem::RestoreInventoryFromBackroomsSnapshot(const TArray<F
 }
 
 
-void UT66RunStateSubsystem::ApplyVendorTokenPickup(int32 TokenLevel)
+int32 UT66RunStateSubsystem::GetBuyGoldForShopStockSlot(int32 Index) const
 {
-	const int32 ClampedLevel = FMath::Clamp(TokenLevel, 1, MaxVendorTokenLevel);
-	if (ClampedLevel <= 0 || ActiveVendorTokenLevel >= ClampedLevel)
+	if (Index < 0 || Index >= ShopStockSlots.Num())
+	{
+		return 0;
+	}
+
+	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
+	FItemData D;
+	const FT66InventorySlot& Slot = ShopStockSlots[Index];
+	if (!GI || !GI->GetItemData(Slot.ItemTemplateID, D))
+	{
+		return 0;
+	}
+
+	const int32 BaseBuyPrice = D.GetBuyGoldForRarity(Slot.Rarity);
+	if (BaseBuyPrice <= 0)
+	{
+		return 0;
+	}
+
+	const float DiscountedPrice = static_cast<float>(BaseBuyPrice) * FMath::Max(0.f, 1.f - GetCurrentBuyDiscountFraction());
+	return FMath::Max(0, FMath::RoundToInt(DiscountedPrice));
+}
+
+
+void UT66RunStateSubsystem::ApplyVendorTokenPickup(int32 TokenStacks)
+{
+	const int32 StacksToAdd = FMath::Clamp(TokenStacks, 1, MaxVendorTokenStacks);
+	const int32 PreviousStacks = T66_ClampVendorTokenStackCount(ActiveVendorTokenStacks);
+	const int32 NewStacks = T66_ClampVendorTokenStackCount(PreviousStacks + StacksToAdd);
+	if (NewStacks <= PreviousStacks)
 	{
 		return;
 	}
 
-	ActiveVendorTokenLevel = ClampedLevel;
-	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ItemID=%s,Source=VendorToken,Level=%d"), *T66VendorTokenItemID.ToString(), ActiveVendorTokenLevel));
+	ActiveVendorTokenStacks = NewStacks;
+	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ItemID=%s,Source=VendorToken,Stacks=%d"), *T66VendorTokenItemID.ToString(), ActiveVendorTokenStacks));
 
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
@@ -693,7 +1034,13 @@ void UT66RunStateSubsystem::ApplyVendorTokenPickup(int32 TokenLevel)
 
 float UT66RunStateSubsystem::GetCurrentSellFraction() const
 {
-	return T66_GetSellFractionForTokenLevel(ActiveVendorTokenLevel);
+	return T66_GetSellFractionForVendorTokenStacks(ActiveVendorTokenStacks);
+}
+
+
+float UT66RunStateSubsystem::GetCurrentBuyDiscountFraction() const
+{
+	return T66_GetBuyDiscountFractionForVendorTokenStacks(ActiveVendorTokenStacks);
 }
 
 
@@ -724,7 +1071,7 @@ int32 UT66RunStateSubsystem::GetSellGoldForInventorySlot(const FT66InventorySlot
 void UT66RunStateSubsystem::ClearInventory()
 {
 	InventorySlots.Empty();
-	ActiveVendorTokenLevel = 0;
+	ActiveVendorTokenStacks = 0;
 	RecomputeItemDerivedStats();
 	InventoryChanged.Broadcast();
 }

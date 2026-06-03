@@ -15,7 +15,7 @@ Master scripts are reusable project tools. One-off task scripts should be delete
 - UI capture/import helpers: `CaptureT66UIScreen.ps1`, `CaptureT66UIWidget.ps1`, `CaptureT66GameplayVideo.ps1`, `CaptureT66EnemyAnimationPreview.ps1`, `BuildT66VideoEvidenceBundle.py`, UI texture import and repair scripts.
 - Data-table setup scripts: `Setup*DataTable.py`, roster/data reload helpers.
 - Import core: `ImportStaticMeshes.py` plus active domain-specific import/verification wrappers. The old generic skeletal import and generic import-batch verifier were retired.
-- Active batch wrappers: current Quad Retro, combat roster, weapon projectile, coherent theme kit, arcade replacement, and world NPC/interactable imports.
+- Active batch wrappers: current Quad Retro, combat roster, weapon projectile, coherent theme kit, and world NPC/interactable imports.
 - Maintenance: focused audit, repair, and verification scripts that are still used by current docs or source-owned tooling.
 
 ## Operator/Validator Stack Helpers
@@ -152,7 +152,7 @@ powershell -ExecutionPolicy Bypass -File C:\UE\T66\Scripts\CaptureT66GameplayVid
   -ResX 1280 -ResY 720
 ```
 
-Default loot UI capture targets exclude Mini/minigame content unless the user explicitly names Mini/minigames.
+Default loot UI capture targets include only the current loot UI targets listed below.
 
 Taxonomy:
 

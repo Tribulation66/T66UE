@@ -12,10 +12,17 @@ struct FT66FrontendVideoAsset
 	bool bPosterOnly = false;
 };
 
+enum class ET66HeroKitPreviewSlot : uint8
+{
+	Weapon,
+	Ultimate,
+};
+
 namespace T66FrontendVideoCatalog
 {
 	T66_API bool ResolveMainMenuBackground(FT66FrontendVideoAsset& OutAsset);
 	T66_API bool ResolveHeroSelection(FName HeroID, FName SkinID, ET66BodyType BodyType, FT66FrontendVideoAsset& OutAsset);
 	T66_API bool ResolveCompanionSelection(FName CompanionID, FName SkinID, FT66FrontendVideoAsset& OutAsset);
+	T66_API bool ResolveHeroKitPreview(FName HeroID, ET66HeroKitPreviewSlot Slot, FName KitID, FName SkinID, ET66BodyType BodyType, FT66FrontendVideoAsset& OutAsset);
 	T66_API FString ResolveMovieAbsolutePath(const FString& MoviePath);
 }

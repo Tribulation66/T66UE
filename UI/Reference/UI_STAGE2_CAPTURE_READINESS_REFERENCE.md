@@ -28,7 +28,6 @@ Stage 2 convention:
 | 4 | Diplomas | `Diplomas` | `PowerUp` | Power Up screen activates permanent/diploma tab from `T66FrontendScreen=Diplomas` | Ready |
 | 5 | Drugs | `Drugs` | `PowerUp` | Power Up screen activates single-use/drugs tab from `T66FrontendScreen=Drugs` | Ready |
 | 6 | Steam Achievements | `SteamAchievements` | `Achievements` | Achievements screen activates Steam/Achievements tab from `T66FrontendScreen=SteamAchievements` | Ready |
-| 7 | Minigames | `Minigames` | `Minigames` | Direct screen | Ready |
 | 8 | Settings Retro FX | `SettingsRetroFX` | `Settings` | Settings screen activates Retro FX from `T66FrontendScreen=SettingsRetroFX`; `Settings` also defaults to Retro FX currently | Ready |
 | 9 | Daily Descent | `DailyDescent` | `DailyDescent` | Direct screen | Ready |
 | 10 | Challenges | `Challenges` | `Challenges` | Direct screen/modal | Ready |

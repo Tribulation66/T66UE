@@ -27,7 +27,6 @@ Migrate the remaining eleven frontend screens to `FT66FlatStyle`, one screen at 
 3. Diplomas
 4. Drugs
 5. Steam Achievements
-6. Minigames
 7. Settings Retro FX
 8. Daily Descent
 9. Challenges

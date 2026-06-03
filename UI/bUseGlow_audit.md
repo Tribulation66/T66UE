@@ -31,7 +31,6 @@ This reduces the silent failure surface without changing non-migrated screens' c
 
 | Site | Classification | Source excerpt |
 |---|---|---|
-| `Source/T66/UI/T66ArcadeSelectionWidget.cpp:155` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(` |
 | `Source/T66/UI/Gambler/T66GamblerOverlayWidget_Build.cpp:1515` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(FText::GetEmpty(),` |
 | `Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Skins.cpp:287` | Hero Selection legacy helper path; flat Build should not call it | `MakeHeroSelectionButton(FT66ButtonParams(EquipText,` |
 | `Source/T66/UI/Screens/HeroSelection/T66HeroSelectionScreen_Skins.cpp:298` | Hero Selection legacy helper path; flat Build should not call it | `MakeHeroSelectionButton(FT66ButtonParams(` |
@@ -106,12 +105,6 @@ This reduces the silent failure surface without changing non-migrated screens' c
 | `Source/T66/UI/Screens/T66SaveSlotsScreen.cpp:1159` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(PrevText, ...` |
 | `Source/T66/UI/Screens/T66SaveSlotsScreen.cpp:1170` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(NextText, ...` |
 | `Source/T66/UI/T66CasinoShopTabWidget.cpp:626` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(` |
-| `Source/T66/UI/T66GoldMinerArcadeWidget.cpp:233` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(` |
-| `Source/T66/UI/T66GoldMinerArcadeWidget.cpp:264` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(` |
-| `Source/T66/UI/T66QuickArcadeWidget.cpp:198` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(` |
-| `Source/T66/UI/T66QuickArcadeWidget.cpp:222` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(` |
-| `Source/T66/UI/T66TopwarArcadeWidget.cpp:294` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(` |
-| `Source/T66/UI/T66WhackAMoleArcadeWidget.cpp:271` | Implicit true legacy risk; review during screen migration | `FT66ButtonParams(` |
 
 ## Follow-Up Rule
 

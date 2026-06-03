@@ -116,6 +116,16 @@ void AT66IdolAltar::ApplyVisuals()
 	}
 }
 
+void AT66IdolAltar::DisableAfterSelection()
+{
+	RemainingSelections = 0;
+	if (InteractTrigger)
+	{
+		InteractTrigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		InteractTrigger->SetGenerateOverlapEvents(false);
+	}
+}
+
 void AT66IdolAltar::ConfigureVisualCollision(UPrimitiveComponent* Primitive, bool bEnableCollision) const
 {
 	if (!Primitive)

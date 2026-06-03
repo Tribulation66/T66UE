@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://t66.local/performance/performance_event.schema.v8.json",
+  "title": "T66 PerformanceSystem Event v8",
+  "type": "object",
+  "required": [
+    "SchemaVersion",
+    "EventId",
+    "SessionId",
+    "WallClockUtc",
+    "DetectorName",
+    "EventName",
+    "Severity",
+    "Confidence",
+    "Summary"
+  ],
+  "properties": {
+    "SchemaVersion": { "const": 8 },
+    "EventId": { "type": "integer", "minimum": 1 },
+    "SessionId": { "type": "string" },
+    "WallClockUtc": { "type": "string" },
+    "GameTimeSeconds": { "type": "number" },
+    "DetectorName": { "type": "string" },
+    "EventName": { "type": "string" },
+    "Severity": { "enum": ["Info", "Warning", "Error", "Critical"] },
+    "Confidence": { "enum": ["Exact", "Sampled", "Inferred", "Unavailable"] },
+    "Summary": { "type": "string" },
+    "WorldName": { "type": "string" },
+    "MapName": { "type": "string" },
+    "Build": { "type": "object" },
+    "Frame": { "type": "object" },
+    "Memory": { "type": "object" },
+    "Attributions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Name", "Value", "Confidence"],
+        "properties": {
+          "Name": { "type": "string" },
+          "Value": { "type": "string" },
+          "Confidence": { "enum": ["Exact", "Sampled", "Inferred", "Unavailable"] },
+          "Source": { "type": "string" },
+          "SampleWindowSeconds": { "type": "number" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": true
+}

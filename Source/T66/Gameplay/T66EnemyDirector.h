@@ -108,6 +108,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Director")
 	void RefreshSpawningFromProgression();
 
+	UFUNCTION(BlueprintCallable, Category = "Director|Pandemonium")
+	void SetPandemoniumMode(bool bEnabled, float RuntimeSpawnIntervalSeconds, int32 RuntimeEnemiesPerWave, int32 RuntimeMaxAliveEnemies, int32 RuntimeMaxSpawnsPerBatch);
+
 	UFUNCTION(BlueprintCallable, Category = "Director|Tower")
 	int32 SpawnInitialPopulationForTowerFloor(int32 FloorNumber);
 
@@ -152,6 +155,11 @@ protected:
 	float ActiveStaggeredSpawnIntervalSeconds = 0.05f;
 	float ActiveRuntimeWaveCooldownSeconds = 0.05f;
 	int32 ActiveMaxSpawnsPerStaggeredBatch = 1;
+	bool bPandemoniumMode = false;
+	float PandemoniumRuntimeSpawnIntervalSeconds = 0.30f;
+	int32 PandemoniumRuntimeEnemiesPerWave = 18;
+	int32 PandemoniumRuntimeMaxAliveEnemies = 180;
+	int32 PandemoniumMaxSpawnsPerBatch = 6;
 
 	TSet<int32> TowerFloorsWithInitialPopulation;
 

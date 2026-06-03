@@ -1,0 +1,79 @@
+{
+  "generated_local": "2026-05-27T11:49:22",
+  "backup_root": "C:\\UE\\T66\\Saved\\HygieneBackups\\2026-05-27\\GateA\\PreDirtyFiles",
+  "allowed_tokens": [
+    "QuickRevive",
+    "Quick revive",
+    "BackroomsQuickRevive",
+    "BackroomsRevive",
+    "MovementSpeed",
+    "MoveSpeed",
+    "DefaultWalkSpeed",
+    "HeroMoveSpeed",
+    "SpawnGuaranteedStartAreaInteractables",
+    "SpawnModelShowcaseRow",
+    "SpawnTricksterAndCowardiceGate",
+    "BossBeacon",
+    "IdolVFX",
+    "bSpawnIdolVFXTestTargetsAtStageStart",
+    "MainMapBossBeaconSurfaceLocation",
+    "BossBeaconSurfaceLocation",
+    "Teleporter",
+    "Reports",
+    "ToonStyle",
+    "report",
+    "Hilly",
+    "Flat",
+    "possible future",
+    "Artifact Routing",
+    "StartArea",
+    "start area",
+    "start-area",
+    "start-floor",
+    "ModelShowcase",
+    "Trickster"
+  ],
+  "results": [
+    {
+      "path": "Gameplay/World/T66_MAP_DESIGN_REFERENCE.md",
+      "hunk_count": 14,
+      "allowed_hunks": 14,
+      "blocked_hunks": 0,
+      "status": "PASS",
+      "blocked": []
+    },
+    {
+      "path": "Source/T66/Gameplay/T66GameMode.cpp",
+      "hunk_count": 2,
+      "allowed_hunks": 2,
+      "blocked_hunks": 0,
+      "status": "PASS",
+      "blocked": []
+    },
+    {
+      "path": "Source/T66/Gameplay/T66GameMode.h",
+      "hunk_count": 8,
+      "allowed_hunks": 8,
+      "blocked_hunks": 0,
+      "status": "PASS",
+      "blocked": []
+    },
+    {
+      "path": "Source/T66/Gameplay/T66TowerMapTerrain.cpp",
+      "hunk_count": 1,
+      "allowed_hunks": 1,
+      "blocked_hunks": 0,
+      "status": "PASS",
+      "blocked": []
+    },
+    {
+      "path": "Source/T66/Gameplay/GameMode/T66GameMode_WorldInteractables.cpp",
+      "hunk_count": 5,
+      "allowed_hunks": 5,
+      "blocked_hunks": 0,
+      "status": "PASS",
+      "blocked": []
+    }
+  ],
+  "status": "PASS"
+}

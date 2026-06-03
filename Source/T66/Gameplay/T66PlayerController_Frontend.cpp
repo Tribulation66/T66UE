@@ -15,6 +15,7 @@
 #include "UI/Screens/T66HeroSelectionScreen.h"
 #include "UI/Screens/T66HeroGridScreen.h"
 #include "UI/Screens/T66CompanionSelectionScreen.h"
+#include "UI/Screens/T66PetSelectionScreen.h"
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66SaveSlotsScreen.h"
 #include "UI/Screens/T66AchievementsScreen.h"
@@ -28,11 +29,9 @@
 #include "UI/Screens/T66PlayerSummaryPickerScreen.h"
 #include "UI/Screens/T66SavePreviewScreen.h"
 #include "UI/Screens/T66PowerUpScreen.h"
-#include "UI/Screens/T66MinigamesScreen.h"
-#include "UI/Screens/T66VersusArcadeScreen.h"
+#include "UI/Screens/T66ShelvedFeatureScreen.h"
 #include "UI/Screens/T66AccountStatusScreen.h"
 #include "UI/Screens/T66ChallengesScreen.h"
-#include "UI/Screens/T66DailyClimbScreen.h"
 #include "UI/Screens/T66PartyInviteModal.h"
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/T66LabOverlayWidget.h"
@@ -56,6 +55,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66BuffSubsystem.h"
@@ -68,7 +68,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66WeaponAltar.h"
 #include "Gameplay/T66CasinoNPC.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
@@ -376,23 +376,16 @@ namespace
 
 namespace
 {
-	bool ResolveMinigameScreen(const ET66ScreenType ScreenType, ET66ScreenType& OutScreenType)
-	{
-		OutScreenType = ScreenType;
-		return true;
-	}
-
 	FString GetAcceptedFrontendScreenNamesForLog()
 	{
 		return TEXT(
 			"MainMenu, HeroSelection, HeroSelect, SaveSlots, SaveSlot, CompanionSelection, CompanionSelect, "
-			"Settings, SettingsScreen, LanguageSelect, Language, Achievements, Minigames, PauseMenu, Pause, "
-			"ReportBug, GameOver, RunSummary, PowerUp, HeroGrid, CompanionGrid, QuitConfirmation, Quit, PartyInvite, "
-			"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, MiniMainMenu, "
-			"MiniCharacterSelect, MiniCompanionSelect, MiniDifficultySelect, MiniIdolSelect, MiniSaveSlots, "
-			"MiniShop, MiniRunSummary, MiniBattle, TDMainMenu, TDDifficultySelect, TDBattle, IdleMainMenu, "
-			"IdleChadpocalypse, DeckMainMenu, Deckbuilder, ChadpocalypseDeckbuilder, Versus, VersusMainMenu, "
-			"Challenges, DailyDescent, Overview, History, Diplomas, "
+			"GirlfriendSelection, GirlfriendSelect, "
+			"PetSelection, PetSelect, Pets, "
+			"Settings, SettingsScreen, LanguageSelect, Language, Achievements, PauseMenu, Pause, "
+			"ReportBug, GameOver, RunSummary, PowerUp, HeroGrid, CompanionGrid, GirlfriendGrid, QuitConfirmation, Quit, PartyInvite, "
+			"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, "
+			"Challenges, DailyDescent, Overview, History, Relics, Steroids, Diplomas, "
 			"Drugs, SteamAchievements, Steam, SettingsRetroFX, RetroFX, SettingsGameplay, SettingsGraphics, "
 			"SettingsControls, SettingsMediaViewer, SettingsMedia, SettingsAudio, LoadGame");
 	}
@@ -419,9 +412,18 @@ namespace
 			return true;
 		}
 		if (Normalized.Equals(TEXT("CompanionSelection"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("CompanionSelect"), ESearchCase::IgnoreCase))
+			|| Normalized.Equals(TEXT("CompanionSelect"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("GirlfriendSelection"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("GirlfriendSelect"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::CompanionSelection;
+			return true;
+		}
+		if (Normalized.Equals(TEXT("PetSelection"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("PetSelect"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Pets"), ESearchCase::IgnoreCase))
+		{
+			OutScreenType = ET66ScreenType::PetSelection;
 			return true;
 		}
 		if (Normalized.Equals(TEXT("Settings"), ESearchCase::IgnoreCase)
@@ -451,15 +453,6 @@ namespace
 			OutScreenType = ET66ScreenType::Achievements;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("Minigames"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::Minigames, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("Versus"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("VersusMainMenu"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::VersusMainMenu, OutScreenType);
-		}
 		if (Normalized.Equals(TEXT("PauseMenu"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("Pause"), ESearchCase::IgnoreCase))
 		{
@@ -483,6 +476,8 @@ namespace
 			return true;
 		}
 		if (Normalized.Equals(TEXT("PowerUp"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Relics"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Steroids"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("Diplomas"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("Drugs"), ESearchCase::IgnoreCase))
 		{
@@ -494,7 +489,8 @@ namespace
 			OutScreenType = ET66ScreenType::HeroGrid;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("CompanionGrid"), ESearchCase::IgnoreCase))
+		if (Normalized.Equals(TEXT("CompanionGrid"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("GirlfriendGrid"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::CompanionGrid;
 			return true;
@@ -529,65 +525,6 @@ namespace
 			OutScreenType = ET66ScreenType::SavePreview;
 			return true;
 		}
-		if (Normalized.Equals(TEXT("MiniMainMenu"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::MiniMainMenu, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("MiniCharacterSelect"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::MiniCharacterSelect, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("MiniCompanionSelect"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::MiniCompanionSelect, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("MiniDifficultySelect"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::MiniDifficultySelect, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("MiniIdolSelect"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::MiniIdolSelect, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("MiniSaveSlots"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::MiniSaveSlots, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("MiniShop"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::MiniShop, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("MiniRunSummary"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::MiniRunSummary, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("MiniBattle"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::MiniBattle, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("TDMainMenu"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::TDMainMenu, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("TDDifficultySelect"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::TDDifficultySelect, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("TDBattle"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::TDBattle, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("IdleMainMenu"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("IdleChadpocalypse"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::IdleMainMenu, OutScreenType);
-		}
-		if (Normalized.Equals(TEXT("DeckMainMenu"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("Deckbuilder"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("ChadpocalypseDeckbuilder"), ESearchCase::IgnoreCase))
-		{
-			return ResolveMinigameScreen(ET66ScreenType::DeckMainMenu, OutScreenType);
-		}
 		if (Normalized.Equals(TEXT("Challenges"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::Challenges;
@@ -595,6 +532,10 @@ namespace
 		}
 		if (Normalized.Equals(TEXT("DailyDescent"), ESearchCase::IgnoreCase))
 		{
+			if (!FT66ShelvedFeatureGate::IsScreenAllowed(ET66ScreenType::DailyDescent))
+			{
+				return false;
+			}
 			OutScreenType = ET66ScreenType::DailyDescent;
 			return true;
 		}
@@ -670,6 +611,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66MainMenuScreen::StaticClass();
 	case ET66ScreenType::CompanionSelection:
 		return UT66CompanionSelectionScreen::StaticClass();
+	case ET66ScreenType::PetSelection:
+		return UT66PetSelectionScreen::StaticClass();
 	case ET66ScreenType::HeroGrid:
 		return UT66HeroGridScreen::StaticClass();
 	case ET66ScreenType::CompanionGrid:
@@ -682,38 +625,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66QuitConfirmationModal::StaticClass();
 	case ET66ScreenType::Achievements:
 		return UT66AchievementsScreen::StaticClass();
-	case ET66ScreenType::Minigames:
-		return UT66MinigamesScreen::StaticClass();
-	case ET66ScreenType::VersusMainMenu:
-		return UT66VersusArcadeScreen::StaticClass();
-	case ET66ScreenType::MiniMainMenu:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniMainMenuScreen"));
-	case ET66ScreenType::MiniSaveSlots:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniSaveSlotsScreen"));
-	case ET66ScreenType::MiniCharacterSelect:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniCharacterSelectScreen"));
-	case ET66ScreenType::MiniCompanionSelect:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniCompanionSelectScreen"));
-	case ET66ScreenType::MiniDifficultySelect:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniDifficultySelectScreen"));
-	case ET66ScreenType::MiniIdolSelect:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniIdolSelectScreen"));
-	case ET66ScreenType::MiniShop:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniShopScreen"));
-	case ET66ScreenType::MiniRunSummary:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniRunSummaryScreen"));
-	case ET66ScreenType::MiniBattle:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Mini.T66MiniBattleScreen"));
-	case ET66ScreenType::TDMainMenu:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66TD.T66TDMainMenuScreen"));
-	case ET66ScreenType::TDDifficultySelect:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66TD.T66TDDifficultySelectScreen"));
-	case ET66ScreenType::TDBattle:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66TD.T66TDBattleScreen"));
-	case ET66ScreenType::IdleMainMenu:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Idle.T66IdleMainMenuScreen"));
-	case ET66ScreenType::DeckMainMenu:
-		return LoadClass<UT66ScreenBase>(nullptr, TEXT("/Script/T66Deck.T66DeckMainMenuScreen"));
+	case ET66ScreenType::DailyDescent:
+		return UT66ShelvedFeatureScreen::StaticClass();
 	case ET66ScreenType::ReportBug:
 		return UT66ReportBugScreen::StaticClass();
 	case ET66ScreenType::Settings:
@@ -734,8 +647,6 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66AccountStatusScreen::StaticClass();
 	case ET66ScreenType::Challenges:
 		return UT66ChallengesScreen::StaticClass();
-	case ET66ScreenType::DailyDescent:
-		return UT66DailyClimbScreen::StaticClass();
 	case ET66ScreenType::PartyInvite:
 		return UT66PartyInviteModal::StaticClass();
 	default:
@@ -885,6 +796,7 @@ void AT66PlayerController::AutoLoadScreenClasses()
 		{ ET66ScreenType::MainMenu, UT66MainMenuScreen::StaticClass() },
 		{ ET66ScreenType::HeroSelection, UT66HeroSelectionScreen::StaticClass() },
 		{ ET66ScreenType::CompanionSelection, UT66CompanionSelectionScreen::StaticClass() },
+		{ ET66ScreenType::PetSelection, UT66PetSelectionScreen::StaticClass() },
 		{ ET66ScreenType::SaveSlots, UT66SaveSlotsScreen::StaticClass() },
 		{ ET66ScreenType::Settings, UT66SettingsScreen::StaticClass() },
 		{ ET66ScreenType::QuitConfirmation, UT66QuitConfirmationModal::StaticClass() },
@@ -1406,70 +1318,6 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::Achievements, AchievementsClass);
 	}
-	if (TSubclassOf<UT66ScreenBase> MinigamesClass = ResolveScreenClass(ET66ScreenType::Minigames))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::Minigames, MinigamesClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> VersusClass = ResolveScreenClass(ET66ScreenType::VersusMainMenu))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::VersusMainMenu, VersusClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> MiniMainMenuClass = ResolveScreenClass(ET66ScreenType::MiniMainMenu))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::MiniMainMenu, MiniMainMenuClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> MiniSaveSlotsClass = ResolveScreenClass(ET66ScreenType::MiniSaveSlots))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::MiniSaveSlots, MiniSaveSlotsClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> MiniCharacterSelectClass = ResolveScreenClass(ET66ScreenType::MiniCharacterSelect))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::MiniCharacterSelect, MiniCharacterSelectClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> MiniCompanionSelectClass = ResolveScreenClass(ET66ScreenType::MiniCompanionSelect))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::MiniCompanionSelect, MiniCompanionSelectClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> MiniDifficultySelectClass = ResolveScreenClass(ET66ScreenType::MiniDifficultySelect))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::MiniDifficultySelect, MiniDifficultySelectClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> MiniIdolSelectClass = ResolveScreenClass(ET66ScreenType::MiniIdolSelect))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::MiniIdolSelect, MiniIdolSelectClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> MiniShopClass = ResolveScreenClass(ET66ScreenType::MiniShop))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::MiniShop, MiniShopClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> MiniRunSummaryClass = ResolveScreenClass(ET66ScreenType::MiniRunSummary))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::MiniRunSummary, MiniRunSummaryClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> MiniBattleClass = ResolveScreenClass(ET66ScreenType::MiniBattle))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::MiniBattle, MiniBattleClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> TDMainMenuClass = ResolveScreenClass(ET66ScreenType::TDMainMenu))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::TDMainMenu, TDMainMenuClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> TDDifficultySelectClass = ResolveScreenClass(ET66ScreenType::TDDifficultySelect))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::TDDifficultySelect, TDDifficultySelectClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> TDBattleClass = ResolveScreenClass(ET66ScreenType::TDBattle))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::TDBattle, TDBattleClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> IdleMainMenuClass = ResolveScreenClass(ET66ScreenType::IdleMainMenu))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::IdleMainMenu, IdleMainMenuClass);
-	}
-	if (TSubclassOf<UT66ScreenBase> DeckMainMenuClass = ResolveScreenClass(ET66ScreenType::DeckMainMenu))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::DeckMainMenu, DeckMainMenuClass);
-	}
 	// Account Status is a C++ modal by default (no WBP required). If a WBP is registered, do not override it.
 	if (TSubclassOf<UT66ScreenBase> AccountStatusClass = ResolveScreenClass(ET66ScreenType::AccountStatus))
 	{
@@ -1581,3 +1429,4 @@ void AT66PlayerController::ShowScreen(ET66ScreenType ScreenType)
 		UIManager->ShowScreen(ScreenType);
 	}
 }
+

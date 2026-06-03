@@ -50,6 +50,8 @@ private:
 		FName ItemID = NAME_None;
 		ET66ItemRarity ItemRarity = ET66ItemRarity::Black;
 		ET66HeroStatType BoostStatType = ET66HeroStatType::Damage;
+		ET66SecondaryStatType BoostSecondaryStatType = ET66SecondaryStatType::None;
+		bool bBoostUsesSecondaryStat = false;
 		int32 BoostBonusStatPoints = 8;
 		float BoostDurationSeconds = 10.f;
 		TWeakObjectPtr<APlayerController> PlayerController;

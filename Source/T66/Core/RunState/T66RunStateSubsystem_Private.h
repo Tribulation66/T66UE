@@ -105,7 +105,7 @@ namespace T66RunStatePrivate
 		static const TArray<ET66SecondaryStatType> Types =
 		{
 			ET66SecondaryStatType::CritChance,
-			ET66SecondaryStatType::CritDamage,
+			ET66SecondaryStatType::HeadshotChance,
 			ET66SecondaryStatType::AttackRange,
 			ET66SecondaryStatType::Execute
 		};
@@ -140,10 +140,10 @@ namespace T66RunStatePrivate
 	{
 		static const TArray<ET66SecondaryStatType> Types =
 		{
-			ET66SecondaryStatType::LootCrate,
-			ET66SecondaryStatType::TreasureChest,
-			ET66SecondaryStatType::LootBag,
-			ET66SecondaryStatType::LootWheel
+			ET66SecondaryStatType::InteractableLuck,
+			ET66SecondaryStatType::StealingLuck,
+			ET66SecondaryStatType::GamblingLuck,
+			ET66SecondaryStatType::ProcLuck
 		};
 		return Types;
 	}
@@ -256,8 +256,13 @@ namespace T66RunStatePrivate
 	static bool T66_IsRetiredRemovedItemID(const FName ItemID)
 	{
 		return ItemID == FName(TEXT("Item_Accuracy"))
+			|| ItemID == FName(TEXT("Item_CritDamage"))
 			|| ItemID == FName(TEXT("Item_Cheating"))
 			|| ItemID == FName(TEXT("Item_Stealing"))
+			|| ItemID == FName(TEXT("Item_LootCrate"))
+			|| ItemID == FName(TEXT("Item_TreasureChest"))
+			|| ItemID == FName(TEXT("Item_LootBag"))
+			|| ItemID == FName(TEXT("Item_LootWheel"))
 			|| ItemID == FName(TEXT("Item_HpRegen"))
 			|| ItemID == FName(TEXT("Item_LifeSteal"));
 	}
@@ -267,14 +272,24 @@ namespace T66RunStatePrivate
 		return ItemID == UT66RunStateSubsystem::BackroomsQuickReviveItemID;
 	}
 
-	static bool T66_IsRewardOnlySpecialItem(const FName ItemID)
+	static bool T66_IsKromerItem(const FName ItemID)
 	{
-		return T66_IsVendorTokenItem(ItemID) || T66_IsBackroomsQuickReviveItem(ItemID);
+		return ItemID == UT66RunStateSubsystem::KromerItemID;
 	}
 
-	static int32 T66_ClampVendorTokenLevel(const int32 Level)
+	static bool T66_IsMobLootItem(const FName ItemID)
 	{
-		return FMath::Clamp(Level, 0, UT66RunStateSubsystem::MaxVendorTokenLevel);
+		return ItemID == UT66RunStateSubsystem::MobLootItemID;
+	}
+
+	static bool T66_IsRewardOnlySpecialItem(const FName ItemID)
+	{
+		return T66_IsVendorTokenItem(ItemID) || T66_IsBackroomsQuickReviveItem(ItemID) || T66_IsKromerItem(ItemID) || T66_IsMobLootItem(ItemID);
+	}
+
+	static int32 T66_ClampVendorTokenStackCount(const int32 StackCount)
+	{
+		return FMath::Clamp(StackCount, 0, UT66RunStateSubsystem::MaxVendorTokenStacks);
 	}
 
 	static bool T66_IsAlchemyEligibleSlot(const FT66InventorySlot& Slot, const UT66GameInstance* GI)
@@ -423,9 +438,14 @@ namespace T66RunStatePrivate
 		Slot.RollSeed = HashCombine(GetTypeHash(PreviousRarity), GetTypeHash(Slot.RollSeed != 0 ? Slot.RollSeed : T66_GetDefaultInventoryRollSeed()));
 	}
 
-	static float T66_GetSellFractionForTokenLevel(const int32 TokenLevel)
+	static float T66_GetSellFractionForVendorTokenStacks(const int32 StackCount)
 	{
-		return FMath::Clamp(0.40f + 0.10f * static_cast<float>(T66_ClampVendorTokenLevel(TokenLevel)), 0.40f, 1.00f);
+		return FMath::Clamp(0.70f + 0.025f * static_cast<float>(T66_ClampVendorTokenStackCount(StackCount)), 0.70f, 1.00f);
+	}
+
+	static float T66_GetBuyDiscountFractionForVendorTokenStacks(const int32 StackCount)
+	{
+		return 0.025f * static_cast<float>(T66_ClampVendorTokenStackCount(StackCount));
 	}
 
 	static float T66_RarityTo01(ET66Rarity R)

@@ -24,7 +24,7 @@
 namespace
 {
 	const FName TutorialGuideCompanionID(TEXT("Companion_01"));
-	const FName TutorialElectricIdolID(TEXT("Idol_Electric"));
+	const FName TutorialElectricIdolID(TEXT("Idol_Electricity_Bounce"));
 
 	const FName TutorialGuideStartTag(TEXT("T66_Tutorial_GuideStart"));
 	const FName TutorialMoveMarkerTag(TEXT("T66_Tutorial_Stop_Move"));

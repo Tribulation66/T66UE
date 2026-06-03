@@ -34,23 +34,12 @@
 #include "UI/T66WeaponAltarOverlayWidget.h"
 #include "UI/T66CollectorOverlayWidget.h"
 #include "UI/T66LoadingScreenWidget.h"
-#include "UI/T66ArcadePopupWidget.h"
-#include "UI/T66ArcadeSelectionWidget.h"
 #include "UI/T66CrateOverlayWidget.h"
-#include "UI/T66GoldMinerArcadeWidget.h"
-#include "UI/T66BladeSweepArcadeWidget.h"
-#include "UI/T66TopwarArcadeWidget.h"
-#include "UI/T66WhackAMoleArcadeWidget.h"
-#include "UI/WidgetGames/T66WidgetGameHostContext.h"
-#include "UI/WidgetGames/T66WidgetGameResult.h"
-#include "UI/WidgetGames/T66WidgetGameRegistry.h"
 #include "Gameplay/T66FountainInteractable.h"
 #include "Gameplay/T66CompanionBase.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66LootWheelInteractable.h"
-#include "Gameplay/T66ArcadeInteractableBase.h"
-#include "Gameplay/T66ArcadeMachineInteractable.h"
 #include "Gameplay/T66CasinoInteractable.h"
 #include "Gameplay/T66VendorInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
@@ -58,15 +47,18 @@
 #include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
+#include "Core/Backend/T66BackendRunSerializer.h"
+#include "Core/Backend/T66BackendRunSummaryParser.h"
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
-#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66GameplayLayout.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66SaveMigration.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66IdolManagerSubsystem.h"
+#include "Core/T66LeaderboardRunSummarySaveGame.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66WeaponManagerSubsystem.h"
 #include "Core/T66LocalizationSubsystem.h"
@@ -75,6 +67,7 @@
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66WeaponAltar.h"
 #include "TimerManager.h"
+#include "Dom/JsonValue.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66MobBase.h"
@@ -106,6 +99,8 @@
 #include "Gameplay/T66BossGroundAOE.h"
 #include "Gameplay/T66Hero1AxeAOEVFXLabActor.h"
 #include "Gameplay/T66HeroPlagueCloud.h"
+#include "PerformanceSystem/T66MobLootStressHarnessActor.h"
+#include "PerformanceSystem/T66OutgoingTravelerStressHarnessActor.h"
 #include "Gameplay/Enemies/T66RangedEnemy.h"
 #include "Gameplay/Traps/T66FloorFlameTrap.h"
 #include "Gameplay/Traps/T66FloorSpikePatchTrap.h"
@@ -114,6 +109,7 @@
 #include "Data/T66DataTypes.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraActor.h"
+#include "Dom/JsonObject.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -153,6 +149,17 @@ namespace
 	const FName T66GameplayAutomationTraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
 	const FName T66GameplayAutomationCameraWallVisualTag(TEXT("T66_CameraOccludingWallVisual"));
 	const FName T66GameplayAutomationTowerCeilingTag(TEXT("T66_Tower_Ceiling"));
+
+	static bool T66IsModeOnlyGameplayAutomationCapture(const FString& CaptureMode)
+	{
+		const FString NormalizedMode = CaptureMode.ToLower();
+		return NormalizedMode == TEXT("bosspartownershipa1")
+			|| NormalizedMode == TEXT("bosspartownershipa2")
+			|| NormalizedMode == TEXT("bossattackdefinitionproof")
+			|| NormalizedMode == TEXT("bosspartmovementb1")
+			|| NormalizedMode == TEXT("bossmovementb2")
+			|| NormalizedMode == TEXT("runsummaryroundtrip");
+	}
 
 	static TAutoConsoleVariable<float> CVarT66AutoCaptureHeroHPOverride(
 		TEXT("T66.AutoCapture.HeroHPOverride"),
@@ -230,18 +237,15 @@ namespace
 			{
 				return nullptr;
 			}
-			AT66VendorBoss* Boss = World->SpawnActor<AT66VendorBoss>(
-				AT66VendorBoss::StaticClass(),
+			AT66BossBase* Boss = World->SpawnActor<AT66BossBase>(
+				AT66BossBase::StaticClass(),
 				FVector(50000.f, 0.f, 100.f),
 				FRotator::ZeroRotator,
 				SpawnParams);
 			if (Boss)
 			{
-				FBossData BossData;
-				BossData.BossID = FName(TEXT("Dungeon_SewerSlimeKing"));
-				BossData.MaxHP = 1000;
-				BossData.BossPartProfile = ET66BossPartProfile::Juggernaut;
-				Boss->InitializeBoss(BossData);
+				Boss->BossID = FName(TEXT("ItemSmokeBoss"));
+				Boss->MaxHP = 1000;
 				Boss->ForceAwaken();
 			}
 			return Boss;
@@ -366,8 +370,8 @@ namespace
 
 		if (RunState)
 		{
-			RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_LootBag")), ET66ItemRarity::White, 40));
-			RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_LootWheel")), ET66ItemRarity::White, 40));
+			RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_InteractableLuck")), ET66ItemRarity::White, 40));
+			RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_ProcLuck")), ET66ItemRarity::White, 40));
 
 			const float LootBagMultiplier = RunState->GetLootBagRewardMultiplier();
 			const float LootWheelMultiplier = RunState->GetLootWheelRewardMultiplier();
@@ -378,15 +382,15 @@ namespace
 			T66AppendSmokeCheck(
 				Checks,
 				bAllPassed,
-				TEXT("Loot Bag improves interactable reward"),
+				TEXT("Interactable Luck improves interactable reward"),
 				bLootBagImproves,
-				FString::Printf(TEXT("LootBagMultiplier=%.3f."), LootBagMultiplier));
+				FString::Printf(TEXT("InteractableLuckMultiplier=%.3f."), LootBagMultiplier));
 			T66AppendSmokeCheck(
 				Checks,
 				bAllPassed,
-				TEXT("Loot Wheel improves interactable reward"),
+				TEXT("Proc Luck retired interactable alias remains compatible"),
 				bLootWheelImproves,
-				FString::Printf(TEXT("LootWheelMultiplier=%.3f."), LootWheelMultiplier));
+				FString::Printf(TEXT("LegacyLootWheelMultiplier=%.3f."), LootWheelMultiplier));
 
 			const int32 InventoryBeforeRetired = RunState->GetInventorySlots().Num();
 			const FName RetiredItems[] =
@@ -394,8 +398,13 @@ namespace
 				FName(TEXT("Item_Accuracy")),
 				FName(TEXT("Item_Cheating")),
 				FName(TEXT("Item_Stealing")),
+				FName(TEXT("Item_LootCrate")),
+				FName(TEXT("Item_TreasureChest")),
+				FName(TEXT("Item_LootBag")),
+				FName(TEXT("Item_LootWheel")),
 				FName(TEXT("Item_HpRegen")),
 				FName(TEXT("Item_LifeSteal")),
+				FName(TEXT("Item_CritDamage")),
 			};
 			for (const FName RetiredItem : RetiredItems)
 			{
@@ -429,9 +438,11 @@ namespace
 		UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
 		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		UT66BuffSubsystem* Buffs = GI ? GI->GetSubsystem<UT66BuffSubsystem>() : nullptr;
+		UT66WeaponManagerSubsystem* WeaponManager = GI ? GI->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr;
 		APawn* PlayerPawn = PC ? PC->GetPawn() : nullptr;
+		AT66HeroBase* HeroPawn = Cast<AT66HeroBase>(PlayerPawn);
 
-		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Context available"), World && GI && RunState && Buffs && PlayerPawn, TEXT("World, GI, RunState, Buffs, and pawn are required."));
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Context available"), World && GI && RunState && Buffs && WeaponManager && PlayerPawn, TEXT("World, GI, RunState, Buffs, WeaponManager, and pawn are required."));
 
 		auto SumDamageSecondaries = [RunState]() -> int32
 		{
@@ -487,6 +498,18 @@ namespace
 			return Mob;
 		};
 
+		auto SpawnSmokeBoss = [&](const FVector& Location) -> AT66BossBase*
+		{
+			AT66BossBase* Boss = World ? World->SpawnActor<AT66BossBase>(AT66BossBase::StaticClass(), Location, FRotator::ZeroRotator, SpawnParams) : nullptr;
+			if (Boss)
+			{
+				Boss->BossID = FName(TEXT("StatSmokeBoss"));
+				Boss->MaxHP = 1000;
+				Boss->ForceAwaken();
+			}
+			return Boss;
+		};
+
 		if (RunState)
 		{
 			RunState->ResetForNewRun();
@@ -508,42 +531,235 @@ namespace
 				FString::Printf(TEXT("AOE damage %d -> %d."), AoeDamageBeforeItem, RunState->GetAoeDmgStat()));
 		}
 
+		if (RunState && GI)
+		{
+			FItemData DeprecatedCritDamageItemData;
+			FItemData HeadshotItemData;
+			const bool bHasDeprecatedCritDamageItem = GI->GetItemData(FName(TEXT("Item_CritDamage")), DeprecatedCritDamageItemData);
+			const bool bHasHeadshotItem = GI->GetItemData(FName(TEXT("Item_Headshot")), HeadshotItemData);
+			const bool bHeadshotItemLive = bHasHeadshotItem
+				&& HeadshotItemData.PrimaryStatType == ET66HeroStatType::Accuracy
+				&& HeadshotItemData.SecondaryStatType == ET66SecondaryStatType::HeadshotChance
+				&& T66IsLiveSecondaryStatType(HeadshotItemData.SecondaryStatType);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Headshot item replaces Crit Damage item"),
+				bHeadshotItemLive && !bHasDeprecatedCritDamageItem,
+				FString::Printf(TEXT("HasHeadshot=%d HeadshotSecondary=%d HasOldCritDamage=%d."), bHasHeadshotItem ? 1 : 0, bHasHeadshotItem ? static_cast<int32>(HeadshotItemData.SecondaryStatType) : -1, bHasDeprecatedCritDamageItem ? 1 : 0));
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Crit damage fixed at 2x and deprecated"),
+				FMath::IsNearlyEqual(RunState->GetCritDamageMultiplier(), 2.0f) && !T66IsLiveSecondaryStatType(ET66SecondaryStatType::CritDamage) && T66IsLiveSecondaryStatType(ET66SecondaryStatType::HeadshotChance),
+				FString::Printf(TEXT("CritMult=%.3f CritDamageLive=%d HeadshotLive=%d."), RunState->GetCritDamageMultiplier(), T66IsLiveSecondaryStatType(ET66SecondaryStatType::CritDamage) ? 1 : 0, T66IsLiveSecondaryStatType(ET66SecondaryStatType::HeadshotChance) ? 1 : 0));
+		}
+
+		if (RunState && Buffs)
+		{
+			RunState->ResetForNewRun();
+			RunState->ClearInventory();
+			const float HeadshotBeforeItem = RunState->GetHeadshotChance01();
+			RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_Headshot")), ET66ItemRarity::White, 99, 0.f, 40));
+			const float HeadshotAfterItem = RunState->GetHeadshotChance01();
+			Buffs->DebugGrantSingleUseBuff(ET66SecondaryStatType::HeadshotChance, 1, true);
+			RunState->DebugActivatePendingSingleUseBuffsForRunStartWithoutConsuming();
+			const float HeadshotAfterDrug = RunState->GetHeadshotChance01();
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Headshot item raises Headshot Chance"),
+				HeadshotAfterItem > HeadshotBeforeItem,
+				FString::Printf(TEXT("HeadshotChance %.3f -> %.3f."), HeadshotBeforeItem, HeadshotAfterItem));
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Headshot drug multiplies Headshot Chance"),
+				HeadshotAfterDrug > HeadshotAfterItem,
+				FString::Printf(TEXT("HeadshotChance %.3f -> %.3f."), HeadshotAfterItem, HeadshotAfterDrug));
+
+			const bool bDeprecatedCritDamageBuffSkipped = !UT66BuffSubsystem::GetAllSingleUseBuffTypes().Contains(ET66SecondaryStatType::CritDamage)
+				&& Buffs->GetOwnedSingleUseBuffCount(ET66SecondaryStatType::CritDamage) == 0
+				&& Buffs->GetSelectedSingleUseBuffSlotAssignedCountForStat(ET66SecondaryStatType::CritDamage) == 0;
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Deprecated CritDamage buff type is skipped"),
+				bDeprecatedCritDamageBuffSkipped,
+				FString::Printf(TEXT("Listed=%d Owned=%d Selected=%d."), UT66BuffSubsystem::GetAllSingleUseBuffTypes().Contains(ET66SecondaryStatType::CritDamage) ? 1 : 0, Buffs->GetOwnedSingleUseBuffCount(ET66SecondaryStatType::CritDamage), Buffs->GetSelectedSingleUseBuffSlotAssignedCountForStat(ET66SecondaryStatType::CritDamage)));
+		}
+
+		if (RunState && World && HeroPawn && HeroPawn->CombatComponent)
+		{
+			RunState->ResetForNewRun();
+			RunState->ClearInventory();
+			const FVector BaseLocation = PlayerPawn->GetActorLocation();
+			AT66MobBase* HeadshotTarget = SpawnLightweightMob(BaseLocation + FVector(250.f, 0.f, 100.f), 0);
+			if (HeadshotTarget)
+			{
+				HeadshotTarget->MaxHP = 100000.f;
+				HeadshotTarget->CurrentHP = 100000.f;
+				for (int32 Index = 0; Index < 24; ++Index)
+				{
+					RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_Headshot")), ET66ItemRarity::White, 99, 0.f, 40));
+				}
+			}
+			const float ForcedHeadshotChance = RunState->GetHeadshotChance01();
+			const float HeadshotStunDuration = RunState->GetHeadshotStunDurationSeconds();
+			const bool bDebugHeadshotApplied = HeadshotTarget
+				&& HeroPawn->CombatComponent->DebugApplyHeadshotStunForAutomation(HeadshotTarget, true);
+			const bool bHeadshotStunned = HeadshotTarget
+				&& ForcedHeadshotChance > 0.f
+				&& bDebugHeadshotApplied
+				&& HeadshotTarget->StunSecondsRemaining > 0.f;
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Headshot Chance can stun a hit target"),
+				bHeadshotStunned,
+				HeadshotTarget ? FString::Printf(TEXT("Chance=%.3f Duration=%.3f Applied=%d StunRemaining=%.3f."), ForcedHeadshotChance, HeadshotStunDuration, bDebugHeadshotApplied ? 1 : 0, HeadshotTarget->StunSecondsRemaining) : TEXT("Headshot target spawn failed."));
+
+			AT66BossBase* HeadshotBossTarget = SpawnSmokeBoss(BaseLocation + FVector(450.f, 0.f, 100.f));
+			const bool bHeadshotBossStunApplied = HeadshotBossTarget
+				&& HeroPawn->CombatComponent->DebugApplyHeadshotStunForAutomation(HeadshotBossTarget, true);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Headshot Chance stuns boss targets"),
+				bHeadshotBossStunApplied,
+				HeadshotBossTarget ? FString::Printf(TEXT("Applied=%d BossAlive=%d Duration=%.3f."), bHeadshotBossStunApplied ? 1 : 0, HeadshotBossTarget->IsAlive() ? 1 : 0, HeadshotStunDuration) : TEXT("Headshot boss target spawn failed."));
+
+		}
+
+		{
+			TSharedPtr<FJsonObject> LegacySummaryJson = MakeShared<FJsonObject>();
+			TSharedPtr<FJsonObject> LegacySecondaryJson = MakeShared<FJsonObject>();
+			LegacySecondaryJson->SetNumberField(TEXT("CritDamage"), 0.42);
+			LegacySummaryJson->SetObjectField(TEXT("secondary_stats"), LegacySecondaryJson);
+			UT66LeaderboardRunSummarySaveGame* ParsedLegacySummary = T66BackendRunSummaryParser::Parse(LegacySummaryJson, GI);
+			const bool bLegacyCritDamageMapsToHeadshot = ParsedLegacySummary
+				&& ParsedLegacySummary->SecondaryStatValues.Contains(ET66SecondaryStatType::HeadshotChance)
+				&& !ParsedLegacySummary->SecondaryStatValues.Contains(ET66SecondaryStatType::CritDamage)
+				&& FMath::IsNearlyEqual(ParsedLegacySummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::HeadshotChance), 0.42f);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Legacy CritDamage backend key maps to Headshot Chance"),
+				bLegacyCritDamageMapsToHeadshot,
+				ParsedLegacySummary ? FString::Printf(TEXT("Headshot=%.3f CritDamagePresent=%d."), ParsedLegacySummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::HeadshotChance), ParsedLegacySummary->SecondaryStatValues.Contains(ET66SecondaryStatType::CritDamage) ? 1 : 0) : TEXT("Parser returned null."));
+
+			TSharedPtr<FJsonObject> LegacyMultiplierSummaryJson = MakeShared<FJsonObject>();
+			TSharedPtr<FJsonObject> LegacyMultiplierSecondaryJson = MakeShared<FJsonObject>();
+			LegacyMultiplierSecondaryJson->SetNumberField(TEXT("CritDamage"), 1.5);
+			LegacyMultiplierSummaryJson->SetObjectField(TEXT("secondary_stats"), LegacyMultiplierSecondaryJson);
+			UT66LeaderboardRunSummarySaveGame* ParsedLegacyMultiplierSummary = T66BackendRunSummaryParser::Parse(LegacyMultiplierSummaryJson, GI);
+			const bool bLegacyCritDamageMultiplierIgnored = ParsedLegacyMultiplierSummary
+				&& !ParsedLegacyMultiplierSummary->SecondaryStatValues.Contains(ET66SecondaryStatType::HeadshotChance)
+				&& !ParsedLegacyMultiplierSummary->SecondaryStatValues.Contains(ET66SecondaryStatType::CritDamage);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Legacy CritDamage multiplier does not become Headshot Chance"),
+				bLegacyCritDamageMultiplierIgnored,
+				ParsedLegacyMultiplierSummary ? FString::Printf(TEXT("HeadshotPresent=%d CritDamagePresent=%d."), ParsedLegacyMultiplierSummary->SecondaryStatValues.Contains(ET66SecondaryStatType::HeadshotChance) ? 1 : 0, ParsedLegacyMultiplierSummary->SecondaryStatValues.Contains(ET66SecondaryStatType::CritDamage) ? 1 : 0) : TEXT("Parser returned null."));
+
+			TSharedPtr<FJsonObject> LegacyBoundarySummaryJson = MakeShared<FJsonObject>();
+			TSharedPtr<FJsonObject> LegacyBoundarySecondaryJson = MakeShared<FJsonObject>();
+			LegacyBoundarySecondaryJson->SetNumberField(TEXT("CritDamage"), 1.0);
+			LegacyBoundarySummaryJson->SetObjectField(TEXT("secondary_stats"), LegacyBoundarySecondaryJson);
+			UT66LeaderboardRunSummarySaveGame* ParsedLegacyBoundarySummary = T66BackendRunSummaryParser::Parse(LegacyBoundarySummaryJson, GI);
+			const bool bLegacyCritDamageBoundaryMapped = ParsedLegacyBoundarySummary
+				&& ParsedLegacyBoundarySummary->SecondaryStatValues.Contains(ET66SecondaryStatType::HeadshotChance)
+				&& !ParsedLegacyBoundarySummary->SecondaryStatValues.Contains(ET66SecondaryStatType::CritDamage)
+				&& FMath::IsNearlyEqual(ParsedLegacyBoundarySummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::HeadshotChance), 1.0f);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Legacy CritDamage 1.0 boundary maps intentionally"),
+				bLegacyCritDamageBoundaryMapped,
+				ParsedLegacyBoundarySummary ? FString::Printf(TEXT("Headshot=%.3f CritDamagePresent=%d."), ParsedLegacyBoundarySummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::HeadshotChance), ParsedLegacyBoundarySummary->SecondaryStatValues.Contains(ET66SecondaryStatType::CritDamage) ? 1 : 0) : TEXT("Parser returned null."));
+
+			UT66LeaderboardRunSummarySaveGame* SerializationSnapshot = NewObject<UT66LeaderboardRunSummarySaveGame>();
+			if (SerializationSnapshot)
+			{
+				SerializationSnapshot->SecondaryStatValues.Add(ET66SecondaryStatType::HeadshotChance, 0.25f);
+				SerializationSnapshot->SecondaryStatValues.Add(ET66SecondaryStatType::CritDamage, 2.0f);
+			}
+			const TSharedPtr<FJsonObject> SerializedRunJson = SerializationSnapshot
+				? T66BackendRunSerializer::BuildRunJsonObject(TEXT("Hero_1"), TEXT("None"), ET66Difficulty::Easy, ET66PartySize::Solo, 1, 0, 0, SerializationSnapshot)
+				: nullptr;
+			const TSharedPtr<FJsonObject>* SerializedSecondaryStats = nullptr;
+			double SerializedHeadshotValue = 0.0;
+			const bool bHeadshotStringSerialized = SerializedRunJson.IsValid()
+				&& SerializedRunJson->TryGetObjectField(TEXT("secondary_stats"), SerializedSecondaryStats)
+				&& SerializedSecondaryStats
+				&& (*SerializedSecondaryStats).IsValid()
+				&& (*SerializedSecondaryStats)->TryGetNumberField(TEXT("HeadshotChance"), SerializedHeadshotValue)
+				&& !(*SerializedSecondaryStats)->HasField(TEXT("CritDamage"))
+				&& !(*SerializedSecondaryStats)->HasField(FString::FromInt(static_cast<int32>(ET66SecondaryStatType::HeadshotChance)))
+				&& FMath::IsNearlyEqual(static_cast<float>(SerializedHeadshotValue), 0.25f);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Headshot Chance serializes by string key"),
+				bHeadshotStringSerialized,
+				SerializedSecondaryStats && (*SerializedSecondaryStats).IsValid()
+					? FString::Printf(TEXT("HasHeadshot=%d HasCritDamage=%d HasOrdinal=%d Value=%.3f."), (*SerializedSecondaryStats)->HasField(TEXT("HeadshotChance")) ? 1 : 0, (*SerializedSecondaryStats)->HasField(TEXT("CritDamage")) ? 1 : 0, (*SerializedSecondaryStats)->HasField(FString::FromInt(static_cast<int32>(ET66SecondaryStatType::HeadshotChance))) ? 1 : 0, static_cast<float>(SerializedHeadshotValue))
+					: TEXT("Serialized secondary_stats object missing."));
+
+			UT66LocalizationSubsystem* Loc = GI ? GI->GetSubsystem<UT66LocalizationSubsystem>() : nullptr;
+			const FString HeadshotLabel = Loc ? Loc->GetText_SecondaryStatName(ET66SecondaryStatType::HeadshotChance).ToString() : FString();
+			const FString DeprecatedCritDamageLabel = Loc ? Loc->GetText_SecondaryStatName(ET66SecondaryStatType::CritDamage).ToString() : FString();
+			const FString DeprecatedCritDamageTooltip = Loc ? Loc->GetText_SecondaryStatDescription(ET66SecondaryStatType::CritDamage).ToString() : FString();
+			const bool bCritDamageUiLabelRetired = Loc
+				&& HeadshotLabel == TEXT("Headshot Chance")
+				&& DeprecatedCritDamageLabel == TEXT("Headshot Chance")
+				&& !DeprecatedCritDamageTooltip.Contains(TEXT("Critical"), ESearchCase::IgnoreCase)
+				&& !DeprecatedCritDamageTooltip.Contains(TEXT("Crit Damage"), ESearchCase::IgnoreCase);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Deprecated CritDamage UI text resolves to Headshot"),
+				bCritDamageUiLabelRetired,
+				Loc ? FString::Printf(TEXT("HeadshotLabel='%s' DeprecatedLabel='%s' DeprecatedTooltip='%s'."), *HeadshotLabel, *DeprecatedCritDamageLabel, *DeprecatedCritDamageTooltip) : TEXT("Localization subsystem missing."));
+		}
+
 		if (RunState && Buffs)
 		{
 			Buffs->DebugSetDiplomaUnlockedSteps(ET66HeroStatType::Damage, 0);
 			RunState->ResetForNewRun();
-			const int32 DamageBeforeDiploma = RunState->GetDamageStat();
-			const int32 DamageSecondaryBeforeDiploma = SumDamageSecondaries();
+			const int32 DamageBeforeRelic = RunState->GetDamageStat();
+			const int32 DamageSecondaryBeforeRelic = SumDamageSecondaries();
 
 			Buffs->DebugSetDiplomaUnlockedSteps(ET66HeroStatType::Damage, 2);
 			RunState->ResetForNewRun();
 			T66AppendSmokeCheck(
 				Checks,
 				bAllPassed,
-				TEXT("Diplomas raise primary stats"),
-				RunState->GetDamageStat() > DamageBeforeDiploma,
-				FString::Printf(TEXT("Damage %d -> %d."), DamageBeforeDiploma, RunState->GetDamageStat()));
+				TEXT("Relics raise primary stats"),
+				RunState->GetDamageStat() > DamageBeforeRelic,
+				FString::Printf(TEXT("Damage %d -> %d."), DamageBeforeRelic, RunState->GetDamageStat()));
 			T66AppendSmokeCheck(
 				Checks,
 				bAllPassed,
-				TEXT("Diplomas propagate to secondary stats"),
-				SumDamageSecondaries() > DamageSecondaryBeforeDiploma,
-				FString::Printf(TEXT("Damage-secondary sum %d -> %d."), DamageSecondaryBeforeDiploma, SumDamageSecondaries()));
+				TEXT("Relics propagate to secondary stats"),
+				SumDamageSecondaries() > DamageSecondaryBeforeRelic,
+				FString::Printf(TEXT("Damage-secondary sum %d -> %d."), DamageSecondaryBeforeRelic, SumDamageSecondaries()));
 		}
 
 		if (RunState && Buffs)
 		{
 			RunState->ResetForNewRun();
-			const float AoeValueBeforeDrug = RunState->GetSecondaryStatValue(ET66SecondaryStatType::AoeDamage);
+			const float AoeValueBeforeSteroid = RunState->GetSecondaryStatValue(ET66SecondaryStatType::AoeDamage);
 			Buffs->DebugGrantSingleUseBuff(ET66SecondaryStatType::AoeDamage, 1, true);
 			RunState->DebugActivatePendingSingleUseBuffsForRunStartWithoutConsuming();
-			const float AoeValueAfterDrug = RunState->GetSecondaryStatValue(ET66SecondaryStatType::AoeDamage);
+			const float AoeValueAfterSteroid = RunState->GetSecondaryStatValue(ET66SecondaryStatType::AoeDamage);
 			T66AppendSmokeCheck(
 				Checks,
 				bAllPassed,
-				TEXT("Selected drugs multiply secondary stats"),
-				AoeValueAfterDrug > AoeValueBeforeDrug,
-				FString::Printf(TEXT("AOE value %.3f -> %.3f."), AoeValueBeforeDrug, AoeValueAfterDrug));
+				TEXT("Selected steroids multiply secondary stats"),
+				AoeValueAfterSteroid > AoeValueBeforeSteroid,
+				FString::Printf(TEXT("AOE value %.3f -> %.3f."), AoeValueBeforeSteroid, AoeValueAfterSteroid));
 		}
 
 		if (RunState)
@@ -633,15 +849,118 @@ namespace
 					Threshold));
 		}
 
-		const FString Json = FString::Printf(
-			TEXT("{\n  \"ok\": %s,\n  \"checks\": [\n%s\n  ]\n}\n"),
-			bAllPassed ? TEXT("true") : TEXT("false"),
-			*FString::Join(Checks, TEXT(",\n")));
+		auto FinishStatPipelineSmoke = [OutputPath](const bool bFinalAllPassed, const TArray<FString>& FinalChecks)
+		{
+			const FString Json = FString::Printf(
+				TEXT("{\n  \"ok\": %s,\n  \"checks\": [\n%s\n  ]\n}\n"),
+				bFinalAllPassed ? TEXT("true") : TEXT("false"),
+				*FString::Join(FinalChecks, TEXT(",\n")));
 
-		IFileManager::Get().MakeDirectory(*FPaths::GetPath(OutputPath), true);
-		const bool bSaved = FFileHelper::SaveStringToFile(Json, *OutputPath);
-		UE_LOG(LogTemp, Display, TEXT("[StatPipelineSmoke] ok=%d saved=%d output=%s"), bAllPassed ? 1 : 0, bSaved ? 1 : 0, *OutputPath);
-		FPlatformMisc::RequestExitWithStatus(false, (bAllPassed && bSaved) ? 0 : 71, TEXT("T66StatPipelineSmokeComplete"));
+			IFileManager::Get().MakeDirectory(*FPaths::GetPath(OutputPath), true);
+			const bool bSaved = FFileHelper::SaveStringToFile(Json, *OutputPath);
+			UE_LOG(LogTemp, Display, TEXT("[StatPipelineSmoke] ok=%d saved=%d output=%s"), bFinalAllPassed ? 1 : 0, bSaved ? 1 : 0, *OutputPath);
+			FPlatformMisc::RequestExitWithStatus(false, (bFinalAllPassed && bSaved) ? 0 : 71, TEXT("T66StatPipelineSmokeComplete"));
+		};
+
+		auto AppendLiveAutoAttackCheck = [](TArray<FString>& InOutChecks, bool& bInOutAllPassed, const TWeakObjectPtr<AT66MobBase>& TargetWeak, const ET66AttackCategory Category, const float Chance)
+		{
+			AT66MobBase* Target = TargetWeak.Get();
+			T66AppendSmokeCheck(
+				InOutChecks,
+				bInOutAllPassed,
+				TEXT("Live auto-attack path rolls Headshot stun"),
+				Target && Chance >= 0.95f && Target->StunSecondsRemaining > 0.f,
+				Target ? FString::Printf(TEXT("Category=%d Chance=%.3f StunRemaining=%.3f HP=%.1f."), static_cast<int32>(Category), Chance, Target->StunSecondsRemaining, Target->CurrentHP) : TEXT("Live auto-attack target missing before delayed proof completed."));
+		};
+
+		TWeakObjectPtr<AT66MobBase> LiveAutoAttackHeadshotTarget;
+		float LiveAutoAttackHeadshotChance = 0.f;
+		ET66AttackCategory AutoAttackProofCategory = ET66AttackCategory::Pierce;
+		float LiveAutoAttackProofDelaySeconds = 0.f;
+
+		if (RunState && World && HeroPawn && HeroPawn->CombatComponent && WeaponManager && GI)
+		{
+			RunState->ResetForNewRun();
+			RunState->ClearInventory();
+			const FVector BaseLocation = PlayerPawn ? PlayerPawn->GetActorLocation() : FVector::ZeroVector;
+			AT66MobBase* SpawnedLiveTarget = SpawnLightweightMob(BaseLocation + FVector(300.f, 120.f, 100.f), 0);
+			LiveAutoAttackHeadshotTarget = SpawnedLiveTarget;
+			if (SpawnedLiveTarget)
+			{
+				SpawnedLiveTarget->MaxHP = 100000.f;
+				SpawnedLiveTarget->CurrentHP = 100000.f;
+			}
+			for (int32 Index = 0; Index < 120 && RunState->GetHeadshotChance01() < 0.95f; ++Index)
+			{
+				RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_Headshot")), ET66ItemRarity::White, 99, 0.f, 40));
+			}
+			RunState->DebugAddPersistentSecondaryStatBonusTenths(
+				ET66SecondaryStatType::HeadshotChance,
+				UT66RunStateSubsystem::MaxHeroStatValue * UT66RunStateSubsystem::HeroStatTenthsScale);
+			if (Buffs)
+			{
+				Buffs->DebugGrantSingleUseBuff(ET66SecondaryStatType::HeadshotChance, UT66BuffSubsystem::MaxSelectedSingleUseBuffs, true);
+				RunState->DebugActivatePendingSingleUseBuffsForRunStartWithoutConsuming();
+			}
+			LiveAutoAttackHeadshotChance = RunState->GetHeadshotChance01();
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Headshot Chance clamps to proc cap"),
+				FMath::IsNearlyEqual(LiveAutoAttackHeadshotChance, 0.95f),
+				FString::Printf(TEXT("HeadshotChance=%.3f after capped inventory, persistent secondary bonus, and selected steroid multiplier."), LiveAutoAttackHeadshotChance));
+			const FName AutoAttackProofHeroID = !HeroPawn->HeroID.IsNone() ? HeroPawn->HeroID : FName(TEXT("Hero_1"));
+			FHeroData AutoAttackProofHeroData;
+			if (GI->GetHeroData(AutoAttackProofHeroID, AutoAttackProofHeroData))
+			{
+				AutoAttackProofCategory = AutoAttackProofHeroData.PrimaryCategory;
+				LiveAutoAttackProofDelaySeconds = (AutoAttackProofCategory == ET66AttackCategory::AOE && AutoAttackProofHeroData.AoeDelay > 0.f)
+					? FMath::Clamp(AutoAttackProofHeroData.AoeDelay + 0.25f, 0.25f, 2.0f)
+					: 0.f;
+			}
+			const FName AutoAttackProofWeaponID = UT66WeaponManagerSubsystem::MakeWeaponID(AutoAttackProofHeroID, ET66WeaponRarity::Black, AutoAttackProofCategory);
+			const bool bSelectedAutoAttackProofWeapon = WeaponManager->SelectWeapon(AutoAttackProofWeaponID);
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Auto-attack proof weapon selected"),
+				bSelectedAutoAttackProofWeapon,
+				FString::Printf(TEXT("WeaponID=%s Selected=%d."), *AutoAttackProofWeaponID.ToString(), bSelectedAutoAttackProofWeapon ? 1 : 0));
+			if (SpawnedLiveTarget)
+			{
+				HeroPawn->CombatComponent->SetAutoAttackSuppressed(false);
+				HeroPawn->CombatComponent->SetLockedTarget(SpawnedLiveTarget);
+				HeroPawn->CombatComponent->PerformAutomationAutoAttackNow();
+				HeroPawn->CombatComponent->ClearLockedTarget();
+			}
+		}
+		else
+		{
+			T66AppendSmokeCheck(
+				Checks,
+				bAllPassed,
+				TEXT("Live auto-attack path rolls Headshot stun"),
+				false,
+				TEXT("World, hero, combat component, weapon manager, run state, or game instance missing."));
+		}
+
+		if (LiveAutoAttackProofDelaySeconds > KINDA_SMALL_NUMBER && World)
+		{
+			FTimerHandle DelayedSmokeFinishHandle;
+			World->GetTimerManager().SetTimer(
+				DelayedSmokeFinishHandle,
+				[Checks, bAllPassed, FinishStatPipelineSmoke, AppendLiveAutoAttackCheck, LiveAutoAttackHeadshotTarget, LiveAutoAttackHeadshotChance, AutoAttackProofCategory]() mutable
+				{
+					AppendLiveAutoAttackCheck(Checks, bAllPassed, LiveAutoAttackHeadshotTarget, AutoAttackProofCategory, LiveAutoAttackHeadshotChance);
+					FinishStatPipelineSmoke(bAllPassed, Checks);
+				},
+				LiveAutoAttackProofDelaySeconds,
+				false);
+			return;
+		}
+
+		AppendLiveAutoAttackCheck(Checks, bAllPassed, LiveAutoAttackHeadshotTarget, AutoAttackProofCategory, LiveAutoAttackHeadshotChance);
+		FinishStatPipelineSmoke(bAllPassed, Checks);
 	}
 #endif
 
@@ -857,16 +1176,32 @@ void AT66PlayerController::QueueGameplayAutomationScreenshotIfRequested()
 	FString RequestedWidgetDumpSpec;
 	const bool bWidgetDumpRequested = FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpWidget="), RequestedWidgetDumpSpec);
 
+	FString RequestedGameplayAutomationCaptureMode;
+	const bool bGameplayAutomationCaptureModeRequested =
+		FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoCapture="), RequestedGameplayAutomationCaptureMode);
+	const bool bModeOnlyAutomationRequested =
+		bGameplayAutomationCaptureModeRequested
+		&& T66IsModeOnlyGameplayAutomationCapture(RequestedGameplayAutomationCaptureMode);
+
 	bool bItemTaxonomySmokeRequested = false;
 	FString RequestedItemTaxonomySmokePath;
 	bool bStatPipelineSmokeRequested = false;
 	FString RequestedStatPipelineSmokePath;
+	bool bEndgameSaintSmokeRequested = false;
+	FString RequestedEndgameSaintSmokePath;
 #if !UE_BUILD_SHIPPING
 	bItemTaxonomySmokeRequested = FParse::Value(FCommandLine::Get(), TEXT("T66ItemTaxonomySmoke="), RequestedItemTaxonomySmokePath);
 	bStatPipelineSmokeRequested = FParse::Value(FCommandLine::Get(), TEXT("T66StatPipelineSmoke="), RequestedStatPipelineSmokePath);
+	bEndgameSaintSmokeRequested = FParse::Value(FCommandLine::Get(), TEXT("T66EndgameSaintSmoke="), RequestedEndgameSaintSmokePath);
 #endif
 
-	if (!bScreenshotRequested && !bScreenshotSequenceRequested && !bWidgetDumpRequested && !bItemTaxonomySmokeRequested && !bStatPipelineSmokeRequested)
+	if (!bScreenshotRequested
+		&& !bScreenshotSequenceRequested
+		&& !bWidgetDumpRequested
+		&& !bModeOnlyAutomationRequested
+		&& !bItemTaxonomySmokeRequested
+		&& !bStatPipelineSmokeRequested
+		&& !bEndgameSaintSmokeRequested)
 	{
 		return;
 	}
@@ -899,9 +1234,26 @@ void AT66PlayerController::QueueGameplayAutomationScreenshotIfRequested()
 		});
 		GetWorldTimerManager().SetTimer(StatPipelineSmokeTimerHandle, SmokeDelegate, 1.0f, false);
 	}
+
+	if (bEndgameSaintSmokeRequested)
+	{
+		const FString SmokeOutputPath = FPaths::ConvertRelativePathToFull(RequestedEndgameSaintSmokePath);
+		FTimerHandle EndgameSaintSmokeTimerHandle;
+		FTimerDelegate SmokeDelegate = FTimerDelegate::CreateLambda([WeakThis = TWeakObjectPtr<AT66PlayerController>(this), SmokeOutputPath]()
+		{
+			if (AT66PlayerController* StrongThis = WeakThis.Get())
+			{
+				UWorld* SmokeWorld = StrongThis->GetWorld();
+				AT66GameMode* SmokeGameMode = SmokeWorld ? Cast<AT66GameMode>(SmokeWorld->GetAuthGameMode()) : nullptr;
+				const bool bPass = SmokeGameMode && SmokeGameMode->RunEndgameSaintSmoke(SmokeWorld, SmokeOutputPath);
+				FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 72, TEXT("T66EndgameSaintSmokeComplete"));
+			}
+		});
+		GetWorldTimerManager().SetTimer(EndgameSaintSmokeTimerHandle, SmokeDelegate, 1.0f, false);
+	}
 #endif
 
-	if (!bScreenshotRequested && !bScreenshotSequenceRequested && !bWidgetDumpRequested)
+	if (!bScreenshotRequested && !bScreenshotSequenceRequested && !bWidgetDumpRequested && !bModeOnlyAutomationRequested)
 	{
 		return;
 	}
@@ -917,6 +1269,9 @@ void AT66PlayerController::QueueGameplayAutomationScreenshotIfRequested()
 	GameplayAutomationScreenshotDelaySeconds = 4.0f;
 	GameplayAutomationWidgetDumpDelaySeconds = 4.0f;
 	GameplayAutomationPostCaptureScreenshotDelaySeconds = 0.5f;
+	GameplayAutomationCaptureMode = bGameplayAutomationCaptureModeRequested
+		? RequestedGameplayAutomationCaptureMode
+		: TEXT("HUD");
 	if (bScreenshotRequested)
 	{
 		GameplayAutomationScreenshotPath = FPaths::ConvertRelativePathToFull(RequestedScreenshotPath);
@@ -965,8 +1320,6 @@ void AT66PlayerController::QueueGameplayAutomationScreenshotIfRequested()
 		FParse::Value(FCommandLine::Get(), TEXT("T66AutoDumpWidgetDelay="), GameplayAutomationWidgetDumpDelaySeconds);
 	}
 
-	GameplayAutomationCaptureMode = TEXT("HUD");
-	FParse::Value(FCommandLine::Get(), TEXT("T66GameplayAutoCapture="), GameplayAutomationCaptureMode);
 	bGameplayAutomationKeepAliveAfterScreenshot =
 		FParse::Param(FCommandLine::Get(), TEXT("T66GameplayKeepAliveAfterScreenshot"))
 		|| FParse::Param(FCommandLine::Get(), TEXT("T66KeepAliveAfterScreenshot"));
@@ -997,12 +1350,20 @@ void AT66PlayerController::HandleGameplayAutomationPrepare()
 {
 	if (GameplayAutomationScreenshotPath.IsEmpty()
 		&& GameplayAutomationScreenshotSequenceDir.IsEmpty()
-		&& GameplayAutomationWidgetDumpPath.IsEmpty())
+		&& GameplayAutomationWidgetDumpPath.IsEmpty()
+		&& !T66IsModeOnlyGameplayAutomationCapture(GameplayAutomationCaptureMode))
 	{
 		return;
 	}
 
 	ApplyGameplayAutomationCaptureMode();
+
+	if (GameplayAutomationScreenshotPath.IsEmpty()
+		&& GameplayAutomationScreenshotSequenceDir.IsEmpty()
+		&& GameplayAutomationWidgetDumpPath.IsEmpty())
+	{
+		return;
+	}
 
 	if (GetWorld())
 	{
@@ -3325,32 +3686,73 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 					It->Destroy();
 				}
 
-				const FName HeroID = HeroPawn->HeroID.IsNone() ? FName(TEXT("Hero_1")) : HeroPawn->HeroID;
+				FName HeroID = HeroPawn->HeroID.IsNone() ? FName(TEXT("Hero_1")) : HeroPawn->HeroID;
 				ET66AttackCategory ProofWeaponCategory = ET66AttackCategory::AOE;
 				if (bPierceVFXBindingProofMode)
 				{
+					HeroID = FName(TEXT("Hero_2"));
 					ProofWeaponCategory = ET66AttackCategory::Pierce;
 				}
 				else if (bBounceVFXBindingProofMode)
 				{
+					HeroID = FName(TEXT("Hero_4"));
 					ProofWeaponCategory = ET66AttackCategory::Bounce;
 				}
 				else if (bDotVFXBindingProofMode)
 				{
+					HeroID = FName(TEXT("Hero_5"));
 					ProofWeaponCategory = ET66AttackCategory::DOT;
 				}
-				const FName ProofWeaponID = UT66WeaponManagerSubsystem::MakeWeaponID(HeroID, ET66WeaponRarity::Black, ProofWeaponCategory);
+				if (HeroPawn->HeroID != HeroID)
+				{
+					HeroPawn->HeroID = HeroID;
+				}
+				FName ProofWeaponID = UT66WeaponManagerSubsystem::MakeWeaponID(HeroID, ET66WeaponRarity::Black, ProofWeaponCategory);
+				FString ProofWeaponOverrideString;
+				const bool bProofWeaponOverride = FParse::Value(FCommandLine::Get(), TEXT("T66Hero1AxeAOEProofWeaponID="), ProofWeaponOverrideString);
+				if (bProofWeaponOverride)
+				{
+					ProofWeaponID = FName(*ProofWeaponOverrideString.TrimStartAndEnd());
+				}
+				FWeaponData ProofWeaponData;
+				UT66GameInstance* ProofGameInstance = Cast<UT66GameInstance>(GetGameInstance());
+				const bool bHaveProofWeaponData = ProofGameInstance
+					? ProofGameInstance->GetWeaponData(ProofWeaponID, ProofWeaponData)
+					: false;
+				if (bHaveProofWeaponData)
+				{
+					if (!ProofWeaponData.HeroID.IsNone())
+					{
+						HeroID = ProofWeaponData.HeroID;
+					}
+					ProofWeaponCategory = ProofWeaponData.Branch;
+					if (HeroPawn->HeroID != HeroID)
+					{
+						HeroPawn->HeroID = HeroID;
+					}
+				}
 				bool bSelectedProofWeapon = false;
 				if (UT66WeaponManagerSubsystem* WeaponManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr)
 				{
-					WeaponManager->BuildWeaponOffers(HeroID, ET66WeaponRarity::Black);
+					if (bProofWeaponOverride)
+					{
+						WeaponManager->ResetForStageWeaponSelection(HeroID);
+					}
+					else
+					{
+						WeaponManager->BuildWeaponOffers(HeroID, ET66WeaponRarity::Black);
+					}
 					bSelectedProofWeapon = WeaponManager->SelectWeapon(ProofWeaponID);
 				}
-				UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] EquippedProofWeapon=%s Success=%d HeroID=%s AttackCategory=%s"),
+				UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEHitboxProof] EquippedProofWeapon=%s Success=%d HeroID=%s AttackCategory=%s PatternID=%s ProjectileCount=%d SpreadAngleDegrees=%.2f Override=%d"),
 					*ProofWeaponID.ToString(),
 					bSelectedProofWeapon ? 1 : 0,
 					*HeroID.ToString(),
-					*UEnum::GetValueAsString(ProofWeaponCategory));
+					*UEnum::GetValueAsString(ProofWeaponCategory),
+					bHaveProofWeaponData ? *ProofWeaponData.AttackPatternID.ToString() : TEXT("None"),
+					bHaveProofWeaponData ? ProofWeaponData.ProjectileCount : 0,
+					bHaveProofWeaponData ? ProofWeaponData.SpreadAngleDegrees : 0.f,
+					bProofWeaponOverride ? 1 : 0);
 
 				FName ImpactProofIdolID = NAME_None;
 				TArray<FName> PreProofEquippedIdols;
@@ -3360,17 +3762,17 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				TWeakObjectPtr<UT66IdolManagerSubsystem> WeakProofIdolManager;
 				if (bWaterIdolImpactProofMode)
 				{
-					FString ProofIdolString(TEXT("Idol_Water"));
+					FString ProofIdolString(TEXT("Idol_Ice_AOE"));
 					FParse::Value(FCommandLine::Get(), TEXT("T66Hero1AxeAOEProofIdol="), ProofIdolString);
 					ImpactProofIdolID = FName(*ProofIdolString.TrimStartAndEnd());
 					// Centralized in T66CombatShared so the proof-idol allowlist cannot drift
-					// from the runtime impact-presentation lane. Members: Idol_Water (AOE,
-					// preserved reference), Idol_Light (Pierce), Idol_Electric (Bounce),
-					// Idol_Poison (DOT), plus Idol_Earth (neutral/alternate control).
+					// from the runtime impact-presentation lane. Members: Idol_Ice_AOE (AOE,
+					// preserved reference), Idol_Electricity_Pierce (Pierce), Idol_Electricity_Bounce (Bounce),
+					// Idol_Nature_DOT (DOT), plus Idol_Nature_AOE (neutral/alternate control).
 					if (!T66CombatShared::GetSupportedProofIdols().Contains(ImpactProofIdolID))
 					{
-						UE_LOG(LogTemp, Warning, TEXT("[Hero1AxeAOEIdolImpactProof] Unsupported proof idol %s; using Idol_Water."), *ImpactProofIdolID.ToString());
-						ImpactProofIdolID = FName(TEXT("Idol_Water"));
+						UE_LOG(LogTemp, Warning, TEXT("[Hero1AxeAOEIdolImpactProof] Unsupported proof idol %s; using Idol_Ice_AOE."), *ImpactProofIdolID.ToString());
+						ImpactProofIdolID = FName(TEXT("Idol_Ice_AOE"));
 					}
 
 					if (UT66IdolManagerSubsystem* IdolManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr)
@@ -3506,9 +3908,10 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				const FVector PrimaryLocation = HeroLocation + Forward * 360.0f;
 				// Category-native idol proof selectors. The AOE weapon is always the upstream
 				// driver; only the equipped proof idol changes the downstream category behaviour.
-				const bool bIdolPierceProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Light"));
-				const bool bIdolBounceProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Electric"));
-				const bool bIdolDotProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Poison"));
+				const bool bIdolPierceProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Electricity_Pierce"));
+				const bool bIdolBounceProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Electricity_Bounce"));
+				const bool bIdolDotProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Nature_DOT"));
+				const bool bWeaponPatternProofMode = FParse::Param(FCommandLine::Get(), TEXT("T66Hero1WeaponPatternProof"));
 				struct FHitboxProofTargetSpec
 				{
 					const TCHAR* Label = TEXT("");
@@ -3516,7 +3919,13 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 					bool bExpectedHit = false;
 				};
 				TArray<FHitboxProofTargetSpec> TargetSpecs;
-				if (bPierceVFXBindingProofMode)
+				if (bWeaponPatternProofMode)
+				{
+					TargetSpecs = {
+						{ TEXT("Primary"), FVector::ZeroVector, true },
+					};
+				}
+				else if (bPierceVFXBindingProofMode)
 				{
 					TargetSpecs = {
 						{ TEXT("Primary"), FVector::ZeroVector, true },
@@ -3554,20 +3963,65 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 						{ TEXT("OutOfRangeSide"), Forward * 4200.0f + Right * 4200.0f, false },
 					};
 				}
-				else if (bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Water")))
+				else if (bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Ice_AOE")))
 				{
+					FIdolData ProofIdolData;
+					const bool bHaveProofIdolData = ProofGameInstance
+						? ProofGameInstance->GetIdolData(ImpactProofIdolID, ProofIdolData)
+						: false;
+					FHeroData ProofHeroData;
+					const bool bHaveProofHeroData = ProofGameInstance
+						? ProofGameInstance->GetHeroData(HeroID, ProofHeroData)
+						: false;
+					const float AuthoredIdolRadius = bHaveProofIdolData
+						? FMath::Max(1.0f, ProofIdolData.AoeRadius)
+						: 300.0f;
+					const float BaseAoeRadius = bHaveProofHeroData && ProofHeroData.AoeRadius > KINDA_SMALL_NUMBER
+						? ProofHeroData.AoeRadius
+						: 300.0f;
+					const float WeaponScaleMultiplier = bHaveProofWeaponData
+						? FMath::Max(0.1f, ProofWeaponData.AttackScaleMultiplier)
+						: 1.0f;
+					const float WeaponBonusAoeRadius = bHaveProofWeaponData
+						? FMath::Max(0.0f, ProofWeaponData.BonusAoeRadius)
+						: 0.0f;
+					const float EffectiveWeaponAoeRadius = FMath::Max(1.0f, BaseAoeRadius * WeaponScaleMultiplier + WeaponBonusAoeRadius);
+					const float EffectiveWeaponInnerRadius = bHaveProofWeaponData
+						? EffectiveWeaponAoeRadius * FMath::Clamp(ProofWeaponData.AoeInnerRadiusRatio, 0.0f, 0.95f)
+						: 0.0f;
+					const float IdolImpactForwardOffset =
+						EffectiveWeaponInnerRadius > KINDA_SMALL_NUMBER && EffectiveWeaponAoeRadius > EffectiveWeaponInnerRadius
+							? (EffectiveWeaponInnerRadius + EffectiveWeaponAoeRadius) * 0.5f
+							: 0.0f;
+					const float AuthoredRadiusInsideForwardOffset = FMath::Max(40.0f, IdolImpactForwardOffset - AuthoredIdolRadius + 80.0f);
+					const float AuthoredRadiusInsideSideOffset = FMath::Min(
+						FMath::Max(40.0f, EffectiveWeaponInnerRadius * 0.75f),
+						FMath::Max(40.0f, AuthoredIdolRadius * 0.6f));
+					const float AuthoredRadiusOutsideOffset = FMath::Max(AuthoredIdolRadius + 80.0f, EffectiveWeaponAoeRadius + 80.0f);
+					UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEIdolImpactProof] AuthoredIdolRadius SourceID=%s AoeRadius=%.2f DataResolved=%d WeaponImpactForwardOffset=%.2f BaseAoeRadius=%.2f WeaponAoeRadius=%.2f WeaponInnerRadius=%.2f InsideForwardOffset=%.2f InsideSideOffset=%.2f OutsideSideOffset=%.2f"),
+						*ImpactProofIdolID.ToString(),
+						AuthoredIdolRadius,
+						bHaveProofIdolData ? 1 : 0,
+						IdolImpactForwardOffset,
+						BaseAoeRadius,
+						EffectiveWeaponAoeRadius,
+						EffectiveWeaponInnerRadius,
+						AuthoredRadiusInsideForwardOffset,
+						AuthoredRadiusInsideSideOffset,
+						AuthoredRadiusOutsideOffset);
 					TargetSpecs = {
 						{ TEXT("Primary"), FVector::ZeroVector, true },
 						{ TEXT("WaterOnlyInnerHollow"), Forward * 120.0f, true },
 						{ TEXT("WeaponOnlyOuterBand"), Forward * 320.0f, true },
 						{ TEXT("InsideBandSide"), Forward * 270.0f + Right * 170.0f, true },
-						{ TEXT("WaterOnlyOuterRadius"), Forward * 520.0f, true },
+						{ TEXT("WaterAuthoredRadiusInside"), Forward * AuthoredRadiusInsideForwardOffset + Right * AuthoredRadiusInsideSideOffset, true },
+						{ TEXT("WaterAuthoredRadiusOutside"), Forward * IdolImpactForwardOffset + Right * AuthoredRadiusOutsideOffset, false },
 						{ TEXT("OutsideAngleEdge"), -Forward * 30.0f + Right * 360.0f, false },
 						{ TEXT("OutsideBehind"), -Forward * 380.0f, false },
 						{ TEXT("OutsideAllRadius"), Forward * 760.0f, false },
 					};
 				}
-				else if (bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Earth")))
+				else if (bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Nature_AOE")))
 				{
 					TargetSpecs = {
 						{ TEXT("Primary"), FVector::ZeroVector, true },
@@ -3582,7 +4036,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				}
 				else if (bIdolPierceProof)
 				{
-					// Pierce idol (Idol_Light, property=1 => 2 line targets) read off the AOE
+					// Pierce idol (Idol_Electricity_Pierce, property=1 => 2 line targets) read off the AOE
 					// impact point along forward: primary + one in-line second target are pierced.
 					// PierceInLineSecond sits beyond the parent AOE outer radius so only the pierce
 					// line can reach it (isolates pierce reach from the parent weapon AOE). All
@@ -3598,7 +4052,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				}
 				else if (bIdolBounceProof)
 				{
-					// Bounce idol (Idol_Electric, property=1 => 2 chain links) read off the AOE
+					// Bounce idol (Idol_Electricity_Bounce, property=1 => 2 chain links) read off the AOE
 					// impact point: primary + one nearby chain link; the remaining controls sit far
 					// out of chain range so the capture cannot read a third link.
 					TargetSpecs = {
@@ -3611,7 +4065,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				}
 				else if (bIdolDotProof)
 				{
-					// DOT idol (Idol_Poison) is single-target: the idol owns ticking damage on the
+					// DOT idol (Idol_Nature_DOT) is single-target: the idol owns ticking damage on the
 					// AOE impact primary. Out-of-range controls stay hidden and unhit so the capture
 					// cannot read the DOT as a multi-target lane.
 					TargetSpecs = {
@@ -4364,6 +4818,320 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		return;
 	}
 
+	if (Mode == TEXT("runsummaryroundtrip"))
+	{
+		FString OutputPath;
+		FParse::Value(FCommandLine::Get(), TEXT("T66RunSummaryRoundTripProof="), OutputPath);
+		if (OutputPath.IsEmpty())
+		{
+			OutputPath = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("Automation"), TEXT("run_summary_roundtrip.json"));
+		}
+
+		TArray<FString> Checks;
+		bool bAllPassed = true;
+		const FString SlotName(TEXT("T66_RunSummaryRoundTripProof"));
+		UGameplayStatics::DeleteGameInSlot(SlotName, 0);
+
+		UT66LeaderboardRunSummarySaveGame* SourceSummary = NewObject<UT66LeaderboardRunSummarySaveGame>(this);
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Source summary allocated"), SourceSummary != nullptr, SourceSummary ? TEXT("Fresh summary object created.") : TEXT("NewObject returned null."));
+		if (SourceSummary)
+		{
+			SourceSummary->SchemaVersion = T66CurrentRunSummarySchemaVersion;
+			SourceSummary->HeroID = FName(TEXT("Hero_1"));
+			SourceSummary->CompanionID = FName(TEXT("Companion_1"));
+			SourceSummary->Difficulty = ET66Difficulty::Easy;
+			SourceSummary->PartySize = ET66PartySize::Solo;
+			SourceSummary->StageReached = 4;
+			SourceSummary->Score = 12345;
+			SourceSummary->RunDurationSeconds = 321.f;
+			SourceSummary->DamageStat = 11;
+			SourceSummary->AttackSpeedStat = 12;
+			SourceSummary->AttackScaleStat = 13;
+			SourceSummary->AccuracyStat = 14;
+			SourceSummary->ArmorStat = 15;
+			SourceSummary->EvasionStat = 16;
+			SourceSummary->LuckStat = 17;
+			SourceSummary->SpeedStat = 18;
+			SourceSummary->SecondaryStatValues.Add(ET66SecondaryStatType::FirePower, 4.25f);
+			SourceSummary->SecondaryStatValues.Add(ET66SecondaryStatType::IcePower, 3.5f);
+			SourceSummary->SecondaryStatValues.Add(ET66SecondaryStatType::ElectricityPower, 2.75f);
+			SourceSummary->SecondaryStatValues.Add(ET66SecondaryStatType::NaturePower, 1.5f);
+			SourceSummary->EquippedIdols = { FName(TEXT("Idol_Fire_AOE")), FName(TEXT("Idol_Ice_Pierce")), FName(TEXT("Idol_Electricity_Bounce")), FName(TEXT("Idol_Nature_DOT")) };
+			SourceSummary->EquippedIdolTiers = { 1, 2, 3, 4 };
+			SourceSummary->EquippedIdolElements = { ET66IdolElement::Fire, ET66IdolElement::Ice, ET66IdolElement::Electricity, ET66IdolElement::Nature };
+			SourceSummary->EquippedIdolCategories = { ET66AttackCategory::AOE, ET66AttackCategory::Pierce, ET66AttackCategory::Bounce, ET66AttackCategory::DOT };
+			SourceSummary->InventorySlots = {
+				FT66InventorySlot(FName(TEXT("Item_FirePower_Black")), ET66ItemRarity::Black, 1, 0.f, 0, 2101),
+				FT66InventorySlot(FName(TEXT("Item_IcePower_Red")), ET66ItemRarity::Red, 3, 0.f, 0, 2102),
+				FT66InventorySlot(FName(TEXT("Item_ElectricityPower_Yellow")), ET66ItemRarity::Yellow, 9, 0.f, 0, 2103),
+				FT66InventorySlot(FName(TEXT("Item_NaturePower_White")), ET66ItemRarity::White, 27, 0.f, 0, 2104)
+			};
+			for (const FT66InventorySlot& Slot : SourceSummary->InventorySlots)
+			{
+				SourceSummary->Inventory.Add(Slot.ItemTemplateID);
+			}
+			SourceSummary->NoIdolSelectionStacks = 2;
+			SourceSummary->NoIdolPrimaryStatBonuses.DamageTenths = 20;
+			SourceSummary->NoIdolPrimaryStatBonuses.AttackSpeedTenths = 20;
+			SourceSummary->NoIdolPrimaryStatBonuses.AttackScaleTenths = 20;
+			SourceSummary->MobLootDropsCollectedThisRun = 7;
+			SourceSummary->MobLootQuantityCollectedThisRun = 42;
+			SourceSummary->MobLootGoldValueCollectedThisRun = 42;
+			SourceSummary->MobLootQuantityCollectedByPlayerThisRun = 25;
+			SourceSummary->MobLootQuantityCollectedByPetThisRun = 17;
+			SourceSummary->MobLootDropsCollectedByPetThisRun = 3;
+			SourceSummary->MobLootQuantitySoldThisRun = 30;
+			SourceSummary->MobLootSaleGoldThisRun = 30;
+			SourceSummary->MobLootRemainingStack = 12;
+
+			FT66AntiCheatGamblerGameSummary& GamblerSummary = SourceSummary->GamblerOutcomeSummaries.AddDefaulted_GetRef();
+			GamblerSummary.GameType = ET66AntiCheatGamblerGameType::CoinFlip;
+			GamblerSummary.Rounds = 4;
+			GamblerSummary.Wins = 2;
+			GamblerSummary.Losses = 2;
+			GamblerSummary.TotalBetGold = 40;
+			GamblerSummary.TotalPayoutGold = 55;
+			SourceSummary->AntiCheatGamblerSummaries = SourceSummary->GamblerOutcomeSummaries;
+			FT66AntiCheatGamblerEvent& GamblerEvent = SourceSummary->GamblerOutcomeEvents.AddDefaulted_GetRef();
+			GamblerEvent.GameType = ET66AntiCheatGamblerGameType::CoinFlip;
+			GamblerEvent.TimeSeconds = 12.5f;
+			GamblerEvent.BetGold = 10;
+			GamblerEvent.PayoutGold = 20;
+			GamblerEvent.bWin = true;
+			GamblerEvent.OutcomeExpectedChance01 = 0.2f;
+			GamblerEvent.ActionSequence = TEXT("proof");
+			SourceSummary->AntiCheatGamblerEvents = SourceSummary->GamblerOutcomeEvents;
+
+			SourceSummary->CurrentGold = 100;
+			SourceSummary->CurrentDebt = 5;
+			SourceSummary->InventorySellValueTotal = 80;
+			SourceSummary->NetWorth = 175;
+			SourceSummary->ActiveVendorTokenStacks = 16;
+			SourceSummary->CurrentSellFraction = 1.0f;
+			SourceSummary->ShopStockCount = 4;
+			SourceSummary->BuybackPoolSize = 2;
+			SourceSummary->EquippedWeaponID = FName(TEXT("Weapon_Hero_1_Red_AOE"));
+			SourceSummary->EquippedWeaponBranch = ET66AttackCategory::AOE;
+			SourceSummary->EquippedWeaponRarity = ET66WeaponRarity::Red;
+			SourceSummary->EquippedWeaponAttackPatternID = FName(TEXT("TwinAxe"));
+			SourceSummary->EquippedWeaponProjectileCount = 2;
+			SourceSummary->EquippedWeaponSpreadAngleDegrees = 22.5f;
+			SourceSummary->ActivePetID = FName(TEXT("Pet_Dungeon_Slime"));
+			SourceSummary->ActivePetSkinID = FName(TEXT("Skin_Green"));
+			SourceSummary->ActivePetBondStagesCleared = 6;
+			SourceSummary->ActivePetBondMovementSpeedMultiplier = 1.18f;
+			SourceSummary->PetMobLootQuantityCollectedThisRun = 17;
+			SourceSummary->PetMobLootDropsCollectedThisRun = 3;
+			SourceSummary->bBossActiveAtSummary = true;
+			SourceSummary->ActiveBossID = FName(TEXT("Dungeon_WebMatriarch"));
+			SourceSummary->BossMaxHP = 900;
+			SourceSummary->BossCurrentHP = 360;
+			SourceSummary->OwedBossIDs = { FName(TEXT("Dungeon_SlimeKing")) };
+			SourceSummary->CowardiceGatesTakenCount = 1;
+			FT66BossPartSnapshot& BossPart = SourceSummary->BossParts.AddDefaulted_GetRef();
+			BossPart.PartID = FName(TEXT("Head"));
+			BossPart.HitZoneType = ET66HitZoneType::Head;
+			BossPart.MaxHP = 300;
+			BossPart.CurrentHP = 120;
+		}
+
+		const bool bSaved = SourceSummary && UGameplayStatics::SaveGameToSlot(SourceSummary, SlotName, 0);
+		UT66LeaderboardRunSummarySaveGame* LoadedSummary = Cast<UT66LeaderboardRunSummarySaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, 0));
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Fresh summary save/load"), bSaved && LoadedSummary != nullptr, FString::Printf(TEXT("Saved=%d Loaded=%d Slot=%s."), bSaved ? 1 : 0, LoadedSummary ? 1 : 0, *SlotName));
+
+		const TSharedPtr<FJsonObject> RunJson = LoadedSummary
+			? T66BackendRunSerializer::BuildRunJsonObject(LoadedSummary->HeroID.ToString(), LoadedSummary->CompanionID.ToString(), LoadedSummary->Difficulty, LoadedSummary->PartySize, LoadedSummary->StageReached, LoadedSummary->Score, FMath::RoundToInt(LoadedSummary->RunDurationSeconds * 1000.f), LoadedSummary)
+			: nullptr;
+		UT66LeaderboardRunSummarySaveGame* ParsedSummary = RunJson.IsValid() ? T66BackendRunSummaryParser::Parse(RunJson, this) : nullptr;
+		UT66LeaderboardRunSummarySaveGame* LegacyVendorTokenParsedSummary = nullptr;
+		if (RunJson.IsValid())
+		{
+			const TSharedPtr<FJsonObject>* VendorObj = nullptr;
+			if (RunJson->TryGetObjectField(TEXT("vendor"), VendorObj) && VendorObj && (*VendorObj).IsValid())
+			{
+				(*VendorObj)->RemoveField(TEXT("active_vendor_token_stacks"));
+				(*VendorObj)->SetNumberField(TEXT("active_vendor_token_level"), 16);
+				LegacyVendorTokenParsedSummary = T66BackendRunSummaryParser::Parse(RunJson, this);
+			}
+		}
+
+		TArray<FName> LegacyIdolSaveIDs = { FName(TEXT("Idol_Light")), FName(TEXT("Idol_Water")), FName(TEXT("Idol_Storm")), FName(TEXT("Idol_Poison")) };
+		TArray<uint8> LegacyIdolSaveTiers = { 1, 2, 3, 4 };
+		const bool bLegacyIdolSaveMigrationChanged = T66NormalizeEquippedIdolSaveArrays(LegacyIdolSaveIDs, LegacyIdolSaveTiers);
+		const bool bLegacyIdolSaveMigrated =
+			LegacyIdolSaveIDs.Num() == 4
+			&& LegacyIdolSaveIDs[0] == FName(TEXT("Idol_Electricity_Pierce"))
+			&& LegacyIdolSaveIDs[1] == FName(TEXT("Idol_Ice_AOE"))
+			&& LegacyIdolSaveIDs[2] == FName(TEXT("Idol_Electricity_AOE"))
+			&& LegacyIdolSaveIDs[3] == FName(TEXT("Idol_Nature_DOT"))
+			&& LegacyIdolSaveTiers.Num() == 4
+			&& LegacyIdolSaveTiers[0] == 1
+			&& LegacyIdolSaveTiers[1] == 2
+			&& LegacyIdolSaveTiers[2] == 3
+			&& LegacyIdolSaveTiers[3] == 4;
+
+		UT66LeaderboardRunSummarySaveGame* LegacyIdolParsedSummary = nullptr;
+		{
+			TSharedPtr<FJsonObject> LegacyIdolJson = MakeShared<FJsonObject>();
+			TArray<TSharedPtr<FJsonValue>> LegacyIdolValues;
+			LegacyIdolValues.Add(MakeShared<FJsonValueString>(TEXT("Idol_Light")));
+			LegacyIdolValues.Add(MakeShared<FJsonValueString>(TEXT("Idol_Water")));
+			LegacyIdolValues.Add(MakeShared<FJsonValueString>(TEXT("Idol_Storm")));
+			LegacyIdolValues.Add(MakeShared<FJsonValueString>(TEXT("Idol_Poison")));
+			LegacyIdolJson->SetArrayField(TEXT("equipped_idols"), LegacyIdolValues);
+
+			TArray<TSharedPtr<FJsonValue>> LegacyTierValues;
+			LegacyTierValues.Add(MakeShared<FJsonValueNumber>(1));
+			LegacyTierValues.Add(MakeShared<FJsonValueNumber>(2));
+			LegacyTierValues.Add(MakeShared<FJsonValueNumber>(3));
+			LegacyTierValues.Add(MakeShared<FJsonValueNumber>(4));
+			LegacyIdolJson->SetArrayField(TEXT("equipped_idol_tiers"), LegacyTierValues);
+
+			LegacyIdolParsedSummary = T66BackendRunSummaryParser::Parse(LegacyIdolJson, this);
+		}
+		const bool bLegacyIdolBackendParsed =
+			LegacyIdolParsedSummary
+			&& LegacyIdolParsedSummary->EquippedIdols.Num() == 4
+			&& LegacyIdolParsedSummary->EquippedIdols[0] == FName(TEXT("Idol_Electricity_Pierce"))
+			&& LegacyIdolParsedSummary->EquippedIdols[1] == FName(TEXT("Idol_Ice_AOE"))
+			&& LegacyIdolParsedSummary->EquippedIdols[2] == FName(TEXT("Idol_Electricity_AOE"))
+			&& LegacyIdolParsedSummary->EquippedIdols[3] == FName(TEXT("Idol_Nature_DOT"));
+		UT66LocalizationSubsystem* Localization = GetGameInstance()
+			? GetGameInstance()->GetSubsystem<UT66LocalizationSubsystem>()
+			: nullptr;
+		const FString CanonicalIdolName = Localization
+			? Localization->GetText_IdolDisplayName(FName(TEXT("Idol_Fire_AOE"))).ToString()
+			: FString();
+		const FString LegacyIdolName = Localization
+			? Localization->GetText_IdolDisplayName(FName(TEXT("Idol_Water"))).ToString()
+			: FString();
+		const FString LegacyIdolTooltip = Localization
+			? Localization->GetText_IdolTooltip(FName(TEXT("Idol_Water"))).ToString()
+			: FString();
+		const bool bCanonicalIdolTextResolved =
+			CanonicalIdolName == TEXT("FIRE AOE IDOL")
+			&& LegacyIdolName == TEXT("ICE AOE IDOL");
+		const bool bLegacyIdolTooltipResolved =
+			!LegacyIdolTooltip.IsEmpty()
+			&& !LegacyIdolTooltip.Equals(TEXT("Unknown."), ESearchCase::CaseSensitive);
+
+		double JsonSchemaVersion = 0.0;
+		const bool bSchemaVersionEmitted = RunJson.IsValid() && RunJson->TryGetNumberField(TEXT("schema_version"), JsonSchemaVersion);
+		const int32 RoundedSchemaVersion = FMath::RoundToInt32(JsonSchemaVersion);
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Backend schema_version emitted"), bSchemaVersionEmitted && RoundedSchemaVersion == T66CurrentRunSummarySchemaVersion, RunJson.IsValid() ? FString::Printf(TEXT("schema_version=%d expected=%d."), RoundedSchemaVersion, T66CurrentRunSummarySchemaVersion) : TEXT("Run JSON missing."));
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Backend parse returned summary"), ParsedSummary != nullptr, ParsedSummary ? TEXT("Parser returned enriched summary.") : TEXT("Parser returned null."));
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Legacy idol save IDs migrate to canonical IDs"), bLegacyIdolSaveMigrationChanged && bLegacyIdolSaveMigrated, FString::Printf(TEXT("Ids=%s,%s,%s,%s Tiers=%d,%d,%d,%d."), *LegacyIdolSaveIDs[0].ToString(), *LegacyIdolSaveIDs[1].ToString(), *LegacyIdolSaveIDs[2].ToString(), *LegacyIdolSaveIDs[3].ToString(), LegacyIdolSaveTiers[0], LegacyIdolSaveTiers[1], LegacyIdolSaveTiers[2], LegacyIdolSaveTiers[3]));
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Legacy idol backend IDs parse as canonical IDs"), bLegacyIdolBackendParsed, LegacyIdolParsedSummary && LegacyIdolParsedSummary->EquippedIdols.Num() == 4 ? FString::Printf(TEXT("Parsed=%s,%s,%s,%s."), *LegacyIdolParsedSummary->EquippedIdols[0].ToString(), *LegacyIdolParsedSummary->EquippedIdols[1].ToString(), *LegacyIdolParsedSummary->EquippedIdols[2].ToString(), *LegacyIdolParsedSummary->EquippedIdols[3].ToString()) : TEXT("Legacy idol parser proof failed."));
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Canonical idol localization resolves"), bCanonicalIdolTextResolved, FString::Printf(TEXT("CanonicalName='%s' LegacyName='%s'."), *CanonicalIdolName, *LegacyIdolName));
+		T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Legacy idol tooltip resolves through migration"), bLegacyIdolTooltipResolved, FString::Printf(TEXT("LegacyTooltip='%s'."), *LegacyIdolTooltip));
+		if (ParsedSummary)
+		{
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Schema round-trips"), ParsedSummary->SchemaVersion == T66CurrentRunSummarySchemaVersion, FString::Printf(TEXT("Parsed=%d."), ParsedSummary->SchemaVersion));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Idol elements/types round-trip"), ParsedSummary->EquippedIdolElements.Num() == 4 && ParsedSummary->EquippedIdolCategories.Num() == 4 && ParsedSummary->EquippedIdolElements[2] == ET66IdolElement::Electricity && ParsedSummary->EquippedIdolCategories[3] == ET66AttackCategory::DOT, TEXT("Four enriched idol slots restored."));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Inventory rarity round-trips"), ParsedSummary->InventorySlots.Num() == 4 && ParsedSummary->InventorySlots[1].Rarity == ET66ItemRarity::Red && ParsedSummary->InventorySlots[3].Rarity == ET66ItemRarity::White, FString::Printf(TEXT("Slots=%d."), ParsedSummary->InventorySlots.Num()));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("No Idol round-trips"), ParsedSummary->NoIdolSelectionStacks == 2 && ParsedSummary->NoIdolPrimaryStatBonuses.AttackScaleTenths == 20, FString::Printf(TEXT("Stacks=%d AttackScaleTenths=%d."), ParsedSummary->NoIdolSelectionStacks, ParsedSummary->NoIdolPrimaryStatBonuses.AttackScaleTenths));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Elemental powers round-trip"), FMath::IsNearlyEqual(ParsedSummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::FirePower), 4.25f) && FMath::IsNearlyEqual(ParsedSummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::NaturePower), 1.5f), TEXT("Fire/Nature power values restored."));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Mob Loot round-trips"), ParsedSummary->MobLootQuantityCollectedThisRun == 42 && ParsedSummary->MobLootQuantitySoldThisRun == 30 && ParsedSummary->MobLootRemainingStack == 12 && ParsedSummary->MobLootQuantityCollectedByPetThisRun == 17, FString::Printf(TEXT("Collected=%d Sold=%d Remaining=%d Pet=%d."), ParsedSummary->MobLootQuantityCollectedThisRun, ParsedSummary->MobLootQuantitySoldThisRun, ParsedSummary->MobLootRemainingStack, ParsedSummary->MobLootQuantityCollectedByPetThisRun));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Gambler arrays round-trip"), ParsedSummary->AntiCheatGamblerSummaries.Num() == 1 && ParsedSummary->AntiCheatGamblerEvents.Num() == 1 && ParsedSummary->AntiCheatGamblerSummaries[0].TotalPayoutGold == 55 && ParsedSummary->AntiCheatGamblerEvents[0].ActionSequence == TEXT("proof"), FString::Printf(TEXT("Summaries=%d Events=%d."), ParsedSummary->AntiCheatGamblerSummaries.Num(), ParsedSummary->AntiCheatGamblerEvents.Num()));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Vendor fields round-trip"), ParsedSummary->CurrentGold == 100 && ParsedSummary->CurrentDebt == 5 && ParsedSummary->ActiveVendorTokenStacks == 16 && ParsedSummary->BuybackPoolSize == 2, FString::Printf(TEXT("Gold=%d Debt=%d TokenStacks=%d Buyback=%d."), ParsedSummary->CurrentGold, ParsedSummary->CurrentDebt, ParsedSummary->ActiveVendorTokenStacks, ParsedSummary->BuybackPoolSize));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Legacy vendor token level fallback"), LegacyVendorTokenParsedSummary && LegacyVendorTokenParsedSummary->ActiveVendorTokenStacks == 16, LegacyVendorTokenParsedSummary ? FString::Printf(TEXT("FallbackTokenStacks=%d."), LegacyVendorTokenParsedSummary->ActiveVendorTokenStacks) : TEXT("Legacy parse failed."));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Weapon structural data round-trips"), ParsedSummary->EquippedWeaponID == FName(TEXT("Weapon_Hero_1_Red_AOE")) && ParsedSummary->EquippedWeaponBranch == ET66AttackCategory::AOE && ParsedSummary->EquippedWeaponProjectileCount == 2 && FMath::IsNearlyEqual(ParsedSummary->EquippedWeaponSpreadAngleDegrees, 22.5f), FString::Printf(TEXT("Weapon=%s Count=%d Spread=%.1f."), *ParsedSummary->EquippedWeaponID.ToString(), ParsedSummary->EquippedWeaponProjectileCount, ParsedSummary->EquippedWeaponSpreadAngleDegrees));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Pet fields round-trip"), ParsedSummary->ActivePetID == FName(TEXT("Pet_Dungeon_Slime")) && ParsedSummary->ActivePetSkinID == FName(TEXT("Skin_Green")) && ParsedSummary->ActivePetBondStagesCleared == 6 && ParsedSummary->PetMobLootQuantityCollectedThisRun == 17, FString::Printf(TEXT("Pet=%s Skin=%s Bond=%d Loot=%d."), *ParsedSummary->ActivePetID.ToString(), *ParsedSummary->ActivePetSkinID.ToString(), ParsedSummary->ActivePetBondStagesCleared, ParsedSummary->PetMobLootQuantityCollectedThisRun));
+			T66AppendSmokeCheck(Checks, bAllPassed, TEXT("Boss fields round-trip"), ParsedSummary->bBossActiveAtSummary && ParsedSummary->ActiveBossID == FName(TEXT("Dungeon_WebMatriarch")) && ParsedSummary->BossParts.Num() == 1 && ParsedSummary->BossParts[0].HitZoneType == ET66HitZoneType::Head && ParsedSummary->OwedBossIDs.Num() == 1, FString::Printf(TEXT("Boss=%s Parts=%d Owed=%d."), *ParsedSummary->ActiveBossID.ToString(), ParsedSummary->BossParts.Num(), ParsedSummary->OwedBossIDs.Num()));
+		}
+
+		const FString Json = FString::Printf(TEXT("{\n  \"ok\": %s,\n  \"slot\": \"%s\",\n  \"checks\": [\n%s\n  ]\n}\n"), bAllPassed ? TEXT("true") : TEXT("false"), *T66SmokeJsonEscape(SlotName), *FString::Join(Checks, TEXT(",\n")));
+		IFileManager::Get().MakeDirectory(*FPaths::GetPath(OutputPath), true);
+		const bool bManifestSaved = FFileHelper::SaveStringToFile(Json, *OutputPath);
+		UGameplayStatics::DeleteGameInSlot(SlotName, 0);
+		UE_LOG(LogTemp, Display, TEXT("[RunSummaryRoundTrip] ok=%d saved=%d output=%s"), bAllPassed ? 1 : 0, bManifestSaved ? 1 : 0, *OutputPath);
+		FPlatformMisc::RequestExitWithStatus(false, (bAllPassed && bManifestSaved) ? 0 : 104, TEXT("T66RunSummaryRoundTripComplete"));
+		return;
+	}
+
+	if (Mode == TEXT("outgoingtravelerstress") || Mode == TEXT("outgoingtravelerstressab"))
+	{
+		float AutoCaptureHeroHPOverride = 0.0f;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66AutoCaptureHeroHPOverride="), AutoCaptureHeroHPOverride))
+		{
+			if (UT66RunStateSubsystem* RunState = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
+			{
+				const float AppliedHeroHPOverride = RunState->ApplyAutomationHeroHPOverride(
+					AutoCaptureHeroHPOverride,
+					TEXT("OutgoingTravelerStress"));
+				UE_LOG(
+					LogTemp,
+					Display,
+					TEXT("[OutgoingTravelerStress] AutoCaptureHeroHPOverride AppliedHP=%.1f RequestedHP=%.1f MaxHP=%.1f CurrentHP=%.1f"),
+					AppliedHeroHPOverride,
+					AutoCaptureHeroHPOverride,
+					RunState->GetMaxHP(),
+					RunState->GetCurrentHP());
+			}
+		}
+
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		if (UWorld* World = GetWorld())
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			if (AT66OutgoingTravelerStressHarnessActor* StressHarness = World->SpawnActor<AT66OutgoingTravelerStressHarnessActor>(
+				AT66OutgoingTravelerStressHarnessActor::StaticClass(),
+				FTransform::Identity,
+				SpawnParams))
+			{
+				StressHarness->StartFromCommandLine(this);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[OutgoingTravelerStress] failed to spawn stress harness actor."));
+			}
+		}
+		return;
+	}
+
+	if (Mode == TEXT("moblootstress") || Mode == TEXT("moblootfoundation"))
+	{
+		if (bInventoryInspectOpen)
+		{
+			SetInventoryInspectOpen(false);
+		}
+
+		if (GameplayHUDWidget)
+		{
+			GameplayHUDWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+
+		if (UWorld* World = GetWorld())
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			if (AT66MobLootStressHarnessActor* StressHarness = World->SpawnActor<AT66MobLootStressHarnessActor>(
+				AT66MobLootStressHarnessActor::StaticClass(),
+				FTransform::Identity,
+				SpawnParams))
+			{
+				StressHarness->StartFromCommandLine(this);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[MobLootStress] failed to spawn stress harness actor."));
+			}
+		}
+		return;
+	}
+
 	if (Mode == TEXT("trapprojectilehitbox") || Mode == TEXT("trapprojectiledebug"))
 	{
 		if (bInventoryInspectOpen)
@@ -4777,6 +5545,857 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 			false);
 		return;
 	}
+
+#if !UE_BUILD_SHIPPING
+	if (Mode == TEXT("bosspartownershipa1"))
+	{
+		UWorld* World = GetWorld();
+		UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+		if (!World || !T66GI)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossPartOwnershipA1] Missing world or T66GameInstance."));
+			FPlatformMisc::RequestExitWithStatus(false, 71, TEXT("BossPartOwnershipA1MissingWorld"));
+			return;
+		}
+
+		APawn* ControlledPawn = GetPawn();
+		if (ControlledPawn)
+		{
+			ControlledPawn->SetActorEnableCollision(false);
+			ControlledPawn->SetActorLocation(T66GameplayLayout::GetStartAreaCenter(120.f), false);
+			if (ACharacter* CharacterPawn = Cast<ACharacter>(ControlledPawn))
+			{
+				if (UCharacterMovementComponent* Movement = CharacterPawn->GetCharacterMovement())
+				{
+					Movement->StopMovementImmediately();
+					Movement->DisableMovement();
+				}
+			}
+		}
+
+		auto BuildBossData = [T66GI]()
+		{
+			FBossData BossData;
+			if (!T66GI->GetBossData(FName(TEXT("Dungeon_SewerSlimeKing")), BossData))
+			{
+				BossData.BossID = FName(TEXT("Dungeon_SewerSlimeKing"));
+				BossData.MaxHP = 1250;
+				BossData.AwakenDistance = 2400.f;
+				BossData.MoveSpeed = 0.f;
+				BossData.FireIntervalSeconds = 999.f;
+				BossData.ProjectileSpeed = 760.f;
+				BossData.ProjectileDamageHearts = 1;
+				BossData.BossPartProfile = ET66BossPartProfile::Juggernaut;
+				BossData.PlaceholderColor = FLinearColor(0.20f, 0.92f, 0.08f, 1.f);
+			}
+			BossData.MoveSpeed = 0.f;
+			BossData.FireIntervalSeconds = 999.f;
+			BossData.AwakenDistance = 2400.f;
+			return BossData;
+		};
+
+		auto SpawnProofBoss = [World, BuildBossData](const FName Name, const FVector& Location) -> AT66BossBase*
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Name = Name;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AT66BossBase* Boss = World->SpawnActor<AT66BossBase>(
+				AT66BossBase::StaticClass(),
+				Location,
+				FRotator(0.f, 180.f, 0.f),
+				SpawnParams);
+			if (!Boss)
+			{
+				return nullptr;
+			}
+			Boss->Tags.AddUnique(FName(TEXT("T66Automation_BossPartOwnershipA1")));
+			Boss->InitializeBoss(BuildBossData());
+			Boss->ForceAwaken();
+			if (UCharacterMovementComponent* BossMovement = Boss->GetCharacterMovement())
+			{
+				BossMovement->StopMovementImmediately();
+				BossMovement->DisableMovement();
+			}
+			FT66VisualUtil::SnapToGround(Boss, World);
+			return Boss;
+		};
+
+		AT66BossBase* ImmediateBoss = SpawnProofBoss(
+			FName(TEXT("T66BossPartOwnershipA1_Immediate")),
+			T66GameplayLayout::GetStartAreaCenter(120.f) + FVector(780.f, 0.f, 0.f));
+		AT66BossBase* WindupBoss = SpawnProofBoss(
+			FName(TEXT("T66BossPartOwnershipA1_Windup")),
+			T66GameplayLayout::GetStartAreaCenter(120.f) + FVector(1180.f, 0.f, 0.f));
+
+		if (!ImmediateBoss || !WindupBoss)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossPartOwnershipA1] Failed to spawn proof bosses."));
+			FPlatformMisc::RequestExitWithStatus(false, 72, TEXT("BossPartOwnershipA1SpawnFailed"));
+			return;
+		}
+
+		auto Counter = [](AT66BossBase* Boss, const TCHAR* EventID, const TCHAR* AttackID, const TCHAR* PartID)
+		{
+			return Boss
+				? Boss->GetBossAttackOwnershipAutomationCounter(FName(EventID), FName(AttackID), FName(PartID))
+				: 0;
+		};
+
+		int32 FailureCount = 0;
+
+		ImmediateBoss->ResetBossAttackOwnershipAutomationCounters();
+		ImmediateBoss->KillBossPartForAutomation(FName(TEXT("LeftLobe")));
+		ImmediateBoss->ForceSewerSlimeKingAttackForAutomation(FName(TEXT("LeftLobe")));
+		ImmediateBoss->ForceSewerSlimeKingAttackForAutomation(FName(TEXT("RightLobe")));
+		const bool bLobeSuppressedOnly = Counter(ImmediateBoss, TEXT("Suppressed"), TEXT("SewerSlime_LobeVolley"), TEXT("LeftLobe")) > 0
+			&& Counter(ImmediateBoss, TEXT("Queued"), TEXT("SewerSlime_LobeVolley"), TEXT("RightLobe")) > 0;
+		FailureCount += bLobeSuppressedOnly ? 0 : 1;
+
+		ImmediateBoss->ResetBossAttackOwnershipAutomationCounters();
+		ImmediateBoss->KillBossPartForAutomation(FName(TEXT("LeftBase")));
+		ImmediateBoss->ForceSewerSlimeKingAttackForAutomation(FName(TEXT("LeftBase")));
+		ImmediateBoss->ForceSewerSlimeKingAttackForAutomation(FName(TEXT("RightBase")));
+		const bool bBaseSuppressedOnly = Counter(ImmediateBoss, TEXT("Suppressed"), TEXT("SewerSlime_LaneBlocker"), TEXT("LeftBase")) > 0
+			&& Counter(ImmediateBoss, TEXT("Queued"), TEXT("SewerSlime_LaneBlocker"), TEXT("RightBase")) > 0
+			&& Counter(ImmediateBoss, TEXT("Fired"), TEXT("SewerSlime_LaneBlocker"), TEXT("RightBase")) > 0;
+		FailureCount += bBaseSuppressedOnly ? 0 : 1;
+
+		ImmediateBoss->ResetBossAttackOwnershipAutomationCounters();
+		ImmediateBoss->KillBossPartForAutomation(FName(TEXT("MouthCore")));
+		ImmediateBoss->ForceSewerSlimeKingAttackForAutomation(FName(TEXT("MouthCore")));
+		ImmediateBoss->ForceSewerSlimeKingAttackForAutomation(FName(TEXT("RightBase")));
+		const bool bMouthSuppressedOnly = Counter(ImmediateBoss, TEXT("Suppressed"), TEXT("SewerSlime_MouthProjectile"), TEXT("MouthCore")) > 0
+			&& Counter(ImmediateBoss, TEXT("Suppressed"), TEXT("SewerSlime_MouthSidecar"), TEXT("MouthCore")) > 0
+			&& Counter(ImmediateBoss, TEXT("Queued"), TEXT("SewerSlime_LaneBlocker"), TEXT("RightBase")) > 0
+			&& Counter(ImmediateBoss, TEXT("Fired"), TEXT("SewerSlime_LaneBlocker"), TEXT("RightBase")) > 0;
+		FailureCount += bMouthSuppressedOnly ? 0 : 1;
+
+		UE_LOG(
+			LogTemp,
+			Display,
+			TEXT("[BossPartOwnershipA1] ImmediateGate LobeSuppressedOnly=%d BaseSuppressedOnly=%d MouthSuppressedOnly=%d"),
+			bLobeSuppressedOnly ? 1 : 0,
+			bBaseSuppressedOnly ? 1 : 0,
+			bMouthSuppressedOnly ? 1 : 0);
+
+		WindupBoss->ResetBossAttackOwnershipAutomationCounters();
+		WindupBoss->ForceSewerSlimeKingAttackForAutomation(FName(TEXT("LeftLobe")));
+		FTimerHandle KillWindupPartHandle;
+		World->GetTimerManager().SetTimer(
+			KillWindupPartHandle,
+			FTimerDelegate::CreateWeakLambda(WindupBoss, [WindupBoss]()
+			{
+				WindupBoss->KillBossPartForAutomation(FName(TEXT("LeftLobe")));
+			}),
+			0.25f,
+			false);
+
+		FTimerHandle SummaryHandle;
+		World->GetTimerManager().SetTimer(
+			SummaryHandle,
+			FTimerDelegate::CreateLambda([WindupBoss, FailureCount, Counter]()
+			{
+				const int32 LobeFired = Counter(WindupBoss, TEXT("Fired"), TEXT("SewerSlime_LobeVolley"), TEXT("LeftLobe"));
+				const int32 LobeSuppressed = Counter(WindupBoss, TEXT("Suppressed"), TEXT("SewerSlime_LobeVolley"), TEXT("LeftLobe"));
+				const bool bWindupInterrupted = LobeFired == 0 && LobeSuppressed > 0;
+				const int32 TotalFailures = FailureCount + (bWindupInterrupted ? 0 : 1);
+				UE_LOG(
+					LogTemp,
+					Display,
+					TEXT("[BossPartOwnershipA1] WindupGate LobeDelayedShotsFired=%d LobeDelayedShotsSuppressed=%d WindupInterrupted=%d"),
+					LobeFired,
+					LobeSuppressed,
+					bWindupInterrupted ? 1 : 0);
+				UE_LOG(
+					LogTemp,
+					Display,
+					TEXT("[BossPartOwnershipA1] Summary Pass=%d Failures=%d BounceTargetHandlePathUnchanged=1 AttackRowsSource=DT_BossAttacks"),
+					TotalFailures == 0 ? 1 : 0,
+					TotalFailures);
+				FPlatformMisc::RequestExitWithStatus(false, TotalFailures == 0 ? 0 : 73, TEXT("BossPartOwnershipA1Complete"));
+			}),
+			1.55f,
+			false);
+		return;
+	}
+
+	if (Mode == TEXT("bosspartownershipa2"))
+	{
+		UWorld* World = GetWorld();
+		UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+		if (!World || !T66GI)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossPartOwnershipA2] Missing world or T66GameInstance."));
+			FPlatformMisc::RequestExitWithStatus(false, 81, TEXT("BossPartOwnershipA2MissingWorld"));
+			return;
+		}
+
+		APawn* ControlledPawn = GetPawn();
+		if (ControlledPawn)
+		{
+			ControlledPawn->SetActorEnableCollision(false);
+			ControlledPawn->SetActorLocation(T66GameplayLayout::GetStartAreaCenter(120.f), false);
+			if (ACharacter* CharacterPawn = Cast<ACharacter>(ControlledPawn))
+			{
+				if (UCharacterMovementComponent* Movement = CharacterPawn->GetCharacterMovement())
+				{
+					Movement->StopMovementImmediately();
+					Movement->DisableMovement();
+				}
+			}
+		}
+
+		FBossData BossData;
+		if (!T66GI->GetBossData(FName(TEXT("Dungeon_WebMatriarch")), BossData))
+		{
+			BossData.BossID = FName(TEXT("Dungeon_WebMatriarch"));
+			BossData.MaxHP = 1500;
+			BossData.AwakenDistance = 2400.f;
+			BossData.MoveSpeed = 0.f;
+			BossData.FireIntervalSeconds = 999.f;
+			BossData.ProjectileSpeed = 930.f;
+			BossData.ProjectileDamageHearts = 1;
+			BossData.BossPartProfile = ET66BossPartProfile::Sharpshooter;
+			BossData.PlaceholderColor = FLinearColor(0.50f, 0.42f, 0.68f, 1.f);
+		}
+		BossData.MoveSpeed = 0.f;
+		BossData.FireIntervalSeconds = 999.f;
+		BossData.AwakenDistance = 2400.f;
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Name = FName(TEXT("T66BossPartOwnershipA2_WebMatriarch"));
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AT66BossBase* Boss = World->SpawnActor<AT66BossBase>(
+			AT66BossBase::StaticClass(),
+			T66GameplayLayout::GetStartAreaCenter(120.f) + FVector(820.f, 0.f, 0.f),
+			FRotator(0.f, 180.f, 0.f),
+			SpawnParams);
+		if (!Boss)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossPartOwnershipA2] Failed to spawn Web Matriarch proof boss."));
+			FPlatformMisc::RequestExitWithStatus(false, 82, TEXT("BossPartOwnershipA2SpawnFailed"));
+			return;
+		}
+
+		Boss->Tags.AddUnique(FName(TEXT("T66Automation_BossPartOwnershipA2")));
+		Boss->InitializeBoss(BossData);
+		Boss->ForceAwaken();
+		if (UCharacterMovementComponent* BossMovement = Boss->GetCharacterMovement())
+		{
+			BossMovement->StopMovementImmediately();
+			BossMovement->DisableMovement();
+		}
+		FT66VisualUtil::SnapToGround(Boss, World);
+
+		auto Counter = [](AT66BossBase* InBoss, const TCHAR* EventID, const TCHAR* AttackID, const TCHAR* PartID)
+		{
+			return InBoss
+				? InBoss->GetBossAttackOwnershipAutomationCounter(FName(EventID), FName(AttackID), FName(PartID))
+				: 0;
+		};
+
+		Boss->ResetBossAttackOwnershipAutomationCounters();
+		Boss->ForceBossAttackForAutomation(FName(TEXT("LegacyProjectile_Sharpshooter")), FName(TEXT("Head")));
+
+		FTimerHandle ProjectileAliveCheckHandle;
+		World->GetTimerManager().SetTimer(
+			ProjectileAliveCheckHandle,
+			FTimerDelegate::CreateLambda([World, Boss, Counter]()
+			{
+				const bool bAuthoredProjectileFired =
+					Counter(Boss, TEXT("Queued"), TEXT("LegacyProjectile_Sharpshooter"), TEXT("Head")) > 0
+					&& Counter(Boss, TEXT("Fired"), TEXT("LegacyProjectile_Sharpshooter"), TEXT("Head")) > 0;
+
+				Boss->ResetBossAttackOwnershipAutomationCounters();
+				Boss->KillBossPartForAutomation(FName(TEXT("Head")));
+				Boss->ForceBossAttackForAutomation(FName(TEXT("LegacyProjectile_Sharpshooter")), FName(TEXT("Head")));
+
+				FTimerHandle ProjectileDeadCheckHandle;
+				World->GetTimerManager().SetTimer(
+					ProjectileDeadCheckHandle,
+					FTimerDelegate::CreateLambda([World, Boss, Counter, bAuthoredProjectileFired]()
+					{
+						const bool bDeadOwnerSuppressed =
+							Counter(Boss, TEXT("Suppressed"), TEXT("LegacyProjectile_Sharpshooter"), TEXT("Head")) > 0
+							&& Counter(Boss, TEXT("Fired"), TEXT("LegacyProjectile_Sharpshooter"), TEXT("Head")) == 0;
+
+						Boss->ResetBossAttackOwnershipAutomationCounters();
+						Boss->ForceBossAttackForAutomation(FName(TEXT("LegacyGroundAOE_Sharpshooter")), FName(TEXT("Core")));
+
+						FTimerHandle AOECheckHandle;
+						World->GetTimerManager().SetTimer(
+							AOECheckHandle,
+							FTimerDelegate::CreateLambda([Boss, Counter, bAuthoredProjectileFired, bDeadOwnerSuppressed]()
+							{
+								const bool bOtherOwnedAOEFired =
+									Counter(Boss, TEXT("Queued"), TEXT("LegacyGroundAOE_Sharpshooter"), TEXT("Core")) > 0
+									&& Counter(Boss, TEXT("Fired"), TEXT("LegacyGroundAOE_Sharpshooter"), TEXT("Core")) > 0;
+								const int32 FailureCount =
+									(bAuthoredProjectileFired ? 0 : 1)
+									+ (bDeadOwnerSuppressed ? 0 : 1)
+									+ (bOtherOwnedAOEFired ? 0 : 1);
+
+								UE_LOG(
+									LogTemp,
+									Display,
+									TEXT("[BossPartOwnershipA2] Gate AuthoredProjectileFired=%d DeadOwnerSuppressed=%d OtherOwnedAOEFired=%d"),
+									bAuthoredProjectileFired ? 1 : 0,
+									bDeadOwnerSuppressed ? 1 : 0,
+									bOtherOwnedAOEFired ? 1 : 0);
+								UE_LOG(
+									LogTemp,
+									Display,
+									TEXT("[BossPartOwnershipA2] Summary Pass=%d Failures=%d BossID=Dungeon_WebMatriarch AttackRowsSource=DT_BossAttacks SeamAttackID=LegacyProjectile_Sharpshooter"),
+									FailureCount == 0 ? 1 : 0,
+									FailureCount);
+								FPlatformMisc::RequestExitWithStatus(false, FailureCount == 0 ? 0 : 83, TEXT("BossPartOwnershipA2Complete"));
+							}),
+							0.20f,
+							false);
+					}),
+					0.20f,
+					false);
+			}),
+			0.55f,
+			false);
+		return;
+	}
+
+	if (Mode == TEXT("bossattackdefinitionproof"))
+	{
+		UWorld* World = GetWorld();
+		UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+		if (!World || !T66GI)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossAttackDefinitionProof] Missing world or T66GameInstance."));
+			FPlatformMisc::RequestExitWithStatus(false, 101, TEXT("BossAttackDefinitionProofMissingWorld"));
+			return;
+		}
+
+		APawn* ControlledPawn = GetPawn();
+		if (ControlledPawn)
+		{
+			ControlledPawn->SetActorEnableCollision(false);
+			ControlledPawn->SetActorLocation(T66GameplayLayout::GetStartAreaCenter(120.f), false);
+			if (ACharacter* CharacterPawn = Cast<ACharacter>(ControlledPawn))
+			{
+				if (UCharacterMovementComponent* Movement = CharacterPawn->GetCharacterMovement())
+				{
+					Movement->StopMovementImmediately();
+					Movement->DisableMovement();
+				}
+			}
+		}
+
+		TArray<FT66BossAttackDefinitionData> DefinitionRows;
+		T66GI->GetBossAttackDefinitionRows(FName(TEXT("LegacyProjectile_Sharpshooter")), 0, DefinitionRows);
+
+		FBossData BossData;
+		if (!T66GI->GetBossData(FName(TEXT("Dungeon_WebMatriarch")), BossData))
+		{
+			BossData.BossID = FName(TEXT("Dungeon_WebMatriarch"));
+			BossData.MaxHP = 1500;
+			BossData.AwakenDistance = 2400.f;
+			BossData.MoveSpeed = 0.f;
+			BossData.FireIntervalSeconds = 999.f;
+			BossData.ProjectileSpeed = 930.f;
+			BossData.ProjectileDamageHearts = 1;
+			BossData.BossPartProfile = ET66BossPartProfile::Sharpshooter;
+			BossData.PlaceholderColor = FLinearColor(0.50f, 0.42f, 0.68f, 1.f);
+		}
+		BossData.MoveSpeed = 0.f;
+		BossData.FireIntervalSeconds = 999.f;
+		BossData.AwakenDistance = 2400.f;
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Name = FName(TEXT("T66BossAttackDefinitionProof_WebMatriarch"));
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AT66BossBase* Boss = World->SpawnActor<AT66BossBase>(
+			AT66BossBase::StaticClass(),
+			T66GameplayLayout::GetStartAreaCenter(120.f) + FVector(820.f, 0.f, 0.f),
+			FRotator(0.f, 180.f, 0.f),
+			SpawnParams);
+		if (!Boss)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossAttackDefinitionProof] Failed to spawn Web Matriarch proof boss."));
+			FPlatformMisc::RequestExitWithStatus(false, 102, TEXT("BossAttackDefinitionProofSpawnFailed"));
+			return;
+		}
+
+		Boss->Tags.AddUnique(FName(TEXT("T66Automation_BossAttackDefinitionProof")));
+		Boss->InitializeBoss(BossData);
+		Boss->ForceAwaken();
+		if (UCharacterMovementComponent* BossMovement = Boss->GetCharacterMovement())
+		{
+			BossMovement->StopMovementImmediately();
+			BossMovement->DisableMovement();
+		}
+		FT66VisualUtil::SnapToGround(Boss, World);
+
+		if (UT66ProjectileManagerSubsystem* ProjectileManager = World->GetSubsystem<UT66ProjectileManagerSubsystem>())
+		{
+			ProjectileManager->ResetProjectileDiagnostics(TEXT("BossAttackDefinitionProof"));
+		}
+
+		auto Counter = [](AT66BossBase* InBoss, const TCHAR* EventID, const TCHAR* AttackID, const TCHAR* PartID)
+		{
+			return InBoss
+				? InBoss->GetBossAttackOwnershipAutomationCounter(FName(EventID), FName(AttackID), FName(PartID))
+				: 0;
+		};
+
+		Boss->ResetBossAttackOwnershipAutomationCounters();
+		Boss->ForceBossAttackForAutomation(FName(TEXT("LegacyProjectile_Sharpshooter")), FName(TEXT("Head")));
+
+		FTimerHandle DefinitionCheckHandle;
+		World->GetTimerManager().SetTimer(
+			DefinitionCheckHandle,
+			FTimerDelegate::CreateLambda([World, Boss, Counter, DefinitionRowCount = DefinitionRows.Num()]()
+			{
+				const int32 QueuedCount = Counter(Boss, TEXT("Queued"), TEXT("LegacyProjectile_Sharpshooter"), TEXT("Head"));
+				const int32 FiredCount = Counter(Boss, TEXT("Fired"), TEXT("LegacyProjectile_Sharpshooter"), TEXT("Head"));
+				const UT66ProjectileManagerSubsystem* ProjectileManager = World ? World->GetSubsystem<UT66ProjectileManagerSubsystem>() : nullptr;
+				const FT66ProjectileManagerDiagnostics Diagnostics = ProjectileManager
+					? ProjectileManager->GetDiagnostics()
+					: FT66ProjectileManagerDiagnostics{};
+				const bool bDefinitionRowsLoaded = DefinitionRowCount > 0;
+				const bool bSchedulerQueued = QueuedCount > 0;
+				const bool bManagedProjectileFired = FiredCount > 0 && Diagnostics.ProjectilesActivePeak > 0;
+				const bool bVisualProfileResolved = Diagnostics.VisualProfilesResolved > 0 && Diagnostics.VisualProfileFallbacks == 0;
+				const int32 FailureCount =
+					(bDefinitionRowsLoaded ? 0 : 1)
+					+ (bSchedulerQueued ? 0 : 1)
+					+ (bManagedProjectileFired ? 0 : 1)
+					+ (bVisualProfileResolved ? 0 : 1);
+
+				UE_LOG(
+					LogTemp,
+					Display,
+					TEXT("[BossAttackDefinitionProof] Gate DefinitionRowsLoaded=%d SchedulerQueued=%d ManagedProjectileFired=%d VisualProfileResolved=%d DefinitionRows=%d Queued=%d Fired=%d ActivePeak=%d VisualProfilesResolved=%d VisualProfileFallbacks=%d"),
+					bDefinitionRowsLoaded ? 1 : 0,
+					bSchedulerQueued ? 1 : 0,
+					bManagedProjectileFired ? 1 : 0,
+					bVisualProfileResolved ? 1 : 0,
+					DefinitionRowCount,
+					QueuedCount,
+					FiredCount,
+					Diagnostics.ProjectilesActivePeak,
+					Diagnostics.VisualProfilesResolved,
+					Diagnostics.VisualProfileFallbacks);
+				UE_LOG(
+					LogTemp,
+					Display,
+					TEXT("[BossAttackDefinitionProof] Summary Pass=%d Failures=%d BossID=Dungeon_WebMatriarch AttackRowsSource=DT_BossAttacks AttackDefinitionsSource=DT_BossAttackDefinitions AttackID=LegacyProjectile_Sharpshooter OwningPartID=Head VisualProfile=ManagedProjectile.Boss.WebNeedle"),
+					FailureCount == 0 ? 1 : 0,
+					FailureCount);
+
+				if (UT66ProjectileManagerSubsystem* MutableProjectileManager = World ? World->GetSubsystem<UT66ProjectileManagerSubsystem>() : nullptr)
+				{
+					MutableProjectileManager->EmitProjectileManagerSummary(TEXT("BossAttackDefinitionProof"), true);
+				}
+				FPlatformMisc::RequestExitWithStatus(false, FailureCount == 0 ? 0 : 103, TEXT("BossAttackDefinitionProofComplete"));
+			}),
+			0.65f,
+			false);
+		return;
+	}
+
+	if (Mode == TEXT("bosspartmovementb1"))
+	{
+		UWorld* World = GetWorld();
+		UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+		if (!World || !T66GI)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossMovementB1] Missing world or T66GameInstance."));
+			FPlatformMisc::RequestExitWithStatus(false, 91, TEXT("BossMovementB1MissingWorld"));
+			return;
+		}
+
+		APawn* ControlledPawn = GetPawn();
+		const FVector PlayerLocation = T66GameplayLayout::GetStartAreaCenter(120.f);
+		if (ControlledPawn)
+		{
+			ControlledPawn->SetActorEnableCollision(false);
+			ControlledPawn->SetActorLocation(PlayerLocation, false);
+			if (ACharacter* CharacterPawn = Cast<ACharacter>(ControlledPawn))
+			{
+				if (UCharacterMovementComponent* Movement = CharacterPawn->GetCharacterMovement())
+				{
+					Movement->StopMovementImmediately();
+					Movement->DisableMovement();
+				}
+			}
+		}
+		const TWeakObjectPtr<APawn> ProofTargetPawn(ControlledPawn);
+		const auto PinProofTarget = [ProofTargetPawn, PlayerLocation]()
+		{
+			if (APawn* Pawn = ProofTargetPawn.Get())
+			{
+				Pawn->SetActorEnableCollision(false);
+				Pawn->SetActorLocation(PlayerLocation, false);
+				if (ACharacter* CharacterPawn = Cast<ACharacter>(Pawn))
+				{
+					if (UCharacterMovementComponent* Movement = CharacterPawn->GetCharacterMovement())
+					{
+						Movement->StopMovementImmediately();
+						Movement->DisableMovement();
+					}
+				}
+			}
+		};
+		PinProofTarget();
+		FTimerHandle PinProofTargetHandle;
+		World->GetTimerManager().SetTimer(
+			PinProofTargetHandle,
+			FTimerDelegate::CreateLambda(PinProofTarget),
+			0.02f,
+			true);
+
+		FBossData BossData;
+		if (!T66GI->GetBossData(FName(TEXT("Dungeon_WebMatriarch")), BossData))
+		{
+			BossData.BossID = FName(TEXT("Dungeon_WebMatriarch"));
+			BossData.MaxHP = 1500;
+			BossData.AwakenDistance = 2400.f;
+			BossData.ProjectileSpeed = 930.f;
+			BossData.ProjectileDamageHearts = 1;
+			BossData.BossPartProfile = ET66BossPartProfile::Sharpshooter;
+			BossData.PlaceholderColor = FLinearColor(0.50f, 0.42f, 0.68f, 1.f);
+		}
+		BossData.MoveSpeed = 520.f;
+		BossData.FireIntervalSeconds = 999.f;
+		BossData.AwakenDistance = 2400.f;
+		BossData.BossMovementProfileID = FName(TEXT("MoveProfile_WebMatriarch_KeepDistance"));
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Name = FName(TEXT("T66BossMovementB1_WebMatriarch"));
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AT66BossBase* Boss = World->SpawnActor<AT66BossBase>(
+			AT66BossBase::StaticClass(),
+			PlayerLocation + FVector(980.f, 0.f, 0.f),
+			FRotator(0.f, 180.f, 0.f),
+			SpawnParams);
+		if (!Boss)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossMovementB1] Failed to spawn proof boss."));
+			FPlatformMisc::RequestExitWithStatus(false, 92, TEXT("BossMovementB1SpawnFailed"));
+			return;
+		}
+
+		Boss->Tags.AddUnique(FName(TEXT("T66Automation_BossMovementB1")));
+		Boss->InitializeBoss(BossData);
+		Boss->ForceAwaken();
+		FT66VisualUtil::SnapToGround(Boss, World);
+		Boss->ResetBossMovementAutomationState();
+
+		const float InitialDistance = FVector::Dist2D(Boss->GetActorLocation(), PlayerLocation);
+		FTimerHandle PatternCheckHandle;
+		World->GetTimerManager().SetTimer(
+			PatternCheckHandle,
+			FTimerDelegate::CreateLambda([World, Boss, PlayerLocation, InitialDistance]()
+			{
+				const float PatternDistance = FVector::Dist2D(Boss->GetActorLocation(), PlayerLocation);
+				const FString PatternMode = Boss->GetBossMovementAutomationMode().ToString();
+				const bool bPatternAdvanced = PatternMode.Contains(TEXT("Pattern.KeepDistance.Advance")) && PatternDistance < InitialDistance - 15.f;
+				UE_LOG(
+					LogTemp,
+					Display,
+					TEXT("[BossMovementB1] PatternSample Mode=%s InitialDistance=%.1f PatternDistance=%.1f"),
+					*PatternMode,
+					InitialDistance,
+					PatternDistance);
+
+				Boss->ResetBossMovementAutomationState();
+				Boss->ApplyMoveSlow(0.35f, 0.65f);
+
+				FTimerHandle SlowCheckHandle;
+				World->GetTimerManager().SetTimer(
+					SlowCheckHandle,
+					FTimerDelegate::CreateLambda([World, Boss, PlayerLocation, PatternDistance, bPatternAdvanced]()
+					{
+						const float SlowSpeed = Boss->GetCharacterMovement() ? Boss->GetCharacterMovement()->MaxWalkSpeed : 0.f;
+						const bool bSlowApplied = SlowSpeed > 0.f && SlowSpeed < 260.f;
+
+						Boss->ResetBossMovementAutomationState();
+						const FVector FreezeStart = Boss->GetActorLocation();
+						Boss->ApplyFreeze(0.45f);
+
+						FTimerHandle FreezeCheckHandle;
+						World->GetTimerManager().SetTimer(
+							FreezeCheckHandle,
+							FTimerDelegate::CreateLambda([World, Boss, PlayerLocation, PatternDistance, bPatternAdvanced, bSlowApplied, FreezeStart]()
+							{
+								const bool bFreezeOverride =
+									Boss->GetBossMovementAutomationMode() == FName(TEXT("FrozenOrStunned"))
+									&& FVector::Dist2D(Boss->GetActorLocation(), FreezeStart) < 8.f;
+
+								FTimerHandle RootStartHandle;
+								World->GetTimerManager().SetTimer(
+									RootStartHandle,
+									FTimerDelegate::CreateLambda([World, Boss, PlayerLocation, PatternDistance, bPatternAdvanced, bSlowApplied, bFreezeOverride]()
+									{
+										Boss->ResetBossMovementAutomationState();
+										const FVector RootStart = Boss->GetActorLocation();
+										Boss->ApplyRoot(0.45f);
+
+										FTimerHandle RootCheckHandle;
+										World->GetTimerManager().SetTimer(
+											RootCheckHandle,
+											FTimerDelegate::CreateLambda([World, Boss, PlayerLocation, PatternDistance, bPatternAdvanced, bSlowApplied, bFreezeOverride, RootStart]()
+											{
+												const bool bRootOverride =
+													Boss->GetBossMovementAutomationMode() == FName(TEXT("Rooted"))
+													&& FVector::Dist2D(Boss->GetActorLocation(), RootStart) < 8.f;
+
+												FTimerHandle StunStartHandle;
+												World->GetTimerManager().SetTimer(
+													StunStartHandle,
+													FTimerDelegate::CreateLambda([World, Boss, PlayerLocation, PatternDistance, bPatternAdvanced, bSlowApplied, bFreezeOverride, bRootOverride]()
+													{
+														Boss->ResetBossMovementAutomationState();
+														const FVector StunStart = Boss->GetActorLocation();
+														Boss->ApplyStun(0.35f);
+
+														FTimerHandle StunCheckHandle;
+														World->GetTimerManager().SetTimer(
+															StunCheckHandle,
+															FTimerDelegate::CreateLambda([World, Boss, PlayerLocation, PatternDistance, bPatternAdvanced, bSlowApplied, bFreezeOverride, bRootOverride, StunStart]()
+															{
+																const bool bStunOverride =
+																	Boss->GetBossMovementAutomationMode() == FName(TEXT("FrozenOrStunned"))
+																	&& FVector::Dist2D(Boss->GetActorLocation(), StunStart) < 8.f;
+
+																FTimerHandle ConfusionStartHandle;
+																World->GetTimerManager().SetTimer(
+																	ConfusionStartHandle,
+																	FTimerDelegate::CreateLambda([World, Boss, PlayerLocation, PatternDistance, bPatternAdvanced, bSlowApplied, bFreezeOverride, bRootOverride, bStunOverride]()
+																	{
+																		Boss->ResetBossMovementAutomationState();
+																		Boss->ApplyConfusion(0.55f);
+
+																		FTimerHandle ConfusionCheckHandle;
+																		World->GetTimerManager().SetTimer(
+																			ConfusionCheckHandle,
+																			FTimerDelegate::CreateLambda([World, Boss, PlayerLocation, PatternDistance, bPatternAdvanced, bSlowApplied, bFreezeOverride, bRootOverride, bStunOverride]()
+																			{
+																				const bool bConfusionOverride = Boss->GetBossMovementAutomationMode() == FName(TEXT("Confusion"));
+
+																				FTimerHandle RunAwayStartHandle;
+																				World->GetTimerManager().SetTimer(
+																					RunAwayStartHandle,
+																					FTimerDelegate::CreateLambda([World, Boss, PlayerLocation, PatternDistance, bPatternAdvanced, bSlowApplied, bFreezeOverride, bRootOverride, bStunOverride, bConfusionOverride]()
+																					{
+																						Boss->ResetBossMovementAutomationState();
+																						if (UCharacterMovementComponent* BossMovement = Boss->GetCharacterMovement())
+																						{
+																							BossMovement->StopMovementImmediately();
+																						}
+																						const float RunAwayStartDistance = FVector::Dist2D(Boss->GetActorLocation(), PlayerLocation);
+																						Boss->ApplyForcedRunAway(1.5f);
+
+																						FTimerHandle RunAwayCheckHandle;
+																						World->GetTimerManager().SetTimer(
+																							RunAwayCheckHandle,
+																							FTimerDelegate::CreateLambda([Boss, PlayerLocation, PatternDistance, bPatternAdvanced, bSlowApplied, bFreezeOverride, bRootOverride, bStunOverride, bConfusionOverride, RunAwayStartDistance]()
+																							{
+																								const float RunAwayEndDistance = FVector::Dist2D(Boss->GetActorLocation(), PlayerLocation);
+																								const bool bRunAwayOverride =
+																									Boss->GetBossMovementAutomationMode() == FName(TEXT("ForcedRunAway"))
+																									&& RunAwayEndDistance > RunAwayStartDistance + 5.f;
+																								const int32 FailureCount =
+																									(bPatternAdvanced ? 0 : 1)
+																									+ (bSlowApplied ? 0 : 1)
+																									+ (bFreezeOverride ? 0 : 1)
+																									+ (bRootOverride ? 0 : 1)
+																									+ (bStunOverride ? 0 : 1)
+																									+ (bConfusionOverride ? 0 : 1)
+																									+ (bRunAwayOverride ? 0 : 1);
+
+																								UE_LOG(
+																									LogTemp,
+																									Display,
+																									TEXT("[BossMovementB1] Gate PatternAdvanced=%d SlowApplied=%d FreezeOverride=%d RootOverride=%d StunOverride=%d ConfusionOverride=%d RunAwayOverride=%d PatternDistance=%.1f RunAwayStart=%.1f RunAwayEnd=%.1f"),
+																									bPatternAdvanced ? 1 : 0,
+																									bSlowApplied ? 1 : 0,
+																									bFreezeOverride ? 1 : 0,
+																									bRootOverride ? 1 : 0,
+																									bStunOverride ? 1 : 0,
+																									bConfusionOverride ? 1 : 0,
+																									bRunAwayOverride ? 1 : 0,
+																									PatternDistance,
+																									RunAwayStartDistance,
+																									RunAwayEndDistance);
+																								UE_LOG(
+																									LogTemp,
+																									Display,
+																									TEXT("[BossMovementB1] Summary Pass=%d Failures=%d BossID=Dungeon_WebMatriarch MovementProfileID=MoveProfile_WebMatriarch_KeepDistance"),
+																									FailureCount == 0 ? 1 : 0,
+																									FailureCount);
+																								FPlatformMisc::RequestExitWithStatus(false, FailureCount == 0 ? 0 : 93, TEXT("BossMovementB1Complete"));
+																							}),
+																							0.35f,
+																							false);
+																					}),
+																					0.70f,
+																					false);
+																			}),
+																			0.25f,
+																			false);
+																	}),
+																	0.65f,
+																	false);
+															}),
+															0.18f,
+															false);
+													}),
+													0.55f,
+													false);
+											}),
+											0.20f,
+											false);
+									}),
+									0.65f,
+									false);
+							}),
+							0.20f,
+							false);
+					}),
+					0.18f,
+					false);
+			}),
+			0.85f,
+			false);
+		return;
+	}
+
+	if (Mode == TEXT("bossmovementb2"))
+	{
+		UWorld* World = GetWorld();
+		UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+		if (!World || !T66GI)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossMovementB2] Missing world or T66GameInstance."));
+			FPlatformMisc::RequestExitWithStatus(false, 94, TEXT("BossMovementB2MissingWorld"));
+			return;
+		}
+
+		APawn* ControlledPawn = GetPawn();
+		const FVector PlayerLocation = T66GameplayLayout::GetStartAreaCenter(120.f);
+		const TWeakObjectPtr<APawn> ProofTargetPawn(ControlledPawn);
+		const auto PinProofTarget = [ProofTargetPawn, PlayerLocation]()
+		{
+			if (APawn* Pawn = ProofTargetPawn.Get())
+			{
+				Pawn->SetActorEnableCollision(false);
+				Pawn->SetActorLocation(PlayerLocation, false);
+				if (ACharacter* CharacterPawn = Cast<ACharacter>(Pawn))
+				{
+					if (UCharacterMovementComponent* Movement = CharacterPawn->GetCharacterMovement())
+					{
+						Movement->StopMovementImmediately();
+						Movement->DisableMovement();
+					}
+				}
+			}
+		};
+		PinProofTarget();
+		FTimerHandle PinProofTargetHandle;
+		World->GetTimerManager().SetTimer(
+			PinProofTargetHandle,
+			FTimerDelegate::CreateLambda(PinProofTarget),
+			0.02f,
+			true);
+
+		FBossData BossData;
+		if (!T66GI->GetBossData(FName(TEXT("Dungeon_WebMatriarch")), BossData))
+		{
+			BossData.BossID = FName(TEXT("Dungeon_WebMatriarch"));
+			BossData.MaxHP = 1500;
+			BossData.AwakenDistance = 2400.f;
+			BossData.ProjectileSpeed = 930.f;
+			BossData.ProjectileDamageHearts = 1;
+			BossData.BossPartProfile = ET66BossPartProfile::Sharpshooter;
+			BossData.PlaceholderColor = FLinearColor(0.50f, 0.42f, 0.68f, 1.f);
+		}
+		BossData.MoveSpeed = 520.f;
+		BossData.FireIntervalSeconds = 999.f;
+		BossData.AwakenDistance = 2400.f;
+		BossData.BossMovementProfileID = FName(TEXT("MoveProfile_WebMatriarch_RetreatCast"));
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Name = FName(TEXT("T66BossMovementB2_WebMatriarch"));
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AT66BossBase* Boss = World->SpawnActor<AT66BossBase>(
+			AT66BossBase::StaticClass(),
+			PlayerLocation + FVector(640.f, 0.f, 0.f),
+			FRotator(0.f, 180.f, 0.f),
+			SpawnParams);
+		if (!Boss)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[BossMovementB2] Failed to spawn proof boss."));
+			FPlatformMisc::RequestExitWithStatus(false, 95, TEXT("BossMovementB2SpawnFailed"));
+			return;
+		}
+
+		Boss->Tags.AddUnique(FName(TEXT("T66Automation_BossMovementB2")));
+		Boss->InitializeBoss(BossData);
+		Boss->ForceAwaken();
+		FT66VisualUtil::SnapToGround(Boss, World);
+		Boss->ResetBossAttackOwnershipAutomationCounters();
+		Boss->ResetBossMovementAutomationState();
+
+		const float InitialDistance = FVector::Dist2D(Boss->GetActorLocation(), PlayerLocation);
+		Boss->ForceBossAttackForAutomation(FName(TEXT("LegacyProjectile_Sharpshooter")), FName(TEXT("Head")));
+
+		FTimerHandle CoordinationCheckHandle;
+		World->GetTimerManager().SetTimer(
+			CoordinationCheckHandle,
+			FTimerDelegate::CreateLambda([Boss, PlayerLocation, InitialDistance]()
+			{
+				const float CoordinatedDistance = FVector::Dist2D(Boss->GetActorLocation(), PlayerLocation);
+				const FString MovementMode = Boss->GetBossMovementAutomationMode().ToString();
+				const int32 QueuedCount = Boss->GetBossAttackOwnershipAutomationCounter(
+					FName(TEXT("Queued")),
+					FName(TEXT("LegacyProjectile_Sharpshooter")),
+					FName(TEXT("Head")));
+				const int32 FiredCount = Boss->GetBossAttackOwnershipAutomationCounter(
+					FName(TEXT("Fired")),
+					FName(TEXT("LegacyProjectile_Sharpshooter")),
+					FName(TEXT("Head")));
+				const bool bPartOwnedAttackQueued = QueuedCount > 0;
+				const bool bPartOwnedAttackFired = FiredCount > 0;
+				const bool bCoordinatedRetreatActive = MovementMode.Contains(TEXT("Pattern.RetreatThenCast.Active"));
+				const bool bRetreatDistanceIncreased = CoordinatedDistance > InitialDistance + 5.f;
+				const int32 FailureCount =
+					(bPartOwnedAttackQueued ? 0 : 1)
+					+ (bPartOwnedAttackFired ? 0 : 1)
+					+ (bCoordinatedRetreatActive ? 0 : 1)
+					+ (bRetreatDistanceIncreased ? 0 : 1);
+
+				UE_LOG(
+					LogTemp,
+					Display,
+					TEXT("[BossMovementB2] Gate PartOwnedAttackQueued=%d PartOwnedAttackFired=%d CoordinatedRetreatActive=%d RetreatDistanceIncreased=%d Mode=%s InitialDistance=%.1f CoordinatedDistance=%.1f"),
+					bPartOwnedAttackQueued ? 1 : 0,
+					bPartOwnedAttackFired ? 1 : 0,
+					bCoordinatedRetreatActive ? 1 : 0,
+					bRetreatDistanceIncreased ? 1 : 0,
+					*MovementMode,
+					InitialDistance,
+					CoordinatedDistance);
+				UE_LOG(
+					LogTemp,
+					Display,
+					TEXT("[BossMovementB2] Summary Pass=%d Failures=%d BossID=Dungeon_WebMatriarch MovementProfileID=MoveProfile_WebMatriarch_RetreatCast AttackID=LegacyProjectile_Sharpshooter OwningPartID=Head"),
+					FailureCount == 0 ? 1 : 0,
+					FailureCount);
+				FPlatformMisc::RequestExitWithStatus(false, FailureCount == 0 ? 0 : 96, TEXT("BossMovementB2Complete"));
+			}),
+			0.45f,
+			false);
+		return;
+	}
+#endif
 
 	if (Mode == TEXT("slimekingbossqa") || Mode == TEXT("slimekingtelegraphqa") || Mode == TEXT("bosstelegraphqa"))
 	{
@@ -5858,26 +7477,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		return;
 	}
 
-	if (Mode == TEXT("arcadeselector") || Mode == TEXT("arcade") || Mode == TEXT("arcademachine"))
-	{
-		if (T66DeprecatedFeatures::AreArcadeInteractablesDisabled()
-			|| T66DeprecatedFeatures::AreArcadeGamesDisabled())
-		{
-			return;
-		}
-
-		if (AT66ArcadeMachineInteractable* AutomationArcade = GetWorld()->SpawnActor<AT66ArcadeMachineInteractable>(
-			AT66ArcadeMachineInteractable::StaticClass(),
-			GetPawn() ? GetPawn()->GetActorLocation() + FVector(360.f, 0.f, 0.f) : FVector::ZeroVector,
-			FRotator::ZeroRotator))
-		{
-			AutomationArcade->SetActorHiddenInGame(true);
-			AutomationArcade->SetActorEnableCollision(false);
-			AutomationArcade->Interact(this);
-		}
-		return;
-	}
-
 	if (GameplayHUDWidget)
 	{
 		GameplayHUDWidget->SetFullMapOpen(false);
@@ -6406,352 +8005,6 @@ void AT66PlayerController::OpenCollectorOverlay()
 	}
 }
 
-bool AT66PlayerController::OpenArcadePopup(
-	const FT66ArcadeInteractableData& ArcadeData,
-	AT66ArcadeInteractableBase* SourceInteractable)
-{
-	if (T66DeprecatedFeatures::AreArcadeGamesDisabled())
-	{
-		return false;
-	}
-
-	if (!IsGameplayLevel()
-		|| ArcadeData.ArcadeClass != ET66ArcadeInteractableClass::PopupArcade
-		|| IsArcadePopupOpen()
-		|| !CanUseCombatMouseInput())
-	{
-		return false;
-	}
-
-	if (bInventoryInspectOpen)
-	{
-		SetInventoryInspectOpen(false);
-	}
-
-	if (!SpawnArcadePopupWidget(ArcadeData, SourceInteractable))
-	{
-		return false;
-	}
-
-	FInputModeGameAndUI InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	SetInputMode(InputMode);
-	bShowMouseCursor = true;
-	bEnableClickEvents = true;
-	bEnableMouseOverEvents = true;
-	return true;
-}
-
-bool AT66PlayerController::OpenArcadePopupFromFrontend(const FT66ArcadeInteractableData& ArcadeData)
-{
-	if (T66DeprecatedFeatures::AreArcadeGamesDisabled())
-	{
-		return false;
-	}
-
-	if (ArcadeData.ArcadeClass != ET66ArcadeInteractableClass::PopupArcade || IsArcadePopupOpen())
-	{
-		return false;
-	}
-
-	if (!SpawnArcadePopupWidget(ArcadeData, nullptr))
-	{
-		return false;
-	}
-
-	FInputModeGameAndUI InputMode;
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	SetInputMode(InputMode);
-	bShowMouseCursor = true;
-	bEnableClickEvents = true;
-	bEnableMouseOverEvents = true;
-	return true;
-}
-bool AT66PlayerController::SpawnArcadePopupWidget(
-	const FT66ArcadeInteractableData& ArcadeData,
-	AT66ArcadeInteractableBase* SourceInteractable)
-{
-	if (T66DeprecatedFeatures::AreArcadeGamesDisabled())
-	{
-		return false;
-	}
-
-	UT66ArcadePopupWidget* NewPopup = nullptr;
-	TSubclassOf<UT66ArcadePopupWidget> PopupWidgetClass = ArcadeData.PopupWidgetClass;
-	if (!PopupWidgetClass)
-	{
-		if (ArcadeData.ArcadeGameType == ET66ArcadeGameType::Random)
-		{
-			PopupWidgetClass = UT66ArcadeSelectionWidget::StaticClass();
-		}
-		else if (ArcadeData.ArcadeGameType != ET66ArcadeGameType::None)
-		{
-			const FName ArcadeGameID = T66WidgetGames::Registry::GetArcadeRowID(ArcadeData.ArcadeGameType);
-			if (const FT66WidgetGameDescriptor* Descriptor = T66WidgetGames::Registry::FindDescriptor(ArcadeGameID))
-			{
-				if (UClass* ResolvedWidgetClass = T66WidgetGames::Registry::ResolveWidgetClass(*Descriptor).Get())
-				{
-					if (ResolvedWidgetClass->IsChildOf(UT66ArcadePopupWidget::StaticClass()))
-					{
-						PopupWidgetClass = ResolvedWidgetClass;
-					}
-				}
-			}
-
-			if (!PopupWidgetClass)
-			{
-				PopupWidgetClass = UT66BladeSweepArcadeWidget::StaticClass();
-			}
-		}
-	}
-
-	if (PopupWidgetClass)
-	{
-		NewPopup = CreateWidget<UT66ArcadePopupWidget>(this, PopupWidgetClass);
-	}
-
-	if (!NewPopup)
-	{
-		return false;
-	}
-
-	NewPopup->InitializeArcadePopup(ArcadeData, SourceInteractable);
-	FT66WidgetGameHostContext HostContext;
-	HostContext.WorldContextObject = this;
-	HostContext.OwningPlayer = this;
-	HostContext.ResultCallback = [WeakThis = TWeakObjectPtr<AT66PlayerController>(this)](const FT66WidgetGameResult& Result)
-	{
-		if (AT66PlayerController* This = WeakThis.Get())
-		{
-			This->HandleArcadeWidgetGameResult(Result);
-		}
-	};
-	ArcadePopupWidget = NewPopup;
-	ArcadePopupWidget->AddToViewport(110);
-
-	if (SourceInteractable)
-	{
-		StartArcadePopupCountdown(NewPopup, HostContext);
-	}
-	else
-	{
-		NewPopup->ActivateWidgetGame(HostContext);
-	}
-
-	return true;
-}
-
-void AT66PlayerController::StartArcadePopupCountdown(
-	UT66ArcadePopupWidget* PopupWidget,
-	const FT66WidgetGameHostContext& HostContext)
-{
-	if (!PopupWidget || PopupWidget != ArcadePopupWidget)
-	{
-		return;
-	}
-
-	ClearArcadePopupCountdown();
-
-	PendingArcadeWidgetGameHostContext = HostContext;
-	ArcadeCountdownDurationSeconds = 3.0f;
-	ArcadeCountdownStartTimeSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : FPlatformTime::Seconds();
-
-	TSharedRef<SWidget> CountdownOverlay =
-		SNew(SOverlay)
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
-			SNew(SBorder)
-			.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-			.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.72f))
-		]
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
-		.Padding(FMargin(24.f))
-		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Center)
-			[
-				SNew(STextBlock)
-				.Text(NSLOCTEXT("T66.Arcade", "ArcadeCountdownLabel", "ARCADE STARTING"))
-				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 28))
-				.ColorAndOpacity(FLinearColor(0.25f, 0.92f, 1.f, 1.f))
-				.Justification(ETextJustify::Center)
-			]
-			+ SVerticalBox::Slot()
-			.AutoHeight()
-			.HAlign(HAlign_Center)
-			.Padding(0.f, 12.f, 0.f, 0.f)
-			[
-				SAssignNew(ArcadeCountdownText, STextBlock)
-				.Text(NSLOCTEXT("T66.Arcade", "ArcadeCountdownThree", "3"))
-				.Font(FCoreStyle::GetDefaultFontStyle("Bold", 112))
-				.ColorAndOpacity(FLinearColor(1.f, 0.78f, 0.22f, 1.f))
-				.Justification(ETextJustify::Center)
-			]
-		];
-
-	ArcadeCountdownOverlayWidget = CountdownOverlay;
-	if (GEngine && GEngine->GameViewport)
-	{
-		GEngine->GameViewport->AddViewportWidgetContent(CountdownOverlay, 250);
-	}
-
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().SetTimer(
-			ArcadeCountdownTimerHandle,
-			this,
-			&AT66PlayerController::TickArcadePopupCountdown,
-			0.10f,
-			true);
-	}
-}
-
-void AT66PlayerController::TickArcadePopupCountdown()
-{
-	if (!ArcadePopupWidget)
-	{
-		ClearArcadePopupCountdown();
-		return;
-	}
-
-	const double NowSeconds = GetWorld() ? GetWorld()->GetTimeSeconds() : FPlatformTime::Seconds();
-	const float RemainingSeconds = ArcadeCountdownDurationSeconds - static_cast<float>(NowSeconds - ArcadeCountdownStartTimeSeconds);
-	if (RemainingSeconds <= 0.f)
-	{
-		FinishArcadePopupCountdown();
-		return;
-	}
-
-	if (ArcadeCountdownText.IsValid())
-	{
-		const int32 DisplaySeconds = FMath::Clamp(FMath::CeilToInt(RemainingSeconds), 1, 3);
-		ArcadeCountdownText->SetText(FText::AsNumber(DisplaySeconds));
-	}
-}
-
-void AT66PlayerController::FinishArcadePopupCountdown()
-{
-	UT66ArcadePopupWidget* PopupWidget = ArcadePopupWidget;
-	const FT66WidgetGameHostContext HostContext = PendingArcadeWidgetGameHostContext;
-	ClearArcadePopupCountdown();
-
-	if (PopupWidget && PopupWidget == ArcadePopupWidget)
-	{
-		PopupWidget->ActivateWidgetGame(HostContext);
-	}
-}
-
-void AT66PlayerController::ClearArcadePopupCountdown()
-{
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(ArcadeCountdownTimerHandle);
-	}
-
-	if (ArcadeCountdownOverlayWidget.IsValid() && GEngine && GEngine->GameViewport)
-	{
-		GEngine->GameViewport->RemoveViewportWidgetContent(ArcadeCountdownOverlayWidget.ToSharedRef());
-	}
-
-	ArcadeCountdownOverlayWidget.Reset();
-	ArcadeCountdownText.Reset();
-	PendingArcadeWidgetGameHostContext = FT66WidgetGameHostContext();
-}
-
-void AT66PlayerController::HandleArcadeWidgetGameResult(const FT66WidgetGameResult& Result)
-{
-	LastArcadeWidgetGameResultID = Result.GameID;
-	LastArcadeWidgetGameFinalScore = Result.bHasFinalScore ? Result.FinalScore : 0;
-	bLastArcadeWidgetGameSuccessful = Result.bSuccessful;
-}
-
-void AT66PlayerController::HandleArcadeGameSelected(
-	UT66ArcadePopupWidget* SelectorWidget,
-	const FT66ArcadeInteractableData& SelectedGameData)
-{
-	if (!SelectorWidget || SelectorWidget != ArcadePopupWidget)
-	{
-		return;
-	}
-
-	AT66ArcadeInteractableBase* SourceInteractable = SelectorWidget->GetSourceInteractable();
-	if (SelectorWidget->IsInViewport())
-	{
-		SelectorWidget->RemoveFromParent();
-	}
-	ArcadePopupWidget = nullptr;
-
-	if (!SpawnArcadePopupWidget(SelectedGameData, SourceInteractable))
-	{
-		if (SourceInteractable)
-		{
-			SourceInteractable->HandleArcadePopupDismissedWithoutResult();
-		}
-		if (IsGameplayLevel())
-		{
-			RestoreGameplayInputMode();
-		}
-	}
-}
-
-void AT66PlayerController::HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, const bool bSucceeded, const int32 FinalScore)
-{
-	if (PopupWidget != ArcadePopupWidget)
-	{
-		return;
-	}
-
-	CloseArcadePopup(bSucceeded, FinalScore);
-}
-
-void AT66PlayerController::CloseArcadePopup(const bool bSucceeded, const int32 FinalScore)
-{
-	ClearArcadePopupCountdown();
-
-	UT66ArcadePopupWidget* PopupWidget = ArcadePopupWidget;
-	if (!PopupWidget)
-	{
-		return;
-	}
-
-	AT66ArcadeInteractableBase* SourceInteractable = PopupWidget->GetSourceInteractable();
-	ArcadePopupWidget = nullptr;
-
-	if (PopupWidget->IsInViewport())
-	{
-		PopupWidget->RemoveFromParent();
-	}
-
-	if (SourceInteractable)
-	{
-		if (PopupWidget->ReportsArcadeResult())
-		{
-			SourceInteractable->HandleArcadePopupClosed(bSucceeded, FinalScore);
-		}
-		else
-		{
-			SourceInteractable->HandleArcadePopupDismissedWithoutResult();
-		}
-	}
-
-	if (IsGameplayLevel() && !IsPaused() && !(UIManager && UIManager->IsModalActive()))
-	{
-		RestoreGameplayInputMode();
-	}
-}
-
-bool AT66PlayerController::IsArcadePopupOpen() const
-{
-	return ArcadePopupWidget && ArcadePopupWidget->IsInViewport();
-}
-
-
 void AT66PlayerController::OpenCowardicePrompt(AT66CowardiceGate* Gate)
 {
 	if (!IsGameplayLevel() || !Gate) return;
@@ -6853,7 +8106,6 @@ void AT66PlayerController::OnPlayerDied()
 	}
 #endif
 	EndHeroOneScopedUlt();
-	CloseArcadePopup(false);
 
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
@@ -6884,6 +8136,14 @@ void AT66PlayerController::OnPlayerDied()
 		World->GetTimerManager().SetTimer(DeathVFXTimerHandle, [this]()
 		{
 			SetPause(true);
+			if (AT66GameMode* GameMode = GetWorld() ? Cast<AT66GameMode>(UGameplayStatics::GetGameMode(this)) : nullptr)
+			{
+				if (GameMode->ShouldEndgameDeathOpenRunSummary())
+				{
+					GameMode->HandleEndgameDeathRunSummary(this);
+					return;
+				}
+			}
 			EnsureGameplayUIManager();
 			if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 			{
@@ -6910,6 +8170,14 @@ void AT66PlayerController::OnPlayerDied()
 	else
 	{
 		SetPause(true);
+		if (AT66GameMode* GameMode = GetWorld() ? Cast<AT66GameMode>(UGameplayStatics::GetGameMode(this)) : nullptr)
+		{
+			if (GameMode->ShouldEndgameDeathOpenRunSummary())
+			{
+				GameMode->HandleEndgameDeathRunSummary(this);
+				return;
+			}
+		}
 		EnsureGameplayUIManager();
 		if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 		{
@@ -6932,7 +8200,6 @@ void AT66PlayerController::OnPlayerDied()
 void AT66PlayerController::ShowVictoryRunSummary()
 {
 	EndHeroOneScopedUlt();
-	CloseArcadePopup(false);
 
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
@@ -7085,12 +8352,6 @@ void AT66PlayerController::HandleEscapePressed()
 	if (bInventoryInspectOpen)
 	{
 		SetInventoryInspectOpen(false);
-		return;
-	}
-
-	if (IsArcadePopupOpen())
-	{
-		CloseArcadePopup(false);
 		return;
 	}
 

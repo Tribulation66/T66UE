@@ -1,0 +1,86 @@
+{
+  "batch": "Pixal3D_PipelineSmoke01",
+  "updated_utc": "2026-05-18T19:41:58+00:00",
+  "rows": [
+    {
+      "id": "tree_organic_prop",
+      "kind": "tree",
+      "display_name": "Tree organic prop",
+      "quad_retro": false,
+      "source_image": "Inputs/SourceImages/tree_organic_prop.png",
+      "generation_attempts": [
+        {
+          "label": "requested",
+          "decimation": 80000,
+          "remesh": true,
+          "status": "ok",
+          "duration_seconds": 123.6,
+          "pod_size_bytes": 3356660,
+          "local_size_bytes": 3356660,
+          "server_export_headers": {
+            "X-Pixal3D-Export-Attempt": "1",
+            "X-Pixal3D-Export-Label": "requested",
+            "X-Pixal3D-Export-Decimation": "80000",
+            "X-Pixal3D-Export-Remesh": "1",
+            "X-Pixal3D-Export-Attempts": "1"
+          }
+        }
+      ],
+      "raw_pixal3d_glb": "Raw/Pixal3D/tree_organic_prop/tree_organic_prop_Pixal3D_R1024_S1337_D80000_Rmx1_requested.glb",
+      "raw_pixal3d_glb_size_bytes": 3356660,
+      "generation_duration_seconds": 123.6,
+      "generation_attempt_index": 1,
+      "generation_decimation": 80000,
+      "generation_remesh": true,
+      "generation_fallback_used": false,
+      "generation_server_export_headers": {
+        "X-Pixal3D-Export-Attempt": "1",
+        "X-Pixal3D-Export-Label": "requested",
+        "X-Pixal3D-Export-Decimation": "80000",
+        "X-Pixal3D-Export-Remesh": "1",
+        "X-Pixal3D-Export-Attempts": "1"
+      },
+      "qa_front_render": "QA/Pixal3DFront/tree_organic_prop_front.png",
+      "qa_metadata": "QA/Pixal3DFront/tree_organic_prop_front_metadata.json",
+      "qa_raw_triangles": 74144,
+      "qa_bounds": {
+        "min": [
+          -0.39632052183151245,
+          -0.19139547646045685,
+          -0.48636099696159363
+        ],
+        "max": [
+          0.401080846786499,
+          0.08190067112445831,
+          0.42644116282463074
+        ],
+        "size": [
+          0.7974013686180115,
+          0.27329614758491516,
+          0.9128021597862244
+        ]
+      }
+    },
+    {
+      "id": "stone_wall_module",
+      "kind": "wall",
+      "display_name": "Stone wall module",
+      "quad_retro": false,
+      "source_image": "Inputs/SourceImages/stone_wall_module.png"
+    },
+    {
+      "id": "humanoid_character",
+      "kind": "character",
+      "display_name": "Humanoid character",
+      "quad_retro": true,
+      "source_image": "Inputs/SourceImages/humanoid_character.png"
+    },
+    {
+      "id": "horned_monster",
+      "kind": "monster",
+      "display_name": "Horned monster",
+      "quad_retro": true,
+      "source_image": "Inputs/SourceImages/horned_monster.png"
+    }
+  ]
+}

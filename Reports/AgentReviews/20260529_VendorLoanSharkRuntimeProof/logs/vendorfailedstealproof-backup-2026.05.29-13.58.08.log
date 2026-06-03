@@ -1,0 +1,952 @@
+﻿Log file open, 05/29/26 10:57:52
+LogWindows: Failed to load 'aqProf.dll' (GetLastError=126)
+LogWindows: File 'aqProf.dll' does not exist
+LogProfilingDebugging: Loading WinPixEventRuntime.dll for PIX profiling (from ../../../Engine/Binaries/ThirdParty/Windows/WinPixEventRuntime/x64).
+LogWindows: Failed to load 'VtuneApi.dll' (GetLastError=126)
+LogWindows: File 'VtuneApi.dll' does not exist
+LogWindows: Failed to load 'VtuneApi32e.dll' (GetLastError=126)
+LogWindows: File 'VtuneApi32e.dll' does not exist
+LogWindows: Enabling Tpause support
+LogWindows: Custom abort handler registered for crash reporting.
+LogCore: Display: UTS: The Unreal Trace Server binary is not available ('../../../Engine/Binaries/Win64/UnrealTraceServer.exe')
+LogTrace: Initializing trace...
+LogTrace: Finished trace initialization.
+LogCsvProfiler: Display: Metadata set : platform="Windows"
+LogCsvProfiler: Display: Metadata set : config="Development"
+LogCsvProfiler: Display: Metadata set : buildversion="++UE5+Release-5.7-CL-48512491"
+LogCsvProfiler: Display: Metadata set : engineversion="5.7.1-48512491+++UE5+Release-5.7"
+LogCsvProfiler: Display: Metadata set : enginereleaseversion="5.7.1"
+LogCsvProfiler: Display: Metadata set : os="Windows 11 (25H2) [10.0.26200.8457] "
+LogCsvProfiler: Display: Metadata set : cpu="GenuineIntel|Intel(R) Core(TM) i9-14900HX"
+LogCsvProfiler: Display: Metadata set : pgoenabled="0"
+LogCsvProfiler: Display: Metadata set : pgoprofilingenabled="0"
+LogCsvProfiler: Display: Metadata set : ltoenabled="0"
+LogCsvProfiler: Display: Metadata set : asan="0"
+LogCsvProfiler: Display: Metadata set : mergedmodules="0"
+LogCsvProfiler: Display: Metadata set : commandline="" -T66Entry=Run:Tower -T66GameplayAutoCapture=vendorfailedstealproof -unattended -nop4 -nosplash -forcelogflush -abslog=C:\UE\T66\Reports\AgentReviews\20260529_VendorLoanSharkRuntimeProof\logs\vendorfailedstealproof.log""
+LogCsvProfiler: Display: Metadata set : loginid="6e1893814737cdf6e2edcbb02b9a616f"
+LogCsvProfiler: Display: Metadata set : llm="0"
+LogPakFile: Initializing PakPlatformFile
+LogIoDispatcher: Display: Reading toc: ../../../T66/Content/Paks/global.utoc
+LogIoDispatcher: Display: Toc loaded : ../../../T66/Content/Paks/global.utoc, Id=ffffffffffffffff, Order=0, EntryCount=1, SignatureHash=0000000000000000000000000000000000000000
+LogIoDispatcher: Display: Mounting container '../../../T66/Content/Paks/global.utoc' in location slot 0
+LogPakFile: Display: Initialized I/O dispatcher file backend. Mounted the global container: ../../../T66/Content/Paks/global.utoc
+LogPakFile: Display: Found Pak file ../../../T66/Content/Paks/T66-Windows.pak attempting to mount.
+LogPakFile: Display: Mounting pak file ../../../T66/Content/Paks/T66-Windows.pak.
+LogIoDispatcher: Display: Reading toc: ../../../T66/Content/Paks/T66-Windows.utoc
+LogIoDispatcher: Display: Toc loaded : ../../../T66/Content/Paks/T66-Windows.utoc, Id=f481395a4453606a, Order=4, EntryCount=7199, SignatureHash=0000000000000000000000000000000000000000
+LogIoDispatcher: Display: Mounting container '../../../T66/Content/Paks/T66-Windows.utoc' in location slot 0
+LogFilePackageStore: Mounting container: Id=f481395a4453606a, Order=4, NumPackages=4168
+LogPakFile: Display: Mounted IoStore container "../../../T66/Content/Paks/T66-Windows.utoc"
+LogPakFile: Display: Mounted Pak file '../../../T66/Content/Paks/T66-Windows.pak', mount point: '../../../'
+LogStats: Stats thread started at 0.208867
+LogAssetRegistry: Premade AssetRegistry loaded from '../../../T66/AssetRegistry.bin'
+LogCsvProfiler: Display: Metadata set : systemresolution.resx="1280"
+LogCsvProfiler: Display: Metadata set : systemresolution.resy="720"
+LogICUInternationalization: OS requested locale 'en-US' is not supported. Using the OS requested language of 'en-US' as the locale.
+LogICUInternationalization: ICU TimeZone Detection - Raw Offset: -3:00, Platform Override: ''
+LogInit: Session CrashGUID >====================================================
+         Session CrashGUID >   UECC-Windows-4FC4DFC549C447A10ED1A8BF02F89782
+         Session CrashGUID >====================================================
+LogConfig: No local boot hotfix file found at: [../../../T66/Saved/PersistentDownloadDir/HotfixForNextBoot.txt]
+LogAudio: Display: Pre-Initializing Audio Device Manager...
+LogAudio: Display: AudioInfo: 'OPUS' Registered
+LogAudioDebug: Display: Lib vorbis DLL was dynamically loaded.
+LogAudio: Display: AudioInfo: 'OGG' Registered
+LogAudio: Display: AudioInfo: 'ADPCM' Registered
+LogAudio: Display: AudioInfo: 'PCM' Registered
+LogAudio: Display: AudioInfo: 'BINKA' Registered
+LogAudio: Display: AudioInfo: 'RADA' Registered
+LogAudio: Display: Audio Device Manager Pre-Initialized
+LogPluginManager: Mounting Engine plugin Paper2D
+LogPluginManager: Mounting Engine plugin AISupport
+LogPluginManager: Mounting Engine plugin EnvironmentQueryEditor
+LogPluginManager: Mounting Engine plugin ACLPlugin
+LogPluginManager: Mounting Engine plugin AnimationData
+LogPluginManager: Mounting Engine plugin ControlRigModules
+LogPluginManager: Mounting Engine plugin ControlRigSpline
+LogPluginManager: Mounting Engine plugin ControlRig
+LogPluginManager: Mounting Engine plugin DeformerGraph
+LogPluginManager: Mounting Engine plugin EaseCurveTool
+LogPluginManager: Mounting Engine plugin IKRig
+LogPluginManager: Mounting Engine plugin LiveLink
+LogPluginManager: Mounting Engine plugin RigLogic
+LogPluginManager: Mounting Engine plugin SkeletalMeshModelingTools
+LogPluginManager: Mounting Engine plugin TweeningUtils
+LogPluginManager: Mounting Engine plugin AudioInsights
+LogPluginManager: Mounting Engine plugin BaseMaterial
+LogPluginManager: Mounting Engine plugin Bridge
+LogPluginManager: Mounting Engine plugin CameraShakePreviewer
+LogPluginManager: Mounting Engine plugin EngineCameras
+LogPluginManager: Mounting Engine plugin GameplayCameras
+LogPluginManager: Mounting Engine plugin ChaosClothAsset
+LogPluginManager: Mounting Engine plugin ChaosCloth
+LogPluginManager: Mounting Engine plugin ChaosVD
+LogPluginManager: Mounting Engine plugin CompositeCore
+LogPluginManager: Mounting Engine plugin OpenColorIO
+LogPluginManager: Mounting Engine plugin OodleNetwork
+LogPluginManager: Mounting Engine plugin AnimationSharing
+LogPluginManager: Mounting Engine plugin ConcertMain
+LogPluginManager: Mounting Engine plugin ConcertSyncClient
+LogPluginManager: Mounting Engine plugin ConcertSyncCore
+LogPluginManager: Mounting Engine plugin ConcertSharedSlate
+LogPluginManager: Mounting Engine plugin DumpGPUServices
+LogPluginManager: Mounting Engine plugin GPUReshape
+LogPluginManager: Mounting Engine plugin NamingTokens
+LogPluginManager: Mounting Engine plugin PixWinPlugin
+LogPluginManager: Mounting Engine plugin PluginUtils
+LogPluginManager: Mounting Engine plugin RenderDocPlugin
+LogPluginManager: Mounting Engine plugin UObjectPlugin
+LogPluginManager: Mounting Engine plugin AssetManagerEditor
+LogPluginManager: Mounting Engine plugin BlueprintHeaderView
+LogPluginManager: Mounting Engine plugin ColorGrading
+LogPluginManager: Mounting Engine plugin ConsoleVariables
+LogPluginManager: Mounting Engine plugin ContentBrowserAssetDataSource
+LogPluginManager: Mounting Engine plugin CurveEditorTools
+LogPluginManager: Mounting Engine plugin DataValidation
+LogPluginManager: Mounting Engine plugin EditorScriptingUtilities
+LogPluginManager: Mounting Engine plugin EngineAssetDefinitions
+LogPluginManager: Mounting Engine plugin FacialAnimation
+LogPluginManager: Mounting Engine plugin GeometryMode
+LogPluginManager: Mounting Engine plugin LightMixer
+LogPluginManager: Mounting Engine plugin ObjectMixer
+LogPluginManager: Mounting Engine plugin SequencerAnimTools
+LogPluginManager: Mounting Engine plugin SpeedTreeImporter
+LogPluginManager: Mounting Engine plugin UMGWidgetPreview
+LogPluginManager: Mounting Engine plugin UVEditor
+LogPluginManager: Mounting Engine plugin EnhancedInput
+LogPluginManager: Mounting Engine plugin DatasmithContent
+LogPluginManager: Mounting Engine plugin GLTFExporter
+LogPluginManager: Mounting Engine plugin VariantManagerContent
+LogPluginManager: Mounting Engine plugin VariantManager
+LogPluginManager: Mounting Engine plugin AnimToTexture
+LogPluginManager: Mounting Engine plugin AutomationUtils
+LogPluginManager: Mounting Engine plugin BackChannel
+LogPluginManager: Mounting Engine plugin ChaosCaching
+LogPluginManager: Mounting Engine plugin ChaosEditor
+LogPluginManager: Mounting Engine plugin ChaosNiagara
+LogPluginManager: Mounting Engine plugin ChaosSolverPlugin
+LogPluginManager: Mounting Engine plugin ChaosUserDataPT
+LogPluginManager: Mounting Engine plugin CharacterAI
+LogPluginManager: Mounting Engine plugin Dataflow
+LogPluginManager: Mounting Engine plugin EditorDataStorageFeatures
+LogPluginManager: Mounting Engine plugin EditorDataStorage
+LogPluginManager: Mounting Engine plugin Fracture
+LogPluginManager: Mounting Engine plugin FullBodyIK
+LogPluginManager: Mounting Engine plugin GeometryCollectionPlugin
+LogPluginManager: Mounting Engine plugin GeometryDataflow
+LogPluginManager: Mounting Engine plugin GlobalConfigurationData
+LogPluginManager: Mounting Engine plugin LevelSequenceNavigatorBridge
+LogPluginManager: Mounting Engine plugin LocalizableMessage
+LogPluginManager: Mounting Engine plugin NFORDenoise
+LogPluginManager: Mounting Engine plugin PlatformCrypto
+LogPluginManager: Mounting Engine plugin PythonScriptPlugin
+LogPluginManager: Mounting Engine plugin RuntimeTelemetry
+LogPluginManager: Mounting Engine plugin ToolPresets
+LogPluginManager: Mounting Engine plugin Cascade
+LogPluginManager: Mounting Engine plugin NiagaraPreviewContent
+LogPluginManager: Mounting Engine plugin NiagaraSimCaching
+LogPluginManager: Mounting Engine plugin Niagara
+LogPluginManager: Mounting Engine plugin Fab
+LogPluginManager: Mounting Engine plugin AlembicImporter
+LogPluginManager: Mounting Engine plugin USDImporter
+LogPluginManager: Mounting Engine plugin InterchangeAssets
+LogPluginManager: Mounting Engine plugin InterchangeEditor
+LogPluginManager: Mounting Engine plugin Interchange
+LogPluginManager: Mounting Engine plugin FabLauncher
+LogPluginManager: Mounting Engine plugin AvfMedia
+LogPluginManager: Mounting Engine plugin D3D12VideoDecodersElectra
+LogPluginManager: Mounting Engine plugin ElectraCDM
+LogPluginManager: Mounting Engine plugin ElectraCodecs
+LogPluginManager: Mounting Engine plugin ElectraPlayer
+LogPluginManager: Mounting Engine plugin ElectraSubtitles
+LogPluginManager: Mounting Engine plugin ElectraUtil
+LogPluginManager: Mounting Engine plugin ImgMedia
+LogPluginManager: Mounting Engine plugin MediaCompositing
+LogPluginManager: Mounting Engine plugin MediaPlate
+LogPluginManager: Mounting Engine plugin OpusDecoderElectra
+LogPluginManager: Mounting Engine plugin WebMMedia
+LogPluginManager: Mounting Engine plugin WmfMedia
+LogPluginManager: Mounting Engine plugin MeshPainting
+LogPluginManager: Mounting Engine plugin TcpMessaging
+LogPluginManager: Mounting Engine plugin UdpMessaging
+LogPluginManager: Mounting Engine plugin MetaHumanSDK
+LogPluginManager: Mounting Engine plugin ActorSequence
+LogPluginManager: Mounting Engine plugin LevelSequenceEditor
+LogPluginManager: Mounting Engine plugin MovieRenderPipeline
+LogPluginManager: Mounting Engine plugin SequenceValidator
+LogPluginManager: Mounting Engine plugin SequencerScripting
+LogPluginManager: Mounting Engine plugin TemplateSequence
+LogPluginManager: Mounting Engine plugin NNEDenoiser
+LogPluginManager: Mounting Engine plugin NNERuntimeORT
+LogPluginManager: Mounting Engine plugin OnlineBase
+LogPluginManager: Mounting Engine plugin OnlineServices
+LogPluginManager: Mounting Engine plugin OnlineSubsystemNull
+LogPluginManager: Mounting Engine plugin OnlineSubsystemSteam
+LogPluginManager: Mounting Engine plugin OnlineSubsystemUtils
+LogPluginManager: Mounting Engine plugin OnlineSubsystem
+LogPluginManager: Mounting Engine plugin SocketSubsystemSteamIP
+LogPluginManager: Mounting Engine plugin LauncherChunkInstaller
+LogPluginManager: Mounting Engine plugin ActorLayerUtilities
+LogPluginManager: Mounting Engine plugin AnalyticsBlueprintLibrary
+LogPluginManager: Mounting Engine plugin AndroidFileServer
+LogPluginManager: Mounting Engine plugin AndroidPermission
+LogPluginManager: Mounting Engine plugin AppleImageUtils
+LogPluginManager: Mounting Engine plugin ArchVisCharacter
+LogPluginManager: Mounting Engine plugin AssetTags
+LogPluginManager: Mounting Engine plugin AudioCapture
+LogPluginManager: Mounting Engine plugin AudioSynesthesia
+LogPluginManager: Mounting Engine plugin AudioWidgets
+LogPluginManager: Mounting Engine plugin CableComponent
+LogPluginManager: Mounting Engine plugin ChunkDownloader
+LogPluginManager: Mounting Engine plugin ComputeFramework
+LogPluginManager: Mounting Engine plugin CustomMeshComponent
+LogPluginManager: Mounting Engine plugin SQLiteCore
+LogPluginManager: Mounting Engine plugin ExampleDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin GeometryCache
+LogPluginManager: Mounting Engine plugin GeometryProcessing
+LogPluginManager: Mounting Engine plugin GooglePAD
+LogPluginManager: Mounting Engine plugin HairStrands
+LogPluginManager: Mounting Engine plugin InputDebugging
+LogPluginManager: Mounting Engine plugin LocationServicesBPLibrary
+LogPluginManager: Mounting Engine plugin Metasound
+LogPluginManager: Mounting Engine plugin MobilePatchingUtils
+LogPluginManager: Mounting Engine plugin MsQuic
+LogPluginManager: Mounting Engine plugin ProceduralMeshComponent
+LogPluginManager: Mounting Engine plugin PropertyAccessEditor
+LogPluginManager: Mounting Engine plugin PropertyBindingUtils
+LogPluginManager: Mounting Engine plugin ResonanceAudio
+LogPluginManager: Mounting Engine plugin RigVM
+LogPluginManager: Mounting Engine plugin SignificanceManager
+LogPluginManager: Mounting Engine plugin SoundFields
+LogPluginManager: Mounting Engine plugin StateTree
+LogPluginManager: Mounting Engine plugin SteamShared
+LogPluginManager: Mounting Engine plugin Synthesis
+LogPluginManager: Mounting Engine plugin USDCore
+LogPluginManager: Mounting Engine plugin WaveTable
+LogPluginManager: Mounting Engine plugin WebMMoviePlayer
+LogPluginManager: Mounting Engine plugin WindowsDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin WindowsMoviePlayer
+LogPluginManager: Mounting Engine plugin XInputDevice
+LogPluginManager: Mounting Engine plugin InterchangeTests
+LogPluginManager: Mounting Engine plugin TraceUtilities
+LogPluginManager: Mounting Engine plugin Takes
+LogPluginManager: Mounting Engine plugin WorldMetrics
+LogWindows: Failed to load 'WinPixGpuCapturer.dll' (GetLastError=126)
+LogWindows: File 'WinPixGpuCapturer.dll' does not exist
+PixWinPlugin: PIX capture plugin failed to initialize! Check that the process is launched from PIX.
+RenderDocPlugin: Display: RenderDoc plugin will not be loaded. Use '-AttachRenderDoc' on the cmd line or enable 'renderdoc.AutoAttach' in the plugin settings.
+LogNFORDenoise: NFORDenoise function starting up
+LogStudioTelemetry: Started StudioTelemetry Session
+LogInit: Using libcurl 8.12.1
+LogInit:  - built for Windows
+LogInit:  - supports SSL with OpenSSL/1.1.1t
+LogInit:  - supports HTTP deflate (compression) using libz 1.3
+LogInit:  - other features:
+LogInit:      CURL_VERSION_SSL
+LogInit:      CURL_VERSION_LIBZ
+LogInit:      CURL_VERSION_IPV6
+LogInit:      CURL_VERSION_ASYNCHDNS
+LogInit:      CURL_VERSION_LARGEFILE
+LogInit:      CURL_VERSION_TLSAUTH_SRP
+LogInit:      CURL_VERSION_HTTP2
+LogInit:  CurlRequestOptions (configurable via config and command line):
+LogInit:  - bVerifyPeer = true  - Libcurl will verify peer certificate
+LogInit:  - bUseHttpProxy = false  - Libcurl will NOT use HTTP proxy
+LogInit:  - CVarHttpCurlReuseConnectionEnabled = true  - Libcurl will reuse connections
+LogInit:  - MaxHostConnections = 16  - Libcurl will limit the number of connections to a host
+LogInit:  - LocalHostAddr = Default
+LogInit:  - BufferSize = 65536
+LogInit: CreateHttpThread using FCurlMultiPollEventLoopHttpThread
+LogInit: Creating http thread with maximum 256 concurrent requests
+LogSteamShared: Display: Loading Steam SDK 1.61
+LogSteamShared: Steam SDK Loaded!
+LogSteamShared: Warning: SteamAPI failed to initialize, conditions not met.
+LogOnline: Warning: STEAM: Steamworks: SteamUtils() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamUser() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamFriends() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamRemoteStorage() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamUserStats() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamMatchmakingServers() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamApps() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamNetworking() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamMatchmaking() failed!
+LogOnline: STEAM: [AppId: 0] Client API initialized 0
+LogOnline: STEAM: [AppId: 4464300] Game Server API initialized 1
+LogOnline: Display: STEAM: OnlineSubsystemSteam::Shutdown()
+LogSteamShared: Unloading the Steam server API...
+LogOnline: Warning: STEAM: Steam API failed to initialize!
+LogOnline: Display: STEAM: OnlineSubsystemSteam::Shutdown()
+LogOnline: OSS: Unable to create OnlineSubsystem instance STEAM
+LogInit: WinSock: version 1.1 (2.2), MaxSocks=32767, MaxUdp=65467
+LogOnline: OSS: Created online subsystem instance for: NULL
+LogOnline: OSS: TryLoadSubsystemAndSetDefault: Loaded subsystem for type [NULL]
+LogSockets: Warning: bAllowP2PPacketRelay has moved from OnlineSubsystemSteam to SocketSubsystemSteamIP, previous location is depreceated
+LogSockets: Warning: P2PConnectionTimeout has moved from OnlineSubsystemSteam to SocketSubsystemSteamIP, previous location is depreceated
+LogSockets: Warning: Missing P2PCleanupTimeout key in SocketSubsystemSteamIP of DefaultEngine.ini
+LogInit: ExecutableName: T66.exe
+LogInit: Build: ++UE5+Release-5.7-CL-48512491
+LogInit: Platform=Windows
+LogInit: MachineId=6e1893814737cdf6e2edcbb02b9a616f
+LogInit: DeviceId=
+LogInit: Engine Version: 5.7.1-48512491+++UE5+Release-5.7
+LogInit: Compatible Engine Version: 5.7.0-47537391+++UE5+Release-5.7
+LogInit: Net CL: 47537391
+LogInit: OS: Windows 11 (25H2) [10.0.26200.8457] (), CPU: Intel(R) Core(TM) i9-14900HX, GPU: Intel(R) UHD Graphics
+LogInit: CPU Model ID: 6b71, microcode revision: 11f
+LogInit: Compiled (64-bit): Nov 20 2025 16:26:36
+LogInit: Architecture: x64
+LogInit: Compiled with Visual C++: 19.44.35220.00
+LogInit: Build Configuration: Development
+LogInit: Branch Name: ++UE5+Release-5.7
+LogInit: Command Line:  -T66Entry=Run:Tower -T66GameplayAutoCapture=vendorfailedstealproof -unattended -nop4 -nosplash -forcelogflush -abslog=C:\UE\T66\Reports\AgentReviews\20260529_VendorLoanSharkRuntimeProof\logs\vendorfailedstealproof.log
+LogInit: Base Directory: C:/UE/T66/Saved/StagedBuilds/Windows/T66/Binaries/Win64/
+LogInit: Allocator: Binned2
+LogInit: Installed Engine Build: 0
+LogInit: This binary is optimized with LTO: no, PGO: no, instrumented for PGO data collection: no
+LogDevObjectVersion: Number of dev versions registered: 41
+LogDevObjectVersion:   Dev-Blueprints (B0D832E4-1F89-4F0D-ACCF-7EB736FD4AA2): 10
+LogDevObjectVersion:   Dev-Build (E1C64328-A22C-4D53-A36C-8E866417BD8C): 0
+LogDevObjectVersion:   Dev-Core (375EC13C-06E4-48FB-B500-84F0262A717E): 4
+LogDevObjectVersion:   Dev-Editor (E4B068ED-F494-42E9-A231-DA0B2E46BB41): 40
+LogDevObjectVersion:   Dev-Framework (CFFC743F-43B0-4480-9391-14DF171D2073): 37
+LogDevObjectVersion:   Dev-Mobile (B02B49B5-BB20-44E9-A304-32B752E40360): 3
+LogDevObjectVersion:   Dev-Networking (A4E4105C-59A1-49B5-A7C5-40C4547EDFEE): 0
+LogDevObjectVersion:   Dev-Online (39C831C9-5AE6-47DC-9A44-9C173E1C8E7C): 0
+LogDevObjectVersion:   Dev-Physics (78F01B33-EBEA-4F98-B9B4-84EACCB95AA2): 20
+LogDevObjectVersion:   Dev-Platform (6631380F-2D4D-43E0-8009-CF276956A95A): 0
+LogDevObjectVersion:   Dev-Rendering (12F88B9F-8875-4AFC-A67C-D90C383ABD29): 49
+LogDevObjectVersion:   Dev-Sequencer (7B5AE74C-D270-4C10-A958-57980B212A5A): 13
+LogDevObjectVersion:   Dev-VR (D7296918-1DD6-4BDD-9DE2-64A83CC13884): 3
+LogDevObjectVersion:   Dev-LoadTimes (C2A15278-BFE7-4AFE-6C17-90FF531DF755): 1
+LogDevObjectVersion:   Private-Geometry (6EACA3D4-40EC-4CC1-B786-8BED09428FC5): 3
+LogDevObjectVersion:   Dev-AnimPhys (29E575DD-E0A3-4627-9D10-D276232CDCEA): 17
+LogDevObjectVersion:   Dev-Anim (AF43A65D-7FD3-4947-9873-3E8ED9C1BB05): 15
+LogDevObjectVersion:   Dev-ReflectionCapture (6B266CEC-1EC7-4B8F-A30B-E4D90942FC07): 1
+LogDevObjectVersion:   Dev-Automation (0DF73D61-A23F-47EA-B727-89E90C41499A): 1
+LogDevObjectVersion:   FortniteMain (601D1886-AC64-4F84-AA16-D3DE0DEAC7D6): 225
+LogDevObjectVersion:   FortniteValkyrie (8DBC2C5B-54A7-43E0-A768-FCBB7DA29060): 8
+LogDevObjectVersion:   FortniteSeason (5B4C06B7-2463-4AF8-805B-BF70CDF5D0DD): 15
+LogDevObjectVersion:   FortniteRelease (E7086368-6B23-4C58-8439-1B7016265E91): 17
+LogDevObjectVersion:   Dev-Enterprise (9DFFBCD6-494F-0158-E221-12823C92A888): 11
+LogDevObjectVersion:   Dev-Niagara (F2AED0AC-9AFE-416F-8664-AA7FFA26D6FC): 1
+LogDevObjectVersion:   Dev-Destruction (174F1F0B-B4C6-45A5-B13F-2EE8D0FB917D): 10
+LogDevObjectVersion:   Dev-Physics-Ext (35F94A83-E258-406C-A318-09F59610247C): 41
+LogDevObjectVersion:   Dev-PhysicsMaterial-Chaos (B68FC16E-8B1B-42E2-B453-215C058844FE): 1
+LogDevObjectVersion:   Dev-CineCamera (B2E18506-4273-CFC2-A54E-F4BB758BBA07): 1
+LogDevObjectVersion:   Dev-VirtualProduction (64F58936-FD1B-42BA-BA96-7289D5D0FA4E): 1
+LogDevObjectVersion:   UE5-Main (697DD581-E64F-41AB-AA4A-51ECBEB7B628): 121
+LogDevObjectVersion:   UE5-Release (D89B5E42-24BD-4D46-8412-ACA8DF641779): 61
+LogDevObjectVersion:   UE5-SpecialProject (59DA5D52-1232-4948-B878-597870B8E98B): 9
+LogDevObjectVersion:   Dev-MediaFramework (6F0ED827-A609-4895-9C91-998D90180EA4): 2
+LogDevObjectVersion:   Dev-NaniteResearch (30D58BE3-95EA-4282-A6E3-B159D8EBB06A): 1
+LogDevObjectVersion:   FN-Main-InterchangePipeline (B69D2E47-E2A8-4003-BF77-18A492C4D899): 1
+LogDevObjectVersion:   Dev-ComputeFramework (6304A3E7-0059-4F59-8CFC-21BD7721FD4E): 0
+LogDevObjectVersion:   Dev-RigVM (DC49959B-53C0-4DE7-9156-EA885E7C5D39): 19
+LogDevObjectVersion:   Dev-ControlRig (A7820CFB-20A7-4359-8C54-2C149623CF50): 40
+LogDevObjectVersion:   Dev-Optimus (93EDE1AA-10CA-7375-4DF9-8A2849B157A0): 14
+LogDevObjectVersion:   Dev-IKRig (F6DFBB78-BB50-A0E4-4018-B84D60CBAF23): 11
+LogInit: Presizing for max 2097152 objects, including 1 objects not considered by GC.
+LogInit: Object subsystem initialized
+[2026.05.29-13.57.58:276][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resx="1920"
+[2026.05.29-13.57.58:286][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resy="1080"
+[2026.05.29-13.57.58:301][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.05.29-13.57.58:318][  0]LogRHI: Using Default RHI: D3D12
+[2026.05.29-13.57.58:332][  0]LogRHI: Using Highest Feature Level of D3D12: SM6
+[2026.05.29-13.57.58:348][  0]LogRHI: Loading RHI module D3D12RHI
+[2026.05.29-13.57.58:365][  0]LogD3D12RHI: Loading WinPixEventRuntime.dll for PIX profiling (from ../../../Engine/Binaries/ThirdParty/Windows/WinPixEventRuntime/x64).
+[2026.05.29-13.57.58:383][  0]LogRHI: Checking if RHI D3D12 with Feature Level SM6 is supported by your system.
+[2026.05.29-13.57.58:822][  0]LogD3D12RHI: Found D3D12 adapter 0: NVIDIA GeForce RTX 4070 Laptop GPU (VendorId: 10de, DeviceId: 2860, SubSysId: 3e4517aa, Revision: 00a1
+[2026.05.29-13.57.58:828][  0]LogD3D12RHI:   Max supported Feature Level 12_2, shader model 6.7, binding tier 3, wave ops supported, atomic64 supported
+[2026.05.29-13.57.58:843][  0]LogD3D12RHI:   Adapter has 7948MB of dedicated video memory, 0MB of dedicated system memory, and 32621MB of shared system memory, 1 output[s], UMA:false
+[2026.05.29-13.57.58:857][  0]LogD3D12RHI:   Driver Version: 591.86 (internal:32.0.15.9186, unified:591.86)
+[2026.05.29-13.57.58:873][  0]LogD3D12RHI:      Driver Date: 1-20-2026
+[2026.05.29-13.57.58:888][  0]LogD3D12RHI: Intel Extensions Framework not supported by driver. Please check if a driver update is available.
+[2026.05.29-13.57.58:914][  0]LogD3D12RHI: Found D3D12 adapter 1: Intel(R) UHD Graphics (VendorId: 8086, DeviceId: a788, SubSysId: 3e4517aa, Revision: 0004
+[2026.05.29-13.57.58:920][  0]LogD3D12RHI:   Max supported Feature Level 12_1, shader model 6.7, binding tier 3, wave ops supported, atomic64 unsupported
+[2026.05.29-13.57.58:936][  0]LogD3D12RHI:   Adapter has 128MB of dedicated video memory, 0MB of dedicated system memory, and 32621MB of shared system memory, 1 output[s], UMA:true
+[2026.05.29-13.57.58:950][  0]LogD3D12RHI:   Driver Version: 32.0.101.6790 (internal:32.0.101.6790, unified:101.6790)
+[2026.05.29-13.57.58:966][  0]LogD3D12RHI:      Driver Date: 4-28-2025
+[2026.05.29-13.57.58:981][  0]LogD3D12RHI: Found D3D12 adapter 2: Microsoft Basic Render Driver (VendorId: 1414, DeviceId: 008c, SubSysId: 0000, Revision: 0000
+[2026.05.29-13.57.58:997][  0]LogD3D12RHI:   Max supported Feature Level 12_1, shader model 6.7, binding tier 3, wave ops supported, atomic64 supported
+[2026.05.29-13.57.59:012][  0]LogD3D12RHI:   Adapter has 0MB of dedicated video memory, 0MB of dedicated system memory, and 32621MB of shared system memory, 0 output[s], UMA:true
+[2026.05.29-13.57.59:031][  0]LogD3D12RHI:   D3D10Warp Version: 10.0.26100.8328
+[2026.05.29-13.57.59:044][  0]LogD3D12RHI: DirectX Agility SDK runtime found.
+[2026.05.29-13.57.59:060][  0]LogD3D12RHI: Chosen D3D12 Adapter Id = 0
+[2026.05.29-13.57.59:075][  0]LogRHI: RHI D3D12 with Feature Level SM6 is supported and will be used.
+[2026.05.29-13.57.59:090][  0]LogInit: Selected Device Profile: [Windows_D3D12RHI]
+[2026.05.29-13.57.59:104][  0]LogHAL: Display: Platform has ~ 64 GB [68413153280 / 68719476736 / 64], which maps to Largest [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2026.05.29-13.57.59:120][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.05.29-13.57.59:137][  0]LogInit: Computer: DDOS
+[2026.05.29-13.57.59:151][  0]LogInit: User: DoPra
+[2026.05.29-13.57.59:166][  0]LogInit: CPU Page size=4096, Cores=24
+[2026.05.29-13.57.59:182][  0]LogInit: High frequency timer resolution =10.000000 MHz
+[2026.05.29-13.57.59:197][  0]LogInit: Handheld Device: 0
+[2026.05.29-13.57.59:213][  0]LogMemory: Process is running as part of a Windows Job with separate resource limits
+[2026.05.29-13.57.59:231][  0]LogMemory: Memory total: Physical=63.7GB (64GB approx) Virtual=79.7GB
+[2026.05.29-13.57.59:244][  0]LogMemory: Platform Memory Stats for Windows
+[2026.05.29-13.57.59:260][  0]LogMemory: Process Physical Memory: 241.32 MB used, 367.94 MB peak
+[2026.05.29-13.57.59:276][  0]LogMemory: Process Virtual Memory: 184.39 MB used, 187.20 MB peak
+[2026.05.29-13.57.59:290][  0]LogMemory: Physical Memory: 23553.84 MB used,  41690.03 MB free, 65243.87 MB total
+[2026.05.29-13.57.59:307][  0]LogMemory: Virtual Memory: 28906.53 MB used,  52721.34 MB free, 81627.87 MB total
+[2026.05.29-13.57.59:321][  0]LogCsvProfiler: Display: Metadata set : extradevelopmentmemorymb="0"
+[2026.05.29-13.57.59:336][  0]LogWindows: WindowsPlatformFeatures enabled
+[2026.05.29-13.57.59:352][  0]LogSpline: Registered spline type: TypeId=0x54E3AD22, Impl=MultiSpline, Value=Vector
+[2026.05.29-13.57.59:368][  0]LogChaosDD: Chaos Debug Draw Startup
+[2026.05.29-13.57.59:383][  0]LogInit: Physics initialised using underlying interface: Chaos
+[2026.05.29-13.57.59:400][  0]LogInit: Using OS detected language (en-US).
+[2026.05.29-13.57.59:414][  0]LogInit: Using OS detected locale (en-US).
+[2026.05.29-13.57.59:429][  0]LogTextLocalizationManager: No specific localization for 'en-US' exists, so 'en' will be used for the language.
+[2026.05.29-13.57.59:445][  0]LogWindowsTextInputMethodSystem: Available input methods:
+[2026.05.29-13.57.59:460][  0]LogWindowsTextInputMethodSystem:   - English (United States) - (Keyboard).
+[2026.05.29-13.57.59:476][  0]LogWindowsTextInputMethodSystem: Activated input method: English (United States) - (Keyboard).
+[2026.05.29-13.57.59:490][  0]LogWindowsTouchpad: Display: CacheForceMaxTouchpadSensitivityMode SetMaxTouchpadSensitivity
+[2026.05.29-13.57.59:506][  0]LogObj: Display: Attempting to load config data for Default__SlateThemeManager before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.05.29-13.57.59:521][  0]LogSlate: New Slate User Created. Platform User Id 0, User Index 0, Is Virtual User: 0
+[2026.05.29-13.57.59:537][  0]LogSlate: Slate User Registered.  User Index 0, Is Virtual User: 0
+[2026.05.29-13.57.59:553][  0]LogRHI: Using Default RHI: D3D12
+[2026.05.29-13.57.59:568][  0]LogRHI: Using Highest Feature Level of D3D12: SM6
+[2026.05.29-13.57.59:583][  0]LogRHI: Loading RHI module D3D12RHI
+[2026.05.29-13.57.59:599][  0]LogRHI: Checking if RHI D3D12 with Feature Level SM6 is supported by your system.
+[2026.05.29-13.57.59:614][  0]LogRHI: RHI D3D12 with Feature Level SM6 is supported and will be used.
+[2026.05.29-13.57.59:630][  0]LogD3D12RHI: Integrated GPU (iGPU): false
+[2026.05.29-13.57.59:645][  0]LogD3D12RHI: Display: Creating D3D12 RHI with Max Feature Level SM6
+[2026.05.29-13.57.59:661][  0]LogWindows: Attached monitors:
+[2026.05.29-13.57.59:677][  0]LogWindows:     resolution: 1920x1080, work area: (0, 0) -> (1920, 1032), device: '\\.\DISPLAY5' [PRIMARY]
+[2026.05.29-13.57.59:692][  0]LogWindows:     resolution: 1463x914, work area: (-2560, 0) -> (-1097, 866), device: '\\.\DISPLAY1'
+[2026.05.29-13.57.59:710][  0]LogWindows: Found 2 attached monitors.
+[2026.05.29-13.57.59:728][  0]LogWindows: Gathering driver information using Windows Setup API
+[2026.05.29-13.57.59:757][  0]LogRHI: RHI Adapter Info:
+[2026.05.29-13.57.59:771][  0]LogRHI:             Name: NVIDIA GeForce RTX 4070 Laptop GPU
+[2026.05.29-13.57.59:787][  0]LogRHI:   Driver Version: 591.86 (internal:32.0.15.9186, unified:591.86)
+[2026.05.29-13.57.59:802][  0]LogRHI:      Driver Date: 1-20-2026
+[2026.05.29-13.57.59:818][  0]LogD3D12RHI:     GPU DeviceId: 0x2860 (for the marketing name, search the web for "GPU Device Id")
+[2026.05.29-13.57.59:833][  0]LogD3D12RHI: InitD3DDevice: -D3DDebug = off -D3D12GPUValidation = off
+[2026.05.29-13.57.59:849][  0]LogNvidiaAftermath: Aftermath initialized
+[2026.05.29-13.57.59:865][  0]LogD3D12RHI: Emitting draw events for PIX profiling.
+[2026.05.29-13.57.59:881][  0]LogNvidiaAftermath: Aftermath enabled. Active feature flags: 
+[2026.05.29-13.57.59:899][  0]LogNvidiaAftermath:  - Feature: EnableResourceTracking
+[2026.05.29-13.57.59:912][  0]LogD3D12RHI: ID3D12Device1 is supported.
+[2026.05.29-13.57.59:927][  0]LogD3D12RHI: ID3D12Device2 is supported.
+[2026.05.29-13.57.59:943][  0]LogD3D12RHI: ID3D12Device3 is supported.
+[2026.05.29-13.57.59:958][  0]LogD3D12RHI: ID3D12Device4 is supported.
+[2026.05.29-13.57.59:974][  0]LogD3D12RHI: ID3D12Device5 is supported.
+[2026.05.29-13.57.59:990][  0]LogD3D12RHI: ID3D12Device6 is supported.
+[2026.05.29-13.58.00:005][  0]LogD3D12RHI: ID3D12Device7 is supported.
+[2026.05.29-13.58.00:021][  0]LogD3D12RHI: ID3D12Device8 is supported.
+[2026.05.29-13.58.00:036][  0]LogD3D12RHI: ID3D12Device9 is supported.
+[2026.05.29-13.58.00:052][  0]LogD3D12RHI: ID3D12Device10 is supported.
+[2026.05.29-13.58.00:068][  0]LogD3D12RHI: ID3D12Device11 is supported.
+[2026.05.29-13.58.00:083][  0]LogD3D12RHI: ID3D12Device12 is supported.
+[2026.05.29-13.58.00:098][  0]LogD3D12RHI: Bindless is supported. MaxNonSamplerDescriptors: 1000000, MaxSamplerDescriptors: 2048
+[2026.05.29-13.58.00:113][  0]LogD3D12RHI: Stencil ref from pixel shader is not supported
+[2026.05.29-13.58.00:130][  0]LogD3D12RHI: Raster order views are supported
+[2026.05.29-13.58.00:145][  0]LogD3D12RHI: Wave Operations are supported (wave size: min=32 max=32).
+[2026.05.29-13.58.00:161][  0]LogD3D12RHI:      Legacy Barriers Present in Build: Yes
+[2026.05.29-13.58.00:177][  0]LogD3D12RHI:    Enhanced Barriers Present in Build: Yes
+[2026.05.29-13.58.00:192][  0]LogD3D12RHI:      Enhanced Barriers Driver Support: Yes
+[2026.05.29-13.58.00:207][  0]LogD3D12RHI: Preferred Barrier Implementation Type: Legacy
+[2026.05.29-13.58.00:224][  0]LogD3D12RHI:         Chosen Barrier Implementation: D3D12LegacyBarriers
+[2026.05.29-13.58.00:238][  0]LogD3D12RHI: D3D12 ray tracing tier 1.1 and bindless resources are supported.
+[2026.05.29-13.58.00:254][  0]LogD3D12RHI: Mesh shader tier 1.0 is supported
+[2026.05.29-13.58.00:270][  0]LogD3D12RHI: AtomicInt64OnTypedResource is supported
+[2026.05.29-13.58.00:285][  0]LogD3D12RHI: AtomicInt64OnGroupShared is supported
+[2026.05.29-13.58.00:301][  0]LogD3D12RHI: AtomicInt64OnDescriptorHeapResource is supported
+[2026.05.29-13.58.00:316][  0]LogD3D12RHI: Shader Model 6.6 atomic64 is supported
+[2026.05.29-13.58.00:332][  0]LogD3D12RHI: Work Graphs are supported
+[2026.05.29-13.58.00:349][  0]LogD3D12RHI: Bindless is enabled (Configuration=RayTracing). Initializing allocators with 32768 Resource and 2048 Sampler descriptors
+[2026.05.29-13.58.00:364][  0]LogD3D12RHI: [GPUBreadCrumb] Successfully setup breadcrumb resource for DiagnosticBuffer (Queue: 0x000001816F5D5180)
+[2026.05.29-13.58.00:378][  0]LogD3D12RHI: [GPUBreadCrumb] Successfully setup breadcrumb resource for DiagnosticBuffer (Queue: 0x000001816F5D5440)
+[2026.05.29-13.58.00:394][  0]LogD3D12RHI: [GPUBreadCrumb] Successfully setup breadcrumb resource for DiagnosticBuffer (Queue: 0x000001816F5D5700)
+[2026.05.29-13.58.00:409][  0]LogD3D12RHI: Display: Not using pipeline state disk cache per r.D3D12.PSO.DiskCache=0
+[2026.05.29-13.58.00:424][  0]LogD3D12RHI: Display: Not using driver-optimized pipeline state disk cache per r.D3D12.PSO.DriverOptimizedDiskCache=0
+[2026.05.29-13.58.00:440][  0]LogD3D12RHI: NVIDIA Shader Execution Reordering interface supported!
+[2026.05.29-13.58.00:455][  0]LogD3D12RHI: NVIDIA Ray Tracing Cluster Operations supported and enabled
+[2026.05.29-13.58.00:472][  0]LogD3D12RHI: NVIDIA Extended ray tracing pipeline state applied.
+[2026.05.29-13.58.00:487][  0]LogD3D12RHI: Display: Batched command list execution is disabled for async queues due to known bugs in the current driver.
+[2026.05.29-13.58.00:502][  0]LogRHI: Texture pool is 4523 MB (70% of 6462 MB)
+[2026.05.29-13.58.00:516][  0]LogD3D12RHI: Async texture creation enabled
+[2026.05.29-13.58.00:532][  0]LogD3D12RHI: RHI has support for 64 bit atomics
+[2026.05.29-13.58.00:549][  0]LogVRS: Current RHI supports per-draw and screenspace Variable Rate Shading
+[2026.05.29-13.58.00:564][  0]LogCsvProfiler: Display: Metadata set : verbatimrhiname="D3D12"
+[2026.05.29-13.58.00:580][  0]LogCsvProfiler: Display: Metadata set : rhiname="D3D12"
+[2026.05.29-13.58.00:595][  0]LogCsvProfiler: Display: Metadata set : rhifeaturelevel="SM6"
+[2026.05.29-13.58.00:610][  0]LogCsvProfiler: Display: Metadata set : shaderplatform="PCD3D_SM6"
+[2026.05.29-13.58.00:625][  0]LogInit: Initializing FReadOnlyCVARCache
+[2026.05.29-13.58.00:641][  0]LogRendererCore: Ray tracing is disabled. Reason: disabled through project setting (r.RayTracing=0).
+[2026.05.29-13.58.00:657][  0]LogShaderLibrary: Display: Using IoDispatcher for shader code library Global. Total 10166 unique shaders.
+[2026.05.29-13.58.00:673][  0]LogShaderLibrary: Display: Cooked Context: Using Shared Shader Library Global
+[2026.05.29-13.58.00:688][  0]LogShaderLibrary: Display: Logical shader library 'Global' has been created as a monolithic library
+[2026.05.29-13.58.00:705][  0]LogTemp: Display: Clearing the OS Cache
+[2026.05.29-13.58.00:720][  0]LogInit: FStereoShaderAspects: --- StereoAspects begin ---
+[2026.05.29-13.58.00:736][  0]LogInit: FStereoShaderAspects: Platform=PCD3D_SM6 (49)
+[2026.05.29-13.58.00:750][  0]LogInit: FStereoShaderAspects: bInstancedStereo = 0
+[2026.05.29-13.58.00:766][  0]LogInit: FStereoShaderAspects: bMobilePlatform = 0
+[2026.05.29-13.58.00:781][  0]LogInit: FStereoShaderAspects: bMobilePostprocessing = 1
+[2026.05.29-13.58.00:796][  0]LogInit: FStereoShaderAspects: bMobileMultiView = 0
+[2026.05.29-13.58.00:812][  0]LogInit: FStereoShaderAspects: bMultiViewportCapable = 1
+[2026.05.29-13.58.00:828][  0]LogInit: FStereoShaderAspects: bInstancedStereoNative = 0
+[2026.05.29-13.58.00:843][  0]LogInit: FStereoShaderAspects: ---
+[2026.05.29-13.58.00:858][  0]LogInit: FStereoShaderAspects: bMobileMultiViewCoreSupport = 0
+[2026.05.29-13.58.00:873][  0]LogInit: FStereoShaderAspects: bMobileMultiViewNative = 0
+[2026.05.29-13.58.00:889][  0]LogInit: FStereoShaderAspects: bMobileMultiViewFallback = 0
+[2026.05.29-13.58.00:904][  0]LogInit: FStereoShaderAspects: ---
+[2026.05.29-13.58.00:920][  0]LogInit: FStereoShaderAspects: bInstancedMultiViewportEnabled = 0
+[2026.05.29-13.58.00:935][  0]LogInit: FStereoShaderAspects: bInstancedStereoEnabled = 0
+[2026.05.29-13.58.00:950][  0]LogInit: FStereoShaderAspects: bMobileMultiViewEnabled = 0
+[2026.05.29-13.58.00:966][  0]LogInit: FStereoShaderAspects: --- StereoAspects end ---
+[2026.05.29-13.58.00:982][  0]LogInit: XR: Instanced Stereo Rendering is Disabled
+[2026.05.29-13.58.00:997][  0]LogInit: XR: MultiViewport is Disabled
+[2026.05.29-13.58.01:013][  0]LogInit: XR: Mobile Multiview is Disabled
+[2026.05.29-13.58.01:027][  0]LogSlate: Using FreeType 2.10.0
+[2026.05.29-13.58.01:046][  0]LogSlate: SlateFontServices - WITH_FREETYPE: 1, WITH_HARFBUZZ: 1
+[2026.05.29-13.58.01:089][  0]LogShaderLibrary: Display: Using IoDispatcher for shader code library T66. Total 4115 unique shaders.
+[2026.05.29-13.58.01:110][  0]LogShaderLibrary: Display: Cooked Context: Using Shared Shader Library T66
+[2026.05.29-13.58.01:136][  0]LogShaderLibrary: Display: Logical shader library 'T66' has been created as a monolithic library
+[2026.05.29-13.58.01:152][  0]LogRHI: Could not open FPipelineCacheFile: ../../../T66/Content/PipelineCaches/Windows/T66_PCD3D_SM6.stable.upipelinecache
+[2026.05.29-13.58.01:165][  0]LogRHI: Could not open FPipelineCacheFile: ../../../T66/Content/PipelineCaches/Windows/T66_PCD3D_SM6.stable.upipelinecache
+[2026.05.29-13.58.01:186][  0]LogShaderLibrary: Display: Tried to open again shader library 'T66', but could not find new components for it (existing components: 1).
+[2026.05.29-13.58.01:212][  0]LogRHI: Could not open FPipelineCacheFile: ../../../T66/Content/PipelineCaches/Windows/T66_PCD3D_SM6.stable.upipelinecache
+[2026.05.29-13.58.01:236][  0]LogInit: Using OS detected language (en-US).
+[2026.05.29-13.58.01:260][  0]LogInit: Using OS detected locale (en-US).
+[2026.05.29-13.58.01:284][  0]LogTextLocalizationManager: No specific localization for 'en-US' exists, so 'en' will be used for the language.
+[2026.05.29-13.58.01:306][  0]LogAssetRegistry: FAssetRegistry took 0.0002 seconds to start up
+[2026.05.29-13.58.01:320][  0]LogCsvProfiler: Display: Metadata set : deviceprofile="Windows_D3D12RHI"
+[2026.05.29-13.58.01:336][  0]LogStreaming: Display: FlushAsyncLoading(1): 1 QueuedPackages, 0 AsyncPackages
+[2026.05.29-13.58.01:352][  0]LogFilePackageStore: Updated: NewPackages=4168, OldPackages=0, TotalPackages=4168
+[2026.05.29-13.58.01:368][  0]LogMetaSound: Display: MetaSound Page Target Initialized to 'Default'
+[2026.05.29-13.58.01:382][  0]LogPackageLocalizationCache: Processed 75 localized package path(s) for 1 prioritized culture(s) in 0.000216 seconds
+[2026.05.29-13.58.01:398][  0]LogStats: UGameplayTagsManager::InitializeManager -  0.000 s
+[2026.05.29-13.58.01:413][  0]LogMoviePlayer: Initializing movie player
+[2026.05.29-13.58.01:429][  0]LogAudio: Display: Registering Engine Module Parameter Interfaces...
+[2026.05.29-13.58.01:445][  0]LogMetaSound: MetaSound Engine Initialized
+[2026.05.29-13.58.01:461][  0]LogAndroidPermission: UAndroidPermissionCallbackProxy::GetInstance
+[2026.05.29-13.58.01:477][  0]LogUObjectArray: 32353 objects as part of root set at end of initial load.
+[2026.05.29-13.58.01:493][  0]LogUObjectArray: 4 objects are not in the root set, but can never be destroyed because they are in the DisregardForGC set.
+[2026.05.29-13.58.01:508][  0]LogUObjectArray: CloseDisregardForGC: 32353/32353 objects in disregard for GC pool
+[2026.05.29-13.58.01:524][  0]LogEngine: Initializing Engine...
+[2026.05.29-13.58.01:540][  0]LogNetVersion: Set ProjectVersion to alpha-0.8. Version Checksum will be recalculated on next use.
+[2026.05.29-13.58.01:555][  0]LogInit: Texture streaming: Enabled
+[2026.05.29-13.58.01:571][  0]LogAudio: Display: Initializing Audio Device Manager...
+[2026.05.29-13.58.01:587][  0]LogAudio: Display: Loading Default Audio Settings Objects...
+[2026.05.29-13.58.01:603][  0]LogAudio: Display: No default SoundConcurrencyObject specified (or failed to load).
+[2026.05.29-13.58.01:618][  0]LogAudio: Display: Audio Device Manager Initialized
+[2026.05.29-13.58.01:635][  0]LogAudio: Display: Creating Audio Device:                 Id: 1, Scope: Shared, Realtime: True
+[2026.05.29-13.58.01:649][  0]LogAudioMixer: Display: Audio Mixer Platform Settings:
+[2026.05.29-13.58.01:665][  0]LogAudioMixer: Display: 	Sample Rate:						  48000
+[2026.05.29-13.58.01:678][  0]LogAudioMixer: Display: 	Callback Buffer Frame Size Requested: 1024
+[2026.05.29-13.58.01:692][  0]LogAudioMixer: Display: 	Callback Buffer Frame Size To Use:	  1024
+[2026.05.29-13.58.01:704][  0]LogAudioMixer: Display: 	Number of buffers to queue:			  1
+[2026.05.29-13.58.01:717][  0]LogAudioMixer: Display: 	Max Channels (voices):				  32
+[2026.05.29-13.58.01:730][  0]LogAudioMixer: Display: 	Number of Async Source Workers:		  4
+[2026.05.29-13.58.01:743][  0]LogAudio: Display: AudioDevice MaxSources: 32
+[2026.05.29-13.58.01:756][  0]LogAudio: Display: Audio Spatialization Plugin: None (built-in).
+[2026.05.29-13.58.01:769][  0]LogAudio: Display: Audio Reverb Plugin: None (built-in).
+[2026.05.29-13.58.01:781][  0]LogAudio: Display: Audio Occlusion Plugin: None (built-in).
+[2026.05.29-13.58.01:795][  0]LogAudioMixer: Display: Initializing audio mixer using platform API: 'XAudio2'
+[2026.05.29-13.58.01:809][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Render Role='Console', Device='Speakers (Realtek(R) Audio)'
+[2026.05.29-13.58.01:824][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Capture Role='Console', Device='Microphone Array (Realtek(R) Audio)'
+[2026.05.29-13.58.01:837][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Render Role='Multimedia', Device='Speakers (Realtek(R) Audio)'
+[2026.05.29-13.58.01:850][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Capture Role='Multimedia', Device='Microphone Array (Realtek(R) Audio)'
+[2026.05.29-13.58.01:864][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Render Role='Communications', Device='Speakers (Realtek(R) Audio)'
+[2026.05.29-13.58.01:877][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Capture Role='Communications', Device='Microphone Array (Realtek(R) Audio)'
+[2026.05.29-13.58.01:893][  0]LogAudioMixer: Display: Using Audio Hardware Device Speakers (Realtek(R) Audio)
+[2026.05.29-13.58.01:906][  0]LogAudioMixer: Display: Initializing Sound Submixes...
+[2026.05.29-13.58.01:921][  0]LogAudioMixer: Display: Creating Master Submix 'MasterSubmixDefault'
+[2026.05.29-13.58.01:935][  0]LogAudioMixer: Display: Creating Master Submix 'MasterReverbSubmixDefault'
+[2026.05.29-13.58.01:948][  0]LogAudioMixer: FMixerPlatformXAudio2::StartAudioStream() called. InstanceID=1
+[2026.05.29-13.58.01:962][  0]LogAudioMixer: Display: Output buffers initialized: Frames=1024, Channels=2, Samples=2048, InstanceID=1
+[2026.05.29-13.58.01:976][  0]LogAudioMixer: Display: Starting AudioMixerPlatformInterface::RunInternal(), InstanceID=1
+[2026.05.29-13.58.01:989][  0]LogInit: FAudioDevice initialized with ID 1.
+[2026.05.29-13.58.02:005][  0]LogAudioMixer: Display: FMixerPlatformXAudio2::SubmitBuffer() called for the first time. InstanceID=1
+[2026.05.29-13.58.02:016][  0]LogAudioMixer: Initializing Audio Bus Subsystem for audio device with ID 1
+[2026.05.29-13.58.02:030][  0]LogCsvProfiler: Display: Metadata set : largeworldcoordinates="1"
+[2026.05.29-13.58.02:043][  0]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.05.29-13.58.02:057][  0]LogStaticMesh: [SM_Sphere] Mesh is marked for CPU read.
+[2026.05.29-13.58.02:069][  0]LogStaticMesh: [SM_Spike] Mesh is marked for CPU read.
+[2026.05.29-13.58.02:082][  0]LogPackageLocalizationCache: Processed 75 localized package path(s) for 1 prioritized culture(s) in 0.000162 seconds
+[2026.05.29-13.58.02:095][  0]LogSlate: FontCache flush requested. Reason: Culture for localization was changed
+[2026.05.29-13.58.02:109][  0]LogSlate: FontCache flush requested. Reason: Culture for localization was changed
+[2026.05.29-13.58.02:122][  0]LogStreaming: Warning: Failed to read file '../../../T66/Saved/SaveGames/T66_Profile.sav' error.
+[2026.05.29-13.58.02:135][  0]LogT66Achievements: [Progression] LoadOrCreateProfile: Created fresh profile (starting CC=10)
+[2026.05.29-13.58.02:147][  0]LogT66Achievements: [SKIN] LoadOrCreateProfile: OwnedHeroSkinsByHero.Num=0, CC Balance=10
+[2026.05.29-13.58.02:162][  0]LogT66Backend: Backend: configured URL = https://t66-backend.vercel.app
+[2026.05.29-13.58.02:174][  0]LogStreaming: Warning: Failed to read file '../../../T66/Saved/SaveGames/T66_PowerUp.sav' error.
+[2026.05.29-13.58.02:186][  0]LogT66Buff: [Buffs] LoadOrCreateSave: Created fresh save (no file found).
+[2026.05.29-13.58.02:200][  0]LogT66GameInstance: [LOAD] ResolveCachedDataTable waited 8.0ms for the existing core DataTable preload handle (/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals).
+[2026.05.29-13.58.02:212][  0]LogStreaming: Warning: Failed to read file '../../../T66/Saved/SaveGames/T66CommunityContent.sav' error.
+[2026.05.29-13.58.02:225][  0]LogStreaming: Warning: Failed to read file '../../../T66/Saved/SaveGames/T66_CompanionUnlocks.sav' error.
+[2026.05.29-13.58.02:239][  0]LogT66RuntimeData: RuntimeData: leaderboard targets initialized ScoreSource=None ScoreTargets=0 SpeedRunSource=None SpeedRunTargets=0
+[2026.05.29-13.58.02:253][  0]LogStreaming: Warning: Failed to read file '../../../T66/Saved/SaveGames/T66_PlayerSettings.sav' error.
+[2026.05.29-13.58.02:268][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/SC_Music (0xA50554B160CEB8C0) - The package to load does not exist on disk or in the loader
+[2026.05.29-13.58.02:281][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/SC_SFX (0xF74B0B9818B0CACA) - The package to load does not exist on disk or in the loader
+[2026.05.29-13.58.02:295][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/Music/MainTheme (0xA0EE5E1D7EC29F75) - The package to load does not exist on disk or in the loader
+[2026.05.29-13.58.02:311][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/MainTheme (0x92931D8621517077) - The package to load does not exist on disk or in the loader
+[2026.05.29-13.58.02:320][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/Music/Theme (0xA9D67F6E79B7345C) - The package to load does not exist on disk or in the loader
+[2026.05.29-13.58.02:335][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/Theme (0x282CC4AD87A4F790) - The package to load does not exist on disk or in the loader
+[2026.05.29-13.58.02:354][  0]LogT66DifficultyTuning: Warning: Difficulty tuning requested by GetDifficultyTuning before DataTable '/Game/Data/DT_DifficultyTuning.DT_DifficultyTuning' was available; using built-in defaults.
+[2026.05.29-13.58.02:360][  0]LogT66PlayerExperience: Warning: PlayerExperience tuning requested by GetDifficultyTuning before DataTable '/Game/Data/DT_PlayerExperience.DT_PlayerExperience' was available; returning empty tuning.
+[2026.05.29-13.58.02:767][  0]LogT66Steam: Warning: SteamHelper: SteamAPI_Init failed for Steam App ID 4464300. For local standalone Development runs, launch with a matching steam_appid.txt beside the executable or through the Steam-distributed build for the real app.
+[2026.05.29-13.58.02:775][  0]LogT66Steam: Warning: SteamHelper: Steam not available and no DevTicket configured. Online features disabled.
+[2026.05.29-13.58.02:790][  0]LogTemp: T66MiniDataSubsystem: loaded 16 mini idols from 'C:/UE/T66/Saved/StagedBuilds/Windows/T66/Content/Mini/Data/T66Mini_Idols.csv'.
+[2026.05.29-13.58.02:986][  0]LogT66DirectEntry: Display: Direct entry configured gameplay run Category=0 Hero=Hero_2 Difficulty=0 Source='Run:Tower'.
+[2026.05.29-13.58.02:998][  0]LogT66GameInstance: [LOAD] PrimeCorePresentationAssetsAsync queued 2 startup combat-presentation assets.
+[2026.05.29-13.58.03:011][  0]LogAudio: Display: Audio Device (ID: 1) registered with world 'Untitled'.
+[2026.05.29-13.58.03:025][  0]LogInit: Loading Cursor '../../../T66/Content/Slate/T66_Cursor_Default.png'.
+[2026.05.29-13.58.03:040][  0]LogInit: Loading Cursor '../../../T66/Content/Slate/T66_Cursor_Default@2x.png'.
+[2026.05.29-13.58.03:053][  0]LogInit: Loading Cursor '../../../T66/Content/Slate/T66_Cursor_Hand.png'.
+[2026.05.29-13.58.03:065][  0]LogInit: Loading Cursor '../../../T66/Content/Slate/T66_Cursor_Hand@2x.png'.
+[2026.05.29-13.58.03:078][  0]LogInit: Loading Cursor '../../../T66/Content/Slate/T66_Cursor_Crosshairs.png'.
+[2026.05.29-13.58.03:091][  0]LogInit: Loading Cursor '../../../T66/Content/Slate/T66_Cursor_Crosshairs@2x.png'.
+[2026.05.29-13.58.03:104][  0]LogInit: Loading Cursor '../../../T66/Content/Slate/T66_Cursor_GrabHandClosed.png'.
+[2026.05.29-13.58.03:118][  0]LogInit: Loading Cursor '../../../T66/Content/Slate/T66_Cursor_GrabHandClosed@2x.png'.
+[2026.05.29-13.58.03:130][  0]LogSlate: Updating window title bar state: overlay mode, drag disabled, window buttons hidden, title bar hidden
+[2026.05.29-13.58.03:144][  0]LogInit: Display: Game Engine Initialized.
+[2026.05.29-13.58.03:157][  0]LogNNEDenoiser: Ray Tracing is not enabled, therefore NNEDenoiser is not registered!
+[2026.05.29-13.58.03:173][  0]LogInit: Display: Starting Game.
+[2026.05.29-13.58.03:184][  0]LogGlobalStatus: UEngine::Browse Started Browse: "/Game/Maps/FrontendLevel?Name=Player"
+[2026.05.29-13.58.03:198][  0]LogNet: Browse: /Game/Maps/FrontendLevel?Name=Player
+[2026.05.29-13.58.03:215][  0]LogLoad: LoadMap: /Game/Maps/FrontendLevel?Name=Player
+[2026.05.29-13.58.03:228][  0]LogWorld: BeginTearingDown for /Temp/Untitled_0
+[2026.05.29-13.58.03:243][  0]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.05.29-13.58.03:257][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.29-13.58.03:271][  0]LogT66EnemyPool: [GOLD] EnemyPool: shutting down. Total acquired=0, reused=0 (0%)
+[2026.05.29-13.58.03:284][  0]LogAudio: Display: Audio Device unregistered from world 'None'.
+[2026.05.29-13.58.03:300][  0]LogUObjectHash: Compacting FUObjectHashTables data took   0.94ms
+[2026.05.29-13.58.03:312][  0]LogAudio: Display: Audio Device (ID: 1) registered with world 'FrontendLevel'.
+[2026.05.29-13.58.03:326][  0]LogChaosDD: Creating Chaos Debug Draw Scene for world FrontendLevel
+[2026.05.29-13.58.03:339][  0]LogLoad: Game class is 'BP_FrontendGameMode_C'
+[2026.05.29-13.58.03:352][  0]LogWorld: Bringing World /Game/Maps/FrontendLevel.FrontendLevel up for play (max tick rate 0) at 2026.05.29-10.58.03
+[2026.05.29-13.58.03:365][  0]LogWorld: Bringing up level for play took: 0.000386
+[2026.05.29-13.58.03:377][  0]LogGameMode: FindPlayerStart: PATHS NOT DEFINED or NO PLAYERSTART with positive rating
+[2026.05.29-13.58.03:390][  0]LogViewport: Display: Viewport MouseLockMode Changed, LockOnCapture -> DoNotLock
+[2026.05.29-13.58.03:402][  0]LogViewport: Display: Viewport MouseCaptureMode Changed, CapturePermanently_IncludingInitialMouseDown -> NoCapture
+[2026.05.29-13.58.03:416][  0]LogT66PlayerController: PlayerController: Frontend mode initialized (UI deferred)
+[2026.05.29-13.58.03:429][  0]LogT66FrontendGameMode: T66FrontendGameMode BeginPlay - Menu level initialized (UI-only frontend)
+[2026.05.29-13.58.03:441][  0]LogLoad: Took 0.025447 seconds to LoadMap(/Game/Maps/FrontendLevel)
+[2026.05.29-13.58.03:454][  1]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Maps/FrontendLevel
+[2026.05.29-13.58.03:467][  1]LogSlate: Took 0.000489 seconds to synchronously load lazily loaded font '../../../Engine/Content/Slate/Fonts/Roboto-Regular.ttf' (155K)
+[2026.05.29-13.58.03:480][  2]LogRHI: Display: ShaderPipelineCache: Paused Batching. 1
+[2026.05.29-13.58.03:492][  2]LogPakFile: AllPaks IndexSizes: DirectoryHashSize=32, PathHashSize=16, EntriesSize=32752, DirTreeIndexSize=155768, TotalSize=188568
+[2026.05.29-13.58.03:506][  3]LogRHI: Display: ShaderPipelineCache: Resumed Batching. 0
+[2026.05.29-13.58.03:518][  4]LogRHI: Display: ShaderPipelineCache: Batching Resumed.
+[2026.05.29-13.58.03:531][  5]LogInit: Display: Engine is initialized. Leaving FEngineLoop::Init()
+[2026.05.29-13.58.03:544][  7]LogLoad: (Engine Initialization) Total time: 11.56 seconds
+[2026.05.29-13.58.03:557][  9]LogT66GameInstance: [LOAD] PrimeHeroSelectionAssetsAsync queued 103 startup hero-selection assets.
+[2026.05.29-13.58.03:570][ 12]LogTemp: Warning: PlayerSettings: SFX SoundClass missing or wrong type after async preload at '/Game/Audio/SC_SFX.SC_SFX'.
+[2026.05.29-13.58.03:584][ 14]LogTemp: Warning: PlayerSettings: Music SoundClass missing or wrong type after async preload at '/Game/Audio/SC_Music.SC_Music'.
+[2026.05.29-13.58.03:596][ 17]LogT66GameInstance: [LOAD] Startup combat-presentation asset warmup completed.
+[2026.05.29-13.58.03:609][ 18]LogT66Audio: Loaded 96 audio event rows from /Game/Data/DT_AudioEvents.DT_AudioEvents.
+[2026.05.29-13.58.03:623][ 19]LogT66RuntimeData: RuntimeData: loaded leaderboard score targets from cooked DataTable '/Game/Data/Leaderboard_ScoreTargets.Leaderboard_ScoreTargets' Added=20 Total=20
+[2026.05.29-13.58.03:635][ 20]LogT66RuntimeData: RuntimeData: loaded leaderboard speed run targets from cooked DataTable '/Game/Data/DT_Leaderboard_SpeedrunTargets.DT_Leaderboard_SpeedrunTargets' Added=23 Total=23
+[2026.05.29-13.58.03:649][ 21]LogContentStreaming: Texture pool size now 1000 MB
+[2026.05.29-13.58.03:663][ 22]LogCsvProfiler: Display: Metadata set : streamingpoolsizemb="1000"
+[2026.05.29-13.58.03:675][ 24]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.29-13.58.03:689][ 26]LogRHI: Display: Encountered a new graphics PSO: 2632108418
+[2026.05.29-13.58.03:702][ 28]LogRHI: Display: Encountered a new graphics PSO: 1723079533
+[2026.05.29-13.58.03:716][ 30]LogRHI: Display: Encountered a new graphics PSO: 279471309
+[2026.05.29-13.58.03:729][ 32]LogRHI: Display: Encountered a new graphics PSO: 3677113228
+[2026.05.29-13.58.03:743][ 34]LogRHI: Display: Encountered a new compute PSO: 174062413
+[2026.05.29-13.58.03:755][ 37]LogRHI: Display: Encountered a new compute PSO: 2381337590
+[2026.05.29-13.58.03:769][ 39]LogRHI: Display: Encountered a new graphics PSO: 1490298645
+[2026.05.29-13.58.03:782][ 42]LogRHI: Display: Encountered a new compute PSO: 2108309869
+[2026.05.29-13.58.03:797][ 45]LogRHI: Display: Encountered a new graphics PSO: 1484277340
+[2026.05.29-13.58.03:811][ 47]LogRHI: Display: Encountered a new graphics PSO: 2222421403
+[2026.05.29-13.58.03:824][ 49]LogRHI: Display: Encountered a new graphics PSO: 3841657486
+[2026.05.29-13.58.03:837][ 52]LogRHI: Display: Encountered a new graphics PSO: 3091068911
+[2026.05.29-13.58.03:850][ 55]LogRHI: Display: Encountered a new graphics PSO: 1826731583
+[2026.05.29-13.58.03:863][ 57]LogSlate: Slate font cache was flushed
+[2026.05.29-13.58.03:876][ 60]LogDataTable: Warning: UDataTable::FindRow : 'GetItemData' requested row 'Item_Alchemy' not in DataTable '/Game/Data/DT_Items.DT_Items'.
+[2026.05.29-13.58.03:889][ 63]LogT66CommunityContent: Warning: Clearing invalid community starting item 'Item_Alchemy' from 'Super Duper Challange'.
+[2026.05.29-13.58.03:903][ 65]LogDataTable: Warning: UDataTable::FindRow : 'GetItemData' requested row 'Item_Alchemy' not in DataTable '/Game/Data/DT_Items.DT_Items'.
+[2026.05.29-13.58.03:916][ 67]LogT66CommunityContent: Warning: Clearing invalid community starting item 'Item_Alchemy' from 'Super Duper Challange'.
+[2026.05.29-13.58.03:929][ 70]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.29-13.58.03:941][ 72]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.29-13.58.03:954][ 74]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.29-13.58.03:967][ 75]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.29-13.58.03:980][ 76]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.29-13.58.03:992][ 76]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.29-13.58.04:006][ 76]LogTrace: Display: Control listening on port 33820
+[2026.05.29-13.58.04:018][ 76]LogT66Frontend: Frontend update gate disabled; continuing startup without client-config validation.
+[2026.05.29-13.58.04:031][ 76]LogT66Frontend: Registered native screen class for type 1
+[2026.05.29-13.58.04:044][ 76]LogT66Frontend: Registered native screen class for type 5
+[2026.05.29-13.58.04:057][ 76]LogT66Frontend: Registered native screen class for type 6
+[2026.05.29-13.58.04:070][ 76]LogT66Frontend: Registered native screen class for type 4
+[2026.05.29-13.58.04:082][ 76]LogT66Frontend: Registered native screen class for type 7
+[2026.05.29-13.58.04:095][ 76]LogT66Frontend: Registered native screen class for type 23
+[2026.05.29-13.58.04:108][ 76]LogT66Frontend: Registered native screen class for type 15
+[2026.05.29-13.58.04:122][ 76]LogT66Frontend: Registered native screen class for type 17
+[2026.05.29-13.58.04:134][ 76]LogStreaming: Display: FlushAsyncLoading(362): 1 QueuedPackages, 8 AsyncPackages
+[2026.05.29-13.58.04:147][ 76]LogT66Frontend: Registered screen class for type 1
+[2026.05.29-13.58.04:160][ 76]LogT66Frontend: Registered screen class for type 5
+[2026.05.29-13.58.04:173][ 76]LogT66Frontend: Registered screen class for type 6
+[2026.05.29-13.58.04:186][ 76]LogT66Frontend: Registered screen class for type 4
+[2026.05.29-13.58.04:198][ 76]LogT66Frontend: Registered screen class for type 7
+[2026.05.29-13.58.04:211][ 76]LogT66Frontend: Registered screen class for type 23
+[2026.05.29-13.58.04:224][ 76]LogT66Frontend: Registered screen class for type 15
+[2026.05.29-13.58.04:237][ 76]LogT66Frontend: Registered screen class for type 17
+[2026.05.29-13.58.04:251][ 76]LogT66Frontend: Display: Direct entry 'Run:Tower' is transitioning frontend startup to gameplay.
+[2026.05.29-13.58.04:264][ 76]LogSlate: Took 0.000316 seconds to synchronously load lazily loaded font '../../../Engine/Content/Slate/Fonts/Roboto-Regular.ttf' (155K)
+[2026.05.29-13.58.04:276][ 76]LogSlate: Took 0.007009 seconds to synchronously load lazily loaded font '../../../T66/RuntimeDependencies/T66/Fonts/Jersey10-Regular.ttf' (76K)
+[2026.05.29-13.58.04:289][ 76]LogT66GameInstance: [LOAD] Startup hero-selection asset warmup completed.
+[2026.05.29-13.58.04:302][ 76]LogRHI: Display: Encountered a new compute PSO: 2936422368
+[2026.05.29-13.58.04:315][ 76]LogRHI: Display: Encountered a new compute PSO: 1582052568
+[2026.05.29-13.58.04:328][ 76]LogRHI: Display: Encountered a new compute PSO: 2102283273
+[2026.05.29-13.58.04:340][ 76]LogRHI: Display: Encountered a new compute PSO: 805299359
+[2026.05.29-13.58.04:353][ 76]LogRHI: Display: Encountered a new compute PSO: 2950653504
+[2026.05.29-13.58.04:366][ 76]LogRHI: Display: Encountered a new compute PSO: 2015780957
+[2026.05.29-13.58.04:379][ 76]LogRHI: Display: Encountered a new compute PSO: 371311396
+[2026.05.29-13.58.04:392][ 76]LogT66GameInstance: [LOAD] TransitionToGameplayLevel started pre-open asset preload.
+[2026.05.29-13.58.04:405][ 76]LogDataTable: Warning: UDataTable::FindRow : 'PreloadGameplayAssets' requested row 'CursedCrow' not in DataTable '/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals'.
+[2026.05.29-13.58.04:418][ 76]LogDataTable: Warning: UDataTable::FindRow : 'PreloadGameplayAssets' requested row 'FamishedGhoul' not in DataTable '/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals'.
+[2026.05.29-13.58.04:431][ 76]LogT66GameInstance: [LOAD] PreloadGameplayAssets queued 92 transition assets.
+[2026.05.29-13.58.04:444][ 76]LogStaticMesh: [SM_Shield_01] Mesh is marked for CPU read.
+[2026.05.29-13.58.04:457][ 76]LogStaticMesh: [SM_SphereDe] Mesh is marked for CPU read.
+[2026.05.29-13.58.04:470][ 76]LogStaticMesh: [SM_Curved_Shield_02] Mesh is marked for CPU read.
+[2026.05.29-13.58.04:484][ 76]LogShaderLibrary: Warning: Spent 16.41 ms in a blocking wait for shader preload, NumRefs: 8, FramePreloadStarted: 6, CurrentFrame: 11
+[2026.05.29-13.58.04:496][ 76]LogShaderLibrary: Warning: Spent 15.94 ms in a blocking wait for shader preload, NumRefs: 6, FramePreloadStarted: 5, CurrentFrame: 11
+[2026.05.29-13.58.04:510][ 76]LogShaderLibrary: Warning: Spent 16.43 ms in a blocking wait for shader preload, NumRefs: 8, FramePreloadStarted: 6, CurrentFrame: 11
+[2026.05.29-13.58.04:524][ 76]LogShaderLibrary: Warning: Spent 16.00 ms in a blocking wait for shader preload, NumRefs: 6, FramePreloadStarted: 5, CurrentFrame: 11
+[2026.05.29-13.58.04:538][ 76]LogStaticMesh: [SM_IceCrystal] Mesh is marked for CPU read.
+[2026.05.29-13.58.04:551][ 76]LogShaderLibrary: Warning: Spent 19.08 ms in a blocking wait for shader preload, NumRefs: 1, FramePreloadStarted: 23, CurrentFrame: 26
+[2026.05.29-13.58.04:565][ 76]LogDataTable: Warning: UDataTable::FindRow : 'QueueGameplayVisualAssetPreload' requested row 'CursedCrow' not in DataTable '/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals'.
+[2026.05.29-13.58.04:580][ 76]LogDataTable: Warning: UDataTable::FindRow : 'QueueGameplayVisualAssetPreload' requested row 'FamishedGhoul' not in DataTable '/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals'.
+[2026.05.29-13.58.04:593][ 76]LogT66GameInstance: [LOAD] Gameplay transition asset preload completed. Pre-resolving 11 visuals.
+[2026.05.29-13.58.04:607][ 76]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Hero_2_Chad ResolvedRow=Hero_2_Chad SkeletalMesh path=/Game/Characters/Heroes/Hero_2/Chad/AnimatedToonStyle/SK_Hero_2_Chad.SK_Hero_2_Chad Loaded=YES
+[2026.05.29-13.58.04:622][ 76]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Hero_2_Chad ResolvedRow=Hero_2_Chad StaticMesh path=/Game/Characters/Heroes/Hero_2/Chad/Pixal3DToonStyle/SM_Hero_2_Chad.SM_Hero_2_Chad Loaded=YES
+[2026.05.29-13.58.04:636][ 76]LogT66CharacterVisuals: [OUTLINE] ResolveVisual VisualID=Hero_2_Chad ResolvedRow=Hero_2_Chad OutlineStaticMesh path=/Game/Characters/Heroes/Hero_2/Chad/Pixal3DToonStyle/SM_Hero_2_Chad_Outline.SM_Hero_2_Chad_Outline Loaded=YES
+[2026.05.29-13.58.04:651][ 76]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=Hero_2_Chad ResolvedRow=Hero_2_Chad IdleAnimation path=/Game/Characters/Heroes/Hero_2/Chad/AnimatedToonStyle/AM_Hero_2_Chad_Idle.AM_Hero_2_Chad_Idle IdleAnim=AM_Hero_2_Chad_Idle
+[2026.05.29-13.58.04:665][ 76]LogT66CharacterVisuals: [GOLD] ResolveVisual: Hero_2_Chad resolved in 0.03ms (cached or no assets)
+[2026.05.29-13.58.04:677][ 76]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Slime ResolvedRow=Slime StaticMesh path=/Game/Characters/Mobs/Slime/SM_Slime.SM_Slime Loaded=YES
+[2026.05.29-13.58.04:691][ 76]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=Slime ResolvedRow=Slime IdleAnimation is null (no idle anim row)
+[2026.05.29-13.58.04:704][ 76]LogT66CharacterVisuals: [GOLD] ResolveVisual: Slime resolved in 0.00ms (cached or no assets)
+[2026.05.29-13.58.04:719][ 76]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=BoneWalker ResolvedRow=BoneWalker StaticMesh path=/Game/Characters/Mobs/BoneWalker/SM_BoneWalker.SM_BoneWalker Loaded=YES
+[2026.05.29-13.58.04:732][ 76]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=BoneWalker ResolvedRow=BoneWalker IdleAnimation is null (no idle anim row)
+[2026.05.29-13.58.04:746][ 76]LogT66CharacterVisuals: [GOLD] ResolveVisual: BoneWalker resolved in 0.00ms (cached or no assets)
+[2026.05.29-13.58.04:759][ 76]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=RatPack ResolvedRow=RatPack StaticMesh path=/Game/Characters/Mobs/RatPack/SM_RatPack.SM_RatPack Loaded=YES
+[2026.05.29-13.58.04:772][ 76]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=RatPack ResolvedRow=RatPack IdleAnimation is null (no idle anim row)
+[2026.05.29-13.58.04:785][ 76]LogT66CharacterVisuals: [GOLD] ResolveVisual: RatPack resolved in 0.00ms (cached or no assets)
+[2026.05.29-13.58.04:798][ 76]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=CaveBat ResolvedRow=CaveBat StaticMesh path=/Game/Characters/Mobs/CaveBat/SM_CaveBat.SM_CaveBat Loaded=YES
+[2026.05.29-13.58.04:812][ 76]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=CaveBat ResolvedRow=CaveBat IdleAnimation is null (no idle anim row)
+[2026.05.29-13.58.04:825][ 76]LogT66CharacterVisuals: [GOLD] ResolveVisual: CaveBat resolved in 0.00ms (cached or no assets)
+[2026.05.29-13.58.04:838][ 76]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=HexSlinger ResolvedRow=HexSlinger StaticMesh path=/Game/Characters/Mobs/HexSlinger/SM_HexSlinger.SM_HexSlinger Loaded=YES
+[2026.05.29-13.58.04:850][ 76]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=HexSlinger ResolvedRow=HexSlinger IdleAnimation is null (no idle anim row)
+[2026.05.29-13.58.04:863][ 76]LogT66CharacterVisuals: [GOLD] ResolveVisual: HexSlinger resolved in 0.00ms (cached or no assets)
+[2026.05.29-13.58.04:876][ 76]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=TombSpider ResolvedRow=TombSpider StaticMesh path=/Game/Characters/Mobs/TombSpider/SM_TombSpider.SM_TombSpider Loaded=YES
+[2026.05.29-13.58.04:889][ 76]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=TombSpider ResolvedRow=TombSpider IdleAnimation is null (no idle anim row)
+[2026.05.29-13.58.04:901][ 76]LogT66CharacterVisuals: [GOLD] ResolveVisual: TombSpider resolved in 0.00ms (cached or no assets)
+[2026.05.29-13.58.04:913][ 76]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=StoneSentinel ResolvedRow=StoneSentinel StaticMesh path=/Game/Characters/Mobs/StoneSentinel/SM_StoneSentinel.SM_StoneSentinel Loaded=YES
+[2026.05.29-13.58.04:926][ 76]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=StoneSentinel ResolvedRow=StoneSentinel IdleAnimation is null (no idle anim row)
+[2026.05.29-13.58.04:939][ 76]LogT66CharacterVisuals: [GOLD] ResolveVisual: StoneSentinel resolved in 0.00ms (cached or no assets)
+[2026.05.29-13.58.04:950][ 76]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Dungeon_SewerSlimeKing ResolvedRow=Dungeon_SewerSlimeKing StaticMesh path=/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/QuadRetro/SM_Dungeon_SewerSlimeKing_QuadRetro.SM_Dungeon_SewerSlimeKing_QuadRetro Loaded=YES
+[2026.05.29-13.58.04:964][ 76]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=Dungeon_SewerSlimeKing ResolvedRow=Dungeon_SewerSlimeKing IdleAnimation is null (no idle anim row)
+[2026.05.29-13.58.04:977][ 76]LogT66CharacterVisuals: [GOLD] ResolveVisual: Dungeon_SewerSlimeKing resolved in 0.00ms (cached or no assets)
+[2026.05.29-13.58.04:990][ 77]LogT66GameInstance: [LOAD] TransitionToGameplayLevel opening /Game/Maps/GameplayLevel.
+[2026.05.29-13.58.05:002][ 77]LogGlobalStatus: UEngine::Browse Started Browse: "/Game/Maps/GameplayLevel"
+[2026.05.29-13.58.05:015][ 77]LogNet: Browse: /Game/Maps/GameplayLevel
+[2026.05.29-13.58.05:027][ 77]LogLoad: LoadMap: /Game/Maps/GameplayLevel
+[2026.05.29-13.58.05:039][ 77]LogWorld: BeginTearingDown for /Game/Maps/FrontendLevel
+[2026.05.29-13.58.05:053][ 77]LogWorld: UWorld::CleanupWorld for FrontendLevel, bSessionEnded=true, bCleanupResources=true
+[2026.05.29-13.58.05:065][ 77]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.29-13.58.05:078][ 77]LogT66EnemyPool: [GOLD] EnemyPool: shutting down. Total acquired=0, reused=0 (0%)
+[2026.05.29-13.58.05:091][ 77]LogAudio: Display: Audio Device unregistered from world 'None'.
+[2026.05.29-13.58.05:104][ 77]LogUObjectHash: Compacting FUObjectHashTables data took   0.74ms
+[2026.05.29-13.58.05:117][ 77]LogStreaming: Display: FlushAsyncLoading(435): 1 QueuedPackages, 0 AsyncPackages
+[2026.05.29-13.58.05:129][ 77]LogAudio: Display: Audio Device (ID: 1) registered with world 'GameplayLevel'.
+[2026.05.29-13.58.05:142][ 77]LogChaosDD: Creating Chaos Debug Draw Scene for world GameplayLevel
+[2026.05.29-13.58.05:155][ 77]LogLoad: Game class is 'BP_GameplayGameMode_C'
+[2026.05.29-13.58.05:168][ 77]LogWorld: Bringing World /Game/Maps/GameplayLevel.GameplayLevel up for play (max tick rate 0) at 2026.05.29-10.58.04
+[2026.05.29-13.58.05:183][ 77]LogWorld: Bringing up level for play took: 0.000218
+[2026.05.29-13.58.05:196][ 77]LogGameMode: FindPlayerStart: PATHS NOT DEFINED or NO PLAYERSTART with positive rating
+[2026.05.29-13.58.05:209][ 77]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.29-13.58.05:222][ 77]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_2147482138 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.29-13.58.05:236][ 77]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 0/0 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.29-13.58.05:248][ 77]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.29-13.58.05:261][ 77]LogT66GameMode: Checking level setup...
+[2026.05.29-13.58.05:274][ 77]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.29-13.58.05:287][ 77]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_2147482138 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.29-13.58.05:299][ 77]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 0/0 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.29-13.58.05:312][ 77]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.29-13.58.05:325][ 77]LogT66GameMode: T66GameMode SpawnDefaultPawnFor - level setup scheduled; content will spawn after landscape is ready.
+[2026.05.29-13.58.05:338][ 77]LogT66GameMode: Warning: Recovering gameplay level spawn from SpawnDefaultPawnFor because terrain/content bootstrap was not ready.
+[2026.05.29-13.58.05:351][ 77]LogT66GameMode: [MAP] Generating main map terrain (layout=Tower, seed=13333, hilliness=0.00, grid=81, cell=2000, step=1000, scale=10.00)
+[2026.05.29-13.58.05:364][ 77]LogT66GameMode: [MAP] Cached tower-map spawn surface at X=0.000 Y=3575.000 Z=1100.000
+[2026.05.29-13.58.05:378][ 77]LogT66TowerMapTerrain: Display: [ATMOSPHERE] Registered 4 outer shell wall box(es) for floor 1.
+[2026.05.29-13.58.05:390][ 77]LogT66TowerLighting: Display: [ATMOSPHERE] Spawned 8 Dungeon torch light(s) for floor 1 (maze=4 shell=4, intensity=500.0 radius=600.0 color=(R=1.000000,G=0.300000,B=0.050000,A=1.000000) falloff=2.00 vOffset=450.0 cap=200) 
+[2026.05.29-13.58.05:403][ 77]LogT66TowerMapTerrain: [MAP] Tower terrain floor 1 spawned in 5.7 ms (collision proxies +12, instanced actors +13, HISM components +0, HISM instances +0, maze walls=4, walkable boxes=1, generatedKit=1).
+[2026.05.29-13.58.05:415][ 77]LogT66TowerMapTerrain: Display: [ATMOSPHERE] Registered 4 outer shell wall box(es) for floor 2.
+[2026.05.29-13.58.05:430][ 77]LogT66TowerLighting: Display: [ATMOSPHERE] Spawned 51 Dungeon torch light(s) for floor 2 (maze=47 shell=4, intensity=500.0 radius=600.0 color=(R=1.000000,G=0.300000,B=0.050000,A=1.000000) falloff=2.00 vOffset=450.0 cap=200) 
+[2026.05.29-13.58.05:443][ 77]LogT66TowerMapTerrain: [MAP] Tower terrain floor 2 spawned in 37.2 ms (collision proxies +178, instanced actors +275, HISM components +0, HISM instances +0, maze walls=110, walkable boxes=63, generatedKit=1).
+[2026.05.29-13.58.05:456][ 77]LogT66TowerMapTerrain: Display: [ATMOSPHERE] Registered 4 outer shell wall box(es) for floor 3.
+[2026.05.29-13.58.05:470][ 77]LogT66TowerLighting: Display: [ATMOSPHERE] Spawned 47 Dungeon torch light(s) for floor 3 (maze=43 shell=4, intensity=500.0 radius=600.0 color=(R=1.000000,G=0.300000,B=0.050000,A=1.000000) falloff=2.00 vOffset=450.0 cap=200) 
+[2026.05.29-13.58.05:483][ 77]LogT66TowerMapTerrain: [MAP] Tower terrain floor 3 spawned in 39.7 ms (collision proxies +184, instanced actors +290, HISM components +0, HISM instances +0, maze walls=106, walkable boxes=73, generatedKit=1).
+[2026.05.29-13.58.05:496][ 77]LogT66TowerMapTerrain: Display: [ATMOSPHERE] Registered 4 outer shell wall box(es) for floor 4.
+[2026.05.29-13.58.05:508][ 77]LogT66TowerLighting: Display: [ATMOSPHERE] Spawned 63 Dungeon torch light(s) for floor 4 (maze=59 shell=4, intensity=500.0 radius=600.0 color=(R=1.000000,G=0.300000,B=0.050000,A=1.000000) falloff=2.00 vOffset=450.0 cap=200) 
+[2026.05.29-13.58.05:521][ 77]LogT66TowerMapTerrain: [MAP] Tower terrain floor 4 spawned in 52.0 ms (collision proxies +223, instanced actors +340, HISM components +0, HISM instances +0, maze walls=150, walkable boxes=69, generatedKit=1).
+[2026.05.29-13.58.05:534][ 77]LogT66TowerMapTerrain: Display: [ATMOSPHERE] Registered 4 outer shell wall box(es) for floor 5.
+[2026.05.29-13.58.05:547][ 77]LogT66TowerLighting: Display: [ATMOSPHERE] Skipped torch placement for floor 5 (role=Boss, reason=boss-floor)
+[2026.05.29-13.58.05:560][ 77]LogT66TowerMapTerrain: [MAP] Tower terrain floor 5 spawned in 2.0 ms (collision proxies +9, instanced actors +10, HISM components +0, HISM instances +0, maze walls=4, walkable boxes=1, generatedKit=1).
+[2026.05.29-13.58.05:573][ 77]LogT66TowerMapTerrain: [MAP] Tower terrain spawned in 141.9 ms across 5 floors (collision proxies=606, instanced actors=928, HISM components=0, HISM instances=0, generatedKit=1).
+[2026.05.29-13.58.05:586][ 77]LogT66Hero: Hero body style set to: Chad (Cylinder)
+[2026.05.29-13.58.05:599][ 77]LogT66Hero: Hero initialized: Chinese Chad, BodyStyle: Chad, Skin: Default, Color: (0.70, 0.30, 0.20)
+[2026.05.29-13.58.05:612][ 77]LogT66Hero: [ANIM] HeroBase::InitializeHero HeroID=Hero_2 BodyStyle=Chad SkinID=Default bPreviewMode=0 bUseIdleAnimation=0 VisualID=Hero_2_Chad
+[2026.05.29-13.58.05:624][ 77]LogT66GameMode: Spawned hero: Chinese Chad (Hero_2), BodyStyle: Chad, Skin: Default, Color: (0.70, 0.30, 0.20)
+[2026.05.29-13.58.05:638][ 77]LogViewport: Display: Viewport MouseLockMode Changed, DoNotLock -> LockOnCapture
+[2026.05.29-13.58.05:651][ 77]LogViewport: Display: Viewport MouseCaptureMode Changed, NoCapture -> CapturePermanently
+[2026.05.29-13.58.05:664][ 77]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.29-13.58.05:677][ 77]LogT66Style: [T66Style] Load UI retro retainer material -> OK
+[2026.05.29-13.58.05:690][ 77]LogT66Backend: Backend: fetching leaderboard key=score_alltime_solo_easy_global
+[2026.05.29-13.58.05:702][ 77]LogT66Backend: Backend: fetching leaderboard key=speedrun_alltime_solo_easy_global
+[2026.05.29-13.58.05:716][ 77]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.29-13.58.05:729][ 77]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.29-13.58.05:742][ 77]LogT66GameMode: Companion spawn using local game-instance fallback because session companion is None. GICompanion=None
+[2026.05.29-13.58.05:755][ 77]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.29-13.58.05:768][ 77]LogT66GameMode: [LOAD] SpawnMainMapTerrain finished in 220.7 ms.
+[2026.05.29-13.58.05:781][ 77]LogT66TrapSubsystem: [Traps] DungeonWallArrow x1
+[2026.05.29-13.58.05:796][ 77]LogT66TrapSubsystem: [Traps] ForestThornVolley x2
+[2026.05.29-13.58.05:809][ 77]LogT66TrapSubsystem: [Traps] OceanHarpoonVolley x1
+[2026.05.29-13.58.05:822][ 77]LogT66TrapSubsystem: [Traps] Spawned 4 floor-driven traps for tower stage 1 on Floor 2 x1, Floor 3 x2, Floor 4 x1.
+[2026.05.29-13.58.05:836][ 77]LogT66GameMode: [MAP] Tower terrain active floor 1 (visual actors changed=915, collision proxies changed=594).
+[2026.05.29-13.58.05:848][ 77]LogT66GameMode: [MAP] Tower population spawned on mob floors=3: chests 6/6, crates 7/7, loot wheels 0/0, fountains 2/2, loot bags 3/3, arcade machines 0/3, vendors 3/3, casino interactables 2/3 chance 45%, vehicles 1, saints 1, totems 3/3.
+[2026.05.29-13.58.05:861][ 77]LogT66GameMode: [LOAD] SpawnStageStructuresAndInteractables finished in 133.7 ms.
+[2026.05.29-13.58.05:874][ 77]LogT66GameMode: Spawned boss for Stage 1 (BossID=Dungeon_SewerSlimeKing)
+[2026.05.29-13.58.05:888][ 77]LogT66GameMode: [LOAD] PrepareMainMapStage finished in 1.8 ms.
+[2026.05.29-13.58.05:901][ 77]LogT66GameMode: T66GameMode - Main map terrain content spawned. Main-board combat and random interactables are waiting for the player to enter the board.
+[2026.05.29-13.58.05:914][ 77]LogT66GameMode: Warning: Spawn recovery already created a pawn for this controller; reusing it to avoid duplicate hero spawns.
+[2026.05.29-13.58.05:929][ 77]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.29-13.58.05:941][ 77]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.29-13.58.05:955][ 77]LogT66GameMode: Companion spawn using local game-instance fallback because session companion is None. GICompanion=None
+[2026.05.29-13.58.05:968][ 77]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.29-13.58.05:981][ 77]LogT66ActorRegistry: [GOLD] ActorRegistry: registered NPC T66SaintNPC_2147479730 (total: 1)
+[2026.05.29-13.58.05:994][ 77]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Saint ResolvedRow=Saint StaticMesh path=/Game/Characters/NPCs/Saint/QuadRetro/SM_Saint_QuadRetro.SM_Saint_QuadRetro Loaded=YES
+[2026.05.29-13.58.06:007][ 77]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=Saint ResolvedRow=Saint IdleAnimation is null (no idle anim row)
+[2026.05.29-13.58.06:020][ 77]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.29-13.58.06:035][ 77]LogT66PlayerController: PlayerController: Gameplay mode initialized
+[2026.05.29-13.58.06:047][ 77]LogT66Combat: Warning: [VFX] NS_PixelParticle not found; falling back to VFX_Attack1. Run CreatePixelParticleNiagara.py + configure in editor.
+[2026.05.29-13.58.06:061][ 77]LogT66Combat: [GOLD] CombatComponent: initialized — overlap sphere (radius=2032), VFX pooling (AutoRelease), timer-based fire (0.98s)
+[2026.05.29-13.58.06:073][ 77]LogT66Hero: HeroBase BeginPlay - Location: (0.0, 3575.0, 1202.2)
+[2026.05.29-13.58.06:086][ 77]LogT66Hero: HeroBase - FollowCamera is active: YES
+[2026.05.29-13.58.06:099][ 77]LogLoad: Took 0.531920 seconds to LoadMap(/Game/Maps/GameplayLevel)
+[2026.05.29-13.58.06:111][ 77]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Maps/GameplayLevel
+[2026.05.29-13.58.06:124][ 77]LogStaticMesh: [SM_IceCrystal] Mesh is marked for CPU read.
+[2026.05.29-13.58.06:137][ 77]LogRHI: Display: Encountered a new graphics PSO: 1394319693
+[2026.05.29-13.58.06:151][ 77]LogRHI: Display: Encountered a new graphics PSO: 739378560
+[2026.05.29-13.58.06:164][ 77]LogRHI: Display: Encountered a new graphics PSO: 4138127947
+[2026.05.29-13.58.06:176][ 77]LogRHI: Display: Encountered a new graphics PSO: 3993138801
+[2026.05.29-13.58.06:189][ 77]LogRHI: Display: Encountered a new graphics PSO: 3858676644
+[2026.05.29-13.58.06:202][ 77]LogRHI: Display: Encountered a new graphics PSO: 3072807617
+[2026.05.29-13.58.06:215][ 77]LogRHI: Display: Encountered a new graphics PSO: 498392350
+[2026.05.29-13.58.06:228][ 77]LogRHI: Display: Encountered a new graphics PSO: 4204082073
+[2026.05.29-13.58.06:241][ 77]LogRHI: Display: Encountered a new graphics PSO: 3695969077
+[2026.05.29-13.58.06:254][ 77]LogRHI: Display: Encountered a new graphics PSO: 691201253
+[2026.05.29-13.58.06:266][ 77]LogRHI: Display: Encountered a new graphics PSO: 714033555
+[2026.05.29-13.58.06:280][ 77]LogRHI: Display: Encountered a new graphics PSO: 2189833817
+[2026.05.29-13.58.06:292][ 77]LogStaticMesh: [SM_Shield_01] Mesh is marked for CPU read.
+[2026.05.29-13.58.06:306][ 77]LogStaticMesh: [SM_SphereDe] Mesh is marked for CPU read.
+[2026.05.29-13.58.06:319][ 77]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.29-13.58.06:333][ 77]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_2147482138 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.29-13.58.06:348][ 77]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.29-13.58.06:361][ 77]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.29-13.58.06:375][ 77]LogT66CharacterVisuals: Error: [MESH] ResolveVisual: NO ROW for VisualID='VendorBoss' in DT_CharacterVisuals (133 rows). First rows: [Hero_1_Chad, Hero_1_Chad_DemoSkin, Hero_2_Chad, Hero_2_Chad_DemoSkin, Hero_3_Chad, Hero_3_Chad_DemoSkin, Hero_4_Chad, Hero_4_Chad_DemoSkin, Hero_5_Chad, Hero_5_Chad_DemoSkin... +123 more]. Reimport via ImportData.py!
+[2026.05.29-13.58.06:388][ 77]LogT66CharacterVisuals: [GOLD] ResolveVisual: VendorBoss resolved in 0.02ms (cached or no assets)
+[2026.05.29-13.58.06:402][ 77]LogT66CharacterVisuals: Warning: [MESH] ApplyCharacterVisual FAILED for VisualID=VendorBoss: bHasRow=0, SkeletalMesh=(null) StaticMesh=(null)
+[2026.05.29-13.58.06:417][ 77]LogStaticMesh: [SM_Curved_Shield_02] Mesh is marked for CPU read.
+[2026.05.29-13.58.06:430][ 77]LogTemp: Boss part destroyed: BossID=VendorBoss PartID=Core
+[2026.05.29-13.58.06:444][ 77]LogTemp: Boss part destroyed: BossID=VendorBoss PartID=Head
+[2026.05.29-13.58.06:457][ 77]LogTemp: Boss part destroyed: BossID=VendorBoss PartID=LeftArm
+[2026.05.29-13.58.06:470][ 77]LogTemp: Boss part destroyed: BossID=VendorBoss PartID=RightArm
+[2026.05.29-13.58.06:483][ 77]LogTemp: Boss part destroyed: BossID=VendorBoss PartID=LeftLeg
+[2026.05.29-13.58.06:496][ 77]LogTemp: Boss part destroyed: BossID=VendorBoss PartID=RightLeg
+[2026.05.29-13.58.06:509][ 77]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Companion_01 ResolvedRow=Companion_01 SkeletalMesh path=/Game/Characters/Companions/Companion_01/Default/AnimatedToonStyle/SK_Companion_01.SK_Companion_01 Loaded=YES
+[2026.05.29-13.58.06:521][ 77]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Companion_01 ResolvedRow=Companion_01 StaticMesh path=/Game/Characters/Companions/Companion_01/Default/Pixal3DToonStyle/SM_Companion_01.SM_Companion_01 Loaded=YES
+[2026.05.29-13.58.06:536][ 77]LogT66CharacterVisuals: [OUTLINE] ResolveVisual VisualID=Companion_01 ResolvedRow=Companion_01 OutlineStaticMesh path=/Game/Characters/Companions/Companion_01/Default/Pixal3DToonStyle/SM_Companion_01_Outline.SM_Companion_01_Outline Loaded=YES
+[2026.05.29-13.58.06:549][ 77]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=Companion_01 ResolvedRow=Companion_01 IdleAnimation path=/Game/Characters/Companions/Companion_01/Default/AnimatedToonStyle/AM_Companion_01_Idle.AM_Companion_01_Idle IdleAnim=AM_Companion_01_Idle
+[2026.05.29-13.58.06:563][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALTEST using /Game/Characters/Mobs/PIXALTEST/T_PIXALTEST.T_PIXALTEST.
+[2026.05.29-13.58.06:576][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALTEST beside Idol Altar at V(X=1170.00, Y=3375.00, Z=2965.60).
+[2026.05.29-13.58.06:589][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALSLIME using /Game/Characters/Mobs/PIXALSLIME/T_PIXALSLIME.T_PIXALSLIME.
+[2026.05.29-13.58.06:602][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALSLIME beside Idol Altar at V(X=1170.00, Y=2975.00, Z=2809.69).
+[2026.05.29-13.58.06:616][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALSLIME_HIFIRUSH using /Game/Characters/Mobs/PIXALSLIME_HIFIRUSH/T_PIXALSLIME_HIFIRUSH.T_PIXALSLIME_HIFIRUSH.
+[2026.05.29-13.58.06:629][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALSLIME_HIFIRUSH beside Idol Altar at V(X=1170.00, Y=2615.00, Z=2612.40).
+[2026.05.29-13.58.06:644][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALTEST2 using /Game/Characters/Mobs/PIXALTEST2/T_PIXALTEST2.T_PIXALTEST2.
+[2026.05.29-13.58.06:656][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALTEST2 beside Idol Altar at V(X=1170.00, Y=4295.00, Z=2406.82).
+[2026.05.29-13.58.06:669][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALTEST3 using /Game/Characters/Mobs/PIXALTEST3/T_PIXALTEST3.T_PIXALTEST3.
+[2026.05.29-13.58.06:682][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALTEST3 beside Idol Altar at V(X=1170.00, Y=4695.00, Z=2398.96).
+[2026.05.29-13.58.06:696][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALTEST4 using /Game/Characters/Mobs/PIXALTEST4/T_PIXALTEST4.T_PIXALTEST4.
+[2026.05.29-13.58.06:708][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALTEST4 beside Idol Altar at V(X=1170.00, Y=5055.00, Z=2391.95).
+[2026.05.29-13.58.06:721][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALTEST5 using /Game/Characters/Mobs/PIXALTEST5/T_PIXALTEST5.T_PIXALTEST5.
+[2026.05.29-13.58.06:734][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALTEST5 beside Idol Altar at V(X=1170.00, Y=5415.00, Z=2388.60).
+[2026.05.29-13.58.06:747][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALBONEWALKER_HIFIRUSH using /Game/Characters/Mobs/PIXALBONEWALKER_HIFIRUSH/T_PIXALBONEWALKER_HIFIRUSH.T_PIXALBONEWALKER_HIFIRUSH.
+[2026.05.29-13.58.06:759][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALBONEWALKER_HIFIRUSH beside Idol Altar at V(X=1540.00, Y=2615.00, Z=2305.51).
+[2026.05.29-13.58.06:772][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALRATPACK_HIFIRUSH using /Game/Characters/Mobs/PIXALRATPACK_HIFIRUSH/T_PIXALRATPACK_HIFIRUSH.T_PIXALRATPACK_HIFIRUSH.
+[2026.05.29-13.58.06:785][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALRATPACK_HIFIRUSH beside Idol Altar at V(X=1540.00, Y=2975.00, Z=2471.07).
+[2026.05.29-13.58.06:798][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALCAVEBAT_HIFIRUSH using /Game/Characters/Mobs/PIXALCAVEBAT_HIFIRUSH/T_PIXALCAVEBAT_HIFIRUSH.T_PIXALCAVEBAT_HIFIRUSH.
+[2026.05.29-13.58.06:811][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALCAVEBAT_HIFIRUSH beside Idol Altar at V(X=1540.00, Y=3335.00, Z=2653.80).
+[2026.05.29-13.58.06:825][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALHEXSLINGER_HIFIRUSH using /Game/Characters/Mobs/PIXALHEXSLINGER_HIFIRUSH/T_PIXALHEXSLINGER_HIFIRUSH.T_PIXALHEXSLINGER_HIFIRUSH.
+[2026.05.29-13.58.06:838][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALHEXSLINGER_HIFIRUSH beside Idol Altar at V(X=1540.00, Y=3695.00, Z=2713.54).
+[2026.05.29-13.58.06:850][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALTOMBSPIDER_HIFIRUSH using /Game/Characters/Mobs/PIXALTOMBSPIDER_HIFIRUSH/T_PIXALTOMBSPIDER_HIFIRUSH.T_PIXALTOMBSPIDER_HIFIRUSH.
+[2026.05.29-13.58.06:865][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALTOMBSPIDER_HIFIRUSH beside Idol Altar at V(X=1540.00, Y=4055.00, Z=2439.61).
+[2026.05.29-13.58.06:877][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALSTONESENTINEL_HIFIRUSH using /Game/Characters/Mobs/PIXALSTONESENTINEL_HIFIRUSH/T_PIXALSTONESENTINEL_HIFIRUSH.T_PIXALSTONESENTINEL_HIFIRUSH.
+[2026.05.29-13.58.06:890][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALSTONESENTINEL_HIFIRUSH beside Idol Altar at V(X=1540.00, Y=4415.00, Z=2470.87).
+[2026.05.29-13.58.06:904][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALMIMICLURE_HIFIRUSH using /Game/Characters/Mobs/PIXALMIMICLURE_HIFIRUSH/T_PIXALMIMICLURE_HIFIRUSH.T_PIXALMIMICLURE_HIFIRUSH.
+[2026.05.29-13.58.06:916][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALMIMICLURE_HIFIRUSH beside Idol Altar at V(X=1540.00, Y=4775.00, Z=2394.96).
+[2026.05.29-13.58.06:930][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALBONECONJURER_HIFIRUSH using /Game/Characters/Mobs/PIXALBONECONJURER_HIFIRUSH/T_PIXALBONECONJURER_HIFIRUSH.T_PIXALBONECONJURER_HIFIRUSH.
+[2026.05.29-13.58.06:943][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALBONECONJURER_HIFIRUSH beside Idol Altar at V(X=1540.00, Y=5135.00, Z=2491.18).
+[2026.05.29-13.58.06:956][ 77]LogT66GameMode: [PixalTestDisplay] Applied direct display material for PIXALCRYPTWRAITH_HIFIRUSH using /Game/Characters/Mobs/PIXALCRYPTWRAITH_HIFIRUSH/T_PIXALCRYPTWRAITH_HIFIRUSH.T_PIXALCRYPTWRAITH_HIFIRUSH.
+[2026.05.29-13.58.06:969][ 77]LogT66GameMode: [PixalTestDisplay] Spawned PIXALCRYPTWRAITH_HIFIRUSH beside Idol Altar at V(X=1540.00, Y=5495.00, Z=2473.13).
+[2026.05.29-13.58.06:982][ 77]LogT66GameMode: Warning: SpawnStageGateAtLocation: request=(600, 3575, 1190) requestFloor=1 anchorSource=BossDeath resolvedAnchor=(0, 0, -3796) anchorFloor=5 player=(0, 3575, 1202) playerFloor=1 bossSpawnSurface=(0, 0, -3796) bossAreaCenter=(0, 0, -3796)
+[2026.05.29-13.58.06:995][ 77]LogT66ActorRegistry: [GOLD] ActorRegistry: registered StageGate T66StageGate_2147479476 (total: 1)
+[2026.05.29-13.58.07:008][ 77]LogTemp: Warning: StageGate BeginPlay: Actor=T66StageGate_2147479476 ActorLoc=(600, 3575, 1190) MeshLoc=(600, 3575, 1190) MeshScale=(1.00, 1.00, 1.00) MeshBoundsMin=(514, 3560, 1190) MeshBoundsMax=(686, 3590, 1450) Hidden=0 Visible=1
+[2026.05.29-13.58.07:022][ 77]LogT66GameMode: Warning: Tower gate snap: actor=T66StageGate_2147479476 class=T66StageGate floor=1 desired=(600, 3575, 1190) floorCenter=(0, 0, 1100) floorSurfaceZ=1100 traceStart=(600, 3575, 1800) traceEnd=(600, 3575, -124) hits=2 foundGround=0 hitActor=None hitPoint=(600, 3575, 1100) halfHeight=0 finalZ=1105
+[2026.05.29-13.58.07:034][ 77]LogT66GameMode: Warning: Spawned Stage Gate desired=(600, 3575, 1190) initial=(600, 3575, 1190) final=(600, 3575, 1105) mesh=(600, 3575, 1105) [location not grounded]
+[2026.05.29-13.58.07:048][ 77]LogT66ActorRegistry: [GOLD] ActorRegistry: registered StageGate T66StageGate_2147479474 (total: 2)
+[2026.05.29-13.58.07:062][ 77]LogTemp: Warning: StageGate BeginPlay: Actor=T66StageGate_2147479474 ActorLoc=(820, 3575, 1190) MeshLoc=(820, 3575, 1190) MeshScale=(1.00, 1.00, 1.00) MeshBoundsMin=(734, 3560, 1190) MeshBoundsMax=(906, 3590, 1450) Hidden=0 Visible=1
+[2026.05.29-13.58.07:074][ 77]LogT66GameMode: Warning: Tower gate snap: actor=T66StageGate_2147479474 class=T66StageGate floor=1 desired=(820, 3575, 1190) floorCenter=(0, 0, 1100) floorSurfaceZ=1100 traceStart=(820, 3575, 1800) traceEnd=(820, 3575, -124) hits=2 foundGround=1 hitActor=Actor_2147482116 hitPoint=(820, 3575, 1100) halfHeight=0 finalZ=1105
+[2026.05.29-13.58.07:087][ 77]LogT66GameMode: Warning: Spawned visible tower Stage Gate fallback desired=(820, 3575, 1190) initial=(820, 3575, 1190) final=(820, 3575, 1105) mesh=(820, 3575, 1105) [location not grounded]
+[2026.05.29-13.58.07:101][ 77]LogT66GameMode: Warning: Visible Tower Exit Gate relation: playerDistance2D=820 playerDeltaZ=-97 gateFloor=1
+[2026.05.29-13.58.07:115][ 77]LogT66GameMode: [VendorFailedStealProofSummary] Terminal=1 StealAttempted=1 StealFailed=1 VendorBossSpawned=1 VendorBossIdentity=1 VendorBossDefeated=1 VendorTokenDropped=1 HiddenBossCount=1 CasinoAngerSpawnedBoss=0 Pass=1
+[2026.05.29-13.58.07:128][ 77]LogWindows: FPlatformMisc::RequestExitWithStatus(0, 0, VendorFailedStealProofComplete)
+[2026.05.29-13.58.07:140][ 77]LogCore: Engine exit requested (reason: Win RequestExit)
+[2026.05.29-13.58.07:153][ 77]LogRHI: Display: Encountered a new graphics PSO: 4014123690
+[2026.05.29-13.58.07:166][ 77]LogRHI: Display: Encountered a new graphics PSO: 3181504284
+[2026.05.29-13.58.07:180][ 77]LogRHI: Display: Encountered a new graphics PSO: 4171542365
+[2026.05.29-13.58.07:193][ 77]LogT66Backend: Backend: leaderboard fetched key=score_alltime_solo_easy_global entries=10 total=20
+[2026.05.29-13.58.07:206][ 77]LogT66Backend: Backend: leaderboard fetched key=speedrun_alltime_solo_easy_global entries=10 total=18
+[2026.05.29-13.58.07:218][ 77]LogCore: Engine exit requested (reason: EngineExit() was called; note: exit was already requested)
+[2026.05.29-13.58.07:232][ 77]LogStreaming: Display: FlushAsyncLoading(): 0 QueuedPackages, 125 AsyncPackages
+[2026.05.29-13.58.07:245][ 77]LogInit: Display: PreExit Game.
+[2026.05.29-13.58.07:259][ 77]LogWorld: BeginTearingDown for /Game/Maps/GameplayLevel
+[2026.05.29-13.58.07:271][ 77]LogT66ActorRegistry: [GOLD] ActorRegistry: unregistered StageGate T66StageGate_2147479476 (total: 1)
+[2026.05.29-13.58.07:284][ 77]LogT66ActorRegistry: [GOLD] ActorRegistry: unregistered StageGate T66StageGate_2147479474 (total: 0)
+[2026.05.29-13.58.07:297][ 77]LogT66ActorRegistry: [GOLD] ActorRegistry: unregistered NPC T66SaintNPC_2147479730 (total: 0)
+[2026.05.29-13.58.07:310][ 77]LogWorld: UWorld::CleanupWorld for GameplayLevel, bSessionEnded=true, bCleanupResources=true
+[2026.05.29-13.58.07:322][ 77]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.29-13.58.07:335][ 77]LogT66EnemyPool: [GOLD] EnemyPool: shutting down. Total acquired=0, reused=0 (0%)
+[2026.05.29-13.58.07:348][ 77]LogRuntimeTelemetry: Recording EnginePreExit events
+[2026.05.29-13.58.07:532][ 77]LogAudio: Display: Beginning Audio Device Manager Shutdown (Module: AudioMixerXAudio2)...
+[2026.05.29-13.58.07:544][ 77]LogAudio: Display: Destroying 1 Remaining Audio Device(s)...
+[2026.05.29-13.58.07:556][ 77]LogAudio: Display: Audio Device unregistered from world 'GameplayLevel'.
+[2026.05.29-13.58.07:570][ 77]LogAudio: Display: Shutting down audio device while 1 references to it are still alive. For more information, compile with INSTRUMENT_AUDIODEVICE_HANDLES.
+[2026.05.29-13.58.07:581][ 77]LogAudioMixer: Display: FMixerPlatformXAudio2::StopAudioStream() called. InstanceID=1, StreamState=4
+[2026.05.29-13.58.07:595][ 77]LogAudioMixer: Display: FMixerPlatformXAudio2::StopAudioStream() called. InstanceID=1, StreamState=2
+[2026.05.29-13.58.07:607][ 77]LogAudioMixer: Deinitializing Audio Bus Subsystem for audio device with ID -1
+[2026.05.29-13.58.07:620][ 77]LogAudio: Display: Audio Device Manager Shutdown
+[2026.05.29-13.58.07:633][ 77]LogSlate: Request Window 'T66 (64-bit Development PCD3D_SM6) ' being destroyed
+[2026.05.29-13.58.07:646][ 77]LogSlate: Window 'T66 (64-bit Development PCD3D_SM6) ' being destroyed
+[2026.05.29-13.58.07:658][ 77]LogWindowsTextInputMethodSystem: Activated input method: English (United States) - (Keyboard).
+[2026.05.29-13.58.07:671][ 77]LogSlate: Slate User Destroyed.  User Index 0, Is Virtual User: 0
+[2026.05.29-13.58.07:684][ 77]LogExit: Preparing to exit.
+[2026.05.29-13.58.07:697][ 77]LogMoviePlayer: Shutting down movie player
+[2026.05.29-13.58.07:709][ 77]LogSlate: Updating window title bar state: overlay mode, drag disabled, window buttons hidden, title bar hidden
+[2026.05.29-13.58.07:722][ 77]LogDemo: Cleaned up 0 splitscreen connections, owner deletion: enabled
+[2026.05.29-13.58.07:737][ 77]LogExit: Game engine shut down
+[2026.05.29-13.58.07:784][ 77]LogExit: Object subsystem successfully closed.
+[2026.05.29-13.58.07:800][ 77]LogShaderLibrary: Display: Closing logical shader library 'Global' with 1 components
+[2026.05.29-13.58.07:825][ 77]LogShaderLibrary: Display: Closing logical shader library 'T66' with 1 components
+[2026.05.29-13.58.07:837][ 77]LogChaosDD: Chaos Debug Draw Shutdown
+[2026.05.29-13.58.07:846][ 77]LogSteamShared: Freeing the Steam Loaded Modules...
+[2026.05.29-13.58.07:860][ 77]LogNFORDenoise: NFORDenoise function shutting down
+[2026.05.29-13.58.07:872][ 77]RenderDocPlugin: plugin has been unloaded.
+[2026.05.29-13.58.07:890][ 77]LogPakFile: Destroying PakPlatformFile
+[2026.05.29-13.58.08:667][ 77]LogD3D12RHI: ~FD3D12DynamicRHI
+[2026.05.29-13.58.08:682][ 77]LogExit: Exiting.
+[2026.05.29-13.58.08:702][ 77]Log file closed, 05/29/26 10:58:08

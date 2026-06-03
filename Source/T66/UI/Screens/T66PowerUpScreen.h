@@ -43,6 +43,7 @@ private:
 	FReply HandleShowPermanentClicked();
 	FReply HandleShowSingleUseClicked();
 	FReply HandleUnlockClicked(ET66HeroStatType StatType);
+	FReply HandlePurchaseRelicClicked(FName RelicID);
 	FReply HandlePurchaseSingleUseClicked(ET66SecondaryStatType StatType);
 	FReply HandleHeroSelectionSingleUseClicked(ET66SecondaryStatType StatType);
 };

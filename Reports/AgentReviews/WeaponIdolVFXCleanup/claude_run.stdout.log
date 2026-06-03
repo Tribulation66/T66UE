@@ -1,0 +1,33 @@
+
+
+RunDir               : C:\UE\T66\Reports\AgentReviews\ClaudeDirectRead\20260530T024933-WeaponIdolVFXCleanup-Operator
+ManifestPath         : C:\UE\T66\Reports\AgentReviews\ClaudeDirectRead\20260530T024933-WeaponIdolVFXCleanup-Operator\ma
+                       nifest.json
+RetentionPath        : C:\UE\T66\Reports\AgentReviews\ClaudeDirectRead\20260530T024933-WeaponIdolVFXCleanup-Operator\.r
+                       eport-run.json
+OutputPath           : C:\UE\T66\Reports\AgentReviews\ClaudeDirectRead\20260530T024933-WeaponIdolVFXCleanup-Operator\cl
+                       aude_direct_read_operator.md
+ArtifactKind         : OperatorWorkArtifactRequiresValidation
+Mode                 : Operator
+Model                : claude-opus-4-8
+Effort               : high
+ClaudeOutputFormat   : json
+PermissionMode       : bypassPermissions
+ToolProfile          : FullOperator
+EffectiveToolSurface : default (full Claude Code tool surface: edits, shell, configured MCP/editor tools)
+MutatingCapability   : True
+ApprovalRequired     : True
+CodexApprovalPath    : C:\UE\T66\Reports\AgentReviews\WeaponIdolVFXCleanup\codex_operator_approval.md
+AllowedTools         : Read,Grep,Glob
+ClaudeTokensSpent    : 6391002
+TokenSummaryPath     : C:\UE\T66\Reports\AgentReviews\ClaudeDirectRead\20260530T024933-WeaponIdolVFXCleanup-Operator\cl
+                       aude_tokens.json
+ReviewedOperatorRun  : 
+Greenlit             : False
+Verdict              : 
+VerdictLine          : 
+OutcomeKind          : ClaudeOperatorArtifact
+FailureKind          : 
+
+
+

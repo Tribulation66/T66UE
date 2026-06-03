@@ -388,9 +388,9 @@ struct T66_API FHeroData : public FTableRowBase
 	// Secondary Stat Base Values (multiplied by item Line 2 rarity multiplier)
 	// ============================================
 
-	/** Base crit damage multiplier (e.g. 1.5 = 50% bonus on crit). */
+	/** Base chance to stun a target with a headshot proc. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
-	float BaseCritDamage = 1.5f;
+	float BaseHeadshotChance = 0.0f;
 
 	/** Base crit chance (0..1, e.g. 0.05 = 5%). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Secondary")
@@ -484,6 +484,18 @@ struct T66_API FWeaponData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
 	ET66AttackCategory Branch = ET66AttackCategory::Pierce;
+
+	/** Optional structural pattern selector for category-specific runtime dispatch. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Pattern")
+	FName AttackPatternID = NAME_None;
+
+	/** Authored projectile/payload count for this weapon row. 0 defers to the branch default or legacy bonus count. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Pattern")
+	int32 ProjectileCount = 0;
+
+	/** Total fan spread in degrees for multi-projectile patterns. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Pattern")
+	float SpreadAngleDegrees = 0.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Stats")
 	float DamageMultiplier = 1.0f;
@@ -821,6 +833,65 @@ struct T66_API FCompanionData : public FTableRowBase
 	{}
 };
 
+/**
+ * Pet data row keyed by the source stage boss ID.
+ * Pet collection state is profile-owned; this row only describes selection/capture presentation and movement feel.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FPetData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	/** Stable pet ID. For generated fallback rows this matches SourceBossID. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName PetID;
+
+	/** Boss row that unlocks/captures this pet. Rows may be keyed directly by this ID. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FName SourceBossID;
+
+	/** Fallback display name (used if no localized/name source exists). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	FText DisplayName;
+
+	/** Selection portrait texture for UI (optional). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UTexture2D> SelectionPortrait;
+
+	/** Optional cute/captured static visual for the world capture interactable. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	TSoftObjectPtr<UStaticMesh> CaptureVisualMesh;
+
+	/** Placeholder color for the pet actor and capture interactable when no authored visual exists. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
+	FLinearColor PlaceholderColor = FLinearColor(0.18f, 0.42f, 0.95f, 1.f);
+
+	/** Runtime pet actor class. Defaults to AT66PetActor if unset. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawning")
+	TSoftClassPtr<AActor> PetActorClass;
+
+	/** Base follow/fetch interpolation speed. Bond may improve movement only. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float BaseFetchSpeed = 7.f;
+
+	/** Additional movement speed per bond stage. Does not affect loot amount, value, radius, or eligibility. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float BondFetchSpeedPerStage = 0.12f;
+
+	/** Cap for bond-driven movement multiplier. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+	float MaxBondFetchSpeedMultiplier = 1.8f;
+
+	/** Authored skin IDs for future pet-skin UI. Default is always available. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skins")
+	TArray<FName> SkinIDs;
+
+	FPetData()
+		: PetID(NAME_None)
+		, SourceBossID(NAME_None)
+	{}
+};
+
 UENUM(BlueprintType)
 enum class ET66ItemRarity : uint8
 {
@@ -882,7 +953,7 @@ enum class ET66SecondaryStatType : uint8
 	BounceScale UMETA(DisplayName = "Bounce Scale"),
 	PierceScale UMETA(DisplayName = "Pierce Scale"),
 	DotScale UMETA(DisplayName = "DOT Scale"),
-	// Crit (2)
+	// Crit / headshot (2)
 	CritDamage UMETA(DisplayName = "Crit Damage"),
 	CritChance UMETA(DisplayName = "Crit Chance"),
 	// Range-conditional (3)
@@ -921,11 +992,21 @@ enum class ET66SecondaryStatType : uint8
 	LootBag UMETA(DisplayName = "Loot Bag"),
 	LootWheel UMETA(DisplayName = "Loot Wheel"),
 	VendorToken UMETA(DisplayName = "Vendor Token"),
+	HeadshotChance UMETA(DisplayName = "Headshot Chance"),
+	FirePower UMETA(DisplayName = "Fire Power"),
+	IcePower UMETA(DisplayName = "Ice Power"),
+	ElectricityPower UMETA(DisplayName = "Electricity Power"),
+	NaturePower UMETA(DisplayName = "Nature Power"),
+	InteractableLuck UMETA(DisplayName = "Interactable Luck"),
+	StealingLuck UMETA(DisplayName = "Stealing Luck"),
+	GamblingLuck UMETA(DisplayName = "Gambling Luck"),
+	ProcLuck UMETA(DisplayName = "Proc Luck"),
 };
 
 FORCEINLINE bool T66IsDeprecatedSecondaryStatType(ET66SecondaryStatType StatType)
 {
-	return StatType == ET66SecondaryStatType::Goblin
+	return StatType == ET66SecondaryStatType::CritDamage
+		|| StatType == ET66SecondaryStatType::Goblin
 		|| StatType == ET66SecondaryStatType::Leprechaun
 		|| StatType == ET66SecondaryStatType::Fountain
 		|| StatType == ET66SecondaryStatType::CloseRangeDamage
@@ -938,7 +1019,41 @@ FORCEINLINE bool T66IsDeprecatedSecondaryStatType(ET66SecondaryStatType StatType
 		|| StatType == ET66SecondaryStatType::Accuracy
 		|| StatType == ET66SecondaryStatType::Cheating
 		|| StatType == ET66SecondaryStatType::Stealing
+		|| StatType == ET66SecondaryStatType::TreasureChest
+		|| StatType == ET66SecondaryStatType::LootCrate
+		|| StatType == ET66SecondaryStatType::LootBag
+		|| StatType == ET66SecondaryStatType::LootWheel
 		|| StatType == ET66SecondaryStatType::VendorToken;
+}
+
+/** Element family used by the 4x4 idol grid and elemental-power scaling. */
+UENUM(BlueprintType)
+enum class ET66IdolElement : uint8
+{
+	Fire UMETA(DisplayName = "Fire"),
+	Ice UMETA(DisplayName = "Ice"),
+	Electricity UMETA(DisplayName = "Electricity"),
+	Nature UMETA(DisplayName = "Nature"),
+};
+
+/** Data-only delivery discriminator. Traveler delivery is reserved for the Foundation API adapter. */
+UENUM(BlueprintType)
+enum class ET66IdolDelivery : uint8
+{
+	LocalImpact UMETA(DisplayName = "Local Impact"),
+	Traveler UMETA(DisplayName = "Traveler"),
+};
+
+FORCEINLINE ET66SecondaryStatType T66GetElementPowerStatType(const ET66IdolElement Element)
+{
+	switch (Element)
+	{
+	case ET66IdolElement::Fire:        return ET66SecondaryStatType::FirePower;
+	case ET66IdolElement::Ice:         return ET66SecondaryStatType::IcePower;
+	case ET66IdolElement::Electricity: return ET66SecondaryStatType::ElectricityPower;
+	case ET66IdolElement::Nature:      return ET66SecondaryStatType::NaturePower;
+	default:                           return ET66SecondaryStatType::FirePower;
+	}
 }
 
 FORCEINLINE bool T66IsLiveSecondaryStatType(ET66SecondaryStatType StatType)
@@ -948,8 +1063,8 @@ FORCEINLINE bool T66IsLiveSecondaryStatType(ET66SecondaryStatType StatType)
 
 FORCEINLINE bool T66IsAccuracyFamilySecondaryStatType(ET66SecondaryStatType StatType)
 {
-	return StatType == ET66SecondaryStatType::CritDamage
-		|| StatType == ET66SecondaryStatType::CritChance
+	return StatType == ET66SecondaryStatType::CritChance
+		|| StatType == ET66SecondaryStatType::HeadshotChance
 		|| StatType == ET66SecondaryStatType::AttackRange
 		|| StatType == ET66SecondaryStatType::Execute;
 }
@@ -979,18 +1094,6 @@ enum class ET66HeroStatusEffectType : uint8
 	Curse UMETA(DisplayName = "Curse"),
 };
 
-/**
- * Item template data row for the Items DataTable.
- *
- * There are 28 live item templates plus deprecated legacy rows kept for compatibility.
- * Each template defines:
- *   - Line 1: a primary stat type (one of the item-facing foundational stats)
- *   - Line 2: a secondary stat type (one live secondary effect)
- *
- * Rarity and Line 1 rolled value are stored at runtime in FT66InventorySlot.
- * Line 2 multiplier is still preserved for legacy item-card text, but gameplay now prefers
- * fixed flat secondary rewards per rarity plus primary-driven proxy rolls.
- */
 USTRUCT(BlueprintType)
 struct T66_API FItemData : public FTableRowBase
 {
@@ -1216,6 +1319,268 @@ enum class ET66BossPartProfile : uint8
 	Duelist UMETA(DisplayName = "Duelist"),
 };
 
+/**
+ * Data-authored ownership row that binds a boss attack identity to the body
+ * part that owns it. The row intentionally does not define projectile visuals
+ * or hazard behavior; those attack definitions are owned by the boss attack
+ * rendering/behavior layer and referenced through AttackID.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66BossAttackOwnershipData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Ownership")
+	FName AttackRowID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Ownership")
+	FName BossID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Ownership")
+	FName AttackID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Ownership")
+	FName OwningPartID = NAME_None;
+
+	/** Optional pipe/comma/semicolon-separated list of additional parts that must be alive. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Ownership")
+	FString RequiredPartIDs;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Ownership")
+	bool bSelectable = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Ownership", meta = (ClampMin = "0.0"))
+	float SelectionWeight = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Ownership")
+	int32 MinPhase = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Ownership")
+	int32 MaxPhase = 99;
+};
+
+/**
+ * Data-authored boss attack behavior row keyed by AttackID. Multiple rows may
+ * share one AttackID; SequenceIndex orders the projectile events that compose
+ * the full attack. Part ownership/liveness remains in FT66BossAttackOwnershipData.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66BossAttackDefinitionData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	FName DefinitionRowID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	FName AttackID = NAME_None;
+
+	/** SingleShot, FanBurst, or RadialBurst. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	FName PatternType = FName(TEXT("SingleShot"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	bool bEnabled = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	int32 SequenceIndex = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	int32 MinPhase = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	int32 MaxPhase = 99;
+
+	/** Optional managed projectile visual profile. None preserves the boss legacy profile bucket. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	FName ProjectileVisualProfileID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition", meta = (ClampMin = "0"))
+	int32 ShotCount = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float SpreadDegrees = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float DelayStepSeconds = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float InitialDelaySeconds = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float SpeedScale = 1.f;
+
+	/** Lateral offset relative to the target-facing right vector. Used by SingleShot and FanBurst. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float SideOffsetDistance = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float YawOffsetDegrees = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float StartAngleDegrees = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	bool bRandomStartAngle = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	bool bStartAngleRelativeToTarget = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	bool bUseSecondaryTint = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float SpawnOffsetX = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float SpawnOffsetY = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float SpawnOffsetZ = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	float VisualScaleMultiplier = 1.f;
+};
+
+/**
+ * Data-authored persistent boss hazard behavior. This is separate from moving
+ * projectiles and from part ownership; bosses reference it by HazardID/AttackID.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66BossHazardDefinitionData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	FName HazardDefinitionID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	FName HazardID = NAME_None;
+
+	/** Circle or Box. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	FName ShapeType = FName(TEXT("Circle"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	FName VisualProfileID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	bool bEnabled = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	int32 MaxActiveCount = 64;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float TelegraphSeconds = 0.8f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float ActiveSeconds = 1.2f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float LingerSeconds = 0.4f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float DamageCadenceSeconds = 0.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	int32 DamageHP = 20;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float Radius = 260.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float BoxExtentX = 180.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float BoxExtentY = 180.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float BoxExtentZ = 100.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float VisualScaleX = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float VisualScaleY = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float VisualScaleZ = 0.05f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float TelegraphR = 0.3f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float TelegraphG = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float TelegraphB = 0.15f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float ActiveR = 0.08f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float ActiveG = 0.85f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Hazard Definition")
+	float ActiveB = 0.18f;
+};
+
+/**
+ * Authored boss movement pattern row. This controls only final movement input selection;
+ * awaken and debuff override gates stay owned by AT66BossBase Tick.
+ */
+USTRUCT(BlueprintType)
+struct T66_API FT66BossMovementPatternData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement")
+	FName MovementProfileID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement")
+	FName PatternID = NAME_None;
+
+	/** SimpleChase, KeepDistance, Orbit, StrafeBurst, RetreatThenCast, AnchorDuringCast, Charge. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement")
+	FName PatternType = FName(TEXT("SimpleChase"));
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement")
+	bool bEnabled = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement", meta = (ClampMin = "0.0"))
+	float Weight = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement")
+	int32 MinPhase = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement")
+	int32 MaxPhase = 99;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement", meta = (ClampMin = "0.0"))
+	float MinDistance = 480.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement", meta = (ClampMin = "0.0"))
+	float MaxDistance = 680.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement", meta = (ClampMin = "0.0"))
+	float SpeedScale = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement")
+	int32 OrbitDirection = 1;
+
+	/** Optional attack identity this movement tactic reacts to. The attack behavior/visual remains owned by boss attack data. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement Coordination")
+	FName CoordinatedAttackID = NAME_None;
+
+	/** Optional owning part this movement tactic reacts to while the part-owned attack is casting. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement Coordination")
+	FName CoordinatedPartID = NAME_None;
+
+	/** Optional row-local window for reading the active part-owned attack state; 0 uses the boss default window. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Movement Coordination", meta = (ClampMin = "0.0"))
+	float CoordinationWindowSeconds = 0.f;
+};
+
 USTRUCT(BlueprintType)
 struct T66_API FBossData : public FTableRowBase
 {
@@ -1272,6 +1637,10 @@ struct T66_API FBossData : public FTableRowBase
 	/** Chase speed once awakened */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	float MoveSpeed = 350.f;
+
+	/** Optional authored movement profile. None means exact legacy simple chase. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	FName BossMovementProfileID = NAME_None;
 
 	/** Fire interval once awakened (seconds) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
@@ -1598,9 +1967,17 @@ struct T66_API FIdolData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FName IdolID;
 
+	/** Element family used by the 4x4 idol grid and elemental-power scaling. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	ET66IdolElement Element = ET66IdolElement::Fire;
+
 	/** Attack category this idol source belongs to. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	ET66AttackCategory Category = ET66AttackCategory::Pierce;
+
+	/** Runtime delivery lane. Traveler delivery is inert until the Foundation API adapter lands. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
+	ET66IdolDelivery Delivery = ET66IdolDelivery::LocalImpact;
 
 	/** UI icon (sprite) for this idol. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
@@ -1638,7 +2015,7 @@ struct T66_API FIdolData : public FTableRowBase
 	// ============================================
 	// Category property scaling (meaning varies by category)
 	//   Pierce: enemies pierced   |  Bounce: bounce count
-	//   AOE: explosion radius (UU)|  DOT: duration (seconds)
+	//   AOE: explosion radius (UU)|  DOT: tick count
 	// ============================================
 
 	/** Base property value at black rarity. */
@@ -1737,7 +2114,7 @@ struct T66_API FIdolData : public FTableRowBase
  * NPC data row (CasinoNPC/Saint/Ouroboros).
  */
 USTRUCT(BlueprintType)
-struct T66_API FHouseNPCData : public FTableRowBase
+struct T66_API FT66NPCData : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -1757,7 +2134,7 @@ struct T66_API FHouseNPCData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Casino")
 	int32 CasinoWinGold = 10;
 
-	FHouseNPCData()
+	FT66NPCData()
 		: NPCID(NAME_None)
 	{}
 };
@@ -2490,3 +2867,4 @@ struct T66_API FSkinData : public FTableRowBase
 		, bIsDefault(false)
 	{}
 };
+

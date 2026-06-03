@@ -15,7 +15,6 @@ Source geometry: `C:\UE\T66\UI\Geometry\frontend_topbar_reference_geometry.md`
 - [ ] FrontendTopBar.ProfileButton.Icon | exists=true
 - [ ] FrontendTopBar.PowerUpButton | exists=true
 - [ ] FrontendTopBar.AchievementsButton | exists=true
-- [ ] FrontendTopBar.MinigamesButton | exists=true
 - [ ] FrontendTopBar.TicketBadge | exists=true
 - [ ] FrontendTopBar.TicketBadge.Icon | exists=true
 - [ ] FrontendTopBar.TicketBadge.Value | exists=true
@@ -52,10 +51,6 @@ Source geometry: `C:\UE\T66\UI\Geometry\frontend_topbar_reference_geometry.md`
 - [ ] FrontendTopBar.AchievementsButton | y=0.018 | 0.006
 - [ ] FrontendTopBar.AchievementsButton | w=0.153 | 0.006
 - [ ] FrontendTopBar.AchievementsButton | h=0.077 | 0.006
-- [ ] FrontendTopBar.MinigamesButton | x=0.679 | 0.006
-- [ ] FrontendTopBar.MinigamesButton | y=0.018 | 0.006
-- [ ] FrontendTopBar.MinigamesButton | w=0.126 | 0.006
-- [ ] FrontendTopBar.MinigamesButton | h=0.077 | 0.006
 - [ ] FrontendTopBar.TicketBadge | x=0.819 | 0.006
 - [ ] FrontendTopBar.TicketBadge | y=0.018 | 0.006
 - [ ] FrontendTopBar.TicketBadge | w=0.087 | 0.006
@@ -81,7 +76,6 @@ Source geometry: `C:\UE\T66\UI\Geometry\frontend_topbar_reference_geometry.md`
 - [ ] FrontendTopBar.ProfileButton | border_color=DefaultBorder
 - [ ] FrontendTopBar.PowerUpButton | border_color=DefaultBorder
 - [ ] FrontendTopBar.AchievementsButton | border_color=DefaultBorder
-- [ ] FrontendTopBar.MinigamesButton | border_color=DefaultBorder
 - [ ] FrontendTopBar.TicketBadge | border_color=DefaultBorder
 - [ ] FrontendTopBar.PowerButton | border_color=SelectedBorder
 
@@ -90,13 +84,11 @@ Source geometry: `C:\UE\T66\UI\Geometry\frontend_topbar_reference_geometry.md`
 - [ ] FrontendTopBar.AccountButton | text=ACCOUNT
 - [ ] FrontendTopBar.PowerUpButton | text=POWER UP
 - [ ] FrontendTopBar.AchievementsButton | text=ACHIEVEMENTS
-- [ ] FrontendTopBar.MinigamesButton | text=MINIGAMES
 - [ ] FrontendTopBar.TicketBadge.Value | text=any | # Dynamic ticket balance; reference shows 10.
 - [ ] FrontendTopBar.TicketBadge.Value | is_label=true
 - [ ] FrontendTopBar.AccountButton | button_state=Default
 - [ ] FrontendTopBar.PowerUpButton | button_state=Default
 - [ ] FrontendTopBar.AchievementsButton | button_state=Default
-- [ ] FrontendTopBar.MinigamesButton | button_state=Default
 - [ ] FrontendTopBar.PowerButton | button_state=Selected
 
 ## Interactivity
@@ -113,8 +105,6 @@ Source geometry: `C:\UE\T66\UI\Geometry\frontend_topbar_reference_geometry.md`
 - [ ] FrontendTopBar.PowerUpButton | hover_capable=true
 - [ ] FrontendTopBar.AchievementsButton | has_click_handler=true
 - [ ] FrontendTopBar.AchievementsButton | hover_capable=true
-- [ ] FrontendTopBar.MinigamesButton | has_click_handler=true
-- [ ] FrontendTopBar.MinigamesButton | hover_capable=true
 - [ ] FrontendTopBar.TicketBadge | has_click_handler=true
 - [ ] FrontendTopBar.TicketBadge | hover_capable=true
 - [ ] FrontendTopBar.PowerButton | has_click_handler=true
@@ -122,7 +112,6 @@ Source geometry: `C:\UE\T66\UI\Geometry\frontend_topbar_reference_geometry.md`
 - [ ] FrontendTopBar.AccountButton | toggle_group=FrontendCategorySelection
 - [ ] FrontendTopBar.PowerUpButton | toggle_group=FrontendCategorySelection
 - [ ] FrontendTopBar.AchievementsButton | toggle_group=FrontendCategorySelection
-- [ ] FrontendTopBar.MinigamesButton | toggle_group=FrontendCategorySelection
 - [ ] FrontendTopBar.SettingsButton | toggle_group=none
 - [ ] FrontendTopBar.GlobeButton | toggle_group=none
 - [ ] FrontendTopBar.ProfileButton | toggle_group=none

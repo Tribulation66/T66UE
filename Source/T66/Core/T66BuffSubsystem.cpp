@@ -12,42 +12,90 @@ const FString UT66BuffSubsystem::BuffSaveSlotName(TEXT("T66_PowerUp"));
 
 namespace
 {
-	static const ET66SecondaryStatType GSingleUseBuffStats[34] = {
+	static const ET66SecondaryStatType GSingleUseBuffStats[28] = {
 		ET66SecondaryStatType::AoeDamage,
 		ET66SecondaryStatType::BounceDamage,
 		ET66SecondaryStatType::PierceDamage,
 		ET66SecondaryStatType::DotDamage,
-		ET66SecondaryStatType::CritDamage,
 		ET66SecondaryStatType::AoeSpeed,
 		ET66SecondaryStatType::BounceSpeed,
 		ET66SecondaryStatType::PierceSpeed,
 		ET66SecondaryStatType::DotSpeed,
-		ET66SecondaryStatType::CritChance,
 		ET66SecondaryStatType::AoeScale,
 		ET66SecondaryStatType::BounceScale,
 		ET66SecondaryStatType::PierceScale,
 		ET66SecondaryStatType::DotScale,
+		ET66SecondaryStatType::CritChance,
+		ET66SecondaryStatType::HeadshotChance,
 		ET66SecondaryStatType::AttackRange,
-		ET66SecondaryStatType::Taunt,
+		ET66SecondaryStatType::Execute,
 		ET66SecondaryStatType::DamageReduction,
 		ET66SecondaryStatType::ReflectDamage,
-		ET66SecondaryStatType::HpRegen,
+		ET66SecondaryStatType::Taunt,
 		ET66SecondaryStatType::Crush,
 		ET66SecondaryStatType::EvasionChance,
 		ET66SecondaryStatType::CounterAttack,
-		ET66SecondaryStatType::LifeSteal,
 		ET66SecondaryStatType::Invisibility,
 		ET66SecondaryStatType::Assassinate,
-		ET66SecondaryStatType::TreasureChest,
-		ET66SecondaryStatType::Cheating,
-		ET66SecondaryStatType::Stealing,
-		ET66SecondaryStatType::LootCrate,
-		ET66SecondaryStatType::Alchemy,
-		ET66SecondaryStatType::Accuracy,
-		ET66SecondaryStatType::Execute,
-		ET66SecondaryStatType::LootBag,
-		ET66SecondaryStatType::LootWheel
+		ET66SecondaryStatType::InteractableLuck,
+		ET66SecondaryStatType::StealingLuck,
+		ET66SecondaryStatType::GamblingLuck,
+		ET66SecondaryStatType::ProcLuck
 	};
+
+	static FT66RelicDefinition T66MakePrimaryRelic(const TCHAR* RelicID, const FText& DisplayName, const ET66HeroStatType StatType)
+	{
+		FT66RelicDefinition Def;
+		Def.RelicID = FName(RelicID);
+		Def.DisplayName = DisplayName;
+		Def.PrimaryStatType = StatType;
+		Def.BonusStatPoints = UT66BuffSubsystem::RelicPermanentBonusStatPoints;
+		Def.CostCC = UT66BuffSubsystem::RelicUnlockCostCC;
+		return Def;
+	}
+
+	static FT66RelicDefinition T66MakeSecondaryRelic(const TCHAR* RelicID, const FText& DisplayName, const ET66SecondaryStatType StatType)
+	{
+		FT66RelicDefinition Def;
+		Def.RelicID = FName(RelicID);
+		Def.DisplayName = DisplayName;
+		Def.SecondaryStatType = StatType;
+		Def.bUsesSecondaryStat = true;
+		Def.BonusStatPoints = UT66BuffSubsystem::RelicPermanentBonusStatPoints;
+		Def.CostCC = UT66BuffSubsystem::RelicUnlockCostCC;
+		return Def;
+	}
+
+	static FT66RelicDefinition T66MakeSolomonsRingRelic()
+	{
+		FT66RelicDefinition Def;
+		Def.RelicID = FName(TEXT("Relic_SolomonsRing"));
+		Def.DisplayName = NSLOCTEXT("T66.Relics", "SolomonsRing", "Solomon's Ring");
+		Def.bIsSolomonsRing = true;
+		Def.BonusStatPoints = 0;
+		Def.CostCC = UT66BuffSubsystem::RelicUnlockCostCC;
+		return Def;
+	}
+}
+
+const TArray<FT66RelicDefinition>& UT66BuffSubsystem::GetAllRelicDefinitions()
+{
+	static const TArray<FT66RelicDefinition> Relics = {
+		T66MakePrimaryRelic(TEXT("Relic_BloodCrown"), NSLOCTEXT("T66.Relics", "BloodCrown", "Blood Crown"), ET66HeroStatType::Damage),
+		T66MakePrimaryRelic(TEXT("Relic_ClockworkFang"), NSLOCTEXT("T66.Relics", "ClockworkFang", "Clockwork Fang"), ET66HeroStatType::AttackSpeed),
+		T66MakePrimaryRelic(TEXT("Relic_GiantsThumb"), NSLOCTEXT("T66.Relics", "GiantsThumb", "Giant's Thumb"), ET66HeroStatType::AttackScale),
+		T66MakePrimaryRelic(TEXT("Relic_HawkEyeLens"), NSLOCTEXT("T66.Relics", "HawkEyeLens", "Hawk Eye Lens"), ET66HeroStatType::Accuracy),
+		T66MakePrimaryRelic(TEXT("Relic_IronHalo"), NSLOCTEXT("T66.Relics", "IronHalo", "Iron Halo"), ET66HeroStatType::Armor),
+		T66MakePrimaryRelic(TEXT("Relic_MirageCloak"), NSLOCTEXT("T66.Relics", "MirageCloak", "Mirage Cloak"), ET66HeroStatType::Evasion),
+		T66MakePrimaryRelic(TEXT("Relic_CloverIdol"), NSLOCTEXT("T66.Relics", "CloverIdol", "Clover Idol"), ET66HeroStatType::Luck),
+		T66MakePrimaryRelic(TEXT("Relic_WindAnklet"), NSLOCTEXT("T66.Relics", "WindAnklet", "Wind Anklet"), ET66HeroStatType::Speed),
+		T66MakeSecondaryRelic(TEXT("Relic_EmberBrand"), NSLOCTEXT("T66.Relics", "EmberBrand", "Ember Brand"), ET66SecondaryStatType::FirePower),
+		T66MakeSecondaryRelic(TEXT("Relic_FrostShard"), NSLOCTEXT("T66.Relics", "FrostShard", "Frost Shard"), ET66SecondaryStatType::IcePower),
+		T66MakeSecondaryRelic(TEXT("Relic_StormCoil"), NSLOCTEXT("T66.Relics", "StormCoil", "Storm Coil"), ET66SecondaryStatType::ElectricityPower),
+		T66MakeSecondaryRelic(TEXT("Relic_RootseedCharm"), NSLOCTEXT("T66.Relics", "RootseedCharm", "Rootseed Charm"), ET66SecondaryStatType::NaturePower),
+		T66MakeSolomonsRingRelic()
+	};
+	return Relics;
 }
 
 const TArray<ET66SecondaryStatType>& UT66BuffSubsystem::GetAllSingleUseBuffTypes()
@@ -160,11 +208,19 @@ void UT66BuffSubsystem::LoadOrCreateSave()
 		bNeedsSave = true;
 	}
 
+	if (SaveData->SaveVersion < 12)
+	{
+		MigrateV11ToV12Relics();
+		SaveData->SaveVersion = 12;
+		bNeedsSave = true;
+	}
+
 	EnsurePendingSingleUseStatesSize(SaveData->PendingSingleUseBuffStates);
 	EnsureSelectedSingleUseStatesSize(SaveData->SelectedSingleUseBuffStates);
 	SanitizeSelectedSingleUseStates(SaveData->SelectedSingleUseBuffStates, SaveData->PendingSingleUseBuffStates);
 	bNeedsSave |= EnsureSelectedSingleUseBuffLoadoutValid();
 	bNeedsSave |= RebuildSelectedSingleUseStatesFromLoadout();
+	bNeedsSave |= EnsureRelicOwnershipValid();
 
 	if (bNeedsSave)
 	{
@@ -456,6 +512,56 @@ void UT66BuffSubsystem::MigrateV10ToV11PrimarySpeed()
 	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v10 saves to v11 primary Speed progression."));
 }
 
+void UT66BuffSubsystem::MigrateV11ToV12Relics()
+{
+	if (!SaveData)
+	{
+		return;
+	}
+
+	auto GetLegacyUnlockedFillStepCount = [this](const ET66HeroStatType StatType) -> int32
+	{
+		const TArray<uint8>* Arr = GetFillStepStatesForStat(StatType);
+		if (!Arr)
+		{
+			return 0;
+		}
+
+		int32 Count = 0;
+		for (int32 i = 0; i < Arr->Num() && i < MaxFillStepsPerStat; ++i)
+		{
+			if ((*Arr)[i] > 0)
+			{
+				++Count;
+			}
+		}
+		return Count;
+	};
+
+	auto PromoteLegacyPrimary = [this, GetLegacyUnlockedFillStepCount](const ET66HeroStatType StatType)
+	{
+		if (GetLegacyUnlockedFillStepCount(StatType) > 0 || GetRandomBonusForStat(StatType) > 0)
+		{
+			const FName RelicID = GetRelicIDForPrimaryStat(StatType);
+			if (!RelicID.IsNone())
+			{
+				SaveData->OwnedRelicIDs.AddUnique(RelicID);
+			}
+		}
+	};
+
+	PromoteLegacyPrimary(ET66HeroStatType::Damage);
+	PromoteLegacyPrimary(ET66HeroStatType::AttackSpeed);
+	PromoteLegacyPrimary(ET66HeroStatType::AttackScale);
+	PromoteLegacyPrimary(ET66HeroStatType::Accuracy);
+	PromoteLegacyPrimary(ET66HeroStatType::Armor);
+	PromoteLegacyPrimary(ET66HeroStatType::Evasion);
+	PromoteLegacyPrimary(ET66HeroStatType::Luck);
+	PromoteLegacyPrimary(ET66HeroStatType::Speed);
+	EnsureRelicOwnershipValid();
+	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v11 permanent fill steps to v12 flat Relics."));
+}
+
 void UT66BuffSubsystem::Save()
 {
 	if (SaveData)
@@ -730,6 +836,56 @@ int32 UT66BuffSubsystem::GetStatIndex(ET66HeroStatType StatType) const
 	}
 }
 
+FName UT66BuffSubsystem::GetRelicIDForPrimaryStat(const ET66HeroStatType StatType) const
+{
+	for (const FT66RelicDefinition& Def : GetAllRelicDefinitions())
+	{
+		if (!Def.bUsesSecondaryStat && !Def.bIsSolomonsRing && Def.PrimaryStatType == StatType)
+		{
+			return Def.RelicID;
+		}
+	}
+	return NAME_None;
+}
+
+const FT66RelicDefinition* UT66BuffSubsystem::FindRelicDefinition(const FName RelicID) const
+{
+	if (RelicID.IsNone())
+	{
+		return nullptr;
+	}
+
+	for (const FT66RelicDefinition& Def : GetAllRelicDefinitions())
+	{
+		if (Def.RelicID == RelicID)
+		{
+			return &Def;
+		}
+	}
+	return nullptr;
+}
+
+bool UT66BuffSubsystem::EnsureRelicOwnershipValid()
+{
+	if (!SaveData)
+	{
+		return false;
+	}
+
+	const TArray<FName> Original = SaveData->OwnedRelicIDs;
+	TArray<FName> Sanitized;
+	for (const FName RelicID : Original)
+	{
+		if (!RelicID.IsNone() && FindRelicDefinition(RelicID))
+		{
+			Sanitized.AddUnique(RelicID);
+		}
+	}
+
+	SaveData->OwnedRelicIDs = MoveTemp(Sanitized);
+	return SaveData->OwnedRelicIDs != Original;
+}
+
 int32 UT66BuffSubsystem::GetSingleUseBuffIndex(ET66SecondaryStatType StatType) const
 {
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(GSingleUseBuffStats); ++Index)
@@ -783,74 +939,70 @@ const TArray<uint8>* UT66BuffSubsystem::GetFillStepStatesForStat(ET66HeroStatTyp
 
 int32 UT66BuffSubsystem::GetFillStepState(ET66HeroStatType StatType, int32 StepIndex) const
 {
-	const TArray<uint8>* Arr = GetFillStepStatesForStat(StatType);
-	if (!Arr || StepIndex < 0 || StepIndex >= MaxFillStepsPerStat) return 0;
-	if (StepIndex >= Arr->Num()) return 0;
-	return (*Arr)[StepIndex] > 0 ? 1 : 0;
+	if (StepIndex != 0)
+	{
+		return 0;
+	}
+
+	const FName RelicID = GetRelicIDForPrimaryStat(StatType);
+	return (!RelicID.IsNone() && IsRelicOwned(RelicID)) ? 1 : 0;
 }
 
 int32 UT66BuffSubsystem::GetUnlockedFillStepCount(ET66HeroStatType StatType) const
 {
-	const TArray<uint8>* Arr = GetFillStepStatesForStat(StatType);
-	if (!Arr) return 0;
-
-	int32 Count = 0;
-	for (int32 i = 0; i < Arr->Num() && i < MaxFillStepsPerStat; ++i)
-	{
-		if ((*Arr)[i] > 0)
-		{
-			++Count;
-		}
-	}
-	return Count;
+	const FName RelicID = GetRelicIDForPrimaryStat(StatType);
+	return (!RelicID.IsNone() && IsRelicOwned(RelicID)) ? 1 : 0;
 }
 
 int32 UT66BuffSubsystem::GetTotalStatBonus(ET66HeroStatType StatType) const
 {
-	return FMath::Max(0, GetUnlockedFillStepCount(StatType)) + FMath::Max(0, GetRandomBonusForStat(StatType));
+	return GetRelicPrimaryStatBonus(StatType);
 }
 
 int32 UT66BuffSubsystem::GetCostForNextFillStepUnlock(ET66HeroStatType StatType) const
 {
-	static_cast<void>(StatType);
-	return 0;
+	return IsStatMaxed(StatType) ? 0 : RelicUnlockCostCC;
 }
 
 bool UT66BuffSubsystem::UnlockNextFillStep(ET66HeroStatType StatType)
 {
-	static_cast<void>(StatType);
-	return false;
+	const FName RelicID = GetRelicIDForPrimaryStat(StatType);
+	return !RelicID.IsNone() && PurchaseRelic(RelicID);
 }
 
 bool UT66BuffSubsystem::UnlockRandomStat()
 {
-	return false;
+	if (!SaveData)
+	{
+		return false;
+	}
+
+	TArray<FName> Candidates;
+	for (const FT66RelicDefinition& Def : GetAllRelicDefinitions())
+	{
+		if (!Def.bUsesSecondaryStat && !Def.bIsSolomonsRing && !IsRelicOwned(Def.RelicID))
+		{
+			Candidates.Add(Def.RelicID);
+		}
+	}
+
+	if (Candidates.Num() <= 0)
+	{
+		return false;
+	}
+
+	return PurchaseRelic(Candidates[FMath::RandRange(0, Candidates.Num() - 1)]);
 }
 
 bool UT66BuffSubsystem::IsStatMaxed(ET66HeroStatType StatType) const
 {
-	const TArray<uint8>* Arr = GetFillStepStatesForStat(StatType);
-	if (!Arr) return true;
-	for (int32 i = 0; i < MaxFillStepsPerStat; ++i)
-	{
-		if (i >= Arr->Num() || (*Arr)[i] == static_cast<uint8>(ET66BuffFillStepState::Locked))
-		{
-			return false;
-		}
-	}
-	return true;
+	const FName RelicID = GetRelicIDForPrimaryStat(StatType);
+	return RelicID.IsNone() || IsRelicOwned(RelicID);
 }
 
 bool UT66BuffSubsystem::IsDemoDiplomaUpgradeLimitReached(ET66HeroStatType StatType) const
 {
-	if (const UGameInstance* GI = GetGameInstance())
-	{
-		if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GI->GetSubsystem<UT66ReleaseVariantSubsystem>())
-		{
-			return !ReleaseVariant->IsDiplomaUpgradeAllowed(GetUnlockedFillStepCount(StatType));
-		}
-	}
-
+	static_cast<void>(StatType);
 	return false;
 }
 
@@ -871,6 +1023,72 @@ FT66HeroStatBonuses UT66BuffSubsystem::GetPermanentBuffStatBonuses() const
 FT66HeroStatBonuses UT66BuffSubsystem::GetPowerupStatBonuses() const
 {
 	return GetPermanentBuffStatBonuses();
+}
+
+bool UT66BuffSubsystem::IsRelicOwned(const FName RelicID) const
+{
+	return SaveData && !RelicID.IsNone() && SaveData->OwnedRelicIDs.Contains(RelicID);
+}
+
+bool UT66BuffSubsystem::PurchaseRelic(const FName RelicID)
+{
+	if (!SaveData || RelicID.IsNone() || IsRelicOwned(RelicID))
+	{
+		return false;
+	}
+
+	const FT66RelicDefinition* Def = FindRelicDefinition(RelicID);
+	if (!Def)
+	{
+		return false;
+	}
+
+	if (!SpendChadCoupons(FMath::Max(0, Def->CostCC)))
+	{
+		return false;
+	}
+
+	SaveData->OwnedRelicIDs.AddUnique(RelicID);
+	EnsureRelicOwnershipValid();
+	Save();
+	return true;
+}
+
+int32 UT66BuffSubsystem::GetRelicCost(const FName RelicID) const
+{
+	const FT66RelicDefinition* Def = FindRelicDefinition(RelicID);
+	return Def ? FMath::Max(0, Def->CostCC) : 0;
+}
+
+bool UT66BuffSubsystem::HasSolomonsRing() const
+{
+	return IsRelicOwned(FName(TEXT("Relic_SolomonsRing")));
+}
+
+int32 UT66BuffSubsystem::GetRelicPrimaryStatBonus(const ET66HeroStatType StatType) const
+{
+	int32 Total = 0;
+	for (const FT66RelicDefinition& Def : GetAllRelicDefinitions())
+	{
+		if (!Def.bUsesSecondaryStat && !Def.bIsSolomonsRing && Def.PrimaryStatType == StatType && IsRelicOwned(Def.RelicID))
+		{
+			Total += FMath::Max(0, Def.BonusStatPoints);
+		}
+	}
+	return Total;
+}
+
+int32 UT66BuffSubsystem::GetRelicSecondaryStatBonus(const ET66SecondaryStatType StatType) const
+{
+	int32 Total = 0;
+	for (const FT66RelicDefinition& Def : GetAllRelicDefinitions())
+	{
+		if (Def.bUsesSecondaryStat && Def.SecondaryStatType == StatType && IsRelicOwned(Def.RelicID))
+		{
+			Total += FMath::Max(0, Def.BonusStatPoints);
+		}
+	}
+	return Total;
 }
 
 bool UT66BuffSubsystem::HasPendingSingleUseBuff(ET66SecondaryStatType StatType) const
@@ -1274,18 +1492,27 @@ TMap<ET66SecondaryStatType, float> UT66BuffSubsystem::ConsumePendingSingleUseBuf
 void UT66BuffSubsystem::DebugSetDiplomaUnlockedSteps(const ET66HeroStatType StatType, const int32 Count)
 {
 	LoadOrCreateSave();
-	TArray<uint8>* Steps = GetFillStepStatesForStat(StatType);
-	if (!SaveData || !Steps)
+	if (!SaveData)
 	{
 		return;
 	}
 
-	Steps->SetNumZeroed(MaxFillStepsPerStat);
-	const int32 ClampedCount = FMath::Clamp(Count, 0, MaxFillStepsPerStat);
-	for (int32 Index = 0; Index < ClampedCount; ++Index)
+	const FName RelicID = GetRelicIDForPrimaryStat(StatType);
+	if (RelicID.IsNone())
 	{
-		(*Steps)[Index] = static_cast<uint8>(ET66BuffFillStepState::Unlocked);
+		return;
 	}
+
+	if (Count > 0)
+	{
+		SaveData->OwnedRelicIDs.AddUnique(RelicID);
+	}
+	else
+	{
+		SaveData->OwnedRelicIDs.Remove(RelicID);
+	}
+	EnsureRelicOwnershipValid();
+	Save();
 }
 
 void UT66BuffSubsystem::DebugGrantSingleUseBuff(const ET66SecondaryStatType StatType, const int32 Count, const bool bSelectForNextRun)

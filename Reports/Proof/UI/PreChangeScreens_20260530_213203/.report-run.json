@@ -1,0 +1,15 @@
+{
+  "task": "pre-change UI screenshots",
+  "createdAtLocal": "2026-05-30T21:32:03-03:00",
+  "expiresAfterDays": 15,
+  "owner": "Codex",
+  "validator": "Claude",
+  "scope": [
+    "Hero Selection Screen",
+    "Companion Selection Screen",
+    "Gambler Screen",
+    "Vendor Screen",
+    "Idol Altar Selection Screen",
+    "Weapon Altar Selection Screen"
+  ]
+}

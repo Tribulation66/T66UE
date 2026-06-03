@@ -1,0 +1,44 @@
+[
+  {
+    "Path": "Saved\\Cooked",
+    "Exists": false,
+    "LastWriteTime": null,
+    "SizeGB": 0,
+    "FileCount": 0
+  },
+  {
+    "Path": "Saved\\StagedBuilds",
+    "Exists": true,
+    "LastWriteTime": "2026-05-27T12:00:20.570457-03:00",
+    "SizeGB": 10.416,
+    "FileCount": 2270
+  },
+  {
+    "Path": "Saved\\StagedBuildsDemo",
+    "Exists": true,
+    "LastWriteTime": "2026-05-22T06:21:58.00438-03:00",
+    "SizeGB": 4.862,
+    "FileCount": 1590
+  },
+  {
+    "Path": "Saved\\VideoCaptures",
+    "Exists": true,
+    "LastWriteTime": "2026-05-27T11:40:14.1523752-03:00",
+    "SizeGB": 14.804,
+    "FileCount": 11454
+  },
+  {
+    "Path": "Saved\\D2",
+    "Exists": true,
+    "LastWriteTime": "2026-05-17T22:37:23.0319469-03:00",
+    "SizeGB": 24.931,
+    "FileCount": 12671
+  },
+  {
+    "Path": "Saved\\VFXResearch",
+    "Exists": true,
+    "LastWriteTime": "2026-05-24T00:41:37.6381497-03:00",
+    "SizeGB": 1.623,
+    "FileCount": 1634
+  }
+]

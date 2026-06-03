@@ -185,22 +185,6 @@ bool UT66ReleaseVariantSubsystem::IsDifficultyAllowed(ET66Difficulty Difficulty)
 	return PlayableDifficulties.Contains(Difficulty);
 }
 
-bool UT66ReleaseVariantSubsystem::IsArcadeGameAllowed(FName ArcadeGameID) const
-{
-	if (!IsSteamDemoBuild() || ArcadeGameID.IsNone())
-	{
-		return true;
-	}
-
-	const UT66DemoModeSettings* Settings = GetDefault<UT66DemoModeSettings>();
-	if (!Settings || Settings->AllowedArcadeGameIDs.Num() == 0)
-	{
-		return true;
-	}
-
-	return Settings->AllowedArcadeGameIDs.Contains(ArcadeGameID);
-}
-
 bool UT66ReleaseVariantSubsystem::IsCasinoGameAllowed(FName CasinoGameID) const
 {
 	if (!IsSteamDemoBuild() || CasinoGameID.IsNone())

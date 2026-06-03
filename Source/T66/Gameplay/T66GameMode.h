@@ -12,6 +12,7 @@
 class AActor;
 class AT66HeroBase;
 class AT66CompanionBase;
+class AT66PetActor;
 class AT66EnemyBase;
 class AT66EnemyDirector;
 class AT66StartGate;
@@ -30,6 +31,7 @@ class AT66Shroom;
 class AT66SpawnPlateau;
 class AT66TutorialManager;
 class AT66SaintNPC;
+class AT66PlayerController;
 class AStaticMeshActor;
 class APawn;
 class UT66GameInstance;
@@ -90,9 +92,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gates")
 	FVector CowardiceGateSpawnOffset = FVector(5200.f, 0.f, 200.f);
 
-	/** Development/test helper: show Pixal3D experiment meshes beside Idol Altars without character data-table rows. */
+	/** Development/test helper: show Pixal3D experiment meshes beside explicit lab/gallery Idol Altars. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
-	bool bSpawnPixalTestModelsAtIdolAltar = true;
+	bool bSpawnPixalTestModelsAtIdolAltar = false;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
 	TSoftObjectPtr<UStaticMesh> PixalTestMesh;
@@ -151,6 +153,9 @@ public:
 
 	/** Called by BossBase on death so GameMode can advance stage flow and award score. */
 	void HandleBossDefeated(AT66BossBase* Boss);
+	void HandleSaintEndgameChoice(AT66PlayerController* PlayerController, int32 ChoiceIndex, AT66SaintNPC* Saint);
+	bool ShouldEndgameDeathOpenRunSummary() const;
+	void HandleEndgameDeathRunSummary(AT66PlayerController* PlayerController);
 
 	/** Destroy existing main map terrain geometry and spawn a fresh difficulty-driven terrain run. */
 	void RegenerateMainMapTerrain(int32 Seed);
@@ -169,6 +174,7 @@ public:
 #if !UE_BUILD_SHIPPING
 	void RunBossProjectileManagerSmokeSpawnBossForCurrentStage() { SpawnBossForCurrentStage(); }
 	void RunBossProjectileManagerSmokeSpawnBossGateIfNeeded() { SpawnBossGateIfNeeded(); }
+	bool RunEndgameSaintSmoke(UWorld* ProofWorld, const FString& OutputPath);
 #endif
 	bool IsBackroomsChallengeActive() const { return bBackroomsChallengeActive; }
 	void HandleBackroomsDoorInteracted(AT66BackroomsDoorInteractable* Door, AT66HeroBase* Hero);
@@ -216,6 +222,13 @@ protected:
 
 	/** Spawn the selected companion (if any) and attach follow behavior */
 	void SpawnCompanionForPlayer(AController* Player);
+	/** Spawn the selected active pet (if any). Mob Loot collection remains disabled until Foundation API lands. */
+	void SpawnPetForPlayer(AController* Player);
+	/** Spawn guaranteed capture interactable for an uncaptured non-final stage boss. */
+	bool TrySpawnPetCaptureForBoss(AT66BossBase* Boss, const FVector& Location);
+	int32 SpawnCagedCompanionsForCurrentStage(const FVector& AnchorLocation);
+	int32 FreeCagedCompanionsForBossClear(const FVector& FallbackLocation);
+	void ClearCagedStageCompanions(bool bDestroyActors);
 
 	/** Spawn Start Gate (walk-through, starts timer) near the hero spawn. */
 	void SpawnStartGateForPlayer(AController* Player);
@@ -232,10 +245,17 @@ protected:
 	void SpawnStageEffectsForStage();
 	void SpawnTutorialArenaIfNeeded();
 	void BeginFinalDifficultySurvival(const FVector& BossDeathLocation);
+	void StopFinalDifficultySurvival();
 	void TickFinalDifficultySurvival(float DeltaTime);
 	void UpdateFinalDifficultySurvivalScaling(bool bForce = false);
 	void SpawnFinalDifficultyTotem(const FVector& SpawnLocation);
 	void SpawnFinalDifficultySaint(const FVector& SpawnLocation);
+	void CompleteDifficultyAndOpenRunSummary();
+	void SpawnKromerLootBag(const FVector& Location);
+	AT66BossBase* SpawnEndgameBossAt(FName BossID, const FVector& Location, bool bForceAwaken, bool bZeroDamageUnkillable, FName ZeroDamageReason, float HealthScalar = 1.f, float DamageScalar = 1.f, float ScaleScalar = 1.f, bool bTrackAsStageBoss = false);
+	void SpawnFinalBossSecondPhase(const FVector& Location);
+	void SpawnFinalCompanionTransformBosses(const FVector& Location);
+	FName ResolveBossIDForActivePet() const;
 	void SpawnTutorialIfNeeded();
 
 	/** Spawn boss for current stage (dormant until player approaches). */
@@ -313,6 +333,7 @@ protected:
 	FVector GetBackroomsCellCenter(int32 X, int32 Y, float ZOffset = 90.f) const;
 	FIntPoint WorldToBackroomsCell(const FVector& Location) const;
 #if !UE_BUILD_SHIPPING
+	bool RunContentCorrectionsSmoke(UWorld* ProofWorld);
 	void ScheduleBackroomsAutomationIfRequested();
 	void RunBackroomsAutomationStart(FString Mode);
 	void RunBackroomsAutomationFinish(FString Mode, int32 InventoryCountBeforeEntry, FName SeedItemID, FName WeaponIDBeforeEntry, float ChaserDistanceAtEntry);
@@ -409,8 +430,12 @@ private:
 	// Track currently spawned companions per player so respawns don't duplicate them.
 	TMap<TWeakObjectPtr<AController>, TWeakObjectPtr<AT66CompanionBase>> PlayerCompanions;
 
+	// Track currently spawned pets per player so respawns don't duplicate them.
+	TMap<TWeakObjectPtr<AController>, TWeakObjectPtr<AT66PetActor>> PlayerPets;
+
 	// Track the current stage boss so we can safely replace it after async load.
 	TWeakObjectPtr<AT66BossBase> StageBoss;
+	TArray<TWeakObjectPtr<AT66RecruitableCompanion>> CagedStageCompanions;
 	TWeakObjectPtr<AT66EnemyDirector> EnemyDirector;
 	TWeakObjectPtr<AT66TutorialManager> TutorialManager;
 
@@ -478,6 +503,8 @@ private:
 	bool bFinalDifficultySurvivalActive = false;
 	float FinalDifficultySurvivalElapsedSeconds = 0.f;
 	float LastAppliedFinalDifficultyEnemyScalar = 1.f;
+	bool bFinalBossSecondPhaseActive = false;
+	bool bFinalBossUnwinnableEndingActive = false;
 	TWeakObjectPtr<AActor> FinalDifficultyTotemActor;
 	TWeakObjectPtr<AT66SaintNPC> FinalDifficultySaintActor;
 

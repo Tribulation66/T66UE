@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
+#include "Core/T66SaveMigration.h"
 #include "T66ProfileSaveGame.generated.h"
 
 /**
@@ -57,7 +58,7 @@ class T66_API UT66ProfileSaveGame : public USaveGame
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 SaveVersion = 16;
+	int32 SaveVersion = T66CurrentProfileSaveVersion;
 
 	/** Item IDs ever obtained (any run type) — used to show only unlocked items in The Lab. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lab")
@@ -127,7 +128,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	int32 LifetimeGamblerWins = 0;
 
-	/** Highest unlocked Vendor Token level (0 = locked, 1..6 = 50%..100% sell rate). */
+	/** Highest unlocked Vendor Token rank (0 = locked). Runtime run-state token pickups convert to stacks. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
 	int32 VendorTokenUnlockedLevel = 0;
 
@@ -188,5 +189,29 @@ public:
 	/** Last companion selected/used in the main Tribulation frontend. NAME_None means no companion. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
 	FName LastSelectedCompanionID = NAME_None;
+
+	/** Captured permanent pet IDs. IDs are keyed to the source stage boss. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pets")
+	TArray<FName> CapturedPetIDs;
+
+	/** Active pet selection for new runs. NAME_None means no active pet. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pets")
+	FName ActivePetID = NAME_None;
+
+	/** Most recently selected pet in the frontend. Kept separately for future UI resume behavior. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pets")
+	FName LastSelectedPetID = NAME_None;
+
+	/** Pet bond progression. Key: PetID, Value: stages cleared while active. Affects movement speed only. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pets")
+	TMap<FName, int32> PetBondStagesClearedByID;
+
+	/** Per-pet owned skin IDs. Default is always considered owned. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pets")
+	TMap<FName, FT66OwnedSkinsList> OwnedPetSkinsByPet;
+
+	/** Per-pet equipped skin ID. Missing/Default means Default. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pets")
+	TMap<FName, FName> EquippedPetSkinIDByPet;
 };
 

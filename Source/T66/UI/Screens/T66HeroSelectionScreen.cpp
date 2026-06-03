@@ -100,6 +100,8 @@ FReply UT66HeroSelectionScreen::HandleCompanionGridClicked() { OnCompanionGridCl
 
 FReply UT66HeroSelectionScreen::HandleCompanionClicked() { OnChooseCompanionClicked(); return FReply::Handled(); }
 
+FReply UT66HeroSelectionScreen::HandlePetClicked() { OnChoosePetClicked(); return FReply::Handled(); }
+
 FReply UT66HeroSelectionScreen::HandleTemporaryBuffSlotClicked(int32 SlotIndex)
 {
 	TemporaryBuffPickerSlotIndex = FMath::Clamp(SlotIndex, 0, UT66BuffSubsystem::MaxSelectedSingleUseBuffs - 1);
@@ -715,6 +717,17 @@ void UT66HeroSelectionScreen::OnChooseCompanionClicked()
 	}
 
 	ShowModal(ET66ScreenType::CompanionSelection);
+}
+
+void UT66HeroSelectionScreen::OnChoosePetClicked()
+{
+	if (UIManager)
+	{
+		UIManager->ShowScreen(ET66ScreenType::PetSelection);
+		return;
+	}
+
+	ShowModal(ET66ScreenType::PetSelection);
 }
 
 void UT66HeroSelectionScreen::OnHeroLoreClicked() { ShowModal(ET66ScreenType::HeroLore); }

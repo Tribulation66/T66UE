@@ -2,7 +2,7 @@
 
 #include "Gameplay/T66LoanShark.h"
 #include "Gameplay/T66HeroBase.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
@@ -142,10 +142,10 @@ void AT66LoanShark::Tick(float DeltaSeconds)
 	// Safe zone rule: cannot enter NPC safe bubbles. If inside, run away.
 	UWorld* World = GetWorld();
 	UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
-	const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
-	for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : NPCs)
+	const TArray<TWeakObjectPtr<AT66NPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66NPCBase>>();
+	for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : NPCs)
 	{
-		AT66HouseNPCBase* NPC = WeakNPC.Get();
+		AT66NPCBase* NPC = WeakNPC.Get();
 		if (!NPC) continue;
 		const FVector N = NPC->GetActorLocation();
 		FVector ToMe = GetActorLocation() - N;
@@ -213,10 +213,10 @@ bool AT66LoanShark::AutomationIsChasingHero() const
 	// Mirror Tick's safe-bubble rule: inside an NPC safe zone the shark flees rather than chases.
 	const UWorld* World = GetWorld();
 	UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
-	const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
-	for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : NPCs)
+	const TArray<TWeakObjectPtr<AT66NPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66NPCBase>>();
+	for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : NPCs)
 	{
-		const AT66HouseNPCBase* NPC = WeakNPC.Get();
+		const AT66NPCBase* NPC = WeakNPC.Get();
 		if (!NPC)
 		{
 			continue;
@@ -285,4 +285,5 @@ void AT66LoanShark::UpdateTuningFromDebt()
 	const int32 ExtraHearts = (DebtPerExtraHeart > 0) ? (Debt / DebtPerExtraHeart) : 0;
 	CurrentDamageHearts = FMath::Clamp(BaseDamageHearts + ExtraHearts, 1, 999);
 }
+
 

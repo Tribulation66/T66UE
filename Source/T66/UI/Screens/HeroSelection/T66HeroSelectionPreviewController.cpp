@@ -135,8 +135,8 @@ void UT66HeroSelectionPreviewController::RefreshCompanionPreviewPanel(
 				: EVisibility::Collapsed);
 		PreviewPlaceholder->SetText(
 			PreviewedCompanionID.IsNone()
-				? NSLOCTEXT("T66.HeroSelection", "NoCompanionPortraitPlaceholder", "No companion selected.")
-				: NSLOCTEXT("T66.HeroSelection", "CompanionPortraitPlaceholder", "Companion portrait unavailable."));
+				? NSLOCTEXT("T66.HeroSelection", "NoCompanionPortraitPlaceholder", "No girlfriend selected.")
+				: NSLOCTEXT("T66.HeroSelection", "CompanionPortraitPlaceholder", "Girlfriend portrait unavailable."));
 	}
 }
 

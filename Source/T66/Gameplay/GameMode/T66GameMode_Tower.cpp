@@ -2,9 +2,15 @@
 
 #include "Gameplay/GameMode/T66GameModePrivate.h"
 
+#include "Core/T66ReleaseVariantSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
+#include "Gameplay/T66BossHazardSubsystem.h"
+#include "Gameplay/T66MobBase.h"
 #include "Gameplay/T66MobManagerSubsystem.h"
 #include "Gameplay/T66ProjectileManagerSubsystem.h"
 #include "Gameplay/T66VendorBoss.h"
+#include "UI/T66CasinoVendorTabWidget.h"
+#include "UI/WidgetGames/T66WidgetGameRegistry.h"
 
 using namespace T66GameModePrivate;
 
@@ -355,6 +361,481 @@ float AT66GameMode::GetTowerMiasmaElapsedSeconds() const
 	return World ? FMath::Max(World->GetTimeSeconds() - TowerMiasmaStartWorldSeconds, 0.f) : 0.f;
 }
 
+#if !UE_BUILD_SHIPPING
+bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
+{
+	TArray<FString> FailedChecks;
+	auto RecordCheck = [&FailedChecks](const TCHAR* CheckName, const bool bPassed, const FString& Detail)
+	{
+		UE_LOG(
+			LogT66GameMode,
+			Log,
+			TEXT("[ContentCorrectionsSmoke] Check=%s Result=%s Detail=%s"),
+			CheckName,
+			bPassed ? TEXT("PASS") : TEXT("FAIL"),
+			*Detail);
+		if (!bPassed)
+		{
+			FailedChecks.Add(FString(CheckName));
+		}
+	};
+
+	UGameInstance* GI = ProofWorld ? ProofWorld->GetGameInstance() : nullptr;
+	UT66GameInstance* T66GI = GetT66GameInstance();
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66ReleaseVariantSubsystem* ReleaseVariant = GI ? GI->GetSubsystem<UT66ReleaseVariantSubsystem>() : nullptr;
+	UT66CompanionUnlockSubsystem* CompanionUnlocks = GI ? GI->GetSubsystem<UT66CompanionUnlockSubsystem>() : nullptr;
+
+	const bool bShelvedGatesPass = !FT66ShelvedFeatureGate::IsDailyDescentEnabled();
+	RecordCheck(
+		TEXT("ShelvedFeatureGates"),
+		bShelvedGatesPass,
+		FString::Printf(
+			TEXT("DailyDescent=%d"),
+			FT66ShelvedFeatureGate::IsDailyDescentEnabled() ? 1 : 0));
+
+	TArray<const FT66WidgetGameDescriptor*> CasinoDescriptors;
+	T66WidgetGames::Registry::GetByCategory(ET66WidgetGameCategory::Casino, CasinoDescriptors);
+	const TArray<FName> ExpectedCasinoGameIDs = {
+		FName(TEXT("Casino_CoinFlip")),
+		FName(TEXT("Casino_GuessTheCup")),
+		FName(TEXT("Casino_PickLongestShortestStick")),
+		FName(TEXT("Casino_FindJoker")),
+	};
+	const TArray<FName> ExpectedCasinoGateIDs = {
+		FName(TEXT("CoinFlip")),
+		FName(TEXT("GuessTheCup")),
+		FName(TEXT("PickLongestShortestStick")),
+		FName(TEXT("FindJoker")),
+	};
+
+	int32 CasinoDescriptorMatches = 0;
+	int32 CasinoDescriptorAvailable = 0;
+	int32 CasinoWidgetClassResolved = 0;
+	for (int32 Index = 0; Index < ExpectedCasinoGameIDs.Num(); ++Index)
+	{
+		const FT66WidgetGameDescriptor* Descriptor = T66WidgetGames::Registry::FindDescriptor(ExpectedCasinoGameIDs[Index]);
+		if (Descriptor
+			&& Descriptor->Category == ET66WidgetGameCategory::Casino
+			&& Descriptor->PlayModel == ET66WidgetGamePlayModel::TurnCasino
+			&& Descriptor->LaunchKind == ET66WidgetGameLaunchKind::CasinoChildWidget
+			&& Descriptor->DemoGateKind == ET66WidgetGameDemoGateKind::CasinoAllowList
+			&& Descriptor->DemoGateID == ExpectedCasinoGateIDs[Index]
+			&& Descriptor->Capabilities.bUsesWager)
+		{
+			++CasinoDescriptorMatches;
+		}
+		if (Descriptor && T66WidgetGames::Registry::IsAvailable(ProofWorld, *Descriptor))
+		{
+			++CasinoDescriptorAvailable;
+		}
+		if (Descriptor && T66WidgetGames::Registry::ResolveWidgetClass(*Descriptor).Get() != nullptr)
+		{
+			++CasinoWidgetClassResolved;
+		}
+	}
+
+	const bool bCasinoRegistryPass =
+		CasinoDescriptors.Num() == ExpectedCasinoGameIDs.Num()
+		&& CasinoDescriptorMatches == ExpectedCasinoGameIDs.Num()
+		&& CasinoDescriptorAvailable == ExpectedCasinoGameIDs.Num()
+		&& CasinoWidgetClassResolved == ExpectedCasinoGameIDs.Num();
+	RecordCheck(
+		TEXT("CasinoFourGameRegistry"),
+		bCasinoRegistryPass,
+		FString::Printf(
+			TEXT("Descriptors=%d Expected=%d Matches=%d Available=%d WidgetClasses=%d DemoMode=%d"),
+			CasinoDescriptors.Num(),
+			ExpectedCasinoGameIDs.Num(),
+			CasinoDescriptorMatches,
+			CasinoDescriptorAvailable,
+			CasinoWidgetClassResolved,
+			(ReleaseVariant && ReleaseVariant->IsDemoModeActive()) ? 1 : 0));
+
+	int32 ShopSlotCount = 0;
+	int32 ValidShopSlots = 0;
+	if (RunState)
+	{
+		RunState->EnsureShopStockForCurrentStage();
+		const TArray<FT66InventorySlot>& ShopSlots = RunState->GetShopStockSlots();
+		ShopSlotCount = ShopSlots.Num();
+		for (const FT66InventorySlot& Slot : ShopSlots)
+		{
+			if (!Slot.ItemTemplateID.IsNone()
+				&& (Slot.Rarity == ET66ItemRarity::Black
+					|| Slot.Rarity == ET66ItemRarity::Red
+					|| Slot.Rarity == ET66ItemRarity::Yellow
+					|| Slot.Rarity == ET66ItemRarity::White))
+			{
+				++ValidShopSlots;
+			}
+		}
+	}
+	RecordCheck(
+		TEXT("ShopFourSlotsAlwaysFilled"),
+		RunState && ShopSlotCount == UT66RunStateSubsystem::ShopDisplaySlotCount && ValidShopSlots == UT66RunStateSubsystem::ShopDisplaySlotCount,
+		FString::Printf(
+			TEXT("Slots=%d ValidSlots=%d Expected=%d"),
+			ShopSlotCount,
+			ValidShopSlots,
+			UT66RunStateSubsystem::ShopDisplaySlotCount));
+	RecordCheck(
+		TEXT("VendorSellBuybackFourSlotSurfaces"),
+		UT66CasinoVendorTabWidget::SellVisibleSlotCount == 4 && UT66RunStateSubsystem::BuybackDisplaySlotCount == 4,
+		FString::Printf(
+			TEXT("SellVisibleSlots=%d BuybackDisplaySlots=%d"),
+			UT66CasinoVendorTabWidget::SellVisibleSlotCount,
+			UT66RunStateSubsystem::BuybackDisplaySlotCount));
+
+	static constexpr int32 ShopProofSamples = 100000;
+	static constexpr int32 ShopProofSeed = 660066;
+	FRandomStream ShopProofRng(ShopProofSeed);
+	int32 BlackCount = 0;
+	int32 RedCount = 0;
+	int32 YellowCount = 0;
+	int32 WhiteCount = 0;
+	for (int32 Index = 0; Index < ShopProofSamples; ++Index)
+	{
+		switch (UT66RunStateSubsystem::RollShopSlotRarity(ShopProofRng))
+		{
+		case ET66ItemRarity::Black:
+			++BlackCount;
+			break;
+		case ET66ItemRarity::Red:
+			++RedCount;
+			break;
+		case ET66ItemRarity::Yellow:
+			++YellowCount;
+			break;
+		case ET66ItemRarity::White:
+			++WhiteCount;
+			break;
+		default:
+			break;
+		}
+	}
+	auto ShopRatio = [](const int32 Count)
+	{
+		return static_cast<float>(Count) / static_cast<float>(ShopProofSamples);
+	};
+	const float ExpectedBlack = UT66RunStateSubsystem::ShopRarityWeightBlack / UT66RunStateSubsystem::ShopRarityWeightTotal;
+	const float ExpectedRed = UT66RunStateSubsystem::ShopRarityWeightRed / UT66RunStateSubsystem::ShopRarityWeightTotal;
+	const float ExpectedYellow = UT66RunStateSubsystem::ShopRarityWeightYellow / UT66RunStateSubsystem::ShopRarityWeightTotal;
+	const float ExpectedWhite = UT66RunStateSubsystem::ShopRarityWeightWhite / UT66RunStateSubsystem::ShopRarityWeightTotal;
+	const bool bShopOddsPass =
+		FMath::Abs(ShopRatio(BlackCount) - ExpectedBlack) <= 0.015f &&
+		FMath::Abs(ShopRatio(RedCount) - ExpectedRed) <= 0.015f &&
+		FMath::Abs(ShopRatio(YellowCount) - ExpectedYellow) <= 0.004f &&
+		FMath::Abs(ShopRatio(WhiteCount) - ExpectedWhite) <= 0.002f;
+	RecordCheck(
+		TEXT("ShopWeightedOdds"),
+		bShopOddsPass,
+		FString::Printf(
+			TEXT("Samples=%d Seed=%d Black=%d %.5f Red=%d %.5f Yellow=%d %.5f White=%d %.5f Expected=%.5f/%.5f/%.5f/%.5f Weights=%.1f/%.1f/%.1f/%.1f"),
+			ShopProofSamples,
+			ShopProofSeed,
+			BlackCount,
+			ShopRatio(BlackCount),
+			RedCount,
+			ShopRatio(RedCount),
+			YellowCount,
+			ShopRatio(YellowCount),
+			WhiteCount,
+			ShopRatio(WhiteCount),
+			ExpectedBlack,
+			ExpectedRed,
+			ExpectedYellow,
+			ExpectedWhite,
+			UT66RunStateSubsystem::ShopRarityWeightBlack,
+			UT66RunStateSubsystem::ShopRarityWeightRed,
+			UT66RunStateSubsystem::ShopRarityWeightYellow,
+			UT66RunStateSubsystem::ShopRarityWeightWhite));
+
+	int32 ExpectedVendorFloors = 0;
+	int32 VendorActorsOnMobFloors = 0;
+	int32 ExpectedCasinoFloors = 0;
+	int32 CasinoActorsOnMobFloors = 0;
+	int32 StartFloorExtraInteractables = 0;
+	FString StartFloorExtraInteractableNames;
+	int32 CasinoInteractableOpenHandled = 0;
+	int32 CasinoOverlayOpenAfterInteract = 0;
+	if (ProofWorld && IsUsingTowerMainMapLayout())
+	{
+		ExpectedVendorFloors = FMath::Max(0, CachedTowerMainMapLayout.LastMobFloorNumber - CachedTowerMainMapLayout.FirstMobFloorNumber + 1);
+		for (TActorIterator<AT66VendorInteractable> It(ProofWorld); It; ++It)
+		{
+			const int32 FloorNumber = T66ReadTowerFloorTag(*It);
+			if (FloorNumber >= CachedTowerMainMapLayout.FirstMobFloorNumber && FloorNumber <= CachedTowerMainMapLayout.LastMobFloorNumber)
+			{
+				++VendorActorsOnMobFloors;
+			}
+		}
+
+		const int32 RunSeed = T66GI ? T66EnsureRunSeed(T66GI) : 0;
+		const int32 StageNum = RunState ? RunState->GetCurrentStage() : 1;
+		for (int32 FloorNumber = CachedTowerMainMapLayout.FirstMobFloorNumber; FloorNumber <= CachedTowerMainMapLayout.LastMobFloorNumber; ++FloorNumber)
+		{
+			const int32 CasinoSeed = RunSeed + StageNum * 1901 + 5600 + FloorNumber * 53;
+			FRandomStream CasinoFloorRng(CasinoSeed);
+			if (CasinoFloorRng.FRand() <= T66TowerCasinoSpawnChance)
+			{
+				++ExpectedCasinoFloors;
+			}
+		}
+		for (TActorIterator<AT66CasinoInteractable> It(ProofWorld); It; ++It)
+		{
+			const int32 FloorNumber = T66ReadTowerFloorTag(*It);
+			if (FloorNumber >= CachedTowerMainMapLayout.FirstMobFloorNumber && FloorNumber <= CachedTowerMainMapLayout.LastMobFloorNumber)
+			{
+				++CasinoActorsOnMobFloors;
+			}
+		}
+
+		for (TActorIterator<AActor> It(ProofWorld); It; ++It)
+		{
+			AActor* Actor = *It;
+			if (!Actor || T66ReadTowerFloorTag(Actor) != CachedTowerMainMapLayout.StartFloorNumber)
+			{
+				continue;
+			}
+
+			const bool bExtraWorldInteractable =
+				Actor->IsA<AT66VendorInteractable>()
+				|| Actor->IsA<AT66CasinoInteractable>()
+				|| Actor->IsA<AT66ChestInteractable>()
+				|| Actor->IsA<AT66CrateInteractable>()
+				|| Actor->IsA<AT66LootWheelInteractable>()
+				|| Actor->IsA<AT66LootBagPickup>()
+				|| Actor->IsA<AT66FountainInteractable>()
+				|| Actor->IsA<AT66DifficultyTotem>()
+				|| Actor->IsA<AT66VehicleInteractable>()
+				|| Actor->IsA<AT66SaintNPC>()
+				|| Actor->IsA<AT66OuroborosNPC>();
+			if (!bExtraWorldInteractable)
+			{
+				continue;
+			}
+
+			++StartFloorExtraInteractables;
+			if (StartFloorExtraInteractableNames.Len() < 256)
+			{
+				if (!StartFloorExtraInteractableNames.IsEmpty())
+				{
+					StartFloorExtraInteractableNames += TEXT(",");
+				}
+				StartFloorExtraInteractableNames += Actor->GetClass()->GetName();
+			}
+		}
+
+		AT66CasinoInteractable* ProofCasinoInteractable = nullptr;
+		for (TActorIterator<AT66CasinoInteractable> It(ProofWorld); It; ++It)
+		{
+			ProofCasinoInteractable = *It;
+			break;
+		}
+
+		if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(ProofWorld->GetFirstPlayerController()))
+		{
+			CasinoInteractableOpenHandled = (ProofCasinoInteractable && T66PC->OpenCasinoGamblerInteractable(ProofCasinoInteractable)) ? 1 : 0;
+			CasinoOverlayOpenAfterInteract = T66PC->IsCasinoOverlayOpen() ? 1 : 0;
+			T66PC->CloseCasinoOverlay();
+		}
+	}
+	RecordCheck(
+		TEXT("VendorGuaranteedPerMobFloor"),
+		IsUsingTowerMainMapLayout() && ExpectedVendorFloors > 0 && VendorActorsOnMobFloors == ExpectedVendorFloors,
+		FString::Printf(
+			TEXT("Vendors=%d Expected=%d Rule=GuaranteedPerMobFloor"),
+			VendorActorsOnMobFloors,
+			ExpectedVendorFloors));
+	RecordCheck(
+		TEXT("CasinoPerFloorChance"),
+		IsUsingTowerMainMapLayout() && CasinoActorsOnMobFloors == ExpectedCasinoFloors,
+		FString::Printf(
+			TEXT("Casinos=%d Expected=%d Chance=%.3f Rule=PerFloorChance"),
+			CasinoActorsOnMobFloors,
+			ExpectedCasinoFloors,
+			T66TowerCasinoSpawnChance));
+	RecordCheck(
+		TEXT("TowerStartFloorReservedForWeaponAltar"),
+		IsUsingTowerMainMapLayout() && StartFloorExtraInteractables == 0,
+		FString::Printf(
+			TEXT("StartFloor=%d ExtraWorldInteractables=%d Classes=%s"),
+			CachedTowerMainMapLayout.StartFloorNumber,
+			StartFloorExtraInteractables,
+			StartFloorExtraInteractableNames.IsEmpty() ? TEXT("None") : *StartFloorExtraInteractableNames));
+	RecordCheck(
+		TEXT("CasinoInteractableOpensGamblerOverlay"),
+		CasinoInteractableOpenHandled == 1 && CasinoOverlayOpenAfterInteract == 1,
+		FString::Printf(
+			TEXT("OpenHandled=%d OverlayOpen=%d CasinoActors=%d"),
+			CasinoInteractableOpenHandled,
+			CasinoOverlayOpenAfterInteract,
+			CasinoActorsOnMobFloors));
+
+	int32 CagedSpawned = 0;
+	int32 CagedFreed = 0;
+	int32 CageInteractHandled = 0;
+	int32 CageUnlockBranchGranted = 0;
+	int32 CageUnlockedAfterInteract = 0;
+	FName CageCompanionID = NAME_None;
+	const int32 StageBeforeCageProof = RunState ? RunState->GetCurrentStage() : 1;
+	if (ProofWorld && RunState && CompanionUnlocks)
+	{
+		APlayerController* PC = ProofWorld->GetFirstPlayerController();
+		RunState->SetCurrentStage(5);
+		ClearCagedStageCompanions(true);
+
+		FVector CageAnchor = !MainMapBossSpawnSurfaceLocation.IsNearlyZero()
+			? MainMapBossSpawnSurfaceLocation
+			: (!CachedTowerMainMapLayout.BossSpawnSurfaceLocation.IsNearlyZero()
+				? CachedTowerMainMapLayout.BossSpawnSurfaceLocation
+				: FVector(0.f, 0.f, 200.f));
+
+		CagedSpawned = SpawnCagedCompanionsForCurrentStage(CageAnchor);
+		CagedFreed = FreeCagedCompanionsForBossClear(CageAnchor);
+		AT66RecruitableCompanion* ProofCompanion = nullptr;
+		for (const TWeakObjectPtr<AT66RecruitableCompanion>& WeakCompanion : CagedStageCompanions)
+		{
+			if (AT66RecruitableCompanion* Companion = WeakCompanion.Get())
+			{
+				ProofCompanion = Companion;
+				break;
+			}
+		}
+
+		if (ProofCompanion)
+		{
+			CageCompanionID = ProofCompanion->CompanionID;
+			CageInteractHandled = (PC && ProofCompanion->Interact(PC)) ? 1 : 0;
+			CageUnlockBranchGranted = ProofCompanion->HasGrantedBossCageUnlock() ? 1 : 0;
+			CageUnlockedAfterInteract = CompanionUnlocks->IsCompanionUnlocked(CageCompanionID) ? 1 : 0;
+		}
+
+		ClearCagedStageCompanions(true);
+		RunState->SetCurrentStage(StageBeforeCageProof);
+	}
+	const bool bCompanionCagePass =
+		CagedSpawned > 0 &&
+		CagedFreed > 0 &&
+		CageInteractHandled &&
+		CageUnlockBranchGranted &&
+		CageUnlockedAfterInteract;
+	RecordCheck(
+		TEXT("BossCagedCompanionInteractUnlock"),
+		bCompanionCagePass,
+		FString::Printf(
+			TEXT("Stage=5 CompanionID=%s Spawned=%d Freed=%d InteractHandled=%d UnlockBranchGranted=%d UnlockedAfter=%d RestoredStage=%d"),
+			*CageCompanionID.ToString(),
+			CagedSpawned,
+			CagedFreed,
+			CageInteractHandled,
+			CageUnlockBranchGranted,
+			CageUnlockedAfterInteract,
+			StageBeforeCageProof));
+
+	const FName IdolDisplayTag(TEXT("T66_PixalTest_IdolAltar_Display"));
+	auto CountIdolDisplayActors = [ProofWorld, IdolDisplayTag]()
+	{
+		int32 Count = 0;
+		if (!ProofWorld)
+		{
+			return Count;
+		}
+		for (TActorIterator<AActor> It(ProofWorld); It; ++It)
+		{
+			if (It->ActorHasTag(IdolDisplayTag))
+			{
+				++Count;
+			}
+		}
+		return Count;
+	};
+	const int32 IdolDisplayBefore = CountIdolDisplayActors();
+	AT66IdolAltar* ProofIdolAltar = SpawnIdolAltarAtLocation(FVector(1200.f, 0.f, 300.f), true);
+	const int32 IdolDisplayAfter = CountIdolDisplayActors();
+	RecordCheck(
+		TEXT("LiveIdolAltarSpawnsNoDisplayModels"),
+		ProofIdolAltar != nullptr && IdolDisplayAfter == IdolDisplayBefore,
+		FString::Printf(
+			TEXT("AltarSpawned=%d DisplayBefore=%d DisplayAfter=%d"),
+			ProofIdolAltar ? 1 : 0,
+			IdolDisplayBefore,
+			IdolDisplayAfter));
+	if (ProofIdolAltar)
+	{
+		if (IdolAltar == ProofIdolAltar)
+		{
+			IdolAltar = nullptr;
+		}
+		ProofIdolAltar->Destroy();
+	}
+
+	int32 MobTouchDamageApplied = 0;
+	float MobTouchHPBefore = -1.f;
+	float MobTouchHPAfter = -1.f;
+	if (ProofWorld && RunState)
+	{
+		AT66PlayerController* PC = Cast<AT66PlayerController>(ProofWorld->GetFirstPlayerController());
+		AT66HeroBase* Hero = PC ? Cast<AT66HeroBase>(PC->GetPawn()) : nullptr;
+		UT66MobManagerSubsystem* MobManager = ProofWorld->GetSubsystem<UT66MobManagerSubsystem>();
+		if (Hero && MobManager)
+		{
+			Hero->SetVehicleMounted(false);
+			if (Hero->IsInSafeZone())
+			{
+				Hero->AddSafeZoneOverlap(-1000);
+			}
+			RunState->ApplyAutomationHeroHPOverride(200.f, TEXT("ContentCorrectionsMobTouchDamage"));
+			RunState->AutomationResetDamageInvuln();
+
+			FActorSpawnParameters MobSpawnParams;
+			MobSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			const FVector MobSpawnLocation = Hero->GetActorLocation() + FVector(36.f, 0.f, 0.f);
+			if (AT66MobBase* ProofMob = ProofWorld->SpawnActor<AT66MobBase>(AT66MobBase::StaticClass(), MobSpawnLocation, FRotator::ZeroRotator, MobSpawnParams))
+			{
+				ProofMob->ConfigureAsMob(FName(TEXT("Slime")), ET66EnemyFamily::Melee, NAME_None, RunState->GetCurrentStage(), RunState->GetDifficultyScalar(), 1.f, RunState->GetFinalSurvivalEnemyScalar(), false);
+				ProofMob->TouchDamageHearts = 1;
+				ProofMob->TouchDamageCooldownSeconds = 0.f;
+				ProofMob->bIsTouchingHero = false;
+				MobTouchHPBefore = RunState->GetCurrentHP();
+				MobTouchDamageApplied = MobManager->AutomationApplyMobTouchDamageForTest(ProofMob, Hero, 0.1f) ? 1 : 0;
+				MobTouchHPAfter = RunState->GetCurrentHP();
+				ProofMob->Destroy();
+			}
+		}
+	}
+	RecordCheck(
+		TEXT("EnemyMobTouchDamageApplies"),
+		MobTouchDamageApplied && MobTouchHPAfter < MobTouchHPBefore,
+		FString::Printf(
+			TEXT("Applied=%d HP=%.1f->%.1f"),
+			MobTouchDamageApplied,
+			MobTouchHPBefore,
+			MobTouchHPAfter));
+
+	const bool bPass = FailedChecks.Num() == 0;
+	if (bPass)
+	{
+		UE_LOG(
+			LogT66GameMode,
+			Log,
+			TEXT("[ContentCorrectionsSmokeSummary] Terminal=1 Pass=1 Failures=0 FailedChecks=%s"),
+			*FString::Join(FailedChecks, TEXT("|")));
+	}
+	else
+	{
+		UE_LOG(
+			LogT66GameMode,
+			Warning,
+			TEXT("[ContentCorrectionsSmokeSummary] Terminal=1 Pass=0 Failures=%d FailedChecks=%s"),
+			FailedChecks.Num(),
+			*FString::Join(FailedChecks, TEXT("|")));
+	}
+	return bPass;
+}
+#endif
+
 void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 {
 	if (!IsUsingTowerMainMapLayout())
@@ -380,8 +861,13 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 		AutomationMode = AutomationMode.TrimStartAndEnd().ToLower();
 		if (AutomationMode != TEXT("minibosstraversalproof")
 			&& AutomationMode != TEXT("bossprojectilekillmidflightproof")
-			&& AutomationMode != TEXT("vendorfailedstealproof")
-			&& AutomationMode != TEXT("loansharkdebtproof"))
+			&& AutomationMode != TEXT("managedprojectilevisualproof")
+			&& AutomationMode != TEXT("bossprojectilevisualprofileproof")
+			&& AutomationMode != TEXT("bosshazarddefinitionproof")
+			&& AutomationMode != TEXT("bosshazarddamageproof")
+			&& AutomationMode != TEXT("vendorshopcorrectionsproof")
+			&& AutomationMode != TEXT("loansharkdebtproof")
+			&& AutomationMode != TEXT("contentcorrectionssmoke"))
 		{
 			return;
 		}
@@ -413,32 +899,142 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 				return;
 			}
 
-			if (AutomationMode == TEXT("vendorfailedstealproof"))
+			if (AutomationMode == TEXT("contentcorrectionssmoke"))
+			{
+				const bool bPass = RunContentCorrectionsSmoke(ProofWorld);
+				FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("T66ContentCorrectionsSmokeComplete"));
+				return;
+			}
+
+			if (AutomationMode == TEXT("managedprojectilevisualproof"))
+			{
+				const bool bPass = [&]()
+				{
+					if (UT66ProjectileManagerSubsystem* ProjectileManager = ProofWorld->GetSubsystem<UT66ProjectileManagerSubsystem>())
+					{
+						return ProjectileManager->RunManagedProjectileVisualProfileProof();
+					}
+					return false;
+				}();
+
+				if (!bPass)
+				{
+					UE_LOG(LogT66GameMode, Warning, TEXT("[ManagedProjectileVisualProfileProofSummary] Terminal=1 Pass=0 Reason=MissingProjectileManagerOrProofFailed"));
+				}
+				FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("ManagedProjectileVisualProfileProofComplete"));
+				return;
+			}
+
+			if (AutomationMode == TEXT("bossprojectilevisualprofileproof"))
+			{
+				const bool bPass = [&]()
+				{
+					if (UT66ProjectileManagerSubsystem* ProjectileManager = ProofWorld->GetSubsystem<UT66ProjectileManagerSubsystem>())
+					{
+						return ProjectileManager->RunBossProjectileVisualProfileProof();
+					}
+					return false;
+				}();
+
+				if (!bPass)
+				{
+					UE_LOG(LogT66GameMode, Warning, TEXT("[BossProjectileVisualProfileProofSummary] Terminal=1 Pass=0 Reason=MissingProjectileManagerOrProofFailed"));
+				}
+				FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("BossProjectileVisualProfileProofComplete"));
+				return;
+			}
+
+			if (AutomationMode == TEXT("bosshazarddefinitionproof"))
+			{
+				const bool bPass = [&]()
+				{
+					if (UT66BossHazardSubsystem* HazardSubsystem = ProofWorld->GetSubsystem<UT66BossHazardSubsystem>())
+					{
+						return HazardSubsystem->RunBossHazardDefinitionProof();
+					}
+					return false;
+				}();
+
+				if (!bPass)
+				{
+					UE_LOG(LogT66GameMode, Warning, TEXT("[BossHazardDefinitionProofSummary] Terminal=1 Pass=0 Reason=MissingBossHazardSubsystemOrProofFailed"));
+				}
+				FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("BossHazardDefinitionProofComplete"));
+				return;
+			}
+
+			if (AutomationMode == TEXT("bosshazarddamageproof"))
+			{
+				const bool bStarted = [&]()
+				{
+					if (UT66BossHazardSubsystem* HazardSubsystem = ProofWorld->GetSubsystem<UT66BossHazardSubsystem>())
+					{
+						return HazardSubsystem->StartBossHazardDamageProof();
+					}
+					return false;
+				}();
+
+				if (!bStarted)
+				{
+					UE_LOG(LogT66GameMode, Warning, TEXT("[BossHazardDamageProofSummary] Terminal=1 Pass=0 Reason=MissingBossHazardSubsystemOrProofStartFailed"));
+					FPlatformMisc::RequestExitWithStatus(false, 1, TEXT("BossHazardDamageProofStartFailed"));
+				}
+				return;
+			}
+
+			if (AutomationMode == TEXT("vendorshopcorrectionsproof"))
 			{
 				UGameInstance* GI = ProofWorld->GetGameInstance();
 				UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+				UT66GameInstance* T66GI = GetT66GameInstance();
 
 				int32 StealAttempted = 0;
-				int32 StealFailed = 0;
+				int32 AttemptTriggeredVendorBoss = 0;
+				int32 AttemptRecorded = 0;
+				int32 DeterministicMiss = 0;
+				int32 ProofShopSlotIndex = INDEX_NONE;
+				int32 BaseBuyGold = 0;
+				FT66InventorySlot ProofShopSlot;
 				if (RunState)
 				{
-					// Drive a deterministic failed steal: bTimingHit=false keeps success chance at 0.
+					RunState->ClearInventory();
 					RunState->EnsureShopStockForCurrentStage();
-					const int32 SlotCount = RunState->GetShopStockSlots().Num();
+					const TArray<FT66InventorySlot>& ShopSlots = RunState->GetShopStockSlots();
+					const int32 SlotCount = ShopSlots.Num();
 					for (int32 SlotIndex = 0; SlotIndex < SlotCount; ++SlotIndex)
 					{
-						RunState->ResolveShopStealAttempt(SlotIndex, /*bTimingHit*/ false, /*bRngSuccess*/ false);
-						const ET66ShopStealOutcome Outcome = RunState->GetLastShopStealOutcome();
-						if (Outcome != ET66ShopStealOutcome::None)
+						FItemData ItemData;
+						if (T66GI
+							&& ShopSlots.IsValidIndex(SlotIndex)
+							&& ShopSlots[SlotIndex].IsValid()
+							&& T66GI->GetItemData(ShopSlots[SlotIndex].ItemTemplateID, ItemData))
 						{
-							StealAttempted = 1;
-							StealFailed = (Outcome == ET66ShopStealOutcome::Miss || Outcome == ET66ShopStealOutcome::Failed) ? 1 : 0;
-							break;
+							const int32 CandidateBuyGold = ItemData.GetBuyGoldForRarity(ShopSlots[SlotIndex].Rarity);
+							if (CandidateBuyGold > 0)
+							{
+								ProofShopSlotIndex = SlotIndex;
+								ProofShopSlot = ShopSlots[SlotIndex];
+								BaseBuyGold = CandidateBuyGold;
+								break;
+							}
 						}
+					}
+
+					if (ProofShopSlotIndex != INDEX_NONE)
+					{
+						// bTimingHit=false is the deterministic live attempt path: it records a miss
+						// and must still arm the current always-trigger vendor anger behavior.
+						RunState->ResolveShopStealAttempt(ProofShopSlotIndex, /*bTimingHit*/ false, /*bRngSuccess*/ false);
+						const ET66ShopStealOutcome Outcome = RunState->GetLastShopStealOutcome();
+						StealAttempted = (Outcome != ET66ShopStealOutcome::None) ? 1 : 0;
+						DeterministicMiss = (Outcome == ET66ShopStealOutcome::Miss) ? 1 : 0;
+						AttemptTriggeredVendorBoss = RunState->DidLastShopStealAttemptTriggerVendorBoss() ? 1 : 0;
+						AttemptRecorded = RunState->GetShopAngerState().StealAttemptCount > 0 ? 1 : 0;
 					}
 				}
 
-				// Spawn the Vendor hidden boss directly (the same class the production failure path spawns).
+				// Spawn the Vendor hidden boss directly after the run-state anger trigger. The production
+				// widget routes this same trigger into PlayerController::SpawnVendorBoss().
 				FVector SpawnLocation = FVector::ZeroVector;
 				if (APlayerController* PC = ProofWorld->GetFirstPlayerController())
 				{
@@ -455,9 +1051,13 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 					++PreSpawnVendorBossCount;
 				}
 
-				FActorSpawnParameters SpawnParams;
-				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-				AT66VendorBoss* VendorBoss = ProofWorld->SpawnActor<AT66VendorBoss>(AT66VendorBoss::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+				AT66VendorBoss* VendorBoss = nullptr;
+				if (AttemptTriggeredVendorBoss)
+				{
+					FActorSpawnParameters SpawnParams;
+					SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+					VendorBoss = ProofWorld->SpawnActor<AT66VendorBoss>(AT66VendorBoss::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+				}
 
 				const int32 VendorBossSpawned = VendorBoss ? 1 : 0;
 				const int32 VendorBossIdentity = (VendorBoss && VendorBoss->BossID == FName(TEXT("VendorBoss"))) ? 1 : 0;
@@ -479,7 +1079,7 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 					VendorBoss->ForceAwaken();
 					for (int32 Hit = 0; Hit < 24 && !VendorBossDefeated; ++Hit)
 					{
-						if (VendorBoss->TakeDamageFromHeroHit(VendorBoss->MaxHP + 1000, FName(TEXT("VendorFailedStealProof"))))
+						if (VendorBoss->TakeDamageFromHeroHit(VendorBoss->MaxHP + 1000, FName(TEXT("VendorShopCorrectionsProof"))))
 						{
 							VendorBossDefeated = 1;
 						}
@@ -487,32 +1087,108 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 				}
 
 				int32 VendorTokenDropped = 0;
+				int32 VendorTokenDroppedStacks = 0;
+				int32 VendorTokenStacksBeforePickup = RunState ? RunState->GetActiveVendorTokenStacks() : INDEX_NONE;
+				int32 VendorTokenStacksAfterPickup = INDEX_NONE;
+				float OneStackSellFraction = 0.f;
+				float OneStackBuyDiscount = 0.f;
+				int32 OneStackBuyGold = 0;
+				int32 OneStackSellGold = 0;
+				float MaxStackSellFraction = 0.f;
+				float MaxStackBuyDiscount = 0.f;
+				int32 MaxStackBuyGold = 0;
+				int32 MaxStackSellGold = 0;
 				for (TActorIterator<AT66LootBagPickup> It(ProofWorld); It; ++It)
 				{
 					if (It->GetItemID() == FName(TEXT("Item_VendorToken")))
 					{
 						VendorTokenDropped = 1;
+						VendorTokenDroppedStacks = It->HasExplicitLine1RolledValue() ? It->GetExplicitLine1RolledValue() : 1;
 						break;
 					}
 				}
 
-				const bool bPass = StealAttempted && StealFailed && VendorBossSpawned && VendorBossIdentity
-					&& VendorBossDefeated && VendorTokenDropped && (HiddenBossCount == 1) && (CasinoAngerSpawnedBoss == 0);
+				if (RunState && VendorTokenDropped && VendorTokenDroppedStacks > 0)
+				{
+					RunState->ApplyVendorTokenPickup(VendorTokenDroppedStacks);
+					VendorTokenStacksAfterPickup = RunState->GetActiveVendorTokenStacks();
+					OneStackSellFraction = RunState->GetCurrentSellFraction();
+					OneStackBuyDiscount = RunState->GetCurrentBuyDiscountFraction();
+					OneStackBuyGold = ProofShopSlotIndex != INDEX_NONE ? RunState->GetBuyGoldForShopStockSlot(ProofShopSlotIndex) : 0;
+					OneStackSellGold = RunState->GetSellGoldForInventorySlot(ProofShopSlot);
+
+					RunState->ApplyVendorTokenPickup(UT66RunStateSubsystem::MaxVendorTokenStacks);
+					MaxStackSellFraction = RunState->GetCurrentSellFraction();
+					MaxStackBuyDiscount = RunState->GetCurrentBuyDiscountFraction();
+					MaxStackBuyGold = ProofShopSlotIndex != INDEX_NONE ? RunState->GetBuyGoldForShopStockSlot(ProofShopSlotIndex) : 0;
+					MaxStackSellGold = RunState->GetSellGoldForInventorySlot(ProofShopSlot);
+				}
+
+				const int32 ExpectedOneStackBuyGold = FMath::Max(0, FMath::RoundToInt(static_cast<float>(BaseBuyGold) * 0.975f));
+				const int32 ExpectedOneStackSellGold = FMath::Max(0, FMath::RoundToInt(static_cast<float>(BaseBuyGold) * 0.725f));
+				const int32 ExpectedMaxStackBuyGold = FMath::Max(0, FMath::RoundToInt(static_cast<float>(BaseBuyGold) * 0.600f));
+				const int32 ExpectedMaxStackSellGold = BaseBuyGold;
+				const bool bOneStackMathPass =
+					VendorTokenStacksBeforePickup == 0 &&
+					VendorTokenDroppedStacks == 1 &&
+					VendorTokenStacksAfterPickup == 1 &&
+					FMath::IsNearlyEqual(OneStackSellFraction, 0.725f, 0.0001f) &&
+					FMath::IsNearlyEqual(OneStackBuyDiscount, 0.025f, 0.0001f) &&
+					OneStackBuyGold == ExpectedOneStackBuyGold &&
+					OneStackSellGold == ExpectedOneStackSellGold;
+				const bool bMaxStackMathPass =
+					RunState &&
+					RunState->GetActiveVendorTokenStacks() == UT66RunStateSubsystem::MaxVendorTokenStacks &&
+					FMath::IsNearlyEqual(MaxStackSellFraction, 1.0f, 0.0001f) &&
+					FMath::IsNearlyEqual(MaxStackBuyDiscount, 0.400f, 0.0001f) &&
+					MaxStackBuyGold == ExpectedMaxStackBuyGold &&
+					MaxStackSellGold == ExpectedMaxStackSellGold;
+				const bool bFourSlotSurfaces =
+					UT66RunStateSubsystem::ShopDisplaySlotCount == 4 &&
+					UT66RunStateSubsystem::BuybackDisplaySlotCount == 4 &&
+					UT66CasinoVendorTabWidget::SellVisibleSlotCount == 4;
+				const bool bPass = RunState && ProofShopSlotIndex != INDEX_NONE && StealAttempted && DeterministicMiss
+					&& AttemptRecorded && AttemptTriggeredVendorBoss && VendorBossSpawned && VendorBossIdentity
+					&& VendorBossDefeated && VendorTokenDropped && (HiddenBossCount == 1) && (CasinoAngerSpawnedBoss == 0)
+					&& bOneStackMathPass && bMaxStackMathPass && bFourSlotSurfaces;
 
 				UE_LOG(
 					LogT66GameMode,
 					Log,
-					TEXT("[VendorFailedStealProofSummary] Terminal=1 StealAttempted=%d StealFailed=%d VendorBossSpawned=%d VendorBossIdentity=%d VendorBossDefeated=%d VendorTokenDropped=%d HiddenBossCount=%d CasinoAngerSpawnedBoss=%d Pass=%d"),
+					TEXT("[VendorShopCorrectionsProofSummary] Terminal=1 Slot=%d BaseBuyGold=%d StealAttempted=%d DeterministicMiss=%d AttemptRecorded=%d AttemptTriggeredVendorBoss=%d VendorBossSpawned=%d VendorBossIdentity=%d VendorBossDefeated=%d VendorTokenDropped=%d DroppedStacks=%d TokenStacksBefore=%d TokenStacksAfterPickup=%d OneStackSellFraction=%.3f OneStackDiscount=%.3f OneStackBuyGold=%d ExpectedOneStackBuyGold=%d OneStackSellGold=%d ExpectedOneStackSellGold=%d MaxStacks=%d MaxSellFraction=%.3f MaxDiscount=%.3f MaxBuyGold=%d ExpectedMaxBuyGold=%d MaxSellGold=%d ExpectedMaxSellGold=%d ShopSlots=%d BuybackSlots=%d SellVisibleSlots=%d HiddenBossCount=%d CasinoAngerSpawnedBoss=%d Pass=%d"),
+					ProofShopSlotIndex,
+					BaseBuyGold,
 					StealAttempted,
-					StealFailed,
+					DeterministicMiss,
+					AttemptRecorded,
+					AttemptTriggeredVendorBoss,
 					VendorBossSpawned,
 					VendorBossIdentity,
 					VendorBossDefeated,
 					VendorTokenDropped,
+					VendorTokenDroppedStacks,
+					VendorTokenStacksBeforePickup,
+					VendorTokenStacksAfterPickup,
+					OneStackSellFraction,
+					OneStackBuyDiscount,
+					OneStackBuyGold,
+					ExpectedOneStackBuyGold,
+					OneStackSellGold,
+					ExpectedOneStackSellGold,
+					RunState ? RunState->GetActiveVendorTokenStacks() : INDEX_NONE,
+					MaxStackSellFraction,
+					MaxStackBuyDiscount,
+					MaxStackBuyGold,
+					ExpectedMaxStackBuyGold,
+					MaxStackSellGold,
+					ExpectedMaxStackSellGold,
+					UT66RunStateSubsystem::ShopDisplaySlotCount,
+					UT66RunStateSubsystem::BuybackDisplaySlotCount,
+					UT66CasinoVendorTabWidget::SellVisibleSlotCount,
 					HiddenBossCount,
 					CasinoAngerSpawnedBoss,
 					bPass ? 1 : 0);
-				FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("VendorFailedStealProofComplete"));
+				FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("VendorShopCorrectionsProofComplete"));
 				return;
 			}
 
@@ -697,50 +1373,6 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	if (IsBossRushFinaleStage())
-	{
-		const T66TowerMapTerrain::FFloor* StartFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, CachedTowerMainMapLayout.StartFloorNumber);
-		const T66TowerMapTerrain::FFloor* BossFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber);
-		if (!StartFloor || !BossFloor)
-		{
-			return;
-		}
-
-		const FVector HoleCenter = StartFloor->bHasDropHole
-			? StartFloor->HoleCenter
-			: FVector(StartFloor->Center.X, StartFloor->Center.Y, StartFloor->SurfaceZ);
-		const FVector2D HoleHalfExtent = StartFloor->bHasDropHole
-			? StartFloor->HoleHalfExtent
-			: FVector2D(320.0f, 320.0f);
-		const float DropHeight = FMath::Max(StartFloor->SurfaceZ - BossFloor->SurfaceZ, 1200.0f);
-		const float VerticalExtent = FMath::Clamp((DropHeight * 0.5f) - 550.0f, 800.0f, 1400.0f);
-		const FVector BoxExtent(
-			FMath::Max(250.0f, HoleHalfExtent.X * 0.88f),
-			FMath::Max(250.0f, HoleHalfExtent.Y * 0.88f),
-			VerticalExtent);
-		const FVector HoleLocation = HoleCenter + FVector(0.0f, 0.0f, -VerticalExtent + 120.0f);
-
-		if (AT66TowerDescentHole* HoleActor = World->SpawnActor<AT66TowerDescentHole>(
-			AT66TowerDescentHole::StaticClass(),
-			HoleLocation,
-			FRotator::ZeroRotator,
-			SpawnParams))
-		{
-			HoleActor->InitializeHole(
-				StartFloor->FloorNumber,
-				BossFloor->FloorNumber,
-				BoxExtent,
-				/*bInRequiresWeaponSelection*/ true,
-				/*bInRequiresGuardianDefeated*/ false);
-			HoleActor->Tags.AddUnique(FName(TEXT("T66_Tower_DescentHole")));
-			TowerDescentHoles.Add(HoleActor);
-		}
-#if !UE_BUILD_SHIPPING
-		ScheduleVerificationProofIfRequested();
-#endif
-		return;
-	}
-
 	for (const T66TowerMapTerrain::FFloor& Floor : CachedTowerMainMapLayout.Floors)
 	{
 		if (!Floor.bHasDropHole)
@@ -800,7 +1432,6 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 bool AT66GameMode::IsPlacedTowerMinibossFloor(const int32 FloorNumber) const
 {
 	return IsUsingTowerMainMapLayout()
-		&& !IsBossRushFinaleStage()
 		&& FloorNumber >= CachedTowerMainMapLayout.FirstMobFloorNumber
 		&& FloorNumber <= CachedTowerMainMapLayout.LastMobFloorNumber;
 }
@@ -1090,7 +1721,7 @@ void AT66GameMode::SyncTowerBossEntryState()
 		}
 	}
 
-	if ((bHasEnemyDirector || IsBossRushFinaleStage()) && bHasBoss)
+	if (bHasEnemyDirector && bHasBoss)
 	{
 		bTowerBossEntryApplied = true;
 		UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Tower boss-floor entry activated via descent hole."));

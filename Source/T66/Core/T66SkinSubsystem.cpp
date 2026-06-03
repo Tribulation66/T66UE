@@ -8,6 +8,7 @@
 
 const FName UT66SkinSubsystem::DefaultSkinID(TEXT("Default"));
 const FName UT66SkinSubsystem::DemoSkinID(TEXT("DemoSkin"));
+const FName UT66SkinSubsystem::SaintSkinID(TEXT("SaintSkin"));
 const FName UT66SkinSubsystem::LegacyBeachgoerSkinID(TEXT("Beachgoer"));
 
 FName UT66SkinSubsystem::NormalizeSkinID(FName SkinID)
@@ -22,7 +23,7 @@ void UT66SkinSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 TArray<FName> UT66SkinSubsystem::GetAllSkinIDs()
 {
-	return { DefaultSkinID, DemoSkinID };
+	return { DefaultSkinID, DemoSkinID, SaintSkinID };
 }
 
 bool UT66SkinSubsystem::IsSkinOfferedForEntity(const ET66SkinEntityType EntityType, const FName EntityID, const FName SkinID) const
@@ -47,7 +48,15 @@ bool UT66SkinSubsystem::IsSkinOfferedForEntity(const ET66SkinEntityType EntityTy
 			FName(TEXT("Hero_4")),
 			FName(TEXT("Hero_5"))
 		};
-		return NormalizedSkinID == DemoSkinID && DemoSkinHeroIDs.Contains(EntityID);
+		if (NormalizedSkinID == DemoSkinID)
+		{
+			return DemoSkinHeroIDs.Contains(EntityID);
+		}
+		if (NormalizedSkinID == SaintSkinID)
+		{
+			return true;
+		}
+		return false;
 	}
 
 	if (EntityType == ET66SkinEntityType::Companion)
@@ -179,6 +188,66 @@ bool UT66SkinSubsystem::PurchaseSkin(ET66SkinEntityType EntityType, FName Entity
 
 	MarkProfileDirtyAndSave(true);
 	OnSkinStateChanged.Broadcast();
+	return true;
+}
+
+bool UT66SkinSubsystem::GrantSkin(ET66SkinEntityType EntityType, FName EntityID, FName SkinID, bool bEquip)
+{
+	SkinID = NormalizeSkinID(SkinID);
+	if (EntityID.IsNone() || SkinID.IsNone() || SkinID == DefaultSkinID)
+	{
+		return false;
+	}
+	if (!IsSkinOfferedForEntity(EntityType, EntityID, SkinID))
+	{
+		return false;
+	}
+
+	UT66ProfileSaveGame* Profile = GetProfile();
+	if (!Profile)
+	{
+		return false;
+	}
+
+	bool bChanged = false;
+	if (EntityType == ET66SkinEntityType::Hero)
+	{
+		FT66OwnedSkinsList& Entry = Profile->OwnedHeroSkinsByHero.FindOrAdd(EntityID);
+		const int32 BeforeCount = Entry.SkinIDs.Num();
+		Entry.SkinIDs.AddUnique(SkinID);
+		bChanged |= Entry.SkinIDs.Num() != BeforeCount;
+		if (bEquip)
+		{
+			FName& EquippedSkinID = Profile->EquippedHeroSkinIDByHero.FindOrAdd(EntityID);
+			if (EquippedSkinID != SkinID)
+			{
+				EquippedSkinID = SkinID;
+				bChanged = true;
+			}
+		}
+	}
+	else
+	{
+		FT66OwnedSkinsList& Entry = Profile->OwnedCompanionSkinsByCompanion.FindOrAdd(EntityID);
+		const int32 BeforeCount = Entry.SkinIDs.Num();
+		Entry.SkinIDs.AddUnique(SkinID);
+		bChanged |= Entry.SkinIDs.Num() != BeforeCount;
+		if (bEquip)
+		{
+			FName& EquippedSkinID = Profile->EquippedCompanionSkinIDByCompanion.FindOrAdd(EntityID);
+			if (EquippedSkinID != SkinID)
+			{
+				EquippedSkinID = SkinID;
+				bChanged = true;
+			}
+		}
+	}
+
+	if (bChanged)
+	{
+		MarkProfileDirtyAndSave(false);
+		OnSkinStateChanged.Broadcast();
+	}
 	return true;
 }
 
@@ -371,6 +440,11 @@ bool UT66SkinSubsystem::IsCompanionSkinOwned(FName CompanionID, FName SkinID) co
 bool UT66SkinSubsystem::PurchaseHeroSkin(FName HeroID, FName SkinID, int32 CostAC)
 {
 	return PurchaseSkin(ET66SkinEntityType::Hero, HeroID, SkinID, CostAC);
+}
+
+bool UT66SkinSubsystem::GrantHeroSkin(FName HeroID, FName SkinID, bool bEquip)
+{
+	return GrantSkin(ET66SkinEntityType::Hero, HeroID, SkinID, bEquip);
 }
 
 bool UT66SkinSubsystem::PurchaseCompanionSkin(FName CompanionID, FName SkinID, int32 CostAC)

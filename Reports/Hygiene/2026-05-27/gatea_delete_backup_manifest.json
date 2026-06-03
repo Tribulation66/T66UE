@@ -1,0 +1,90 @@
+{
+  "generated_utc": "2026-05-27T14:16:36.9822729Z",
+  "backup_root": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets",
+  "entries": [
+    {
+      "path": "Content\\World\\Interactables\\Vending\\SM_QuickReviveVending_Pixal3D.uasset",
+      "bytes": 6659981,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\SM_QuickReviveVending_Pixal3D.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\World\\Interactables\\Vending\\SM_QuickReviveVending_Pixal3D_Outline.uasset",
+      "bytes": 6933157,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\SM_QuickReviveVending_Pixal3D_Outline.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\World\\Interactables\\Vending\\QuickReviveVending_QuadRetro.uasset",
+      "bytes": 1830430,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\QuickReviveVending_QuadRetro.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\World\\Interactables\\Vending\\Materials\\MI_QuickReviveVending_Pixal3D.uasset",
+      "bytes": 6204,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\Materials\\MI_QuickReviveVending_Pixal3D.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\World\\Interactables\\Vending\\Materials\\MI_QuickReviveVending_Pixal3D_Outline.uasset",
+      "bytes": 2823,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\Materials\\MI_QuickReviveVending_Pixal3D_Outline.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\World\\Interactables\\Vending\\Materials\\M_QuickReviveVending_QuadRetro.uasset",
+      "bytes": 22203,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\Materials\\M_QuickReviveVending_QuadRetro.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\World\\Interactables\\Vending\\Textures\\T_QuickReviveVending_Pixal3D_0.uasset",
+      "bytes": 3397556,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\Textures\\T_QuickReviveVending_Pixal3D_0.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\World\\Interactables\\Vending\\Textures\\T_QuickReviveVending_Pixal3D_1.uasset",
+      "bytes": 570970,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\Textures\\T_QuickReviveVending_Pixal3D_1.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\World\\Interactables\\Vending\\Textures\\T_QuickReviveVending_Pixal3D_InnerLines.uasset",
+      "bytes": 1862036,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\Textures\\T_QuickReviveVending_Pixal3D_InnerLines.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\World\\Interactables\\Vending\\Textures\\T_QuickReviveVending_Pixal3D_Tint.uasset",
+      "bytes": 3393805,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\Textures\\T_QuickReviveVending_Pixal3D_Tint.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\World\\Interactables\\Vending\\Textures\\T_QuickReviveVending_QuadRetro_Pixelated_512.uasset",
+      "bytes": 396357,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\World\\Interactables\\Vending\\Textures\\T_QuickReviveVending_QuadRetro_Pixelated_512.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    },
+    {
+      "path": "Content\\UI\\Sprites\\Interactables\\QuickReviveIcon.uasset",
+      "bytes": 101496,
+      "backup_path": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets\\Content\\UI\\Sprites\\Interactables\\QuickReviveIcon.uasset",
+      "source_lfs_pointer": false,
+      "backup_lfs_pointer": false
+    }
+  ]
+}

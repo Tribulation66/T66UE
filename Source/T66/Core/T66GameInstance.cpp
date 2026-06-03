@@ -5,8 +5,10 @@
 #include "Core/T66ReleaseVariantSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66LoadingScreenWidget.h"
 #include "UI/Style/T66Style.h"
@@ -167,12 +169,15 @@ UT66GameInstance::UT66GameInstance()
 	WeaponsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Weapons.DT_Weapons")));
 	CombatVFXBindingsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_CombatVFXBindings.DT_CombatVFXBindings")));
 	BossesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Bosses.DT_Bosses")));
+	BossAttacksDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossAttacks.DT_BossAttacks")));
+	BossAttackDefinitionsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossAttackDefinitions.DT_BossAttackDefinitions")));
+	BossHazardDefinitionsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossHazardDefinitions.DT_BossHazardDefinitions")));
+	BossMovementPatternsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossMovementPatterns.DT_BossMovementPatterns")));
 	StagesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Stages.DT_Stages")));
 	EnemiesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Enemies.DT_Enemies")));
 	StatusEffectsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_StatusEffects.DT_StatusEffects")));
 	BossEncountersDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossEncounters.DT_BossEncounters")));
 	BossEncounterMembersDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossEncounterMembers.DT_BossEncounterMembers")));
-	ArcadeInteractablesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables")));
 	NPCsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_NPCs.DT_NPCs")));
 	UniqueEnemiesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_UniqueEnemies.DT_UniqueEnemies")));
 
@@ -180,17 +185,12 @@ UT66GameInstance::UT66GameInstance()
 	SelectedPartySize = ET66PartySize::Solo;
 	SelectedHeroID = NAME_None;
 	SelectedCompanionID = NAME_None;
+	SelectedPetID = NAME_None;
 	SelectedDifficulty = ET66Difficulty::Easy;
 	SelectedRunMode = ET66RunMode::Regular;
 	SelectedRunCategory = ET66RunCategory::Tower;
 	SelectedRunModifierKind = ET66RunModifierKind::None;
 	SelectedRunModifierID = NAME_None;
-	MiniSelectedHeroID = NAME_None;
-	MiniSelectedCompanionID = NAME_None;
-	MiniSelectedDifficultyID = NAME_None;
-	MiniSelectedIdolIDs.Reset();
-	bMiniLoadFlow = false;
-	bMiniIntermissionFlow = false;
 	SelectedHeroBodyType = ET66BodyType::Chad;
 	SelectedCompanionBodyType = ET66BodyType::Chad;
 }
@@ -266,7 +266,7 @@ void UT66GameInstance::Init()
 			TEXT("bounce-damage"),
 			TEXT("pierce-damage"),
 			TEXT("dot-damage"),
-			TEXT("crit-damage"),
+			TEXT("headshot"),
 			TEXT("aoe-speed"),
 			TEXT("bounce-speed"),
 			TEXT("pierce-speed"),
@@ -314,7 +314,7 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	bCoreDataTablesLoadRequested = true;
 
 	TArray<FSoftObjectPath> Paths;
-	Paths.Reserve(15);
+	Paths.Reserve(16);
 
 	auto AddDT = [&](const TSoftObjectPtr<UDataTable>& DT)
 	{
@@ -326,11 +326,16 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 
 	AddDT(HeroDataTable);
 	AddDT(CompanionDataTable);
+	AddDT(PetsDataTable);
 	AddDT(ItemsDataTable);
 	AddDT(IdolsDataTable);
 	AddDT(WeaponsDataTable);
 	AddDT(CombatVFXBindingsDataTable);
 	AddDT(BossesDataTable);
+	AddDT(BossAttacksDataTable);
+	AddDT(BossAttackDefinitionsDataTable);
+	AddDT(BossHazardDefinitionsDataTable);
+	AddDT(BossMovementPatternsDataTable);
 	AddDT(StagesDataTable);
 	AddDT(EnemiesDataTable);
 	AddDT(StatusEffectsDataTable);
@@ -340,7 +345,6 @@ void UT66GameInstance::PrimeCoreDataTablesAsync()
 	AddDT(LoanSharkDataTable);
 	AddDT(UniqueEnemiesDataTable);
 	AddDT(CharacterVisualsDataTable);
-	AddDT(ArcadeInteractablesDataTable);
 
 	if (Paths.Num() <= 0)
 	{
@@ -366,11 +370,16 @@ void UT66GameInstance::HandleCoreDataTablesLoaded()
 	// Cache any tables that successfully loaded.
 	if (!CachedHeroDataTable) CachedHeroDataTable = HeroDataTable.Get();
 	if (!CachedCompanionDataTable) CachedCompanionDataTable = CompanionDataTable.Get();
+	if (!CachedPetsDataTable) CachedPetsDataTable = PetsDataTable.Get();
 	if (!CachedItemsDataTable) CachedItemsDataTable = ItemsDataTable.Get();
 	if (!CachedIdolsDataTable) CachedIdolsDataTable = IdolsDataTable.Get();
 	if (!CachedWeaponsDataTable) CachedWeaponsDataTable = WeaponsDataTable.Get();
 	if (!CachedCombatVFXBindingsDataTable) CachedCombatVFXBindingsDataTable = CombatVFXBindingsDataTable.Get();
 	if (!CachedBossesDataTable) CachedBossesDataTable = BossesDataTable.Get();
+	if (!CachedBossAttacksDataTable) CachedBossAttacksDataTable = BossAttacksDataTable.Get();
+	if (!CachedBossAttackDefinitionsDataTable) CachedBossAttackDefinitionsDataTable = BossAttackDefinitionsDataTable.Get();
+	if (!CachedBossHazardDefinitionsDataTable) CachedBossHazardDefinitionsDataTable = BossHazardDefinitionsDataTable.Get();
+	if (!CachedBossMovementPatternsDataTable) CachedBossMovementPatternsDataTable = BossMovementPatternsDataTable.Get();
 	if (!CachedStagesDataTable) CachedStagesDataTable = StagesDataTable.Get();
 	if (!CachedEnemiesDataTable) CachedEnemiesDataTable = EnemiesDataTable.Get();
 	if (!CachedStatusEffectsDataTable) CachedStatusEffectsDataTable = StatusEffectsDataTable.Get();
@@ -380,7 +389,6 @@ void UT66GameInstance::HandleCoreDataTablesLoaded()
 	if (!CachedLoanSharkDataTable) CachedLoanSharkDataTable = LoanSharkDataTable.Get();
 	if (!CachedUniqueEnemiesDataTable) CachedUniqueEnemiesDataTable = UniqueEnemiesDataTable.Get();
 	if (!CachedCharacterVisualsDataTable) CachedCharacterVisualsDataTable = CharacterVisualsDataTable.Get();
-	if (!CachedArcadeInteractablesDataTable) CachedArcadeInteractablesDataTable = ArcadeInteractablesDataTable.Get();
 
 	bCoreDataTablesLoaded = true;
 	PrimeHeroSelectionAssetsAsync();
@@ -695,6 +703,7 @@ UDataTable* UT66GameInstance::ResolveCachedDataTable(TObjectPtr<UDataTable>& Cac
 
 UDataTable* UT66GameInstance::GetHeroDataTable() { return ResolveCachedDataTable(CachedHeroDataTable, HeroDataTable); }
 UDataTable* UT66GameInstance::GetCompanionDataTable() { return ResolveCachedDataTable(CachedCompanionDataTable, CompanionDataTable); }
+UDataTable* UT66GameInstance::GetPetsDataTable() { return ResolveCachedDataTable(CachedPetsDataTable, PetsDataTable); }
 UDataTable* UT66GameInstance::GetIdolsDataTable() { return ResolveCachedDataTable(CachedIdolsDataTable, IdolsDataTable); }
 UDataTable* UT66GameInstance::GetWeaponsDataTable() { return ResolveCachedDataTable(CachedWeaponsDataTable, WeaponsDataTable); }
 UDataTable* UT66GameInstance::GetCombatVFXBindingsDataTable() { return ResolveCachedDataTable(CachedCombatVFXBindingsDataTable, CombatVFXBindingsDataTable); }
@@ -709,30 +718,73 @@ bool UT66GameInstance::GetCompanionData(FName CompanionID, FCompanionData& OutCo
 	return FindDataRow(GetCompanionDataTable(), CompanionID, OutCompanionData, TEXT("GetCompanionData"), /*bRequireValidID=*/false);
 }
 
-bool UT66GameInstance::GetArcadeInteractableData(FName ArcadeRowID, FT66ArcadeInteractableData& OutArcadeData)
+bool UT66GameInstance::GetPetData(FName PetID, FPetData& OutPetData)
 {
-	if (ArcadeRowID.IsNone())
+	if (PetID.IsNone())
 	{
 		return false;
 	}
 
-	UDataTable* DataTable = GetArcadeInteractablesDataTable();
-	if (!DataTable)
+	if (UDataTable* DataTable = GetPetsDataTable())
 	{
-		return false;
-	}
-
-	if (const FT66ArcadeInteractableRow* FoundRow = DataTable->FindRow<FT66ArcadeInteractableRow>(ArcadeRowID, TEXT("GetArcadeInteractableData")))
-	{
-		OutArcadeData = FoundRow->ArcadeData;
-		if (OutArcadeData.ArcadeID.IsNone())
+		if (const FPetData* FoundRow = DataTable->FindRow<FPetData>(PetID, TEXT("GetPetData")))
 		{
-			OutArcadeData.ArcadeID = ArcadeRowID;
+			OutPetData = *FoundRow;
+			if (OutPetData.PetID.IsNone())
+			{
+				OutPetData.PetID = PetID;
+			}
+			if (OutPetData.SourceBossID.IsNone())
+			{
+				OutPetData.SourceBossID = PetID;
+			}
+			return true;
 		}
-		return true;
 	}
 
-	return false;
+	FBossData BossData;
+	if (!GetBossData(PetID, BossData))
+	{
+		return false;
+	}
+
+	OutPetData = FPetData{};
+	OutPetData.PetID = PetID;
+	OutPetData.SourceBossID = BossData.BossID.IsNone() ? PetID : BossData.BossID;
+	OutPetData.DisplayName = !BossData.DisplayName.IsEmpty()
+		? BossData.DisplayName
+		: FText::FromName(PetID);
+	OutPetData.PlaceholderColor = BossData.PlaceholderColor;
+	OutPetData.SkinIDs.AddUnique(FName(TEXT("Default")));
+	return true;
+}
+
+FName UT66GameInstance::ResolvePetIDForBossID(FName BossID)
+{
+	if (BossID.IsNone())
+	{
+		return NAME_None;
+	}
+
+	if (UDataTable* DataTable = GetPetsDataTable())
+	{
+		if (const FPetData* DirectRow = DataTable->FindRow<FPetData>(BossID, TEXT("ResolvePetIDForBossID")))
+		{
+			return DirectRow->PetID.IsNone() ? BossID : DirectRow->PetID;
+		}
+
+		TArray<FPetData*> PetRows;
+		DataTable->GetAllRows(TEXT("ResolvePetIDForBossID"), PetRows);
+		for (const FPetData* PetRow : PetRows)
+		{
+			if (PetRow && PetRow->SourceBossID == BossID)
+			{
+				return PetRow->PetID.IsNone() ? BossID : PetRow->PetID;
+			}
+		}
+	}
+
+	return GetBossesDataTable() ? BossID : NAME_None;
 }
 
 UDataTable* UT66GameInstance::GetItemsDataTable() { return ResolveCachedDataTable(CachedItemsDataTable, ItemsDataTable); }
@@ -768,7 +820,7 @@ void UT66GameInstance::EnsureCachedItemIDs()
 	if (CachedItemIDs.Num() == 0)
 	{
 		CachedItemIDs.Add(FName(TEXT("Item_AoeDamage")));
-		CachedItemIDs.Add(FName(TEXT("Item_CritDamage")));
+		CachedItemIDs.Add(FName(TEXT("Item_Headshot")));
 		CachedItemIDs.Add(FName(TEXT("Item_Execute")));
 		CachedItemIDs.Add(FName(TEXT("Item_DamageReduction")));
 	}
@@ -844,6 +896,10 @@ FName UT66GameInstance::GetRandomItemIDForLootRarityFromStream(ET66Rarity LootRa
 }
 
 UDataTable* UT66GameInstance::GetBossesDataTable() { return ResolveCachedDataTable(CachedBossesDataTable, BossesDataTable); }
+UDataTable* UT66GameInstance::GetBossAttacksDataTable() { return ResolveCachedDataTable(CachedBossAttacksDataTable, BossAttacksDataTable); }
+UDataTable* UT66GameInstance::GetBossAttackDefinitionsDataTable() { return ResolveCachedDataTable(CachedBossAttackDefinitionsDataTable, BossAttackDefinitionsDataTable); }
+UDataTable* UT66GameInstance::GetBossHazardDefinitionsDataTable() { return ResolveCachedDataTable(CachedBossHazardDefinitionsDataTable, BossHazardDefinitionsDataTable); }
+UDataTable* UT66GameInstance::GetBossMovementPatternsDataTable() { return ResolveCachedDataTable(CachedBossMovementPatternsDataTable, BossMovementPatternsDataTable); }
 UDataTable* UT66GameInstance::GetStagesDataTable() { return ResolveCachedDataTable(CachedStagesDataTable, StagesDataTable); }
 UDataTable* UT66GameInstance::GetEnemiesDataTable() { return ResolveCachedDataTable(CachedEnemiesDataTable, EnemiesDataTable); }
 UDataTable* UT66GameInstance::GetStatusEffectsDataTable() { return ResolveCachedDataTable(CachedStatusEffectsDataTable, StatusEffectsDataTable); }
@@ -853,7 +909,6 @@ UDataTable* UT66GameInstance::GetNPCsDataTable() { return ResolveCachedDataTable
 UDataTable* UT66GameInstance::GetLoanSharkDataTable() { return ResolveCachedDataTable(CachedLoanSharkDataTable, LoanSharkDataTable); }
 UDataTable* UT66GameInstance::GetUniqueEnemiesDataTable() { return ResolveCachedDataTable(CachedUniqueEnemiesDataTable, UniqueEnemiesDataTable); }
 UDataTable* UT66GameInstance::GetCharacterVisualsDataTable() { return ResolveCachedDataTable(CachedCharacterVisualsDataTable, CharacterVisualsDataTable); }
-UDataTable* UT66GameInstance::GetArcadeInteractablesDataTable() { return ResolveCachedDataTable(CachedArcadeInteractablesDataTable, ArcadeInteractablesDataTable); }
 
 bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 {
@@ -879,7 +934,7 @@ bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 
 bool UT66GameInstance::GetIdolData(FName IdolID, FIdolData& OutIdolData)
 {
-	return FindDataRow(GetIdolsDataTable(), IdolID, OutIdolData, TEXT("GetIdolData"));
+	return FindDataRow(GetIdolsDataTable(), UT66IdolManagerSubsystem::NormalizeLegacyIdolID(IdolID), OutIdolData, TEXT("GetIdolData"));
 }
 
 bool UT66GameInstance::GetWeaponData(FName WeaponID, FWeaponData& OutWeaponData)
@@ -951,6 +1006,134 @@ bool UT66GameInstance::GetBossData(FName BossID, FBossData& OutBossData)
 	return FindDataRow(GetBossesDataTable(), BossID, OutBossData, TEXT("GetBossData"), /*bRequireValidID=*/false);
 }
 
+void UT66GameInstance::GetBossAttackOwnershipRows(FName BossID, TArray<FT66BossAttackOwnershipData>& OutRows)
+{
+	OutRows.Reset();
+	UDataTable* DataTable = GetBossAttacksDataTable();
+	if (!DataTable || BossID.IsNone())
+	{
+		return;
+	}
+
+	for (const FName& RowName : DataTable->GetRowNames())
+	{
+		const FT66BossAttackOwnershipData* Row = DataTable->FindRow<FT66BossAttackOwnershipData>(RowName, TEXT("GetBossAttackOwnershipRows"), false);
+		if (!Row || Row->BossID != BossID)
+		{
+			continue;
+		}
+
+		FT66BossAttackOwnershipData& Copy = OutRows.Add_GetRef(*Row);
+		if (Copy.AttackRowID.IsNone())
+		{
+			Copy.AttackRowID = RowName;
+		}
+	}
+}
+
+void UT66GameInstance::GetBossAttackDefinitionRows(FName AttackID, int32 Phase, TArray<FT66BossAttackDefinitionData>& OutRows)
+{
+	OutRows.Reset();
+	UDataTable* DataTable = GetBossAttackDefinitionsDataTable();
+	if (!DataTable || AttackID.IsNone())
+	{
+		return;
+	}
+
+	for (const FName& RowName : DataTable->GetRowNames())
+	{
+		const FT66BossAttackDefinitionData* Row = DataTable->FindRow<FT66BossAttackDefinitionData>(RowName, TEXT("GetBossAttackDefinitionRows"), false);
+		if (!Row
+			|| !Row->bEnabled
+			|| Row->AttackID != AttackID
+			|| Phase < Row->MinPhase
+			|| Phase > Row->MaxPhase)
+		{
+			continue;
+		}
+
+		FT66BossAttackDefinitionData& Copy = OutRows.Add_GetRef(*Row);
+		if (Copy.DefinitionRowID.IsNone())
+		{
+			Copy.DefinitionRowID = RowName;
+		}
+	}
+
+	OutRows.Sort([](const FT66BossAttackDefinitionData& A, const FT66BossAttackDefinitionData& B)
+	{
+		if (A.SequenceIndex != B.SequenceIndex)
+		{
+			return A.SequenceIndex < B.SequenceIndex;
+		}
+		return A.DefinitionRowID.LexicalLess(B.DefinitionRowID);
+	});
+}
+
+bool UT66GameInstance::GetBossHazardDefinitionData(FName HazardID, FT66BossHazardDefinitionData& OutDefinition)
+{
+	UDataTable* DataTable = GetBossHazardDefinitionsDataTable();
+	if (!DataTable || HazardID.IsNone())
+	{
+		return false;
+	}
+
+	const FT66BossHazardDefinitionData* Row = DataTable->FindRow<FT66BossHazardDefinitionData>(HazardID, TEXT("GetBossHazardDefinitionData"), false);
+	FName RowName = HazardID;
+	if (!Row)
+	{
+		for (const FName& CandidateRowName : DataTable->GetRowNames())
+		{
+			const FT66BossHazardDefinitionData* Candidate = DataTable->FindRow<FT66BossHazardDefinitionData>(CandidateRowName, TEXT("GetBossHazardDefinitionData"), false);
+			if (Candidate && Candidate->HazardID == HazardID)
+			{
+				Row = Candidate;
+				RowName = CandidateRowName;
+				break;
+			}
+		}
+	}
+	if (!Row || !Row->bEnabled)
+	{
+		return false;
+	}
+
+	OutDefinition = *Row;
+	if (OutDefinition.HazardDefinitionID.IsNone())
+	{
+		OutDefinition.HazardDefinitionID = RowName;
+	}
+	if (OutDefinition.HazardID.IsNone())
+	{
+		OutDefinition.HazardID = HazardID;
+	}
+	return true;
+}
+
+void UT66GameInstance::GetBossMovementPatternRows(FName MovementProfileID, TArray<FT66BossMovementPatternData>& OutRows)
+{
+	OutRows.Reset();
+	UDataTable* DataTable = GetBossMovementPatternsDataTable();
+	if (!DataTable || MovementProfileID.IsNone())
+	{
+		return;
+	}
+
+	for (const FName& RowName : DataTable->GetRowNames())
+	{
+		const FT66BossMovementPatternData* Row = DataTable->FindRow<FT66BossMovementPatternData>(RowName, TEXT("GetBossMovementPatternRows"), false);
+		if (!Row || Row->MovementProfileID != MovementProfileID)
+		{
+			continue;
+		}
+
+		FT66BossMovementPatternData& Copy = OutRows.Add_GetRef(*Row);
+		if (Copy.PatternID.IsNone())
+		{
+			Copy.PatternID = RowName;
+		}
+	}
+}
+
 bool UT66GameInstance::GetStageData(int32 StageNumber, FStageData& OutStageData)
 {
 	const FName RowName(*FString::Printf(TEXT("Stage_%02d"), StageNumber));
@@ -1001,7 +1184,7 @@ void UT66GameInstance::GetBossEncounterMemberData(FName BossEncounterID, TArray<
 	});
 }
 
-bool UT66GameInstance::GetNPCData(FName NPCID, FHouseNPCData& OutNPCData)
+bool UT66GameInstance::GetNPCData(FName NPCID, FT66NPCData& OutNPCData)
 {
 	return FindDataRow(GetNPCsDataTable(), NPCID, OutNPCData, TEXT("GetNPCData"));
 }
@@ -1145,6 +1328,17 @@ TArray<FName> UT66GameInstance::GetPlayableCompanionIDs()
 	return AllCompanionIDs;
 }
 
+TArray<FName> UT66GameInstance::GetAllPetIDs()
+{
+	if (UDataTable* DataTable = GetPetsDataTable())
+	{
+		return DataTable->GetRowNames();
+	}
+
+	UDataTable* BossesTable = GetBossesDataTable();
+	return BossesTable ? BossesTable->GetRowNames() : TArray<FName>();
+}
+
 bool UT66GameInstance::IsCompanionPlayable(FName CompanionID) const
 {
 	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
@@ -1177,6 +1371,15 @@ bool UT66GameInstance::GetSelectedCompanionData(FCompanionData& OutCompanionData
 		return false;
 	}
 	return GetCompanionData(SelectedCompanionID, OutCompanionData);
+}
+
+bool UT66GameInstance::GetSelectedPetData(FPetData& OutPetData)
+{
+	if (SelectedPetID.IsNone())
+	{
+		return false;
+	}
+	return GetPetData(SelectedPetID, OutPetData);
 }
 
 TSoftObjectPtr<UTexture2D> UT66GameInstance::ResolveHeroPortrait(FName HeroID, ET66BodyType BodyType, ET66HeroPortraitVariant Variant) const
@@ -1240,13 +1443,8 @@ void UT66GameInstance::ClearSelections()
 	SelectedPartySize = ET66PartySize::Solo;
 	SelectedHeroID = NAME_None;
 	SelectedCompanionID = NAME_None;
+	SelectedPetID = NAME_None;
 	SelectedDifficulty = ET66Difficulty::Easy;
-	MiniSelectedHeroID = NAME_None;
-	MiniSelectedCompanionID = NAME_None;
-	MiniSelectedDifficultyID = NAME_None;
-	MiniSelectedIdolIDs.Reset();
-	bMiniLoadFlow = false;
-	bMiniIntermissionFlow = false;
 	SelectedHeroBodyType = ET66BodyType::Chad;
 	SelectedCompanionBodyType = ET66BodyType::Chad;
 	ClearActiveDailyClimbRun();
@@ -1257,6 +1455,13 @@ void UT66GameInstance::ClearSelections()
 void UT66GameInstance::BeginDailyClimbRun(const FT66DailyClimbChallengeData& Challenge)
 {
 	CachedDailyClimbChallenge = Challenge;
+	if (!FT66ShelvedFeatureGate::IsDailyDescentEnabled())
+	{
+		ClearActiveDailyClimbRun();
+		UE_LOG(LogT66GameInstance, Display, TEXT("[T66Proof][DailyDescentShelved] BeginDailyClimbRun ignored because Daily Descent is shelved."));
+		return;
+	}
+
 	ActiveDailyClimbChallenge = Challenge;
 	SelectedRunMode = Challenge.IsValid() ? ET66RunMode::DailyClimb : ET66RunMode::Regular;
 	SelectedRunCategory = ET66RunCategory::Tower;
@@ -1288,6 +1493,12 @@ void UT66GameInstance::ClearActiveDailyClimbRun()
 	}
 }
 
+bool UT66GameInstance::IsDailyClimbRun() const
+{
+	return FT66ShelvedFeatureGate::IsDailyDescentEnabled()
+		&& SelectedRunMode == ET66RunMode::DailyClimb;
+}
+
 int32 UT66GameInstance::GetDailyClimbIntRuleValue(const ET66DailyClimbRuleType RuleType, const int32 DefaultValue) const
 {
 	return IsDailyClimbRun() && ActiveDailyClimbChallenge.IsValid()
@@ -1307,6 +1518,7 @@ void UT66GameInstance::PersistRememberedSelectionDefaults()
 	if (UT66AchievementsSubsystem* Achievements = GetSubsystem<UT66AchievementsSubsystem>())
 	{
 		Achievements->RememberLastSelectedLoadout(SelectedHeroID, SelectedCompanionID);
+		Achievements->SetActivePetID(SelectedPetID);
 	}
 }
 
@@ -1335,6 +1547,17 @@ void UT66GameInstance::RestoreRememberedSelectionDefaults()
 			SelectedCompanionID = IsCompanionPlayable(RememberedCompanionID) && GetCompanionData(RememberedCompanionID, CompanionData)
 				? RememberedCompanionID
 				: NAME_None;
+		}
+
+		const FName RememberedPetID = Achievements->GetActivePetID();
+		if (!RememberedPetID.IsNone() && Achievements->IsPetCaptured(RememberedPetID))
+		{
+			FPetData PetData;
+			SelectedPetID = GetPetData(RememberedPetID, PetData) ? RememberedPetID : NAME_None;
+		}
+		else
+		{
+			SelectedPetID = NAME_None;
 		}
 	}
 }
@@ -1920,3 +2143,4 @@ void UT66GameInstance::HidePersistentGameplayTransitionCurtain()
 
 	PersistentGameplayTransitionCurtain.Reset();
 }
+

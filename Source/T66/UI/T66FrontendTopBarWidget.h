@@ -26,7 +26,6 @@ public:
 		Language,
 		Home,
 		PowerUp,
-		MiniGames,
 		Achievements,
 		None,
 	};
@@ -62,7 +61,6 @@ private:
 	FReply HandleLanguageClicked();
 	FReply HandleHomeClicked();
 	FReply HandlePowerUpClicked();
-	FReply HandleMiniGamesClicked();
 	FReply HandleAchievementsClicked();
 	FReply HandleAccountStatusClicked();
 	FReply HandleQuitClicked();

@@ -19,7 +19,6 @@ namespace T66MainMenuReferenceLayout
 		inline constexpr FT66ReferenceRect BadgeProfile{606.0f, 0.0f, 134.0f, 128.0f};
 		inline constexpr FT66ReferenceRect TabPowerUp{760.0f, 0.0f, 295.0f, 106.0f};
 		inline constexpr FT66ReferenceRect TabAchievements{1067.0f, 0.0f, 305.0f, 106.0f};
-		inline constexpr FT66ReferenceRect TabMinigames{1386.0f, 0.0f, 218.0f, 106.0f};
 		inline constexpr FT66ReferenceRect CurrencySlot{1616.0f, 0.0f, 154.0f, 106.0f};
 		inline constexpr FT66ReferenceRect ButtonPower{1788.0f, 0.0f, 112.0f, 106.0f};
 	}

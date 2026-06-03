@@ -8,7 +8,7 @@ DEFINE_LOG_CATEGORY(LogT66GameMode);
 namespace T66GameModePrivate
 {
 
-constexpr int32 T66LastCompanionUnlockStage = 16;
+constexpr int32 T66LastCompanionUnlockIndex = 12;
 
 // Helper: avoid PIE warnings ("StaticMeshComponent has to be 'Movable' if you'd like to move")
 // by temporarily setting mobility to Movable while we apply transforms.
@@ -26,8 +26,7 @@ SMC->SetMobility(Mobility);
 
 bool T66_IsCompanionUnlockStage(int32 StageNum)
 {
-// Stage clears unlock one companion each through the first four difficulties.
-return StageNum >= 1 && StageNum <= T66LastCompanionUnlockStage;
+return T66_CompanionBaseIndexForStage(StageNum) != INDEX_NONE;
 }
 
 bool T66_IsDifficultyBossStage(int32 StageNum)
@@ -37,12 +36,22 @@ return StageNum == 4 || StageNum == 8 || StageNum == 12 || StageNum == 16 || Sta
 
 int32 T66_CompanionBaseIndexForStage(int32 StageNum)
 {
-if (!T66_IsCompanionUnlockStage(StageNum))
+switch (StageNum)
 {
-return INDEX_NONE;
+case 1: return 1;
+case 2: return 2;
+case 3: return 3;
+case 5: return 4;
+case 6: return 5;
+case 7: return 6;
+case 9: return 7;
+case 10: return 8;
+case 11: return 9;
+case 13: return 10;
+case 14: return 11;
+case 15: return 12;
+default: return INDEX_NONE;
 }
-
-return StageNum;
 }
 
 void T66_AppendCompanionUnlockIDsForStage(const int32 StageNum, TArray<FName>& OutCompanionIDs)
@@ -55,7 +64,7 @@ return;
 
 auto AddCompanionByIndex = [&OutCompanionIDs](const int32 Index)
 {
-if (Index <= 0 || Index > T66LastCompanionUnlockStage)
+if (Index <= 0 || Index > T66LastCompanionUnlockIndex)
 {
 return;
 }
@@ -1432,10 +1441,10 @@ void AT66GameMode::TrySpawnLoanSharkIfNeeded()
 
 		bool bInSafe = false;
 		UT66ActorRegistrySubsystem* Registry = World ? World->GetSubsystem<UT66ActorRegistrySubsystem>() : nullptr;
-		const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66HouseNPCBase>>();
-		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : NPCs)
+		const TArray<TWeakObjectPtr<AT66NPCBase>>& NPCs = Registry ? Registry->GetNPCs() : TArray<TWeakObjectPtr<AT66NPCBase>>();
+		for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : NPCs)
 		{
-			AT66HouseNPCBase* NPC = WeakNPC.Get();
+			AT66NPCBase* NPC = WeakNPC.Get();
 			if (!NPC) continue;
 			const float R = NPC->GetSafeZoneRadius();
 			if (FVector::DistSquared2D(SpawnLoc, NPC->GetActorLocation()) < (R * R))
@@ -1786,3 +1795,4 @@ static FAutoConsoleCommandWithWorldAndArgs T66MainMapCmd(
 // ============================================
 // The Lab: spawn / reset
 // ============================================
+

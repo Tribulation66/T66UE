@@ -1,0 +1,904 @@
+{
+  "project_root": "C:\\UE\\T66",
+  "map_roots": [
+    "/Game/Maps"
+  ],
+  "classes": {
+    "AT66GameMode": {
+      "resolved": true,
+      "script_path": "/Script/T66.T66GameMode",
+      "script_name": "T66GameMode",
+      "class_object_name": "T66GameMode"
+    },
+    "AT66HeroBase": {
+      "resolved": true,
+      "script_path": "/Script/T66.T66HeroBase",
+      "script_name": "T66HeroBase",
+      "class_object_name": "T66HeroBase"
+    }
+  },
+  "members": [
+    "GetMovementSpeedSecondaryMultiplier",
+    "BackroomsQuickReviveItemID"
+  ],
+  "asset_count_all": 4038,
+  "asset_count_game": 3802,
+  "asset_registry_hits": [
+    {
+      "asset": "/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase",
+      "package": "/Game/Blueprints/Core/BP_HeroBase",
+      "asset_class": "<Struct 'TopLevelAssetPath' (0x000001D7B0E6633C) {package_name: \"/Script/Engine\", asset_name: \"Blueprint\"}>",
+      "hits": [
+        "/Script/T66.T66HeroBase",
+        "T66HeroBase"
+      ]
+    },
+    {
+      "asset": "/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",
+      "package": "/Game/Blueprints/Core/BP_HeroBase",
+      "asset_class": "<Struct 'TopLevelAssetPath' (0x000001D7B0E663FC) {package_name: \"/Script/Engine\", asset_name: \"BlueprintGeneratedClass\"}>",
+      "hits": [
+        "/Script/T66.T66HeroBase",
+        "T66HeroBase"
+      ]
+    },
+    {
+      "asset": "/Game/Blueprints/GameModes/BP_GameplayGameMode.BP_GameplayGameMode",
+      "package": "/Game/Blueprints/GameModes/BP_GameplayGameMode",
+      "asset_class": "<Struct 'TopLevelAssetPath' (0x000001D7B0E6693C) {package_name: \"/Script/Engine\", asset_name: \"Blueprint\"}>",
+      "hits": [
+        "/Script/T66.T66GameMode",
+        "T66GameMode"
+      ]
+    },
+    {
+      "asset": "/Game/Blueprints/GameModes/BP_GameplayGameMode.BP_GameplayGameMode_C",
+      "package": "/Game/Blueprints/GameModes/BP_GameplayGameMode",
+      "asset_class": "<Struct 'TopLevelAssetPath' (0x000001D7B0E669FC) {package_name: \"/Script/Engine\", asset_name: \"BlueprintGeneratedClass\"}>",
+      "hits": [
+        "/Script/T66.T66GameMode",
+        "T66GameMode"
+      ]
+    }
+  ],
+  "blueprints": {
+    "candidates": 4,
+    "loaded": 2,
+    "matches": [
+      {
+        "asset": "/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase",
+        "class_hits": [
+          "AT66HeroBase"
+        ],
+        "evidence": "asset_registry_tags_unconfirmed"
+      },
+      {
+        "asset": "/Game/Blueprints/Core/BP_HeroBase.BP_HeroBase_C",
+        "class_hits": [
+          "AT66HeroBase"
+        ],
+        "evidence": "asset_registry_tags"
+      },
+      {
+        "asset": "/Game/Blueprints/GameModes/BP_GameplayGameMode.BP_GameplayGameMode",
+        "class_hits": [
+          "AT66GameMode"
+        ],
+        "evidence": "asset_registry_tags_unconfirmed"
+      },
+      {
+        "asset": "/Game/Blueprints/GameModes/BP_GameplayGameMode.BP_GameplayGameMode_C",
+        "class_hits": [
+          "AT66GameMode"
+        ],
+        "evidence": "asset_registry_tags"
+      }
+    ],
+    "load_failures": []
+  },
+  "maps": {
+    "candidate_maps": 2,
+    "scanned": 2,
+    "matches": [],
+    "load_failures": []
+  },
+  "binary_content": {
+    "scanned": 3645,
+    "matches": [
+      {
+        "path": "Content\\Blueprints\\Core\\BP_HeroBase.uasset",
+        "hits": [
+          "/Script/T66.T66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Content\\Blueprints\\GameModes\\BP_GameplayGameMode.uasset",
+        "hits": [
+          "/Script/T66.T66GameMode",
+          "T66GameMode"
+        ]
+      }
+    ],
+    "read_failures": []
+  },
+  "text": {
+    "scanned": 893,
+    "matches": [
+      {
+        "path": "Source\\T66\\Core\\T66LagTrackerSubsystem.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\T66LocalizationSubsystem.cpp",
+        "hits": [
+          "BackroomsQuickReviveItemID"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\T66RunStateSubsystem.h",
+        "hits": [
+          "BackroomsQuickReviveItemID",
+          "GetMovementSpeedSecondaryMultiplier"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\T66SessionSubsystem.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\T66TrapSubsystem.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\RunState\\T66RunStateSubsystem_Combat.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\RunState\\T66RunStateSubsystem_EconomyInventory.cpp",
+        "hits": [
+          "BackroomsQuickReviveItemID"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\RunState\\T66RunStateSubsystem_Private.h",
+        "hits": [
+          "BackroomsQuickReviveItemID"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\RunState\\T66RunStateSubsystem_Stats.cpp",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\pending_issues_Gameplay.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66ArcadeInteractableBase.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66ArcadeInteractableBase.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66ArcadeMachineInteractable.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BackroomsChaser.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BackroomsChaser.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BackroomsDoorInteractable.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BackroomsDoorInteractable.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BossBase.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BossGate.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BossGroundAOE.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BossLaneBlockerHazard.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BossProjectile.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66CombatComponent.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66CombatShared.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66CombatShared.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66EnemyBase.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66EnemyDirector.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66FrontendGameMode.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66GameMode.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66GameMode.h",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66GoblinThiefEnemy.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66HeroBase.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66HeroBase.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66HouseNPCBase.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66HouseNPCBase.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66LavaPatch.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66LavaPatch.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66LoanShark.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66LootBagPickup.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66MiasmaBoundary.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66MiasmaManager.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66MiasmaTile.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66MobBase.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66MobBase.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66MobManagerSubsystem.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66MobManagerSubsystem.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PilotableTractor.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PilotableTractor.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Combat.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Frontend.cpp",
+        "hits": [
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Input.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Movement.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Overlays.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_ScopedUlt.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_WorldDialogue.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66ProjectileManagerSubsystem.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66ProjectileManagerSubsystem.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66QuickReviveVendingMachine.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66QuickReviveVendingMachine.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66StageEffects.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66StageGate.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66StartGate.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66TowerDescentHole.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66TowerDescentHole.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66TutorialPromptActor.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66UniqueDebuffEnemy.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66UniqueDebuffProjectile.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66WorldInteractableBase.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66WorldInteractableBase.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66WorldVisualSetup.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Enemies\\T66RangedEnemy.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Enemies\\Projectiles\\T66EnemyProjectileBase.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Enemies\\Projectiles\\T66EnemyProjectileBase.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameModePrivate.h",
+        "hits": [
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Backrooms.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "BackroomsQuickReviveItemID",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Bootstrap.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_BossFlow.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Lab.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_MainMap.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Spawning.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_TestRoom.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Tower.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_WorldInteractables.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Movement\\T66HeroMovementComponent.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "GetMovementSpeedSecondaryMultiplier",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Movement\\T66HeroMovementComponent.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Traps\\T66TrapArrowProjectile.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Traps\\T66TrapBase.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Traps\\T66TrapBase.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Traps\\T66TrapDamageUtils.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Traps\\T66TrapPressurePlate.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Traps\\T66WallArrowTrap.cpp",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Traps\\T66WallArrowTrap.h",
+        "hits": [
+          "AT66HeroBase",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\T66CollectorOverlayWidget.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\T66LabOverlayWidget.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\T66LabOverlayWidget.h",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\HUD\\T66GameplayHUDWidget_Map.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\HUD\\T66GameplayHUDWidget_Private.h",
+        "hits": [
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\HUD\\T66GameplayHUDWidget_Refresh.cpp",
+        "hits": [
+          "AT66GameMode",
+          "AT66HeroBase",
+          "T66GameMode",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\Screens\\T66RunSummaryScreen.cpp",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier"
+        ]
+      },
+      {
+        "path": "Source\\T66Editor\\T66ProceduralLandscapeEditorTool.h",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66Editor\\T66UISetupSubsystem.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Scripts\\AuditNativeClassReferencesAndExit.py",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\candidate_manifest.md",
+        "hits": [
+          "AT66HeroBase",
+          "BackroomsQuickReviveItemID",
+          "GetMovementSpeedSecondaryMultiplier",
+          "T66HeroBase"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\native_reference_audit_dryrun.json",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier",
+          "T66GameMode"
+        ]
+      }
+    ],
+    "read_failures": []
+  }
+}

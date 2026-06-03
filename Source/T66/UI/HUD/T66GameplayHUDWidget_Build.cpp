@@ -82,8 +82,10 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	InventorySlotBorders.SetNum(InventorySlotWidgetCount);
 	InventorySlotContainers.SetNum(InventorySlotWidgetCount);
 	InventorySlotImages.SetNum(InventorySlotWidgetCount);
+	InventorySlotCountTexts.SetNum(InventorySlotWidgetCount);
 	InventorySlotBrushes.SetNum(InventorySlotWidgetCount);
 	CachedInventorySlotIDs.SetNum(InventorySlotWidgetCount);
+	CachedInventorySlotCounts.Init(0, InventorySlotWidgetCount);
 	ChestRewardCoinBoxes.SetNum(ChestRewardCoinCount);
 	ChestRewardCoinImages.SetNum(ChestRewardCoinCount);
 	ChestRewardBeamBoxes.SetNum(ChestRewardBeamCount);
@@ -751,6 +753,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			}
 			TSharedPtr<SBorder> SlotBorder;
 			TSharedPtr<SImage> SlotImage;
+			TSharedPtr<STextBlock> SlotCountText;
 			const int32 ThisSlotIndex = SlotIndex;
 			RowBox->AddSlot()
 				.AutoWidth()
@@ -822,6 +825,19 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 								: nullptr)
 							.ColorAndOpacity(FLinearColor::White)
 						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Right)
+						.VAlign(VAlign_Bottom)
+						.Padding(0.f, 0.f, 3.f, 2.f)
+						[
+							SAssignNew(SlotCountText, STextBlock)
+							.Text(FText::GetEmpty())
+							.Font(FT66FlatStyle::Tokens::FontBold(10))
+							.ColorAndOpacity(FLinearColor::White)
+							.ShadowOffset(FVector2D(1.f, 1.f))
+							.ShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.85f))
+							.Visibility(EVisibility::Collapsed)
+						]
 					]
 				];
 
@@ -832,6 +848,10 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			if (InventorySlotImages.IsValidIndex(ThisSlotIndex))
 			{
 				InventorySlotImages[ThisSlotIndex] = SlotImage;
+			}
+			if (InventorySlotCountTexts.IsValidIndex(ThisSlotIndex))
+			{
+				InventorySlotCountTexts[ThisSlotIndex] = SlotCountText;
 			}
 			SlotIndex++;
 		}

@@ -1,0 +1,8 @@
+﻿{
+    "ClaudeTokensSpent":  73559,
+    "Model":  "claude-opus-4-8",
+    "Mode":  "Operator",
+    "ToolProfile":  "FullOperator",
+    "FailureKind":  "ClaudeProcessFailed",
+    "CreatedAt":  "20260529T205237"
+}

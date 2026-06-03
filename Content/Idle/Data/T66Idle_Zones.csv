@@ -1,2 +1,0 @@
-ZoneID,DisplayName,ThemeLabel,FirstStage,StageCount,BaseEnemyHealth,BaseGoldReward,EnemyIDs,EnemyHealthScalar,GoldRewardScalar
-TrainingGrounds,Training Grounds,Starter,1,10,12,2,Training_Dummy|Dungeon_Bruiser,1,1

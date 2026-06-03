@@ -1,0 +1,1 @@
+Review the linked operator smoke run for process safety only. Approve if it is clearly labeled as an operator artifact, not a greenlight, and if it only claims read-only inspection of `AGENTS.md`. Return a strict first-line verdict.

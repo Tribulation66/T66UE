@@ -142,9 +142,13 @@ public:
 	/** Apply difficulty scaling using a scalar (e.g. 1.1, 1.2, ...). */
 	void ApplyDifficultyScalar(float Scalar);
 
+	void ApplyEndgameBossMultipliers(float HealthScalar, float DamageScalar, float ScaleScalar);
+
 	/** Called by hero projectile overlap; returns true if boss died. DamageSourceID used for run damage log (default: AutoAttack). EventType for floating text (Crit, DoT; default none). */
 	bool TakeDamageFromHeroHit(int32 DamageAmount, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
 	bool TakeDamageFromHeroHitZone(int32 DamageAmount, const FT66CombatTargetHandle& TargetHandle, FName DamageSourceID = NAME_None, FName EventType = NAME_None);
+	void SetZeroDamageUnkillable(bool bEnabled, FName Reason = NAME_None);
+	bool IsZeroDamageUnkillable() const { return bZeroDamageUnkillable; }
 	float GetEffectiveArmor() const;
 	bool SupportsCombatHitZones() const;
 	FT66CombatTargetHandle ResolveCombatTargetHandle(const UPrimitiveComponent* HitComponent = nullptr, ET66HitZoneType PreferredZone = ET66HitZoneType::Body) const;
@@ -157,6 +161,15 @@ public:
 	void ForceAwaken() { Awaken(); }
 	void ForceSewerSlimeKingAttackForAutomation(FName AttackPartID);
 	void RefreshRunStateBossState() const;
+
+#if !UE_BUILD_SHIPPING
+	void ResetBossAttackOwnershipAutomationCounters();
+	int32 GetBossAttackOwnershipAutomationCounter(FName EventID, FName AttackID, FName PartID) const;
+	bool KillBossPartForAutomation(FName PartID);
+	void ForceBossAttackForAutomation(FName AttackID, FName OwningPartID = NAME_None);
+	void ResetBossMovementAutomationState();
+	FName GetBossMovementAutomationMode() const;
+#endif
 
 	int32 GetPointValue() const { return PointValue; }
 
@@ -185,6 +198,8 @@ private:
 	void BuildBossPartSnapshots(TArray<FT66BossPartSnapshot>& OutBossParts) const;
 	bool RestoreBossPartStateFromRunState();
 	void PushBossPartStateToRunState() const;
+	void LoadBossAttackOwnershipRows();
+	void LoadBossMovementPatternRows();
 	int32 ResolveBossPartIndex(const UPrimitiveComponent* HitComponent, ET66HitZoneType PreferredZone, FName PreferredPartID = NAME_None) const;
 	int32 FindFallbackBossPartIndex() const;
 	float GetBossPartDamageMultiplier(int32 PartIndex) const;
@@ -192,28 +207,55 @@ private:
 	int32 GetAttackPhaseIndex() const;
 	FVector ResolveGroundLocation(const FVector& PreferredLocation) const;
 	void SpawnGroundAOEAtLocation(const FVector& WorldLocation, float RadiusScale = 1.f, float WarningScale = 1.f, bool bUseSecondaryTint = false);
+	void SpawnGroundAOEAtLocationForAttackRow(const FT66BossAttackOwnershipData& AttackRow, const FVector& WorldLocation, float RadiusScale = 1.f, float WarningScale = 1.f, bool bUseSecondaryTint = false);
 	void SpawnProjectileInDirection(const FVector& Direction, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false);
+	void SpawnProjectileInDirectionForAttackRow(const FT66BossAttackOwnershipData& AttackRow, const FVector& Direction, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false, FName VisualProfileID = NAME_None, float VisualScaleMultiplier = 1.f);
 	void SpawnScaledProjectileInDirection(const FVector& Direction, float SpeedScale, const FVector& SpawnOffset, bool bUseSecondaryTint, float VisualScaleMultiplier);
 	void QueueTimedAttackLambda(FTimerDelegate&& Delegate, float DelaySeconds);
 	void QueueProjectileShotTowards(const FVector& TargetLocation, float DelaySeconds, float YawOffsetDegrees = 0.f, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false);
 	void QueueProjectileShotDirection(const FVector& Direction, float DelaySeconds, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false);
 	void QueueProjectileFanBurst(const FVector& TargetLocation, int32 ShotCount, float SpreadDegrees, float DelayStepSeconds, float SpeedScale = 1.f, float InitialDelaySeconds = 0.f, float SideOffsetDistance = 0.f, bool bUseSecondaryTint = false);
 	void QueueRadialBurst(int32 ShotCount, float DelayStepSeconds, float StartAngleDegrees, float SpeedScale = 1.f, float InitialDelaySeconds = 0.f, bool bUseSecondaryTint = false);
+	void QueueProjectileShotTowardsForAttackRow(const FT66BossAttackOwnershipData& AttackRow, const FVector& TargetLocation, float DelaySeconds, float YawOffsetDegrees = 0.f, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false, FName VisualProfileID = NAME_None, float VisualScaleMultiplier = 1.f);
+	void QueueProjectileShotDirectionForAttackRow(const FT66BossAttackOwnershipData& AttackRow, const FVector& Direction, float DelaySeconds, float SpeedScale = 1.f, const FVector& SpawnOffset = FVector::ZeroVector, bool bUseSecondaryTint = false, FName VisualProfileID = NAME_None, float VisualScaleMultiplier = 1.f);
+	void QueueProjectileFanBurstForAttackRow(const FT66BossAttackOwnershipData& AttackRow, const FVector& TargetLocation, int32 ShotCount, float SpreadDegrees, float DelayStepSeconds, float SpeedScale = 1.f, float InitialDelaySeconds = 0.f, float SideOffsetDistance = 0.f, bool bUseSecondaryTint = false, FName VisualProfileID = NAME_None, float VisualScaleMultiplier = 1.f);
+	void QueueRadialBurstForAttackRow(const FT66BossAttackOwnershipData& AttackRow, int32 ShotCount, float DelayStepSeconds, float StartAngleDegrees, float SpeedScale = 1.f, float InitialDelaySeconds = 0.f, bool bUseSecondaryTint = false, FName VisualProfileID = NAME_None, float VisualScaleMultiplier = 1.f);
+	void TickSimpleChaseMovement(const FVector& MyLoc, const FVector& PlayerLoc, bool bRunAway);
+	bool TickAuthoredBossMovementPattern(float DeltaSeconds, const FVector& MyLoc, const FVector& PlayerLoc);
+	const FT66BossMovementPatternData* PickBossMovementPatternRow() const;
+	bool DoesMovementPatternRequireAttackCoordination(const FT66BossMovementPatternData& PatternRow) const;
+	bool IsMovementPatternAttackCoordinationActive(const FT66BossMovementPatternData& PatternRow) const;
+	void NotifyBossMovementAttackCoordinationStarted(const FT66BossAttackOwnershipData& AttackRow);
 	bool IsSewerSlimeKingBoss() const;
 	bool IsBossPartAlive(FName PartID) const;
 	FVector GetBossPartWorldLocation(FName PartID) const;
-	FName PickSewerSlimeKingAttackPart() const;
+	bool AreBossAttackPartsAlive(const FT66BossAttackOwnershipData& AttackRow, FName& OutDeadPartID) const;
+	bool CanSelectBossAttackRow(const FT66BossAttackOwnershipData& AttackRow, int32 Phase, FName& OutDeadPartID) const;
+	const FT66BossAttackOwnershipData* PickBossAttackRowByPrefix(const TCHAR* AttackIDPrefix, bool& bOutHasMatchingRows, FName& OutSuppressedPartID) const;
+	const FT66BossAttackOwnershipData* FindBossAttackRowByAttackID(FName AttackID, FName OwningPartID = NAME_None) const;
+	bool FireAuthoredBossProjectileAttack(APawn* PlayerPawn);
+	bool FireBossProjectileAttackDefinitionRows(APawn* PlayerPawn, const FT66BossAttackOwnershipData& AttackRow, const FVector& TargetLocation, int32 Phase, const FVector& PlanarToTarget, const FVector& Side);
+	bool FireBossProjectileAttackRow(APawn* PlayerPawn, const FT66BossAttackOwnershipData& AttackRow);
+	bool FireAuthoredBossGroundAOE(APawn* PlayerPawn);
+	bool FireBossGroundAOEAttackRow(APawn* PlayerPawn, const FT66BossAttackOwnershipData& AttackRow);
+	const FT66BossAttackOwnershipData* PickSewerSlimeKingAttackRow() const;
+	const FT66BossAttackOwnershipData* FindSewerSlimeKingAttackRowForPart(FName AttackPartID) const;
+	const FT66BossAttackOwnershipData* FindSewerSlimeKingMouthSidecarRow() const;
 	void FireSewerSlimeKingAttack(APawn* PlayerPawn, FName ForcedAttackPartID = NAME_None);
-	void QueueSewerSlimeKingLobeVolley(FName AttackPartID, APawn* InitialPlayerPawn, bool bUseSecondaryTint);
-	void SpawnSewerSlimeKingLaneBlocker(FName AttackPartID, const FVector& TargetLocation);
-	void SpawnSewerSlimeKingMouthProjectile(const FVector& TargetLocation);
+	void FireSewerSlimeKingAttackRow(APawn* PlayerPawn, const FT66BossAttackOwnershipData& AttackRow);
+	void QueueSewerSlimeKingLobeVolley(const FT66BossAttackOwnershipData& AttackRow, APawn* InitialPlayerPawn, bool bUseSecondaryTint);
+	void SpawnSewerSlimeKingLaneBlocker(const FT66BossAttackOwnershipData& AttackRow, const FVector& TargetLocation);
+	void SpawnSewerSlimeKingMouthProjectile(const FT66BossAttackOwnershipData& AttackRow, const FVector& TargetLocation);
 	void SpawnSewerSlimeKingTelegraph(FName AttackPartID, const FVector& Location, float DurationSeconds, float ScaleMultiplier, bool bCylinder);
 	void ClearPendingAttackTimers();
+	void RecordBossAttackOwnershipEvent(FName EventID, const FT66BossAttackOwnershipData* AttackRow, FName PartID, const TCHAR* Context);
 
 	bool bBaseTuningInitialized = false;
 	int32 BaseMaxHP = 0;
 	int32 BaseProjectileDamageHearts = 0;
 	float BaseMoveSpeed = 350.f;
+	bool bZeroDamageUnkillable = false;
+	FName ZeroDamageUnkillableReason = NAME_None;
 
 	float ArmorDebuffAmount = 0.f;
 	float ArmorDebuffSecondsRemaining = 0.f;
@@ -224,6 +266,10 @@ private:
 	float StunSecondsRemaining = 0.f;
 	float RootSecondsRemaining = 0.f;
 	float FreezeSecondsRemaining = 0.f;
+	float BossMovementAttackCoordinationSecondsRemaining = 0.f;
+	float BossMovementAttackCoordinationSecondsSinceStart = 0.f;
+	FName ActiveBossMovementAttackID = NAME_None;
+	FName ActiveBossMovementAttackPartID = NAME_None;
 	FVector CachedWanderDir = FVector::ZeroVector;
 	float WanderDirRefreshAccum = 0.f;
 	TWeakObjectPtr<APawn> CachedPlayerPawn;
@@ -234,6 +280,18 @@ private:
 	UPROPERTY(Transient)
 	TArray<FTimerHandle> PendingAttackTimerHandles;
 
+	UPROPERTY(Transient)
+	TArray<FT66BossAttackOwnershipData> BossAttackOwnershipRows;
+
+	UPROPERTY(Transient)
+	TArray<FT66BossMovementPatternData> BossMovementPatternRows;
+
+#if !UE_BUILD_SHIPPING
+	TMap<FString, int32> BossAttackOwnershipAutomationCounters;
+	FName LastBossMovementAutomationMode = NAME_None;
+#endif
+
 	FName LastSewerSlimeKingAttackPart = NAME_None;
+	FName BossMovementProfileID = NAME_None;
 };
 

@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "workflow": "pixal3d_toonstyle_production_import",
+  "production_cleared": true,
+  "source_gate_override": {
+    "luminance_floor": "waived_by_user_2026-05-19",
+    "reason": "Pablo explicitly instructed to ignore luminance issues/warnings and proceed with these images."
+  },
+  "settings": {
+    "seed": 1337,
+    "resolution": 1536,
+    "texture_size": 4096,
+    "decimation": 200000,
+    "fallback_decimation": 80000,
+    "remesh": true,
+    "export_fallback": true,
+    "safe_fill_holes_fallback": true,
+    "ss_steps": 25,
+    "ss_guidance": 7.5,
+    "shape_steps": 25,
+    "shape_guidance": 7.5,
+    "tex_steps": 25,
+    "tex_guidance": 4.0
+  },
+  "assets": [
+    {
+      "asset_id": "Boost_Luck_Pixal3D",
+      "display_name": "Luck Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_luck.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_Luck_Pixal3D/Working",
+      "notes": "ET66HeroStatType::Luck boost coin."
+    },
+    {
+      "asset_id": "Boost_Speed_Pixal3D",
+      "display_name": "Speed Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_speed.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_Speed_Pixal3D/Working",
+      "notes": "ET66HeroStatType::Speed boost coin."
+    },
+    {
+      "asset_id": "Boost_Accuracy_Pixal3D",
+      "display_name": "Accuracy Boost Pixal3D",
+      "category": "prop",
+      "asset_class": "prop",
+      "source_image": "SourceAssets/ToonStyle/ModelSourceInputs/Pixal3D_NonEnemyModelSource_2026-05-19/Agent_1_StaticWorldAssets/Boosts/boost_accuracy.png",
+      "target_dir": "/Game/World/Boosts",
+      "replaces": "",
+      "target_height": 80.0,
+      "collision_policy": "none",
+      "outline_color": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "gameplay_owner": "Imported only; no dedicated boost pickup mesh data table found in Agent 1 README",
+      "production_status": "planned",
+      "working_dir": "SourceAssets/ToonStyle/Pixal3D/Production/Agent1_StaticWorldAssets_20260519/Boost_Accuracy_Pixal3D/Working",
+      "notes": "ET66HeroStatType::Accuracy boost coin."
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+---,BindingID,SourceType,SourceID,AttackCategory,NiagaraSystem,EffectPacketID,VFXProfile,BaseVisualRadius,BasePlaybackSeconds,bSuppressTemporaryProjectile,bDevelopmentFallbackAllowed,VisualScaleMultiplier,Notes
+Hero1Axe_AOE_Base,Hero1Axe_AOE_Base,WeaponBase,Hero_1_black_aoe,AOE,/Game/VFX/Hero1/Axe/AOE/NS_Hero1AxeAOE_MeshSlash.NS_Hero1AxeAOE_MeshSlash,Hero1AxeAOESlashMechanismPacket,MeshSlashAOE,411.4,0.46,True,True,1.0,active synthetic row
+Hero1Axe_DOT_Scaffold,Hero1Axe_DOT_Scaffold,WeaponBase,Hero_1_black_dot,DOT,,Hero1AxeDOTMechanismPacket,,,,,False,,DEFERRED scaffold-only row

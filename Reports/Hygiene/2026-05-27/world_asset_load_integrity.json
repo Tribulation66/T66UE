@@ -1,0 +1,2951 @@
+{
+  "generated_utc": "2026-05-27T14:46:23.871841+00:00",
+  "scan_roots": [
+    "/Game/World",
+    "/Game/Maps"
+  ],
+  "maps": [
+    {
+      "map": "/Game/Maps/FrontendLevel",
+      "loaded": true,
+      "error": null
+    },
+    {
+      "map": "/Game/Maps/GameplayLevel",
+      "loaded": true,
+      "error": null
+    }
+  ],
+  "world_assets": [
+    {
+      "asset": "/Game/World/Backrooms/Textures/T_Backrooms_Door.T_Backrooms_Door",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Backrooms/Textures/T_Backrooms_Floor.T_Backrooms_Floor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Backrooms/Textures/T_Backrooms_Wall.T_Backrooms_Wall",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D.MI_Boost_Accuracy_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D_Outline.MI_Boost_Accuracy_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D.MI_Boost_Armor_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D_Outline.MI_Boost_Armor_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D.MI_Boost_AttackScale_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D_Outline.MI_Boost_AttackScale_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D.MI_Boost_AttackSpeed_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D_Outline.MI_Boost_AttackSpeed_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D.MI_Boost_DamageStrength_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D_Outline.MI_Boost_DamageStrength_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D.MI_Boost_Evasion_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D_Outline.MI_Boost_Evasion_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D.MI_Boost_Luck_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D_Outline.MI_Boost_Luck_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D.MI_Boost_Speed_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D_Outline.MI_Boost_Speed_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_Accuracy_Pixal3D.SM_Boost_Accuracy_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_Accuracy_Pixal3D_Outline.SM_Boost_Accuracy_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_Armor_Pixal3D.SM_Boost_Armor_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_Armor_Pixal3D_Outline.SM_Boost_Armor_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_AttackScale_Pixal3D.SM_Boost_AttackScale_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_AttackScale_Pixal3D_Outline.SM_Boost_AttackScale_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_AttackSpeed_Pixal3D.SM_Boost_AttackSpeed_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_AttackSpeed_Pixal3D_Outline.SM_Boost_AttackSpeed_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_DamageStrength_Pixal3D.SM_Boost_DamageStrength_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_DamageStrength_Pixal3D_Outline.SM_Boost_DamageStrength_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_Evasion_Pixal3D.SM_Boost_Evasion_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_Evasion_Pixal3D_Outline.SM_Boost_Evasion_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_Luck_Pixal3D.SM_Boost_Luck_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_Luck_Pixal3D_Outline.SM_Boost_Luck_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_Speed_Pixal3D.SM_Boost_Speed_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/SM_Boost_Speed_Pixal3D_Outline.SM_Boost_Speed_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_0.T_Boost_Accuracy_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_1.T_Boost_Accuracy_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_InnerLines.T_Boost_Accuracy_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_Tint.T_Boost_Accuracy_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_0.T_Boost_Armor_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_1.T_Boost_Armor_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_InnerLines.T_Boost_Armor_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_Tint.T_Boost_Armor_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_0.T_Boost_AttackScale_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_1.T_Boost_AttackScale_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_InnerLines.T_Boost_AttackScale_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_Tint.T_Boost_AttackScale_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_0.T_Boost_AttackSpeed_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_1.T_Boost_AttackSpeed_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_InnerLines.T_Boost_AttackSpeed_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_Tint.T_Boost_AttackSpeed_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_0.T_Boost_DamageStrength_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_1.T_Boost_DamageStrength_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_InnerLines.T_Boost_DamageStrength_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_Tint.T_Boost_DamageStrength_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_0.T_Boost_Evasion_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_1.T_Boost_Evasion_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_InnerLines.T_Boost_Evasion_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_Tint.T_Boost_Evasion_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_0.T_Boost_Luck_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_1.T_Boost_Luck_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_InnerLines.T_Boost_Luck_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_Tint.T_Boost_Luck_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_0.T_Boost_Speed_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_1.T_Boost_Speed_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_InnerLines.T_Boost_Speed_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_Tint.T_Boost_Speed_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/BossGate_Pixal3D.BossGate_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Materials/MI_CowardiceGate_Pixal3D.MI_CowardiceGate_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Materials/MI_CowardiceGate_Pixal3D_Outline.MI_CowardiceGate_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Materials/MI_StageGate_Pixal3D.MI_StageGate_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Materials/MI_StageGate_Pixal3D_Outline.MI_StageGate_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Materials/M_BossGate_Pixal3D.M_BossGate_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Materials/M_StageGate_Pixal3D.M_StageGate_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Materials/M_StartGate_Pixal3D.M_StartGate_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Materials/M_TutorialGate_Pixal3D.M_TutorialGate_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/SM_CowardiceGate.SM_CowardiceGate",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/SM_CowardiceGate_Pixal3D.SM_CowardiceGate_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/SM_StageGate_Pixal3D.SM_StageGate_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/StageGate_Pixal3D.StageGate_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/StartGate_Pixal3D.StartGate_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_BossGate_Pixal3D_BaseColor.T_BossGate_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_0.T_CowardiceGate_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_1.T_CowardiceGate_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_InnerLines.T_CowardiceGate_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_Tint.T_CowardiceGate_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_0.T_StageGate_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_1.T_StageGate_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_BaseColor.T_StageGate_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_InnerLines.T_StageGate_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_Tint.T_StageGate_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_StartGate_Pixal3D_BaseColor.T_StartGate_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/Textures/T_TutorialGate_Pixal3D_BaseColor.T_TutorialGate_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Altar/Materials/Material_0_006.Material_0_006",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Altar/Textures/Image_0_006.Image_0_006",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Altar/Textures/Image_1.Image_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Arcade_BladeSweep_QuadRetro.Arcade_BladeSweep_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Materials/M_Arcade_BladeSweep_QuadRetro.M_Arcade_BladeSweep_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_BladeSweep/Textures/T_Arcade_BladeSweep_QuadRetro_Pixelated_512.T_Arcade_BladeSweep_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Arcade_BombSorter_QuadRetro.Arcade_BombSorter_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Materials/M_Arcade_BombSorter_QuadRetro.M_Arcade_BombSorter_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_BombSorter/Textures/T_Arcade_BombSorter_QuadRetro_Pixelated_512.T_Arcade_BombSorter_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Arcade_CartSwitcher_QuadRetro.Arcade_CartSwitcher_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Materials/M_Arcade_CartSwitcher_QuadRetro.M_Arcade_CartSwitcher_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_CartSwitcher/Textures/T_Arcade_CartSwitcher_QuadRetro_Pixelated_512.T_Arcade_CartSwitcher_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Arcade_CrystalDash_QuadRetro.Arcade_CrystalDash_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Materials/M_Arcade_CrystalDash_QuadRetro.M_Arcade_CrystalDash_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_CrystalDash/Textures/T_Arcade_CrystalDash_QuadRetro_Pixelated_512.T_Arcade_CrystalDash_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Arcade_GoldMiner_QuadRetro.Arcade_GoldMiner_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Materials/M_Arcade_GoldMiner_QuadRetro.M_Arcade_GoldMiner_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_GoldMiner/Textures/T_Arcade_GoldMiner_QuadRetro_Pixelated_512.T_Arcade_GoldMiner_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Arcade_LanternLeap_QuadRetro.Arcade_LanternLeap_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Materials/M_Arcade_LanternLeap_QuadRetro.M_Arcade_LanternLeap_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_LanternLeap/Textures/T_Arcade_LanternLeap_QuadRetro_Pixelated_512.T_Arcade_LanternLeap_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/Arcade_Machine_QuadRetro.Arcade_Machine_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/Materials/MI_Arcade_Machine_Pixal3D.MI_Arcade_Machine_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/Materials/MI_Arcade_Machine_Pixal3D_Outline.MI_Arcade_Machine_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/Materials/M_Arcade_Machine_QuadRetro.M_Arcade_Machine_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D.SM_Arcade_Machine_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/SM_Arcade_Machine_Pixal3D_Outline.SM_Arcade_Machine_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/Textures/T_Arcade_Machine_Pixal3D_0.T_Arcade_Machine_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/Textures/T_Arcade_Machine_Pixal3D_1.T_Arcade_Machine_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/Textures/T_Arcade_Machine_Pixal3D_InnerLines.T_Arcade_Machine_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/Textures/T_Arcade_Machine_Pixal3D_Tint.T_Arcade_Machine_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Machine/Textures/T_Arcade_Machine_QuadRetro_Pixelated_512.T_Arcade_Machine_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Arcade_MimicMemory_QuadRetro.Arcade_MimicMemory_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Materials/M_Arcade_MimicMemory_QuadRetro.M_Arcade_MimicMemory_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_MimicMemory/Textures/T_Arcade_MimicMemory_QuadRetro_Pixelated_512.T_Arcade_MimicMemory_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Arcade_PotionPour_QuadRetro.Arcade_PotionPour_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Materials/M_Arcade_PotionPour_QuadRetro.M_Arcade_PotionPour_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_PotionPour/Textures/T_Arcade_PotionPour_QuadRetro_Pixelated_512.T_Arcade_PotionPour_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Arcade_RelicStack_QuadRetro.Arcade_RelicStack_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Materials/M_Arcade_RelicStack_QuadRetro.M_Arcade_RelicStack_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_RelicStack/Textures/T_Arcade_RelicStack_QuadRetro_Pixelated_512.T_Arcade_RelicStack_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Arcade_RuneSwipe_QuadRetro.Arcade_RuneSwipe_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Materials/M_Arcade_RuneSwipe_QuadRetro.M_Arcade_RuneSwipe_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_RuneSwipe/Textures/T_Arcade_RuneSwipe_QuadRetro_Pixelated_512.T_Arcade_RuneSwipe_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Arcade_ShieldParry_QuadRetro.Arcade_ShieldParry_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Materials/M_Arcade_ShieldParry_QuadRetro.M_Arcade_ShieldParry_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_ShieldParry/Textures/T_Arcade_ShieldParry_QuadRetro_Pixelated_512.T_Arcade_ShieldParry_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Topwar/Arcade_Topwar_QuadRetro.Arcade_Topwar_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Topwar/Materials/M_Arcade_Topwar_QuadRetro.M_Arcade_Topwar_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_Topwar/Textures/T_Arcade_Topwar_QuadRetro_Pixelated_512.T_Arcade_Topwar_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Arcade_WhackAMole_QuadRetro.Arcade_WhackAMole_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Materials/M_Arcade_WhackAMole_QuadRetro.M_Arcade_WhackAMole_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Arcade_WhackAMole/Textures/T_Arcade_WhackAMole_QuadRetro_Pixelated_512.T_Arcade_WhackAMole_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Vehicle/Materials/M_Vehicle_QuadRetro.M_Vehicle_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Vehicle/Textures/T_Vehicle_QuadRetro_Pixelated_512.T_Vehicle_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Arcade/Vehicle/Vehicle_QuadRetro.Vehicle_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/ArcadeMachine/ArcadeMachine.ArcadeMachine",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/ArcadeMachine/Materials/M_ArcadeMachine.M_ArcadeMachine",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/ArcadeMachine/Textures/ArcadeMachine_BaseColor_00.ArcadeMachine_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/AccuracyBoost_Pixal3D.AccuracyBoost_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/ArmorBoost_Pixal3D.ArmorBoost_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/AttackScaleBoost_Pixal3D.AttackScaleBoost_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/AttackSpeedBoost_Pixal3D.AttackSpeedBoost_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/DamageBoost_Pixal3D.DamageBoost_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/EvasionBoost_Pixal3D.EvasionBoost_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/LuckBoost_Pixal3D.LuckBoost_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Materials/MI_AccuracyBoost_Pixal3D.MI_AccuracyBoost_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Materials/MI_ArmorBoost_Pixal3D.MI_ArmorBoost_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Materials/MI_AttackScaleBoost_Pixal3D.MI_AttackScaleBoost_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Materials/MI_AttackSpeedBoost_Pixal3D.MI_AttackSpeedBoost_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Materials/MI_DamageBoost_Pixal3D.MI_DamageBoost_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Materials/MI_EvasionBoost_Pixal3D.MI_EvasionBoost_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Materials/MI_LuckBoost_Pixal3D.MI_LuckBoost_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Materials/MI_SpeedBoost_Pixal3D.MI_SpeedBoost_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/SpeedBoost_Pixal3D.SpeedBoost_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Textures/T_AccuracyBoost_Pixal3D_BaseColor.T_AccuracyBoost_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Textures/T_ArmorBoost_Pixal3D_BaseColor.T_ArmorBoost_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Textures/T_AttackScaleBoost_Pixal3D_BaseColor.T_AttackScaleBoost_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Textures/T_AttackSpeedBoost_Pixal3D_BaseColor.T_AttackSpeedBoost_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Textures/T_DamageBoost_Pixal3D_BaseColor.T_DamageBoost_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Textures/T_EvasionBoost_Pixal3D_BaseColor.T_EvasionBoost_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Textures/T_LuckBoost_Pixal3D_BaseColor.T_LuckBoost_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Boosts/Textures/T_SpeedBoost_Pixal3D_BaseColor.T_SpeedBoost_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Chest.Chest",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Chest_QuadRetro.Chest_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Materials/MI_Chest_Pixal3D.MI_Chest_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Materials/MI_Chest_Pixal3D_Outline.MI_Chest_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest.M_Chest",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest_QuadRetro.M_Chest_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D.SM_Chest_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Textures/Chest_BaseColor_00.Chest_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_0.T_Chest_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_1.T_Chest_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_InnerLines.T_Chest_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_Tint.T_Chest_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_QuadRetro_Pixelated_512.T_Chest_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate.Crate",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Crate_QuadRetro.Crate_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Materials/MI_LootCrate.MI_LootCrate",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Materials/MI_LootCrate_Outline.MI_LootCrate_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Materials/M_Crate_QuadRetro.M_Crate_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Materials/Material_0_016.Material_0_016",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/SM_LootCrate.SM_LootCrate",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Textures/Image_0_016.Image_0_016",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Textures/Image_1.Image_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Textures/T_Crate_QuadRetro_Pixelated_512.T_Crate_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Textures/T_LootCrate_0.T_LootCrate_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Textures/T_LootCrate_1.T_LootCrate_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Textures/T_LootCrate_InnerLines.T_LootCrate_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Crate/Textures/T_LootCrate_Tint.T_LootCrate_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/DifficultyTotem_QuadRetro.DifficultyTotem_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/Materials/MI_DifficultyTotem_Pixal3D.MI_DifficultyTotem_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/Materials/MI_DifficultyTotem_Pixal3D_Outline.MI_DifficultyTotem_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/Materials/M_DifficultyTotem_QuadRetro.M_DifficultyTotem_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D.SM_DifficultyTotem_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_0.T_DifficultyTotem_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_1.T_DifficultyTotem_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_InnerLines.T_DifficultyTotem_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_Tint.T_DifficultyTotem_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_QuadRetro_Pixelated_512.T_DifficultyTotem_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Fountain.Fountain",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Fountain/Materials/Material_0_003.Material_0_003",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Fountain/Textures/Image_0_003.Image_0_003",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Fountain/Textures/Image_1.Image_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Fountain_QuadRetro.Fountain_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Materials/MI_Fountain_Pixal3D.MI_Fountain_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Materials/MI_Fountain_Pixal3D_Outline.MI_Fountain_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Materials/M_Fountain_QuadRetro.M_Fountain_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D.SM_Fountain_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_0.T_Fountain_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_1.T_Fountain_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_InnerLines.T_Fountain_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_Tint.T_Fountain_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Fountain/Textures/T_Fountain_QuadRetro_Pixelated_512.T_Fountain_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/IdolAltar_Pixal3D.IdolAltar_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/IdolAltar_QuadRetro.IdolAltar_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/Materials/MI_IdolAltar_Pixal3D.MI_IdolAltar_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/Materials/MI_IdolAltar_Pixal3D_Outline.MI_IdolAltar_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/Materials/M_IdolAltar_Pixal3D.M_IdolAltar_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/Materials/M_IdolAltar_QuadRetro.M_IdolAltar_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D.SM_IdolAltar_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_0.T_IdolAltar_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_1.T_IdolAltar_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_BaseColor.T_IdolAltar_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_InnerLines.T_IdolAltar_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_Tint.T_IdolAltar_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_QuadRetro_Pixelated_512.T_IdolAltar_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/LootWheel/LootWheel_Pixal3D.LootWheel_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/LootWheel/Materials/MI_LootWheel_Pixal3D.MI_LootWheel_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/LootWheel/Materials/MI_LootWheel_Pixal3D_Outline.MI_LootWheel_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D.SM_LootWheel_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_0.T_LootWheel_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_1.T_LootWheel_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_BaseColor.T_LootWheel_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_InnerLines.T_LootWheel_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_Tint.T_LootWheel_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/SM_IdolAltar.SM_IdolAltar",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Shroom.Shroom",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Shroom/Materials/M_Shroom_QuadRetro.M_Shroom_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Shroom/Materials/Material_0_009.Material_0_009",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Shroom/Shroom_QuadRetro.Shroom_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Shroom/Textures/Image_0_009.Image_0_009",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Shroom/Textures/Image_1.Image_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Shroom/Textures/T_Shroom_QuadRetro_Pixelated_512.T_Shroom_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Totem.Totem",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Totem/Materials/Material_0_017.Material_0_017",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Totem/Textures/Image_0_017.Image_0_017",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Totem/Textures/Image_1.Image_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/Materials/MI_Vehicle_Pixal3D.MI_Vehicle_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/Materials/MI_Vehicle_Pixal3D_Outline.MI_Vehicle_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/Materials/M_Tractor_Pixal3D.M_Tractor_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D_Outline.SM_Vehicle_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/Textures/T_Tractor_Pixal3D_BaseColor.T_Tractor_Pixal3D_BaseColor",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_0.T_Vehicle_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_1.T_Vehicle_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_InnerLines.T_Vehicle_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_Tint.T_Vehicle_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vending/Vending.Vending",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vending/Vending/Materials/Material_0_010.Material_0_010",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vending/Vending/Textures/Image_0_010.Image_0_010",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/Vending/Vending/Textures/Image_1.Image_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/WeaponAltar/Materials/MI_WeaponAltar_Pixal3D.MI_WeaponAltar_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/WeaponAltar/Materials/MI_WeaponAltar_Pixal3D_Outline.MI_WeaponAltar_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D.SM_WeaponAltar_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D_Outline.SM_WeaponAltar_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_0.T_WeaponAltar_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_1.T_WeaponAltar_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_InnerLines.T_WeaponAltar_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_Tint.T_WeaponAltar_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Black/BlackBag/Materials/Material_0.Material_0",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Black/BlackBag/Textures/Image_0.Image_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Black/BlackBag/Textures/Image_1.Image_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Black/Materials/M_SM_LootBag_Black_QuadRetro.M_SM_LootBag_Black_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Black/Textures/T_SM_LootBag_Black_QuadRetro_Pixelated_512.T_SM_LootBag_Black_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Red/Materials/M_SM_LootBag_Red_QuadRetro.M_SM_LootBag_Red_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Red/RedBag/Materials/Material_0_005.Material_0_005",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Red/RedBag/Textures/Image_0_005.Image_0_005",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Red/RedBag/Textures/Image_1.Image_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Red/SM_LootBag_Red.SM_LootBag_Red",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Red/SM_LootBag_Red_QuadRetro.SM_LootBag_Red_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Red/Textures/T_SM_LootBag_Red_QuadRetro_Pixelated_512.T_SM_LootBag_Red_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Shared/Materials/MI_LootBag_Shared_Pixal3D.MI_LootBag_Shared_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Shared/Materials/MI_LootBag_Shared_Pixal3D_Outline.MI_LootBag_Shared_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D.SM_LootBag_Shared_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D_Outline.SM_LootBag_Shared_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_0.T_LootBag_Shared_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_1.T_LootBag_Shared_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_InnerLines.T_LootBag_Shared_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_Tint.T_LootBag_Shared_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/White/Materials/M_SM_LootBag_White_QuadRetro.M_SM_LootBag_White_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/White/SM_LootBag_White.SM_LootBag_White",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/White/SM_LootBag_White_QuadRetro.SM_LootBag_White_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/White/Textures/T_SM_LootBag_White_QuadRetro_Pixelated_512.T_SM_LootBag_White_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/White/WhiteBag/Materials/Material_0_007.Material_0_007",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/White/WhiteBag/Textures/Image_0_007.Image_0_007",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/White/WhiteBag/Textures/Image_1.Image_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Yellow/Materials/M_SM_LootBag_Yellow_QuadRetro.M_SM_LootBag_Yellow_QuadRetro",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Yellow/SM_LootBag_Yellow.SM_LootBag_Yellow",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Yellow/SM_LootBag_Yellow_QuadRetro.SM_LootBag_Yellow_QuadRetro",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Yellow/Textures/T_SM_LootBag_Yellow_QuadRetro_Pixelated_512.T_SM_LootBag_Yellow_QuadRetro_Pixelated_512",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Yellow/YellowBag/Materials/Material_0_008.Material_0_008",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Yellow/YellowBag/Textures/Image_0_008.Image_0_008",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/LootBags/Yellow/YellowBag/Textures/Image_1.Image_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Bones_A_UnrealReady.DungeonFloor_Bones_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Bones_A_UnrealReady_BaseColor_00.DungeonFloor_Bones_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Bones_A_UnrealReady_Mat_00.DungeonFloor_Bones_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Cracked_A_UnrealReady.DungeonFloor_Cracked_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Cracked_A_UnrealReady_BaseColor_00.DungeonFloor_Cracked_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Cracked_A_UnrealReady_Mat_00.DungeonFloor_Cracked_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Drain_A_UnrealReady.DungeonFloor_Drain_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Drain_A_UnrealReady_BaseColor_00.DungeonFloor_Drain_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Drain_A_UnrealReady_Mat_00.DungeonFloor_Drain_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_StoneSlabs_A_UnrealReady.DungeonFloor_StoneSlabs_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_StoneSlabs_A_UnrealReady_BaseColor_00.DungeonFloor_StoneSlabs_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_StoneSlabs_A_UnrealReady_Mat_00.DungeonFloor_StoneSlabs_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_BonesNiche_A_UnrealReady.DungeonWall_BonesNiche_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_BonesNiche_A_UnrealReady_BaseColor_00.DungeonWall_BonesNiche_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_BonesNiche_A_UnrealReady_Mat_00.DungeonWall_BonesNiche_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_Chains_A_UnrealReady.DungeonWall_Chains_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_Chains_A_UnrealReady_BaseColor_00.DungeonWall_Chains_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_Chains_A_UnrealReady_Mat_00.DungeonWall_Chains_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_StoneBlocks_A_UnrealReady.DungeonWall_StoneBlocks_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_StoneBlocks_A_UnrealReady_BaseColor_00.DungeonWall_StoneBlocks_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_StoneBlocks_A_UnrealReady_Mat_00.DungeonWall_StoneBlocks_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_TorchSconce_A_UnrealReady.DungeonWall_TorchSconce_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_TorchSconce_A_UnrealReady_BaseColor_00.DungeonWall_TorchSconce_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_TorchSconce_A_UnrealReady_Mat_00.DungeonWall_TorchSconce_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_BrambleEdge_A_UnrealReady.ForestFloor_BrambleEdge_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_BrambleEdge_A_UnrealReady_BaseColor_00.ForestFloor_BrambleEdge_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_BrambleEdge_A_UnrealReady_Mat_00.ForestFloor_BrambleEdge_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_LeafCrack_A_UnrealReady.ForestFloor_LeafCrack_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_LeafCrack_A_UnrealReady_BaseColor_00.ForestFloor_LeafCrack_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_LeafCrack_A_UnrealReady_Mat_00.ForestFloor_LeafCrack_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_MossStone_A_UnrealReady.ForestFloor_MossStone_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_MossStone_A_UnrealReady_BaseColor_00.ForestFloor_MossStone_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_MossStone_A_UnrealReady_Mat_00.ForestFloor_MossStone_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_RootMat_A_UnrealReady.ForestFloor_RootMat_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_RootMat_A_UnrealReady_BaseColor_00.ForestFloor_RootMat_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestFloor_RootMat_A_UnrealReady_Mat_00.ForestFloor_RootMat_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_MushroomBark_A_UnrealReady.ForestWall_MushroomBark_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_MushroomBark_A_UnrealReady_BaseColor_00.ForestWall_MushroomBark_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_MushroomBark_A_UnrealReady_Mat_00.ForestWall_MushroomBark_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_RootBraid_A_UnrealReady.ForestWall_RootBraid_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_RootBraid_A_UnrealReady_BaseColor_00.ForestWall_RootBraid_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_RootBraid_A_UnrealReady_Mat_00.ForestWall_RootBraid_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_TrunkWeave_A_UnrealReady.ForestWall_TrunkWeave_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_TrunkWeave_A_UnrealReady_BaseColor_00.ForestWall_TrunkWeave_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_TrunkWeave_A_UnrealReady_Mat_00.ForestWall_TrunkWeave_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_VineTotem_A_UnrealReady.ForestWall_VineTotem_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_VineTotem_A_UnrealReady_BaseColor_00.ForestWall_VineTotem_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/ForestWall_VineTotem_A_UnrealReady_Mat_00.ForestWall_VineTotem_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_BoneAsh_A_UnrealReady.HellFloor_BoneAsh_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_BoneAsh_A_UnrealReady_BaseColor_00.HellFloor_BoneAsh_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_BoneAsh_A_UnrealReady_Mat_00.HellFloor_BoneAsh_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_EmberFissure_A_UnrealReady.HellFloor_EmberFissure_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_EmberFissure_A_UnrealReady_BaseColor_00.HellFloor_EmberFissure_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_EmberFissure_A_UnrealReady_Mat_00.HellFloor_EmberFissure_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_Obsidian_A_UnrealReady.HellFloor_Obsidian_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_Obsidian_A_UnrealReady_BaseColor_00.HellFloor_Obsidian_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_Obsidian_A_UnrealReady_Mat_00.HellFloor_Obsidian_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_RunePlate_A_UnrealReady.HellFloor_RunePlate_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_RunePlate_A_UnrealReady_BaseColor_00.HellFloor_RunePlate_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellFloor_RunePlate_A_UnrealReady_Mat_00.HellFloor_RunePlate_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_Brimstone_A_UnrealReady.HellWall_Brimstone_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_Brimstone_A_UnrealReady_BaseColor_00.HellWall_Brimstone_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_Brimstone_A_UnrealReady_Mat_00.HellWall_Brimstone_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_ChainsSkulls_A_UnrealReady.HellWall_ChainsSkulls_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_ChainsSkulls_A_UnrealReady_BaseColor_00.HellWall_ChainsSkulls_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_ChainsSkulls_A_UnrealReady_Mat_00.HellWall_ChainsSkulls_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_LavaCrack_A_UnrealReady.HellWall_LavaCrack_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_LavaCrack_A_UnrealReady_BaseColor_00.HellWall_LavaCrack_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_LavaCrack_A_UnrealReady_Mat_00.HellWall_LavaCrack_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_SpikeBasalt_A_UnrealReady.HellWall_SpikeBasalt_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_SpikeBasalt_A_UnrealReady_BaseColor_00.HellWall_SpikeBasalt_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/HellWall_SpikeBasalt_A_UnrealReady_Mat_00.HellWall_SpikeBasalt_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_CraterCracks_A_UnrealReady.MartianFloor_CraterCracks_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_CraterCracks_A_UnrealReady_BaseColor_00.MartianFloor_CraterCracks_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_CraterCracks_A_UnrealReady_Mat_00.MartianFloor_CraterCracks_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_CrystalDust_A_UnrealReady.MartianFloor_CrystalDust_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_CrystalDust_A_UnrealReady_BaseColor_00.MartianFloor_CrystalDust_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_CrystalDust_A_UnrealReady_Mat_00.MartianFloor_CrystalDust_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_RegolithPlates_A_UnrealReady.MartianFloor_RegolithPlates_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_RegolithPlates_A_UnrealReady_BaseColor_00.MartianFloor_RegolithPlates_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_RegolithPlates_A_UnrealReady_Mat_00.MartianFloor_RegolithPlates_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_RuinTile_A_UnrealReady.MartianFloor_RuinTile_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_RuinTile_A_UnrealReady_BaseColor_00.MartianFloor_RuinTile_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianFloor_RuinTile_A_UnrealReady_Mat_00.MartianFloor_RuinTile_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_CrystalVein_A_UnrealReady.MartianWall_CrystalVein_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_CrystalVein_A_UnrealReady_BaseColor_00.MartianWall_CrystalVein_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_CrystalVein_A_UnrealReady_Mat_00.MartianWall_CrystalVein_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_MeteorScar_A_UnrealReady.MartianWall_MeteorScar_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_MeteorScar_A_UnrealReady_BaseColor_00.MartianWall_MeteorScar_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_MeteorScar_A_UnrealReady_Mat_00.MartianWall_MeteorScar_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_RedRock_A_UnrealReady.MartianWall_RedRock_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_RedRock_A_UnrealReady_BaseColor_00.MartianWall_RedRock_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_RedRock_A_UnrealReady_Mat_00.MartianWall_RedRock_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_RuinPanel_A_UnrealReady.MartianWall_RuinPanel_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_RuinPanel_A_UnrealReady_BaseColor_00.MartianWall_RuinPanel_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/MartianWall_RuinPanel_A_UnrealReady_Mat_00.MartianWall_RuinPanel_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_CoralCrack_A_UnrealReady.OceanFloor_CoralCrack_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_CoralCrack_A_UnrealReady_BaseColor_00.OceanFloor_CoralCrack_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_CoralCrack_A_UnrealReady_Mat_00.OceanFloor_CoralCrack_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_ReefStone_A_UnrealReady.OceanFloor_ReefStone_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_ReefStone_A_UnrealReady_BaseColor_00.OceanFloor_ReefStone_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_ReefStone_A_UnrealReady_Mat_00.OceanFloor_ReefStone_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_ShellSand_A_UnrealReady.OceanFloor_ShellSand_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_ShellSand_A_UnrealReady_BaseColor_00.OceanFloor_ShellSand_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_ShellSand_A_UnrealReady_Mat_00.OceanFloor_ShellSand_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_TidePool_A_UnrealReady.OceanFloor_TidePool_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_TidePool_A_UnrealReady_BaseColor_00.OceanFloor_TidePool_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanFloor_TidePool_A_UnrealReady_Mat_00.OceanFloor_TidePool_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_CoralReef_A_UnrealReady.OceanWall_CoralReef_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_CoralReef_A_UnrealReady_BaseColor_00.OceanWall_CoralReef_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_CoralReef_A_UnrealReady_Mat_00.OceanWall_CoralReef_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_KelpCoral_A_UnrealReady.OceanWall_KelpCoral_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_KelpCoral_A_UnrealReady_BaseColor_00.OceanWall_KelpCoral_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_KelpCoral_A_UnrealReady_Mat_00.OceanWall_KelpCoral_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_ReefRuin_A_UnrealReady.OceanWall_ReefRuin_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_ReefRuin_A_UnrealReady_BaseColor_00.OceanWall_ReefRuin_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_ReefRuin_A_UnrealReady_Mat_00.OceanWall_ReefRuin_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_ShellLimestone_A_UnrealReady.OceanWall_ShellLimestone_A_UnrealReady",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_ShellLimestone_A_UnrealReady_BaseColor_00.OceanWall_ShellLimestone_A_UnrealReady_BaseColor_00",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/OceanWall_ShellLimestone_A_UnrealReady_Mat_00.OceanWall_ShellLimestone_A_UnrealReady_Mat_00",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerForest/MI_TowerForestRoof.MI_TowerForestRoof",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerForest/T_TowerForestGround.T_TowerForestGround",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerForest/T_TowerForestRoof.T_TowerForestRoof",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/Tower/Textures/T_TowerDescentGate_Closed.T_TowerDescentGate_Closed",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D.MI_BrokenVase_Easy_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D_Outline.MI_BrokenVase_Easy_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Materials/MI_SkullRemains_Easy_Pixal3D.MI_SkullRemains_Easy_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Materials/MI_SkullRemains_Easy_Pixal3D_Outline.MI_SkullRemains_Easy_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Materials/MI_WallLamp_Easy_Pixal3D.MI_WallLamp_Easy_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Materials/MI_WallLamp_Easy_Pixal3D_Outline.MI_WallLamp_Easy_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Materials/MI_WallTorch_Easy_Pixal3D.MI_WallTorch_Easy_Pixal3D",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Materials/MI_WallTorch_Easy_Pixal3D_Outline.MI_WallTorch_Easy_Pixal3D_Outline",
+      "loaded": true,
+      "class": "MaterialInstanceConstant",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/SM_BrokenVase_Easy_Pixal3D.SM_BrokenVase_Easy_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/SM_BrokenVase_Easy_Pixal3D_Outline.SM_BrokenVase_Easy_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D.SM_SkullRemains_Easy_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/SM_WallLamp_Easy_Pixal3D.SM_WallLamp_Easy_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/SM_WallLamp_Easy_Pixal3D_Outline.SM_WallLamp_Easy_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/SM_WallTorch_Easy_Pixal3D.SM_WallTorch_Easy_Pixal3D",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/SM_WallTorch_Easy_Pixal3D_Outline.SM_WallTorch_Easy_Pixal3D_Outline",
+      "loaded": true,
+      "class": "StaticMesh",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_0.T_BrokenVase_Easy_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_1.T_BrokenVase_Easy_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_InnerLines.T_BrokenVase_Easy_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_Tint.T_BrokenVase_Easy_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_0.T_SkullRemains_Easy_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_1.T_SkullRemains_Easy_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_InnerLines.T_SkullRemains_Easy_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_Tint.T_SkullRemains_Easy_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_WallLamp_Easy_Pixal3D_0.T_WallLamp_Easy_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_WallLamp_Easy_Pixal3D_1.T_WallLamp_Easy_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_WallLamp_Easy_Pixal3D_InnerLines.T_WallLamp_Easy_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_WallLamp_Easy_Pixal3D_Tint.T_WallLamp_Easy_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_WallTorch_Easy_Pixal3D_0.T_WallTorch_Easy_Pixal3D_0",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_WallTorch_Easy_Pixal3D_1.T_WallTorch_Easy_Pixal3D_1",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_WallTorch_Easy_Pixal3D_InnerLines.T_WallTorch_Easy_Pixal3D_InnerLines",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    },
+    {
+      "asset": "/Game/World/VisualProps/Easy/Textures/T_WallTorch_Easy_Pixal3D_Tint.T_WallTorch_Easy_Pixal3D_Tint",
+      "loaded": true,
+      "class": "Texture2D",
+      "error": null
+    }
+  ],
+  "failure_count": 0,
+  "failures": []
+}

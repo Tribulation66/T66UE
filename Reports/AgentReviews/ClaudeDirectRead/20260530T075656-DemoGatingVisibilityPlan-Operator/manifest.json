@@ -1,0 +1,48 @@
+{
+  "ArtifactKind": "ClaudeHelperFailed",
+  "Mode": "Operator",
+  "Model": "claude-opus-4-8",
+  "Effort": "high",
+  "ClaudeOutputFormat": "json",
+  "PermissionMode": "default",
+  "ToolProfile": "ReadOnly",
+  "EffectiveToolSurface": "Read,Grep,Glob",
+  "MutatingCapability": false,
+  "ApprovalRequired": false,
+  "CodexApprovalPath": null,
+  "AllowedTools": [
+    "Read",
+    "Grep",
+    "Glob"
+  ],
+  "AddDir": [
+    "C:\\UE\\T66"
+  ],
+  "PromptPath": "C:\\UE\\T66\\Reports\\AgentReviews\\DemoGatingVisibility\\operator_prompt.md",
+  "EffectivePromptPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260530T075656-DemoGatingVisibilityPlan-Operator\\effective_prompt.md",
+  "AttemptsRequested": 1,
+  "TimeoutSeconds": 300,
+  "MaxTurns": 0,
+  "MaxTurnContinuations": 3,
+  "SessionPersistence": false,
+  "SessionPersistenceSource": "default off (MaxTurns <= 0 has no max-turn resume to support)",
+  "NoSessionPersistence": true,
+  "ClaudePath": "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+  "ClaudeVersion": "2.1.150 (Claude Code)",
+  "FailureKind": "ClaudeProcessFailed",
+  "MaxTurnContinuationAttempted": false,
+  "ClaudeTokensSpent": null,
+  "TokenSummaryPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260530T075656-DemoGatingVisibilityPlan-Operator\\claude_tokens.json",
+  "Attempts": [
+    {
+      "StdoutPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260530T075656-DemoGatingVisibilityPlan-Operator\\attempts\\stdout_attempt1.json",
+      "StderrPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260530T075656-DemoGatingVisibilityPlan-Operator\\attempts\\stderr_attempt1.txt",
+      "TimedOut": true,
+      "ExitCode": null,
+      "Success": false,
+      "MaxTurnContinuationAttempted": false,
+      "MaxTurnContinuationCount": 0
+    }
+  ],
+  "OutcomeKind": "ClaudeHelperFailed"
+}

@@ -1,0 +1,324 @@
+{
+  "project_root": "C:\\UE\\T66",
+  "map_roots": [
+    "/Game/Maps"
+  ],
+  "classes": {
+    "AT66StageGate": {
+      "resolved": true,
+      "script_path": "/Script/T66.T66StageGate",
+      "script_name": "T66StageGate",
+      "class_object_name": "T66StageGate"
+    },
+    "AT66IdolAltar": {
+      "resolved": true,
+      "script_path": "/Script/T66.T66IdolAltar",
+      "script_name": "T66IdolAltar",
+      "class_object_name": "T66IdolAltar"
+    }
+  },
+  "members": [
+    "GetMovementSpeedSecondaryMultiplier",
+    "HasQuickReviveCharge"
+  ],
+  "asset_count_all": 4038,
+  "asset_count_game": 3802,
+  "asset_registry_hits": [],
+  "blueprints": {
+    "candidates": 0,
+    "loaded": 0,
+    "matches": [],
+    "load_failures": []
+  },
+  "maps": {
+    "candidate_maps": 2,
+    "scanned": 2,
+    "matches": [],
+    "load_failures": []
+  },
+  "binary_content": {
+    "scanned": 3645,
+    "matches": [],
+    "read_failures": []
+  },
+  "text": {
+    "scanned": 892,
+    "matches": [
+      {
+        "path": "Source\\T66\\Core\\T66ActorRegistrySubsystem.cpp",
+        "hits": [
+          "AT66StageGate",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\T66ActorRegistrySubsystem.h",
+        "hits": [
+          "AT66StageGate",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\T66RunStateSubsystem.h",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier",
+          "HasQuickReviveCharge"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\RunState\\T66RunStateSubsystem_Stats.cpp",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\pending_issues_Gameplay.md",
+        "hits": [
+          "AT66StageGate",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66GameMode.cpp",
+        "hits": [
+          "AT66StageGate",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66GameMode.h",
+        "hits": [
+          "AT66IdolAltar",
+          "AT66StageGate",
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66IdolAltar.cpp",
+        "hits": [
+          "AT66IdolAltar",
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66IdolAltar.h",
+        "hits": [
+          "AT66IdolAltar",
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66LootBagPickup.cpp",
+        "hits": [
+          "AT66IdolAltar",
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController.cpp",
+        "hits": [
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController.h",
+        "hits": [
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Combat.cpp",
+        "hits": [
+          "AT66IdolAltar",
+          "AT66StageGate",
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Frontend.cpp",
+        "hits": [
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Input.cpp",
+        "hits": [
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Overlays.cpp",
+        "hits": [
+          "AT66IdolAltar",
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_ScopedUlt.cpp",
+        "hits": [
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_WorldDialogue.cpp",
+        "hits": [
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66StageGate.cpp",
+        "hits": [
+          "AT66StageGate",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66StageGate.h",
+        "hits": [
+          "AT66StageGate",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66TutorialManager.cpp",
+        "hits": [
+          "AT66IdolAltar",
+          "AT66StageGate",
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66TutorialManager.h",
+        "hits": [
+          "AT66IdolAltar",
+          "AT66StageGate",
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameModePrivate.h",
+        "hits": [
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_BossFlow.cpp",
+        "hits": [
+          "AT66StageGate",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Lab.cpp",
+        "hits": [
+          "AT66IdolAltar",
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Tower.cpp",
+        "hits": [
+          "AT66IdolAltar",
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_WorldInteractables.cpp",
+        "hits": [
+          "AT66IdolAltar",
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Movement\\T66HeroMovementComponent.cpp",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\T66IdolAltarOverlayWidget.cpp",
+        "hits": [
+          "AT66IdolAltar",
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\T66IdolAltarOverlayWidget.h",
+        "hits": [
+          "AT66IdolAltar",
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\HUD\\T66GameplayHUDWidget_Map.cpp",
+        "hits": [
+          "AT66StageGate",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\HUD\\T66GameplayHUDWidget_Private.h",
+        "hits": [
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\Screens\\T66RunSummaryScreen.cpp",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\Style\\T66IdolAltarOverlayReferenceLayout.generated.h",
+        "hits": [
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Scripts\\AuditNativeClassReferencesAndExit.py",
+        "hits": [
+          "AT66IdolAltar",
+          "AT66StageGate",
+          "GetMovementSpeedSecondaryMultiplier",
+          "HasQuickReviveCharge",
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\candidate_manifest.md",
+        "hits": [
+          "AT66IdolAltar",
+          "GetMovementSpeedSecondaryMultiplier",
+          "HasQuickReviveCharge",
+          "T66IdolAltar"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\native_reference_audit_dryrun.json",
+        "hits": [
+          "/Script/T66.T66IdolAltar",
+          "/Script/T66.T66StageGate",
+          "AT66IdolAltar",
+          "AT66StageGate",
+          "GetMovementSpeedSecondaryMultiplier",
+          "HasQuickReviveCharge",
+          "T66IdolAltar",
+          "T66StageGate"
+        ]
+      }
+    ],
+    "read_failures": []
+  }
+}

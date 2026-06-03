@@ -1,0 +1,2 @@
+The proposal is complete and saved to the plan file at `C:\Users\DoPra\.claude\plans\you-are-claude-acting-luminous-dahl.md`. As a read-only operator artifact, this is the deliverable for Codex to integrate — no files were edited. The summary above captures the recommended doc edits, the worked-example anchoring to Hero 1 AOE, and the three risk callouts where doc-only scope leaves real follow-up work (Water idol footprint asset, automated enforcement, numeric tolerance diffing).
+

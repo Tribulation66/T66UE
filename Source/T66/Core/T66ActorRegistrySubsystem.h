@@ -10,11 +10,12 @@
 class AT66EnemyBase;
 class AT66MobBase;
 class AT66BossBase;
-class AT66HouseNPCBase;
+class AT66NPCBase;
 class AT66StageGate;
 class AT66MiasmaBoundary;
 class AT66WorldInteractableBase;
 class AT66LootBagPickup;
+class UT66SafeZoneComponent;
 
 DECLARE_MULTICAST_DELEGATE(FOnT66RegisteredEnemiesChanged);
 
@@ -50,9 +51,14 @@ public:
 	const TArray<TWeakObjectPtr<AT66BossBase>>& GetBosses() const { return Bosses; }
 
 	// --------------- NPCs ---------------
-	void RegisterNPC(AT66HouseNPCBase* NPC);
-	void UnregisterNPC(AT66HouseNPCBase* NPC);
-	const TArray<TWeakObjectPtr<AT66HouseNPCBase>>& GetNPCs() const { return NPCs; }
+	void RegisterNPC(AT66NPCBase* NPC);
+	void UnregisterNPC(AT66NPCBase* NPC);
+	const TArray<TWeakObjectPtr<AT66NPCBase>>& GetNPCs() const { return NPCs; }
+
+	// --------------- Safe Zones ---------------
+	void RegisterSafeZone(UT66SafeZoneComponent* SafeZone);
+	void UnregisterSafeZone(UT66SafeZoneComponent* SafeZone);
+	const TArray<TWeakObjectPtr<UT66SafeZoneComponent>>& GetSafeZones() const { return SafeZones; }
 
 	// --------------- Stage Gates ---------------
 	void RegisterStageGate(AT66StageGate* Gate);
@@ -79,9 +85,11 @@ private:
 	TArray<TWeakObjectPtr<AT66MobBase>> ActiveMobs;
 	FOnT66RegisteredEnemiesChanged EnemiesChanged;
 	TArray<TWeakObjectPtr<AT66BossBase>> Bosses;
-	TArray<TWeakObjectPtr<AT66HouseNPCBase>> NPCs;
+	TArray<TWeakObjectPtr<AT66NPCBase>> NPCs;
+	TArray<TWeakObjectPtr<UT66SafeZoneComponent>> SafeZones;
 	TArray<TWeakObjectPtr<AT66StageGate>> StageGates;
 	TArray<TWeakObjectPtr<AT66MiasmaBoundary>> MiasmaBoundaries;
 	TArray<TWeakObjectPtr<AT66WorldInteractableBase>> WorldInteractables;
 	TArray<TWeakObjectPtr<AT66LootBagPickup>> LootBags;
 };
+

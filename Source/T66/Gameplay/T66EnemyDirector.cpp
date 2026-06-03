@@ -12,7 +12,8 @@
 #include "Gameplay/T66MobBase.h"
 #include "Gameplay/T66MobManagerSubsystem.h"
 #include "Gameplay/T66TowerMapTerrain.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
+#include "Gameplay/T66SafeZoneComponent.h"
 #include "Core/T66GameplayLayout.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66Rarity.h"
@@ -317,6 +318,21 @@ void AT66EnemyDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	ActiveMaxSpawnsPerStaggeredBatch = FMath::Max(1, MaxSpawnsPerStaggeredBatch);
 
 	Super::EndPlay(EndPlayReason);
+}
+
+void AT66EnemyDirector::SetPandemoniumMode(
+	const bool bEnabled,
+	const float RuntimeSpawnIntervalSeconds,
+	const int32 RuntimeEnemiesPerWave,
+	const int32 RuntimeMaxAliveEnemies,
+	const int32 RuntimeMaxSpawnsPerBatch)
+{
+	bPandemoniumMode = bEnabled;
+	PandemoniumRuntimeSpawnIntervalSeconds = FMath::Clamp(RuntimeSpawnIntervalSeconds, 0.05f, 5.f);
+	PandemoniumRuntimeEnemiesPerWave = FMath::Clamp(RuntimeEnemiesPerWave, 1, 600);
+	PandemoniumRuntimeMaxAliveEnemies = FMath::Clamp(RuntimeMaxAliveEnemies, PandemoniumRuntimeEnemiesPerWave, 1500);
+	PandemoniumMaxSpawnsPerBatch = FMath::Clamp(RuntimeMaxSpawnsPerBatch, 1, 64);
+	RefreshSpawningFromProgression();
 }
 
 void AT66EnemyDirector::SpawnInitialPopulationForStage()
@@ -886,7 +902,9 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	}
 	if (bTowerLayout)
 	{
-		const float RuntimeSpawnInterval = FMath::Max(0.10f, Snapshot.SpawnBudget.RuntimeSpawnIntervalSeconds);
+		const float RuntimeSpawnInterval = bPandemoniumMode
+			? FMath::Max(0.05f, PandemoniumRuntimeSpawnIntervalSeconds)
+			: FMath::Max(0.10f, Snapshot.SpawnBudget.RuntimeSpawnIntervalSeconds);
 		const float RuntimeWaveDuration = FMath::Max(0.0f, Snapshot.SpawnBudget.RuntimeWaveStaggerDurationSeconds);
 		ActiveRuntimeWaveCooldownSeconds = FMath::Max(0.0f, RuntimeSpawnInterval - RuntimeWaveDuration);
 	}
@@ -899,10 +917,14 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	int32 EffectiveMaxAlive = 0;
 	if (bTowerLayout)
 	{
-		EffectivePerWave = FMath::Max(1, Snapshot.SpawnBudget.RuntimeEnemiesPerWave);
-		EffectiveMaxAlive = FMath::Max(
-			EffectivePerWave,
-			T66ResolveRuntimeMaxAliveEnemies(Snapshot.SpawnBudget.RuntimeMaxAliveEnemies, MaxAliveEnemies));
+		EffectivePerWave = bPandemoniumMode
+			? FMath::Max(1, PandemoniumRuntimeEnemiesPerWave)
+			: FMath::Max(1, Snapshot.SpawnBudget.RuntimeEnemiesPerWave);
+		EffectiveMaxAlive = bPandemoniumMode
+			? FMath::Max(EffectivePerWave, PandemoniumRuntimeMaxAliveEnemies)
+			: FMath::Max(
+				EffectivePerWave,
+				T66ResolveRuntimeMaxAliveEnemies(Snapshot.SpawnBudget.RuntimeMaxAliveEnemies, MaxAliveEnemies));
 	}
 	else
 	{
@@ -942,9 +964,9 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	{
 		if (!Registry) return false;
 		const int32 CandidateFloorNumber = (bTowerLayout && GameMode) ? GameMode->GetTowerFloorIndexForLocation(Loc) : INDEX_NONE;
-		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+		for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : Registry->GetNPCs())
 		{
-			AT66HouseNPCBase* NPC = WeakNPC.Get();
+			AT66NPCBase* NPC = WeakNPC.Get();
 			if (!NPC) continue;
 			if (bTowerLayout && GameMode && CandidateFloorNumber != INDEX_NONE
 				&& GameMode->GetTowerFloorIndexForLocation(NPC->GetActorLocation()) != CandidateFloorNumber)
@@ -953,6 +975,22 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 			}
 			const float R = NPC->GetSafeZoneRadius();
 			if (FVector::DistSquared2D(Loc, NPC->GetActorLocation()) < (R * R))
+			{
+				return true;
+			}
+		}
+		for (const TWeakObjectPtr<UT66SafeZoneComponent>& WeakSafeZone : Registry->GetSafeZones())
+		{
+			const UT66SafeZoneComponent* SafeZone = WeakSafeZone.Get();
+			if (!SafeZone) continue;
+			const FVector SafeZoneLocation = SafeZone->GetComponentLocation();
+			if (bTowerLayout && GameMode && CandidateFloorNumber != INDEX_NONE
+				&& GameMode->GetTowerFloorIndexForLocation(SafeZoneLocation) != CandidateFloorNumber)
+			{
+				continue;
+			}
+			const float R = SafeZone->GetSafeZoneRadius();
+			if (FVector::DistSquared2D(Loc, SafeZoneLocation) < (R * R))
 			{
 				return true;
 			}
@@ -1200,9 +1238,9 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 		if (!bTowerLayout && Registry && IsInAnySafeZone2D(SpawnLoc))
 		{
 			static constexpr float SafeZonePushMargin = 50.f;
-			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : Registry->GetNPCs())
 			{
-				AT66HouseNPCBase* NPC = WeakNPC.Get();
+				AT66NPCBase* NPC = WeakNPC.Get();
 				if (!NPC) continue;
 				const float R = NPC->GetSafeZoneRadius();
 				FVector ToSpawnPt = SpawnLoc - NPC->GetActorLocation();
@@ -1222,6 +1260,34 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 					if (Dir.Normalize())
 					{
 						SpawnLoc = NPC->GetActorLocation() + Dir * (R + SafeZonePushMargin);
+						SpawnLoc.Z = PlayerGroundZ;
+					}
+					break;
+				}
+			}
+			for (const TWeakObjectPtr<UT66SafeZoneComponent>& WeakSafeZone : Registry->GetSafeZones())
+			{
+				const UT66SafeZoneComponent* SafeZone = WeakSafeZone.Get();
+				if (!SafeZone) continue;
+				const FVector SafeZoneLocation = SafeZone->GetComponentLocation();
+				const float R = SafeZone->GetSafeZoneRadius();
+				FVector ToSpawnPt = SpawnLoc - SafeZoneLocation;
+				ToSpawnPt.Z = 0.f;
+				const float Dist2D = ToSpawnPt.Size();
+				if (Dist2D < R && Dist2D > 1.f)
+				{
+					FVector Dir = ToSpawnPt / Dist2D;
+					SpawnLoc = SafeZoneLocation + FVector(Dir.X, Dir.Y, 0.f) * (R + SafeZonePushMargin);
+					SpawnLoc.Z = PlayerGroundZ;
+					break;
+				}
+				else if (Dist2D <= 1.f)
+				{
+					FVector Dir(Rng.FRandRange(-1.f, 1.f), Rng.FRandRange(-1.f, 1.f), 0.f);
+					Dir.Z = 0.f;
+					if (Dir.Normalize())
+					{
+						SpawnLoc = SafeZoneLocation + Dir * (R + SafeZonePushMargin);
 						SpawnLoc.Z = PlayerGroundZ;
 					}
 					break;
@@ -1340,7 +1406,9 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	}
 
 	ActiveMaxSpawnsPerStaggeredBatch = bTowerLayout
-		? FMath::Clamp(Snapshot.SpawnBudget.RuntimeMaxSpawnsPerStaggeredBatch, 1, 128)
+		? (bPandemoniumMode
+			? FMath::Clamp(PandemoniumMaxSpawnsPerBatch, 1, 128)
+			: FMath::Clamp(Snapshot.SpawnBudget.RuntimeMaxSpawnsPerStaggeredBatch, 1, 128))
 		: FMath::Max(1, MaxSpawnsPerStaggeredBatch);
 	const int32 TotalStaggeredBatches = FMath::CeilToInt(static_cast<float>(PendingSpawns.Num()) / static_cast<float>(ActiveMaxSpawnsPerStaggeredBatch));
 	if (bTowerLayout && Snapshot.SpawnBudget.RuntimeWaveStaggerDurationSeconds > 0.0f && TotalStaggeredBatches > 1)
@@ -1554,3 +1622,4 @@ void AT66EnemyDirector::SpawnNextStaggeredBatch()
 		}
 	}
 }
+

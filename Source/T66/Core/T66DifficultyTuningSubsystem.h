@@ -21,12 +21,6 @@ struct T66_API FT66DifficultyTuningRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Difficulty|RunShape", meta = (ClampMin = "1", ClampMax = "20"))
 	int32 EndStage = 4;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Difficulty|Idols")
-	ET66ItemRarity IdolBaseRarity = ET66ItemRarity::Black;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Difficulty|Weapons")
-	ET66WeaponRarity WeaponBaseRarity = ET66WeaponRarity::Black;
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Difficulty|RunShape")
 	bool bUsesFinalSequence = false;
 
@@ -64,10 +58,13 @@ public:
 	int32 GetDifficultyEndStage(ET66Difficulty Difficulty) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Difficulty")
-	ET66ItemRarity GetDifficultyIdolBaseRarity(ET66Difficulty Difficulty) const;
+	int32 GetDifficultyLocalStage(ET66Difficulty Difficulty, int32 AbsoluteStage) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Difficulty")
-	ET66WeaponRarity GetDifficultyWeaponBaseRarity(ET66Difficulty Difficulty) const;
+	ET66ItemRarity GetLocalStageIdolRarity(int32 LocalStageNumber) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Difficulty")
+	ET66WeaponRarity GetLocalStageWeaponRarity(int32 LocalStageNumber) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Difficulty")
 	bool DoesDifficultyUseFinalSequence(ET66Difficulty Difficulty) const;

@@ -1,0 +1,9 @@
+---,MovementProfileID,PatternID,PatternType,bEnabled,Weight,MinPhase,MaxPhase,MinDistance,MaxDistance,SpeedScale,OrbitDirection,CoordinatedAttackID,CoordinatedPartID,CoordinationWindowSeconds
+MoveProfile_SimpleChase_SimpleChase,MoveProfile_SimpleChase,SimpleChase,SimpleChase,true,1.0,0,99,0.0,0.0,1.0,1,,,0.0
+MoveProfile_WebMatriarch_KeepDistance,MoveProfile_WebMatriarch_KeepDistance,KeepDistance,KeepDistance,true,1.0,0,99,520.0,680.0,1.0,1,,,0.0
+MoveProfile_OrbitDemo_Orbit,MoveProfile_OrbitDemo,Orbit,Orbit,true,1.0,0,99,480.0,720.0,0.85,1,,,0.0
+MoveProfile_WebMatriarch_RetreatCast_KeepDistance,MoveProfile_WebMatriarch_RetreatCast,KeepDistanceFallback,KeepDistance,true,1.0,0,99,520.0,680.0,1.0,1,,,0.0
+MoveProfile_WebMatriarch_RetreatCast_HeadShot,MoveProfile_WebMatriarch_RetreatCast,HeadShotRetreat,RetreatThenCast,true,10.0,0,99,0.0,900.0,1.35,1,LegacyProjectile_Sharpshooter,Head,1.25
+MoveProfile_WebMatriarch_Tactics_Strafe,MoveProfile_WebMatriarch_Tactics,StrafeBurstDemo,StrafeBurst,true,1.0,0,99,480.0,720.0,1.15,-1,,,0.0
+MoveProfile_WebMatriarch_Tactics_Anchor,MoveProfile_WebMatriarch_Tactics,AnchorHeadShot,AnchorDuringCast,true,10.0,0,99,0.0,900.0,1.0,1,LegacyProjectile_Sharpshooter,Head,1.25
+MoveProfile_WebMatriarch_Tactics_Charge,MoveProfile_WebMatriarch_Tactics,ChargeDemo,Charge,true,1.0,0,99,180.0,900.0,1.35,1,,,0.0

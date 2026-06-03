@@ -430,9 +430,9 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		if (Registry)
 		{
 			// NPCs use icon markers on the minimap.
-			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : Registry->GetNPCs())
 			{
-				AT66HouseNPCBase* NPC = WeakNPC.Get();
+				AT66NPCBase* NPC = WeakNPC.Get();
 				if (!NPC) continue;
 				MapCache.Add({ NPC, EMapCacheMarkerType::NPC, NPC->NPCColor, NPC->NPCName, NPC->NPCID });
 			}
@@ -620,4 +620,5 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		FullMapWidget->SetSnapshot(PlayerXY, Markers, PlayerMarkerBrush);
 	}
 }
+
 

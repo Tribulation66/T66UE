@@ -1,0 +1,12 @@
+{
+  "generated_local": "2026-05-27T12:34:28",
+  "command": "Scripts\\\\CaptureT66UIScreen.ps1 -Screen RunSummary -Output Reports/Hygiene/2026-05-27/run_summary_smoke.png -ExtraArgs -T66AutoDumpScreen=Reports/Hygiene/2026-05-27/run_summary_smoke_dump.json",
+  "screenshot": "C:\\UE\\T66\\Reports\\Hygiene\\2026-05-27\\run_summary_smoke.png",
+  "screenshot_bytes": 546354,
+  "dump": "C:\\UE\\T66\\Reports\\Hygiene\\2026-05-27\\run_summary_smoke_dump.json",
+  "dump_bytes": 949800,
+  "run_summary_label_count": 6,
+  "move_speed_mult_label_count": 0,
+  "passed": true,
+  "interpretation": "Staged direct RunSummary route rendered and dumped the Run Summary screen; the removed legacy Move Speed Mult line is absent from the dump. Frontend direct mode does not populate a completed-run stat row, so stat-formula equivalence is covered by code-level proof in movement_run_summary_equivalence.md."
+}

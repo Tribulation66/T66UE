@@ -1,0 +1,97 @@
+﻿{
+    "ArtifactKind":  "OperatorWorkArtifactRequiresValidation",
+    "Mode":  "Operator",
+    "Model":  "claude-opus-4-8",
+    "Effort":  "high",
+    "ClaudeOutputFormat":  "json",
+    "PermissionMode":  "bypassPermissions",
+    "ToolProfile":  "FullOperator",
+    "EffectiveToolSurface":  "default (full Claude Code tool surface: edits, shell, configured MCP/editor tools)",
+    "MutatingCapability":  true,
+    "ApprovalRequired":  true,
+    "CodexApprovalPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\20260529_DeprecatedCodeCleanup\\codex_operator_approval_implementation.md",
+    "AllowedTools":  [
+                         "Read",
+                         "Grep",
+                         "Glob"
+                     ],
+    "AddDir":  [
+                   "C:\\UE\\T66"
+               ],
+    "PromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\20260529_DeprecatedCodeCleanup\\claude_operator_prompt_implementation.md",
+    "EffectivePromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T205948-DeprecatedCodeCleanup_Implementation-Operator\\effective_prompt.md",
+    "OutputPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T205948-DeprecatedCodeCleanup_Implementation-Operator\\claude_direct_read_operator.md",
+    "TokenSummaryPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T205948-DeprecatedCodeCleanup_Implementation-Operator\\claude_tokens.json",
+    "ReviewedOperatorRun":  null,
+    "AttemptsRequested":  1,
+    "TimeoutSeconds":  0,
+    "MaxTurns":  0,
+    "MaxTurnContinuations":  3,
+    "SessionPersistence":  false,
+    "SessionPersistenceSource":  "default off (MaxTurns \u003c= 0 has no max-turn resume to support)",
+    "NoSessionPersistence":  true,
+    "MaxTurnContinuationAttempted":  false,
+    "ClaudePath":  "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+    "ClaudeVersion":  "2.1.150 (Claude Code)",
+    "SuccessfulStdoutPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T205948-DeprecatedCodeCleanup_Implementation-Operator\\attempts\\stdout_attempt1.json",
+    "SuccessfulStderrPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T205948-DeprecatedCodeCleanup_Implementation-Operator\\attempts\\stderr_attempt1.txt",
+    "ClaudeJsonPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T205948-DeprecatedCodeCleanup_Implementation-Operator\\attempts\\stdout_attempt1.json",
+    "ClaudeTokensSpent":  1448874,
+    "ClaudeUsage":  {
+                        "input_tokens":  37,
+                        "cache_creation_input_tokens":  110530,
+                        "cache_read_input_tokens":  1305812,
+                        "output_tokens":  30752,
+                        "server_tool_use":  {
+                                                "web_search_requests":  0,
+                                                "web_fetch_requests":  0
+                                            },
+                        "service_tier":  "standard",
+                        "cache_creation":  {
+                                               "ephemeral_1h_input_tokens":  110530,
+                                               "ephemeral_5m_input_tokens":  0
+                                           },
+                        "inference_geo":  "",
+                        "iterations":  [
+                                           {
+                                               "input_tokens":  2,
+                                               "output_tokens":  1034,
+                                               "cache_read_input_tokens":  108114,
+                                               "cache_creation_input_tokens":  88,
+                                               "cache_creation":  {
+                                                                      "ephemeral_5m_input_tokens":  0,
+                                                                      "ephemeral_1h_input_tokens":  88
+                                                                  },
+                                               "type":  "message"
+                                           }
+                                       ],
+                        "speed":  "standard"
+                    },
+    "ClaudeModelUsage":  {
+                             "claude-haiku-4-5-20251001":  {
+                                                               "inputTokens":  1729,
+                                                               "outputTokens":  14,
+                                                               "cacheReadInputTokens":  0,
+                                                               "cacheCreationInputTokens":  0,
+                                                               "webSearchRequests":  0,
+                                                               "costUSD":  0.001799,
+                                                               "contextWindow":  200000,
+                                                               "maxOutputTokens":  32000
+                                                           },
+                             "claude-opus-4-8":  {
+                                                     "inputTokens":  37,
+                                                     "outputTokens":  30752,
+                                                     "cacheReadInputTokens":  1305812,
+                                                     "cacheCreationInputTokens":  110530,
+                                                     "webSearchRequests":  0,
+                                                     "costUSD":  2.1127035000000003,
+                                                     "contextWindow":  200000,
+                                                     "maxOutputTokens":  32000
+                                                 }
+                         },
+    "Greenlit":  false,
+    "Verdict":  null,
+    "VerdictLine":  null,
+    "OutcomeKind":  "ClaudeOperatorArtifact",
+    "FailureKind":  null
+}

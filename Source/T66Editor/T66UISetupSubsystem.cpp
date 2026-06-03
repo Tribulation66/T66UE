@@ -467,7 +467,6 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	const FString BossEncounterMembersTablePath = TEXT("/Game/Data/DT_BossEncounterMembers.DT_BossEncounterMembers");
 	const FString NPCsTablePath = TEXT("/Game/Data/DT_NPCs.DT_NPCs");
 	const FString CharacterVisualsTablePath = TEXT("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals");
-	const FString ArcadeInteractablesTablePath = TEXT("/Game/Data/DT_ArcadeInteractables.DT_ArcadeInteractables");
 
 	UDataTable* HeroesTable = LoadObject<UDataTable>(nullptr, *HeroesTablePath);
 	UDataTable* CompanionsTable = LoadObject<UDataTable>(nullptr, *CompanionsTablePath);
@@ -481,7 +480,6 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	UDataTable* BossEncounterMembersTable = LoadObject<UDataTable>(nullptr, *BossEncounterMembersTablePath);
 	UDataTable* NPCsTable = LoadObject<UDataTable>(nullptr, *NPCsTablePath);
 	UDataTable* CharacterVisualsTable = LoadObject<UDataTable>(nullptr, *CharacterVisualsTablePath);
-	UDataTable* ArcadeInteractablesTable = LoadObject<UDataTable>(nullptr, *ArcadeInteractablesTablePath);
 
 	if (HeroesTable)
 	{
@@ -601,16 +599,6 @@ bool UT66UISetupSubsystem::ConfigureGameInstance()
 	else
 	{
 		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_CharacterVisuals (create via SetupCharacterVisualsDataTable.py)"));
-	}
-
-	if (ArcadeInteractablesTable)
-	{
-		GameInstanceCDO->ArcadeInteractablesDataTable = ArcadeInteractablesTable;
-		UE_LOG(LogT66Editor, Log, TEXT("Set ArcadeInteractablesDataTable to DT_ArcadeInteractables"));
-	}
-	else
-	{
-		UE_LOG(LogT66Editor, Warning, TEXT("Failed to load DT_ArcadeInteractables (create via SetupArcadeInteractablesDataTable.py)"));
 	}
 
 	return SaveBlueprint(Blueprint);

@@ -1,0 +1,1 @@
+{"attention_backend":"flash_attn_3","cuda":true,"gpu":"NVIDIA A40","loaded_at":1779496072.9164112,"low_vram":false,"model_path":"TencentARC/Pixal3D","pipeline_loaded":true,"sparse_attention_backend":"flash_attn_3","sparse_conv_backend":"flex_gemm","status":"ok","vram_allocated_gb":20.2,"vram_reserved_gb":20.3,"vram_total_gb":47.7}

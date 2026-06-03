@@ -45,27 +45,6 @@ struct T66_API FT66LobbyPlayerInfo
 	ET66MainMapLayoutVariant MainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	bool bMiniFlowActive = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	FName MiniSelectedHeroID = NAME_None;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	FName MiniSelectedCompanionID = NAME_None;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	FName MiniSelectedDifficultyID = NAME_None;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	TArray<FName> MiniSelectedIdolIDs;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	bool bMiniLoadFlow = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
-	bool bMiniIntermissionFlow = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
 	ET66ScreenType FrontendScreen = ET66ScreenType::MainMenu;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")

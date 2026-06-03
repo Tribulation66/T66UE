@@ -2,6 +2,7 @@
 
 #include "Core/T66InteractionPromptSubsystem.h"
 
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66DifficultyTotem.h"
@@ -81,7 +82,9 @@ ET66InteractionPromptAction UT66InteractionPromptSubsystem::GetPromptActionForAc
 
 	if (Cast<AT66PilotableTractor>(Actor))
 	{
-		return ET66InteractionPromptAction::PilotTractor;
+		return FT66ShelvedFeatureGate::IsVehicleInteractablesEnabled()
+			? ET66InteractionPromptAction::PilotTractor
+			: ET66InteractionPromptAction::None;
 	}
 	if (Cast<AT66FountainInteractable>(Actor))
 	{
@@ -112,7 +115,9 @@ FText UT66InteractionPromptSubsystem::GetPromptTargetNameForActor(const AActor* 
 
 	if (Cast<AT66PilotableTractor>(Actor))
 	{
-		return NSLOCTEXT("T66.InteractionPrompt", "TargetVehicle", "Vehicle");
+		return FT66ShelvedFeatureGate::IsVehicleInteractablesEnabled()
+			? NSLOCTEXT("T66.InteractionPrompt", "TargetVehicle", "Vehicle")
+			: FText::GetEmpty();
 	}
 	if (Cast<AT66FountainInteractable>(Actor))
 	{

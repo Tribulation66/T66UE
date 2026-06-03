@@ -845,7 +845,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 		return nullptr;
 	}
 
-	Snapshot->SchemaVersion = T66SparseActiveHeroIdRunSummarySchemaVersion;
+	Snapshot->SchemaVersion = T66CurrentRunSummarySchemaVersion;
 	Snapshot->LeaderboardType = LeaderboardType;
 	Snapshot->Difficulty = Difficulty;
 	Snapshot->PartySize = PartySize;
@@ -862,7 +862,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	Snapshot->Score = FMath::Max(0, Score);
 
 	Snapshot->SecondaryStatValues.Reset();
-	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::VendorToken); ++i)
+	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::NaturePower); ++i)
 	{
 		const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
 		if (!T66IsLiveSecondaryStatType(SecType))
@@ -918,6 +918,9 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	RunState->GetAntiCheatGamblerSummaries(Snapshot->AntiCheatGamblerSummaries);
 	RunState->GetAntiCheatGamblerEvents(Snapshot->AntiCheatGamblerEvents);
 	Snapshot->bAntiCheatGamblerEventsTruncated = RunState->AreAntiCheatGamblerEventsTruncated();
+	Snapshot->GamblerOutcomeSummaries = Snapshot->AntiCheatGamblerSummaries;
+	Snapshot->GamblerOutcomeEvents = Snapshot->AntiCheatGamblerEvents;
+	Snapshot->bGamblerOutcomeEventsTruncated = Snapshot->bAntiCheatGamblerEventsTruncated;
 	if (Integrity)
 	{
 		Integrity->FinalizeCurrentRun();
@@ -939,7 +942,81 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 		Snapshot->EquippedIdols = RunState->GetEquippedIdols();
 		Snapshot->EquippedIdolTiers = RunState->GetEquippedIdolTierValues();
 	}
+	T66NormalizeEquippedIdolSaveArrays(Snapshot->EquippedIdols, Snapshot->EquippedIdolTiers);
+	Snapshot->EquippedIdolElements.Reset();
+	Snapshot->EquippedIdolCategories.Reset();
+	Snapshot->EquippedIdolElements.Reserve(Snapshot->EquippedIdols.Num());
+	Snapshot->EquippedIdolCategories.Reserve(Snapshot->EquippedIdols.Num());
+	for (const FName& IdolID : Snapshot->EquippedIdols)
+	{
+		FIdolData IdolData;
+		if (T66GI->GetIdolData(IdolID, IdolData))
+		{
+			Snapshot->EquippedIdolElements.Add(IdolData.Element);
+			Snapshot->EquippedIdolCategories.Add(IdolData.Category);
+		}
+		else
+		{
+			Snapshot->EquippedIdolElements.Add(ET66IdolElement::Fire);
+			Snapshot->EquippedIdolCategories.Add(ET66AttackCategory::Pierce);
+		}
+	}
 	Snapshot->Inventory = RunState->GetInventory();
+	Snapshot->InventorySlots = RunState->GetInventorySlots();
+	Snapshot->NoIdolSelectionStacks = RunState->GetNoIdolSelectionStacks();
+	Snapshot->NoIdolPrimaryStatBonuses = RunState->GetNoIdolPrimaryStatBonuses();
+	Snapshot->MobLootDropsCollectedThisRun = RunState->GetMobLootDropsCollectedThisRun();
+	Snapshot->MobLootQuantityCollectedThisRun = RunState->GetMobLootQuantityCollectedThisRun();
+	Snapshot->MobLootGoldValueCollectedThisRun = RunState->GetMobLootGoldValueCollectedThisRun();
+	Snapshot->MobLootQuantityCollectedByPlayerThisRun = RunState->GetMobLootQuantityCollectedByPlayerThisRun();
+	Snapshot->MobLootQuantityCollectedByPetThisRun = RunState->GetMobLootQuantityCollectedByPetThisRun();
+	Snapshot->MobLootDropsCollectedByPetThisRun = RunState->GetMobLootDropsCollectedByPetThisRun();
+	Snapshot->MobLootQuantitySoldThisRun = RunState->GetMobLootQuantitySoldThisRun();
+	Snapshot->MobLootSaleGoldThisRun = RunState->GetMobLootSaleGoldThisRun();
+	Snapshot->MobLootRemainingStack = RunState->GetCollectedMobLootStack();
+	Snapshot->CurrentGold = RunState->GetCurrentGold();
+	Snapshot->CurrentDebt = RunState->GetCurrentDebt();
+	Snapshot->InventorySellValueTotal = RunState->GetInventorySellValueTotal();
+	Snapshot->NetWorth = RunState->GetNetWorth();
+	Snapshot->ActiveVendorTokenStacks = RunState->GetActiveVendorTokenStacks();
+	Snapshot->CurrentSellFraction = RunState->GetCurrentSellFraction();
+	Snapshot->ShopStockCount = RunState->GetShopStockSlots().Num();
+	Snapshot->BuybackPoolSize = RunState->GetBuybackPoolSize();
+
+	if (UT66WeaponManagerSubsystem* WeaponManager = GI ? GI->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr)
+	{
+		Snapshot->EquippedWeaponID = WeaponManager->GetEquippedWeaponID();
+		FWeaponData WeaponData;
+		if (WeaponManager->GetEquippedWeaponData(WeaponData))
+		{
+			Snapshot->EquippedWeaponBranch = WeaponData.Branch;
+			Snapshot->EquippedWeaponRarity = WeaponData.Rarity;
+			Snapshot->EquippedWeaponAttackPatternID = WeaponData.AttackPatternID;
+			Snapshot->EquippedWeaponProjectileCount = WeaponData.ProjectileCount;
+			Snapshot->EquippedWeaponSpreadAngleDegrees = WeaponData.SpreadAngleDegrees;
+		}
+	}
+
+	if (const UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
+	{
+		Snapshot->ActivePetID = !T66GI->SelectedPetID.IsNone() ? T66GI->SelectedPetID : Achievements->GetActivePetID();
+		if (!Snapshot->ActivePetID.IsNone())
+		{
+			Snapshot->ActivePetSkinID = Achievements->GetEquippedPetSkinID(Snapshot->ActivePetID);
+			Snapshot->ActivePetBondStagesCleared = Achievements->GetPetBondStagesCleared(Snapshot->ActivePetID);
+			Snapshot->ActivePetBondMovementSpeedMultiplier = Achievements->GetPetBondMovementSpeedMultiplier(Snapshot->ActivePetID);
+		}
+	}
+	Snapshot->PetMobLootQuantityCollectedThisRun = RunState->GetMobLootQuantityCollectedByPetThisRun();
+	Snapshot->PetMobLootDropsCollectedThisRun = RunState->GetMobLootDropsCollectedByPetThisRun();
+	Snapshot->bBossActiveAtSummary = RunState->GetBossActive();
+	Snapshot->ActiveBossID = RunState->GetActiveBossID();
+	Snapshot->BossMaxHP = RunState->GetBossMaxHP();
+	Snapshot->BossCurrentHP = RunState->GetBossCurrentHP();
+	Snapshot->BossParts = RunState->GetBossPartSnapshots();
+	Snapshot->OwedBossIDs = RunState->GetOwedBossIDs();
+	Snapshot->CowardiceGatesTakenCount = RunState->GetCowardiceGatesTaken();
+
 	if (UT66BuffSubsystem* Buffs = GI ? GI->GetSubsystem<UT66BuffSubsystem>() : nullptr)
 	{
 		Snapshot->TemporaryBuffSlots = Buffs->GetSelectedSingleUseBuffSlots();
@@ -968,6 +1045,14 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 
 bool UT66LeaderboardSubsystem::SaveRunSummarySnapshotToSlot(UT66LeaderboardRunSummarySaveGame* Snapshot, const FString& SlotName) const
 {
+	if (Snapshot)
+	{
+		T66MigrateLocalRunSummarySaveFields(
+			Snapshot->SchemaVersion,
+			Snapshot->HeroID,
+			Snapshot->EquippedIdols,
+			Snapshot->EquippedIdolTiers);
+	}
 	return Snapshot && !SlotName.IsEmpty() && UGameplayStatics::SaveGameToSlot(Snapshot, SlotName, 0);
 }
 
@@ -990,7 +1075,11 @@ bool UT66LeaderboardSubsystem::UpdateSavedRunSummaryRanks(
 		return false;
 	}
 
-	Snapshot->SchemaVersion = FMath::Max(Snapshot->SchemaVersion, 18);
+	T66MigrateLocalRunSummarySaveFields(
+		Snapshot->SchemaVersion,
+		Snapshot->HeroID,
+		Snapshot->EquippedIdols,
+		Snapshot->EquippedIdolTiers);
 	Snapshot->ScoreRankAllTime = FMath::Max(0, ScoreRankAlltime);
 	Snapshot->ScoreRankWeekly = FMath::Max(0, ScoreRankWeekly);
 	Snapshot->SpeedRunRankAllTime = FMath::Max(0, SpeedRunRankAlltime);

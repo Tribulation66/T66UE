@@ -1,0 +1,9 @@
+{
+  "ClaudeTokensSpent": null,
+  "Model": "claude-opus-4-8",
+  "Mode": "Operator",
+  "ToolProfile": "ReadOnly",
+  "ClaudeUsage": null,
+  "ClaudeModelUsage": null,
+  "CreatedAt": "20260529T221800"
+}

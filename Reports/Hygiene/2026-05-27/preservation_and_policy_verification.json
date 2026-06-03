@@ -1,0 +1,39 @@
+{
+  "generated_local": "2026-05-27T12:12:42",
+  "path_checks": [
+    {
+      "Path": "Content\\World\\Backrooms\\Textures\\T_Backrooms_Door.uasset",
+      "Exists": true
+    },
+    {
+      "Path": "Content\\World\\Backrooms\\Textures\\T_Backrooms_Floor.uasset",
+      "Exists": true
+    },
+    {
+      "Path": "Content\\World\\Backrooms\\Textures\\T_Backrooms_Wall.uasset",
+      "Exists": true
+    },
+    {
+      "Path": "Reports\\README.md",
+      "Exists": true
+    },
+    {
+      "Path": "Reports\\AGENTS.md",
+      "Exists": true
+    },
+    {
+      "Path": "AGENTS.md",
+      "Exists": true
+    }
+  ],
+  "policy_hits": [
+    "Reports\\AGENTS.md:13:- Use `Reports/ToonStyle` instead of `ToonStyle/Reports` when the file is only a report and current process docs/manifests do not require the old location.",
+    "Reports\\AGENTS.md:20:Raw report/proof run folders expire after 15 days. New raw run folders should include `.report-run.json` with `expiresAfterDays: 15`, but existing raw run folders without a marker still follow the 15-day rule after a durable-summary check and an active-reference sweep.",
+    "Reports\\README.md:12:- `Reports/ToonStyle/` - ToonStyle report-only artifacts moved out of production folders after consumer checks.",
+    "Reports\\README.md:18:Raw run folders expire after 15 days. Cleanup should delete the whole raw run folder, not individual files.",
+    "Reports\\README.md:25:New raw run folders should include a `.report-run.json` marker with `expiresAfterDays: 15` so future cleanup can identify them unambiguously. Existing raw run folders without a marker still follow the 15-day rule after the durable-summary and active-reference checks pass.",
+    "AGENTS.md:175:| Pixal3D ToonStyle production import | Pixal3D asset entering playable content | Use `Model Generation/Instructions/09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md`. Do not use legacy one-off import scripts or manual ToonStyle material assignment. | Manifest, Blender pipeline output, Unreal import, hard validators, and staged build proof if playable content is affected. |",
+    "AGENTS.md:213:- Report-only ToonStyle artifacts belong under `Reports/ToonStyle`, not under production ToonStyle folders.",
+    "AGENTS.md:214:- Raw report/proof run folders expire after 15 days. Delete whole run folders only after confirming a durable summary exists outside the raw folder and no active references still point at that run. New raw run folders should include `.report-run.json` with `expiresAfterDays: 15` for unambiguous future cleanup."
+  ]
+}

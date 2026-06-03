@@ -104,7 +104,7 @@ static const int32 CatAttackScale[] =
 static const int32 CatAccuracy[] =
 {
 	static_cast<int32>(ET66SecondaryStatType::CritChance),
-	static_cast<int32>(ET66SecondaryStatType::CritDamage),
+	static_cast<int32>(ET66SecondaryStatType::HeadshotChance),
 	static_cast<int32>(ET66SecondaryStatType::AttackRange),
 	static_cast<int32>(ET66SecondaryStatType::Execute),
 };
@@ -129,6 +129,13 @@ static const int32 CatLuck[] =
 	static_cast<int32>(ET66SecondaryStatType::LootBag),
 	static_cast<int32>(ET66SecondaryStatType::LootWheel),
 };
+static const int32 CatElementalPower[] =
+{
+	static_cast<int32>(ET66SecondaryStatType::FirePower),
+	static_cast<int32>(ET66SecondaryStatType::IcePower),
+	static_cast<int32>(ET66SecondaryStatType::ElectricityPower),
+	static_cast<int32>(ET66SecondaryStatType::NaturePower),
+};
 
 static const FSecondaryStatCategory SecondaryStatCategories[] =
 {
@@ -139,6 +146,7 @@ static const FSecondaryStatCategory SecondaryStatCategories[] =
 	{ NSLOCTEXT("T66.StatsPanel", "CatArmor",       "Armor"),          CatArmor,       UE_ARRAY_COUNT(CatArmor), EDerivedStatLine::ArmorReduction, 5 },
 	{ NSLOCTEXT("T66.StatsPanel", "CatEvasion",     "Evasion"),        CatEvasion,     UE_ARRAY_COUNT(CatEvasion), EDerivedStatLine::EvasionChance, 6 },
 	{ NSLOCTEXT("T66.StatsPanel", "CatLuck",        "Luck"),           CatLuck,        UE_ARRAY_COUNT(CatLuck), EDerivedStatLine::None,            7 },
+	{ NSLOCTEXT("T66.StatsPanel", "CatElemental",   "Elemental Power"), CatElementalPower, UE_ARRAY_COUNT(CatElementalPower), EDerivedStatLine::None, INDEX_NONE },
 };
 static constexpr int32 NumSecondaryStatCategories = UE_ARRAY_COUNT(SecondaryStatCategories);
 
@@ -267,6 +275,7 @@ static FText GetPrimaryStatAdjective(const UT66RunStateSubsystem* RunState, int3
 static bool IsSecondaryPercent(ET66SecondaryStatType SecType)
 {
 	return SecType == ET66SecondaryStatType::CritChance
+		|| SecType == ET66SecondaryStatType::HeadshotChance
 		|| SecType == ET66SecondaryStatType::ReflectDamage
 		|| SecType == ET66SecondaryStatType::Crush
 		|| SecType == ET66SecondaryStatType::Invisibility

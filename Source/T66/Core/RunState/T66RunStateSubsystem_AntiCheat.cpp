@@ -4,6 +4,27 @@
 
 using namespace T66RunStatePrivate;
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66CasinoProof, Log, All);
+
+namespace
+{
+	const TCHAR* T66_GetGamblerProofGameName(const ET66AntiCheatGamblerGameType GameType)
+	{
+		switch (GameType)
+		{
+		case ET66AntiCheatGamblerGameType::GuessTheCup:
+			return TEXT("GuessTheCup");
+		case ET66AntiCheatGamblerGameType::PickLongestShortestStick:
+			return TEXT("PickLongestShortestStick");
+		case ET66AntiCheatGamblerGameType::FindJoker:
+			return TEXT("FindJoker");
+		case ET66AntiCheatGamblerGameType::CoinFlip:
+		default:
+			return TEXT("CoinFlip");
+		}
+	}
+}
+
 void UT66RunStateSubsystem::ResetLuckRatingTracking()
 {
 	LuckQuantityByCategory.Reset();
@@ -555,6 +576,31 @@ void UT66RunStateSubsystem::RecordAntiCheatGamblerRound(
 	Event.OutcomeDrawIndex = OutcomeDrawIndex;
 	Event.OutcomeExpectedChance01 = OutcomeExpectedChance01;
 	Event.ActionSequence = ActionSequence;
+
+	UE_LOG(
+		LogT66CasinoProof,
+		Log,
+		TEXT("[T66Proof][CasinoGameRound] Game=%s Bet=%d Payout=%d Win=%d Draw=%d CheatAttempted=%d CheatSucceeded=%d PlayerChoice=%d OpponentChoice=%d Outcome=%d Secondary=%d SelectedMask=%d ResolvedMask=%d PathBits=%d ShuffleSeed=%d ShuffleDrawIndex=%d OutcomeSeed=%d OutcomeDrawIndex=%d ExpectedChance=%.5f Actions=%s"),
+		T66_GetGamblerProofGameName(GameType),
+		Event.BetGold,
+		Event.PayoutGold,
+		Event.bWin ? 1 : 0,
+		Event.bDraw ? 1 : 0,
+		Event.bCheatAttempted ? 1 : 0,
+		Event.bCheatSucceeded ? 1 : 0,
+		Event.PlayerChoice,
+		Event.OpponentChoice,
+		Event.OutcomeValue,
+		Event.OutcomeSecondaryValue,
+		Event.SelectedMask,
+		Event.ResolvedMask,
+		Event.PathBits,
+		Event.ShufflePreDrawSeed,
+		Event.ShuffleStartDrawIndex,
+		Event.OutcomePreDrawSeed,
+		Event.OutcomeDrawIndex,
+		Event.OutcomeExpectedChance01,
+		*Event.ActionSequence);
 
 	if (AntiCheatGamblerEvents.Num() > MaxAntiCheatGamblerEvents)
 	{

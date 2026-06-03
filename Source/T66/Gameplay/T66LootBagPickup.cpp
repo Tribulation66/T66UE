@@ -4,7 +4,7 @@
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
@@ -224,9 +224,9 @@ void AT66LootBagPickup::ResolveSpawnClearance()
 
 		if (Registry)
 		{
-			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : Registry->GetNPCs())
 			{
-				const AT66HouseNPCBase* NPC = WeakNPC.Get();
+				const AT66NPCBase* NPC = WeakNPC.Get();
 				if (!NPC)
 				{
 					continue;
@@ -404,4 +404,5 @@ void AT66LootBagPickup::OnSphereEndOverlap(UPrimitiveComponent* OverlappedCompon
 
 	PC->ClearNearbyLootBag(this);
 }
+
 

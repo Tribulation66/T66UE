@@ -9,7 +9,6 @@
 #include "Core/T66Rarity.h"
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66RunTypes.h"
-#include "Gameplay/T66ArcadeInteractableTypes.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 #include "UI/T66UITypes.h"
 #include "T66GameInstance.generated.h"
@@ -69,6 +68,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> CompanionDataTable;
 
+	/** Reference to the Pets DataTable. Rows are keyed by source boss ID. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> PetsDataTable;
+
 	/** Reference to the Items DataTable (v0: 3 placeholder items) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> ItemsDataTable;
@@ -88,6 +91,22 @@ public:
 	/** Reference to the Bosses DataTable. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> BossesDataTable;
+
+	/** Reference to the boss attack ownership DataTable. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> BossAttacksDataTable;
+
+	/** Reference to boss attack behavior/visual definitions keyed by AttackID. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> BossAttackDefinitionsDataTable;
+
+	/** Reference to authored persistent boss hazard definitions keyed by HazardID. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> BossHazardDefinitionsDataTable;
+
+	/** Reference to the boss movement pattern DataTable. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
+	TSoftObjectPtr<UDataTable> BossMovementPatternsDataTable;
 
 	/** Reference to the Stages DataTable. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
@@ -125,10 +144,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
 	TSoftObjectPtr<UDataTable> CharacterVisualsDataTable;
 
-	/** Reference to the Arcade Interactables DataTable (in-run arcade tuning and rewards). */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data")
-	TSoftObjectPtr<UDataTable> ArcadeInteractablesDataTable;
-
 	// ============================================
 	// Player Selections (for current run setup)
 	// ============================================
@@ -144,6 +159,10 @@ public:
 	/** Selected companion row name (from Companion DataTable). NAME_None = no companion */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	FName SelectedCompanionID;
+
+	/** Selected active pet row/source boss ID. NAME_None = no pet. */
+	UPROPERTY(BlueprintReadWrite, Category = "Selection")
+	FName SelectedPetID;
 
 	/** Selected difficulty */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
@@ -164,30 +183,6 @@ public:
 	/** Stable run modifier id/name used by the frontend selection. */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	FName SelectedRunModifierID = NAME_None;
-
-	/** Mini lobby selected hero row name. */
-	UPROPERTY(BlueprintReadWrite, Category = "Mini")
-	FName MiniSelectedHeroID;
-
-	/** Mini lobby selected companion row name. */
-	UPROPERTY(BlueprintReadWrite, Category = "Mini")
-	FName MiniSelectedCompanionID;
-
-	/** Mini lobby selected difficulty row name. */
-	UPROPERTY(BlueprintReadWrite, Category = "Mini")
-	FName MiniSelectedDifficultyID;
-
-	/** Mini lobby selected idol loadout. */
-	UPROPERTY(BlueprintReadWrite, Category = "Mini")
-	TArray<FName> MiniSelectedIdolIDs;
-
-	/** True when the current mini frontend flow came from loading a save. */
-	UPROPERTY(BlueprintReadWrite, Category = "Mini")
-	bool bMiniLoadFlow = false;
-
-	/** True when the current mini frontend flow is in intermission/shop state. */
-	UPROPERTY(BlueprintReadWrite, Category = "Mini")
-	bool bMiniIntermissionFlow = false;
 
 	/** Run-level random seed (set when entering tribulation). Used for stage effects, NPC shuffle, world interactables. */
 	UPROPERTY(BlueprintReadWrite, Category = "Flow")
@@ -321,6 +316,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetCompanionDataTable();
 
+	/** Get the loaded Pets DataTable (loads if necessary, optional during Foundation seam work). */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetPetsDataTable();
+
 	/** Get the loaded Items DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetItemsDataTable();
@@ -354,6 +353,22 @@ public:
 	/** Get the loaded Bosses DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetBossesDataTable();
+
+	/** Get the loaded boss attack ownership DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetBossAttacksDataTable();
+
+	/** Get the loaded boss attack definition DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetBossAttackDefinitionsDataTable();
+
+	/** Get the loaded boss hazard definition DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetBossHazardDefinitionsDataTable();
+
+	/** Get the loaded boss movement pattern DataTable (loads if necessary) */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	UDataTable* GetBossMovementPatternsDataTable();
 
 	/** Get the loaded Stages DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -391,10 +406,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetCharacterVisualsDataTable();
 
-	/** Get the loaded Arcade Interactables DataTable (loads if necessary) */
-	UFUNCTION(BlueprintCallable, Category = "Data")
-	UDataTable* GetArcadeInteractablesDataTable();
-
 	/** Get item data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetItemData(FName ItemID, FItemData& OutItemData);
@@ -413,6 +424,18 @@ public:
 	/** Get boss data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetBossData(FName BossID, FBossData& OutBossData);
+
+	/** Get authored attack ownership rows for a boss. */
+	void GetBossAttackOwnershipRows(FName BossID, TArray<FT66BossAttackOwnershipData>& OutRows);
+
+	/** Get enabled attack definition rows for an attack identity and current phase, sorted by SequenceIndex. */
+	void GetBossAttackDefinitionRows(FName AttackID, int32 Phase, TArray<FT66BossAttackDefinitionData>& OutRows);
+
+	/** Get authored persistent hazard definition by HazardID. */
+	bool GetBossHazardDefinitionData(FName HazardID, FT66BossHazardDefinitionData& OutDefinition);
+
+	/** Get authored movement pattern rows for a movement profile. */
+	void GetBossMovementPatternRows(FName MovementProfileID, TArray<FT66BossMovementPatternData>& OutRows);
 
 	/** Get stage data by stage number. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -436,7 +459,7 @@ public:
 
 	/** Get NPC data by ID (row name). Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
-	bool GetNPCData(FName NPCID, FHouseNPCData& OutNPCData);
+	bool GetNPCData(FName NPCID, FT66NPCData& OutNPCData);
 
 	/** Get loan shark tuning data. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -454,9 +477,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetCompanionData(FName CompanionID, FCompanionData& OutCompanionData);
 
-	/** Get arcade interactable data by row ID. Returns false if not found. */
+	/** Get pet data by pet/source boss ID. Synthesizes a fallback from Bosses when DT_Pets is absent. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
-	bool GetArcadeInteractableData(FName ArcadeRowID, FT66ArcadeInteractableData& OutArcadeData);
+	bool GetPetData(FName PetID, FPetData& OutPetData);
+
+	/** Resolve a pet ID from a defeated boss ID. Rows are keyed by boss ID for the temporary data layer. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	FName ResolvePetIDForBossID(FName BossID);
 
 	/** Get all hero IDs from the DataTable */
 	UFUNCTION(BlueprintCallable, Category = "Data")
@@ -510,6 +537,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Release")
 	TArray<FName> GetPlayableCompanionIDs();
 
+	/** Get all pet IDs from DT_Pets or, until that table exists, from DT_Bosses. */
+	UFUNCTION(BlueprintCallable, Category = "Data")
+	TArray<FName> GetAllPetIDs();
+
 	/** Returns true when the companion is playable for this release variant. */
 	UFUNCTION(BlueprintCallable, Category = "Release")
 	bool IsCompanionPlayable(FName CompanionID) const;
@@ -525,6 +556,10 @@ public:
 	/** Get the currently selected companion data (returns false if no companion selected) */
 	UFUNCTION(BlueprintCallable, Category = "Selection")
 	bool GetSelectedCompanionData(FCompanionData& OutCompanionData);
+
+	/** Get the currently selected pet data (returns false if no pet selected). */
+	UFUNCTION(BlueprintCallable, Category = "Selection")
+	bool GetSelectedPetData(FPetData& OutPetData);
 
 	/** Resolve a hero portrait for a body type + portrait state (low / half / full). */
 	TSoftObjectPtr<UTexture2D> ResolveHeroPortrait(FName HeroID, ET66BodyType BodyType, ET66HeroPortraitVariant Variant) const;
@@ -560,7 +595,7 @@ public:
 	void ClearActiveDailyClimbRun();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Run")
-	bool IsDailyClimbRun() const { return SelectedRunMode == ET66RunMode::DailyClimb; }
+	bool IsDailyClimbRun() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Run")
 	bool IsOfflineRun() const { return SelectedRunMode == ET66RunMode::Offline; }
@@ -711,6 +746,10 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedCompanionDataTable;
 
+	/** Cached loaded Pets DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedPetsDataTable;
+
 	/** Cached loaded Items DataTable */
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedItemsDataTable;
@@ -753,6 +792,22 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedBossesDataTable;
 
+	/** Cached loaded boss attack ownership DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedBossAttacksDataTable;
+
+	/** Cached loaded boss attack definition DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedBossAttackDefinitionsDataTable;
+
+	/** Cached loaded boss hazard definition DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedBossHazardDefinitionsDataTable;
+
+	/** Cached loaded boss movement pattern DataTable */
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> CachedBossMovementPatternsDataTable;
+
 
 	/** Cached loaded Stages DataTable */
 	UPROPERTY(Transient)
@@ -791,10 +846,6 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UDataTable> CachedCharacterVisualsDataTable;
 
-	/** Cached loaded Arcade Interactables DataTable */
-	UPROPERTY(Transient)
-	TObjectPtr<UDataTable> CachedArcadeInteractablesDataTable;
-
 	// Gameplay asset pre-load tracking.
 	bool bGameplayAssetsPreloadInFlight = false;
 	bool bGameplayPreloadWaitingOnCoreTables = false;
@@ -806,3 +857,4 @@ private:
 	void HandleGameplayAssetsPreloaded();
 	TSharedPtr<SBorder> PersistentGameplayTransitionCurtain;
 };
+

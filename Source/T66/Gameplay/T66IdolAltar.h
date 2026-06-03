@@ -64,10 +64,13 @@ public:
 
 	/** Idol offered when tutorial single-offer mode is enabled. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "IdolAltar")
-	FName TutorialOfferedIdolID = FName(TEXT("Idol_Electric"));
+	FName TutorialOfferedIdolID = FName(TEXT("Idol_Electricity_Bounce"));
 
 	/** Apply simple placeholder visuals (color/material). */
 	void ApplyVisuals();
+
+	/** Spend this altar and disable future player interaction while keeping the visual actor in place. */
+	void DisableAfterSelection();
 
 protected:
 	virtual void BeginPlay() override;

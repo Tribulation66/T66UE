@@ -153,9 +153,9 @@ namespace
 		return Window;
 	}
 
-	static FT66TrapLevelSpawnTuning MakeLevelSpawnTuning(const int32 MinCount, const int32 MaxCount)
+	static FT66TrapFloorSpawnTuning MakeFloorSpawnTuning(const int32 MinCount, const int32 MaxCount)
 	{
-		FT66TrapLevelSpawnTuning Tuning;
+		FT66TrapFloorSpawnTuning Tuning;
 		Tuning.TotalTrapCount = { MinCount, MaxCount };
 		return Tuning;
 	}
@@ -253,11 +253,9 @@ namespace
 }
 
 UT66TrapTuningConfig::UT66TrapTuningConfig()
-	: GameplayLevel1(MakeLevelSpawnTuning(3, 4))
-	, GameplayLevel2(MakeLevelSpawnTuning(3, 5))
-	, GameplayLevel3(MakeLevelSpawnTuning(4, 5))
-	, GameplayLevel4(MakeLevelSpawnTuning(4, 6))
-	, GameplayLevel5(MakeLevelSpawnTuning(5, 7))
+	: TowerFloor2(MakeFloorSpawnTuning(3, 4))
+	, TowerFloor3(MakeFloorSpawnTuning(3, 5))
+	, TowerFloor4(MakeFloorSpawnTuning(4, 5))
 	, DungeonWallArrow(MakeWallTuning(1, 2, 2.60f, 0.40f, 0.35f, 1.15f, 5200.f, 2400.f, 12))
 	, DungeonFloorFlame(MakeFloorBurstTuning(1, 2, 260.f, 0.80f, 1.15f, 3.00f, 0.35f, 0.80f, 2.10f, 10))
 	, DungeonFloorSpikePatch(MakeAreaControlTuning(1, 2, 285.f, 0.90f, 0.25f, 1.05f, 0.25f, 2.85f, 0.35f, 1.00f, 2.15f, 165.f, 10, 11))
@@ -280,11 +278,9 @@ void UT66TrapTuningConfig::LoadFromConfig()
 {
 	const FString ConfigFilename = GetT66TrapConfigFilename();
 
-	LoadTrapStructValue(ConfigFilename, TEXT("GameplayLevel1"), GameplayLevel1);
-	LoadTrapStructValue(ConfigFilename, TEXT("GameplayLevel2"), GameplayLevel2);
-	LoadTrapStructValue(ConfigFilename, TEXT("GameplayLevel3"), GameplayLevel3);
-	LoadTrapStructValue(ConfigFilename, TEXT("GameplayLevel4"), GameplayLevel4);
-	LoadTrapStructValue(ConfigFilename, TEXT("GameplayLevel5"), GameplayLevel5);
+	LoadTrapStructValue(ConfigFilename, TEXT("TowerFloor2"), TowerFloor2);
+	LoadTrapStructValue(ConfigFilename, TEXT("TowerFloor3"), TowerFloor3);
+	LoadTrapStructValue(ConfigFilename, TEXT("TowerFloor4"), TowerFloor4);
 
 	LoadTrapStructValue(ConfigFilename, TEXT("TrapAssets"), TrapAssets);
 
@@ -309,15 +305,13 @@ void UT66TrapTuningConfig::LoadFromConfig()
 	LoadTrapStructValue(ConfigFilename, TEXT("HellBrimstonePatch"), HellBrimstonePatch);
 }
 
-const FT66TrapLevelSpawnTuning* UT66TrapTuningConfig::FindLevelSpawnTuning(const int32 GameplayLevelNumber) const
+const FT66TrapFloorSpawnTuning* UT66TrapTuningConfig::FindFloorSpawnTuning(const int32 TowerFloorNumber) const
 {
-	switch (GameplayLevelNumber)
+	switch (TowerFloorNumber)
 	{
-	case 1: return &GameplayLevel1;
-	case 2: return &GameplayLevel2;
-	case 3: return &GameplayLevel3;
-	case 4: return &GameplayLevel4;
-	case 5: return &GameplayLevel5;
+	case 2: return &TowerFloor2;
+	case 3: return &TowerFloor3;
+	case 4: return &TowerFloor4;
 	default: return nullptr;
 	}
 }

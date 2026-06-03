@@ -4,11 +4,12 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66MobBase.h"
 #include "Gameplay/T66BossBase.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66MiasmaBoundary.h"
 #include "Gameplay/T66WorldInteractableBase.h"
 #include "Gameplay/T66LootBagPickup.h"
+#include "Gameplay/T66SafeZoneComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66ActorRegistry, Log, All);
 
@@ -170,18 +171,34 @@ void UT66ActorRegistrySubsystem::UnregisterBoss(AT66BossBase* Boss)
 
 // --------------- NPCs ---------------
 
-void UT66ActorRegistrySubsystem::RegisterNPC(AT66HouseNPCBase* NPC)
+void UT66ActorRegistrySubsystem::RegisterNPC(AT66NPCBase* NPC)
 {
 	if (!NPC) return;
 	AddUniqueWeak(NPCs, NPC);
 	UE_LOG(LogT66ActorRegistry, Log, TEXT("[GOLD] ActorRegistry: registered NPC %s (total: %d)"), *NPC->GetName(), NPCs.Num());
 }
 
-void UT66ActorRegistrySubsystem::UnregisterNPC(AT66HouseNPCBase* NPC)
+void UT66ActorRegistrySubsystem::UnregisterNPC(AT66NPCBase* NPC)
 {
 	if (!NPC) return;
 	RemoveWeak(NPCs, NPC);
 	UE_LOG(LogT66ActorRegistry, Log, TEXT("[GOLD] ActorRegistry: unregistered NPC %s (total: %d)"), *NPC->GetName(), NPCs.Num());
+}
+
+// --------------- Safe Zones ---------------
+
+void UT66ActorRegistrySubsystem::RegisterSafeZone(UT66SafeZoneComponent* SafeZone)
+{
+	if (!SafeZone) return;
+	AddUniqueWeak(SafeZones, SafeZone);
+	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: registered SafeZone %s (total: %d)"), *SafeZone->GetName(), SafeZones.Num());
+}
+
+void UT66ActorRegistrySubsystem::UnregisterSafeZone(UT66SafeZoneComponent* SafeZone)
+{
+	if (!SafeZone) return;
+	RemoveWeak(SafeZones, SafeZone);
+	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: unregistered SafeZone %s (total: %d)"), *SafeZone->GetName(), SafeZones.Num());
 }
 
 // --------------- Stage Gates ---------------
@@ -247,3 +264,4 @@ void UT66ActorRegistrySubsystem::UnregisterLootBag(AT66LootBagPickup* LootBag)
 	RemoveWeak(LootBags, LootBag);
 	UE_LOG(LogT66ActorRegistry, Verbose, TEXT("[GOLD] ActorRegistry: unregistered LootBag %s (total: %d)"), *LootBag->GetName(), LootBags.Num());
 }
+

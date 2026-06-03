@@ -3,6 +3,7 @@
 #include "Core/T66DirectEntry.h"
 
 #include "Core/T66GameInstance.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Gameplay/T66PlayerController.h"
 #include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -24,12 +25,6 @@ namespace
 		Value.ReplaceInline(TEXT("_"), TEXT(""));
 		Value.ReplaceInline(TEXT("-"), TEXT(""));
 		return Value.ToLower();
-	}
-
-	bool ResolveMinigameScreen(const ET66ScreenType ScreenType, ET66ScreenType& OutScreenType)
-	{
-		OutScreenType = ScreenType;
-		return true;
 	}
 
 	FString ResolveArgValue(const TArray<FString>& Args, const TCHAR* RequestedKey)
@@ -179,12 +174,12 @@ FString T66DirectEntry::GetAcceptedFrontendScreenNamesForLog()
 {
 	return TEXT(
 		"MainMenu, HeroSelection, HeroSelect, SaveSlots, SaveSlot, CompanionSelection, CompanionSelect, "
-		"Settings, SettingsScreen, LanguageSelect, Language, Achievements, Minigames, PauseMenu, Pause, "
-		"ReportBug, RunSummary, PowerUp, HeroGrid, CompanionGrid, QuitConfirmation, Quit, PartyInvite, "
-		"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, MiniMainMenu, "
-		"MiniCharacterSelect, MiniCompanionSelect, MiniDifficultySelect, MiniIdolSelect, MiniSaveSlots, "
-		"MiniShop, MiniRunSummary, MiniBattle, TDMainMenu, TDDifficultySelect, TDBattle, IdleMainMenu, "
-		"DeckMainMenu, Deckbuilder, Challenges, DailyDescent, Overview, History, Diplomas, "
+		"GirlfriendSelection, GirlfriendSelect, "
+		"PetSelection, PetSelect, Pets, "
+		"Settings, SettingsScreen, LanguageSelect, Language, Achievements, PauseMenu, Pause, "
+		"ReportBug, RunSummary, PowerUp, HeroGrid, CompanionGrid, GirlfriendGrid, QuitConfirmation, Quit, PartyInvite, "
+		"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, "
+		"Challenges, DailyDescent, Overview, History, Relics, Steroids, Diplomas, "
 		"Drugs, SteamAchievements, Steam, SettingsRetroFX, RetroFX, SettingsGameplay, SettingsGraphics, "
 		"SettingsControls, SettingsMediaViewer, SettingsMedia, SettingsAudio, LoadGame");
 }
@@ -212,9 +207,15 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 		OutScreenType = ET66ScreenType::SaveSlots;
 		return true;
 	}
-	if (Key == TEXT("companionselection") || Key == TEXT("companionselect"))
+	if (Key == TEXT("companionselection") || Key == TEXT("companionselect")
+		|| Key == TEXT("girlfriendselection") || Key == TEXT("girlfriendselect"))
 	{
 		OutScreenType = ET66ScreenType::CompanionSelection;
+		return true;
+	}
+	if (Key == TEXT("petselection") || Key == TEXT("petselect") || Key == TEXT("pets"))
+	{
+		OutScreenType = ET66ScreenType::PetSelection;
 		return true;
 	}
 	if (Key == TEXT("settings") || Key == TEXT("settingsscreen") || Key == TEXT("settingsretrofx")
@@ -235,10 +236,6 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 		OutScreenType = ET66ScreenType::Achievements;
 		return true;
 	}
-	if (Key == TEXT("minigames"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::Minigames, OutScreenType);
-	}
 	if (Key == TEXT("pausemenu") || Key == TEXT("pause"))
 	{
 		OutScreenType = ET66ScreenType::PauseMenu;
@@ -254,7 +251,8 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 		OutScreenType = ET66ScreenType::RunSummary;
 		return true;
 	}
-	if (Key == TEXT("powerup") || Key == TEXT("diplomas") || Key == TEXT("drugs"))
+	if (Key == TEXT("powerup") || Key == TEXT("relics") || Key == TEXT("steroids")
+		|| Key == TEXT("diplomas") || Key == TEXT("drugs"))
 	{
 		OutScreenType = ET66ScreenType::PowerUp;
 		return true;
@@ -264,7 +262,7 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 		OutScreenType = ET66ScreenType::HeroGrid;
 		return true;
 	}
-	if (Key == TEXT("companiongrid"))
+	if (Key == TEXT("companiongrid") || Key == TEXT("girlfriendgrid"))
 	{
 		OutScreenType = ET66ScreenType::CompanionGrid;
 		return true;
@@ -294,62 +292,6 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 		OutScreenType = ET66ScreenType::SavePreview;
 		return true;
 	}
-	if (Key == TEXT("minimainmenu"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::MiniMainMenu, OutScreenType);
-	}
-	if (Key == TEXT("minicharacterselect"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::MiniCharacterSelect, OutScreenType);
-	}
-	if (Key == TEXT("minicompanionselect"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::MiniCompanionSelect, OutScreenType);
-	}
-	if (Key == TEXT("minidifficultyselect"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::MiniDifficultySelect, OutScreenType);
-	}
-	if (Key == TEXT("miniidolselect"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::MiniIdolSelect, OutScreenType);
-	}
-	if (Key == TEXT("minisaveslots"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::MiniSaveSlots, OutScreenType);
-	}
-	if (Key == TEXT("minishop"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::MiniShop, OutScreenType);
-	}
-	if (Key == TEXT("minirunsummary"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::MiniRunSummary, OutScreenType);
-	}
-	if (Key == TEXT("minibattle"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::MiniBattle, OutScreenType);
-	}
-	if (Key == TEXT("tdmainmenu"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::TDMainMenu, OutScreenType);
-	}
-	if (Key == TEXT("tddifficultyselect"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::TDDifficultySelect, OutScreenType);
-	}
-	if (Key == TEXT("tdbattle"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::TDBattle, OutScreenType);
-	}
-	if (Key == TEXT("idlemainmenu") || Key == TEXT("idlechadpocalypse"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::IdleMainMenu, OutScreenType);
-	}
-	if (Key == TEXT("deckmainmenu") || Key == TEXT("deckbuilder") || Key == TEXT("chadpocalypsedeckbuilder"))
-	{
-		return ResolveMinigameScreen(ET66ScreenType::DeckMainMenu, OutScreenType);
-	}
 	if (Key == TEXT("challenges"))
 	{
 		OutScreenType = ET66ScreenType::Challenges;
@@ -357,6 +299,10 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 	}
 	if (Key == TEXT("dailydescent"))
 	{
+		if (!FT66ShelvedFeatureGate::IsScreenAllowed(ET66ScreenType::DailyDescent))
+		{
+			return false;
+		}
 		OutScreenType = ET66ScreenType::DailyDescent;
 		return true;
 	}

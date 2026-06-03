@@ -2033,7 +2033,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			AddProgressRow(TEXT("Overview.AccountProgressPanel.Achievements"), NSLOCTEXT("T66.Account", "AchProgFlatFixed", "Achievements Unlocked"), UnlockedAchievements, AchievementDefs.Num(), 0.029f, 0.686f, 0.356f, 0.043f, 0.190f);
 			AddProgressRow(TEXT("Overview.AccountProgressPanel.PowerUps"), NSLOCTEXT("T66.Account", "PowerProgFlatFixed", "Permanent Buffs Unlocked"), UnlockedPowerUps, PowerStats.Num() * UT66BuffSubsystem::MaxFillStepsPerStat, 0.029f, 0.737f, 0.356f, 0.043f, 0.190f);
 			AddProgressRow(TEXT("Overview.AccountProgressPanel.Heroes"), NSLOCTEXT("T66.Account", "HeroProgFlatFixed", "Heroes Unlocked"), HeroIDs.Num(), HeroIDs.Num(), 0.029f, 0.788f, 0.356f, 0.043f, 0.190f);
-			AddProgressRow(TEXT("Overview.AccountProgressPanel.Companions"), NSLOCTEXT("T66.Account", "CompProgFlatFixed", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num(), 0.029f, 0.839f, 0.356f, 0.043f, 0.190f);
+			AddProgressRow(TEXT("Overview.AccountProgressPanel.Companions"), NSLOCTEXT("T66.Account", "CompProgFlatFixed", "Girlfriends Unlocked"), UnlockedCompanions, CompanionIDs.Num(), 0.029f, 0.839f, 0.356f, 0.043f, 0.190f);
 			AddProgressRow(TEXT("Overview.AccountProgressPanel.Challenges"), NSLOCTEXT("T66.Account", "ChallengeProgFlatFixed", "Challenges Completed"), DisplayChallengesCompleted, TotalChallengeCount, 0.029f, 0.890f, 0.356f, 0.043f, 0.190f);
 
 			auto MakePBMenuEntry = [&OTag, &UpperText](
@@ -2598,7 +2598,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 			[
-				MakeOverviewProgressRow(TEXT("Overview.AccountProgressPanel.Companions"), NSLOCTEXT("T66.Account", "CompProgFlat", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num())
+				MakeOverviewProgressRow(TEXT("Overview.AccountProgressPanel.Companions"), NSLOCTEXT("T66.Account", "CompProgFlat", "Girlfriends Unlocked"), UnlockedCompanions, CompanionIDs.Num())
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 12.f, 0.f, 0.f)
 			[
@@ -4169,7 +4169,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 		const FText HeroName = bHasHeroData ? (Loc ? Loc->GetText_HeroName(Run.HeroID) : HeroData.DisplayName) : FText::FromName(Run.HeroID);
 		const FText CompanionName = (T66GI && T66GI->GetCompanionData(Run.CompanionID, CompanionData))
 			? (Loc ? Loc->GetText_CompanionName(Run.CompanionID) : CompanionData.DisplayName)
-			: (Run.CompanionID.IsNone() ? NSLOCTEXT("T66.Account", "NoComp", "No Companion") : FText::FromName(Run.CompanionID));
+			: (Run.CompanionID.IsNone() ? NSLOCTEXT("T66.Account", "NoComp", "No Girlfriend") : FText::FromName(Run.CompanionID));
 		const FText StatusText = Run.bWasFullClear ? NSLOCTEXT("T66.Account", "CompletedRun", "Completed") : NSLOCTEXT("T66.Account", "NotCompletedRun", "Not Completed");
 		const FLinearColor StatusColor = Run.bWasFullClear ? AccountSuccess() : AccountDanger();
 		const FText RunDetailsText = FText::Format(NSLOCTEXT("T66.Account", "RunDetailsFmt", "{0} / {1}"), DifficultyText(Run.Difficulty), PartySizeText(Loc, Run.PartySize));
@@ -4541,7 +4541,7 @@ TSharedRef<SWidget> UT66AccountStatusScreen::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "AchProg", "Achievements Unlocked"), UnlockedAchievements, AchievementDefs.Num(), FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "PowerProg", "Permanent Buffs Unlocked"), UnlockedPowerUps, PowerStats.Num() * UT66BuffSubsystem::MaxFillStepsPerStat, FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "HeroProg", "Heroes Unlocked"), HeroIDs.Num(), HeroIDs.Num(), FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
-			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "CompProg", "Companions Unlocked"), UnlockedCompanions, CompanionIDs.Num(), FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)[MakeProgressRow(NSLOCTEXT("T66.Account", "CompProg", "Girlfriends Unlocked"), UnlockedCompanions, CompanionIDs.Num(), FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
 			+ SVerticalBox::Slot().AutoHeight()[MakeProgressRow(NSLOCTEXT("T66.Account", "ChallengeProg", "Challenges Completed"), DisplayChallengesCompleted, TotalChallengeCount, FLinearColor(0.92f, 0.05f, 0.12f, 1.0f))]
 			+ SVerticalBox::Slot().FillHeight(1.f)[SNew(SSpacer)],
 			ET66PanelType::Panel, AccountPanelFill(), FMargin(14.f));

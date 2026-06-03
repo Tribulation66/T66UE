@@ -1,0 +1,7 @@
+---,HazardDefinitionID,HazardID,ShapeType,VisualProfileID,bEnabled,MaxActiveCount,TelegraphSeconds,ActiveSeconds,LingerSeconds,DamageCadenceSeconds,DamageHP,Radius,BoxExtentX,BoxExtentY,BoxExtentZ,VisualScaleX,VisualScaleY,VisualScaleZ,TelegraphR,TelegraphG,TelegraphB,ActiveR,ActiveG,ActiveB
+BossHazard_SlimePatch,BossHazard_SlimePatch,BossHazard.SlimePatch,Circle,BossHazard.Visual.SlimePatch,True,512,0.25,1.25,0.80,0.40,1,180,180,180,80,1.00,1.00,0.05,0.18,0.95,0.10,0.03,0.70,0.14
+LegacyGroundAOE_Sharpshooter,LegacyGroundAOE_Sharpshooter,LegacyGroundAOE_Sharpshooter,Circle,BossHazard.Visual.SharpshooterAOE,True,64,1.20,0.80,0.25,0.50,25,300,180,180,80,1.00,1.00,0.05,0.92,0.18,0.14,1.00,0.40,0.18
+LegacyGroundAOE_Balanced,LegacyGroundAOE_Balanced,LegacyGroundAOE_Balanced,Circle,BossHazard.Visual.BalancedAOE,True,64,1.20,0.80,0.25,0.50,25,300,180,180,80,1.00,1.00,0.05,0.95,0.52,0.12,1.00,0.72,0.18
+LegacyGroundAOE_Juggernaut,LegacyGroundAOE_Juggernaut,LegacyGroundAOE_Juggernaut,Circle,BossHazard.Visual.JuggernautAOE,True,64,1.20,0.80,0.25,0.50,25,300,180,180,80,1.00,1.00,0.05,0.60,0.18,0.95,0.78,0.30,1.00
+LegacyGroundAOE_Duelist,LegacyGroundAOE_Duelist,LegacyGroundAOE_Duelist,Circle,BossHazard.Visual.DuelistAOE,True,64,1.20,0.80,0.25,0.50,25,300,180,180,80,1.00,1.00,0.05,0.16,0.70,1.00,0.10,0.48,0.95
+SewerSlime_LaneBlocker,SewerSlime_LaneBlocker,SewerSlime_LaneBlocker,Box,BossHazard.Visual.SlimeLaneBlocker,True,16,0.78,1.45,0.15,0.50,28,185,185,185,115,2.65,2.65,0.80,0.36,1.00,0.06,0.06,0.88,0.20

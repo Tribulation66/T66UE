@@ -34,6 +34,23 @@ namespace
 			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/DamageBoost_Pixal3D.DamageBoost_Pixal3D"));
 		}
 	}
+
+	static FSoftObjectPath T66ResolveSecondaryBoostMeshPath(const ET66SecondaryStatType StatType)
+	{
+		switch (StatType)
+		{
+		case ET66SecondaryStatType::FirePower:
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/DamageBoost_Pixal3D.DamageBoost_Pixal3D"));
+		case ET66SecondaryStatType::IcePower:
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/ArmorBoost_Pixal3D.ArmorBoost_Pixal3D"));
+		case ET66SecondaryStatType::ElectricityPower:
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/AttackSpeedBoost_Pixal3D.AttackSpeedBoost_Pixal3D"));
+		case ET66SecondaryStatType::NaturePower:
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/LuckBoost_Pixal3D.LuckBoost_Pixal3D"));
+		default:
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/DamageBoost_Pixal3D.DamageBoost_Pixal3D"));
+		}
+	}
 }
 
 AT66BoostInteractable::AT66BoostInteractable()
@@ -66,7 +83,23 @@ void AT66BoostInteractable::ConfigureBoost(
 	const int32 InBonusStatPoints,
 	const float InDurationSeconds)
 {
+	bUseSecondaryStat = false;
 	StatType = InStatType;
+	SecondaryStatType = ET66SecondaryStatType::None;
+	BonusStatPoints = FMath::Max(1, InBonusStatPoints);
+	DurationSeconds = FMath::Max(1.f, InDurationSeconds);
+	RefreshMeshForStatType();
+	ApplyRarityVisuals();
+	RefreshInteractionPrompt();
+}
+
+void AT66BoostInteractable::ConfigureSecondaryBoost(
+	const ET66SecondaryStatType InStatType,
+	const int32 InBonusStatPoints,
+	const float InDurationSeconds)
+{
+	bUseSecondaryStat = true;
+	SecondaryStatType = InStatType;
 	BonusStatPoints = FMath::Max(1, InBonusStatPoints);
 	DurationSeconds = FMath::Max(1.f, InDurationSeconds);
 	RefreshMeshForStatType();
@@ -88,7 +121,14 @@ bool AT66BoostInteractable::Interact(APlayerController* PC)
 		return false;
 	}
 
-	RunState->ApplyTemporaryPrimaryStatAmplifier(StatType, BonusStatPoints, DurationSeconds);
+	if (bUseSecondaryStat)
+	{
+		RunState->ApplyTemporarySecondaryStatAmplifier(SecondaryStatType, BonusStatPoints, DurationSeconds);
+	}
+	else
+	{
+		RunState->ApplyTemporaryPrimaryStatAmplifier(StatType, BonusStatPoints, DurationSeconds);
+	}
 	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Boost.Interact")), GetActorLocation(), this);
 
 	if (IsShowcaseReusable())
@@ -121,7 +161,9 @@ void AT66BoostInteractable::ApplyRarityVisuals()
 
 void AT66BoostInteractable::RefreshMeshForStatType()
 {
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(T66ResolveBoostMeshPath(StatType));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(bUseSecondaryStat
+		? T66ResolveSecondaryBoostMeshPath(SecondaryStatType)
+		: T66ResolveBoostMeshPath(StatType));
 }
 
 FText AT66BoostInteractable::BuildInteractionPromptText() const
@@ -141,6 +183,23 @@ FText AT66BoostInteractable::BuildInteractionPromptTargetName() const
 
 FText AT66BoostInteractable::ResolveStatDisplayName() const
 {
+	if (bUseSecondaryStat)
+	{
+		switch (SecondaryStatType)
+		{
+		case ET66SecondaryStatType::FirePower:
+			return NSLOCTEXT("T66.BoostInteractable", "FirePowerStat", "Fire Power");
+		case ET66SecondaryStatType::IcePower:
+			return NSLOCTEXT("T66.BoostInteractable", "IcePowerStat", "Ice Power");
+		case ET66SecondaryStatType::ElectricityPower:
+			return NSLOCTEXT("T66.BoostInteractable", "ElectricityPowerStat", "Electricity Power");
+		case ET66SecondaryStatType::NaturePower:
+			return NSLOCTEXT("T66.BoostInteractable", "NaturePowerStat", "Nature Power");
+		default:
+			return NSLOCTEXT("T66.BoostInteractable", "SecondaryStat", "Stat");
+		}
+	}
+
 	switch (StatType)
 	{
 	case ET66HeroStatType::Damage:

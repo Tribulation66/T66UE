@@ -5,6 +5,8 @@
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66CompanionBase.h"
+#include "Gameplay/T66PetActor.h"
+#include "Gameplay/T66PetCaptureInteractable.h"
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66StartGate.h"
 #include "Gameplay/T66StageGate.h"
@@ -15,7 +17,7 @@
 #include "Gameplay/T66SaintNPC.h"
 #include "Gameplay/T66OuroborosNPC.h"
 #include "Gameplay/T66LoanShark.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66CowardiceGate.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66GalleryDisplayActor.h"
@@ -35,7 +37,6 @@
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66LootWheelInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
-#include "Gameplay/T66ArcadeMachineInteractable.h"
 #include "Gameplay/T66VehicleInteractable.h"
 #include "Gameplay/T66VendorInteractable.h"
 #include "Gameplay/T66StageEffects.h"
@@ -111,9 +112,20 @@ namespace T66GameModePrivate
 {
 	inline constexpr float T66TowerStageTransitionDropHeight = 7800.0f;
 	inline constexpr int32 T66MaxGlobalStage = 20;
+	inline constexpr float T66TowerCasinoSpawnChance = 0.45f;
 	inline constexpr float T66MainMapRoomReserveRadiusCells = 2.70f;
 	inline constexpr float T66MainMapCorridorReserveRadiusCells = 0.80f;
-	inline constexpr float T66FinalDifficultySurvivalDurationSeconds = 60.0f;
+	inline constexpr float T66PandemoniumEnemyScalar = 8.0f;
+	inline constexpr float T66PandemoniumRuntimeSpawnIntervalSeconds = 0.25f;
+	inline constexpr int32 T66PandemoniumRuntimeEnemiesPerWave = 24;
+	inline constexpr int32 T66PandemoniumRuntimeMaxAliveEnemies = 220;
+	inline constexpr int32 T66PandemoniumRuntimeMaxSpawnsPerBatch = 8;
+	inline constexpr int32 T66SaintBlessingStatBoostPoints = 8;
+	inline constexpr float T66SaintBlessingElementPowerPerPoint = 0.05f;
+	inline constexpr int32 T66PandemoniumSmokeEnemyScoreProofPoints = 100;
+	inline constexpr float T66EndgameTransformedBossHealthScalar = 3.0f;
+	inline constexpr float T66EndgameTransformedBossDamageScalar = 2.5f;
+	inline constexpr float T66EndgameTransformedBossScaleScalar = 1.25f;
 
 	extern const FName T66MainMapTerrainVisualTag;
 	extern const FName T66MainMapTerrainMaterialsReadyTag;
@@ -174,3 +186,4 @@ namespace T66GameModePrivate
 	bool T66TryBuildFacingRotation2D(const FVector& FromLocation, const FVector& TargetLocation, FRotator& OutRotation);
 	void T66SyncPawnAndControllerRotation(APawn* Pawn, AController* Controller, const FRotator& DesiredRotation);
 }
+

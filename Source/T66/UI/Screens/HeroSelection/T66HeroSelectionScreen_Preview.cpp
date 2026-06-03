@@ -1,11 +1,87 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "UI/Screens/HeroSelection/T66HeroSelectionScreen_Private.h"
+#include "Core/T66WeaponManagerSubsystem.h"
+#include "UI/T66FrontendVideoPlayer.h"
 
 using namespace T66HeroSelectionPrivate;
 
 namespace
 {
+	struct FHeroKitPreviewDisplay
+	{
+		FName KitID = NAME_None;
+		FText Title;
+		FText Description;
+		FLinearColor FallbackColor = FLinearColor(0.025f, 0.027f, 0.035f, 1.f);
+	};
+
+	FText FormatAttackCategory(ET66AttackCategory Category)
+	{
+		switch (Category)
+		{
+		case ET66AttackCategory::Bounce:
+			return NSLOCTEXT("T66.HeroSelection", "AttackCategoryBounce", "Bounce");
+		case ET66AttackCategory::AOE:
+			return NSLOCTEXT("T66.HeroSelection", "AttackCategoryAoe", "AOE");
+		case ET66AttackCategory::DOT:
+			return NSLOCTEXT("T66.HeroSelection", "AttackCategoryDot", "DOT");
+		case ET66AttackCategory::Pierce:
+		default:
+			return NSLOCTEXT("T66.HeroSelection", "AttackCategoryPierce", "Pierce");
+		}
+	}
+
+	FHeroKitPreviewDisplay ResolveHeroKitPreviewDisplay(
+		UT66GameInstance* T66GI,
+		UT66LocalizationSubsystem* Loc,
+		const FHeroData& HeroData,
+		const ET66HeroKitPreviewSlot KitSlot)
+	{
+		FHeroKitPreviewDisplay Display;
+		Display.FallbackColor = HeroData.PlaceholderColor;
+		if (KitSlot == ET66HeroKitPreviewSlot::Weapon)
+		{
+			Display.KitID = UT66WeaponManagerSubsystem::MakeWeaponID(
+				HeroData.HeroID,
+				ET66WeaponRarity::Black,
+				HeroData.PrimaryCategory);
+
+			FWeaponData WeaponData;
+			if (T66GI && T66GI->GetWeaponData(Display.KitID, WeaponData))
+			{
+				Display.Title = WeaponData.DisplayName.IsEmpty()
+					? FText::FromName(Display.KitID)
+					: WeaponData.DisplayName;
+				Display.Description = WeaponData.Description.IsEmpty()
+					? FText::Format(
+						NSLOCTEXT("T66.HeroSelection", "WeaponPreviewFallbackDescription", "Primary branch: {0}."),
+						FormatAttackCategory(HeroData.PrimaryCategory))
+					: WeaponData.Description;
+				return Display;
+			}
+
+			Display.Title = FText::Format(
+				NSLOCTEXT("T66.HeroSelection", "WeaponPreviewFallbackTitle", "{0} Weapon"),
+				FormatAttackCategory(HeroData.PrimaryCategory));
+			Display.Description = FText::Format(
+				NSLOCTEXT("T66.HeroSelection", "WeaponPreviewFallbackDescriptionShort", "Primary {0} branch preview."),
+				FormatAttackCategory(HeroData.PrimaryCategory));
+			return Display;
+		}
+
+		Display.KitID = StaticEnum<ET66UltimateType>()
+			? FName(*StaticEnum<ET66UltimateType>()->GetNameStringByValue(static_cast<int64>(HeroData.UltimateType)))
+			: FName(TEXT("Ultimate"));
+		Display.Title = Loc
+			? Loc->GetText_UltimateName(HeroData.UltimateType)
+			: FText::FromName(Display.KitID);
+		Display.Description = Loc
+			? Loc->GetText_UltimateDescription(HeroData.UltimateType)
+			: NSLOCTEXT("T66.HeroSelection", "UltimatePreviewFallbackDescription", "Ultimate kit preview.");
+		return Display;
+	}
+
 	FText FormatHeroRecordRankText(const int32 Rank)
 	{
 		if (Rank <= 0)
@@ -39,12 +115,15 @@ namespace
 	}
 }
 
+FReply UT66HeroSelectionScreen::HandleWeaponPreviewClicked()
+{
+	ApplyKitPreviewVideo(ET66HeroKitPreviewSlot::Weapon);
+	return FReply::Handled();
+}
+
 FReply UT66HeroSelectionScreen::HandleUltimatePreviewClicked()
 {
-	if (UT66HeroSelectionPreviewController* HeroPreviewController = GetOrCreatePreviewController())
-	{
-		HeroPreviewController->ToggleSelectedPreviewClip(ET66HeroSelectionPreviewClip::Ultimate, bShowingCompanionInfo);
-	}
+	ApplyKitPreviewVideo(ET66HeroKitPreviewSlot::Ultimate);
 	return FReply::Handled();
 }
 
@@ -55,6 +134,92 @@ FReply UT66HeroSelectionScreen::HandlePassivePreviewClicked()
 		HeroPreviewController->ToggleSelectedPreviewClip(ET66HeroSelectionPreviewClip::Passive, bShowingCompanionInfo);
 	}
 	return FReply::Handled();
+}
+
+void UT66HeroSelectionScreen::ApplyKitPreviewVideo(const ET66HeroKitPreviewSlot KitSlot)
+{
+	SelectedKitPreviewSlot = KitSlot;
+
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	FHeroData HeroData;
+	if (!T66GI || !GetPreviewedHeroData(HeroData))
+	{
+		if (KitPreviewVideoPlayer)
+		{
+			KitPreviewVideoPlayer->CloseVideo();
+		}
+		if (KitPreviewColorBox.IsValid())
+		{
+			KitPreviewColorBox->SetBorderBackgroundColor(FLinearColor(0.025f, 0.027f, 0.035f, 1.f));
+		}
+		return;
+	}
+
+	const FHeroKitPreviewDisplay Display = ResolveHeroKitPreviewDisplay(T66GI, GetLocSubsystem(), HeroData, KitSlot);
+	if (KitPreviewTitleWidget.IsValid())
+	{
+		KitPreviewTitleWidget->SetText(Display.Title);
+	}
+	if (KitPreviewDescriptionWidget.IsValid())
+	{
+		KitPreviewDescriptionWidget->SetText(Display.Description);
+	}
+
+	FName EffectiveSkinID = FName(TEXT("Default"));
+	if (const UT66HeroSelectionPreviewController* HeroPreviewController = GetPreviewController())
+	{
+		EffectiveSkinID = HeroPreviewController->ResolveEffectiveHeroSkinID(T66GI);
+	}
+	else if (T66GI && !T66GI->SelectedHeroSkinID.IsNone())
+	{
+		EffectiveSkinID = T66GI->SelectedHeroSkinID;
+	}
+
+	FT66FrontendVideoAsset VideoAsset;
+	const bool bResolved = T66FrontendVideoCatalog::ResolveHeroKitPreview(
+		HeroData.HeroID,
+		KitSlot,
+		Display.KitID,
+		EffectiveSkinID,
+		SelectedBodyType,
+		VideoAsset);
+	bool bVideoOpened = false;
+	if (bResolved)
+	{
+		if (!KitPreviewVideoPlayer)
+		{
+			KitPreviewVideoPlayer = NewObject<UT66FrontendVideoPlayer>(this);
+		}
+		if (KitPreviewVideoPlayer)
+		{
+			const FName DebugName = KitSlot == ET66HeroKitPreviewSlot::Weapon
+				? FName(TEXT("HeroSelectionWeaponKitPreview"))
+				: FName(TEXT("HeroSelectionUltimateKitPreview"));
+			bVideoOpened = KitPreviewVideoPlayer->OpenVideo(
+				VideoAsset,
+				FVector2D(540.f, 96.f),
+				DebugName);
+		}
+	}
+
+	if (!bVideoOpened && KitPreviewVideoPlayer)
+	{
+		KitPreviewVideoPlayer->CloseVideo();
+	}
+	if (KitPreviewColorBox.IsValid())
+	{
+		KitPreviewColorBox->SetBorderBackgroundColor(bVideoOpened ? FLinearColor::Transparent : Display.FallbackColor);
+	}
+}
+
+void UT66HeroSelectionScreen::RefreshKitPreviewPanelText()
+{
+	ApplyKitPreviewVideo(SelectedKitPreviewSlot);
+}
+
+const FSlateBrush* UT66HeroSelectionScreen::GetKitPreviewVideoBrush() const
+{
+	return KitPreviewVideoPlayer ? KitPreviewVideoPlayer->GetVideoBrush() : nullptr;
 }
 
 void UT66HeroSelectionScreen::RefreshHeroRecordRank()
@@ -225,7 +390,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 
 	auto UpdateTargetOptions = [this, Loc, T66GI]()
 	{
-		const FText NoCompanionText = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.HeroSelection", "NoCompanionOption", "No Companion");
+		const FText NoCompanionText = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.HeroSelection", "NoCompanionOption", "No Girlfriend");
 		FText CurrentHeroDisplayName = NSLOCTEXT("T66.HeroSelection", "HeroTargetFallback", "Hero");
 		FText CurrentCompanionDisplayName = NoCompanionText;
 
@@ -311,6 +476,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 
 		PopulateHeroStatsSnapshot(HeroData, BaseStats, PermanentBuffBonuses);
 		RefreshHeroStatsPanels();
+		RefreshKitPreviewPanelText();
 
 		if (HeroUltimateIconBrush.IsValid())
 		{
@@ -367,7 +533,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 				CompanionHealsPerSecondWidget->SetText(
 					bHasCompanion
 						? FormatCompanionDifficultyHealText(HealAmount, HealIntervalSeconds)
-						: (Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.HeroSelection", "NoCompanionInfo", "No companion selected.")));
+						: (Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.HeroSelection", "NoCompanionInfo", "No girlfriend selected.")));
 			}
 			if (CompanionUnityTextWidget.IsValid())
 			{
@@ -377,7 +543,7 @@ void UT66HeroSelectionScreen::UpdateHeroDisplay()
 							NSLOCTEXT("T66.HeroSelection", "CompanionUnityFormat", "Unity: {0} / {1}"),
 							FText::AsNumber(CompanionUnityStagesCleared),
 							FText::AsNumber(UT66AchievementsSubsystem::UnionTier_HyperStages))
-					: NSLOCTEXT("T66.HeroSelection", "CompanionUnityNoSelection", "Select a companion to view unity."));
+					: NSLOCTEXT("T66.HeroSelection", "CompanionUnityNoSelection", "Select a girlfriend to view unity."));
 			}
 			RefreshRecordValues();
 		}

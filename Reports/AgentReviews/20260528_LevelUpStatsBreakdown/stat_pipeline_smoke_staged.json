@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "checks": [
+    { "name": "Context available", "ok": true, "detail": "World, GI, RunState, Buffs, and pawn are required." },
+    { "name": "Items do not raise primary stats", "ok": true, "detail": "Damage 3 -> 3." },
+    { "name": "Items raise secondary stats", "ok": true, "detail": "AOE damage 1 -> 28." },
+    { "name": "Diplomas raise primary stats", "ok": true, "detail": "Damage 3 -> 5." },
+    { "name": "Diplomas propagate to secondary stats", "ok": true, "detail": "Damage-secondary sum 8 -> 13." },
+    { "name": "Selected drugs multiply secondary stats", "ok": true, "detail": "AOE value 1.696 -> 1.866." },
+    { "name": "XP triggers level up", "ok": true, "detail": "Level 1 -> 2 threshold=100." },
+    { "name": "Level up heals to full", "ok": true, "detail": "HP 1.0/1.0." },
+    { "name": "Level up raises primary stats", "ok": true, "detail": "Primary sum 19 -> 27." },
+    { "name": "Level up propagates to secondary stats", "ok": true, "detail": "Tracked secondary sum 17 -> 29." },
+    { "name": "Rich and lightweight enemies grant XP", "ok": true, "detail": "XP 0 -> 12 level 1 -> 1." },
+    { "name": "Level-up wave does not chain XP", "ok": true, "detail": "Level 1 -> 2 enemyHP=0 mobHP=0.0 threshold=100." }
+  ]
+}

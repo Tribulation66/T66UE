@@ -9,6 +9,7 @@ void AT66GameMode::RestartPlayer(AController* NewPlayer)
 {
 Super::RestartPlayer(NewPlayer);
 SpawnCompanionForPlayer(NewPlayer);
+SpawnPetForPlayer(NewPlayer);
 // Start gate is spawned in SpawnLevelContentAfterLandscapeReady (after floor exists) so its ground trace hits the floor.
 
 UT66GameInstance* GI = GetT66GameInstance();
@@ -262,6 +263,110 @@ return;
 		{
 			ActiveAsyncLoadHandles.Add(Handle);
 		}
+	}
+}
+
+void AT66GameMode::SpawnPetForPlayer(AController* Player)
+{
+	UT66GameInstance* GI = GetT66GameInstance();
+	if (!GI)
+	{
+		return;
+	}
+	if (GI->IsTutorialRun() || GI->IsTestRoomRun())
+	{
+		return;
+	}
+
+	UGameInstance* GameInstance = GetGameInstance();
+	UT66AchievementsSubsystem* Achievements = GameInstance ? GameInstance->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
+	FName SelectedPetID = GI->SelectedPetID;
+	if (SelectedPetID.IsNone() && Achievements)
+	{
+		SelectedPetID = Achievements->GetActivePetID();
+		GI->SelectedPetID = SelectedPetID;
+	}
+	if (SelectedPetID.IsNone())
+	{
+		return;
+	}
+	if (Achievements && !Achievements->IsPetCaptured(SelectedPetID))
+	{
+		return;
+	}
+
+	FPetData PetData;
+	if (!GI->GetPetData(SelectedPetID, PetData))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	APawn* HeroPawn = Player ? Player->GetPawn() : nullptr;
+	if (!HeroPawn)
+	{
+		return;
+	}
+
+	if (Player)
+	{
+		if (TWeakObjectPtr<AT66PetActor>* Existing = PlayerPets.Find(Player))
+		{
+			if (AT66PetActor* ExistingPet = Existing->Get())
+			{
+				ExistingPet->Destroy();
+			}
+			PlayerPets.Remove(Player);
+		}
+	}
+
+	UClass* PetClass = AT66PetActor::StaticClass();
+	if (!PetData.PetActorClass.IsNull())
+	{
+		if (UClass* LoadedPetClass = PetData.PetActorClass.Get())
+		{
+			if (LoadedPetClass->IsChildOf(AT66PetActor::StaticClass()))
+			{
+				PetClass = LoadedPetClass;
+			}
+		}
+	}
+
+	const FVector SpawnLoc = HeroPawn->GetActorLocation() + FVector(-90.f, -130.f, 0.f);
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = HeroPawn;
+	SpawnParams.Instigator = HeroPawn;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	FName PetSkinID = FName(TEXT("Default"));
+	if (Achievements)
+	{
+		PetSkinID = Achievements->GetEquippedPetSkinID(SelectedPetID);
+	}
+
+	AT66PetActor* Pet = World->SpawnActor<AT66PetActor>(PetClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	if (Pet)
+	{
+		Pet->InitializePet(PetData, PetSkinID);
+		Pet->bMobLootCollectionEnabled = true;
+		if (Player)
+		{
+			PlayerPets.Add(Player, Pet);
+		}
+
+		FHitResult Hit;
+		const FVector Start = Pet->GetActorLocation() + FVector(0.f, 0.f, 2000.f);
+		const FVector End = Pet->GetActorLocation() - FVector(0.f, 0.f, 9000.f);
+		if (World->LineTraceSingleByChannel(Hit, Start, End, ECC_WorldStatic))
+		{
+			Pet->SetActorLocation(Hit.ImpactPoint, false, nullptr, ETeleportType::TeleportPhysics);
+		}
+		UE_LOG(LogT66GameMode, Log, TEXT("[Pets] Spawned active pet %s (Mob Loot collection enabled)"), *SelectedPetID.ToString());
 	}
 }
 

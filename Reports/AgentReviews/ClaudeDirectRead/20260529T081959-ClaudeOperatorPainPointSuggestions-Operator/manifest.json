@@ -1,0 +1,95 @@
+{
+  "ArtifactKind": "OperatorArtifactNotGreenlight",
+  "Mode": "Operator",
+  "Model": "claude-opus-4-8",
+  "Effort": "high",
+  "ClaudeOutputFormat": "json",
+  "PermissionMode": "default",
+  "ToolProfile": "ReadOnly",
+  "EffectiveToolSurface": "Read,Grep,Glob",
+  "MutatingCapability": false,
+  "ApprovalRequired": false,
+  "CodexApprovalPath": null,
+  "AllowedTools": [
+    "Read",
+    "Grep",
+    "Glob"
+  ],
+  "AddDir": [
+    "C:\\UE\\T66"
+  ],
+  "PromptPath": "C:\\UE\\T66\\Reports\\AgentReviews\\20260529_ClaudeOperatorPainPointSuggestions\\claude_readonly_prompt.md",
+  "EffectivePromptPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T081959-ClaudeOperatorPainPointSuggestions-Operator\\effective_prompt.md",
+  "OutputPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T081959-ClaudeOperatorPainPointSuggestions-Operator\\claude_direct_read_operator.md",
+  "TokenSummaryPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T081959-ClaudeOperatorPainPointSuggestions-Operator\\claude_tokens.json",
+  "ReviewedOperatorRun": null,
+  "AttemptsRequested": 1,
+  "TimeoutSeconds": 600,
+  "MaxTurns": 0,
+  "MaxTurnContinuations": 3,
+  "NoSessionPersistence": true,
+  "MaxTurnContinuationAttempted": false,
+  "ClaudePath": "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+  "ClaudeVersion": "2.1.150 (Claude Code)",
+  "SuccessfulStdoutPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T081959-ClaudeOperatorPainPointSuggestions-Operator\\attempts\\stdout_attempt1.json",
+  "SuccessfulStderrPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T081959-ClaudeOperatorPainPointSuggestions-Operator\\attempts\\stderr_attempt1.txt",
+  "ClaudeJsonPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T081959-ClaudeOperatorPainPointSuggestions-Operator\\attempts\\stdout_attempt1.json",
+  "ClaudeTokensSpent": 120499,
+  "ClaudeUsage": {
+    "input_tokens": 3,
+    "cache_creation_input_tokens": 60070,
+    "cache_read_input_tokens": 54140,
+    "output_tokens": 5146,
+    "server_tool_use": {
+      "web_search_requests": 0,
+      "web_fetch_requests": 0
+    },
+    "service_tier": "standard",
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 60070,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "inference_geo": "",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 4810,
+        "cache_read_input_tokens": 32825,
+        "cache_creation_input_tokens": 48560,
+        "cache_creation": {
+          "ephemeral_5m_input_tokens": 0,
+          "ephemeral_1h_input_tokens": 48560
+        },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "ClaudeModelUsage": {
+    "claude-haiku-4-5-20251001": {
+      "inputTokens": 1122,
+      "outputTokens": 18,
+      "cacheReadInputTokens": 0,
+      "cacheCreationInputTokens": 0,
+      "webSearchRequests": 0,
+      "costUSD": 0.001212,
+      "contextWindow": 200000,
+      "maxOutputTokens": 32000
+    },
+    "claude-opus-4-8": {
+      "inputTokens": 3,
+      "outputTokens": 5146,
+      "cacheReadInputTokens": 54140,
+      "cacheCreationInputTokens": 60070,
+      "webSearchRequests": 0,
+      "costUSD": 0.5311724999999999,
+      "contextWindow": 200000,
+      "maxOutputTokens": 32000
+    }
+  },
+  "Greenlit": false,
+  "Verdict": null,
+  "VerdictLine": null,
+  "OutcomeKind": "ClaudeOperatorArtifact",
+  "FailureKind": null
+}

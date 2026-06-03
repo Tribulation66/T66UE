@@ -9,6 +9,36 @@
 
 class UT66BuffSaveGame;
 
+USTRUCT(BlueprintType)
+struct T66_API FT66RelicDefinition
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	FName RelicID = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	FText DisplayName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	ET66HeroStatType PrimaryStatType = ET66HeroStatType::Damage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	ET66SecondaryStatType SecondaryStatType = ET66SecondaryStatType::None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	bool bUsesSecondaryStat = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	bool bIsSolomonsRing = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	int32 BonusStatPoints = 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	int32 CostCC = 10;
+};
+
 /** Fill-step state: 0=Locked, 1=Unlocked. */
 enum class ET66BuffFillStepState : uint8
 {
@@ -30,9 +60,11 @@ public:
 	static const FString BuffSaveSlotName;
 	static constexpr int32 BuffSaveUserIndex = 0;
 
-	/** Visible diploma upgrade steps per permanent stat. */
+	/** Legacy fill-step constant retained for save compatibility; live permanent progression is flat Relics. */
 	static constexpr int32 MaxFillStepsPerStat = 4;
 	static constexpr int32 PermanentBuffUnlockCostCC = 10;
+	static constexpr int32 RelicUnlockCostCC = 10;
+	static constexpr int32 RelicPermanentBonusStatPoints = 1;
 	static constexpr int32 SingleUseBuffCostCC = 1;
 	static constexpr int32 MaxSelectedSingleUseBuffs = 4;
 	static constexpr float SingleUseSecondaryBuffMultiplier = 1.10f;
@@ -84,7 +116,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool UnlockRandomStat();
 
-	/** True if all visible diploma upgrades for this stat are unlocked. */
+	/** True if the primary-stat Relic for this stat is owned. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	bool IsStatMaxed(ET66HeroStatType StatType) const;
 
@@ -93,6 +125,26 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Buffs")
 	FT66HeroStatBonuses GetPermanentBuffStatBonuses() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
+	bool IsRelicOwned(FName RelicID) const;
+
+	UFUNCTION(BlueprintCallable, Category = "PowerUp|Relics")
+	bool PurchaseRelic(FName RelicID);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
+	int32 GetRelicCost(FName RelicID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
+	bool HasSolomonsRing() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
+	int32 GetRelicPrimaryStatBonus(ET66HeroStatType StatType) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
+	int32 GetRelicSecondaryStatBonus(ET66SecondaryStatType StatType) const;
+
+	static const TArray<FT66RelicDefinition>& GetAllRelicDefinitions();
 
 	/** Compatibility alias for permanent diploma primary-stat bonuses. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
@@ -187,7 +239,7 @@ public:
 
 private:
 	static constexpr int32 LegacyV2SlotsPerStat = 10;
-	static constexpr int32 SingleUseBuffCount = 31;
+	static constexpr int32 SingleUseBuffCount = 28;
 	static constexpr int32 SelectedSingleUseBuffSlotCount = MaxSelectedSingleUseBuffs;
 
 	UPROPERTY()
@@ -207,6 +259,7 @@ private:
 	void MigrateV8ToV9PrimaryAccuracy();
 	void MigrateV9ToV10SingleLoadoutSlots();
 	void MigrateV10ToV11PrimarySpeed();
+	void MigrateV11ToV12Relics();
 	void Save();
 	TArray<uint8>* GetFillStepStatesForStat(ET66HeroStatType StatType);
 	const TArray<uint8>* GetFillStepStatesForStat(ET66HeroStatType StatType) const;
@@ -224,6 +277,9 @@ private:
 	bool RebuildSelectedSingleUseStatesFromLoadout();
 	int32 GetRandomBonusForStat(ET66HeroStatType StatType) const;
 	int32 GetStatIndex(ET66HeroStatType StatType) const;
+	FName GetRelicIDForPrimaryStat(ET66HeroStatType StatType) const;
+	const FT66RelicDefinition* FindRelicDefinition(FName RelicID) const;
+	bool EnsureRelicOwnershipValid();
 	int32 GetSingleUseBuffIndex(ET66SecondaryStatType StatType) const;
 	void AddBonusForStat(FT66HeroStatBonuses& Bonuses, ET66HeroStatType StatType, int32 Amount) const;
 };

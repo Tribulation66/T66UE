@@ -1,0 +1,30 @@
+﻿{
+    "ArtifactKind":  "OperatorArtifactNotGreenlight",
+    "Mode":  "Operator",
+    "Model":  "claude-opus-4-8",
+    "Effort":  "high",
+    "PermissionMode":  "plan",
+    "AllowedTools":  [
+                         "Read",
+                         "Grep",
+                         "Glob"
+                     ],
+    "AddDir":  [
+                   "C:\\UE\\T66,C:\\Users\\DoPra\\Tools\\AIUsageTray"
+               ],
+    "PromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\20260529_UsageTrayOperatorRefreshFix\\claude_operator_prompt_short.md",
+    "EffectivePromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T002821-20260529_UsageTrayOperatorRefreshFixShort-Operator\\effective_prompt.md",
+    "OutputPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T002821-20260529_UsageTrayOperatorRefreshFixShort-Operator\\claude_direct_read_operator.md",
+    "ReviewedOperatorRun":  null,
+    "AttemptsRequested":  1,
+    "TimeoutSeconds":  600,
+    "ClaudePath":  "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+    "ClaudeVersion":  "2.1.150 (Claude Code)",
+    "SuccessfulStdoutPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T002821-20260529_UsageTrayOperatorRefreshFixShort-Operator\\attempts\\stdout_attempt1.md",
+    "SuccessfulStderrPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T002821-20260529_UsageTrayOperatorRefreshFixShort-Operator\\attempts\\stderr_attempt1.txt",
+    "Greenlit":  false,
+    "Verdict":  null,
+    "VerdictLine":  null,
+    "OutcomeKind":  "ClaudeOperatorArtifact",
+    "FailureKind":  null
+}

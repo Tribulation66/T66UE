@@ -9,11 +9,13 @@
 #include "Data/T66DataTypes.h"
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66RetroFXSettings.h"
+#include "UI/T66FrontendVideoCatalog.h"
 #include "T66HeroSelectionScreen.generated.h"
 
 class UT66LocalizationSubsystem;
 class UT66LeaderboardRunSummarySaveGame;
 class UT66HeroSelectionPreviewController;
+class UT66FrontendVideoPlayer;
 struct FSlateBrush;
 class SVerticalBox;
 class SBox;
@@ -95,6 +97,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
 	void OnChooseCompanionClicked();
+
+	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
+	void OnChoosePetClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
 	void OnHeroLoreClicked();
@@ -184,6 +189,9 @@ private:
 
 	TSharedPtr<FSlateBrush> HeroUltimateIconBrush;
 	TSharedPtr<FSlateBrush> HeroPassiveIconBrush;
+	TSharedPtr<SBorder> KitPreviewColorBox;
+	TSharedPtr<STextBlock> KitPreviewTitleWidget;
+	TSharedPtr<STextBlock> KitPreviewDescriptionWidget;
 
 	/** Dropdown for switching the left skins panel between hero and companion skins. */
 	TArray<TSharedPtr<FString>> SkinTargetOptions;
@@ -284,8 +292,10 @@ private:
 	FReply HandleStatsClicked();
 	FReply HandleOpenStatsPanelClicked();
 	FReply HandleHeroRecordInfoClicked();
+	FReply HandleWeaponPreviewClicked();
 	FReply HandleUltimatePreviewClicked();
 	FReply HandlePassivePreviewClicked();
+	FReply HandlePetClicked();
 	FReply HandleChadBodyClicked();
 	FReply HandleStacyBodyClicked();
 	FReply HandleEnterClicked();
@@ -313,5 +323,14 @@ private:
 	TObjectPtr<UT66HeroSelectionPreviewController> PreviewController;
 
 	UPROPERTY(Transient)
+	TObjectPtr<UT66FrontendVideoPlayer> KitPreviewVideoPlayer;
+
+	ET66HeroKitPreviewSlot SelectedKitPreviewSlot = ET66HeroKitPreviewSlot::Weapon;
+
+	UPROPERTY(Transient)
 	TObjectPtr<UT66LeaderboardRunSummarySaveGame> HeroStatsSnapshot;
+
+	void ApplyKitPreviewVideo(ET66HeroKitPreviewSlot KitSlot);
+	void RefreshKitPreviewPanelText();
+	const FSlateBrush* GetKitPreviewVideoBrush() const;
 };

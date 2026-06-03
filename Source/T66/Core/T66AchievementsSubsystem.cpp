@@ -12,6 +12,7 @@
 DEFINE_LOG_CATEGORY_STATIC(LogT66Achievements, Log, All);
 
 const FString UT66AchievementsSubsystem::ProfileSaveSlotName(TEXT("T66_Profile"));
+const FName UT66AchievementsSubsystem::EnterTheKingdomAchievementID(TEXT("ACH_SECRET_ENTER_THE_KINGDOM"));
 
 namespace
 {
@@ -366,6 +367,19 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		UE_LOG(LogT66Achievements, Log, TEXT("[Account] LoadOrCreateProfile: Applied sparse active HeroID migration (SaveVersion %d)."), T66SparseActiveHeroIdProfileSaveVersion);
 	}
 
+	if (LoadedSaveVersion < T66PetProfileSaveVersion)
+	{
+		Profile->CapturedPetIDs.Reset();
+		Profile->ActivePetID = NAME_None;
+		Profile->LastSelectedPetID = NAME_None;
+		Profile->PetBondStagesClearedByID.Reset();
+		Profile->OwnedPetSkinsByPet.Reset();
+		Profile->EquippedPetSkinIDByPet.Reset();
+		Profile->SaveVersion = T66PetProfileSaveVersion;
+		bProfileDirty = true;
+		UE_LOG(LogT66Achievements, Log, TEXT("[Pets] LoadOrCreateProfile: Added pet collection defaults (SaveVersion %d)."), T66PetProfileSaveVersion);
+	}
+
 	// Hero skins: log current state (no more auto-reset; purchases persist).
 	const FName DefaultSkin(TEXT("Default"));
 	
@@ -386,6 +400,11 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 
 	// Union defaults: clamp to sane ranges so corrupted saves can't break gameplay math.
 	for (TPair<FName, int32>& Pair : Profile->CompanionUnionStagesClearedByID)
+	{
+		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
+	}
+
+	for (TPair<FName, int32>& Pair : Profile->PetBondStagesClearedByID)
 	{
 		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
 	}
@@ -430,7 +449,7 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		Pair.Value = FMath::Clamp(Pair.Value, 0, 2000000000);
 	}
 
-	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, T66SparseActiveHeroIdProfileSaveVersion);
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, T66CurrentProfileSaveVersion);
 }
 
 int32 UT66AchievementsSubsystem::GetChadCouponBalance() const
@@ -591,6 +610,192 @@ void UT66AchievementsSubsystem::RememberLastSelectedLoadout(FName HeroID, FName 
 	}
 }
 
+FName UT66AchievementsSubsystem::GetActivePetID() const
+{
+	return Profile ? Profile->ActivePetID : NAME_None;
+}
+
+FName UT66AchievementsSubsystem::GetLastSelectedPetID() const
+{
+	return Profile ? Profile->LastSelectedPetID : NAME_None;
+}
+
+bool UT66AchievementsSubsystem::SetActivePetID(FName PetID)
+{
+	if (!Profile)
+	{
+		LoadOrCreateProfile();
+	}
+	if (!Profile)
+	{
+		return false;
+	}
+
+	if (!PetID.IsNone() && !IsPetCaptured(PetID))
+	{
+		return false;
+	}
+
+	if (Profile->ActivePetID == PetID && Profile->LastSelectedPetID == PetID)
+	{
+		return true;
+	}
+
+	Profile->ActivePetID = PetID;
+	Profile->LastSelectedPetID = PetID;
+	MarkProfileDirtyAndSave(false);
+	AchievementsStateChanged.Broadcast();
+	return true;
+}
+
+bool UT66AchievementsSubsystem::IsPetCaptured(FName PetID) const
+{
+	return Profile && !PetID.IsNone() && Profile->CapturedPetIDs.Contains(PetID);
+}
+
+bool UT66AchievementsSubsystem::CapturePet(FName PetID, bool& bOutAutoEquipped)
+{
+	bOutAutoEquipped = false;
+	if (PetID.IsNone())
+	{
+		return false;
+	}
+	if (!Profile)
+	{
+		LoadOrCreateProfile();
+	}
+	if (!Profile)
+	{
+		return false;
+	}
+
+	const bool bAlreadyCaptured = Profile->CapturedPetIDs.Contains(PetID);
+	if (!bAlreadyCaptured)
+	{
+		Profile->CapturedPetIDs.Add(PetID);
+		FT66OwnedSkinsList& OwnedSkins = Profile->OwnedPetSkinsByPet.FindOrAdd(PetID);
+		OwnedSkins.SkinIDs.AddUnique(FName(TEXT("Default")));
+		if (!Profile->EquippedPetSkinIDByPet.Contains(PetID))
+		{
+			Profile->EquippedPetSkinIDByPet.Add(PetID, FName(TEXT("Default")));
+		}
+	}
+
+	if (Profile->ActivePetID.IsNone())
+	{
+		Profile->ActivePetID = PetID;
+		Profile->LastSelectedPetID = PetID;
+		bOutAutoEquipped = true;
+	}
+
+	if (!bAlreadyCaptured || bOutAutoEquipped)
+	{
+		MarkProfileDirtyAndSave(false);
+		AchievementsStateChanged.Broadcast();
+	}
+	return !bAlreadyCaptured;
+}
+
+TArray<FName> UT66AchievementsSubsystem::GetCapturedPetIDs() const
+{
+	return Profile ? Profile->CapturedPetIDs : TArray<FName>();
+}
+
+int32 UT66AchievementsSubsystem::GetPetBondStagesCleared(FName PetID) const
+{
+	if (!Profile || PetID.IsNone()) return 0;
+	const int32* Found = Profile->PetBondStagesClearedByID.Find(PetID);
+	return Found ? FMath::Max(0, *Found) : 0;
+}
+
+float UT66AchievementsSubsystem::GetPetBondProgress01(FName PetID) const
+{
+	if (PetID.IsNone()) return 0.f;
+	const int32 Stages = GetPetBondStagesCleared(PetID);
+	return PetBondTier_MaxStages <= 0
+		? 0.f
+		: FMath::Clamp(static_cast<float>(Stages) / static_cast<float>(PetBondTier_MaxStages), 0.f, 1.f);
+}
+
+float UT66AchievementsSubsystem::GetPetBondMovementSpeedMultiplier(FName PetID) const
+{
+	const int32 Stages = GetPetBondStagesCleared(PetID);
+	return FMath::Clamp(
+		1.f + static_cast<float>(Stages) * PetBondSpeedMultiplierPerStage,
+		1.f,
+		PetBondSpeedMultiplierMax);
+}
+
+void UT66AchievementsSubsystem::AddPetBondStagesCleared(FName PetID, int32 DeltaStagesCleared)
+{
+	if (PetID.IsNone()) return;
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile) return;
+
+	const int32 Delta = FMath::Clamp(DeltaStagesCleared, 0, 1000000);
+	if (Delta <= 0) return;
+
+	const int32 Prev = GetPetBondStagesCleared(PetID);
+	const int32 Next = FMath::Clamp(Prev + Delta, 0, 2000000000);
+	Profile->PetBondStagesClearedByID.FindOrAdd(PetID) = Next;
+	MarkDirtyAndMaybeSave(false);
+	AchievementsStateChanged.Broadcast();
+}
+
+FName UT66AchievementsSubsystem::GetEquippedPetSkinID(FName PetID) const
+{
+	if (!Profile || PetID.IsNone())
+	{
+		return FName(TEXT("Default"));
+	}
+	const FName* Found = Profile->EquippedPetSkinIDByPet.Find(PetID);
+	return Found && !Found->IsNone() ? *Found : FName(TEXT("Default"));
+}
+
+TArray<FName> UT66AchievementsSubsystem::GetOwnedPetSkinIDs(FName PetID) const
+{
+	TArray<FName> Out;
+	if (!Profile || PetID.IsNone())
+	{
+		return Out;
+	}
+
+	if (const FT66OwnedSkinsList* Owned = Profile->OwnedPetSkinsByPet.Find(PetID))
+	{
+		Out = Owned->SkinIDs;
+	}
+	Out.AddUnique(FName(TEXT("Default")));
+	return Out;
+}
+
+void UT66AchievementsSubsystem::SetEquippedPetSkinID(FName PetID, FName SkinID)
+{
+	if (PetID.IsNone())
+	{
+		return;
+	}
+	if (!Profile) LoadOrCreateProfile();
+	if (!Profile || !IsPetCaptured(PetID))
+	{
+		return;
+	}
+	if (SkinID.IsNone())
+	{
+		SkinID = FName(TEXT("Default"));
+	}
+	if (SkinID != FName(TEXT("Default")))
+	{
+		const FT66OwnedSkinsList* Owned = Profile->OwnedPetSkinsByPet.Find(PetID);
+		if (!Owned || !Owned->SkinIDs.Contains(SkinID))
+		{
+			return;
+		}
+	}
+	Profile->EquippedPetSkinIDByPet.FindOrAdd(PetID) = SkinID;
+	MarkProfileDirtyAndSave(false);
+	AchievementsStateChanged.Broadcast();
+}
+
 bool UT66AchievementsSubsystem::IsHeroSkinOwned(FName HeroID, FName SkinID) const
 {
 	if (UT66SkinSubsystem* Skin = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66SkinSubsystem>() : nullptr)
@@ -741,6 +946,19 @@ void UT66AchievementsSubsystem::RebuildDefinitions()
 	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_BLK_011")), ET66AchievementTier::Black, 5, 100);
 	AddAchievement(CachedDefinitions, Loc, FName(TEXT("ACH_RED_007")), ET66AchievementTier::Red, 5, 250);
 
+	{
+		FAchievementData SecretEnding;
+		SecretEnding.AchievementID = EnterTheKingdomAchievementID;
+		SecretEnding.Tier = ET66AchievementTier::White;
+		SecretEnding.Category = ET66AchievementCategory::Special;
+		SecretEnding.RewardType = ET66AchievementRewardType::ChadCoupons;
+		SecretEnding.RewardCoins = 0;
+		SecretEnding.RequirementCount = 1;
+		SecretEnding.DisplayName = NSLOCTEXT("T66.Achievements", "EnterTheKingdomName", "Enter the Kingdom");
+		SecretEnding.Description = NSLOCTEXT("T66.Achievements", "EnterTheKingdomDesc", "Give Kromer to the Saint.");
+		CachedDefinitions.Add(SecretEnding);
+	}
+
 	const TArray<int32>& ExtraEnemyThresholds = GetExtraEnemyKillThresholds();
 	for (int32 Index = 0; Index < ExtraEnemyThresholds.Num(); ++Index)
 	{
@@ -863,8 +1081,8 @@ void UT66AchievementsSubsystem::RebuildDefinitions()
 			Index,
 			ExtraUnionThresholds.Num(),
 			Requirement,
-			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraUnionTitle", "Companion Bond {0}"), FText::AsNumber(Index + 1)),
-			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraUnionDesc", "Clear {0} stages with the same companion."), FText::AsNumber(Requirement)));
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraUnionTitle", "Girlfriend Bond {0}"), FText::AsNumber(Index + 1)),
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraUnionDesc", "Clear {0} stages with the same girlfriend."), FText::AsNumber(Requirement)));
 	}
 
 	const TArray<int32>& ExtraTokenThresholds = GetExtraVendorTokenThresholds();
@@ -878,7 +1096,7 @@ void UT66AchievementsSubsystem::RebuildDefinitions()
 			ExtraTokenThresholds.Num(),
 			Requirement,
 			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraTokenTitle", "Token Rank {0}"), FText::AsNumber(Requirement)),
-			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraTokenDesc", "Unlock Vendor Token level {0}."), FText::AsNumber(Requirement)));
+			FText::Format(NSLOCTEXT("T66.Achievements", "ExtraTokenDesc", "Unlock Vendor Token rank {0}."), FText::AsNumber(Requirement)));
 	}
 
 	ApplyRuntimeStateToCachedDefinitions(CachedDefinitions);
@@ -1290,6 +1508,39 @@ bool UT66AchievementsSubsystem::TryClaimAchievement(FName AchievementID)
 	return true;
 }
 
+bool UT66AchievementsSubsystem::UnlockEnterTheKingdomAchievement()
+{
+	if (!Profile)
+	{
+		LoadOrCreateProfile();
+	}
+	if (!Profile)
+	{
+		return false;
+	}
+
+	FT66AchievementState* State = FindOrAddState(EnterTheKingdomAchievementID);
+	if (!State)
+	{
+		return false;
+	}
+
+	const bool bWasUnlocked = State->bIsUnlocked;
+	State->CurrentProgress = FMath::Max(State->CurrentProgress, 1);
+	State->bIsUnlocked = true;
+	State->bIsClaimed = true;
+
+	if (!bWasUnlocked)
+	{
+		CurrentRunUnlockedAchievementIDs.AddUnique(EnterTheKingdomAchievementID);
+		BroadcastAchievementsUnlocked({ EnterTheKingdomAchievementID });
+	}
+
+	MarkDirtyAndMaybeSave(true);
+	AchievementsStateChanged.Broadcast();
+	return !bWasUnlocked;
+}
+
 void UT66AchievementsSubsystem::ResetProfileProgress()
 {
 	if (!Profile) LoadOrCreateProfile();
@@ -1314,6 +1565,12 @@ void UT66AchievementsSubsystem::ResetProfileProgress()
 	Profile->CompanionHighestMedalByID.Reset();
 	Profile->CompanionCumulativeScoreByID.Reset();
 	Profile->CompanionTotalHealingByID.Reset();
+	Profile->CapturedPetIDs.Reset();
+	Profile->ActivePetID = NAME_None;
+	Profile->LastSelectedPetID = NAME_None;
+	Profile->PetBondStagesClearedByID.Reset();
+	Profile->OwnedPetSkinsByPet.Reset();
+	Profile->EquippedPetSkinIDByPet.Reset();
 
 	MarkDirtyAndMaybeSave(true);
 	AchievementCoinsChanged.Broadcast();
@@ -1636,4 +1893,3 @@ void UT66AchievementsSubsystem::RecordCompanionDifficultyClear(FName CompanionID
 	MarkDirtyAndMaybeSave(true);
 	AchievementsStateChanged.Broadcast();
 }
-

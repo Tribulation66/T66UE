@@ -49,12 +49,21 @@ namespace T66ItemCardTextUtils
 	{
 		if (ItemData.SecondaryStatType == ET66SecondaryStatType::VendorToken)
 		{
-			const int32 TokenLevel = FMath::Clamp(MainValue, 1, 5);
-			const int32 SellPercent = 40 + TokenLevel * 10;
+			const int32 TokenStacks = FMath::Clamp(MainValue, 1, 16);
+			const int32 SellPercent = FMath::Min(100, 70 + FMath::RoundToInt(static_cast<float>(TokenStacks) * 2.5f));
+			const int32 BuyDiscountTenths = TokenStacks * 25;
+			const FNumberFormattingOptions BuyDiscountFormatting = []()
+			{
+				FNumberFormattingOptions Options;
+				Options.MinimumFractionalDigits = 0;
+				Options.MaximumFractionalDigits = 1;
+				return Options;
+			}();
 			return FText::Format(
-				NSLOCTEXT("T66.ItemTooltip", "VendorTokenLineFormat", "Level {0}: sell items for {1}% of buy value."),
-				FText::AsNumber(TokenLevel),
-				FText::AsNumber(SellPercent));
+				NSLOCTEXT("T66.ItemTooltip", "VendorTokenStackLineFormat", "{0} stacks: sell items for {1}% of buy value, buy discount +{2}%."),
+				FText::AsNumber(TokenStacks),
+				FText::AsNumber(SellPercent),
+				FText::AsNumber(static_cast<float>(BuyDiscountTenths) / 10.f, &BuyDiscountFormatting));
 		}
 
 		if (!Loc || ItemData.SecondaryStatType == ET66SecondaryStatType::None)

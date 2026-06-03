@@ -196,39 +196,65 @@ def validate_csv_binding():
     log("CSV binding row is production-bound, suppresses the temporary projectile, and uses the calibrated visual radius")
 
 
+def validate_hero3_aoe_placeholder_csv_binding():
+    rows = read_binding_rows(CSV_PATH)
+
+    row = next((candidate for candidate in rows if candidate.get("---") == "Hero3_AOE_Black_Placeholder"), None)
+    if row is None:
+        fail("CombatVFXBindings.csv is missing Hero3_AOE_Black_Placeholder row")
+
+    expected = {
+        "BindingID": "Hero3_AOE_Black_Placeholder",
+        "SourceType": "WeaponBase",
+        "SourceID": "Hero_3_black_aoe",
+        "AttackCategory": "AOE",
+        "NiagaraSystem": PRODUCTION_NIAGARA,
+        "bSuppressTemporaryProjectile": "True",
+    }
+    for key, value in expected.items():
+        if row.get(key) != value:
+            fail(f"Hero3_AOE_Black_Placeholder {key}={row.get(key)!r}, expected {value!r}")
+
+    notes = row.get("Notes") or ""
+    if "FLAGGED placeholder reuse" not in notes:
+        fail("Hero3_AOE_Black_Placeholder Notes must flag the temporary Hero 1 AOE reuse")
+
+    log("Hero 3 AOE placeholder row reuses the Hero 1 AOE Niagara path and is explicitly flagged")
+
+
 def validate_pierce_csv_binding():
     rows = read_binding_rows(CSV_PATH)
 
-    row = next((candidate for candidate in rows if candidate.get("---") == "Hero1Axe_Pierce_Base"), None)
+    row = next((candidate for candidate in rows if candidate.get("---") == "Hero2_Pierce_Black_Base"), None)
     if row is None:
-        fail("CombatVFXBindings.csv is missing Hero1Axe_Pierce_Base row")
+        fail("CombatVFXBindings.csv is missing Hero2_Pierce_Black_Base row")
 
     expected = {
-        "BindingID": "Hero1Axe_Pierce_Base",
+        "BindingID": "Hero2_Pierce_Black_Base",
         "SourceType": "WeaponBase",
-        "SourceID": "Hero_1_black_pierce",
+        "SourceID": "Hero_2_black_pierce",
         "AttackCategory": "Pierce",
         "NiagaraSystem": PRODUCTION_PIERCE_NIAGARA,
         "bSuppressTemporaryProjectile": "True",
     }
     for key, value in expected.items():
         if row.get(key) != value:
-            fail(f"Hero1Axe_Pierce_Base {key}={row.get(key)!r}, expected {value!r}")
+            fail(f"Hero2_Pierce_Black_Base {key}={row.get(key)!r}, expected {value!r}")
 
-    log("Pierce CSV binding row is production-bound to the PathAnchored Niagara system and suppresses the temporary projectile")
+    log("Hero 2 Pierce CSV binding row is production-bound to the PathAnchored Niagara system and suppresses the temporary projectile")
 
 
 def validate_bounce_csv_binding():
     rows = read_binding_rows(CSV_PATH)
 
-    row = next((candidate for candidate in rows if candidate.get("---") == "Hero1Axe_Bounce_Base"), None)
+    row = next((candidate for candidate in rows if candidate.get("---") == "Hero4_Bounce_Black_Base"), None)
     if row is None:
-        fail("CombatVFXBindings.csv is missing Hero1Axe_Bounce_Base row")
+        fail("CombatVFXBindings.csv is missing Hero4_Bounce_Black_Base row")
 
     expected = {
-        "BindingID": "Hero1Axe_Bounce_Base",
+        "BindingID": "Hero4_Bounce_Black_Base",
         "SourceType": "WeaponBase",
-        "SourceID": "Hero_1_black_bounce",
+        "SourceID": "Hero_4_black_bounce",
         "AttackCategory": "Bounce",
         "NiagaraSystem": PRODUCTION_BOUNCE_NIAGARA,
         "EffectPacketID": "Hero1AxeBounceMechanismPacket",
@@ -237,29 +263,29 @@ def validate_bounce_csv_binding():
     }
     for key, value in expected.items():
         if row.get(key) != value:
-            fail(f"Hero1Axe_Bounce_Base {key}={row.get(key)!r}, expected {value!r}")
+            fail(f"Hero4_Bounce_Black_Base {key}={row.get(key)!r}, expected {value!r}")
 
     base_playback = float(row.get("BasePlaybackSeconds") or 0.0)
     if abs(base_playback - 0.32) > 0.005:
-        fail(f"Hero1Axe_Bounce_Base BasePlaybackSeconds={base_playback:.3f}, expected 0.32")
+        fail(f"Hero4_Bounce_Black_Base BasePlaybackSeconds={base_playback:.3f}, expected 0.32")
 
-    log("Bounce CSV binding row is production-bound to the ImpactAnchored per-link Niagara system and suppresses the temporary projectile")
+    log("Hero 4 Bounce CSV binding row is production-bound to the ImpactAnchored per-link Niagara system and suppresses the temporary projectile")
 
 
 def validate_dot_csv_binding():
     rows = read_binding_rows(CSV_PATH)
 
-    row = next((candidate for candidate in rows if candidate.get("---") == "Hero1Axe_DOT_Base"), None)
+    row = next((candidate for candidate in rows if candidate.get("---") == "Hero5_DOT_Black_Base"), None)
     if row is None:
-        fail("CombatVFXBindings.csv is missing Hero1Axe_DOT_Base row")
+        fail("CombatVFXBindings.csv is missing Hero5_DOT_Black_Base row")
 
     if is_deferred_scaffold_row(row):
-        fail("Hero1Axe_DOT_Base is still a deferred scaffold row; it must be an active production row")
+        fail("Hero5_DOT_Black_Base is still a deferred scaffold row; it must be an active production row")
 
     expected = {
-        "BindingID": "Hero1Axe_DOT_Base",
+        "BindingID": "Hero5_DOT_Black_Base",
         "SourceType": "WeaponBase",
-        "SourceID": "Hero_1_black_dot",
+        "SourceID": "Hero_5_black_dot",
         "AttackCategory": "DOT",
         "NiagaraSystem": PRODUCTION_DOT_NIAGARA,
         "EffectPacketID": "Hero1AxeDOTMechanismPacket",
@@ -268,9 +294,9 @@ def validate_dot_csv_binding():
     }
     for key, value in expected.items():
         if row.get(key) != value:
-            fail(f"Hero1Axe_DOT_Base {key}={row.get(key)!r}, expected {value!r}")
+            fail(f"Hero5_DOT_Black_Base {key}={row.get(key)!r}, expected {value!r}")
 
-    log("DOT CSV binding row is production-bound to the moving aura-ring carrier Niagara system and suppresses the temporary projectile")
+    log("Hero 5 DOT CSV binding row is production-bound to the moving aura-ring carrier Niagara system and suppresses the temporary projectile")
 
 
 def validate_weapon_geometry_contract():
@@ -449,6 +475,7 @@ def run_unreal_validation() -> None:
     log("=== Combat VFX production binding validation ===")
     log(DISCLAIMER)
     validate_csv_binding()
+    validate_hero3_aoe_placeholder_csv_binding()
     validate_pierce_csv_binding()
     validate_bounce_csv_binding()
     validate_dot_csv_binding()
@@ -492,10 +519,10 @@ def run_self_test(root: Path) -> None:
         "Notes": "active synthetic row",
     }
     deferred_row = {
-        "---": "Hero1Axe_DOT_Scaffold",
-        "BindingID": "Hero1Axe_DOT_Scaffold",
+        "---": "Hero5_DOT_Scaffold",
+        "BindingID": "Hero5_DOT_Scaffold",
         "SourceType": "WeaponBase",
-        "SourceID": "Hero_1_black_dot",
+        "SourceID": "Hero_5_black_dot",
         "AttackCategory": "DOT",
         "NiagaraSystem": "",
         "EffectPacketID": "Hero1AxeDOTMechanismPacket",

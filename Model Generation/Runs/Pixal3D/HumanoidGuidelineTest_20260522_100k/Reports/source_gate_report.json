@@ -1,0 +1,281 @@
+{
+  "hard_reject_count": 18,
+  "method": "near-white background excluded; sRGB converted to linear; luminance = 0.2126R + 0.7152G + 0.0722B",
+  "override": "User requested this accepted humanoid guideline-test image batch be generated on Pixal3D at 100k; report records luminance findings without modifying source pixels.",
+  "rows": [
+    {
+      "asset_id": "Companion_BarMaidenBlonde_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.199658,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Companion_BarMaidenBlonde_Demo.png",
+      "subject_coverage": 0.226568,
+      "subject_pixel_count": 356360,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Companion_BarMaidenBlonde_Regular",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.211232,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Companion_BarMaidenBlonde_Regular.png",
+      "subject_coverage": 0.255269,
+      "subject_pixel_count": 401504,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Companion_CollegeBrunette_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.139506,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Companion_CollegeBrunette_Demo.png",
+      "subject_coverage": 0.212915,
+      "subject_pixel_count": 334887,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Companion_CollegeBrunette_Regular",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.122511,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Companion_CollegeBrunette_Regular.png",
+      "subject_coverage": 0.256388,
+      "subject_pixel_count": 403264,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Companion_OfficeLadyBlackhair_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.128933,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Companion_OfficeLadyBlackhair_Demo.png",
+      "subject_coverage": 0.200178,
+      "subject_pixel_count": 314852,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Companion_OfficeLadyBlackhair_Regular",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.089555,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Companion_OfficeLadyBlackhair_Regular.png",
+      "subject_coverage": 0.247531,
+      "subject_pixel_count": 389333,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Companion_RapVixenLightskinBlack_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.087616,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Companion_RapVixenLightskinBlack_Demo.png",
+      "subject_coverage": 0.214013,
+      "subject_pixel_count": 336613,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Companion_RapVixenLightskinBlack_Regular",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.049234,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Companion_RapVixenLightskinBlack_Regular.png",
+      "subject_coverage": 0.24914,
+      "subject_pixel_count": 391864,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Hero_1_Chad_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.114233,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Hero_1_Chad_Demo.png",
+      "subject_coverage": 0.287038,
+      "subject_pixel_count": 451471,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Hero_1_Stacy_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.120785,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Hero_1_Stacy_Demo.png",
+      "subject_coverage": 0.24652,
+      "subject_pixel_count": 387743,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Hero_2_Chad_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.116312,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Hero_2_Chad_Demo.png",
+      "subject_coverage": 0.293385,
+      "subject_pixel_count": 461455,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Hero_2_Stacy_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.115075,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Hero_2_Stacy_Demo.png",
+      "subject_coverage": 0.236469,
+      "subject_pixel_count": 371933,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Hero_3_Chad_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.074005,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Hero_3_Chad_Demo.png",
+      "subject_coverage": 0.263669,
+      "subject_pixel_count": 414716,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Hero_3_Stacy_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.074991,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Hero_3_Stacy_Demo.png",
+      "subject_coverage": 0.238234,
+      "subject_pixel_count": 374710,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Hero_4_Chad_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.183925,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Hero_4_Chad_Demo.png",
+      "subject_coverage": 0.249463,
+      "subject_pixel_count": 392371,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Hero_4_Stacy_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.135595,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Hero_4_Stacy_Demo.png",
+      "subject_coverage": 0.226109,
+      "subject_pixel_count": 355638,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Hero_5_Chad_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.252617,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Hero_5_Chad_Demo.png",
+      "subject_coverage": 0.232206,
+      "subject_pixel_count": 365229,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    },
+    {
+      "asset_id": "Hero_5_Stacy_Demo",
+      "hard_reject_below": 0.45,
+      "luminance_gate": "hard_reject",
+      "mean_linear_luminance": 0.222381,
+      "pixel_count": 1572864,
+      "source": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k/Sources/Hero_5_Stacy_Demo.png",
+      "subject_coverage": 0.201235,
+      "subject_pixel_count": 316516,
+      "target_range": [
+        0.55,
+        0.65
+      ],
+      "visual_gate_basis": "Previously accepted humanoid guideline-test source image; full-body, forward-facing, clean white background source was preserved unchanged."
+    }
+  ],
+  "run_root": "Model Generation/Runs/Pixal3D/HumanoidGuidelineTest_20260522_100k",
+  "schema_version": 1,
+  "source_count": 18,
+  "warning_count": 0
+}

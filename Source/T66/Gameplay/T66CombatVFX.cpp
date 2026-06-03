@@ -433,27 +433,21 @@ namespace
 
 	const TCHAR* GetIdolNiagaraEffectPath(const FName& IdolID)
 	{
-		if (IdolID == FName(TEXT("Idol_Curse")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Portal.P_Cosmic_Portal");
-		if (IdolID == FName(TEXT("Idol_Lava")))      return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Fire.P_Fire");
-		if (IdolID == FName(TEXT("Idol_Poison")))    return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Poison_02.P_Poison_02");
-		if (IdolID == FName(TEXT("Idol_Bleed")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Liquid_Hit_03.P_Liquid_Hit_03");
-		if (IdolID == FName(TEXT("Idol_Electric")))  return TEXT("/Game/Stylized_VFX_StPack/Particles/P_Electric_Projectile_02.P_Electric_Projectile_02");
-		if (IdolID == FName(TEXT("Idol_Ice")))       return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Ice_Projectile_02.P_Ice_Projectile_02");
-		if (IdolID == FName(TEXT("Idol_Shadow")))    return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_02.P_Cosmic_Projectile_02");
-		if (IdolID == FName(TEXT("Idol_Star")))      return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Projectile_03.P_Cosmic_Projectile_03");
-		if (IdolID == FName(TEXT("Idol_Earth")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02");
-		if (IdolID == FName(TEXT("Idol_Water")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/P_Splash_02.P_Splash_02");
-		if (IdolID == FName(TEXT("Idol_BlackHole"))) return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Cosmic_Portal.P_Cosmic_Portal");
-		if (IdolID == FName(TEXT("Idol_Light")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/P_Laser_02.P_Laser_02");
-		if (IdolID == FName(TEXT("Idol_Steel")))     return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_01.P_Weapon_01");
-		if (IdolID == FName(TEXT("Idol_Wood")))      return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Web_Projectile_01.P_Web_Projectile_01");
-		if (IdolID == FName(TEXT("Idol_Bone")))      return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_02.P_Weapon_02");
+		const FName NormalizedIdolID = UT66IdolManagerSubsystem::NormalizeLegacyIdolID(IdolID);
+		if (NormalizedIdolID == FName(TEXT("Idol_Fire_DOT")) || NormalizedIdolID == FName(TEXT("Idol_Fire_AOE"))) return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Fire.P_Fire");
+		if (NormalizedIdolID == FName(TEXT("Idol_Fire_Pierce")) || NormalizedIdolID == FName(TEXT("Idol_Fire_Bounce"))) return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_4/P_Weapon_01.P_Weapon_01");
+		if (NormalizedIdolID == FName(TEXT("Idol_Ice_DOT")) || NormalizedIdolID == FName(TEXT("Idol_Ice_AOE")) || NormalizedIdolID == FName(TEXT("Idol_Ice_Pierce")) || NormalizedIdolID == FName(TEXT("Idol_Ice_Bounce"))) return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_2/P_Ice_Projectile_02.P_Ice_Projectile_02");
+		if (NormalizedIdolID == FName(TEXT("Idol_Electricity_DOT")) || NormalizedIdolID == FName(TEXT("Idol_Electricity_AOE")) || NormalizedIdolID == FName(TEXT("Idol_Electricity_Pierce")) || NormalizedIdolID == FName(TEXT("Idol_Electricity_Bounce"))) return TEXT("/Game/Stylized_VFX_StPack/Particles/P_Electric_Projectile_02.P_Electric_Projectile_02");
+		if (NormalizedIdolID == FName(TEXT("Idol_Nature_DOT"))) return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Poison_02.P_Poison_02");
+		if (NormalizedIdolID == FName(TEXT("Idol_Nature_AOE"))) return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Dirt_Spikes_02.P_Dirt_Spikes_02");
+		if (NormalizedIdolID == FName(TEXT("Idol_Nature_Pierce")) || NormalizedIdolID == FName(TEXT("Idol_Nature_Bounce"))) return TEXT("/Game/Stylized_VFX_StPack/Particles/UPDATE_1_3/P_Web_Projectile_01.P_Web_Projectile_01");
 		return nullptr;
 	}
 
 	const TCHAR* GetIdolBlueprintEffectClassPath(const FName& IdolID)
 	{
-		if (IdolID == FName(TEXT("Idol_Storm")))
+		const FName NormalizedIdolID = UT66IdolManagerSubsystem::NormalizeLegacyIdolID(IdolID);
+		if (NormalizedIdolID == FName(TEXT("Idol_Electricity_AOE")))
 		{
 			return TEXT("/Game/Stylized_VFX_StPack/Blueprints/BP_Storm.BP_Storm_C");
 		}

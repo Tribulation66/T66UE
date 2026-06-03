@@ -27,7 +27,7 @@
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66LootBagPickup.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
@@ -2414,4 +2414,5 @@ namespace
 			FText::AsNumber(Centiseconds, &TwoDigits));
 	}
 }
+
 

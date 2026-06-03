@@ -1,0 +1,68 @@
+{
+  "created_utc": "2026-05-29T00:17:10.029068+00:00",
+  "errors": [],
+  "failure_kind": "Success",
+  "file_metadata": {
+    "after_delete": {
+      "exists": false,
+      "modified_utc": "",
+      "path": "C:\\UE\\T66\\Content\\VFXLab\\ClaudeSmoke\\NS_Hero1AxeAOE_MeshSlash_ClaudeModifySmoke.uasset",
+      "sha256": "",
+      "size": 0
+    },
+    "after_save": {
+      "exists": true,
+      "modified_utc": "2026-05-29T00:17:14.552941+00:00",
+      "path": "C:\\UE\\T66\\Content\\VFXLab\\ClaudeSmoke\\NS_Hero1AxeAOE_MeshSlash_ClaudeModifySmoke.uasset",
+      "sha256": "c3ad0c2167ee6931a687c005f98be37eda500d182212374939707d8c4b800821",
+      "size": 1717899
+    },
+    "after_verify": {
+      "exists": true,
+      "modified_utc": "2026-05-29T00:17:14.552941+00:00",
+      "path": "C:\\UE\\T66\\Content\\VFXLab\\ClaudeSmoke\\NS_Hero1AxeAOE_MeshSlash_ClaudeModifySmoke.uasset",
+      "sha256": "c3ad0c2167ee6931a687c005f98be37eda500d182212374939707d8c4b800821",
+      "size": 1717899
+    },
+    "before_delete": {
+      "exists": true,
+      "modified_utc": "2026-05-29T00:14:19.396330+00:00",
+      "path": "C:\\UE\\T66\\Content\\VFXLab\\ClaudeSmoke\\NS_Hero1AxeAOE_MeshSlash_ClaudeModifySmoke.uasset",
+      "sha256": "d84db3431afe87ec3461c3497cdf859fa91055cc34dd5e02ee5c0080096eb634",
+      "size": 1717899
+    }
+  },
+  "mode_history": [
+    {
+      "mode": "modify",
+      "started_utc": "2026-05-29T00:17:10.035669+00:00"
+    },
+    {
+      "mode": "verify",
+      "started_utc": "2026-05-29T00:17:25.614867+00:00"
+    }
+  ],
+  "modified_property": {
+    "after_requested": 2,
+    "after_set": 2,
+    "after_verify": 2,
+    "before": 1,
+    "name": "warmup_tick_count",
+    "tolerance": 1e-06,
+    "type": "int"
+  },
+  "reload_verified": true,
+  "save_success": true,
+  "source_asset": {
+    "class_name": "NiagaraSystem",
+    "exists": true,
+    "path": "/Game/VFX/Hero1/Axe/AOE/NS_Hero1AxeAOE_MeshSlash"
+  },
+  "success": true,
+  "target_asset": {
+    "class_name": "NiagaraSystem",
+    "exists": true,
+    "path": "/Game/VFXLab/ClaudeSmoke/NS_Hero1AxeAOE_MeshSlash_ClaudeModifySmoke"
+  },
+  "verify_process_success": true
+}

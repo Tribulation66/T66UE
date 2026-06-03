@@ -115,7 +115,7 @@ TSharedRef<SWidget> UT66CompanionGridScreen::BuildSlateUI()
 	}
 
 	UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-	FText TitleText = Loc ? Loc->GetText_CompanionGrid() : NSLOCTEXT("T66.CompanionGrid", "Title", "COMPANION GRID");
+	FText TitleText = Loc ? Loc->GetText_CompanionGrid() : NSLOCTEXT("T66.CompanionGrid", "Title", "GIRLFRIEND GRID");
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
@@ -307,4 +307,3 @@ FReply UT66CompanionGridScreen::HandleCloseClicked()
 	CloseModal();
 	return FReply::Handled();
 }
-

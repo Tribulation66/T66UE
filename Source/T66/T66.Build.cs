@@ -44,6 +44,7 @@ public class T66 : ModuleRules
 			"ProceduralMeshComponent",
 			"Projects",
 			"RenderCore",
+			"RHI",
 			"MeshDescription",
 			"StaticMeshDescription"
 		});
@@ -82,7 +83,6 @@ public class T66 : ModuleRules
 
 		// Canonical non-UFS runtime fallbacks used by T66RuntimeUI* helpers. Generated UI
 		// art stays here until the remaining screens move to cooked UTexture assets.
-		AddLooseRuntimeDependency("RuntimeDependencies/T66/Arcade/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/Fonts/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/UI/...");
 		AddLooseRuntimeDependency("RuntimeDependencies/T66/Video/...");

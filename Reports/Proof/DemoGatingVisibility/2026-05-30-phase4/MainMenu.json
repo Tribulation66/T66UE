@@ -1,0 +1,10314 @@
+{
+	"screen": "Widget.ViewportIndex.0.T66FrontendTopBarWidget",
+	"capture_timestamp": "2026-05-30T11:53:55.455Z",
+	"viewport":
+	{
+		"width": 1920,
+		"height": 1080,
+		"normalized_basis": "1920x1080",
+		"normalized_basis_width": 1920,
+		"normalized_basis_height": 1080
+	},
+	"widgets": [
+		{
+			"index": 0,
+			"tag": "Widget.ViewportIndex.0.T66FrontendTopBarWidget.Root",
+			"untagged": false,
+			"type": "SObjectWidget",
+			"source": "Widget.cpp(995)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": -1,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 0,
+				"absolute_y": 0,
+				"width": 1920.0001220703125,
+				"height": 1080,
+				"desired_size":
+				{
+					"x": 1920,
+					"y": 1080
+				},
+				"layer_id": 306,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 1
+				},
+				"reference_1920x1080":
+				{
+					"x": 0,
+					"y": 0,
+					"width": 1920.0001220703125,
+					"height": 1080
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 1
+				},
+				"desired_size":
+				{
+					"x": 1920,
+					"y": 1080
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "Widget.ViewportIndex.0.T66FrontendTopBarWidget.Root",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 1,
+			"tag": "FrontendTopBar.Root",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66FrontendTopBarWidget.cpp(1286)",
+			"parent": "Widget.ViewportIndex.0.T66FrontendTopBarWidget.Root",
+			"parent_tag": "Widget.ViewportIndex.0.T66FrontendTopBarWidget.Root",
+			"parent_index": 0,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 0,
+				"absolute_y": 0,
+				"width": 1920.0001220703125,
+				"height": 1080,
+				"desired_size":
+				{
+					"x": 1920,
+					"y": 1080
+				},
+				"layer_id": 307,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 1
+				},
+				"reference_1920x1080":
+				{
+					"x": 0,
+					"y": 0,
+					"width": 1920.0001220703125,
+					"height": 1080
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 1
+				},
+				"desired_size":
+				{
+					"x": 1920,
+					"y": 1080
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.Root",
+				"intended_role": "TopBarRoot",
+				"intended_state": "Default",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 2,
+			"tag": "",
+			"untagged": true,
+			"type": "SVerticalBox",
+			"source": "T66FrontendTopBarWidget.cpp(1290)",
+			"parent": "FrontendTopBar.Root",
+			"parent_tag": "FrontendTopBar.Root",
+			"parent_index": 1,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 0,
+				"absolute_y": 0,
+				"width": 1920.0001220703125,
+				"height": 1080,
+				"desired_size":
+				{
+					"x": 1600,
+					"y": 132
+				},
+				"layer_id": 307,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 1
+				},
+				"reference_1920x1080":
+				{
+					"x": 0,
+					"y": 0,
+					"width": 1920.0001220703125,
+					"height": 1080
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 1
+				},
+				"desired_size":
+				{
+					"x": 1600,
+					"y": 132
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 3,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FrontendTopBarWidget.cpp(1295)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 2,
+			"child_index": 0,
+			"child_count": 2,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 0,
+				"absolute_y": 0,
+				"width": 1920.0001220703125,
+				"height": 158.40000915527344,
+				"desired_size":
+				{
+					"x": 1600,
+					"y": 132
+				},
+				"layer_id": 307,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 0.14666667580604553
+				},
+				"reference_1920x1080":
+				{
+					"x": 0,
+					"y": 0,
+					"width": 1920.0001220703125,
+					"height": 158.40000915527344
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 0.14666667580604553
+				},
+				"desired_size":
+				{
+					"x": 1600,
+					"y": 132
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 4,
+			"tag": "",
+			"untagged": true,
+			"type": "SDPIScaler",
+			"source": "T66FrontendTopBarWidget.cpp(1298)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 3,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 0,
+				"absolute_y": 0,
+				"width": 1920.0001220703125,
+				"height": 158.40000915527344,
+				"desired_size":
+				{
+					"x": 1600,
+					"y": 110.00000762939453
+				},
+				"layer_id": 307,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 0.14666667580604553
+				},
+				"reference_1920x1080":
+				{
+					"x": 0,
+					"y": 0,
+					"width": 1920.0001220703125,
+					"height": 158.40000915527344
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 0.14666667580604553
+				},
+				"desired_size":
+				{
+					"x": 1600,
+					"y": 110.00000762939453
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 5,
+			"tag": "",
+			"untagged": true,
+			"type": "SScaleBox",
+			"source": "T66FrontendTopBarWidget.cpp(1304)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 4,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 0,
+				"absolute_y": 0,
+				"width": 1920.0001220703125,
+				"height": 158.40000915527344,
+				"desired_size":
+				{
+					"x": 1920,
+					"y": 132.00001525878906
+				},
+				"layer_id": 307,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 0.14666667580604553
+				},
+				"reference_1920x1080":
+				{
+					"x": 0,
+					"y": 0,
+					"width": 1920.0001220703125,
+					"height": 158.40000915527344
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0,
+					"y": 0,
+					"w": 1.0000001192092896,
+					"h": 0.14666667580604553
+				},
+				"desired_size":
+				{
+					"x": 1920,
+					"y": 132.00001525878906
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 6,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FrontendTopBarWidget.cpp(1276)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 5,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 0,
+				"absolute_y": 13.199996948242188,
+				"width": 1920.000244140625,
+				"height": 132.00001525878906,
+				"desired_size":
+				{
+					"x": 1920,
+					"y": 132
+				},
+				"layer_id": 308,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0,
+					"y": 0.012222219258546829,
+					"w": 1.0000002384185791,
+					"h": 0.12222223728895187
+				},
+				"reference_1920x1080":
+				{
+					"x": 0,
+					"y": 13.199996948242188,
+					"width": 1920.000244140625,
+					"height": 132.00001525878906
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0,
+					"y": 0.012222219258546829,
+					"w": 1.0000002384185791,
+					"h": 0.12222223728895187
+				},
+				"desired_size":
+				{
+					"x": 1920,
+					"y": 132
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 7,
+			"tag": "",
+			"untagged": true,
+			"type": "SConstraintCanvas",
+			"source": "T66FrontendTopBarWidget.cpp(1243)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 6,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 0,
+				"absolute_y": 13.199996948242188,
+				"width": 1920.000244140625,
+				"height": 132.00001525878906,
+				"desired_size":
+				{
+					"x": 1908.47998046875,
+					"y": 96.120002746582031
+				},
+				"layer_id": 308,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0,
+					"y": 0.012222219258546829,
+					"w": 1.0000002384185791,
+					"h": 0.12222223728895187
+				},
+				"reference_1920x1080":
+				{
+					"x": 0,
+					"y": 13.199996948242188,
+					"width": 1920.000244140625,
+					"height": 132.00001525878906
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0,
+					"y": 0.012222219258546829,
+					"w": 1.0000002384185791,
+					"h": 0.12222223728895187
+				},
+				"desired_size":
+				{
+					"x": 1908.47998046875,
+					"y": 96.120002746582031
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 8,
+			"tag": "FrontendTopBar.OuterContainer",
+			"untagged": false,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(312)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 7,
+			"child_index": 0,
+			"child_count": 9,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 11.52001953125,
+				"absolute_y": 13.199996948242188,
+				"width": 1896.960205078125,
+				"height": 96.120018005371094,
+				"desired_size":
+				{
+					"x": 4,
+					"y": 4
+				},
+				"layer_id": 309,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.0060000102967023849,
+					"y": 0.012222219258546829,
+					"w": 0.98800015449523926,
+					"h": 0.089000016450881958
+				},
+				"reference_1920x1080":
+				{
+					"x": 11.52001953125,
+					"y": 13.199996948242188,
+					"width": 1896.960205078125,
+					"height": 96.120018005371094
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.0060000102967023849,
+					"y": 0.012222219258546829,
+					"w": 0.98800015449523926,
+					"h": 0.089000016450881958
+				},
+				"desired_size":
+				{
+					"x": 4,
+					"y": 4
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.OuterContainer",
+				"intended_role": "Panel",
+				"intended_state": "Default",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 9,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(321)",
+			"parent": "FrontendTopBar.OuterContainer",
+			"parent_tag": "FrontendTopBar.OuterContainer",
+			"parent_index": 8,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 13.52001953125,
+				"absolute_y": 15.199996948242188,
+				"width": 1892.960205078125,
+				"height": 92.120010375976562,
+				"desired_size":
+				{
+					"x": 0,
+					"y": 0
+				},
+				"layer_id": 310,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.0070416773669421673,
+					"y": 0.014074071310460567,
+					"w": 0.9859168529510498,
+					"h": 0.085296303033828735
+				},
+				"reference_1920x1080":
+				{
+					"x": 13.52001953125,
+					"y": 15.199996948242188,
+					"width": 1892.960205078125,
+					"height": 92.120010375976562
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.0085681257769465446,
+					"g": 0.0085681257769465446,
+					"b": 0.012983032502233982,
+					"a": 1,
+					"hex": "#17171EFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.0070416773669421673,
+					"y": 0.014074071310460567,
+					"w": 0.9859168529510498,
+					"h": 0.085296303033828735
+				},
+				"desired_size":
+				{
+					"x": 0,
+					"y": 0
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 10,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FrontendTopBarWidget.cpp(1251)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 9,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 13.52001953125,
+				"absolute_y": 15.199996948242188,
+				"width": 1892.960205078125,
+				"height": 92.120010375976562,
+				"desired_size":
+				{
+					"x": 0,
+					"y": 0
+				},
+				"layer_id": 311,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.0070416773669421673,
+					"y": 0.014074071310460567,
+					"w": 0.9859168529510498,
+					"h": 0.085296303033828735
+				},
+				"reference_1920x1080":
+				{
+					"x": 13.52001953125,
+					"y": 15.199996948242188,
+					"width": 1892.960205078125,
+					"height": 92.120010375976562
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.0070416773669421673,
+					"y": 0.014074071310460567,
+					"w": 0.9859168529510498,
+					"h": 0.085296303033828735
+				},
+				"desired_size":
+				{
+					"x": 0,
+					"y": 0
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 11,
+			"tag": "",
+			"untagged": true,
+			"type": "SNullWidgetContent",
+			"source": "SNullWidget.cpp(80)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 10,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 2240,
+				"absolute_y": -218,
+				"width": 0,
+				"height": 0,
+				"desired_size":
+				{
+					"x": 0,
+					"y": 0
+				},
+				"layer_id": 0,
+				"visibility": "Hidden",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 1.1666667461395264,
+					"y": -0.20185184478759766,
+					"w": 0,
+					"h": 0
+				},
+				"reference_1920x1080":
+				{
+					"x": 2240,
+					"y": -218,
+					"width": 0,
+					"height": 0
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 1.1666667461395264,
+					"y": -0.20185184478759766,
+					"w": 0,
+					"h": 0
+				},
+				"desired_size":
+				{
+					"x": 0,
+					"y": 0
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 12,
+			"tag": "FrontendTopBar.SettingsButton",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66Style.cpp(2244)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 7,
+			"child_index": 1,
+			"child_count": 9,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 24.9599609375,
+				"absolute_y": 26.639999389648438,
+				"width": 88.32000732421875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"layer_id": 312,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.012999980710446835,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 24.9599609375,
+					"y": 26.639999389648438,
+					"width": 88.32000732421875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.012999980710446835,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.SettingsButton",
+				"intended_role": "ToggleButton",
+				"intended_state": "Default",
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 13,
+			"tag": "",
+			"untagged": true,
+			"type": "SButton",
+			"source": "T66Style.cpp(2215)",
+			"parent": "FrontendTopBar.SettingsButton",
+			"parent_tag": "FrontendTopBar.SettingsButton",
+			"parent_index": 12,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 24.9599609375,
+				"absolute_y": 26.639999389648438,
+				"width": 88.32000732421875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"layer_id": 312,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.012999980710446835,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 24.9599609375,
+					"y": 26.639999389648438,
+					"width": 88.32000732421875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.012999980710446835,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 14,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FlatStyle.cpp(218)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 13,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 24.9599609375,
+				"absolute_y": 26.639999389648438,
+				"width": 88.32000732421875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"layer_id": 313,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.012999980710446835,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 24.9599609375,
+					"y": 26.639999389648438,
+					"width": 88.32000732421875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.012999980710446835,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 15,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(312)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 14,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 24.9599609375,
+				"absolute_y": 26.639999389648438,
+				"width": 88.32000732421875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 66,
+					"y": 66
+				},
+				"layer_id": 313,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.012999980710446835,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 24.9599609375,
+					"y": 26.639999389648438,
+					"width": 88.32000732421875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.012999980710446835,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 66,
+					"y": 66
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 16,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(321)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 15,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 26.9599609375,
+				"absolute_y": 28.639999389648438,
+				"width": 84.32000732421875,
+				"height": 65.240013122558594,
+				"desired_size":
+				{
+					"x": 62,
+					"y": 62
+				},
+				"layer_id": 314,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.01404164731502533,
+					"y": 0.026518518105149269,
+					"w": 0.043916672468185425,
+					"h": 0.060407418757677078
+				},
+				"reference_1920x1080":
+				{
+					"x": 26.9599609375,
+					"y": 28.639999389648438,
+					"width": 84.32000732421875,
+					"height": 65.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.0085681257769465446,
+					"g": 0.0085681257769465446,
+					"b": 0.012983032502233982,
+					"a": 1,
+					"hex": "#17171EFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.01404164731502533,
+					"y": 0.026518518105149269,
+					"w": 0.043916672468185425,
+					"h": 0.060407418757677078
+				},
+				"desired_size":
+				{
+					"x": 62,
+					"y": 62
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 17,
+			"tag": "FrontendTopBar.SettingsButton.Icon",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66FrontendTopBarWidget.cpp(979)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 16,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 34.9599609375,
+				"absolute_y": 36.639999389648438,
+				"width": 68.32000732421875,
+				"height": 49.240013122558594,
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"layer_id": 315,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.01820831373333931,
+					"y": 0.033925924450159073,
+					"w": 0.035583339631557465,
+					"h": 0.045592602342367172
+				},
+				"reference_1920x1080":
+				{
+					"x": 34.9599609375,
+					"y": 36.639999389648438,
+					"width": 68.32000732421875,
+					"height": 49.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.01820831373333931,
+					"y": 0.033925924450159073,
+					"w": 0.035583339631557465,
+					"h": 0.045592602342367172
+				},
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.SettingsButton.Icon",
+				"intended_role": "Icon",
+				"intended_state": "Default",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 18,
+			"tag": "",
+			"untagged": true,
+			"type": "ST66TopBarGearGlyph",
+			"source": "T66FrontendTopBarWidget.cpp(1177)",
+			"parent": "FrontendTopBar.SettingsButton.Icon",
+			"parent_tag": "FrontendTopBar.SettingsButton.Icon",
+			"parent_index": 17,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 46.119873046875,
+				"absolute_y": 38.260009765625,
+				"width": 46.000003814697266,
+				"height": 46.000003814697266,
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"layer_id": 315,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.024020768702030182,
+					"y": 0.035425934940576553,
+					"w": 0.023958336561918259,
+					"h": 0.042592596262693405
+				},
+				"reference_1920x1080":
+				{
+					"x": 46.119873046875,
+					"y": 38.260009765625,
+					"width": 46.000003814697266,
+					"height": 46.000003814697266
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.024020768702030182,
+					"y": 0.035425934940576553,
+					"w": 0.023958336561918259,
+					"h": 0.042592596262693405
+				},
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 19,
+			"tag": "FrontendTopBar.GlobeButton",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66Style.cpp(2244)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 7,
+			"child_index": 2,
+			"child_count": 9,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 140.159912109375,
+				"absolute_y": 26.639999389648438,
+				"width": 88.32000732421875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"layer_id": 321,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.072999961674213409,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 140.159912109375,
+					"y": 26.639999389648438,
+					"width": 88.32000732421875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.072999961674213409,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.GlobeButton",
+				"intended_role": "ToggleButton",
+				"intended_state": "Default",
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 20,
+			"tag": "",
+			"untagged": true,
+			"type": "SButton",
+			"source": "T66Style.cpp(2215)",
+			"parent": "FrontendTopBar.GlobeButton",
+			"parent_tag": "FrontendTopBar.GlobeButton",
+			"parent_index": 19,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 140.159912109375,
+				"absolute_y": 26.639999389648438,
+				"width": 88.32000732421875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"layer_id": 321,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.072999961674213409,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 140.159912109375,
+					"y": 26.639999389648438,
+					"width": 88.32000732421875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.072999961674213409,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 21,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FlatStyle.cpp(218)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 20,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 140.159912109375,
+				"absolute_y": 26.639999389648438,
+				"width": 88.32000732421875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"layer_id": 322,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.072999961674213409,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 140.159912109375,
+					"y": 26.639999389648438,
+					"width": 88.32000732421875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.072999961674213409,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 88.319999694824219,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 22,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(312)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 21,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 140.159912109375,
+				"absolute_y": 26.639999389648438,
+				"width": 88.32000732421875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 66,
+					"y": 66
+				},
+				"layer_id": 322,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.072999961674213409,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 140.159912109375,
+					"y": 26.639999389648438,
+					"width": 88.32000732421875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.072999961674213409,
+					"y": 0.024666665121912956,
+					"w": 0.046000007539987564,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 66,
+					"y": 66
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 23,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(321)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 22,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 142.159912109375,
+				"absolute_y": 28.639999389648438,
+				"width": 84.32000732421875,
+				"height": 65.240013122558594,
+				"desired_size":
+				{
+					"x": 62,
+					"y": 62
+				},
+				"layer_id": 323,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.07404162734746933,
+					"y": 0.026518518105149269,
+					"w": 0.043916672468185425,
+					"h": 0.060407418757677078
+				},
+				"reference_1920x1080":
+				{
+					"x": 142.159912109375,
+					"y": 28.639999389648438,
+					"width": 84.32000732421875,
+					"height": 65.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.0085681257769465446,
+					"g": 0.0085681257769465446,
+					"b": 0.012983032502233982,
+					"a": 1,
+					"hex": "#17171EFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.07404162734746933,
+					"y": 0.026518518105149269,
+					"w": 0.043916672468185425,
+					"h": 0.060407418757677078
+				},
+				"desired_size":
+				{
+					"x": 62,
+					"y": 62
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 24,
+			"tag": "FrontendTopBar.GlobeButton.Icon",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66FrontendTopBarWidget.cpp(979)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 23,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 150.159912109375,
+				"absolute_y": 36.639999389648438,
+				"width": 68.32000732421875,
+				"height": 49.240013122558594,
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"layer_id": 324,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.078208290040493011,
+					"y": 0.033925924450159073,
+					"w": 0.035583339631557465,
+					"h": 0.045592602342367172
+				},
+				"reference_1920x1080":
+				{
+					"x": 150.159912109375,
+					"y": 36.639999389648438,
+					"width": 68.32000732421875,
+					"height": 49.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.078208290040493011,
+					"y": 0.033925924450159073,
+					"w": 0.035583339631557465,
+					"h": 0.045592602342367172
+				},
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.GlobeButton.Icon",
+				"intended_role": "Icon",
+				"intended_state": "Default",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 25,
+			"tag": "",
+			"untagged": true,
+			"type": "ST66TopBarGlobeGlyph",
+			"source": "T66FrontendTopBarWidget.cpp(1183)",
+			"parent": "FrontendTopBar.GlobeButton.Icon",
+			"parent_tag": "FrontendTopBar.GlobeButton.Icon",
+			"parent_index": 24,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 161.320068359375,
+				"absolute_y": 38.260009765625,
+				"width": 46.000003814697266,
+				"height": 46.000003814697266,
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"layer_id": 324,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.08402087539434433,
+					"y": 0.035425934940576553,
+					"w": 0.023958336561918259,
+					"h": 0.042592596262693405
+				},
+				"reference_1920x1080":
+				{
+					"x": 161.320068359375,
+					"y": 38.260009765625,
+					"width": 46.000003814697266,
+					"height": 46.000003814697266
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.08402087539434433,
+					"y": 0.035425934940576553,
+					"w": 0.023958336561918259,
+					"h": 0.042592596262693405
+				},
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 26,
+			"tag": "FrontendTopBar.AccountButton",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66Style.cpp(2244)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 7,
+			"child_index": 3,
+			"child_count": 9,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 255.3599853515625,
+				"absolute_y": 26.639999389648438,
+				"width": 284.1600341796875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 284.16000366210938,
+					"y": 69.240005493164062
+				},
+				"layer_id": 330,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.13300000131130219,
+					"y": 0.024666665121912956,
+					"w": 0.14800003170967102,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 255.3599853515625,
+					"y": 26.639999389648438,
+					"width": 284.1600341796875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "FrontendCategorySelection"
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.13300000131130219,
+					"y": 0.024666665121912956,
+					"w": 0.14800003170967102,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 284.16000366210938,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.AccountButton",
+				"intended_role": "ToggleButton",
+				"intended_state": "Default",
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "FrontendCategorySelection",
+				"is_label": false
+			}
+		},
+		{
+			"index": 27,
+			"tag": "",
+			"untagged": true,
+			"type": "SButton",
+			"source": "T66Style.cpp(2215)",
+			"parent": "FrontendTopBar.AccountButton",
+			"parent_tag": "FrontendTopBar.AccountButton",
+			"parent_index": 26,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 255.3599853515625,
+				"absolute_y": 26.639999389648438,
+				"width": 284.1600341796875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 284.16000366210938,
+					"y": 69.240005493164062
+				},
+				"layer_id": 330,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.13300000131130219,
+					"y": 0.024666665121912956,
+					"w": 0.14800003170967102,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 255.3599853515625,
+					"y": 26.639999389648438,
+					"width": 284.1600341796875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.13300000131130219,
+					"y": 0.024666665121912956,
+					"w": 0.14800003170967102,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 284.16000366210938,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 28,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FlatStyle.cpp(218)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 27,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 255.3599853515625,
+				"absolute_y": 26.639999389648438,
+				"width": 284.1600341796875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 284.16000366210938,
+					"y": 69.240005493164062
+				},
+				"layer_id": 331,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.13300000131130219,
+					"y": 0.024666665121912956,
+					"w": 0.14800003170967102,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 255.3599853515625,
+					"y": 26.639999389648438,
+					"width": 284.1600341796875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.13300000131130219,
+					"y": 0.024666665121912956,
+					"w": 0.14800003170967102,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 284.16000366210938,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 29,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(312)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 28,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 255.3599853515625,
+				"absolute_y": 26.639999389648438,
+				"width": 284.1600341796875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 146.99998474121094,
+					"y": 62.999996185302734
+				},
+				"layer_id": 331,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.13300000131130219,
+					"y": 0.024666665121912956,
+					"w": 0.14800003170967102,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 255.3599853515625,
+					"y": 26.639999389648438,
+					"width": 284.1600341796875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.13300000131130219,
+					"y": 0.024666665121912956,
+					"w": 0.14800003170967102,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 146.99998474121094,
+					"y": 62.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 30,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(321)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 29,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 257.3599853515625,
+				"absolute_y": 28.639999389648438,
+				"width": 280.1600341796875,
+				"height": 65.240013122558594,
+				"desired_size":
+				{
+					"x": 142.99998474121094,
+					"y": 58.999996185302734
+				},
+				"layer_id": 332,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.13404166698455811,
+					"y": 0.026518518105149269,
+					"w": 0.14591668546199799,
+					"h": 0.060407418757677078
+				},
+				"reference_1920x1080":
+				{
+					"x": 257.3599853515625,
+					"y": 28.639999389648438,
+					"width": 280.1600341796875,
+					"height": 65.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.0085681257769465446,
+					"g": 0.0085681257769465446,
+					"b": 0.012983032502233982,
+					"a": 1,
+					"hex": "#17171EFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.13404166698455811,
+					"y": 0.026518518105149269,
+					"w": 0.14591668546199799,
+					"h": 0.060407418757677078
+				},
+				"desired_size":
+				{
+					"x": 142.99998474121094,
+					"y": 58.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 31,
+			"tag": "",
+			"untagged": true,
+			"type": "SHorizontalBox",
+			"source": "T66FlatStyle.cpp(1648)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 30,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 269.3599853515625,
+				"absolute_y": 36.639999389648438,
+				"width": 256.1600341796875,
+				"height": 49.240013122558594,
+				"desired_size":
+				{
+					"x": 118.99998474121094,
+					"y": 42.999996185302734
+				},
+				"layer_id": 333,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.14029166102409363,
+					"y": 0.033925924450159073,
+					"w": 0.13341669738292694,
+					"h": 0.045592602342367172
+				},
+				"reference_1920x1080":
+				{
+					"x": 269.3599853515625,
+					"y": 36.639999389648438,
+					"width": 256.1600341796875,
+					"height": 49.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.14029166102409363,
+					"y": 0.033925924450159073,
+					"w": 0.13341669738292694,
+					"h": 0.045592602342367172
+				},
+				"desired_size":
+				{
+					"x": 118.99998474121094,
+					"y": 42.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 32,
+			"tag": "",
+			"untagged": true,
+			"type": "STextBlock",
+			"source": "T66FlatStyle.cpp(1665)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 31,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 337.93994140625,
+				"absolute_y": 39.760009765625,
+				"width": 119,
+				"height": 43,
+				"desired_size":
+				{
+					"x": 118.99998474121094,
+					"y": 42.999996185302734
+				},
+				"layer_id": 333,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.17601040005683899,
+					"y": 0.036814823746681213,
+					"w": 0.061979170888662338,
+					"h": 0.039814814925193787
+				},
+				"reference_1920x1080":
+				{
+					"x": 337.93994140625,
+					"y": 39.760009765625,
+					"width": 119,
+					"height": 43
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACCOUNT",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.17601040005683899,
+					"y": 0.036814823746681213,
+					"w": 0.061979170888662338,
+					"h": 0.039814814925193787
+				},
+				"desired_size":
+				{
+					"x": 118.99998474121094,
+					"y": 42.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 33,
+			"tag": "FrontendTopBar.ProfileButton",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66Style.cpp(2244)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 7,
+			"child_index": 4,
+			"child_count": 9,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 564.47998046875,
+				"absolute_y": 26.639999389648438,
+				"width": 339.84002685546875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 339.83999633789062,
+					"y": 69.240005493164062
+				},
+				"layer_id": 336,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.29399999976158142,
+					"y": 0.024666665121912956,
+					"w": 0.1770000159740448,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 564.47998046875,
+					"y": 26.639999389648438,
+					"width": 339.84002685546875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.75294220447540283,
+					"g": 0.016807375475764275,
+					"b": 0.026241222396492958,
+					"a": 1,
+					"hex": "#E1232DFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "HOME",
+				"font_path": "CompositeFont",
+				"size": 26,
+				"color":
+				{
+					"r": 1,
+					"g": 0.080219820141792297,
+					"b": 0.11443537473678589,
+					"a": 1,
+					"hex": "#FF505FFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "Selected",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.29399999976158142,
+					"y": 0.024666665121912956,
+					"w": 0.1770000159740448,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 339.83999633789062,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.ProfileButton",
+				"intended_role": "Button",
+				"intended_state": "Selected",
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 34,
+			"tag": "",
+			"untagged": true,
+			"type": "SButton",
+			"source": "T66Style.cpp(2215)",
+			"parent": "FrontendTopBar.ProfileButton",
+			"parent_tag": "FrontendTopBar.ProfileButton",
+			"parent_index": 33,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 564.47998046875,
+				"absolute_y": 26.639999389648438,
+				"width": 339.84002685546875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 339.83999633789062,
+					"y": 69.240005493164062
+				},
+				"layer_id": 336,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.29399999976158142,
+					"y": 0.024666665121912956,
+					"w": 0.1770000159740448,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 564.47998046875,
+					"y": 26.639999389648438,
+					"width": 339.84002685546875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.75294220447540283,
+					"g": 0.016807375475764275,
+					"b": 0.026241222396492958,
+					"a": 1,
+					"hex": "#E1232DFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "HOME",
+				"font_path": "CompositeFont",
+				"size": 26,
+				"color":
+				{
+					"r": 1,
+					"g": 0.080219820141792297,
+					"b": 0.11443537473678589,
+					"a": 1,
+					"hex": "#FF505FFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.29399999976158142,
+					"y": 0.024666665121912956,
+					"w": 0.1770000159740448,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 339.83999633789062,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 35,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FlatStyle.cpp(218)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 34,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 564.47998046875,
+				"absolute_y": 26.639999389648438,
+				"width": 339.84002685546875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 339.83999633789062,
+					"y": 69.240005493164062
+				},
+				"layer_id": 337,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.29399999976158142,
+					"y": 0.024666665121912956,
+					"w": 0.1770000159740448,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 564.47998046875,
+					"y": 26.639999389648438,
+					"width": 339.84002685546875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.75294220447540283,
+					"g": 0.016807375475764275,
+					"b": 0.026241222396492958,
+					"a": 1,
+					"hex": "#E1232DFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "HOME",
+				"font_path": "CompositeFont",
+				"size": 26,
+				"color":
+				{
+					"r": 1,
+					"g": 0.080219820141792297,
+					"b": 0.11443537473678589,
+					"a": 1,
+					"hex": "#FF505FFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.29399999976158142,
+					"y": 0.024666665121912956,
+					"w": 0.1770000159740448,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 339.83999633789062,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 36,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(312)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 35,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 564.47998046875,
+				"absolute_y": 26.639999389648438,
+				"width": 339.84002685546875,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 81.999992370605469,
+					"y": 57.999996185302734
+				},
+				"layer_id": 337,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.29399999976158142,
+					"y": 0.024666665121912956,
+					"w": 0.1770000159740448,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 564.47998046875,
+					"y": 26.639999389648438,
+					"width": 339.84002685546875,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.75294220447540283,
+					"g": 0.016807375475764275,
+					"b": 0.026241222396492958,
+					"a": 1,
+					"hex": "#E1232DFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "HOME",
+				"font_path": "CompositeFont",
+				"size": 26,
+				"color":
+				{
+					"r": 1,
+					"g": 0.080219820141792297,
+					"b": 0.11443537473678589,
+					"a": 1,
+					"hex": "#FF505FFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.29399999976158142,
+					"y": 0.024666665121912956,
+					"w": 0.1770000159740448,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 81.999992370605469,
+					"y": 57.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 37,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(321)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 36,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 566.47998046875,
+				"absolute_y": 28.639999389648438,
+				"width": 335.84002685546875,
+				"height": 65.240013122558594,
+				"desired_size":
+				{
+					"x": 77.999992370605469,
+					"y": 53.999996185302734
+				},
+				"layer_id": 338,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.29504168033599854,
+					"y": 0.026518518105149269,
+					"w": 0.17491668462753296,
+					"h": 0.060407418757677078
+				},
+				"reference_1920x1080":
+				{
+					"x": 566.47998046875,
+					"y": 28.639999389648438,
+					"width": 335.84002685546875,
+					"height": 65.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.011612244881689548,
+					"g": 0.0043914420530200005,
+					"b": 0.005181516520678997,
+					"a": 1,
+					"hex": "#1C0E10FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "HOME",
+				"font_path": "CompositeFont",
+				"size": 26,
+				"color":
+				{
+					"r": 1,
+					"g": 0.080219820141792297,
+					"b": 0.11443537473678589,
+					"a": 1,
+					"hex": "#FF505FFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.29504168033599854,
+					"y": 0.026518518105149269,
+					"w": 0.17491668462753296,
+					"h": 0.060407418757677078
+				},
+				"desired_size":
+				{
+					"x": 77.999992370605469,
+					"y": 53.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 38,
+			"tag": "",
+			"untagged": true,
+			"type": "SHorizontalBox",
+			"source": "T66FlatStyle.cpp(1394)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 37,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 574.47998046875,
+				"absolute_y": 36.639999389648438,
+				"width": 319.84002685546875,
+				"height": 49.240013122558594,
+				"desired_size":
+				{
+					"x": 61.999992370605469,
+					"y": 37.999996185302734
+				},
+				"layer_id": 339,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.29920834302902222,
+					"y": 0.033925924450159073,
+					"w": 0.1665833592414856,
+					"h": 0.045592602342367172
+				},
+				"reference_1920x1080":
+				{
+					"x": 574.47998046875,
+					"y": 36.639999389648438,
+					"width": 319.84002685546875,
+					"height": 49.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "HOME",
+				"font_path": "CompositeFont",
+				"size": 26,
+				"color":
+				{
+					"r": 1,
+					"g": 0.080219820141792297,
+					"b": 0.11443537473678589,
+					"a": 1,
+					"hex": "#FF505FFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.29920834302902222,
+					"y": 0.033925924450159073,
+					"w": 0.1665833592414856,
+					"h": 0.045592602342367172
+				},
+				"desired_size":
+				{
+					"x": 61.999992370605469,
+					"y": 37.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 39,
+			"tag": "",
+			"untagged": true,
+			"type": "STextBlock",
+			"source": "T66FlatStyle.cpp(1411)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 38,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 703.4000244140625,
+				"absolute_y": 42.260009765625,
+				"width": 62,
+				"height": 38,
+				"desired_size":
+				{
+					"x": 61.999992370605469,
+					"y": 37.999996185302734
+				},
+				"layer_id": 339,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.36635419726371765,
+					"y": 0.039129637181758881,
+					"w": 0.032291669398546219,
+					"h": 0.035185184329748154
+				},
+				"reference_1920x1080":
+				{
+					"x": 703.4000244140625,
+					"y": 42.260009765625,
+					"width": 62,
+					"height": 38
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "HOME",
+				"font_path": "CompositeFont",
+				"size": 26,
+				"color":
+				{
+					"r": 1,
+					"g": 0.080219820141792297,
+					"b": 0.11443537473678589,
+					"a": 1,
+					"hex": "#FF505FFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.36635419726371765,
+					"y": 0.039129637181758881,
+					"w": 0.032291669398546219,
+					"h": 0.035185184329748154
+				},
+				"desired_size":
+				{
+					"x": 61.999992370605469,
+					"y": 37.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 40,
+			"tag": "FrontendTopBar.PowerUpButton",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66Style.cpp(2244)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 7,
+			"child_index": 5,
+			"child_count": 9,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 931.2000732421875,
+				"absolute_y": 26.639999389648438,
+				"width": 272.64004516601562,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 272.6400146484375,
+					"y": 69.240005493164062
+				},
+				"layer_id": 342,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.48500007390975952,
+					"y": 0.024666665121912956,
+					"w": 0.14200003445148468,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 931.2000732421875,
+					"y": 26.639999389648438,
+					"width": 272.64004516601562,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "POWER UP",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "FrontendCategorySelection"
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.48500007390975952,
+					"y": 0.024666665121912956,
+					"w": 0.14200003445148468,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 272.6400146484375,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.PowerUpButton",
+				"intended_role": "ToggleButton",
+				"intended_state": "Default",
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "FrontendCategorySelection",
+				"is_label": false
+			}
+		},
+		{
+			"index": 41,
+			"tag": "",
+			"untagged": true,
+			"type": "SButton",
+			"source": "T66Style.cpp(2215)",
+			"parent": "FrontendTopBar.PowerUpButton",
+			"parent_tag": "FrontendTopBar.PowerUpButton",
+			"parent_index": 40,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 931.2000732421875,
+				"absolute_y": 26.639999389648438,
+				"width": 272.64004516601562,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 272.6400146484375,
+					"y": 69.240005493164062
+				},
+				"layer_id": 342,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.48500007390975952,
+					"y": 0.024666665121912956,
+					"w": 0.14200003445148468,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 931.2000732421875,
+					"y": 26.639999389648438,
+					"width": 272.64004516601562,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "POWER UP",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.48500007390975952,
+					"y": 0.024666665121912956,
+					"w": 0.14200003445148468,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 272.6400146484375,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 42,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FlatStyle.cpp(218)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 41,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 931.2000732421875,
+				"absolute_y": 26.639999389648438,
+				"width": 272.64004516601562,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 272.6400146484375,
+					"y": 69.240005493164062
+				},
+				"layer_id": 343,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.48500007390975952,
+					"y": 0.024666665121912956,
+					"w": 0.14200003445148468,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 931.2000732421875,
+					"y": 26.639999389648438,
+					"width": 272.64004516601562,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "POWER UP",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.48500007390975952,
+					"y": 0.024666665121912956,
+					"w": 0.14200003445148468,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 272.6400146484375,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 43,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(312)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 42,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 931.2000732421875,
+				"absolute_y": 26.639999389648438,
+				"width": 272.64004516601562,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 160.99998474121094,
+					"y": 62.999996185302734
+				},
+				"layer_id": 343,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.48500007390975952,
+					"y": 0.024666665121912956,
+					"w": 0.14200003445148468,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 931.2000732421875,
+					"y": 26.639999389648438,
+					"width": 272.64004516601562,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "POWER UP",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.48500007390975952,
+					"y": 0.024666665121912956,
+					"w": 0.14200003445148468,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 160.99998474121094,
+					"y": 62.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 44,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(321)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 43,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 933.2000732421875,
+				"absolute_y": 28.639999389648438,
+				"width": 268.64004516601562,
+				"height": 65.240013122558594,
+				"desired_size":
+				{
+					"x": 156.99998474121094,
+					"y": 58.999996185302734
+				},
+				"layer_id": 344,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.48604172468185425,
+					"y": 0.026518518105149269,
+					"w": 0.13991670310497284,
+					"h": 0.060407418757677078
+				},
+				"reference_1920x1080":
+				{
+					"x": 933.2000732421875,
+					"y": 28.639999389648438,
+					"width": 268.64004516601562,
+					"height": 65.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.0085681257769465446,
+					"g": 0.0085681257769465446,
+					"b": 0.012983032502233982,
+					"a": 1,
+					"hex": "#17171EFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "POWER UP",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.48604172468185425,
+					"y": 0.026518518105149269,
+					"w": 0.13991670310497284,
+					"h": 0.060407418757677078
+				},
+				"desired_size":
+				{
+					"x": 156.99998474121094,
+					"y": 58.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 45,
+			"tag": "",
+			"untagged": true,
+			"type": "SHorizontalBox",
+			"source": "T66FlatStyle.cpp(1648)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 44,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 945.2000732421875,
+				"absolute_y": 36.639999389648438,
+				"width": 244.64004516601562,
+				"height": 49.240013122558594,
+				"desired_size":
+				{
+					"x": 132.99998474121094,
+					"y": 42.999996185302734
+				},
+				"layer_id": 345,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.49229171872138977,
+					"y": 0.033925924450159073,
+					"w": 0.1274167001247406,
+					"h": 0.045592602342367172
+				},
+				"reference_1920x1080":
+				{
+					"x": 945.2000732421875,
+					"y": 36.639999389648438,
+					"width": 244.64004516601562,
+					"height": 49.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "POWER UP",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.49229171872138977,
+					"y": 0.033925924450159073,
+					"w": 0.1274167001247406,
+					"h": 0.045592602342367172
+				},
+				"desired_size":
+				{
+					"x": 132.99998474121094,
+					"y": 42.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 46,
+			"tag": "",
+			"untagged": true,
+			"type": "STextBlock",
+			"source": "T66FlatStyle.cpp(1665)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 45,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1001.02001953125,
+				"absolute_y": 39.760009765625,
+				"width": 133,
+				"height": 43,
+				"desired_size":
+				{
+					"x": 132.99998474121094,
+					"y": 42.999996185302734
+				},
+				"layer_id": 345,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.52136462926864624,
+					"y": 0.036814823746681213,
+					"w": 0.06927083432674408,
+					"h": 0.039814814925193787
+				},
+				"reference_1920x1080":
+				{
+					"x": 1001.02001953125,
+					"y": 39.760009765625,
+					"width": 133,
+					"height": 43
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "POWER UP",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.52136462926864624,
+					"y": 0.036814823746681213,
+					"w": 0.06927083432674408,
+					"h": 0.039814814925193787
+				},
+				"desired_size":
+				{
+					"x": 132.99998474121094,
+					"y": 42.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 47,
+			"tag": "FrontendTopBar.AchievementsButton",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66Style.cpp(2244)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 7,
+			"child_index": 6,
+			"child_count": 9,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1226.880126953125,
+				"absolute_y": 26.639999389648438,
+				"width": 293.76004028320312,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 293.760009765625,
+					"y": 69.240005493164062
+				},
+				"layer_id": 348,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.63900011777877808,
+					"y": 0.024666665121912956,
+					"w": 0.15300002694129944,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1226.880126953125,
+					"y": 26.639999389648438,
+					"width": 293.76004028320312,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACHIEVEMENTS",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "FrontendCategorySelection"
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.63900011777877808,
+					"y": 0.024666665121912956,
+					"w": 0.15300002694129944,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 293.760009765625,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.AchievementsButton",
+				"intended_role": "ToggleButton",
+				"intended_state": "Default",
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "FrontendCategorySelection",
+				"is_label": false
+			}
+		},
+		{
+			"index": 48,
+			"tag": "",
+			"untagged": true,
+			"type": "SButton",
+			"source": "T66Style.cpp(2215)",
+			"parent": "FrontendTopBar.AchievementsButton",
+			"parent_tag": "FrontendTopBar.AchievementsButton",
+			"parent_index": 47,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1226.880126953125,
+				"absolute_y": 26.639999389648438,
+				"width": 293.76004028320312,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 293.760009765625,
+					"y": 69.240005493164062
+				},
+				"layer_id": 348,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.63900011777877808,
+					"y": 0.024666665121912956,
+					"w": 0.15300002694129944,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1226.880126953125,
+					"y": 26.639999389648438,
+					"width": 293.76004028320312,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACHIEVEMENTS",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.63900011777877808,
+					"y": 0.024666665121912956,
+					"w": 0.15300002694129944,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 293.760009765625,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 49,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FlatStyle.cpp(218)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 48,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1226.880126953125,
+				"absolute_y": 26.639999389648438,
+				"width": 293.76004028320312,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 293.760009765625,
+					"y": 69.240005493164062
+				},
+				"layer_id": 349,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.63900011777877808,
+					"y": 0.024666665121912956,
+					"w": 0.15300002694129944,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1226.880126953125,
+					"y": 26.639999389648438,
+					"width": 293.76004028320312,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACHIEVEMENTS",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.63900011777877808,
+					"y": 0.024666665121912956,
+					"w": 0.15300002694129944,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 293.760009765625,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 50,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(312)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 49,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1226.880126953125,
+				"absolute_y": 26.639999389648438,
+				"width": 293.76004028320312,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 218.99998474121094,
+					"y": 62.999996185302734
+				},
+				"layer_id": 349,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.63900011777877808,
+					"y": 0.024666665121912956,
+					"w": 0.15300002694129944,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1226.880126953125,
+					"y": 26.639999389648438,
+					"width": 293.76004028320312,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACHIEVEMENTS",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.63900011777877808,
+					"y": 0.024666665121912956,
+					"w": 0.15300002694129944,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 218.99998474121094,
+					"y": 62.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 51,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(321)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 50,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1228.880126953125,
+				"absolute_y": 28.639999389648438,
+				"width": 289.76004028320312,
+				"height": 65.240013122558594,
+				"desired_size":
+				{
+					"x": 214.99998474121094,
+					"y": 58.999996185302734
+				},
+				"layer_id": 350,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.6400417685508728,
+					"y": 0.026518518105149269,
+					"w": 0.1509166955947876,
+					"h": 0.060407418757677078
+				},
+				"reference_1920x1080":
+				{
+					"x": 1228.880126953125,
+					"y": 28.639999389648438,
+					"width": 289.76004028320312,
+					"height": 65.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.0085681257769465446,
+					"g": 0.0085681257769465446,
+					"b": 0.012983032502233982,
+					"a": 1,
+					"hex": "#17171EFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACHIEVEMENTS",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.6400417685508728,
+					"y": 0.026518518105149269,
+					"w": 0.1509166955947876,
+					"h": 0.060407418757677078
+				},
+				"desired_size":
+				{
+					"x": 214.99998474121094,
+					"y": 58.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 52,
+			"tag": "",
+			"untagged": true,
+			"type": "SHorizontalBox",
+			"source": "T66FlatStyle.cpp(1648)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 51,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1240.880126953125,
+				"absolute_y": 36.639999389648438,
+				"width": 265.76004028320312,
+				"height": 49.240013122558594,
+				"desired_size":
+				{
+					"x": 190.99998474121094,
+					"y": 42.999996185302734
+				},
+				"layer_id": 351,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.64629179239273071,
+					"y": 0.033925924450159073,
+					"w": 0.13841669261455536,
+					"h": 0.045592602342367172
+				},
+				"reference_1920x1080":
+				{
+					"x": 1240.880126953125,
+					"y": 36.639999389648438,
+					"width": 265.76004028320312,
+					"height": 49.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACHIEVEMENTS",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.64629179239273071,
+					"y": 0.033925924450159073,
+					"w": 0.13841669261455536,
+					"h": 0.045592602342367172
+				},
+				"desired_size":
+				{
+					"x": 190.99998474121094,
+					"y": 42.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 53,
+			"tag": "",
+			"untagged": true,
+			"type": "STextBlock",
+			"source": "T66FlatStyle.cpp(1665)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 52,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1278.2601318359375,
+				"absolute_y": 39.760009765625,
+				"width": 191,
+				"height": 43,
+				"desired_size":
+				{
+					"x": 190.99998474121094,
+					"y": 42.999996185302734
+				},
+				"layer_id": 351,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.66576051712036133,
+					"y": 0.036814823746681213,
+					"w": 0.099479168653488159,
+					"h": 0.039814814925193787
+				},
+				"reference_1920x1080":
+				{
+					"x": 1278.2601318359375,
+					"y": 39.760009765625,
+					"width": 191,
+					"height": 43
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "ACHIEVEMENTS",
+				"font_path": "CompositeFont",
+				"size": 30,
+				"color":
+				{
+					"r": 0.71569347381591797,
+					"g": 0.67954248189926147,
+					"b": 0.83076989650726318,
+					"a": 1,
+					"hex": "#DCD7EBFF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.66576051712036133,
+					"y": 0.036814823746681213,
+					"w": 0.099479168653488159,
+					"h": 0.039814814925193787
+				},
+				"desired_size":
+				{
+					"x": 190.99998474121094,
+					"y": 42.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 54,
+			"tag": "FrontendTopBar.TicketBadge",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66Style.cpp(2244)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 7,
+			"child_index": 7,
+			"child_count": 9,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1572.480224609375,
+				"absolute_y": 26.639999389648438,
+				"width": 167.04000854492188,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 167.03999328613281,
+					"y": 69.240005493164062
+				},
+				"layer_id": 354,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.81900018453598022,
+					"y": 0.024666665121912956,
+					"w": 0.087000012397766113,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1572.480224609375,
+					"y": 26.639999389648438,
+					"width": 167.04000854492188,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "10",
+				"font_path": "CompositeFont",
+				"size": 20,
+				"color":
+				{
+					"r": 0.87136709690093994,
+					"g": 0.87136709690093994,
+					"b": 0.91309863328933716,
+					"a": 1,
+					"hex": "#F0F0F5FF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.81900018453598022,
+					"y": 0.024666665121912956,
+					"w": 0.087000012397766113,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 167.03999328613281,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.TicketBadge",
+				"intended_role": "ToggleButton",
+				"intended_state": "Default",
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 55,
+			"tag": "",
+			"untagged": true,
+			"type": "SButton",
+			"source": "T66Style.cpp(2215)",
+			"parent": "FrontendTopBar.TicketBadge",
+			"parent_tag": "FrontendTopBar.TicketBadge",
+			"parent_index": 54,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1572.480224609375,
+				"absolute_y": 26.639999389648438,
+				"width": 167.04000854492188,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 171.03999328613281,
+					"y": 69.240005493164062
+				},
+				"layer_id": 354,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.81900018453598022,
+					"y": 0.024666665121912956,
+					"w": 0.087000012397766113,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1572.480224609375,
+					"y": 26.639999389648438,
+					"width": 167.04000854492188,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "10",
+				"font_path": "CompositeFont",
+				"size": 20,
+				"color":
+				{
+					"r": 0.87136709690093994,
+					"g": 0.87136709690093994,
+					"b": 0.91309863328933716,
+					"a": 1,
+					"hex": "#F0F0F5FF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.81900018453598022,
+					"y": 0.024666665121912956,
+					"w": 0.087000012397766113,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 171.03999328613281,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 56,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FlatStyle.cpp(218)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 55,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1572.480224609375,
+				"absolute_y": 26.639999389648438,
+				"width": 167.04000854492188,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 171.03999328613281,
+					"y": 69.240005493164062
+				},
+				"layer_id": 355,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.81900018453598022,
+					"y": 0.024666665121912956,
+					"w": 0.087000012397766113,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1572.480224609375,
+					"y": 26.639999389648438,
+					"width": 167.04000854492188,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "10",
+				"font_path": "CompositeFont",
+				"size": 20,
+				"color":
+				{
+					"r": 0.87136709690093994,
+					"g": 0.87136709690093994,
+					"b": 0.91309863328933716,
+					"a": 1,
+					"hex": "#F0F0F5FF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.81900018453598022,
+					"y": 0.024666665121912956,
+					"w": 0.087000012397766113,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 171.03999328613281,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 57,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(312)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 56,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1572.480224609375,
+				"absolute_y": 26.639999389648438,
+				"width": 167.04000854492188,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 171.03999328613281,
+					"y": 73.240005493164062
+				},
+				"layer_id": 355,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.81900018453598022,
+					"y": 0.024666665121912956,
+					"w": 0.087000012397766113,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1572.480224609375,
+					"y": 26.639999389648438,
+					"width": 167.04000854492188,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.068478167057037354,
+					"g": 0.068478167057037354,
+					"b": 0.090841710567474365,
+					"a": 1,
+					"hex": "#4A4A55FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "10",
+				"font_path": "CompositeFont",
+				"size": 20,
+				"color":
+				{
+					"r": 0.87136709690093994,
+					"g": 0.87136709690093994,
+					"b": 0.91309863328933716,
+					"a": 1,
+					"hex": "#F0F0F5FF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.81900018453598022,
+					"y": 0.024666665121912956,
+					"w": 0.087000012397766113,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 171.03999328613281,
+					"y": 73.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 58,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(321)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 57,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1574.480224609375,
+				"absolute_y": 28.639999389648438,
+				"width": 163.04000854492188,
+				"height": 65.240013122558594,
+				"desired_size":
+				{
+					"x": 167.03999328613281,
+					"y": 69.240005493164062
+				},
+				"layer_id": 356,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.82004183530807495,
+					"y": 0.026518518105149269,
+					"w": 0.084916673600673676,
+					"h": 0.060407418757677078
+				},
+				"reference_1920x1080":
+				{
+					"x": 1574.480224609375,
+					"y": 28.639999389648438,
+					"width": 163.04000854492188,
+					"height": 65.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.0085681257769465446,
+					"g": 0.0085681257769465446,
+					"b": 0.012983032502233982,
+					"a": 1,
+					"hex": "#17171EFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "10",
+				"font_path": "CompositeFont",
+				"size": 20,
+				"color":
+				{
+					"r": 0.87136709690093994,
+					"g": 0.87136709690093994,
+					"b": 0.91309863328933716,
+					"a": 1,
+					"hex": "#F0F0F5FF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.82004183530807495,
+					"y": 0.026518518105149269,
+					"w": 0.084916673600673676,
+					"h": 0.060407418757677078
+				},
+				"desired_size":
+				{
+					"x": 167.03999328613281,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 59,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FrontendTopBarWidget.cpp(1227)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 58,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1582.480224609375,
+				"absolute_y": 34.639999389648438,
+				"width": 147.04000854492188,
+				"height": 53.240013122558594,
+				"desired_size":
+				{
+					"x": 151.03999328613281,
+					"y": 57.240005493164062
+				},
+				"layer_id": 357,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.82420849800109863,
+					"y": 0.03207407146692276,
+					"w": 0.076583340764045715,
+					"h": 0.049296308308839798
+				},
+				"reference_1920x1080":
+				{
+					"x": 1582.480224609375,
+					"y": 34.639999389648438,
+					"width": 147.04000854492188,
+					"height": 53.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "10",
+				"font_path": "CompositeFont",
+				"size": 20,
+				"color":
+				{
+					"r": 0.87136709690093994,
+					"g": 0.87136709690093994,
+					"b": 0.91309863328933716,
+					"a": 1,
+					"hex": "#F0F0F5FF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.82420849800109863,
+					"y": 0.03207407146692276,
+					"w": 0.076583340764045715,
+					"h": 0.049296308308839798
+				},
+				"desired_size":
+				{
+					"x": 151.03999328613281,
+					"y": 57.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 60,
+			"tag": "",
+			"untagged": true,
+			"type": "SConstraintCanvas",
+			"source": "T66FrontendTopBarWidget.cpp(1213)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 59,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1582.480224609375,
+				"absolute_y": 34.639999389648438,
+				"width": 147.04000854492188,
+				"height": 53.240013122558594,
+				"desired_size":
+				{
+					"x": 148,
+					"y": 55
+				},
+				"layer_id": 357,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.82420849800109863,
+					"y": 0.03207407146692276,
+					"w": 0.076583340764045715,
+					"h": 0.049296308308839798
+				},
+				"reference_1920x1080":
+				{
+					"x": 1582.480224609375,
+					"y": 34.639999389648438,
+					"width": 147.04000854492188,
+					"height": 53.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "10",
+				"font_path": "CompositeFont",
+				"size": 20,
+				"color":
+				{
+					"r": 0.87136709690093994,
+					"g": 0.87136709690093994,
+					"b": 0.91309863328933716,
+					"a": 1,
+					"hex": "#F0F0F5FF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.82420849800109863,
+					"y": 0.03207407146692276,
+					"w": 0.076583340764045715,
+					"h": 0.049296308308839798
+				},
+				"desired_size":
+				{
+					"x": 148,
+					"y": 55
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 61,
+			"tag": "FrontendTopBar.TicketBadge.Icon",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66FrontendTopBarWidget.cpp(979)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 60,
+			"child_index": 0,
+			"child_count": 2,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1618.480224609375,
+				"absolute_y": 49.6400146484375,
+				"width": 40.000003814697266,
+				"height": 40.000003814697266,
+				"desired_size":
+				{
+					"x": 40,
+					"y": 40
+				},
+				"layer_id": 358,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.84295850992202759,
+					"y": 0.045962974429130554,
+					"w": 0.020833335816860199,
+					"h": 0.037037041038274765
+				},
+				"reference_1920x1080":
+				{
+					"x": 1618.480224609375,
+					"y": 49.6400146484375,
+					"width": 40.000003814697266,
+					"height": 40.000003814697266
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.84295850992202759,
+					"y": 0.045962974429130554,
+					"w": 0.020833335816860199,
+					"h": 0.037037041038274765
+				},
+				"desired_size":
+				{
+					"x": 40,
+					"y": 40
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.TicketBadge.Icon",
+				"intended_role": "Icon",
+				"intended_state": "Default",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 62,
+			"tag": "",
+			"untagged": true,
+			"type": "SImage",
+			"source": "T66FrontendTopBarWidget.cpp(995)",
+			"parent": "FrontendTopBar.TicketBadge.Icon",
+			"parent_tag": "FrontendTopBar.TicketBadge.Icon",
+			"parent_index": 61,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1618.480224609375,
+				"absolute_y": 49.6400146484375,
+				"width": 40.000003814697266,
+				"height": 40.000003814697266,
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"layer_id": 358,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.84295850992202759,
+					"y": 0.045962974429130554,
+					"w": 0.020833335816860199,
+					"h": 0.037037041038274765
+				},
+				"reference_1920x1080":
+				{
+					"x": 1618.480224609375,
+					"y": 49.6400146484375,
+					"width": 40.000003814697266,
+					"height": 40.000003814697266
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.84295850992202759,
+					"y": 0.045962974429130554,
+					"w": 0.020833335816860199,
+					"h": 0.037037041038274765
+				},
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 63,
+			"tag": "FrontendTopBar.TicketBadge.Value",
+			"untagged": false,
+			"type": "STextBlock",
+			"source": "T66FlatStyle.cpp(2298)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 60,
+			"child_index": 1,
+			"child_count": 2,
+			"is_label": true,
+			"geometry":
+			{
+				"absolute_x": 1678.480224609375,
+				"absolute_y": 52.6400146484375,
+				"width": 52.000007629394531,
+				"height": 30.000003814697266,
+				"desired_size":
+				{
+					"x": 15.999998092651367,
+					"y": 28.999996185302734
+				},
+				"layer_id": 359,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.87420850992202759,
+					"y": 0.048740752041339874,
+					"w": 0.027083339169621468,
+					"h": 0.027777781710028648
+				},
+				"reference_1920x1080":
+				{
+					"x": 1678.480224609375,
+					"y": 52.6400146484375,
+					"width": 52.000007629394531,
+					"height": 30.000003814697266
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "10",
+				"font_path": "CompositeFont",
+				"size": 20,
+				"color":
+				{
+					"r": 0.87136709690093994,
+					"g": 0.87136709690093994,
+					"b": 0.91309863328933716,
+					"a": 1,
+					"hex": "#F0F0F5FF"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 1,
+					"hex": "#000000FF"
+				},
+				"shadow_offset":
+				{
+					"x": 0,
+					"y": 0
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.87420850992202759,
+					"y": 0.048740752041339874,
+					"w": 0.027083339169621468,
+					"h": 0.027777781710028648
+				},
+				"desired_size":
+				{
+					"x": 15.999998092651367,
+					"y": 28.999996185302734
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.TicketBadge.Value",
+				"intended_role": "Label.Button",
+				"intended_state": "Default",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": true
+			}
+		},
+		{
+			"index": 64,
+			"tag": "FrontendTopBar.PowerButton",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66Style.cpp(2244)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 7,
+			"child_index": 8,
+			"child_count": 9,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1772.16015625,
+				"absolute_y": 26.639999389648438,
+				"width": 120.96001434326172,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 120.95999908447266,
+					"y": 69.240005493164062
+				},
+				"layer_id": 362,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.92300015687942505,
+					"y": 0.024666665121912956,
+					"w": 0.063000008463859558,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1772.16015625,
+					"y": 26.639999389648438,
+					"width": 120.96001434326172,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.75294220447540283,
+					"g": 0.016807375475764275,
+					"b": 0.026241222396492958,
+					"a": 1,
+					"hex": "#E1232DFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "Selected",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.92300015687942505,
+					"y": 0.024666665121912956,
+					"w": 0.063000008463859558,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 120.95999908447266,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.PowerButton",
+				"intended_role": "ToggleButton",
+				"intended_state": "Selected",
+				"has_click_handler": true,
+				"hover_capable": true,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 65,
+			"tag": "",
+			"untagged": true,
+			"type": "SButton",
+			"source": "T66Style.cpp(2215)",
+			"parent": "FrontendTopBar.PowerButton",
+			"parent_tag": "FrontendTopBar.PowerButton",
+			"parent_index": 64,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1772.16015625,
+				"absolute_y": 26.639999389648438,
+				"width": 120.96001434326172,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 120.95999908447266,
+					"y": 69.240005493164062
+				},
+				"layer_id": 362,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.92300015687942505,
+					"y": 0.024666665121912956,
+					"w": 0.063000008463859558,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1772.16015625,
+					"y": 26.639999389648438,
+					"width": 120.96001434326172,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.75294220447540283,
+					"g": 0.016807375475764275,
+					"b": 0.026241222396492958,
+					"a": 1,
+					"hex": "#E1232DFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.92300015687942505,
+					"y": 0.024666665121912956,
+					"w": 0.063000008463859558,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 120.95999908447266,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 66,
+			"tag": "",
+			"untagged": true,
+			"type": "SBox",
+			"source": "T66FlatStyle.cpp(218)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 65,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1772.16015625,
+				"absolute_y": 26.639999389648438,
+				"width": 120.96001434326172,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 120.95999908447266,
+					"y": 69.240005493164062
+				},
+				"layer_id": 363,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.92300015687942505,
+					"y": 0.024666665121912956,
+					"w": 0.063000008463859558,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1772.16015625,
+					"y": 26.639999389648438,
+					"width": 120.96001434326172,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.75294220447540283,
+					"g": 0.016807375475764275,
+					"b": 0.026241222396492958,
+					"a": 1,
+					"hex": "#E1232DFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.92300015687942505,
+					"y": 0.024666665121912956,
+					"w": 0.063000008463859558,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 120.95999908447266,
+					"y": 69.240005493164062
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 67,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(312)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 66,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1772.16015625,
+				"absolute_y": 26.639999389648438,
+				"width": 120.96001434326172,
+				"height": 69.240013122558594,
+				"desired_size":
+				{
+					"x": 66,
+					"y": 66
+				},
+				"layer_id": 363,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.92300015687942505,
+					"y": 0.024666665121912956,
+					"w": 0.063000008463859558,
+					"h": 0.064111120998859406
+				},
+				"reference_1920x1080":
+				{
+					"x": 1772.16015625,
+					"y": 26.639999389648438,
+					"width": 120.96001434326172,
+					"height": 69.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.75294220447540283,
+					"g": 0.016807375475764275,
+					"b": 0.026241222396492958,
+					"a": 1,
+					"hex": "#E1232DFF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.92300015687942505,
+					"y": 0.024666665121912956,
+					"w": 0.063000008463859558,
+					"h": 0.064111120998859406
+				},
+				"desired_size":
+				{
+					"x": 66,
+					"y": 66
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 68,
+			"tag": "",
+			"untagged": true,
+			"type": "SBorder",
+			"source": "T66FlatStyle.cpp(321)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 67,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1774.16015625,
+				"absolute_y": 28.639999389648438,
+				"width": 116.96001434326172,
+				"height": 65.240013122558594,
+				"desired_size":
+				{
+					"x": 62,
+					"y": 62
+				},
+				"layer_id": 364,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.92404180765151978,
+					"y": 0.026518518105149269,
+					"w": 0.060916677117347717,
+					"h": 0.060407418757677078
+				},
+				"reference_1920x1080":
+				{
+					"x": 1774.16015625,
+					"y": 28.639999389648438,
+					"width": 116.96001434326172,
+					"height": 65.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "Image",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				},
+				"background_color":
+				{
+					"r": 0.011612244881689548,
+					"g": 0.0043914420530200005,
+					"b": 0.005181516520678997,
+					"a": 1,
+					"hex": "#1C0E10FF"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.92404180765151978,
+					"y": 0.026518518105149269,
+					"w": 0.060916677117347717,
+					"h": 0.060407418757677078
+				},
+				"desired_size":
+				{
+					"x": 62,
+					"y": 62
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 69,
+			"tag": "FrontendTopBar.PowerButton.Icon",
+			"untagged": false,
+			"type": "SBox",
+			"source": "T66FrontendTopBarWidget.cpp(979)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 68,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1782.16015625,
+				"absolute_y": 36.639999389648438,
+				"width": 100.96001434326172,
+				"height": 49.240013122558594,
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"layer_id": 365,
+				"visibility": "SelfHitTestInvisible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.92820847034454346,
+					"y": 0.033925924450159073,
+					"w": 0.052583344280719757,
+					"h": 0.045592602342367172
+				},
+				"reference_1920x1080":
+				{
+					"x": 1782.16015625,
+					"y": 36.639999389648438,
+					"width": 100.96001434326172,
+					"height": 49.240013122558594
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "Default",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.92820847034454346,
+					"y": 0.033925924450159073,
+					"w": 0.052583344280719757,
+					"h": 0.045592602342367172
+				},
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "FrontendTopBar.PowerButton.Icon",
+				"intended_role": "Icon",
+				"intended_state": "Default",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 70,
+			"tag": "",
+			"untagged": true,
+			"type": "ST66TopBarPowerGlyph",
+			"source": "T66FrontendTopBarWidget.cpp(1201)",
+			"parent": "FrontendTopBar.PowerButton.Icon",
+			"parent_tag": "FrontendTopBar.PowerButton.Icon",
+			"parent_index": 69,
+			"child_index": 0,
+			"child_count": 1,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 1809.64013671875,
+				"absolute_y": 38.260009765625,
+				"width": 46.000003814697266,
+				"height": 46.000003814697266,
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"layer_id": 365,
+				"visibility": "Visible",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 0.94252097606658936,
+					"y": 0.035425934940576553,
+					"w": 0.023958336561918259,
+					"h": 0.042592596262693405
+				},
+				"reference_1920x1080":
+				{
+					"x": 1809.64013671875,
+					"y": 38.260009765625,
+					"width": 46.000003814697266,
+					"height": 46.000003814697266
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 0.94252097606658936,
+					"y": 0.035425934940576553,
+					"w": 0.023958336561918259,
+					"h": 0.042592596262693405
+				},
+				"desired_size":
+				{
+					"x": 46,
+					"y": 46
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		},
+		{
+			"index": 71,
+			"tag": "",
+			"untagged": true,
+			"type": "SNullWidgetContent",
+			"source": "SNullWidget.cpp(80)",
+			"parent": "",
+			"parent_tag": "",
+			"parent_index": 2,
+			"child_index": 1,
+			"child_count": 2,
+			"is_label": false,
+			"geometry":
+			{
+				"absolute_x": 2240,
+				"absolute_y": -218,
+				"width": 0,
+				"height": 0,
+				"desired_size":
+				{
+					"x": 0,
+					"y": 0
+				},
+				"layer_id": 0,
+				"visibility": "Hidden",
+				"enabled": true,
+				"hovered": false,
+				"pressed": false,
+				"normalized":
+				{
+					"x": 1.1666667461395264,
+					"y": -0.20185184478759766,
+					"w": 0,
+					"h": 0
+				},
+				"reference_1920x1080":
+				{
+					"x": 2240,
+					"y": -218,
+					"width": 0,
+					"height": 0
+				}
+			},
+			"border":
+			{
+				"brush_resource": "",
+				"draw_type": "",
+				"tint":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"background_color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"margin":
+				{
+					"left": 0,
+					"top": 0,
+					"right": 0,
+					"bottom": 0
+				}
+			},
+			"text":
+			{
+				"content": "",
+				"font_path": "",
+				"size": 0,
+				"color":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				},
+				"letter_spacing": 0,
+				"shadow":
+				{
+					"r": 0,
+					"g": 0,
+					"b": 0,
+					"a": 0,
+					"hex": "#00000000"
+				}
+			},
+			"button_state":
+			{
+				"state": "",
+				"pressed": false
+			},
+			"interactivity":
+			{
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": ""
+			},
+			"image":
+			{
+				"rect":
+				{
+					"x": 1.1666667461395264,
+					"y": -0.20185184478759766,
+					"w": 0,
+					"h": 0
+				},
+				"desired_size":
+				{
+					"x": 0,
+					"y": 0
+				},
+				"brush_resource": "",
+				"tint":
+				{
+					"r": 1,
+					"g": 1,
+					"b": 1,
+					"a": 1,
+					"hex": "#FFFFFFFF"
+				}
+			},
+			"t66_metadata":
+			{
+				"tag": "",
+				"intended_role": "",
+				"intended_state": "",
+				"has_click_handler": false,
+				"hover_capable": false,
+				"toggle_group": "",
+				"is_label": false
+			}
+		}
+	]
+}

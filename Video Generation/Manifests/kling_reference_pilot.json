@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "provider": "native_kling",
+  "runNamePrefix": "KlingReferencePilot",
+  "defaultModelName": "kling-v1",
+  "defaultMode": "std",
+  "defaultDurationSeconds": 5,
+  "defaultCfgScale": 0.5,
+  "negativePrompt": "text, UI, logo, subtitles, extra limbs, malformed hands, duplicate face, camera shake, hard cuts, glitch artifacts, blurred subject, distorted anatomy, melting face, changing identity, changing outfit, cropped head, cropped feet",
+  "smokePrompt": "Locked camera T66 toon-shaded 3D character-selection preview. Founding Chad stays centered in the same readable selection-screen silhouette, subtle breathing, small heroic weight shift, soft forest light movement, no UI, no text, no logo.",
+  "smokeTarget": {
+    "entityType": "Hero",
+    "entityId": "Hero_1",
+    "skinId": "Default",
+    "bodyType": "Chad"
+  },
+  "pilotTargets": [
+    {
+      "entityType": "Hero",
+      "entityId": "Hero_1",
+      "skinId": "Default",
+      "bodyType": "Chad",
+      "creativeGoal": "loopable forest wood-chopping micro-action that returns to centered stance"
+    },
+    {
+      "entityType": "Hero",
+      "entityId": "Hero_7",
+      "skinId": "Default",
+      "bodyType": "Chad",
+      "creativeGoal": "visually distinct hero identity and loopable personality micro-action"
+    },
+    {
+      "entityType": "Companion",
+      "entityId": "Companion_14",
+      "skinId": "Default",
+      "creativeGoal": "centered cyclic companion dance loop"
+    }
+  ],
+  "capabilityChecks": [
+    {
+      "name": "image2video_list",
+      "method": "GET",
+      "endpoint": "/videos/image2video?pageNum=1&pageSize=1",
+      "spendsCredits": false
+    },
+    {
+      "name": "text2video_list",
+      "method": "GET",
+      "endpoint": "/videos/text2video?pageNum=1&pageSize=1",
+      "spendsCredits": false
+    },
+    {
+      "name": "image_generation_list",
+      "method": "GET",
+      "endpoint": "/images/generations?pageNum=1&pageSize=1",
+      "spendsCredits": false
+    }
+  ]
+}

@@ -357,10 +357,12 @@ protected:
 	TArray<TSharedPtr<SBorder>> InventorySlotBorders;
 	TArray<TSharedPtr<SBox>> InventorySlotContainers;
 	TArray<TSharedPtr<SImage>> InventorySlotImages;
+	TArray<TSharedPtr<STextBlock>> InventorySlotCountTexts;
 	TArray<TSharedPtr<FSlateBrush>> InventorySlotBrushes;
 	/** Cached idol/item IDs per slot so we only update tooltips when slot content changes (avoids tooltip flash from RefreshHUD). */
 	TArray<FName> CachedIdolSlotIDs;
 	TArray<FName> CachedInventorySlotIDs;
+	TArray<int32> CachedInventorySlotCounts;
 	TSharedPtr<STextBlock> ElevationText;
 	TSharedPtr<STextBlock> FPSText;
 	TSharedPtr<SBox> InventoryPanelBox;

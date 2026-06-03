@@ -52,9 +52,6 @@ public:
 	void OnPowerUpClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Main Menu")
-	void OnMinigamesClicked();
-
-	UFUNCTION(BlueprintCallable, Category = "Main Menu")
 	void OnAchievementsClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Main Menu")
@@ -144,7 +141,6 @@ private:
 	FReply HandleLoadGameClicked();
 	FReply HandleDailyDescentClicked();
 	FReply HandlePowerUpClicked();
-	FReply HandleMinigamesClicked();
 	FReply HandleAchievementsClicked();
 	FReply HandleSettingsClicked();
 	FReply HandleLanguageClicked();

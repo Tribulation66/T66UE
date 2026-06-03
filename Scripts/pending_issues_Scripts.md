@@ -3,7 +3,7 @@
 ## Static Mesh Import Core Still Owns Shared GLB Helpers
 
 - Severity tag: [Minor]
-- What's wrong: The final cleanup prompt approved deleting the old static GLB import workflow, but `Scripts/ImportStaticMeshes.py` and `Scripts/MakeGLBImportsUnlit.py` are still imported by active QuadRetro, CoherentThemeKit01, weapon projectile, arcade replacement, world NPC/interactable, and generated-kit verification scripts. Deleting them now would break those active workflows.
+- What's wrong: The final cleanup prompt approved deleting the old static GLB import workflow, but `Scripts/ImportStaticMeshes.py` and `Scripts/MakeGLBImportsUnlit.py` are still imported by active QuadRetro, CoherentThemeKit01, weapon projectile, world NPC/interactable, and generated-kit verification scripts. Deleting them now would break those active workflows.
 - Why it's out of scope now: This cleanup pass can retire the old skeletal/generic import scripts, but replacing the shared static-mesh import core requires updating multiple active import families to a new shared helper first.
 - What fixing it would entail: Extract the still-needed `ImportStaticMeshes.py` helpers into a smaller reusable module, update all active importers and verifiers to use it, then delete the old monolithic static import script and GLB unlit helper when no imports remain.
 

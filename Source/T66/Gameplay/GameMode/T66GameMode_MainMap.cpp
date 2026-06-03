@@ -231,9 +231,9 @@ continue;
 bool bBlockedByNPC = false;
 if (Registry)
 {
-for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : Registry->GetNPCs())
 {
-const AT66HouseNPCBase* NPC = WeakNPC.Get();
+const AT66NPCBase* NPC = WeakNPC.Get();
 if (!NPC)
 {
 continue;
@@ -342,7 +342,7 @@ void AT66GameMode::TryActivateMainMapCombat()
 	}
 	}
 
-	const bool bSkipStandardEnemySpawning = IsUsingTowerMainMapLayout() && IsBossRushFinaleStage();
+	const bool bSkipStandardEnemySpawning = false;
 
 	RunState->ResetStageTimerToFull();
 	if (!bWorldInteractablesSpawnedForStage)
@@ -849,7 +849,7 @@ void AT66GameMode::SpawnMainMapTerrain()
 
 	if (Preset.LayoutVariant == ET66MainMapLayoutVariant::Tower)
 	{
-		if (!T66TowerMapTerrain::BuildLayout(Preset, CachedTowerMainMapLayout, IsBossRushFinaleStage()))
+		if (!T66TowerMapTerrain::BuildLayout(Preset, CachedTowerMainMapLayout, false))
 		{
 			UE_LOG(LogT66GameMode, Error, TEXT("[MAP] Tower main map layout generation failed (seed=%d)"), Preset.Seed);
 			CachedTowerMainMapLayout = T66TowerMapTerrain::FLayout{};
@@ -1038,3 +1038,4 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 		SpawnBossForCurrentStage();
 	}
 }
+

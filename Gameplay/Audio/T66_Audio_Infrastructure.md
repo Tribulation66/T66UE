@@ -30,7 +30,6 @@ Covered groups:
 - Enemies: spawn, melee/ranged attack, family-specific hit, family-specific death.
 - Bosses: spawn, hit, death, phase change, profile-specific projectile fire, profile-specific AOE warning, AOE impact.
 - Traps and interactables: wall arrows, floor flame, spike patch, pressure plate, doors, chests, shops, shrines.
-- Minigame and run state: generic minigame start/success/fail, run start, stage clear, run complete.
 
 ## Adding Or Replacing Sounds
 

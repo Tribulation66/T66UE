@@ -3,6 +3,8 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66CombatDebugDraw.h"
+#include "Gameplay/T66MobLootSubsystem.h"
+#include "Gameplay/T66WorldSystemsAPI.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -773,6 +775,15 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 				}
 				if (ClosestEnemy && !IsInSafeZone())
 				{
+					if (ClosestEnemy->TouchDamageHearts > 0 && Now - LastEnemyTouchDamageTime >= EnemyTouchDamageCooldown)
+					{
+						const int32 DamageHP = FMath::Max(1, ClosestEnemy->TouchDamageHearts) * 20;
+						if (RunState->ApplyDamage(DamageHP, ClosestEnemy, FName(TEXT("EnemyTouch")), ClosestEnemy))
+						{
+							LastEnemyTouchDamageTime = Now;
+						}
+					}
+
 					if (Now - LastEnemyBounceTime >= EnemyBounceCooldown)
 					{
 						LastEnemyBounceTime = Now;
@@ -785,6 +796,26 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 							LaunchCharacter(BounceVel, true, true);
 						}
 					}
+				}
+			}
+		}
+
+		MobLootPickupCheckAccumSeconds += DeltaSeconds;
+		if (World && RunState && MobLootPickupCheckAccumSeconds >= MobLootPickupCheckInterval)
+		{
+			MobLootPickupCheckAccumSeconds = 0.f;
+			if (UT66MobLootSubsystem* MobLoot = World->GetSubsystem<UT66MobLootSubsystem>())
+			{
+				FT66MobLootCollectorRef Collector;
+				Collector.Collector = this;
+				Collector.CollectorID = HeroID.IsNone()
+					? FName(TEXT("Player"))
+					: FName(*FString::Printf(TEXT("Player.%s"), *HeroID.ToString()));
+				Collector.CollectorType = ET66MobLootCollectorType::Player;
+				const FT66MobLootCollectResult CollectResult = MobLoot->CollectMobLootAt(GetActorLocation(), MobLootPickupRadius, Collector);
+				if (CollectResult.DropsCollected > 0)
+				{
+					RunState->AddCollectedMobLootFromCollection(CollectResult, Collector);
 				}
 			}
 		}

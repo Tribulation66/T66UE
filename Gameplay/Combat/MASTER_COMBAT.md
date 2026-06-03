@@ -1,6 +1,6 @@
 # T66 Master Combat
 
-**Last updated:** 2026-05-28
+**Last updated:** 2026-05-31
 **Scope:** Single-source handoff for combat runtime flow, targeting, damage routing, damage provenance logging, combat collision roles, debug visibility, hit feedback, spatial headshots, accuracy-driven aiming, and boss body-part combat.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`, `Gameplay/Combat/VFX_PROCESS_INDEX.md`, `Gameplay/Combat/CombatVFXAuthoringProcedure.md`
 **Maintenance rule:** Update this file after every material combat, targeting, damage-model, hitbox, projectile, boss-health, or combat-UI change.
@@ -36,16 +36,8 @@ Combat VFX process note: start future VFX work from `VFX_PROCESS_INDEX.md` and `
 - `Accuracy` now exists as a full primary hero stat and its secondary family feeds untargeted auto-attack head selection.
 - The existing `Headshot` passive is no longer a random proc; it currently adds `+20%` accuracy weighting.
 - `Alchemy`, `HpRegen`, and `LifeSteal` are now deprecated legacy secondary stats kept only for save/data compatibility and old authored rows.
-- Adding real headshots and accuracy requires a model change from:
-  - `AActor` target
-  - one HP pool per enemy/boss
-  - actor-center bounce logic
-  - actor-root projectile homing
-- The clean target model is:
-  - actor selection
-  - optional hit-zone selection inside that actor
-  - damage routing through a hit-zone result
-  - optional per-part HP for bosses
+- `HeadshotChance` is now a live Accuracy-family secondary stat. It is separate from spatial head-hit targeting and rolls a data-driven stun proc on successful auto-attack hits, including boss targets.
+- Critical hits always deal fixed `2x` damage; `CritDamage` is retained only as a deprecated compatibility enum/key. Legacy backend `CritDamage` values above `1.0` are ignored instead of being imported as Headshot Chance; `1.0` remains the explicit compatibility boundary.
 
 ## 2. Current Combat Runtime Spine
 
@@ -58,11 +50,12 @@ Combat VFX process note: start future VFX work from `VFX_PROCESS_INDEX.md` and `
   - `BaseAccuracy` as the combat head-targeting baseline
   - Accuracy-family secondaries:
     - `CritChance`
-    - `CritDamage`
+    - `HeadshotChance`
     - `AttackRange`
-    - `Accuracy`
+    - `Execute`
 - Deprecated live-stat removals:
   - `Alchemy`
+  - `CritDamage`
   - `HpRegen`
   - `LifeSteal`
 - Deprecated secondary stats still remain in enums and legacy rows so older saves and payloads can still deserialize safely.
@@ -104,9 +97,9 @@ Combat VFX process note: start future VFX work from `VFX_PROCESS_INDEX.md` and `
   - `DotScale`
 - `Accuracy`
   - `CritChance`
-  - `CritDamage`
+  - `HeadshotChance`
   - `AttackRange`
-  - `Accuracy`
+  - `Execute`
 - `Armor`
   - `Taunt`
   - `DamageReduction`
@@ -118,10 +111,10 @@ Combat VFX process note: start future VFX work from `VFX_PROCESS_INDEX.md` and `
   - `Invisibility`
   - `Assassinate`
 - `Luck`
-  - `TreasureChest`
-  - `Cheating`
-  - `Stealing`
   - `LootCrate`
+  - `TreasureChest`
+  - `LootBag`
+  - `LootWheel`
 
 ### 2.3 Auto attack and damage dispatch
 

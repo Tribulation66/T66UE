@@ -18,6 +18,7 @@ class UMaterialInstanceDynamic;
 class UT66CombatComponent;
 class UT66RunStateSubsystem;
 class UT66HeroSpeedSubsystem;
+class UT66MobLootSubsystem;
 class UAnimationAsset;
 class AT66PilotableTractor;
 class UT66HeroMovementComponent;
@@ -293,11 +294,14 @@ private:
 	float LastEnemyTouchDamageTime = -9999.f;
 	float LastEnemyBounceTime = -9999.f;
 	float EnemyTouchCheckAccumSeconds = 0.f;
+	float MobLootPickupCheckAccumSeconds = 0.f;
 	static constexpr float EnemyTouchDamageCooldown = 0.5f;
 	static constexpr float EnemyBounceCooldown = 0.25f;
 	static constexpr float EnemyTouchRadius = 90.f;
 	static constexpr float EnemyBounceStrength = 420.f;
 	static constexpr float EnemyBounceZ = 120.f;
+	static constexpr float MobLootPickupRadius = 130.f;
+	static constexpr float MobLootPickupCheckInterval = 0.08f;
 	static constexpr float EnemyTouchCheckInterval = 0.10f;
 
 private:

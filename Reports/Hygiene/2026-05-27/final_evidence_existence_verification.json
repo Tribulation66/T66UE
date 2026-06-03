@@ -1,0 +1,57 @@
+{
+  "generated_local": "2026-05-27T12:40:28",
+  "files": {
+    "gatea_delete_backup_manifest": true,
+    "native_reference_audit_gatea_pre": true,
+    "native_reference_audit_gatea_post": true,
+    "class_property_audit_gatea_pre": true,
+    "class_property_audit_gatea_post": true,
+    "backrooms_consume_qa_verification": true,
+    "hero_movement_qa_verification": true,
+    "run_summary_smoke_verification": true,
+    "movement_run_summary_equivalence": true,
+    "final_confirmation_points": true
+  },
+  "backup_manifest": {
+    "entry_count": 12,
+    "backup_root": "Saved\\HygieneBackups\\2026-05-27\\GateA\\DeletedAssets",
+    "missing_backup_files": [],
+    "all_backup_files_exist": true
+  },
+  "native_pre_summary": {
+    "asset_registry_hits": 0,
+    "blueprint_matches": 0,
+    "map_matches": 0,
+    "binary_content_matches": 0
+  },
+  "class_property_pre_summary": {
+    "blueprint_cdo_matches": 0,
+    "native_cdo_checked": 1
+  },
+  "backrooms_qa_summary": {
+    "reward_granted": true,
+    "hud_icon_visible_when_owned": true,
+    "consumed_by_lethal_damage": true,
+    "hp_after": "20.0",
+    "expected_hp_after": "20.0"
+  },
+  "movement_qa_summary": {
+    "passed": true,
+    "frames_count": 90,
+    "sample_count": 15,
+    "max_walk_speeds": [
+      840.0
+    ],
+    "max_velocity_speed": 840.0,
+    "max_delta_speed": 886.2,
+    "observed_x_distance": 5406.0,
+    "jump_observed_by_z": true
+  },
+  "run_summary_smoke_summary": {
+    "passed": true,
+    "screenshot_bytes": 546354,
+    "dump_bytes": 949800,
+    "run_summary_label_count": 6,
+    "move_speed_mult_label_count": 0
+  }
+}

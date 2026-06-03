@@ -1,0 +1,9 @@
+[2026.05.27-15.11.45:386][178]LogT66HUD: [BackroomsQA] Phase=QuickReviveHUD Mode=Consume Item=0 IconVisible=0 DownedOverlayPresent=0
+[2026.05.27-15.11.45:626][237]LogT66GameMode: [BackroomsQA] Phase=Scheduled Mode=consume StartDelay=1.00
+[2026.05.27-15.11.46:325][384]LogT66HUD: [BackroomsQA] Phase=QuickReviveHUD Mode=Consume Item=0 IconVisible=0 DownedOverlayPresent=0
+[2026.05.27-15.11.46:350][384]LogT66GameMode: [BackroomsQA] Phase=Entered Mode=consume InteractReturned=1 Entered=1 InventoryBefore=1 InventoryDuring=0 InventoryHidden=1 WeaponBefore=Hero_2_black_aoe WeaponDuring=None WeaponHidden=1 StageTimerPaused=1 SpeedRunPaused=1 PauseFlag=1 ChaserSpawned=1 ChaserDistance=7440.0 MoveTargetResolved=1 MoveTarget=V(X=303720.00, Y=296900.00, Z=14096.00)
+[2026.05.27-15.11.46:362][384]LogT66HUD: [BackroomsQA] Phase=QuickReviveHUD Mode=Consume Item=0 IconVisible=0 DownedOverlayPresent=0
+[2026.05.27-15.11.46:375][384]LogT66HUD: [BackroomsQA] Phase=QuickReviveHUD Mode=Consume Item=1 IconVisible=1 DownedOverlayPresent=0
+[2026.05.27-15.11.46:389][384]LogT66GameMode: [BackroomsQA] Phase=Exit Mode=consume InteractReturned=1 ChallengeEnded=1 RewardGranted=1 InventoryRestored=1 WeaponRestored=1 StageTimerRestored=1 SpeedRunRestored=1 InventoryCount=2
+[2026.05.27-15.11.46:415][384]LogT66HUD: [BackroomsQA] Phase=QuickReviveHUD Mode=Consume Item=0 IconVisible=0 DownedOverlayPresent=0
+[2026.05.27-15.11.46:427][384]LogT66GameMode: [BackroomsQA] Phase=Consume Mode=consume DamageApplied=1 Consumed=1 Alive=1 HPBefore=100.0 HPAfter=20.0

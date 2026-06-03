@@ -250,6 +250,15 @@ bool UT66RunStateSubsystem::SelectIdolFromStock(int32 SlotIndex)
 	return false;
 }
 
+bool UT66RunStateSubsystem::SelectNoIdolFromAltar(const ET66ItemRarity Rarity)
+{
+	if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
+	{
+		return IdolManager->SelectNoIdolFromAltar(Rarity);
+	}
+	return false;
+}
+
 
 bool UT66RunStateSubsystem::IsIdolStockSlotSelected(int32 SlotIndex) const
 {

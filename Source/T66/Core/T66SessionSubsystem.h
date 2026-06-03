@@ -63,7 +63,6 @@ public:
 	ET66ScreenType GetDesiredPartyFrontendScreen() const;
 	ET66Difficulty GetSharedLobbyDifficulty() const;
 	bool AreAllPartyMembersReadyForGameplay(FString* OutFailureReason = nullptr) const;
-	bool AreAllPartyMembersReadyForMiniGameplay(FString* OutFailureReason = nullptr) const;
 	const FString& GetLastStatusText() const { return LastStatusText; }
 
 	FOnT66SessionStateChanged& OnSessionStateChanged() { return SessionStateChanged; }

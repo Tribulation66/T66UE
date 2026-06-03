@@ -1,0 +1,42 @@
+{
+  "ArtifactKind": "ClaudeHelperFailed",
+  "Mode": "Operator",
+  "Model": "claude-opus-4-8",
+  "Effort": "high",
+  "ClaudeOutputFormat": "json",
+  "PermissionMode": "bypassPermissions",
+  "ToolProfile": "FullOperator",
+  "CodexApprovalPath": "C:\\UE\\T66\\Reports\\AgentReviews\\Hero1PierceVerticalSlashVFX\\codex_operator_approval.md",
+  "AllowedTools": [
+    "Read",
+    "Grep",
+    "Glob"
+  ],
+  "AddDir": [
+    "C:\\UE\\T66"
+  ],
+  "PromptPath": "C:\\UE\\T66\\Reports\\AgentReviews\\Hero1PierceVerticalSlashVFX\\claude_full_operator_prompt.md",
+  "EffectivePromptPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T054431-Hero1PierceVerticalSlashVFXFullOperator-Operator\\effective_prompt.md",
+  "AttemptsRequested": 1,
+  "TimeoutSeconds": 1200,
+  "MaxTurns": 0,
+  "MaxTurnContinuations": 3,
+  "NoSessionPersistence": false,
+  "ClaudePath": "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+  "ClaudeVersion": "2.1.150 (Claude Code)",
+  "FailureKind": "ClaudeProcessFailed",
+  "MaxTurnContinuationAttempted": false,
+  "ClaudeTokensSpent": null,
+  "Attempts": [
+    {
+      "StdoutPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T054431-Hero1PierceVerticalSlashVFXFullOperator-Operator\\attempts\\stdout_attempt1.json",
+      "StderrPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T054431-Hero1PierceVerticalSlashVFXFullOperator-Operator\\attempts\\stderr_attempt1.txt",
+      "TimedOut": true,
+      "ExitCode": null,
+      "Success": false,
+      "MaxTurnContinuationAttempted": false,
+      "MaxTurnContinuationCount": 0
+    }
+  ],
+  "OutcomeKind": "ClaudeHelperFailed"
+}

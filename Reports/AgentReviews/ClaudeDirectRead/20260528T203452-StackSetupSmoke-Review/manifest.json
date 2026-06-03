@@ -1,0 +1,30 @@
+﻿{
+    "ArtifactKind":  "ReviewArtifact",
+    "Mode":  "Review",
+    "Model":  "claude-opus-4-8",
+    "Effort":  "low",
+    "PermissionMode":  "plan",
+    "AllowedTools":  [
+                         "Read",
+                         "Grep",
+                         "Glob"
+                     ],
+    "AddDir":  [
+                   "C:\\UE\\T66"
+               ],
+    "PromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\20260528_ClaudeStackSetup\\direct_read_review_prompt.md",
+    "EffectivePromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T203452-StackSetupSmoke-Review\\effective_prompt.md",
+    "OutputPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T203452-StackSetupSmoke-Review\\claude_direct_read_review.md",
+    "ReviewedOperatorRun":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T203423-StackSetupSmoke-Operator",
+    "AttemptsRequested":  2,
+    "TimeoutSeconds":  180,
+    "ClaudePath":  "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+    "ClaudeVersion":  "2.1.150 (Claude Code)",
+    "SuccessfulStdoutPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T203452-StackSetupSmoke-Review\\attempts\\stdout_attempt1.md",
+    "SuccessfulStderrPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T203452-StackSetupSmoke-Review\\attempts\\stderr_attempt1.txt",
+    "Greenlit":  true,
+    "Verdict":  "APPROVE",
+    "VerdictLine":  "Verdict: APPROVE",
+    "OutcomeKind":  "ClaudeValidVerdict",
+    "FailureKind":  null
+}

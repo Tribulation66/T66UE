@@ -32,6 +32,8 @@
 
 namespace
 {
+	const FName T66NoIdolOfferID(TEXT("Idol_NoIdol"));
+
 	UT66IdolManagerSubsystem* GetIdolManager(UWorld* World)
 	{
 		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
@@ -229,6 +231,11 @@ void UT66IdolAltarOverlayWidget::HandleIdolsChanged()
 
 int32 UT66IdolAltarOverlayWidget::GetOfferStockIndexForVisibleSlot(const int32 VisibleSlotIndex) const
 {
+	if (ActiveOfferCategoryIndex == OfferCategoryCount - 1)
+	{
+		return INDEX_NONE;
+	}
+
 	return (FMath::Clamp(ActiveOfferCategoryIndex, 0, OfferCategoryCount - 1) * OfferSlotsPerCategory)
 		+ FMath::Clamp(VisibleSlotIndex, 0, OfferSlotsPerCategory - 1);
 }
@@ -248,10 +255,7 @@ void UT66IdolAltarOverlayWidget::ConsumeSelectionBudget(const int32 SlotIndex)
 		return;
 	}
 
-	if (Altar->RemainingSelections > 0)
-	{
-		Altar->RemainingSelections = FMath::Max(0, Altar->RemainingSelections - 1);
-	}
+	Altar->DisableAfterSelection();
 }
 
 void UT66IdolAltarOverlayWidget::RefundSelectionBudget(const int32 SlotIndex)
@@ -599,6 +603,7 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 	const bool bHasSelectionAllowance = HasSelectionsRemaining();
 	const bool bTutorialSingleOffer = IsTutorialSingleOfferMode();
 	const FName TutorialOfferedIdolID = GetTutorialOfferedIdolID();
+	const bool bNoIdolPage = !bTutorialSingleOffer && ActiveOfferCategoryIndex == OfferCategoryCount - 1;
 
 	if (RerollButton.IsValid())
 	{
@@ -610,23 +615,33 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 		const int32 SlotIndex = GetOfferStockIndexForVisibleSlot(VisibleSlotIndex);
 		const bool bHasItem = bTutorialSingleOffer
 			? (VisibleSlotIndex == 0 && !TutorialOfferedIdolID.IsNone())
-			: (Stock.IsValidIndex(SlotIndex) && !Stock[SlotIndex].IsNone());
+			: (bNoIdolPage
+				? VisibleSlotIndex == 0
+				: (Stock.IsValidIndex(SlotIndex) && !Stock[SlotIndex].IsNone()));
 		const FName IdolID = bTutorialSingleOffer
 			? TutorialOfferedIdolID
-			: (bHasItem ? Stock[SlotIndex] : NAME_None);
+			: (bNoIdolPage
+				? (bHasItem ? T66NoIdolOfferID : NAME_None)
+				: (bHasItem ? Stock[SlotIndex] : NAME_None));
 		const int32 EquippedSlot = FindEquippedSlotByIdolID(IdolManager, IdolID);
 		const bool bOwned = EquippedSlot != INDEX_NONE;
+		const ET66ItemRarity OfferRarity = bTutorialSingleOffer
+			? ET66ItemRarity::Black
+			: (bNoIdolPage
+				? IdolManager->GetIdolStockRarityInSlot(0)
+				: IdolManager->GetIdolStockRarityInSlot(SlotIndex));
+		const int32 OfferedTier = UT66IdolManagerSubsystem::IdolRarityToTierValue(OfferRarity);
+		const int32 ExistingTier = bOwned ? IdolManager->GetEquippedIdolLevelInSlot(EquippedSlot) : 0;
+		const bool bCanUpgrade = bOwned && ExistingTier < OfferedTier;
 		const bool bSelected = bTutorialSingleOffer
 			? (bOwned && !HasSelectionsRemaining())
-			: IdolManager->IsIdolStockSlotSelected(SlotIndex);
+			: (bNoIdolPage
+				? false
+				: IdolManager->IsIdolStockSlotSelected(SlotIndex));
 		const bool bCanTake = bHasItem
 			&& !bSelected
 			&& bHasSelectionAllowance
-			&& !bOwned
-			&& bHasEmptySlot;
-		const ET66ItemRarity OfferRarity = bTutorialSingleOffer
-			? ET66ItemRarity::Black
-			: IdolManager->GetIdolStockRarityInSlot(SlotIndex);
+			&& (bNoIdolPage || bCanUpgrade || (!bOwned && bHasEmptySlot));
 		const FLinearColor RarityColor = bHasItem ? FItemData::GetItemRarityColor(OfferRarity) : FT66FlatStyle::Tokens::Panel2;
 		if (OfferBaseBorderColors.IsValidIndex(VisibleSlotIndex))
 		{
@@ -651,7 +666,9 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 			FText NameText = FText::GetEmpty();
 			if (bHasItem)
 			{
-				const FText IdolName = Loc ? Loc->GetText_IdolDisplayName(IdolID) : FText::FromName(IdolID);
+				const FText IdolName = bNoIdolPage
+					? NSLOCTEXT("T66.IdolAltar", "NoIdolName", "NO IDOL")
+					: (Loc ? Loc->GetText_IdolDisplayName(IdolID) : FText::FromName(IdolID));
 				const FText RarityName = Loc ? Loc->GetText_ItemRarityName(OfferRarity) : FText::GetEmpty();
 				NameText = RarityName.IsEmpty()
 					? IdolName
@@ -663,10 +680,12 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 		if (OfferDescriptionTexts.IsValidIndex(VisibleSlotIndex) && OfferDescriptionTexts[VisibleSlotIndex].IsValid())
 		{
 			OfferDescriptionTexts[VisibleSlotIndex]->SetText(
-				bHasData
+				bNoIdolPage && bHasItem
+					? NSLOCTEXT("T66.IdolAltar", "NoIdolDescription", "Gain Damage, Attack Speed, and Attack Scale instead.")
+					: (bHasData
 					? BuildIdolCardDescriptionMarkup(Loc, IdolID, IdolData.Category)
-					: FText::GetEmpty());
-			OfferDescriptionTexts[VisibleSlotIndex]->SetVisibility(bHasData ? EVisibility::Visible : EVisibility::Collapsed);
+					: FText::GetEmpty()));
+			OfferDescriptionTexts[VisibleSlotIndex]->SetVisibility((bNoIdolPage && bHasItem) || bHasData ? EVisibility::Visible : EVisibility::Collapsed);
 		}
 
 		if (OfferTileBorders.IsValidIndex(VisibleSlotIndex) && OfferTileBorders[VisibleSlotIndex].IsValid())
@@ -701,17 +720,14 @@ void UT66IdolAltarOverlayWidget::RefreshStock()
 
 		if (OfferButtonTexts.IsValidIndex(VisibleSlotIndex) && OfferButtonTexts[VisibleSlotIndex].IsValid())
 		{
-			OfferButtonTexts[VisibleSlotIndex]->SetText(
-				bSelected
-					? NSLOCTEXT("T66.IdolAltar", "Return", "RETURN")
-					: NSLOCTEXT("T66.IdolAltar", "Take", "TAKE"));
+			OfferButtonTexts[VisibleSlotIndex]->SetText(NSLOCTEXT("T66.IdolAltar", "Take", "TAKE"));
 		}
 
 		SetActionButtonState(
 			OfferButtons.IsValidIndex(VisibleSlotIndex) ? OfferButtons[VisibleSlotIndex] : TSharedPtr<SWidget>(),
 			OfferButtonBorders.IsValidIndex(VisibleSlotIndex) ? OfferButtonBorders[VisibleSlotIndex] : TSharedPtr<SBorder>(),
 			OfferButtonTexts.IsValidIndex(VisibleSlotIndex) ? OfferButtonTexts[VisibleSlotIndex] : TSharedPtr<STextBlock>(),
-			!bSelectionAnimationActive && (bSelected || bCanTake),
+			!bSelectionAnimationActive && bCanTake,
 			bSelected);
 	}
 
@@ -735,42 +751,25 @@ FReply UT66IdolAltarOverlayWidget::OnToggleSlot(int32 SlotIndex)
 	}
 
 	const bool bTutorialSingleOffer = IsTutorialSingleOfferMode();
+	const bool bNoIdolPage = !bTutorialSingleOffer && ActiveOfferCategoryIndex == OfferCategoryCount - 1;
 	const int32 StockIndex = GetOfferStockIndexForVisibleSlot(SlotIndex);
 	const TArray<FName>& Stock = IdolManager->GetIdolStockIDs();
 	const FName IdolID = bTutorialSingleOffer
 		? GetTutorialOfferedIdolID()
-		: (Stock.IsValidIndex(StockIndex) ? Stock[StockIndex] : NAME_None);
+		: (bNoIdolPage
+			? (SlotIndex == 0 ? T66NoIdolOfferID : NAME_None)
+			: (Stock.IsValidIndex(StockIndex) ? Stock[StockIndex] : NAME_None));
+	const ET66ItemRarity OfferRarity = bTutorialSingleOffer
+		? ET66ItemRarity::Black
+		: (bNoIdolPage
+			? IdolManager->GetIdolStockRarityInSlot(0)
+			: IdolManager->GetIdolStockRarityInSlot(StockIndex));
 	const bool bSelected = bTutorialSingleOffer
 		? (FindEquippedSlotByIdolID(IdolManager, IdolID) != INDEX_NONE && !HasSelectionsRemaining())
-		: IdolManager->IsIdolStockSlotSelected(StockIndex);
+		: (!bNoIdolPage && IdolManager->IsIdolStockSlotSelected(StockIndex));
 
 	if (IdolID.IsNone())
 	{
-		return FReply::Handled();
-	}
-
-	if (bSelected)
-	{
-		const int32 EquippedSlot = FindEquippedSlotByIdolID(IdolManager, IdolID);
-		if (EquippedSlot == INDEX_NONE || !IdolManager->SellEquippedIdolInSlot(EquippedSlot))
-		{
-			if (StatusText.IsValid())
-			{
-				StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "ReturnFailed", "Nothing to return."));
-			}
-			return FReply::Handled();
-		}
-
-		RefundSelectionBudget(StockIndex);
-
-		if (StatusText.IsValid())
-		{
-			StatusText->SetText(FText::Format(
-				NSLOCTEXT("T66.IdolAltar", "ReturnSuccess", "Returned {0}."),
-				Loc ? Loc->GetText_IdolDisplayName(IdolID) : FText::FromName(IdolID)));
-		}
-
-		RefreshStock();
 		return FReply::Handled();
 	}
 
@@ -783,19 +782,31 @@ FReply UT66IdolAltarOverlayWidget::OnToggleSlot(int32 SlotIndex)
 		return FReply::Handled();
 	}
 
-	const TArray<FName>& EquippedBefore = IdolManager->GetEquippedIdols();
-	const bool bWasUpgrade = false;
-	const int32 ExistingEquippedSlot = FindEquippedSlotByIdolID(IdolManager, IdolID);
-	const bool bHasEmptySlot = EquippedBefore.Contains(NAME_None);
-	if (ExistingEquippedSlot != INDEX_NONE)
+	if (bNoIdolPage)
 	{
 		if (StatusText.IsValid())
 		{
-			StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "AlreadyOwned", "That idol is already bound."));
+			StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "NoIdolSelectionRevealing", "Taking stat power..."));
+		}
+		StartSelectionAnimation(SlotIndex, INDEX_NONE, IdolID, false, false, OfferRarity, true);
+		return FReply::Handled();
+	}
+
+	const TArray<FName>& EquippedBefore = IdolManager->GetEquippedIdols();
+	const int32 ExistingEquippedSlot = FindEquippedSlotByIdolID(IdolManager, IdolID);
+	const int32 OfferedTier = UT66IdolManagerSubsystem::IdolRarityToTierValue(OfferRarity);
+	const int32 ExistingTier = ExistingEquippedSlot != INDEX_NONE ? IdolManager->GetEquippedIdolLevelInSlot(ExistingEquippedSlot) : 0;
+	const bool bWasUpgrade = ExistingEquippedSlot != INDEX_NONE && ExistingTier < OfferedTier;
+	const bool bHasEmptySlot = EquippedBefore.Contains(NAME_None);
+	if (ExistingEquippedSlot != INDEX_NONE && !bWasUpgrade)
+	{
+		if (StatusText.IsValid())
+		{
+			StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "AlreadyOwned", "That idol is already bound at this tier."));
 		}
 		return FReply::Handled();
 	}
-	if (!bHasEmptySlot)
+	if (!bWasUpgrade && !bHasEmptySlot)
 	{
 		if (StatusText.IsValid())
 		{
@@ -806,10 +817,12 @@ FReply UT66IdolAltarOverlayWidget::OnToggleSlot(int32 SlotIndex)
 
 	if (StatusText.IsValid())
 	{
-		StatusText->SetText(NSLOCTEXT("T66.IdolAltar", "SelectionRevealing", "Binding idol..."));
+		StatusText->SetText(bWasUpgrade
+			? NSLOCTEXT("T66.IdolAltar", "UpgradeRevealing", "Upgrading idol...")
+			: NSLOCTEXT("T66.IdolAltar", "SelectionRevealing", "Binding idol..."));
 	}
 
-	StartSelectionAnimation(SlotIndex, StockIndex, IdolID, bTutorialSingleOffer, bWasUpgrade);
+	StartSelectionAnimation(SlotIndex, StockIndex, IdolID, bTutorialSingleOffer, bWasUpgrade, OfferRarity, false);
 	return FReply::Handled();
 }
 
@@ -895,7 +908,9 @@ void UT66IdolAltarOverlayWidget::StartSelectionAnimation(
 	const int32 StockIndex,
 	const FName IdolID,
 	const bool bTutorialSingleOffer,
-	const bool bWasUpgrade)
+	const bool bWasUpgrade,
+	const ET66ItemRarity OfferRarity,
+	const bool bNoIdolSelection)
 {
 	if (!OfferCardBoxes.IsValidIndex(VisibleSlotIndex))
 	{
@@ -909,6 +924,8 @@ void UT66IdolAltarOverlayWidget::StartSelectionAnimation(
 	PendingSelection.IdolID = IdolID;
 	PendingSelection.bTutorialSingleOffer = bTutorialSingleOffer;
 	PendingSelection.bWasUpgrade = bWasUpgrade;
+	PendingSelection.OfferRarity = OfferRarity;
+	PendingSelection.bNoIdolSelection = bNoIdolSelection;
 
 	RegisterMarkerHandlers();
 	bSelectionAnimationActive = true;
@@ -1000,6 +1017,10 @@ void UT66IdolAltarOverlayWidget::TickAnimations(const float DeltaSeconds)
 			CommitPendingSelectionIfNeeded();
 			ClearPendingSelection();
 			RefreshStock();
+			if (bCloseAfterSelectionCommit)
+			{
+				CloseAfterCommittedSelection();
+			}
 		}
 	}
 
@@ -1050,9 +1071,11 @@ void UT66IdolAltarOverlayWidget::CommitPendingSelectionIfNeeded()
 		return;
 	}
 
-	const bool bSelectionApplied = PendingSelection.bTutorialSingleOffer
-		? IdolManager->SelectIdolFromAltar(PendingSelection.IdolID)
-		: IdolManager->SelectIdolFromStock(PendingSelection.StockIndex);
+	const bool bSelectionApplied = PendingSelection.bNoIdolSelection
+		? IdolManager->SelectNoIdolFromAltar(PendingSelection.OfferRarity)
+		: (PendingSelection.bTutorialSingleOffer
+			? IdolManager->SelectIdolFromAltar(PendingSelection.IdolID)
+			: IdolManager->SelectIdolFromStock(PendingSelection.StockIndex));
 	if (!bSelectionApplied)
 	{
 		if (StatusText.IsValid())
@@ -1063,12 +1086,20 @@ void UT66IdolAltarOverlayWidget::CommitPendingSelectionIfNeeded()
 	}
 
 	ConsumeSelectionBudget(PendingSelection.StockIndex);
+	IdolManager->RerollIdolStock();
+	bCloseAfterSelectionCommit = true;
 	if (StatusText.IsValid())
 	{
-		StatusText->SetText(
-			PendingSelection.bWasUpgrade
-				? NSLOCTEXT("T66.IdolAltar", "UpgradeApplied", "Upgraded idol.")
-				: (Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped.")));
+		FText ResultText = Loc ? Loc->GetText_IdolAltarEquipped() : NSLOCTEXT("T66.IdolAltar", "Equipped", "Equipped.");
+		if (PendingSelection.bWasUpgrade)
+		{
+			ResultText = NSLOCTEXT("T66.IdolAltar", "UpgradeApplied", "Upgraded idol.");
+		}
+		else if (PendingSelection.bNoIdolSelection)
+		{
+			ResultText = NSLOCTEXT("T66.IdolAltar", "NoIdolApplied", "Stat power gained.");
+		}
+		StatusText->SetText(ResultText);
 	}
 }
 
@@ -1079,6 +1110,12 @@ void UT66IdolAltarOverlayWidget::ClearPendingSelection()
 	{
 		SelectionAlpha = 0.f;
 	}
+}
+
+void UT66IdolAltarOverlayWidget::CloseAfterCommittedSelection()
+{
+	bCloseAfterSelectionCommit = false;
+	OnBack();
 }
 
 FReply UT66IdolAltarOverlayWidget::OnReroll()

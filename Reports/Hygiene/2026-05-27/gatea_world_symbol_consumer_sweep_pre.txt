@@ -1,0 +1,75 @@
+Reports\Hygiene\2026-05-27\candidate_manifest.md:114:- `SpawnTricksterAndCowardiceGate()` no-op and callsites.
+Reports\Hygiene\2026-05-27\candidate_manifest.md:115:- `SpawnModelShowcaseRow()` no-op and stale caller/comment path.
+Reports\Hygiene\2026-05-27\candidate_manifest.md:117:- Boss beacon code and fields, including `BossBeaconActor`, `BossBeaconUpdateAccumulator`, `MainMapBossBeaconSurfaceLocation`, `BossBeaconSurfaceLocation`, and spawn/update/destroy helpers, if boss flow proof passes.
+Reports\Hygiene\2026-05-27\candidate_manifest.md:122:- `bSpawnIdolVFXTestTargetsAtStageStart`.
+Reports\Hygiene\2026-05-27\candidate_manifest.md:123:- `IdolVFXTestTargets`.
+Reports\Hygiene\2026-05-27\candidate_manifest.md:124:- `SpawnIdolVFXTestTargets()`.
+Gameplay\World\T66_MAP_DESIGN_REFERENCE.md:172:  - `SpawnGuaranteedStartAreaInteractables()`
+Gameplay\World\T66_MAP_DESIGN_REFERENCE.md:190:- `SpawnTricksterAndCowardiceGate()`
+Source\T66\Gameplay\GameMode\T66GameMode_Bootstrap.cpp:465:SpawnGuaranteedStartAreaInteractables();
+Source\T66\Gameplay\GameMode\T66GameMode_Bootstrap.cpp:474:SpawnTricksterAndCowardiceGate();
+Source\T66\Gameplay\GameMode\T66GameMode_Bootstrap.cpp:475:SpawnBossBeaconIfNeeded();
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:308:		DestroyBossBeacon();
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:530:		else if (!MainMapBossBeaconSurfaceLocation.IsNearlyZero())
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:532:			FallbackSpawnLoc = MainMapBossBeaconSurfaceLocation;
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:577:		MainMapBossBeaconSurfaceLocation.X,
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:578:		MainMapBossBeaconSurfaceLocation.Y,
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:579:		MainMapBossBeaconSurfaceLocation.Z);
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:617:						(FallbackSpawnLoc.Equals(MainMapBossBeaconSurfaceLocation, 1.0f) ? TEXT("BossBeaconSurface") : TEXT("TowerFallback")));
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:825:		SpawnBossBeaconIfNeeded();
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:880:						SpawnBossBeaconIfNeeded();
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:968:bool AT66GameMode::TryComputeBossBeaconBase(FVector& OutBeaconBase) const
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:983:		if (!MainMapBossBeaconSurfaceLocation.IsNearlyZero())
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:985:			OutBeaconBase = MainMapBossBeaconSurfaceLocation;
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1054:void AT66GameMode::DestroyBossBeacon()
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1056:	if (AActor* BeaconActor = BossBeaconActor.Get())
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1060:	BossBeaconActor = nullptr;
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1063:void AT66GameMode::UpdateBossBeaconTransform(bool bForceSpawnIfMissing)
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1067:		DestroyBossBeacon();
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1072:	if (!TryComputeBossBeaconBase(BeaconBase))
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1077:	if (AActor* BeaconActor = BossBeaconActor.Get())
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1085:		SpawnBossBeaconIfNeeded();
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1089:void AT66GameMode::SpawnBossBeaconIfNeeded()
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1093:		DestroyBossBeacon();
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1103:	// Stage-transition cleanup only. BossBeaconActor is cached after spawn, but
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1119:	BossBeaconActor = nullptr;
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1124:	if (!TryComputeBossBeaconBase(BeaconBase))
+Source\T66\Gameplay\GameMode\T66GameMode_BossFlow.cpp:1239:	BossBeaconActor = BeaconActor;
+Source\T66\Gameplay\GameMode\T66GameMode_MainMap.cpp:821:	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
+Source\T66\Gameplay\GameMode\T66GameMode_MainMap.cpp:866:		MainMapBossBeaconSurfaceLocation = CachedTowerMainMapLayout.BossBeaconSurfaceLocation;
+Source\T66\Gameplay\GameMode\T66GameMode_MainMap.cpp:930:		MainMapBossBeaconSurfaceLocation = BossBeaconLocation;
+Source\T66\Gameplay\GameMode\T66GameMode_MainMap.cpp:934:		MainMapBossBeaconSurfaceLocation = MainMapBossAreaCenterSurfaceLocation;
+Source\T66\Gameplay\GameMode\T66GameMode_MainMap.cpp:1000:	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
+Source\T66\Gameplay\GameMode\T66GameMode_MainMap.cpp:1037:	DestroyBossBeacon();
+Source\T66\Gameplay\GameMode\T66GameMode_MainMap.cpp:1048:		SpawnTricksterAndCowardiceGate();
+Source\T66\Gameplay\GameMode\T66GameMode_MainMap.cpp:1053:		SpawnBossBeaconIfNeeded();
+Source\T66\Gameplay\GameMode\T66GameMode_WorldInteractables.cpp:346:void AT66GameMode::SpawnTricksterAndCowardiceGate()
+Source\T66\Gameplay\GameMode\T66GameMode_WorldInteractables.cpp:459:void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
+Source\T66\Gameplay\GameMode\T66GameMode_WorldInteractables.cpp:1879:		SpawnModelShowcaseRow();
+Source\T66\Gameplay\GameMode\T66GameMode_WorldInteractables.cpp:1911:void AT66GameMode::SpawnModelShowcaseRow()
+Source\T66\Gameplay\GameMode\T66GameMode_WorldInteractables.cpp:2657:void AT66GameMode::SpawnIdolVFXTestTargets()
+Source\T66\Gameplay\GameMode\T66GameMode_WorldInteractables.cpp:2659:	if (!bSpawnIdolVFXTestTargetsAtStageStart || IsLabRun())
+Source\T66\Gameplay\GameMode\T66GameMode_WorldInteractables.cpp:2670:	for (AT66EnemyBase* ExistingTarget : IdolVFXTestTargets)
+Source\T66\Gameplay\GameMode\T66GameMode_WorldInteractables.cpp:2677:	IdolVFXTestTargets.Reset();
+Source\T66\Gameplay\GameMode\T66GameMode_WorldInteractables.cpp:2793:		IdolVFXTestTargets.Add(TargetEnemy);
+Source\T66\Gameplay\T66GameMode.h:95:	bool bSpawnIdolVFXTestTargetsAtStageStart = true;
+Source\T66\Gameplay\T66GameMode.h:226:	void SpawnIdolVFXTestTargets();
+Source\T66\Gameplay\T66GameMode.h:232:	void SpawnGuaranteedStartAreaInteractables();
+Source\T66\Gameplay\T66GameMode.h:233:	void SpawnModelShowcaseRow();
+Source\T66\Gameplay\T66GameMode.h:246:	void SpawnBossBeaconIfNeeded();
+Source\T66\Gameplay\T66GameMode.h:259:	void SpawnTricksterAndCowardiceGate();
+Source\T66\Gameplay\T66GameMode.h:382:	TArray<TObjectPtr<AT66EnemyBase>> IdolVFXTestTargets;
+Source\T66\Gameplay\T66GameMode.h:415:	TWeakObjectPtr<AActor> BossBeaconActor;
+Source\T66\Gameplay\T66GameMode.h:416:	float BossBeaconUpdateAccumulator = 0.f;
+Source\T66\Gameplay\T66GameMode.h:425:	bool TryComputeBossBeaconBase(FVector& OutBeaconBase) const;
+Source\T66\Gameplay\T66GameMode.h:426:	void UpdateBossBeaconTransform(bool bForceSpawnIfMissing);
+Source\T66\Gameplay\T66GameMode.h:427:	void DestroyBossBeacon();
+Source\T66\Gameplay\T66GameMode.h:452:	FVector MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
+Source\T66\Gameplay\T66GameMode.cpp:1144:	BossBeaconActor = nullptr;
+Source\T66\Gameplay\T66GameMode.cpp:1145:	BossBeaconUpdateAccumulator = 0.f;
+Source\T66\Gameplay\T66GameMode.cpp:1177:	BossBeaconUpdateAccumulator += DeltaTime;
+Source\T66\Gameplay\T66GameMode.cpp:1178:	if (BossBeaconUpdateAccumulator >= 0.10f)
+Source\T66\Gameplay\T66GameMode.cpp:1180:		BossBeaconUpdateAccumulator = 0.f;
+Source\T66\Gameplay\T66GameMode.cpp:1181:		UpdateBossBeaconTransform(true);
+Source\T66\Gameplay\T66TowerMapTerrain.cpp:5012:		OutLayout.BossBeaconSurfaceLocation = BossFloor->Center + (BossHoleDirection * 600.0f);
+Source\T66\Gameplay\T66TowerMapTerrain.h:163:		FVector BossBeaconSurfaceLocation = FVector::ZeroVector;

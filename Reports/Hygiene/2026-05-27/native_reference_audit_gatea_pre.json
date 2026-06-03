@@ -1,0 +1,241 @@
+{
+  "project_root": "C:\\UE\\T66",
+  "map_roots": [
+    "/Game/Maps"
+  ],
+  "classes": {
+    "AT66QuickReviveVendingMachine": {
+      "resolved": true,
+      "script_path": "/Script/T66.T66QuickReviveVendingMachine",
+      "script_name": "T66QuickReviveVendingMachine",
+      "class_object_name": "T66QuickReviveVendingMachine"
+    },
+    "AT66TutorialGate": {
+      "resolved": true,
+      "script_path": "/Script/T66.T66TutorialGate",
+      "script_name": "T66TutorialGate",
+      "class_object_name": "T66TutorialGate"
+    }
+  },
+  "members": [
+    "HasQuickReviveCharge",
+    "IsInQuickReviveDownedState",
+    "GetQuickReviveDownedSecondsRemaining",
+    "GrantQuickReviveCharge",
+    "ClearQuickReviveCharge",
+    "IsQuickReviveDowned",
+    "GetHeroMoveSpeedMultiplier",
+    "GetMovementSpeedSecondaryMultiplier",
+    "DefaultWalkSpeed"
+  ],
+  "asset_count_all": 4030,
+  "asset_count_game": 3794,
+  "asset_registry_hits": [],
+  "blueprints": {
+    "candidates": 0,
+    "loaded": 0,
+    "matches": [],
+    "load_failures": []
+  },
+  "maps": {
+    "candidate_maps": 2,
+    "scanned": 2,
+    "matches": [],
+    "load_failures": []
+  },
+  "binary_content": {
+    "scanned": 3637,
+    "matches": [],
+    "read_failures": []
+  },
+  "text": {
+    "scanned": 900,
+    "matches": [
+      {
+        "path": "Source\\T66\\Core\\pending_issues_Core.md",
+        "hits": [
+          "GetHeroMoveSpeedMultiplier"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\T66RunStateSubsystem.h",
+        "hits": [
+          "ClearQuickReviveCharge",
+          "GetHeroMoveSpeedMultiplier",
+          "GetMovementSpeedSecondaryMultiplier",
+          "GetQuickReviveDownedSecondsRemaining",
+          "GrantQuickReviveCharge",
+          "HasQuickReviveCharge",
+          "IsInQuickReviveDownedState"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\RunState\\T66RunStateSubsystem_Combat.cpp",
+        "hits": [
+          "ClearQuickReviveCharge",
+          "GrantQuickReviveCharge"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\RunState\\T66RunStateSubsystem_Stats.cpp",
+        "hits": [
+          "GetHeroMoveSpeedMultiplier",
+          "GetMovementSpeedSecondaryMultiplier"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\pending_issues_Gameplay.md",
+        "hits": [
+          "AT66TutorialGate",
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66HeroBase.h",
+        "hits": [
+          "IsQuickReviveDowned"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController.cpp",
+        "hits": [
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Combat.cpp",
+        "hits": [
+          "AT66TutorialGate",
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Frontend.cpp",
+        "hits": [
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Input.cpp",
+        "hits": [
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Overlays.cpp",
+        "hits": [
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_ScopedUlt.cpp",
+        "hits": [
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_WorldDialogue.cpp",
+        "hits": [
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66QuickReviveVendingMachine.cpp",
+        "hits": [
+          "AT66QuickReviveVendingMachine",
+          "T66QuickReviveVendingMachine"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66QuickReviveVendingMachine.h",
+        "hits": [
+          "AT66QuickReviveVendingMachine",
+          "T66QuickReviveVendingMachine"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66TutorialGate.cpp",
+        "hits": [
+          "AT66TutorialGate",
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66TutorialGate.h",
+        "hits": [
+          "AT66TutorialGate",
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Movement\\T66HeroMovementComponent.cpp",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Movement\\T66HeroMovementTypes.h",
+        "hits": [
+          "DefaultWalkSpeed"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\Screens\\T66RunSummaryScreen.cpp",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier"
+        ]
+      },
+      {
+        "path": "Scripts\\AuditNativeClassReferencesAndExit.py",
+        "hits": [
+          "AT66QuickReviveVendingMachine",
+          "AT66TutorialGate",
+          "ClearQuickReviveCharge",
+          "DefaultWalkSpeed",
+          "GetHeroMoveSpeedMultiplier",
+          "GetMovementSpeedSecondaryMultiplier",
+          "GetQuickReviveDownedSecondsRemaining",
+          "GrantQuickReviveCharge",
+          "HasQuickReviveCharge",
+          "IsInQuickReviveDownedState",
+          "IsQuickReviveDowned",
+          "T66QuickReviveVendingMachine",
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\candidate_manifest.md",
+        "hits": [
+          "AT66QuickReviveVendingMachine",
+          "AT66TutorialGate",
+          "ClearQuickReviveCharge",
+          "DefaultWalkSpeed",
+          "GetHeroMoveSpeedMultiplier",
+          "GetMovementSpeedSecondaryMultiplier",
+          "GetQuickReviveDownedSecondsRemaining",
+          "GrantQuickReviveCharge",
+          "HasQuickReviveCharge",
+          "IsInQuickReviveDownedState",
+          "IsQuickReviveDowned",
+          "T66QuickReviveVendingMachine",
+          "T66TutorialGate"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\native_reference_audit_dryrun.json",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier",
+          "HasQuickReviveCharge"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\native_reference_audit_positive_control.json",
+        "hits": [
+          "GetMovementSpeedSecondaryMultiplier",
+          "T66QuickReviveVendingMachine"
+        ]
+      }
+    ],
+    "read_failures": []
+  }
+}

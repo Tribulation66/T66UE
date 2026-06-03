@@ -1,0 +1,30 @@
+Using bundled DotNet SDK version: 8.0.412 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" T66Editor Win64 Development -Project=C:\UE\T66\T66.uproject -WaitMutex -NoHotReloadFromIDE
+Log file: C:\Users\DoPra\AppData\Local\UnrealBuildTool\Log.txt
+Parsing headers for T66Editor
+  Running Internal UnrealHeaderTool C:\UE\T66\T66.uproject C:\UE\T66\Intermediate\Build\Win64\T66Editor\Development\T66Editor.uhtmanifest -WarningsAsErrors -installed
+UHT processed T66Editor in 1.9257268 seconds (3 files written)
+Building T66Editor...
+Using Visual Studio 2022 14.44.35222 toolchain (C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207) and Windows 10.0.22621.0 SDK (C:\Program Files (x86)\Windows Kits\10).
+Determining max actions to execute in parallel (24 physical cores, 32 logical cores)
+  Executing up to 24 processes, one per physical core
+Using Unreal Build Accelerator local executor to run 7 action(s)
+  Storage capacity 40Gb
+---- Starting trace: 260530_000308 ----
+UbaSessionServer - Disable remote execution (remote sessions will finish current processes)
+[1/7] Compile [x64] Module.T66.1.cpp
+[2/7] Compile [x64] Module.T66.5.cpp
+[3/7] Compile [x64] Module.T66.26.cpp
+[4/7] Compile [x64] Module.T66.27.cpp
+C:\UE\T66\Source\T66\Gameplay\T66Hero1AxeAOEVFXLabActor.cpp(353,3): warning C4996: 'FNiagaraEmitterInstance::IsReadyToRun': Please update your code to handle execution path for different emitter types - Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+		UE_LOG(
+		^
+[5/7] Link [x64] UnrealEditor-T66.lib
+[6/7] Link [x64] UnrealEditor-T66.dll
+[7/7] WriteMetadata T66Editor.target [NoUba]
+
+Trace written to file C:/Users/DoPra/AppData/Local/UnrealBuildTool/Log.uba with size 5.7kb
+Total time in Unreal Build Accelerator local executor: 23.94 seconds
+
+Result: Succeeded
+Total execution time: 27.84 seconds

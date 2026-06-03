@@ -25,6 +25,11 @@ namespace
 		return BodyType == ET66BodyType::Stacy ? TEXT("stacy") : TEXT("chad");
 	}
 
+	FString KitSlotToCatalogKey(const ET66HeroKitPreviewSlot Slot)
+	{
+		return Slot == ET66HeroKitPreviewSlot::Ultimate ? TEXT("ultimate") : TEXT("weapon");
+	}
+
 	TSharedPtr<FJsonObject> LoadFrontendVideoManifest()
 	{
 		const FString AbsolutePath = FPaths::ConvertRelativePathToFull(FPaths::ProjectDir() / FrontendVideoManifestPath);
@@ -222,6 +227,61 @@ namespace
 
 		return false;
 	}
+
+	bool TryResolveHeroKitFromArray(
+		const TSharedPtr<FJsonObject>& HeroSelectionObject,
+		const FString& HeroKey,
+		const FString& SlotKey,
+		const FString& KitKey,
+		const FString& SkinKey,
+		const FString& BodyKey,
+		FT66FrontendVideoAsset& OutAsset)
+	{
+		const TArray<TSharedPtr<FJsonValue>>* Kits = nullptr;
+		if (!HeroSelectionObject.IsValid()
+			|| !HeroSelectionObject->TryGetArrayField(TEXT("kitPreviews"), Kits)
+			|| !Kits)
+		{
+			return false;
+		}
+
+		for (const TSharedPtr<FJsonValue>& Value : *Kits)
+		{
+			const TSharedPtr<FJsonObject> Entry = Value.IsValid() ? Value->AsObject() : nullptr;
+			if (!Entry.IsValid())
+			{
+				continue;
+			}
+
+			FString EntryHero;
+			FString EntrySlot;
+			FString EntryKit;
+			FString EntrySkin;
+			FString EntryBody;
+			if (!Entry->TryGetStringField(TEXT("heroId"), EntryHero)
+				|| !Entry->TryGetStringField(TEXT("slot"), EntrySlot)
+				|| !Entry->TryGetStringField(TEXT("kitId"), EntryKit))
+			{
+				continue;
+			}
+			Entry->TryGetStringField(TEXT("skinId"), EntrySkin);
+			Entry->TryGetStringField(TEXT("bodyType"), EntryBody);
+
+			const bool bSkinMatches = EntrySkin.TrimStartAndEnd().IsEmpty() || NormalizeKey(EntrySkin) == SkinKey;
+			const bool bBodyMatches = EntryBody.TrimStartAndEnd().IsEmpty() || NormalizeKey(EntryBody) == BodyKey;
+			if (NormalizeKey(EntryHero) == HeroKey
+				&& NormalizeKey(EntrySlot) == SlotKey
+				&& NormalizeKey(EntryKit) == KitKey
+				&& bSkinMatches
+				&& bBodyMatches
+				&& ReadVideoAsset(Entry, OutAsset))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 }
 
 namespace T66FrontendVideoCatalog
@@ -332,6 +392,57 @@ namespace T66FrontendVideoCatalog
 
 		OutAsset.MoviePath = TEXT("Frontend/HeroSelection/Companions/Companion_01/Default.mp4");
 		OutAsset.PosterPath = TEXT("RuntimeDependencies/T66/Video/Posters/HeroSelection/Companions/Companion_01/Default.png");
+		return true;
+	}
+
+	bool ResolveHeroKitPreview(
+		const FName HeroID,
+		const ET66HeroKitPreviewSlot Slot,
+		const FName KitID,
+		const FName SkinID,
+		const ET66BodyType BodyType,
+		FT66FrontendVideoAsset& OutAsset)
+	{
+		const FString HeroKey = NormalizeKey(HeroID.ToString());
+		const FString SlotKey = KitSlotToCatalogKey(Slot);
+		const FString KitKey = NormalizeKey(KitID.IsNone() ? SlotKey : KitID.ToString());
+		const FString SkinKey = NormalizeKey(SkinID.IsNone() ? TEXT("Default") : SkinID.ToString());
+		const FString BodyKey = BodyTypeToCatalogKey(BodyType);
+
+		if (const TSharedPtr<FJsonObject> Root = LoadFrontendVideoManifest())
+		{
+			const TSharedPtr<FJsonObject>* HeroSelectionObject = nullptr;
+			if (Root->TryGetObjectField(TEXT("heroSelection"), HeroSelectionObject)
+				&& HeroSelectionObject
+				&& HeroSelectionObject->IsValid())
+			{
+				const TSharedPtr<FJsonObject>* KitsObject = nullptr;
+				if ((*HeroSelectionObject)->TryGetObjectField(TEXT("kitPreviews"), KitsObject)
+					&& KitsObject
+					&& KitsObject->IsValid())
+				{
+					if (TryReadNestedVideoAsset(*KitsObject, { HeroKey, SlotKey, KitKey, SkinKey, BodyKey }, OutAsset)
+						|| TryReadNestedVideoAsset(*KitsObject, { HeroKey, SlotKey, KitKey, NormalizeKey(TEXT("Default")), BodyKey }, OutAsset)
+						|| TryReadNestedVideoAsset(*KitsObject, { HeroKey, SlotKey, KitKey }, OutAsset)
+						|| TryReadNestedVideoAsset(*KitsObject, { HeroKey, SlotKey }, OutAsset))
+					{
+						return true;
+					}
+				}
+
+				if (TryResolveHeroKitFromArray(*HeroSelectionObject, HeroKey, SlotKey, KitKey, SkinKey, BodyKey, OutAsset)
+					|| TryReadFallbackAsset(*HeroSelectionObject, SlotKey, OutAsset)
+					|| TryReadFallbackAsset(*HeroSelectionObject, TEXT("kit"), OutAsset)
+					|| TryReadFallbackAsset(*HeroSelectionObject, BodyType == ET66BodyType::Stacy ? TEXT("herostacy") : TEXT("herochad"), OutAsset)
+					|| TryReadFallbackAsset(*HeroSelectionObject, TEXT("hero"), OutAsset))
+				{
+					return true;
+				}
+			}
+		}
+
+		OutAsset.MoviePath = TEXT("HeroSelection/Hero_1_Default_Chad.mp4");
+		OutAsset.PosterPath = TEXT("RuntimeDependencies/T66/UI/HeroSelection/Skins/skin_default_stub.png");
 		return true;
 	}
 

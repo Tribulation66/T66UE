@@ -31,6 +31,21 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals|Cage")
+	TObjectPtr<UStaticMeshComponent> CageBarFrontLeft;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals|Cage")
+	TObjectPtr<UStaticMeshComponent> CageBarFrontRight;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals|Cage")
+	TObjectPtr<UStaticMeshComponent> CageBarBackLeft;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals|Cage")
+	TObjectPtr<UStaticMeshComponent> CageBarBackRight;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals|Cage")
+	TObjectPtr<UStaticMeshComponent> CageTopBar;
+
 	/** Imported skeletal mesh visual (optional; driven by DT_CharacterVisuals). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<USkeletalMeshComponent> SkeletalMesh;
@@ -45,6 +60,23 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Companion")
 	void InitializeRecruit(const FCompanionData& InData);
 
+	/** Marks this recruit as a locked stage-boss cage reward. */
+	UFUNCTION(BlueprintCallable, Category = "Companion|Cage")
+	void SetCagedForBossReward();
+
+	/** Frees a stage-boss cage reward so the player can interact and unlock it. */
+	UFUNCTION(BlueprintCallable, Category = "Companion|Cage")
+	void FreeFromBossCage();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Companion|Cage")
+	bool IsLockedInBossCage() const { return bLockedInBossCage; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Companion|Cage")
+	bool IsBossCageUnlockReward() const { return bBossCageUnlockReward; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Companion|Cage")
+	bool HasGrantedBossCageUnlock() const { return bUnlockGrantedFromBossCage; }
+
 	/** Press-F interaction. Returns true if handled. */
 	virtual bool Interact(APlayerController* PC);
 
@@ -58,7 +90,21 @@ private:
 	UPROPERTY(Transient)
 	bool bUsingCharacterVisual = false;
 
+	UPROPERTY(Transient)
+	bool bBossCageUnlockReward = false;
+
+	UPROPERTY(Transient)
+	bool bLockedInBossCage = false;
+
+	UPROPERTY(Transient)
+	bool bFreedFromBossCage = false;
+
+	UPROPERTY(Transient)
+	bool bUnlockGrantedFromBossCage = false;
+
 	void ApplyPlaceholderColor(const FLinearColor& Color);
+	void ApplyCageColor(const FLinearColor& Color);
+	void SetCageVisualsVisible(bool bVisible);
 	void SnapToGround(bool bTreatOriginAsGroundContact);
 };
 

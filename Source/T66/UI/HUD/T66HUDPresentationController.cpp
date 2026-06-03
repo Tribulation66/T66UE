@@ -900,7 +900,7 @@ void FT66HUDPresentationController::PopulatePickupCardContent(const FName ItemID
 				}
 				if (ItemID == FName(TEXT("Item_VendorToken")))
 				{
-					MainValue = RunState->GetActiveVendorTokenLevel();
+					MainValue = RunState->GetActiveVendorTokenStacks();
 				}
 			}
 			Owner.PickupCardDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, ItemData, ItemRarity, MainValue, ScaleMult, Line2Multiplier));

@@ -641,7 +641,6 @@ bool UT66UIManager::ShouldShowFrontendTopBar(ET66ScreenType ScreenType) const
 	case ET66ScreenType::AccountStatus:
 	case ET66ScreenType::PowerUp:
 	case ET66ScreenType::Achievements:
-	case ET66ScreenType::Minigames:
 	case ET66ScreenType::DailyDescent:
 		return true;
 	default:

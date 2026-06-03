@@ -25,11 +25,11 @@ struct T66_API FT66TrapSpawnWindow
 };
 
 USTRUCT(BlueprintType)
-struct T66_API FT66TrapLevelSpawnTuning
+struct T66_API FT66TrapFloorSpawnTuning
 {
 	GENERATED_BODY()
 
-	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Level", meta = (ClampMin = "0"))
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Floor", meta = (ClampMin = "0"))
 	FT66IntRange TotalTrapCount = { 3, 4 };
 };
 
@@ -184,7 +184,7 @@ public:
 
 	void LoadFromConfig();
 
-	const FT66TrapLevelSpawnTuning* FindLevelSpawnTuning(int32 GameplayLevelNumber) const;
+	const FT66TrapFloorSpawnTuning* FindFloorSpawnTuning(int32 TowerFloorNumber) const;
 	const FT66WallProjectileTrapTuning* FindWallProjectileTuning(FName RegistryKey) const;
 	const FT66FloorBurstTrapTuning* FindFloorBurstTuning(FName RegistryKey) const;
 	const FT66AreaControlTrapTuning* FindAreaControlTuning(FName RegistryKey) const;
@@ -193,11 +193,9 @@ public:
 	static UStaticMesh* LoadConfiguredTrapStaticMesh(const FString& ObjectPathString, const TCHAR* ConfigKey);
 	static UNiagaraSystem* LoadConfiguredTrapNiagaraSystem(const FString& ObjectPathString, const TCHAR* ConfigKey);
 
-	FT66TrapLevelSpawnTuning GameplayLevel1;
-	FT66TrapLevelSpawnTuning GameplayLevel2;
-	FT66TrapLevelSpawnTuning GameplayLevel3;
-	FT66TrapLevelSpawnTuning GameplayLevel4;
-	FT66TrapLevelSpawnTuning GameplayLevel5;
+	FT66TrapFloorSpawnTuning TowerFloor2;
+	FT66TrapFloorSpawnTuning TowerFloor3;
+	FT66TrapFloorSpawnTuning TowerFloor4;
 
 	FT66TrapVisualAssetConfig TrapAssets;
 

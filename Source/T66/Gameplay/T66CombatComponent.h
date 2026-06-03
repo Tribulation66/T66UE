@@ -41,6 +41,7 @@ public:
 	void PerformScopedPiercingShot(const FVector& Start, const FVector& End);
 #if !UE_BUILD_SHIPPING
 	void PerformAutomationAutoAttackNow();
+	bool DebugApplyHeadshotStunForAutomation(AActor* Target, bool bForce = false);
 #endif
 
 	/** Cooldown progress 0..1 (0 = just fired, 1 = ready). For UI cooldown bar below hero. */
@@ -91,6 +92,7 @@ protected:
 
 	void TryFire();
 	void RecomputeFromRunState();
+	bool TryApplyHeadshotStunToTargetHandle(const FT66CombatTargetHandle& TargetHandle, bool bForce = false);
 
 	FTimerHandle FireTimerHandle;
 

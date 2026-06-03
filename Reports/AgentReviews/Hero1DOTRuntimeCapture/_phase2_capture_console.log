@@ -1,0 +1,49 @@
+FFmpeg: C:\Users\DoPra\.local\bin\ffmpeg.cmd
+Frames: C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\frames
+Output: C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\hero1axedotvfxbinding.mp4
+Evidence bundle: C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\evidence
+C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe C:\UE\T66\T66.uproject /Game/Maps/GameplayLevel -game -windowed -ResX=1280 -ResY=720 -T66AutomationResX=1280 -T66AutomationResY=720 -T66AutomationWindowed -T66GameplayAutoCapture=hero1axedotvfxbinding -T66GameplayAutoScreenshotSequenceDir=C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\frames -T66GameplayAutoScreenshotSequencePrefix=frame -T66GameplayAutoScreenshotSequenceCount=120 -T66GameplayAutoScreenshotSequenceInterval=0.08 -T66GameplayAutoScreenshotDelay=5 -T66GameplayAutoPostCaptureScreenshotDelay=0.2 -unattended -nop4 -nosplash -ExecCmds="T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch -30,T66.Camera.LockedChaseArmLength 540,T66.Camera.LockedChasePivotHeight 145,T66.Camera.ConstrainAgainstTowerWalls 0,T66.Camera.WallOcclusionEnabled 0,T66.Combat.DebugView 2,T66.Combat.DebugLabels 1,T66.Combat.ImpactSourceVerbose 1" -T66Hero1AxeAOECenterPlayer -T66GameplayAutoLockCameraZoom -T66GameplayAutoCameraArmLength=540 -T66Hero1AxeAOELabForwardOffset=360 -T66Hero1AxeAOELabRightOffset=0 -T66Hero1AxeAOELabVerticalOffset=-82 -T66Hero1AxeAOEHitboxFireDelay=7.6 -T66Hero1AxeAOEHitboxVFXLeadSeconds=0.12
+Input #0, image2, from 'C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\frames\frame_%04d.png':
+  Duration: 00:00:10.00, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: png, rgba(pc, gbr/unknown/unknown), 1280x720, 12 fps, 12 tbr, 12 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (png (native) -> h264 (libx264))
+Press [q] to stop, [?] for help
+[libx264 @ 0000026ad55d5dc0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 0000026ad55d5dc0] profile High, level 3.1, 4:2:0, 8-bit
+[libx264 @ 0000026ad55d5dc0] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=22 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=12 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\hero1axedotvfxbinding.mp4':
+  Metadata:
+    encoder         : Lavf62.12.101
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 1280x720, q=2-31, 12 fps, 12288 tbn
+    Metadata:
+      encoder         : Lavc62.28.101 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+[mp4 @ 0000026ad55c3240] Starting second pass: moving the moov atom to the beginning of the file
+[out#0/mp4 @ 0000026ad5551e80] video:395KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.566823%
+frame=  120 fps=0.0 q=-1.0 Lsize=     397KiB time=00:00:09.83 bitrate= 330.8kbits/s speed=24.9x elapsed=0:00:00.39    
+[libx264 @ 0000026ad55d5dc0] frame I:1     Avg QP:16.10  size:182265
+[libx264 @ 0000026ad55d5dc0] frame P:30    Avg QP:18.21  size:  3647
+[libx264 @ 0000026ad55d5dc0] frame B:89    Avg QP:25.99  size:  1258
+[libx264 @ 0000026ad55d5dc0] consecutive B-frames:  0.8%  0.0%  2.5% 96.7%
+[libx264 @ 0000026ad55d5dc0] mb I  I16..4:  1.3% 23.4% 75.3%
+[libx264 @ 0000026ad55d5dc0] mb P  I16..4:  0.0%  0.1%  0.4%  P16..4:  6.3%  0.9%  1.3%  0.0%  0.0%    skip:91.0%
+[libx264 @ 0000026ad55d5dc0] mb B  I16..4:  0.0%  0.0%  0.1%  B16..8:  2.3%  0.5%  0.3%  direct: 0.2%  skip:96.6%  L0:36.7% L1:56.6% BI: 6.7%
+[libx264 @ 0000026ad55d5dc0] 8x8 transform intra:22.8% inter:42.7%
+[libx264 @ 0000026ad55d5dc0] coded y,uvDC,uvAC intra: 91.5% 69.7% 58.3% inter: 1.3% 1.3% 0.7%
+[libx264 @ 0000026ad55d5dc0] i16 v,h,dc,p: 11% 57% 12% 20%
+[libx264 @ 0000026ad55d5dc0] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 10% 30% 14%  7%  6%  7%  8%  8% 10%
+[libx264 @ 0000026ad55d5dc0] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 14% 31% 10%  7%  8%  7%  8%  7%  8%
+[libx264 @ 0000026ad55d5dc0] i8c dc,h,v,p: 63% 20% 13%  4%
+[libx264 @ 0000026ad55d5dc0] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0000026ad55d5dc0] ref P L0: 46.4% 15.3% 22.7% 15.6%
+[libx264 @ 0000026ad55d5dc0] ref B L0: 86.1% 10.1%  3.8%
+[libx264 @ 0000026ad55d5dc0] ref B L1: 91.6%  8.4%
+[libx264 @ 0000026ad55d5dc0] kb/s:322.94
+Evidence bundle: C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\evidence
+Contact sheet: C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\evidence\contact_sheet.png
+Manifest: C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\evidence\manifest.json
+Evidence bundle: C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\evidence
+Frame sequence: C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\frames
+Captured video: C:\UE\T66\Saved\VideoCaptures\hero1axedotvfxbinding_20260530_063509\hero1axedotvfxbinding.mp4

@@ -14,6 +14,7 @@
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66ReleaseVariantSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Core/T66SteamHelper.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
@@ -571,6 +572,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 
 	auto IsDailyDescentAvailable = [this]() -> bool
 	{
+		if (!FT66ShelvedFeatureGate::IsDailyDescentEnabled())
+		{
+			return false;
+		}
+
 		const UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 		const UT66ReleaseVariantSubsystem* ReleaseVariant = GI ? GI->GetSubsystem<UT66ReleaseVariantSubsystem>() : nullptr;
 		return !ReleaseVariant || !ReleaseVariant->IsDemoModeActive();
@@ -1939,12 +1945,6 @@ FReply UT66MainMenuScreen::HandlePowerUpClicked()
 	return FReply::Handled();
 }
 
-FReply UT66MainMenuScreen::HandleMinigamesClicked()
-{
-	OnMinigamesClicked();
-	return FReply::Handled();
-}
-
 FReply UT66MainMenuScreen::HandleAchievementsClicked()
 {
 	OnAchievementsClicked();
@@ -2041,6 +2041,11 @@ void UT66MainMenuScreen::OnLoadGameClicked()
 
 void UT66MainMenuScreen::OnDailyDescentClicked()
 {
+	if (!FT66ShelvedFeatureGate::IsDailyDescentEnabled())
+	{
+		return;
+	}
+
 	const UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
 	const UT66ReleaseVariantSubsystem* ReleaseVariant = GI ? GI->GetSubsystem<UT66ReleaseVariantSubsystem>() : nullptr;
 	if (ReleaseVariant && ReleaseVariant->IsDemoModeActive())
@@ -2054,11 +2059,6 @@ void UT66MainMenuScreen::OnDailyDescentClicked()
 void UT66MainMenuScreen::OnPowerUpClicked()
 {
 	NavigateTo(ET66ScreenType::PowerUp);
-}
-
-void UT66MainMenuScreen::OnMinigamesClicked()
-{
-	NavigateTo(ET66ScreenType::Minigames);
 }
 
 void UT66MainMenuScreen::OnSettingsClicked()

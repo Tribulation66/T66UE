@@ -8,6 +8,7 @@
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Core/T66SteamHelper.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Data/T66DataTypes.h"
@@ -980,7 +981,7 @@ void UT66SaveSlotsScreen::PrepareGameInstanceForLoadedSave(UT66GameInstance* GI,
 	GI->SelectedDifficulty = GI->ResolvePlayableDifficulty(Loaded->Difficulty);
 	GI->SelectedPartySize = Loaded->PartySize;
 	GI->RunSeed = Loaded->RunSeed;
-	if (Loaded->bIsDailyClimbRun && Loaded->DailyClimbChallenge.IsValid())
+	if (Loaded->bIsDailyClimbRun && Loaded->DailyClimbChallenge.IsValid() && FT66ShelvedFeatureGate::IsDailyDescentEnabled())
 	{
 		GI->CachedDailyClimbChallenge = Loaded->DailyClimbChallenge;
 		GI->ActiveDailyClimbChallenge = Loaded->DailyClimbChallenge;
@@ -992,6 +993,10 @@ void UT66SaveSlotsScreen::PrepareGameInstanceForLoadedSave(UT66GameInstance* GI,
 	}
 	else
 	{
+		if (Loaded->bIsDailyClimbRun && Loaded->DailyClimbChallenge.IsValid())
+		{
+			GI->CachedDailyClimbChallenge = Loaded->DailyClimbChallenge;
+		}
 		GI->ClearActiveDailyClimbRun();
 	}
 	GI->CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;

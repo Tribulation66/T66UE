@@ -1,0 +1,16 @@
+{
+  "generated_local": "2026-05-27T12:01:56",
+  "target": "C:\\UE\\T66\\Saved\\Cooked",
+  "resolved": "C:\\UE\\T66\\Saved\\Cooked",
+  "allowed_root": "C:\\UE\\T66\\Saved\\",
+  "exact_leaf_required": "Cooked",
+  "safety_check": true,
+  "pre_exists": true,
+  "pre_file_count": 9304,
+  "pre_size_bytes": 14138031088.0,
+  "pre_size_gb": 13.167,
+  "deleted": true,
+  "post_exists": false,
+  "staged_exe_exists_after_delete": true,
+  "staged_exe": "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe"
+}

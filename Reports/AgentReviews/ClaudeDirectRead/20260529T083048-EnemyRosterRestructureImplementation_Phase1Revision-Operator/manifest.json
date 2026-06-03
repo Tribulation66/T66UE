@@ -1,0 +1,97 @@
+﻿{
+    "ArtifactKind":  "OperatorWorkArtifactRequiresValidation",
+    "Mode":  "Operator",
+    "Model":  "claude-opus-4-8",
+    "Effort":  "high",
+    "ClaudeOutputFormat":  "json",
+    "PermissionMode":  "bypassPermissions",
+    "ToolProfile":  "FullOperator",
+    "EffectiveToolSurface":  "default (full Claude Code tool surface: edits, shell, configured MCP/editor tools)",
+    "MutatingCapability":  true,
+    "ApprovalRequired":  true,
+    "CodexApprovalPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\20260529_EnemyRosterRestructureImplementation\\codex_operator_approval_phase1_revision.md",
+    "AllowedTools":  [
+                         "Read",
+                         "Grep",
+                         "Glob"
+                     ],
+    "AddDir":  [
+                   "C:\\UE\\T66"
+               ],
+    "PromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\20260529_EnemyRosterRestructureImplementation\\claude_operator_prompt_phase1_revision.md",
+    "EffectivePromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T083048-EnemyRosterRestructureImplementation_Phase1Revision-Operator\\effective_prompt.md",
+    "OutputPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T083048-EnemyRosterRestructureImplementation_Phase1Revision-Operator\\claude_direct_read_operator.md",
+    "TokenSummaryPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T083048-EnemyRosterRestructureImplementation_Phase1Revision-Operator\\claude_tokens.json",
+    "ReviewedOperatorRun":  null,
+    "AttemptsRequested":  1,
+    "TimeoutSeconds":  0,
+    "MaxTurns":  0,
+    "MaxTurnContinuations":  3,
+    "SessionPersistence":  false,
+    "SessionPersistenceSource":  "default off (MaxTurns \u003c= 0 has no max-turn resume to support)",
+    "NoSessionPersistence":  true,
+    "MaxTurnContinuationAttempted":  false,
+    "ClaudePath":  "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+    "ClaudeVersion":  "2.1.150 (Claude Code)",
+    "SuccessfulStdoutPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T083048-EnemyRosterRestructureImplementation_Phase1Revision-Operator\\attempts\\stdout_attempt1.json",
+    "SuccessfulStderrPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T083048-EnemyRosterRestructureImplementation_Phase1Revision-Operator\\attempts\\stderr_attempt1.txt",
+    "ClaudeJsonPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T083048-EnemyRosterRestructureImplementation_Phase1Revision-Operator\\attempts\\stdout_attempt1.json",
+    "ClaudeTokensSpent":  11197177,
+    "ClaudeUsage":  {
+                        "input_tokens":  247,
+                        "cache_creation_input_tokens":  297168,
+                        "cache_read_input_tokens":  10635798,
+                        "output_tokens":  81506,
+                        "server_tool_use":  {
+                                                "web_search_requests":  0,
+                                                "web_fetch_requests":  0
+                                            },
+                        "service_tier":  "standard",
+                        "cache_creation":  {
+                                               "ephemeral_1h_input_tokens":  297168,
+                                               "ephemeral_5m_input_tokens":  0
+                                           },
+                        "inference_geo":  "",
+                        "iterations":  [
+                                           {
+                                               "input_tokens":  2,
+                                               "output_tokens":  1295,
+                                               "cache_read_input_tokens":  104077,
+                                               "cache_creation_input_tokens":  88,
+                                               "cache_creation":  {
+                                                                      "ephemeral_5m_input_tokens":  0,
+                                                                      "ephemeral_1h_input_tokens":  88
+                                                                  },
+                                               "type":  "message"
+                                           }
+                                       ],
+                        "speed":  "standard"
+                    },
+    "ClaudeModelUsage":  {
+                             "claude-haiku-4-5-20251001":  {
+                                                               "inputTokens":  2336,
+                                                               "outputTokens":  19,
+                                                               "cacheReadInputTokens":  0,
+                                                               "cacheCreationInputTokens":  0,
+                                                               "webSearchRequests":  0,
+                                                               "costUSD":  0.002431,
+                                                               "contextWindow":  200000,
+                                                               "maxOutputTokens":  32000
+                                                           },
+                             "claude-opus-4-8":  {
+                                                     "inputTokens":  2815,
+                                                     "outputTokens":  91487,
+                                                     "cacheReadInputTokens":  10802111,
+                                                     "cacheCreationInputTokens":  298409,
+                                                     "webSearchRequests":  0,
+                                                     "costUSD":  9.567361750000003,
+                                                     "contextWindow":  200000,
+                                                     "maxOutputTokens":  32000
+                                                 }
+                         },
+    "Greenlit":  false,
+    "Verdict":  null,
+    "VerdictLine":  null,
+    "OutcomeKind":  "ClaudeOperatorArtifact",
+    "FailureKind":  null
+}

@@ -3,8 +3,6 @@
     "Name": "Easy",
     "StartStage": 1,
     "EndStage": 4,
-    "IdolBaseRarity": "Black",
-    "WeaponBaseRarity": "Black",
     "bUsesFinalSequence": false,
     "SkullColorBandSize": 4
   },
@@ -12,8 +10,6 @@
     "Name": "Medium",
     "StartStage": 5,
     "EndStage": 8,
-    "IdolBaseRarity": "Red",
-    "WeaponBaseRarity": "Red",
     "bUsesFinalSequence": false,
     "SkullColorBandSize": 4
   },
@@ -21,8 +17,6 @@
     "Name": "Hard",
     "StartStage": 9,
     "EndStage": 12,
-    "IdolBaseRarity": "Yellow",
-    "WeaponBaseRarity": "Yellow",
     "bUsesFinalSequence": false,
     "SkullColorBandSize": 4
   },
@@ -30,8 +24,6 @@
     "Name": "VeryHard",
     "StartStage": 13,
     "EndStage": 16,
-    "IdolBaseRarity": "White",
-    "WeaponBaseRarity": "White",
     "bUsesFinalSequence": false,
     "SkullColorBandSize": 4
   },
@@ -39,8 +31,6 @@
     "Name": "Impossible",
     "StartStage": 17,
     "EndStage": 20,
-    "IdolBaseRarity": "White",
-    "WeaponBaseRarity": "White",
     "bUsesFinalSequence": true,
     "SkullColorBandSize": 4
   }

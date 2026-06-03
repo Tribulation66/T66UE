@@ -139,7 +139,7 @@ namespace
 		const FString& DisplayName)
 	{
 		UT66LeaderboardRunSummarySaveGame* Summary = NewObject<UT66LeaderboardRunSummarySaveGame>(Outer);
-		Summary->SchemaVersion = T66SparseActiveHeroIdRunSummarySchemaVersion;
+		Summary->SchemaVersion = T66CurrentRunSummarySchemaVersion;
 		Summary->EntryId = Entry.EntryId;
 		Summary->OwnerSteamId = FString::Printf(TEXT("dummy_%s_%02d"), *Identity.Filter, Entry.Rank);
 		Summary->LeaderboardType = (Identity.Type == TEXT("speedrun")) ? ET66LeaderboardType::SpeedRun : ET66LeaderboardType::Score;
@@ -171,8 +171,74 @@ namespace
 		Summary->LuckRatingQuantity0To100 = 68 - Entry.Rank;
 		Summary->LuckRatingQuality0To100 = 74 - Entry.Rank;
 		Summary->SkillRating0To100 = 80 - (Entry.Rank * 2);
-		Summary->EquippedIdols = { FName(TEXT("Idol_Luck")), FName(TEXT("Idol_Speed")), FName(TEXT("Idol_Damage")) };
+		Summary->EquippedIdols = {
+			FName(TEXT("Idol_Fire_AOE")),
+			FName(TEXT("Idol_Ice_Pierce")),
+			FName(TEXT("Idol_Electricity_Bounce")),
+			FName(TEXT("Idol_Nature_DOT"))
+		};
+		Summary->EquippedIdolTiers = { 1, 2, 3, 4 };
+		T66NormalizeEquippedIdolSaveArrays(Summary->EquippedIdols, Summary->EquippedIdolTiers);
+		Summary->EquippedIdolElements = {
+			ET66IdolElement::Fire,
+			ET66IdolElement::Ice,
+			ET66IdolElement::Electricity,
+			ET66IdolElement::Nature
+		};
+		Summary->EquippedIdolCategories = {
+			ET66AttackCategory::AOE,
+			ET66AttackCategory::Pierce,
+			ET66AttackCategory::Bounce,
+			ET66AttackCategory::DOT
+		};
 		Summary->Inventory = { FName(TEXT("Item_GoldTooth")), FName(TEXT("Item_TravelerBoots")), FName(TEXT("Item_LuckyCoin")) };
+		Summary->InventorySlots = {
+			FT66InventorySlot(FName(TEXT("Item_GoldTooth")), ET66ItemRarity::Black, 1, 0.f, 0, 1101),
+			FT66InventorySlot(FName(TEXT("Item_TravelerBoots")), ET66ItemRarity::Red, 3, 0.f, 0, 1102),
+			FT66InventorySlot(FName(TEXT("Item_LuckyCoin")), ET66ItemRarity::Yellow, 9, 0.f, 0, 1103)
+		};
+		Summary->NoIdolSelectionStacks = 1;
+		Summary->NoIdolPrimaryStatBonuses.DamageTenths = 10;
+		Summary->NoIdolPrimaryStatBonuses.AttackSpeedTenths = 10;
+		Summary->NoIdolPrimaryStatBonuses.AttackScaleTenths = 10;
+		Summary->MobLootDropsCollectedThisRun = 24 + Entry.Rank;
+		Summary->MobLootQuantityCollectedThisRun = 64 + Entry.Rank;
+		Summary->MobLootGoldValueCollectedThisRun = Summary->MobLootQuantityCollectedThisRun;
+		Summary->MobLootQuantityCollectedByPlayerThisRun = 40 + Entry.Rank;
+		Summary->MobLootQuantityCollectedByPetThisRun = Summary->MobLootQuantityCollectedThisRun - Summary->MobLootQuantityCollectedByPlayerThisRun;
+		Summary->MobLootDropsCollectedByPetThisRun = 8;
+		Summary->MobLootQuantitySoldThisRun = 50 + Entry.Rank;
+		Summary->MobLootSaleGoldThisRun = Summary->MobLootQuantitySoldThisRun;
+		Summary->MobLootRemainingStack = Summary->MobLootQuantityCollectedThisRun - Summary->MobLootQuantitySoldThisRun;
+		Summary->CurrentGold = 125 + Entry.Rank;
+		Summary->CurrentDebt = 0;
+		Summary->InventorySellValueTotal = 90;
+		Summary->NetWorth = Summary->CurrentGold + Summary->InventorySellValueTotal;
+		Summary->ActiveVendorTokenStacks = 1;
+		Summary->CurrentSellFraction = 0.725f;
+		Summary->ShopStockCount = 4;
+		Summary->BuybackPoolSize = 2;
+		Summary->EquippedWeaponID = FName(TEXT("Weapon_Hero_1_Black_AOE"));
+		Summary->EquippedWeaponBranch = ET66AttackCategory::AOE;
+		Summary->EquippedWeaponRarity = ET66WeaponRarity::Black;
+		Summary->EquippedWeaponAttackPatternID = FName(TEXT("TwinAxe"));
+		Summary->EquippedWeaponProjectileCount = 2;
+		Summary->EquippedWeaponSpreadAngleDegrees = 18.f;
+		Summary->ActivePetID = FName(TEXT("Pet_Dungeon_Slime"));
+		Summary->ActivePetSkinID = FName(TEXT("Default"));
+		Summary->ActivePetBondStagesCleared = 3;
+		Summary->ActivePetBondMovementSpeedMultiplier = 1.09f;
+		Summary->PetMobLootQuantityCollectedThisRun = Summary->MobLootQuantityCollectedByPetThisRun;
+		Summary->PetMobLootDropsCollectedThisRun = Summary->MobLootDropsCollectedByPetThisRun;
+		Summary->bBossActiveAtSummary = false;
+		Summary->ActiveBossID = FName(TEXT("Dungeon_SlimeKing"));
+		Summary->BossMaxHP = 1000;
+		Summary->BossCurrentHP = 0;
+		FT66BossPartSnapshot& DummyBossPart = Summary->BossParts.AddDefaulted_GetRef();
+		DummyBossPart.PartID = FName(TEXT("Core"));
+		DummyBossPart.HitZoneType = ET66HitZoneType::Core;
+		DummyBossPart.MaxHP = 1000;
+		DummyBossPart.CurrentHP = 0;
 		Summary->DamageBySource.Add(FName(TEXT("PrimaryAttack")), FMath::Max(2500, Summary->Score / 2));
 		Summary->DamageBySource.Add(FName(TEXT("Ultimate")), FMath::Max(600, Summary->Score / 6));
 		Summary->DamageReceivedBySource.Add(FName(TEXT("Slime")), 120);

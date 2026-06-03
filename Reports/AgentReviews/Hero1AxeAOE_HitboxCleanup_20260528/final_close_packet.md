@@ -1,0 +1,168 @@
+# Final Review Packet - Hero 1 Axe AOE Hitbox Cleanup And Handoff
+
+## Working Goal
+
+Align the Hero 1 axe AOE VFX hitbox/debug outline with the visual, clean and organize the VFX process/assets/docs for future agents, and prepare a new-agent handoff for item-stat confirmation and future idol overlay VFX work.
+
+## Output Scope To Greenlight
+
+The final user-facing closeout will claim:
+
+- In the current working tree, Hero 1 black AOE now has a logical crescent-band hitbox aligned to the current slash visual. This pass is not yet a version-control-durable close because several load-bearing setup/validator/binding/report files are untracked.
+- The proof target set confirms inside-band hits, inner-hollow miss, behind miss, and outside-radius miss.
+- A pre-commit / working-tree-only VFX cleanup and handoff is prepared: it documents the live tree, hitbox contract, proof bundle, and untracked-file caveats. It is not a fresh-clone guarantee until the untracked infrastructure/report files are committed or otherwise restored in the next session.
+- The next durable action should be a user-authorized stage/commit pass for the load-bearing files listed in `Binding Reproducibility`, especially the setup script, validator script, binding CSV/uasset, proof handoff, review packet, and related combat docs.
+- Greenlight of this packet means it is safe to present the current working-tree result and recommended stage/commit set to Pablo; it does not mean the result has already become durable in version control.
+- The next-agent handoff is prepared for normal item/stat confirmation first. Idol overlay VFX is parked as follow-up scope and must not begin until the item/stat proof is complete or explicitly blocked and the user gives the next go-ahead.
+- The current AOE visual is not being polished further in this pass.
+
+## Applicable Instructions
+
+- `AGENTS.md`: active goal, live repo first, Claude cross-review, PPF/process fidelity, Unreal-owned capture, Niagara combat VFX rules.
+- `Gameplay/GAMEPLAY_AGENTS.md`: combat VFX work routes through `Gameplay/Combat`.
+- `Gameplay/Combat/CombatVFXAuthoringProcedure.md`: combat VFX authoring and evidence gates.
+- `Gameplay/Combat/Hero1AxeAOESlashMechanismPacket.md`: effect-specific AOE packet and hitbox contract.
+- `Reports/AGENTS.md`: report/proof artifacts go under `Reports/Proof`.
+
+## Codex Implementation Summary
+
+Runtime/data changes:
+
+- `Source/T66/Data/T66DataTypes.h`: added `FWeaponData::AoeInnerRadiusRatio`.
+- `Scripts/SetupWeaponsDataTable.py`: emits `AoeInnerRadiusRatio=0.54` for `Hero_1_black_aoe`, `0.00` for other rows.
+- `Content/Data/Weapons.csv` and `Content/Data/DT_Weapons.uasset`: regenerated/reloaded.
+- `Content/Data/CombatVFXBindings.csv`: `Hero1Axe_AOE_Base` now has `BaseVisualRadius=411.4`.
+- `Source/T66/Gameplay/T66CombatComponent.h/.cpp`: passes `EffectiveSlashInnerRadius` through the Hero 1 frontal-sector query and production VFX log.
+- `Source/T66/Gameplay/T66PlayerController_Overlays.cpp`: hitbox proof targets now include `Primary`, `InsideBandForward`, `InsideBandSide`, `InsideAngleEdge`, `InnerHollow`, `OutsideAngleEdge`, `OutsideBehind`, and `OutsideRadius`.
+- `Scripts/SetupCombatVFXBindingsDataTable.py`: enforces the `Hero1Axe_AOE_Base` binding row, including `BaseVisualRadius=411.4`, before reloading `DT_CombatVFXBindings`.
+- `Scripts/ValidateCombatVFXProductionBindings.py`: validates the binding visual radius, weapon geometry contract, and source guard fragments.
+- `Scripts/BuildT66VideoEvidenceBundle.py`: keeps manual selected-frame labels intentionally limited to `start`, `mid`, `impact`, and `dissipate`; the generic limitation is documented in `Scripts/pending_issues_Scripts.md`.
+
+Docs/handoff changes:
+
+- `Gameplay/Combat/Hero1AxeAOESlashMechanismPacket.md`: added `10.4 Crescent-Band Hitbox Close`.
+- `Gameplay/Combat/CombatVFXInfrastructureInventory.md`: added current hitbox/binding infrastructure status and generated-binding caveat.
+- `Gameplay/Combat/MASTER_COMBAT.md`: updated Hero 1 AOE logical hitbox description, and records that `Hero1Axe_AOE_Base` is generated/enforced by the setup script, checked by the validator, and that the binding/helper files may be untracked in this repository state.
+- `Gameplay/Combat/pending_issues_Combat.md`: clarified manual selected-frame issue, current corrected proof, selected-frame helper label limits, and that AOE visual polish is deferred after the hitbox close.
+- `Scripts/pending_issues_Scripts.md`: records the generic VFX evidence-bundle limitation that selected-frame labels are fixed and frame selection is still manual.
+- `Reports/Proof/CombatVFX/Hero1AxeAOE_HitboxCleanup_20260528/CLEANUP_STATUS.md`: current VFX tree, implemented changes, evidence, and loose ends.
+- `Reports/Proof/CombatVFX/Hero1AxeAOE_HitboxCleanup_20260528/HANDOFF_NEXT_AGENT.md`: prompt for the next agent to verify the normal item/stat route first, with idol overlay VFX parked behind a second user go-ahead.
+
+## Handoff Contents Included For Review
+
+`HANDOFF_NEXT_AGENT.md` tells the next agent to:
+
+- create/set the goal: confirm normal item/stat route drives the Hero 1 black AOE production VFX/logical crescent hitbox without changing accepted AOE visual polish yet;
+- read `AGENTS.md`, `Gameplay/GAMEPLAY_AGENTS.md`, the combat VFX procedure, the Hero 1 axe plan/packet, the infrastructure inventory, `MASTER_COMBAT.md`, pending issues, and `CLEANUP_STATUS.md`;
+- use Claude review by default, with Codex CLI fallback only for true Claude availability/session-limit failures;
+- start from the EdgeFinal proof video/contact sheet/log listed in this packet;
+- verify normal item/stat acquisition for AOE scale, AOE damage, and AOE speed, proving both combat and presentation changes through Unreal-owned captures/logs;
+- explicitly stop after the item/stat proof and ask for a second user go-ahead before beginning idol-overlay design;
+- preserve idol-overlay notes only as follow-up constraints: weapon base VFX remains the base carrier, idol visuals are additive overlays, and old temporary projectile placeholder paths are not valid for the real system;
+- avoid visual-polish continuation, DOT/Pierce/Bounce authoring, Mini/minigame work, and broad Git/LFS scans.
+- loudly preserve the working-tree caveat: setup/validator/report files may be untracked, while generated binding CSV/uasset are live on disk but not in `git ls-files`. Its first action is to verify those files exist in the working tree, then rerun setup plus validation before trusting or extending the handoff.
+- if the handoff packet or setup/validator files are missing in a clean checkout, stop and ask Pablo for the final handoff packet/thread or for a commit that includes the VFX cleanup infrastructure. Do not reconstruct the missing process from memory.
+
+## Binding Reproducibility
+
+`Content/Data/CombatVFXBindings.csv` and `Content/Data/DT_CombatVFXBindings.uasset` are not tracked in this repository state, but the load-bearing `Hero1Axe_AOE_Base` row is now enforced by a repo-local setup script:
+
+- `Scripts/SetupCombatVFXBindingsDataTable.py` defines `HERO1_AXE_AOE_BINDING_ROW` with `BaseVisualRadius="411.4"` and writes/updates `Content/Data/CombatVFXBindings.csv` before reloading `DT_CombatVFXBindings`.
+- `Scripts/ValidateCombatVFXProductionBindings.py` explicitly fails if `Hero1Axe_AOE_Base BaseVisualRadius` differs from `411.4` by more than `0.05`.
+- After this change, setup plus validator were rerun successfully.
+- `git status --untracked-files=all` currently reports the setup script, validator script, and report packet files as untracked. If this pass is committed later, those files must be included with the tracked code/data changes.
+- Recommended durable stage/commit set for this pass:
+  - `Source/T66/Data/T66DataTypes.h`
+  - `Source/T66/Gameplay/T66CombatComponent.h`
+  - `Source/T66/Gameplay/T66CombatComponent.cpp`
+  - `Source/T66/Gameplay/T66PlayerController_Overlays.cpp`
+  - `Scripts/SetupWeaponsDataTable.py`
+  - `Scripts/SetupCombatVFXBindingsDataTable.py`
+  - `Scripts/ValidateCombatVFXProductionBindings.py`
+  - `Scripts/BuildT66VideoEvidenceBundle.py`
+  - `Scripts/pending_issues_Scripts.md`
+  - `Content/Data/Weapons.csv`
+  - `Content/Data/DT_Weapons.uasset`
+  - `Content/Data/CombatVFXBindings.csv`
+  - `Content/Data/DT_CombatVFXBindings.uasset`
+  - `Gameplay/Combat/MASTER_COMBAT.md`
+  - `Gameplay/Combat/Hero1AxeAOESlashMechanismPacket.md`
+  - `Gameplay/Combat/CombatVFXInfrastructureInventory.md`
+  - `Gameplay/Combat/pending_issues_Combat.md`
+  - `Reports/Proof/CombatVFX/Hero1AxeAOE_HitboxCleanup_20260528/CLEANUP_STATUS.md`
+  - `Reports/Proof/CombatVFX/Hero1AxeAOE_HitboxCleanup_20260528/HANDOFF_NEXT_AGENT.md`
+  - `Reports/AgentReviews/Hero1AxeAOE_HitboxCleanup_20260528/final_close_packet.md`
+
+`Reports/AgentReviews` is sanctioned by `Reports/AGENTS.md` for review packets and reviewer outputs. `Reports/Proof/CombatVFX/...` is used for the durable proof/handoff files.
+
+## Verification Performed
+
+- Build succeeded: `T66Editor Win64 Development`, 2026-05-28.
+- Weapons DataTable reload succeeded: `Scripts/SetupWeaponsDataTable.py`.
+- Combat VFX binding DataTable reload succeeded: `Scripts/SetupCombatVFXBindingsDataTable.py`.
+- Production binding validator succeeded after final doc updates:
+  - command: `UnrealEditor-Cmd.exe C:\UE\T66\T66.uproject -run=pythonscript -script=C:\UE\T66\Scripts\ValidateCombatVFXProductionBindings.py -unattended -nop4 -nosplash`
+  - result: `Success - 0 error(s), 3 warning(s)`
+  - warnings were the existing scalability and ToonStyle material include warnings.
+- Gameplay capture succeeded:
+  - video: `Saved/VideoCaptures/Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810/Hero1AxeAOE_HitboxCleanup.mp4`
+  - contact sheet: `Saved/VideoCaptures/Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810/evidence/contact_sheet.png`
+  - manifest: `Saved/VideoCaptures/Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810/evidence/manifest.json`
+  - visibility checklist: `Saved/VideoCaptures/Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810/evidence/visibility_checklist.md`
+  - runtime log: `Saved/VideoCaptures/Hero1AxeAOE_HitboxCleanup_20260528_EdgeFinal_20260528_014810/T66.log`
+
+Important proof log lines from the final capture:
+
+- `CombatVFXProductionSpawned ... EffectiveSlashRadius=437.52 EffectiveSlashInnerRadius=236.26 AoeInnerRadiusRatio=0.540 BaseVisualRadius=411.40 ... VisualScale=1.063 ... EffectiveDamagePerShot=28`
+- `Target=Primary ExpectedHit=1 ActualHit=1 ... Result=PASS`
+- `Target=InsideBandForward ExpectedHit=1 ActualHit=1 ... Result=PASS`
+- `Target=InsideBandSide ExpectedHit=1 ActualHit=1 ... Result=PASS`
+- `Target=InsideAngleEdge ExpectedHit=1 ActualHit=1 ... Result=PASS`
+- `Target=InnerHollow ExpectedHit=0 ActualHit=0 ... Result=PASS`
+- `Target=OutsideAngleEdge ExpectedHit=0 ActualHit=0 ... Result=PASS`
+- `Target=OutsideBehind ExpectedHit=0 ActualHit=0 ... Result=PASS`
+- `Target=OutsideRadius ExpectedHit=0 ActualHit=0 ... Result=PASS`
+
+Manual visual evidence:
+
+- The final contact sheet frame 62 shows the active red/blue slash inside the red crescent-band debug outline, including the hollow center and near-sector-edge layout.
+- The corrected contact-sheet labels are `start=60`, `mid=62`, `impact=64`, and `dissipate=68`.
+- Visibility checklist is marked `PASS`.
+
+## PPF Close
+
+```text
+PPF CLOSE
+Process used: AGENTS.md Niagara combat VFX + Hero1AxeAOESlashMechanismPacket hitbox authority process.
+Matches declared process: YES
+Evidence: Damage authority remains UT66CombatComponent logical query; Niagara remains presentation-only; Unreal-owned capture and logs prove the current working-tree crescent-band hitbox contract.
+```
+
+## Mechanism Close For This Pass
+
+```text
+MECHANISM CLOSE
+Mechanism: Logical crescent-band hitbox
+Status: PRESENT
+Evidence: AoeInnerRadiusRatio=0.54, EffectiveSlashInnerRadius=236.26, target PASS rows for inside band/hollow/behind/outside.
+Discriminator test: A filled sector would hit InnerHollow; final log reports InnerHollow ExpectedHit=0 ActualHit=0 Result=PASS. A too-wide sector would hit OutsideAngleEdge; final log reports OutsideAngleEdge ExpectedHit=0 ActualHit=0 Result=PASS.
+Reported status: FULL for this hitbox-alignment pass.
+```
+
+## Known Caveats
+
+- This is not a renewed final visual-polish pass.
+- Normal player-facing item acquisition still needs a next-agent proof. Existing proof-item grants are automation-only.
+- Future idol overlays need a reviewed binding/effect-packet design; they are not implemented here and are explicitly gated behind a second user go-ahead after normal item/stat proof closes.
+- `Content/Data/CombatVFXBindings.csv` and `Content/Data/DT_CombatVFXBindings.uasset` are live generated binding files, but `git ls-files` returns no entries for them in this repo state.
+- A failed rerun occurred because `BuildT66VideoEvidenceBundle.py` accepts only `start`, `mid`, `impact`, and `dissipate` selected-frame labels. The final bundle was rebuilt with `start=60,mid=62,impact=64,dissipate=68`.
+
+## Reviewer Request
+
+Review this final closeout packet as read-only. Identify blocker/major issues only if the final user-facing claims above are unsupported, contradict repo instructions, skip required evidence, overstate completion, or leave the next-agent handoff misleading. First non-empty line must be exactly one of:
+
+`Verdict: APPROVE`
+
+`Verdict: REVISE`
+
+`Verdict: BLOCK`

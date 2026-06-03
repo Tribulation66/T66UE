@@ -159,6 +159,10 @@ bool AT66StageGate::AdvanceToNextStage()
 		{
 			Ach->AddCompanionUnionStagesCleared(T66GI->SelectedCompanionID, 1);
 		}
+		if (!T66GI->SelectedPetID.IsNone())
+		{
+			Ach->AddPetBondStagesCleared(T66GI->SelectedPetID, 1);
+		}
 	}
 
 	const int32 NextStage = RunState->GetCurrentStage() + 1;

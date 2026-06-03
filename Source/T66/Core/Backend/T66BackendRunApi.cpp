@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/Backend/T66BackendPrivate.h"
+#include "Core/T66ShelvedFeatureGate.h"
 
 namespace
 {
@@ -295,6 +296,14 @@ void UT66BackendSubsystem::SendSubmitRunRequest(const TSharedPtr<FJsonObject>& R
 
 void UT66BackendSubsystem::FetchCurrentDailyClimb()
 {
+	if (!FT66ShelvedFeatureGate::IsDailyDescentEnabled())
+	{
+		LastDailyClimbStatus = TEXT("daily_descent_shelved");
+		LastDailyClimbMessage = TEXT("Daily Descent is shelved in this build.");
+		OnDailyClimbChallengeReady.Broadcast(TEXT("current"));
+		return;
+	}
+
 	if (!IsBackendConfigured())
 	{
 		LastDailyClimbStatus = TEXT("backend_unconfigured");
@@ -314,6 +323,14 @@ void UT66BackendSubsystem::FetchCurrentDailyClimb()
 
 void UT66BackendSubsystem::StartDailyClimbAttempt()
 {
+	if (!FT66ShelvedFeatureGate::IsDailyDescentEnabled())
+	{
+		LastDailyClimbStatus = TEXT("daily_descent_shelved");
+		LastDailyClimbMessage = TEXT("Daily Descent is shelved in this build.");
+		OnDailyClimbChallengeReady.Broadcast(TEXT("start"));
+		return;
+	}
+
 	if (!IsBackendConfigured())
 	{
 		LastDailyClimbStatus = TEXT("backend_unconfigured");
@@ -344,6 +361,14 @@ void UT66BackendSubsystem::SubmitDailyClimbRun(
 	const FString& AttemptId,
 	const FString& RequestKey)
 {
+	if (!FT66ShelvedFeatureGate::IsDailyDescentEnabled())
+	{
+		LastDailyClimbStatus = TEXT("daily_descent_shelved");
+		LastDailyClimbMessage = TEXT("Daily Descent is shelved in this build.");
+		OnDailyClimbSubmitDataReady.Broadcast(RequestKey, false, LastDailyClimbStatus, 0, 0);
+		return;
+	}
+
 	if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
 		if (T66GI->IsOfflineRun())

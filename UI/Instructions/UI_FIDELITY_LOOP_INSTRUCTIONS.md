@@ -36,7 +36,6 @@ In the flat redesign, **all chrome is pure Slate** built via `FT66FlatStyle` hel
 
 Flat chrome surfaces include two global retro visual treatments: subtle fill pixelation and deterministic stepped edge distortion. Both are driven by `FT66RetroFXSettings` and applied inside `FT66FlatStyle`; they affect chrome fill/border rendering only and do not change layout bounds, hit rects, semantic state, text, icons, or content artwork. Settings infrastructure is in place; user-facing controls for these values are deferred.
 
-**Content artwork** is the visual content rendered inside chrome slots: character portraits, hero faces, skin thumbnails, item icons, diploma parchment art, drug bottle illustrations, minigame screenshots, weapon glyphs, ultimate glyphs, Steam logo, 3D character renders, leaderboard icons.
 
 Content artwork **remains PNG-driven**. The migration does not touch how content is rendered, only how it's framed.
 
@@ -199,9 +198,7 @@ For gameplay HUD and overlay captures, the helper launches `/Game/Maps/GameplayL
 **HUD/overlay/in-world distinctions:**
 
 - **HUD widgets** are persistent gameplay viewport widgets such as `UT66GameplayHUDWidget`. Use `Class=<WidgetClass>` or a tagged descendant. The dump should be taken after any automation state setup has made the desired HUD mode visible.
-- **Overlay widgets** are created on demand, for example idol altar, crate, lab, collector, cowardice, loading, casino, and arcade overlays. Trigger the overlay first, then dump it by class or tag. If the overlay is not active, `DumpWidget` returns an error instead of producing an empty tree.
 - **In-world UI** may be `UWidgetComponent`-backed or HUD-routed. For widget components, use `Actor=<ActorName>`. For current T66 interactable prompts, the actor target falls back to the HUD-rendered prompt path because `AT66WorldInteractableBase` drives `UT66GameplayHUDWidget::ShowInteractionPrompt()` rather than owning a widget component.
-- **Canvas HUDs** such as `AT66MiniBattleHUD` are not Slate widget trees and cannot be dumped by this command. They require a separate Canvas-aware verification method.
 
 **Known overlay trigger modes for automation:**
 
@@ -213,7 +210,6 @@ For gameplay HUD and overlay captures, the helper launches `/Game/Maps/GameplayL
 - Crate overlay: `-T66GameplayAutoCapture=crate`, target `Class=UT66CrateOverlayWidget`.
 - Collector overlay: `-T66GameplayAutoCapture=collector`, target `Class=UT66CollectorOverlayWidget`.
 - Casino/gambler overlays: `-T66GameplayAutoCapture=casinoshop`, `casinogambling`, or `casinoalchemy`, target the active casino/gambler class.
-- Arcade selector overlay: `-T66GameplayAutoCapture=arcadeselector`, target `Class=UT66ArcadeSelectionWidget` or the active arcade popup class.
 - World interactable prompt: `-T66GameplayAutoCapture=worldprompt`, target `Actor=T66WidgetDump_WorldInteractablePrompt`.
 - Cowardice prompt: use a natural cowardice-gate trigger or a debug trigger that calls `OpenCowardicePrompt`; then target `Class=UT66CowardicePromptWidget`.
 - Loading screen: `-T66GameplayAutoCapture=loading`, target `Class=UT66LoadingScreenWidget`; natural gameplay/frontend transitions can also be captured while the widget is active.
@@ -553,13 +549,11 @@ These are the code paths classified as legacy PNG-composited chrome. Cleanup for
 - `T66SettingsScreen_Private.h` line 1189 — `GetSettingsReferenceScrollBarStyle`
 
 **Screen-level PNG chrome consumers** (replace during that screen's migration; full list in Codex's audit response):
-Account, Achievements, Challenges, Companion Grid, Companion Selection, Daily Climb, Hero Grid, Language Select, Main Menu, Minigames, Party Invite, Pause, Player Summary Picker, Power Up, Quit, Report Bug, Run Summary, Save Preview, Save Slots, Frontend Top Bar, Frontend Back Button, Leaderboard Panel, Minigame Menu Layout.
 
 ### 5.3 What NOT to touch during cleanup
 
 These are non-chrome and remain PNG-driven:
 
-- Hero portrait textures, companion portrait textures, character renders, weapon icons, ultimate icons, idol icons, diploma art, drug art, minigame screenshots, leaderboard partner icons (Steam, Friends), gameplay HUD content art, item icons, currency icons.
 - Localization assets, font files, gameplay material instances unrelated to UI chrome.
 - `UT66RetroFXSubsystem` for game-world post-process (separate from UI chrome retainer).
 

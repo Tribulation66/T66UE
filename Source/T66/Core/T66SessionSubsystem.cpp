@@ -11,6 +11,7 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66SaveMigration.h"
 #include "Core/T66SaveSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Core/T66SteamHelper.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66GameMode.h"
@@ -106,23 +107,6 @@ namespace
 			: FString::Printf(TEXT("steam.%s:%d"), *HostSteamId, JoinPort > 0 ? JoinPort : T66DefaultSteamJoinPort);
 	}
 
-	bool T66IsMiniFrontendScreen(const ET66ScreenType ScreenType)
-	{
-		switch (ScreenType)
-		{
-		case ET66ScreenType::MiniMainMenu:
-		case ET66ScreenType::MiniSaveSlots:
-		case ET66ScreenType::MiniCharacterSelect:
-		case ET66ScreenType::MiniCompanionSelect:
-		case ET66ScreenType::MiniDifficultySelect:
-		case ET66ScreenType::MiniIdolSelect:
-		case ET66ScreenType::MiniShop:
-		case ET66ScreenType::MiniRunSummary:
-			return true;
-		default:
-			return false;
-		}
-	}
 }
 
 void UT66SessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -1592,79 +1576,6 @@ bool UT66SessionSubsystem::AreAllPartyMembersReadyForGameplay(FString* OutFailur
 	return true;
 }
 
-bool UT66SessionSubsystem::AreAllPartyMembersReadyForMiniGameplay(FString* OutFailureReason) const
-{
-	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
-	GetCurrentLobbyProfiles(LobbyProfiles);
-	if (LobbyProfiles.Num() <= 0)
-	{
-		if (OutFailureReason)
-		{
-			*OutFailureReason = TEXT("No mini party members are available.");
-		}
-		return false;
-	}
-
-	for (const FT66LobbyPlayerInfo& LobbyInfo : LobbyProfiles)
-	{
-		if (!LobbyInfo.bMiniFlowActive)
-		{
-			if (OutFailureReason)
-			{
-				*OutFailureReason = FString::Printf(TEXT("%s is not in the mini lobby yet."), *LobbyInfo.DisplayName);
-			}
-			return false;
-		}
-
-		if (LobbyInfo.MiniSelectedHeroID.IsNone())
-		{
-			if (OutFailureReason)
-			{
-				*OutFailureReason = FString::Printf(TEXT("%s has not selected a mini hero yet."), *LobbyInfo.DisplayName);
-			}
-			return false;
-		}
-
-		if (LobbyInfo.MiniSelectedCompanionID.IsNone())
-		{
-			if (OutFailureReason)
-			{
-				*OutFailureReason = FString::Printf(TEXT("%s has not selected a mini companion yet."), *LobbyInfo.DisplayName);
-			}
-			return false;
-		}
-
-		if (LobbyInfo.MiniSelectedDifficultyID.IsNone())
-		{
-			if (OutFailureReason)
-			{
-				*OutFailureReason = FString::Printf(TEXT("%s has not selected a mini difficulty yet."), *LobbyInfo.DisplayName);
-			}
-			return false;
-		}
-
-		if (LobbyInfo.MiniSelectedIdolIDs.Num() <= 0)
-		{
-			if (OutFailureReason)
-			{
-				*OutFailureReason = FString::Printf(TEXT("%s has not equipped any mini idols yet."), *LobbyInfo.DisplayName);
-			}
-			return false;
-		}
-
-		if (!LobbyInfo.bPartyHost && LobbyProfiles.Num() > 1 && !LobbyInfo.bLobbyReady)
-		{
-			if (OutFailureReason)
-			{
-				*OutFailureReason = FString::Printf(TEXT("%s is not ready yet."), *LobbyInfo.DisplayName);
-			}
-			return false;
-		}
-	}
-
-	return true;
-}
-
 IOnlineSessionPtr UT66SessionSubsystem::GetSessionInterface() const
 {
 	if (IOnlineSubsystem* OnlineSubsystem = Online::GetSubsystem(GetWorld()))
@@ -2018,16 +1929,6 @@ FT66LobbyPlayerInfo UT66SessionSubsystem::BuildLocalLobbyProfile() const
 		LobbyInfo.LobbyDifficulty = GI->ResolvePlayableDifficulty(GI->SelectedDifficulty);
 		LobbyInfo.RunSeed = GI->RunSeed;
 		LobbyInfo.MainMapLayoutVariant = GI->CurrentMainMapLayoutVariant;
-		LobbyInfo.bMiniFlowActive = T66IsMiniFrontendScreen(LocalFrontendScreen);
-		if (LobbyInfo.bMiniFlowActive)
-		{
-			LobbyInfo.MiniSelectedHeroID = GI->MiniSelectedHeroID;
-			LobbyInfo.MiniSelectedCompanionID = GI->MiniSelectedCompanionID;
-			LobbyInfo.MiniSelectedDifficultyID = GI->MiniSelectedDifficultyID;
-			LobbyInfo.MiniSelectedIdolIDs = GI->MiniSelectedIdolIDs;
-			LobbyInfo.bMiniLoadFlow = GI->bMiniLoadFlow;
-			LobbyInfo.bMiniIntermissionFlow = GI->bMiniIntermissionFlow;
-		}
 	}
 
 	if (LobbyInfo.DisplayName.IsEmpty())
@@ -2057,7 +1958,7 @@ void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* L
 	GI->SelectedRunCategory = GI->ResolvePlayableRunCategory(LoadedSave->RunCategory);
 	GI->SelectedPartySize = LoadedSave->PartySize;
 	GI->RunSeed = LoadedSave->RunSeed;
-	if (LoadedSave->bIsDailyClimbRun && LoadedSave->DailyClimbChallenge.IsValid())
+	if (LoadedSave->bIsDailyClimbRun && LoadedSave->DailyClimbChallenge.IsValid() && FT66ShelvedFeatureGate::IsDailyDescentEnabled())
 	{
 		GI->CachedDailyClimbChallenge = LoadedSave->DailyClimbChallenge;
 		GI->ActiveDailyClimbChallenge = LoadedSave->DailyClimbChallenge;
@@ -2069,6 +1970,10 @@ void UT66SessionSubsystem::ApplyLoadedRunToGameInstance(const UT66RunSaveGame* L
 	}
 	else
 	{
+		if (LoadedSave->bIsDailyClimbRun && LoadedSave->DailyClimbChallenge.IsValid())
+		{
+			GI->CachedDailyClimbChallenge = LoadedSave->DailyClimbChallenge;
+		}
 		GI->ClearActiveDailyClimbRun();
 	}
 	GI->CurrentMainMapLayoutVariant = ET66MainMapLayoutVariant::Tower;

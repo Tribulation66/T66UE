@@ -1014,7 +1014,7 @@ FText UT66AchievementsScreen::BuildAchievementRewardText(const FAchievementData&
 						? Loc->GetCompanionDisplayName(CompanionData)
 						: (!CompanionData.DisplayName.IsEmpty() ? CompanionData.DisplayName : FText::FromName(Achievement.RewardEntityID));
 					return FText::Format(
-						NSLOCTEXT("T66.Achievements", "SkinRewardCompanionFormat", "{0} Outfit: {1}"),
+						NSLOCTEXT("T66.Achievements", "SkinRewardCompanionFormat", "{0} Girlfriend Outfit: {1}"),
 						SkinName,
 						CompanionName);
 				}
@@ -1287,7 +1287,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		const TArray<FFlatSteamAchievementRow> Rows = {
 			{ FText::FromString(TEXT("01")), NSLOCTEXT("T66.Achievements", "FlatSteamCollector1", "Collector 1"), NSLOCTEXT("T66.Achievements", "FlatSteamCollector1Desc", "[Discover 1 items]") },
 			{ FText::FromString(TEXT("02")), NSLOCTEXT("T66.Achievements", "FlatSteamFieldNotes1", "Field Notes 1"), NSLOCTEXT("T66.Achievements", "FlatSteamFieldNotes1Desc", "[Discover 1 enemies]") },
-			{ FText::FromString(TEXT("03")), NSLOCTEXT("T66.Achievements", "FlatSteamTokenRank1", "Token Rank 1"), NSLOCTEXT("T66.Achievements", "FlatSteamTokenRank1Desc", "[Unlock Vendor Token level 1]") },
+			{ FText::FromString(TEXT("03")), NSLOCTEXT("T66.Achievements", "FlatSteamTokenRank1", "Token Rank 1"), NSLOCTEXT("T66.Achievements", "FlatSteamTokenRank1Desc", "[Unlock Vendor Token rank 1]") },
 			{ FText::FromString(TEXT("04")), NSLOCTEXT("T66.Achievements", "FlatSteamFirstWin1", "First Win 1"), NSLOCTEXT("T66.Achievements", "FlatSteamFirstWin1Desc", "[Win 1 match in any mode]") }
 		};
 

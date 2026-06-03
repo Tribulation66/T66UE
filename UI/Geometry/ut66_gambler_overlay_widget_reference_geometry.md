@@ -16,12 +16,10 @@ Normalized basis: 1920x1080
 | Gambler.Mode.BuybackButton | `(0.424, 0.189, 0.047, 0.049)` | `±0.015` | BUYBACK mode button. |
 | Gambler.Mode.GamesButton | `(0.480, 0.189, 0.039, 0.049)` | `±0.015` | GAMES mode button, Selected state. |
 | Gambler.Mode.RerollButton | `(0.529, 0.189, 0.034, 0.049)` | `±0.015` | REROLL action button. |
-| Gambler.GameCard.01.Panel | `(0.202, 0.309, 0.086, 0.292)` | `±0.020` | Rock Paper Scissors card. |
-| Gambler.GameCard.02.Panel | `(0.305, 0.309, 0.086, 0.292)` | `±0.020` | Black Jack card. |
-| Gambler.GameCard.03.Panel | `(0.407, 0.309, 0.086, 0.292)` | `±0.020` | Coin Flip card. |
-| Gambler.GameCard.04.Panel | `(0.510, 0.309, 0.086, 0.292)` | `±0.020` | Lottery card. |
-| Gambler.GameCard.05.Panel | `(0.612, 0.309, 0.086, 0.292)` | `±0.020` | Plinko card. |
-| Gambler.MoreGamesButton | `(0.427, 0.620, 0.045, 0.049)` | `±0.020` | More Games action below card row. |
+| Gambler.GameCard.01.Panel | `(0.202, 0.309, 0.086, 0.292)` | `±0.020` | Coin Flip card. |
+| Gambler.GameCard.02.Panel | `(0.305, 0.309, 0.086, 0.292)` | `±0.020` | Guess the Cup card. |
+| Gambler.GameCard.03.Panel | `(0.407, 0.309, 0.086, 0.292)` | `±0.020` | Pick the Stick card. |
+| Gambler.GameCard.04.Panel | `(0.510, 0.309, 0.086, 0.292)` | `±0.020` | Find the Joker card. |
 | Gambler.RightPanel | `(0.828, 0.169, 0.168, 0.548)` | `±0.020` | Right column containing portrait and bank. |
 | Gambler.PortraitPanel | `(0.870, 0.192, 0.087, 0.156)` | `±0.025` | Gambler portrait panel. |
 | Gambler.BankPanel | `(0.836, 0.478, 0.153, 0.224)` | `±0.025` | Bank panel with borrow/payback controls. |

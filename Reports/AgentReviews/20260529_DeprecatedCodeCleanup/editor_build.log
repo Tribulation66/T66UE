@@ -1,0 +1,10 @@
+Using bundled DotNet SDK version: 8.0.412 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" T66Editor Win64 Development -Project=C:\UE\T66\T66.uproject -WaitMutex -NoHotReload
+Log file: C:\Users\DoPra\AppData\Local\UnrealBuildTool\Log.txt
+Invalidating makefile for T66Editor (DefaultEngine.ini modified)
+C:\UE\T66\Source\T66Mini\T66Mini.Build.cs: warning: Referenced directory 'C:\UE\T66\Source\T66Mini\Public\UI\Components' does not exist.
+UHT compiled-in object format Default
+Target is up to date
+
+Result: Succeeded
+Total execution time: 6.08 seconds

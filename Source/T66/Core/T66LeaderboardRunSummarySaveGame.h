@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/T66RunSaveGame.h"
+#include "Core/T66SaveMigration.h"
 #include "Data/T66DataTypes.h"
 #include "Core/PlayerExperience/T66PlayerExperienceTypes.h"
 #include "GameFramework/SaveGame.h"
@@ -24,7 +25,7 @@ class T66_API UT66LeaderboardRunSummarySaveGame : public USaveGame
 public:
 	/** Bump if fields change in a breaking way. */
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 23;
+	int32 SchemaVersion = T66CurrentRunSummarySchemaVersion;
 
 	/** Backend leaderboard entry UUID when this snapshot came from the online service. */
 	UPROPERTY(SaveGame)
@@ -272,14 +273,154 @@ public:
 
 	// ===== Inventory / idols / log =====
 
+	/** Equipped idol IDs in fixed run-summary slots. SchemaVersion>=23 stores four slots. */
 	UPROPERTY(SaveGame)
 	TArray<FName> EquippedIdols;
 
+	/** Equipped idol tier values aligned with EquippedIdols (0 empty, 1 black .. 4 white). SchemaVersion>=23. */
 	UPROPERTY(SaveGame)
 	TArray<uint8> EquippedIdolTiers;
 
+	/** Equipped idol elements aligned with EquippedIdols. SchemaVersion>=24. */
+	UPROPERTY(SaveGame)
+	TArray<ET66IdolElement> EquippedIdolElements;
+
+	/** Equipped idol attack categories aligned with EquippedIdols. SchemaVersion>=24. */
+	UPROPERTY(SaveGame)
+	TArray<ET66AttackCategory> EquippedIdolCategories;
+
 	UPROPERTY(SaveGame)
 	TArray<FName> Inventory;
+
+	/** Rarity-bearing inventory slot snapshot. Keep Inventory for old wire compatibility. SchemaVersion>=24. */
+	UPROPERTY(SaveGame)
+	TArray<FT66InventorySlot> InventorySlots;
+
+	/** No Idol altar selections accumulated this run. SchemaVersion>=24. */
+	UPROPERTY(SaveGame)
+	int32 NoIdolSelectionStacks = 0;
+
+	UPROPERTY(SaveGame)
+	FT66HeroPreciseStatBlock NoIdolPrimaryStatBonuses;
+
+	/** Mob Loot quantities are sellable-stack quantities, not active world-drop counts. SchemaVersion>=24. */
+	UPROPERTY(SaveGame)
+	int32 MobLootDropsCollectedThisRun = 0;
+
+	UPROPERTY(SaveGame)
+	int32 MobLootQuantityCollectedThisRun = 0;
+
+	UPROPERTY(SaveGame)
+	int32 MobLootGoldValueCollectedThisRun = 0;
+
+	UPROPERTY(SaveGame)
+	int32 MobLootQuantityCollectedByPlayerThisRun = 0;
+
+	UPROPERTY(SaveGame)
+	int32 MobLootQuantityCollectedByPetThisRun = 0;
+
+	UPROPERTY(SaveGame)
+	int32 MobLootDropsCollectedByPetThisRun = 0;
+
+	UPROPERTY(SaveGame)
+	int32 MobLootQuantitySoldThisRun = 0;
+
+	UPROPERTY(SaveGame)
+	int32 MobLootSaleGoldThisRun = 0;
+
+	UPROPERTY(SaveGame)
+	int32 MobLootRemainingStack = 0;
+
+	/** Player-facing gambler outcome copy; anti-cheat arrays are preserved separately. SchemaVersion>=24. */
+	UPROPERTY(SaveGame)
+	TArray<FT66AntiCheatGamblerGameSummary> GamblerOutcomeSummaries;
+
+	UPROPERTY(SaveGame)
+	TArray<FT66AntiCheatGamblerEvent> GamblerOutcomeEvents;
+
+	UPROPERTY(SaveGame)
+	bool bGamblerOutcomeEventsTruncated = false;
+
+	UPROPERTY(SaveGame)
+	int32 CurrentGold = 0;
+
+	UPROPERTY(SaveGame)
+	int32 CurrentDebt = 0;
+
+	UPROPERTY(SaveGame)
+	int32 InventorySellValueTotal = 0;
+
+	UPROPERTY(SaveGame)
+	int32 NetWorth = 0;
+
+	UPROPERTY(SaveGame)
+	int32 ActiveVendorTokenStacks = 0;
+
+	UPROPERTY(SaveGame)
+	float CurrentSellFraction = 0.f;
+
+	UPROPERTY(SaveGame)
+	int32 ShopStockCount = 0;
+
+	UPROPERTY(SaveGame)
+	int32 BuybackPoolSize = 0;
+
+	UPROPERTY(SaveGame)
+	FName EquippedWeaponID = NAME_None;
+
+	UPROPERTY(SaveGame)
+	ET66AttackCategory EquippedWeaponBranch = ET66AttackCategory::Pierce;
+
+	UPROPERTY(SaveGame)
+	ET66WeaponRarity EquippedWeaponRarity = ET66WeaponRarity::Black;
+
+	UPROPERTY(SaveGame)
+	FName EquippedWeaponAttackPatternID = NAME_None;
+
+	UPROPERTY(SaveGame)
+	int32 EquippedWeaponProjectileCount = 0;
+
+	UPROPERTY(SaveGame)
+	float EquippedWeaponSpreadAngleDegrees = 0.f;
+
+	UPROPERTY(SaveGame)
+	FName ActivePetID = NAME_None;
+
+	UPROPERTY(SaveGame)
+	FName ActivePetSkinID = NAME_None;
+
+	UPROPERTY(SaveGame)
+	int32 ActivePetBondStagesCleared = 0;
+
+	UPROPERTY(SaveGame)
+	float ActivePetBondMovementSpeedMultiplier = 1.f;
+
+	UPROPERTY(SaveGame)
+	int32 PetMobLootQuantityCollectedThisRun = 0;
+
+	UPROPERTY(SaveGame)
+	int32 PetMobLootDropsCollectedThisRun = 0;
+
+	UPROPERTY(SaveGame)
+	bool bBossActiveAtSummary = false;
+
+	UPROPERTY(SaveGame)
+	FName ActiveBossID = NAME_None;
+
+	UPROPERTY(SaveGame)
+	int32 BossMaxHP = 0;
+
+	UPROPERTY(SaveGame)
+	int32 BossCurrentHP = 0;
+
+	UPROPERTY(SaveGame)
+	TArray<FT66BossPartSnapshot> BossParts;
+
+	UPROPERTY(SaveGame)
+	TArray<FName> OwedBossIDs;
+
+	UPROPERTY(SaveGame)
+	int32 CowardiceGatesTakenCount = 0;
 
 	/** Temporary buff loadout that was active when the run summary snapshot was captured. SchemaVersion>=17. */
 	UPROPERTY(SaveGame)

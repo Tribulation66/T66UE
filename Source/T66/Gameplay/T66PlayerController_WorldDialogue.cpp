@@ -44,11 +44,13 @@
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66CasinoNPC.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
+#include "Gameplay/T66SaintNPC.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66VendorBoss.h"
+#include "Core/T66SkinSubsystem.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
 #include "EngineUtils.h"
@@ -86,6 +88,37 @@
 #include "Widgets/Views/SListView.h"
 #include "Styling/CoreStyle.h"
 
+namespace
+{
+	FText T66BuildSaintKromerDialogueOptionText(const AT66PlayerController* PC)
+	{
+		UGameInstance* GI = PC && PC->GetWorld() ? PC->GetWorld()->GetGameInstance() : nullptr;
+		const UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+		const UT66SkinSubsystem* Skins = GI ? GI->GetSubsystem<UT66SkinSubsystem>() : nullptr;
+		const bool bHasSaintSkinForHero = Skins
+			&& T66GI
+			&& !T66GI->SelectedHeroID.IsNone()
+			&& Skins->IsHeroSkinOwned(T66GI->SelectedHeroID, UT66SkinSubsystem::SaintSkinID);
+		return bHasSaintSkinForHero
+			? NSLOCTEXT("T66.Saint", "HelloFellowSaint", "Hello fellow saint")
+			: NSLOCTEXT("T66.Saint", "GiveKromer", "Give him a Kromer");
+	}
+}
+
+#if !UE_BUILD_SHIPPING
+FText AT66PlayerController::GetWorldDialogueOptionTextForAutomation(const int32 OptionIndex) const
+{
+	return WorldDialogueCurrentOptions.IsValidIndex(OptionIndex)
+		? WorldDialogueCurrentOptions[OptionIndex]
+		: FText::GetEmpty();
+}
+
+FText AT66PlayerController::GetSaintKromerDialogueOptionTextForAutomation() const
+{
+	return T66BuildSaintKromerDialogueOptionText(this);
+}
+#endif
+
 void AT66PlayerController::OpenWorldDialogueCasino(AT66CasinoNPC* CasinoNPC)
 {
 	if (!IsGameplayLevel()) return;
@@ -109,6 +142,7 @@ void AT66PlayerController::OpenWorldDialogueCasino(AT66CasinoNPC* CasinoNPC)
 	WorldDialogueTargetCompanion.Reset();
 	WorldDialogueSelectedIndex = 0;
 	WorldDialogueNumOptions = 2;
+	WorldDialogueCurrentOptions = Options;
 	bWorldDialogueOpen = true;
 	LastWorldDialogueNavTimeSeconds = -1000.f;
 
@@ -141,6 +175,75 @@ void AT66PlayerController::OpenWorldDialogueCompanion(AT66RecruitableCompanion* 
 	WorldDialogueTargetCompanion = Companion;
 	WorldDialogueSelectedIndex = 0;
 	WorldDialogueNumOptions = 2;
+	WorldDialogueCurrentOptions = Options;
+	bWorldDialogueOpen = true;
+	LastWorldDialogueNavTimeSeconds = -1000.f;
+
+	GameplayHUDWidget->ShowWorldDialogue(Options, WorldDialogueSelectedIndex);
+	UpdateWorldDialoguePosition();
+	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.1f, true);
+}
+
+void AT66PlayerController::OpenWorldDialogueSaint(AT66SaintNPC* Saint)
+{
+	if (!IsGameplayLevel()) return;
+	if (!GameplayHUDWidget) return;
+	if (!Saint) return;
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
+
+	TArray<FText> Options;
+	if (Saint->IsEndgameSaint())
+	{
+		Options =
+		{
+			NSLOCTEXT("T66.Saint", "LeaveThisPlace", "Leave this place"),
+			NSLOCTEXT("T66.Saint", "ReceiveBlessing", "Receive the Saint's blessing"),
+			T66BuildSaintKromerDialogueOptionText(this),
+		};
+	}
+	else
+	{
+		Options = { T66BuildSaintKromerDialogueOptionText(this) };
+	}
+
+	WorldDialogueKind = ET66WorldDialogueKind::Saint;
+	WorldDialogueTargetNPC = Saint;
+	WorldDialogueTargetCompanion.Reset();
+	WorldDialogueSelectedIndex = 0;
+	WorldDialogueNumOptions = Options.Num();
+	WorldDialogueCurrentOptions = Options;
+	bWorldDialogueOpen = true;
+	LastWorldDialogueNavTimeSeconds = -1000.f;
+
+	GameplayHUDWidget->ShowWorldDialogue(Options, WorldDialogueSelectedIndex);
+	UpdateWorldDialoguePosition();
+	GetWorldTimerManager().SetTimer(WorldDialoguePositionTimerHandle, this, &AT66PlayerController::UpdateWorldDialoguePosition, 0.1f, true);
+}
+
+void AT66PlayerController::OpenWorldDialogueSaintMissingKromer(AT66SaintNPC* Saint)
+{
+	if (!IsGameplayLevel()) return;
+	if (!GameplayHUDWidget) return;
+	if (!Saint) return;
+	if (bInventoryInspectOpen)
+	{
+		SetInventoryInspectOpen(false);
+	}
+
+	const TArray<FText> Options =
+	{
+		NSLOCTEXT("T66.Saint", "MissingKromerResponse", "You don't have any Kromer"),
+	};
+
+	WorldDialogueKind = ET66WorldDialogueKind::None;
+	WorldDialogueTargetNPC = Saint;
+	WorldDialogueTargetCompanion.Reset();
+	WorldDialogueSelectedIndex = 0;
+	WorldDialogueNumOptions = Options.Num();
+	WorldDialogueCurrentOptions = Options;
 	bWorldDialogueOpen = true;
 	LastWorldDialogueNavTimeSeconds = -1000.f;
 
@@ -156,6 +259,7 @@ void AT66PlayerController::CloseWorldDialogue()
 	WorldDialogueKind = ET66WorldDialogueKind::None;
 	WorldDialogueSelectedIndex = 0;
 	WorldDialogueNumOptions = 3;
+	WorldDialogueCurrentOptions.Reset();
 	WorldDialogueTargetNPC.Reset();
 	WorldDialogueTargetCompanion.Reset();
 	GetWorldTimerManager().ClearTimer(WorldDialoguePositionTimerHandle);
@@ -186,7 +290,7 @@ void AT66PlayerController::ConfirmWorldDialogue()
 	// Capture before we close (closing clears state).
 	const ET66WorldDialogueKind Kind = WorldDialogueKind;
 	const int32 Choice = WorldDialogueSelectedIndex;
-	AT66HouseNPCBase* TargetNPC = WorldDialogueTargetNPC.Get();
+	AT66NPCBase* TargetNPC = WorldDialogueTargetNPC.Get();
 	AT66RecruitableCompanion* TargetCompanion = WorldDialogueTargetCompanion.Get();
 	const int32 CasinoGamblerWinGoldAmount = (Kind == ET66WorldDialogueKind::Casino)
 		? (Cast<AT66CasinoNPC>(TargetNPC) ? Cast<AT66CasinoNPC>(TargetNPC)->GetWinGoldAmount() : 0)
@@ -214,6 +318,28 @@ void AT66PlayerController::ConfirmWorldDialogue()
 			{
 				TargetCompanion->Destroy();
 			}
+		}
+		return;
+	}
+
+	if (Kind == ET66WorldDialogueKind::Saint)
+	{
+		if (AT66GameMode* GM = GetWorld() ? Cast<AT66GameMode>(UGameplayStatics::GetGameMode(this)) : nullptr)
+		{
+			AT66SaintNPC* Saint = Cast<AT66SaintNPC>(TargetNPC);
+			if (Saint && !Saint->IsEndgameSaint())
+			{
+				UT66RunStateSubsystem* RunState = GetWorld() && GetWorld()->GetGameInstance()
+					? GetWorld()->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>()
+					: nullptr;
+				if (!RunState || !RunState->HasKromerItem())
+				{
+					OpenWorldDialogueSaintMissingKromer(Saint);
+					return;
+				}
+			}
+			const int32 ResolvedChoice = (Saint && !Saint->IsEndgameSaint()) ? 2 : Choice;
+			GM->HandleSaintEndgameChoice(this, ResolvedChoice, Saint);
 		}
 		return;
 	}
@@ -275,3 +401,4 @@ void AT66PlayerController::UpdateWorldDialoguePosition()
 
 	GameplayHUDWidget->SetWorldDialogueScreenPosition(ScreenPos);
 }
+

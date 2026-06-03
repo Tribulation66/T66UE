@@ -307,7 +307,7 @@ void UT66HeroSelectionScreen::PopulateHeroStatsSnapshot(const FHeroData& HeroDat
 	SetSecondaryValue(ET66SecondaryStatType::BounceScale, static_cast<float>(HeroData.BaseBounceAtkScale));
 	SetSecondaryValue(ET66SecondaryStatType::PierceScale, static_cast<float>(HeroData.BasePierceAtkScale));
 	SetSecondaryValue(ET66SecondaryStatType::DotScale, static_cast<float>(HeroData.BaseDotAtkScale));
-	SetSecondaryValue(ET66SecondaryStatType::CritDamage, HeroData.BaseCritDamage);
+	SetSecondaryValue(ET66SecondaryStatType::HeadshotChance, HeroData.BaseHeadshotChance);
 	SetSecondaryValue(ET66SecondaryStatType::CritChance, HeroData.BaseCritChance);
 	SetSecondaryValue(ET66SecondaryStatType::AttackRange, HeroData.BaseAttackRange);
 	SetSecondaryValue(ET66SecondaryStatType::Accuracy, HeroData.BaseAccuracy);

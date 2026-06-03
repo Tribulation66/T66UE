@@ -13,7 +13,6 @@ Normalized bounding boxes use the loop standard 1920x1080 basis. The Overview re
 | FrontendTopBar.ProfileButton | `(0.302, 0.018, 0.043, 0.077)` | `+/-0.006` | Profile/home icon button. |
 | FrontendTopBar.PowerUpButton | `(0.359, 0.018, 0.142, 0.077)` | `+/-0.006` | Power Up category button. |
 | FrontendTopBar.AchievementsButton | `(0.513, 0.018, 0.153, 0.077)` | `+/-0.006` | Achievements category button. |
-| FrontendTopBar.MinigamesButton | `(0.679, 0.018, 0.126, 0.077)` | `+/-0.006` | Minigames category button. |
 | FrontendTopBar.TicketBadge | `(0.819, 0.018, 0.087, 0.077)` | `+/-0.006` | Ticket counter badge. |
 | FrontendTopBar.TicketBadge.Icon | `(0.842, 0.041, 0.019, 0.032)` | `+/-0.010` | Ticket icon inside the badge. |
 | FrontendTopBar.TicketBadge.Value | `(0.870, 0.043, 0.025, 0.028)` | `+/-0.012` | Dynamic ticket counter text. |

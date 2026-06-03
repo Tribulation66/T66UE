@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tribulation66.local/performance/board_saturation_frame_sample.schema.v1.json",
+  "title": "T66 Performance Board Saturation Frame Sample",
+  "type": "object",
+  "required": [
+    "SchemaVersion",
+    "SessionTimeSeconds",
+    "GameTimeSeconds",
+    "FrameTimeMs",
+    "BoardSaturationValid",
+    "LiveRegularEnemies",
+    "PendingSpawns",
+    "ActiveEnemyProjectiles",
+    "BoardSaturationSampleAgeSeconds",
+    "WorldName",
+    "MapName"
+  ],
+  "properties": {
+    "SchemaVersion": { "type": "integer", "const": 1 },
+    "SessionTimeSeconds": { "type": "number" },
+    "GameTimeSeconds": { "type": "number" },
+    "FrameTimeMs": { "type": "number" },
+    "BoardSaturationValid": { "type": "boolean" },
+    "LiveRegularEnemies": { "type": "integer" },
+    "PendingSpawns": { "type": "integer" },
+    "ActiveEnemyProjectiles": { "type": "integer" },
+    "BoardSaturationSampleAgeSeconds": { "type": "number" },
+    "WorldName": { "type": "string" },
+    "MapName": { "type": "string" }
+  },
+  "additionalProperties": false
+}

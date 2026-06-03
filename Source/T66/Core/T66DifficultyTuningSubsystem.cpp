@@ -38,36 +38,26 @@ FT66DifficultyTuningTable::FT66DifficultyTuningTable()
 {
 	Easy.StartStage = 1;
 	Easy.EndStage = 4;
-	Easy.IdolBaseRarity = ET66ItemRarity::Black;
-	Easy.WeaponBaseRarity = ET66WeaponRarity::Black;
 	Easy.bUsesFinalSequence = false;
 	Easy.SkullColorBandSize = 4;
 
 	Medium.StartStage = 5;
 	Medium.EndStage = 8;
-	Medium.IdolBaseRarity = ET66ItemRarity::Red;
-	Medium.WeaponBaseRarity = ET66WeaponRarity::Red;
 	Medium.bUsesFinalSequence = false;
 	Medium.SkullColorBandSize = 4;
 
 	Hard.StartStage = 9;
 	Hard.EndStage = 12;
-	Hard.IdolBaseRarity = ET66ItemRarity::Yellow;
-	Hard.WeaponBaseRarity = ET66WeaponRarity::Yellow;
 	Hard.bUsesFinalSequence = false;
 	Hard.SkullColorBandSize = 4;
 
 	VeryHard.StartStage = 13;
 	VeryHard.EndStage = 16;
-	VeryHard.IdolBaseRarity = ET66ItemRarity::White;
-	VeryHard.WeaponBaseRarity = ET66WeaponRarity::White;
 	VeryHard.bUsesFinalSequence = false;
 	VeryHard.SkullColorBandSize = 4;
 
 	Impossible.StartStage = 17;
 	Impossible.EndStage = 20;
-	Impossible.IdolBaseRarity = ET66ItemRarity::White;
-	Impossible.WeaponBaseRarity = ET66WeaponRarity::White;
 	Impossible.bUsesFinalSequence = true;
 	Impossible.SkullColorBandSize = 4;
 }
@@ -186,14 +176,33 @@ int32 UT66DifficultyTuningSubsystem::GetDifficultyEndStage(const ET66Difficulty 
 	return FMath::Clamp(Tuning.EndStage, StartStage, 20);
 }
 
-ET66ItemRarity UT66DifficultyTuningSubsystem::GetDifficultyIdolBaseRarity(const ET66Difficulty Difficulty) const
+int32 UT66DifficultyTuningSubsystem::GetDifficultyLocalStage(const ET66Difficulty Difficulty, const int32 AbsoluteStage) const
 {
-	return GetDifficultyTuning(Difficulty).IdolBaseRarity;
+	return FMath::Clamp(AbsoluteStage - GetDifficultyStartStage(Difficulty) + 1, 1, 4);
 }
 
-ET66WeaponRarity UT66DifficultyTuningSubsystem::GetDifficultyWeaponBaseRarity(const ET66Difficulty Difficulty) const
+ET66ItemRarity UT66DifficultyTuningSubsystem::GetLocalStageIdolRarity(const int32 LocalStageNumber) const
 {
-	return GetDifficultyTuning(Difficulty).WeaponBaseRarity;
+	switch (FMath::Clamp(LocalStageNumber, 1, 4))
+	{
+	case 1:  return ET66ItemRarity::Black;
+	case 2:  return ET66ItemRarity::Red;
+	case 3:  return ET66ItemRarity::Yellow;
+	case 4:
+	default: return ET66ItemRarity::White;
+	}
+}
+
+ET66WeaponRarity UT66DifficultyTuningSubsystem::GetLocalStageWeaponRarity(const int32 LocalStageNumber) const
+{
+	switch (FMath::Clamp(LocalStageNumber, 1, 4))
+	{
+	case 1:  return ET66WeaponRarity::Black;
+	case 2:  return ET66WeaponRarity::Red;
+	case 3:  return ET66WeaponRarity::Yellow;
+	case 4:
+	default: return ET66WeaponRarity::White;
+	}
 }
 
 bool UT66DifficultyTuningSubsystem::DoesDifficultyUseFinalSequence(const ET66Difficulty Difficulty) const

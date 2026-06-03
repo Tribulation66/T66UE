@@ -18,13 +18,11 @@ STAGE01_PATH = REPORTS_DIR / "Stage01_SourceAndTrellisManifest.json"
 STAGE02_PATH = REPORTS_DIR / "Stage02_QuadRetroManifest.json"
 IMPORT_PATH = REPORTS_DIR / "UnrealImportManifest.json"
 VALIDATION_PATH = REPORTS_DIR / "UnrealValidationReport.json"
-ARCADE_JSON = PROJECT_DIR / "Content" / "Data" / "ArcadeInteractables.json"
 CHARACTER_VISUALS_CSV = PROJECT_DIR / "Content" / "Data" / "CharacterVisuals.csv"
 EXPECTED_PARENT = "/Game/Materials/M_Environment_Unlit"
 
 
 STALE_IN_SCOPE_PATHS = [
-    "/Game/World/Interactables/ArcadeMachine/ArcadeMachine.ArcadeMachine",
     "/Game/World/Interactables/Crate.Crate",
     "/Game/World/Interactables/Chests/ChestModel/Chest.Chest",
     "/Game/World/Interactables/Fountain/Fountain.Fountain",
@@ -159,35 +157,6 @@ def validate_imports(import_manifest):
     return entries, errors
 
 
-def validate_arcade_data(import_manifest):
-    arcade = load_json(ARCADE_JSON)
-    expected = {
-        entry["row_id"]: entry["unreal_asset_path"]
-        for entry in import_manifest.get("entries", [])
-        if entry.get("row_id") == "Vehicle" or str(entry.get("row_id")).startswith("Arcade_")
-    }
-    rows = []
-    errors = []
-    for row in arcade:
-        row_id = row.get("Name")
-        if row_id not in expected:
-            continue
-        data = row.get("ArcadeData") or {}
-        mesh_path = data.get("DisplayMesh", "")
-        exists = bool(load_asset(mesh_path))
-        rows.append({
-            "row_id": row_id,
-            "display_mesh": mesh_path,
-            "expected": expected[row_id],
-            "asset_exists": exists,
-        })
-        if mesh_path != expected[row_id]:
-            errors.append(f"{row_id}: DisplayMesh is {mesh_path}, expected {expected[row_id]}")
-        if not exists:
-            errors.append(f"{row_id}: DisplayMesh asset does not resolve")
-    return rows, errors
-
-
 def validate_character_visuals(import_manifest):
     expected = {
         entry["row_id"]: entry["unreal_asset_path"]
@@ -260,11 +229,10 @@ def main():
 
     generated_entries, generated_errors = validate_generated_files(stage01, stage02)
     import_entries, import_errors = validate_imports(import_manifest)
-    arcade_rows, arcade_errors = validate_arcade_data(import_manifest)
     character_rows, character_errors = validate_character_visuals(import_manifest)
     stale_hits, excluded_hits = scan_stale_paths()
 
-    errors = generated_errors + import_errors + arcade_errors + character_errors
+    errors = generated_errors + import_errors + character_errors
     if stale_hits:
         errors.append(f"stale in-scope path references remain: {len(stale_hits)}")
 
@@ -274,7 +242,6 @@ def main():
         "summary": {
             "generated_rows": len(generated_entries),
             "imported_rows": len(import_entries),
-            "arcade_rows_checked": len(arcade_rows),
             "character_visual_rows_checked": len(character_rows),
             "stale_in_scope_references": len(stale_hits),
             "boss_excluded_legacy_references": len(excluded_hits),
@@ -282,7 +249,6 @@ def main():
         },
         "generated_files": generated_entries,
         "imported_assets": import_entries,
-        "arcade_data": arcade_rows,
         "character_visuals": character_rows,
         "stale_in_scope_references": stale_hits,
         "boss_excluded_legacy_references": excluded_hits,

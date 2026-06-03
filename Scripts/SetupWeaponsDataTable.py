@@ -89,6 +89,25 @@ BRANCH_ID_SLUGS = {
 
 HERO1_AXE_AOE_CRESCENT_INNER_RADIUS_RATIO = 0.54
 
+DEFAULT_WEAPON_PATTERN = {
+    "AttackPatternID": "Default",
+    "ProjectileCount": "0",
+    "SpreadAngleDegrees": "0.0",
+}
+
+HERO_AOE_PATTERNS = {
+    ("Hero_1", "Black"): {
+        "AttackPatternID": "Single",
+        "ProjectileCount": "1",
+        "SpreadAngleDegrees": "0.0",
+    },
+    ("Hero_1", "Red"): {
+        "AttackPatternID": "TwinFan",
+        "ProjectileCount": "2",
+        "SpreadAngleDegrees": "34.0",
+    },
+}
+
 CSV_FIELDS = (
     "---",
     "WeaponID",
@@ -98,6 +117,9 @@ CSV_FIELDS = (
     "Icon",
     "Rarity",
     "Branch",
+    "AttackPatternID",
+    "ProjectileCount",
+    "SpreadAngleDegrees",
     "DamageMultiplier",
     "AttackSpeedMultiplier",
     "AttackScaleMultiplier",
@@ -342,9 +364,21 @@ def _branch_description(branch, rarity, hero_id=None):
     return f"{rarity} tier. A {branch_kind} {family} auto-attack that leaves a lingering wound."
 
 
+def _weapon_pattern(hero_id, rarity, branch):
+    if branch == "AOE":
+        return HERO_AOE_PATTERNS.get((hero_id, rarity), {
+            "AttackPatternID": "Single",
+            "ProjectileCount": "1",
+            "SpreadAngleDegrees": "0.0",
+        })
+    return DEFAULT_WEAPON_PATTERN
+
+
 def _upgrade_row(hero, rarity, branch, tuning):
     hero_id = hero["HeroID"]
     weapon_id = _weapon_id(hero_id, rarity, branch)
+    pattern = _weapon_pattern(hero_id, rarity, branch)
+    projectile_count = _int(pattern.get("ProjectileCount"), 0)
     return {
         "---": weapon_id,
         "WeaponID": weapon_id,
@@ -354,6 +388,9 @@ def _upgrade_row(hero, rarity, branch, tuning):
         "Icon": f"/Game/Weapons/Sprites/{rarity}/{weapon_id}.{weapon_id}",
         "Rarity": rarity,
         "Branch": branch,
+        "AttackPatternID": pattern.get("AttackPatternID", "Default"),
+        "ProjectileCount": str(projectile_count),
+        "SpreadAngleDegrees": f"{_float(pattern.get('SpreadAngleDegrees'), 0.0):.1f}",
         "DamageMultiplier": f"{tuning['damage']:.2f}",
         "AttackSpeedMultiplier": f"{tuning['speed']:.2f}",
         "AttackScaleMultiplier": f"{tuning['scale']:.2f}",
@@ -361,7 +398,7 @@ def _upgrade_row(hero, rarity, branch, tuning):
         "BonusHitDamage": str(tuning["hit"]),
         "BonusPierceCount": str(tuning["pierce"] if branch == "Pierce" else 0),
         "BonusBounceCount": str(tuning["bounce"] if branch == "Bounce" else 0),
-        "BonusAoeCount": "1" if branch == "AOE" else "0",
+        "BonusAoeCount": str(projectile_count if branch == "AOE" and projectile_count > 0 else (1 if branch == "AOE" else 0)),
         "BonusDotSources": "1" if branch == "DOT" else "0",
         "BonusAoeRadius": f"{tuning['aoe_radius'] if branch == 'AOE' else 0.0:.1f}",
         "AoeInnerRadiusRatio": f"{HERO1_AXE_AOE_CRESCENT_INNER_RADIUS_RATIO if weapon_id == 'Hero_1_black_aoe' else 0.0:.2f}",
@@ -383,9 +420,11 @@ def generate_weapons_csv(project_dir):
 
     rows = []
     for hero in heroes:
+        primary_branch = hero.get("PrimaryCategory") or "Pierce"
+        if primary_branch not in BRANCHES:
+            primary_branch = "Pierce"
         for rarity, tuning in RARITY_TUNING.items():
-            for branch in BRANCHES:
-                rows.append(_upgrade_row(hero, rarity, branch, tuning))
+            rows.append(_upgrade_row(hero, rarity, primary_branch, tuning))
 
     with open(weapons_path, "w", newline="", encoding="utf-8") as output:
         writer = csv.DictWriter(output, fieldnames=CSV_FIELDS, quoting=csv.QUOTE_ALL)

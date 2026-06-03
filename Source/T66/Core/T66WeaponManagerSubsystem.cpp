@@ -60,18 +60,17 @@ void UT66WeaponManagerSubsystem::BuildWeaponOffers(FName HeroID, ET66WeaponRarit
 		return;
 	}
 
-	static const ET66AttackCategory Branches[] =
+	ET66AttackCategory HeroLockedBranch = ET66AttackCategory::Pierce;
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
-		ET66AttackCategory::Pierce,
-		ET66AttackCategory::Bounce,
-		ET66AttackCategory::AOE,
-		ET66AttackCategory::DOT,
-	};
-
-	for (ET66AttackCategory Branch : Branches)
-	{
-		WeaponOfferIDs.Add(MakeWeaponID(HeroID, Rarity, Branch));
+		FHeroData HeroData;
+		if (T66GI->GetHeroData(HeroID, HeroData))
+		{
+			HeroLockedBranch = HeroData.PrimaryCategory;
+		}
 	}
+
+	WeaponOfferIDs.Add(MakeWeaponID(HeroID, Rarity, HeroLockedBranch));
 
 	BroadcastWeaponStateChanged();
 }

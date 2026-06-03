@@ -102,7 +102,7 @@ SERIES: tuple[Series, ...] = (
         Variant("black", "lucky penny", "Oracle Coin"),
         Variant("red", "cracked compact mirror", "Truth Shard"),
         Variant("yellow", "broken dice cube", "Fate Apostate"),
-        Variant("white", "lottery ticket scrap", "Prophet's Receipt"),
+        Variant("white", "raffle ticket scrap", "Prophet's Receipt"),
     )),
     Series("AttackScale", "AoeScale", "AttackScale_AoeScale_sheet.png", (
         Variant("black", "crushed pie tin", "Expanding Moon"),

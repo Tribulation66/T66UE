@@ -33,7 +33,7 @@ param(
     [double]$Hero1AxeHitboxFireDelay = 7.6,
     [double]$Hero1AxeHitboxVFXLeadSeconds = 0.12,
     [string]$Hero1AxeProofItems = "",
-    [string]$Hero1AxeProofIdol = "Idol_Water",
+    [string]$Hero1AxeProofIdol = "Idol_Ice_AOE",
     [int]$Hero1AxeProofLine1 = 8,
     [int]$Hero1AxeProofSecondary = 1,
     [switch]$Hero1AxeKeepProofInventory,
@@ -334,7 +334,7 @@ if ($LootUIAnimationBatch) {
     $summaryLines = @(
         "# Loot UI Animation Capture Summary",
         "",
-        "Default targets exclude Mini/minigame content unless explicitly named.",
+        "Default targets include only the current loot UI targets listed below.",
         "",
         "| Target | Taxonomy | Artifact | Notes |",
         "|---|---|---|---|"

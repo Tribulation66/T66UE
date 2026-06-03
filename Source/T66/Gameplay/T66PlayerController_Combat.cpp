@@ -40,6 +40,7 @@
 #include "Core/T66CommunityContentSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66BuffSubsystem.h"
@@ -50,7 +51,7 @@
 #include "Gameplay/T66WeaponAltar.h"
 #include "Gameplay/T66TowerDescentHole.h"
 #include "Gameplay/T66CasinoNPC.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
@@ -679,7 +680,7 @@ void AT66PlayerController::RefreshGameplayMouseMappings()
 
 bool AT66PlayerController::TryHandleMouseTriggeredUltimate()
 {
-	static bool bT66UltimateAttacksEnabled = false;
+	static bool bT66UltimateAttacksEnabled = true;
 	if (!bT66UltimateAttacksEnabled)
 	{
 		return false;
@@ -719,7 +720,7 @@ bool AT66PlayerController::TryHandleMouseTriggeredUltimate()
 
 void AT66PlayerController::HandleUltimatePressed()
 {
-	static bool bT66UltimateAttacksEnabled = false;
+	static bool bT66UltimateAttacksEnabled = true;
 	if (!bT66UltimateAttacksEnabled)
 	{
 		return;
@@ -895,7 +896,6 @@ bool AT66PlayerController::CanUseCombatMouseInput() const
 	// Suppress combat mouse inputs if a modal overlay is active (cursor is visible for UI).
 	return IsGameplayLevel()
 		&& !bInventoryInspectOpen
-		&& !IsArcadePopupOpen()
 		&& !(GameplayHUDWidget && GameplayHUDWidget->IsFullMapOpen())
 		&& !IsCasinoOverlayOpen()
 		&& !(CowardicePromptWidget && CowardicePromptWidget->IsInViewport())
@@ -1116,10 +1116,6 @@ void AT66PlayerController::HandleInteractPressed()
 	{
 		return;
 	}
-	if (IsArcadePopupOpen())
-	{
-		return;
-	}
 
 	// If we're in an in-world NPC dialogue, Interact confirms the selection.
 	if (bWorldDialogueOpen)
@@ -1199,7 +1195,7 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66StageGate* ClosestStageGate = nullptr;
 	AT66CowardiceGate* ClosestCowardiceGate = nullptr;
 	AT66DifficultyTotem* ClosestTotem = nullptr;
-	AT66HouseNPCBase* ClosestNPC = nullptr;
+	AT66NPCBase* ClosestNPC = nullptr;
 	AT66RecruitableCompanion* ClosestRecruitableCompanion = nullptr;
 	AT66LootBagPickup* ClosestLootBag = nullptr;
 	AT66TutorialGate* ClosestTutorialGate = nullptr;
@@ -1246,7 +1242,7 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestTotemDistSq) { ClosestTotemDistSq = DistSq; ClosestTotem = DT; }
 		}
-		else if (AT66HouseNPCBase* N = Cast<AT66HouseNPCBase>(A))
+		else if (AT66NPCBase* N = Cast<AT66NPCBase>(A))
 		{
 			if (DistSq < ClosestNPCDistSq) { ClosestNPCDistSq = DistSq; ClosestNPC = N; }
 		}
@@ -1274,9 +1270,12 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestTowerDescentHoleDistSq) { ClosestTowerDescentHoleDistSq = DistSq; ClosestTowerDescentHole = TowerDescentHole; }
 		}
-		else if (AT66PilotableTractor* Tractor = Cast<AT66PilotableTractor>(A))
+		else if (FT66ShelvedFeatureGate::IsVehicleInteractablesEnabled())
 		{
-			if (DistSq < ClosestTractorDistSq) { ClosestTractorDistSq = DistSq; ClosestTractor = Tractor; }
+			if (AT66PilotableTractor* Tractor = Cast<AT66PilotableTractor>(A))
+			{
+				if (DistSq < ClosestTractorDistSq) { ClosestTractorDistSq = DistSq; ClosestTractor = Tractor; }
+			}
 		}
 		else if (AT66FountainInteractable* Fountain = Cast<AT66FountainInteractable>(A))
 		{
@@ -1427,8 +1426,8 @@ void AT66PlayerController::HandleInteractPressed()
 			const ET66ItemRarity FinalItemRarity = UpgradeItemRarityByRewardMultiplier(PickedItemRarity, RunState->GetLootBagRewardMultiplier());
 			if (T66_IsVendorTokenItem(PickedItemID))
 			{
-				const int32 TokenLevel = SelectedLootBag->HasExplicitLine1RolledValue() ? SelectedLootBag->GetExplicitLine1RolledValue() : 1;
-				RunState->ApplyVendorTokenPickup(TokenLevel);
+				const int32 TokenStacks = SelectedLootBag->HasExplicitLine1RolledValue() ? SelectedLootBag->GetExplicitLine1RolledValue() : 1;
+				RunState->ApplyVendorTokenPickup(TokenStacks);
 				PlayInteractAudio(FName(TEXT("Pickup.LootBag")), SelectedLootBag);
 				SelectedLootBag->ConsumeAndDestroy();
 				ClearNearbyLootBag(SelectedLootBag);
@@ -1514,6 +1513,11 @@ void AT66PlayerController::HandleInteractPressed()
 	}
 	if (AT66IdolAltar* SelectedIdolAltar = Cast<AT66IdolAltar>(SecondaryInteract.Actor))
 	{
+		if (SelectedIdolAltar->RemainingSelections <= 0)
+		{
+			return;
+		}
+
 		if (bInventoryInspectOpen)
 		{
 			SetInventoryInspectOpen(false);
@@ -1542,3 +1546,4 @@ void AT66PlayerController::HandleInteractPressed()
 		}
 	}
 }
+

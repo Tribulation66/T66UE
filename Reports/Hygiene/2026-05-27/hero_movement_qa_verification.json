@@ -1,0 +1,22 @@
+{
+  "generated_local": "2026-05-27T12:27:16",
+  "command": "T66.exe -T66GameplayAutoCapture=heromovementqa -T66Entry=Tower -T66Hero=Hero_1 -T66HeroVisualOverride=Hero_1_Chad -T66HeroMovementQAVisualID=Hero_1_Chad -T66HeroMovementQACompanionID=Companion_01",
+  "process_exit_code": 0,
+  "frames_dir": "C:\\UE\\T66\\Reports\\Hygiene\\2026-05-27\\hero_movement_qa_staged_frames",
+  "frames_count": 90,
+  "log": "C:\\UE\\T66\\Saved\\StandaloneLogs\\T66_HeroMovementQA_Hygiene.log",
+  "excerpt": "C:\\UE\\T66\\Reports\\Hygiene\\2026-05-27\\hero_movement_qa_log_excerpt.txt",
+  "armed_line": "[2026.05.27-15.25.20:103][658]LogTemp: Display: [HeroMovementQA] Armed hero=Hero_1 visual=Hero_1_Chad companion=Companion_01 floor=2 start=V(Y=-1300.00) cameraDistance=520.0 cameraSideOffset=520.0 cameraHeight=240.0 moveDuration=6.80 jumpAt=2.45 rollAt=4.95.",
+  "hero_visual_line": "[2026.05.27-15.25.20:078][658]LogTemp: Display: [HeroMovementQA] HeroVisualID=Hero_1_Chad HeroWalk=AM_Hero_1_Chad_Walk class=AnimSequence playLength=1.667 bEnableRootMotion=0 hasRootMotion=0 extractedRootMotion=V(0) extractedRootMotion2D=0.000 rootTrack=Unavailable",
+  "companion_visual_line": "[2026.05.27-15.25.20:090][658]LogTemp: Display: [HeroMovementQA] CompanionVisualID=Companion_01 CompanionWalk=AM_Companion_01_Walk class=AnimSequence playLength=1.667 bEnableRootMotion=0 hasRootMotion=0 extractedRootMotion=V(0) extractedRootMotion2D=0.000 rootTrack=Unavailable",
+  "sample_count": 15,
+  "max_walk_speeds": [
+    840.0
+  ],
+  "max_velocity_speed": 840.0,
+  "max_delta_speed": 886.2,
+  "observed_x_distance": 5406.0,
+  "jump_observed_by_z": true,
+  "passed": true,
+  "interpretation": "Packaged staged exe ran the existing HeroMovementQA route. Samples show CharacterMovement-driven hero movement with stable MaxWalkSpeed 840.0, sustained velocity near 840, forward displacement, and a jump Z excursion."
+}

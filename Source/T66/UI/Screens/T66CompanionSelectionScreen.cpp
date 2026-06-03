@@ -103,7 +103,7 @@ namespace
 		}
 		return Loc
 			? Loc->GetText_CompanionLore(CompanionData.CompanionID)
-			: NSLOCTEXT("T66.CompanionSelection", "FallbackCompanionLore", "A mysterious companion.");
+			: NSLOCTEXT("T66.CompanionSelection", "FallbackCompanionLore", "A mysterious girlfriend.");
 	}
 
 	FName CompanionSelectionTag(const TCHAR* Tag)
@@ -485,7 +485,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 
 	const FText SkinsText = Loc ? Loc->GetText_Skins() : NSLOCTEXT("T66.CompanionSelection", "Skins", "SKINS");
 	const FText LoreText = Loc ? Loc->GetText_Lore() : NSLOCTEXT("T66.CompanionSelection", "Lore", "LORE");
-	const FText ConfirmText = Loc ? Loc->GetText_ConfirmCompanion() : NSLOCTEXT("T66.CompanionSelection", "ConfirmCompanion", "CONFIRM COMPANION");
+	const FText ConfirmText = Loc ? Loc->GetText_ConfirmCompanion() : NSLOCTEXT("T66.CompanionSelection", "ConfirmCompanion", "CONFIRM GIRLFRIEND");
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 	const FText EnterText = NSLOCTEXT("T66.CompanionSelection", "EnterShort", "ENTER");
 	const FText ReadyText = NSLOCTEXT("T66.CompanionSelection", "Ready", "READY");
@@ -516,8 +516,8 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 		SelectedDifficulty = Difficulties.IsValidIndex(0) ? Difficulties[0] : ET66Difficulty::Easy;
 	}
 
-	FText CurrentCompanionName = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionSelection", "NoCompanion", "NO COMPANION");
-	FText CurrentCompanionLore = NSLOCTEXT("T66.CompanionSelection", "NoCompanionLore", "Selecting no companion means you face the tribulation alone.");
+	FText CurrentCompanionName = Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionSelection", "NoCompanion", "NO GIRLFRIEND");
+	FText CurrentCompanionLore = NSLOCTEXT("T66.CompanionSelection", "NoCompanionLore", "Selecting no girlfriend means you face the tribulation alone.");
 	FLinearColor PreviewColor = FLinearColor(0.3f, 0.3f, 0.4f, 1.0f);
 	if (!PreviewedCompanionID.IsNone())
 	{
@@ -718,7 +718,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	AddSlot(1392.f, 51.f, 462.f, 46.f,
 		MakeTrackedLabel(CompanionNameWidget, CurrentCompanionName, 30, true, FT66FlatStyle::SelectedText(), CompanionSelectionTag(TEXT("CompanionSelection.CompanionName")), ETextJustify::Center));
 	AddSlot(1372.f, 118.f, 502.f, 118.f,
-		FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(10.f), MakeStaticLabel(NSLOCTEXT("T66.CompanionSelection", "PortraitStrip", "COMPANION PORTRAIT"), 16, true, FT66FlatStyle::SecondaryText(), CompanionSelectionTag(TEXT("CompanionSelection.PortraitLabel")), ETextJustify::Center), nullptr, CompanionSelectionTag(TEXT("CompanionSelection.PortraitPanel"))));
+		FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(10.f), MakeStaticLabel(NSLOCTEXT("T66.CompanionSelection", "PortraitStrip", "GIRLFRIEND PORTRAIT"), 16, true, FT66FlatStyle::SecondaryText(), CompanionSelectionTag(TEXT("CompanionSelection.PortraitLabel")), ETextJustify::Center), nullptr, CompanionSelectionTag(TEXT("CompanionSelection.PortraitPanel"))));
 	AddSlot(1372.f, 261.f, 502.f, 64.f,
 		FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(12.f),
 			SNew(SHorizontalBox)
@@ -1253,7 +1253,7 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 		if (PreviewedCompanionID.IsNone())
 		{
 			UT66LocalizationSubsystem* Loc = GetLocSubsystem();
-			CompanionNameWidget->SetText(Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionSelection", "NoCompanionTitle", "No Companion"));
+			CompanionNameWidget->SetText(Loc ? Loc->GetText_NoCompanion() : NSLOCTEXT("T66.CompanionSelection", "NoCompanionTitle", "No Girlfriend"));
 		}
 		else
 		{
@@ -1270,7 +1270,7 @@ void UT66CompanionSelectionScreen::UpdateCompanionDisplay()
 	{
 		if (PreviewedCompanionID.IsNone())
 		{
-			CompanionLoreWidget->SetText(NSLOCTEXT("T66.CompanionSelection", "NoCompanionLore", "Selecting no companion means you face the tribulation alone."));
+			CompanionLoreWidget->SetText(NSLOCTEXT("T66.CompanionSelection", "NoCompanionLore", "Selecting no girlfriend means you face the tribulation alone."));
 		}
 		else
 		{
@@ -1660,4 +1660,3 @@ void UT66CompanionSelectionScreen::OnLanguageChanged(ET66Language NewLanguage)
 {
 	RequestDeferredSlateRebuild();
 }
-

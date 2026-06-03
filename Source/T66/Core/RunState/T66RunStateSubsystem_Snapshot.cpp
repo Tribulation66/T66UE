@@ -17,6 +17,15 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 		OutSnapshot.HeartSlotTiers.Add(static_cast<uint8>(GetHeartSlotTier(SlotIndex)));
 	}
 	OutSnapshot.CurrentGold = CurrentGold;
+	OutSnapshot.CollectedMobLootStack = CollectedMobLootStack;
+	OutSnapshot.MobLootDropsCollectedThisRun = MobLootDropsCollectedThisRun;
+	OutSnapshot.MobLootQuantityCollectedThisRun = MobLootQuantityCollectedThisRun;
+	OutSnapshot.MobLootGoldValueCollectedThisRun = MobLootGoldValueCollectedThisRun;
+	OutSnapshot.MobLootQuantityCollectedByPlayerThisRun = MobLootQuantityCollectedByPlayerThisRun;
+	OutSnapshot.MobLootQuantityCollectedByPetThisRun = MobLootQuantityCollectedByPetThisRun;
+	OutSnapshot.MobLootDropsCollectedByPetThisRun = MobLootDropsCollectedByPetThisRun;
+	OutSnapshot.MobLootQuantitySoldThisRun = MobLootQuantitySoldThisRun;
+	OutSnapshot.MobLootSaleGoldThisRun = MobLootSaleGoldThisRun;
 	OutSnapshot.CurrentDebt = CurrentDebt;
 	OutSnapshot.DifficultyTier = DifficultyTier;
 	OutSnapshot.DifficultySkulls = DifficultySkulls;
@@ -24,7 +33,7 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.OwedBossIDs = OwedBossIDs;
 	OutSnapshot.CowardiceGatesTakenCount = CowardiceGatesTakenCount;
 	OutSnapshot.InventorySlots = InventorySlots;
-	OutSnapshot.ActiveVendorTokenLevel = ActiveVendorTokenLevel;
+	OutSnapshot.ActiveVendorTokenStacks = T66_ClampVendorTokenStackCount(ActiveVendorTokenStacks);
 	OutSnapshot.EventLog = EventLog;
 	OutSnapshot.StructuredEventLog = StructuredEventLog;
 	OutSnapshot.StagePacingPoints = StagePacingPoints;
@@ -70,6 +79,19 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.BossCurrentHP = BossCurrentHP;
 	OutSnapshot.BossParts = BossPartSnapshots;
 	OutSnapshot.bSaintBlessingActive = bSaintBlessingActive;
+	OutSnapshot.SaintBlessingPrimaryStatBonuses = SaintBlessingPrimaryStatBonusesPrecise;
+	OutSnapshot.SaintBlessingSecondaryStatBonusEntries.Reset();
+	for (const TPair<ET66SecondaryStatType, int32>& Pair : SaintBlessingSecondaryStatBonusTenths)
+	{
+		if (Pair.Key == ET66SecondaryStatType::None || Pair.Value <= 0)
+		{
+			continue;
+		}
+
+		FT66SavedSecondaryStatBonusEntry& Entry = OutSnapshot.SaintBlessingSecondaryStatBonusEntries.AddDefaulted_GetRef();
+		Entry.StatType = Pair.Key;
+		Entry.BonusTenths = Pair.Value;
+	}
 	OutSnapshot.FinalSurvivalEnemyScalar = FinalSurvivalEnemyScalar;
 	OutSnapshot.AntiCheatIncomingHitChecks = AntiCheatIncomingHitChecks;
 	OutSnapshot.AntiCheatDamageTakenHitCount = AntiCheatDamageTakenHitCount;
@@ -87,6 +109,9 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.AntiCheatCurrentPressureDodges = AntiCheatCurrentPressureDodges;
 	OutSnapshot.AntiCheatCurrentPressureDamageApplied = AntiCheatCurrentPressureDamageApplied;
 	OutSnapshot.AntiCheatCurrentPressureExpectedDodges = AntiCheatCurrentPressureExpectedDodges;
+	OutSnapshot.NoIdolSelectionStacks = NoIdolSelectionStacks;
+	OutSnapshot.NoIdolPrimaryStatBonuses = NoIdolPrimaryStatBonusesPrecise;
+	OutSnapshot.UltimateCharge = UltimateCharge;
 
 	if (const UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
 	{
@@ -153,6 +178,15 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 		RebuildHeartSlotTiersFromMaxHP();
 	}
 	CurrentGold = FMath::Max(0, Snapshot.CurrentGold);
+	CollectedMobLootStack = FMath::Clamp(Snapshot.CollectedMobLootStack, 0, MaxCollectedMobLootStack);
+	MobLootDropsCollectedThisRun = FMath::Max(0, Snapshot.MobLootDropsCollectedThisRun);
+	MobLootQuantityCollectedThisRun = FMath::Max(0, Snapshot.MobLootQuantityCollectedThisRun);
+	MobLootGoldValueCollectedThisRun = FMath::Max(0, Snapshot.MobLootGoldValueCollectedThisRun);
+	MobLootQuantityCollectedByPlayerThisRun = FMath::Max(0, Snapshot.MobLootQuantityCollectedByPlayerThisRun);
+	MobLootQuantityCollectedByPetThisRun = FMath::Max(0, Snapshot.MobLootQuantityCollectedByPetThisRun);
+	MobLootDropsCollectedByPetThisRun = FMath::Max(0, Snapshot.MobLootDropsCollectedByPetThisRun);
+	MobLootQuantitySoldThisRun = FMath::Max(0, Snapshot.MobLootQuantitySoldThisRun);
+	MobLootSaleGoldThisRun = FMath::Max(0, Snapshot.MobLootSaleGoldThisRun);
 	CurrentDebt = FMath::Max(0, Snapshot.CurrentDebt);
 	DifficultyTier = FMath::Max(0, Snapshot.DifficultyTier);
 	DifficultySkulls = FMath::Max(0, Snapshot.DifficultySkulls);
@@ -168,7 +202,7 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[Items] Removed %d retired inventory slot(s) from run snapshot."), RemovedRetiredSlots);
 	}
-	ActiveVendorTokenLevel = T66_ClampVendorTokenLevel(Snapshot.ActiveVendorTokenLevel);
+	ActiveVendorTokenStacks = T66_ClampVendorTokenStackCount(Snapshot.ActiveVendorTokenStacks);
 	EventLog = Snapshot.EventLog;
 	StructuredEventLog = Snapshot.StructuredEventLog;
 	StagePacingPoints = Snapshot.StagePacingPoints;
@@ -191,6 +225,15 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	bRunEnded = Snapshot.bRunEnded;
 	bRunEndedAsVictory = Snapshot.bRunEndedAsVictory;
 	bSaintBlessingActive = Snapshot.bSaintBlessingActive;
+	SaintBlessingPrimaryStatBonusesPrecise = Snapshot.SaintBlessingPrimaryStatBonuses;
+	SaintBlessingSecondaryStatBonusTenths.Reset();
+	for (const FT66SavedSecondaryStatBonusEntry& Entry : Snapshot.SaintBlessingSecondaryStatBonusEntries)
+	{
+		if (Entry.StatType != ET66SecondaryStatType::None && Entry.BonusTenths > 0)
+		{
+			SaintBlessingSecondaryStatBonusTenths.FindOrAdd(Entry.StatType) += Entry.BonusTenths;
+		}
+	}
 	FinalSurvivalEnemyScalar = FMath::Clamp(Snapshot.FinalSurvivalEnemyScalar, 1.f, 99.f);
 	AntiCheatIncomingHitChecks = FMath::Max(0, Snapshot.AntiCheatIncomingHitChecks);
 	AntiCheatDamageTakenHitCount = FMath::Max(0, Snapshot.AntiCheatDamageTakenHitCount);
@@ -241,6 +284,10 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	{
 		AddPersistentSecondaryStatBonusTenths(Entry.StatType, Entry.BonusTenths);
 	}
+	RestoreNoIdolState(Snapshot.NoIdolSelectionStacks, Snapshot.NoIdolPrimaryStatBonuses);
+	UltimateCharge = FMath::Clamp(Snapshot.UltimateCharge, 0.f, UltimateChargeRequired);
+	UltimateCooldownRemainingSeconds = 0.f;
+	LastBroadcastUltimateSecond = 0;
 	SyncLegacyHeroStatsFromPrecise();
 	PowerCrystalsEarnedThisRun = FMath::Max(0, Snapshot.PowerCrystalsEarnedThisRun);
 	PowerCrystalsGrantedToWalletThisRun = FMath::Clamp(Snapshot.PowerCrystalsGrantedToWalletThisRun, 0, PowerCrystalsEarnedThisRun);

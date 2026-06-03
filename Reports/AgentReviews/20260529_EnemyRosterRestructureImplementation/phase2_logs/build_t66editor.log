@@ -1,0 +1,7 @@
+Using bundled DotNet SDK version: 8.0.412 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" T66Editor Win64 Development -project=C:\UE\T66\T66.uproject -waitmutex
+Log file: C:\Users\DoPra\AppData\Local\UnrealBuildTool\Log.txt
+Target is up to date
+
+Result: Succeeded
+Total execution time: 0.89 seconds

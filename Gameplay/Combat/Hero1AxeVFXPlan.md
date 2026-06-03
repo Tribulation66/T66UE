@@ -56,7 +56,6 @@ The approved AOE lab prototype may add:
 Do not start Step 1 research implementation or asset authoring until these gates are resolved:
 
 - Confirm Hero 1 weapon identity.
-  - Current `Content/TD/Data/T66TD_Heroes.csv` has `Hero_1`, `Royal Chad`, `Lane Guard`, `Spear wall lane control`, and `Spearstorm`.
   - The current user direction is axe-themed VFX.
   - Before building, decide whether this is a spear-to-axe redesign, an alternate variant, or throwaway R&D.
 - Confirm `/Game/VFXLab` is free and reserved for isolated VFX lab assets.

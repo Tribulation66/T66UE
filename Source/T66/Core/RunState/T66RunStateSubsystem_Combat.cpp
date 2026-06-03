@@ -27,6 +27,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66RunState, Log, All);
 namespace
 {
 	static const FName T66BackroomsChaserTouchDelivery(TEXT("BackroomsChaserTouch"));
+	static const FName T66OuroborosLethalZoneDelivery(TEXT("OuroborosLethalZone"));
 
 	FString T66FormatDamageActorLocation(const AActor* Actor)
 	{
@@ -456,6 +457,8 @@ void UT66RunStateSubsystem::NotifyEnemyKilledByHero()
 		ChaosTheoryBounceStacks = FMath::Min(3, ChaosTheoryBounceStacks + 1);
 		ChaosTheoryTimerEndWorldTime = Now + 5.0;
 	}
+
+	AddUltimateCharge(UltimateChargePerKill);
 }
 
 
@@ -485,6 +488,7 @@ void UT66RunStateSubsystem::NotifyAttackFired()
 	LastAttackFireWorldTime = World->GetTimeSeconds();
 	if (PassiveType == ET66PassiveType::Overclock)
 		OverclockAttackCounter++;
+	AddUltimateCharge(UltimateChargePerAttack);
 }
 
 
@@ -565,9 +569,33 @@ void UT66RunStateSubsystem::ApplyTemporaryPrimaryStatAmplifier(
 	const int32 BonusStatPoints,
 	const float DurationSeconds)
 {
-	static_cast<void>(StatType);
-	static_cast<void>(BonusStatPoints);
-	static_cast<void>(DurationSeconds);
+	if (StatType == ET66HeroStatType::Special || BonusStatPoints <= 0 || DurationSeconds <= 0.f)
+	{
+		return;
+	}
+
+	FT66TemporaryPrimaryStatAmplifier& Amplifier = TemporaryPrimaryStatAmplifiers.AddDefaulted_GetRef();
+	Amplifier.StatType = StatType;
+	Amplifier.BonusTenths = WholeStatToTenths(FMath::Max(1, BonusStatPoints));
+	Amplifier.SecondsRemaining = FMath::Max(0.1f, DurationSeconds);
+	HeroProgressChanged.Broadcast();
+}
+
+void UT66RunStateSubsystem::ApplyTemporarySecondaryStatAmplifier(
+	const ET66SecondaryStatType StatType,
+	const int32 BonusStatPoints,
+	const float DurationSeconds)
+{
+	if (!T66IsLiveSecondaryStatType(StatType) || BonusStatPoints <= 0 || DurationSeconds <= 0.f)
+	{
+		return;
+	}
+
+	FT66TemporarySecondaryStatAmplifier& Amplifier = TemporarySecondaryStatAmplifiers.AddDefaulted_GetRef();
+	Amplifier.StatType = StatType;
+	Amplifier.BonusTenths = WholeStatToTenths(FMath::Max(1, BonusStatPoints));
+	Amplifier.SecondsRemaining = FMath::Max(0.1f, DurationSeconds);
+	HeroProgressChanged.Broadcast();
 }
 
 
@@ -588,15 +616,32 @@ void UT66RunStateSubsystem::ApplyStatusCurse(float /*DurationSeconds*/) {}
 
 bool UT66RunStateSubsystem::TryActivateUltimate()
 {
-	if (UltimateCooldownRemainingSeconds > 0.f || LastBroadcastUltimateSecond != 0)
+	if (UltimateCharge < UltimateChargeRequired)
 	{
-		UltimateCooldownRemainingSeconds = 0.f;
-		LastBroadcastUltimateSecond = 0;
-		UltimateChanged.Broadcast();
+		return false;
 	}
-	return false;
+
+	UltimateCharge = 0.f;
+	UltimateCooldownRemainingSeconds = 0.f;
+	LastBroadcastUltimateSecond = 0;
+	UltimateChanged.Broadcast();
+	return true;
 }
 
+void UT66RunStateSubsystem::AddUltimateCharge(const float Amount)
+{
+	if (Amount <= 0.f)
+	{
+		return;
+	}
+
+	const float PreviousCharge = UltimateCharge;
+	UltimateCharge = FMath::Clamp(UltimateCharge + Amount, 0.f, UltimateChargeRequired);
+	if (!FMath::IsNearlyEqual(PreviousCharge, UltimateCharge))
+	{
+		UltimateChanged.Broadcast();
+	}
+}
 
 void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 {
@@ -607,13 +652,6 @@ void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 
 	// HP regen (numerical)
 	ApplyHpRegen(DeltaTime);
-
-	if (UltimateCooldownRemainingSeconds > 0.f)
-	{
-		UltimateCooldownRemainingSeconds = 0.f;
-		LastBroadcastUltimateSecond = 0;
-		UltimateChanged.Broadcast();
-	}
 
 	// Stage speed boost timer
 	if (StageMoveSpeedSecondsRemaining > 0.f)
@@ -634,6 +672,16 @@ void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 		if (Amplifier.SecondsRemaining <= 0.f)
 		{
 			TemporaryPrimaryStatAmplifiers.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+			bAmplifiersChanged = true;
+		}
+	}
+	for (int32 Index = TemporarySecondaryStatAmplifiers.Num() - 1; Index >= 0; --Index)
+	{
+		FT66TemporarySecondaryStatAmplifier& Amplifier = TemporarySecondaryStatAmplifiers[Index];
+		Amplifier.SecondsRemaining = FMath::Max(0.f, Amplifier.SecondsRemaining - DeltaTime);
+		if (Amplifier.SecondsRemaining <= 0.f)
+		{
+			TemporarySecondaryStatAmplifiers.RemoveAtSwap(Index, 1, EAllowShrinking::No);
 			bAmplifiersChanged = true;
 		}
 	}
@@ -665,6 +713,8 @@ bool UT66RunStateSubsystem::IsBossDamageSource(const AActor* Attacker)
 void UT66RunStateSubsystem::HandleLethalDamage(AActor* Attacker, const FName DeliveryMethod)
 {
 	const bool bBackroomsChaserTouch = DeliveryMethod == T66BackroomsChaserTouchDelivery;
+	const bool bOuroborosLethalZone = DeliveryMethod == T66OuroborosLethalZoneDelivery;
+	const bool bBypassesQuickRevive = bBackroomsChaserTouch || bOuroborosLethalZone;
 	// Dev Immortality: never end the run.
 	if (bDevImmortality)
 	{
@@ -674,7 +724,7 @@ void UT66RunStateSubsystem::HandleLethalDamage(AActor* Attacker, const FName Del
 		return;
 	}
 
-	if (!bBackroomsChaserTouch && ConsumeBackroomsQuickReviveItem())
+	if (!bBypassesQuickRevive && ConsumeBackroomsQuickReviveItem())
 	{
 		if (HeartSlotTiers.Num() != DefaultMaxHearts)
 		{
@@ -719,11 +769,6 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker, const 
 				}
 			}
 		}
-	}
-
-	if (!bBackroomsChaserTouch && bSaintBlessingActive)
-	{
-		return false;
 	}
 
 	if (Cast<AT66TrapBase>(Attacker) == nullptr && (Cast<AT66EnemyBase>(Attacker) || Cast<AT66BossBase>(Attacker)))
@@ -994,8 +1039,8 @@ void UT66RunStateSubsystem::ApplyHpRegen(float DeltaTime)
 }
 
 
-void UT66RunStateSubsystem::KillPlayer()
+void UT66RunStateSubsystem::KillPlayer(const FName DeliveryMethod)
 {
 	CurrentHP = 0.f;
-	HandleLethalDamage(nullptr);
+	HandleLethalDamage(nullptr, DeliveryMethod);
 }

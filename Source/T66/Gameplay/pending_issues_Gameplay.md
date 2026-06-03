@@ -1,5 +1,12 @@
 # Pending Issues - Gameplay
 
+## Vendor Boss Has No CharacterVisuals Row
+
+- Severity tag: [Minor]
+- What's wrong: The staged vendor/shop corrections proof spawned and defeated `AT66VendorBoss`, but the runtime log emitted `LogT66CharacterVisuals: Error: [MESH] ResolveVisual: NO ROW for VisualID='VendorBoss' in DT_CharacterVisuals`. The proof still passed because boss identity, defeat, token drop, and vendor-token stack math were valid, but the boss visual lookup is unresolved.
+- Why it's out of scope now: The approved pass explicitly leaves CharacterVisuals consolidation/data alone and only changes vendor-token, steal-trigger, Daily Descent naming, and retired side-mode teardown surfaces.
+- What fixing it would entail: Decide whether `VendorBoss` should receive a dedicated `CharacterVisuals.csv` row or move into a future per-entity visual table, author/import the visual row through the owning data-table pipeline, then rerun a staged vendor-boss smoke to confirm the visual error is gone.
+
 ## Hero 1 Axe AOE VFX Lab Uses Deprecated Niagara Emitter Readiness API
 
 - Severity tag: [Minor]
@@ -155,12 +162,11 @@
 - Why it's out of scope now: Atmosphere Iteration 01 is explicitly Dungeon-only so Pablo can validate the foundation before extending vibe-setter values to other themes.
 - What fixing it would entail: Author and tune per-theme sky light, fog, and color-grading specs for Forest, Ocean, Martian, and Hell, then validate them in staged gameplay screenshots.
 
-## NPC Class Names Still Use HouseNPC
+## Resolved: NPC Class Names Still Used HouseNPC
 
-- Severity tag: [Minor]
-- What's wrong: The data/setup/runtime table seam now uses `NPCs.csv`, `DT_NPCs`, `NPCsDataTable`, and `GetNPCData`, but the underlying C++ actor/data symbols still include `AT66HouseNPCBase`, `FHouseNPCData`, and related subclass/include names in `Source/T66/Gameplay` and registry consumers.
-- Why it's out of scope now: The current cleanup is constrained to data/loader/source naming and avoids broad C++ class renames that would touch generated headers, includes, Blueprint references, and asset class bindings.
-- What fixing it would entail: Rename the C++ base actor and data struct to neutral NPC names, add Unreal redirects if needed, update all includes/subclasses/registry references, compile, and verify existing Blueprint/class references still resolve.
+- Severity tag: [Resolved - Minor]
+- Resolution: The C++ base actor and data struct were renamed to `AT66NPCBase` and `FT66NPCData`; registry, gameplay, HUD, and NPC subclass references now use the neutral symbols, with CoreRedirects preserving old class/struct references.
+- Follow-up: None for the C++ symbol cleanup.
 
 ## Vehicle Class Names Still Use Tractor
 
@@ -175,3 +181,4 @@
 - What's wrong: `Source/T66/Gameplay/T66TutorialGate.*` and the `AT66TutorialGate` interaction path in `Source/T66/Gameplay/T66PlayerController_Combat.cpp` still exist, but `Source/T66/Gameplay/T66TutorialManager.cpp` now spawns `AT66StageGate` for the tutorial exit.
 - Why it's out of scope now: This pass was intentionally constrained to swapping the tutorial end to the regular Stage Gate without broad class/file deletion or reference cleanup.
 - What fixing it would entail: Prove there are no Blueprint, asset, map, or automation references to `AT66TutorialGate`, then remove the class, includes, player-controller branch, and any stale generated/API references with a focused compile and content reference check.
+

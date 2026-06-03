@@ -95,24 +95,39 @@ namespace T66CombatShared
 
 	const TSet<FName>& GetImpactPresentationProofIdols()
 	{
-		// Idol_Water=AOE, Idol_Light=Pierce, Idol_Electric=Bounce, Idol_Poison=DOT.
-		// Idol_Earth is intentionally absent (neutral control: it must not enter the lane).
+		// 4x4 grid proof idols: Ice AOE, Electricity Pierce/Bounce, Nature DOT.
+		// Idol_Nature_AOE is intentionally absent (neutral control: it must not enter the lane).
 		static const TSet<FName> ImpactPresentationProofIdols = {
-			FName(TEXT("Idol_Water")),
-			FName(TEXT("Idol_Light")),
-			FName(TEXT("Idol_Electric")),
-			FName(TEXT("Idol_Poison")),
+			FName(TEXT("Idol_Ice_AOE")),
+			FName(TEXT("Idol_Electricity_Pierce")),
+			FName(TEXT("Idol_Electricity_Bounce")),
+			FName(TEXT("Idol_Nature_DOT")),
 		};
 		return ImpactPresentationProofIdols;
 	}
 
 	const TSet<FName>& GetSupportedProofIdols()
 	{
-		// Impact-presentation proof idols plus Idol_Earth (neutral/alternate control input).
+		// Impact-presentation proof idols plus the full 4x4 Stream B traveler grid.
 		static const TSet<FName> SupportedProofIdols = []()
 		{
 			TSet<FName> Set = GetImpactPresentationProofIdols();
-			Set.Add(FName(TEXT("Idol_Earth")));
+			Set.Add(FName(TEXT("Idol_Fire_AOE")));
+			Set.Add(FName(TEXT("Idol_Fire_Pierce")));
+			Set.Add(FName(TEXT("Idol_Fire_Bounce")));
+			Set.Add(FName(TEXT("Idol_Fire_DOT")));
+			Set.Add(FName(TEXT("Idol_Ice_AOE")));
+			Set.Add(FName(TEXT("Idol_Ice_Pierce")));
+			Set.Add(FName(TEXT("Idol_Ice_Bounce")));
+			Set.Add(FName(TEXT("Idol_Ice_DOT")));
+			Set.Add(FName(TEXT("Idol_Electricity_AOE")));
+			Set.Add(FName(TEXT("Idol_Electricity_Pierce")));
+			Set.Add(FName(TEXT("Idol_Electricity_Bounce")));
+			Set.Add(FName(TEXT("Idol_Electricity_DOT")));
+			Set.Add(FName(TEXT("Idol_Nature_AOE")));
+			Set.Add(FName(TEXT("Idol_Nature_Pierce")));
+			Set.Add(FName(TEXT("Idol_Nature_Bounce")));
+			Set.Add(FName(TEXT("Idol_Nature_DOT")));
 			return Set;
 		}();
 		return SupportedProofIdols;
@@ -143,6 +158,18 @@ namespace T66CombatShared
 			GetScaleSecondaryForCategory(Category),
 			RunState ? RunState->GetHeroScaleMultiplier() : 1.f,
 			5.f);
+	}
+
+	ET66SecondaryStatType GetElementPowerSecondaryForIdolElement(const ET66IdolElement Element)
+	{
+		return T66GetElementPowerStatType(Element);
+	}
+
+	float GetIdolElementPowerMultiplier(const UT66RunStateSubsystem* RunState, const ET66IdolElement Element)
+	{
+		return RunState
+			? FMath::Max(0.1f, RunState->GetSecondaryStatValue(GetElementPowerSecondaryForIdolElement(Element)))
+			: 1.f;
 	}
 
 	float GetIdolRarityVisualScale(const ET66ItemRarity Rarity)

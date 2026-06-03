@@ -326,10 +326,6 @@ namespace T66RuntimeUITextureAccess
 		{
 			return Remapped;
 		}
-		if (const FString Remapped = RemapPrefix(TEXT("SourceAssets/Arcade/"), TEXT("RuntimeDependencies/T66/Arcade/")); !Remapped.IsEmpty())
-		{
-			return Remapped;
-		}
 		if (const FString Remapped = RemapPrefix(
 			TEXT("SourceAssets/Shikashi's Fantasy Icons Pack v2/Shikashi's Fantasy Icons Pack v2/"),
 			TEXT("RuntimeDependencies/T66/UI/Minimap/")); !Remapped.IsEmpty())

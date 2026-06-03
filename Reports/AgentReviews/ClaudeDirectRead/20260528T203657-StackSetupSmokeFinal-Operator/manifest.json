@@ -1,0 +1,30 @@
+﻿{
+    "ArtifactKind":  "OperatorArtifactNotGreenlight",
+    "Mode":  "Operator",
+    "Model":  "claude-opus-4-8",
+    "Effort":  "high",
+    "PermissionMode":  "plan",
+    "AllowedTools":  [
+                         "Read",
+                         "Grep",
+                         "Glob"
+                     ],
+    "AddDir":  [
+                   "C:\\UE\\T66"
+               ],
+    "PromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\20260528_ClaudeStackSetup\\direct_read_operator_prompt.md",
+    "EffectivePromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T203657-StackSetupSmokeFinal-Operator\\effective_prompt.md",
+    "OutputPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T203657-StackSetupSmokeFinal-Operator\\claude_direct_read_operator.md",
+    "ReviewedOperatorRun":  null,
+    "AttemptsRequested":  2,
+    "TimeoutSeconds":  180,
+    "ClaudePath":  "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+    "ClaudeVersion":  "2.1.150 (Claude Code)",
+    "SuccessfulStdoutPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T203657-StackSetupSmokeFinal-Operator\\attempts\\stdout_attempt1.md",
+    "SuccessfulStderrPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T203657-StackSetupSmokeFinal-Operator\\attempts\\stderr_attempt1.txt",
+    "Greenlit":  false,
+    "Verdict":  null,
+    "VerdictLine":  null,
+    "OutcomeKind":  "ClaudeOperatorArtifact",
+    "FailureKind":  null
+}

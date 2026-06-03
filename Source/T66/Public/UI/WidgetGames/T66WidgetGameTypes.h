@@ -8,37 +8,27 @@
 UENUM(BlueprintType)
 enum class ET66WidgetGameCategory : uint8
 {
-	Arcade,
 	Casino,
-	Frontend,
 };
 
 UENUM(BlueprintType)
 enum class ET66WidgetGamePlayModel : uint8
 {
-	RealtimePopup,
-	RealtimeBoard,
 	TurnCasino,
 	PhysicalCasino,
-	CardRun,
-	IdleProgression,
 };
 
 UENUM(BlueprintType)
 enum class ET66WidgetGameLaunchKind : uint8
 {
-	ArcadePopup,
 	CasinoChildWidget,
-	FrontendScreen,
 };
 
 UENUM(BlueprintType)
 enum class ET66WidgetGameDemoGateKind : uint8
 {
 	None,
-	ArcadeAllowList,
 	CasinoAllowList,
-	FrontendMinigameLocked,
 };
 
 UENUM(BlueprintType)

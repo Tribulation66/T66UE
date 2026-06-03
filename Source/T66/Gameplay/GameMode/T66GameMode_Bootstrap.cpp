@@ -83,7 +83,7 @@ RunState->StageTimerChanged.AddDynamic(this, &AT66GameMode::HandleStageTimerChan
 RunState->StageChanged.AddDynamic(this, &AT66GameMode::HandleStageChanged);
 RunState->DifficultyChanged.AddDynamic(this, &AT66GameMode::HandleDifficultyChanged);
 RunState->EndSaintBlessingEmpowerment();
-RunState->SetSaintBlessingActive(false);
+RunState->ClearSaintBlessingStatBoosts();
 RunState->SetFinalSurvivalEnemyScalar(1.f);
 if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
 {
@@ -457,6 +457,10 @@ SpawnStartGateForPlayer(PC);
 if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
 {
 SpawnWeaponAltarForPlayer(PC);
+if (IsUsingTowerMainMapLayout())
+{
+SpawnIdolAltarForPlayer(PC);
+}
 }
 
 if (!IsUsingTowerMainMapLayout())
@@ -701,19 +705,6 @@ void AT66GameMode::SpawnStageMiasmaSystems()
 
 void AT66GameMode::SpawnStageEnemyDirector()
 {
-	if (IsUsingTowerMainMapLayout() && IsBossRushFinaleStage())
-	{
-		UE_LOG(LogT66GameMode, Log, TEXT("[GOLD] Phase2-Tick3: skipped enemy director for boss-rush finale stage."));
-		if (UWorld* World = GetWorld())
-		{
-			World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
-			{
-				FinalizeStandardStageCombatBootstrap();
-			}));
-		}
-		return;
-	}
-
 	if (UWorld* World = GetWorld())
 	{
 		const bool bHadEnemyDirector = (FindOrCacheEnemyDirector(World) != nullptr);

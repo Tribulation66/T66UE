@@ -10,8 +10,8 @@
 class UT66LocalizationSubsystem;
 
 /**
- * Companion Grid Modal - overlay showing a grid of all companions (and NO COMPANION) by color.
- * Clicking a companion selects it on the underlying Companion Selection screen and closes the modal.
+ * Girlfriend Grid Modal - overlay showing a grid of all girlfriends (and NO GIRLFRIEND) by color.
+ * Clicking a girlfriend selects it on the underlying Girlfriend Selection screen and closes the modal.
  */
 UCLASS(Blueprintable)
 class T66_API UT66CompanionGridScreen : public UT66ScreenBase

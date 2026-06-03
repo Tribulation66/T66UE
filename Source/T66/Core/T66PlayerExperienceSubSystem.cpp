@@ -249,3 +249,13 @@ float UT66PlayerExperienceSubSystem::GetDifficultyLevelUpWaveRadiusUU(const ET66
 {
 	return FMath::Max(0.f, GetDifficultyTuning(Difficulty).LevelUpWaveRadiusUU);
 }
+
+float UT66PlayerExperienceSubSystem::GetDifficultyHeadshotChancePerBonusPoint(const ET66Difficulty Difficulty) const
+{
+	return FMath::Clamp(GetDifficultyTuning(Difficulty).HeadshotChancePerBonusPoint, 0.f, 1.f);
+}
+
+float UT66PlayerExperienceSubSystem::GetDifficultyHeadshotStunDurationSeconds(const ET66Difficulty Difficulty) const
+{
+	return FMath::Max(0.f, GetDifficultyTuning(Difficulty).HeadshotStunDurationSeconds);
+}

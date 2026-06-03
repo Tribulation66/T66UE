@@ -31,14 +31,11 @@ Important interpretation: `regex matches = 0` does not mean the widget is flat-m
 | In-world | 2 |
 | Shop | 9 |
 | Modal | 1 |
-| Minigame-HUD | 1 |
 | Other | 9 |
 
 ### Top 5 Highest-Complexity Items
 
 1. `UT66GameplayHUDWidget` - Complex because it is the primary active gameplay HUD and contains health/status, ability cooldowns, inventory/economy, minimap/full-map, interaction prompts, boss bars, pickup cards, crate/chest presentations, and legacy reference chrome matches in the same construction path.
-2. `AT66MiniBattleHUD` - Complex because it is an `AHUD` Canvas renderer, not a Slate tree, and uses many gameplay-semantic colors for hearts, timer danger, XP, ultimate readiness, boss health, and loot crate presentation.
-3. `UT66GamblerOverlayWidget` - Complex because it owns multiple casino pages and couples UI to run economy, inventory, wager state, boss anger, and minigame result state.
 4. `UT66CasinoShopTabWidget` - Complex because it shares the in-run casino host, uses run-state economy/inventory delegates, and has purchase/steal/alchemy behavior that needs interaction verification beyond visual chrome.
 5. `UT66LeaderboardPanel` - Complex because it is a large shared component with 22 standard legacy chrome matches, old hover behavior, state plates, dropdowns, pagination/rows, and likely cross-screen usage.
 
@@ -47,7 +44,6 @@ Important interpretation: `regex matches = 0` does not mean the widget is flat-m
 - `AT66PlayerController` exposes DeletedTheme-theme override class slots for HUD and overlays (`DeletedThemeGameplayHUDClass`, `DeletedThemeCasinoOverlayClass`, `DeletedThemeCollectorOverlayClass`, `DeletedThemeCowardicePromptClass`, `DeletedThemeIdolAltarOverlayClass`). If assigned to Blueprint subclasses, those subclasses are not separately source-readable here. They inherit the same categories as their base widgets but should be checked in-editor before a HUD migration plan is locked.
 - `T66HUDPresentationController`, `T66TemporaryBuffUIUtils`, and `T66ItemCardTextUtils` are not standalone rendered widgets. They are helper/controller paths feeding `UT66GameplayHUDWidget` presentations, so their UI impact is captured under that HUD row.
 - `T66ScreenSlateHelpers`, `FT66Style`, `T66RuntimeUITextureAccess`, and `T66RuntimeUIBrushAccess` still contain global legacy helpers, but they are infrastructure rather than UI elements. They should be handled during Stage 3/global cleanup, or during a targeted migration only when the audited widget still reaches them.
-- The completed Stage 2 frontend screens from `overnight_progress_log.md` are excluded: History, Diplomas, Drugs, Steam Achievements, Minigames, Settings tabs, Daily Descent, Challenges, Run Summary, Main Menu, Pause Menu, modals, selection grids, minigame menu screens, TD screens, Idle screens, and Deck screens.
 
 ## Inventory
 
@@ -72,16 +68,7 @@ Important interpretation: `regex matches = 0` does not mean the widget is flat-m
 | 17 | `AT66WorldInteractableBase` | `C:\UE\T66\Source\T66\Gameplay\T66WorldInteractableBase.h`; `C:\UE\T66\Source\T66\Gameplay\T66WorldInteractableBase.cpp` | Base in-world interactable that participates in targeting and interaction prompt flow. | Regex-clean; no direct Slate chrome, but drives `UT66GameplayHUDWidget` interaction prompts. | 0 | In-world | Medium - not itself a widget, but migration depends on prompt contract and target labels. | Yes - prompt must be readable over gameplay. |
 | 18 | `AT66TutorialPromptActor` | `C:\UE\T66\Source\T66\Gameplay\T66TutorialPromptActor.h`; `C:\UE\T66\Source\T66\Gameplay\T66TutorialPromptActor.cpp` | Tutorial prompt actor/signage path used for in-world guidance. | Regex-clean; no reference chrome match found. | 0 | In-world | Medium - actor-driven prompt content likely needs runtime readability review. | Yes - in-world text or prompt over gameplay. |
 | 19 | `UT66CasinoOverlayWidget` | `C:\UE\T66\Source\T66\UI\T66CasinoOverlayWidget.h`; `C:\UE\T66\Source\T66\UI\T66CasinoOverlayWidget.cpp`; `C:\UE\T66\Source\T66\UI\T66CasinoOverlayShared.h` | Host overlay for casino/shop/gambling tabs during a run. | Regex-clean; shared host uses custom Slate and creates `UT66GamblerOverlayWidget`/`UT66CasinoShopTabWidget`. | 0 | Shop | Complex - shared in-run shop host with tab routing and run-state delegates. | Yes - modal over gameplay. |
-| 20 | `UT66GamblerOverlayWidget` | `C:\UE\T66\Source\T66\UI\T66GamblerOverlayWidget.h`; `C:\UE\T66\Source\T66\UI\T66GamblerOverlayWidget.cpp`; `C:\UE\T66\Source\T66\UI\Gambler\T66GamblerOverlayWidget_*.cpp` | In-run gambler interface with dialogue, casino selection, coin flip, RPS, blackjack, lottery, plinko, and box opening pages. | Regex-clean; extensive custom Slate/old style usage, no flat tagging. | 0 | Shop | Complex - multiple mini-interactions, economy and boss anger coupling. | Yes - modal over gameplay. |
 | 21 | `UT66CasinoShopTabWidget` | `C:\UE\T66\Source\T66\UI\T66CasinoShopTabWidget.h`; `C:\UE\T66\Source\T66\UI\T66CasinoShopTabWidget.cpp` | In-run casino shop/alchemy tab with item cards and purchase/steal actions. | Regex-clean; custom Slate/old style usage, no flat tagging. | 0 | Shop | Complex - economy, inventory, debt, anger, steal permissions, and item data. | Yes - modal over gameplay. |
-| 22 | `UT66ArcadePopupWidget` | `C:\UE\T66\Source\T66\UI\T66ArcadePopupWidget.h`; `C:\UE\T66\Source\T66\UI\T66ArcadePopupWidget.cpp` | Abstract/shared base for in-world arcade popup games launched from arcade interactables. | Regex-clean; base class, not a complete flat surface. | 0 | Shop | Medium - base lifecycle and completion/reward hooks need preservation. | Yes - modal over gameplay. |
-| 23 | `UT66ArcadeSelectionWidget` | `C:\UE\T66\Source\T66\UI\T66ArcadeSelectionWidget.h`; `C:\UE\T66\Source\T66\UI\T66ArcadeSelectionWidget.cpp` | Arcade random-selection popup that lets the player choose from arcade game entries. | Regex-clean; custom Slate and old style usage. | 0 | Shop | Medium - data-driven entry list and selection behavior. | Yes - modal over gameplay. |
-| 24 | `UT66WhackAMoleArcadeWidget` | `C:\UE\T66\Source\T66\UI\T66WhackAMoleArcadeWidget.h`; `C:\UE\T66\Source\T66\UI\T66WhackAMoleArcadeWidget.cpp` | Full Whack-a-Mole arcade popup with 3x3 board, score/time/combo HUD, lives, hover hammer, and mole states. | Regex-clean; bespoke Slate, sprite art, and per-cell hover state. | 0 | Shop | Complex - active minigame loop, hover gameplay affordance, timer/state machine. | Yes - active minigame UI. |
-| 25 | `UT66TopwarArcadeWidget` | `C:\UE\T66\Source\T66\UI\T66TopwarArcadeWidget.h`; `C:\UE\T66\Source\T66\UI\T66TopwarArcadeWidget.cpp` | Topwar arcade popup with bespoke game UI. | Regex-clean; custom Slate/old style usage. | 0 | Shop | Medium - arcade gameplay state and scoring. | Yes - active minigame UI. |
-| 26 | `UT66GoldMinerArcadeWidget` | `C:\UE\T66\Source\T66\UI\T66GoldMinerArcadeWidget.h`; `C:\UE\T66\Source\T66\UI\T66GoldMinerArcadeWidget.cpp` | Gold Miner arcade popup with bespoke game UI. | Regex-clean; custom Slate/old style usage. | 0 | Shop | Medium - arcade gameplay state and scoring. | Yes - active minigame UI. |
-| 27 | `UT66QuickArcadeWidget` | `C:\UE\T66\Source\T66\UI\T66QuickArcadeWidget.h`; `C:\UE\T66\Source\T66\UI\T66QuickArcadeWidget.cpp` | Fallback quick arcade popup for arcade game types without a dedicated widget. | Regex-clean; custom Slate/old style usage. | 0 | Shop | Medium - covers many arcade variants through one generic presentation. | Yes - active minigame UI. |
-| 28 | `UT66MiniPauseMenuWidget` | `C:\UE\T66\Source\T66Mini\Public\UI\T66MiniPauseMenuWidget.h`; `C:\UE\T66\Source\T66Mini\Private\UI\T66MiniPauseMenuWidget.cpp` | Runtime Mini pause/settings modal with resume, settings, save/quit, sliders, toggles, key rebinding, and settings tabs. | Regex-clean; custom Mini UI style and raw Slate controls, not `FT66FlatStyle`. | 0 | Modal | Complex - runtime pause modal with settings persistence and input capture. | Yes - modal over active minigame. |
-| 29 | `AT66MiniBattleHUD` | `C:\UE\T66\Source\T66Mini\Public\UI\T66MiniBattleHUD.h`; `C:\UE\T66\Source\T66Mini\Private\UI\T66MiniBattleHUD.cpp` | Actual Mini battle HUD rendered during Mini gameplay: hearts, timer, score, XP, ultimate, boss bar, pause prompt, and loot crate presentation. | Regex-clean; Canvas `DrawHUD` rendering, not Slate and not `FT66FlatStyle`. | 0 | Minigame-HUD | Complex - Canvas renderer with many gameplay-semantic colors and timed overlays. | Yes - Needs gameplay-readability variant. |
 | 30 | `FT66OverlayChromeStyle` | `C:\UE\T66\Source\T66\UI\Style\T66OverlayChromeStyle.h`; `C:\UE\T66\Source\T66\UI\Style\T66OverlayChromeStyle.cpp` | Shared overlay chrome helper used by several in-run overlays for panels and overlay shells. | Uses `SourceAssets/UI/Reference/Shared`, `MakeReferenceSharedAssetPath`, `MakeReferenceHorizontalSlicedImage`, and `MakeRetroUIChromeSurface`. | 4 | Other | Complex - shared helper can affect multiple runtime overlays at once. | Depends on consuming overlay; likely yes. |
 | 31 | `UT66LeaderboardPanel` | `C:\UE\T66\Source\T66\UI\Components\T66LeaderboardPanel.h`; `C:\UE\T66\Source\T66\UI\Components\T66LeaderboardPanel.cpp` | Shared leaderboard component with filters, dropdowns, rows, pagination/state plates, avatars, and score/speedrun views. | Uses reference shared dirs, reference buttons, reference sliced images, reference dropdowns, and reference state plate buttons. | 22 | Other | Complex - legacy-heavy shared component with hover and multiple control types. | No for active gameplay; yes if embedded in in-run overlay later. |
 | 32 | `UT66FrontendBackButtonWidget` | `C:\UE\T66\Source\T66\UI\T66FrontendBackButtonWidget.h`; `C:\UE\T66\Source\T66\UI\T66FrontendBackButtonWidget.cpp` | Shared standalone frontend back-button chrome widget managed by `UT66UIManager`. | Uses reference pill button brushes and reference horizontal sliced image. | 4 | Other | Medium - shared chrome; isolated, but likely appears outside screen-specific Stage 2 paths. | No - frontend/shared chrome. |
@@ -128,8 +115,6 @@ Implication: HUD and in-run UI need a dedicated gameplay-readability variant or 
 
 There is a mostly clean architectural separation:
 
-- Frontend/menu screens are primarily `UT66ScreenBase` classes under `Source\T66\UI\Screens` or minigame screen modules, routed through `UT66UIManager` and verified with the Stage 2 dump/checklist loop.
-- Runtime HUD and in-run overlays are mostly `UUserWidget`, `AHUD`, widget-component, or plain Slate/Canvas classes under `Source\T66\UI`, `Source\T66\UI\HUD`, `Source\T66Mini\Private\UI`, and gameplay controller overlay paths.
 
 There are still shared code paths:
 
@@ -143,28 +128,19 @@ Implication: systematic migration should not run the Stage 2 screen loop unchang
 
 There are existing hover behaviors that could conflict with a universal green hover rule:
 
-- `UT66WhackAMoleArcadeWidget` uses hover to show the hammer/cell highlight in a gameplay board. Replacing that with a generic green UI hover would obscure the minigame affordance.
 - `UT66LeaderboardPanel` has old hover variants and row hover state.
 - `UT66Button` wires `OnHovered` and `OnUnhovered` at the component level.
 - `UT66GameplayHUDWidget` has inventory hover/tooltip behavior in inspect mode.
 
 Most HUD elements are not standard hover-enabled menu controls. For runtime widgets, hover should be opt-in per interactive control and should preserve gameplay-specific hover affordances.
 
-### D. Minigame HUD and shop framework separation
 
-Minigame HUDs are not implemented through one shared HUD base:
 
-- Mini gameplay uses bespoke `AT66MiniBattleHUD`, an `AHUD` Canvas renderer.
 - TD, Idle, and Deck menu/gameplay screens listed in the progress log are Stage 2-migrated `UT66ScreenBase` style screens where applicable.
-- No shared minigame HUD base class equivalent to `UT66ScreenBase` was found for actual in-run minigame HUD rendering.
 
-Arcade and shop surfaces are partially shared but still bespoke:
 
-- Arcade interactions share `UT66ArcadePopupWidget` as a base and route through `AT66PlayerController::SpawnArcadePopupWidget`.
-- Dedicated arcade widgets exist for Whack-a-Mole, Topwar, and Gold Miner; other arcade game types use `UT66QuickArcadeWidget`; random selection uses `UT66ArcadeSelectionWidget`.
 - Casino/gambler flows share `UT66CasinoOverlayWidget` and `T66CasinoOverlayShared.h`, but `UT66GamblerOverlayWidget` and `UT66CasinoShopTabWidget` implement their own complex UI surfaces.
 
-Implication: a future migration should group arcade popup framework work separately from gambler/casino shop work, and Mini battle HUD separately from frontend minigame menu screens.
 
 ## Recommended Next Audit Boundaries
 
@@ -173,5 +149,3 @@ No implementation changes were made in this session. If Pablo turns this invento
 1. Gameplay HUD contract pass: define a HUD palette/readability variant and break `UT66GameplayHUDWidget` into checklist regions.
 2. Shared overlay chrome pass: migrate `FT66OverlayChromeStyle` consumers or route them to a HUD-safe flat helper.
 3. Casino/Gambler pass: migrate `UT66CasinoOverlayWidget`, `UT66GamblerOverlayWidget`, and `UT66CasinoShopTabWidget` together.
-4. Arcade popup pass: migrate `UT66ArcadePopupWidget` plus the concrete arcade widgets together.
-5. Mini runtime pass: migrate `AT66MiniBattleHUD` and `UT66MiniPauseMenuWidget` with a Canvas-aware verification method.

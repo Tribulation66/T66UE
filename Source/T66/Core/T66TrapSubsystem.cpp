@@ -6,7 +6,8 @@
 #include "Core/T66StageProgressionSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66GameMode.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
+#include "Gameplay/T66SafeZoneComponent.h"
 #include "Gameplay/Traps/T66FloorFlameTrap.h"
 #include "Gameplay/Traps/T66FloorSpikePatchTrap.h"
 #include "Gameplay/Traps/T66TrapBase.h"
@@ -328,39 +329,30 @@ namespace
 		return nullptr;
 	}
 
-	const TArray<FName>& GetTrapPoolForGameplayLevel(const int32 GameplayLevelNumber)
+	const TArray<FName>& GetTrapPoolForTowerFloor(const int32 TowerFloorNumber)
 	{
 		static const TArray<FName> Empty;
-		static const TArray<FName> Level1 = { TEXT("DungeonWallArrow"), TEXT("DungeonFloorFlame"), TEXT("DungeonFloorSpikePatch") };
-		static const TArray<FName> Level2 = { TEXT("ForestThornVolley"), TEXT("ForestSporeBurst"), TEXT("ForestBramblePatch") };
-		static const TArray<FName> Level3 = { TEXT("OceanHarpoonVolley"), TEXT("OceanSteamBurst"), TEXT("OceanUrchinPatch") };
-		static const TArray<FName> Level4 = { TEXT("MartianShardVolley"), TEXT("MartianPlasmaBurst"), TEXT("MartianCrystalPatch") };
-		static const TArray<FName> Level5 = { TEXT("HellSoulBoltVolley"), TEXT("HellEmberBurst"), TEXT("HellBrimstonePatch") };
+		static const TArray<FName> Floor2 = { TEXT("DungeonWallArrow"), TEXT("DungeonFloorFlame"), TEXT("DungeonFloorSpikePatch") };
+		static const TArray<FName> Floor3 = { TEXT("ForestThornVolley"), TEXT("ForestSporeBurst"), TEXT("ForestBramblePatch") };
+		static const TArray<FName> Floor4 = { TEXT("OceanHarpoonVolley"), TEXT("OceanSteamBurst"), TEXT("OceanUrchinPatch") };
 
-		switch (GameplayLevelNumber)
+		switch (TowerFloorNumber)
 		{
-		case 1: return Level1;
-		case 2: return Level2;
-		case 3: return Level3;
-		case 4: return Level4;
-		case 5: return Level5;
+		case 2: return Floor2;
+		case 3: return Floor3;
+		case 4: return Floor4;
 		default: return Empty;
 		}
 	}
 
-	int32 ResolveGameplayLevelNumber(const T66TowerMapTerrain::FLayout& Layout, const T66TowerMapTerrain::FFloor& Floor)
+	bool IsTrapTowerFloor(const T66TowerMapTerrain::FLayout& Layout, const T66TowerMapTerrain::FFloor& Floor)
 	{
-		if (!Floor.bMobFloor || Floor.GameplayLevelNumber == INDEX_NONE)
+		if (!Floor.bMobFloor)
 		{
-			return INDEX_NONE;
+			return false;
 		}
 
-		return Floor.GameplayLevelNumber;
-	}
-
-	bool IsGameplayTowerFloor(const T66TowerMapTerrain::FLayout& Layout, const T66TowerMapTerrain::FFloor& Floor)
-	{
-		return ResolveGameplayLevelNumber(Layout, Floor) != INDEX_NONE;
+		return Floor.FloorNumber == 2 || Floor.FloorNumber == 3 || Floor.FloorNumber == 4;
 	}
 
 	int32 RollSpawnCount(const FT66IntRange& Range, FRandomStream& Rng)
@@ -606,10 +598,19 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 
 		if (Registry)
 		{
-			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : Registry->GetNPCs())
 			{
-				const AT66HouseNPCBase* NPC = WeakNPC.Get();
+				const AT66NPCBase* NPC = WeakNPC.Get();
 				if (IsSafeZoneTooClose(NPC, (NPC ? NPC->GetSafeZoneRadius() : 0.f) + 500.f))
+				{
+					return false;
+				}
+			}
+			for (const TWeakObjectPtr<UT66SafeZoneComponent>& WeakSafeZone : Registry->GetSafeZones())
+			{
+				const UT66SafeZoneComponent* SafeZone = WeakSafeZone.Get();
+				const AActor* Owner = SafeZone ? SafeZone->GetOwner() : nullptr;
+				if (IsSafeZoneTooClose(Owner, (SafeZone ? SafeZone->GetSafeZoneRadius() : 0.f) + 500.f))
 				{
 					return false;
 				}
@@ -681,7 +682,7 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 	};
 
 	auto BuildSpawnRequestsForFloor =
-		[&](const int32 GameplayLevelNumber, const TArray<FName>& TrapPool, FRandomStream& FloorCountRng, TArray<FT66ResolvedTrapSpawnRequest, TInlineAllocator<8>>& OutRequests)
+		[&](const int32 TowerFloorNumber, const TArray<FName>& TrapPool, FRandomStream& FloorCountRng, TArray<FT66ResolvedTrapSpawnRequest, TInlineAllocator<8>>& OutRequests)
 	{
 		OutRequests.Reset();
 
@@ -744,9 +745,9 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 			return;
 		}
 
-		const FT66TrapLevelSpawnTuning* LevelTuning = CachedTuning.FindLevelSpawnTuning(GameplayLevelNumber);
-		const FT66IntRange TotalTrapRange = LevelTuning
-			? LevelTuning->TotalTrapCount
+		const FT66TrapFloorSpawnTuning* FloorTuning = CachedTuning.FindFloorSpawnTuning(TowerFloorNumber);
+		const FT66IntRange TotalTrapRange = FloorTuning
+			? FloorTuning->TotalTrapCount
 			: FT66IntRange{ MinimumTotal, MaximumTotal };
 		const int32 TargetTotal = FMath::Clamp(
 			RollSpawnCount(TotalTrapRange, FloorCountRng),
@@ -778,13 +779,13 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 
 	for (const T66TowerMapTerrain::FFloor& Floor : Layout.Floors)
 	{
-		if (!IsGameplayTowerFloor(Layout, Floor))
+		if (!IsTrapTowerFloor(Layout, Floor))
 		{
 			continue;
 		}
 
-		const int32 GameplayLevelNumber = ResolveGameplayLevelNumber(Layout, Floor);
-		const TArray<FName>& TrapPool = GetTrapPoolForGameplayLevel(GameplayLevelNumber);
+		const int32 TowerFloorNumber = Floor.FloorNumber;
+		const TArray<FName>& TrapPool = GetTrapPoolForTowerFloor(TowerFloorNumber);
 		if (TrapPool.Num() <= 0)
 		{
 			continue;
@@ -792,7 +793,7 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 
 		FRandomStream FloorCountRng(RunSeed + StageNum * 2903 + Floor.FloorNumber * 311 + 97);
 		TArray<FT66ResolvedTrapSpawnRequest, TInlineAllocator<8>> SpawnRequests;
-		BuildSpawnRequestsForFloor(GameplayLevelNumber, TrapPool, FloorCountRng, SpawnRequests);
+		BuildSpawnRequestsForFloor(TowerFloorNumber, TrapPool, FloorCountRng, SpawnRequests);
 
 		for (const FT66ResolvedTrapSpawnRequest& SpawnRequest : SpawnRequests)
 		{
@@ -1037,3 +1038,4 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 		StageNum,
 		*TrapFloorSummary);
 }
+

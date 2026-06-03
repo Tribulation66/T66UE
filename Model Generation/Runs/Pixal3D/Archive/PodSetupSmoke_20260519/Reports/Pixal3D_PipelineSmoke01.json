@@ -1,0 +1,34 @@
+{
+  "batch": "Pixal3D_PipelineSmoke01",
+  "updated_utc": "2026-05-19T03:33:47+00:00",
+  "rows": [
+    {
+      "id": "tree_organic_prop",
+      "kind": "tree",
+      "display_name": "Tree organic prop",
+      "quad_retro": false,
+      "source_image": "Inputs/SourceImages/tree_organic_prop.png"
+    },
+    {
+      "id": "stone_wall_module",
+      "kind": "wall",
+      "display_name": "Stone wall module",
+      "quad_retro": false,
+      "source_image": "Inputs/SourceImages/stone_wall_module.png"
+    },
+    {
+      "id": "humanoid_character",
+      "kind": "character",
+      "display_name": "Humanoid character",
+      "quad_retro": true,
+      "source_image": "Inputs/SourceImages/humanoid_character.png"
+    },
+    {
+      "id": "horned_monster",
+      "kind": "monster",
+      "display_name": "Horned monster",
+      "quad_retro": true,
+      "source_image": "Inputs/SourceImages/horned_monster.png"
+    }
+  ]
+}

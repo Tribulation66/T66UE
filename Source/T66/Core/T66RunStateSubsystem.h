@@ -42,6 +42,8 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCowardiceGatesTakenChanged);
 
 class AActor;
 class FSubsystemCollectionBase;
+struct FT66MobLootCollectResult;
+struct FT66MobLootCollectorRef;
 struct FT66SavedRunSnapshot;
 
 /** Single DOT instance on one target (idol DOT damage over time). */
@@ -81,6 +83,34 @@ enum class ET66ShopStealOutcome : uint8
 	Success,
 };
 
+USTRUCT(BlueprintType)
+struct FT66ShopAngerState
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shop")
+	int32 StealAttemptCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shop")
+	int32 LastAttemptSlotIndex = INDEX_NONE;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shop")
+	int32 LastAttemptBuyValue = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shop")
+	bool bTriggerVendorBossOnAnyAttempt = true;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shop")
+	bool bLastAttemptTriggeredVendorBoss = false;
+};
+
+UENUM(BlueprintType)
+enum class ET66GoldTransactionSource : uint8
+{
+	Gambler UMETA(DisplayName = "Gambler"),
+	MobLootSale UMETA(DisplayName = "Mob Loot Sale"),
+};
+
 /**
  * Authoritative run state: health, gold, inventory, event log, HUD panel visibility.
  * Survives death; reset on Restart / Main Menu.
@@ -112,8 +142,19 @@ public:
 	static constexpr int32 DefaultXPToLevel = 100;
 	static constexpr float UltimateCooldownSeconds = 30.f;
 	static constexpr int32 UltimateDamage = 200;
-	static constexpr int32 ShopDisplaySlotCount = 5;
-	static constexpr int32 BuybackDisplaySlotCount = 5;
+	static constexpr int32 ShopDisplaySlotCount = 4;
+	static constexpr int32 BuybackDisplaySlotCount = 4;
+	static constexpr float ShopRarityWeightBlack = 70.0f;
+	static constexpr float ShopRarityWeightRed = 25.0f;
+	static constexpr float ShopRarityWeightYellow = 4.5f;
+	static constexpr float ShopRarityWeightWhite = 0.5f;
+	static constexpr float ShopRarityWeightTotal =
+		ShopRarityWeightBlack +
+		ShopRarityWeightRed +
+		ShopRarityWeightYellow +
+		ShopRarityWeightWhite;
+	static ET66ItemRarity RollShopSlotRarity(FRandomStream& Rng);
+	static constexpr int32 MaxCollectedMobLootStack = 999;
 	// Safety: keep logs bounded so low-end machines never accumulate unbounded memory / UI work.
 	static constexpr int32 MaxEventLogEntries = 400;
 	static constexpr int32 MaxStructuredEventLogEntries = 800;
@@ -276,6 +317,36 @@ public:
 	int32 GetCurrentGold() const { return CurrentGold; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetCollectedMobLootStack() const { return CollectedMobLootStack; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetCollectedMobLootSellValue() const { return CollectedMobLootStack; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetMobLootDropsCollectedThisRun() const { return MobLootDropsCollectedThisRun; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetMobLootQuantityCollectedThisRun() const { return MobLootQuantityCollectedThisRun; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetMobLootGoldValueCollectedThisRun() const { return MobLootGoldValueCollectedThisRun; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetMobLootQuantityCollectedByPlayerThisRun() const { return MobLootQuantityCollectedByPlayerThisRun; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetMobLootQuantityCollectedByPetThisRun() const { return MobLootQuantityCollectedByPetThisRun; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetMobLootDropsCollectedByPetThisRun() const { return MobLootDropsCollectedByPetThisRun; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetMobLootQuantitySoldThisRun() const { return MobLootQuantitySoldThisRun; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	int32 GetMobLootSaleGoldThisRun() const { return MobLootSaleGoldThisRun; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	int32 GetCurrentDebt() const { return CurrentDebt; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -352,6 +423,16 @@ public:
 	/** Add gold (e.g. gambler win). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddGold(int32 Amount);
+	void AddGold(int32 Amount, ET66GoldTransactionSource Source);
+
+	int32 AddCollectedMobLootFromCollection(const FT66MobLootCollectResult& Result, const FT66MobLootCollectorRef& Collector);
+
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	bool SellCollectedMobLoot();
+
+#if !UE_BUILD_SHIPPING
+	void SetCollectedMobLootStackForAutomation(int32 Amount);
+#endif
 
 	/** Spend gold if possible (used by in-run gambling/shop costs). Returns true if spent. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -474,8 +555,17 @@ public:
 	/** Select (equip/level-up) the idol at the given stock slot. Returns true on success. */
 	bool SelectIdolFromStock(int32 SlotIndex);
 
+	/** Select the No Idol altar card and convert the selection into primary stat stacks. */
+	bool SelectNoIdolFromAltar(ET66ItemRarity Rarity);
+
 	/** Whether a stock slot has already been selected this visit. */
 	bool IsIdolStockSlotSelected(int32 SlotIndex) const;
+
+	void ApplyNoIdolSelection(ET66ItemRarity Rarity);
+	int32 GetNoIdolSelectionStacks() const { return NoIdolSelectionStacks; }
+	const FT66HeroPreciseStatBlock& GetNoIdolPrimaryStatBonuses() const { return NoIdolPrimaryStatBonusesPrecise; }
+	void RestoreNoIdolState(int32 Stacks, const FT66HeroPreciseStatBlock& Bonuses);
+	static int32 GetNoIdolPrimaryBonusTenthsForRarity(ET66ItemRarity Rarity);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FString>& GetEventLog() const { return EventLog; }
@@ -669,7 +759,7 @@ public:
 
 	/** Instantly kill the player (bypasses i-frames). */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
-	void KillPlayer();
+	void KillPlayer(FName DeliveryMethod = NAME_None);
 
 	/** Add an item by template ID with auto-generated rarity and rolled value. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -686,30 +776,46 @@ public:
 	/** Reward-only quick revive item granted by a successful Backrooms escape. */
 	static const FName BackroomsQuickReviveItemID;
 
+	/** Reward-only Kromer item granted by the no-girlfriend/no-pet final-boss second phase. */
+	static const FName KromerItemID;
+
+	/** Sell-only Mob Loot stack displayed as an inventory item. */
+	static const FName MobLootItemID;
+
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
 	bool HasBackroomsQuickReviveItem() const;
 
 	bool ConsumeBackroomsQuickReviveItem();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
+	bool HasKromerItem() const;
+
+	bool ConsumeKromerItem();
+
 	void SnapshotAndClearInventoryForBackrooms(TArray<FT66InventorySlot>& OutSnapshot);
 	void RestoreInventoryFromBackroomsSnapshot(const TArray<FT66InventorySlot>& Snapshot);
 
-	/** Activates the canonical Vendor Token (1..5 => 50%..90% sell value). */
+	/** Adds canonical Vendor Token stacks for this run (clamped to 16 total stacks). */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Items")
-	void ApplyVendorTokenPickup(int32 TokenLevel);
+	void ApplyVendorTokenPickup(int32 TokenStacks);
 
-	/** Active Vendor Token level for this run (0 = inactive). */
+	/** Active Vendor Token stack count for this run (0 = inactive). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Items")
-	int32 GetActiveVendorTokenLevel() const { return ActiveVendorTokenLevel; }
+	int32 GetActiveVendorTokenStacks() const { return FMath::Clamp(ActiveVendorTokenStacks, 0, MaxVendorTokenStacks); }
 
-	/** Current sell fraction for regular items in this run (0.4 base, up to 1.0 with the token). */
+	/** Current sell fraction for regular items in this run (0.70 base, +0.025 per token stack, capped at 1.0). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Economy")
 	float GetCurrentSellFraction() const;
+
+	/** Current shop buy discount from Vendor Token stacks (+0.025 per stack, no discount cap). */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Economy")
+	float GetCurrentBuyDiscountFraction() const;
 
 	/** Sell value for a specific inventory slot under the current run modifiers. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Economy")
 	int32 GetSellGoldForInventorySlot(const FT66InventorySlot& Slot) const;
 
-	static constexpr int32 MaxVendorTokenLevel = 5;
+	static constexpr int32 MaxVendorTokenStacks = 16;
 
 	/** Clear inventory only (e.g. Lab "Reset Items"). Recomputes stats and broadcasts. */
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -871,6 +977,21 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetLootWheelRewardMultiplier() const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary|Luck")
+	float GetInteractableLuckRewardMultiplier() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary|Luck")
+	float GetStealingLuckChanceBonus01() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary|Luck")
+	float GetGamblingLuckRescueRerollChance01() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary|Luck")
+	float GetProcLuckChanceBonus01() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary|Luck")
+	float ApplyProcLuckToChance01(float BaseChance01) const;
+
 	/** Execute chance on critical hits (0..1); routed through non-boss OHKO rules. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetExecuteChance01() const;
@@ -886,6 +1007,14 @@ public:
 	/** Crit damage multiplier (e.g. 1.5 = 50% bonus). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
 	float GetCritDamageMultiplier() const;
+
+	/** Headshot proc chance (0..1). Successful procs stun the hit target. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetHeadshotChance01() const;
+
+	/** Headshot stun duration, data-authored per difficulty. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+	float GetHeadshotStunDurationSeconds() const;
 
 	/** Life steal fraction (0..1). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
@@ -955,6 +1084,7 @@ public:
 
 #if !UE_BUILD_SHIPPING
 	void DebugActivatePendingSingleUseBuffsForRunStartWithoutConsuming();
+	void DebugAddPersistentSecondaryStatBonusTenths(ET66SecondaryStatType StatType, int32 DeltaTenths);
 #endif
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
@@ -968,6 +1098,11 @@ public:
 
 	/** Restores the inventory + equipped idols that were active before BeginSaintBlessingEmpowerment. */
 	void EndSaintBlessingEmpowerment();
+
+	/** Applies the new Saint blessing: one run-persistent stat boost to all primary and elemental stats. */
+	void ApplySaintBlessingStatBoosts();
+
+	void ClearSaintBlessingStatBoosts();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
 	float GetFinalSurvivalEnemyScalar() const { return FMath::Max(1.f, FinalSurvivalEnemyScalar); }
@@ -1153,6 +1288,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
 	bool IsShopStockSlotSold(int32 Index) const;
 
+	/** Buy price for a shop slot after active Vendor Token stack discount. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
+	int32 GetBuyGoldForShopStockSlot(int32 Index) const;
+
 	/** Attempt to buy a shop slot; returns true if purchased. */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Shop")
 	bool TryBuyShopStockSlot(int32 Index);
@@ -1162,6 +1301,8 @@ public:
 	bool ResolveShopStealAttempt(int32 Index, bool bTimingHit, bool bRngSuccess);
 
 	ET66ShopStealOutcome GetLastShopStealOutcome() const { return LastShopStealOutcome; }
+	bool DidLastShopStealAttemptTriggerVendorBoss() const { return ShopAngerState.bLastAttemptTriggeredVendorBoss; }
+	const FT66ShopAngerState& GetShopAngerState() const { return ShopAngerState; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
 	bool HasBoughtFromShopThisStage() const { return bBoughtFromShopThisStage; }
@@ -1196,11 +1337,26 @@ public:
 	// Ultimate
 	// ============================================
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
-	bool IsUltimateReady() const { return UltimateCooldownRemainingSeconds <= 0.f; }
+	static constexpr float UltimateChargeRequired = 100.f;
+	static constexpr float UltimateChargePerAttack = 5.f;
+	static constexpr float UltimateChargePerKill = 10.f;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
-	float GetUltimateCooldownRemainingSeconds() const { return FMath::Max(0.f, UltimateCooldownRemainingSeconds); }
+	bool IsUltimateReady() const { return UltimateCharge >= UltimateChargeRequired; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
+	float GetUltimateCooldownRemainingSeconds() const { return 0.f; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
+	float GetUltimateCharge() const { return UltimateCharge; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
+	float GetUltimateChargeRequired() const { return UltimateChargeRequired; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
+	float GetUltimateChargeFraction() const { return FMath::Clamp(UltimateCharge / UltimateChargeRequired, 0.f, 1.f); }
+
+	void AddUltimateCharge(float Amount);
 
 	/** Consume ultimate if ready; returns true if it was activated. */
 	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|Ultimate")
@@ -1291,9 +1447,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState|StageEffects")
 	void ApplyStageSpeedBoost(float MoveSpeedMultiplier, float DurationSeconds);
 
-	/** Temporary stat boost from arcade amplifier pickups. */
+	/** Temporary stat boost from boost interactables. */
 	UFUNCTION(BlueprintCallable, Category = "RunState|StageEffects")
 	void ApplyTemporaryPrimaryStatAmplifier(ET66HeroStatType StatType, int32 BonusStatPoints, float DurationSeconds);
+
+	UFUNCTION(BlueprintCallable, Category = "RunState|StageEffects")
+	void ApplyTemporarySecondaryStatAmplifier(ET66SecondaryStatType StatType, int32 BonusStatPoints, float DurationSeconds);
 
 	// ============================================
 	// Hero status effects (Unique enemy debuffs)
@@ -1400,6 +1559,13 @@ private:
 		float SecondsRemaining = 0.f;
 	};
 
+	struct FT66TemporarySecondaryStatAmplifier
+	{
+		ET66SecondaryStatType StatType = ET66SecondaryStatType::None;
+		int32 BonusTenths = 0;
+		float SecondsRemaining = 0.f;
+	};
+
 	struct FT66LuckAccumulator
 	{
 		double Sum01 = 0.0;
@@ -1455,6 +1621,8 @@ private:
 	void RefreshPermanentBuffBonusesFromProfile();
 	int32 GetDataDrivenLevelUpXPThreshold() const;
 	float GetDataDrivenLevelUpWaveRadiusUU() const;
+	float GetDataDrivenHeadshotChancePerBonusPoint() const;
+	float GetDataDrivenHeadshotStunDurationSeconds() const;
 	void ApplyLevelUpPrimaryGainTenths(ET66HeroStatType StatType, int32 GainTenths);
 	int32 ApplyLevelUpWave(float RadiusUU);
 	static int32 WholeStatToTenths(int32 WholeValue);
@@ -1463,7 +1631,9 @@ private:
 	int32 GetPrecisePrimaryStatTenths(ET66HeroStatType StatType) const;
 	int32 GetItemPrimaryStatTenths(ET66HeroStatType StatType) const;
 	int32 GetPermanentPrimaryBuffTenths(ET66HeroStatType StatType) const;
+	int32 GetSaintBlessingPrimaryStatTenths(ET66HeroStatType StatType) const;
 	int32 GetTemporaryPrimaryStatAmplifierTenths(ET66HeroStatType StatType) const;
+	int32 GetTemporarySecondaryStatAmplifierTenths(ET66SecondaryStatType StatType) const;
 	int32 GetSecondaryStatBonusTenths(ET66SecondaryStatType StatType) const;
 	float GetSecondaryStatBonusValue(ET66SecondaryStatType StatType) const;
 	int32 GetCategoryBaseStatTenths(ET66SecondaryStatType StatType) const;
@@ -1502,6 +1672,33 @@ private:
 	int32 CurrentGold = 0;
 
 	UPROPERTY()
+	int32 CollectedMobLootStack = 0;
+
+	UPROPERTY()
+	int32 MobLootDropsCollectedThisRun = 0;
+
+	UPROPERTY()
+	int32 MobLootQuantityCollectedThisRun = 0;
+
+	UPROPERTY()
+	int32 MobLootGoldValueCollectedThisRun = 0;
+
+	UPROPERTY()
+	int32 MobLootQuantityCollectedByPlayerThisRun = 0;
+
+	UPROPERTY()
+	int32 MobLootQuantityCollectedByPetThisRun = 0;
+
+	UPROPERTY()
+	int32 MobLootDropsCollectedByPetThisRun = 0;
+
+	UPROPERTY()
+	int32 MobLootQuantitySoldThisRun = 0;
+
+	UPROPERTY()
+	int32 MobLootSaleGoldThisRun = 0;
+
+	UPROPERTY()
 	int32 CurrentDebt = 0;
 
 	UPROPERTY()
@@ -1525,8 +1722,8 @@ private:
 	UPROPERTY()
 	TArray<FT66InventorySlot> InventorySlots;
 
-	/** Active Vendor Token level for this run. */
-	int32 ActiveVendorTokenLevel = 0;
+	/** Active Vendor Token stack count for this run. */
+	int32 ActiveVendorTokenStacks = 0;
 
 	/** Active DOTs (idol): one per target+source pair so distinct idols do not overwrite each other. */
 	TMap<FT66DotKey, FT66DotInstance> ActiveDOTs;
@@ -1610,6 +1807,12 @@ private:
 	/** Extra scalar applied only to the final-survival enemy escalation. */
 	UPROPERTY()
 	float FinalSurvivalEnemyScalar = 1.f;
+
+	UPROPERTY()
+	FT66HeroPreciseStatBlock SaintBlessingPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+
+	UPROPERTY()
+	TMap<ET66SecondaryStatType, int32> SaintBlessingSecondaryStatBonusTenths;
 
 	UPROPERTY()
 	int32 CurrentScore = 0;
@@ -1744,7 +1947,7 @@ private:
 	// ============================================
 	// Hero secondary base stats (loaded from Heroes DataTable, then modified by items, drugs, level-ups, and diplomas)
 	// ============================================
-	float HeroBaseCritDamage = 1.5f;
+	float HeroBaseHeadshotChance = 0.0f;
 	float HeroBaseCritChance = 0.05f;
 	float HeroBaseCloseRangeDmg = 1.0f;
 	float HeroBaseLongRangeDmg = 1.0f;
@@ -1770,6 +1973,8 @@ private:
 	TMap<ET66SecondaryStatType, int32> PersistentSecondaryStatBonusTenths;
 	TMap<ET66SecondaryStatType, int32> ItemSecondaryStatBonusTenths;
 	FT66HeroPreciseStatBlock ItemPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	FT66HeroPreciseStatBlock NoIdolPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	int32 NoIdolSelectionStacks = 0;
 
 	bool bSuppressLevelUpWaveXP = false;
 	bool bProcessingHeroLevelUps = false;
@@ -1778,6 +1983,7 @@ private:
 	FRandomStream HeroStatRng;
 
 	float UltimateCooldownRemainingSeconds = 0.f;
+	float UltimateCharge = 0.f;
 	int32 LastBroadcastUltimateSecond = 0;
 
 	ET66PassiveType PassiveType = ET66PassiveType::None;
@@ -1821,6 +2027,7 @@ private:
 	TMap<FName, int32> ShopSeenCounts;
 	bool bBoughtFromShopThisStage = false;
 	ET66ShopStealOutcome LastShopStealOutcome = ET66ShopStealOutcome::None;
+	FT66ShopAngerState ShopAngerState;
 
 	// Aggregated tracking for Luck Rating (per run).
 	TMap<FName, FT66LuckAccumulator> LuckQuantityByCategory;
@@ -1852,6 +2059,7 @@ private:
 	float StageMoveSpeedMultiplier = 1.f;
 	float StageMoveSpeedSecondsRemaining = 0.f;
 	TArray<FT66TemporaryPrimaryStatAmplifier> TemporaryPrimaryStatAmplifiers;
+	TArray<FT66TemporarySecondaryStatAmplifier> TemporarySecondaryStatAmplifiers;
 
 	// Status effects
 	float StatusBurnSecondsRemaining = 0.f;

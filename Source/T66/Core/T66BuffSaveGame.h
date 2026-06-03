@@ -36,9 +36,9 @@ class T66_API UT66BuffSaveGame : public USaveGame
 	GENERATED_BODY()
 
 public:
-	/** SaveVersion 11 = added primary Speed progression; 10 = collapsed named temp-buff presets into one temp-buff loadout; 9 = added primary Accuracy progression; 8 = named temp-buff presets; 7 = selected secondary single-use buffs; 6 = secondary-stat single-use buffs; 5 = unified Chad Coupons buffs; 4 = 10 fill steps; 3 = 6 body-part unlocks; 2 = 10-slot wedge tiers; 1 = legacy slice counts. */
+	/** SaveVersion 12 = flat Relic ownership; 11 = added primary Speed progression; 10 = collapsed named temp-buff presets into one temp-buff loadout; 9 = added primary Accuracy progression; 8 = named temp-buff presets; 7 = selected secondary single-use buffs; 6 = secondary-stat single-use buffs; 5 = unified Chad Coupons buffs; 4 = 10 fill steps; 3 = 6 body-part unlocks; 2 = 10-slot wedge tiers; 1 = legacy slice counts. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
-	int32 SaveVersion = 11;
+	int32 SaveVersion = 12;
 
 	/** @deprecated Replaced by the shared Chad Coupons wallet in SaveVersion 5. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
@@ -114,6 +114,10 @@ public:
 	/** Live source of truth for the temp-buff slots shown on hero selection. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	TArray<ET66SecondaryStatType> SelectedSingleUseBuffSlots;
+
+	/** Flat permanent Relics owned by ID. Legacy wedge arrays above remain only for deserialization compatibility. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
+	TArray<FName> OwnedRelicIDs;
 
 	/** Legacy preset loadouts retained only so v8-v9 saves still deserialize before migration. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp", meta = (DeprecatedProperty))

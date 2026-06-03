@@ -2,6 +2,7 @@
 
 #include "Core/Backend/T66BackendRunSerializer.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
+#include "Core/T66SaveMigration.h"
 #include "Dom/JsonObject.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
@@ -87,6 +88,84 @@ namespace
 		default: return TEXT("solo");
 		}
 	}
+
+	FString T66AttackCategoryToApiString(ET66AttackCategory Category)
+	{
+		switch (Category)
+		{
+		case ET66AttackCategory::Pierce: return TEXT("pierce");
+		case ET66AttackCategory::Bounce: return TEXT("bounce");
+		case ET66AttackCategory::AOE: return TEXT("aoe");
+		case ET66AttackCategory::DOT: return TEXT("dot");
+		default: return TEXT("pierce");
+		}
+	}
+
+	FString T66IdolElementToApiString(ET66IdolElement Element)
+	{
+		switch (Element)
+		{
+		case ET66IdolElement::Fire: return TEXT("fire");
+		case ET66IdolElement::Ice: return TEXT("ice");
+		case ET66IdolElement::Electricity: return TEXT("electricity");
+		case ET66IdolElement::Nature: return TEXT("nature");
+		default: return TEXT("fire");
+		}
+	}
+
+	FString T66ItemRarityToApiString(ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black: return TEXT("black");
+		case ET66ItemRarity::Red: return TEXT("red");
+		case ET66ItemRarity::Yellow: return TEXT("yellow");
+		case ET66ItemRarity::White: return TEXT("white");
+		default: return TEXT("black");
+		}
+	}
+
+	FString T66WeaponRarityToApiString(ET66WeaponRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66WeaponRarity::Black: return TEXT("black");
+		case ET66WeaponRarity::Red: return TEXT("red");
+		case ET66WeaponRarity::Yellow: return TEXT("yellow");
+		case ET66WeaponRarity::White: return TEXT("white");
+		default: return TEXT("black");
+		}
+	}
+
+	FString T66GamblerGameTypeToApiString(ET66AntiCheatGamblerGameType GameType)
+	{
+		switch (GameType)
+		{
+		case ET66AntiCheatGamblerGameType::GuessTheCup: return TEXT("guess_the_cup");
+		case ET66AntiCheatGamblerGameType::PickLongestShortestStick: return TEXT("pick_longest_shortest_stick");
+		case ET66AntiCheatGamblerGameType::FindJoker: return TEXT("find_joker");
+		case ET66AntiCheatGamblerGameType::CoinFlip:
+		default:
+			return TEXT("coin_flip");
+		}
+	}
+
+	FString T66HitZoneToApiString(ET66HitZoneType HitZoneType)
+	{
+		switch (HitZoneType)
+		{
+		case ET66HitZoneType::None: return TEXT("none");
+		case ET66HitZoneType::Body: return TEXT("body");
+		case ET66HitZoneType::Head: return TEXT("head");
+		case ET66HitZoneType::Core: return TEXT("core");
+		case ET66HitZoneType::WeakPoint: return TEXT("weak_point");
+		case ET66HitZoneType::LeftArm: return TEXT("left_arm");
+		case ET66HitZoneType::RightArm: return TEXT("right_arm");
+		case ET66HitZoneType::LeftLeg: return TEXT("left_leg");
+		case ET66HitZoneType::RightLeg: return TEXT("right_leg");
+		default: return TEXT("body");
+		}
+	}
 }
 
 TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
@@ -114,6 +193,7 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 		return RunObj;
 	}
 
+	RunObj->SetNumberField(TEXT("schema_version"), Snapshot->SchemaVersion);
 	RunObj->SetNumberField(TEXT("hero_level"), Snapshot->HeroLevel);
 	RunObj->SetNumberField(TEXT("hero_mastery_level"), Snapshot->HeroMasteryLevel);
 	RunObj->SetNumberField(TEXT("hero_mastery_xp"), Snapshot->HeroMasteryXP);
@@ -151,8 +231,9 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 		case ET66SecondaryStatType::BounceScale: KeyName = TEXT("BounceScale"); break;
 		case ET66SecondaryStatType::PierceScale: KeyName = TEXT("PierceScale"); break;
 		case ET66SecondaryStatType::DotScale: KeyName = TEXT("DotScale"); break;
-		case ET66SecondaryStatType::CritDamage: KeyName = TEXT("CritDamage"); break;
+		case ET66SecondaryStatType::CritDamage: continue;
 		case ET66SecondaryStatType::CritChance: KeyName = TEXT("CritChance"); break;
+		case ET66SecondaryStatType::HeadshotChance: KeyName = TEXT("HeadshotChance"); break;
 		case ET66SecondaryStatType::CloseRangeDamage: KeyName = TEXT("CloseRangeDamage"); break;
 		case ET66SecondaryStatType::LongRangeDamage: KeyName = TEXT("LongRangeDamage"); break;
 		case ET66SecondaryStatType::AttackRange: KeyName = TEXT("AttackRange"); break;
@@ -181,6 +262,14 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 		case ET66SecondaryStatType::LootBag: KeyName = TEXT("LootBag"); break;
 		case ET66SecondaryStatType::LootWheel: KeyName = TEXT("LootWheel"); break;
 		case ET66SecondaryStatType::VendorToken: KeyName = TEXT("VendorToken"); break;
+		case ET66SecondaryStatType::FirePower: KeyName = TEXT("FirePower"); break;
+		case ET66SecondaryStatType::IcePower: KeyName = TEXT("IcePower"); break;
+		case ET66SecondaryStatType::ElectricityPower: KeyName = TEXT("ElectricityPower"); break;
+		case ET66SecondaryStatType::NaturePower: KeyName = TEXT("NaturePower"); break;
+		case ET66SecondaryStatType::InteractableLuck: KeyName = TEXT("InteractableLuck"); break;
+		case ET66SecondaryStatType::StealingLuck: KeyName = TEXT("StealingLuck"); break;
+		case ET66SecondaryStatType::GamblingLuck: KeyName = TEXT("GamblingLuck"); break;
+		case ET66SecondaryStatType::ProcLuck: KeyName = TEXT("ProcLuck"); break;
 		default: continue;
 		}
 		SecObj->SetNumberField(KeyName, Pair.Value);
@@ -351,11 +440,9 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 			const TCHAR* GameTypeString = TEXT("coin_flip");
 			switch (Summary.GameType)
 			{
-			case ET66AntiCheatGamblerGameType::RockPaperScissors: GameTypeString = TEXT("rps"); break;
-			case ET66AntiCheatGamblerGameType::BlackJack: GameTypeString = TEXT("blackjack"); break;
-			case ET66AntiCheatGamblerGameType::Lottery: GameTypeString = TEXT("lottery"); break;
-			case ET66AntiCheatGamblerGameType::Plinko: GameTypeString = TEXT("plinko"); break;
-			case ET66AntiCheatGamblerGameType::BoxOpening: GameTypeString = TEXT("box_opening"); break;
+			case ET66AntiCheatGamblerGameType::GuessTheCup: GameTypeString = TEXT("guess_the_cup"); break;
+			case ET66AntiCheatGamblerGameType::PickLongestShortestStick: GameTypeString = TEXT("pick_longest_shortest_stick"); break;
+			case ET66AntiCheatGamblerGameType::FindJoker: GameTypeString = TEXT("find_joker"); break;
 			default: break;
 			}
 
@@ -381,11 +468,9 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 			const TCHAR* GameTypeString = TEXT("coin_flip");
 			switch (Event.GameType)
 			{
-			case ET66AntiCheatGamblerGameType::RockPaperScissors: GameTypeString = TEXT("rps"); break;
-			case ET66AntiCheatGamblerGameType::BlackJack: GameTypeString = TEXT("blackjack"); break;
-			case ET66AntiCheatGamblerGameType::Lottery: GameTypeString = TEXT("lottery"); break;
-			case ET66AntiCheatGamblerGameType::Plinko: GameTypeString = TEXT("plinko"); break;
-			case ET66AntiCheatGamblerGameType::BoxOpening: GameTypeString = TEXT("box_opening"); break;
+			case ET66AntiCheatGamblerGameType::GuessTheCup: GameTypeString = TEXT("guess_the_cup"); break;
+			case ET66AntiCheatGamblerGameType::PickLongestShortestStick: GameTypeString = TEXT("pick_longest_shortest_stick"); break;
+			case ET66AntiCheatGamblerGameType::FindJoker: GameTypeString = TEXT("find_joker"); break;
 			default: break;
 			}
 
@@ -508,12 +593,37 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 	}
 	RunObj->SetObjectField(TEXT("score_budget_context"), ScoreBudgetObj);
 
+	TArray<FName> EquippedIdols = Snapshot->EquippedIdols;
+	TArray<uint8> EquippedIdolTiers = Snapshot->EquippedIdolTiers;
+	T66NormalizeEquippedIdolSaveArrays(EquippedIdols, EquippedIdolTiers);
+
 	TArray<TSharedPtr<FJsonValue>> IdolArr;
-	for (const FName& Idol : Snapshot->EquippedIdols)
+	for (const FName& Idol : EquippedIdols)
 	{
 		IdolArr.Add(MakeShared<FJsonValueString>(Idol.ToString()));
 	}
 	RunObj->SetArrayField(TEXT("equipped_idols"), IdolArr);
+
+	TArray<TSharedPtr<FJsonValue>> IdolTierArr;
+	for (const uint8 Tier : EquippedIdolTiers)
+	{
+		IdolTierArr.Add(MakeShared<FJsonValueNumber>(Tier));
+	}
+	RunObj->SetArrayField(TEXT("equipped_idol_tiers"), IdolTierArr);
+
+	TArray<TSharedPtr<FJsonValue>> IdolElementArr;
+	for (const ET66IdolElement Element : Snapshot->EquippedIdolElements)
+	{
+		IdolElementArr.Add(MakeShared<FJsonValueString>(T66IdolElementToApiString(Element)));
+	}
+	RunObj->SetArrayField(TEXT("equipped_idol_elements"), IdolElementArr);
+
+	TArray<TSharedPtr<FJsonValue>> IdolCategoryArr;
+	for (const ET66AttackCategory Category : Snapshot->EquippedIdolCategories)
+	{
+		IdolCategoryArr.Add(MakeShared<FJsonValueString>(T66AttackCategoryToApiString(Category)));
+	}
+	RunObj->SetArrayField(TEXT("equipped_idol_types"), IdolCategoryArr);
 
 	TArray<TSharedPtr<FJsonValue>> InvArr;
 	for (const FName& Item : Snapshot->Inventory)
@@ -521,6 +631,117 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 		InvArr.Add(MakeShared<FJsonValueString>(Item.ToString()));
 	}
 	RunObj->SetArrayField(TEXT("inventory"), InvArr);
+
+	TArray<TSharedPtr<FJsonValue>> InventorySlotArr;
+	for (const FT66InventorySlot& Slot : Snapshot->InventorySlots)
+	{
+		TSharedPtr<FJsonObject> SlotObj = MakeShared<FJsonObject>();
+		SlotObj->SetStringField(TEXT("item_id"), Slot.ItemTemplateID.ToString());
+		SlotObj->SetStringField(TEXT("rarity"), T66ItemRarityToApiString(Slot.Rarity));
+		SlotObj->SetNumberField(TEXT("line1_rolled_value"), Slot.Line1RolledValue);
+		SlotObj->SetNumberField(TEXT("secondary_stat_bonus_override"), Slot.SecondaryStatBonusOverride);
+		SlotObj->SetNumberField(TEXT("line2_multiplier_override"), Slot.Line2MultiplierOverride);
+		SlotObj->SetNumberField(TEXT("roll_seed"), Slot.RollSeed);
+		InventorySlotArr.Add(MakeShared<FJsonValueObject>(SlotObj));
+	}
+	RunObj->SetArrayField(TEXT("inventory_slots"), InventorySlotArr);
+
+	TSharedPtr<FJsonObject> NoIdolObj = MakeShared<FJsonObject>();
+	NoIdolObj->SetNumberField(TEXT("stacks"), Snapshot->NoIdolSelectionStacks);
+	NoIdolObj->SetNumberField(TEXT("damage_tenths"), Snapshot->NoIdolPrimaryStatBonuses.DamageTenths);
+	NoIdolObj->SetNumberField(TEXT("attack_speed_tenths"), Snapshot->NoIdolPrimaryStatBonuses.AttackSpeedTenths);
+	NoIdolObj->SetNumberField(TEXT("attack_scale_tenths"), Snapshot->NoIdolPrimaryStatBonuses.AttackScaleTenths);
+	NoIdolObj->SetNumberField(TEXT("accuracy_tenths"), Snapshot->NoIdolPrimaryStatBonuses.AccuracyTenths);
+	NoIdolObj->SetNumberField(TEXT("armor_tenths"), Snapshot->NoIdolPrimaryStatBonuses.ArmorTenths);
+	NoIdolObj->SetNumberField(TEXT("evasion_tenths"), Snapshot->NoIdolPrimaryStatBonuses.EvasionTenths);
+	NoIdolObj->SetNumberField(TEXT("luck_tenths"), Snapshot->NoIdolPrimaryStatBonuses.LuckTenths);
+	NoIdolObj->SetNumberField(TEXT("speed_tenths"), Snapshot->NoIdolPrimaryStatBonuses.SpeedTenths);
+	RunObj->SetObjectField(TEXT("no_idol"), NoIdolObj);
+
+	TSharedPtr<FJsonObject> MobLootObj = MakeShared<FJsonObject>();
+	MobLootObj->SetNumberField(TEXT("drops_collected"), Snapshot->MobLootDropsCollectedThisRun);
+	MobLootObj->SetNumberField(TEXT("quantity_collected"), Snapshot->MobLootQuantityCollectedThisRun);
+	MobLootObj->SetNumberField(TEXT("gold_value_collected"), Snapshot->MobLootGoldValueCollectedThisRun);
+	MobLootObj->SetNumberField(TEXT("quantity_collected_by_player"), Snapshot->MobLootQuantityCollectedByPlayerThisRun);
+	MobLootObj->SetNumberField(TEXT("quantity_collected_by_pet"), Snapshot->MobLootQuantityCollectedByPetThisRun);
+	MobLootObj->SetNumberField(TEXT("drops_collected_by_pet"), Snapshot->MobLootDropsCollectedByPetThisRun);
+	MobLootObj->SetNumberField(TEXT("quantity_sold"), Snapshot->MobLootQuantitySoldThisRun);
+	MobLootObj->SetNumberField(TEXT("sale_gold"), Snapshot->MobLootSaleGoldThisRun);
+	MobLootObj->SetNumberField(TEXT("remaining_stack"), Snapshot->MobLootRemainingStack);
+	RunObj->SetObjectField(TEXT("mob_loot"), MobLootObj);
+
+	TArray<TSharedPtr<FJsonValue>> GamblerResultArr;
+	for (const FT66AntiCheatGamblerGameSummary& Summary : Snapshot->GamblerOutcomeSummaries)
+	{
+		TSharedPtr<FJsonObject> SummaryObj = MakeShared<FJsonObject>();
+		SummaryObj->SetStringField(TEXT("game_type"), T66GamblerGameTypeToApiString(Summary.GameType));
+		SummaryObj->SetNumberField(TEXT("rounds"), Summary.Rounds);
+		SummaryObj->SetNumberField(TEXT("wins"), Summary.Wins);
+		SummaryObj->SetNumberField(TEXT("losses"), Summary.Losses);
+		SummaryObj->SetNumberField(TEXT("draws"), Summary.Draws);
+		SummaryObj->SetNumberField(TEXT("cheat_attempts"), Summary.CheatAttempts);
+		SummaryObj->SetNumberField(TEXT("cheat_successes"), Summary.CheatSuccesses);
+		SummaryObj->SetNumberField(TEXT("total_bet_gold"), Summary.TotalBetGold);
+		SummaryObj->SetNumberField(TEXT("total_payout_gold"), Summary.TotalPayoutGold);
+		GamblerResultArr.Add(MakeShared<FJsonValueObject>(SummaryObj));
+	}
+	RunObj->SetArrayField(TEXT("gambler_results"), GamblerResultArr);
+	RunObj->SetBoolField(TEXT("gambler_results_truncated"), Snapshot->bGamblerOutcomeEventsTruncated);
+
+	TSharedPtr<FJsonObject> VendorObj = MakeShared<FJsonObject>();
+	VendorObj->SetNumberField(TEXT("current_gold"), Snapshot->CurrentGold);
+	VendorObj->SetNumberField(TEXT("current_debt"), Snapshot->CurrentDebt);
+	VendorObj->SetNumberField(TEXT("inventory_sell_value_total"), Snapshot->InventorySellValueTotal);
+	VendorObj->SetNumberField(TEXT("net_worth"), Snapshot->NetWorth);
+	VendorObj->SetNumberField(TEXT("active_vendor_token_stacks"), Snapshot->ActiveVendorTokenStacks);
+	VendorObj->SetNumberField(TEXT("current_sell_fraction"), Snapshot->CurrentSellFraction);
+	VendorObj->SetNumberField(TEXT("shop_stock_count"), Snapshot->ShopStockCount);
+	VendorObj->SetNumberField(TEXT("buyback_pool_size"), Snapshot->BuybackPoolSize);
+	RunObj->SetObjectField(TEXT("vendor"), VendorObj);
+
+	TSharedPtr<FJsonObject> WeaponObj = MakeShared<FJsonObject>();
+	WeaponObj->SetStringField(TEXT("weapon_id"), Snapshot->EquippedWeaponID.ToString());
+	WeaponObj->SetStringField(TEXT("branch"), T66AttackCategoryToApiString(Snapshot->EquippedWeaponBranch));
+	WeaponObj->SetStringField(TEXT("rarity"), T66WeaponRarityToApiString(Snapshot->EquippedWeaponRarity));
+	WeaponObj->SetStringField(TEXT("attack_pattern_id"), Snapshot->EquippedWeaponAttackPatternID.ToString());
+	WeaponObj->SetNumberField(TEXT("projectile_count"), Snapshot->EquippedWeaponProjectileCount);
+	WeaponObj->SetNumberField(TEXT("spread_angle_degrees"), Snapshot->EquippedWeaponSpreadAngleDegrees);
+	RunObj->SetObjectField(TEXT("weapon"), WeaponObj);
+
+	TSharedPtr<FJsonObject> PetObj = MakeShared<FJsonObject>();
+	PetObj->SetStringField(TEXT("active_pet_id"), Snapshot->ActivePetID.ToString());
+	PetObj->SetStringField(TEXT("active_pet_skin_id"), Snapshot->ActivePetSkinID.ToString());
+	PetObj->SetNumberField(TEXT("bond_stages_cleared"), Snapshot->ActivePetBondStagesCleared);
+	PetObj->SetNumberField(TEXT("bond_movement_speed_multiplier"), Snapshot->ActivePetBondMovementSpeedMultiplier);
+	PetObj->SetNumberField(TEXT("mob_loot_quantity_collected"), Snapshot->PetMobLootQuantityCollectedThisRun);
+	PetObj->SetNumberField(TEXT("mob_loot_drops_collected"), Snapshot->PetMobLootDropsCollectedThisRun);
+	RunObj->SetObjectField(TEXT("pet"), PetObj);
+
+	TSharedPtr<FJsonObject> BossObj = MakeShared<FJsonObject>();
+	BossObj->SetBoolField(TEXT("active_at_summary"), Snapshot->bBossActiveAtSummary);
+	BossObj->SetStringField(TEXT("active_boss_id"), Snapshot->ActiveBossID.ToString());
+	BossObj->SetNumberField(TEXT("boss_max_hp"), Snapshot->BossMaxHP);
+	BossObj->SetNumberField(TEXT("boss_current_hp"), Snapshot->BossCurrentHP);
+	BossObj->SetNumberField(TEXT("cowardice_gates_taken"), Snapshot->CowardiceGatesTakenCount);
+	TArray<TSharedPtr<FJsonValue>> OwedBossArr;
+	for (const FName& BossID : Snapshot->OwedBossIDs)
+	{
+		OwedBossArr.Add(MakeShared<FJsonValueString>(BossID.ToString()));
+	}
+	BossObj->SetArrayField(TEXT("owed_boss_ids"), OwedBossArr);
+	TArray<TSharedPtr<FJsonValue>> BossPartArr;
+	for (const FT66BossPartSnapshot& Part : Snapshot->BossParts)
+	{
+		TSharedPtr<FJsonObject> PartObj = MakeShared<FJsonObject>();
+		PartObj->SetStringField(TEXT("part_id"), Part.PartID.ToString());
+		PartObj->SetStringField(TEXT("hit_zone_type"), T66HitZoneToApiString(Part.HitZoneType));
+		PartObj->SetNumberField(TEXT("max_hp"), Part.MaxHP);
+		PartObj->SetNumberField(TEXT("current_hp"), Part.CurrentHP);
+		PartObj->SetBoolField(TEXT("alive"), Part.IsAlive());
+		BossPartArr.Add(MakeShared<FJsonValueObject>(PartObj));
+	}
+	BossObj->SetArrayField(TEXT("parts"), BossPartArr);
+	RunObj->SetObjectField(TEXT("boss"), BossObj);
 
 	TArray<TSharedPtr<FJsonValue>> LogArr;
 	for (const FString& Msg : Snapshot->EventLog)

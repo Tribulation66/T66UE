@@ -6,12 +6,14 @@
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66EnemyAIController.h"
 #include "Gameplay/Enemies/T66RangedEnemy.h"
-#include "Gameplay/T66ArcadeMachineInteractable.h"
+#include "Gameplay/T66BoostInteractable.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66MobLootSubsystem.h"
 #include "Gameplay/T66MobManagerSubsystem.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
+#include "Gameplay/T66SafeZoneComponent.h"
 #include "Gameplay/T66CombatHitZoneComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66AudioSubsystem.h"
@@ -52,6 +54,76 @@ namespace
 	const FName T66MobVATClip_Death(TEXT("Death"));
 	const FName T66TowerDescentGuardianTag(TEXT("T66_Tower_DescentGuardian"));
 	const TCHAR* T66TowerFloorTagPrefix = TEXT("T66_Floor_Tower_");
+	constexpr float T66NormalMobStatBoostDropChance = 0.02f;
+	constexpr float T66MiniBossStatBoostDropChance = 0.08f;
+
+	struct FT66MobKillBoostDropTarget
+	{
+		bool bUsesSecondaryStat = false;
+		ET66HeroStatType PrimaryStatType = ET66HeroStatType::Damage;
+		ET66SecondaryStatType SecondaryStatType = ET66SecondaryStatType::None;
+	};
+
+	const TArray<FT66MobKillBoostDropTarget>& T66GetMobKillBoostDropTargets()
+	{
+		static const TArray<FT66MobKillBoostDropTarget> Targets = {
+			{ false, ET66HeroStatType::Damage, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::AttackSpeed, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::AttackScale, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::Accuracy, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::Armor, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::Evasion, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::Luck, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::Speed, ET66SecondaryStatType::None },
+			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::FirePower },
+			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::IcePower },
+			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::ElectricityPower },
+			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::NaturePower },
+		};
+		return Targets;
+	}
+
+	void T66TrySpawnMobKillStatBoost(AActor* SourceActor, const bool bIsMiniBoss)
+	{
+		if (!SourceActor)
+		{
+			return;
+		}
+
+		UWorld* World = SourceActor->GetWorld();
+		const TArray<FT66MobKillBoostDropTarget>& Targets = T66GetMobKillBoostDropTargets();
+		const float DropChance = bIsMiniBoss ? T66MiniBossStatBoostDropChance : T66NormalMobStatBoostDropChance;
+		if (!World || Targets.Num() <= 0 || FMath::FRand() >= DropChance)
+		{
+			return;
+		}
+
+		const FT66MobKillBoostDropTarget& Target = Targets[FMath::RandRange(0, Targets.Num() - 1)];
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = SourceActor;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		if (AT66BoostInteractable* Boost = World->SpawnActor<AT66BoostInteractable>(
+			AT66BoostInteractable::StaticClass(),
+			SourceActor->GetActorLocation() + FVector(0.f, 0.f, 80.f),
+			FRotator::ZeroRotator,
+			SpawnParams))
+		{
+			if (Target.bUsesSecondaryStat)
+			{
+				Boost->ConfigureSecondaryBoost(Target.SecondaryStatType, 8, 10.f);
+			}
+			else
+			{
+				Boost->ConfigureBoost(Target.PrimaryStatType, 8, 10.f);
+			}
+			UE_LOG(LogT66Enemy, Display, TEXT("[T66Proof][StatBoostDrop] Source=RichEnemy MiniBoss=%d Chance=%.3f Primary=%d Secondary=%d UsesSecondary=%d"),
+				bIsMiniBoss ? 1 : 0,
+				DropChance,
+				static_cast<int32>(Target.PrimaryStatType),
+				static_cast<int32>(Target.SecondaryStatType),
+				Target.bUsesSecondaryStat ? 1 : 0);
+		}
+	}
 
 	const TCHAR* T66EnemyFamilyAudioSuffix(const ET66EnemyFamily Family)
 	{
@@ -125,9 +197,9 @@ namespace
 			return Result;
 		}
 
-		for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+		for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : Registry->GetNPCs())
 		{
-			const AT66HouseNPCBase* NPC = WeakNPC.Get();
+			const AT66NPCBase* NPC = WeakNPC.Get();
 			if (!NPC)
 			{
 				continue;
@@ -142,21 +214,22 @@ namespace
 			T66ConsiderSafeZoneHit(QueryLocation, NPC->GetActorLocation(), NPC->GetSafeZoneRadius(), Result);
 		}
 
-		for (const TWeakObjectPtr<AT66WorldInteractableBase>& WeakInteractable : Registry->GetWorldInteractables())
+		for (const TWeakObjectPtr<UT66SafeZoneComponent>& WeakSafeZone : Registry->GetSafeZones())
 		{
-			const AT66ArcadeMachineInteractable* ArcadeMachine = Cast<AT66ArcadeMachineInteractable>(WeakInteractable.Get());
-			if (!ArcadeMachine)
+			const UT66SafeZoneComponent* SafeZone = WeakSafeZone.Get();
+			if (!SafeZone)
 			{
 				continue;
 			}
 
+			const FVector SafeZoneLocation = SafeZone->GetComponentLocation();
 			if (bTowerLayout && QueryFloorNumber != INDEX_NONE
-				&& GameMode->GetTowerFloorIndexForLocation(ArcadeMachine->GetActorLocation()) != QueryFloorNumber)
+				&& GameMode->GetTowerFloorIndexForLocation(SafeZoneLocation) != QueryFloorNumber)
 			{
 				continue;
 			}
 
-			T66ConsiderSafeZoneHit(QueryLocation, ArcadeMachine->GetActorLocation(), ArcadeMachine->GetProtectionAuraRadius(), Result);
+			T66ConsiderSafeZoneHit(QueryLocation, SafeZoneLocation, SafeZone->GetSafeZoneRadius(), Result);
 		}
 
 		return Result;
@@ -1272,6 +1345,34 @@ void AT66EnemyBase::Tick(float DeltaSeconds)
 		return;
 	}
 
+	if (const AT66HeroBase* Hero = Cast<AT66HeroBase>(PlayerPawn))
+	{
+		if (Hero->IsInSafeZone())
+		{
+			if (UT66MobManagerSubsystem* Manager = RecordRichRangedFireAttempt())
+			{
+				Manager->RecordRangedFireSkippedSafeZone(false, MobID, RangedDiagnosticDist2D);
+			}
+
+			const FT66SafeZoneHit HeroSafeZoneHit = T66ResolveSafeZoneHit2D(GetWorld(), PlayerPawn->GetActorLocation());
+			const FVector RepelCenter = HeroSafeZoneHit.bInside ? HeroSafeZoneHit.Center : PlayerPawn->GetActorLocation();
+			const float RepelStopDistance = HeroSafeZoneHit.bInside ? (HeroSafeZoneHit.Radius + 800.f) : 1450.f;
+			FVector AwayFromSafeZone = GetActorLocation() - RepelCenter;
+			AwayFromSafeZone.Z = 0.f;
+			const float DistanceToSafeZoneCenter = AwayFromSafeZone.Size2D();
+			if (!AwayFromSafeZone.Normalize() || DistanceToSafeZoneCenter >= RepelStopDistance)
+			{
+				Move->StopMovementImmediately();
+			}
+			else
+			{
+				Move->MaxWalkSpeed = BaseMaxWalkSpeed * SafeZoneLoiterMoveScale;
+				AddMovementInput(AwayFromSafeZone, 1.f);
+			}
+			return;
+		}
+	}
+
 	// Tick armor debuff timer.
 	if (ArmorDebuffSecondsRemaining > 0.f)
 	{
@@ -1702,6 +1803,17 @@ void AT66EnemyBase::OnDeath()
 		}
 	}
 
+	if (World)
+	{
+		if (UT66MobLootSubsystem* MobLoot = World->GetSubsystem<UT66MobLootSubsystem>())
+		{
+			FT66MobLootHandle MobLootHandle;
+			const FName SourceID = MobID.IsNone() ? CharacterVisualID : MobID;
+			MobLoot->SpawnMobLootFromNonBossDeath(this, SourceID, bIsMiniBoss, MobLootHandle);
+		}
+		T66TrySpawnMobKillStatBoost(this, bIsMiniBoss);
+	}
+
 	if (OwningDirector)
 	{
 		OwningDirector->NotifyEnemyDied(this);
@@ -1846,3 +1958,4 @@ void AT66EnemyBase::OnDeath()
 		SetLifeSpan(0.1f);
 	}
 }
+

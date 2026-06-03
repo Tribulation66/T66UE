@@ -207,11 +207,9 @@ UENUM(BlueprintType)
 enum class ET66AntiCheatGamblerGameType : uint8
 {
 	CoinFlip           UMETA(DisplayName = "Coin Flip"),
-	RockPaperScissors  UMETA(DisplayName = "Rock Paper Scissors"),
-	BlackJack          UMETA(DisplayName = "Black Jack"),
-	Lottery            UMETA(DisplayName = "Lottery"),
-	Plinko             UMETA(DisplayName = "Plinko"),
-	BoxOpening         UMETA(DisplayName = "Box Opening")
+	GuessTheCup        UMETA(DisplayName = "Guess the Cup"),
+	PickLongestShortestStick UMETA(DisplayName = "Pick Longest/Shortest Stick"),
+	FindJoker          UMETA(DisplayName = "Find Joker")
 };
 
 USTRUCT(BlueprintType)
@@ -374,7 +372,7 @@ struct T66_API FT66SavedRunSnapshot
 	TArray<FT66InventorySlot> InventorySlots;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	int32 ActiveVendorTokenLevel = 0;
+	int32 ActiveVendorTokenStacks = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	TArray<FString> EventLog;
@@ -491,6 +489,12 @@ struct T66_API FT66SavedRunSnapshot
 	bool bSaintBlessingActive = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FT66HeroPreciseStatBlock SaintBlessingPrimaryStatBonuses;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	TArray<FT66SavedSecondaryStatBonusEntry> SaintBlessingSecondaryStatBonusEntries;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	float FinalSurvivalEnemyScalar = 1.f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
@@ -558,6 +562,43 @@ struct T66_API FT66SavedRunSnapshot
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	float AntiCheatCurrentPressureExpectedDodges = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 NoIdolSelectionStacks = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	FT66HeroPreciseStatBlock NoIdolPrimaryStatBonuses;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float UltimateCharge = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 CollectedMobLootStack = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 MobLootDropsCollectedThisRun = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 MobLootQuantityCollectedThisRun = 0;
+
+	/** Total sell value represented by Mob Loot collected this run. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 MobLootGoldValueCollectedThisRun = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 MobLootQuantityCollectedByPlayerThisRun = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 MobLootQuantityCollectedByPetThisRun = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 MobLootDropsCollectedByPetThisRun = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 MobLootQuantitySoldThisRun = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	int32 MobLootSaleGoldThisRun = 0;
 };
 
 USTRUCT(BlueprintType)

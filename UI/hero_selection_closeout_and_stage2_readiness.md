@@ -177,7 +177,6 @@ Ready by resolver after pre-rollout cleanup:
 - `Diplomas` -> `PowerUp` with permanent/diploma tab active.
 - `Drugs` -> `PowerUp` with single-use/drugs tab active.
 - `SteamAchievements` -> `Achievements` with Steam/Achievements tab active.
-- `Minigames`
 - `SettingsRetroFX` -> `Settings` with Retro FX tab active.
 - `DailyDescent`
 - `Challenges`
@@ -191,7 +190,6 @@ The current Section 7.2 specs are strong visual summaries, but the non-Hero Sele
 Overview example:
 - Needs an `Interactivity` subsection: top-bar buttons, sub-tabs, filter dropdowns, tooltip/info icons, any row/card click actions.
 - Needs label-vs-button assignments: e.g. player name, account status text, warning paragraph, table headers, progress-count labels should be labels; top-bar/sub-tab/filter controls should be buttons/dropdowns.
-- Needs a per-screen icon inventory: settings, globe, account/profile, power-up, achievements, minigames, ticket, power, info, shield, bar chart, trophy, stopwatch.
 - Needs content-stub policy decisions: player avatar, account name, progress counts, leaderboard/table rows.
 - Needs a Step 0.5 geometry table and overlay before checklist authoring.
 

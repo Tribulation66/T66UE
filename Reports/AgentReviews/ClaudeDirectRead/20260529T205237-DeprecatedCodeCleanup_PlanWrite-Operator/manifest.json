@@ -1,0 +1,48 @@
+﻿{
+    "ArtifactKind":  "ClaudeHelperFailed",
+    "Mode":  "Operator",
+    "Model":  "claude-opus-4-8",
+    "Effort":  "high",
+    "ClaudeOutputFormat":  "json",
+    "PermissionMode":  "bypassPermissions",
+    "ToolProfile":  "FullOperator",
+    "EffectiveToolSurface":  "default (full Claude Code tool surface: edits, shell, configured MCP/editor tools)",
+    "MutatingCapability":  true,
+    "ApprovalRequired":  true,
+    "CodexApprovalPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\20260529_DeprecatedCodeCleanup\\codex_operator_approval_plan_write.md",
+    "AllowedTools":  [
+                         "Read",
+                         "Grep",
+                         "Glob"
+                     ],
+    "AddDir":  [
+                   "C:\\UE\\T66"
+               ],
+    "PromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\20260529_DeprecatedCodeCleanup\\claude_operator_prompt_plan_write.md",
+    "EffectivePromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T205237-DeprecatedCodeCleanup_PlanWrite-Operator\\effective_prompt.md",
+    "AttemptsRequested":  1,
+    "TimeoutSeconds":  900,
+    "MaxTurns":  0,
+    "MaxTurnContinuations":  3,
+    "SessionPersistence":  false,
+    "SessionPersistenceSource":  "default off (MaxTurns \u003c= 0 has no max-turn resume to support)",
+    "NoSessionPersistence":  true,
+    "ClaudePath":  "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+    "ClaudeVersion":  "2.1.150 (Claude Code)",
+    "FailureKind":  "ClaudeProcessFailed",
+    "MaxTurnContinuationAttempted":  false,
+    "ClaudeTokensSpent":  73559,
+    "TokenSummaryPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T205237-DeprecatedCodeCleanup_PlanWrite-Operator\\claude_tokens.json",
+    "Attempts":  [
+                     {
+                         "StdoutPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T205237-DeprecatedCodeCleanup_PlanWrite-Operator\\attempts\\stdout_attempt1.json",
+                         "StderrPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T205237-DeprecatedCodeCleanup_PlanWrite-Operator\\attempts\\stderr_attempt1.txt",
+                         "TimedOut":  false,
+                         "ExitCode":  1,
+                         "Success":  false,
+                         "MaxTurnContinuationAttempted":  false,
+                         "MaxTurnContinuationCount":  0
+                     }
+                 ],
+    "OutcomeKind":  "ClaudeHelperFailed"
+}

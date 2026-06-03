@@ -20,3 +20,10 @@
 - What's wrong: `Content/Items/Sprites/Item_HpRegen_*.uasset` and `Content/Items/Sprites/Item_LifeSteal_*.uasset` remain after the main-run `Content/Data/Items.csv` rows for `Item_HpRegen` and `Item_LifeSteal` were removed.
 - Why it's out of scope now: The current cleanup is scoped to the main-run item system. A Mini-inclusive ownership/reference pass has not been done, and the shared sprite assets should not be deleted until Mini-owned references are audited.
 - What fixing it would entail: Run a Mini-inclusive reference audit for those sprite assets, update or remove any Mini-owned references, delete the no-longer-owned sprite assets and source import records, refresh affected data assets, and stage/smoke the standalone build.
+
+## Headshot Item Still Reuses Legacy Crit Damage Sprites
+
+- Severity tag: [Minor]
+- What's wrong: `Content/Data/Items.csv` now uses live row `Item_Headshot`, but its icon paths still point at `Content/Items/Sprites/Item_CritDamage_*.uasset` because no `Item_Headshot_*` sprite assets currently exist.
+- Why it's out of scope now: This pass is a stat/data/combat rename and behavior change. Raw-copying or renaming Unreal `.uasset` files without an editor asset-rename pass would risk broken internal object names and stale redirectors.
+- What fixing it would entail: Create or properly rename/import `Item_Headshot_*` sprite assets through the Unreal asset pipeline, update `Items.csv` paths, refresh `/Game/Data/DT_Items`, then run the item/UI smoke path to confirm the icons resolve.

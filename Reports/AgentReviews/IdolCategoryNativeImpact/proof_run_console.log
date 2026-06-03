@@ -1,0 +1,226 @@
+=== Idol category-native proof case: LightPierce (Idol_Light) ===
+FFmpeg: C:\Users\DoPra\.local\bin\ffmpeg.cmd
+Frames: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\LightPierce\frames
+Output: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\LightPierce\LightPierce.mp4
+C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe C:\UE\T66\T66.uproject /Game/Maps/GameplayLevel -game -windowed -ResX=1280 -ResY=720 -T66AutomationResX=1280 -T66AutomationResY=720 -T66AutomationWindowed -T66GameplayAutoCapture=hero1axeaoewateridolimpact -T66GameplayAutoScreenshotSequenceDir=C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\LightPierce\frames -T66GameplayAutoScreenshotSequencePrefix=frame -T66GameplayAutoScreenshotSequenceCount=72 -T66GameplayAutoScreenshotSequenceInterval=0.08 -T66GameplayAutoScreenshotDelay=5 -T66GameplayAutoPostCaptureScreenshotDelay=0.2 -unattended -nop4 -nosplash -ExecCmds="T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch -30,T66.Camera.LockedChaseArmLength 540,T66.Camera.LockedChasePivotHeight 145,T66.Camera.ConstrainAgainstTowerWalls 0,T66.Camera.WallOcclusionEnabled 0,T66.Combat.DebugView 2,T66.Combat.DebugLabels 1,T66.Combat.ImpactSourceVerbose 1" -T66Hero1AxeAOECenterPlayer -T66GameplayAutoLockCameraZoom -T66GameplayAutoCameraArmLength=540 -T66Hero1AxeAOELabForwardOffset=360 -T66Hero1AxeAOELabRightOffset=0 -T66Hero1AxeAOELabVerticalOffset=-82 -T66Hero1AxeAOESpawnTargets -T66Hero1AxeAOETargetCount=3 -T66Hero1AxeAOETargetSpacing=145 -T66Hero1AxeAOETargetForwardOffset=210 -T66Hero1AxeAOETargetMob=Slime -T66Hero1AxeAOEHitboxFireDelay=7.6 -T66Hero1AxeAOEHitboxVFXLeadSeconds=0.12 -T66Hero1AxeAOEProofIdol=Idol_Light
+Input #0, image2, from 'C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\LightPierce\frames\frame_%04d.png':
+  Duration: 00:00:06.00, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: png, rgba(pc, gbr/unknown/unknown), 1280x720, 12 fps, 12 tbr, 12 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (png (native) -> h264 (libx264))
+Press [q] to stop, [?] for help
+[libx264 @ 0000016f4cfb6100] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 0000016f4cfb6100] profile High, level 3.1, 4:2:0, 8-bit
+[libx264 @ 0000016f4cfb6100] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=22 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=12 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\LightPierce\LightPierce.mp4':
+  Metadata:
+    encoder         : Lavf62.12.101
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 1280x720, q=2-31, 12 fps, 12288 tbn
+    Metadata:
+      encoder         : Lavc62.28.101 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+[mp4 @ 0000016f4cfb5840] Starting second pass: moving the moov atom to the beginning of the file
+[out#0/mp4 @ 0000016f4cf32d40] video:293KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.563688%
+frame=   72 fps=0.0 q=-1.0 Lsize=     295KiB time=00:00:05.83 bitrate= 414.0kbits/s speed=17.3x elapsed=0:00:00.33    
+[libx264 @ 0000016f4cfb6100] frame I:1     Avg QP:16.09  size:186839
+[libx264 @ 0000016f4cfb6100] frame P:21    Avg QP:18.86  size:  3762
+[libx264 @ 0000016f4cfb6100] frame B:50    Avg QP:25.72  size:   673
+[libx264 @ 0000016f4cfb6100] consecutive B-frames:  2.8%  8.3% 16.7% 72.2%
+[libx264 @ 0000016f4cfb6100] mb I  I16..4:  1.3% 24.5% 74.2%
+[libx264 @ 0000016f4cfb6100] mb P  I16..4:  0.1%  0.4%  0.6%  P16..4:  8.8%  0.6%  0.9%  0.0%  0.0%    skip:88.6%
+[libx264 @ 0000016f4cfb6100] mb B  I16..4:  0.0%  0.1%  0.1%  B16..8:  2.9%  0.2%  0.1%  direct: 0.1%  skip:96.4%  L0:40.2% L1:58.4% BI: 1.4%
+[libx264 @ 0000016f4cfb6100] 8x8 transform intra:27.1% inter:63.6%
+[libx264 @ 0000016f4cfb6100] coded y,uvDC,uvAC intra: 85.0% 66.6% 53.5% inter: 1.3% 1.2% 0.3%
+[libx264 @ 0000016f4cfb6100] i16 v,h,dc,p: 37% 31% 15% 18%
+[libx264 @ 0000016f4cfb6100] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 17% 25% 16%  7%  6%  5%  8%  7% 10%
+[libx264 @ 0000016f4cfb6100] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 15% 29% 10%  7%  8%  7%  8%  8%  8%
+[libx264 @ 0000016f4cfb6100] i8c dc,h,v,p: 62% 21% 14%  4%
+[libx264 @ 0000016f4cfb6100] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0000016f4cfb6100] ref P L0: 40.3% 23.4% 25.1% 11.2%
+[libx264 @ 0000016f4cfb6100] ref B L0: 75.9% 18.2%  5.8%
+[libx264 @ 0000016f4cfb6100] ref B L1: 92.8%  7.2%
+[libx264 @ 0000016f4cfb6100] kb/s:399.30
+Frame sequence: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\LightPierce\frames
+Captured video: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\LightPierce\LightPierce.mp4
+=== Idol category-native proof case: ElectricBounce (Idol_Electric) ===
+FFmpeg: C:\Users\DoPra\.local\bin\ffmpeg.cmd
+Frames: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\ElectricBounce\frames
+Output: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\ElectricBounce\ElectricBounce.mp4
+C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe C:\UE\T66\T66.uproject /Game/Maps/GameplayLevel -game -windowed -ResX=1280 -ResY=720 -T66AutomationResX=1280 -T66AutomationResY=720 -T66AutomationWindowed -T66GameplayAutoCapture=hero1axeaoewateridolimpact -T66GameplayAutoScreenshotSequenceDir=C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\ElectricBounce\frames -T66GameplayAutoScreenshotSequencePrefix=frame -T66GameplayAutoScreenshotSequenceCount=72 -T66GameplayAutoScreenshotSequenceInterval=0.08 -T66GameplayAutoScreenshotDelay=5 -T66GameplayAutoPostCaptureScreenshotDelay=0.2 -unattended -nop4 -nosplash -ExecCmds="T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch -30,T66.Camera.LockedChaseArmLength 540,T66.Camera.LockedChasePivotHeight 145,T66.Camera.ConstrainAgainstTowerWalls 0,T66.Camera.WallOcclusionEnabled 0,T66.Combat.DebugView 2,T66.Combat.DebugLabels 1,T66.Combat.ImpactSourceVerbose 1" -T66Hero1AxeAOECenterPlayer -T66GameplayAutoLockCameraZoom -T66GameplayAutoCameraArmLength=540 -T66Hero1AxeAOELabForwardOffset=360 -T66Hero1AxeAOELabRightOffset=0 -T66Hero1AxeAOELabVerticalOffset=-82 -T66Hero1AxeAOESpawnTargets -T66Hero1AxeAOETargetCount=3 -T66Hero1AxeAOETargetSpacing=145 -T66Hero1AxeAOETargetForwardOffset=210 -T66Hero1AxeAOETargetMob=Slime -T66Hero1AxeAOEHitboxFireDelay=7.6 -T66Hero1AxeAOEHitboxVFXLeadSeconds=0.12 -T66Hero1AxeAOEProofIdol=Idol_Electric
+Input #0, image2, from 'C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\ElectricBounce\frames\frame_%04d.png':
+  Duration: 00:00:06.00, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: png, rgba(pc, gbr/unknown/unknown), 1280x720, 12 fps, 12 tbr, 12 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (png (native) -> h264 (libx264))
+Press [q] to stop, [?] for help
+[libx264 @ 000002253a84c340] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 000002253a84c340] profile High, level 3.1, 4:2:0, 8-bit
+[libx264 @ 000002253a84c340] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=22 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=12 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\ElectricBounce\ElectricBounce.mp4':
+  Metadata:
+    encoder         : Lavf62.12.101
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 1280x720, q=2-31, 12 fps, 12288 tbn
+    Metadata:
+      encoder         : Lavc62.28.101 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+[mp4 @ 000002253a84b8c0] Starting second pass: moving the moov atom to the beginning of the file
+[out#0/mp4 @ 000002253a7c27c0] video:221KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.757445%
+frame=   72 fps=0.0 q=-1.0 Lsize=     223KiB time=00:00:05.83 bitrate= 313.1kbits/s speed=17.8x elapsed=0:00:00.32    
+[libx264 @ 000002253a84c340] frame I:1     Avg QP:16.01  size:186947
+[libx264 @ 000002253a84c340] frame P:18    Avg QP:17.38  size:  1066
+[libx264 @ 000002253a84c340] frame B:53    Avg QP:25.77  size:   372
+[libx264 @ 000002253a84c340] consecutive B-frames:  1.4%  0.0%  4.2% 94.4%
+[libx264 @ 000002253a84c340] mb I  I16..4:  1.0% 23.3% 75.7%
+[libx264 @ 000002253a84c340] mb P  I16..4:  0.0%  0.0%  0.1%  P16..4:  3.8%  0.2%  0.4%  0.0%  0.0%    skip:95.5%
+[libx264 @ 000002253a84c340] mb B  I16..4:  0.0%  0.0%  0.0%  B16..8:  1.4%  0.0%  0.0%  direct: 0.0%  skip:98.4%  L0:27.5% L1:72.0% BI: 0.5%
+[libx264 @ 000002253a84c340] 8x8 transform intra:23.6% inter:51.5%
+[libx264 @ 000002253a84c340] coded y,uvDC,uvAC intra: 94.5% 65.6% 52.2% inter: 0.3% 0.6% 0.1%
+[libx264 @ 000002253a84c340] i16 v,h,dc,p:  0% 46% 38% 16%
+[libx264 @ 000002253a84c340] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu:  7% 32% 12%  7%  7%  6%  9%  8% 12%
+[libx264 @ 000002253a84c340] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 13% 31%  9%  7%  8%  8%  8%  8%  8%
+[libx264 @ 000002253a84c340] i8c dc,h,v,p: 65% 19% 13%  3%
+[libx264 @ 000002253a84c340] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 000002253a84c340] ref P L0: 63.4%  4.2% 18.8% 13.5%
+[libx264 @ 000002253a84c340] ref B L0: 87.5% 10.8%  1.7%
+[libx264 @ 000002253a84c340] ref B L1: 91.0%  9.0%
+[libx264 @ 000002253a84c340] kb/s:301.15
+Frame sequence: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\ElectricBounce\frames
+Captured video: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\ElectricBounce\ElectricBounce.mp4
+=== Idol category-native proof case: PoisonDOT (Idol_Poison) ===
+FFmpeg: C:\Users\DoPra\.local\bin\ffmpeg.cmd
+Frames: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\PoisonDOT\frames
+Output: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\PoisonDOT\PoisonDOT.mp4
+C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe C:\UE\T66\T66.uproject /Game/Maps/GameplayLevel -game -windowed -ResX=1280 -ResY=720 -T66AutomationResX=1280 -T66AutomationResY=720 -T66AutomationWindowed -T66GameplayAutoCapture=hero1axeaoewateridolimpact -T66GameplayAutoScreenshotSequenceDir=C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\PoisonDOT\frames -T66GameplayAutoScreenshotSequencePrefix=frame -T66GameplayAutoScreenshotSequenceCount=72 -T66GameplayAutoScreenshotSequenceInterval=0.08 -T66GameplayAutoScreenshotDelay=5 -T66GameplayAutoPostCaptureScreenshotDelay=0.2 -unattended -nop4 -nosplash -ExecCmds="T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch -30,T66.Camera.LockedChaseArmLength 540,T66.Camera.LockedChasePivotHeight 145,T66.Camera.ConstrainAgainstTowerWalls 0,T66.Camera.WallOcclusionEnabled 0,T66.Combat.DebugView 2,T66.Combat.DebugLabels 1,T66.Combat.ImpactSourceVerbose 1" -T66Hero1AxeAOECenterPlayer -T66GameplayAutoLockCameraZoom -T66GameplayAutoCameraArmLength=540 -T66Hero1AxeAOELabForwardOffset=360 -T66Hero1AxeAOELabRightOffset=0 -T66Hero1AxeAOELabVerticalOffset=-82 -T66Hero1AxeAOESpawnTargets -T66Hero1AxeAOETargetCount=3 -T66Hero1AxeAOETargetSpacing=145 -T66Hero1AxeAOETargetForwardOffset=210 -T66Hero1AxeAOETargetMob=Slime -T66Hero1AxeAOEHitboxFireDelay=7.6 -T66Hero1AxeAOEHitboxVFXLeadSeconds=0.12 -T66Hero1AxeAOEProofIdol=Idol_Poison
+Input #0, image2, from 'C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\PoisonDOT\frames\frame_%04d.png':
+  Duration: 00:00:06.00, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: png, rgba(pc, gbr/unknown/unknown), 1280x720, 12 fps, 12 tbr, 12 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (png (native) -> h264 (libx264))
+Press [q] to stop, [?] for help
+[libx264 @ 00000264944393c0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 00000264944393c0] profile High, level 3.1, 4:2:0, 8-bit
+[libx264 @ 00000264944393c0] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=22 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=12 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\PoisonDOT\PoisonDOT.mp4':
+  Metadata:
+    encoder         : Lavf62.12.101
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 1280x720, q=2-31, 12 fps, 12288 tbn
+    Metadata:
+      encoder         : Lavc62.28.101 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+[mp4 @ 0000026494438a40] Starting second pass: moving the moov atom to the beginning of the file
+[out#0/mp4 @ 00000264943b4100] video:261KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.641610%
+frame=   72 fps=0.0 q=-1.0 Lsize=     263KiB time=00:00:05.83 bitrate= 369.1kbits/s speed=12.7x elapsed=0:00:00.45    
+[libx264 @ 00000264944393c0] frame I:1     Avg QP:16.30  size:183754
+[libx264 @ 00000264944393c0] frame P:18    Avg QP:18.56  size:  2061
+[libx264 @ 00000264944393c0] frame B:53    Avg QP:27.10  size:   866
+[libx264 @ 00000264944393c0] consecutive B-frames:  1.4%  0.0%  4.2% 94.4%
+[libx264 @ 00000264944393c0] mb I  I16..4:  2.8% 23.3% 73.9%
+[libx264 @ 00000264944393c0] mb P  I16..4:  0.0%  0.1%  0.2%  P16..4:  4.5%  0.4%  0.6%  0.0%  0.0%    skip:94.2%
+[libx264 @ 00000264944393c0] mb B  I16..4:  0.0%  0.0%  0.1%  B16..8:  1.8%  0.2%  0.1%  direct: 0.1%  skip:97.6%  L0:34.8% L1:60.2% BI: 5.0%
+[libx264 @ 00000264944393c0] 8x8 transform intra:23.5% inter:48.1%
+[libx264 @ 00000264944393c0] coded y,uvDC,uvAC intra: 93.9% 67.3% 55.6% inter: 0.6% 0.8% 0.4%
+[libx264 @ 00000264944393c0] i16 v,h,dc,p:  2% 91%  2%  5%
+[libx264 @ 00000264944393c0] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 10% 35% 10%  6%  7%  5%  8%  7% 12%
+[libx264 @ 00000264944393c0] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 13% 34%  9%  6%  8%  7%  8%  7%  8%
+[libx264 @ 00000264944393c0] i8c dc,h,v,p: 64% 22% 12%  3%
+[libx264 @ 00000264944393c0] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 00000264944393c0] ref P L0: 53.6%  8.1% 25.6% 12.7%
+[libx264 @ 00000264944393c0] ref B L0: 86.8%  9.6%  3.5%
+[libx264 @ 00000264944393c0] ref B L1: 92.4%  7.6%
+[libx264 @ 00000264944393c0] kb/s:355.68
+Frame sequence: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\PoisonDOT\frames
+Captured video: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\PoisonDOT\PoisonDOT.mp4
+=== Idol category-native proof case: WaterAOERegression (Idol_Water) ===
+FFmpeg: C:\Users\DoPra\.local\bin\ffmpeg.cmd
+Frames: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\WaterAOERegression\frames
+Output: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\WaterAOERegression\WaterAOERegression.mp4
+C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe C:\UE\T66\T66.uproject /Game/Maps/GameplayLevel -game -windowed -ResX=1280 -ResY=720 -T66AutomationResX=1280 -T66AutomationResY=720 -T66AutomationWindowed -T66GameplayAutoCapture=hero1axeaoewateridolimpact -T66GameplayAutoScreenshotSequenceDir=C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\WaterAOERegression\frames -T66GameplayAutoScreenshotSequencePrefix=frame -T66GameplayAutoScreenshotSequenceCount=72 -T66GameplayAutoScreenshotSequenceInterval=0.08 -T66GameplayAutoScreenshotDelay=5 -T66GameplayAutoPostCaptureScreenshotDelay=0.2 -unattended -nop4 -nosplash -ExecCmds="T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch -30,T66.Camera.LockedChaseArmLength 540,T66.Camera.LockedChasePivotHeight 145,T66.Camera.ConstrainAgainstTowerWalls 0,T66.Camera.WallOcclusionEnabled 0,T66.Combat.DebugView 2,T66.Combat.DebugLabels 1,T66.Combat.ImpactSourceVerbose 1" -T66Hero1AxeAOECenterPlayer -T66GameplayAutoLockCameraZoom -T66GameplayAutoCameraArmLength=540 -T66Hero1AxeAOELabForwardOffset=360 -T66Hero1AxeAOELabRightOffset=0 -T66Hero1AxeAOELabVerticalOffset=-82 -T66Hero1AxeAOESpawnTargets -T66Hero1AxeAOETargetCount=3 -T66Hero1AxeAOETargetSpacing=145 -T66Hero1AxeAOETargetForwardOffset=210 -T66Hero1AxeAOETargetMob=Slime -T66Hero1AxeAOEHitboxFireDelay=7.6 -T66Hero1AxeAOEHitboxVFXLeadSeconds=0.12 -T66Hero1AxeAOEProofIdol=Idol_Water
+Input #0, image2, from 'C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\WaterAOERegression\frames\frame_%04d.png':
+  Duration: 00:00:06.00, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: png, rgba(pc, gbr/unknown/unknown), 1280x720, 12 fps, 12 tbr, 12 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (png (native) -> h264 (libx264))
+Press [q] to stop, [?] for help
+[libx264 @ 000001409b88a5c0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 000001409b88a5c0] profile High, level 3.1, 4:2:0, 8-bit
+[libx264 @ 000001409b88a5c0] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=22 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=12 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\WaterAOERegression\WaterAOERegression.mp4':
+  Metadata:
+    encoder         : Lavf62.12.101
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 1280x720, q=2-31, 12 fps, 12288 tbn
+    Metadata:
+      encoder         : Lavc62.28.101 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+[mp4 @ 000001409b888f40] Starting second pass: moving the moov atom to the beginning of the file
+[out#0/mp4 @ 000001409b801a80] video:273KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.614939%
+frame=   72 fps=0.0 q=-1.0 Lsize=     274KiB time=00:00:05.83 bitrate= 385.1kbits/s speed=  19x elapsed=0:00:00.30    
+[libx264 @ 000001409b88a5c0] frame I:1     Avg QP:16.43  size:189041
+[libx264 @ 000001409b88a5c0] frame P:18    Avg QP:18.05  size:  3125
+[libx264 @ 000001409b88a5c0] frame B:53    Avg QP:25.33  size:   624
+[libx264 @ 000001409b88a5c0] consecutive B-frames:  1.4%  0.0%  4.2% 94.4%
+[libx264 @ 000001409b88a5c0] mb I  I16..4:  2.5% 22.5% 75.0%
+[libx264 @ 000001409b88a5c0] mb P  I16..4:  0.1%  0.3%  0.4%  P16..4:  5.8%  0.3%  0.7%  0.0%  0.0%    skip:92.2%
+[libx264 @ 000001409b88a5c0] mb B  I16..4:  0.0%  0.0%  0.1%  B16..8:  1.7%  0.0%  0.0%  direct: 0.0%  skip:98.0%  L0:36.3% L1:63.2% BI: 0.5%
+[libx264 @ 000001409b88a5c0] 8x8 transform intra:23.2% inter:59.9%
+[libx264 @ 000001409b88a5c0] coded y,uvDC,uvAC intra: 86.3% 67.1% 55.4% inter: 0.5% 0.8% 0.2%
+[libx264 @ 000001409b88a5c0] i16 v,h,dc,p: 32% 51%  5% 12%
+[libx264 @ 000001409b88a5c0] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 14% 30% 14%  6%  7%  5%  7%  6% 11%
+[libx264 @ 000001409b88a5c0] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 16% 32% 10%  6%  7%  7%  7%  7%  9%
+[libx264 @ 000001409b88a5c0] i8c dc,h,v,p: 61% 21% 14%  3%
+[libx264 @ 000001409b88a5c0] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 000001409b88a5c0] ref P L0: 48.4% 13.9% 12.1% 25.6%
+[libx264 @ 000001409b88a5c0] ref B L0: 90.5%  8.9%  0.6%
+[libx264 @ 000001409b88a5c0] ref B L1: 92.8%  7.2%
+[libx264 @ 000001409b88a5c0] kb/s:371.15
+Frame sequence: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\WaterAOERegression\frames
+Captured video: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\WaterAOERegression\WaterAOERegression.mp4
+=== Idol category-native proof case: EarthNeutral (Idol_Earth) ===
+FFmpeg: C:\Users\DoPra\.local\bin\ffmpeg.cmd
+Frames: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\EarthNeutral\frames
+Output: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\EarthNeutral\EarthNeutral.mp4
+C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor.exe C:\UE\T66\T66.uproject /Game/Maps/GameplayLevel -game -windowed -ResX=1280 -ResY=720 -T66AutomationResX=1280 -T66AutomationResY=720 -T66AutomationWindowed -T66GameplayAutoCapture=hero1axeaoewateridolimpact -T66GameplayAutoScreenshotSequenceDir=C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\EarthNeutral\frames -T66GameplayAutoScreenshotSequencePrefix=frame -T66GameplayAutoScreenshotSequenceCount=72 -T66GameplayAutoScreenshotSequenceInterval=0.08 -T66GameplayAutoScreenshotDelay=5 -T66GameplayAutoPostCaptureScreenshotDelay=0.2 -unattended -nop4 -nosplash -ExecCmds="T66.Camera.GameplayPreset 1,T66.Camera.LockedChasePitch -30,T66.Camera.LockedChaseArmLength 540,T66.Camera.LockedChasePivotHeight 145,T66.Camera.ConstrainAgainstTowerWalls 0,T66.Camera.WallOcclusionEnabled 0,T66.Combat.DebugView 2,T66.Combat.DebugLabels 1,T66.Combat.ImpactSourceVerbose 1" -T66Hero1AxeAOECenterPlayer -T66GameplayAutoLockCameraZoom -T66GameplayAutoCameraArmLength=540 -T66Hero1AxeAOELabForwardOffset=360 -T66Hero1AxeAOELabRightOffset=0 -T66Hero1AxeAOELabVerticalOffset=-82 -T66Hero1AxeAOESpawnTargets -T66Hero1AxeAOETargetCount=3 -T66Hero1AxeAOETargetSpacing=145 -T66Hero1AxeAOETargetForwardOffset=210 -T66Hero1AxeAOETargetMob=Slime -T66Hero1AxeAOEHitboxFireDelay=7.6 -T66Hero1AxeAOEHitboxVFXLeadSeconds=0.12 -T66Hero1AxeAOEProofIdol=Idol_Earth
+Input #0, image2, from 'C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\EarthNeutral\frames\frame_%04d.png':
+  Duration: 00:00:06.00, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: png, rgba(pc, gbr/unknown/unknown), 1280x720, 12 fps, 12 tbr, 12 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (png (native) -> h264 (libx264))
+Press [q] to stop, [?] for help
+[libx264 @ 000002b64cf9ac00] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 000002b64cf9ac00] profile High, level 3.1, 4:2:0, 8-bit
+[libx264 @ 000002b64cf9ac00] 264 - core 165 r3223 0480cb0 - H.264/MPEG-4 AVC codec - Copyleft 2003-2025 - http://www.videolan.org/x264.html - options: cabac=1 ref=3 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=7 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=22 lookahead_threads=3 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=2 keyint=250 keyint_min=12 scenecut=40 intra_refresh=0 rc_lookahead=40 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\EarthNeutral\EarthNeutral.mp4':
+  Metadata:
+    encoder         : Lavf62.12.101
+  Stream #0:0: Video: h264 (avc1 / 0x31637661), yuv420p(tv, progressive), 1280x720, q=2-31, 12 fps, 12288 tbn
+    Metadata:
+      encoder         : Lavc62.28.101 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+[mp4 @ 000002b64cf9a240] Starting second pass: moving the moov atom to the beginning of the file
+[out#0/mp4 @ 000002b64cf113c0] video:298KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 0.561877%
+frame=   72 fps=0.0 q=-1.0 Lsize=     300KiB time=00:00:05.83 bitrate= 421.2kbits/s speed=18.7x elapsed=0:00:00.31    
+[libx264 @ 000002b64cf9ac00] frame I:1     Avg QP:16.18  size:189282
+[libx264 @ 000002b64cf9ac00] frame P:18    Avg QP:18.74  size:  3403
+[libx264 @ 000002b64cf9ac00] frame B:53    Avg QP:26.09  size:  1022
+[libx264 @ 000002b64cf9ac00] consecutive B-frames:  1.4%  0.0%  4.2% 94.4%
+[libx264 @ 000002b64cf9ac00] mb I  I16..4:  0.8% 23.0% 76.2%
+[libx264 @ 000002b64cf9ac00] mb P  I16..4:  0.0%  0.3%  0.6%  P16..4:  4.4%  0.4%  0.7%  0.0%  0.0%    skip:93.6%
+[libx264 @ 000002b64cf9ac00] mb B  I16..4:  0.0%  0.0%  0.1%  B16..8:  2.1%  0.4%  0.2%  direct: 0.1%  skip:97.0%  L0:44.2% L1:52.6% BI: 3.2%
+[libx264 @ 000002b64cf9ac00] 8x8 transform intra:24.4% inter:37.6%
+[libx264 @ 000002b64cf9ac00] coded y,uvDC,uvAC intra: 92.4% 73.5% 63.1% inter: 0.7% 1.2% 0.7%
+[libx264 @ 000002b64cf9ac00] i16 v,h,dc,p: 26% 30% 28% 16%
+[libx264 @ 000002b64cf9ac00] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 11% 28% 12%  7%  7%  7%  9%  9% 10%
+[libx264 @ 000002b64cf9ac00] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 15% 30% 10%  7%  8%  7%  8%  8%  8%
+[libx264 @ 000002b64cf9ac00] i8c dc,h,v,p: 63% 20% 13%  4%
+[libx264 @ 000002b64cf9ac00] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 000002b64cf9ac00] ref P L0: 52.9%  5.4% 24.6% 17.1%
+[libx264 @ 000002b64cf9ac00] ref B L0: 84.7% 12.7%  2.6%
+[libx264 @ 000002b64cf9ac00] ref B L1: 91.5%  8.5%
+[libx264 @ 000002b64cf9ac00] kb/s:406.29
+Frame sequence: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\EarthNeutral\frames
+Captured video: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\EarthNeutral\EarthNeutral.mp4
+Idol category-native impact proof summary: C:\UE\T66\Saved\VideoCaptures\Hero1AxeIdolCategoryNativeImpactProof\Hero1AxeIdolCategoryNativeImpactProofSummary.md

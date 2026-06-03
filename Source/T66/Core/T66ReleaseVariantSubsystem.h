@@ -47,9 +47,6 @@ public:
 	TArray<FName> AllowedDifficultyIDs;
 
 	UPROPERTY(Config, EditAnywhere, Category = "Content")
-	TArray<FName> AllowedArcadeGameIDs;
-
-	UPROPERTY(Config, EditAnywhere, Category = "Content")
 	TArray<FName> AllowedCasinoGameIDs;
 
 	UPROPERTY(Config, EditAnywhere, Category = "Content")
@@ -91,9 +88,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
 	bool IsDifficultyAllowed(ET66Difficulty Difficulty) const;
-
-	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
-	bool IsArcadeGameAllowed(FName ArcadeGameID) const;
 
 	UFUNCTION(BlueprintCallable, Category = "Release|Demo")
 	bool IsCasinoGameAllowed(FName CasinoGameID) const;

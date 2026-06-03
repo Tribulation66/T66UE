@@ -7,6 +7,7 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HeroOneAttackVFX.h"
 #include "Gameplay/T66HeroProjectile.h"
+#include "Gameplay/T66OutgoingTravelerPoolSubsystem.h"
 #include "Gameplay/T66DotMarkerVFX.h"
 #include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66CombatShared.h"
@@ -93,6 +94,11 @@ namespace
 		0,
 		TEXT("Emit verbose weapon/idol combat impact context logs for VFX and damage-source proof runs."));
 
+	static TAutoConsoleVariable<int32> CVarT66OutgoingTravelerPoolForceTemporaryWeaponVisual(
+		TEXT("T66.OutgoingTravelerPool.ForceTemporaryWeaponVisual"),
+		0,
+		TEXT("Proof-only override. When non-zero, weapon-base bindings do not suppress the temporary main projectile visual."));
+
 	FName GetT66AttackCategoryAudioEvent(const ET66AttackCategory Category)
 	{
 		switch (Category)
@@ -103,6 +109,128 @@ namespace
 		case ET66AttackCategory::DOT:    return FName(TEXT("Hero.Attack.DOT"));
 		default:                         return FName(TEXT("Hero.Attack.Generic"));
 		}
+	}
+
+	FName GetT66TravelerVisualProfileID(const ET66IdolElement Element, const ET66AttackCategory Category)
+	{
+		const TCHAR* ElementName = TEXT("Fire");
+		switch (Element)
+		{
+		case ET66IdolElement::Fire:        ElementName = TEXT("Fire"); break;
+		case ET66IdolElement::Ice:         ElementName = TEXT("Ice"); break;
+		case ET66IdolElement::Electricity: ElementName = TEXT("Electricity"); break;
+		case ET66IdolElement::Nature:      ElementName = TEXT("Nature"); break;
+		default:                           ElementName = TEXT("Fire"); break;
+		}
+
+		return FName(*FString::Printf(TEXT("TravelerVisual.%s.%s"), ElementName, GetT66AttackCategoryName(Category)));
+	}
+
+	FLinearColor GetT66IdolElementTravelerColor(const ET66IdolElement Element)
+	{
+		switch (Element)
+		{
+		case ET66IdolElement::Fire:        return FLinearColor(1.0f, 0.22f, 0.05f, 1.0f);
+		case ET66IdolElement::Ice:         return FLinearColor(0.35f, 0.85f, 1.0f, 0.78f);
+		case ET66IdolElement::Electricity: return FLinearColor(0.95f, 0.98f, 0.18f, 1.0f);
+		case ET66IdolElement::Nature:      return FLinearColor(0.25f, 0.9f, 0.32f, 0.78f);
+		default:                           return FT66TemporaryProjectileSystem::HeroProjectileColor();
+		}
+	}
+
+	float GetT66DistanceSpeedForSeconds(const FVector& Start, const FVector& End, const float DesiredTravelSeconds, const float FallbackSpeed)
+	{
+		if (DesiredTravelSeconds > KINDA_SMALL_NUMBER)
+		{
+			const float Distance = FVector::Dist(Start, End);
+			if (Distance > KINDA_SMALL_NUMBER)
+			{
+				return FMath::Max(1.f, Distance / DesiredTravelSeconds);
+			}
+		}
+		return FMath::Max(1.f, FallbackSpeed);
+	}
+
+	struct FT66CombatTravelerFireRequest
+	{
+		FVector StartPosition = FVector::ZeroVector;
+		FVector TargetPosition = FVector::ZeroVector;
+		FT66CombatTargetHandle TargetHandle;
+		FName ProfileID = NAME_None;
+		FName TravelerVisualProfileID = NAME_None;
+		FLinearColor Color = FLinearColor::White;
+		float ScaleMultiplier = 1.f;
+		float Speed = 2400.f;
+		float LifetimeSeconds = 10.f;
+		float ArrivalRadius = 30.f;
+		int32 DamageAmount = 0;
+		FName DamageSourceID = NAME_None;
+		FName EventType = NAME_None;
+		ET66AttackCategory AttackCategory = ET66AttackCategory::AOE;
+		FName DebugSourceID = NAME_None;
+	};
+
+	bool FireT66CombatOutgoingTraveler(
+		UWorld* World,
+		const FT66CombatTravelerFireRequest& Request,
+		FT66OutgoingTravelerArrivalCallback OnArrived = FT66OutgoingTravelerArrivalCallback())
+	{
+		if (!World || !UT66OutgoingTravelerPoolSubsystem::IsEnabled())
+		{
+			return false;
+		}
+
+		UT66OutgoingTravelerPoolSubsystem* Pool = World->GetSubsystem<UT66OutgoingTravelerPoolSubsystem>();
+		if (!Pool)
+		{
+			return false;
+		}
+
+		FT66OutgoingTravelerFireParams FireParams;
+		FireParams.StartPosition = Request.StartPosition;
+		FireParams.TargetPosition = Request.TargetPosition;
+		if (AActor* TargetActor = Request.TargetHandle.Actor.Get())
+		{
+			FireParams.TargetOffset = Request.TargetPosition - TargetActor->GetActorLocation();
+		}
+		FireParams.TargetHandle = Request.TargetHandle;
+		FireParams.ProfileID = Request.ProfileID;
+		FireParams.TravelerVisualProfileID = Request.TravelerVisualProfileID;
+		FireParams.Color = Request.Color;
+		FireParams.ScaleMultiplier = FMath::Max(0.01f, Request.ScaleMultiplier);
+		FireParams.Speed = FMath::Max(1.f, Request.Speed);
+		FireParams.LifetimeSeconds = FMath::Max(0.05f, Request.LifetimeSeconds);
+		FireParams.ArrivalRadius = FMath::Max(1.f, Request.ArrivalRadius);
+		FireParams.DamageAmount = FMath::Max(0, Request.DamageAmount);
+		FireParams.DamageSourceID = Request.DamageSourceID;
+		FireParams.EventType = Request.EventType;
+		FireParams.bTrackTarget = true;
+		FireParams.bEnableArrivalCollision = Request.DamageAmount > 0;
+		FireParams.bApplyDamageOnArrival = Request.DamageAmount > 0;
+
+		FT66OutgoingTravelerHandle TravelerHandle;
+		const bool bFired = OnArrived.IsBound()
+			? Pool->FireOutgoingTraveler(FireParams, TravelerHandle, OnArrived)
+			: Pool->FireOutgoingTraveler(FireParams, TravelerHandle);
+		if (bFired)
+		{
+			UE_LOG(
+				LogT66Combat,
+				Display,
+				TEXT("T66CombatTravelerFired DebugSourceID=%s DamageSourceID=%s Category=%s VisualProfile=%s Profile=%s Slot=%d Damage=%d ArrivalRadius=%.2f Callback=%s Start=%s Target=%s"),
+				*Request.DebugSourceID.ToString(),
+				*Request.DamageSourceID.ToString(),
+				GetT66AttackCategoryName(Request.AttackCategory),
+				*Request.TravelerVisualProfileID.ToString(),
+				*Request.ProfileID.ToString(),
+				TravelerHandle.SlotIndex,
+				Request.DamageAmount,
+				FireParams.ArrivalRadius,
+				OnArrived.IsBound() ? TEXT("true") : TEXT("false"),
+				*Request.StartPosition.ToCompactString(),
+				*Request.TargetPosition.ToCompactString());
+		}
+		return bFired;
 	}
 
 	float GetIdolTierFloat(const ET66ItemRarity Rarity, const float Black, const float Red, const float Yellow, const float White)
@@ -1057,6 +1185,72 @@ float UT66CombatComponent::GetAutoAttackCooldownProgress() const
 	return FMath::Clamp(Elapsed / EffectiveFireIntervalSeconds, 0.f, 1.f);
 }
 
+bool UT66CombatComponent::TryApplyHeadshotStunToTargetHandle(const FT66CombatTargetHandle& TargetHandle, const bool bForce)
+{
+	if (!TargetHandle.Actor.IsValid())
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!CachedRunState && World && World->GetGameInstance())
+	{
+		CachedRunState = World->GetGameInstance()->GetSubsystem<UT66RunStateSubsystem>();
+	}
+	if (!CachedRunState)
+	{
+		return false;
+	}
+
+	UT66RngSubsystem* RngSub = World && World->GetGameInstance()
+		? World->GetGameInstance()->GetSubsystem<UT66RngSubsystem>()
+		: nullptr;
+	const float HeadshotChance = CachedRunState->GetHeadshotChance01();
+	const float StunDuration = CachedRunState->GetHeadshotStunDurationSeconds();
+	if (StunDuration <= 0.f)
+	{
+		return false;
+	}
+	if (!bForce && (HeadshotChance <= 0.f || !RollTierChance(HeadshotChance, RngSub)))
+	{
+		return false;
+	}
+
+	AActor* Target = TargetHandle.Actor.Get();
+	bool bApplied = false;
+	if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
+	{
+		if (Enemy->CurrentHP > 0)
+		{
+			Enemy->ApplyStun(StunDuration);
+			bApplied = true;
+		}
+	}
+	else if (AT66MobBase* Mob = Cast<AT66MobBase>(Target))
+	{
+		if (Mob->CurrentHP > 0.f)
+		{
+			Mob->ApplyStun(StunDuration);
+			bApplied = true;
+		}
+	}
+	else if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
+	{
+		if (Boss->IsAlive())
+		{
+			Boss->ApplyStun(StunDuration);
+			bApplied = true;
+		}
+	}
+
+	if (bApplied && CachedFloatingCombatText)
+	{
+		CachedFloatingCombatText->ShowStatusEvent(Target, UT66FloatingCombatTextSubsystem::EventType_Headshot);
+	}
+
+	return bApplied;
+}
+
 bool UT66CombatComponent::ResolveCombatVFXBinding(
 	const ET66CombatVFXBindingSourceType SourceType,
 	const FName SourceID,
@@ -1098,6 +1292,11 @@ bool UT66CombatComponent::ResolveCombatVFXBinding(
 
 bool UT66CombatComponent::ShouldSuppressWeaponBaseProjectileVisual(const ET66AttackCategory AttackCategory) const
 {
+	if (CVarT66OutgoingTravelerPoolForceTemporaryWeaponVisual.GetValueOnGameThread() != 0)
+	{
+		return false;
+	}
+
 	if (!bHasCachedWeaponData || CachedWeaponData.WeaponID.IsNone())
 	{
 		return false;
@@ -1822,6 +2021,7 @@ void UT66CombatComponent::TryFire()
 	auto ApplyResolvedAutoAttackDamage = [this, RngSub](const FT66CombatTargetHandle& TargetHandle, const FResolvedAutoAttackHit& Resolved, const FName RangeEvent)
 	{
 		ApplyDamageToTargetHandle(TargetHandle, Resolved.Damage, Resolved.EventType, NAME_None, RangeEvent);
+		TryApplyHeadshotStunToTargetHandle(TargetHandle);
 		if (!Resolved.bCrit || !CachedRunState)
 		{
 			return;
@@ -1831,6 +2031,76 @@ void UT66CombatComponent::TryFire()
 		if (ExecuteChance > 0.f && RollTierChance(ExecuteChance, RngSub))
 		{
 			T66CombatShared::TryApplyNonBossOHKO(TargetHandle.Actor.Get(), &TargetHandle, FName(TEXT("Execute")), NAME_None);
+		}
+	};
+
+	auto ResolveCritForComponent = [](UT66CombatComponent* Self, UT66RngSubsystem* Rng, const int32 BaseDamage) -> FResolvedAutoAttackHit
+	{
+		if (!Self || !Self->CachedRunState)
+		{
+			return { BaseDamage, NAME_None, false };
+		}
+
+		const float CritChance = Self->CachedRunState->GetCritChance01();
+		const bool bCrit = RollTierChance(CritChance, Rng);
+		if (bCrit)
+		{
+			const float Mult = Self->CachedRunState->GetCritDamageMultiplier();
+			return { FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseDamage) * Mult)), UT66FloatingCombatTextSubsystem::EventType_Crit, true };
+		}
+		return { BaseDamage, NAME_None, false };
+	};
+
+	auto ResolveRangeDamageForComponent = [](UT66CombatComponent* Self, const FVector& OriginLocation, const int32 BaseDamage, AActor* Target, FName* OutRangeEvent = nullptr) -> int32
+	{
+		if (!Self || !Self->CachedRunState || !Target)
+		{
+			return BaseDamage;
+		}
+
+		const float Dist = FVector::Dist(OriginLocation, Target->GetActorLocation());
+		const float CloseThresh = Self->CachedRunState->GetCloseRangeThreshold();
+		const float LongThresh = Self->CachedRunState->GetLongRangeThreshold();
+		if (Dist <= CloseThresh)
+		{
+			const float Mult = Self->CachedRunState->GetCloseRangeDamageMultiplier();
+			if (OutRangeEvent && Mult != 1.f)
+			{
+				*OutRangeEvent = UT66FloatingCombatTextSubsystem::EventType_CloseRange;
+			}
+			return FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseDamage) * Mult));
+		}
+		if (Dist >= LongThresh)
+		{
+			const float Mult = Self->CachedRunState->GetLongRangeDamageMultiplier();
+			if (OutRangeEvent && Mult != 1.f)
+			{
+				*OutRangeEvent = UT66FloatingCombatTextSubsystem::EventType_LongRange;
+			}
+			return FMath::Max(1, FMath::RoundToInt(static_cast<float>(BaseDamage) * Mult));
+		}
+		return BaseDamage;
+	};
+
+	auto ApplyResolvedDamageWithExecute = [RngSub](UT66CombatComponent* Self, const FT66CombatTargetHandle& TargetHandle, const FResolvedAutoAttackHit& Resolved, const FName DamageSourceID, const FName RangeEvent, const bool bAutoAttackHeadshot, const bool bAllowExecute)
+	{
+		if (!Self || !TargetHandle.IsValid())
+		{
+			return;
+		}
+
+		Self->ApplyDamageToTargetHandle(TargetHandle, Resolved.Damage, Resolved.EventType, DamageSourceID, RangeEvent);
+		if (bAutoAttackHeadshot)
+		{
+			Self->TryApplyHeadshotStunToTargetHandle(TargetHandle);
+		}
+		if (bAllowExecute && Resolved.bCrit && Self->CachedRunState)
+		{
+			const float ExecuteChance = Self->CachedRunState->GetExecuteChance01();
+			if (ExecuteChance > 0.f && RollTierChance(ExecuteChance, RngSub))
+			{
+				T66CombatShared::TryApplyNonBossOHKO(TargetHandle.Actor.Get(), &TargetHandle, FName(TEXT("Execute")), DamageSourceID);
+			}
 		}
 	};
 
@@ -2217,34 +2487,116 @@ void UT66CombatComponent::TryFire()
 	{
 		if (!Target || !IsValidAutoTarget(Target))
 		{
+			if (CVarT66OutgoingTravelerPoolForceTemporaryWeaponVisual.GetValueOnGameThread() != 0)
+			{
+				UE_LOG(
+					LogT66Combat,
+					Display,
+					TEXT("OutgoingTravelerPoolVisualSkipped Reason=InvalidTarget SourceIdolID=%s Target=%s"),
+					*SourceIdolID.ToString(),
+					Target ? *Target->GetName() : TEXT("None"));
+			}
 			return;
 		}
-
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = OwnerActor;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 		const FVector RightVector = OwnerActor->GetActorRightVector().GetSafeNormal();
 		const float CenteredIndex = static_cast<float>(PayloadIndex) - (static_cast<float>(FMath::Max(1, PayloadCount) - 1) * 0.5f);
 		const FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 48.f) + RightVector * (CenteredIndex * 34.f);
 		const FVector TargetLoc = Target->GetActorLocation() + FVector(0.f, 0.f, 36.f);
 		const FRotator SpawnRot = (TargetLoc - SpawnLoc).Rotation();
+		const FLinearColor CoreColor = FT66TemporaryProjectileSystem::HeroProjectileColor();
+		const FName CoreProfile = FT66TemporaryProjectileSystem::GetHeroAttackProfile(AttackCategory);
+		const float CoreScaleMultiplier = ProjectileScaleMultiplier * (SourceIdolID.IsNone() ? 1.f : 0.94f);
 
-		AT66HeroProjectile* Projectile = World->SpawnActor<AT66HeroProjectile>(
+		if (UT66OutgoingTravelerPoolSubsystem::IsEnabled())
+		{
+			UT66OutgoingTravelerPoolSubsystem* Pool = World->GetSubsystem<UT66OutgoingTravelerPoolSubsystem>();
+			if (!Pool)
+			{
+				if (CVarT66OutgoingTravelerPoolForceTemporaryWeaponVisual.GetValueOnGameThread() != 0)
+				{
+					UE_LOG(
+						LogT66Combat,
+						Warning,
+						TEXT("OutgoingTravelerPoolVisualSkipped Reason=MissingPoolSubsystem SourceIdolID=%s"),
+						*SourceIdolID.ToString());
+				}
+				return;
+			}
+
+			FT66OutgoingTravelerFireParams FireParams;
+			FireParams.StartPosition = SpawnLoc;
+			FireParams.TargetPosition = TargetLoc;
+			FireParams.TargetOffset = TargetLoc - Target->GetActorLocation();
+			FireParams.TargetHandle = MakeActorTargetHandle(Target);
+			FireParams.ProfileID = CoreProfile;
+			FireParams.Color = CoreColor;
+			FireParams.ScaleMultiplier = CoreScaleMultiplier;
+			FireParams.Speed = bHaveHeroData && HeroDataForPrimary.ProjectileSpeed > 0.f
+				? HeroDataForPrimary.ProjectileSpeed
+				: 2400.f;
+			FireParams.LifetimeSeconds = 10.0f;
+			FireParams.bTrackTarget = true;
+
+			FT66OutgoingTravelerHandle TravelerHandle;
+			if (!Pool->FireOutgoingTraveler(FireParams, TravelerHandle))
+			{
+				if (CVarT66OutgoingTravelerPoolForceTemporaryWeaponVisual.GetValueOnGameThread() != 0)
+				{
+					UE_LOG(
+						LogT66Combat,
+						Warning,
+						TEXT("OutgoingTravelerPoolVisualSkipped Reason=FireFailed SourceIdolID=%s PayloadIndex=%d PayloadCount=%d AttackCategory=%s Target=%s"),
+						*SourceIdolID.ToString(),
+						PayloadIndex,
+						PayloadCount,
+						GetT66AttackCategoryName(AttackCategory),
+						*Target->GetName());
+				}
+				return;
+			}
+
+			if (CVarT66OutgoingTravelerPoolForceTemporaryWeaponVisual.GetValueOnGameThread() != 0)
+			{
+				UE_LOG(
+					LogT66Combat,
+					Display,
+					TEXT("OutgoingTravelerPoolVisualSpawnedActorless SourceIdolID=%s PayloadIndex=%d PayloadCount=%d AttackCategory=%s Target=%s Slot=%d"),
+					*SourceIdolID.ToString(),
+					PayloadIndex,
+					PayloadCount,
+					GetT66AttackCategoryName(AttackCategory),
+					*Target->GetName(),
+					TravelerHandle.SlotIndex);
+			}
+			return;
+		}
+
+		const FTransform SpawnTransform(SpawnRot, SpawnLoc);
+		AT66HeroProjectile* Projectile = World->SpawnActorDeferred<AT66HeroProjectile>(
 			AT66HeroProjectile::StaticClass(),
-			SpawnLoc,
-			SpawnRot,
-			SpawnParams);
+			SpawnTransform,
+			OwnerActor,
+			nullptr,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 		if (!Projectile)
 		{
+			if (CVarT66OutgoingTravelerPoolForceTemporaryWeaponVisual.GetValueOnGameThread() != 0)
+			{
+				UE_LOG(
+					LogT66Combat,
+					Warning,
+					TEXT("OutgoingTravelerPoolVisualSkipped Reason=SpawnFailed SourceIdolID=%s SpawnLoc=%s SpawnRot=%s"),
+					*SourceIdolID.ToString(),
+					*SpawnLoc.ToCompactString(),
+					*SpawnRot.ToCompactString());
+			}
 			return;
 		}
 
 		Projectile->SetVisualOnly(true);
 		Projectile->Damage = 0;
 		Projectile->DamageSourceID = SourceIdolID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : SourceIdolID;
-		const FLinearColor CoreColor = FT66TemporaryProjectileSystem::HeroProjectileColor();
-		const FName CoreProfile = FT66TemporaryProjectileSystem::GetHeroAttackProfile(AttackCategory);
 		const FName OverlayProfile = SourceIdolID.IsNone() ? NAME_None : FT66TemporaryProjectileSystem::ProfileIdolOverlay();
 		const FLinearColor OverlayColor = SourceIdolID.IsNone()
 			? FLinearColor::Transparent
@@ -2252,15 +2604,165 @@ void UT66CombatComponent::TryFire()
 		Projectile->ConfigureTemporaryProjectileVisual(
 			CoreProfile,
 			CoreColor,
-			ProjectileScaleMultiplier * (SourceIdolID.IsNone() ? 1.f : 0.94f),
+			CoreScaleMultiplier,
 			OverlayProfile,
 			OverlayColor,
 			1.f);
+		Projectile->FinishSpawning(SpawnTransform);
 		if (bHaveHeroData && HeroDataForPrimary.ProjectileSpeed > 0.f)
 		{
 			Projectile->SetProjectileSpeed(HeroDataForPrimary.ProjectileSpeed);
 		}
 		Projectile->SetTargetActor(Target);
+		if (CVarT66OutgoingTravelerPoolForceTemporaryWeaponVisual.GetValueOnGameThread() != 0)
+		{
+			UE_LOG(
+				LogT66Combat,
+				Display,
+				TEXT("OutgoingTravelerPoolVisualSpawned SourceIdolID=%s PayloadIndex=%d PayloadCount=%d AttackCategory=%s Target=%s"),
+				*SourceIdolID.ToString(),
+				PayloadIndex,
+				PayloadCount,
+				GetT66AttackCategoryName(AttackCategory),
+				*Target->GetName());
+		}
+	};
+
+	auto FireTravelerDotTicks = [World, AttackOrigin](
+		TWeakObjectPtr<UT66CombatComponent> WeakSelf,
+		const FT66CombatTargetHandle& InitialTargetHandle,
+		const int32 TickCount,
+		const float TickInterval,
+		const float DamagePerTick,
+		const FName DamageSourceID,
+		const FName TravelerVisualProfileID,
+		const FLinearColor& Color,
+		const float ScaleMultiplier,
+		const float ArrivalRadius,
+		const FName DebugSourceID)
+	{
+		if (!World || TickCount <= 0 || TickInterval <= 0.f || DamagePerTick <= 0.f || !InitialTargetHandle.IsValid())
+		{
+			return;
+		}
+
+		struct FDotTickState
+		{
+			int32 TicksRemaining = 0;
+		};
+
+		TSharedRef<FDotTickState> State = MakeShared<FDotTickState>();
+		State->TicksRemaining = TickCount;
+		TSharedRef<TFunction<void(const FT66CombatTargetHandle&)>> FireNextTick = MakeShared<TFunction<void(const FT66CombatTargetHandle&)>>();
+		*FireNextTick = [WeakSelf, World, AttackOrigin, TickInterval, DamagePerTick, DamageSourceID, TravelerVisualProfileID, Color, ScaleMultiplier, ArrivalRadius, DebugSourceID, State, FireNextTick](const FT66CombatTargetHandle& TargetHandle) mutable
+		{
+			UT66CombatComponent* Self = WeakSelf.Get();
+			AActor* Target = TargetHandle.Actor.Get();
+			if (!Self || !Target || !Self->IsValidAutoTarget(Target) || State->TicksRemaining <= 0)
+			{
+				FireNextTick->Reset();
+				return;
+			}
+
+			const FVector TargetLoc = UT66CombatComponent::GetTargetAimPoint(TargetHandle);
+			FVector TravelDir = (AttackOrigin - TargetLoc).GetSafeNormal();
+			if (TravelDir.IsNearlyZero())
+			{
+				TravelDir = FVector::UpVector;
+			}
+			const float TickTravelDistance = FMath::Clamp(FMath::Max(160.f, FVector::Dist(AttackOrigin, TargetLoc) * 0.25f), 160.f, 520.f);
+			const FVector TickStart = TargetLoc + TravelDir * TickTravelDistance + FVector(0.f, 0.f, 42.f);
+			const float TickSpeed = GetT66DistanceSpeedForSeconds(TickStart, TargetLoc, TickInterval, 2400.f);
+			const int32 TickDamage = FMath::Max(1, FMath::RoundToInt(DamagePerTick));
+
+			FT66CombatTravelerFireRequest Request;
+			Request.StartPosition = TickStart;
+			Request.TargetPosition = TargetLoc;
+			Request.TargetHandle = TargetHandle;
+			Request.ProfileID = FT66TemporaryProjectileSystem::ProfileHeroDOT();
+			Request.TravelerVisualProfileID = TravelerVisualProfileID;
+			Request.Color = Color;
+			Request.ScaleMultiplier = ScaleMultiplier;
+			Request.Speed = TickSpeed;
+			Request.LifetimeSeconds = FMath::Max(1.f, TickInterval + 2.f);
+			Request.ArrivalRadius = ArrivalRadius;
+			Request.DamageAmount = TickDamage;
+			Request.DamageSourceID = DamageSourceID;
+			Request.EventType = UT66FloatingCombatTextSubsystem::EventType_DoT;
+			Request.AttackCategory = ET66AttackCategory::DOT;
+			Request.DebugSourceID = DebugSourceID;
+
+			FT66OutgoingTravelerArrivalCallback OnArrived;
+			OnArrived.BindLambda([WeakSelf, DamageSourceID, DebugSourceID, TickDamage, State, FireNextTick](const FT66OutgoingTravelerArrivalEvent& Event) mutable
+			{
+				UT66CombatComponent* CallbackSelf = WeakSelf.Get();
+				if (!CallbackSelf || !Event.bHitLiveTarget || !Event.ResolvedTargetHandle.IsValid())
+				{
+					UE_LOG(
+						LogT66Combat,
+						Display,
+						TEXT("T66TravelerDOTTickFizzled SourceID=%s Reason=%s LastKnown=%s"),
+						*DebugSourceID.ToString(),
+						CallbackSelf ? TEXT("TargetLostOrDead") : TEXT("ComponentInvalid"),
+						*Event.LastKnownTargetPosition.ToCompactString());
+					FireNextTick->Reset();
+					return;
+				}
+
+				AActor* HitTarget = Event.ResolvedTargetHandle.Actor.Get();
+				if (!CallbackSelf->IsValidAutoTarget(HitTarget))
+				{
+					FireNextTick->Reset();
+					return;
+				}
+
+				CallbackSelf->ApplyDamageToTargetHandle(
+					Event.ResolvedTargetHandle,
+					TickDamage,
+					UT66FloatingCombatTextSubsystem::EventType_DoT,
+					DamageSourceID,
+					NAME_None);
+				--State->TicksRemaining;
+				UE_LOG(
+					LogT66Combat,
+					Display,
+					TEXT("T66TravelerDOTTickArrived SourceID=%s RemainingTicks=%d Target=%s Arrival=%s"),
+					*DebugSourceID.ToString(),
+					State->TicksRemaining,
+					*GetNameSafe(HitTarget),
+					*Event.ArrivalPosition.ToCompactString());
+				if (State->TicksRemaining > 0)
+				{
+					(*FireNextTick)(Event.ResolvedTargetHandle);
+				}
+				else
+				{
+					FireNextTick->Reset();
+				}
+			});
+
+			if (!FireT66CombatOutgoingTraveler(World, Request, OnArrived))
+			{
+				UE_LOG(
+					LogT66Combat,
+					Warning,
+					TEXT("T66TravelerDOTTickFallbackImmediate SourceID=%s Target=%s"),
+					*DebugSourceID.ToString(),
+					*GetNameSafe(Target));
+				Self->ApplyDamageToTargetHandle(TargetHandle, TickDamage, UT66FloatingCombatTextSubsystem::EventType_DoT, DamageSourceID, NAME_None);
+				--State->TicksRemaining;
+				if (State->TicksRemaining > 0)
+				{
+					(*FireNextTick)(TargetHandle);
+				}
+				else
+				{
+					FireNextTick->Reset();
+				}
+			}
+		};
+
+		(*FireNextTick)(InitialTargetHandle);
 	};
 
 	// --- Pierce (straight line): full range so enemies behind the first are hit; 10% damage reduction per pierced target. ---
@@ -2350,12 +2852,12 @@ void UT66CombatComponent::TryFire()
 		const FT66CombatTargetHandle PrimaryHandle = (PrimaryTarget == PrimaryTargetHandle.Actor.Get())
 			? PrimaryTargetHandle
 			: ResolveAutoAttackTargetHandle(PrimaryTarget, false, RngSub);
-		const FVector SlashCenter = GetTargetAimPoint(PrimaryHandle);
+		const FVector PrimarySlashCenter = GetTargetAimPoint(PrimaryHandle);
 		const float BaseSlashRadius = (bHaveHeroData && HeroDataForPrimary.AoeRadius > 0.f) ? HeroDataForPrimary.AoeRadius : SlashRadius;
 		const float WeaponAoeRadius = bHasCachedWeaponData ? FMath::Max(0.f, CachedWeaponData.BonusAoeRadius) : 0.f;
 		const float EffectiveSlashRadius = BaseSlashRadius * ProjectileScaleMultiplier + WeaponAoeRadius;
 		const bool bUseHeroOneFrontalSector = (CurrentHeroID == FName(TEXT("Hero_1")));
-		const FVector SlashForward = T66ResolvePlanarDirection(SlashCenter - AttackOrigin, OwnerActor);
+		const FVector BaseSlashForward = T66ResolvePlanarDirection(PrimarySlashCenter - AttackOrigin, OwnerActor);
 		constexpr float HeroOneAoeHalfAngleDegrees = 90.f;
 		const float AoeInnerRadiusRatio = bHasCachedWeaponData
 			? FMath::Clamp(CachedWeaponData.AoeInnerRadiusRatio, 0.f, 0.95f)
@@ -2364,82 +2866,179 @@ void UT66CombatComponent::TryFire()
 			? EffectiveSlashRadius * AoeInnerRadiusRatio
 			: 0.f;
 
-		TArray<AActor*> SlashTargets;
-		BuildSlashTargets(PrimaryTarget, EffectiveSlashRadius, SlashTargets, bUseHeroOneFrontalSector, SlashForward, HeroOneAoeHalfAngleDegrees, EffectiveSlashInnerRadius);
+		const int32 AuthoredProjectileCount = bHasCachedWeaponData ? CachedWeaponData.ProjectileCount : 0;
+		const int32 LegacyAoeCount = bHasCachedWeaponData ? FMath::Max(0, CachedWeaponData.BonusAoeCount) : 0;
+		const int32 EffectiveProjectileCount = FMath::Clamp(AuthoredProjectileCount > 0 ? AuthoredProjectileCount : (LegacyAoeCount > 0 ? LegacyAoeCount : 1), 1, 12);
+		const float AuthoredSpreadAngleDegrees = bHasCachedWeaponData ? FMath::Max(0.f, CachedWeaponData.SpreadAngleDegrees) : 0.f;
+		const float EffectiveSpreadAngleDegrees = (EffectiveProjectileCount > 1) ? AuthoredSpreadAngleDegrees : 0.f;
+		const FName PatternID = (bHasCachedWeaponData && !CachedWeaponData.AttackPatternID.IsNone())
+			? CachedWeaponData.AttackPatternID
+			: FName(TEXT("Default"));
+		const float PatternTravelDistance = FMath::Max(1.f, FVector::Dist2D(AttackOrigin, PrimarySlashCenter));
+		const bool bUseFanPattern = EffectiveProjectileCount > 1 && EffectiveSpreadAngleDegrees > KINDA_SMALL_NUMBER;
+		bool bAnySlashPayload = false;
 
-		FVector SlashContextImpactPoint = SlashCenter;
-		const bool bUseCrescentBandImpactPoint =
-			bUseHeroOneFrontalSector
-			&& EffectiveSlashInnerRadius > KINDA_SMALL_NUMBER
-			&& EffectiveSlashRadius > EffectiveSlashInnerRadius;
-		if (bUseCrescentBandImpactPoint)
+		for (int32 ProjectileIndex = 0; ProjectileIndex < EffectiveProjectileCount; ++ProjectileIndex)
 		{
-			// Idol overlays should trigger from the visible crescent band, not the hollow damage-query center.
-			const float BandMidpointRadius = (EffectiveSlashInnerRadius + EffectiveSlashRadius) * 0.5f;
-			SlashContextImpactPoint = SlashCenter + SlashForward * BandMidpointRadius;
-		}
+			const float CenteredIndex = static_cast<float>(ProjectileIndex) - (static_cast<float>(EffectiveProjectileCount - 1) * 0.5f);
+			const float StepAngleDegrees = (EffectiveProjectileCount > 1) ? (EffectiveSpreadAngleDegrees / static_cast<float>(EffectiveProjectileCount - 1)) : 0.f;
+			const float YawOffsetDegrees = CenteredIndex * StepAngleDegrees;
+			const FVector ProjectileForward = bUseFanPattern
+				? T66ResolvePlanarDirection(FRotator(0.f, YawOffsetDegrees, 0.f).RotateVector(BaseSlashForward), OwnerActor)
+				: BaseSlashForward;
+			const FVector SlashCenter = bUseFanPattern
+				? (AttackOrigin + ProjectileForward * PatternTravelDistance)
+				: PrimarySlashCenter;
+			const bool bForcePrimaryIntoQuery = true;
 
-		FT66CombatImpactContext SlashImpactContext;
-		SlashImpactContext.PrimaryTargetHandle = PrimaryHandle;
-		SlashImpactContext.DamageCenter = SlashCenter;
-		SlashImpactContext.ImpactPoint = SlashContextImpactPoint;
-		SlashImpactContext.Forward = SlashForward;
-		SlashImpactContext.Radius = EffectiveSlashRadius;
-		SlashImpactContext.InnerRadius = EffectiveSlashInnerRadius;
-		SlashImpactContext.HalfAngleDegrees = bUseHeroOneFrontalSector ? HeroOneAoeHalfAngleDegrees : 0.f;
-		SlashImpactContext.EffectiveDamage = EffectiveDamagePerShot;
-		SlashImpactContext.bUsesFrontalSector = bUseHeroOneFrontalSector;
-		SlashImpactContext.bDamageCenterValid = true;
-		SlashImpactContext.bImpactPointValid = true;
-		for (int32 TargetIndex = 0; TargetIndex < SlashTargets.Num(); ++TargetIndex)
-		{
-			AActor* SlashTarget = SlashTargets[TargetIndex];
-			const FT66CombatTargetHandle SlashTargetHandle = (TargetIndex == 0 && SlashTarget == PrimaryTarget)
-				? PrimaryHandle
-				: MakeActorTargetHandle(SlashTarget);
-			AddImpactTargetHandleUnique(SlashImpactContext, SlashTargetHandle);
-		}
-		if (SlashImpactContext.HitTargetHandles.Num() > 0)
-		{
-			PublishWeaponImpactContext(SlashImpactContext, true);
-		}
+			TArray<AActor*> SlashTargets;
+			BuildSlashTargets(
+				bForcePrimaryIntoQuery ? PrimaryTarget : nullptr,
+				EffectiveSlashRadius,
+				SlashTargets,
+				bUseHeroOneFrontalSector,
+				ProjectileForward,
+				HeroOneAoeHalfAngleDegrees,
+				EffectiveSlashInnerRadius,
+				&SlashCenter,
+				FString::Printf(TEXT("Weapon %s AOE Pattern %s %d/%d"), *ResolveWeaponImpactSourceID().ToString(), *PatternID.ToString(), ProjectileIndex + 1, EffectiveProjectileCount));
 
-		TrySpawnBoundWeaponBaseSlashVFX(SlashImpactContext, EffectiveDamagePerShot, CurrentHeroID, AttackCategory);
-
-		const int32 HitCount = SlashTargets.Num();
-		float ArcaneMult = 1.f;
-		if (CachedRunState && CachedRunState->GetPassiveType() == ET66PassiveType::ArcaneAmplification)
-		{
-			if (HitCount >= 5) ArcaneMult = 1.35f;
-			else if (HitCount >= 3) ArcaneMult = 1.2f;
-		}
-
-		const int32 PrimaryDmg = FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * PrimaryDamageMult * ArcaneMult));
-		{
-			FName RangeEvent;
-			const int32 RangeDmg = GetRangeMultipliedDamage(PrimaryDmg, PrimaryTarget, &RangeEvent);
-			const FResolvedAutoAttackHit Resolved = ResolveCrit(RangeDmg);
-			ApplyResolvedAutoAttackDamage(PrimaryHandle, Resolved, RangeEvent);
-			WeaponHitActors.AddUnique(PrimaryTarget);
-		}
-
-		const int32 SplashDmg = FMath::Max(1, FMath::RoundToInt(static_cast<float>(EffectiveDamagePerShot) * ArcaneMult));
-		for (int32 TargetIndex = 1; TargetIndex < SlashTargets.Num(); ++TargetIndex)
-		{
-			AActor* Hit = SlashTargets[TargetIndex];
-			if (Hit)
+			FVector SlashContextImpactPoint = SlashCenter;
+			const bool bUseCrescentBandImpactPoint =
+				bUseHeroOneFrontalSector
+				&& EffectiveSlashInnerRadius > KINDA_SMALL_NUMBER
+				&& EffectiveSlashRadius > EffectiveSlashInnerRadius;
+			if (bUseCrescentBandImpactPoint)
 			{
-				const FT66CombatTargetHandle HitHandle = ResolveAutoAttackTargetHandle(Hit, false, RngSub);
-				FName RangeEvent;
-				const int32 RangeDmg = GetRangeMultipliedDamage(SplashDmg, Hit, &RangeEvent);
-				const FResolvedAutoAttackHit Resolved = ResolveCrit(RangeDmg);
-				ApplyResolvedAutoAttackDamage(HitHandle, Resolved, RangeEvent);
-				WeaponHitActors.AddUnique(Hit);
+				// Idol overlays should trigger from the visible crescent band, not the hollow damage-query center.
+				const float BandMidpointRadius = (EffectiveSlashInnerRadius + EffectiveSlashRadius) * 0.5f;
+				SlashContextImpactPoint = SlashCenter + ProjectileForward * BandMidpointRadius;
 			}
+
+			FT66CombatImpactContext SlashImpactContext;
+			SlashImpactContext.PrimaryTargetHandle = PrimaryHandle;
+			SlashImpactContext.DamageCenter = SlashCenter;
+			SlashImpactContext.ImpactPoint = SlashContextImpactPoint;
+			SlashImpactContext.Forward = ProjectileForward;
+			SlashImpactContext.Radius = EffectiveSlashRadius;
+			SlashImpactContext.InnerRadius = EffectiveSlashInnerRadius;
+			SlashImpactContext.HalfAngleDegrees = bUseHeroOneFrontalSector ? HeroOneAoeHalfAngleDegrees : 0.f;
+			SlashImpactContext.EffectiveDamage = EffectiveDamagePerShot;
+			SlashImpactContext.bUsesFrontalSector = bUseHeroOneFrontalSector;
+			SlashImpactContext.bDamageCenterValid = true;
+			SlashImpactContext.bImpactPointValid = true;
+
+			TArray<FT66CombatTargetHandle> SlashTargetHandles;
+			SlashTargetHandles.Reserve(SlashTargets.Num());
+			for (int32 TargetIndex = 0; TargetIndex < SlashTargets.Num(); ++TargetIndex)
+			{
+				AActor* SlashTarget = SlashTargets[TargetIndex];
+				const FT66CombatTargetHandle SlashTargetHandle = (SlashTarget == PrimaryTarget)
+					? PrimaryHandle
+					: MakeActorTargetHandle(SlashTarget);
+				SlashTargetHandles.Add(SlashTargetHandle);
+				AddImpactTargetHandleUnique(SlashImpactContext, SlashTargetHandle);
+			}
+			if (SlashTargetHandles.Num() > 0)
+			{
+				SlashImpactContext.PrimaryTargetHandle = SlashTargetHandles[0];
+			}
+			if (SlashImpactContext.HitTargetHandles.Num() > 0)
+			{
+				PublishWeaponImpactContext(SlashImpactContext, !bHasPrimaryWeaponImpactContext);
+			}
+
+			if (EffectiveProjectileCount > 1 || CVarT66CombatImpactSourceVerbose.GetValueOnGameThread() != 0)
+			{
+				UE_LOG(
+					LogT66Combat,
+					Display,
+					TEXT("WeaponPatternFire WeaponID=%s PatternID=%s ProjectileCount=%d ProjectileIndex=%d SpreadAngleDegrees=%.2f YawOffsetDegrees=%.2f Targets=%d DamageCenter=%s Forward=%s"),
+					*ResolveWeaponImpactSourceID().ToString(),
+					*PatternID.ToString(),
+					EffectiveProjectileCount,
+					ProjectileIndex,
+					EffectiveSpreadAngleDegrees,
+					YawOffsetDegrees,
+					SlashTargetHandles.Num(),
+					*SlashCenter.ToCompactString(),
+					*ProjectileForward.ToCompactString());
+			}
+
+			TrySpawnBoundWeaponBaseSlashVFX(SlashImpactContext, EffectiveDamagePerShot, CurrentHeroID, AttackCategory);
+
+			const int32 HitCount = SlashTargets.Num();
+			for (AActor* Hit : SlashTargets)
+			{
+				if (Hit)
+				{
+					WeaponHitActors.AddUnique(Hit);
+				}
+			}
+			float ArcaneMult = 1.f;
+			if (CachedRunState && CachedRunState->GetPassiveType() == ET66PassiveType::ArcaneAmplification)
+			{
+				if (HitCount >= 5) ArcaneMult = 1.35f;
+				else if (HitCount >= 3) ArcaneMult = 1.2f;
+			}
+
+			const int32 PrimaryDmg = FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * PrimaryDamageMult * ArcaneMult));
+			const int32 SplashDmg = FMath::Max(1, FMath::RoundToInt(static_cast<float>(EffectiveDamagePerShot) * ArcaneMult));
+			const float AoeAttackSpeedScale = (BaseFireIntervalSeconds > KINDA_SMALL_NUMBER && EffectiveFireIntervalSeconds > KINDA_SMALL_NUMBER)
+				? FMath::Clamp(BaseFireIntervalSeconds / EffectiveFireIntervalSeconds, 0.1f, 20.f)
+				: 1.f;
+			const float EffectiveAoeDelay = (bHaveHeroData && HeroDataForPrimary.AoeDelay > 0.f)
+				? HeroDataForPrimary.AoeDelay / AoeAttackSpeedScale
+				: 0.f;
+			TWeakObjectPtr<UT66CombatComponent> WeakThis(this);
+			auto ApplySlashDamage = [WeakThis, SlashTargets, SlashTargetHandles, PrimaryDmg, SplashDmg, ResolveCrit, GetRangeMultipliedDamage, ApplyResolvedAutoAttackDamage, RngSub]() mutable
+			{
+				UT66CombatComponent* Self = WeakThis.Get();
+				if (!Self || SlashTargets.Num() <= 0 || SlashTargetHandles.Num() <= 0)
+				{
+					return;
+				}
+
+				AActor* FirstHit = SlashTargets[0];
+				if (FirstHit && SlashTargetHandles[0].IsValid())
+				{
+					FName RangeEvent;
+					const int32 RangeDmg = GetRangeMultipliedDamage(PrimaryDmg, FirstHit, &RangeEvent);
+					const FResolvedAutoAttackHit Resolved = ResolveCrit(RangeDmg);
+					ApplyResolvedAutoAttackDamage(SlashTargetHandles[0], Resolved, RangeEvent);
+				}
+
+				for (int32 TargetIndex = 1; TargetIndex < SlashTargets.Num() && TargetIndex < SlashTargetHandles.Num(); ++TargetIndex)
+				{
+					AActor* Hit = SlashTargets[TargetIndex];
+					if (Hit && SlashTargetHandles[TargetIndex].IsValid())
+					{
+						FName SplashRangeEvent;
+						const int32 SplashRangeDmg = GetRangeMultipliedDamage(SplashDmg, Hit, &SplashRangeEvent);
+						const FResolvedAutoAttackHit SplashResolved = ResolveCrit(SplashRangeDmg);
+						ApplyResolvedAutoAttackDamage(SlashTargetHandles[TargetIndex], SplashResolved, SplashRangeEvent);
+					}
+				}
+			};
+
+			if (EffectiveAoeDelay > KINDA_SMALL_NUMBER && World)
+			{
+				FTimerHandle AoeDelayTimerHandle;
+				World->GetTimerManager().SetTimer(AoeDelayTimerHandle, MoveTemp(ApplySlashDamage), EffectiveAoeDelay, false);
+			}
+			else
+			{
+				ApplySlashDamage();
+			}
+
+			bAnySlashPayload = true;
 		}
 
-		PlayHeroAttackSfx(CurrentHeroID, AttackCategory, SlashCenter);
-		return true;
+		if (bAnySlashPayload)
+		{
+			PlayHeroAttackSfx(CurrentHeroID, AttackCategory, PrimarySlashCenter);
+		}
+		return bAnySlashPayload;
 	};
 
 	// --- Bounce ---
@@ -2466,134 +3065,138 @@ void UT66CombatComponent::TryFire()
 		ChainPositions.Add(MyLoc);
 		ChainPositions.Add(PrimaryLoc);
 
-		// PerChainLink impact-context policy: publish one official Bounce weapon impact
-		// context per resolved chain link at each authoritative hit point, so future
-		// idol/chaining systems read official per-hit contexts instead of one aggregated
-		// context. Damage and contexts are resolved here; the moving Bounce projectile
-		// presentation is staged separately after the full chain resolves (see
-		// StageBounceProjectileChain) so Bounce reads as a moving link sequence rather than
-		// static impact slashes.
-		auto PublishBounceLink = [&](const FT66CombatTargetHandle& LinkHandle, const FVector& PrevLoc, const FVector& ImpactLoc, const int32 LinkChainIndex, const int32 LinkEffectiveDamage)
+		const int32 PrimaryDmg = FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * PrimaryDamageMult));
+		const float BounceProjectileSpeed = (bHaveHeroData && HeroDataForPrimary.ProjectileSpeed > 0.f)
+			? HeroDataForPrimary.ProjectileSpeed
+			: 2400.f;
+		const FName WeaponSourceID = ResolveWeaponImpactSourceID();
+		const int32 EffectiveDamageForBounce = EffectiveDamagePerShot;
+		const float ProjectileScaleForBounce = ProjectileScaleMultiplier;
+		TSharedRef<TSet<FString>> HitKeys = MakeShared<TSet<FString>>();
+		TWeakObjectPtr<UT66CombatComponent> WeakSelf(this);
+		TSharedRef<TFunction<void(const FT66CombatTargetHandle&, const FVector&, int32, float)>> FireNextBounceLink =
+			MakeShared<TFunction<void(const FT66CombatTargetHandle&, const FVector&, int32, float)>>();
+		*FireNextBounceLink = [WeakSelf, World, OwnerActor, MyLoc, AttackOrigin, CurrentHeroID, WeaponSourceID, AttackCategory, BounceRangeSq, BounceCount, Falloff, EffectiveDamageForBounce, PrimaryDmg, BounceProjectileSpeed, ProjectileScaleForBounce, RngSub, ResolveRangeDamageForComponent, ResolveCritForComponent, ApplyResolvedDamageWithExecute, LogCombatImpactContext, HitKeys, FireNextBounceLink](const FT66CombatTargetHandle& LinkHandle, const FVector& LinkStart, const int32 LinkIndex, const float LinkDamageMult) mutable
 		{
-			FT66CombatImpactContext LinkContext;
-			LinkContext.PrimaryTargetHandle = LinkHandle;
-			LinkContext.ImpactPoint = ImpactLoc;
-			LinkContext.DamageCenter = ImpactLoc;
-			LinkContext.Forward = T66ResolvePlanarDirection(ImpactLoc - PrevLoc, OwnerActor);
-			LinkContext.Radius = 0.f;
-			LinkContext.ChainIndex = LinkChainIndex;
-			LinkContext.EffectiveDamage = LinkEffectiveDamage;
-			LinkContext.bDamageCenterValid = true;
-			LinkContext.bImpactPointValid = true;
-			AddImpactTargetHandleUnique(LinkContext, LinkHandle);
-			PublishWeaponImpactContext(LinkContext, LinkChainIndex == 0);
+			UT66CombatComponent* Self = WeakSelf.Get();
+			AActor* Target = LinkHandle.Actor.Get();
+			if (!Self || !World || !Target || !Self->IsValidAutoTarget(Target))
+			{
+				FireNextBounceLink->Reset();
+				return;
+			}
+
+			const FVector LinkTarget = UT66CombatComponent::GetTargetAimPoint(LinkHandle);
+			const int32 LinkBaseDamage = (LinkIndex == 0)
+				? PrimaryDmg
+				: FMath::Max(1, FMath::RoundToInt(static_cast<float>(EffectiveDamageForBounce) * LinkDamageMult));
+			FName RangeEvent;
+			const int32 RangeDamage = ResolveRangeDamageForComponent(Self, MyLoc, LinkBaseDamage, Target, &RangeEvent);
+			const FResolvedAutoAttackHit Resolved = ResolveCritForComponent(Self, RngSub, RangeDamage);
+
+			FT66CombatTravelerFireRequest Request;
+			Request.StartPosition = LinkStart;
+			Request.TargetPosition = LinkTarget;
+			Request.TargetHandle = LinkHandle;
+			Request.ProfileID = FT66TemporaryProjectileSystem::ProfileHeroBounce();
+			Request.Color = FT66TemporaryProjectileSystem::HeroProjectileColor();
+			Request.ScaleMultiplier = ProjectileScaleForBounce;
+			Request.Speed = BounceProjectileSpeed;
+			Request.LifetimeSeconds = 10.f;
+			Request.ArrivalRadius = 35.f;
+			Request.DamageAmount = Resolved.Damage;
+			Request.DamageSourceID = UT66DamageLogSubsystem::SourceID_AutoAttack;
+			Request.EventType = Resolved.EventType;
+			Request.AttackCategory = ET66AttackCategory::Bounce;
+			Request.DebugSourceID = WeaponSourceID;
+
+			FT66OutgoingTravelerArrivalCallback OnArrived;
+			OnArrived.BindLambda([WeakSelf, OwnerActor, MyLoc, AttackOrigin, CurrentHeroID, WeaponSourceID, AttackCategory, BounceRangeSq, BounceCount, Falloff, LinkIndex, LinkBaseDamage, LinkDamageMult, Resolved, RangeEvent, RngSub, ApplyResolvedDamageWithExecute, LogCombatImpactContext, HitKeys, FireNextBounceLink](const FT66OutgoingTravelerArrivalEvent& Event) mutable
+			{
+				UT66CombatComponent* CallbackSelf = WeakSelf.Get();
+				if (!CallbackSelf || !Event.bHitLiveTarget || !Event.ResolvedTargetHandle.IsValid())
+				{
+					UE_LOG(
+						LogT66Combat,
+						Display,
+						TEXT("T66TravelerBounceLinkFizzled SourceID=%s LinkIndex=%d Reason=%s LastKnown=%s"),
+						*WeaponSourceID.ToString(),
+						LinkIndex,
+						CallbackSelf ? TEXT("TargetLostOrDead") : TEXT("ComponentInvalid"),
+						*Event.LastKnownTargetPosition.ToCompactString());
+					FireNextBounceLink->Reset();
+					return;
+				}
+
+				AActor* HitTarget = Event.ResolvedTargetHandle.Actor.Get();
+				ApplyResolvedDamageWithExecute(CallbackSelf, Event.ResolvedTargetHandle, Resolved, NAME_None, RangeEvent, true, true);
+
+				if (LinkIndex > 0
+					&& CallbackSelf->CachedRunState
+					&& CallbackSelf->CachedRunState->GetPassiveType() == ET66PassiveType::StaticCharge
+					&& RollTierChance(0.2f, RngSub))
+				{
+					if (AT66EnemyBase* BounceEnemy = Cast<AT66EnemyBase>(HitTarget))
+					{
+						BounceEnemy->ApplyConfusion(1.5f);
+					}
+				}
+
+				FT66CombatImpactContext LinkContext;
+				LinkContext.SourceType = ET66CombatVFXBindingSourceType::WeaponBase;
+				LinkContext.SourceID = WeaponSourceID;
+				LinkContext.HeroID = CurrentHeroID;
+				LinkContext.AttackCategory = AttackCategory;
+				LinkContext.AttackOrigin = AttackOrigin;
+				LinkContext.PrimaryTargetHandle = Event.ResolvedTargetHandle;
+				LinkContext.ImpactPoint = Event.ArrivalPosition;
+				LinkContext.DamageCenter = Event.ArrivalPosition;
+				LinkContext.Forward = T66ResolvePlanarDirection(Event.ArrivalPosition - MyLoc, OwnerActor);
+				LinkContext.ChainIndex = LinkIndex;
+				LinkContext.EffectiveDamage = LinkBaseDamage;
+				LinkContext.bDamageCenterValid = true;
+				LinkContext.bImpactPointValid = true;
+				LinkContext.HitTargetHandles.Add(Event.ResolvedTargetHandle);
+				LogCombatImpactContext(LinkContext, LinkIndex == 0 ? TEXT("WeaponPrimaryArrival") : TEXT("WeaponSecondaryArrival"));
+
+				HitKeys->Add(UT66CombatComponent::MakeTargetHandleKey(Event.ResolvedTargetHandle));
+				if (LinkIndex + 1 >= BounceCount)
+				{
+					FireNextBounceLink->Reset();
+					return;
+				}
+
+				const FT66CombatTargetHandle NextHandle = CallbackSelf->FindClosestTargetHandleInRange(Event.ArrivalPosition, BounceRangeSq, &HitKeys.Get());
+				if (!NextHandle.IsValid())
+				{
+					FireNextBounceLink->Reset();
+					return;
+				}
+
+				HitKeys->Add(UT66CombatComponent::MakeTargetHandleKey(NextHandle));
+				(*FireNextBounceLink)(
+					NextHandle,
+					Event.ArrivalPosition,
+					LinkIndex + 1,
+					LinkDamageMult * (1.f - Falloff));
+			});
+
+			if (!FireT66CombatOutgoingTraveler(World, Request, OnArrived))
+			{
+				UE_LOG(
+					LogT66Combat,
+					Warning,
+					TEXT("T66TravelerBounceLinkFallbackImmediate SourceID=%s LinkIndex=%d Target=%s"),
+					*WeaponSourceID.ToString(),
+					LinkIndex,
+					*GetNameSafe(Target));
+				ApplyResolvedDamageWithExecute(Self, LinkHandle, Resolved, NAME_None, RangeEvent, true, true);
+				FireNextBounceLink->Reset();
+			}
 		};
 
-		const int32 PrimaryDmg = FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * PrimaryDamageMult));
-		{
-			FName RangeEvent;
-			const int32 RangeDmg = GetRangeMultipliedDamage(PrimaryDmg, PrimaryTarget, &RangeEvent);
-			const FResolvedAutoAttackHit Resolved = ResolveCrit(RangeDmg);
-			ApplyResolvedAutoAttackDamage(PrimaryHandle, Resolved, RangeEvent);
-			WeaponHitActors.AddUnique(PrimaryTarget);
-		}
-		PublishBounceLink(PrimaryHandle, MyLoc, PrimaryLoc, 0, PrimaryDmg);
-
-		FVector CurrentLoc = PrimaryLoc;
-		TSet<FString> HitKeys;
-		HitKeys.Add(MakeTargetHandleKey(PrimaryHandle));
-		int32 BouncesLeft = BounceCount - 1;
-		float DamageMult = 1.f - Falloff;
-		int32 LinkChainIndex = 1;
-		while (BouncesLeft > 0)
-		{
-			const FT66CombatTargetHandle NextHandle = FindClosestTargetHandleInRange(CurrentLoc, BounceRangeSq, &HitKeys);
-			AActor* Next = NextHandle.Actor.Get();
-			if (!Next) break;
-			const FVector NextLoc = GetTargetAimPoint(NextHandle);
-			ChainPositions.Add(NextLoc);
-			HitKeys.Add(MakeTargetHandleKey(NextHandle));
-			const int32 BounceDmg = FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * DamageMult));
-			FName RangeEvent;
-			const int32 RangeDmg = GetRangeMultipliedDamage(BounceDmg, Next, &RangeEvent);
-			const FResolvedAutoAttackHit Resolved = ResolveCrit(RangeDmg);
-			ApplyResolvedAutoAttackDamage(NextHandle, Resolved, RangeEvent);
-			WeaponHitActors.AddUnique(Next);
-			// StaticCharge: 20% chance to confuse bounced targets.
-			if (CachedRunState && CachedRunState->GetPassiveType() == ET66PassiveType::StaticCharge)
-			{
-				if (RollTierChance(0.2f, RngSub))
-				{
-					if (AT66EnemyBase* BounceEnemy = Cast<AT66EnemyBase>(Next))
-						BounceEnemy->ApplyConfusion(1.5f);
-				}
-			}
-			PublishBounceLink(NextHandle, CurrentLoc, NextLoc, LinkChainIndex, BounceDmg);
-			CurrentLoc = NextLoc;
-			DamageMult *= (1.f - Falloff);
-			--BouncesLeft;
-			++LinkChainIndex;
-		}
-
-		// Moving Bounce presentation: stage one visible projectile link at a time along the
-		// resolved chain — hero attack origin -> primary, then primary -> each next target —
-		// instead of placing static slashes at every impact point simultaneously. The first
-		// link is elevated to the hero attack origin so it reads from the hero, not the floor.
-		if (ChainPositions.Num() >= 2)
-		{
-			TArray<FVector> ProjectileChain = ChainPositions;
-			ProjectileChain[0] = AttackOrigin;
-			const float BounceProjectileSpeed = (bHaveHeroData && HeroDataForPrimary.ProjectileSpeed > 0.f)
-				? HeroDataForPrimary.ProjectileSpeed
-				: 2400.f;
-
-			// Resolve the authored Bounce slash binding so the moving carrier IS the
-			// production red/blue horizontal slash Niagara, not the temporary cube. If the
-			// binding can't be resolved, StageBounceProjectileChain falls back to the
-			// temporary profile mover (dev fallback) so bring-up is never invisible.
-			FT66CombatVFXBindingData BounceBinding;
-			UNiagaraSystem* BounceCarrierSystem = nullptr;
-			const bool bResolvedBounceCarrier = ResolveCombatVFXBinding(
-				ET66CombatVFXBindingSourceType::WeaponBase,
-				ResolveWeaponImpactSourceID(),
-				AttackCategory,
-				BounceBinding,
-				BounceCarrierSystem);
-			const float CarrierVisualScale = bResolvedBounceCarrier
-				? FMath::Max(0.01f, BounceBinding.VisualScaleMultiplier)
-				: ProjectileScaleMultiplier;
-			// Presentation-only readable travel window. The authored slash reveals along its
-			// length by normalized particle age, so it is only fully drawn near end-of-life;
-			// the carrier must therefore spend enough on-screen time travelling the hero->
-			// target path for the reveal to read as a moving slash rather than a flash at the
-			// impact point. This floor also keeps the link travelling across multiple captured
-			// frames even if a single frame hitches. Damage timing was resolved above and is
-			// unaffected. CarrierPlaybackSeconds stays the authored window so the slash is
-			// time-dilated to stretch its reveal across the whole travel (see
-			// SpawnBounceLinkProjectile).
-			constexpr float ReadableBounceLinkTravelSeconds = 0.60f;
-			// Proof staging may stretch the travel window so the frame-rate-limited capture
-			// samples each link's full hero->primary / primary->second path (see CVar comment).
-			const float ProofReadableTravelSeconds = FMath::Max(0.f, CVarBounceProofReadableTravelSeconds.GetValueOnGameThread());
-			const float EffectiveReadableTravelSeconds = ProofReadableTravelSeconds > KINDA_SMALL_NUMBER
-				? ProofReadableTravelSeconds
-				: ReadableBounceLinkTravelSeconds;
-			const float AuthoredCarrierPlaybackSeconds = bResolvedBounceCarrier
-				? FMath::Max(0.f, BounceBinding.BasePlaybackSeconds)
-				: 0.32f;
-			const float MinLinkTravelSeconds = FMath::Max(EffectiveReadableTravelSeconds, AuthoredCarrierPlaybackSeconds);
-			const float CarrierPlaybackSeconds = AuthoredCarrierPlaybackSeconds;
-
-			StageBounceProjectileChain(
-				ProjectileChain,
-				FT66TemporaryProjectileSystem::HeroProjectileColor(),
-				BounceProjectileSpeed,
-				ProjectileScaleMultiplier,
-				BounceCarrierSystem,
-				CarrierVisualScale,
-				MinLinkTravelSeconds,
-				CarrierPlaybackSeconds);
-		}
+		HitKeys->Add(MakeTargetHandleKey(PrimaryHandle));
+		(*FireNextBounceLink)(PrimaryHandle, AttackOrigin, 0, 1.f - Falloff);
 
 		PlayHeroAttackSfx(CurrentHeroID, AttackCategory, PrimaryLoc);
 		return true;
@@ -2609,9 +3212,15 @@ void UT66CombatComponent::TryFire()
 		static const FName HeroPrimaryDotSource(TEXT("HeroPrimaryDot"));
 		const float WeaponDotDuration = bHasCachedWeaponData ? FMath::Max(0.f, CachedWeaponData.BonusDotDuration) : 0.f;
 		const float WeaponDotTickDamageMultiplier = bHasCachedWeaponData ? FMath::Max(0.01f, CachedWeaponData.BonusDotTickDamageMultiplier) : 1.f;
-		const float Duration = ((bHaveHeroData && HeroDataForPrimary.DotDuration > 0.f) ? HeroDataForPrimary.DotDuration : 3.f) + WeaponDotDuration;
-		const float TickInterval = (bHaveHeroData && HeroDataForPrimary.DotTickInterval > 0.f) ? HeroDataForPrimary.DotTickInterval : 0.5f;
-		const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
+		const float BaseDotDuration = ((bHaveHeroData && HeroDataForPrimary.DotDuration > 0.f) ? HeroDataForPrimary.DotDuration : 3.f) + WeaponDotDuration;
+		const float BaseTickInterval = (bHaveHeroData && HeroDataForPrimary.DotTickInterval > 0.f) ? HeroDataForPrimary.DotTickInterval : 0.5f;
+		const float DotTickCountScale = FMath::Max(0.1f, ProjectileScaleMultiplier);
+		const float DotTickRateScale = (BaseFireIntervalSeconds > KINDA_SMALL_NUMBER && EffectiveFireIntervalSeconds > KINDA_SMALL_NUMBER)
+			? FMath::Clamp(BaseFireIntervalSeconds / EffectiveFireIntervalSeconds, 0.1f, 20.f)
+			: 1.f;
+		const int32 Ticks = FMath::Max(1, FMath::RoundToInt((BaseDotDuration / BaseTickInterval) * DotTickCountScale));
+		const float TickInterval = FMath::Max(0.05f, BaseTickInterval / DotTickRateScale);
+		const float Duration = FMath::Max(TickInterval, TickInterval * static_cast<float>(Ticks));
 		const int32 InitialDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(EffectiveDamagePerShot) * 0.5f * PrimaryDamageMult));
 		const float DotTotalDamage = static_cast<float>(FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * PrimaryDamageMult) - InitialDamage)) * WeaponDotTickDamageMultiplier;
 		const float DamagePerTick = DotTotalDamage / static_cast<float>(Ticks);
@@ -2622,22 +3231,14 @@ void UT66CombatComponent::TryFire()
 		DotImpactContext.Radius = 0.f;
 		DotImpactContext.EffectiveDamage = FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * PrimaryDamageMult));
 		DotImpactContext.bImpactPointValid = true;
-		{
-			FName RangeEvent;
-			const int32 RangeDmg = GetRangeMultipliedDamage(InitialDamage, PrimaryTarget, &RangeEvent);
-			const FResolvedAutoAttackHit Resolved = ResolveCrit(RangeDmg);
-			ApplyResolvedAutoAttackDamage(PrimaryHandle, Resolved, RangeEvent);
-			WeaponHitActors.AddUnique(PrimaryTarget);
-			AddImpactTargetHandleUnique(DotImpactContext, PrimaryHandle);
-		}
-		PublishWeaponImpactContext(DotImpactContext, true);
+		FName InitialRangeEvent;
+		const int32 InitialRangeDmg = GetRangeMultipliedDamage(InitialDamage, PrimaryTarget, &InitialRangeEvent);
+		const FResolvedAutoAttackHit InitialResolved = ResolveCrit(InitialRangeDmg);
+		AddImpactTargetHandleUnique(DotImpactContext, PrimaryHandle);
 
-		// DOT ticking + the placeholder applicator markers apply when the single visible
-		// hero->target shot reaches the enemy. The shot is visual-only; the initial contact
-		// damage and impact context above stay authoritative on this frame so idol overlays
-		// still consume the weapon impact context. There is exactly ONE ApplyDOT call here ->
-		// a single authoritative DOT payload. The three sphere markers are visual applicators
-		// only and never multiply or own DOT damage.
+		// DOT ticking + the placeholder applicator markers now start when the single visible
+		// hero->target traveler reaches the enemy. The initial contact damage, impact context,
+		// and DOT ticks all move onto traveler arrivals so downstream timing matches the visual cue.
 		const FVector DotShotStart = AttackOrigin;
 		const FVector DotShotEnd = DotImpactContext.ImpactPoint;
 		const FLinearColor DotVisualColor = FT66TemporaryProjectileSystem::HeroProjectileColor();
@@ -2648,535 +3249,118 @@ void UT66CombatComponent::TryFire()
 		const bool bDotProofReadable = DotProofTravelSeconds > 0.f;
 		const float DotShotScale = bDotProofReadable ? 3.0f : 1.f;
 		const float DotMarkerScale = bDotProofReadable ? 0.6f : 0.18f;
-
 		TWeakObjectPtr<UT66CombatComponent> WeakSelf(this);
-		TWeakObjectPtr<AActor> WeakDotTarget(PrimaryTarget);
-		auto ApplyDotPayload = [WeakSelf, WeakDotTarget, Duration, TickInterval, DamagePerTick, DotVisualColor, DotMarkerScale]()
+		const FName WeaponSourceID = ResolveWeaponImpactSourceID();
+		const float DotBaseSpeed = (bHaveHeroData && HeroDataForPrimary.ProjectileSpeed > 0.f)
+			? HeroDataForPrimary.ProjectileSpeed
+			: 2400.f;
+
+		FT66CombatTravelerFireRequest Request;
+		Request.StartPosition = DotShotStart;
+		Request.TargetPosition = DotShotEnd;
+		Request.TargetHandle = PrimaryHandle;
+		Request.ProfileID = FT66TemporaryProjectileSystem::ProfileHeroDOT();
+		Request.Color = DotVisualColor;
+		Request.ScaleMultiplier = DotShotScale;
+		Request.Speed = GetT66DistanceSpeedForSeconds(DotShotStart, DotShotEnd, DotProofTravelSeconds, DotBaseSpeed);
+		Request.LifetimeSeconds = FMath::Max(2.f, DotProofTravelSeconds + 2.f);
+		Request.ArrivalRadius = 35.f;
+		Request.DamageAmount = InitialResolved.Damage;
+		Request.DamageSourceID = UT66DamageLogSubsystem::SourceID_AutoAttack;
+		Request.EventType = InitialResolved.EventType;
+		Request.AttackCategory = ET66AttackCategory::DOT;
+		Request.DebugSourceID = WeaponSourceID;
+		const FName HeroPrimaryDotSourceValue = HeroPrimaryDotSource;
+
+		FT66OutgoingTravelerArrivalCallback OnArrived;
+		OnArrived.BindLambda([WeakSelf, PrimaryHandle, DotImpactContext, InitialResolved, InitialRangeEvent, Duration, TickInterval, DamagePerTick, Ticks, DotVisualColor, DotMarkerScale, HeroPrimaryDotSourceValue, WeaponSourceID, CurrentHeroID, AttackCategory, AttackOrigin, FireTravelerDotTicks, ApplyResolvedDamageWithExecute, LogCombatImpactContext](const FT66OutgoingTravelerArrivalEvent& Event) mutable
 		{
 			UT66CombatComponent* Self = WeakSelf.Get();
-			AActor* DotTarget = WeakDotTarget.Get();
-			if (!Self || !DotTarget || !Self->CachedRunState)
+			if (!Self || !Event.bHitLiveTarget || !Event.ResolvedTargetHandle.IsValid())
 			{
+				UE_LOG(
+					LogT66Combat,
+					Display,
+					TEXT("T66TravelerDOTImpactFizzled SourceID=%s Reason=%s LastKnown=%s"),
+					*WeaponSourceID.ToString(),
+					Self ? TEXT("TargetLostOrDead") : TEXT("ComponentInvalid"),
+					*Event.LastKnownTargetPosition.ToCompactString());
 				return;
 			}
-			Self->CachedRunState->ApplyDOT(DotTarget, Duration, TickInterval, DamagePerTick, HeroPrimaryDotSource);
-			Self->SpawnDOTApplicatorMarkers(DotTarget, DotVisualColor, Duration, DotMarkerScale);
-			UE_LOG(
-				LogT66Combat,
-				Display,
-				TEXT("T66DotPayloadApplied Target=%s Duration=%.2f TickInterval=%.2f DamagePerTick=%.2f Source=HeroPrimaryDot (single payload)"),
-				*GetNameSafe(DotTarget),
-				Duration,
-				TickInterval,
-				DamagePerTick);
-		};
 
-		// Resolve the authored Hero1Axe_DOT_Base carrier so the single moving hero->target
-		// DOT shot IS the production aura-ring Niagara silhouette, transported by the visual
-		// projectile (same carrier method class as the Bounce link slash). If the binding can't
-		// be resolved, SpawnVisualTravelProjectile falls back to the temporary DOT profile so
-		// bring-up is never invisible. This is presentation-only: the initial contact damage,
-		// the single HeroPrimaryDot payload, and the marker cadence above/below are unchanged.
-		FT66CombatVFXBindingData DotBinding;
-		UNiagaraSystem* DotCarrierSystem = nullptr;
-		const bool bResolvedDotCarrier = ResolveCombatVFXBinding(
-			ET66CombatVFXBindingSourceType::WeaponBase,
-			ResolveWeaponImpactSourceID(),
-			AttackCategory,
-			DotBinding,
-			DotCarrierSystem);
-		const float DotCarrierVisualScale = bResolvedDotCarrier
-			? FMath::Max(0.01f, DotBinding.VisualScaleMultiplier)
-			: 1.f;
+			AActor* DotTarget = Event.ResolvedTargetHandle.Actor.Get();
+			ApplyResolvedDamageWithExecute(Self, Event.ResolvedTargetHandle, InitialResolved, NAME_None, InitialRangeEvent, true, true);
 
-		AT66HeroProjectile* DotShot = SpawnVisualTravelProjectile(
-			DotShotStart,
-			DotShotEnd,
-			DotVisualColor,
-			FT66TemporaryProjectileSystem::ProfileHeroDOT(),
-			DotShotScale,
-			DotProofTravelSeconds,
-			bResolvedDotCarrier ? DotCarrierSystem : nullptr,
-			DotCarrierVisualScale);
-		if (DotShot)
-		{
-			UE_LOG(
-				LogT66Combat,
-				Display,
-				TEXT("T66DotShotSpawned Target=%s Start=%s End=%s ProofTravelSeconds=%.3f Carrier=%s CarrierVisualScale=%.3f"),
-				*GetNameSafe(PrimaryTarget),
-				*DotShotStart.ToCompactString(),
-				*DotShotEnd.ToCompactString(),
-				DotProofTravelSeconds,
-				bResolvedDotCarrier ? *DotCarrierSystem->GetPathName() : TEXT("TemporaryProfileFallback"),
-				DotCarrierVisualScale);
-			DotShot->SetVisualArrivalCallback(MoveTemp(ApplyDotPayload));
-		}
-		else
-		{
-			// No visible shot spawned: apply the single DOT payload + markers immediately so
-			// gameplay never loses DOT ticking.
-			ApplyDotPayload();
-		}
+			FT66CombatImpactContext ArrivalContext = DotImpactContext;
+			ArrivalContext.SourceType = ET66CombatVFXBindingSourceType::WeaponBase;
+			ArrivalContext.SourceID = WeaponSourceID;
+			ArrivalContext.HeroID = CurrentHeroID;
+			ArrivalContext.AttackCategory = AttackCategory;
+			ArrivalContext.AttackOrigin = AttackOrigin;
+			ArrivalContext.PrimaryTargetHandle = Event.ResolvedTargetHandle;
+			ArrivalContext.ImpactPoint = Event.ArrivalPosition;
+			ArrivalContext.DamageCenter = Event.ArrivalPosition;
+			ArrivalContext.bDamageCenterValid = true;
+			ArrivalContext.bImpactPointValid = true;
+			ArrivalContext.HitTargetHandles.Reset();
+			ArrivalContext.HitTargetHandles.Add(Event.ResolvedTargetHandle);
+			LogCombatImpactContext(ArrivalContext, TEXT("WeaponPrimaryArrival"));
 
-		// Frostbite: DOT attacks slow enemy move speed by 30%.
-		if (CachedRunState->HasFrostbite())
+			if (Self->CachedRunState && DotTarget)
+			{
+				Self->SpawnDOTApplicatorMarkers(DotTarget, DotVisualColor, Duration, DotMarkerScale);
+				FireTravelerDotTicks(
+					WeakSelf,
+					Event.ResolvedTargetHandle,
+					Ticks,
+					TickInterval,
+					DamagePerTick,
+					HeroPrimaryDotSourceValue,
+					NAME_None,
+					DotVisualColor,
+					1.f,
+					30.f,
+					HeroPrimaryDotSourceValue);
+				if (Self->CachedRunState->HasFrostbite())
+				{
+					if (AT66EnemyBase* DotEnemy = Cast<AT66EnemyBase>(DotTarget))
+					{
+						DotEnemy->ApplyMoveSlow(0.7f, Duration);
+					}
+					else if (AT66MobBase* DotMob = Cast<AT66MobBase>(DotTarget))
+					{
+						DotMob->ApplyMoveSlow(0.7f, Duration);
+					}
+				}
+				UE_LOG(
+					LogT66Combat,
+					Display,
+					TEXT("T66DotPayloadApplied Target=%s Duration=%.2f TickInterval=%.2f TickCount=%d DamagePerTick=%.2f Source=HeroPrimaryDot (traveler ticks)"),
+					*GetNameSafe(DotTarget),
+					Duration,
+					TickInterval,
+					Ticks,
+					DamagePerTick);
+			}
+		});
+
+		if (!FireT66CombatOutgoingTraveler(World, Request, OnArrived))
 		{
-			if (AT66EnemyBase* DotEnemy = Cast<AT66EnemyBase>(PrimaryTarget))
-				DotEnemy->ApplyMoveSlow(0.7f, Duration);
-			else if (AT66MobBase* DotMob = Cast<AT66MobBase>(PrimaryTarget))
-				DotMob->ApplyMoveSlow(0.7f, Duration);
+			UE_LOG(LogT66Combat, Warning, TEXT("T66TravelerDOTImpactFallbackImmediate SourceID=%s Target=%s"), *WeaponSourceID.ToString(), *GetNameSafe(PrimaryTarget));
+			ApplyResolvedAutoAttackDamage(PrimaryHandle, InitialResolved, InitialRangeEvent);
+			FireTravelerDotTicks(WeakSelf, PrimaryHandle, Ticks, TickInterval, DamagePerTick, HeroPrimaryDotSourceValue, NAME_None, DotVisualColor, 1.f, 30.f, HeroPrimaryDotSourceValue);
 		}
 		PlayHeroAttackSfx(CurrentHeroID, AttackCategory, GetTargetAimPoint(PrimaryHandle));
 		return true;
 	};
 
-	auto ShowTargetStatus = [&](AActor* Target, const FName EventType)
+	auto ApplyIdolSpecialBehavior = [](AActor* Target, const FName& IdolID, const ET66ItemRarity IdolRarity, const int32 IdolDamage, const FVector& EffectOrigin)
 	{
-		if (CachedFloatingCombatText && Target && !EventType.IsNone())
-		{
-			CachedFloatingCombatText->ShowStatusEvent(Target, EventType);
-		}
-	};
-
-	auto ApplyMoveSlowToTarget = [&](AActor* Target, const float SpeedMultiplier, const float DurationSeconds)
-	{
-		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
-		{
-			Enemy->ApplyMoveSlow(SpeedMultiplier, DurationSeconds);
-			return true;
-		}
-		if (AT66MobBase* Mob = Cast<AT66MobBase>(Target))
-		{
-			Mob->ApplyMoveSlow(SpeedMultiplier, DurationSeconds);
-			return true;
-		}
-		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
-		{
-			Boss->ApplyMoveSlow(SpeedMultiplier, DurationSeconds);
-			return true;
-		}
-		return false;
-	};
-
-	auto ApplyConfusionToTarget = [&](AActor* Target, const float DurationSeconds)
-	{
-		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
-		{
-			Enemy->ApplyConfusion(DurationSeconds);
-			return true;
-		}
-		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
-		{
-			Boss->ApplyConfusion(DurationSeconds);
-			return true;
-		}
-		return false;
-	};
-
-	auto ApplyFearToTarget = [&](AActor* Target, const float DurationSeconds)
-	{
-		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
-		{
-			Enemy->ApplyForcedRunAway(DurationSeconds);
-			return true;
-		}
-		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
-		{
-			Boss->ApplyForcedRunAway(DurationSeconds);
-			return true;
-		}
-		return false;
-	};
-
-	auto ApplyArmorBreakToTarget = [&](AActor* Target, const float ReductionAmount, const float DurationSeconds)
-	{
-		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
-		{
-			Enemy->ApplyArmorDebuff(ReductionAmount, DurationSeconds);
-			return true;
-		}
-		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
-		{
-			Boss->ApplyArmorDebuff(ReductionAmount, DurationSeconds);
-			return true;
-		}
-		return false;
-	};
-
-	auto ApplyStunToTarget = [&](AActor* Target, const float DurationSeconds)
-	{
-		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
-		{
-			Enemy->ApplyStun(DurationSeconds);
-			return true;
-		}
-		if (AT66MobBase* Mob = Cast<AT66MobBase>(Target))
-		{
-			Mob->ApplyStun(DurationSeconds);
-			return true;
-		}
-		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
-		{
-			Boss->ApplyStun(DurationSeconds);
-			return true;
-		}
-		return false;
-	};
-
-	auto ApplyRootToTarget = [&](AActor* Target, const float DurationSeconds)
-	{
-		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
-		{
-			Enemy->ApplyRoot(DurationSeconds);
-			return true;
-		}
-		if (AT66MobBase* Mob = Cast<AT66MobBase>(Target))
-		{
-			Mob->ApplyRoot(DurationSeconds);
-			return true;
-		}
-		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
-		{
-			Boss->ApplyRoot(DurationSeconds);
-			return true;
-		}
-		return false;
-	};
-
-	auto ApplyFreezeToTarget = [&](AActor* Target, const float DurationSeconds)
-	{
-		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
-		{
-			Enemy->ApplyFreeze(DurationSeconds);
-			return true;
-		}
-		if (AT66MobBase* Mob = Cast<AT66MobBase>(Target))
-		{
-			Mob->ApplyFreeze(DurationSeconds);
-			return true;
-		}
-		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
-		{
-			Boss->ApplyFreeze(DurationSeconds);
-			return true;
-		}
-		return false;
-	};
-
-	auto ApplyPullToTarget = [&](AActor* Target, const FVector& Origin, const float Distance)
-	{
-		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
-		{
-			Enemy->ApplyPullTowards(Origin, Distance);
-			return true;
-		}
-		if (AT66MobBase* Mob = Cast<AT66MobBase>(Target))
-		{
-			Mob->ApplyPullTowards(Origin, Distance);
-			return true;
-		}
-		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
-		{
-			Boss->ApplyPullTowards(Origin, Distance);
-			return true;
-		}
-		return false;
-	};
-
-	auto ApplyPushToTarget = [&](AActor* Target, const FVector& Origin, const float Distance)
-	{
-		if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
-		{
-			Enemy->ApplyPushAwayFrom(Origin, Distance);
-			return true;
-		}
-		if (AT66MobBase* Mob = Cast<AT66MobBase>(Target))
-		{
-			Mob->ApplyPushAwayFrom(Origin, Distance);
-			return true;
-		}
-		if (AT66BossBase* Boss = Cast<AT66BossBase>(Target))
-		{
-			Boss->ApplyPushAwayFrom(Origin, Distance);
-			return true;
-		}
-		return false;
-	};
-
-	auto ApplyExtraDOTToTarget = [&](AActor* Target, const FName& SourceId, const float Duration, const float TickInterval, const float TotalDamage)
-	{
-		if (!CachedRunState || !Target || Duration <= 0.f || TickInterval <= 0.f || TotalDamage <= 0.f)
-		{
-			return;
-		}
-
-		const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
-		CachedRunState->ApplyDOT(Target, Duration, TickInterval, TotalDamage / static_cast<float>(Ticks), SourceId);
-	};
-
-	auto TryExecuteTarget = [&](AActor* Target, const FName& SourceId, const float Chance01)
-	{
-		if (!Target || !RollTierChance(Chance01, RngSub))
-		{
-			return false;
-		}
-
-		if (T66CombatShared::TryApplyNonBossOHKO(Target, nullptr, FName(TEXT("Execute")), SourceId))
-		{
-			ShowTargetStatus(Target, FName(TEXT("Execute")));
-			return true;
-		}
-
-		return false;
-	};
-
-	auto ApplyIdolSpecialBehavior = [&](AActor* Target, const FName& IdolID, const ET66ItemRarity IdolRarity, const int32 IdolDamage, const FVector& EffectOrigin)
-	{
-		if (!Target || IdolID.IsNone())
-		{
-			return;
-		}
-
-		if (IdolID == FName(TEXT("Idol_Curse")))
-		{
-			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.f, 0.20f, 0.35f, 0.42f);
-			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 0.f, 1.3f, 1.8f, 2.2f);
-			if (RollTierChance(ConfuseChance, RngSub) && ApplyConfusionToTarget(Target, ConfuseDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Confusion")));
-			}
-			const float FearChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.16f, 0.24f);
-			const float FearDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.0f, 1.3f);
-			if (RollTierChance(FearChance, RngSub) && ApplyFearToTarget(Target, FearDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Fear")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.035f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Lava")))
-		{
-			const float SlowMult = GetIdolTierFloat(IdolRarity, 1.f, 0.80f, 0.72f, 0.68f);
-			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.f, 1.1f, 1.5f, 1.8f);
-			if (SlowDuration > 0.f)
-			{
-				ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
-			}
-			const float ArmorBreakAmount = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.12f, 0.18f);
-			const float ArmorBreakDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 2.2f, 3.0f);
-			if (ArmorBreakAmount > 0.f && ApplyArmorBreakToTarget(Target, ArmorBreakAmount, ArmorBreakDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Armor Break")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Poison")))
-		{
-			const float SlowMult = GetIdolTierFloat(IdolRarity, 1.f, 0.78f, 0.72f, 0.66f);
-			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.f, 1.8f, 2.2f, 2.6f);
-			if (SlowDuration > 0.f)
-			{
-				ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
-			}
-			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.22f, 0.32f);
-			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.5f, 2.0f);
-			if (RollTierChance(ConfuseChance, RngSub) && ApplyConfusionToTarget(Target, ConfuseDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Confusion")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.028f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Bleed")))
-		{
-			const float SlowMult = GetIdolTierFloat(IdolRarity, 1.f, 0.86f, 0.78f, 0.72f);
-			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.f, 1.0f, 1.3f, 1.6f);
-			if (SlowDuration > 0.f)
-			{
-				ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
-			}
-			const float FearChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.18f, 0.26f);
-			const float FearDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.8f, 1.1f);
-			if (RollTierChance(FearChance, RngSub) && ApplyFearToTarget(Target, FearDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Fear")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.050f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Electric")))
-		{
-			const float StunChance = GetIdolTierFloat(IdolRarity, 0.f, 0.18f, 0.28f, 0.36f);
-			const float StunDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.20f, 0.42f, 0.65f);
-			if (RollTierChance(StunChance, RngSub) && ApplyStunToTarget(Target, StunDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Stun")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.040f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Ice")))
-		{
-			const float SlowMult = GetIdolTierFloat(IdolRarity, 0.84f, 0.72f, 0.66f, 0.58f);
-			const float SlowDuration = GetIdolTierFloat(IdolRarity, 1.0f, 1.4f, 1.8f, 2.2f);
-			ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
-			const float FreezeChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.16f, 0.24f);
-			const float FreezeDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.55f, 0.80f);
-			if (RollTierChance(FreezeChance, RngSub) && ApplyFreezeToTarget(Target, FreezeDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Freeze")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Shadow")))
-		{
-			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.14f, 0.25f, 0.30f, 0.36f);
-			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 1.0f, 1.4f, 1.6f, 1.8f);
-			if (RollTierChance(ConfuseChance, RngSub) && ApplyConfusionToTarget(Target, ConfuseDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Confusion")));
-			}
-			const float FearChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.18f, 0.25f);
-			const float FearDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.0f, 1.25f);
-			if (RollTierChance(FearChance, RngSub) && ApplyFearToTarget(Target, FearDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Fear")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.035f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Star")))
-		{
-			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.f, 0.12f, 0.18f, 0.22f);
-			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.8f, 1.0f, 1.2f);
-			if (RollTierChance(ConfuseChance, RngSub) && ApplyConfusionToTarget(Target, ConfuseDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Confusion")));
-			}
-			const float StunChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.16f, 0.22f);
-			const float StunDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.50f, 0.65f);
-			if (RollTierChance(StunChance, RngSub) && ApplyStunToTarget(Target, StunDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Stun")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Earth")))
-		{
-			const float RootChance = GetIdolTierFloat(IdolRarity, 0.25f, 0.35f, 0.40f, 0.46f);
-			const float RootDuration = GetIdolTierFloat(IdolRarity, 0.45f, 0.75f, 0.95f, 1.10f);
-			if (RollTierChance(RootChance, RngSub) && ApplyRootToTarget(Target, RootDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Root")));
-			}
-			const float StunChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.18f, 0.24f);
-			const float StunDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.45f, 0.60f);
-			if (RollTierChance(StunChance, RngSub) && ApplyStunToTarget(Target, StunDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Stun")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Water")))
-		{
-			const float SlowMult = GetIdolTierFloat(IdolRarity, 0.82f, 0.70f, 0.64f, 0.58f);
-			const float SlowDuration = GetIdolTierFloat(IdolRarity, 1.2f, 1.7f, 2.1f, 2.5f);
-			ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
-			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.18f, 0.24f);
-			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.1f, 1.4f);
-			if (RollTierChance(ConfuseChance, RngSub) && ApplyConfusionToTarget(Target, ConfuseDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Confusion")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.025f));
-		}
-		else if (IdolID == FName(TEXT("Idol_BlackHole")))
-		{
-			const float PullDistance = GetIdolTierFloat(IdolRarity, 120.f, 185.f, 240.f, 280.f);
-			if (ApplyPullToTarget(Target, EffectOrigin, PullDistance))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Pull")));
-			}
-			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.f, 1.2f, 1.5f, 1.8f);
-			if (SlowDuration > 0.f)
-			{
-				ApplyMoveSlowToTarget(Target, GetIdolTierFloat(IdolRarity, 1.f, 0.78f, 0.72f, 0.65f), SlowDuration);
-			}
-			const float RootDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.90f, 1.15f);
-			if (RootDuration > 0.f && ApplyRootToTarget(Target, RootDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Root")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.020f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Storm")))
-		{
-			const float SlowMult = GetIdolTierFloat(IdolRarity, 0.86f, 0.72f, 0.68f, 0.60f);
-			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.8f, 1.4f, 1.8f, 2.1f);
-			ApplyMoveSlowToTarget(Target, SlowMult, SlowDuration);
-			const float StunChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.15f, 0.22f);
-			const float StunDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.45f, 0.65f);
-			if (RollTierChance(StunChance, RngSub) && ApplyStunToTarget(Target, StunDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Stun")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Light")))
-		{
-			const float ConfuseChance = GetIdolTierFloat(IdolRarity, 0.f, 0.15f, 0.20f, 0.25f);
-			const float ConfuseDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.8f, 1.0f, 1.2f);
-			if (RollTierChance(ConfuseChance, RngSub) && ApplyConfusionToTarget(Target, ConfuseDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Confusion")));
-			}
-			const float StunChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.16f, 0.22f);
-			const float StunDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.40f, 0.55f);
-			if (RollTierChance(StunChance, RngSub) && ApplyStunToTarget(Target, StunDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Stun")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.040f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Steel")))
-		{
-			const float BleedDuration = GetIdolTierFloat(IdolRarity, 2.2f, 2.6f, 3.0f, 3.4f);
-			const float BleedDamage = static_cast<float>(IdolDamage) * GetIdolTierFloat(IdolRarity, 0.35f, 0.45f, 0.55f, 0.65f);
-			ApplyExtraDOTToTarget(Target, IdolID, BleedDuration, 0.35f, BleedDamage);
-			ShowTargetStatus(Target, FName(TEXT("Bleed")));
-			const float ArmorBreakAmount = GetIdolTierFloat(IdolRarity, 0.f, 0.12f, 0.20f, 0.24f);
-			const float ArmorBreakDuration = GetIdolTierFloat(IdolRarity, 0.f, 2.0f, 3.0f, 3.4f);
-			if (ArmorBreakAmount > 0.f && ApplyArmorBreakToTarget(Target, ArmorBreakAmount, ArmorBreakDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Armor Break")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.035f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Wood")))
-		{
-			const float RootChance = GetIdolTierFloat(IdolRarity, 0.22f, 0.32f, 0.36f, 0.40f);
-			const float RootDuration = GetIdolTierFloat(IdolRarity, 0.45f, 0.75f, 0.95f, 1.15f);
-			if (RollTierChance(RootChance, RngSub) && ApplyRootToTarget(Target, RootDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Root")));
-			}
-			const float SlowDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.5f, 1.9f);
-			if (SlowDuration > 0.f)
-			{
-				ApplyMoveSlowToTarget(Target, GetIdolTierFloat(IdolRarity, 1.f, 1.f, 0.78f, 0.70f), SlowDuration);
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
-		}
-		else if (IdolID == FName(TEXT("Idol_Bone")))
-		{
-			const float BleedDuration = GetIdolTierFloat(IdolRarity, 1.8f, 2.4f, 2.8f, 3.2f);
-			const float BleedDamage = static_cast<float>(IdolDamage) * GetIdolTierFloat(IdolRarity, 0.30f, 0.45f, 0.52f, 0.60f);
-			ApplyExtraDOTToTarget(Target, IdolID, BleedDuration, 0.4f, BleedDamage);
-			ShowTargetStatus(Target, FName(TEXT("Bleed")));
-			const float FearChance = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.18f, 0.24f);
-			const float FearDuration = GetIdolTierFloat(IdolRarity, 0.f, 0.f, 1.0f, 1.3f);
-			if (RollTierChance(FearChance, RngSub) && ApplyFearToTarget(Target, FearDuration))
-			{
-				ShowTargetStatus(Target, FName(TEXT("Fear")));
-			}
-			(void)TryExecuteTarget(Target, IdolID, GetIdolTierFloat(IdolRarity, 0.f, 0.f, 0.f, 0.030f));
-		}
+		(void)Target;
+		(void)IdolID;
+		(void)IdolRarity;
+		(void)IdolDamage;
+		(void)EffectOrigin;
 	};
 
 	// ---------------------------------------------------------------------------
@@ -3222,7 +3406,19 @@ void UT66CombatComponent::TryFire()
 	LastFireTime = static_cast<float>(World->GetTimeSeconds());
 
 	int32 VisualPayloadCount = 1;
-	const bool bSuppressWeaponBaseProjectileVisual = ShouldSuppressWeaponBaseProjectileVisual(AttackCategory);
+	const bool bWeaponBaseUsesDamageTraveler = AttackCategory == ET66AttackCategory::Bounce || AttackCategory == ET66AttackCategory::DOT;
+	const bool bSuppressWeaponBaseProjectileVisual = bWeaponBaseUsesDamageTraveler || ShouldSuppressWeaponBaseProjectileVisual(AttackCategory);
+	if (CVarT66OutgoingTravelerPoolForceTemporaryWeaponVisual.GetValueOnGameThread() != 0)
+	{
+		UE_LOG(
+			LogT66Combat,
+			Display,
+			TEXT("OutgoingTravelerPoolVisualPlan AttackCategory=%s SuppressWeaponBase=%s WeaponBaseUsesDamageTraveler=%s CachedIdolSlots=%d"),
+			GetT66AttackCategoryName(AttackCategory),
+			bSuppressWeaponBaseProjectileVisual ? TEXT("true") : TEXT("false"),
+			bWeaponBaseUsesDamageTraveler ? TEXT("true") : TEXT("false"),
+			CachedIdolSlots.Num());
+	}
 	if (bSuppressWeaponBaseProjectileVisual)
 	{
 		VisualPayloadCount = 0;
@@ -3231,6 +3427,10 @@ void UT66CombatComponent::TryFire()
 	{
 		if (CachedIdolSlot.bValid && !CachedIdolSlot.IdolID.IsNone())
 		{
+			if (CachedIdolSlot.IdolData.Delivery == ET66IdolDelivery::Traveler)
+			{
+				continue;
+			}
 			if (UsesImpactPresentationForIdol(CachedIdolSlot))
 			{
 				if (CVarT66CombatImpactSourceVerbose.GetValueOnGameThread() != 0)
@@ -3260,6 +3460,10 @@ void UT66CombatComponent::TryFire()
 			continue;
 		}
 		if (UsesImpactPresentationForIdol(CachedIdolSlot))
+		{
+			continue;
+		}
+		if (CachedIdolSlot.IdolData.Delivery == ET66IdolDelivery::Traveler)
 		{
 			continue;
 		}
@@ -3447,9 +3651,285 @@ void UT66CombatComponent::TryFire()
 				const FIdolData& IdolData = CachedIdolSlot.IdolData;
 				const float IdolGlobalScale = FMath::Max(0.1f, ProjectileScaleMultiplier);
 				const float IdolCategorySubScale = T66CombatShared::GetCategorySubScaleMultiplier(CachedRunState, IdolData.Category);
-				const float IdolBehaviorScale = IdolGlobalScale * IdolCategorySubScale;
-				const int32 IdolDamage = FMath::Max(1, FMath::RoundToInt(IdolData.GetDamageAtRarity(IdolRarity)));
+				const float IdolCategorySpeedScale = T66CombatShared::GetCategorySubAttackSpeedMultiplier(CachedRunState, IdolData.Category);
+				const float IdolElementPowerMult = T66CombatShared::GetIdolElementPowerMultiplier(CachedRunState, IdolData.Element);
+				const float IdolBehaviorScale = IdolGlobalScale * IdolCategorySubScale * IdolElementPowerMult;
+				const float IdolSpeedScale = FMath::Max(0.1f, IdolCategorySpeedScale * IdolElementPowerMult);
+				const int32 IdolDamage = FMath::Max(1, FMath::RoundToInt(IdolData.GetDamageAtRarity(IdolRarity) * IdolElementPowerMult));
 				const bool bUsesImpactPresentation = UsesImpactPresentationForIdol(CachedIdolSlot);
+				const bool bUsesTravelerDelivery = IdolData.Delivery == ET66IdolDelivery::Traveler;
+
+				if (bUsesTravelerDelivery)
+				{
+					if (!PrimaryTarget || !PrimaryTargetHandle.IsValid())
+					{
+						continue;
+					}
+
+					const FName VisualProfileID = GetT66TravelerVisualProfileID(IdolData.Element, IdolData.Category);
+					const FLinearColor TravelerColor = GetT66IdolElementTravelerColor(IdolData.Element);
+					const float TravelerSpeedBase = IdolData.ProjectileSpeed > 0.f ? IdolData.ProjectileSpeed : 2400.f;
+					const float TravelerSpeed = FMath::Max(1.f, TravelerSpeedBase * IdolSpeedScale);
+					const FName TravelerProfile = FT66TemporaryProjectileSystem::GetHeroAttackProfile(IdolData.Category);
+					const FVector PrimaryAimPoint = GetTargetAimPoint(PrimaryTargetHandle);
+					TWeakObjectPtr<UT66CombatComponent> WeakSelf(this);
+
+					auto ApplyIdolArrivalDamage = [WeakSelf, IdolID, ApplyResolvedDamageWithExecute](const FT66OutgoingTravelerArrivalEvent& Event, const FResolvedAutoAttackHit& Resolved, const FName RangeEvent)
+					{
+						UT66CombatComponent* Self = WeakSelf.Get();
+						if (!Self || !Event.bHitLiveTarget || !Event.ResolvedTargetHandle.IsValid())
+						{
+							UE_LOG(
+								LogT66Combat,
+								Display,
+								TEXT("T66IdolTravelerDamageFizzled SourceID=%s Reason=%s LastKnown=%s"),
+								*IdolID.ToString(),
+								Self ? TEXT("TargetLostOrDead") : TEXT("ComponentInvalid"),
+								*Event.LastKnownTargetPosition.ToCompactString());
+							return;
+						}
+						ApplyResolvedDamageWithExecute(Self, Event.ResolvedTargetHandle, Resolved, IdolID, RangeEvent, false, false);
+					};
+
+					auto FireSingleIdolTraveler = [&](const FT66CombatTargetHandle& TargetHandle, const FVector& StartPosition, const int32 Damage, const float ScaleMultiplier, const float Speed, const float ArrivalRadius, const FName EventType, FT66OutgoingTravelerArrivalCallback OnArrived)
+					{
+						const FVector TargetPosition = GetTargetAimPoint(TargetHandle);
+						FT66CombatTravelerFireRequest Request;
+						Request.StartPosition = StartPosition;
+						Request.TargetPosition = TargetPosition;
+						Request.TargetHandle = TargetHandle;
+						Request.ProfileID = TravelerProfile;
+						Request.TravelerVisualProfileID = VisualProfileID;
+						Request.Color = TravelerColor;
+						Request.ScaleMultiplier = ScaleMultiplier;
+						Request.Speed = Speed;
+						Request.LifetimeSeconds = 10.f;
+						Request.ArrivalRadius = ArrivalRadius;
+						Request.DamageAmount = Damage;
+						Request.DamageSourceID = IdolID;
+						Request.EventType = EventType;
+						Request.AttackCategory = IdolData.Category;
+						Request.DebugSourceID = IdolID;
+						return FireT66CombatOutgoingTraveler(World, Request, OnArrived);
+					};
+
+					switch (IdolData.Category)
+					{
+					case ET66AttackCategory::Pierce:
+					{
+						const float LineLength = FMath::Max(1.f, AttackRange);
+						const float PierceRadius = FMath::Max(1.f, 80.f * IdolGlobalScale);
+						FVector PierceDir = T66ResolvePlanarDirection(PrimaryAimPoint - AttackOrigin, OwnerActor);
+						TArray<AActor*> InLine;
+						BuildPierceTargets(PrimaryTarget, LineLength, PierceRadius, InLine, PierceDir, &PrimaryAimPoint);
+						const int32 MaxPierceTargets = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale) + 1);
+						if (InLine.Num() > MaxPierceTargets)
+						{
+							InLine.SetNum(MaxPierceTargets, EAllowShrinking::No);
+						}
+						const float FalloffPerHit = FMath::Clamp((IdolData.FalloffPerHit > 0.f) ? IdolData.FalloffPerHit : 0.15f, 0.f, 0.95f);
+						for (int32 PierceIndex = 0; PierceIndex < InLine.Num(); ++PierceIndex)
+						{
+							AActor* Hit = InLine[PierceIndex];
+							if (!IsValidAutoTarget(Hit))
+							{
+								continue;
+							}
+							const FT66CombatTargetHandle HitHandle = (Hit == PrimaryTarget)
+								? PrimaryTargetHandle
+								: ResolveAutoAttackTargetHandle(Hit, false, RngSub);
+							const float FalloffMult = FMath::Max(0.1f, 1.f - FalloffPerHit * static_cast<float>(PierceIndex));
+							const int32 ShapedDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(IdolDamage) * FalloffMult));
+							FName RangeEvent;
+							const int32 RangeDmg = ResolveRangeDamageForComponent(this, MyLoc, ShapedDamage, Hit, &RangeEvent);
+							const FResolvedAutoAttackHit Resolved = ResolveCritForComponent(this, RngSub, RangeDmg);
+							FT66OutgoingTravelerArrivalCallback OnArrived;
+							OnArrived.BindLambda([ApplyIdolArrivalDamage, Resolved, RangeEvent](const FT66OutgoingTravelerArrivalEvent& Event) mutable
+							{
+								ApplyIdolArrivalDamage(Event, Resolved, RangeEvent);
+							});
+							if (!FireSingleIdolTraveler(HitHandle, AttackOrigin, Resolved.Damage, FMath::Max(0.01f, IdolGlobalScale), TravelerSpeed, 30.f, Resolved.EventType, OnArrived))
+							{
+								ApplyDamageToTargetHandle(HitHandle, Resolved.Damage, Resolved.EventType, IdolID, RangeEvent);
+							}
+						}
+						UE_LOG(LogT66Combat, Display, TEXT("T66IdolTravelerDispatched SourceID=%s Category=Pierce VisualProfile=%s Targets=%d MaxTargets=%d"), *IdolID.ToString(), *VisualProfileID.ToString(), InLine.Num(), MaxPierceTargets);
+						break;
+					}
+					case ET66AttackCategory::Bounce:
+					{
+						const int32 BounceCount = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale) + 1);
+						const float Falloff = FMath::Clamp((IdolData.FalloffPerHit > 0.f) ? IdolData.FalloffPerHit : 0.2f, 0.f, 0.95f);
+						const float BounceRangeSq = AttackRange * AttackRange;
+						TSharedRef<TSet<FString>> BounceHitKeys = MakeShared<TSet<FString>>();
+						TSharedRef<TFunction<void(const FT66CombatTargetHandle&, const FVector&, int32, float)>> FireNextIdolBounce =
+							MakeShared<TFunction<void(const FT66CombatTargetHandle&, const FVector&, int32, float)>>();
+						*FireNextIdolBounce = [WeakSelf, World, OwnerActor, MyLoc, AttackOrigin, IdolID, VisualProfileID, TravelerColor, TravelerProfile, IdolData, IdolDamage, BounceCount, Falloff, BounceRangeSq, TravelerSpeed, IdolGlobalScale, RngSub, ResolveRangeDamageForComponent, ResolveCritForComponent, ApplyResolvedDamageWithExecute, BounceHitKeys, FireNextIdolBounce](const FT66CombatTargetHandle& LinkHandle, const FVector& LinkStart, const int32 LinkIndex, const float DamageMult) mutable
+						{
+							UT66CombatComponent* Self = WeakSelf.Get();
+							AActor* Target = LinkHandle.Actor.Get();
+							if (!Self || !World || !Target || !Self->IsValidAutoTarget(Target))
+							{
+								FireNextIdolBounce->Reset();
+								return;
+							}
+							const int32 LinkDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(IdolDamage) * DamageMult));
+							FName RangeEvent;
+							const int32 RangeDmg = ResolveRangeDamageForComponent(Self, MyLoc, LinkDamage, Target, &RangeEvent);
+							const FResolvedAutoAttackHit Resolved = ResolveCritForComponent(Self, RngSub, RangeDmg);
+							const FVector TargetPosition = UT66CombatComponent::GetTargetAimPoint(LinkHandle);
+
+							FT66CombatTravelerFireRequest Request;
+							Request.StartPosition = LinkStart;
+							Request.TargetPosition = TargetPosition;
+							Request.TargetHandle = LinkHandle;
+							Request.ProfileID = TravelerProfile;
+							Request.TravelerVisualProfileID = VisualProfileID;
+							Request.Color = TravelerColor;
+							Request.ScaleMultiplier = FMath::Max(0.01f, IdolGlobalScale);
+							Request.Speed = TravelerSpeed;
+							Request.ArrivalRadius = 30.f;
+							Request.DamageAmount = Resolved.Damage;
+							Request.DamageSourceID = IdolID;
+							Request.EventType = Resolved.EventType;
+							Request.AttackCategory = ET66AttackCategory::Bounce;
+							Request.DebugSourceID = IdolID;
+
+							FT66OutgoingTravelerArrivalCallback OnArrived;
+							OnArrived.BindLambda([WeakSelf, IdolID, LinkIndex, BounceCount, Falloff, DamageMult, BounceRangeSq, Resolved, RangeEvent, ApplyResolvedDamageWithExecute, BounceHitKeys, FireNextIdolBounce](const FT66OutgoingTravelerArrivalEvent& Event) mutable
+							{
+								UT66CombatComponent* CallbackSelf = WeakSelf.Get();
+								if (!CallbackSelf || !Event.bHitLiveTarget || !Event.ResolvedTargetHandle.IsValid())
+								{
+									UE_LOG(LogT66Combat, Display, TEXT("T66IdolBounceTravelerFizzled SourceID=%s LinkIndex=%d"), *IdolID.ToString(), LinkIndex);
+									FireNextIdolBounce->Reset();
+									return;
+								}
+								ApplyResolvedDamageWithExecute(CallbackSelf, Event.ResolvedTargetHandle, Resolved, IdolID, RangeEvent, false, false);
+								BounceHitKeys->Add(UT66CombatComponent::MakeTargetHandleKey(Event.ResolvedTargetHandle));
+								UE_LOG(LogT66Combat, Display, TEXT("T66IdolBounceTravelerArrived SourceID=%s LinkIndex=%d Target=%s"), *IdolID.ToString(), LinkIndex, *GetNameSafe(Event.ResolvedTargetHandle.Actor.Get()));
+								if (LinkIndex + 1 >= BounceCount)
+								{
+									FireNextIdolBounce->Reset();
+									return;
+								}
+								const FT66CombatTargetHandle NextHandle = CallbackSelf->FindClosestTargetHandleInRange(Event.ArrivalPosition, BounceRangeSq, &BounceHitKeys.Get());
+								if (!NextHandle.IsValid())
+								{
+									FireNextIdolBounce->Reset();
+									return;
+								}
+								BounceHitKeys->Add(UT66CombatComponent::MakeTargetHandleKey(NextHandle));
+								(*FireNextIdolBounce)(NextHandle, Event.ArrivalPosition, LinkIndex + 1, DamageMult * (1.f - Falloff));
+							});
+
+							if (!FireT66CombatOutgoingTraveler(World, Request, OnArrived))
+							{
+								Self->ApplyDamageToTargetHandle(LinkHandle, Resolved.Damage, Resolved.EventType, IdolID, RangeEvent);
+								FireNextIdolBounce->Reset();
+							}
+						};
+						BounceHitKeys->Add(MakeTargetHandleKey(PrimaryTargetHandle));
+						(*FireNextIdolBounce)(PrimaryTargetHandle, AttackOrigin, 0, 1.f);
+						UE_LOG(LogT66Combat, Display, TEXT("T66IdolTravelerDispatched SourceID=%s Category=Bounce VisualProfile=%s BounceCount=%d"), *IdolID.ToString(), *VisualProfileID.ToString(), BounceCount);
+						break;
+					}
+					case ET66AttackCategory::DOT:
+					{
+						const float TickInterval = FMath::Max(0.05f, ((IdolData.DotTickInterval > 0.f) ? IdolData.DotTickInterval : 0.5f) / IdolSpeedScale);
+						const int32 Ticks = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale));
+						const float Duration = FMath::Max(TickInterval, TickInterval * static_cast<float>(Ticks));
+						FT66CombatTravelerFireRequest Request;
+						Request.StartPosition = AttackOrigin;
+						Request.TargetPosition = PrimaryAimPoint;
+						Request.TargetHandle = PrimaryTargetHandle;
+						Request.ProfileID = TravelerProfile;
+						Request.TravelerVisualProfileID = VisualProfileID;
+						Request.Color = TravelerColor;
+						Request.ScaleMultiplier = FMath::Max(0.01f, IdolGlobalScale);
+						Request.Speed = TravelerSpeed;
+						Request.ArrivalRadius = 30.f;
+						Request.AttackCategory = ET66AttackCategory::DOT;
+						Request.DebugSourceID = IdolID;
+
+						FT66OutgoingTravelerArrivalCallback OnArrived;
+						OnArrived.BindLambda([WeakSelf, FireTravelerDotTicks, PrimaryTargetHandle, Ticks, TickInterval, Duration, IdolDamage, IdolID, VisualProfileID, TravelerColor, IdolGlobalScale](const FT66OutgoingTravelerArrivalEvent& Event) mutable
+						{
+							UT66CombatComponent* Self = WeakSelf.Get();
+							if (!Self || !Event.bHitLiveTarget || !Event.ResolvedTargetHandle.IsValid())
+							{
+								UE_LOG(LogT66Combat, Display, TEXT("T66IdolDOTTravelerFizzled SourceID=%s"), *IdolID.ToString());
+								return;
+							}
+							FireTravelerDotTicks(WeakSelf, Event.ResolvedTargetHandle, Ticks, TickInterval, static_cast<float>(IdolDamage), IdolID, VisualProfileID, TravelerColor, IdolGlobalScale, 30.f, IdolID);
+							UE_LOG(LogT66Combat, Display, TEXT("T66IdolTravelerDispatched SourceID=%s Category=DOT VisualProfile=%s Duration=%.2f TickInterval=%.2f TickCount=%d"), *IdolID.ToString(), *VisualProfileID.ToString(), Duration, TickInterval, Ticks);
+						});
+						if (!FireT66CombatOutgoingTraveler(World, Request, OnArrived))
+						{
+							FireTravelerDotTicks(WeakSelf, PrimaryTargetHandle, Ticks, TickInterval, static_cast<float>(IdolDamage), IdolID, VisualProfileID, TravelerColor, IdolGlobalScale, 30.f, IdolID);
+						}
+						break;
+					}
+					case ET66AttackCategory::AOE:
+					default:
+					{
+						const float IdolRadius = FMath::Max(1.f, IdolData.AoeRadius * IdolBehaviorScale);
+						const float DesiredTravelSeconds = (IdolData.AoeDelay > 0.f) ? (IdolData.AoeDelay / IdolSpeedScale) : 0.f;
+						const float AoeSpeed = GetT66DistanceSpeedForSeconds(AttackOrigin, PrimaryAimPoint, DesiredTravelSeconds, TravelerSpeed);
+						FT66CombatTravelerFireRequest Request;
+						Request.StartPosition = AttackOrigin;
+						Request.TargetPosition = PrimaryAimPoint;
+						Request.TargetHandle = PrimaryTargetHandle;
+						Request.ProfileID = TravelerProfile;
+						Request.TravelerVisualProfileID = VisualProfileID;
+						Request.Color = TravelerColor;
+						Request.ScaleMultiplier = FMath::Max(0.01f, IdolRadius / FMath::Max(1.f, IdolData.AoeRadius));
+						Request.Speed = AoeSpeed;
+						Request.ArrivalRadius = FMath::Max(30.f, IdolRadius * 0.15f);
+						Request.AttackCategory = ET66AttackCategory::AOE;
+						Request.DebugSourceID = IdolID;
+
+						FT66OutgoingTravelerArrivalCallback OnArrived;
+						OnArrived.BindLambda([WeakSelf, World, OwnerActor, MyLoc, IdolID, IdolRadius, IdolDamage, ResolveRangeDamageForComponent, ResolveCritForComponent, ApplyResolvedDamageWithExecute](const FT66OutgoingTravelerArrivalEvent& Event) mutable
+						{
+							UT66CombatComponent* Self = WeakSelf.Get();
+							if (!Self || !World || !Event.bHitLiveTarget || !Event.ResolvedTargetHandle.IsValid())
+							{
+								UE_LOG(LogT66Combat, Display, TEXT("T66IdolAOETravelerFizzled SourceID=%s"), *IdolID.ToString());
+								return;
+							}
+
+							const TArray<AActor*> Targets = T66GatherAttackTargetsInSphere(World, OwnerActor, Event.ArrivalPosition, IdolRadius);
+							for (AActor* Hit : Targets)
+							{
+								if (!Self->IsValidAutoTarget(Hit))
+								{
+									continue;
+								}
+								const FT66CombatTargetHandle HitHandle = (Hit == Event.ResolvedTargetHandle.Actor.Get())
+									? Event.ResolvedTargetHandle
+									: Self->MakeActorTargetHandle(Hit);
+								FName RangeEvent;
+								const int32 RangeDmg = ResolveRangeDamageForComponent(Self, MyLoc, IdolDamage, Hit, &RangeEvent);
+								const FResolvedAutoAttackHit Resolved = ResolveCritForComponent(Self, nullptr, RangeDmg);
+								ApplyResolvedDamageWithExecute(Self, HitHandle, Resolved, IdolID, RangeEvent, false, false);
+							}
+							UE_LOG(LogT66Combat, Display, TEXT("T66IdolAOETravelerArrived SourceID=%s Radius=%.2f Targets=%d Arrival=%s"), *IdolID.ToString(), IdolRadius, Targets.Num(), *Event.ArrivalPosition.ToCompactString());
+						});
+						if (!FireT66CombatOutgoingTraveler(World, Request, OnArrived))
+						{
+							FName RangeEvent;
+							const int32 RangeDmg = ResolveRangeDamageForComponent(this, MyLoc, IdolDamage, PrimaryTarget, &RangeEvent);
+							const FResolvedAutoAttackHit Resolved = ResolveCritForComponent(this, RngSub, RangeDmg);
+							ApplyDamageToTargetHandle(PrimaryTargetHandle, Resolved.Damage, Resolved.EventType, IdolID, RangeEvent);
+						}
+						UE_LOG(LogT66Combat, Display, TEXT("T66IdolTravelerDispatched SourceID=%s Category=AOE VisualProfile=%s Radius=%.2f TravelSeconds=%.3f"), *IdolID.ToString(), *VisualProfileID.ToString(), IdolRadius, DesiredTravelSeconds);
+						break;
+					}
+					}
+
+					continue;
+				}
 
 				if (bUsesImpactPresentation)
 				{
@@ -3645,10 +4125,10 @@ void UT66CombatComponent::TryFire()
 							// target. The damage source is the idol ID, so DamageBySource attributes the
 							// ticks to the DOT idol rather than the weapon.
 							IdolImpactContext.Radius = 0.f;
-							const float Duration = FMath::Max(0.5f, (IdolData.DotDuration > 0.f) ? IdolData.DotDuration : 3.0f);
-							const float TickInterval = FMath::Max(0.1f, (IdolData.DotTickInterval > 0.f) ? IdolData.DotTickInterval : 0.5f);
-							const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
-							const float DamagePerTick = static_cast<float>(IdolDamage) / static_cast<float>(Ticks);
+							const float TickInterval = FMath::Max(0.05f, ((IdolData.DotTickInterval > 0.f) ? IdolData.DotTickInterval : 0.5f) / IdolSpeedScale);
+							const int32 Ticks = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale));
+							const float Duration = FMath::Max(TickInterval, TickInterval * static_cast<float>(Ticks));
+							const float DamagePerTick = static_cast<float>(IdolDamage);
 							AActor* DotTarget = QueryPrimaryTarget;
 							const FT66CombatTargetHandle DotHandle = PrimaryWeaponImpactContext.PrimaryTargetHandle;
 							if (DotTarget && IsValidAutoTarget(DotTarget) && DotHandle.IsValid() && CachedRunState)
@@ -3664,11 +4144,12 @@ void UT66CombatComponent::TryFire()
 								UE_LOG(
 									LogT66Combat,
 									Display,
-									TEXT("CombatIdolCategoryImpactResolved SourceID=%s Category=DOT ParentSourceID=%s Duration=%.2f TickInterval=%.2f DamagePerTick=%.2f Targets=%d DamageCenter=%s ImpactPoint=%s"),
+									TEXT("CombatIdolCategoryImpactResolved SourceID=%s Category=DOT ParentSourceID=%s Duration=%.2f TickInterval=%.2f TickCount=%d DamagePerTick=%.2f Targets=%d DamageCenter=%s ImpactPoint=%s"),
 									*IdolID.ToString(),
 									*IdolImpactContext.ParentSourceID.ToString(),
 									Duration,
 									TickInterval,
+									Ticks,
 									DamagePerTick,
 									IdolImpactContext.HitTargetHandles.Num(),
 									*IdolImpactContext.DamageCenter.ToCompactString(),
@@ -3717,14 +4198,17 @@ void UT66CombatComponent::TryFire()
 							LogCombatImpactContext(IdolImpactContext, TEXT("IdolPrimary"));
 							if (CVarT66CombatImpactSourceVerbose.GetValueOnGameThread() != 0)
 							{
+								const float EffectiveAoeDelay = (IdolData.AoeDelay > 0.f) ? (IdolData.AoeDelay / IdolSpeedScale) : 0.f;
 								UE_LOG(
 									LogT66Combat,
 									Display,
-									TEXT("CombatIdolWaterImpactResolved SourceID=%s ParentSourceID=%s Radius=%.2f RadiusSource=FIdolData.AoeRadius AoeDelay=%.3f DelayApplied=false Reason=LegacyImmediatePreserved Targets=%d DamageCenter=%s ImpactPoint=%s"),
+									TEXT("CombatIdolWaterImpactResolved SourceID=%s ParentSourceID=%s Radius=%.2f RadiusSource=FIdolData.AoeRadius AoeDelay=%.3f EffectiveDelay=%.3f DelayApplied=%s Targets=%d DamageCenter=%s ImpactPoint=%s"),
 									*IdolID.ToString(),
 									*IdolImpactContext.ParentSourceID.ToString(),
 									IdolRadius,
 									IdolData.AoeDelay,
+									EffectiveAoeDelay,
+									EffectiveAoeDelay > KINDA_SMALL_NUMBER ? TEXT("true") : TEXT("false"),
 									IdolImpactContext.HitTargetHandles.Num(),
 									*IdolImpactContext.DamageCenter.ToCompactString(),
 									*IdolImpactContext.ImpactPoint.ToCompactString());
@@ -3736,24 +4220,46 @@ void UT66CombatComponent::TryFire()
 								SpawnWaterIdolImpactPlaceholderVFX(IdolImpactContext, IdolRadius);
 							}
 
-							for (const FT66CombatTargetHandle& HitHandle : IdolImpactContext.HitTargetHandles)
+							const TArray<FT66CombatTargetHandle> AoeTargetHandles = IdolImpactContext.HitTargetHandles;
+							const float EffectiveAoeDelay = (IdolData.AoeDelay > 0.f) ? (IdolData.AoeDelay / IdolSpeedScale) : 0.f;
+							bIdolDamageApplied = AoeTargetHandles.Num() > 0;
+
+							TWeakObjectPtr<UT66CombatComponent> WeakThis(this);
+							auto ApplyAoeDamage = [WeakThis, AoeTargetHandles, IdolID, IdolDamage, ResolveCrit, GetRangeMultipliedDamage, RngSub]() mutable
 							{
-								AActor* Hit = HitHandle.Actor.Get();
-								if (!IsValidAutoTarget(Hit))
+								UT66CombatComponent* Self = WeakThis.Get();
+								if (!Self)
 								{
-									continue;
+									return;
 								}
 
-								FName RangeEvent;
-								const int32 RangeDmg = GetRangeMultipliedDamage(IdolDamage, Hit, &RangeEvent);
-								const FResolvedAutoAttackHit Resolved = ResolveCrit(RangeDmg);
-								ApplyDamageToTargetHandle(HitHandle, Resolved.Damage, Resolved.EventType, IdolID, RangeEvent);
-								if (Resolved.bCrit && CachedRunState && RollTierChance(CachedRunState->GetExecuteChance01(), RngSub))
+								for (const FT66CombatTargetHandle& HitHandle : AoeTargetHandles)
 								{
-									T66CombatShared::TryApplyNonBossOHKO(HitHandle.Actor.Get(), &HitHandle, FName(TEXT("Execute")), NAME_None);
+									AActor* Hit = HitHandle.Actor.Get();
+									if (!Self->IsValidAutoTarget(Hit))
+									{
+										continue;
+									}
+
+									FName RangeEvent;
+									const int32 RangeDmg = GetRangeMultipliedDamage(IdolDamage, Hit, &RangeEvent);
+									const FResolvedAutoAttackHit Resolved = ResolveCrit(RangeDmg);
+									Self->ApplyDamageToTargetHandle(HitHandle, Resolved.Damage, Resolved.EventType, IdolID, RangeEvent);
+									if (Resolved.bCrit && Self->CachedRunState && RollTierChance(Self->CachedRunState->GetExecuteChance01(), RngSub))
+									{
+										T66CombatShared::TryApplyNonBossOHKO(HitHandle.Actor.Get(), &HitHandle, FName(TEXT("Execute")), NAME_None);
+									}
 								}
-								ApplyIdolSpecialBehavior(Hit, IdolID, IdolRarity, IdolDamage, IdolImpactContext.ImpactPoint);
-								bIdolDamageApplied = true;
+							};
+
+							if (EffectiveAoeDelay > KINDA_SMALL_NUMBER && GetWorld())
+							{
+								FTimerHandle AoeDelayTimerHandle;
+								GetWorld()->GetTimerManager().SetTimer(AoeDelayTimerHandle, MoveTemp(ApplyAoeDamage), EffectiveAoeDelay, false);
+							}
+							else
+							{
+								ApplyAoeDamage();
 							}
 							break;
 						}
@@ -3787,10 +4293,10 @@ void UT66CombatComponent::TryFire()
 
 					if (IdolData.Category == ET66AttackCategory::DOT)
 					{
-						const float Duration = FMath::Max(0.5f, IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale);
-						const float TickInterval = FMath::Max(0.1f, IdolData.DotTickInterval);
-						const int32 Ticks = FMath::Max(1, FMath::RoundToInt(Duration / TickInterval));
-						const float DamagePerTick = static_cast<float>(IdolDamage) / static_cast<float>(Ticks);
+						const float TickInterval = FMath::Max(0.05f, ((IdolData.DotTickInterval > 0.f) ? IdolData.DotTickInterval : 0.5f) / IdolSpeedScale);
+						const int32 Ticks = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale));
+						const float Duration = FMath::Max(TickInterval, TickInterval * static_cast<float>(Ticks));
+						const float DamagePerTick = static_cast<float>(IdolDamage);
 						CachedRunState->ApplyDOT(Hit, Duration, TickInterval, DamagePerTick, IdolID);
 					}
 				}
@@ -3834,6 +4340,11 @@ void UT66CombatComponent::TryFire()
 void UT66CombatComponent::PerformAutomationAutoAttackNow()
 {
 	TryFire();
+}
+
+bool UT66CombatComponent::DebugApplyHeadshotStunForAutomation(AActor* Target, const bool bForce)
+{
+	return Target ? TryApplyHeadshotStunToTargetHandle(MakeActorTargetHandle(Target), bForce) : false;
 }
 #endif
 
@@ -3896,6 +4407,11 @@ void UT66CombatComponent::ApplyDamageToTargetHandle(const FT66CombatTargetHandle
 		}
 	}
 
+	if (DamageAmount > 0 && CachedRunState && ResolvedSource != UT66DamageLogSubsystem::SourceID_Ultimate)
+	{
+		CachedRunState->AddUltimateCharge(FMath::Clamp(static_cast<float>(DamageAmount) * 0.12f, 1.f, 12.f));
+	}
+
 	// Life steal: % chance per hit; when it procs, heal 10% of damage dealt.
 	if (DamageAmount > 0 && CachedRunState)
 	{
@@ -3928,13 +4444,17 @@ void UT66CombatComponent::ApplyDamageToTargetHandle(const FT66CombatTargetHandle
 		}
 	}
 
-	// Taunt: on hit, apply armor debuff to the target (enemy or boss) using Taunt stat.
+	// Taunt: chance proc on hit that applies a short armor debuff to the target.
 	if (Target && DamageAmount > 0 && CachedRunState)
 	{
-		const float Aggro = CachedRunState->GetAggroMultiplier();
-		if (Aggro > 1.f)
+		UT66RngSubsystem* RngSub = GetWorld() && GetWorld()->GetGameInstance()
+			? GetWorld()->GetGameInstance()->GetSubsystem<UT66RngSubsystem>()
+			: nullptr;
+		const float TauntChance = CachedRunState->GetAggroMultiplier();
+		if (RollTierChance(TauntChance, RngSub))
 		{
-			const float ReductionAmount = FMath::Min(0.5f, Aggro - 1.f);
+			constexpr float T66TauntArmorReductionAmount = 0.25f;
+			const float ReductionAmount = T66TauntArmorReductionAmount;
 			const float DurationSeconds = 3.f;
 			if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Target))
 			{

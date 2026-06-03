@@ -19,9 +19,9 @@ class T66_API UT66IdolManagerSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	static constexpr int32 MaxEquippedIdolSlots = 3;
+	static constexpr int32 MaxEquippedIdolSlots = 4;
 	static constexpr int32 MaxIdolLevel = 4;
-	static constexpr int32 IdolStockSlotCount = 12;
+	static constexpr int32 IdolStockSlotCount = 16;
 
 	UPROPERTY(BlueprintAssignable, Category = "Idols")
 	FOnIdolStateChanged IdolStateChanged;
@@ -34,6 +34,7 @@ public:
 
 	static ET66ItemRarity IdolTierValueToRarity(int32 TierValue);
 	static int32 IdolRarityToTierValue(ET66ItemRarity Rarity);
+	static FName NormalizeLegacyIdolID(FName IdolID);
 	static const TArray<FName>& GetAllIdolIDs();
 	static FLinearColor GetIdolColor(FName IdolID);
 
@@ -48,6 +49,7 @@ public:
 	int32 GetIdolStockTierValue(int32 SlotIndex) const;
 	ET66ItemRarity GetIdolStockRarityInSlot(int32 SlotIndex) const;
 	bool SelectIdolFromStock(int32 SlotIndex);
+	bool SelectNoIdolFromAltar(ET66ItemRarity Rarity);
 	bool IsIdolStockSlotSelected(int32 SlotIndex) const;
 	bool SellEquippedIdolInSlot(int32 SlotIndex);
 	void RestoreState(const TArray<FName>& InEquippedIdols, const TArray<uint8>& InEquippedIdolTiers, ET66Difficulty Difficulty);

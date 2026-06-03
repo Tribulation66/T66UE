@@ -96,7 +96,7 @@ try {
         Write-Host "  $line"
     }
 
-    $dependencyLines = @(& rg -n "AddLoose[A-Za-z]*RuntimeDependency" Source/T66/T66.Build.cs Source/T66Mini/T66Mini.Build.cs Source/T66TD/T66TD.Build.cs Source/T66Deck/T66Deck.Build.cs Source/T66Idle/T66Idle.Build.cs)
+    $dependencyLines = @(& rg -n "AddLoose[A-Za-z]*RuntimeDependency" Source/T66/T66.Build.cs)
     if ($LASTEXITCODE -gt 1) {
         throw "rg failed while scanning loose runtime dependencies."
     }

@@ -1,0 +1,85 @@
+{
+  "generated_utc": "2026-05-27T13:23:10.924851+00:00",
+  "scan_roots": [
+    "/Game",
+    "/Game/Maps"
+  ],
+  "game_mode_blueprints": {
+    "target_class": "/Script/T66.T66GameMode",
+    "matches": [],
+    "load_failures": []
+  },
+  "content_token_scan": {
+    "matches": [
+      {
+        "path": "Content/World/Cliffs/MI_HillTile1.uasset",
+        "hits": [
+          "/Game/World/Cliffs",
+          "MI_HillTile",
+          "T_HillTile"
+        ],
+        "is_target_hilltile_file": true
+      },
+      {
+        "path": "Content/World/Cliffs/MI_HillTile2.uasset",
+        "hits": [
+          "/Game/World/Cliffs",
+          "MI_HillTile",
+          "T_HillTile"
+        ],
+        "is_target_hilltile_file": true
+      },
+      {
+        "path": "Content/World/Cliffs/MI_HillTile3.uasset",
+        "hits": [
+          "/Game/World/Cliffs",
+          "MI_HillTile",
+          "T_HillTile"
+        ],
+        "is_target_hilltile_file": true
+      },
+      {
+        "path": "Content/World/Cliffs/MI_HillTile4.uasset",
+        "hits": [
+          "/Game/World/Cliffs",
+          "MI_HillTile",
+          "T_HillTile"
+        ],
+        "is_target_hilltile_file": true
+      },
+      {
+        "path": "Content/World/Cliffs/T_HillTile1.uasset",
+        "hits": [
+          "/Game/World/Cliffs",
+          "T_HillTile"
+        ],
+        "is_target_hilltile_file": true
+      },
+      {
+        "path": "Content/World/Cliffs/T_HillTile2.uasset",
+        "hits": [
+          "/Game/World/Cliffs",
+          "T_HillTile"
+        ],
+        "is_target_hilltile_file": true
+      },
+      {
+        "path": "Content/World/Cliffs/T_HillTile3.uasset",
+        "hits": [
+          "/Game/World/Cliffs",
+          "T_HillTile"
+        ],
+        "is_target_hilltile_file": true
+      },
+      {
+        "path": "Content/World/Cliffs/T_HillTile4.uasset",
+        "hits": [
+          "/Game/World/Cliffs",
+          "T_HillTile"
+        ],
+        "is_target_hilltile_file": true
+      }
+    ],
+    "read_failures": []
+  }
+}

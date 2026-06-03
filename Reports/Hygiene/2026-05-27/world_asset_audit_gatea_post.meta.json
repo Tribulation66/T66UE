@@ -1,0 +1,7 @@
+{
+  "forced_asset_registry_scan": true,
+  "scan_roots": [
+    "/Game/World"
+  ],
+  "generated_utc": "2026-05-27T14:45:04.821788+00:00"
+}

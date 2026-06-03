@@ -50,7 +50,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Gameplay/T66IdolAltar.h"
 #include "Gameplay/T66CasinoNPC.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
@@ -1442,3 +1442,4 @@ void AT66PlayerController::EnsureGameplayRuntimePresentation()
 	PrimeGameplayPresentationAssetsAsync();
 	bGameplayRuntimePresentationInitialized = true;
 }
+

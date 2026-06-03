@@ -6,7 +6,6 @@
 #include "Components/SkyLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
-#include "Core/T66DeprecatedFeatureSettings.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Data/T66DataTypes.h"
@@ -672,7 +671,6 @@ namespace T66TestRoom
 				{ TEXT("/Game/Characters/Mobs/BoneConjurer"), TEXT("BoneConjurer"), TEXT("Bone Conjurer"), FVector(800.0f, 1850.0f, 0.f) },
 				{ TEXT("/Game/Characters/Mobs/CryptWraith"), TEXT("CryptWraith"), TEXT("Crypt Wraith"), FVector(1600.0f, 1850.0f, 0.f) },
 				// World assets - east side.
-				{ TEXT("/Game/World/Interactables/Arcade/Arcade_Machine"), TEXT("Arcade_Machine_Pixal3D"), TEXT("Arcade Machine"), FVector(3950.0f, -3850.0f, 0.f) },
 				{ TEXT("/Game/World/Interactables/Vehicles"), TEXT("Vehicle_Pixal3D"), TEXT("Vehicle"), FVector(3950.0f, -3150.0f, 0.f) },
 				{ TEXT("/Game/World/Interactables/Chests/ChestModel"), TEXT("Chest_Pixal3D"), TEXT("Chest"), FVector(3950.0f, -2450.0f, 0.f) },
 				{ TEXT("/Game/World/Interactables/Fountain"), TEXT("Fountain_Pixal3D"), TEXT("Fountain"), FVector(3950.0f, -1750.0f, 0.f) },
@@ -714,12 +712,6 @@ namespace T66TestRoom
 			int32 SpawnedLineupCount = 0;
 			for (const FLineupEntry& Entry : Entries)
 			{
-				if (T66DeprecatedFeatures::AreArcadeInteractablesDisabled()
-					&& FCString::Stricmp(Entry.AssetID, TEXT("Arcade_Machine_Pixal3D")) == 0)
-				{
-					continue;
-				}
-
 				if (bRepresentativeOnly && !IsRepresentativeLineupAsset(Entry.AssetID))
 				{
 					continue;

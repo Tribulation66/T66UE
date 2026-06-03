@@ -5,6 +5,11 @@
 
 using namespace T66RunStatePrivate;
 
+namespace
+{
+	constexpr int32 T66SaintBlessingBoostStatPoints = 8;
+}
+
 void UT66RunStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
@@ -246,6 +251,39 @@ void UT66RunStateSubsystem::EndSaintBlessingEmpowerment()
 	bSaintBlessingLoadoutSnapshotValid = false;
 }
 
+void UT66RunStateSubsystem::ApplySaintBlessingStatBoosts()
+{
+	const int32 BonusTenths = WholeStatToTenths(T66SaintBlessingBoostStatPoints);
+	SaintBlessingPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	SaintBlessingPrimaryStatBonusesPrecise.DamageTenths = BonusTenths;
+	SaintBlessingPrimaryStatBonusesPrecise.AttackSpeedTenths = BonusTenths;
+	SaintBlessingPrimaryStatBonusesPrecise.AttackScaleTenths = BonusTenths;
+	SaintBlessingPrimaryStatBonusesPrecise.AccuracyTenths = BonusTenths;
+	SaintBlessingPrimaryStatBonusesPrecise.ArmorTenths = BonusTenths;
+	SaintBlessingPrimaryStatBonusesPrecise.EvasionTenths = BonusTenths;
+	SaintBlessingPrimaryStatBonusesPrecise.LuckTenths = BonusTenths;
+	SaintBlessingPrimaryStatBonusesPrecise.SpeedTenths = BonusTenths;
+
+	SaintBlessingSecondaryStatBonusTenths.Reset();
+	SaintBlessingSecondaryStatBonusTenths.Add(ET66SecondaryStatType::FirePower, BonusTenths);
+	SaintBlessingSecondaryStatBonusTenths.Add(ET66SecondaryStatType::IcePower, BonusTenths);
+	SaintBlessingSecondaryStatBonusTenths.Add(ET66SecondaryStatType::ElectricityPower, BonusTenths);
+	SaintBlessingSecondaryStatBonusTenths.Add(ET66SecondaryStatType::NaturePower, BonusTenths);
+
+	SetSaintBlessingActive(true);
+	HeroProgressChanged.Broadcast();
+	AddStructuredEvent(ET66RunEventType::ItemAcquired, TEXT("Source=SaintBlessing,PrimaryBoosts=8,ElementBoosts=4"));
+	LogAdded.Broadcast();
+}
+
+void UT66RunStateSubsystem::ClearSaintBlessingStatBoosts()
+{
+	SaintBlessingPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	SaintBlessingSecondaryStatBonusTenths.Reset();
+	SetSaintBlessingActive(false);
+	HeroProgressChanged.Broadcast();
+}
+
 
 void UT66RunStateSubsystem::SetFinalSurvivalEnemyScalar(const float Scalar)
 {
@@ -407,6 +445,15 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	CurrentHP = MaxHP;
 	DeferredRunStartItemId = NAME_None;
 	CurrentGold = 0;
+	CollectedMobLootStack = 0;
+	MobLootDropsCollectedThisRun = 0;
+	MobLootQuantityCollectedThisRun = 0;
+	MobLootGoldValueCollectedThisRun = 0;
+	MobLootQuantityCollectedByPlayerThisRun = 0;
+	MobLootQuantityCollectedByPetThisRun = 0;
+	MobLootDropsCollectedByPetThisRun = 0;
+	MobLootQuantitySoldThisRun = 0;
+	MobLootSaleGoldThisRun = 0;
 	CurrentDebt = 0;
 	bLoanSharkPending = false;
 	DifficultyTier = 0;
@@ -416,7 +463,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	OwedBossIDs.Empty();
 	CowardiceGatesTakenCount = 0;
 	InventorySlots.Empty();
-	ActiveVendorTokenLevel = 0;
+	ActiveVendorTokenStacks = 0;
 	BuybackPool.Empty();
 	BuybackDisplaySlots.Empty();
 	BuybackDisplayPage = 0;
@@ -466,6 +513,8 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	SaintBlessingEquippedIdolsSnapshot.Reset();
 	SaintBlessingEquippedIdolTiersSnapshot.Reset();
 	bSaintBlessingLoadoutSnapshotValid = false;
+	SaintBlessingPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	SaintBlessingSecondaryStatBonusTenths.Reset();
 	FinalSurvivalEnemyScalar = 1.f;
 	CurrentScore = 0;
 	ResetScoreBudgetContext();
@@ -501,6 +550,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	StageMoveSpeedMultiplier = 1.f;
 	StageMoveSpeedSecondsRemaining = 0.f;
 	TemporaryPrimaryStatAmplifiers.Reset();
+	TemporarySecondaryStatAmplifiers.Reset();
 	StatusBurnSecondsRemaining = 0.f;
 	StatusBurnDamagePerSecond = 0.f;
 	StatusBurnAccumDamage = 0.f;
@@ -510,6 +560,8 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	HeroLevel = DefaultHeroLevel;
 	HeroPreciseStats = FT66HeroPreciseStatBlock{};
 	ItemPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	NoIdolPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	NoIdolSelectionStacks = 0;
 	ClearPersistentSecondaryStatBonuses();
 	PermanentSecondaryStatBonusTenths.Reset();
 	ItemSecondaryStatBonusTenths.Reset();
@@ -580,6 +632,7 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	HeroXP = 0;
 	XPToNextLevel = GetDataDrivenLevelUpXPThreshold();
 	UltimateCooldownRemainingSeconds = 0.f;
+	UltimateCharge = 0.f;
 	LastBroadcastUltimateSecond = 0;
 	ResetBossState();
 	HeartsChanged.Broadcast();

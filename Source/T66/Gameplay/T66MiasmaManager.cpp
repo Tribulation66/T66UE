@@ -15,7 +15,7 @@
 #include "Engine/World.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66GameMode.h"
-#include "Gameplay/T66HouseNPCBase.h"
+#include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66LavaPatch.h"
 #include "Gameplay/T66MainMapTerrain.h"
 #include "Gameplay/T66TowerMapTerrain.h"
@@ -547,9 +547,9 @@ int32 AT66MiasmaManager::SpawnLegacyStageLavaPatchesForCurrentStage()
 
 		if (Registry)
 		{
-			for (const TWeakObjectPtr<AT66HouseNPCBase>& WeakNPC : Registry->GetNPCs())
+			for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : Registry->GetNPCs())
 			{
-				const AT66HouseNPCBase* NPC = WeakNPC.Get();
+				const AT66NPCBase* NPC = WeakNPC.Get();
 				if (!NPC)
 				{
 					continue;
@@ -1077,3 +1077,4 @@ void AT66MiasmaManager::ClearLegacyLavaPatches()
 		}
 	}
 }
+

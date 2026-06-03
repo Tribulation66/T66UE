@@ -21,8 +21,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Boost")
 	void ConfigureBoost(ET66HeroStatType InStatType, int32 InBonusStatPoints, float InDurationSeconds);
 
+	UFUNCTION(BlueprintCallable, Category = "Boost")
+	void ConfigureSecondaryBoost(ET66SecondaryStatType InStatType, int32 InBonusStatPoints, float InDurationSeconds);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
 	ET66HeroStatType StatType = ET66HeroStatType::Damage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
+	ET66SecondaryStatType SecondaryStatType = ET66SecondaryStatType::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
+	bool bUseSecondaryStat = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boost")
 	int32 BonusStatPoints = 8;

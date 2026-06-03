@@ -1,0 +1,929 @@
+﻿Log file open, 05/31/26 02:51:16
+LogWindows: Failed to load 'aqProf.dll' (GetLastError=126)
+LogWindows: File 'aqProf.dll' does not exist
+LogProfilingDebugging: Loading WinPixEventRuntime.dll for PIX profiling (from ../../../Engine/Binaries/ThirdParty/Windows/WinPixEventRuntime/x64).
+LogWindows: Failed to load 'VtuneApi.dll' (GetLastError=126)
+LogWindows: File 'VtuneApi.dll' does not exist
+LogWindows: Failed to load 'VtuneApi32e.dll' (GetLastError=126)
+LogWindows: File 'VtuneApi32e.dll' does not exist
+LogWindows: Started CrashReportClient (pid=16616)
+LogWindows: Enabling Tpause support
+LogWindows: Custom abort handler registered for crash reporting.
+LogInit: Display: Running engine for game: T66
+LogCore: UTS: Unreal Trace Server launched successfully
+LogTrace: Initializing trace...
+LogCore: Display: Requested channels: 'cpu,gpu,frame,log,bookmark,screenshot,region'
+LogCore: No trace connection. Tracing to in-memory cache.
+LogTrace: Display: Control listening on port 33927
+LogTrace: Finished trace initialization.
+LogCsvProfiler: Display: Metadata set : platform="Windows"
+LogCsvProfiler: Display: Metadata set : config="Development"
+LogCsvProfiler: Display: Metadata set : buildversion="++UE5+Release-5.7-CL-48512491"
+LogCsvProfiler: Display: Metadata set : engineversion="5.7.1-48512491+++UE5+Release-5.7"
+LogCsvProfiler: Display: Metadata set : enginereleaseversion="5.7.1"
+LogCsvProfiler: Display: Metadata set : os="Windows 11 (25H2) [10.0.26200.8457] "
+LogCsvProfiler: Display: Metadata set : cpu="GenuineIntel|Intel(R) Core(TM) i9-14900HX"
+LogCsvProfiler: Display: Metadata set : pgoenabled="0"
+LogCsvProfiler: Display: Metadata set : pgoprofilingenabled="0"
+LogCsvProfiler: Display: Metadata set : ltoenabled="0"
+LogCsvProfiler: Display: Metadata set : asan="0"
+LogCsvProfiler: Display: Metadata set : mergedmodules="0"
+LogCsvProfiler: Display: Metadata set : commandline="" C:\UE\T66\T66.uproject /Game/Maps/GameplayLevel -game -windowed -ResX=1280 -ResY=720 -T66AutomationWindowed -T66StatPipelineSmoke=C:/UE/T66/Reports/AgentReviews/20260531_HeadshotChanceStat/stat_pipeline_smoke_final.json -unattended -nop4 -nosplash -NoSound -abslog=C:/UE/T66/Reports/AgentReviews/20260531_HeadshotChanceStat/stat_pipeline_smoke_final.log -forcelogflush""
+LogCsvProfiler: Display: Metadata set : loginid="6e1893814737cdf6e2edcbb02b9a616f"
+LogCsvProfiler: Display: Metadata set : llm="0"
+LogStats: Stats thread started at 0.337241
+LogCsvProfiler: Display: Metadata set : systemresolution.resx="1280"
+LogCsvProfiler: Display: Metadata set : systemresolution.resy="720"
+LogICUInternationalization: ICU TimeZone Detection - Raw Offset: -3:00, Platform Override: ''
+LogInit: Session CrashGUID >====================================================
+         Session CrashGUID >   UECC-Windows-A6C938224C1FECE0198DB28E4C4BF374
+         Session CrashGUID >====================================================
+LogConfig: No local boot hotfix file found at: [../../../../../../UE/T66/Saved/PersistentDownloadDir/HotfixForNextBoot.txt]
+LogAudio: Display: Audio Device Manager not initializing due to all audio being disabled. If this is not intentional, please check command line arguments for "-nosound".
+LogPluginManager: Looking for build plugins target receipt
+LogConfig: Display: Loading Mac ini files took 0.07 seconds
+LogPluginManager: Found matching target receipt: ../../../../../../UE/T66/Binaries/Win64/T66Editor.target
+LogConfig: Display: Loading VulkanPC ini files took 0.08 seconds
+LogConfig: Display: Loading Android ini files took 0.10 seconds
+LogConfig: Display: Loading IOS ini files took 0.10 seconds
+LogPluginManager: Looking for enabled plugins target receipt
+LogConfig: Display: Loading TVOS ini files took 0.12 seconds
+LogConfig: Display: Loading Unix ini files took 0.13 seconds
+LogConfig: Display: Loading Windows ini files took 0.14 seconds
+LogConfig: Display: Loading VisionOS ini files took 0.14 seconds
+LogConfig: Display: Loading Linux ini files took 0.15 seconds
+LogPluginManager: Found matching target receipt: ../../../../../../UE/T66/Binaries/Win64/T66Editor.target
+LogPluginManager: Mounting Engine plugin AudioInsights
+LogPluginManager: Mounting Engine plugin Bridge
+LogPluginManager: Mounting Engine plugin ChaosCloth
+LogPluginManager: Mounting Engine plugin ChaosClothAsset
+LogPluginManager: Mounting Engine plugin BaseMaterial
+LogPluginManager: Mounting Engine plugin ChaosVD
+LogPluginManager: Mounting Engine plugin ChaosInsights
+LogPluginManager: Mounting Engine plugin CmdLinkServer
+LogPluginManager: Mounting Engine plugin EnhancedInput
+LogPluginManager: Mounting Engine plugin Fab
+LogPluginManager: Mounting Engine plugin MassInsights
+LogPluginManager: Mounting Engine plugin IoStoreInsights
+LogPluginManager: Mounting Engine plugin MeshPainting
+LogPluginManager: Mounting Engine plugin RenderGraphInsights
+LogPluginManager: Mounting Engine plugin TraceUtilities
+LogPluginManager: Mounting Engine plugin UbaController
+LogPluginManager: Mounting Engine plugin WorldMetrics
+LogPluginManager: Mounting Engine plugin XGEController
+LogPluginManager: Mounting Engine plugin AISupport
+LogPluginManager: Mounting Engine plugin EnvironmentQueryEditor
+LogPluginManager: Mounting Engine plugin OodleNetwork
+LogPluginManager: Mounting Engine plugin AdvancedRenamer
+LogPluginManager: Mounting Engine plugin AnimToTexture
+LogPluginManager: Mounting Engine plugin AutomationUtils
+LogPluginManager: Mounting Engine plugin BackChannel
+LogPluginManager: Mounting Engine plugin ChaosCaching
+LogPluginManager: Mounting Engine plugin ChaosEditor
+LogPluginManager: Mounting Engine plugin ChaosNiagara
+LogPluginManager: Mounting Engine plugin ChaosSolverPlugin
+LogPluginManager: Mounting Engine plugin ChaosUserDataPT
+LogPluginManager: Mounting Engine plugin CharacterAI
+LogPluginManager: Mounting Engine plugin Dataflow
+LogPluginManager: Mounting Engine plugin EditorDataStorage
+LogPluginManager: Mounting Engine plugin EditorPerformance
+LogPluginManager: Mounting Engine plugin EditorTelemetry
+LogPluginManager: Mounting Engine plugin EditorDataStorageFeatures
+LogPluginManager: Mounting Engine plugin Fracture
+LogPluginManager: Mounting Engine plugin FullBodyIK
+LogPluginManager: Mounting Engine plugin GeometryCollectionPlugin
+LogPluginManager: Mounting Engine plugin GeometryDataflow
+LogPluginManager: Mounting Engine plugin GeometryFlow
+LogPluginManager: Mounting Engine plugin GlobalConfigurationData
+LogPluginManager: Mounting Engine plugin LevelSequenceNavigatorBridge
+LogPluginManager: Mounting Engine plugin LocalizableMessage
+LogPluginManager: Mounting Engine plugin MeshModelingToolsetExp
+LogPluginManager: Mounting Engine plugin LowLevelNetTrace
+LogPluginManager: Mounting Engine plugin NFORDenoise
+LogPluginManager: Mounting Engine plugin PlanarCut
+LogPluginManager: Mounting Engine plugin PlatformCrypto
+LogPluginManager: Mounting Engine plugin PythonScriptPlugin
+LogPluginManager: Mounting Engine plugin RuntimeTelemetry
+LogPluginManager: Mounting Engine plugin SequenceNavigator
+LogPluginManager: Mounting Engine plugin SkeletalReduction
+LogPluginManager: Mounting Engine plugin ToolPresets
+LogPluginManager: Mounting Engine plugin ActorLayerUtilities
+LogPluginManager: Mounting Engine plugin NNERuntimeORT
+LogPluginManager: Mounting Engine plugin NNEDenoiser
+LogPluginManager: Mounting Engine plugin AndroidFileServer
+LogPluginManager: Mounting Engine plugin AndroidPermission
+LogPluginManager: Mounting Engine plugin AndroidMoviePlayer
+LogPluginManager: Mounting Engine plugin AppleImageUtils
+LogPluginManager: Mounting Engine plugin AssetTags
+LogPluginManager: Mounting Engine plugin AndroidDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin AudioCapture
+LogPluginManager: Mounting Engine plugin ArchVisCharacter
+LogPluginManager: Mounting Engine plugin AudioSynesthesia
+LogPluginManager: Mounting Engine plugin AppleMoviePlayer
+LogPluginManager: Mounting Engine plugin ChunkDownloader
+LogPluginManager: Mounting Engine plugin CableComponent
+LogPluginManager: Mounting Engine plugin ComputeFramework
+LogPluginManager: Mounting Engine plugin CustomMeshComponent
+LogPluginManager: Mounting Engine plugin ExampleDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin AudioWidgets
+LogPluginManager: Mounting Engine plugin GeometryProcessing
+LogPluginManager: Mounting Engine plugin GoogleCloudMessaging
+LogPluginManager: Mounting Engine plugin GooglePAD
+LogPluginManager: Mounting Engine plugin InputDebugging
+LogPluginManager: Mounting Engine plugin GeometryCache
+LogPluginManager: Mounting Engine plugin HairStrands
+LogPluginManager: Mounting Engine plugin LinuxDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin MeshModelingToolset
+LogPluginManager: Mounting Engine plugin Metasound
+LogPluginManager: Mounting Engine plugin LocationServicesBPLibrary
+LogPluginManager: Mounting Engine plugin IOSDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin MobilePatchingUtils
+LogPluginManager: Mounting Engine plugin MsQuic
+LogPluginManager: Mounting Engine plugin ProceduralMeshComponent
+LogPluginManager: Mounting Engine plugin PropertyAccessEditor
+LogPluginManager: Mounting Engine plugin PropertyBindingUtils
+LogPluginManager: Mounting Engine plugin ResonanceAudio
+LogPluginManager: Mounting Engine plugin SignificanceManager
+LogPluginManager: Mounting Engine plugin RigVM
+LogPluginManager: Mounting Engine plugin StateTree
+LogPluginManager: Mounting Engine plugin Synthesis
+LogPluginManager: Mounting Engine plugin USDCore
+LogPluginManager: Mounting Engine plugin WaveTable
+LogPluginManager: Mounting Engine plugin SoundFields
+LogPluginManager: Mounting Engine plugin WindowsMoviePlayer
+LogPluginManager: Mounting Engine plugin WindowsDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin WebMMoviePlayer
+LogPluginManager: Mounting Engine plugin DatasmithContent
+LogPluginManager: Mounting Engine plugin GLTFExporter
+LogPluginManager: Mounting Engine plugin VariantManager
+LogPluginManager: Mounting Engine plugin Cascade
+LogPluginManager: Mounting Engine plugin Niagara
+LogPluginManager: Mounting Engine plugin VariantManagerContent
+LogPluginManager: Mounting Engine plugin NiagaraPreviewContent
+LogPluginManager: Mounting Engine plugin NiagaraSimCaching
+LogPluginManager: Mounting Engine plugin InterchangeEditor
+LogPluginManager: Mounting Engine plugin InterchangeAssets
+LogPluginManager: Mounting Engine plugin AndroidMedia
+LogPluginManager: Mounting Engine plugin Interchange
+LogPluginManager: Mounting Engine plugin D3D12VideoDecodersElectra
+LogPluginManager: Mounting Engine plugin ElectraCDM
+LogPluginManager: Mounting Engine plugin ElectraPlayer
+LogPluginManager: Mounting Engine plugin ElectraSubtitles
+LogPluginManager: Mounting Engine plugin AvfMedia
+LogPluginManager: Mounting Engine plugin ElectraCodecs
+LogPluginManager: Mounting Engine plugin ImgMedia
+LogPluginManager: Mounting Engine plugin MediaCompositing
+LogPluginManager: Mounting Engine plugin ElectraUtil
+LogPluginManager: Mounting Engine plugin OpusDecoderElectra
+LogPluginManager: Mounting Engine plugin MediaPlayerEditor
+LogPluginManager: Mounting Engine plugin WebMMedia
+LogPluginManager: Mounting Engine plugin WmfMedia
+LogPluginManager: Mounting Engine plugin MediaPlate
+LogPluginManager: Mounting Engine plugin TcpMessaging
+LogPluginManager: Mounting Engine plugin UdpMessaging
+LogPluginManager: Mounting Engine plugin ActorSequence
+LogPluginManager: Mounting Engine plugin SequencerScripting
+LogPluginManager: Mounting Engine plugin TemplateSequence
+LogPluginManager: Mounting Engine plugin LevelSequenceEditor
+LogPluginManager: Mounting Engine plugin MovieRenderPipeline
+LogPluginManager: Mounting Engine plugin OnlineBase
+LogPluginManager: Mounting Engine plugin SequenceValidator
+LogPluginManager: Mounting Engine plugin OnlineServices
+LogPluginManager: Mounting Engine plugin EOSShared
+LogPluginManager: Mounting Engine plugin OnlineSubsystemSteam
+LogPluginManager: Mounting Engine plugin OnlineSubsystemNull
+LogPluginManager: Mounting Engine plugin OnlineSubsystem
+LogPluginManager: Mounting Engine plugin OnlineSubsystemUtils
+LogPluginManager: Mounting Engine plugin SocketSubsystemSteamIP
+LogPluginManager: Mounting Engine plugin CLionSourceCodeAccess
+LogPluginManager: Mounting Engine plugin AnimationSharing
+LogPluginManager: Mounting Engine plugin CodeLiteSourceCodeAccess
+LogPluginManager: Mounting Engine plugin DumpGPUServices
+LogPluginManager: Mounting Engine plugin N10XSourceCodeAccess
+LogPluginManager: Mounting Engine plugin NamingTokens
+LogPluginManager: Mounting Engine plugin KDevelopSourceCodeAccess
+LogPluginManager: Mounting Engine plugin GitSourceControl
+LogPluginManager: Mounting Engine plugin GPUReshape
+LogPluginManager: Mounting Engine plugin PlasticSourceControl
+LogPluginManager: Mounting Engine plugin NullSourceCodeAccess
+LogPluginManager: Mounting Engine plugin ProjectLauncher
+LogPluginManager: Mounting Engine plugin RenderDocPlugin
+LogPluginManager: Mounting Engine plugin SubversionSourceControl
+LogPluginManager: Mounting Engine plugin PerforceSourceControl
+LogPluginManager: Mounting Engine plugin PixWinPlugin
+LogPluginManager: Mounting Engine plugin TextureFormatOodle
+LogPluginManager: Mounting Engine plugin UObjectPlugin
+LogPluginManager: Mounting Engine plugin PluginUtils
+LogPluginManager: Mounting Engine plugin VisualStudioSourceCodeAccess
+LogPluginManager: Mounting Engine plugin PropertyAccessNode
+LogPluginManager: Mounting Engine plugin RiderSourceCodeAccess
+LogPluginManager: Mounting Engine plugin AlembicImporter
+LogPluginManager: Mounting Engine plugin USDImporter
+LogPluginManager: Mounting Engine plugin Paper2D
+LogPluginManager: Mounting Engine plugin XCodeSourceCodeAccess
+LogPluginManager: Mounting Engine plugin ACLPlugin
+LogPluginManager: Mounting Engine plugin VisualStudioCodeSourceCodeAccess
+LogPluginManager: Mounting Engine plugin BlendSpaceMotionAnalysis
+LogPluginManager: Mounting Engine plugin AnimationData
+LogPluginManager: Mounting Engine plugin DeformerGraph
+LogPluginManager: Mounting Engine plugin AnimationModifierLibrary
+LogPluginManager: Mounting Engine plugin ControlRigModules
+LogPluginManager: Mounting Engine plugin GameplayInsights
+LogPluginManager: Mounting Engine plugin ControlRig
+LogPluginManager: Mounting Engine plugin IKRig
+LogPluginManager: Mounting Engine plugin ControlRigSpline
+LogPluginManager: Mounting Engine plugin LiveLink
+LogPluginManager: Mounting Engine plugin EaseCurveTool
+LogPluginManager: Mounting Engine plugin TweeningUtils
+LogPluginManager: Mounting Engine plugin CameraShakePreviewer
+LogPluginManager: Mounting Engine plugin CompositeCore
+LogPluginManager: Mounting Engine plugin RigLogic
+LogPluginManager: Mounting Engine plugin SkeletalMeshModelingTools
+LogPluginManager: Mounting Engine plugin OpenColorIO
+LogPluginManager: Mounting Engine plugin EngineCameras
+LogPluginManager: Mounting Engine plugin AssetManagerEditor
+LogPluginManager: Mounting Engine plugin GameplayCameras
+LogPluginManager: Mounting Engine plugin ChangelistReview
+LogPluginManager: Mounting Engine plugin ConsoleVariables
+LogPluginManager: Mounting Engine plugin CurveEditorTools
+LogPluginManager: Mounting Engine plugin EditorDebugTools
+LogPluginManager: Mounting Engine plugin BlueprintHeaderView
+LogPluginManager: Mounting Engine plugin ColorGrading
+LogPluginManager: Mounting Engine plugin EngineAssetDefinitions
+LogPluginManager: Mounting Engine plugin DataValidation
+LogPluginManager: Mounting Engine plugin GameplayTagsEditor
+LogPluginManager: Mounting Engine plugin CryptoKeys
+LogPluginManager: Mounting Engine plugin MacGraphicsSwitching
+LogPluginManager: Mounting Engine plugin EditorScriptingUtilities
+LogPluginManager: Mounting Engine plugin MeshLODToolset
+LogPluginManager: Mounting Engine plugin FacialAnimation
+LogPluginManager: Mounting Engine plugin MobileLauncherProfileWizard
+LogPluginManager: Mounting Engine plugin GeometryMode
+LogPluginManager: Mounting Engine plugin ModelingToolsEditorMode
+LogPluginManager: Mounting Engine plugin ProxyLODPlugin
+LogPluginManager: Mounting Engine plugin PluginBrowser
+LogPluginManager: Mounting Engine plugin MaterialAnalyzer
+LogPluginManager: Mounting Engine plugin WorldPartitionHLODUtilities
+LogPluginManager: Mounting Engine plugin FabLauncher
+LogPluginManager: Mounting Engine plugin SequencerAnimTools
+LogPluginManager: Mounting Engine plugin SpeedTreeImporter
+LogPluginManager: Mounting Engine plugin UMGWidgetPreview
+LogPluginManager: Mounting Engine plugin StylusInput
+LogPluginManager: Mounting Engine plugin UVEditor
+LogPluginManager: Mounting Engine plugin LauncherChunkInstaller
+LogPluginManager: Mounting Engine plugin InterchangeTests
+LogPluginManager: Mounting Engine plugin MetaHumanSDK
+LogPluginManager: Mounting Engine plugin Takes
+LogPluginManager: Mounting Engine plugin ContentBrowserFileDataSource
+LogPluginManager: Mounting Engine plugin ContentBrowserClassDataSource
+LogPluginManager: Mounting Engine plugin XInputDevice
+LogPluginManager: Mounting Engine plugin ContentBrowserAssetDataSource
+LogPluginManager: Mounting Engine plugin SQLiteCore
+LogPluginManager: Mounting Engine plugin ObjectMixer
+LogPluginManager: Mounting Engine plugin AnalyticsBlueprintLibrary
+LogPluginManager: Mounting Engine plugin LightMixer
+LogPluginManager: Mounting Engine plugin BaseCharacterFXEditor
+LogPluginManager: Mounting Engine plugin SteamShared
+LogPluginManager: Mounting Engine plugin OnlineSubsystemGooglePlay
+LogPluginManager: Mounting Engine plugin PortableObjectFileDataSource
+LogPluginManager: Mounting Engine plugin OnlineSubsystemIOS
+LogPluginManager: Mounting Engine plugin ConcertMain
+LogPluginManager: Mounting Engine plugin ConcertSharedSlate
+LogPluginManager: Mounting Engine plugin ConcertSyncClient
+LogPluginManager: Mounting Engine plugin ConcertSyncCore
+SourceControl: Revision control is disabled
+SourceControl: Revision control is disabled
+SourceControl: Revision control is disabled
+LogNFORDenoise: NFORDenoise function starting up
+LogStudioTelemetry: Started StudioTelemetry Session
+LogEOSShared: Loaded "C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/EOSSDK-Win64-Shipping.dll"
+LogEOSShared: FEOSSDKManager::Initialize Initializing EOSSDK Version:1.18.1.2-47370208
+LogInit: Using libcurl 8.12.1
+LogInit:  - built for Windows
+LogInit:  - supports SSL with OpenSSL/1.1.1t
+LogInit:  - supports HTTP deflate (compression) using libz 1.3
+LogInit:  - other features:
+LogInit:      CURL_VERSION_SSL
+LogInit:      CURL_VERSION_LIBZ
+LogInit:      CURL_VERSION_IPV6
+LogInit:      CURL_VERSION_ASYNCHDNS
+LogInit:      CURL_VERSION_LARGEFILE
+LogInit:      CURL_VERSION_TLSAUTH_SRP
+LogInit:      CURL_VERSION_HTTP2
+LogInit:  CurlRequestOptions (configurable via config and command line):
+LogInit:  - bVerifyPeer = true  - Libcurl will verify peer certificate
+LogInit:  - bUseHttpProxy = false  - Libcurl will NOT use HTTP proxy
+LogInit:  - CVarHttpCurlReuseConnectionEnabled = true  - Libcurl will reuse connections
+LogInit:  - MaxHostConnections = 16  - Libcurl will limit the number of connections to a host
+LogInit:  - LocalHostAddr = Default
+LogInit:  - BufferSize = 65536
+LogInit: CreateHttpThread using FCurlMultiPollEventLoopHttpThread
+LogInit: Creating http thread with maximum 256 concurrent requests
+LogSteamShared: Display: Loading Steam SDK 1.61
+LogSteamShared: Steam SDK Loaded!
+LogSteamShared: Warning: SteamAPI failed to initialize, conditions not met.
+LogOnline: Warning: STEAM: Steamworks: SteamUtils() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamUser() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamFriends() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamRemoteStorage() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamUserStats() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamMatchmakingServers() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamApps() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamNetworking() failed!
+LogOnline: Warning: STEAM: Steamworks: SteamMatchmaking() failed!
+LogOnline: STEAM: [AppId: 0] Client API initialized 0
+LogOnline: STEAM: [AppId: 4464300] Game Server API initialized 1
+LogOnline: Display: STEAM: OnlineSubsystemSteam::Shutdown()
+LogSteamShared: Unloading the Steam server API...
+LogOnline: Warning: STEAM: Steam API failed to initialize!
+LogOnline: Display: STEAM: OnlineSubsystemSteam::Shutdown()
+LogOnline: OSS: Unable to create OnlineSubsystem instance Steam
+LogInit: WinSock: version 1.1 (2.2), MaxSocks=32767, MaxUdp=65467
+LogOnline: OSS: Created online subsystem instance for: NULL
+LogOnline: OSS: TryLoadSubsystemAndSetDefault: Loaded subsystem for type [NULL]
+LogSockets: Warning: bAllowP2PPacketRelay has moved from OnlineSubsystemSteam to SocketSubsystemSteamIP, previous location is depreceated
+LogSockets: Warning: P2PConnectionTimeout has moved from OnlineSubsystemSteam to SocketSubsystemSteamIP, previous location is depreceated
+LogSockets: Warning: Missing P2PCleanupTimeout key in SocketSubsystemSteamIP of DefaultEngine.ini
+RenderDocPlugin: Display: RenderDoc plugin will not be loaded. Use '-AttachRenderDoc' on the cmd line or enable 'renderdoc.AutoAttach' in the plugin settings.
+LogWindows: Failed to load 'WinPixGpuCapturer.dll' (GetLastError=126)
+LogWindows: File 'WinPixGpuCapturer.dll' does not exist
+PixWinPlugin: PIX capture plugin failed to initialize! Check that the process is launched from PIX.
+LogInit: ExecutableName: UnrealEditor-Cmd.exe
+LogInit: Build: ++UE5+Release-5.7-CL-48512491
+LogInit: Platform=WindowsEditor
+LogInit: MachineId=6e1893814737cdf6e2edcbb02b9a616f
+LogInit: DeviceId=
+LogInit: Engine Version: 5.7.1-48512491+++UE5+Release-5.7
+LogInit: Compatible Engine Version: 5.7.0-47537391+++UE5+Release-5.7
+LogInit: Net CL: 47537391
+LogInit: OS: Windows 11 (25H2) [10.0.26200.8457] (), CPU: Intel(R) Core(TM) i9-14900HX, GPU: Intel(R) UHD Graphics
+LogInit: CPU Model ID: 6b71, microcode revision: 11f
+LogInit: Compiled (64-bit): Nov 20 2025 16:27:58
+LogInit: Architecture: x64
+LogInit: Compiled with Visual C++: 19.44.35220.00
+LogInit: Build Configuration: Development
+LogInit: Branch Name: ++UE5+Release-5.7
+LogInit: Command Line: /Game/Maps/GameplayLevel -game -windowed -ResX=1280 -ResY=720 -T66AutomationWindowed -T66StatPipelineSmoke=C:/UE/T66/Reports/AgentReviews/20260531_HeadshotChanceStat/stat_pipeline_smoke_final.json -unattended -nop4 -nosplash -NoSound -abslog=C:/UE/T66/Reports/AgentReviews/20260531_HeadshotChanceStat/stat_pipeline_smoke_final.log -forcelogflush
+LogInit: Base Directory: C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/
+LogInit: Allocator: Mimalloc
+LogInit: Installed Engine Build: 1
+LogInit: This binary is optimized with LTO: no, PGO: no, instrumented for PGO data collection: no
+LogDevObjectVersion: Number of dev versions registered: 36
+LogDevObjectVersion:   Dev-Blueprints (B0D832E4-1F89-4F0D-ACCF-7EB736FD4AA2): 10
+LogDevObjectVersion:   Dev-Build (E1C64328-A22C-4D53-A36C-8E866417BD8C): 0
+LogDevObjectVersion:   Dev-Core (375EC13C-06E4-48FB-B500-84F0262A717E): 4
+LogDevObjectVersion:   Dev-Editor (E4B068ED-F494-42E9-A231-DA0B2E46BB41): 40
+LogDevObjectVersion:   Dev-Framework (CFFC743F-43B0-4480-9391-14DF171D2073): 37
+LogDevObjectVersion:   Dev-Mobile (B02B49B5-BB20-44E9-A304-32B752E40360): 3
+LogDevObjectVersion:   Dev-Networking (A4E4105C-59A1-49B5-A7C5-40C4547EDFEE): 0
+LogDevObjectVersion:   Dev-Online (39C831C9-5AE6-47DC-9A44-9C173E1C8E7C): 0
+LogDevObjectVersion:   Dev-Physics (78F01B33-EBEA-4F98-B9B4-84EACCB95AA2): 20
+LogDevObjectVersion:   Dev-Platform (6631380F-2D4D-43E0-8009-CF276956A95A): 0
+LogDevObjectVersion:   Dev-Rendering (12F88B9F-8875-4AFC-A67C-D90C383ABD29): 49
+LogDevObjectVersion:   Dev-Sequencer (7B5AE74C-D270-4C10-A958-57980B212A5A): 13
+LogDevObjectVersion:   Dev-VR (D7296918-1DD6-4BDD-9DE2-64A83CC13884): 3
+LogDevObjectVersion:   Dev-LoadTimes (C2A15278-BFE7-4AFE-6C17-90FF531DF755): 1
+LogDevObjectVersion:   Private-Geometry (6EACA3D4-40EC-4CC1-B786-8BED09428FC5): 3
+LogDevObjectVersion:   Dev-AnimPhys (29E575DD-E0A3-4627-9D10-D276232CDCEA): 17
+LogDevObjectVersion:   Dev-Anim (AF43A65D-7FD3-4947-9873-3E8ED9C1BB05): 15
+LogDevObjectVersion:   Dev-ReflectionCapture (6B266CEC-1EC7-4B8F-A30B-E4D90942FC07): 1
+LogDevObjectVersion:   Dev-Automation (0DF73D61-A23F-47EA-B727-89E90C41499A): 1
+LogDevObjectVersion:   FortniteMain (601D1886-AC64-4F84-AA16-D3DE0DEAC7D6): 225
+LogDevObjectVersion:   FortniteValkyrie (8DBC2C5B-54A7-43E0-A768-FCBB7DA29060): 8
+LogDevObjectVersion:   FortniteSeason (5B4C06B7-2463-4AF8-805B-BF70CDF5D0DD): 15
+LogDevObjectVersion:   FortniteRelease (E7086368-6B23-4C58-8439-1B7016265E91): 17
+LogDevObjectVersion:   Dev-Enterprise (9DFFBCD6-494F-0158-E221-12823C92A888): 11
+LogDevObjectVersion:   Dev-Niagara (F2AED0AC-9AFE-416F-8664-AA7FFA26D6FC): 1
+LogDevObjectVersion:   Dev-Destruction (174F1F0B-B4C6-45A5-B13F-2EE8D0FB917D): 10
+LogDevObjectVersion:   Dev-Physics-Ext (35F94A83-E258-406C-A318-09F59610247C): 41
+LogDevObjectVersion:   Dev-PhysicsMaterial-Chaos (B68FC16E-8B1B-42E2-B453-215C058844FE): 1
+LogDevObjectVersion:   Dev-CineCamera (B2E18506-4273-CFC2-A54E-F4BB758BBA07): 1
+LogDevObjectVersion:   Dev-VirtualProduction (64F58936-FD1B-42BA-BA96-7289D5D0FA4E): 1
+LogDevObjectVersion:   UE5-Main (697DD581-E64F-41AB-AA4A-51ECBEB7B628): 121
+LogDevObjectVersion:   UE5-Release (D89B5E42-24BD-4D46-8412-ACA8DF641779): 61
+LogDevObjectVersion:   UE5-SpecialProject (59DA5D52-1232-4948-B878-597870B8E98B): 9
+LogDevObjectVersion:   Dev-MediaFramework (6F0ED827-A609-4895-9C91-998D90180EA4): 2
+LogDevObjectVersion:   Dev-NaniteResearch (30D58BE3-95EA-4282-A6E3-B159D8EBB06A): 1
+LogDevObjectVersion:   Dev-ComputeFramework (6304A3E7-0059-4F59-8CFC-21BD7721FD4E): 0
+LogInit: Presizing for max 25165824 objects, including 0 objects not considered by GC.
+LogInit: Object subsystem initialized
+[2026.05.31-05.51.23:376][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.05.31-05.51.23:390][  0]LogRHI: Using Default RHI: D3D12
+[2026.05.31-05.51.23:407][  0]LogRHI: Using Highest Feature Level of D3D12: SM6
+[2026.05.31-05.51.23:421][  0]LogRHI: Loading RHI module D3D12RHI
+[2026.05.31-05.51.23:438][  0]LogD3D12RHI: Loading WinPixEventRuntime.dll for PIX profiling (from ../../../Engine/Binaries/ThirdParty/Windows/WinPixEventRuntime/x64).
+[2026.05.31-05.51.23:453][  0]LogRHI: Checking if RHI D3D12 with Feature Level SM6 is supported by your system.
+[2026.05.31-05.51.24:177][  0]LogD3D12RHI: Found D3D12 adapter 0: NVIDIA GeForce RTX 4070 Laptop GPU (VendorId: 10de, DeviceId: 2860, SubSysId: 3e4517aa, Revision: 00a1
+[2026.05.31-05.51.24:191][  0]LogD3D12RHI:   Max supported Feature Level 12_2, shader model 6.7, binding tier 3, wave ops supported, atomic64 supported
+[2026.05.31-05.51.24:206][  0]LogD3D12RHI:   Adapter has 7948MB of dedicated video memory, 0MB of dedicated system memory, and 32621MB of shared system memory, 1 output[s], UMA:false
+[2026.05.31-05.51.24:221][  0]LogD3D12RHI:   Driver Version: 591.86 (internal:32.0.15.9186, unified:591.86)
+[2026.05.31-05.51.24:236][  0]LogD3D12RHI:      Driver Date: 1-20-2026
+[2026.05.31-05.51.24:273][  0]LogD3D12RHI: Intel Extensions Framework not supported by driver. Please check if a driver update is available.
+[2026.05.31-05.51.24:294][  0]LogD3D12RHI: Found D3D12 adapter 1: Intel(R) UHD Graphics (VendorId: 8086, DeviceId: a788, SubSysId: 3e4517aa, Revision: 0004
+[2026.05.31-05.51.24:299][  0]LogD3D12RHI:   Max supported Feature Level 12_1, shader model 6.7, binding tier 3, wave ops supported, atomic64 unsupported
+[2026.05.31-05.51.24:315][  0]LogD3D12RHI:   Adapter has 128MB of dedicated video memory, 0MB of dedicated system memory, and 32621MB of shared system memory, 1 output[s], UMA:true
+[2026.05.31-05.51.24:330][  0]LogD3D12RHI:   Driver Version: 32.0.101.6790 (internal:32.0.101.6790, unified:101.6790)
+[2026.05.31-05.51.24:345][  0]LogD3D12RHI:      Driver Date: 4-28-2025
+[2026.05.31-05.51.24:361][  0]LogD3D12RHI: Found D3D12 adapter 2: Microsoft Basic Render Driver (VendorId: 1414, DeviceId: 008c, SubSysId: 0000, Revision: 0000
+[2026.05.31-05.51.24:377][  0]LogD3D12RHI:   Max supported Feature Level 12_1, shader model 6.7, binding tier 3, wave ops supported, atomic64 supported
+[2026.05.31-05.51.24:393][  0]LogD3D12RHI:   Adapter has 0MB of dedicated video memory, 0MB of dedicated system memory, and 32621MB of shared system memory, 0 output[s], UMA:true
+[2026.05.31-05.51.24:409][  0]LogD3D12RHI:   D3D10Warp Version: 10.0.26100.8328
+[2026.05.31-05.51.24:425][  0]LogD3D12RHI: DirectX Agility SDK runtime found.
+[2026.05.31-05.51.24:440][  0]LogD3D12RHI: Chosen D3D12 Adapter Id = 0
+[2026.05.31-05.51.24:456][  0]LogRHI: RHI D3D12 with Feature Level SM6 is supported and will be used.
+[2026.05.31-05.51.24:471][  0]LogInit: Selected Device Profile: [WindowsEditor]
+[2026.05.31-05.51.24:487][  0]LogHAL: Display: Platform has ~ 64 GB [68413153280 / 68719476736 / 64], which maps to Largest [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2026.05.31-05.51.24:503][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.05.31-05.51.24:518][  0]LogInit: Computer: DDOS
+[2026.05.31-05.51.24:534][  0]LogInit: User: DoPra
+[2026.05.31-05.51.24:550][  0]LogInit: CPU Page size=4096, Cores=24
+[2026.05.31-05.51.24:565][  0]LogInit: High frequency timer resolution =10.000000 MHz
+[2026.05.31-05.51.24:581][  0]LogInit: Handheld Device: 0
+[2026.05.31-05.51.24:597][  0]LogMemory: Memory total: Physical=63.7GB (64GB approx) Virtual=79.7GB
+[2026.05.31-05.51.24:613][  0]LogMemory: Platform Memory Stats for WindowsEditor
+[2026.05.31-05.51.24:629][  0]LogMemory: Process Physical Memory: 609.36 MB used, 634.61 MB peak
+[2026.05.31-05.51.24:645][  0]LogMemory: Process Virtual Memory: 589.66 MB used, 593.12 MB peak
+[2026.05.31-05.51.24:661][  0]LogMemory: Physical Memory: 17709.70 MB used,  47534.17 MB free, 65243.87 MB total
+[2026.05.31-05.51.24:677][  0]LogMemory: Virtual Memory: 19295.17 MB used,  62332.70 MB free, 81627.87 MB total
+[2026.05.31-05.51.24:693][  0]LogCsvProfiler: Display: Metadata set : extradevelopmentmemorymb="0"
+[2026.05.31-05.51.24:708][  0]LogWindows: WindowsPlatformFeatures enabled
+[2026.05.31-05.51.24:726][  0]LogSpline: Registered spline type: TypeId=0x54E3AD22, Impl=MultiSpline, Value=Vector
+[2026.05.31-05.51.24:750][  0]LogChaosDD: Chaos Debug Draw Startup
+[2026.05.31-05.51.24:772][  0]LogInit: Physics initialised using underlying interface: Chaos
+[2026.05.31-05.51.24:788][  0]LogInit: Using OS detected language (en-US).
+[2026.05.31-05.51.24:803][  0]LogInit: Using OS detected locale (en-US).
+[2026.05.31-05.51.24:819][  0]LogTextLocalizationManager: No specific localization for 'en-US' exists, so 'en' will be used for the language.
+[2026.05.31-05.51.24:980][  0]LogWindowsTextInputMethodSystem: Available input methods:
+[2026.05.31-05.51.24:991][  0]LogWindowsTextInputMethodSystem:   - English (United States) - (Keyboard).
+[2026.05.31-05.51.25:007][  0]LogWindowsTextInputMethodSystem: Activated input method: English (United States) - (Keyboard).
+[2026.05.31-05.51.25:028][  0]LogWindowsTouchpad: Display: CacheForceMaxTouchpadSensitivityMode SetMaxTouchpadSensitivity
+[2026.05.31-05.51.25:039][  0]LogObj: Display: Attempting to load config data for Default__SlateThemeManager before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.05.31-05.51.25:054][  0]LogSlate: New Slate User Created. Platform User Id 0, User Index 0, Is Virtual User: 0
+[2026.05.31-05.51.25:070][  0]LogSlate: Slate User Registered.  User Index 0, Is Virtual User: 0
+[2026.05.31-05.51.25:142][  0]LogRHI: Using Default RHI: D3D12
+[2026.05.31-05.51.25:148][  0]LogRHI: Using Highest Feature Level of D3D12: SM6
+[2026.05.31-05.51.25:163][  0]LogRHI: Loading RHI module D3D12RHI
+[2026.05.31-05.51.25:179][  0]LogRHI: Checking if RHI D3D12 with Feature Level SM6 is supported by your system.
+[2026.05.31-05.51.25:195][  0]LogRHI: RHI D3D12 with Feature Level SM6 is supported and will be used.
+[2026.05.31-05.51.25:212][  0]LogD3D12RHI: Integrated GPU (iGPU): false
+[2026.05.31-05.51.25:226][  0]LogD3D12RHI: Display: Creating D3D12 RHI with Max Feature Level SM6
+[2026.05.31-05.51.25:242][  0]LogWindows: Attached monitors:
+[2026.05.31-05.51.25:257][  0]LogWindows:     resolution: 1920x1080, work area: (0, 0) -> (1920, 1032), device: '\\.\DISPLAY5' [PRIMARY]
+[2026.05.31-05.51.25:273][  0]LogWindows:     resolution: 1463x914, work area: (-2560, 0) -> (-1097, 866), device: '\\.\DISPLAY1'
+[2026.05.31-05.51.25:288][  0]LogWindows: Found 2 attached monitors.
+[2026.05.31-05.51.25:304][  0]LogWindows: Gathering driver information using Windows Setup API
+[2026.05.31-05.51.25:320][  0]LogRHI: RHI Adapter Info:
+[2026.05.31-05.51.25:336][  0]LogRHI:             Name: NVIDIA GeForce RTX 4070 Laptop GPU
+[2026.05.31-05.51.25:352][  0]LogRHI:   Driver Version: 591.86 (internal:32.0.15.9186, unified:591.86)
+[2026.05.31-05.51.25:368][  0]LogRHI:      Driver Date: 1-20-2026
+[2026.05.31-05.51.25:384][  0]LogD3D12RHI:     GPU DeviceId: 0x2860 (for the marketing name, search the web for "GPU Device Id")
+[2026.05.31-05.51.25:401][  0]LogD3D12RHI: InitD3DDevice: -D3DDebug = off -D3D12GPUValidation = off
+[2026.05.31-05.51.25:444][  0]LogNvidiaAftermath: Aftermath initialized
+[2026.05.31-05.51.25:447][  0]LogD3D12RHI: Emitting draw events for PIX profiling.
+[2026.05.31-05.51.25:511][  0]LogNvidiaAftermath: Aftermath enabled. Active feature flags: 
+[2026.05.31-05.51.25:526][  0]LogNvidiaAftermath:  - Feature: EnableResourceTracking
+[2026.05.31-05.51.25:542][  0]LogD3D12RHI: ID3D12Device1 is supported.
+[2026.05.31-05.51.25:560][  0]LogD3D12RHI: ID3D12Device2 is supported.
+[2026.05.31-05.51.25:574][  0]LogD3D12RHI: ID3D12Device3 is supported.
+[2026.05.31-05.51.25:590][  0]LogD3D12RHI: ID3D12Device4 is supported.
+[2026.05.31-05.51.25:606][  0]LogD3D12RHI: ID3D12Device5 is supported.
+[2026.05.31-05.51.25:621][  0]LogD3D12RHI: ID3D12Device6 is supported.
+[2026.05.31-05.51.25:635][  0]LogD3D12RHI: ID3D12Device7 is supported.
+[2026.05.31-05.51.25:652][  0]LogD3D12RHI: ID3D12Device8 is supported.
+[2026.05.31-05.51.25:667][  0]LogD3D12RHI: ID3D12Device9 is supported.
+[2026.05.31-05.51.25:683][  0]LogD3D12RHI: ID3D12Device10 is supported.
+[2026.05.31-05.51.25:698][  0]LogD3D12RHI: ID3D12Device11 is supported.
+[2026.05.31-05.51.25:713][  0]LogD3D12RHI: ID3D12Device12 is supported.
+[2026.05.31-05.51.25:729][  0]LogD3D12RHI: Bindless is supported. MaxNonSamplerDescriptors: 1000000, MaxSamplerDescriptors: 2048
+[2026.05.31-05.51.25:745][  0]LogD3D12RHI: Stencil ref from pixel shader is not supported
+[2026.05.31-05.51.25:759][  0]LogD3D12RHI: Raster order views are supported
+[2026.05.31-05.51.25:776][  0]LogD3D12RHI: Wave Operations are supported (wave size: min=32 max=32).
+[2026.05.31-05.51.25:791][  0]LogD3D12RHI:      Legacy Barriers Present in Build: Yes
+[2026.05.31-05.51.25:808][  0]LogD3D12RHI:    Enhanced Barriers Present in Build: Yes
+[2026.05.31-05.51.25:823][  0]LogD3D12RHI:      Enhanced Barriers Driver Support: Yes
+[2026.05.31-05.51.25:838][  0]LogD3D12RHI: Preferred Barrier Implementation Type: Legacy
+[2026.05.31-05.51.25:855][  0]LogD3D12RHI:         Chosen Barrier Implementation: D3D12LegacyBarriers
+[2026.05.31-05.51.25:871][  0]LogD3D12RHI: D3D12 ray tracing tier 1.1 and bindless resources are supported.
+[2026.05.31-05.51.25:885][  0]LogD3D12RHI: Mesh shader tier 1.0 is supported
+[2026.05.31-05.51.25:901][  0]LogD3D12RHI: AtomicInt64OnTypedResource is supported
+[2026.05.31-05.51.25:917][  0]LogD3D12RHI: AtomicInt64OnGroupShared is supported
+[2026.05.31-05.51.25:931][  0]LogD3D12RHI: AtomicInt64OnDescriptorHeapResource is supported
+[2026.05.31-05.51.25:947][  0]LogD3D12RHI: Shader Model 6.6 atomic64 is supported
+[2026.05.31-05.51.25:962][  0]LogD3D12RHI: Work Graphs are supported
+[2026.05.31-05.51.25:978][  0]LogD3D12RHI: Bindless is enabled (Configuration=RayTracing). Initializing allocators with 32768 Resource and 2048 Sampler descriptors
+[2026.05.31-05.51.25:993][  0]LogD3D12RHI: [GPUBreadCrumb] Successfully setup breadcrumb resource for DiagnosticBuffer (Queue: 0x000002543AC28380)
+[2026.05.31-05.51.26:009][  0]LogD3D12RHI: [GPUBreadCrumb] Successfully setup breadcrumb resource for DiagnosticBuffer (Queue: 0x000002543AC28640)
+[2026.05.31-05.51.26:027][  0]LogD3D12RHI: [GPUBreadCrumb] Successfully setup breadcrumb resource for DiagnosticBuffer (Queue: 0x000002543AC28900)
+[2026.05.31-05.51.26:041][  0]LogD3D12RHI: Display: Not using pipeline state disk cache per r.D3D12.PSO.DiskCache=0
+[2026.05.31-05.51.26:057][  0]LogD3D12RHI: Display: Not using driver-optimized pipeline state disk cache per r.D3D12.PSO.DriverOptimizedDiskCache=0
+[2026.05.31-05.51.26:098][  0]LogD3D12RHI: NVIDIA Shader Execution Reordering interface supported!
+[2026.05.31-05.51.26:120][  0]LogD3D12RHI: NVIDIA Ray Tracing Cluster Operations supported and enabled
+[2026.05.31-05.51.26:138][  0]LogD3D12RHI: NVIDIA Extended ray tracing pipeline state applied.
+[2026.05.31-05.51.26:153][  0]LogD3D12RHI: Display: Batched command list execution is disabled for async queues due to known bugs in the current driver.
+[2026.05.31-05.51.26:169][  0]LogRHI: Texture pool is 4523 MB (70% of 6462 MB)
+[2026.05.31-05.51.26:185][  0]LogD3D12RHI: Async texture creation enabled
+[2026.05.31-05.51.26:201][  0]LogD3D12RHI: RHI has support for 64 bit atomics
+[2026.05.31-05.51.26:216][  0]LogVRS: Current RHI supports per-draw and screenspace Variable Rate Shading
+[2026.05.31-05.51.26:230][  0]LogCsvProfiler: Display: Metadata set : verbatimrhiname="D3D12"
+[2026.05.31-05.51.26:248][  0]LogCsvProfiler: Display: Metadata set : rhiname="D3D12"
+[2026.05.31-05.51.26:262][  0]LogCsvProfiler: Display: Metadata set : rhifeaturelevel="SM6"
+[2026.05.31-05.51.26:278][  0]LogCsvProfiler: Display: Metadata set : shaderplatform="PCD3D_SM6"
+[2026.05.31-05.51.26:293][  0]LogInit: Initializing FReadOnlyCVARCache
+[2026.05.31-05.51.26:309][  0]LogTextureFormatASTC: Display: ASTCEnc version 5.0.1 library loaded
+[2026.05.31-05.51.26:325][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatASTC
+[2026.05.31-05.51.26:341][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatDXT
+[2026.05.31-05.51.26:357][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatETC2
+[2026.05.31-05.51.26:372][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatIntelISPCTexComp
+[2026.05.31-05.51.26:388][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatUncompressed
+[2026.05.31-05.51.26:404][  0]LogTextureFormatOodle: Display: Oodle Texture TFO init; latest sdk version = 2.9.14
+[2026.05.31-05.51.26:420][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.14.dll
+[2026.05.31-05.51.26:434][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.5.dll
+[2026.05.31-05.51.26:453][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatOodle
+[2026.05.31-05.51.26:466][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Windows'
+[2026.05.31-05.51.26:482][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsEditor'
+[2026.05.31-05.51.26:498][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsServer'
+[2026.05.31-05.51.26:514][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsClient'
+[2026.05.31-05.51.26:530][  0]LogTargetPlatformManager: Display: Building Assets For WindowsEditor
+[2026.05.31-05.51.26:546][  0]LogAudioDebug: Display: Lib vorbis DLL was dynamically loaded.
+[2026.05.31-05.51.26:562][  0]LogRendererCore: Ray tracing is disabled. Reason: disabled through project setting (r.RayTracing=0).
+[2026.05.31-05.51.26:578][  0]LogDerivedDataCache: Display: Memory: Max Cache Size: -1 MB
+[2026.05.31-05.51.26:594][  0]LogDerivedDataCache: FDerivedDataBackendGraph: Pak pak cache file ../../../../../../UE/T66/DerivedDataCache/DDC.ddp not found, will not use a pak cache.
+[2026.05.31-05.51.26:610][  0]LogDerivedDataCache: Unable to find inner node Pak for hierarchy Hierarchy.
+[2026.05.31-05.51.26:625][  0]LogDerivedDataCache: FDerivedDataBackendGraph: CompressedPak pak cache file ../../../../../../UE/T66/DerivedDataCache/Compressed.ddp not found, will not use a pak cache.
+[2026.05.31-05.51.26:643][  0]LogDerivedDataCache: Unable to find inner node CompressedPak for hierarchy Hierarchy.
+[2026.05.31-05.51.26:658][  0]LogDerivedDataCache: Display: ../../../Engine/DerivedDataCache/Compressed.ddp: Opened pak cache for reading. (1732 MiB)
+[2026.05.31-05.51.26:673][  0]LogDerivedDataCache: FDerivedDataBackendGraph: EnterprisePak pak cache file ../../../Enterprise/DerivedDataCache/Compressed.ddp not found, will not use a pak cache.
+[2026.05.31-05.51.26:688][  0]LogDerivedDataCache: Unable to find inner node EnterprisePak for hierarchy Hierarchy.
+[2026.05.31-05.51.26:702][  0]LogZenServiceInstance: Found Zen config default=C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Data
+[2026.05.31-05.51.27:035][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zen.exe service status'.
+[2026.05.31-05.51.27:400][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zen.exe service status'.
+[2026.05.31-05.51.27:907][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/DoPra/AppData/Local/UnrealEngine/5.7/Saved/Zen/zen.version', version: '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.05.31-05.51.27:922][  0]LogZenServiceInstance: InTree version at 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zenserver.exe' is '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.05.31-05.51.27:938][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zen.version', version: '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.05.31-05.51.27:954][  0]LogZenServiceInstance: Installed version at 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.05.31-05.51.27:970][  0]LogZenServiceInstance: Display: Installed service at 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is up to date
+[2026.05.31-05.51.27:985][  0]LogZenServiceInstance: Found existing instance running on port 8558 matching our settings, no actions needed
+[2026.05.31-05.51.28:239][  0]LogZenServiceInstance: Display: Unreal Zen Storage Server HTTP service at http://[::1]:8558 status: OK!.
+[2026.05.31-05.51.28:255][  0]LogZenServiceInstance: Local ZenServer AutoLaunch initialization completed in 0.335 seconds
+[2026.05.31-05.51.28:270][  0]LogDerivedDataCache: Display: ZenLocal: Using ZenServer HTTP service at [::1] with namespace ue.ddc status: OK!.
+[2026.05.31-05.51.28:287][  0]LogDerivedDataCache: C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: Speed tests took 0.02 seconds.
+[2026.05.31-05.51.28:303][  0]LogDerivedDataCache: Display: C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: Performance: Latency=0.06ms. RandomReadSpeed=758.93MBs, RandomWriteSpeed=41.92MBs. Assigned SpeedClass 'Local'
+[2026.05.31-05.51.28:342][  0]LogDerivedDataCache: Local: Using data cache path C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: DeleteOnly
+[2026.05.31-05.51.28:364][  0]LogDerivedDataCache: ZenShared: Disabled because Host is set to 'None'
+[2026.05.31-05.51.28:379][  0]LogDerivedDataCache: Unable to find inner node ZenShared for hierarchy Hierarchy.
+[2026.05.31-05.51.28:394][  0]LogDerivedDataCache: Shared: Disabled because no path is configured.
+[2026.05.31-05.51.28:411][  0]LogDerivedDataCache: Unable to find inner node Shared for hierarchy Hierarchy.
+[2026.05.31-05.51.28:426][  0]LogDerivedDataCache: Cloud: Disabled because Host is set to 'None'
+[2026.05.31-05.51.28:441][  0]LogDerivedDataCache: Unable to find inner node Cloud for hierarchy Hierarchy.
+[2026.05.31-05.51.28:458][  0]LogShaderCompilers: Guid format shader working directory is 21 characters bigger than the processId version (../../../../../../UE/T66/Intermediate/Shaders/WorkingDirectory/24480/).
+[2026.05.31-05.51.28:473][  0]LogShaderCompilers: Cleaned the shader compiler working directory 'C:/Users/DoPra/AppData/Local/Temp/UnrealShaderWorkingDir/826B85D14101640AFBB790A5058621EE/'.
+[2026.05.31-05.51.28:489][  0]LogXGEController: Cannot use XGE Controller as Incredibuild is not installed on this machine.
+[2026.05.31-05.51.28:505][  0]LogShaderCompilers: Display: No distributed shader compiler controller found
+[2026.05.31-05.51.28:524][  0]LogShaderCompilers: Display: Using 16 local workers for shader compilation
+[2026.05.31-05.51.28:537][  0]LogShaderCompilers: Display: Compiling shader autogen file: ../../../../../../UE/T66/Intermediate/ShaderAutogen/PCD3D_SM6/AutogenShaderHeaders.ush
+[2026.05.31-05.51.28:553][  0]LogShaderCompilers: Display: Autogen file is unchanged, skipping write.
+[2026.05.31-05.51.30:267][  0]LogSlate: Using FreeType 2.10.0
+[2026.05.31-05.51.30:269][  0]LogSlate: SlateFontServices - WITH_FREETYPE: 1, WITH_HARFBUZZ: 1
+[2026.05.31-05.51.30:284][  0]LogStreaming: Warning: Failed to read file '../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_24x.png' error.
+[2026.05.31-05.51.30:301][  0]LogSlate: Could not load file for Slate resource: [../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_24x.png] file: [../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_24x.png]
+[2026.05.31-05.51.30:316][  0]LogStreaming: Warning: Failed to read file '../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_128x.png' error.
+[2026.05.31-05.51.30:333][  0]LogSlate: Could not load file for Slate resource: [../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_128x.png] file: [../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_128x.png]
+[2026.05.31-05.51.30:459][  0]LogInit: Using OS detected language (en-US).
+[2026.05.31-05.51.30:467][  0]LogInit: Using OS detected locale (en-US).
+[2026.05.31-05.51.30:479][  0]LogTextLocalizationManager: No specific localization for 'en-US' exists, so 'en' will be used for the language.
+[2026.05.31-05.51.30:491][  0]LogAssetRegistry: FAssetRegistry took 0.0007 seconds to start up
+[2026.05.31-05.51.30:862][  0]LogCsvProfiler: Display: Metadata set : deviceprofile="WindowsEditor"
+[2026.05.31-05.51.30:870][  0]LogStreaming: Display: FlushAsyncLoading(1): 1 QueuedPackages, 0 AsyncPackages
+[2026.05.31-05.51.30:882][  0]LogPackageLocalizationCache: Processed 81 localized package path(s) for 1 prioritized culture(s) in 0.003745 seconds
+[2026.05.31-05.51.30:894][  0]LogTextureEncodingSettings: Display: Texture Encode Speed: Final (cook).
+[2026.05.31-05.51.30:906][  0]LogTextureEncodingSettings: Display: Oodle Texture Encode Speed settings: Fast: RDO Off Lambda=0, Effort=Normal Final: RDO Off Lambda=0, Effort=Normal
+[2026.05.31-05.51.30:918][  0]LogTextureEncodingSettings: Display: Shared linear texture encoding: Disabled
+[2026.05.31-05.51.30:930][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.30:943][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness because of a recursive sync load
+[2026.05.31-05.51.30:954][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.30:966][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.30:978][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec because of a recursive sync load
+[2026.05.31-05.51.30:990][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.31:002][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/WorldGridMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.31:014][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/WorldGridMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.31:026][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.31:038][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultPostProcessMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.31:049][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultLightFunctionMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultPostProcessMaterial because of a recursive sync load
+[2026.05.31-05.51.31:061][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultPostProcessMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.31:073][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultDeferredDecalMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultLightFunctionMaterial because of a recursive sync load
+[2026.05.31-05.51.31:085][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.31:097][  0]LogStreaming: Display: Package /Engine/EngineMaterials/WorldGridMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultDeferredDecalMaterial because of a recursive sync load
+[2026.05.31-05.51.31:109][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/WorldGridMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.31:121][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/EngineMaterials/WorldGridMaterial because of a recursive sync load
+[2026.05.31-05.51.31:133][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/WorldGridMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.05.31-05.51.31:178][  0]LogMeshReduction: Display: Using QuadricMeshReduction for automatic static mesh reduction
+[2026.05.31-05.51.31:188][  0]LogMeshReduction: Display: Using SkeletalMeshReduction for automatic skeletal mesh reduction
+[2026.05.31-05.51.31:199][  0]LogMeshReduction: Display: Using ProxyLODMeshReduction for automatic mesh merging
+[2026.05.31-05.51.31:212][  0]LogMeshReduction: Display: No distributed automatic mesh merging module available
+[2026.05.31-05.51.31:224][  0]LogMeshMerging: No distributed automatic mesh merging module available
+[2026.05.31-05.51.31:589][  0]LogShaderCompilers: Display: Compiling shader autogen file: ../../../../../../UE/T66/Intermediate/ShaderAutogen/PCD3D_SM5/AutogenShaderHeaders.ush
+[2026.05.31-05.51.31:597][  0]LogShaderCompilers: Display: Autogen file is unchanged, skipping write.
+[2026.05.31-05.51.31:609][  0]LogVirtualization: Display: VirtualizationSystem name found in ini file: None
+[2026.05.31-05.51.31:621][  0]LogVirtualization: Display: FNullVirtualizationSystem mounted, virtualization will be disabled
+[2026.05.31-05.51.31:643][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize started...
+[2026.05.31-05.51.31:645][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize took 2.119 ms
+[2026.05.31-05.51.31:667][  0]LogMoviePlayer: Initializing movie player
+[2026.05.31-05.51.31:669][  0]LogInit: XR: Instanced Stereo Rendering is Disabled
+[2026.05.31-05.51.31:681][  0]LogInit: XR: MultiViewport is Disabled
+[2026.05.31-05.51.31:693][  0]LogInit: XR: Mobile Multiview is Disabled
+[2026.05.31-05.51.31:705][  0]LogStats: UGameplayTagsManager::InitializeManager -  0.000 s
+[2026.05.31-05.51.31:971][  0]LogMetaSound: Display: MetaSound Page Target Initialized to 'Default'
+[2026.05.31-05.51.31:981][  0]LogAudio: Display: Registering Engine Module Parameter Interfaces...
+[2026.05.31-05.51.31:993][  0]LogMetaSound: MetaSound Engine Initialized
+[2026.05.31-05.51.32:040][  0]LogCollectionManager: Loaded 0 collections in 0.001933 seconds
+[2026.05.31-05.51.32:050][  0]LogFileCache: Scanning file cache for directory 'C:/UE/T66/Saved/Collections/' took 0.00s
+[2026.05.31-05.51.32:062][  0]LogFileCache: Scanning file cache for directory 'C:/UE/T66/Content/Developers/DoPra/Collections/' took 0.00s
+[2026.05.31-05.51.32:076][  0]LogFileCache: Scanning file cache for directory 'C:/UE/T66/Content/Collections/' took 0.00s
+[2026.05.31-05.51.32:086][  0]LogCollectionManager: Fixed up redirectors for 0 collections in 0.000000 seconds (updated 0 objects)
+[2026.05.31-05.51.32:427][  0]LogMaterial: Warning: Expression include file path '/Project/ToonStyle/ToonShadingCommon.ush' is invalid, removing from cached data for material '/Game/ToonStyle/Materials/M_Toon_Character.M_Toon_Character'.
+[2026.05.31-05.51.32:583][  0]LogAndroidPermission: UAndroidPermissionCallbackProxy::GetInstance
+[2026.05.31-05.51.32:736][  0]SourceControl: Revision control is disabled
+[2026.05.31-05.51.32:835][  0]LogUObjectArray: 45419 objects as part of root set at end of initial load.
+[2026.05.31-05.51.32:845][  0]LogUObjectArray: CloseDisregardForGC: 0/0 objects in disregard for GC pool
+[2026.05.31-05.51.33:049][  0]LogAutomationTest: Error: Saving and loading a serialized object containing FText properties failed to maintain FText values.
+[2026.05.31-05.51.33:051][  0]LogEngine: Initializing Engine...
+[2026.05.31-05.51.33:355][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.12.dll
+[2026.05.31-05.51.33:373][  0]LogNetVersion: Set ProjectVersion to alpha-0.9. Version Checksum will be recalculated on next use.
+[2026.05.31-05.51.33:377][  0]LogInit: Texture streaming: Enabled
+[2026.05.31-05.51.33:446][  0]LogCsvProfiler: Display: Metadata set : largeworldcoordinates="1"
+[2026.05.31-05.51.33:455][  0]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.05.31-05.51.33:467][  0]LogPackageLocalizationCache: Processed 81 localized package path(s) for 1 prioritized culture(s) in 0.003518 seconds
+[2026.05.31-05.51.33:478][  0]LogSlate: FontCache flush requested. Reason: Culture for localization was changed
+[2026.05.31-05.51.33:489][  0]LogSlate: FontCache flush requested. Reason: Culture for localization was changed
+[2026.05.31-05.51.33:765][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.31-05.51.33:769][  0]LogWindows: WindowsPlatformFeatures enabled
+[2026.05.31-05.51.33:780][  0]LogT66Achievements: [Progression] LoadOrCreateProfile: Loaded existing profile from save file
+[2026.05.31-05.51.33:793][  0]LogT66Achievements: [SKIN] LoadOrCreateProfile: OwnedHeroSkinsByHero.Num=0, CC Balance=11
+[2026.05.31-05.51.33:819][  0]LogT66Backend: Backend: configured URL = https://t66-backend.vercel.app
+[2026.05.31-05.51.33:831][  0]LogT66Buff: [Buffs] LoadOrCreateSave: Loaded existing save, legacyBalance=0
+[2026.05.31-05.51.33:843][  0]LogT66GameInstance: [LOAD] ResolveCachedDataTable waited 16.4ms for the existing core DataTable preload handle (/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals).
+[2026.05.31-05.51.33:855][  0]LogT66RuntimeData: RuntimeData: leaderboard targets initialized ScoreSource=None ScoreTargets=0 SpeedRunSource=None SpeedRunTargets=0
+[2026.05.31-05.51.33:942][  0]LogT66DifficultyTuning: Warning: Difficulty tuning requested by GetDifficultyTuning before DataTable '/Game/Data/DT_DifficultyTuning.DT_DifficultyTuning' was available; using built-in defaults.
+[2026.05.31-05.51.33:950][  0]LogT66PlayerExperience: Warning: PlayerExperience tuning requested by GetDifficultyTuning before DataTable '/Game/Data/DT_PlayerExperience.DT_PlayerExperience' was available; returning empty tuning.
+[2026.05.31-05.51.33:964][  0]LogT66Steam: Warning: SteamHelper: SteamAPI_Init failed for Steam App ID 4464300. For local standalone Development runs, launch with a matching steam_appid.txt beside the executable or through the Steam-distributed build for the real app.
+[2026.05.31-05.51.33:976][  0]LogT66Steam: Warning: SteamHelper: Steam not available and no DevTicket configured. Online features disabled.
+[2026.05.31-05.51.33:988][  0]LogTemp: T66MiniDataSubsystem: loaded 16 mini idols from 'C:/UE/T66/Content/Mini/Data/T66Mini_Idols.csv'.
+[2026.05.31-05.51.34:027][  0]LogT66GameInstance: [LOAD] PrimeCorePresentationAssetsAsync queued 2 startup combat-presentation assets.
+[2026.05.31-05.51.34:038][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Default.png'.
+[2026.05.31-05.51.34:051][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Default@2x.png'.
+[2026.05.31-05.51.34:062][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Hand.png'.
+[2026.05.31-05.51.34:074][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Hand@2x.png'.
+[2026.05.31-05.51.34:086][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Crosshairs.png'.
+[2026.05.31-05.51.34:098][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Crosshairs@2x.png'.
+[2026.05.31-05.51.34:111][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_GrabHandClosed.png'.
+[2026.05.31-05.51.34:123][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_GrabHandClosed@2x.png'.
+[2026.05.31-05.51.34:134][  0]LogSlate: Updating window title bar state: overlay mode, drag disabled, window buttons hidden, title bar hidden
+[2026.05.31-05.51.34:145][  0]LogInit: Display: Game Engine Initialized.
+[2026.05.31-05.51.34:157][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/SC_Music (0xA50554B160CEB8C0) - The package to load does not exist on disk or in the loader
+[2026.05.31-05.51.34:168][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/SC_SFX (0xF74B0B9818B0CACA) - The package to load does not exist on disk or in the loader
+[2026.05.31-05.51.34:180][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/Music/MainTheme (0xA0EE5E1D7EC29F75) - The package to load does not exist on disk or in the loader
+[2026.05.31-05.51.34:195][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/MainTheme (0x92931D8621517077) - The package to load does not exist on disk or in the loader
+[2026.05.31-05.51.34:205][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/Music/Theme (0xA9D67F6E79B7345C) - The package to load does not exist on disk or in the loader
+[2026.05.31-05.51.34:217][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/Theme (0x282CC4AD87A4F790) - The package to load does not exist on disk or in the loader
+[2026.05.31-05.51.34:230][  0]LogNNEDenoiser: Ray Tracing is not enabled, therefore NNEDenoiser is not registered!
+[2026.05.31-05.51.34:242][  0]LogNiagaraEditor: GEditor isn't valid! Particle reset commands will not work for Niagara components!
+[2026.05.31-05.51.34:254][  0]LogPython: Python enabled via CVar 'Engine.Python.IsEnabledByDefault'
+[2026.05.31-05.51.34:266][  0]LogPython: Using Python 3.11.8
+[2026.05.31-05.51.34:278][  0]LogPython: Display: No pip-enabled plugins with python dependencies found, skipping
+[2026.05.31-05.51.34:564][  0]LogInit: Display: Starting Game.
+[2026.05.31-05.51.34:576][  0]LogGlobalStatus: UEngine::Browse Started Browse: "/Game/Maps/GameplayLevel?Name=Player"
+[2026.05.31-05.51.34:588][  0]LogNet: Browse: /Game/Maps/GameplayLevel?Name=Player
+[2026.05.31-05.51.35:406][  0]LogNiagaraEditor: Niagara graph NiagaraGraph /Niagara/Modules/Update/Material/DynamicMaterialParameters.DynamicMaterialParameters:NiagaraScriptSource_3.NiagaraGraph_0: The default value declaration for the variable 'Module.Index0Float3Write' is not consistent between the graph and the metadata.
+  Either change the default mode to 'custom' or check the input pins in the parameter map get node in the graph.
+[2026.05.31-05.51.35:408][  0]LogNiagaraEditor: Niagara graph NiagaraGraph /Niagara/Modules/Update/Material/DynamicMaterialParameters.DynamicMaterialParameters:NiagaraScriptSource_3.NiagaraGraph_0: The default value declaration for the variable 'Module.Index1Float3Write' is not consistent between the graph and the metadata.
+  Either change the default mode to 'custom' or check the input pins in the parameter map get node in the graph.
+[2026.05.31-05.51.35:745][  0]LogLoad: LoadMap: /Game/Maps/GameplayLevel?Name=Player
+[2026.05.31-05.51.35:755][  0]LogWorld: BeginTearingDown for /Temp/Untitled_0
+[2026.05.31-05.51.35:767][  0]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.05.31-05.51.35:778][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.31-05.51.35:790][  0]LogT66EnemyPool: [GOLD] EnemyPool: shutting down. Total acquired=0, reused=0 (0%)
+[2026.05.31-05.51.35:802][  0]LogUObjectHash: Compacting FUObjectHashTables data took   0.69ms
+[2026.05.31-05.51.35:814][  0]LogChaosDD: Creating Chaos Debug Draw Scene for world GameplayLevel
+[2026.05.31-05.51.35:826][  0]LogLoad: Game class is 'BP_GameplayGameMode_C'
+[2026.05.31-05.51.35:841][  0]LogWorld: Bringing World /Game/Maps/GameplayLevel.GameplayLevel up for play (max tick rate 0) at 2026.05.31-02.51.35
+[2026.05.31-05.51.35:853][  0]LogWorld: Bringing up level for play took: 0.000560
+[2026.05.31-05.51.35:867][  0]LogGameMode: FindPlayerStart: PATHS NOT DEFINED or NO PLAYERSTART with positive rating
+[2026.05.31-05.51.35:998][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.36:008][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.36:020][  0]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 0/0 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.36:031][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.36:044][  0]LogT66GameMode: Checking level setup...
+[2026.05.31-05.51.36:055][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.36:067][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.36:082][  0]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 0/0 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.36:095][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.36:106][  0]LogT66GameMode: T66GameMode SpawnDefaultPawnFor - level setup scheduled; content will spawn after landscape is ready.
+[2026.05.31-05.51.36:118][  0]LogT66GameMode: Warning: Recovering gameplay level spawn from SpawnDefaultPawnFor because terrain/content bootstrap was not ready.
+[2026.05.31-05.51.36:130][  0]LogT66GameMode: [MAP] Generating main map terrain (layout=Tower, seed=13276, hilliness=0.00, grid=81, cell=2000, step=1000, scale=10.00)
+[2026.05.31-05.51.36:146][  0]LogT66GameMode: [MAP] Cached tower-map spawn surface at X=0.000 Y=3575.000 Z=1100.000
+[2026.05.31-05.51.36:156][  0]LogT66TowerMapTerrain: Display: [ATMOSPHERE] Registered 4 outer shell wall box(es) for floor 1.
+[2026.05.31-05.51.36:169][  0]LogT66TowerLighting: Display: [ATMOSPHERE] Spawned 8 Dungeon torch light(s) for floor 1 (maze=4 shell=4, intensity=500.0 radius=600.0 color=(R=1.000000,G=0.300000,B=0.050000,A=1.000000) falloff=2.00 vOffset=450.0 cap=200) 
+[2026.05.31-05.51.36:182][  0]LogT66TowerMapTerrain: [MAP] Tower terrain floor 1 spawned in 16.3 ms (collision proxies +12, instanced actors +13, HISM components +0, HISM instances +0, maze walls=4, walkable boxes=1, generatedKit=1).
+[2026.05.31-05.51.36:195][  0]LogT66TowerMapTerrain: Display: [ATMOSPHERE] Registered 4 outer shell wall box(es) for floor 2.
+[2026.05.31-05.51.36:207][  0]LogT66TowerLighting: Display: [ATMOSPHERE] Spawned 56 Dungeon torch light(s) for floor 2 (maze=52 shell=4, intensity=500.0 radius=600.0 color=(R=1.000000,G=0.300000,B=0.050000,A=1.000000) falloff=2.00 vOffset=450.0 cap=200) 
+[2026.05.31-05.51.36:218][  0]LogT66TowerMapTerrain: [MAP] Tower terrain floor 2 spawned in 95.6 ms (collision proxies +189, instanced actors +290, HISM components +0, HISM instances +0, maze walls=119, walkable boxes=66, generatedKit=1).
+[2026.05.31-05.51.36:230][  0]LogT66TowerMapTerrain: Display: [ATMOSPHERE] Registered 4 outer shell wall box(es) for floor 3.
+[2026.05.31-05.51.36:314][  0]LogT66TowerLighting: Display: [ATMOSPHERE] Spawned 55 Dungeon torch light(s) for floor 3 (maze=51 shell=4, intensity=500.0 radius=600.0 color=(R=1.000000,G=0.300000,B=0.050000,A=1.000000) falloff=2.00 vOffset=450.0 cap=200) 
+[2026.05.31-05.51.36:331][  0]LogT66TowerMapTerrain: [MAP] Tower terrain floor 3 spawned in 137.5 ms (collision proxies +210, instanced actors +329, HISM components +0, HISM instances +0, maze walls=128, walkable boxes=78, generatedKit=1).
+[2026.05.31-05.51.36:338][  0]LogT66TowerMapTerrain: Display: [ATMOSPHERE] Registered 4 outer shell wall box(es) for floor 4.
+[2026.05.31-05.51.36:395][  0]LogT66TowerLighting: Display: [ATMOSPHERE] Spawned 49 Dungeon torch light(s) for floor 4 (maze=45 shell=4, intensity=500.0 radius=600.0 color=(R=1.000000,G=0.300000,B=0.050000,A=1.000000) falloff=2.00 vOffset=450.0 cap=200) 
+[2026.05.31-05.51.36:405][  0]LogT66TowerMapTerrain: [MAP] Tower terrain floor 4 spawned in 73.4 ms (collision proxies +199, instanced actors +311, HISM components +0, HISM instances +0, maze walls=123, walkable boxes=71, generatedKit=1).
+[2026.05.31-05.51.36:418][  0]LogT66TowerMapTerrain: Display: [ATMOSPHERE] Registered 4 outer shell wall box(es) for floor 5.
+[2026.05.31-05.51.36:429][  0]LogT66TowerLighting: Display: [ATMOSPHERE] Skipped torch placement for floor 5 (role=Boss, reason=boss-floor)
+[2026.05.31-05.51.36:440][  0]LogT66TowerMapTerrain: [MAP] Tower terrain floor 5 spawned in 2.7 ms (collision proxies +9, instanced actors +10, HISM components +0, HISM instances +0, maze walls=4, walkable boxes=1, generatedKit=1).
+[2026.05.31-05.51.36:452][  0]LogT66TowerMapTerrain: [MAP] Tower terrain spawned in 343.0 ms across 5 floors (collision proxies=619, instanced actors=953, HISM components=0, HISM instances=0, generatedKit=1).
+[2026.05.31-05.51.36:464][  0]LogT66Hero: Hero body style set to: Chad (Cylinder)
+[2026.05.31-05.51.36:476][  0]LogT66Hero: Hero initialized: Founding Chad, BodyStyle: Chad, Skin: Default, Color: (0.30, 0.50, 0.40)
+[2026.05.31-05.51.36:488][  0]LogT66Hero: [ANIM] HeroBase::InitializeHero HeroID=Hero_1 BodyStyle=Chad SkinID=Default bPreviewMode=0 bUseIdleAnimation=0 VisualID=Hero_1_Chad
+[2026.05.31-05.51.36:507][  0]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Hero_1_Chad ResolvedRow=Hero_1_Chad SkeletalMesh path=/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad Loaded=YES
+[2026.05.31-05.51.36:513][  0]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Hero_1_Chad ResolvedRow=Hero_1_Chad StaticMesh path=/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad.SM_Hero_1_Chad Loaded=YES
+[2026.05.31-05.51.36:523][  0]LogT66CharacterVisuals: [OUTLINE] ResolveVisual VisualID=Hero_1_Chad ResolvedRow=Hero_1_Chad OutlineStaticMesh path=/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline.SM_Hero_1_Chad_Outline Loaded=YES
+[2026.05.31-05.51.36:649][  0]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=Hero_1_Chad ResolvedRow=Hero_1_Chad IdleAnimation path=/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Idle.AM_Hero_1_Chad_Idle IdleAnim=AM_Hero_1_Chad_Idle
+[2026.05.31-05.51.36:686][  0]LogT66CharacterVisuals: [GOLD] ResolveVisual: Hero_1_Chad took 277.3ms (sync asset loads — consider preloading)
+[2026.05.31-05.51.36:698][  0]LogT66GameMode: Spawned hero: Founding Chad (Hero_1), BodyStyle: Chad, Skin: Default, Color: (0.30, 0.50, 0.40)
+[2026.05.31-05.51.36:711][  0]LogViewport: Display: Viewport MouseCaptureMode Changed, CapturePermanently_IncludingInitialMouseDown -> CapturePermanently
+[2026.05.31-05.51.36:722][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.31-05.51.36:734][  0]LogT66Style: [T66Style] Load UI retro retainer material -> OK
+[2026.05.31-05.51.36:746][  0]LogT66Backend: Backend: fetching leaderboard key=score_alltime_solo_easy_global
+[2026.05.31-05.51.36:757][  0]LogT66Backend: Backend: fetching leaderboard key=speedrun_alltime_solo_easy_global
+[2026.05.31-05.51.36:769][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.31-05.51.36:781][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.31-05.51.36:792][  0]LogT66GameMode: Companion spawn using local game-instance fallback because session companion is None. GICompanion=None
+[2026.05.31-05.51.36:804][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.31-05.51.36:816][  0]LogT66GameMode: [LOAD] SpawnMainMapTerrain finished in 721.3 ms.
+[2026.05.31-05.51.36:828][  0]LogT66TrapSubsystem: [Traps] DungeonWallArrow x1
+[2026.05.31-05.51.36:842][  0]LogT66TrapSubsystem: [Traps] ForestThornVolley x2
+[2026.05.31-05.51.36:852][  0]LogT66TrapSubsystem: [Traps] OceanHarpoonVolley x2
+[2026.05.31-05.51.36:864][  0]LogT66TrapSubsystem: [Traps] Spawned 5 floor-driven traps for tower stage 1 on Floor 2 x1, Floor 3 x2, Floor 4 x2.
+[2026.05.31-05.51.36:877][  0]LogT66GameMode: [MAP] Tower terrain active floor 1 (visual actors changed=940, collision proxies changed=607).
+[2026.05.31-05.51.36:889][  0]LogT66GameMode: [MAP] Tower population spawned on mob floors=3: chests 6/6, crates 8/8, loot wheels 0/0, fountains 2/2, loot bags 3/3, arcade machines 0/3, vendors 3/3, casino interactables 1/3 chance 45%, vehicles 1, saints 1, totems 3/3.
+[2026.05.31-05.51.36:900][  0]LogT66GameMode: [LOAD] SpawnStageStructuresAndInteractables finished in 38.4 ms.
+[2026.05.31-05.51.36:912][  0]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Dungeon_SewerSlimeKing ResolvedRow=Dungeon_SewerSlimeKing StaticMesh path=/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/QuadRetro/SM_Dungeon_SewerSlimeKing_QuadRetro.SM_Dungeon_SewerSlimeKing_QuadRetro Loaded=YES
+[2026.05.31-05.51.36:924][  0]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=Dungeon_SewerSlimeKing ResolvedRow=Dungeon_SewerSlimeKing IdleAnimation is null (no idle anim row)
+[2026.05.31-05.51.36:935][  0]LogT66GameMode: Spawned boss for Stage 1 (BossID=Dungeon_SewerSlimeKing)
+[2026.05.31-05.51.36:947][  0]LogT66GameMode: [LOAD] PrepareMainMapStage finished in 17.0 ms.
+[2026.05.31-05.51.36:959][  0]LogT66GameMode: T66GameMode - Main map terrain content spawned. Main-board combat and random interactables are waiting for the player to enter the board.
+[2026.05.31-05.51.36:971][  0]LogT66GameMode: Warning: Spawn recovery already created a pawn for this controller; reusing it to avoid duplicate hero spawns.
+[2026.05.31-05.51.36:982][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.31-05.51.36:994][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.31-05.51.37:006][  0]LogT66GameMode: Companion spawn using local game-instance fallback because session companion is None. GICompanion=None
+[2026.05.31-05.51.37:018][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.31-05.51.37:030][  0]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D.SM_LootBag_Shared_Pixal3D being ready before playing
+[2026.05.31-05.51.37:043][  0]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D being ready before playing
+[2026.05.31-05.51.37:054][  0]LogStaticMesh: Display: Waiting for static meshes to be ready 0/2 (/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D) ...
+[2026.05.31-05.51.37:066][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.05.31-05.51.37:078][  0]LogT66PlayerController: PlayerController: Gameplay mode initialized
+[2026.05.31-05.51.37:090][  0]LogT66Combat: [VFX] Pixel particle system loaded: NS_PixelParticle
+[2026.05.31-05.51.37:102][  0]LogT66Combat: [GOLD] CombatComponent: initialized — overlap sphere (radius=1000), VFX pooling (AutoRelease), timer-based fire (1.00s)
+[2026.05.31-05.51.37:113][  0]LogT66Hero: HeroBase BeginPlay - Location: (0.0, 3575.0, 1202.2)
+[2026.05.31-05.51.37:125][  0]LogT66Hero: HeroBase - FollowCamera is active: YES
+[2026.05.31-05.51.37:136][  0]LogT66ActorRegistry: [GOLD] ActorRegistry: registered NPC T66SaintNPC_0 (total: 1)
+[2026.05.31-05.51.37:147][  0]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Saint ResolvedRow=Saint StaticMesh path=/Game/Characters/NPCs/Saint/QuadRetro/SM_Saint_QuadRetro.SM_Saint_QuadRetro Loaded=YES
+[2026.05.31-05.51.37:160][  0]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=Saint ResolvedRow=Saint IdleAnimation is null (no idle anim row)
+[2026.05.31-05.51.37:171][  0]LogStaticMesh: Display: Waiting for static meshes to be ready 0/1 (/Game/Characters/NPCs/Saint/QuadRetro/SM_Saint_QuadRetro) ...
+[2026.05.31-05.51.37:183][  0]LogLoad: Took 1.123874 seconds to LoadMap(/Game/Maps/GameplayLevel)
+[2026.05.31-05.51.37:194][  0]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Maps/GameplayLevel
+[2026.05.31-05.51.37:206][  0]LogSlate: Took 0.000186 seconds to synchronously load lazily loaded font '../../../../../../UE/T66/RuntimeDependencies/T66/Fonts/Jersey10-Regular.ttf' (76K)
+[2026.05.31-05.51.37:217][  0]LogSlate: Took 0.000112 seconds to synchronously load lazily loaded font '../../../Engine/Content/Slate/Fonts/Roboto-Regular.ttf' (155K)
+[2026.05.31-05.51.37:229][  0]LogAssetRegistry: Display: No AssetDiscovery cache present at ../../../../../../UE/T66/Intermediate/CachedAssetRegistryDiscovery.bin. AssetRegistry discovery of files will be uncached.
+[2026.05.31-05.51.37:240][  0]LogAssetRegistry: Display: Asset registry cache read as 77.6 MiB from ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_0.bin.
+[2026.05.31-05.51.37:252][  0]LogAssetRegistry: Display: AssetDataGatherer spent 0.115s loading caches ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_*.bin.
+[2026.05.31-05.51.37:298][  0]LogAssetRegistry: AssetRegistryGather time 0.1914s: AssetDataDiscovery 0.0000s, AssetDataGather 0.1298s, StoreResults 0.0615s. Wall time 6.8360s.
+	NumCachedDirectories 0. NumUncachedDirectories 2883. NumCachedFiles 11518. NumUncachedFiles 3.
+	BackgroundTickInterruptions 0.
+[2026.05.31-05.51.37:307][  0]LogAssetRegistry: Display: Starting OnFilesLoaded.Broadcast
+[2026.05.31-05.51.37:319][  0]LogAssetRegistry: Display: Completed OnFilesLoaded.Broadcast: -0.326s
+[2026.05.31-05.51.37:330][  0]LogInit: Display: Engine is initialized. Leaving FEngineLoop::Init()
+[2026.05.31-05.51.37:343][  0]LogLoad: (Engine Initialization) Total time: 21.20 seconds
+[2026.05.31-05.51.37:354][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.37:366][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.37:378][  0]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.37:391][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.37:402][  0]LogT66GameInstance: [LOAD] PrimeHeroSelectionAssetsAsync queued 103 startup hero-selection assets.
+[2026.05.31-05.51.37:414][  0]LogTemp: Warning: PlayerSettings: SFX SoundClass missing or wrong type after async preload at '/Game/Audio/SC_SFX.SC_SFX'.
+[2026.05.31-05.51.37:426][  0]LogTemp: Warning: PlayerSettings: Music SoundClass missing or wrong type after async preload at '/Game/Audio/SC_Music.SC_Music'.
+[2026.05.31-05.51.37:450][  0]LogT66Audio: Loaded 96 audio event rows from /Game/Data/DT_AudioEvents.DT_AudioEvents.
+[2026.05.31-05.51.37:463][  0]LogT66RuntimeData: RuntimeData: loaded leaderboard score targets from cooked DataTable '/Game/Data/Leaderboard_ScoreTargets.Leaderboard_ScoreTargets' Added=20 Total=20
+[2026.05.31-05.51.37:476][  0]LogT66RuntimeData: RuntimeData: loaded leaderboard speed run targets from cooked DataTable '/Game/Data/DT_Leaderboard_SpeedrunTargets.DT_Leaderboard_SpeedrunTargets' Added=23 Total=23
+[2026.05.31-05.51.37:490][  0]LogT66GameInstance: [LOAD] Startup combat-presentation asset warmup completed.
+[2026.05.31-05.51.37:503][  0]LogContentStreaming: Texture pool size now 800 MB
+[2026.05.31-05.51.37:515][  0]LogCsvProfiler: Display: Metadata set : streamingpoolsizemb="800"
+[2026.05.31-05.51.37:529][  0]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Game/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D.SM_WeaponAltar_Pixal3D being ready before playing
+[2026.05.31-05.51.37:542][  0]LogStaticMesh: Display: Waiting on static mesh StaticMesh /Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D.SM_DifficultyTotem_Pixal3D being ready before playing
+[2026.05.31-05.51.37:553][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.31-05.51.37:566][  0]LogAutomationController: Ignoring very large delta of 17056712.40 seconds in calls to FAutomationControllerManager::Tick() and not penalizing unresponsive tests
+[2026.05.31-05.51.37:577][  0]LogDataTable: Warning: UDataTable::FindRow : 'GetItemData' requested row 'Item_Alchemy' not in DataTable '/Game/Data/DT_Items.DT_Items'.
+[2026.05.31-05.51.37:589][  0]LogT66CommunityContent: Warning: Clearing invalid community starting item 'Item_Alchemy' from 'Super Duper Challange'.
+[2026.05.31-05.51.37:604][  0]LogDataTable: Warning: UDataTable::FindRow : 'GetItemData' requested row 'Item_Alchemy' not in DataTable '/Game/Data/DT_Items.DT_Items'.
+[2026.05.31-05.51.37:617][  0]LogT66CommunityContent: Warning: Clearing invalid community starting item 'Item_Alchemy' from 'Super Duper Challange'.
+[2026.05.31-05.51.37:630][  0]LogT66Backend: Backend: leaderboard fetched key=score_alltime_solo_easy_global entries=10 total=20
+[2026.05.31-05.51.37:643][  0]LogT66Backend: Backend: leaderboard fetched key=speedrun_alltime_solo_easy_global entries=10 total=18
+[2026.05.31-05.51.37:655][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.31-05.51.37:667][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.31-05.51.37:679][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... started...
+[2026.05.31-05.51.37:691][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... took 23.361 ms
+[2026.05.31-05.51.37:702][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... started...
+[2026.05.31-05.51.37:714][  0]LogPython: registering <class 'ControlRigWorkflows.workflow_deformation_rig_preset.provider'>
+
+[2026.05.31-05.51.37:736][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... took 335.925 ms (total: 359.287 ms)
+[2026.05.31-05.51.37:747][  1]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Importers/USDImporter/Content/Python/init_unreal.py... started...
+[2026.05.31-05.51.37:759][  1]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Importers/USDImporter/Content/Python/init_unreal.py... took 122 us (total: 359.409 ms)
+[2026.05.31-05.51.37:770][  1]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/MovieScene/MovieRenderPipeline/Content/Python/init_unreal.py... started...
+[2026.05.31-05.51.37:782][  2]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/MovieScene/MovieRenderPipeline/Content/Python/init_unreal.py... took 1.737 ms (total: 361.147 ms)
+[2026.05.31-05.51.37:793][  3]LogStreaming: Display: FlushAsyncLoading(506): 1 QueuedPackages, 250 AsyncPackages
+[2026.05.31-05.51.37:805][  4]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.37:817][  5]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.37:829][  6]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.37:841][  8]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.37:852][  9]LogSlate: Took 0.000166 seconds to synchronously load lazily loaded font '../../../Engine/Content/Slate/Fonts/Roboto-Regular.ttf' (155K)
+[2026.05.31-05.51.37:864][ 11]LogSlate: Took 0.000192 seconds to synchronously load lazily loaded font '../../../../../../UE/T66/RuntimeDependencies/T66/Fonts/Jersey10-Regular.ttf' (76K)
+[2026.05.31-05.51.38:023][ 23]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.38:033][ 24]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.38:044][ 25]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.38:057][ 26]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.38:117][ 34]LogT66GameInstance: [LOAD] Startup hero-selection asset warmup completed.
+[2026.05.31-05.51.38:362][ 58]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.38:374][ 58]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.38:385][ 58]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.38:397][ 58]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.38:410][ 58]LogDataTable: Warning: UDataTable::FindRow : 'GetItemData' requested row 'Item_CritDamage' not in DataTable '/Game/Data/DT_Items.DT_Items'.
+[2026.05.31-05.51.38:420][ 58]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.38:433][ 58]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.38:445][ 58]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.38:456][ 58]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.38:468][ 58]LogT66Buff: [Buffs] LoadOrCreateSave: Loaded existing save, legacyBalance=0
+[2026.05.31-05.51.38:479][ 58]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.38:490][ 58]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.38:502][ 58]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.38:515][ 58]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.38:526][ 58]LogT66Buff: [Buffs] LoadOrCreateSave: Loaded existing save, legacyBalance=0
+[2026.05.31-05.51.38:537][ 58]LogStreaming: Display: FlushAsyncLoading(507): 1 QueuedPackages, 132 AsyncPackages
+[2026.05.31-05.51.38:549][ 58]LogChaos: Display: Input trimesh contains 8 bad triangles.
+[2026.05.31-05.51.38:561][ 58]LogT66Combat: Display: CombatVFXProductionSpawned Binding=Hero1Axe_Pierce_Base SourceType=WeaponBase SourceID=Hero_1_black_pierce HeroID=Hero_1 AttackCategory=Pierce System=/Game/VFX/Hero1/Axe/Pierce/NS_Hero1AxePierce_MeshSlash.NS_Hero1AxePierce_MeshSlash Location=V(Y=3575.00, Z=1266.15) VisualPivot=V(Y=3575.00, Z=1266.15) DamageCenter=V(X=300.00, Y=3695.00, Z=1366.15) DamageCenterValid=0 ImpactPoint=V(X=300.00, Y=3695.00, Z=1366.15) ImpactPointValid=1 VisualAnchorModel=PathAnchored ImpactOffsetFromDamageCenter=0.00 Forward=V(X=0.93, Y=0.37) EffectiveSlashRadius=0.00 EffectiveSlashInnerRadius=0.00 AoeInnerRadiusRatio=0.000 BaseVisualRadius=80.00 ProjectileScaleMultiplier=1.058 VisualScale=0.010 BaseFireIntervalSeconds=1.000 EffectiveFireIntervalSeconds=0.948 RawVisualPlaybackMultiplier=1.055 VisualPlaybackMultiplier=1.055 BasePlaybackSeconds=0.300 ExpectedVisualDuration=0.284 EffectiveDamagePerShot=28 VFXProfile=MeshSlashPierce EffectPacketID=Hero1AxePierceMechanismPacket PathLineLength=2595.60 PathTubeRadius=84.67 VisualScaleVec=V(X=2595.60, Y=84.67, Z=84.67)
+[2026.05.31-05.51.38:573][ 59]LogT66Buff: [Buffs] LoadOrCreateSave: Loaded existing save, legacyBalance=0
+[2026.05.31-05.51.38:584][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.38:595][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.38:608][ 59]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.38:619][ 59]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.38:631][ 59]LogT66Buff: [Buffs] LoadOrCreateSave: Loaded existing save, legacyBalance=0
+[2026.05.31-05.51.38:642][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.38:654][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.38:665][ 59]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.38:677][ 59]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.38:688][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.38:700][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.38:710][ 59]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.38:724][ 59]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.38:735][ 59]LogT66Buff: [Buffs] LoadOrCreateSave: Loaded existing save, legacyBalance=0
+[2026.05.31-05.51.38:747][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.38:759][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.38:771][ 59]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.38:783][ 59]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.38:795][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.38:807][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.38:818][ 59]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.38:830][ 59]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.38:841][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.05.31-05.51.38:853][ 59]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.05.31-05.51.38:866][ 59]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.05.31-05.51.38:877][ 59]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.05.31-05.51.38:890][ 59]LogTemp: Display: [StatPipelineSmoke] ok=1 saved=1 output=C:/UE/T66/Reports/AgentReviews/20260531_HeadshotChanceStat/stat_pipeline_smoke_final.json
+[2026.05.31-05.51.38:902][ 59]LogWindows: FPlatformMisc::RequestExitWithStatus(0, 0, T66StatPipelineSmokeComplete)
+[2026.05.31-05.51.38:914][ 59]LogCore: Engine exit requested (reason: Win RequestExit)
+[2026.05.31-05.51.38:926][ 59]LogCore: Engine exit requested (reason: EngineExit() was called; note: exit was already requested)
+[2026.05.31-05.51.38:939][ 59]LogStaticMesh: Abandoning remaining async distance field tasks for shutdown
+[2026.05.31-05.51.38:951][ 59]LogStaticMesh: Abandoning remaining async card representation tasks for shutdown
+[2026.05.31-05.51.38:964][ 59]LogStreaming: Display: FlushAsyncLoading(): 0 QueuedPackages, 131 AsyncPackages
+[2026.05.31-05.51.40:021][ 59]LogInit: Display: PreExit Game.
+[2026.05.31-05.51.40:024][ 59]LogWorld: BeginTearingDown for /Game/Maps/GameplayLevel
+[2026.05.31-05.51.40:036][ 59]LogT66ActorRegistry: [GOLD] ActorRegistry: unregistered NPC T66SaintNPC_0 (total: 0)
+[2026.05.31-05.51.40:073][ 59]LogWorld: UWorld::CleanupWorld for GameplayLevel, bSessionEnded=true, bCleanupResources=true
+[2026.05.31-05.51.40:081][ 59]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.05.31-05.51.40:093][ 59]LogT66EnemyPool: [GOLD] EnemyPool: shutting down. Total acquired=0, reused=0 (0%)
+[2026.05.31-05.51.40:105][ 59]LogRuntimeTelemetry: Recording EnginePreExit events
+[2026.05.31-05.51.40:195][ 59]LogSlate: Window 'T66 (64-bit Development PCD3D_SM6) ' being destroyed
+[2026.05.31-05.51.40:206][ 59]LogWindowsTextInputMethodSystem: Activated input method: English (United States) - (Keyboard).
+[2026.05.31-05.51.40:216][ 59]LogSlate: Slate User Destroyed.  User Index 0, Is Virtual User: 0
+[2026.05.31-05.51.40:240][ 59]LogExit: Preparing to exit.
+[2026.05.31-05.51.40:265][ 59]LogUObjectHash: Compacting FUObjectHashTables data took   1.16ms
+[2026.05.31-05.51.40:363][ 59]LogMoviePlayer: Shutting down movie player
+[2026.05.31-05.51.40:397][ 59]LogSlate: Updating window title bar state: overlay mode, drag disabled, window buttons hidden, title bar hidden
+[2026.05.31-05.51.40:432][ 59]LogDemo: Cleaned up 0 splitscreen connections, owner deletion: enabled
+[2026.05.31-05.51.40:444][ 59]LogExit: Game engine shut down
+[2026.05.31-05.51.40:542][ 59]LogExit: Object subsystem successfully closed.
+[2026.05.31-05.51.40:596][ 59]LogShaderCompilers: Display: Shaders left to compile 0
+[2026.05.31-05.51.40:750][ 59]LogChaosDD: Chaos Debug Draw Shutdown
+[2026.05.31-05.51.40:757][ 59]RenderDocPlugin: plugin has been unloaded.
+[2026.05.31-05.51.40:776][ 59]LogSteamShared: Freeing the Steam Loaded Modules...
+[2026.05.31-05.51.40:796][ 59]LogEOSShared: FEOSSDKManager::Shutdown EOS_Shutdown Result=[EOS_Success]
+[2026.05.31-05.51.40:815][ 59]LogNFORDenoise: NFORDenoise function shutting down
+[2026.05.31-05.51.40:834][ 59]LogXGEController: Cleaning working directory: C:/Users/DoPra/AppData/Local/Temp/UnrealXGEWorkingDir/
+[2026.05.31-05.51.40:854][ 59]LogPakFile: Destroying PakPlatformFile
+[2026.05.31-05.51.41:209][ 59]LogD3D12RHI: ~FD3D12DynamicRHI
+[2026.05.31-05.51.41:321][ 59]LogExit: Exiting.
+[2026.05.31-05.51.41:362][ 59]Log file closed, 05/31/26 02:51:41

@@ -1,0 +1,4 @@
+﻿The analysis artifact above is the complete deliverable — there is no code for me to implement, so per the ExitPlanMode contract (which excludes research/analysis tasks) I won't force a false implementation plan. The "Required changes" and "Codex validation checklist" sections are Codex's to validate against live repo state and apply if you approve.
+
+Bottom line: the 80/20 split is sound as a *cognitive-load* target but unprovable as a quota guarantee until the deferred usage-ledger pass exists. The smallest safe move is a routing change — default Tier 1 planning/investigation/proposal to Claude-as-Operator (already supported by `Invoke-ClaudeDirectRead.ps1 -Mode Operator`), keep Codex as Validator/Integrator, and add a durable per-task context note to stop re-reading the repo each turn. Direct Claude edits should stay off baseline and only ever open under a named, path-scoped, user-approved profile that excludes all `.uasset`/Unreal/editor work.
+

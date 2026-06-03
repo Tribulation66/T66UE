@@ -2,11 +2,11 @@
 
 ## Owns
 
-Gameplay runtime systems and their documentation: combat, stats, movement, camera, traps, audio, world/tower, and minigames.
+Gameplay runtime systems and their documentation: combat, stats, movement, camera, traps, audio, and world/tower.
 
 ## Trigger Words
 
-Combat, boss, enemy, stats, XP, movement, dash, camera, trap, audio, tower, world, map, stage, minigame, Mini, TD, Deck, Idle.
+Combat, boss, enemy, stats, XP, movement, dash, camera, trap, audio, tower, world, map, stage.
 
 ## Read First
 
@@ -18,5 +18,4 @@ Combat, boss, enemy, stats, XP, movement, dash, camera, trap, audio, tower, worl
 ## Hard Rules
 
 - Prefer data-authored tuning over hardcoded C++ defaults.
-- Preserve minigame isolation boundaries.
 - Runtime-facing gameplay changes need compile/build verification and staged standalone validation when they affect the playable standalone.

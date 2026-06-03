@@ -1,0 +1,14 @@
+{
+  "generated_local": "2026-05-27T12:13:52",
+  "command": "T66.exe -T66Entry=Run:Tower -ExecCmds='T66.Backrooms.ForceSpawn 1' -T66BackroomsAutoQA=Consume -T66BackroomsAutoQAStartDelay=1.0 -T66BackroomsAutoQAFinishDelay=1.0",
+  "process_exit_code": 0,
+  "log": "C:\\UE\\T66\\Saved\\StandaloneLogs\\T66_BackroomsQA_Consume_Hygiene.log",
+  "excerpt": "C:\\UE\\T66\\Reports\\Hygiene\\2026-05-27\\backrooms_consume_qa_log_excerpt.txt",
+  "reward_granted": true,
+  "hud_icon_visible_when_owned": true,
+  "consumed_by_lethal_damage": true,
+  "hp_after": "20.0",
+  "exit_line": "[2026.05.27-15.11.46:389][384]LogT66GameMode: [BackroomsQA] Phase=Exit Mode=consume InteractReturned=1 ChallengeEnded=1 RewardGranted=1 InventoryRestored=1 WeaponRestored=1 StageTimerRestored=1 SpeedRunRestored=1 InventoryCount=2",
+  "consume_line": "[2026.05.27-15.11.46:427][384]LogT66GameMode: [BackroomsQA] Phase=Consume Mode=consume DamageApplied=1 Consumed=1 Alive=1 HPBefore=100.0 HPAfter=20.0",
+  "hud_owned_line": "[2026.05.27-15.11.46:375][384]LogT66HUD: [BackroomsQA] Phase=QuickReviveHUD Mode=Consume Item=1 IconVisible=1 DownedOverlayPresent=0"
+}

@@ -8,7 +8,6 @@
 #include "GameFramework/PlayerController.h"
 #include "UI/T66LootWheelPresentationTypes.h"
 #include "UI/T66UITypes.h"
-#include "UI/WidgetGames/T66WidgetGameHostContext.h"
 #include "T66PlayerController.generated.h"
 
 class UT66UIManager;
@@ -24,21 +23,18 @@ class UT66IdolAltarOverlayWidget;
 class UT66WeaponAltarOverlayWidget;
 class UNiagaraSystem;
 class UT66CollectorOverlayWidget;
-class UT66ArcadePopupWidget;
 class UT66LoadingScreenWidget;
 class AT66LootBagPickup;
-class AT66HouseNPCBase;
+class AT66NPCBase;
 class AT66CasinoNPC;
 class AT66CasinoInteractable;
 class AT66VendorInteractable;
 class AT66RecruitableCompanion;
+class AT66SaintNPC;
 class AT66HeroBase;
-class AT66ArcadeInteractableBase;
 class UT66CombatComponent;
 class UT66CombatHitZoneComponent;
 enum class ET66Rarity : uint8;
-struct FT66ArcadeInteractableData;
-struct FT66WidgetGameResult;
 class SWidget;
 class SWeakWidget;
 class STextBlock;
@@ -170,17 +166,16 @@ public:
 	/** Open the Lab Collector full-screen overlay (non-pausing). */
 	void OpenCollectorOverlay();
 
-	/** Open a run-time arcade popup without pausing gameplay. */
-	bool OpenArcadePopup(const FT66ArcadeInteractableData& ArcadeData, AT66ArcadeInteractableBase* SourceInteractable);
-	bool OpenArcadePopupFromFrontend(const FT66ArcadeInteractableData& ArcadeData);
-	void HandleArcadeGameSelected(UT66ArcadePopupWidget* SelectorWidget, const FT66ArcadeInteractableData& SelectedGameData);
-	void HandleArcadePopupResult(UT66ArcadePopupWidget* PopupWidget, bool bSucceeded, int32 FinalScore);
-	void CloseArcadePopup(bool bSucceeded, int32 FinalScore = 0);
-	bool IsArcadePopupOpen() const;
-
 	/** In-world dialogue (open-world) for casino/companion interactions (non-pausing). */
 	void OpenWorldDialogueCasino(AT66CasinoNPC* CasinoNPC);
 	void OpenWorldDialogueCompanion(AT66RecruitableCompanion* Companion);
+	void OpenWorldDialogueSaint(AT66SaintNPC* Saint);
+	void OpenWorldDialogueSaintMissingKromer(AT66SaintNPC* Saint);
+#if !UE_BUILD_SHIPPING
+	int32 GetWorldDialogueNumOptionsForAutomation() const { return WorldDialogueNumOptions; }
+	FText GetWorldDialogueOptionTextForAutomation(int32 OptionIndex) const;
+	FText GetSaintKromerDialogueOptionTextForAutomation() const;
+#endif
 
 	/** HUD-rendered world interaction prompt. */
 	void ShowInteractionPrompt(AActor* SourceActor, const FText& TargetName);
@@ -326,12 +321,6 @@ private:
 	TSubclassOf<UT66CowardicePromptWidget> ResolveCowardicePromptClass() const;
 	TSubclassOf<UT66IdolAltarOverlayWidget> ResolveIdolAltarOverlayClass() const;
 	TSubclassOf<UT66WeaponAltarOverlayWidget> ResolveWeaponAltarOverlayClass() const;
-	bool SpawnArcadePopupWidget(const FT66ArcadeInteractableData& ArcadeData, AT66ArcadeInteractableBase* SourceInteractable);
-	void StartArcadePopupCountdown(UT66ArcadePopupWidget* PopupWidget, const FT66WidgetGameHostContext& HostContext);
-	void TickArcadePopupCountdown();
-	void FinishArcadePopupCountdown();
-	void ClearArcadePopupCountdown();
-	void HandleArcadeWidgetGameResult(const FT66WidgetGameResult& Result);
 
 	/** Gameplay HUD (hearts, gold, inventory, minimap); created in gameplay BeginPlay */
 	UPROPERTY()
@@ -356,20 +345,6 @@ private:
 	/** Lab Collector full-screen UI (opened by interacting with The Collector NPC). */
 	UPROPERTY()
 	TObjectPtr<UT66CollectorOverlayWidget> CollectorOverlayWidget;
-
-	UPROPERTY()
-	TObjectPtr<UT66ArcadePopupWidget> ArcadePopupWidget;
-
-	FT66WidgetGameHostContext PendingArcadeWidgetGameHostContext;
-	FTimerHandle ArcadeCountdownTimerHandle;
-	TSharedPtr<SWidget> ArcadeCountdownOverlayWidget;
-	TSharedPtr<STextBlock> ArcadeCountdownText;
-	double ArcadeCountdownStartTimeSeconds = 0.0;
-	float ArcadeCountdownDurationSeconds = 3.0f;
-
-	FName LastArcadeWidgetGameResultID = NAME_None;
-	int32 LastArcadeWidgetGameFinalScore = 0;
-	bool bLastArcadeWidgetGameSuccessful = false;
 
 	TWeakObjectPtr<AT66LootBagPickup> NearbyLootBag;
 
@@ -565,16 +540,18 @@ private:
 		None,
 		Casino,
 		Companion,
+		Saint,
 	};
 
 	ET66WorldDialogueKind WorldDialogueKind = ET66WorldDialogueKind::None;
 	bool bWorldDialogueOpen = false;
 	int32 WorldDialogueSelectedIndex = 0;
 	int32 WorldDialogueNumOptions = 3;
+	TArray<FText> WorldDialogueCurrentOptions;
 	float LastWorldDialogueNavTimeSeconds = -1000.f;
 	static constexpr float WorldDialogueNavDebounceSeconds = 0.18f;
 
-	TWeakObjectPtr<AT66HouseNPCBase> WorldDialogueTargetNPC;
+	TWeakObjectPtr<AT66NPCBase> WorldDialogueTargetNPC;
 	TWeakObjectPtr<AT66RecruitableCompanion> WorldDialogueTargetCompanion;
 	FTimerHandle WorldDialoguePositionTimerHandle;
 
@@ -591,3 +568,4 @@ private:
 	void ConfirmWorldDialogue();
 	void UpdateWorldDialoguePosition();
 };
+

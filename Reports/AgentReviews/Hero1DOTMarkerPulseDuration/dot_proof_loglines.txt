@@ -1,0 +1,10 @@
+967:[2026.05.30-03.04.17:929][729]LogT66Combat: Display: T66DotShotSpawned Target=T66EnemyBase_0 Start=V(Z=64.00) End=V(X=360.00, Z=64.00) ProofTravelSeconds=0.600
+977:[2026.05.30-03.04.19:207][744]LogT66Combat: Display: T66DotApplicatorMarkerRevealed Target=T66EnemyBase_0 MarkerIndex=0 MarkerCount=3 PlannedRevealDelaySeconds=0.00 (visual-only; single DOT payload unchanged)
+978:[2026.05.30-03.04.19:207][744]LogT66Combat: Display: T66DotApplicatorMarkersSpawned Target=T66EnemyBase_0 MarkerCount=3 Duration=4.00 (visual-only; single DOT payload unchanged)
+979:[2026.05.30-03.04.19:207][744]LogT66Combat: Display: T66DotMarkerAlignment Target=T66EnemyBase_0 TargetLoc=X=360.000 Y=0.000 Z=0.000 MarkerLoc=X=360.000 Y=0.000 Z=0.000 TargetRelativeOffset=X=0.000 Y=0.000 Z=0.000 OffsetSize=0.000 (expect ~0; markers on target)
+980:[2026.05.30-03.04.19:207][744]LogT66Combat: Display: T66DotPayloadApplied Target=T66EnemyBase_0 Duration=4.00 TickInterval=0.50 DamagePerTick=2.01 Source=HeroPrimaryDot (single payload)
+984:[2026.05.30-03.04.20:002][752]LogT66Combat: Display: T66DotApplicatorMarkerHidden Target=T66EnemyBase_0 MarkerIndex=0 MarkerCount=3 PlannedRevealDelaySeconds=0.00 VisibleDurationSeconds=0.30 (visual-only; single DOT payload unchanged)
+987:[2026.05.30-03.04.20:456][757]LogT66Combat: Display: T66DotApplicatorMarkerRevealed Target=T66EnemyBase_0 MarkerIndex=1 MarkerCount=3 PlannedRevealDelaySeconds=0.50 (visual-only; single DOT payload unchanged)
+990:[2026.05.30-03.04.20:840][765]LogT66Combat: Display: T66DotApplicatorMarkerHidden Target=T66EnemyBase_0 MarkerIndex=1 MarkerCount=3 PlannedRevealDelaySeconds=0.50 VisibleDurationSeconds=0.30 (visual-only; single DOT payload unchanged)
+993:[2026.05.30-03.04.21:186][770]LogT66Combat: Display: T66DotApplicatorMarkerRevealed Target=T66EnemyBase_0 MarkerIndex=2 MarkerCount=3 PlannedRevealDelaySeconds=1.00 (visual-only; single DOT payload unchanged)
+997:[2026.05.30-03.04.21:718][778]LogT66Combat: Display: T66DotApplicatorMarkerHidden Target=T66EnemyBase_0 MarkerIndex=2 MarkerCount=3 PlannedRevealDelaySeconds=1.00 VisibleDurationSeconds=0.30 (visual-only; single DOT payload unchanged)

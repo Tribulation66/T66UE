@@ -3,6 +3,7 @@
 #include "Gameplay/T66PilotableTractor.h"
 
 #include "Core/T66InteractionPromptSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66HeroBase.h"
@@ -52,6 +53,11 @@ AT66PilotableTractor::AT66PilotableTractor()
 
 bool AT66PilotableTractor::Interact(APlayerController* PC)
 {
+	if (!FT66ShelvedFeatureGate::IsVehicleInteractablesEnabled())
+	{
+		return false;
+	}
+
 	AT66HeroBase* Hero = PC ? Cast<AT66HeroBase>(PC->GetPawn()) : nullptr;
 	if (!Hero)
 	{
@@ -164,6 +170,11 @@ void AT66PilotableTractor::ApplyRarityVisuals()
 
 bool AT66PilotableTractor::ShouldShowInteractionPrompt(const AT66HeroBase* LocalHero) const
 {
+	if (!FT66ShelvedFeatureGate::IsVehicleInteractablesEnabled())
+	{
+		return false;
+	}
+
 	const bool bMountedByLocalHero = LocalHero && IsMountedByHero(LocalHero);
 	if (MountedHero.IsValid() && !bMountedByLocalHero)
 	{

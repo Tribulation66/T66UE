@@ -13,9 +13,9 @@ DT_PATH = "/Game/Data/DT_NPCs"
 
 
 def resolve_row_struct():
-    struct_type = getattr(unreal, "HouseNPCData", None)
+    struct_type = getattr(unreal, "T66NPCData", None)
     if struct_type is None:
-        unreal.log_error("Could not resolve HouseNPCData in Python.")
+        unreal.log_error("Could not resolve T66NPCData in Python.")
         return None
 
     if hasattr(struct_type, "static_struct"):

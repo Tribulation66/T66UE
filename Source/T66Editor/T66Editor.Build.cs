@@ -33,14 +33,17 @@ public class T66Editor : ModuleRules
 			"ImageWrapper",
 			"Landscape",
 			"LandscapeEditor",
+			"MeshDescription",
 			"Foliage",
 			"Json",
 			"JsonUtilities",
 			"LevelEditor",
 			"Niagara",
 			"NiagaraCore",
+			"NiagaraEditor",
 			"RenderCore",
 			"RHI",
+			"StaticMeshDescription",
 			"ToolMenus"
 		});
 

@@ -353,7 +353,7 @@ namespace T66HeroSelectionPrivate
 		case ET66SecondaryStatType::BounceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugBounceDamage", "METHANDROSTENOLONE");
 		case ET66SecondaryStatType::PierceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugPierceDamage", "FLUOXYMESTERONE");
 		case ET66SecondaryStatType::DotDamage: return NSLOCTEXT("T66.HeroSelection", "DrugDotDamage", "NANDROLONE DECANOATE");
-		case ET66SecondaryStatType::CritDamage: return NSLOCTEXT("T66.HeroSelection", "DrugCritDamage", "TRENBOLONE ACETATE");
+		case ET66SecondaryStatType::HeadshotChance: return NSLOCTEXT("T66.HeroSelection", "DrugHeadshotChance", "TRENBOLONE ACETATE");
 		case ET66SecondaryStatType::AoeSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugAoeSpeed", "CAFFEINE CITRATE");
 		case ET66SecondaryStatType::BounceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugBounceSpeed", "MODAFINIL");
 		case ET66SecondaryStatType::PierceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugPierceSpeed", "EPHEDRINE HCL");

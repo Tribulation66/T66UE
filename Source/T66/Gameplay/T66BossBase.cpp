@@ -6,11 +6,13 @@
 #include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66BossAttackTelegraph.h"
 #include "Gameplay/T66BossGroundAOE.h"
+#include "Gameplay/T66BossHazardSubsystem.h"
 #include "Gameplay/T66BossLaneBlockerHazard.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66ProjectileManagerSubsystem.h"
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
@@ -26,8 +28,47 @@
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/World.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogT66BossAttackOwnership, Log, All);
+DEFINE_LOG_CATEGORY_STATIC(LogT66BossMovement, Log, All);
+
 namespace
 {
+	const FName T66BossAttackEvent_Queued(TEXT("Queued"));
+	const FName T66BossAttackEvent_Fired(TEXT("Fired"));
+	const FName T66BossAttackEvent_Suppressed(TEXT("Suppressed"));
+	const FName T66BossAttackEvent_Loaded(TEXT("Loaded"));
+	const FName T66BossAttackID_SewerSlimeLobeVolley(TEXT("SewerSlime_LobeVolley"));
+	const FName T66BossAttackID_SewerSlimeLaneBlocker(TEXT("SewerSlime_LaneBlocker"));
+	const FName T66BossAttackID_SewerSlimeMouthProjectile(TEXT("SewerSlime_MouthProjectile"));
+	const FName T66BossAttackID_SewerSlimeMouthSidecar(TEXT("SewerSlime_MouthSidecar"));
+	const TCHAR* T66BossAttackIDPrefix_LegacyProjectile = TEXT("LegacyProjectile_");
+	const TCHAR* T66BossAttackIDPrefix_LegacyGroundAOE = TEXT("LegacyGroundAOE_");
+	const FName T66BossAttackID_LegacyProjectileBalanced(TEXT("LegacyProjectile_Balanced"));
+	const FName T66BossAttackID_LegacyProjectileSharpshooter(TEXT("LegacyProjectile_Sharpshooter"));
+	const FName T66BossAttackID_LegacyProjectileJuggernaut(TEXT("LegacyProjectile_Juggernaut"));
+	const FName T66BossAttackID_LegacyProjectileDuelist(TEXT("LegacyProjectile_Duelist"));
+	const FName T66BossAttackID_LegacyProjectileGambler(TEXT("LegacyProjectile_Gambler"));
+	const FName T66BossAttackID_LegacyGroundAOEBalanced(TEXT("LegacyGroundAOE_Balanced"));
+	const FName T66BossAttackID_LegacyGroundAOESharpshooter(TEXT("LegacyGroundAOE_Sharpshooter"));
+	const FName T66BossAttackID_LegacyGroundAOEJuggernaut(TEXT("LegacyGroundAOE_Juggernaut"));
+	const FName T66BossAttackID_LegacyGroundAOEDuelist(TEXT("LegacyGroundAOE_Duelist"));
+	const FName T66BossAttackID_LegacyGroundAOEGambler(TEXT("LegacyGroundAOE_Gambler"));
+	const FName T66BossAttackPattern_SingleShot(TEXT("SingleShot"));
+	const FName T66BossAttackPattern_FanBurst(TEXT("FanBurst"));
+	const FName T66BossAttackPattern_RadialBurst(TEXT("RadialBurst"));
+	const FName T66BossMovementPattern_SimpleChase(TEXT("SimpleChase"));
+	const FName T66BossMovementPattern_KeepDistance(TEXT("KeepDistance"));
+	const FName T66BossMovementPattern_Orbit(TEXT("Orbit"));
+	const FName T66BossMovementPattern_StrafeBurst(TEXT("StrafeBurst"));
+	const FName T66BossMovementPattern_RetreatThenCast(TEXT("RetreatThenCast"));
+	const FName T66BossMovementPattern_AnchorDuringCast(TEXT("AnchorDuringCast"));
+	const FName T66BossMovementPattern_Charge(TEXT("Charge"));
+	const FName T66BossMovementMode_FallbackSimpleChase(TEXT("FallbackSimpleChase"));
+	const FName T66BossMovementMode_ForcedRunAway(TEXT("ForcedRunAway"));
+	const FName T66BossMovementMode_Confusion(TEXT("Confusion"));
+	const FName T66BossMovementMode_Rooted(TEXT("Rooted"));
+	const FName T66BossMovementMode_FrozenOrStunned(TEXT("FrozenOrStunned"));
+
 	APawn* T66ResolveClosestBossTargetPawn(const AActor* ContextActor)
 	{
 		const UWorld* World = ContextActor ? ContextActor->GetWorld() : nullptr;
@@ -169,6 +210,38 @@ namespace
 		}
 	}
 
+	bool T66BossAttackIDStartsWith(const FName AttackID, const TCHAR* Prefix)
+	{
+		return AttackID.ToString().StartsWith(Prefix, ESearchCase::CaseSensitive);
+	}
+
+	ET66BossAttackProfile T66ResolveLegacyAttackProfileFromAttackID(
+		const FName AttackID,
+		const ET66BossAttackProfile FallbackProfile)
+	{
+		if (AttackID == T66BossAttackID_LegacyProjectileSharpshooter || AttackID == T66BossAttackID_LegacyGroundAOESharpshooter)
+		{
+			return ET66BossAttackProfile::Sharpshooter;
+		}
+		if (AttackID == T66BossAttackID_LegacyProjectileJuggernaut || AttackID == T66BossAttackID_LegacyGroundAOEJuggernaut)
+		{
+			return ET66BossAttackProfile::Juggernaut;
+		}
+		if (AttackID == T66BossAttackID_LegacyProjectileDuelist || AttackID == T66BossAttackID_LegacyGroundAOEDuelist)
+		{
+			return ET66BossAttackProfile::Duelist;
+		}
+		if (AttackID == T66BossAttackID_LegacyProjectileGambler || AttackID == T66BossAttackID_LegacyGroundAOEGambler)
+		{
+			return ET66BossAttackProfile::Gambler;
+		}
+		if (AttackID == T66BossAttackID_LegacyProjectileBalanced || AttackID == T66BossAttackID_LegacyGroundAOEBalanced)
+		{
+			return ET66BossAttackProfile::Balanced;
+		}
+		return FallbackProfile;
+	}
+
 	FVector T66RotatePlanarVector(const FVector& Direction, const float Degrees)
 	{
 		return FRotator(0.f, Degrees, 0.f).RotateVector(Direction).GetSafeNormal();
@@ -216,6 +289,38 @@ namespace
 		}
 
 		return UT66AudioSubsystem::PlayEventFromWorldContext(Boss, FallbackEventID, Location, Boss);
+	}
+
+	TArray<FName> T66ParseRequiredBossPartIDs(const FString& RequiredPartIDs)
+	{
+		TArray<FName> Result;
+		TArray<FString> Tokens;
+		RequiredPartIDs.ParseIntoArray(Tokens, TEXT("|"), true);
+		if (Tokens.Num() <= 1)
+		{
+			Tokens.Reset();
+			RequiredPartIDs.ParseIntoArray(Tokens, TEXT(","), true);
+		}
+		if (Tokens.Num() <= 1)
+		{
+			Tokens.Reset();
+			RequiredPartIDs.ParseIntoArray(Tokens, TEXT(";"), true);
+		}
+
+		for (FString Token : Tokens)
+		{
+			Token.TrimStartAndEndInline();
+			if (!Token.IsEmpty())
+			{
+				Result.Add(FName(*Token));
+			}
+		}
+		return Result;
+	}
+
+	FString T66MakeBossAttackCounterKey(const FName EventID, const FName AttackID, const FName PartID)
+	{
+		return FString::Printf(TEXT("%s|%s|%s"), *EventID.ToString(), *AttackID.ToString(), *PartID.ToString());
 	}
 }
 
@@ -479,6 +584,37 @@ void AT66BossBase::PushBossPartStateToRunState() const
 		TArray<FT66BossPartSnapshot> Snapshots;
 		BuildBossPartSnapshots(Snapshots);
 		RunState->SetBossActiveWithParts(BossID, Snapshots);
+	}
+}
+
+void AT66BossBase::LoadBossAttackOwnershipRows()
+{
+	BossAttackOwnershipRows.Reset();
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	UT66GameInstance* T66GI = GI ? Cast<UT66GameInstance>(GI) : nullptr;
+	if (T66GI && !BossID.IsNone())
+	{
+		T66GI->GetBossAttackOwnershipRows(BossID, BossAttackOwnershipRows);
+	}
+
+	for (FT66BossAttackOwnershipData& Row : BossAttackOwnershipRows)
+	{
+		if (Row.AttackRowID.IsNone())
+		{
+			Row.AttackRowID = Row.AttackID;
+		}
+	}
+
+	UE_LOG(
+		LogT66BossAttackOwnership,
+		Display,
+		TEXT("BossAttackOwnershipRowsLoaded BossID=%s RowCount=%d"),
+		*BossID.ToString(),
+		BossAttackOwnershipRows.Num());
+
+	for (const FT66BossAttackOwnershipData& Row : BossAttackOwnershipRows)
+	{
+		RecordBossAttackOwnershipEvent(T66BossAttackEvent_Loaded, &Row, Row.OwningPartID, TEXT("LoadBossAttackOwnershipRows"));
 	}
 }
 
@@ -763,6 +899,9 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 	AttackPrimaryColor = BossData.PlaceholderColor;
 	AttackPrimaryColor.A = 1.f;
 	AttackSecondaryColor = T66MakeAttackSecondaryColor(AttackPrimaryColor);
+	BossMovementProfileID = BossData.BossMovementProfileID;
+	LoadBossAttackOwnershipRows();
+	LoadBossMovementPatternRows();
 
 	// Conservative default if DT doesn't specify a score: tie to HP scale.
 	if (PointValue <= 0)
@@ -844,6 +983,57 @@ void AT66BossBase::ApplyDifficultyScalar(float Scalar)
 	{
 		PushBossPartStateToRunState();
 	}
+}
+
+void AT66BossBase::ApplyEndgameBossMultipliers(const float HealthScalar, const float DamageScalar, const float ScaleScalar)
+{
+	if (!bBaseTuningInitialized)
+	{
+		BaseMaxHP = MaxHP;
+		BaseProjectileDamageHearts = ProjectileDamageHearts;
+		bBaseTuningInitialized = true;
+	}
+
+	const float ClampedHealthScalar = FMath::Clamp(HealthScalar, 0.1f, 99.f);
+	const float ClampedDamageScalar = FMath::Clamp(DamageScalar, 0.1f, 99.f);
+	MaxHP = FMath::Max(1, FMath::RoundToInt(static_cast<float>(MaxHP) * ClampedHealthScalar));
+	CurrentHP = MaxHP;
+	ProjectileDamageHearts = FMath::Max(1, FMath::RoundToInt(static_cast<float>(ProjectileDamageHearts) * ClampedDamageScalar));
+	RebuildBossPartState(false);
+
+	if (ScaleScalar > 0.f && !FMath::IsNearlyEqual(ScaleScalar, 1.f))
+	{
+		SetActorScale3D(GetActorScale3D() * FMath::Clamp(ScaleScalar, 0.25f, 8.f));
+	}
+
+	if (bAwakened)
+	{
+		PushBossPartStateToRunState();
+	}
+}
+
+void AT66BossBase::LoadBossMovementPatternRows()
+{
+	BossMovementPatternRows.Reset();
+	if (BossMovementProfileID.IsNone())
+	{
+		UE_LOG(LogT66BossMovement, Display, TEXT("BossMovementRowsLoaded BossID=%s MovementProfileID=None RowCount=0 Fallback=SimpleChase"), *BossID.ToString());
+		return;
+	}
+
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance());
+	if (T66GI)
+	{
+		T66GI->GetBossMovementPatternRows(BossMovementProfileID, BossMovementPatternRows);
+	}
+
+	UE_LOG(
+		LogT66BossMovement,
+		Display,
+		TEXT("BossMovementRowsLoaded BossID=%s MovementProfileID=%s RowCount=%d"),
+		*BossID.ToString(),
+		*BossMovementProfileID.ToString(),
+		BossMovementPatternRows.Num());
 }
 
 void AT66BossBase::RefreshRunStateBossState() const
@@ -928,6 +1118,90 @@ void AT66BossBase::QueueTimedAttackLambda(FTimerDelegate&& Delegate, const float
 	World->GetTimerManager().SetTimer(Handle, MoveTemp(Delegate), FMath::Max(0.001f, DelaySeconds), false);
 }
 
+void AT66BossBase::RecordBossAttackOwnershipEvent(
+	const FName EventID,
+	const FT66BossAttackOwnershipData* AttackRow,
+	const FName PartID,
+	const TCHAR* Context)
+{
+	const FName AttackID = AttackRow ? AttackRow->AttackID : NAME_None;
+	const FName AttackRowID = AttackRow ? AttackRow->AttackRowID : NAME_None;
+	const FName OwningPartID = AttackRow ? AttackRow->OwningPartID : NAME_None;
+
+#if !UE_BUILD_SHIPPING
+	const FString Key = T66MakeBossAttackCounterKey(EventID, AttackID, PartID);
+	int32& Counter = BossAttackOwnershipAutomationCounters.FindOrAdd(Key);
+	++Counter;
+#endif
+
+	UE_LOG(
+		LogT66BossAttackOwnership,
+		Display,
+		TEXT("BossAttackOwnershipEvent Event=%s BossID=%s AttackRowID=%s AttackID=%s OwningPartID=%s PartID=%s Context=%s"),
+		*EventID.ToString(),
+		*BossID.ToString(),
+		*AttackRowID.ToString(),
+		*AttackID.ToString(),
+		*OwningPartID.ToString(),
+		*PartID.ToString(),
+		Context ? Context : TEXT("None"));
+}
+
+#if !UE_BUILD_SHIPPING
+void AT66BossBase::ResetBossAttackOwnershipAutomationCounters()
+{
+	BossAttackOwnershipAutomationCounters.Reset();
+}
+
+int32 AT66BossBase::GetBossAttackOwnershipAutomationCounter(const FName EventID, const FName AttackID, const FName PartID) const
+{
+	const FString Key = T66MakeBossAttackCounterKey(EventID, AttackID, PartID);
+	if (const int32* Counter = BossAttackOwnershipAutomationCounters.Find(Key))
+	{
+		return *Counter;
+	}
+	return 0;
+}
+
+bool AT66BossBase::KillBossPartForAutomation(const FName PartID)
+{
+	for (FT66BossPartRuntimeState& Part : BossPartStates)
+	{
+		if (Part.PartID != PartID)
+		{
+			continue;
+		}
+
+		const bool bWasAlive = Part.CurrentHP > 0;
+		Part.CurrentHP = 0;
+		CurrentHP = 0;
+		for (const FT66BossPartRuntimeState& RuntimePart : BossPartStates)
+		{
+			CurrentHP += RuntimePart.CurrentHP;
+		}
+		CurrentHP = FMath::Clamp(CurrentHP, 0, MaxHP);
+		if (bWasAlive)
+		{
+			UE_LOG(LogT66BossAttackOwnership, Display, TEXT("BossAttackOwnershipAutomationKilledPart BossID=%s PartID=%s"), *BossID.ToString(), *PartID.ToString());
+			RefreshCombatHitZoneState();
+			PushBossPartStateToRunState();
+		}
+		return bWasAlive;
+	}
+	return false;
+}
+
+void AT66BossBase::ResetBossMovementAutomationState()
+{
+	LastBossMovementAutomationMode = NAME_None;
+}
+
+FName AT66BossBase::GetBossMovementAutomationMode() const
+{
+	return LastBossMovementAutomationMode;
+}
+#endif
+
 void AT66BossBase::SpawnProjectileInDirection(const FVector& Direction, const float SpeedScale, const FVector& SpawnOffset, const bool bUseSecondaryTint)
 {
 	if (!bAwakened || CurrentHP <= 0 || StunSecondsRemaining > 0.f || FreezeSecondsRemaining > 0.f)
@@ -964,6 +1238,63 @@ void AT66BossBase::SpawnProjectileInDirection(const FVector& Direction, const fl
 		FireParams.BossVisualScaleMultiplier = 1.f;
 		if (ProjectileManager->FireBossProjectile(FireParams))
 		{
+			T66PlayBossProfileAudioEvent(this, TEXT("Boss.Projectile.Fire"), FName(TEXT("Boss.Projectile.Fire")), SpawnLoc);
+		}
+	}
+}
+
+void AT66BossBase::SpawnProjectileInDirectionForAttackRow(
+	const FT66BossAttackOwnershipData& AttackRow,
+	const FVector& Direction,
+	const float SpeedScale,
+	const FVector& SpawnOffset,
+	const bool bUseSecondaryTint,
+	const FName VisualProfileID,
+	const float VisualScaleMultiplier)
+{
+	if (!bAwakened || CurrentHP <= 0 || StunSecondsRemaining > 0.f || FreezeSecondsRemaining > 0.f)
+	{
+		return;
+	}
+
+	FName DeadPartID = NAME_None;
+	if (!AreBossAttackPartsAlive(AttackRow, DeadPartID))
+	{
+		RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, &AttackRow, DeadPartID, TEXT("LegacyProjectileDelayedShot"));
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const FVector ShotDirection = Direction.GetSafeNormal();
+	if (ShotDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	const FVector SpawnLoc = GetActorLocation() + FVector(0.f, 0.f, 84.f) + SpawnOffset;
+	if (UT66ProjectileManagerSubsystem* ProjectileManager = World->GetSubsystem<UT66ProjectileManagerSubsystem>())
+	{
+		FT66ManagedProjectileFireParams FireParams;
+		FireParams.SourceActor = this;
+		FireParams.SourceID = BossID;
+		FireParams.Origin = SpawnLoc;
+		FireParams.Direction = ShotDirection;
+		FireParams.Speed = ProjectileSpeed * FMath::Max(0.35f, SpeedScale);
+		FireParams.Damage = FMath::Max(1, ProjectileDamageHearts) * 20.f;
+		FireParams.BossAttackProfile = T66ResolveLegacyAttackProfileFromAttackID(AttackRow.AttackID, AttackProfile);
+		FireParams.BossPrimaryColor = AttackPrimaryColor;
+		FireParams.BossSecondaryColor = AttackSecondaryColor;
+		FireParams.bUseBossSecondaryTint = bUseSecondaryTint;
+		FireParams.VisualProfileID = VisualProfileID;
+		FireParams.BossVisualScaleMultiplier = VisualScaleMultiplier;
+		if (ProjectileManager->FireBossProjectile(FireParams))
+		{
+			RecordBossAttackOwnershipEvent(T66BossAttackEvent_Fired, &AttackRow, AttackRow.OwningPartID, TEXT("LegacyProjectileDelayedShot"));
 			T66PlayBossProfileAudioEvent(this, TEXT("Boss.Projectile.Fire"), FName(TEXT("Boss.Projectile.Fire")), SpawnLoc);
 		}
 	}
@@ -1037,6 +1368,36 @@ void AT66BossBase::QueueProjectileShotDirection(const FVector& Direction, const 
 		DelaySeconds);
 }
 
+void AT66BossBase::QueueProjectileShotDirectionForAttackRow(
+	const FT66BossAttackOwnershipData& AttackRow,
+	const FVector& Direction,
+	const float DelaySeconds,
+	const float SpeedScale,
+	const FVector& SpawnOffset,
+	const bool bUseSecondaryTint,
+	const FName VisualProfileID,
+	const float VisualScaleMultiplier)
+{
+	const FVector ShotDirection = Direction.GetSafeNormal();
+	if (ShotDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	TWeakObjectPtr<AT66BossBase> WeakThis(this);
+	QueueTimedAttackLambda(
+		FTimerDelegate::CreateLambda([WeakThis, AttackRow, ShotDirection, SpeedScale, SpawnOffset, bUseSecondaryTint, VisualProfileID, VisualScaleMultiplier]()
+		{
+			if (!WeakThis.IsValid())
+			{
+				return;
+			}
+
+			WeakThis->SpawnProjectileInDirectionForAttackRow(AttackRow, ShotDirection, SpeedScale, SpawnOffset, bUseSecondaryTint, VisualProfileID, VisualScaleMultiplier);
+		}),
+		DelaySeconds);
+}
+
 void AT66BossBase::QueueProjectileShotTowards(const FVector& TargetLocation, const float DelaySeconds, const float YawOffsetDegrees, const float SpeedScale, const FVector& SpawnOffset, const bool bUseSecondaryTint)
 {
 	FVector Direction = TargetLocation - (GetActorLocation() + FVector(0.f, 0.f, 84.f));
@@ -1048,6 +1409,28 @@ void AT66BossBase::QueueProjectileShotTowards(const FVector& TargetLocation, con
 	}
 
 	QueueProjectileShotDirection(T66RotatePlanarVector(Direction, YawOffsetDegrees), DelaySeconds, SpeedScale, SpawnOffset, bUseSecondaryTint);
+}
+
+void AT66BossBase::QueueProjectileShotTowardsForAttackRow(
+	const FT66BossAttackOwnershipData& AttackRow,
+	const FVector& TargetLocation,
+	const float DelaySeconds,
+	const float YawOffsetDegrees,
+	const float SpeedScale,
+	const FVector& SpawnOffset,
+	const bool bUseSecondaryTint,
+	const FName VisualProfileID,
+	const float VisualScaleMultiplier)
+{
+	FVector Direction = TargetLocation - (GetActorLocation() + FVector(0.f, 0.f, 84.f));
+	Direction.Z = 0.f;
+	Direction = Direction.GetSafeNormal();
+	if (Direction.IsNearlyZero())
+	{
+		Direction = GetActorForwardVector();
+	}
+
+	QueueProjectileShotDirectionForAttackRow(AttackRow, T66RotatePlanarVector(Direction, YawOffsetDegrees), DelaySeconds, SpeedScale, SpawnOffset, bUseSecondaryTint, VisualProfileID, VisualScaleMultiplier);
 }
 
 void AT66BossBase::QueueProjectileFanBurst(
@@ -1086,6 +1469,48 @@ void AT66BossBase::QueueProjectileFanBurst(
 	}
 }
 
+void AT66BossBase::QueueProjectileFanBurstForAttackRow(
+	const FT66BossAttackOwnershipData& AttackRow,
+	const FVector& TargetLocation,
+	const int32 ShotCount,
+	const float SpreadDegrees,
+	const float DelayStepSeconds,
+	const float SpeedScale,
+	const float InitialDelaySeconds,
+	const float SideOffsetDistance,
+	const bool bUseSecondaryTint,
+	const FName VisualProfileID,
+	const float VisualScaleMultiplier)
+{
+	if (ShotCount <= 0)
+	{
+		return;
+	}
+
+	const FVector BaseDirection = (TargetLocation - GetActorLocation()).GetSafeNormal();
+	const FVector Right = T66ResolvePlanarRightVector(BaseDirection);
+	const float StartYaw = (ShotCount > 1) ? (-SpreadDegrees * 0.5f) : 0.f;
+	const float StepYaw = (ShotCount > 1) ? (SpreadDegrees / static_cast<float>(ShotCount - 1)) : 0.f;
+
+	for (int32 Index = 0; Index < ShotCount; ++Index)
+	{
+		const float NormalizedIndex = (ShotCount > 1)
+			? (static_cast<float>(Index) / static_cast<float>(ShotCount - 1) - 0.5f) * 2.f
+			: 0.f;
+		const FVector SpawnOffset = Right * (SideOffsetDistance * NormalizedIndex);
+		QueueProjectileShotTowardsForAttackRow(
+			AttackRow,
+			TargetLocation,
+			InitialDelaySeconds + DelayStepSeconds * static_cast<float>(Index),
+			StartYaw + StepYaw * static_cast<float>(Index),
+			SpeedScale,
+			SpawnOffset,
+			bUseSecondaryTint && ((Index % 2) == 1),
+			VisualProfileID,
+			VisualScaleMultiplier);
+	}
+}
+
 void AT66BossBase::QueueRadialBurst(
 	const int32 ShotCount,
 	const float DelayStepSeconds,
@@ -1113,6 +1538,39 @@ void AT66BossBase::QueueRadialBurst(
 	}
 }
 
+void AT66BossBase::QueueRadialBurstForAttackRow(
+	const FT66BossAttackOwnershipData& AttackRow,
+	const int32 ShotCount,
+	const float DelayStepSeconds,
+	const float StartAngleDegrees,
+	const float SpeedScale,
+	const float InitialDelaySeconds,
+	const bool bUseSecondaryTint,
+	const FName VisualProfileID,
+	const float VisualScaleMultiplier)
+{
+	if (ShotCount <= 0)
+	{
+		return;
+	}
+
+	const float StepDegrees = 360.f / static_cast<float>(ShotCount);
+	for (int32 Index = 0; Index < ShotCount; ++Index)
+	{
+		const float AngleDegrees = StartAngleDegrees + StepDegrees * static_cast<float>(Index);
+		const FVector Direction = FRotator(0.f, AngleDegrees, 0.f).Vector();
+		QueueProjectileShotDirectionForAttackRow(
+			AttackRow,
+			Direction,
+			InitialDelaySeconds + DelayStepSeconds * static_cast<float>(Index),
+			SpeedScale,
+			FVector::ZeroVector,
+			bUseSecondaryTint && ((Index % 2) == 1),
+			VisualProfileID,
+			VisualScaleMultiplier);
+	}
+}
+
 bool AT66BossBase::IsSewerSlimeKingBoss() const
 {
 	return BossID == FName(TEXT("Dungeon_SewerSlimeKing"));
@@ -1120,6 +1578,11 @@ bool AT66BossBase::IsSewerSlimeKingBoss() const
 
 bool AT66BossBase::IsBossPartAlive(const FName PartID) const
 {
+	if (PartID.IsNone())
+	{
+		return true;
+	}
+
 	for (const FT66BossPartRuntimeState& Part : BossPartStates)
 	{
 		if (Part.PartID == PartID)
@@ -1144,33 +1607,187 @@ FVector AT66BossBase::GetBossPartWorldLocation(const FName PartID) const
 	return GetActorLocation() + FVector(0.f, 0.f, 120.f);
 }
 
-FName AT66BossBase::PickSewerSlimeKingAttackPart() const
+bool AT66BossBase::AreBossAttackPartsAlive(const FT66BossAttackOwnershipData& AttackRow, FName& OutDeadPartID) const
 {
-	TArray<FName> AvailableParts;
-	for (const FName PartID : {
-		FName(TEXT("LeftLobe")),
-		FName(TEXT("RightLobe")),
-		FName(TEXT("LeftBase")),
-		FName(TEXT("RightBase")),
-		FName(TEXT("MouthCore")) })
+	OutDeadPartID = NAME_None;
+	if (!IsBossPartAlive(AttackRow.OwningPartID))
 	{
-		if (IsBossPartAlive(PartID))
+		OutDeadPartID = AttackRow.OwningPartID;
+		return false;
+	}
+
+	for (const FName RequiredPartID : T66ParseRequiredBossPartIDs(AttackRow.RequiredPartIDs))
+	{
+		if (!IsBossPartAlive(RequiredPartID))
 		{
-			AvailableParts.Add(PartID);
+			OutDeadPartID = RequiredPartID;
+			return false;
 		}
 	}
 
-	if (AvailableParts.Num() <= 0)
+	return true;
+}
+
+bool AT66BossBase::CanSelectBossAttackRow(const FT66BossAttackOwnershipData& AttackRow, const int32 Phase, FName& OutDeadPartID) const
+{
+	if (!AttackRow.bSelectable || AttackRow.BossID != BossID || AttackRow.SelectionWeight <= 0.f)
 	{
-		return NAME_None;
+		OutDeadPartID = NAME_None;
+		return false;
 	}
 
-	if (AvailableParts.Num() > 1)
+	if (Phase < AttackRow.MinPhase || Phase > AttackRow.MaxPhase)
 	{
-		AvailableParts.Remove(LastSewerSlimeKingAttackPart);
+		OutDeadPartID = NAME_None;
+		return false;
 	}
 
-	return AvailableParts[FMath::RandRange(0, AvailableParts.Num() - 1)];
+	return AreBossAttackPartsAlive(AttackRow, OutDeadPartID);
+}
+
+const FT66BossAttackOwnershipData* AT66BossBase::PickBossAttackRowByPrefix(
+	const TCHAR* AttackIDPrefix,
+	bool& bOutHasMatchingRows,
+	FName& OutSuppressedPartID) const
+{
+	bOutHasMatchingRows = false;
+	OutSuppressedPartID = NAME_None;
+
+	TArray<const FT66BossAttackOwnershipData*> AvailableRows;
+	const int32 Phase = GetAttackPhaseIndex();
+	for (const FT66BossAttackOwnershipData& Row : BossAttackOwnershipRows)
+	{
+		if (Row.BossID != BossID || !Row.bSelectable || !T66BossAttackIDStartsWith(Row.AttackID, AttackIDPrefix))
+		{
+			continue;
+		}
+
+		bOutHasMatchingRows = true;
+		FName DeadPartID = NAME_None;
+		if (CanSelectBossAttackRow(Row, Phase, DeadPartID))
+		{
+			AvailableRows.Add(&Row);
+		}
+		else if (OutSuppressedPartID.IsNone())
+		{
+			OutSuppressedPartID = DeadPartID;
+		}
+	}
+
+	if (AvailableRows.Num() <= 0)
+	{
+		return nullptr;
+	}
+
+	float TotalWeight = 0.f;
+	for (const FT66BossAttackOwnershipData* Row : AvailableRows)
+	{
+		TotalWeight += Row ? FMath::Max(0.f, Row->SelectionWeight) : 0.f;
+	}
+
+	if (TotalWeight <= KINDA_SMALL_NUMBER)
+	{
+		return AvailableRows[0];
+	}
+
+	float Pick = FMath::FRandRange(0.f, TotalWeight);
+	for (const FT66BossAttackOwnershipData* Row : AvailableRows)
+	{
+		Pick -= Row ? FMath::Max(0.f, Row->SelectionWeight) : 0.f;
+		if (Pick <= 0.f)
+		{
+			return Row;
+		}
+	}
+
+	return AvailableRows.Last();
+}
+
+const FT66BossAttackOwnershipData* AT66BossBase::FindBossAttackRowByAttackID(const FName AttackID, const FName OwningPartID) const
+{
+	for (const FT66BossAttackOwnershipData& Row : BossAttackOwnershipRows)
+	{
+		if (Row.BossID == BossID
+			&& Row.AttackID == AttackID
+			&& (OwningPartID.IsNone() || Row.OwningPartID == OwningPartID))
+		{
+			return &Row;
+		}
+	}
+	return nullptr;
+}
+
+const FT66BossAttackOwnershipData* AT66BossBase::PickSewerSlimeKingAttackRow() const
+{
+	TArray<const FT66BossAttackOwnershipData*> AvailableRows;
+	const int32 Phase = GetAttackPhaseIndex();
+	for (const FT66BossAttackOwnershipData& Row : BossAttackOwnershipRows)
+	{
+		FName DeadPartID;
+		if (CanSelectBossAttackRow(Row, Phase, DeadPartID))
+		{
+			AvailableRows.Add(&Row);
+		}
+	}
+
+	if (AvailableRows.Num() <= 0)
+	{
+		return nullptr;
+	}
+
+	if (AvailableRows.Num() > 1)
+	{
+		AvailableRows.RemoveAllSwap([this](const FT66BossAttackOwnershipData* Row)
+		{
+			return Row && Row->OwningPartID == LastSewerSlimeKingAttackPart;
+		});
+	}
+
+	float TotalWeight = 0.f;
+	for (const FT66BossAttackOwnershipData* Row : AvailableRows)
+	{
+		TotalWeight += Row ? FMath::Max(0.f, Row->SelectionWeight) : 0.f;
+	}
+	if (TotalWeight <= 0.f)
+	{
+		return AvailableRows[FMath::RandRange(0, AvailableRows.Num() - 1)];
+	}
+
+	float Roll = FMath::FRandRange(0.f, TotalWeight);
+	for (const FT66BossAttackOwnershipData* Row : AvailableRows)
+	{
+		const float Weight = Row ? FMath::Max(0.f, Row->SelectionWeight) : 0.f;
+		if (Roll <= Weight)
+		{
+			return Row;
+		}
+		Roll -= Weight;
+	}
+	return AvailableRows.Last();
+}
+
+const FT66BossAttackOwnershipData* AT66BossBase::FindSewerSlimeKingAttackRowForPart(const FName AttackPartID) const
+{
+	for (const FT66BossAttackOwnershipData& Row : BossAttackOwnershipRows)
+	{
+		if (Row.BossID == BossID && Row.bSelectable && Row.OwningPartID == AttackPartID)
+		{
+			return &Row;
+		}
+	}
+	return nullptr;
+}
+
+const FT66BossAttackOwnershipData* AT66BossBase::FindSewerSlimeKingMouthSidecarRow() const
+{
+	for (const FT66BossAttackOwnershipData& Row : BossAttackOwnershipRows)
+	{
+		if (Row.BossID == BossID && !Row.bSelectable && Row.AttackID == T66BossAttackID_SewerSlimeMouthSidecar)
+		{
+			return &Row;
+		}
+	}
+	return nullptr;
 }
 
 void AT66BossBase::SpawnSewerSlimeKingTelegraph(
@@ -1209,11 +1826,12 @@ void AT66BossBase::SpawnSewerSlimeKingTelegraph(
 }
 
 void AT66BossBase::QueueSewerSlimeKingLobeVolley(
-	const FName AttackPartID,
+	const FT66BossAttackOwnershipData& AttackRow,
 	APawn* InitialPlayerPawn,
 	const bool bUseSecondaryTint)
 {
 	static const float ShotYawOffsets[] = { -10.f, -5.f, 0.f, 5.f, 10.f };
+	const FName AttackPartID = AttackRow.OwningPartID;
 	TWeakObjectPtr<AT66BossBase> WeakThis(this);
 	TWeakObjectPtr<APawn> WeakInitialPlayer(InitialPlayerPawn);
 
@@ -1222,7 +1840,7 @@ void AT66BossBase::QueueSewerSlimeKingLobeVolley(
 		const float Delay = 0.58f + static_cast<float>(Index) * 0.12f;
 		const float YawOffset = ShotYawOffsets[Index];
 		QueueTimedAttackLambda(
-			FTimerDelegate::CreateLambda([WeakThis, WeakInitialPlayer, AttackPartID, YawOffset, bUseSecondaryTint, Index]()
+			FTimerDelegate::CreateLambda([WeakThis, WeakInitialPlayer, AttackRow, AttackPartID, YawOffset, bUseSecondaryTint, Index]()
 			{
 				if (!WeakThis.IsValid())
 				{
@@ -1230,8 +1848,10 @@ void AT66BossBase::QueueSewerSlimeKingLobeVolley(
 				}
 
 				AT66BossBase* Boss = WeakThis.Get();
-				if (!Boss->IsBossPartAlive(AttackPartID))
+				FName DeadPartID;
+				if (!Boss->AreBossAttackPartsAlive(AttackRow, DeadPartID))
 				{
+					Boss->RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, &AttackRow, DeadPartID, TEXT("SewerSlimeLobeVolleyDelayedShot"));
 					return;
 				}
 
@@ -1251,13 +1871,21 @@ void AT66BossBase::QueueSewerSlimeKingLobeVolley(
 				Direction = T66RotatePlanarVector(Direction.GetSafeNormal(), YawOffset);
 				const FVector SpawnOffset = PartWorldLocation - (Boss->GetActorLocation() + FVector(0.f, 0.f, 84.f));
 				Boss->SpawnScaledProjectileInDirection(Direction, 0.88f + static_cast<float>(Index) * 0.025f, SpawnOffset, bUseSecondaryTint, 1.12f);
+				Boss->RecordBossAttackOwnershipEvent(T66BossAttackEvent_Fired, &AttackRow, AttackPartID, TEXT("SewerSlimeLobeVolleyDelayedShot"));
 			}),
 			Delay);
 	}
 }
 
-void AT66BossBase::SpawnSewerSlimeKingLaneBlocker(const FName AttackPartID, const FVector& TargetLocation)
+void AT66BossBase::SpawnSewerSlimeKingLaneBlocker(const FT66BossAttackOwnershipData& AttackRow, const FVector& TargetLocation)
 {
+	FName DeadPartID;
+	if (!AreBossAttackPartsAlive(AttackRow, DeadPartID))
+	{
+		RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, &AttackRow, DeadPartID, TEXT("SewerSlimeLaneBlockerImmediate"));
+		return;
+	}
+
 	UWorld* World = GetWorld();
 	if (!World)
 	{
@@ -1272,9 +1900,30 @@ void AT66BossBase::SpawnSewerSlimeKingLaneBlocker(const FName AttackPartID, cons
 		Forward = GetActorForwardVector().GetSafeNormal2D();
 	}
 	const FVector Right = T66ResolvePlanarRightVector(Forward);
+	const FName AttackPartID = AttackRow.OwningPartID;
 	const float SideSign = (AttackPartID == FName(TEXT("LeftBase"))) ? -1.f : 1.f;
 	const FVector HazardBase = ResolveGroundLocation(TargetLocation + Forward * 100.f + Right * SideSign * 255.f);
 	const FVector SpawnLocation = HazardBase + FVector(0.f, 0.f, 48.f);
+	const int32 DamageHP = FMath::Max(18, ProjectileDamageHearts * 22);
+
+	if (UT66BossHazardSubsystem* HazardSubsystem = World->GetSubsystem<UT66BossHazardSubsystem>())
+	{
+		FT66BossHazardSpawnParams HazardParams;
+		HazardParams.SourceActor = this;
+		HazardParams.SourceID = BossID;
+		HazardParams.HazardID = AttackRow.AttackID;
+		HazardParams.Location = SpawnLocation;
+		HazardParams.Rotation = FRotator::ZeroRotator;
+		HazardParams.RadiusScale = 1.f;
+		HazardParams.TelegraphScale = 1.f;
+		HazardParams.VisualScaleMultiplier = 1.f;
+		HazardParams.DamageOverrideHP = DamageHP;
+		if (HazardSubsystem->SpawnBossHazard(HazardParams))
+		{
+			RecordBossAttackOwnershipEvent(T66BossAttackEvent_Fired, &AttackRow, AttackPartID, TEXT("BossHazardDefinitionLaneBlocker"));
+			return;
+		}
+	}
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
@@ -1286,7 +1935,6 @@ void AT66BossBase::SpawnSewerSlimeKingLaneBlocker(const FName AttackPartID, cons
 		FRotator::ZeroRotator,
 		SpawnParams))
 	{
-		const int32 DamageHP = FMath::Max(18, ProjectileDamageHearts * 22);
 		Hazard->ConfigureHazard(
 			FLinearColor(0.36f, 1.00f, 0.06f, 1.f),
 			FLinearColor(0.06f, 0.88f, 0.20f, 1.f),
@@ -1295,17 +1943,21 @@ void AT66BossBase::SpawnSewerSlimeKingLaneBlocker(const FName AttackPartID, cons
 			0.78f,
 			1.45f,
 			DamageHP);
+		RecordBossAttackOwnershipEvent(T66BossAttackEvent_Fired, &AttackRow, AttackPartID, TEXT("SewerSlimeLaneBlockerImmediate"));
 	}
 }
 
-void AT66BossBase::SpawnSewerSlimeKingMouthProjectile(const FVector& TargetLocation)
+void AT66BossBase::SpawnSewerSlimeKingMouthProjectile(const FT66BossAttackOwnershipData& AttackRow, const FVector& TargetLocation)
 {
-	if (!IsBossPartAlive(FName(TEXT("MouthCore"))))
+	FName DeadPartID;
+	if (!AreBossAttackPartsAlive(AttackRow, DeadPartID))
 	{
+		RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, &AttackRow, DeadPartID, TEXT("SewerSlimeMouthDelayedShot"));
 		return;
 	}
 
-	const FVector MouthLocation = GetBossPartWorldLocation(FName(TEXT("MouthCore")));
+	const FName AttackPartID = AttackRow.OwningPartID;
+	const FVector MouthLocation = GetBossPartWorldLocation(AttackPartID);
 	FVector Direction = TargetLocation - MouthLocation;
 	Direction.Z = 0.f;
 	Direction = Direction.GetSafeNormal();
@@ -1316,6 +1968,7 @@ void AT66BossBase::SpawnSewerSlimeKingMouthProjectile(const FVector& TargetLocat
 
 	const FVector SpawnOffset = MouthLocation - (GetActorLocation() + FVector(0.f, 0.f, 84.f));
 	SpawnScaledProjectileInDirection(Direction, 0.82f, SpawnOffset, true, 2.35f);
+	RecordBossAttackOwnershipEvent(T66BossAttackEvent_Fired, &AttackRow, AttackPartID, TEXT("SewerSlimeMouthDelayedShot"));
 }
 
 void AT66BossBase::FireSewerSlimeKingAttack(APawn* PlayerPawn, const FName ForcedAttackPartID)
@@ -1325,17 +1978,47 @@ void AT66BossBase::FireSewerSlimeKingAttack(APawn* PlayerPawn, const FName Force
 		return;
 	}
 
-	FName AttackPartID = ForcedAttackPartID;
-	if (AttackPartID.IsNone() || !IsBossPartAlive(AttackPartID))
+	if (BossAttackOwnershipRows.Num() <= 0)
 	{
-		AttackPartID = PickSewerSlimeKingAttackPart();
+		UE_LOG(LogT66BossAttackOwnership, Warning, TEXT("BossAttackOwnershipMissingRows BossID=%s Context=FireSewerSlimeKingAttack"), *BossID.ToString());
+		return;
 	}
-	if (AttackPartID.IsNone())
+
+	const FT66BossAttackOwnershipData* AttackRow = ForcedAttackPartID.IsNone()
+		? PickSewerSlimeKingAttackRow()
+		: FindSewerSlimeKingAttackRowForPart(ForcedAttackPartID);
+	if (!AttackRow)
+	{
+		UE_LOG(
+			LogT66BossAttackOwnership,
+			Display,
+			TEXT("BossAttackOwnershipSuppressed BossID=%s ForcedPart=%s Reason=NoAuthoredAttackRow"),
+			*BossID.ToString(),
+			*ForcedAttackPartID.ToString());
+		return;
+	}
+
+	FName DeadPartID;
+	if (!AreBossAttackPartsAlive(*AttackRow, DeadPartID))
+	{
+		RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, AttackRow, DeadPartID, ForcedAttackPartID.IsNone() ? TEXT("SewerSlimeSchedulerSelection") : TEXT("SewerSlimeForcedSelection"));
+		return;
+	}
+
+	FireSewerSlimeKingAttackRow(PlayerPawn, *AttackRow);
+}
+
+void AT66BossBase::FireSewerSlimeKingAttackRow(APawn* PlayerPawn, const FT66BossAttackOwnershipData& AttackRow)
+{
+	if (!PlayerPawn)
 	{
 		return;
 	}
 
+	const FName AttackPartID = AttackRow.OwningPartID;
 	LastSewerSlimeKingAttackPart = AttackPartID;
+	RecordBossAttackOwnershipEvent(T66BossAttackEvent_Queued, &AttackRow, AttackPartID, TEXT("SewerSlimeAttackRow"));
+	NotifyBossMovementAttackCoordinationStarted(AttackRow);
 
 	const FVector TargetLocation = PlayerPawn->GetActorLocation();
 	FVector Facing = TargetLocation - GetActorLocation();
@@ -1345,47 +2028,59 @@ void AT66BossBase::FireSewerSlimeKingAttack(APawn* PlayerPawn, const FName Force
 		SetActorRotation(Facing.Rotation());
 	}
 
-	const bool bLeftOrRightLobe = AttackPartID == FName(TEXT("LeftLobe")) || AttackPartID == FName(TEXT("RightLobe"));
-	const bool bLeftOrRightBase = AttackPartID == FName(TEXT("LeftBase")) || AttackPartID == FName(TEXT("RightBase"));
-	const bool bMouthCore = AttackPartID == FName(TEXT("MouthCore"));
-
-	if (!bMouthCore && IsBossPartAlive(FName(TEXT("MouthCore"))))
+	if (AttackRow.AttackID != T66BossAttackID_SewerSlimeMouthProjectile)
 	{
-		const FVector MouthTelegraphLocation = GetBossPartWorldLocation(FName(TEXT("MouthCore"))) + FVector(0.f, 0.f, 18.f);
-		SpawnSewerSlimeKingTelegraph(FName(TEXT("MouthCore")), MouthTelegraphLocation, 0.32f, 0.82f, false);
-		QueueTimedAttackLambda(
-			FTimerDelegate::CreateWeakLambda(this, [this, TargetLocation]()
+		const FT66BossAttackOwnershipData* MouthSidecarRow = FindSewerSlimeKingMouthSidecarRow();
+		if (MouthSidecarRow)
+		{
+			FName DeadPartID;
+			if (AreBossAttackPartsAlive(*MouthSidecarRow, DeadPartID))
 			{
-				SpawnSewerSlimeKingMouthProjectile(TargetLocation);
-			}),
-			0.34f);
+				const FVector MouthTelegraphLocation = GetBossPartWorldLocation(MouthSidecarRow->OwningPartID) + FVector(0.f, 0.f, 18.f);
+				SpawnSewerSlimeKingTelegraph(MouthSidecarRow->OwningPartID, MouthTelegraphLocation, 0.32f, 0.82f, false);
+				QueueTimedAttackLambda(
+					FTimerDelegate::CreateWeakLambda(this, [this, SidecarRow = *MouthSidecarRow, TargetLocation]()
+					{
+						SpawnSewerSlimeKingMouthProjectile(SidecarRow, TargetLocation);
+					}),
+					0.34f);
+				RecordBossAttackOwnershipEvent(T66BossAttackEvent_Queued, MouthSidecarRow, MouthSidecarRow->OwningPartID, TEXT("SewerSlimeMouthSidecar"));
+			}
+			else
+			{
+				RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, MouthSidecarRow, DeadPartID, TEXT("SewerSlimeMouthSidecar"));
+			}
+		}
 	}
 
-	if (bLeftOrRightLobe)
+	if (AttackRow.AttackID == T66BossAttackID_SewerSlimeLobeVolley)
 	{
 		const FVector TelegraphLocation = GetBossPartWorldLocation(AttackPartID) + FVector(0.f, 0.f, 28.f);
 		SpawnSewerSlimeKingTelegraph(AttackPartID, TelegraphLocation, 0.56f, 1.05f, false);
-		QueueSewerSlimeKingLobeVolley(AttackPartID, PlayerPawn, AttackPartID == FName(TEXT("RightLobe")));
+		QueueSewerSlimeKingLobeVolley(AttackRow, PlayerPawn, AttackPartID == FName(TEXT("RightLobe")));
 		return;
 	}
 
-	if (bLeftOrRightBase)
+	if (AttackRow.AttackID == T66BossAttackID_SewerSlimeLaneBlocker)
 	{
-		SpawnSewerSlimeKingLaneBlocker(AttackPartID, TargetLocation);
+		SpawnSewerSlimeKingLaneBlocker(AttackRow, TargetLocation);
 		return;
 	}
 
-	if (bMouthCore)
+	if (AttackRow.AttackID == T66BossAttackID_SewerSlimeMouthProjectile)
 	{
 		const FVector TelegraphLocation = GetBossPartWorldLocation(AttackPartID) + FVector(0.f, 0.f, 28.f);
 		SpawnSewerSlimeKingTelegraph(AttackPartID, TelegraphLocation, 0.95f, 1.8f, false);
 		QueueTimedAttackLambda(
-			FTimerDelegate::CreateWeakLambda(this, [this, TargetLocation]()
+			FTimerDelegate::CreateWeakLambda(this, [this, AttackRow, TargetLocation]()
 			{
-				SpawnSewerSlimeKingMouthProjectile(TargetLocation);
+				SpawnSewerSlimeKingMouthProjectile(AttackRow, TargetLocation);
 			}),
 			0.98f);
+		return;
 	}
+
+	RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, &AttackRow, AttackPartID, TEXT("UnsupportedSewerSlimeAttackID"));
 }
 
 void AT66BossBase::SpawnGroundAOEAtLocation(const FVector& WorldLocation, const float RadiusScale, const float WarningScale, const bool bUseSecondaryTint)
@@ -1410,6 +2105,74 @@ void AT66BossBase::SpawnGroundAOEAtLocation(const FVector& WorldLocation, const 
 		UT66RunStateSubsystem* RS = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 		const int32 Stage = RS ? FMath::Max(1, RS->GetCurrentStage()) : 1;
 		AOE->DamageHP = FMath::Max(10, FMath::RoundToInt(static_cast<float>(GroundAOEBaseDamageHP) * FMath::Pow(1.25f, static_cast<float>(Stage - 1))));
+		T66PlayBossProfileAudioEvent(this, TEXT("Boss.AOE.Warning"), FName(TEXT("Boss.AOE.Warning")), AOE->GetActorLocation());
+	}
+}
+
+void AT66BossBase::SpawnGroundAOEAtLocationForAttackRow(
+	const FT66BossAttackOwnershipData& AttackRow,
+	const FVector& WorldLocation,
+	const float RadiusScale,
+	const float WarningScale,
+	const bool bUseSecondaryTint)
+{
+	if (!bAwakened || CurrentHP <= 0 || StunSecondsRemaining > 0.f || FreezeSecondsRemaining > 0.f)
+	{
+		return;
+	}
+
+	FName DeadPartID = NAME_None;
+	if (!AreBossAttackPartsAlive(AttackRow, DeadPartID))
+	{
+		RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, &AttackRow, DeadPartID, TEXT("LegacyGroundAOEImmediate"));
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UGameInstance* GI = World->GetGameInstance();
+	UT66RunStateSubsystem* RS = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const int32 Stage = RS ? FMath::Max(1, RS->GetCurrentStage()) : 1;
+	const int32 DamageHP = FMath::Max(10, FMath::RoundToInt(static_cast<float>(GroundAOEBaseDamageHP) * FMath::Pow(1.25f, static_cast<float>(Stage - 1))));
+	const FVector GroundLocation = ResolveGroundLocation(WorldLocation);
+
+	if (UT66BossHazardSubsystem* HazardSubsystem = World->GetSubsystem<UT66BossHazardSubsystem>())
+	{
+		FT66BossHazardSpawnParams HazardParams;
+		HazardParams.SourceActor = this;
+		HazardParams.SourceID = BossID;
+		HazardParams.HazardID = AttackRow.AttackID;
+		HazardParams.Location = GroundLocation;
+		HazardParams.Rotation = FRotator::ZeroRotator;
+		HazardParams.RadiusScale = FMath::Max(0.35f, RadiusScale);
+		HazardParams.TelegraphScale = FMath::Max(0.55f, WarningScale);
+		HazardParams.VisualScaleMultiplier = 1.f;
+		HazardParams.DamageOverrideHP = DamageHP;
+		if (HazardSubsystem->SpawnBossHazard(HazardParams))
+		{
+			RecordBossAttackOwnershipEvent(T66BossAttackEvent_Fired, &AttackRow, AttackRow.OwningPartID, TEXT("BossHazardDefinitionImmediate"));
+			T66PlayBossProfileAudioEvent(this, TEXT("Boss.AOE.Warning"), FName(TEXT("Boss.AOE.Warning")), GroundLocation);
+			return;
+		}
+	}
+
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	if (AT66BossGroundAOE* AOE = World->SpawnActor<AT66BossGroundAOE>(AT66BossGroundAOE::StaticClass(), GroundLocation, FRotator::ZeroRotator, Params))
+	{
+		AOE->Radius = GroundAOERadius * FMath::Max(0.35f, RadiusScale);
+		AOE->WarningDurationSeconds = GroundAOEWarningSeconds * FMath::Max(0.55f, WarningScale);
+		const ET66BossAttackProfile VisualProfile = T66ResolveLegacyAttackProfileFromAttackID(AttackRow.AttackID, AttackProfile);
+		AOE->ConfigureVisualStyle(VisualProfile, bUseSecondaryTint ? AttackSecondaryColor : AttackPrimaryColor, AttackSecondaryColor);
+
+		AOE->DamageHP = DamageHP;
+		RecordBossAttackOwnershipEvent(T66BossAttackEvent_Fired, &AttackRow, AttackRow.OwningPartID, TEXT("LegacyGroundAOEImmediate"));
 		T66PlayBossProfileAudioEvent(this, TEXT("Boss.AOE.Warning"), FName(TEXT("Boss.AOE.Warning")), AOE->GetActorLocation());
 	}
 }
@@ -1460,6 +2223,294 @@ void AT66BossBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 
 	Super::EndPlay(EndPlayReason);
+}
+
+void AT66BossBase::TickSimpleChaseMovement(const FVector& MyLoc, const FVector& PlayerLoc, const bool bRunAway)
+{
+	FVector ToPlayer = PlayerLoc - MyLoc;
+	ToPlayer.Z = 0.f;
+	const float Len = ToPlayer.Size();
+	if (Len > 10.f)
+	{
+		ToPlayer /= Len;
+		AddMovementInput(bRunAway ? -ToPlayer : ToPlayer, 1.f);
+	}
+#if !UE_BUILD_SHIPPING
+	LastBossMovementAutomationMode = bRunAway ? T66BossMovementMode_ForcedRunAway : T66BossMovementMode_FallbackSimpleChase;
+#endif
+}
+
+void AT66BossBase::NotifyBossMovementAttackCoordinationStarted(const FT66BossAttackOwnershipData& AttackRow)
+{
+	ActiveBossMovementAttackID = AttackRow.AttackID;
+	ActiveBossMovementAttackPartID = AttackRow.OwningPartID;
+	BossMovementAttackCoordinationSecondsRemaining = FMath::Max(BossMovementAttackCoordinationSecondsRemaining, 2.0f);
+	BossMovementAttackCoordinationSecondsSinceStart = 0.f;
+}
+
+bool AT66BossBase::DoesMovementPatternRequireAttackCoordination(const FT66BossMovementPatternData& PatternRow) const
+{
+	return !PatternRow.CoordinatedAttackID.IsNone() || !PatternRow.CoordinatedPartID.IsNone();
+}
+
+bool AT66BossBase::IsMovementPatternAttackCoordinationActive(const FT66BossMovementPatternData& PatternRow) const
+{
+	if (!DoesMovementPatternRequireAttackCoordination(PatternRow))
+	{
+		return true;
+	}
+
+	if (BossMovementAttackCoordinationSecondsRemaining <= 0.f)
+	{
+		return false;
+	}
+
+	if (!PatternRow.CoordinatedAttackID.IsNone() && PatternRow.CoordinatedAttackID != ActiveBossMovementAttackID)
+	{
+		return false;
+	}
+
+	if (!PatternRow.CoordinatedPartID.IsNone())
+	{
+		if (PatternRow.CoordinatedPartID != ActiveBossMovementAttackPartID)
+		{
+			return false;
+		}
+		if (!IsBossPartAlive(PatternRow.CoordinatedPartID))
+		{
+			return false;
+		}
+	}
+
+	if (PatternRow.CoordinationWindowSeconds > 0.f
+		&& BossMovementAttackCoordinationSecondsSinceStart > PatternRow.CoordinationWindowSeconds)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+const FT66BossMovementPatternData* AT66BossBase::PickBossMovementPatternRow() const
+{
+	if (BossMovementProfileID.IsNone())
+	{
+		return nullptr;
+	}
+
+	TArray<const FT66BossMovementPatternData*> AvailableRows;
+	TArray<const FT66BossMovementPatternData*> ActiveCoordinatedRows;
+	const int32 Phase = GetAttackPhaseIndex();
+	for (const FT66BossMovementPatternData& Row : BossMovementPatternRows)
+	{
+		if (!Row.bEnabled
+			|| Row.MovementProfileID != BossMovementProfileID
+			|| Row.Weight <= 0.f
+			|| Phase < Row.MinPhase
+			|| Phase > Row.MaxPhase)
+		{
+			continue;
+		}
+		if (DoesMovementPatternRequireAttackCoordination(Row))
+		{
+			if (IsMovementPatternAttackCoordinationActive(Row))
+			{
+				ActiveCoordinatedRows.Add(&Row);
+			}
+			continue;
+		}
+		AvailableRows.Add(&Row);
+	}
+
+	if (ActiveCoordinatedRows.Num() > 0)
+	{
+		AvailableRows = MoveTemp(ActiveCoordinatedRows);
+	}
+
+	if (AvailableRows.Num() <= 0)
+	{
+		return nullptr;
+	}
+
+	float TotalWeight = 0.f;
+	for (const FT66BossMovementPatternData* Row : AvailableRows)
+	{
+		TotalWeight += Row ? FMath::Max(0.f, Row->Weight) : 0.f;
+	}
+
+	if (TotalWeight <= KINDA_SMALL_NUMBER)
+	{
+		return AvailableRows[0];
+	}
+
+	float Pick = FMath::FRandRange(0.f, TotalWeight);
+	for (const FT66BossMovementPatternData* Row : AvailableRows)
+	{
+		Pick -= Row ? FMath::Max(0.f, Row->Weight) : 0.f;
+		if (Pick <= 0.f)
+		{
+			return Row;
+		}
+	}
+	return AvailableRows.Last();
+}
+
+bool AT66BossBase::TickAuthoredBossMovementPattern(const float DeltaSeconds, const FVector& MyLoc, const FVector& PlayerLoc)
+{
+	(void)DeltaSeconds;
+	const FT66BossMovementPatternData* PatternRow = PickBossMovementPatternRow();
+	if (!PatternRow)
+	{
+		return false;
+	}
+
+	FVector ToPlayer = PlayerLoc - MyLoc;
+	ToPlayer.Z = 0.f;
+	const float Distance = ToPlayer.Size();
+	if (Distance <= 10.f)
+	{
+#if !UE_BUILD_SHIPPING
+		LastBossMovementAutomationMode = FName(TEXT("Pattern.Hold"));
+#endif
+		return true;
+	}
+	ToPlayer /= Distance;
+
+	const float InputScale = FMath::Clamp(PatternRow->SpeedScale, 0.f, 2.f);
+	if (PatternRow->PatternType == T66BossMovementPattern_SimpleChase)
+	{
+		AddMovementInput(ToPlayer, InputScale);
+#if !UE_BUILD_SHIPPING
+		LastBossMovementAutomationMode = FName(TEXT("Pattern.SimpleChase"));
+#endif
+		return true;
+	}
+
+	if (PatternRow->PatternType == T66BossMovementPattern_KeepDistance)
+	{
+		if (Distance > PatternRow->MaxDistance)
+		{
+			AddMovementInput(ToPlayer, InputScale);
+#if !UE_BUILD_SHIPPING
+			LastBossMovementAutomationMode = FName(TEXT("Pattern.KeepDistance.Advance"));
+#endif
+		}
+		else if (Distance < PatternRow->MinDistance)
+		{
+			AddMovementInput(-ToPlayer, InputScale);
+#if !UE_BUILD_SHIPPING
+			LastBossMovementAutomationMode = FName(TEXT("Pattern.KeepDistance.Retreat"));
+#endif
+		}
+		else
+		{
+#if !UE_BUILD_SHIPPING
+			LastBossMovementAutomationMode = FName(TEXT("Pattern.KeepDistance.Hold"));
+#endif
+		}
+		return true;
+	}
+
+	if (PatternRow->PatternType == T66BossMovementPattern_Orbit)
+	{
+		FVector Direction = FVector::CrossProduct(FVector::UpVector, ToPlayer).GetSafeNormal();
+		if (PatternRow->OrbitDirection < 0)
+		{
+			Direction *= -1.f;
+		}
+		if (Distance > PatternRow->MaxDistance)
+		{
+			Direction = (Direction * 0.72f + ToPlayer * 0.55f).GetSafeNormal();
+		}
+		else if (Distance < PatternRow->MinDistance)
+		{
+			Direction = (Direction * 0.72f - ToPlayer * 0.55f).GetSafeNormal();
+		}
+		AddMovementInput(Direction, InputScale);
+#if !UE_BUILD_SHIPPING
+		LastBossMovementAutomationMode = FName(TEXT("Pattern.Orbit"));
+#endif
+		return true;
+	}
+
+	if (PatternRow->PatternType == T66BossMovementPattern_StrafeBurst)
+	{
+		FVector Direction = FVector::CrossProduct(FVector::UpVector, ToPlayer).GetSafeNormal();
+		if (PatternRow->OrbitDirection < 0)
+		{
+			Direction *= -1.f;
+		}
+		if (Distance > PatternRow->MaxDistance)
+		{
+			Direction = (Direction * 0.82f + ToPlayer * 0.45f).GetSafeNormal();
+		}
+		else if (Distance < PatternRow->MinDistance)
+		{
+			Direction = (Direction * 0.82f - ToPlayer * 0.45f).GetSafeNormal();
+		}
+		AddMovementInput(Direction, InputScale);
+#if !UE_BUILD_SHIPPING
+		LastBossMovementAutomationMode = FName(TEXT("Pattern.StrafeBurst"));
+#endif
+		return true;
+	}
+
+	if (PatternRow->PatternType == T66BossMovementPattern_RetreatThenCast)
+	{
+		if (!IsMovementPatternAttackCoordinationActive(*PatternRow))
+		{
+			return false;
+		}
+		AddMovementInput(-ToPlayer, InputScale);
+#if !UE_BUILD_SHIPPING
+		LastBossMovementAutomationMode = FName(TEXT("Pattern.RetreatThenCast.Active"));
+#endif
+		return true;
+	}
+
+	if (PatternRow->PatternType == T66BossMovementPattern_AnchorDuringCast)
+	{
+		if (!IsMovementPatternAttackCoordinationActive(*PatternRow))
+		{
+			return false;
+		}
+		if (UCharacterMovementComponent* Move = GetCharacterMovement())
+		{
+			Move->StopMovementImmediately();
+		}
+#if !UE_BUILD_SHIPPING
+		LastBossMovementAutomationMode = FName(TEXT("Pattern.AnchorDuringCast.Active"));
+#endif
+		return true;
+	}
+
+	if (PatternRow->PatternType == T66BossMovementPattern_Charge)
+	{
+		if (Distance > FMath::Max(10.f, PatternRow->MinDistance))
+		{
+			AddMovementInput(ToPlayer, InputScale);
+#if !UE_BUILD_SHIPPING
+			LastBossMovementAutomationMode = FName(TEXT("Pattern.Charge"));
+#endif
+		}
+		else
+		{
+#if !UE_BUILD_SHIPPING
+			LastBossMovementAutomationMode = FName(TEXT("Pattern.Charge.Hold"));
+#endif
+		}
+		return true;
+	}
+
+	UE_LOG(
+		LogT66BossMovement,
+		Warning,
+		TEXT("BossMovementUnsupportedPattern BossID=%s MovementProfileID=%s PatternID=%s PatternType=%s"),
+		*BossID.ToString(),
+		*BossMovementProfileID.ToString(),
+		*PatternRow->PatternID.ToString(),
+		*PatternRow->PatternType.ToString());
+	return false;
 }
 
 void AT66BossBase::Tick(float DeltaSeconds)
@@ -1542,6 +2593,17 @@ void AT66BossBase::Tick(float DeltaSeconds)
 	{
 		FreezeSecondsRemaining = FMath::Max(0.f, FreezeSecondsRemaining - DeltaSeconds);
 	}
+	if (BossMovementAttackCoordinationSecondsRemaining > 0.f)
+	{
+		BossMovementAttackCoordinationSecondsRemaining = FMath::Max(0.f, BossMovementAttackCoordinationSecondsRemaining - DeltaSeconds);
+		BossMovementAttackCoordinationSecondsSinceStart += DeltaSeconds;
+		if (BossMovementAttackCoordinationSecondsRemaining <= 0.f)
+		{
+			ActiveBossMovementAttackID = NAME_None;
+			ActiveBossMovementAttackPartID = NAME_None;
+			BossMovementAttackCoordinationSecondsSinceStart = 0.f;
+		}
+	}
 
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
@@ -1550,11 +2612,17 @@ void AT66BossBase::Tick(float DeltaSeconds)
 		if (FreezeSecondsRemaining > 0.f || StunSecondsRemaining > 0.f)
 		{
 			Move->StopMovementImmediately();
+#if !UE_BUILD_SHIPPING
+			LastBossMovementAutomationMode = T66BossMovementMode_FrozenOrStunned;
+#endif
 			return;
 		}
 		if (RootSecondsRemaining > 0.f)
 		{
 			Move->StopMovementImmediately();
+#if !UE_BUILD_SHIPPING
+			LastBossMovementAutomationMode = T66BossMovementMode_Rooted;
+#endif
 			return;
 		}
 	}
@@ -1572,18 +2640,24 @@ void AT66BossBase::Tick(float DeltaSeconds)
 		{
 			AddMovementInput(CachedWanderDir, 0.45f);
 		}
+#if !UE_BUILD_SHIPPING
+		LastBossMovementAutomationMode = T66BossMovementMode_Confusion;
+#endif
 		return;
 	}
 
-	// Chase player
-	FVector ToPlayer = PlayerLoc - MyLoc;
-	ToPlayer.Z = 0.f;
-	const float Len = ToPlayer.Size();
-	if (Len > 10.f)
+	if (bRunAway)
 	{
-		ToPlayer /= Len;
-		AddMovementInput(bRunAway ? -ToPlayer : ToPlayer, 1.f);
+		TickSimpleChaseMovement(MyLoc, PlayerLoc, true);
+		return;
 	}
+
+	if (TickAuthoredBossMovementPattern(DeltaSeconds, MyLoc, PlayerLoc))
+	{
+		return;
+	}
+
+	TickSimpleChaseMovement(MyLoc, PlayerLoc, false);
 }
 
 void AT66BossBase::ApplyArmorDebuff(float ReductionAmount, float DurationSeconds)
@@ -1750,6 +2824,289 @@ void AT66BossBase::ForceSewerSlimeKingAttackForAutomation(const FName AttackPart
 	}
 }
 
+#if !UE_BUILD_SHIPPING
+void AT66BossBase::ForceBossAttackForAutomation(const FName AttackID, const FName OwningPartID)
+{
+	if (!bAwakened || CurrentHP <= 0)
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(FireTimerHandle);
+		World->GetTimerManager().ClearTimer(AOETimerHandle);
+	}
+	ClearPendingAttackTimers();
+
+	const FT66BossAttackOwnershipData* AttackRow = FindBossAttackRowByAttackID(AttackID, OwningPartID);
+	if (!AttackRow)
+	{
+		UE_LOG(
+			LogT66BossAttackOwnership,
+			Warning,
+			TEXT("BossAttackOwnershipAutomationMissingRow BossID=%s AttackID=%s OwningPartID=%s"),
+			*BossID.ToString(),
+			*AttackID.ToString(),
+			*OwningPartID.ToString());
+		return;
+	}
+
+	APawn* PlayerPawn = ResolvePlayerPawn();
+	if (T66BossAttackIDStartsWith(AttackID, T66BossAttackIDPrefix_LegacyProjectile))
+	{
+		FireBossProjectileAttackRow(PlayerPawn, *AttackRow);
+		return;
+	}
+
+	if (T66BossAttackIDStartsWith(AttackID, T66BossAttackIDPrefix_LegacyGroundAOE))
+	{
+		FireBossGroundAOEAttackRow(PlayerPawn, *AttackRow);
+		return;
+	}
+
+	RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, AttackRow, AttackRow->OwningPartID, TEXT("UnsupportedAutomationAttackID"));
+}
+#endif
+
+bool AT66BossBase::FireAuthoredBossProjectileAttack(APawn* PlayerPawn)
+{
+	bool bHasMatchingRows = false;
+	FName SuppressedPartID = NAME_None;
+	const FT66BossAttackOwnershipData* AttackRow = PickBossAttackRowByPrefix(
+		T66BossAttackIDPrefix_LegacyProjectile,
+		bHasMatchingRows,
+		SuppressedPartID);
+	if (AttackRow)
+	{
+		return FireBossProjectileAttackRow(PlayerPawn, *AttackRow);
+	}
+
+	if (bHasMatchingRows)
+	{
+		UE_LOG(
+			LogT66BossAttackOwnership,
+			Display,
+			TEXT("BossAttackOwnershipSuppressed BossID=%s Channel=LegacyProjectile DeadPartID=%s Reason=NoSelectableAuthoredRows"),
+			*BossID.ToString(),
+			*SuppressedPartID.ToString());
+		return true;
+	}
+
+	return false;
+}
+
+bool AT66BossBase::FireBossProjectileAttackDefinitionRows(
+	APawn* PlayerPawn,
+	const FT66BossAttackOwnershipData& AttackRow,
+	const FVector& TargetLocation,
+	const int32 Phase,
+	const FVector& PlanarToTarget,
+	const FVector& Side)
+{
+	if (!PlayerPawn)
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	UT66GameInstance* T66GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+	if (!T66GI)
+	{
+		return false;
+	}
+
+	TArray<FT66BossAttackDefinitionData> DefinitionRows;
+	T66GI->GetBossAttackDefinitionRows(AttackRow.AttackID, Phase, DefinitionRows);
+	if (DefinitionRows.Num() <= 0)
+	{
+		return false;
+	}
+
+	const FVector SafePlanarToTarget = PlanarToTarget.IsNearlyZero() ? GetActorForwardVector() : PlanarToTarget;
+	const float TargetYawDegrees = SafePlanarToTarget.Rotation().Yaw;
+	int32 ScheduledRows = 0;
+	int32 UnsupportedRows = 0;
+
+	for (const FT66BossAttackDefinitionData& DefinitionRow : DefinitionRows)
+	{
+		const FName VisualProfileID = DefinitionRow.ProjectileVisualProfileID;
+		const float SpeedScale = FMath::Max(0.1f, DefinitionRow.SpeedScale);
+		const float VisualScaleMultiplier = FMath::Max(0.01f, DefinitionRow.VisualScaleMultiplier);
+		const FVector AuthoredOffset(DefinitionRow.SpawnOffsetX, DefinitionRow.SpawnOffsetY, DefinitionRow.SpawnOffsetZ);
+
+		if (DefinitionRow.PatternType == T66BossAttackPattern_SingleShot)
+		{
+			QueueProjectileShotTowardsForAttackRow(
+				AttackRow,
+				TargetLocation,
+				FMath::Max(0.f, DefinitionRow.InitialDelaySeconds),
+				DefinitionRow.YawOffsetDegrees,
+				SpeedScale,
+				Side * DefinitionRow.SideOffsetDistance + AuthoredOffset,
+				DefinitionRow.bUseSecondaryTint,
+				VisualProfileID,
+				VisualScaleMultiplier);
+			++ScheduledRows;
+			continue;
+		}
+
+		if (DefinitionRow.PatternType == T66BossAttackPattern_FanBurst)
+		{
+			QueueProjectileFanBurstForAttackRow(
+				AttackRow,
+				TargetLocation,
+				FMath::Max(1, DefinitionRow.ShotCount),
+				DefinitionRow.SpreadDegrees,
+				FMath::Max(0.f, DefinitionRow.DelayStepSeconds),
+				SpeedScale,
+				FMath::Max(0.f, DefinitionRow.InitialDelaySeconds),
+				DefinitionRow.SideOffsetDistance,
+				DefinitionRow.bUseSecondaryTint,
+				VisualProfileID,
+				VisualScaleMultiplier);
+			++ScheduledRows;
+			continue;
+		}
+
+		if (DefinitionRow.PatternType == T66BossAttackPattern_RadialBurst)
+		{
+			float StartAngleDegrees = DefinitionRow.bRandomStartAngle
+				? FMath::FRandRange(0.f, 360.f)
+				: DefinitionRow.StartAngleDegrees;
+			if (DefinitionRow.bStartAngleRelativeToTarget)
+			{
+				StartAngleDegrees += TargetYawDegrees;
+			}
+
+			QueueRadialBurstForAttackRow(
+				AttackRow,
+				FMath::Max(1, DefinitionRow.ShotCount),
+				FMath::Max(0.f, DefinitionRow.DelayStepSeconds),
+				StartAngleDegrees,
+				SpeedScale,
+				FMath::Max(0.f, DefinitionRow.InitialDelaySeconds),
+				DefinitionRow.bUseSecondaryTint,
+				VisualProfileID,
+				VisualScaleMultiplier);
+			++ScheduledRows;
+			continue;
+		}
+
+		++UnsupportedRows;
+		UE_LOG(
+			LogT66BossAttackOwnership,
+			Warning,
+			TEXT("BossAttackDefinitionUnsupportedPattern BossID=%s AttackID=%s DefinitionRowID=%s PatternType=%s"),
+			*BossID.ToString(),
+			*AttackRow.AttackID.ToString(),
+			*DefinitionRow.DefinitionRowID.ToString(),
+			*DefinitionRow.PatternType.ToString());
+	}
+
+	if (ScheduledRows <= 0)
+	{
+		return false;
+	}
+
+	RecordBossAttackOwnershipEvent(T66BossAttackEvent_Queued, &AttackRow, AttackRow.OwningPartID, TEXT("BossAttackDefinitionRows"));
+	NotifyBossMovementAttackCoordinationStarted(AttackRow);
+	UE_LOG(
+		LogT66BossAttackOwnership,
+		Display,
+		TEXT("BossAttackDefinitionQueued BossID=%s AttackID=%s Phase=%d DefinitionRows=%d ScheduledRows=%d UnsupportedRows=%d Source=DT_BossAttackDefinitions"),
+		*BossID.ToString(),
+		*AttackRow.AttackID.ToString(),
+		Phase,
+		DefinitionRows.Num(),
+		ScheduledRows,
+		UnsupportedRows);
+	return true;
+}
+
+bool AT66BossBase::FireBossProjectileAttackRow(APawn* PlayerPawn, const FT66BossAttackOwnershipData& AttackRow)
+{
+	if (!PlayerPawn)
+	{
+		return false;
+	}
+
+	FName DeadPartID = NAME_None;
+	if (!AreBossAttackPartsAlive(AttackRow, DeadPartID))
+	{
+		RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, &AttackRow, DeadPartID, TEXT("LegacyProjectileSelection"));
+		return true;
+	}
+
+	const FVector TargetLocation = PlayerPawn->GetActorLocation();
+	const FVector PlanarToTarget = (TargetLocation - GetActorLocation()).GetSafeNormal2D();
+	const FVector Side = T66ResolvePlanarRightVector(PlanarToTarget.IsNearlyZero() ? GetActorForwardVector() : PlanarToTarget);
+	const int32 Phase = GetAttackPhaseIndex();
+	const float PhaseScale = 1.f + 0.08f * static_cast<float>(Phase);
+	const ET66BossAttackProfile AuthoredProfile = T66ResolveLegacyAttackProfileFromAttackID(AttackRow.AttackID, AttackProfile);
+
+	if (FireBossProjectileAttackDefinitionRows(PlayerPawn, AttackRow, TargetLocation, Phase, PlanarToTarget, Side))
+	{
+		return true;
+	}
+
+	RecordBossAttackOwnershipEvent(T66BossAttackEvent_Queued, &AttackRow, AttackRow.OwningPartID, TEXT("LegacyProjectileAttackRow"));
+	NotifyBossMovementAttackCoordinationStarted(AttackRow);
+
+	switch (AuthoredProfile)
+	{
+	case ET66BossAttackProfile::Sharpshooter:
+		QueueProjectileFanBurstForAttackRow(AttackRow, TargetLocation, Phase >= 1 ? 5 : 3, Phase == 0 ? 8.f : 12.f, 0.04f, 1.18f + 0.06f * static_cast<float>(Phase), 0.f, 18.f, true);
+		QueueProjectileShotTowardsForAttackRow(AttackRow, TargetLocation, 0.16f, 0.f, 1.36f + 0.08f * static_cast<float>(Phase), FVector::ZeroVector, false);
+		if (Phase >= 2)
+		{
+			QueueProjectileShotTowardsForAttackRow(AttackRow, TargetLocation, 0.28f, -6.f, 1.24f, FVector::ZeroVector, true);
+			QueueProjectileShotTowardsForAttackRow(AttackRow, TargetLocation, 0.32f, 6.f, 1.24f, FVector::ZeroVector, true);
+		}
+		return true;
+
+	case ET66BossAttackProfile::Juggernaut:
+		QueueProjectileFanBurstForAttackRow(AttackRow, TargetLocation, Phase == 0 ? 5 : 7, 30.f + 4.f * static_cast<float>(Phase), 0.05f, 0.94f + 0.05f * static_cast<float>(Phase), 0.f, 46.f, false);
+		QueueRadialBurstForAttackRow(AttackRow, Phase == 0 ? 6 : (Phase == 1 ? 8 : 10), 0.025f, FMath::FRandRange(0.f, 360.f), 0.76f + 0.05f * static_cast<float>(Phase), 0.18f, true);
+		return true;
+
+	case ET66BossAttackProfile::Duelist:
+		QueueProjectileShotTowardsForAttackRow(AttackRow, TargetLocation, 0.f, -10.f, 1.12f * PhaseScale, -Side * 52.f, false);
+		QueueProjectileShotTowardsForAttackRow(AttackRow, TargetLocation, 0.05f, 10.f, 1.12f * PhaseScale, Side * 52.f, true);
+		if (Phase >= 1)
+		{
+			QueueProjectileFanBurstForAttackRow(AttackRow, TargetLocation, 4 + Phase, 20.f, 0.05f, 1.04f + 0.05f * static_cast<float>(Phase), 0.18f, 26.f, true);
+		}
+		if (Phase >= 2)
+		{
+			QueueRadialBurstForAttackRow(AttackRow, 6, 0.03f, PlanarToTarget.Rotation().Yaw + 30.f, 0.96f, 0.34f, true);
+		}
+		return true;
+
+	case ET66BossAttackProfile::Gambler:
+		QueueRadialBurstForAttackRow(AttackRow, 6 + Phase * 2, 0.02f, FMath::FRandRange(0.f, 360.f), 0.86f + 0.04f * static_cast<float>(Phase), 0.f, true);
+		QueueProjectileFanBurstForAttackRow(AttackRow, TargetLocation, 3 + Phase, 16.f + 2.f * static_cast<float>(Phase), 0.05f, 1.10f + 0.05f * static_cast<float>(Phase), 0.16f, 20.f, false);
+		if (Phase >= 2)
+		{
+			QueueProjectileShotTowardsForAttackRow(AttackRow, TargetLocation, 0.32f, FMath::FRandRange(-12.f, 12.f), 1.35f, FVector::ZeroVector, true);
+		}
+		return true;
+
+	case ET66BossAttackProfile::Balanced:
+	default:
+		QueueProjectileFanBurstForAttackRow(AttackRow, TargetLocation, Phase == 0 ? 3 : (Phase == 1 ? 5 : 6), 14.f + 4.f * static_cast<float>(Phase), 0.06f, 1.00f + 0.06f * static_cast<float>(Phase), 0.f, 36.f, false);
+		if (Phase >= 1)
+		{
+			QueueProjectileShotTowardsForAttackRow(AttackRow, TargetLocation, 0.22f, 0.f, 1.18f, FVector::ZeroVector, true);
+		}
+		if (Phase >= 2)
+		{
+			QueueProjectileFanBurstForAttackRow(AttackRow, TargetLocation, 3, 10.f, 0.05f, 1.24f, 0.34f, 0.f, true);
+		}
+		return true;
+	}
+}
+
 void AT66BossBase::FireAtPlayer()
 {
 	if (!bAwakened || CurrentHP <= 0 || StunSecondsRemaining > 0.f || FreezeSecondsRemaining > 0.f) return;
@@ -1765,6 +3122,11 @@ void AT66BossBase::FireAtPlayer()
 	if (IsSewerSlimeKingBoss())
 	{
 		FireSewerSlimeKingAttack(PlayerPawn);
+		return;
+	}
+
+	if (FireAuthoredBossProjectileAttack(PlayerPawn))
+	{
 		return;
 	}
 
@@ -1845,6 +3207,21 @@ bool AT66BossBase::TakeDamageFromHeroHitZone(int32 DamageAmount, const FT66Comba
 		return false;
 	}
 
+	if (bZeroDamageUnkillable)
+	{
+		UWorld* World = GetWorld();
+		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+		if (UT66FloatingCombatTextSubsystem* FloatingText = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
+		{
+			FloatingText->ShowDamageNumber(this, 0, EventType);
+		}
+		UE_LOG(LogTemp, Verbose, TEXT("[T66Endgame] ZeroDamageBossHit BossID=%s Source=%s Reason=%s"),
+			*BossID.ToString(),
+			*SourceID.ToString(),
+			*ZeroDamageUnkillableReason.ToString());
+		return false;
+	}
+
 	const int32 PartIndex = ResolveBossPartIndex(TargetHandle.HitComponent.Get(), TargetHandle.HitZoneType, TargetHandle.HitZoneName);
 	if (!BossPartStates.IsValidIndex(PartIndex))
 	{
@@ -1898,9 +3275,139 @@ bool AT66BossBase::TakeDamageFromHeroHitZone(int32 DamageAmount, const FT66Comba
 	return false;
 }
 
+void AT66BossBase::SetZeroDamageUnkillable(const bool bEnabled, const FName Reason)
+{
+	bZeroDamageUnkillable = bEnabled;
+	ZeroDamageUnkillableReason = bEnabled ? Reason : NAME_None;
+}
+
 float AT66BossBase::GetEffectiveArmor() const
 {
 	return FMath::Clamp(Armor - ArmorDebuffAmount, -0.5f, 0.95f);
+}
+
+bool AT66BossBase::FireAuthoredBossGroundAOE(APawn* PlayerPawn)
+{
+	bool bHasMatchingRows = false;
+	FName SuppressedPartID = NAME_None;
+	const FT66BossAttackOwnershipData* AttackRow = PickBossAttackRowByPrefix(
+		T66BossAttackIDPrefix_LegacyGroundAOE,
+		bHasMatchingRows,
+		SuppressedPartID);
+	if (AttackRow)
+	{
+		return FireBossGroundAOEAttackRow(PlayerPawn, *AttackRow);
+	}
+
+	if (bHasMatchingRows)
+	{
+		UE_LOG(
+			LogT66BossAttackOwnership,
+			Display,
+			TEXT("BossAttackOwnershipSuppressed BossID=%s Channel=LegacyGroundAOE DeadPartID=%s Reason=NoSelectableAuthoredRows"),
+			*BossID.ToString(),
+			*SuppressedPartID.ToString());
+		return true;
+	}
+
+	return false;
+}
+
+bool AT66BossBase::FireBossGroundAOEAttackRow(APawn* PlayerPawn, const FT66BossAttackOwnershipData& AttackRow)
+{
+	if (!PlayerPawn)
+	{
+		return false;
+	}
+
+	FName DeadPartID = NAME_None;
+	if (!AreBossAttackPartsAlive(AttackRow, DeadPartID))
+	{
+		RecordBossAttackOwnershipEvent(T66BossAttackEvent_Suppressed, &AttackRow, DeadPartID, TEXT("LegacyGroundAOESelection"));
+		return true;
+	}
+
+	const FVector TargetLoc = ResolveGroundLocation(PlayerPawn->GetActorLocation());
+	const FVector Forward = (TargetLoc - GetActorLocation()).GetSafeNormal2D();
+	const FVector Right = T66ResolvePlanarRightVector(Forward.IsNearlyZero() ? GetActorForwardVector() : Forward);
+	const int32 Phase = GetAttackPhaseIndex();
+	const ET66BossAttackProfile AuthoredProfile = T66ResolveLegacyAttackProfileFromAttackID(AttackRow.AttackID, AttackProfile);
+
+	RecordBossAttackOwnershipEvent(T66BossAttackEvent_Queued, &AttackRow, AttackRow.OwningPartID, TEXT("LegacyGroundAOEAttackRow"));
+	NotifyBossMovementAttackCoordinationStarted(AttackRow);
+
+	switch (AuthoredProfile)
+	{
+	case ET66BossAttackProfile::Sharpshooter:
+		SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc, 0.82f, 0.90f, false);
+		SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc + Right * GroundAOERadius * 0.95f, 0.72f, 0.82f, true);
+		if (Phase >= 1)
+		{
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc - Right * GroundAOERadius * 0.95f, 0.72f, 0.82f, true);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc + Forward * GroundAOERadius * 0.95f, 0.78f, 0.76f, false);
+		}
+		return true;
+
+	case ET66BossAttackProfile::Juggernaut:
+		SpawnGroundAOEAtLocationForAttackRow(AttackRow, GetActorLocation(), 1.18f + 0.10f * static_cast<float>(Phase), 1.00f, false);
+		if (Phase >= 1)
+		{
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc, 1.00f, 0.86f, true);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc + Right * GroundAOERadius, 0.84f, 0.78f, true);
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc - Right * GroundAOERadius, 0.84f, 0.78f, true);
+		}
+		return true;
+
+	case ET66BossAttackProfile::Duelist:
+		SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc + Right * GroundAOERadius * 0.7f, 0.76f, 0.82f, false);
+		SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc - Right * GroundAOERadius * 0.7f, 0.76f, 0.82f, true);
+		if (Phase >= 1)
+		{
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc + Forward * GroundAOERadius * 0.82f, 0.72f, 0.76f, true);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc - Forward * GroundAOERadius * 0.82f, 0.72f, 0.76f, false);
+		}
+		return true;
+
+	case ET66BossAttackProfile::Gambler:
+	{
+		const int32 SpotCount = Phase == 0 ? 3 : (Phase == 1 ? 5 : 6);
+		const float RandomStart = FMath::FRandRange(0.f, 360.f);
+		for (int32 Index = 0; Index < SpotCount; ++Index)
+		{
+			const float Angle = RandomStart + (360.f / static_cast<float>(SpotCount)) * static_cast<float>(Index);
+			const FVector Offset = FRotator(0.f, Angle, 0.f).Vector() * (GroundAOERadius * (Phase >= 2 ? 0.92f : 0.72f));
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc + Offset, 0.70f + 0.05f * static_cast<float>(Phase), 0.82f, (Index % 2) == 1);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc, 0.88f, 0.76f, true);
+		}
+		return true;
+	}
+
+	case ET66BossAttackProfile::Balanced:
+	default:
+		SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc, 1.00f, 1.00f, false);
+		if (Phase >= 1)
+		{
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc + Right * GroundAOERadius * 0.85f, 0.82f, 0.88f, true);
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc - Right * GroundAOERadius * 0.85f, 0.82f, 0.88f, true);
+		}
+		if (Phase >= 2)
+		{
+			SpawnGroundAOEAtLocationForAttackRow(AttackRow, TargetLoc + Forward * GroundAOERadius * 0.9f, 0.78f, 0.80f, false);
+		}
+		return true;
+	}
 }
 
 void AT66BossBase::SpawnGroundAOE()
@@ -1912,6 +3419,11 @@ void AT66BossBase::SpawnGroundAOE()
 
 	APawn* PlayerPawn = ResolvePlayerPawn();
 	if (!PlayerPawn) return;
+
+	if (FireAuthoredBossGroundAOE(PlayerPawn))
+	{
+		return;
+	}
 
 	const FVector TargetLoc = ResolveGroundLocation(PlayerPawn->GetActorLocation());
 	const FVector Forward = (TargetLoc - GetActorLocation()).GetSafeNormal2D();

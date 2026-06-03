@@ -1,0 +1,30 @@
+﻿{
+    "ArtifactKind":  "OperatorArtifactNotGreenlight",
+    "Mode":  "Operator",
+    "Model":  "claude-opus-4-8",
+    "Effort":  "high",
+    "PermissionMode":  "plan",
+    "AllowedTools":  [
+                         "Read",
+                         "Grep",
+                         "Glob"
+                     ],
+    "AddDir":  [
+                   "C:\\UE\\T66,C:\\Users\\DoPra\\Tools\\AIUsageTray"
+               ],
+    "PromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\20260529_OperatorStateProcessValidation\\claude_operator_prompt.md",
+    "EffectivePromptPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T235241-20260529_OperatorStateProcessValidation-Operator\\effective_prompt.md",
+    "OutputPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T235241-20260529_OperatorStateProcessValidation-Operator\\claude_direct_read_operator.md",
+    "ReviewedOperatorRun":  null,
+    "AttemptsRequested":  2,
+    "TimeoutSeconds":  600,
+    "ClaudePath":  "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+    "ClaudeVersion":  "2.1.150 (Claude Code)",
+    "SuccessfulStdoutPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T235241-20260529_OperatorStateProcessValidation-Operator\\attempts\\stdout_attempt1.md",
+    "SuccessfulStderrPath":  "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260528T235241-20260529_OperatorStateProcessValidation-Operator\\attempts\\stderr_attempt1.txt",
+    "Greenlit":  false,
+    "Verdict":  null,
+    "VerdictLine":  null,
+    "OutcomeKind":  "ClaudeOperatorArtifact",
+    "FailureKind":  null
+}

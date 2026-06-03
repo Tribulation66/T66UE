@@ -1,0 +1,16 @@
+[
+  {
+    "Shortcut": "C:\\UE\\T66\\T66 Standalone.lnk",
+    "Target": "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe",
+    "Arguments": "-abslog=\"C:\\UE\\T66\\Saved\\StandaloneLogs\\T66_Standalone.log\" -forcelogflush",
+    "WorkingDirectory": "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64",
+    "TargetExists": true
+  },
+  {
+    "Shortcut": "C:\\Users\\DoPra\\AppData\\Roaming\\Microsoft\\Internet Explorer\\Quick Launch\\User Pinned\\TaskBar\\T66 Standalone.lnk",
+    "Target": "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64\\T66.exe",
+    "Arguments": "-abslog=\"C:\\UE\\T66\\Saved\\StandaloneLogs\\T66_Standalone.log\" -forcelogflush",
+    "WorkingDirectory": "C:\\UE\\T66\\Saved\\StagedBuilds\\Windows\\T66\\Binaries\\Win64",
+    "TargetExists": true
+  }
+]

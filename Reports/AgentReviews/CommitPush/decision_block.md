@@ -1,45 +1,46 @@
 # Commit And Push Decision Block
 
-Working goal: Commit approved current T66 changes to `main`, push `main`, create and push the required version tag, and verify `main` matches `origin/main` with tracked changes classified or clean.
+Working task: commit approved current T66 changes to `main`, push `main`, create and push the required next version tag, and verify `main` matches `origin/main` with tracked changes clean or explicitly classified.
 
-Decision gate saved: 2026-05-30.
+Decision gate saved: 2026-06-03.
 
 ## Why This Needs User Decision
 
-The live repo state cannot be safely committed under the root instructions without explicit scope/version decisions:
+The live repo state cannot be safely committed under the root instructions without explicit scope and version decisions:
 
-1. `main` is already one commit ahead of `origin/main`.
-2. The working tree has a large tracked dirty set across config, data, docs, scripts, runtime source, LFS-tracked Unreal assets, and deleted tracked files.
-3. At least one changed tracked path is Mini/minigame-owned (`Source/T66/UI/Screens/T66MinigamesScreen.cpp`). Root `AGENTS.md` excludes Mini/minigame scope unless the user explicitly includes it.
-4. `Config/DefaultGame.ini` currently has `ProjectVersion=alpha-0.8`, and the `alpha-0.8` tag already exists on `origin/main`. Root `AGENTS.md` says "commit and push" includes creating and pushing the next version tag.
-5. The tracked set includes LFS-tracked Unreal assets, including modified DataTable `.uasset` files and deleted world/interactable `.uasset` files. This may require a real LFS-inclusive release commit rather than the prior non-LFS-safe pattern.
+1. `main` is currently aligned with `origin/main` at `25d9e826340bdfb333486df5c927e42867a3583e`.
+2. `Config/DefaultGame.ini` currently reports `ProjectVersion=alpha-0.9`.
+3. The existing version tags are `alpha-0.1`, `alpha-0.2`, `alpha-0.4`, `alpha-0.5`, `alpha-0.7`, `alpha-0.8`, and `alpha-0.9`; the current project version tag already exists.
+4. A commit/push request in root `AGENTS.md` includes creating and pushing the next version tag from the committed `main` tip. The next version value is not named by the user.
+5. The tracked tree is not limited to the approved LFS/media/model cleanup. Current tracked status has 203 staged entries and roughly 625 unstaged entries.
+6. The unstaged tracked set includes a non-trivial Mini/minigame block. Root `AGENTS.md` excludes Mini/minigame scope unless the user explicitly includes it.
+7. The unstaged tracked set also includes broad non-LFS config, runtime source, UI, data, scripts, tools, runtime dependencies, and project-file changes. These appear outside the approved LFS cleanup scope and cannot be silently committed or reverted.
 
 ## Decisions Needed
 
-Please choose or override these defaults:
+Please answer these before commit/tag/push:
 
-1. Scope to stage:
-   - Default if you say `no clarification needed`: commit all current tracked changes, including Mini/minigame-owned paths and LFS-tracked Unreal assets/deletions.
-   - Alternative: commit only non-Mini/non-LFS text/code/docs changes and leave excluded tracked changes explicitly deferred, which means the tree will not be fully clean.
+1. Version/tag:
+   - Choose the next version/tag value, such as `alpha-0.10` or `alpha-1.0`. Root `AGENTS.md` says this value becomes both `ProjectVersion` and the Git tag.
+   - Alternative: explicitly override repo policy and push without a new version tag.
 
-2. Version/tag:
-   - Default if you say `no clarification needed`: bump `ProjectVersion` to `alpha-0.9`, commit it, create tag `alpha-0.9`, and push `main` plus `alpha-0.9`.
-   - Alternative: provide a different version/tag, or explicitly say to push `main` without creating a new tag.
-
-3. Review:
-   - Default: continue with the repo Operator/Validator review gate before mutating Git.
-   - Alternative: say `skip Validator review` to bypass the cross-review for this request.
+2. Scope for the current dirty tree:
+   - Recommended: commit only the approved staged LFS/media/model cleanup plus the chosen version bump, and explicitly defer the unrelated unstaged tracked changes for a later cleanup/commit.
+   - Alternative: include all tracked changes, including Mini/minigame paths. This explicitly expands scope beyond the default Mini exclusion and should only be chosen if all 625 unstaged tracked entries are intended for this release.
+   - Alternative: pause commit/push until the unrelated tracked changes are separately resolved.
 
 ## Current Evidence
 
 - Current branch: `main`.
 - Upstream: `origin/main`.
-- Local HEAD: `27e148ae` (`Codify durable combat VFX pipeline`).
-- Upstream HEAD: `cdd3f896` (`Prepare alpha-0.8`).
-- Existing tag: `alpha-0.8` points at the upstream alpha-0.8 snapshot.
-- `Config/DefaultGame.ini` currently reports `ProjectVersion=alpha-0.8`.
-- Broad tracked status showed modified/deleted tracked files across `Config`, `Content/Data`, `Content/World`, `Demo`, `Gameplay`, `Scripts`, `Source`, `T66.uproject`, `Tools`, and `ToonStyle/Reports`.
+- Local HEAD: `25d9e826340bdfb333486df5c927e42867a3583e`.
+- Upstream HEAD: `25d9e826340bdfb333486df5c927e42867a3583e`.
+- Current project version: `alpha-0.9`.
+- Existing latest tag: `alpha-0.9`.
+- Current tracked status summary: 203 staged entries, roughly 625 unstaged entries, with a non-trivial Mini/minigame block.
+- Staged scope is the approved LFS/media/model cleanup and its reports.
+- Unstaged scope spans `Source`, `Content`, `RuntimeDependencies`, `UI`, `Gameplay`, `Scripts`, `Tools`, `Config`, `AGENTS.md`, and `T66.uproject`.
 
 ## Stop Rule
 
-No staging, commit, tag, push, reset, clean, or restore should happen until the user answers this decision gate.
+No commit, tag, push, reset, clean, restore, or broad staging should happen until the user answers this decision gate.

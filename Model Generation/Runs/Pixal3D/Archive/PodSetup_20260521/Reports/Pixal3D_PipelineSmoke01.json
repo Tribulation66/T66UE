@@ -1,0 +1,298 @@
+{
+  "batch": "Pixal3D_PipelineSmoke01",
+  "updated_utc": "2026-05-21T23:18:47+00:00",
+  "rows": [
+    {
+      "id": "tree_organic_prop",
+      "kind": "tree",
+      "display_name": "Tree organic prop",
+      "quad_retro": false,
+      "source_image": "Inputs/SourceImages/tree_organic_prop.png",
+      "generation_attempts": [
+        {
+          "label": "requested",
+          "decimation": 200000,
+          "remesh": true,
+          "status": "ok",
+          "duration_seconds": 123.4,
+          "pod_size_bytes": 7942244,
+          "local_size_bytes": 7942244,
+          "server_export_headers": {
+            "X-Pixal3D-Export-Attempt": "1",
+            "X-Pixal3D-Export-Label": "requested",
+            "X-Pixal3D-Export-Decimation": "200000",
+            "X-Pixal3D-Export-Remesh": "1",
+            "X-Pixal3D-Export-Attempts": "1",
+            "X-Pixal3D-Export-Safe-Fill-Holes": "0",
+            "X-Pixal3D-Export-Fill-Holes-Skipped": "0",
+            "X-Pixal3D-Export-CPU-UV-Unwraps": "0"
+          }
+        }
+      ],
+      "raw_pixal3d_glb": "Raw/Pixal3D/tree_organic_prop/tree_organic_prop_Pixal3D_R1024_S1337_D200000_Rmx1_requested.glb",
+      "raw_pixal3d_glb_size_bytes": 7942244,
+      "generation_duration_seconds": 123.4,
+      "generation_attempt_index": 1,
+      "generation_decimation": 200000,
+      "generation_remesh": true,
+      "generation_export_attempt": 1,
+      "generation_export_label": "requested",
+      "generation_export_decimation": 200000,
+      "generation_export_remesh": true,
+      "generation_export_safe_fill_holes": false,
+      "generation_export_fill_holes_skipped": 0,
+      "generation_export_cpu_uv_unwraps": 0,
+      "generation_server_export_fallback_used": false,
+      "generation_fallback_used": false,
+      "generation_server_export_headers": {
+        "X-Pixal3D-Export-Attempt": "1",
+        "X-Pixal3D-Export-Label": "requested",
+        "X-Pixal3D-Export-Decimation": "200000",
+        "X-Pixal3D-Export-Remesh": "1",
+        "X-Pixal3D-Export-Attempts": "1",
+        "X-Pixal3D-Export-Safe-Fill-Holes": "0",
+        "X-Pixal3D-Export-Fill-Holes-Skipped": "0",
+        "X-Pixal3D-Export-CPU-UV-Unwraps": "0"
+      },
+      "qa_front_render": "QA/Pixal3DFront/tree_organic_prop_front.png",
+      "qa_metadata": "QA/Pixal3DFront/tree_organic_prop_front_metadata.json",
+      "qa_raw_triangles": 187627,
+      "qa_bounds": {
+        "min": [
+          -0.3972850441932678,
+          -0.19484588503837585,
+          -0.48894521594047546
+        ],
+        "max": [
+          0.3998068571090698,
+          0.08668600022792816,
+          0.42830324172973633
+        ],
+        "size": [
+          0.7970919013023376,
+          0.2815318703651428,
+          0.9172484874725342
+        ]
+      }
+    },
+    {
+      "id": "stone_wall_module",
+      "kind": "wall",
+      "display_name": "Stone wall module",
+      "quad_retro": false,
+      "source_image": "Inputs/SourceImages/stone_wall_module.png",
+      "generation_attempts": [
+        {
+          "label": "requested",
+          "decimation": 200000,
+          "remesh": true,
+          "status": "ok",
+          "duration_seconds": 115.1,
+          "pod_size_bytes": 8600928,
+          "local_size_bytes": 8600928,
+          "server_export_headers": {
+            "X-Pixal3D-Export-Attempt": "1",
+            "X-Pixal3D-Export-Label": "requested",
+            "X-Pixal3D-Export-Decimation": "200000",
+            "X-Pixal3D-Export-Remesh": "1",
+            "X-Pixal3D-Export-Attempts": "1",
+            "X-Pixal3D-Export-Safe-Fill-Holes": "0",
+            "X-Pixal3D-Export-Fill-Holes-Skipped": "0",
+            "X-Pixal3D-Export-CPU-UV-Unwraps": "0"
+          }
+        }
+      ],
+      "raw_pixal3d_glb": "Raw/Pixal3D/stone_wall_module/stone_wall_module_Pixal3D_R1024_S1337_D200000_Rmx1_requested.glb",
+      "raw_pixal3d_glb_size_bytes": 8600928,
+      "generation_duration_seconds": 115.1,
+      "generation_attempt_index": 1,
+      "generation_decimation": 200000,
+      "generation_remesh": true,
+      "generation_export_attempt": 1,
+      "generation_export_label": "requested",
+      "generation_export_decimation": 200000,
+      "generation_export_remesh": true,
+      "generation_export_safe_fill_holes": false,
+      "generation_export_fill_holes_skipped": 0,
+      "generation_export_cpu_uv_unwraps": 0,
+      "generation_server_export_fallback_used": false,
+      "generation_fallback_used": false,
+      "generation_server_export_headers": {
+        "X-Pixal3D-Export-Attempt": "1",
+        "X-Pixal3D-Export-Label": "requested",
+        "X-Pixal3D-Export-Decimation": "200000",
+        "X-Pixal3D-Export-Remesh": "1",
+        "X-Pixal3D-Export-Attempts": "1",
+        "X-Pixal3D-Export-Safe-Fill-Holes": "0",
+        "X-Pixal3D-Export-Fill-Holes-Skipped": "0",
+        "X-Pixal3D-Export-CPU-UV-Unwraps": "0"
+      },
+      "qa_front_render": "QA/Pixal3DFront/stone_wall_module_front.png",
+      "qa_metadata": "QA/Pixal3DFront/stone_wall_module_front_metadata.json",
+      "qa_raw_triangles": 186600,
+      "qa_bounds": {
+        "min": [
+          -0.29736530780792236,
+          -0.49057114124298096,
+          -0.20397615432739258
+        ],
+        "max": [
+          0.28294458985328674,
+          0.4962139129638672,
+          0.2039979249238968
+        ],
+        "size": [
+          0.5803098678588867,
+          0.9867850542068481,
+          0.4079740643501282
+        ]
+      }
+    },
+    {
+      "id": "humanoid_character",
+      "kind": "character",
+      "display_name": "Humanoid character",
+      "quad_retro": true,
+      "source_image": "Inputs/SourceImages/humanoid_character.png",
+      "generation_attempts": [
+        {
+          "label": "requested",
+          "decimation": 200000,
+          "remesh": true,
+          "status": "ok",
+          "duration_seconds": 77.2,
+          "pod_size_bytes": 6597116,
+          "local_size_bytes": 6597116,
+          "server_export_headers": {
+            "X-Pixal3D-Export-Attempt": "1",
+            "X-Pixal3D-Export-Label": "requested",
+            "X-Pixal3D-Export-Decimation": "200000",
+            "X-Pixal3D-Export-Remesh": "1",
+            "X-Pixal3D-Export-Attempts": "1",
+            "X-Pixal3D-Export-Safe-Fill-Holes": "0",
+            "X-Pixal3D-Export-Fill-Holes-Skipped": "0",
+            "X-Pixal3D-Export-CPU-UV-Unwraps": "0"
+          }
+        }
+      ],
+      "raw_pixal3d_glb": "Raw/Pixal3D/humanoid_character/humanoid_character_Pixal3D_R1024_S1337_D200000_Rmx1_requested.glb",
+      "raw_pixal3d_glb_size_bytes": 6597116,
+      "generation_duration_seconds": 77.2,
+      "generation_attempt_index": 1,
+      "generation_decimation": 200000,
+      "generation_remesh": true,
+      "generation_export_attempt": 1,
+      "generation_export_label": "requested",
+      "generation_export_decimation": 200000,
+      "generation_export_remesh": true,
+      "generation_export_safe_fill_holes": false,
+      "generation_export_fill_holes_skipped": 0,
+      "generation_export_cpu_uv_unwraps": 0,
+      "generation_server_export_fallback_used": false,
+      "generation_fallback_used": false,
+      "generation_server_export_headers": {
+        "X-Pixal3D-Export-Attempt": "1",
+        "X-Pixal3D-Export-Label": "requested",
+        "X-Pixal3D-Export-Decimation": "200000",
+        "X-Pixal3D-Export-Remesh": "1",
+        "X-Pixal3D-Export-Attempts": "1",
+        "X-Pixal3D-Export-Safe-Fill-Holes": "0",
+        "X-Pixal3D-Export-Fill-Holes-Skipped": "0",
+        "X-Pixal3D-Export-CPU-UV-Unwraps": "0"
+      },
+      "qa_front_render": "QA/Pixal3DFront/humanoid_character_front.png",
+      "qa_metadata": "QA/Pixal3DFront/humanoid_character_front_metadata.json",
+      "qa_raw_triangles": 186687,
+      "qa_bounds": {
+        "min": [
+          -0.16494451463222504,
+          -0.1734590232372284,
+          -0.4402933418750763
+        ],
+        "max": [
+          0.16384516656398773,
+          0.1640925109386444,
+          0.4917945861816406
+        ],
+        "size": [
+          0.32878968119621277,
+          0.3375515341758728,
+          0.9320878982543945
+        ]
+      }
+    },
+    {
+      "id": "horned_monster",
+      "kind": "monster",
+      "display_name": "Horned monster",
+      "quad_retro": true,
+      "source_image": "Inputs/SourceImages/horned_monster.png",
+      "generation_attempts": [
+        {
+          "label": "requested",
+          "decimation": 200000,
+          "remesh": true,
+          "status": "ok",
+          "duration_seconds": 68.6,
+          "pod_size_bytes": 6545832,
+          "local_size_bytes": 6545832,
+          "server_export_headers": {
+            "X-Pixal3D-Export-Attempt": "1",
+            "X-Pixal3D-Export-Label": "requested",
+            "X-Pixal3D-Export-Decimation": "200000",
+            "X-Pixal3D-Export-Remesh": "1",
+            "X-Pixal3D-Export-Attempts": "1",
+            "X-Pixal3D-Export-Safe-Fill-Holes": "0",
+            "X-Pixal3D-Export-Fill-Holes-Skipped": "0",
+            "X-Pixal3D-Export-CPU-UV-Unwraps": "0"
+          }
+        }
+      ],
+      "raw_pixal3d_glb": "Raw/Pixal3D/horned_monster/horned_monster_Pixal3D_R1024_S1337_D200000_Rmx1_requested.glb",
+      "raw_pixal3d_glb_size_bytes": 6545832,
+      "generation_duration_seconds": 68.6,
+      "generation_attempt_index": 1,
+      "generation_decimation": 200000,
+      "generation_remesh": true,
+      "generation_export_attempt": 1,
+      "generation_export_label": "requested",
+      "generation_export_decimation": 200000,
+      "generation_export_remesh": true,
+      "generation_export_safe_fill_holes": false,
+      "generation_export_fill_holes_skipped": 0,
+      "generation_export_cpu_uv_unwraps": 0,
+      "generation_server_export_fallback_used": false,
+      "generation_fallback_used": false,
+      "generation_server_export_headers": {
+        "X-Pixal3D-Export-Attempt": "1",
+        "X-Pixal3D-Export-Label": "requested",
+        "X-Pixal3D-Export-Decimation": "200000",
+        "X-Pixal3D-Export-Remesh": "1",
+        "X-Pixal3D-Export-Attempts": "1",
+        "X-Pixal3D-Export-Safe-Fill-Holes": "0",
+        "X-Pixal3D-Export-Fill-Holes-Skipped": "0",
+        "X-Pixal3D-Export-CPU-UV-Unwraps": "0"
+      },
+      "qa_front_render": "QA/Pixal3DFront/horned_monster_front.png",
+      "qa_metadata": "QA/Pixal3DFront/horned_monster_front_metadata.json",
+      "qa_raw_triangles": 186713,
+      "qa_bounds": {
+        "min": [
+          -0.3405797481536865,
+          -0.25428932905197144,
+          -0.44374558329582214
+        ],
+        "max": [
+          0.3376501202583313,
+          0.1959598958492279,
+          0.4918714165687561
+        ],
+        "size": [
+          0.6782298684120178,
+          0.45024922490119934,
+          0.9356169700622559
+        ]
+      }
+    }
+  ]
+}

@@ -69,8 +69,6 @@
 "Screens","MainMenu","ScreenArt","SourceAssets\UI\Reference\Screens\MainMenu\ScreenArt\mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_1920.png","2045471"
 "Screens","MainMenu","ScreenArt","SourceAssets\UI\Reference\Screens\MainMenu\ScreenArt\mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_foreground_occluder.png","8117"
 "Screens","MainMenu","Slots","SourceAssets\UI\Reference\Screens\MainMenu\Slots\mainmenu_slots_reference_square_slot_frame_normal.png","1174905"
-"Screens","Minigames","Controls","SourceAssets\UI\Reference\Screens\Minigames\Controls\minigames_controls_reference_dropdown_field_normal.png","1218937"
-"Screens","Minigames","Panels","SourceAssets\UI\Reference\Screens\Minigames\Panels\minigames_panels_inner_panel_normal.png","1925457"
 "Screens","PowerUp","Controls","SourceAssets\UI\Reference\Screens\PowerUp\Controls\powerup_controls_controls_sheet.png","836862"
 "Screens","PowerUp","Controls","SourceAssets\UI\Reference\Screens\PowerUp\Controls\powerup_controls_reference_dropdown_field_normal.png","1218937"
 "Screens","PowerUp","Icons","SourceAssets\UI\Reference\Screens\PowerUp\Icons\powerup_iconsgenerated_icon_07_coupon_ticket_white_v1.png","1883300"

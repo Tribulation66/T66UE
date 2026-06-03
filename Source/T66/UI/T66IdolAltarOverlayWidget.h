@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Core/T66Rarity.h"
 #include "Core/Animation/T66AnimationGroup.h"
 #include "Core/Animation/T66AnimationSequence.h"
 #include "Input/Reply.h"
@@ -32,9 +33,9 @@ public:
 	void SetSourceAltar(AT66IdolAltar* InSourceAltar) { SourceAltar = InSourceAltar; }
 
 private:
-	static constexpr int32 OfferSlotCount = 12;
-	static constexpr int32 OfferSlotsPerCategory = 3;
-	static constexpr int32 OfferCategoryCount = 4;
+	static constexpr int32 OfferSlotCount = 16;
+	static constexpr int32 OfferSlotsPerCategory = 4;
+	static constexpr int32 OfferCategoryCount = 5;
 
 	TArray<TSharedPtr<SBox>> OfferCardBoxes;
 	TArray<TSharedPtr<STextBlock>> OfferNameTexts;
@@ -66,6 +67,7 @@ private:
 	TSharedPtr<FActiveTimerHandle> AnimationActiveTimerHandle;
 	bool bRevealAnimationActive = false;
 	bool bSelectionAnimationActive = false;
+	bool bCloseAfterSelectionCommit = false;
 
 	struct FPendingSelection
 	{
@@ -73,9 +75,11 @@ private:
 		bool bCommitAttempted = false;
 		bool bTutorialSingleOffer = false;
 		bool bWasUpgrade = false;
+		bool bNoIdolSelection = false;
 		int32 VisibleSlotIndex = INDEX_NONE;
 		int32 StockIndex = INDEX_NONE;
 		FName IdolID = NAME_None;
+		ET66ItemRarity OfferRarity = ET66ItemRarity::Black;
 	};
 	FPendingSelection PendingSelection;
 
@@ -91,7 +95,7 @@ private:
 	bool IsTutorialSingleOfferMode() const;
 	FName GetTutorialOfferedIdolID() const;
 	void StartRevealAnimation(const TSharedRef<SWidget>& OwningWidget);
-	void StartSelectionAnimation(int32 VisibleSlotIndex, int32 StockIndex, FName IdolID, bool bTutorialSingleOffer, bool bWasUpgrade);
+	void StartSelectionAnimation(int32 VisibleSlotIndex, int32 StockIndex, FName IdolID, bool bTutorialSingleOffer, bool bWasUpgrade, ET66ItemRarity OfferRarity, bool bNoIdolSelection);
 	void StartAnimationActiveTimer(const TSharedRef<SWidget>& OwningWidget);
 	void StopAnimationActiveTimer();
 	EActiveTimerReturnType HandleAnimationActiveTimer(double CurrentTime, float DeltaTime);
@@ -100,6 +104,7 @@ private:
 	void RegisterMarkerHandlers();
 	void CommitPendingSelectionIfNeeded();
 	void ClearPendingSelection();
+	void CloseAfterCommittedSelection();
 
 	UFUNCTION()
 	void HandleIdolsChanged();

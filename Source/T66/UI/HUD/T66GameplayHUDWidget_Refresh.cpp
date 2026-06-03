@@ -862,7 +862,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	FHeroData SelectedHeroData;
 	const bool bHasSelectedHeroData = GIAsT66 && GIAsT66->GetSelectedHeroData(SelectedHeroData);
 	const FName DesiredAbilityHeroID = bHasSelectedHeroData ? SelectedHeroData.HeroID : NAME_None;
-	ET66UltimateType DesiredUltimateType = ET66UltimateType::None;
+	ET66UltimateType DesiredUltimateType = bHasSelectedHeroData ? SelectedHeroData.UltimateType : ET66UltimateType::None;
 	ET66PassiveType DesiredPassiveType = RunState->GetPassiveType();
 	FWeaponData DesiredWeaponData;
 	bool bHasDesiredWeaponData = false;
@@ -902,6 +902,11 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		if (UltimateBrush.IsValid())
 		{
 			UltimateBrush->SetResourceObject(nullptr);
+			const TSoftObjectPtr<UTexture2D> UltSoft = ResolveGameplayUltimateIcon(DesiredAbilityHeroID, DesiredUltimateType);
+			if (TexPool && !UltSoft.IsNull())
+			{
+				T66SlateTexture::BindSharedBrushAsync(TexPool, UltSoft, this, UltimateBrush, FName(TEXT("HUDUltimate")), false);
+			}
 		}
 
 		if (PassiveBrush.IsValid())
@@ -931,7 +936,9 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 	if (UltimateInputHintText.IsValid())
 	{
-		UltimateInputHintText->SetText(FText::GetEmpty());
+		UltimateInputHintText->SetText(DesiredUltimateType != ET66UltimateType::None
+			? ResolveGameplayUltimateInputHint(DesiredUltimateType)
+			: FText::GetEmpty());
 	}
 
 	// Item inventory progress ring. Hero XP/level growth is deprecated.
@@ -948,17 +955,25 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	}
 
 	{
+		const float UltimateChargeFraction = RunState->GetUltimateChargeFraction();
+		const bool bHasUltimate = DesiredUltimateType != ET66UltimateType::None;
+		const bool bUltimateReady = RunState->IsUltimateReady();
 		if (UltimateCooldownOverlay.IsValid())
 		{
-			UltimateCooldownOverlay->SetVisibility(EVisibility::Collapsed);
+			UltimateCooldownOverlay->SetVisibility(bHasUltimate && !bUltimateReady ? EVisibility::Visible : EVisibility::Collapsed);
+			UltimateCooldownOverlay->SetBorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, FMath::Lerp(0.62f, 0.18f, UltimateChargeFraction)));
 		}
 		if (UltimateText.IsValid())
 		{
-			UltimateText->SetText(FText::GetEmpty());
+			UltimateText->SetText(bHasUltimate
+				? (bUltimateReady
+					? NSLOCTEXT("T66.GameplayHUD", "UltimateReady", "READY")
+					: FText::Format(NSLOCTEXT("T66.GameplayHUD", "UltimateChargePercent", "{0}%"), FText::AsNumber(FMath::RoundToInt(UltimateChargeFraction * 100.f))))
+				: FText::GetEmpty());
 		}
 		if (UltimateBorder.IsValid())
 		{
-			UltimateBorder->SetVisibility(EVisibility::Collapsed);
+			UltimateBorder->SetVisibility(bHasUltimate ? EVisibility::Visible : EVisibility::Collapsed);
 		}
 	}
 
@@ -1110,15 +1125,51 @@ void UT66GameplayHUDWidget::RefreshHUD()
 
 	// Inventory slots: item color + hover tooltip, grey when empty
 	UT66GameInstance* InventoryGI = Cast<UT66GameInstance>(GetGameInstance());
-	const TArray<FName>& EquippedInventory = RunState->GetInventory();
 	const TArray<FT66InventorySlot>& EquippedInventorySlots = RunState->GetInventorySlots();
-	const TArray<FName>& Inv = EquippedInventory;
-	const TArray<FT66InventorySlot>& InvSlots = EquippedInventorySlots;
-	if (InvSlots.Num() > InventorySlotBorders.Num())
+	TArray<FName> DisplayInventory;
+	TArray<FT66InventorySlot> DisplayInventorySlots;
+	TArray<int32> DisplayStackCounts;
+	TArray<bool> DisplayMobLootFlags;
+	DisplayInventory.Reserve(InventorySlotBorders.Num());
+	DisplayInventorySlots.Reserve(InventorySlotBorders.Num());
+	DisplayStackCounts.Reserve(InventorySlotBorders.Num());
+	DisplayMobLootFlags.Reserve(InventorySlotBorders.Num());
+
+	const int32 MobLootStack = RunState->GetCollectedMobLootStack();
+	if (MobLootStack > 0 && DisplayInventory.Num() < InventorySlotBorders.Num())
 	{
-		FT66FlatStyle::DeferRebuild(this);
-		return;
+		DisplayInventory.Add(UT66RunStateSubsystem::MobLootItemID);
+		DisplayInventorySlots.Add(FT66InventorySlot(UT66RunStateSubsystem::MobLootItemID, ET66ItemRarity::Black, MobLootStack));
+		DisplayStackCounts.Add(MobLootStack);
+		DisplayMobLootFlags.Add(true);
 	}
+
+	TMap<FString, int32> InventoryStackCounts;
+	for (const FT66InventorySlot& EquippedSlot : EquippedInventorySlots)
+	{
+		if (EquippedSlot.IsValid())
+		{
+			InventoryStackCounts.FindOrAdd(FString::Printf(TEXT("%s|%d"), *EquippedSlot.ItemTemplateID.ToString(), static_cast<int32>(EquippedSlot.Rarity)))++;
+		}
+	}
+
+	for (int32 SourceIndex = 0; SourceIndex < EquippedInventorySlots.Num() && DisplayInventory.Num() < InventorySlotBorders.Num(); ++SourceIndex)
+	{
+		if (!EquippedInventorySlots[SourceIndex].IsValid())
+		{
+			continue;
+		}
+		DisplayInventory.Add(EquippedInventorySlots[SourceIndex].ItemTemplateID);
+		DisplayInventorySlots.Add(EquippedInventorySlots[SourceIndex]);
+		DisplayStackCounts.Add(InventoryStackCounts.FindRef(FString::Printf(
+			TEXT("%s|%d"),
+			*EquippedInventorySlots[SourceIndex].ItemTemplateID.ToString(),
+			static_cast<int32>(EquippedInventorySlots[SourceIndex].Rarity))));
+		DisplayMobLootFlags.Add(false);
+	}
+
+	const TArray<FName>& Inv = DisplayInventory;
+	const TArray<FT66InventorySlot>& InvSlots = DisplayInventorySlots;
 	for (int32 i = 0; i < InventorySlotBorders.Num(); ++i)
 	{
 		if (!InventorySlotBorders[i].IsValid()) continue;
@@ -1126,11 +1177,27 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		FLinearColor SlotColor = FT66FlatStyle::DefaultBorder();
 		FText Tooltip = FText::GetEmpty();
 		TSoftObjectPtr<UTexture2D> SlotIconSoft;
+		const bool bMobLootSlot = DisplayMobLootFlags.IsValidIndex(i) && DisplayMobLootFlags[i];
 		if (i < Inv.Num() && !Inv[i].IsNone())
 		{
 			const FName ItemID = Inv[i];
 			FItemData D;
-			if (InventoryGI && InventoryGI->GetItemData(ItemID, D))
+			if (bMobLootSlot)
+			{
+				SlotColor = FLinearColor(0.95f, 0.67f, 0.18f, 1.0f);
+			}
+			if (bMobLootSlot)
+			{
+				Tooltip = FText::Format(
+					NSLOCTEXT("T66.ItemTooltip", "MobLootStackTooltip", "Mob Loot\nSell-only monster loot.\nStack: {0}\nSell: {1} gold"),
+					FText::AsNumber(MobLootStack),
+					FText::AsNumber(RunState->GetCollectedMobLootSellValue()));
+				if (InventoryGI && InventoryGI->GetItemData(ItemID, D))
+				{
+					SlotIconSoft = D.GetIconForRarity(ET66ItemRarity::Black);
+				}
+			}
+			else if (InventoryGI && InventoryGI->GetItemData(ItemID, D))
 			{
 				SlotColor = InvSlots.IsValidIndex(i) ? FItemData::GetItemRarityColor(InvSlots[i].Rarity) : FT66FlatStyle::Tokens::Panel2;
 				TArray<FText> TipLines;
@@ -1176,9 +1243,12 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 		InventorySlotBorders[i]->SetBorderBackgroundColor(SlotColor);
 		const FName CurrentItemID = (i < Inv.Num()) ? Inv[i] : NAME_None;
-		if (!CachedInventorySlotIDs.IsValidIndex(i) || CachedInventorySlotIDs[i] != CurrentItemID)
+		const int32 CurrentStackCount = DisplayStackCounts.IsValidIndex(i) ? DisplayStackCounts[i] : 0;
+		if (!CachedInventorySlotIDs.IsValidIndex(i) || CachedInventorySlotIDs[i] != CurrentItemID
+			|| !CachedInventorySlotCounts.IsValidIndex(i) || CachedInventorySlotCounts[i] != CurrentStackCount)
 		{
 			if (CachedInventorySlotIDs.IsValidIndex(i)) CachedInventorySlotIDs[i] = CurrentItemID;
+			if (CachedInventorySlotCounts.IsValidIndex(i)) CachedInventorySlotCounts[i] = CurrentStackCount;
 			if (InventorySlotContainers.IsValidIndex(i) && InventorySlotContainers[i].IsValid())
 			{
 				InventorySlotContainers[i]->SetToolTip(CreateCustomTooltip(Tooltip));
@@ -1200,6 +1270,14 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		if (InventorySlotImages.IsValidIndex(i) && InventorySlotImages[i].IsValid())
 		{
 			InventorySlotImages[i]->SetVisibility(!SlotIconSoft.IsNull() ? EVisibility::Visible : EVisibility::Hidden);
+		}
+		if (InventorySlotCountTexts.IsValidIndex(i) && InventorySlotCountTexts[i].IsValid())
+		{
+			const bool bShowCount = CurrentStackCount > 1 || bMobLootSlot;
+			InventorySlotCountTexts[i]->SetText(bShowCount
+				? FText::Format(NSLOCTEXT("T66.Inventory", "StackCountFormat", "{0}x"), FText::AsNumber(CurrentStackCount))
+				: FText::GetEmpty());
+			InventorySlotCountTexts[i]->SetVisibility(bShowCount ? EVisibility::Visible : EVisibility::Collapsed);
 		}
 	}
 

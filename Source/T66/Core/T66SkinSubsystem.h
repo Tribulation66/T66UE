@@ -43,6 +43,9 @@ public:
 	/** Demo-facing purchasable skin ID. Offered only for the first five heroes. */
 	static const FName DemoSkinID;
 
+	/** Secret skin unlocked for the hero that gives Kromer to the Saint. */
+	static const FName SaintSkinID;
+
 	/** Price in Chad Coupons for the purchasable demo skin. */
 	static constexpr int32 DefaultSkinPriceAC = 50;
 
@@ -59,6 +62,10 @@ public:
 	/** Purchase a skin for the entity with Chad Coupons. Returns true if purchased. */
 	UFUNCTION(BlueprintCallable, Category = "Skins")
 	bool PurchaseSkin(ET66SkinEntityType EntityType, FName EntityID, FName SkinID, int32 CostAC);
+
+	/** Grants a skin without spending currency; used by achievement/secret-ending rewards. */
+	UFUNCTION(BlueprintCallable, Category = "Skins")
+	bool GrantSkin(ET66SkinEntityType EntityType, FName EntityID, FName SkinID, bool bEquip = true);
 
 	/** Refund a previously owned skin for the entity. Returns true if refunded. */
 	UFUNCTION(BlueprintCallable, Category = "Skins")
@@ -91,6 +98,8 @@ public:
 	bool IsCompanionSkinOwned(FName CompanionID, FName SkinID) const;
 	UFUNCTION(BlueprintCallable, Category = "Skins")
 	bool PurchaseHeroSkin(FName HeroID, FName SkinID, int32 CostAC);
+	UFUNCTION(BlueprintCallable, Category = "Skins")
+	bool GrantHeroSkin(FName HeroID, FName SkinID, bool bEquip = true);
 	UFUNCTION(BlueprintCallable, Category = "Skins")
 	bool PurchaseCompanionSkin(FName CompanionID, FName SkinID, int32 CostAC);
 	UFUNCTION(BlueprintCallable, Category = "Skins")

@@ -966,39 +966,6 @@ public:
 	FText GetText_CoinFlip() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_RockPaperScissors() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_FindTheBall() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_BlackJack() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Hit() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Stand() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Double() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Split() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Dealer() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_You() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Bust() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Push() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_ChooseHeadsOrTails() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
@@ -1006,18 +973,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_Tails() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_PickOne() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Rock() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Paper() const;
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_Scissors() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_PickACup() const;
@@ -1078,12 +1033,6 @@ public:
 	// Game result formats
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
 	FText GetText_CoinFlipResultFormat() const; // "Result: {0} — {1}"
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_RpsResultFormat() const; // "You: {0}  |  Gambler: {1}  —  {2}"
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gambler")
-	FText GetText_FindBallResultFormat() const; // "Ball was under {0} — {1}"
 
 	// ============================================
 	// Loading Screen

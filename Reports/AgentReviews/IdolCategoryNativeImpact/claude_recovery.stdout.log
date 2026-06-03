@@ -1,0 +1,34 @@
+
+
+RunDir               : C:\UE\T66\Reports\AgentReviews\ClaudeDirectRead\20260530T012957-IdolCategoryNativeImpactRecovery
+                       -Operator
+ManifestPath         : C:\UE\T66\Reports\AgentReviews\ClaudeDirectRead\20260530T012957-IdolCategoryNativeImpactRecovery
+                       -Operator\manifest.json
+RetentionPath        : C:\UE\T66\Reports\AgentReviews\ClaudeDirectRead\20260530T012957-IdolCategoryNativeImpactRecovery
+                       -Operator\.report-run.json
+OutputPath           : C:\UE\T66\Reports\AgentReviews\ClaudeDirectRead\20260530T012957-IdolCategoryNativeImpactRecovery
+                       -Operator\claude_direct_read_operator.md
+ArtifactKind         : OperatorWorkArtifactRequiresValidation
+Mode                 : Operator
+Model                : claude-opus-4-8
+Effort               : high
+ClaudeOutputFormat   : json
+PermissionMode       : bypassPermissions
+ToolProfile          : FullOperator
+EffectiveToolSurface : default (full Claude Code tool surface: edits, shell, configured MCP/editor tools)
+MutatingCapability   : True
+ApprovalRequired     : True
+CodexApprovalPath    : C:\UE\T66\Reports\AgentReviews\IdolCategoryNativeImpact\codex_operator_approval_recovery.md
+AllowedTools         : Read,Grep,Glob
+ClaudeTokensSpent    : 6042194
+TokenSummaryPath     : C:\UE\T66\Reports\AgentReviews\ClaudeDirectRead\20260530T012957-IdolCategoryNativeImpactRecovery
+                       -Operator\claude_tokens.json
+ReviewedOperatorRun  : 
+Greenlit             : False
+Verdict              : 
+VerdictLine          : 
+OutcomeKind          : ClaudeOperatorArtifact
+FailureKind          : 
+
+
+

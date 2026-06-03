@@ -25,7 +25,6 @@
   - spring-arm collision pull-in
   - tag-based occluder fading for traversal barriers and tower ceilings
 - Frontend preview cameras are separate spawned `ACameraActor` instances and do not reuse gameplay spring-arm behavior.
-- `T66Mini` no longer has a battle camera product. Mini battle is framed by the `MiniBattle` Slate board transform inside `UT66MiniBattleScreen`.
 
 ## 2. Canonical Files
 
@@ -137,10 +136,7 @@
   - authoritative/in-world frontend game mode path
   - local controller preview path
 
-## 5. T66Mini Battle Framing
 
-- `T66Mini` battle no longer loads a world map and no longer constructs a pawn camera, spring arm, or `CameraComponent`.
-- Battle framing is owned by `UT66MiniBattleScreen` and its Slate battle board.
 - The board converts 2D battle coordinates into widget coordinates and clamps gameplay to the board-space arena.
 - Sprite facing, shadows, hit flashes, telegraphs, and combat text are simulation/presentation state in the widget runtime.
 - Future Mini presentation tuning belongs in the Mini battle board transform and `AnimatedStyle.Mini.*` rendering tags, not in the main gameplay camera stack.
@@ -152,7 +148,6 @@
 - Reconcile spring-arm collision with manual occluder fading. The current hybrid approach can still snap on blockers that are not tagged for fade.
 - Move ability-specific camera behavior toward a reusable camera-mode stack. Scoped ult currently hand-saves and restores multiple booleans, transforms, and visibility flags.
 - Keep main-game and frontend preview camera rules intentionally documented. Preview cameras currently mirror the gameplay FOV target of `90` but do not share gameplay collision or zoom behavior.
-- Treat `T66Mini` battle framing as a separate widget layout problem. It should not be coupled to main-game third-person camera tuning.
 
 ## 7. Immediate Working Checklist
 
@@ -168,7 +163,6 @@
   - Hero One scoped mode
   - hero selection preview
   - companion selection preview
-  - `T66Mini` battle board edges, if a Mini board-framing change is part of the same pass
 - Record any camera changes here with:
   - old value
   - new value

@@ -154,7 +154,6 @@ Screens:
 - TemporaryBuffSelection
 - TemporaryBuffShop
 - RunSummary
-- Minigames
 
 Modals:
 

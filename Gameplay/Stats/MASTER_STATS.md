@@ -1,6 +1,6 @@
 # T66 Master Stats
 
-**Last updated:** 2026-05-29
+**Last updated:** 2026-05-31
 **Scope:** Single-source handoff for the T66 stat system: authored data, live runtime ownership, primary and secondary formulas, item and buff stacking, stat UI, persistence, and current deprecated or inert stat paths.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Combat/MASTER_COMBAT.md`, `Gameplay/Movement/MASTER_MOVEMENT.md`
 **Maintenance rule:** Update this file after every material change to hero stat schema, hero level curves, item stat rules, buff progression, stat UI, run-summary stat snapshots, or secondary-stat activation/deprecation.
@@ -52,9 +52,10 @@
 - Secondary stats start from hero-authored base values, then combine item secondary bonuses, persistent level-up secondary bonuses, permanent diploma secondary bonuses, selected drug multipliers, and primary-derived multipliers.
 - `Accuracy` is now a full primary stat. The Accuracy family is:
   - `CritChance`
-  - `CritDamage`
+  - `HeadshotChance`
   - `AttackRange`
   - `Execute`
+- Critical hits always deal fixed `2x` damage. Crit damage is no longer a live item/stat track.
 - The current default stats panel shows `Level` plus 7 primaries:
   - `Damage`
   - `AttackSpeed`
@@ -99,7 +100,7 @@
   - the other foundational primaries
   - decimal per-level gain ranges for all 8 primaries, including `LvlSpeedMin` / `LvlSpeedMax`
   - category-specific base stats for `Pierce`, `Bounce`, `AOE`, and `DOT`
-  - secondary baselines such as `BaseCritDamage`, `BaseCritChance`, `BaseAttackRange`, `BaseTaunt`, `BaseReflectDmg`, `BaseCrushChance`, `BaseInvisChance`, `BaseCounterAttack`, `BaseAssassinateChance`, `BaseCheatChance`, and `BaseStealChance`
+  - secondary baselines such as `BaseHeadshotChance`, `BaseCritChance`, `BaseAttackRange`, `BaseTaunt`, `BaseReflectDmg`, `BaseCrushChance`, `BaseInvisChance`, `BaseCounterAttack`, `BaseAssassinateChance`, `BaseCheatChance`, and `BaseStealChance`
 - The selected hero row is loaded through `UT66GameInstance::GetHeroStatTuning()` and `UT66GameInstance::GetHeroData()`.
 
 ### 3.2 Items data
@@ -115,7 +116,7 @@
 - Normal lethal damage consumes the Backrooms Quick Revive item once, restores one heart, and removes the item from inventory.
 - Runtime still normalizes item rows through `T66ResolveEffectivePrimaryStatType(...)` for compatibility and presentation.
 - Accuracy-family secondaries resolve under primary `Accuracy`.
-- `Item_Accuracy` is retired; `Item_Execute` is the live fourth Accuracy-family item.
+- `Item_CritDamage` and `Item_Accuracy` are retired; `Item_Headshot` and `Item_Execute` are live Accuracy-family items.
 
 ### 3.3 Buff progression data
 
@@ -255,9 +256,11 @@
 ### 7.5 Accuracy family
 
 - `CritChance = clamp((HeroBaseCritChance + BonusPoints * 0.01) * M * HeroAccuracyMultiplier, 0.0, 1.0)`
-- `CritDamage = max(1.0, (HeroBaseCritDamage + BonusPoints * 0.05) * M * HeroAccuracyMultiplier)`
+- `HeadshotChance = clamp((HeroBaseHeadshotChance + BonusPoints * HeadshotChancePerBonusPoint) * M * HeroAccuracyMultiplier, 0.0, 1.0)`
 - `AttackRange = max(100.0, (HeroBaseAttackRange + BonusPoints * 25.0) * M * HeroAccuracyMultiplier)`
 - `Execute = clamp(BonusPoints * 0.005 * M, 0.0, 1.0)`
+- `CritDamage` is fixed at `2.0` through `GetCritDamageMultiplier()` and is no longer item-facing.
+- Backend compatibility parses in-range legacy `CritDamage` values as `HeadshotChance`, including the intentional `1.0` boundary, but ignores legacy multiplier-shaped values above `1.0` so old crit-damage multipliers like `1.5` or `2.0` cannot become 150%-200% Headshot Chance.
 
 ### 7.6 Armor family
 
@@ -322,7 +325,8 @@
 ### 8.5 Accuracy item normalization
 
 - Accuracy-family items are normalized to primary `Accuracy` by runtime code.
-- `Item_Accuracy` is retired.
+- `Item_CritDamage` and `Item_Accuracy` are retired.
+- `Item_Headshot` is the live Accuracy-family item for `HeadshotChance`.
 - `Item_Execute` is explicitly kept in fallback stock and random pools.
 
 ## 9. Buff Progression Rules
@@ -354,10 +358,10 @@
 - Damage: `AoeDamage`, `BounceDamage`, `PierceDamage`, `DotDamage`
 - Attack Speed: `AoeSpeed`, `BounceSpeed`, `PierceSpeed`, `DotSpeed`
 - Attack Scale: `AoeScale`, `BounceScale`, `PierceScale`, `DotScale`
-- Accuracy: `CritDamage`, `CritChance`, `AttackRange`, `Accuracy`
+- Accuracy: `CritChance`, `HeadshotChance`, `AttackRange`, `Execute`
 - Armor: `Taunt`, `DamageReduction`, `ReflectDamage`, `Crush`
 - Evasion: `EvasionChance`, `CounterAttack`, `Invisibility`, `Assassinate`
-- Luck: `TreasureChest`, `Cheating`, `Stealing`, `LootCrate`
+- Luck: `LootCrate`, `TreasureChest`, `LootBag`, `LootWheel`
 
 ### 10.2 Deprecated or inert secondary enums retained for compatibility
 
@@ -368,6 +372,10 @@
 - `LongRangeDamage`
 - `SpinWheel`
 - `MovementSpeed`
+- `CritDamage`
+- `Accuracy`
+- `Cheating`
+- `Stealing`
 - `VendorToken` / legacy `GamblerToken` enum alias
 - `HpRegen`
 - `LifeSteal`
@@ -434,11 +442,14 @@
   - `GetHeroScaleMultiplier()`
   - `GetCritChance01()`
   - `GetCritDamageMultiplier()`
+  - `GetHeadshotChance01()`
+  - `GetHeadshotStunDurationSeconds()`
   - `GetAccuracyChance01()`
   - `GetCloseRangeThreshold()`
   - `GetLongRangeThreshold()`
 - Untargeted auto-attacks use `GetAccuracyChance01()` to prefer `Head` hit zones on enemies and bosses that expose combat hit zones.
-- `CritChance` and `CritDamage` are live and confirmed in the combat hit path.
+- `CritChance` is live and confirmed in the combat hit path; critical hits use fixed `2x` damage.
+- `HeadshotChance` is live and can proc a data-driven stun on hit. Current behavior allows this stun on boss targets as crowd control; boss immunity remains specific to non-boss OHKO sources such as Execute, Assassinate, and Crush.
 - `Invisibility` is live and can proc confusion on hit.
 - `Taunt` is live through `GetAggroMultiplier()`.
 

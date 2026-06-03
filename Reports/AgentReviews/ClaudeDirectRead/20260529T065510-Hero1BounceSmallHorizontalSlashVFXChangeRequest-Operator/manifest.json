@@ -1,0 +1,46 @@
+{
+  "ArtifactKind": "ClaudeHelperFailed",
+  "Mode": "Operator",
+  "Model": "claude-opus-4-8",
+  "Effort": "high",
+  "ClaudeOutputFormat": "json",
+  "PermissionMode": "default",
+  "ToolProfile": "ReadOnly",
+  "EffectiveToolSurface": "Read,Grep,Glob",
+  "MutatingCapability": false,
+  "ApprovalRequired": false,
+  "CodexApprovalPath": null,
+  "AllowedTools": [
+    "Read",
+    "Grep",
+    "Glob"
+  ],
+  "AddDir": [
+    "C:\\UE\\T66"
+  ],
+  "PromptPath": "C:\\UE\\T66\\Reports\\AgentReviews\\Hero1BounceSmallHorizontalSlashVFX\\claude_operator_change_request_prompt.md",
+  "EffectivePromptPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T065510-Hero1BounceSmallHorizontalSlashVFXChangeRequest-Operator\\effective_prompt.md",
+  "AttemptsRequested": 1,
+  "TimeoutSeconds": 300,
+  "MaxTurns": 0,
+  "MaxTurnContinuations": 3,
+  "NoSessionPersistence": false,
+  "ClaudePath": "C:\\Users\\DoPra\\.local\\bin\\claude.exe",
+  "ClaudeVersion": "2.1.150 (Claude Code)",
+  "FailureKind": "ClaudeProcessFailed",
+  "MaxTurnContinuationAttempted": false,
+  "ClaudeTokensSpent": 102983,
+  "TokenSummaryPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T065510-Hero1BounceSmallHorizontalSlashVFXChangeRequest-Operator\\claude_tokens.json",
+  "Attempts": [
+    {
+      "StdoutPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T065510-Hero1BounceSmallHorizontalSlashVFXChangeRequest-Operator\\attempts\\stdout_attempt1.json",
+      "StderrPath": "C:\\UE\\T66\\Reports\\AgentReviews\\ClaudeDirectRead\\20260529T065510-Hero1BounceSmallHorizontalSlashVFXChangeRequest-Operator\\attempts\\stderr_attempt1.txt",
+      "TimedOut": false,
+      "ExitCode": 1,
+      "Success": false,
+      "MaxTurnContinuationAttempted": false,
+      "MaxTurnContinuationCount": 0
+    }
+  ],
+  "OutcomeKind": "ClaudeHelperFailed"
+}

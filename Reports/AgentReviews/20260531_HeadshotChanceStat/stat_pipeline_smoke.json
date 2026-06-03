@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "checks": [
+    { "name": "Context available", "ok": true, "detail": "World, GI, RunState, Buffs, and pawn are required." },
+    { "name": "Items do not raise primary stats", "ok": true, "detail": "Damage 3 -> 3." },
+    { "name": "Items raise secondary stats", "ok": true, "detail": "AOE damage 1 -> 28." },
+    { "name": "Headshot item replaces Crit Damage item", "ok": true, "detail": "HasHeadshot=1 HeadshotSecondary=43 HasOldCritDamage=0." },
+    { "name": "Crit damage fixed at 2x and deprecated", "ok": true, "detail": "CritMult=2.000 CritDamageLive=0 HeadshotLive=1." },
+    { "name": "Headshot item raises Headshot Chance", "ok": true, "detail": "HeadshotChance 0.000 -> 0.202." },
+    { "name": "Headshot drug multiplies Headshot Chance", "ok": true, "detail": "HeadshotChance 0.202 -> 0.222." },
+    { "name": "Headshot Chance can stun a hit target", "ok": true, "detail": "Chance=0.500 Duration=0.750 Applied=1 StunRemaining=0.750." },
+    { "name": "Headshot Chance stuns boss targets", "ok": true, "detail": "Applied=1 BossAlive=1 Duration=0.750." },
+    { "name": "Legacy CritDamage backend key maps to Headshot Chance", "ok": true, "detail": "Headshot=0.420 CritDamagePresent=0." },
+    { "name": "Legacy CritDamage multiplier does not become Headshot Chance", "ok": true, "detail": "HeadshotPresent=0 CritDamagePresent=0." },
+    { "name": "Headshot Chance serializes by string key", "ok": true, "detail": "HasHeadshot=1 HasCritDamage=0 HasOrdinal=0 Value=0.250." },
+    { "name": "Deprecated CritDamage UI text resolves to Headshot", "ok": true, "detail": "HeadshotLabel='Headshot Chance' DeprecatedLabel='Headshot Chance' DeprecatedTooltip='Chance for each attack to stun the hit enemy with a headshot proc.'." },
+    { "name": "Diplomas raise primary stats", "ok": true, "detail": "Damage 3 -> 5." },
+    { "name": "Diplomas propagate to secondary stats", "ok": true, "detail": "Damage-secondary sum 8 -> 13." },
+    { "name": "Selected drugs multiply secondary stats", "ok": true, "detail": "AOE value 1.696 -> 1.866." },
+    { "name": "XP triggers level up", "ok": true, "detail": "Level 1 -> 2 threshold=100." },
+    { "name": "Level up heals to full", "ok": true, "detail": "HP 1.0/1.0." },
+    { "name": "Level up raises primary stats", "ok": true, "detail": "Primary sum 19 -> 27." },
+    { "name": "Level up propagates to secondary stats", "ok": true, "detail": "Tracked secondary sum 17 -> 29." },
+    { "name": "Rich and lightweight enemies grant XP", "ok": true, "detail": "XP 0 -> 12 level 1 -> 1." },
+    { "name": "Level-up wave does not chain XP", "ok": true, "detail": "Level 1 -> 2 enemyHP=0 mobHP=0.0 threshold=100." }
+  ]
+}

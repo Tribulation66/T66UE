@@ -47,10 +47,9 @@ namespace
 	constexpr float ShopReferenceHeight = 1080.f;
 	constexpr float ShopHeroSelectionEditReferenceHeight = 1080.f;
 	constexpr float ShopCardGap = 24.f;
-	constexpr float ShopDiplomaCardWidth = 466.f;
-	constexpr float ShopDiplomaCardHeight = 442.f;
-	constexpr int32 ShopDiplomaUpgradeCount = UT66BuffSubsystem::MaxFillStepsPerStat;
-	constexpr int32 ShopDiplomaStatIncrease = 1;
+	constexpr float ShopRelicCardWidth = 466.f;
+	constexpr float ShopRelicCardHeight = 442.f;
+	constexpr int32 ShopRelicStatIncrease = UT66BuffSubsystem::RelicPermanentBonusStatPoints;
 	const FLinearColor ShopPermanentCardFill(0.020f, 0.022f, 0.032f, 0.98f);
 	const FLinearColor ShopPermanentCardAccent(0.92f, 0.05f, 0.12f, 1.0f);
 	TMap<FString, TStrongObjectPtr<UTexture2D>> GShopFileTextureCache;
@@ -1076,7 +1075,7 @@ namespace
 		case ET66SecondaryStatType::BounceDamage:   return TEXT("bounce-damage");
 		case ET66SecondaryStatType::PierceDamage:   return TEXT("pierce-damage");
 		case ET66SecondaryStatType::DotDamage:      return TEXT("dot-damage");
-		case ET66SecondaryStatType::CritDamage:     return TEXT("crit-damage");
+		case ET66SecondaryStatType::HeadshotChance: return TEXT("headshot");
 		case ET66SecondaryStatType::AoeSpeed:       return TEXT("aoe-speed");
 		case ET66SecondaryStatType::BounceSpeed:    return TEXT("bounce-speed");
 		case ET66SecondaryStatType::PierceSpeed:    return TEXT("pierce-speed");
@@ -1146,7 +1145,8 @@ void UT66PowerUpScreen::OnScreenActivated_Implementation()
 {
 	if (UT66BuffSubsystem* Buffs = GetBuffSubsystem())
 	{
-		if (FParse::Param(FCommandLine::Get(), TEXT("T66PowerUpHeroSelectionDrugEdit")))
+		if (FParse::Param(FCommandLine::Get(), TEXT("T66PowerUpHeroSelectionSteroidEdit"))
+			|| FParse::Param(FCommandLine::Get(), TEXT("T66PowerUpHeroSelectionDrugEdit")))
 		{
 			Buffs->BeginHeroSelectionSingleUseBuffEdit(Buffs->GetSelectedSingleUseBuffEditSlotIndex());
 		}
@@ -1167,7 +1167,9 @@ void UT66PowerUpScreen::OnScreenActivated_Implementation()
 	{
 		FString RequestedFrontendScreen;
 		if (FParse::Value(FCommandLine::Get(), TEXT("T66FrontendScreen="), RequestedFrontendScreen)
-			&& (RequestedFrontendScreen.Equals(TEXT("Diplomas"), ESearchCase::IgnoreCase)
+			&& (RequestedFrontendScreen.Equals(TEXT("Relics"), ESearchCase::IgnoreCase)
+				|| RequestedFrontendScreen.Equals(TEXT("Steroids"), ESearchCase::IgnoreCase)
+				|| RequestedFrontendScreen.Equals(TEXT("Diplomas"), ESearchCase::IgnoreCase)
 				|| RequestedFrontendScreen.Equals(TEXT("Drugs"), ESearchCase::IgnoreCase)))
 		{
 			RequestedPowerUpTab = RequestedFrontendScreen;
@@ -1181,6 +1183,8 @@ void UT66PowerUpScreen::OnScreenActivated_Implementation()
 			RequestedPowerUpTab.Equals(TEXT("SingleUse"), ESearchCase::IgnoreCase)
 			|| RequestedPowerUpTab.Equals(TEXT("Single"), ESearchCase::IgnoreCase)
 			|| RequestedPowerUpTab.Equals(TEXT("Temporary"), ESearchCase::IgnoreCase)
+			|| RequestedPowerUpTab.Equals(TEXT("Steroids"), ESearchCase::IgnoreCase)
+			|| RequestedPowerUpTab.Equals(TEXT("Steroid"), ESearchCase::IgnoreCase)
 			|| RequestedPowerUpTab.Equals(TEXT("Drugs"), ESearchCase::IgnoreCase)
 			|| RequestedPowerUpTab.Equals(TEXT("Drug"), ESearchCase::IgnoreCase);
 	}
@@ -1271,6 +1275,19 @@ FReply UT66PowerUpScreen::HandleUnlockClicked(ET66HeroStatType StatType)
 	return FReply::Handled();
 }
 
+FReply UT66PowerUpScreen::HandlePurchaseRelicClicked(FName RelicID)
+{
+	if (UT66BuffSubsystem* Buffs = GetBuffSubsystem())
+	{
+		if (Buffs->PurchaseRelic(RelicID))
+		{
+			RefreshScreen();
+		}
+	}
+
+	return FReply::Handled();
+}
+
 FReply UT66PowerUpScreen::HandlePurchaseSingleUseClicked(ET66SecondaryStatType StatType)
 {
 	if (UT66BuffSubsystem* Buffs = GetBuffSubsystem())
@@ -1341,7 +1358,8 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	OwnedBrushes.Reset();
-	if (FParse::Param(FCommandLine::Get(), TEXT("T66PowerUpHeroSelectionDrugEdit")) && Buffs)
+	if ((FParse::Param(FCommandLine::Get(), TEXT("T66PowerUpHeroSelectionSteroidEdit"))
+		|| FParse::Param(FCommandLine::Get(), TEXT("T66PowerUpHeroSelectionDrugEdit"))) && Buffs)
 	{
 		Buffs->BeginHeroSelectionSingleUseBuffEdit(Buffs->GetSelectedSingleUseBuffEditSlotIndex());
 	}
@@ -1363,7 +1381,9 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		{
 			FString RequestedFrontendScreen;
 			if (FParse::Value(FCommandLine::Get(), TEXT("T66FrontendScreen="), RequestedFrontendScreen)
-				&& (RequestedFrontendScreen.Equals(TEXT("Diplomas"), ESearchCase::IgnoreCase)
+				&& (RequestedFrontendScreen.Equals(TEXT("Relics"), ESearchCase::IgnoreCase)
+					|| RequestedFrontendScreen.Equals(TEXT("Steroids"), ESearchCase::IgnoreCase)
+					|| RequestedFrontendScreen.Equals(TEXT("Diplomas"), ESearchCase::IgnoreCase)
 					|| RequestedFrontendScreen.Equals(TEXT("Drugs"), ESearchCase::IgnoreCase)))
 			{
 				RequestedPowerUpTab = RequestedFrontendScreen;
@@ -1377,19 +1397,21 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				RequestedPowerUpTab.Equals(TEXT("SingleUse"), ESearchCase::IgnoreCase)
 				|| RequestedPowerUpTab.Equals(TEXT("Single"), ESearchCase::IgnoreCase)
 				|| RequestedPowerUpTab.Equals(TEXT("Temporary"), ESearchCase::IgnoreCase)
+				|| RequestedPowerUpTab.Equals(TEXT("Steroids"), ESearchCase::IgnoreCase)
+				|| RequestedPowerUpTab.Equals(TEXT("Steroid"), ESearchCase::IgnoreCase)
 				|| RequestedPowerUpTab.Equals(TEXT("Drugs"), ESearchCase::IgnoreCase)
 				|| RequestedPowerUpTab.Equals(TEXT("Drug"), ESearchCase::IgnoreCase);
 		}
 	}
 
 	const int32 SingleUsePercent = FMath::RoundToInt((UT66BuffSubsystem::SingleUseSecondaryBuffMultiplier - 1.f) * 100.f);
-	const FText PermanentTabText = NSLOCTEXT("T66.PowerUp", "PermanentTab", "DIPLOMAS (PERMANENT)");
-	const FText SingleUseTabText = NSLOCTEXT("T66.PowerUp", "SingleUseTab", "DRUGS (ONE RUN USE)");
+	const FText PermanentTabText = NSLOCTEXT("T66.PowerUp", "PermanentTab", "RELICS (PERMANENT)");
+	const FText SingleUseTabText = NSLOCTEXT("T66.PowerUp", "SingleUseTab", "STEROIDS (ONE RUN USE)");
 	const FText PermanentHintText = FText::Format(
-		NSLOCTEXT("T66.PowerUp", "PermanentHint", "Graduate diplomas for permanent +{0} primary-stat upgrades across every run."),
-		FText::AsNumber(ShopDiplomaStatIncrease));
+		NSLOCTEXT("T66.PowerUp", "PermanentHint", "Buy relics for permanent +{0} primary-stat upgrades across every run. Solomon's Ring enables boss-pet capture."),
+		FText::AsNumber(ShopRelicStatIncrease));
 	const FText SingleUseHintText = FText::Format(
-		NSLOCTEXT("T66.PowerUp", "SingleUseHint", "Buy drugs for +{0}% secondary-stat boosts. Owned drugs can be equipped from Hero Selection, up to 4 total per run."),
+		NSLOCTEXT("T66.PowerUp", "SingleUseHint", "Buy steroids for +{0}% secondary-stat boosts. Owned steroids can be equipped from Hero Selection, up to 4 total per run."),
 		FText::AsNumber(SingleUsePercent));
 	const FText BackText = Loc ? Loc->GetText_Back() : NSLOCTEXT("T66.Common", "Back", "BACK");
 
@@ -1419,7 +1441,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		return Loc ? Loc->GetText_SecondaryStatName(StatType) : FText::FromString(TEXT("?"));
 	};
 
-	auto GetSingleUseDrugName = [](ET66SecondaryStatType StatType) -> FText
+	auto GetSingleUseSteroidName = [](ET66SecondaryStatType StatType) -> FText
 	{
 		switch (StatType)
 		{
@@ -1435,7 +1457,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			case ET66SecondaryStatType::BounceScale:     return NSLOCTEXT("T66.PowerUp", "Drug_BounceScale", "BOLDENONE UNDECYLENATE");
 			case ET66SecondaryStatType::PierceScale:     return NSLOCTEXT("T66.PowerUp", "Drug_PierceScale", "DROSTANOLONE PROPIONATE");
 			case ET66SecondaryStatType::DotScale:        return NSLOCTEXT("T66.PowerUp", "Drug_DotScale", "METHENOLONE ENANTHATE");
-			case ET66SecondaryStatType::CritDamage:      return NSLOCTEXT("T66.PowerUp", "Drug_CritDamage", "TRENBOLONE ACETATE");
+			case ET66SecondaryStatType::HeadshotChance:  return NSLOCTEXT("T66.PowerUp", "Drug_HeadshotChance", "TRENBOLONE ACETATE");
 			case ET66SecondaryStatType::CritChance:      return NSLOCTEXT("T66.PowerUp", "Drug_CritChance", "STANOZOLOL");
 			case ET66SecondaryStatType::AttackRange:     return NSLOCTEXT("T66.PowerUp", "Drug_AttackRange", "CLENBUTEROL HCL");
 			case ET66SecondaryStatType::Execute:         return NSLOCTEXT("T66.PowerUp", "Drug_Execute", "ATOMOXETINE HCL");
@@ -1448,14 +1470,12 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			case ET66SecondaryStatType::CounterAttack:   return NSLOCTEXT("T66.PowerUp", "Drug_CounterAttack", "LIDOCAINE HCL");
 			case ET66SecondaryStatType::Invisibility:    return NSLOCTEXT("T66.PowerUp", "Drug_Invisibility", "DIPHENHYDRAMINE HCL");
 			case ET66SecondaryStatType::Assassinate:     return NSLOCTEXT("T66.PowerUp", "Drug_Assassinate", "ATROPINE SULFATE");
-			case ET66SecondaryStatType::TreasureChest:   return NSLOCTEXT("T66.PowerUp", "Drug_TreasureChest", "NICOTINAMIDE RIBOSIDE");
-			case ET66SecondaryStatType::Cheating:        return NSLOCTEXT("T66.PowerUp", "Drug_Cheating", "SILDENAFIL CITRATE");
-			case ET66SecondaryStatType::Stealing:        return NSLOCTEXT("T66.PowerUp", "Drug_Stealing", "LOPERAMIDE HCL");
-			case ET66SecondaryStatType::LootCrate:       return NSLOCTEXT("T66.PowerUp", "Drug_LootCrate", "METFORMIN HCL");
-			case ET66SecondaryStatType::LootBag:         return NSLOCTEXT("T66.PowerUp", "Drug_LootBag", "UBIQUINOL");
-			case ET66SecondaryStatType::LootWheel:       return NSLOCTEXT("T66.PowerUp", "Drug_LootWheel", "THEOBROMINE");
+			case ET66SecondaryStatType::InteractableLuck:return NSLOCTEXT("T66.PowerUp", "Steroid_InteractableLuck", "NICOTINAMIDE RIBOSIDE");
+			case ET66SecondaryStatType::StealingLuck:    return NSLOCTEXT("T66.PowerUp", "Steroid_StealingLuck", "LOPERAMIDE HCL");
+			case ET66SecondaryStatType::GamblingLuck:    return NSLOCTEXT("T66.PowerUp", "Steroid_GamblingLuck", "SILDENAFIL CITRATE");
+			case ET66SecondaryStatType::ProcLuck:        return NSLOCTEXT("T66.PowerUp", "Steroid_ProcLuck", "THEOBROMINE");
 			case ET66SecondaryStatType::VendorToken:     return NSLOCTEXT("T66.PowerUp", "Drug_VendorToken", "VENDOR TOKEN");
-			default:                                     return NSLOCTEXT("T66.PowerUp", "Drug_Unknown", "COMPOUND");
+			default:                                     return NSLOCTEXT("T66.PowerUp", "Steroid_Unknown", "COMPOUND");
 		}
 	};
 
@@ -1471,14 +1491,14 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 	{
 		return FText::Format(
 			NSLOCTEXT("T66.PowerUp", "PermanentEffectFormat", "+{0} {1}"),
-			FText::AsNumber(ShopDiplomaStatIncrease),
+			FText::AsNumber(ShopRelicStatIncrease),
 			GetStatLabel(StatType));
 	};
 
-	auto GetDrugRowTitle = [&](ET66HeroStatType StatType) -> FText
+	auto GetSteroidRowTitle = [&](ET66HeroStatType StatType) -> FText
 	{
 		return FText::Format(
-			NSLOCTEXT("T66.PowerUp", "DrugRowTitle", "{0} Drugs"),
+			NSLOCTEXT("T66.PowerUp", "SteroidRowTitle", "{0} Steroids"),
 			GetStatLabel(StatType));
 	};
 
@@ -1492,1002 +1512,44 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		{ ET66HeroStatType::Damage,      { ET66SecondaryStatType::AoeDamage, ET66SecondaryStatType::BounceDamage, ET66SecondaryStatType::PierceDamage, ET66SecondaryStatType::DotDamage } },
 		{ ET66HeroStatType::AttackSpeed, { ET66SecondaryStatType::AoeSpeed, ET66SecondaryStatType::BounceSpeed, ET66SecondaryStatType::PierceSpeed, ET66SecondaryStatType::DotSpeed } },
 		{ ET66HeroStatType::AttackScale, { ET66SecondaryStatType::AoeScale, ET66SecondaryStatType::BounceScale, ET66SecondaryStatType::PierceScale, ET66SecondaryStatType::DotScale } },
-		{ ET66HeroStatType::Accuracy,    { ET66SecondaryStatType::CritChance, ET66SecondaryStatType::CritDamage, ET66SecondaryStatType::AttackRange, ET66SecondaryStatType::Execute } },
+		{ ET66HeroStatType::Accuracy,    { ET66SecondaryStatType::CritChance, ET66SecondaryStatType::HeadshotChance, ET66SecondaryStatType::AttackRange, ET66SecondaryStatType::Execute } },
 		{ ET66HeroStatType::Armor,       { ET66SecondaryStatType::DamageReduction, ET66SecondaryStatType::ReflectDamage, ET66SecondaryStatType::Taunt, ET66SecondaryStatType::Crush } },
 		{ ET66HeroStatType::Evasion,     { ET66SecondaryStatType::EvasionChance, ET66SecondaryStatType::CounterAttack, ET66SecondaryStatType::Invisibility, ET66SecondaryStatType::Assassinate } },
-		{ ET66HeroStatType::Luck,        { ET66SecondaryStatType::LootCrate, ET66SecondaryStatType::TreasureChest, ET66SecondaryStatType::LootBag, ET66SecondaryStatType::LootWheel } },
+		{ ET66HeroStatType::Luck,        { ET66SecondaryStatType::InteractableLuck, ET66SecondaryStatType::StealingLuck, ET66SecondaryStatType::GamblingLuck, ET66SecondaryStatType::ProcLuck } },
 	};
-	const TArray<ET66HeroStatType> PermanentCardOrder = {
-		ET66HeroStatType::Damage,
-		ET66HeroStatType::AttackSpeed,
-		ET66HeroStatType::AttackScale,
-		ET66HeroStatType::Accuracy,
-		ET66HeroStatType::Armor,
-		ET66HeroStatType::Evasion,
-		ET66HeroStatType::Luck,
-		ET66HeroStatType::Speed
-	};
-
-	auto MakeUpperText = [](const FText& Text) -> FText
+	const TArray<FT66RelicDefinition> RelicCardOrder = UT66BuffSubsystem::GetAllRelicDefinitions();
+	auto GetRelicEffectText = [&](const FT66RelicDefinition& RelicDef) -> FText
 	{
-		return FText::FromString(Text.ToString().ToUpper());
-	};
-
-	auto GetDiplomaAssetSlug = [](ET66HeroStatType StatType) -> FString
-	{
-		switch (StatType)
+		if (RelicDef.bIsSolomonsRing)
 		{
-			case ET66HeroStatType::Damage:      return TEXT("damage");
-			case ET66HeroStatType::AttackSpeed: return TEXT("attack_speed");
-			case ET66HeroStatType::AttackScale: return TEXT("attack_scale");
-			case ET66HeroStatType::Accuracy:    return TEXT("accuracy");
-			case ET66HeroStatType::Armor:       return TEXT("armor");
-			case ET66HeroStatType::Evasion:     return TEXT("evasion");
-			case ET66HeroStatType::Luck:        return TEXT("luck");
-			case ET66HeroStatType::Speed:       return TEXT("speed");
-			default: break;
+			return NSLOCTEXT("T66.PowerUp", "SolomonsRingEffect", "Enables boss-pet capture");
 		}
-
-		return TEXT("damage");
-	};
-
-	auto GetDiplomaRankAssetName = [](int32 VisibleUnlockedSteps) -> FString
-	{
-		switch (VisibleUnlockedSteps)
+		if (RelicDef.bUsesSecondaryStat)
 		{
-			case 1: return TEXT("bachelors");
-			case 2: return TEXT("masters");
-			case 3: return TEXT("phd");
-			case 4: return TEXT("magistrate");
-			default: break;
+			return FText::Format(
+				NSLOCTEXT("T66.PowerUp", "RelicSecondaryEffectFormat", "+{0} {1}"),
+				FText::AsNumber(RelicDef.BonusStatPoints),
+				GetSecondaryLabel(RelicDef.SecondaryStatType));
 		}
-
-		return TEXT("");
-	};
-
-	auto GetDiplomaImagePath = [&](ET66HeroStatType StatType, int32 VisibleUnlockedSteps) -> FString
-	{
-		if (VisibleUnlockedSteps <= 0)
-		{
-			return SelectFirstExistingShopPath(TArray<FString>{
-				TEXT("SourceAssets/UI/PowerUp/Diplomas/Generated/dropout_cardboard_box_imagegen_20260426.png"),
-				MakePowerUpOwnedPanelPath(TEXT("powerup_diplomas_art_placeholder.png"))
-			});
-		}
-
-		return SelectFirstExistingShopPath(TArray<FString>{
-			FString::Printf(
-				TEXT("SourceAssets/UI/PowerUp/Diplomas/Generated/%s_%s.png"),
-				*GetDiplomaAssetSlug(StatType),
-				*GetDiplomaRankAssetName(VisibleUnlockedSteps)),
-			MakePowerUpOwnedPanelPath(TEXT("powerup_diplomas_art_placeholder.png"))
-		});
-	};
-
-	auto GetDiplomaRankTitle = [&](ET66HeroStatType StatType, int32 VisibleUnlockedSteps) -> FText
-	{
-		const FText StatLabel = GetStatLabel(StatType);
-		switch (VisibleUnlockedSteps)
-		{
-			case 1:
-				return FText::Format(NSLOCTEXT("T66.PowerUp", "BachelorInStat", "BACHELOR'S IN {0}"), MakeUpperText(StatLabel));
-			case 2:
-				return FText::Format(NSLOCTEXT("T66.PowerUp", "MasterInStat", "MASTER'S IN {0}"), MakeUpperText(StatLabel));
-			case 3:
-				return FText::Format(NSLOCTEXT("T66.PowerUp", "PHDInStat", "PHD IN {0}"), MakeUpperText(StatLabel));
-			case 4:
-				return FText::Format(NSLOCTEXT("T66.PowerUp", "MagistrateInStat", "MAGISTRATE IN {0}"), MakeUpperText(StatLabel));
-			default:
-				break;
-		}
-
-		const FText DropoutProgram = StatType == ET66HeroStatType::Damage
-			? NSLOCTEXT("T66.PowerUp", "DiplomaDropoutProgramStrength", "STRENGTH")
-			: MakeUpperText(StatLabel);
 		return FText::Format(
-			NSLOCTEXT("T66.PowerUp", "DiplomaRankDropoutUniversity", "{0} UNIVERSITY DROPOUT"),
-			DropoutProgram);
+			NSLOCTEXT("T66.PowerUp", "RelicPrimaryEffectFormat", "+{0} {1}"),
+			FText::AsNumber(RelicDef.BonusStatPoints),
+			GetStatLabel(RelicDef.PrimaryStatType));
 	};
 
-	if (!bShowingSingleUse && !bHeroSelectionSingleUseEdit)
+	auto MakePermanentStatPanel = [&](const FT66RelicDefinition& RelicDef) -> TSharedRef<SWidget>
 	{
-		constexpr float DiplomasCanvasW = 1920.f;
-		constexpr float DiplomasCanvasH = 1080.f;
-		constexpr int32 CardsPerPage = 4;
-		const int32 TotalDiplomaPages = FMath::Max(1, FMath::DivideAndRoundUp(PermanentCardOrder.Num(), CardsPerPage));
-		DiplomaPageIndex = FMath::Clamp(DiplomaPageIndex, 0, TotalDiplomaPages - 1);
-		const FButtonStyle& NoBorderButtonStyle = FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder"));
-		TSharedRef<SConstraintCanvas> DiplomasCanvas = SNew(SConstraintCanvas);
-
-		auto DTag = [](const TCHAR* Tag) -> FName
-		{
-			return FName(Tag);
-		};
-
-		auto AddCanvas = [&DiplomasCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
-		{
-			DiplomasCanvas->AddSlot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(X, Y, W, H))
-			[
-				Widget
-			];
-		};
-
-		auto AddN = [&AddCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
-		{
-			AddCanvas(X * DiplomasCanvasW, Y * DiplomasCanvasH, W * DiplomasCanvasW, H * DiplomasCanvasH, Widget);
-		};
-
-		auto MakeMetadataRegion = [](const FName Tag, const FString& Role, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::AttachMetadata(SNew(SSpacer), Tag, Role, State);
-		};
-
-		auto MakePanelSurface = [](const FName Tag, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::MakeFlatPanel(
-				State,
-				FMargin(0.f),
-				SNew(SSpacer),
-				nullptr,
-				Tag);
-		};
-
-		auto PlainText = [](
-			const FText& Text,
-			const int32 FontSize,
-			const FLinearColor& Color,
-			const bool bBold = true,
-			const ETextJustify::Type Justification = ETextJustify::Center) -> TSharedRef<SWidget>
-		{
-			return SNew(STextBlock)
-				.Visibility(EVisibility::HitTestInvisible)
-				.Text(Text)
-				.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
-				.ColorAndOpacity(Color)
-				.Justification(Justification)
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds);
-		};
-
-		auto TaggedText = [](
-			const FName Tag,
-			const FText& Text,
-			const int32 FontSize,
-			const FLinearColor& Color,
-			const bool bBold = true,
-			const ETextJustify::Type Justification = ETextJustify::Center) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::AttachMetadata(
-				SNew(STextBlock)
-				.Visibility(EVisibility::HitTestInvisible)
-				.Text(Text)
-				.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
-				.ColorAndOpacity(Color)
-				.Justification(Justification)
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds),
-				Tag,
-				TEXT("Label"),
-				ET66FlatState::Default,
-				TOptional<FLinearColor>(),
-				false,
-				NAME_None,
-				true);
-		};
-
-		auto MakeIcon = [&PlainText](
-			const FName Tag,
-			const FSlateBrush* Brush,
-			const FVector2D& SizeHint,
-			const FText& FallbackText,
-			const FLinearColor& Tint = FLinearColor::White) -> TSharedRef<SWidget>
-		{
-			const TSharedRef<SWidget> IconContent = Brush
-				? StaticCastSharedRef<SWidget>(
-					SNew(SImage)
-					.Visibility(EVisibility::HitTestInvisible)
-					.Image(Brush)
-					.ColorAndOpacity(Tint))
-				: StaticCastSharedRef<SWidget>(PlainText(FallbackText, 18, Tint, true, ETextJustify::Center));
-
-			return FT66FlatStyle::AttachMetadata(
-				SNew(SBox)
-				.Visibility(EVisibility::HitTestInvisible)
-				.WidthOverride(SizeHint.X)
-				.HeightOverride(SizeHint.Y)
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Fill)
-				[
-					IconContent
-				],
-				Tag,
-				TEXT("Icon"),
-				ET66FlatState::Default);
-		};
-
-		auto MakeArtwork = [&PlainText](
-			const FName Tag,
-			const FString& RelativePath,
-			const FVector2D& SizeHint) -> TSharedRef<SWidget>
-		{
-			const FSlateBrush* Brush = ResolveShopFlatContentBrush(RelativePath, SizeHint);
-			const TSharedRef<SWidget> Content = Brush
-				? StaticCastSharedRef<SWidget>(
-					SNew(SScaleBox)
-					.Stretch(EStretch::ScaleToFill)
-					[
-						SNew(SImage)
-						.Visibility(EVisibility::HitTestInvisible)
-						.Image(Brush)
-					])
-				: StaticCastSharedRef<SWidget>(
-					SNew(SBox)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					[
-						PlainText(NSLOCTEXT("T66.PowerUp", "FlatMissingDiplomaArt", "DIPLOMA"), 18, FT66FlatStyle::SecondaryText(), true, ETextJustify::Center)
-					]);
-
-			return FT66FlatStyle::AttachMetadata(
-				SNew(SBox)
-				.Visibility(EVisibility::HitTestInvisible)
-				.Clipping(EWidgetClipping::ClipToBounds)
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Fill)
-				[
-					Content
-				],
-				Tag,
-				TEXT("Artwork"),
-				ET66FlatState::Default);
-		};
-
-		auto MakeBareInteractive = [&NoBorderButtonStyle](
-			const FName Tag,
-			const FString& Role,
-			const TSharedRef<SWidget>& Content,
-			FOnClicked OnClicked,
-			const ET66FlatState State = ET66FlatState::Default,
-			const FName ToggleGroup = NAME_None) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::AttachMetadata(
-				FT66FlatStyle::MakeBareButton(
-					FT66BareButtonParams(MoveTemp(OnClicked), Content)
-					.SetButtonStyle(&NoBorderButtonStyle)
-					.SetPadding(FMargin(0.f))
-					.SetDebounceClick(false)),
-				Tag,
-				Role,
-				State,
-				TOptional<FLinearColor>(),
-				true,
-				ToggleGroup,
-				false,
-				State != ET66FlatState::Disabled);
-		};
-
-		auto MakeGraduateButton = [&PlainText](const FName Tag, FOnClicked OnClicked, const float Width, const float Height, const bool bEnabled) -> TSharedRef<SWidget>
-		{
-			const ET66FlatState ButtonState = bEnabled ? ET66FlatState::Selected : ET66FlatState::Disabled;
-			return FT66FlatStyle::MakeFlatToggleGroupButton(
-				ButtonState,
-				SNew(SBox)
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Center)
-				.Padding(FMargin(28.f, 0.f, 0.f, 0.f))
-				[
-					PlainText(
-						NSLOCTEXT("T66.PowerUp", "FlatGraduate", "GRADUATE"),
-						24,
-						bEnabled ? FT66FlatStyle::SelectedText() : FT66FlatStyle::DisabledText(),
-						true,
-						ETextJustify::Left)
-				],
-				MoveTemp(OnClicked),
-				FMargin(0.f),
-				Width,
-				Height,
-				bEnabled,
-				Tag);
-		};
-
-		const FSlateBrush* InfoBrush = ResolveShopFlatContentBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(28.f, 28.f));
-		const FSlateBrush* LeftArrowBrush = ResolveShopFlatContentBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/pagination_left.png"), FVector2D(34.f, 48.f));
-		const FSlateBrush* RightArrowBrush = ResolveShopFlatContentBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/pagination_right.png"), FVector2D(34.f, 48.f));
-		const FSlateBrush* TicketBrush = ResolveShopFlatContentBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png"), FVector2D(36.f, 28.f));
-
-		auto WrapDiplomaPage = [TotalDiplomaPages](const int32 Candidate) -> int32
-		{
-			if (TotalDiplomaPages <= 1)
-			{
-				return 0;
-			}
-			const int32 Mod = Candidate % TotalDiplomaPages;
-			return Mod < 0 ? Mod + TotalDiplomaPages : Mod;
-		};
-
-		AddN(0.031f, 0.158f, 0.936f, 0.749f, MakeMetadataRegion(DTag(TEXT("Diplomas.Root")), TEXT("Root")));
-		AddN(0.031f, 0.260f, 0.936f, 0.647f, MakeMetadataRegion(DTag(TEXT("Diplomas.MainOuterContainer")), TEXT("OuterContainer")));
-		AddN(0.148f, 0.123f, 0.690f, 0.060f, MakeMetadataRegion(DTag(TEXT("Diplomas.SubTabs")), TEXT("ToggleGroup.PowerUpTabs")));
-		AddN(0.072f, 0.260f, 0.851f, 0.610f, MakeMetadataRegion(DTag(TEXT("Diplomas.CardsRow")), TEXT("CardRow")));
-
-		AddN(
-			0.148f,
-			0.123f,
-			0.320f,
-			0.060f,
-			FT66FlatStyle::MakeFlatToggleGroupButton(
-				ET66FlatState::Selected,
-				SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)
-				[
-					PlainText(PermanentTabText, 24, FT66FlatStyle::SelectedText(), true, ETextJustify::Center)
-				],
-				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowPermanentClicked),
-				FMargin(0.f),
-				0.320f * DiplomasCanvasW,
-				0.060f * DiplomasCanvasH,
-				true,
-				DTag(TEXT("Diplomas.SubTabs.DiplomasButton")),
-				DTag(TEXT("PowerUpTabs"))));
-		AddN(
-			0.498f,
-			0.123f,
-			0.340f,
-			0.060f,
-			FT66FlatStyle::MakeFlatToggleGroupButton(
-				ET66FlatState::Default,
-				SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)
-				[
-					PlainText(NSLOCTEXT("T66.PowerUp", "FlatSingleUseTab", "DRUGS (ONE TIME USE)"), 24, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center)
-				],
-				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowSingleUseClicked),
-				FMargin(0.f),
-				0.340f * DiplomasCanvasW,
-				0.060f * DiplomasCanvasH,
-				true,
-				DTag(TEXT("Diplomas.SubTabs.DrugsButton")),
-				DTag(TEXT("PowerUpTabs"))));
-
-		AddN(0.438f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
-			ET66FlatState::Selected,
-			InfoBrush,
-			PermanentHintText,
-			FVector2D(31.f, 31.f),
-			DTag(TEXT("Diplomas.SubTabs.DiplomasInfoIcon")),
-			FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowPermanentClicked)));
-		AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
-			ET66FlatState::Default,
-			InfoBrush,
-			SingleUseHintText,
-			FVector2D(31.f, 31.f),
-			DTag(TEXT("Diplomas.SubTabs.DrugsInfoIcon")),
-			FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowSingleUseClicked)));
-
-		AddN(
-			0.032f,
-			0.532f,
-			0.017f,
-			0.046f,
-			MakeBareInteractive(
-				DTag(TEXT("Diplomas.Carousel.LeftNavButton")),
-				TEXT("Button"),
-				MakeIcon(NAME_None, LeftArrowBrush, FVector2D(34.f, 48.f), FText::FromString(TEXT("<")), FT66FlatStyle::PrimaryText()),
-				FOnClicked::CreateLambda([this, WrapDiplomaPage]()
-				{
-					DiplomaPageIndex = WrapDiplomaPage(DiplomaPageIndex - 1);
-					RequestDeferredSlateRebuild();
-					return FReply::Handled();
-				})));
-		AddN(
-			0.950f,
-			0.532f,
-			0.017f,
-			0.046f,
-			MakeBareInteractive(
-				DTag(TEXT("Diplomas.Carousel.RightNavButton")),
-				TEXT("Button"),
-				MakeIcon(NAME_None, RightArrowBrush, FVector2D(34.f, 48.f), FText::FromString(TEXT(">")), FT66FlatStyle::PrimaryText()),
-				FOnClicked::CreateLambda([this, WrapDiplomaPage]()
-				{
-					DiplomaPageIndex = WrapDiplomaPage(DiplomaPageIndex + 1);
-					RequestDeferredSlateRebuild();
-					return FReply::Handled();
-				})));
-
-		constexpr float CardX[4] = { 0.072f, 0.292f, 0.508f, 0.722f };
-		constexpr float CardY[4] = { 0.260f, 0.261f, 0.261f, 0.261f };
-		constexpr float CardW[4] = { 0.205f, 0.199f, 0.201f, 0.201f };
-		constexpr float CardH[4] = { 0.610f, 0.608f, 0.608f, 0.608f };
-		constexpr float ArtX[4] = { 0.086f, 0.303f, 0.519f, 0.733f };
-		constexpr float ArtY[4] = { 0.278f, 0.279f, 0.279f, 0.278f };
-		constexpr float ArtW[4] = { 0.178f, 0.178f, 0.178f, 0.178f };
-		constexpr float ArtH[4] = { 0.446f, 0.445f, 0.445f, 0.446f };
-		constexpr float StatX[4] = { 0.135f, 0.340f, 0.550f, 0.778f };
-		constexpr float StatW[4] = { 0.083f, 0.108f, 0.127f, 0.093f };
-		constexpr float ButtonX[4] = { 0.081f, 0.300f, 0.517f, 0.731f };
-		constexpr float ButtonW[4] = { 0.185f, 0.181f, 0.181f, 0.182f };
-		constexpr float CostX[4] = { 0.214f, 0.430f, 0.646f, 0.862f };
-		constexpr float CostW[4] = { 0.036f, 0.037f, 0.037f, 0.036f };
-
-		auto GetFlatDiplomaArtPath = [&](ET66HeroStatType StatType, const int32 DisplayStep) -> FString
-		{
-			if (DiplomaPageIndex == 0)
-			{
-				switch (DisplayStep)
-				{
-					case 0: return TEXT("RuntimeDependencies/T66/UI/PowerUp/Diplomas/FlatReference/diplomas_card01_art.png");
-					case 1: return TEXT("RuntimeDependencies/T66/UI/PowerUp/Diplomas/FlatReference/diplomas_card02_art.png");
-					case 2: return TEXT("RuntimeDependencies/T66/UI/PowerUp/Diplomas/FlatReference/diplomas_card03_art.png");
-					case 3: return TEXT("RuntimeDependencies/T66/UI/PowerUp/Diplomas/FlatReference/diplomas_card04_art.png");
-					default: break;
-				}
-			}
-
-			if (DisplayStep <= 0)
-			{
-				return TEXT("RuntimeDependencies/T66/UI/PowerUp/Diplomas/Generated/dropout_cardboard_box_imagegen_20260426.png");
-			}
-
-			return FString::Printf(
-				TEXT("RuntimeDependencies/T66/UI/PowerUp/Diplomas/Generated/%s_%s.png"),
-				*GetDiplomaAssetSlug(StatType),
-				*GetDiplomaRankAssetName(DisplayStep));
-		};
-
-		for (int32 VisibleIndex = 0; VisibleIndex < CardsPerPage; ++VisibleIndex)
-		{
-			const int32 StatIndex = DiplomaPageIndex * CardsPerPage + VisibleIndex;
-			if (!PermanentCardOrder.IsValidIndex(StatIndex))
-			{
-				continue;
-			}
-
-			const ET66HeroStatType StatType = PermanentCardOrder[StatIndex];
-			const int32 DisplayStep = FMath::Clamp(VisibleIndex, 0, ShopDiplomaUpgradeCount - 1);
-			const FString Prefix = FString::Printf(TEXT("Diplomas.Card%02d"), VisibleIndex + 1);
-			const bool bDemoDiplomaLocked = Buffs
-				&& !Buffs->IsStatMaxed(StatType)
-				&& Buffs->IsDemoDiplomaUpgradeLimitReached(StatType);
-			const FText StatText = FText::Format(
-				NSLOCTEXT("T66.PowerUp", "FlatDiplomaStatText", "+{0} {1}"),
-				FText::AsNumber(DisplayStep),
-				MakeUpperText(GetStatLabel(StatType)));
-
-			AddN(CardX[VisibleIndex], CardY[VisibleIndex], CardW[VisibleIndex], CardH[VisibleIndex], MakePanelSurface(FName(*Prefix), ET66FlatState::Default));
-			AddN(ArtX[VisibleIndex], ArtY[VisibleIndex], ArtW[VisibleIndex], ArtH[VisibleIndex], MakeArtwork(FName(*(Prefix + TEXT(".Artwork"))), GetFlatDiplomaArtPath(StatType, DisplayStep), FVector2D(340.f, 430.f)));
-			AddN(StatX[VisibleIndex], 0.740f, StatW[VisibleIndex], 0.028f, TaggedText(FName(*(Prefix + TEXT(".StatText"))), StatText, 24, FT66FlatStyle::PurpleAccent(), true, ETextJustify::Center));
-			const TSharedRef<SWidget> GraduateButton = MakeGraduateButton(
-				FName(*(Prefix + TEXT(".GraduateButton"))),
-				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType),
-				ButtonW[VisibleIndex] * DiplomasCanvasW,
-				0.072f * DiplomasCanvasH,
-				!bDemoDiplomaLocked);
-			AddN(ButtonX[VisibleIndex], 0.781f, ButtonW[VisibleIndex], 0.072f,
-				T66DemoModeUI::WrapWithComingSoonOverlay(
-					GraduateButton,
-					bDemoDiplomaLocked,
-					this,
-					FName(*(Prefix + TEXT(".GraduateButton.DemoOverlay")))));
-			if (!bDemoDiplomaLocked)
-			{
-				AddN(CostX[VisibleIndex], 0.807f, CostW[VisibleIndex], 0.030f, TaggedText(
-					FName(*(Prefix + TEXT(".GraduateButton.Cost"))),
-					FText::AsNumber(UT66BuffSubsystem::PermanentBuffUnlockCostCC),
-					24,
-					FT66FlatStyle::PrimaryText(),
-					true,
-					ETextJustify::Right));
-				AddN(CostX[VisibleIndex] + CostW[VisibleIndex] + 0.006f, 0.805f, 0.019f, 0.029f, MakeIcon(
-					FName(*(Prefix + TEXT(".GraduateButton.TicketIcon"))),
-					TicketBrush,
-					FVector2D(36.f, 28.f),
-					FText::FromString(TEXT("[]")),
-					FLinearColor::White));
-			}
-		}
-
-		auto MakePageDot = [](const bool bActive) -> TSharedRef<SWidget>
-		{
-			return SNew(SBox)
-				.WidthOverride(18.f)
-				.HeightOverride(18.f)
-				[
-					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-					.BorderBackgroundColor(bActive ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::BorderForState(ET66FlatState::Default))
-				];
-		};
-
-		TSharedRef<SHorizontalBox> PaginationRow = SNew(SHorizontalBox);
-		for (int32 PageIndex = 0; PageIndex < TotalDiplomaPages; ++PageIndex)
-		{
-			PaginationRow->AddSlot()
-			.AutoWidth()
-			.Padding(PageIndex > 0 ? FMargin(12.f, 0.f, 0.f, 0.f) : FMargin(0.f))
-			[
-				MakePageDot(PageIndex == DiplomaPageIndex)
-			];
-		}
-
-		AddN(
-			0.455f,
-			0.891f,
-			0.091f,
-			0.021f,
-			MakeBareInteractive(
-				DTag(TEXT("Diplomas.Pagination")),
-				TEXT("PaginationIndicator"),
-				SNew(SBox).HAlign(HAlign_Center).VAlign(VAlign_Center)[PaginationRow],
-				FOnClicked::CreateLambda([this, WrapDiplomaPage]()
-				{
-					DiplomaPageIndex = WrapDiplomaPage(DiplomaPageIndex + 1);
-					RequestDeferredSlateRebuild();
-					return FReply::Handled();
-				}),
-				ET66FlatState::Default));
-
-		TSharedRef<SWidget> DiplomasContent = SNew(SOverlay)
-			+ SOverlay::Slot()
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-				.BorderBackgroundColor(FT66FlatStyle::BackgroundColor())
-			]
-			+ SOverlay::Slot()
-			[
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				[
-					SNew(SBox)
-					.WidthOverride(DiplomasCanvasW)
-					.HeightOverride(DiplomasCanvasH)
-					[
-						DiplomasCanvas
-					]
-				]
-			];
-
-		return DiplomasContent;
-	}
-
-	if (bShowingSingleUse && !bHeroSelectionSingleUseEdit)
-	{
-		constexpr float DrugsCanvasW = 1920.f;
-		constexpr float DrugsCanvasH = 1080.f;
-		TSharedRef<SConstraintCanvas> DrugsCanvas = SNew(SConstraintCanvas);
-
-		auto DrugTag = [](const TCHAR* Tag) -> FName
-		{
-			return FName(Tag);
-		};
-
-		auto AddCanvas = [&DrugsCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
-		{
-			DrugsCanvas->AddSlot()
-			.Anchors(FAnchors(0.f, 0.f))
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(X, Y, W, H))
-			[
-				Widget
-			];
-		};
-
-		auto AddN = [&AddCanvas](const float X, const float Y, const float W, const float H, const TSharedRef<SWidget>& Widget)
-		{
-			AddCanvas(X * DrugsCanvasW, Y * DrugsCanvasH, W * DrugsCanvasW, H * DrugsCanvasH, Widget);
-		};
-
-		auto MakeMetadataRegion = [](const FName Tag, const FString& Role, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::AttachMetadata(SNew(SSpacer), Tag, Role, State);
-		};
-
-		auto MakePanelSurface = [](const FName Tag, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::MakeFlatPanel(
-				State,
-				FMargin(0.f),
-				SNew(SSpacer),
-				nullptr,
-				Tag);
-		};
-
-		auto PlainText = [](
-			const FText& Text,
-			const int32 FontSize,
-			const FLinearColor& Color,
-			const bool bBold = true,
-			const ETextJustify::Type Justification = ETextJustify::Center) -> TSharedRef<SWidget>
-		{
-			return SNew(STextBlock)
-				.Visibility(EVisibility::HitTestInvisible)
-				.Text(Text)
-				.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
-				.ColorAndOpacity(Color)
-				.Justification(Justification)
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds);
-		};
-
-		auto TaggedText = [](
-			const FName Tag,
-			const FText& Text,
-			const int32 FontSize,
-			const FLinearColor& Color,
-			const bool bBold = true,
-			const ETextJustify::Type Justification = ETextJustify::Center,
-			const float WrapAt = 0.f) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::AttachMetadata(
-				SNew(SBox)
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Fill)
-				[
-					SNew(SScaleBox)
-					.Stretch(EStretch::ScaleToFit)
-					.StretchDirection(EStretchDirection::DownOnly)
-					[
-						SNew(STextBlock)
-						.Visibility(EVisibility::HitTestInvisible)
-						.Text(Text)
-						.Font(bBold ? FT66FlatStyle::MakeBoldFont(FontSize) : FT66FlatStyle::MakeFont(FontSize))
-						.ColorAndOpacity(Color)
-						.Justification(Justification)
-						.AutoWrapText(WrapAt > 0.f)
-						.WrapTextAt(WrapAt)
-						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-						.Clipping(EWidgetClipping::ClipToBounds)
-					]
-				],
-				Tag,
-				TEXT("Label"),
-				ET66FlatState::Default,
-				TOptional<FLinearColor>(),
-				false,
-				NAME_None,
-				true);
-		};
-
-		auto MakeIcon = [&PlainText](
-			const FName Tag,
-			const FSlateBrush* Brush,
-			const FVector2D& SizeHint,
-			const FText& FallbackText,
-			const FLinearColor& Tint = FLinearColor::White) -> TSharedRef<SWidget>
-		{
-			const TSharedRef<SWidget> IconContent = Brush
-				? StaticCastSharedRef<SWidget>(
-					SNew(SImage)
-					.Visibility(EVisibility::HitTestInvisible)
-					.Image(Brush)
-					.ColorAndOpacity(Tint))
-				: StaticCastSharedRef<SWidget>(PlainText(FallbackText, 18, Tint, true, ETextJustify::Center));
-
-			return FT66FlatStyle::AttachMetadata(
-				SNew(SBox)
-				.Visibility(EVisibility::HitTestInvisible)
-				.WidthOverride(SizeHint.X)
-				.HeightOverride(SizeHint.Y)
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Fill)
-				[
-					IconContent
-				],
-				Tag,
-				TEXT("Icon"),
-				ET66FlatState::Default);
-		};
-
-		auto MakeArtwork = [&PlainText](
-			const FName Tag,
-			const ET66SecondaryStatType StatType,
-			const FVector2D& SizeHint) -> TSharedRef<SWidget>
-		{
-			const FString Slug = GetShopSecondaryBuffSlug(StatType);
-			const FString RelativePath = FString::Printf(TEXT("RuntimeDependencies/T66/UI/PowerUp/SecondaryBuffs/%s.png"), *Slug);
-			const FSlateBrush* Brush = Slug.IsEmpty() ? nullptr : ResolveShopFlatContentBrush(RelativePath, SizeHint);
-			const TSharedRef<SWidget> Content = Brush
-				? StaticCastSharedRef<SWidget>(
-					SNew(SScaleBox)
-					.Stretch(EStretch::ScaleToFit)
-					[
-						SNew(SImage)
-						.Visibility(EVisibility::HitTestInvisible)
-						.Image(Brush)
-					])
-				: StaticCastSharedRef<SWidget>(
-					SNew(SBox)
-					.HAlign(HAlign_Center)
-					.VAlign(VAlign_Center)
-					[
-						PlainText(NSLOCTEXT("T66.PowerUp", "FlatMissingDrugArt", "DRUG"), 18, FT66FlatStyle::SecondaryText(), true, ETextJustify::Center)
-					]);
-
-			return FT66FlatStyle::AttachMetadata(
-				SNew(SBox)
-				.Visibility(EVisibility::HitTestInvisible)
-				.HAlign(HAlign_Fill)
-				.VAlign(VAlign_Fill)
-				[
-					Content
-				],
-				Tag,
-				TEXT("Artwork"),
-				ET66FlatState::Default);
-		};
-
-		auto MakeFlatTab = [&PlainText](
-			const FName Tag,
-			const FText& Text,
-			FOnClicked OnClicked,
-			const ET66FlatState State,
-			const float Width,
-			const float Height) -> TSharedRef<SWidget>
-		{
-			return FT66FlatStyle::MakeFlatToggleGroupButton(
-				State,
-				SNew(SBox)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					PlainText(Text, 24, State == ET66FlatState::Selected ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText(), true, ETextJustify::Center)
-				],
-				MoveTemp(OnClicked),
-				FMargin(0.f),
-				Width,
-				Height,
-				true,
-				Tag,
-				FName(TEXT("PowerUpTabs")));
-		};
-
-		auto MakeBuyButton = [&PlainText](
-			const FName Tag,
-			FOnClicked OnClicked,
-			const float Width,
-			const float Height,
-			const bool bEnabled) -> TSharedRef<SWidget>
-		{
-			const ET66FlatState ButtonState = bEnabled ? ET66FlatState::Selected : ET66FlatState::Disabled;
-			return FT66FlatStyle::MakeFlatToggleGroupButton(
-				ButtonState,
-				SNew(SBox)
-				.HAlign(HAlign_Left)
-				.VAlign(VAlign_Center)
-				.Padding(FMargin(28.f, 0.f, 0.f, 0.f))
-				[
-					PlainText(
-						NSLOCTEXT("T66.PowerUp", "FlatBuy", "BUY"),
-						26,
-						bEnabled ? FT66FlatStyle::SelectedText() : FT66FlatStyle::DisabledText(),
-						true,
-						ETextJustify::Left)
-				],
-				MoveTemp(OnClicked),
-				FMargin(0.f),
-				Width,
-				Height,
-				bEnabled,
-				Tag);
-		};
-
-		const FSlateBrush* InfoBrush = ResolveShopFlatContentBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(28.f, 28.f));
-		const FSlateBrush* TargetBrush = ResolveShopFlatContentBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/target_crosshair.png"), FVector2D(72.f, 72.f));
-		const FSlateBrush* SpeedBrush = ResolveShopFlatContentBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/gauge_speedometer.png"), FVector2D(72.f, 72.f));
-		const FSlateBrush* TicketBrush = ResolveShopFlatContentBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png"), FVector2D(34.f, 26.f));
-
-		auto MakeDrugEffectText = [](const ET66SecondaryStatType StatType) -> FText
-		{
-			switch (StatType)
-			{
-				case ET66SecondaryStatType::AoeDamage:    return NSLOCTEXT("T66.PowerUp", "FlatDrugEffect_AoeDamage", "+10% AOE Damage");
-				case ET66SecondaryStatType::BounceDamage: return NSLOCTEXT("T66.PowerUp", "FlatDrugEffect_BounceDamage", "+10% Bounce Damage");
-				case ET66SecondaryStatType::PierceDamage: return NSLOCTEXT("T66.PowerUp", "FlatDrugEffect_PierceDamage", "+10% Pierce Damage");
-				case ET66SecondaryStatType::DotDamage:    return NSLOCTEXT("T66.PowerUp", "FlatDrugEffect_DotDamage", "+10% DOT Damage");
-				case ET66SecondaryStatType::AoeSpeed:     return NSLOCTEXT("T66.PowerUp", "FlatDrugEffect_AoeSpeed", "+10% AOE Speed");
-				case ET66SecondaryStatType::BounceSpeed:  return NSLOCTEXT("T66.PowerUp", "FlatDrugEffect_BounceSpeed", "+10% Bounce Speed");
-				case ET66SecondaryStatType::PierceSpeed:  return NSLOCTEXT("T66.PowerUp", "FlatDrugEffect_PierceSpeed", "+10% Pierce Speed");
-				case ET66SecondaryStatType::DotSpeed:     return NSLOCTEXT("T66.PowerUp", "FlatDrugEffect_DotSpeed", "+10% DOT Speed");
-				default:                                  return NSLOCTEXT("T66.PowerUp", "FlatDrugEffectUnknown", "+10%");
-			}
-		};
-
-		constexpr ET66SecondaryStatType VisibleDrugStats[8] = {
-			ET66SecondaryStatType::AoeDamage,
-			ET66SecondaryStatType::BounceDamage,
-			ET66SecondaryStatType::PierceDamage,
-			ET66SecondaryStatType::DotDamage,
-			ET66SecondaryStatType::AoeSpeed,
-			ET66SecondaryStatType::BounceSpeed,
-			ET66SecondaryStatType::PierceSpeed,
-			ET66SecondaryStatType::DotSpeed
-		};
-		constexpr float CardX[8] = { 0.170f, 0.365f, 0.566f, 0.769f, 0.170f, 0.365f, 0.566f, 0.769f };
-		constexpr float CardY[8] = { 0.236f, 0.236f, 0.236f, 0.236f, 0.613f, 0.613f, 0.613f, 0.613f };
-		constexpr float CardW[8] = { 0.175f, 0.181f, 0.182f, 0.181f, 0.175f, 0.181f, 0.182f, 0.181f };
-		constexpr float CardH[8] = { 0.346f, 0.346f, 0.346f, 0.346f, 0.343f, 0.343f, 0.343f, 0.343f };
-		constexpr float NameX[8] = { 0.213f, 0.388f, 0.601f, 0.783f, 0.205f, 0.423f, 0.609f, 0.792f };
-		constexpr float NameY[8] = { 0.261f, 0.261f, 0.261f, 0.261f, 0.640f, 0.640f, 0.640f, 0.640f };
-		constexpr float NameW[8] = { 0.089f, 0.138f, 0.114f, 0.148f, 0.105f, 0.064f, 0.106f, 0.129f };
-		constexpr float ArtX[8] = { 0.238f, 0.419f, 0.639f, 0.839f, 0.239f, 0.421f, 0.636f, 0.822f };
-		constexpr float ArtY[8] = { 0.299f, 0.313f, 0.302f, 0.296f, 0.675f, 0.682f, 0.675f, 0.678f };
-		constexpr float ArtW[8] = { 0.048f, 0.065f, 0.056f, 0.049f, 0.050f, 0.066f, 0.063f, 0.078f };
-		constexpr float ArtH[8] = { 0.159f, 0.134f, 0.152f, 0.163f, 0.160f, 0.137f, 0.160f, 0.148f };
-		constexpr float EffectX[8] = { 0.202f, 0.392f, 0.596f, 0.803f, 0.204f, 0.392f, 0.597f, 0.804f };
-		constexpr float EffectY[8] = { 0.480f, 0.480f, 0.480f, 0.480f, 0.859f, 0.859f, 0.859f, 0.859f };
-		constexpr float EffectW[8] = { 0.110f, 0.127f, 0.122f, 0.118f, 0.108f, 0.127f, 0.121f, 0.117f };
-		constexpr float BuyX[8] = { 0.178f, 0.374f, 0.575f, 0.777f, 0.178f, 0.374f, 0.575f, 0.777f };
-		constexpr float BuyY[8] = { 0.513f, 0.513f, 0.513f, 0.513f, 0.891f, 0.891f, 0.891f, 0.891f };
-		constexpr float BuyW[8] = { 0.160f, 0.165f, 0.165f, 0.164f, 0.160f, 0.165f, 0.165f, 0.164f };
-		constexpr float CostX[8] = { 0.279f, 0.472f, 0.675f, 0.876f, 0.279f, 0.472f, 0.675f, 0.876f };
-		constexpr float CostY[8] = { 0.529f, 0.529f, 0.529f, 0.529f, 0.906f, 0.906f, 0.906f, 0.906f };
-
-		AddN(0.041f, 0.135f, 0.909f, 0.823f, MakeMetadataRegion(DrugTag(TEXT("Drugs.Root")), TEXT("Root")));
-		AddN(0.041f, 0.236f, 0.909f, 0.722f, MakePanelSurface(DrugTag(TEXT("Drugs.MainOuterContainer")), ET66FlatState::Default));
-		AddN(0.148f, 0.123f, 0.690f, 0.060f, MakeMetadataRegion(DrugTag(TEXT("Drugs.SubTabs")), TEXT("ToggleGroup.PowerUpTabs")));
-		AddN(0.170f, 0.236f, 0.781f, 0.346f, MakeMetadataRegion(DrugTag(TEXT("Drugs.Row.Damage")), TEXT("CardRow")));
-		AddN(0.170f, 0.613f, 0.781f, 0.343f, MakeMetadataRegion(DrugTag(TEXT("Drugs.Row.AttackSpeed")), TEXT("CardRow")));
-
-		AddN(
-			0.148f,
-			0.123f,
-			0.320f,
-			0.060f,
-			MakeFlatTab(
-				DrugTag(TEXT("Drugs.SubTabs.DiplomasButton")),
-				PermanentTabText,
-				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowPermanentClicked),
-				ET66FlatState::Default,
-				0.320f * DrugsCanvasW,
-				0.060f * DrugsCanvasH));
-		AddN(
-			0.498f,
-			0.123f,
-			0.340f,
-			0.060f,
-			MakeFlatTab(
-				DrugTag(TEXT("Drugs.SubTabs.DrugsButton")),
-				SingleUseTabText,
-				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowSingleUseClicked),
-				ET66FlatState::Selected,
-				0.340f * DrugsCanvasW,
-				0.060f * DrugsCanvasH));
-
-		AddN(0.438f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
-			ET66FlatState::Default,
-			InfoBrush,
-			PermanentHintText,
-			FVector2D(31.f, 31.f),
-			DrugTag(TEXT("Drugs.SubTabs.DiplomasInfoIcon")),
-			FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowPermanentClicked)));
-		AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(
-			ET66FlatState::Selected,
-			InfoBrush,
-			SingleUseHintText,
-			FVector2D(31.f, 31.f),
-			DrugTag(TEXT("Drugs.SubTabs.DrugsInfoIcon")),
-			FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleShowSingleUseClicked)));
-
-		AddN(0.041f, 0.236f, 0.108f, 0.346f, MakePanelSurface(DrugTag(TEXT("Drugs.Category.DamagePanel")), ET66FlatState::Selected));
-		AddN(0.075f, 0.291f, 0.038f, 0.065f, MakeIcon(DrugTag(TEXT("Drugs.Category.DamageIcon")), TargetBrush, FVector2D(72.f, 72.f), FText::FromString(TEXT("+")), FT66FlatStyle::SelectedText()));
-		AddN(0.054f, 0.390f, 0.080f, 0.085f, TaggedText(
-			DrugTag(TEXT("Drugs.Category.DamageLabel")),
-			NSLOCTEXT("T66.PowerUp", "FlatDamageDrugs", "DAMAGE DRUGS"),
-			26,
-			FT66FlatStyle::SelectedText(),
-			true,
-			ETextJustify::Center,
-			0.080f * DrugsCanvasW));
-
-		AddN(0.041f, 0.613f, 0.108f, 0.343f, MakePanelSurface(DrugTag(TEXT("Drugs.Category.AttackSpeedPanel")), ET66FlatState::Selected));
-		AddN(0.075f, 0.661f, 0.040f, 0.065f, MakeIcon(DrugTag(TEXT("Drugs.Category.AttackSpeedIcon")), SpeedBrush, FVector2D(72.f, 72.f), FText::FromString(TEXT(">")), FT66FlatStyle::SelectedText()));
-		AddN(0.054f, 0.748f, 0.083f, 0.131f, TaggedText(
-			DrugTag(TEXT("Drugs.Category.AttackSpeedLabel")),
-			NSLOCTEXT("T66.PowerUp", "FlatAttackSpeedDrugs", "ATTACK SPEED DRUGS"),
-			26,
-			FT66FlatStyle::SelectedText(),
-			true,
-			ETextJustify::Center,
-			0.083f * DrugsCanvasW));
-
-		for (int32 CardIndex = 0; CardIndex < UE_ARRAY_COUNT(VisibleDrugStats); ++CardIndex)
-		{
-			const ET66SecondaryStatType StatType = VisibleDrugStats[CardIndex];
-			const FString Prefix = FString::Printf(TEXT("Drugs.Card%02d"), CardIndex + 1);
-			AddN(CardX[CardIndex], CardY[CardIndex], CardW[CardIndex], CardH[CardIndex], MakePanelSurface(FName(*Prefix), ET66FlatState::Default));
-			AddN(NameX[CardIndex], NameY[CardIndex], NameW[CardIndex], 0.030f, TaggedText(
-				FName(*(Prefix + TEXT(".Name"))),
-				GetSingleUseDrugName(StatType),
-				27,
-				FT66FlatStyle::PrimaryText(),
-				true,
-				ETextJustify::Center));
-			AddN(ArtX[CardIndex], ArtY[CardIndex], ArtW[CardIndex], ArtH[CardIndex], MakeArtwork(
-				FName(*(Prefix + TEXT(".Artwork"))),
-				StatType,
-				FVector2D(180.f, 220.f)));
-			AddN(EffectX[CardIndex], EffectY[CardIndex], EffectW[CardIndex], 0.024f, TaggedText(
-				FName(*(Prefix + TEXT(".Effect"))),
-				MakeDrugEffectText(StatType),
-				24,
-				FT66FlatStyle::PrimaryText(),
-				false,
-				ETextJustify::Center));
-			const TSharedRef<SWidget> BuyButton = MakeBuyButton(
-				FName(*(Prefix + TEXT(".BuyButton"))),
-				FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandlePurchaseSingleUseClicked, StatType),
-				BuyW[CardIndex] * DrugsCanvasW,
-				0.054f * DrugsCanvasH,
-				!bDemoDrugPurchasesBlocked);
-			AddN(BuyX[CardIndex], BuyY[CardIndex], BuyW[CardIndex], 0.054f,
-				T66DemoModeUI::WrapWithComingSoonOverlay(
-					BuyButton,
-					bDemoDrugPurchasesBlocked,
-					this,
-					FName(*(Prefix + TEXT(".BuyButton.DemoOverlay")))));
-			if (!bDemoDrugPurchasesBlocked)
-			{
-				AddN(CostX[CardIndex], CostY[CardIndex] - 0.002f, 0.018f, 0.027f, MakeIcon(
-					FName(*(Prefix + TEXT(".BuyButton.TicketIcon"))),
-					TicketBrush,
-					FVector2D(34.f, 26.f),
-					FText::FromString(TEXT("[]")),
-					FLinearColor::White));
-				AddN(CostX[CardIndex] + 0.025f, CostY[CardIndex], 0.014f, 0.029f, TaggedText(
-					FName(*(Prefix + TEXT(".BuyButton.Cost"))),
-					FText::AsNumber(UT66BuffSubsystem::SingleUseBuffCostCC),
-					23,
-					FT66FlatStyle::PrimaryText(),
-					true,
-					ETextJustify::Left));
-			}
-		}
-
-		TSharedRef<SWidget> DrugsContent = SNew(SOverlay)
-			+ SOverlay::Slot()
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-				.BorderBackgroundColor(FT66FlatStyle::BackgroundColor())
-			]
-			+ SOverlay::Slot()
-			[
-				SNew(SScaleBox)
-				.Stretch(EStretch::ScaleToFit)
-				[
-					SNew(SBox)
-					.WidthOverride(DrugsCanvasW)
-					.HeightOverride(DrugsCanvasH)
-					[
-						DrugsCanvas
-					]
-				]
-			];
-
-		return DrugsContent;
-	}
-
-	auto MakePermanentStatPanel = [&](ET66HeroStatType StatType) -> TSharedRef<SWidget>
-	{
-		const int32 Cost = Buffs ? Buffs->GetCostForNextFillStepUnlock(StatType) : 0;
-		const int32 UnlockedSteps = Buffs ? Buffs->GetUnlockedFillStepCount(StatType) : 0;
-		const int32 VisibleUnlockedSteps = FMath::Clamp(UnlockedSteps, 0, ShopDiplomaUpgradeCount);
-		const bool bDiplomaMaxed = VisibleUnlockedSteps >= ShopDiplomaUpgradeCount;
-		const bool bDiplomaDemoLocked = Buffs
-			&& !Buffs->IsStatMaxed(StatType)
-			&& Buffs->IsDemoDiplomaUpgradeLimitReached(StatType);
-		const bool bDiplomaActionEnabled = !bDiplomaMaxed && !bDiplomaDemoLocked && Balance >= Cost;
-		const FText ButtonText = bDiplomaMaxed
-			? NSLOCTEXT("T66.PowerUp", "Max", "MAX")
-			: NSLOCTEXT("T66.PowerUp", "Graduate", "GRADUATE");
-		const FText CostText = FText::AsNumber((bDiplomaDemoLocked && Cost <= 0) ? UT66BuffSubsystem::PermanentBuffUnlockCostCC : Cost);
-		const FSlateBrush* DiplomaBrush = ResolveShopGeneratedBrush(GetDiplomaImagePath(StatType, VisibleUnlockedSteps), FVector2D(244.f, 244.f));
+		const int32 Cost = Buffs ? Buffs->GetRelicCost(RelicDef.RelicID) : UT66BuffSubsystem::RelicUnlockCostCC;
+		const bool bRelicOwned = Buffs && Buffs->IsRelicOwned(RelicDef.RelicID);
+		const bool bRelicActionEnabled = !bRelicOwned && Balance >= Cost;
+		const FText ButtonText = bRelicOwned
+			? NSLOCTEXT("T66.PowerUp", "RelicOwned", "OWNED")
+			: NSLOCTEXT("T66.PowerUp", "BuyRelic", "BUY");
+		const FText CostText = FText::AsNumber(Cost);
+		const FSlateBrush* RelicBrush = ResolveShopGeneratedBrush(MakePowerUpOwnedPanelPath(TEXT("powerup_diplomas_art_placeholder.png")), FVector2D(244.f, 244.f));
 		const FSlateBrush* CouponBrush = ResolveShopGeneratedBrush(MakePowerUpCommonPath(TEXT("Icons"), TEXT("powerup_iconsgenerated_icon_07_coupon_ticket_white_v1.png")), FVector2D(30.f, 24.f));
-		const FText DiplomaTitle = GetDiplomaRankTitle(StatType, VisibleUnlockedSteps);
-		const TSharedRef<SWidget> DiplomaImageWidget = DiplomaBrush
+		const FText RelicTitle = RelicDef.DisplayName.IsEmpty() ? FText::FromName(RelicDef.RelicID) : RelicDef.DisplayName;
+		const TSharedRef<SWidget> RelicImageWidget = RelicBrush
 			? StaticCastSharedRef<SWidget>(
 				SNew(SBox)
 				.WidthOverride(220.f)
@@ -2499,7 +1561,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					.Stretch(EStretch::ScaleToFit)
 					[
 						SNew(SImage)
-						.Image(DiplomaBrush)
+						.Image(RelicBrush)
 					]
 				])
 			: StaticCastSharedRef<SWidget>(
@@ -2510,7 +1572,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				.VAlign(VAlign_Center)
 				[
 					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.PowerUp", "MissingDiplomaArt", "DIPLOMA"))
+					.Text(NSLOCTEXT("T66.PowerUp", "MissingRelicArt", "RELIC"))
 					.Font(ShopBoldFont(13))
 					.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
@@ -2533,7 +1595,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					.StretchDirection(EStretchDirection::DownOnly)
 					[
 						SNew(STextBlock)
-						.Text(DiplomaTitle)
+						.Text(RelicTitle)
 						.Font(ShopBoldFont(16))
 						.ColorAndOpacity(T66PowerUpTitleText())
 						.Justification(ETextJustify::Center)
@@ -2552,7 +1614,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 				[
 					MakeShopGeneratedPanel(
 						MakePowerUpOwnedPanelPath(TEXT("powerup_panels_item_art_well.png")),
-						DiplomaImageWidget,
+						RelicImageWidget,
 						FMargin(6.f),
 						T66PowerUpStrokeTint(),
 						T66PowerUpInsetFill())
@@ -2561,7 +1623,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 			[
 				SNew(STextBlock)
-				.Text(GetPermanentEffectText(StatType))
+				.Text(GetRelicEffectText(RelicDef))
 				.Font(ShopRegularFont(12))
 				.ColorAndOpacity(T66PowerUpText())
 				.Justification(ETextJustify::Center)
@@ -2578,19 +1640,19 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			[
 				T66DemoModeUI::WrapWithComingSoonOverlay(
 				MakeShopGeneratedButton(
-					FT66ButtonParams(ButtonText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandleUnlockClicked, StatType), ET66ButtonType::Primary)
+					FT66ButtonParams(ButtonText, FOnClicked::CreateUObject(this, &UT66PowerUpScreen::HandlePurchaseRelicClicked, RelicDef.RelicID), ET66ButtonType::Primary)
 					.SetMinWidth(0.f)
 					.SetHeight(44.f)
-					.SetColor(TAttribute<FSlateColor>::CreateLambda([bDiplomaMaxed, bDiplomaActionEnabled]() -> FSlateColor
+					.SetColor(TAttribute<FSlateColor>::CreateLambda([bRelicOwned, bRelicActionEnabled]() -> FSlateColor
 					{
-						if (bDiplomaMaxed)
+						if (bRelicOwned)
 						{
 							return FSlateColor(T66PowerUpButtonFill());
 						}
 
-						return FSlateColor(bDiplomaActionEnabled ? T66PowerUpButtonFill() : T66PowerUpButtonDisabledFill());
+						return FSlateColor(bRelicActionEnabled ? T66PowerUpButtonFill() : T66PowerUpButtonDisabledFill());
 					}))
-					.SetEnabled(TAttribute<bool>(bDiplomaActionEnabled))
+					.SetEnabled(TAttribute<bool>(bRelicActionEnabled))
 					.SetContent(
 						SNew(SBox)
 						.HAlign(HAlign_Center)
@@ -2616,7 +1678,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 									.Text(CostText)
 									.Font(ShopBoldFont(14))
 									.ColorAndOpacity(ShopPermanentCardAccent)
-									.Visibility(bDiplomaMaxed || bDiplomaDemoLocked ? EVisibility::Collapsed : EVisibility::Visible)
+									.Visibility(bRelicOwned ? EVisibility::Collapsed : EVisibility::Visible)
 									.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 									.Clipping(EWidgetClipping::ClipToBounds)
 								]
@@ -2625,7 +1687,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 									SNew(SBox)
 									.WidthOverride(24.f)
 									.HeightOverride(18.f)
-									.Visibility(bDiplomaMaxed || bDiplomaDemoLocked || !CouponBrush ? EVisibility::Collapsed : EVisibility::Visible)
+									.Visibility(bRelicOwned || !CouponBrush ? EVisibility::Collapsed : EVisibility::Visible)
 									[
 										SNew(SImage)
 										.Image(CouponBrush)
@@ -2639,7 +1701,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 					FT66FlatStyle::Tokens::Text,
 					FMargin(14.f, 7.f, 14.f, 6.f)
 				),
-				bDiplomaDemoLocked,
+				false,
 				this,
 				NAME_None)
 			],
@@ -2723,7 +1785,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 							.StretchDirection(EStretchDirection::DownOnly)
 							[
 								SNew(STextBlock)
-								.Text(GetSingleUseDrugName(StatType))
+								.Text(GetSingleUseSteroidName(StatType))
 								.Font(ShopBoldFont(17))
 								.ColorAndOpacity(T66PowerUpTitleText())
 								.Justification(ETextJustify::Center)
@@ -2848,19 +1910,19 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 			];
 	};
 
-	TSharedRef<SGridPanel> DiplomaGrid = SNew(SGridPanel);
-	for (int32 StatIndex = 0; StatIndex < PermanentCardOrder.Num(); ++StatIndex)
+	TSharedRef<SGridPanel> RelicGrid = SNew(SGridPanel);
+	for (int32 RelicIndex = 0; RelicIndex < RelicCardOrder.Num(); ++RelicIndex)
 	{
-		const int32 Column = StatIndex % 4;
-		const int32 Row = StatIndex / 4;
-		DiplomaGrid->AddSlot(Column, Row)
+		const int32 Column = RelicIndex % 4;
+		const int32 Row = RelicIndex / 4;
+		RelicGrid->AddSlot(Column, Row)
 			.Padding(Column > 0 ? ShopCardGap : 0.f, Row > 0 ? ShopCardGap : 0.f, 0.f, 0.f)
 			[
 				SNew(SBox)
-				.WidthOverride(ShopDiplomaCardWidth)
-				.HeightOverride(ShopDiplomaCardHeight)
+				.WidthOverride(ShopRelicCardWidth)
+				.HeightOverride(ShopRelicCardHeight)
 				[
-					MakePermanentStatPanel(PermanentCardOrder[StatIndex])
+					MakePermanentStatPanel(RelicCardOrder[RelicIndex])
 				]
 			];
 	}
@@ -2894,7 +1956,15 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		]
 		+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Center).VAlign(VAlign_Top)
 		[
-			DiplomaGrid
+			SNew(SScrollBox)
+			.ScrollBarStyle(GetShopDrugsScrollBarStyle())
+			.ScrollBarVisibility(EVisibility::Visible)
+			.ScrollBarThickness(FVector2D(28.f, 28.f))
+			.ScrollBarPadding(FMargin(14.f, 0.f, 0.f, 0.f))
+			+ SScrollBox::Slot()
+			[
+				RelicGrid
+			]
 		];
 
 	TSharedRef<SVerticalBox> SingleUseRowsBox = SNew(SVerticalBox);
@@ -2997,7 +2067,7 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 						.StretchDirection(EStretchDirection::DownOnly)
 						[
 							SNew(STextBlock)
-							.Text(GetDrugRowTitle(RowDef.PrimaryStat))
+							.Text(GetSteroidRowTitle(RowDef.PrimaryStat))
 							.Font(ShopBoldFont(28))
 							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 							.Justification(ETextJustify::Center)
@@ -3157,3 +2227,4 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		FLinearColor::Transparent,
 		FMargin(0.f, 0.f, 0.f, -4.f));
 }
+

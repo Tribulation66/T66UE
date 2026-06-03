@@ -1,0 +1,417 @@
+{
+  "project_root": "C:\\UE\\T66",
+  "packages": [
+    {
+      "package": "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline",
+      "asset_path": "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline.SM_QuickReviveVending_Pixal3D_Outline",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro",
+      "asset_path": "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D.MI_QuickReviveVending_Pixal3D",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline",
+      "asset_path": "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline.MI_QuickReviveVending_Pixal3D_Outline",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro",
+      "asset_path": "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro.M_QuickReviveVending_QuadRetro",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0",
+      "asset_path": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0.T_QuickReviveVending_Pixal3D_0",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1",
+      "asset_path": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1.T_QuickReviveVending_Pixal3D_1",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines",
+      "asset_path": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines.T_QuickReviveVending_Pixal3D_InnerLines",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint",
+      "asset_path": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint.T_QuickReviveVending_Pixal3D_Tint",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512.T_QuickReviveVending_QuadRetro_Pixelated_512",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/UI/Sprites/Interactables/QuickReviveIcon",
+      "asset_path": "/Game/UI/Sprites/Interactables/QuickReviveIcon.QuickReviveIcon",
+      "exists": false,
+      "registry_assets": [],
+      "referencers": [],
+      "referencer_count": 0
+    }
+  ],
+  "tokens": [
+    "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D",
+    "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D",
+    "SM_QuickReviveVending_Pixal3D",
+    "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline",
+    "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline.SM_QuickReviveVending_Pixal3D_Outline",
+    "SM_QuickReviveVending_Pixal3D_Outline",
+    "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro",
+    "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro",
+    "QuickReviveVending_QuadRetro",
+    "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D",
+    "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D.MI_QuickReviveVending_Pixal3D",
+    "MI_QuickReviveVending_Pixal3D",
+    "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline",
+    "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline.MI_QuickReviveVending_Pixal3D_Outline",
+    "MI_QuickReviveVending_Pixal3D_Outline",
+    "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro",
+    "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro.M_QuickReviveVending_QuadRetro",
+    "M_QuickReviveVending_QuadRetro",
+    "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0",
+    "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0.T_QuickReviveVending_Pixal3D_0",
+    "T_QuickReviveVending_Pixal3D_0",
+    "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1",
+    "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1.T_QuickReviveVending_Pixal3D_1",
+    "T_QuickReviveVending_Pixal3D_1",
+    "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines",
+    "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines.T_QuickReviveVending_Pixal3D_InnerLines",
+    "T_QuickReviveVending_Pixal3D_InnerLines",
+    "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint",
+    "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint.T_QuickReviveVending_Pixal3D_Tint",
+    "T_QuickReviveVending_Pixal3D_Tint",
+    "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512",
+    "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512.T_QuickReviveVending_QuadRetro_Pixelated_512",
+    "T_QuickReviveVending_QuadRetro_Pixelated_512",
+    "/Game/UI/Sprites/Interactables/QuickReviveIcon",
+    "/Game/UI/Sprites/Interactables/QuickReviveIcon.QuickReviveIcon",
+    "QuickReviveIcon"
+  ],
+  "metadata": {
+    "forced_asset_registry_scan": true,
+    "scan_roots": [
+      "/Game/UI",
+      "/Game/World"
+    ],
+    "generated_utc": "2026-05-27T14:34:48.107021+00:00"
+  },
+  "binary_content": {
+    "scanned": 3625,
+    "matches": [],
+    "read_failures": []
+  },
+  "text": {
+    "scanned": 1565,
+    "matches": [
+      {
+        "path": "Scripts\\ImportInteractableUISprites.py",
+        "hits": [
+          "QuickReviveIcon"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\asset_reference_audit_gatea_quickrevive_post.json",
+        "hits": [
+          "/Game/UI/Sprites/Interactables/QuickReviveIcon",
+          "/Game/UI/Sprites/Interactables/QuickReviveIcon.QuickReviveIcon",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D.MI_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline.MI_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro.M_QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline.SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0.T_QuickReviveVending_Pixal3D_0",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1.T_QuickReviveVending_Pixal3D_1",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines.T_QuickReviveVending_Pixal3D_InnerLines",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint.T_QuickReviveVending_Pixal3D_Tint",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512.T_QuickReviveVending_QuadRetro_Pixelated_512",
+          "MI_QuickReviveVending_Pixal3D",
+          "MI_QuickReviveVending_Pixal3D_Outline",
+          "M_QuickReviveVending_QuadRetro",
+          "QuickReviveIcon",
+          "QuickReviveVending_QuadRetro",
+          "SM_QuickReviveVending_Pixal3D",
+          "SM_QuickReviveVending_Pixal3D_Outline",
+          "T_QuickReviveVending_Pixal3D_0",
+          "T_QuickReviveVending_Pixal3D_1",
+          "T_QuickReviveVending_Pixal3D_InnerLines",
+          "T_QuickReviveVending_Pixal3D_Tint",
+          "T_QuickReviveVending_QuadRetro_Pixelated_512"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\asset_reference_audit_gatea_quickrevive_pre.json",
+        "hits": [
+          "/Game/UI/Sprites/Interactables/QuickReviveIcon",
+          "/Game/UI/Sprites/Interactables/QuickReviveIcon.QuickReviveIcon",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D.MI_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline.MI_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro.M_QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline.SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0.T_QuickReviveVending_Pixal3D_0",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1.T_QuickReviveVending_Pixal3D_1",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines.T_QuickReviveVending_Pixal3D_InnerLines",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint.T_QuickReviveVending_Pixal3D_Tint",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512.T_QuickReviveVending_QuadRetro_Pixelated_512",
+          "MI_QuickReviveVending_Pixal3D",
+          "MI_QuickReviveVending_Pixal3D_Outline",
+          "M_QuickReviveVending_QuadRetro",
+          "QuickReviveIcon",
+          "QuickReviveVending_QuadRetro",
+          "SM_QuickReviveVending_Pixal3D",
+          "SM_QuickReviveVending_Pixal3D_Outline",
+          "T_QuickReviveVending_Pixal3D_0",
+          "T_QuickReviveVending_Pixal3D_1",
+          "T_QuickReviveVending_Pixal3D_InnerLines",
+          "T_QuickReviveVending_Pixal3D_Tint",
+          "T_QuickReviveVending_QuadRetro_Pixelated_512"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\candidate_manifest.md",
+        "hits": [
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D",
+          "SM_QuickReviveVending_Pixal3D"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\gatea_delete_backup_manifest.json",
+        "hits": [
+          "MI_QuickReviveVending_Pixal3D",
+          "MI_QuickReviveVending_Pixal3D_Outline",
+          "M_QuickReviveVending_QuadRetro",
+          "QuickReviveIcon",
+          "QuickReviveVending_QuadRetro",
+          "SM_QuickReviveVending_Pixal3D",
+          "SM_QuickReviveVending_Pixal3D_Outline",
+          "T_QuickReviveVending_Pixal3D_0",
+          "T_QuickReviveVending_Pixal3D_1",
+          "T_QuickReviveVending_Pixal3D_InnerLines",
+          "T_QuickReviveVending_Pixal3D_Tint",
+          "T_QuickReviveVending_QuadRetro_Pixelated_512"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\world_asset_audit.json",
+        "hits": [
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D.MI_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline.MI_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro.M_QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline.SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0.T_QuickReviveVending_Pixal3D_0",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1.T_QuickReviveVending_Pixal3D_1",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines.T_QuickReviveVending_Pixal3D_InnerLines",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint.T_QuickReviveVending_Pixal3D_Tint",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512.T_QuickReviveVending_QuadRetro_Pixelated_512",
+          "MI_QuickReviveVending_Pixal3D",
+          "MI_QuickReviveVending_Pixal3D_Outline",
+          "M_QuickReviveVending_QuadRetro",
+          "QuickReviveVending_QuadRetro",
+          "SM_QuickReviveVending_Pixal3D",
+          "SM_QuickReviveVending_Pixal3D_Outline",
+          "T_QuickReviveVending_Pixal3D_0",
+          "T_QuickReviveVending_Pixal3D_1",
+          "T_QuickReviveVending_Pixal3D_InnerLines",
+          "T_QuickReviveVending_Pixal3D_Tint",
+          "T_QuickReviveVending_QuadRetro_Pixelated_512"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\world_asset_audit_gateb_post.json",
+        "hits": [
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D.MI_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline.MI_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro.M_QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline.SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0.T_QuickReviveVending_Pixal3D_0",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1.T_QuickReviveVending_Pixal3D_1",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines.T_QuickReviveVending_Pixal3D_InnerLines",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint.T_QuickReviveVending_Pixal3D_Tint",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512.T_QuickReviveVending_QuadRetro_Pixelated_512",
+          "MI_QuickReviveVending_Pixal3D",
+          "MI_QuickReviveVending_Pixal3D_Outline",
+          "M_QuickReviveVending_QuadRetro",
+          "QuickReviveVending_QuadRetro",
+          "SM_QuickReviveVending_Pixal3D",
+          "SM_QuickReviveVending_Pixal3D_Outline",
+          "T_QuickReviveVending_Pixal3D_0",
+          "T_QuickReviveVending_Pixal3D_1",
+          "T_QuickReviveVending_Pixal3D_InnerLines",
+          "T_QuickReviveVending_Pixal3D_Tint",
+          "T_QuickReviveVending_QuadRetro_Pixelated_512"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\world_asset_load_integrity.json",
+        "hits": [
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D.MI_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Materials/MI_QuickReviveVending_Pixal3D_Outline.MI_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/Materials/M_QuickReviveVending_QuadRetro.M_QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline.SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_0.T_QuickReviveVending_Pixal3D_0",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_1.T_QuickReviveVending_Pixal3D_1",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_InnerLines.T_QuickReviveVending_Pixal3D_InnerLines",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_Pixal3D_Tint.T_QuickReviveVending_Pixal3D_Tint",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512",
+          "/Game/World/Interactables/Vending/Textures/T_QuickReviveVending_QuadRetro_Pixelated_512.T_QuickReviveVending_QuadRetro_Pixelated_512",
+          "MI_QuickReviveVending_Pixal3D",
+          "MI_QuickReviveVending_Pixal3D_Outline",
+          "M_QuickReviveVending_QuadRetro",
+          "QuickReviveVending_QuadRetro",
+          "SM_QuickReviveVending_Pixal3D",
+          "SM_QuickReviveVending_Pixal3D_Outline",
+          "T_QuickReviveVending_Pixal3D_0",
+          "T_QuickReviveVending_Pixal3D_1",
+          "T_QuickReviveVending_Pixal3D_InnerLines",
+          "T_QuickReviveVending_Pixal3D_Tint",
+          "T_QuickReviveVending_QuadRetro_Pixelated_512"
+        ]
+      },
+      {
+        "path": "Model Generation\\Pixal3D\\production_agent1_static_world_assets_manifest_20260519.json",
+        "hits": [
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro",
+          "/Game/World/Interactables/Vending/QuickReviveVending_QuadRetro.QuickReviveVending_QuadRetro",
+          "QuickReviveVending_QuadRetro"
+        ]
+      },
+      {
+        "path": "Model Generation\\Runs\\Pixal3D\\Archive\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Reports\\Agent1_StaticWorldAssets_Import_Report.json",
+        "hits": [
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D_Outline.SM_QuickReviveVending_Pixal3D_Outline",
+          "SM_QuickReviveVending_Pixal3D",
+          "SM_QuickReviveVending_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Model Generation\\Runs\\Pixal3D\\Archive\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Reports\\Agent1_StaticWorldAssets_Import_Report.md",
+        "hits": [
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D",
+          "/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D",
+          "SM_QuickReviveVending_Pixal3D"
+        ]
+      },
+      {
+        "path": "Model Generation\\Scripts\\Batches\\WorldNpcInteractablesRetroBatch01\\export_world_npc_interactables_retro_batch01_unreal_ready.py",
+        "hits": [
+          "QuickReviveVending_QuadRetro"
+        ]
+      }
+    ],
+    "read_failures": []
+  }
+}

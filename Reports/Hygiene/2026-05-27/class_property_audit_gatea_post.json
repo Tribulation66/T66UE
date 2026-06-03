@@ -1,0 +1,621 @@
+{
+  "project_root": "C:\\UE\\T66",
+  "metadata": {
+    "forced_asset_registry_scan": true,
+    "scan_roots": [
+      "/Game"
+    ],
+    "generated_utc": "2026-05-27T14:39:31.516799+00:00"
+  },
+  "classes": [
+    {
+      "class": "AT66GameMode",
+      "resolved": true,
+      "script_path": "/Script/T66.T66GameMode"
+    }
+  ],
+  "properties": [
+    "bSpawnIdolVFXTestTargetsAtStageStart",
+    "IdolVFXTestTargets",
+    "BossBeaconActor",
+    "BossBeaconUpdateAccumulator",
+    "MainMapBossBeaconSurfaceLocation",
+    "BossBeaconSurfaceLocation",
+    "DefaultWalkSpeed"
+  ],
+  "tokens": [
+    "bSpawnIdolVFXTestTargetsAtStageStart",
+    "IdolVFXTestTargets",
+    "BossBeaconActor",
+    "BossBeaconUpdateAccumulator",
+    "MainMapBossBeaconSurfaceLocation",
+    "BossBeaconSurfaceLocation",
+    "DefaultWalkSpeed",
+    "AT66GameMode",
+    "T66GameMode",
+    "/Script/T66.T66GameMode"
+  ],
+  "native_cdos": [
+    {
+      "class": "AT66GameMode",
+      "resolved": true,
+      "script_path": "/Script/T66.T66GameMode",
+      "cdo_loaded": true,
+      "cdo_properties": [
+        {
+          "property": "bSpawnIdolVFXTestTargetsAtStageStart",
+          "readable": false,
+          "value": null,
+          "error": "T66GameMode: Failed to find property 'bSpawnIdolVFXTestTargetsAtStageStart' for attribute 'bSpawnIdolVFXTestTargetsAtStageStart' on 'T66GameMode'"
+        },
+        {
+          "property": "IdolVFXTestTargets",
+          "readable": false,
+          "value": null,
+          "error": "T66GameMode: Failed to find property 'IdolVFXTestTargets' for attribute 'IdolVFXTestTargets' on 'T66GameMode'"
+        },
+        {
+          "property": "BossBeaconActor",
+          "readable": false,
+          "value": null,
+          "error": "T66GameMode: Failed to find property 'BossBeaconActor' for attribute 'BossBeaconActor' on 'T66GameMode'"
+        },
+        {
+          "property": "BossBeaconUpdateAccumulator",
+          "readable": false,
+          "value": null,
+          "error": "T66GameMode: Failed to find property 'BossBeaconUpdateAccumulator' for attribute 'BossBeaconUpdateAccumulator' on 'T66GameMode'"
+        },
+        {
+          "property": "MainMapBossBeaconSurfaceLocation",
+          "readable": false,
+          "value": null,
+          "error": "T66GameMode: Failed to find property 'MainMapBossBeaconSurfaceLocation' for attribute 'MainMapBossBeaconSurfaceLocation' on 'T66GameMode'"
+        },
+        {
+          "property": "BossBeaconSurfaceLocation",
+          "readable": false,
+          "value": null,
+          "error": "T66GameMode: Failed to find property 'BossBeaconSurfaceLocation' for attribute 'BossBeaconSurfaceLocation' on 'T66GameMode'"
+        },
+        {
+          "property": "DefaultWalkSpeed",
+          "readable": false,
+          "value": null,
+          "error": "T66GameMode: Failed to find property 'DefaultWalkSpeed' for attribute 'DefaultWalkSpeed' on 'T66GameMode'"
+        }
+      ]
+    }
+  ],
+  "blueprint_cdos": {
+    "candidates": 2,
+    "matches": [],
+    "load_failures": []
+  },
+  "binary_content": {
+    "scanned": 3625,
+    "matches": [
+      {
+        "path": "Content\\Blueprints\\GameModes\\BP_GameplayGameMode.uasset",
+        "hits": [
+          "/Script/T66.T66GameMode",
+          "T66GameMode"
+        ]
+      }
+    ],
+    "read_failures": []
+  },
+  "text": {
+    "scanned": 1124,
+    "matches": [
+      {
+        "path": "Source\\T66\\Core\\T66LagTrackerSubsystem.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\T66SessionSubsystem.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\T66TrapSubsystem.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Core\\RunState\\T66RunStateSubsystem_Combat.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\pending_issues_Gameplay.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BackroomsChaser.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BackroomsDoorInteractable.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BossBase.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66BossGate.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66EnemyBase.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66EnemyDirector.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66FrontendGameMode.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66GameMode.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66GameMode.h",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66LootBagPickup.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66MiasmaManager.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Combat.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Frontend.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Input.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_Overlays.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_ScopedUlt.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66PlayerController_WorldDialogue.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66StageGate.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\T66TowerDescentHole.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameModePrivate.h",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Backrooms.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Bootstrap.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_BossFlow.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Lab.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_MainMap.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Spawning.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_TestRoom.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_Tower.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\GameMode\\T66GameMode_WorldInteractables.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Traps\\T66TrapBase.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\Gameplay\\Traps\\T66TrapPressurePlate.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\T66CollectorOverlayWidget.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\T66LabOverlayWidget.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\T66LabOverlayWidget.h",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\HUD\\T66GameplayHUDWidget_Map.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\HUD\\T66GameplayHUDWidget_Private.h",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66\\UI\\HUD\\T66GameplayHUDWidget_Refresh.cpp",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66Editor\\T66ProceduralLandscapeEditorTool.h",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Source\\T66Editor\\T66UISetupSubsystem.cpp",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Scripts\\AuditCliffSideMaterialsAndExit.py",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Scripts\\AuditNativeClassReferencesAndExit.py",
+        "hits": [
+          "DefaultWalkSpeed"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\candidate_manifest.md",
+        "hits": [
+          "AT66GameMode",
+          "BossBeaconActor",
+          "BossBeaconSurfaceLocation",
+          "BossBeaconUpdateAccumulator",
+          "DefaultWalkSpeed",
+          "IdolVFXTestTargets",
+          "MainMapBossBeaconSurfaceLocation",
+          "T66GameMode",
+          "bSpawnIdolVFXTestTargetsAtStageStart"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\class_property_audit_gatea_pre.json",
+        "hits": [
+          "/Script/T66.T66GameMode",
+          "AT66GameMode",
+          "BossBeaconActor",
+          "BossBeaconSurfaceLocation",
+          "BossBeaconUpdateAccumulator",
+          "DefaultWalkSpeed",
+          "IdolVFXTestTargets",
+          "MainMapBossBeaconSurfaceLocation",
+          "T66GameMode",
+          "bSpawnIdolVFXTestTargetsAtStageStart"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\cliff_side_materials_audit.json",
+        "hits": [
+          "/Script/T66.T66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\gatea_world_symbol_consumer_sweep_pre.txt",
+        "hits": [
+          "AT66GameMode",
+          "BossBeaconActor",
+          "BossBeaconSurfaceLocation",
+          "BossBeaconUpdateAccumulator",
+          "IdolVFXTestTargets",
+          "MainMapBossBeaconSurfaceLocation",
+          "T66GameMode",
+          "bSpawnIdolVFXTestTargetsAtStageStart"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\native_reference_audit_dryrun.json",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\native_reference_audit_gatea_post.json",
+        "hits": [
+          "/Script/T66.T66GameMode",
+          "AT66GameMode",
+          "BossBeaconActor",
+          "BossBeaconSurfaceLocation",
+          "BossBeaconUpdateAccumulator",
+          "DefaultWalkSpeed",
+          "IdolVFXTestTargets",
+          "MainMapBossBeaconSurfaceLocation",
+          "T66GameMode",
+          "bSpawnIdolVFXTestTargetsAtStageStart"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\native_reference_audit_gatea_pre.json",
+        "hits": [
+          "DefaultWalkSpeed"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\native_reference_audit_positive_control.json",
+        "hits": [
+          "/Script/T66.T66GameMode",
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\ToonStyle\\Phase0\\Phase0_Situation_Report.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\ToonStyle\\Phase1A\\Phase1A0_Implementation_Report.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\ToonStyle\\Phase1A\\Phase1A1_Implementation_Report.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\ToonStyle\\Phase1A\\Phase1A2_Implementation_Report.md",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\ToonStyle\\Phase1A\\Phase1A_Environment_Textures_Report.md",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\ToonStyle\\Phase1A\\Phase1A_Pixal3D_LuBu_Matrix_Report.md",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\ToonStyle\\Phase1A\\Phase1A_Preflight_Inventory.md",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\ToonStyle\\Phase1B\\Phase1B_TestRoom_And_Exposure_Report.md",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Reports\\ToonStyle\\Phase1C\\Phase1C_Pipeline_And_Materials_Report.md",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Gameplay\\Minigames\\Mini\\T66Mini_MasterImplementation.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Gameplay\\Stats\\MASTER_PLAYER_EXPERIENCE.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Gameplay\\Stats\\MASTER_STATS.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Gameplay\\Traps\\MASTER_TRAPS.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Gameplay\\World\\T66_LIGHTING_REFERENCE.md",
+        "hits": [
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Gameplay\\World\\T66_MAP_DESIGN_REFERENCE.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      },
+      {
+        "path": "Gameplay\\World\\T66_Tower_Multi_Agent_Implementation_Plan.md",
+        "hits": [
+          "AT66GameMode",
+          "T66GameMode"
+        ]
+      }
+    ],
+    "read_failures": []
+  }
+}

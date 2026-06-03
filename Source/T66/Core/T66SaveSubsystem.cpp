@@ -136,6 +136,25 @@ UT66RunSaveGame* UT66SaveSubsystem::LoadFromSlot(int32 SlotIndex)
 			RunSave->RunCategory = ET66RunCategory::Tower;
 			RunSave->SaveVersion = T66RunModeCategoryRunSaveVersion;
 		}
+		if (RunSave->SaveVersion < T66CollectedMobLootRunSaveVersion)
+		{
+			RunSave->RunSnapshot.CollectedMobLootStack = 0;
+			RunSave->SaveVersion = T66CollectedMobLootRunSaveVersion;
+		}
+		if (RunSave->SaveVersion < T66MobLootRunSummaryCountersRunSaveVersion)
+		{
+			RunSave->RunSnapshot.MobLootDropsCollectedThisRun = 0;
+			RunSave->RunSnapshot.MobLootQuantityCollectedThisRun = 0;
+			RunSave->RunSnapshot.MobLootGoldValueCollectedThisRun = 0;
+			RunSave->RunSnapshot.MobLootQuantityCollectedByPlayerThisRun = 0;
+			RunSave->RunSnapshot.MobLootQuantityCollectedByPetThisRun = 0;
+			RunSave->RunSnapshot.MobLootDropsCollectedByPetThisRun = 0;
+			RunSave->RunSnapshot.MobLootQuantitySoldThisRun = 0;
+			RunSave->RunSnapshot.MobLootSaleGoldThisRun = 0;
+			RunSave->SaveVersion = T66MobLootRunSummaryCountersRunSaveVersion;
+		}
+		T66NormalizeEquippedIdolSaveArrays(RunSave->EquippedIdols, RunSave->EquippedIdolTiers);
+		T66NormalizeEquippedIdolSaveArrays(RunSave->RunSnapshot.EquippedIdols, RunSave->RunSnapshot.EquippedIdolTiers);
 
 		FString LocalPlayerId = TEXT("local_player");
 		FString LocalDisplayName = TEXT("You");

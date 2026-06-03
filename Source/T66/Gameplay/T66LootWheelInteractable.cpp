@@ -58,17 +58,28 @@ namespace
 		return AT66LootWheelInteractable::ELockedLootWheelRewardType::Boost;
 	}
 
-	static const TArray<ET66HeroStatType>& T66GetLootWheelBoostStatPool()
+	struct FT66LootWheelBoostTarget
 	{
-		static const TArray<ET66HeroStatType> StatPool = {
-			ET66HeroStatType::Damage,
-			ET66HeroStatType::AttackSpeed,
-			ET66HeroStatType::AttackScale,
-			ET66HeroStatType::Armor,
-			ET66HeroStatType::Evasion,
-			ET66HeroStatType::Luck,
-			ET66HeroStatType::Speed,
-			ET66HeroStatType::Accuracy,
+		bool bUsesSecondaryStat = false;
+		ET66HeroStatType PrimaryStatType = ET66HeroStatType::Damage;
+		ET66SecondaryStatType SecondaryStatType = ET66SecondaryStatType::None;
+	};
+
+	static const TArray<FT66LootWheelBoostTarget>& T66GetLootWheelBoostStatPool()
+	{
+		static const TArray<FT66LootWheelBoostTarget> StatPool = {
+			{ false, ET66HeroStatType::Damage, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::AttackSpeed, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::AttackScale, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::Armor, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::Evasion, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::Luck, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::Speed, ET66SecondaryStatType::None },
+			{ false, ET66HeroStatType::Accuracy, ET66SecondaryStatType::None },
+			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::FirePower },
+			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::IcePower },
+			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::ElectricityPower },
+			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::NaturePower },
 		};
 		return StatPool;
 	}
@@ -215,10 +226,13 @@ bool AT66LootWheelInteractable::LockLootWheelReward(APlayerController* PC)
 		break;
 	case ELockedLootWheelRewardType::Boost:
 	{
-		const TArray<ET66HeroStatType>& StatPool = T66GetLootWheelBoostStatPool();
-		LockedReward.BoostStatType = StatPool.IsValidIndex(0)
+		const TArray<FT66LootWheelBoostTarget>& StatPool = T66GetLootWheelBoostStatPool();
+		const FT66LootWheelBoostTarget Target = StatPool.IsValidIndex(0)
 			? StatPool[Rng.RandRange(0, StatPool.Num() - 1)]
-			: ET66HeroStatType::Damage;
+			: FT66LootWheelBoostTarget{};
+		LockedReward.bBoostUsesSecondaryStat = Target.bUsesSecondaryStat;
+		LockedReward.BoostStatType = Target.PrimaryStatType;
+		LockedReward.BoostSecondaryStatType = Target.SecondaryStatType;
 		LockedReward.BoostBonusStatPoints = FMath::Max(1, FMath::RoundToInt(8.f * LootWheelMultiplier));
 		LockedReward.BoostDurationSeconds = 10.f;
 		break;
@@ -281,10 +295,19 @@ void AT66LootWheelInteractable::CommitLockedLootWheelRewardIfNeeded()
 			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 			if (AT66BoostInteractable* Boost = World->SpawnActor<AT66BoostInteractable>(AT66BoostInteractable::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams))
 			{
-				Boost->ConfigureBoost(LockedReward.BoostStatType, LockedReward.BoostBonusStatPoints, LockedReward.BoostDurationSeconds);
+				if (LockedReward.bBoostUsesSecondaryStat)
+				{
+					Boost->ConfigureSecondaryBoost(LockedReward.BoostSecondaryStatType, LockedReward.BoostBonusStatPoints, LockedReward.BoostDurationSeconds);
+				}
+				else
+				{
+					Boost->ConfigureBoost(LockedReward.BoostStatType, LockedReward.BoostBonusStatPoints, LockedReward.BoostDurationSeconds);
+				}
 				Boost->Interact(PC);
-				UE_LOG(LogTemp, Display, TEXT("[LootWheelUI] committed boost stat=%d points=%d duration=%.1f"),
+				UE_LOG(LogTemp, Display, TEXT("[LootWheelUI] committed boost primary=%d secondary=%d usesSecondary=%d points=%d duration=%.1f"),
 					static_cast<int32>(LockedReward.BoostStatType),
+					static_cast<int32>(LockedReward.BoostSecondaryStatType),
+					LockedReward.bBoostUsesSecondaryStat ? 1 : 0,
 					LockedReward.BoostBonusStatPoints,
 					LockedReward.BoostDurationSeconds);
 			}
@@ -313,6 +336,8 @@ void AT66LootWheelInteractable::PresentLockedLootWheelReward()
 		PresentationParams.ItemID = LockedReward.ItemID;
 		PresentationParams.ItemRarity = LockedReward.ItemRarity;
 		PresentationParams.BoostStatType = LockedReward.BoostStatType;
+		PresentationParams.BoostSecondaryStatType = LockedReward.BoostSecondaryStatType;
+		PresentationParams.bBoostUsesSecondaryStat = LockedReward.bBoostUsesSecondaryStat;
 		PresentationParams.BoostBonusStatPoints = LockedReward.BoostBonusStatPoints;
 		PresentationParams.BoostDurationSeconds = LockedReward.BoostDurationSeconds;
 
@@ -493,10 +518,10 @@ void AT66LootWheelInteractable::GrantBoostReward(APlayerController* PC, FRandomS
 		return;
 	}
 
-	const TArray<ET66HeroStatType>& StatPool = T66GetLootWheelBoostStatPool();
-	const ET66HeroStatType StatType = StatPool.IsValidIndex(0)
+	const TArray<FT66LootWheelBoostTarget>& StatPool = T66GetLootWheelBoostStatPool();
+	const FT66LootWheelBoostTarget Target = StatPool.IsValidIndex(0)
 		? StatPool[Rng.RandRange(0, StatPool.Num() - 1)]
-		: ET66HeroStatType::Damage;
+		: FT66LootWheelBoostTarget{};
 
 	const FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, 80.f);
 	FActorSpawnParameters SpawnParams;
@@ -504,7 +529,14 @@ void AT66LootWheelInteractable::GrantBoostReward(APlayerController* PC, FRandomS
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	if (AT66BoostInteractable* Boost = World->SpawnActor<AT66BoostInteractable>(AT66BoostInteractable::StaticClass(), SpawnLocation, FRotator::ZeroRotator, SpawnParams))
 	{
-		Boost->ConfigureBoost(StatType, 8, 10.f);
+		if (Target.bUsesSecondaryStat)
+		{
+			Boost->ConfigureSecondaryBoost(Target.SecondaryStatType, 8, 10.f);
+		}
+		else
+		{
+			Boost->ConfigureBoost(Target.PrimaryStatType, 8, 10.f);
+		}
 		Boost->Interact(PC);
 	}
 }

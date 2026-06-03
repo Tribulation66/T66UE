@@ -1,0 +1,2248 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 295790e6..201ac992 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -3,11 +3,11 @@
+ ## 1. Project Contract
+ 
+ - Treat this file as the root process router for `C:\UE\T66`. It defines global behavior, accepted process classes, and where to find deeper folder-owned instructions.
+-- Before answering or acting on every new user request or question, derive the current working goal in one sentence. Use the native goal/set_goal mechanism when available; otherwise state the working goal in the conversation.
+-- Use the working goal to decide what files/systems to inspect, what changes are in scope, and what verification proves the request is done.
++- Before answering or acting on every new user request or question, derive the current working goal in one sentence. When a native goal function is available (`/goal`, `set_goal`, `create_goal`, or an equivalent tool), call it to create or set that goal before planning, review, implementation, or substantive answers. If no goal function is available, state the working goal in the conversation.
++- Treat the function-created or conversation-stated working goal as the active task contract. Use it to decide what files/systems to inspect, what changes are in scope, and what verification proves the request is done.
+ - Start from the live repo, current folder instructions, current assets, current scripts, and current machine state. Do not answer from stale docs or memory when the live project can be checked.
+ - Default scope excludes Mini/minigame systems. Unless the user explicitly names Mini, minigames, a specific minigame, or a Mini-owned path, do not inspect, change, recommend, capture, validate, or include Mini/minigame code, UI, assets, docs, checklists, or generated outputs. Do not treat unrelated terms such as minimap or mini-stat as Mini scope. If a task appears impossible without Mini/minigame work, ask before including it.
+-- User constraints, planning-only boundaries, and repository instructions override convenience. If the user changes scope, replace the working goal and discard stale assumptions.
++- User constraints, planning-only boundaries, and repository instructions override convenience. If the user changes scope, update, close, or replace the active function-created goal with the available goal controls before proceeding; if the environment cannot update the function goal, state the replacement working goal in the conversation and discard stale assumptions.
+ - For each completed change, report the exact verification performed, or state clearly why verification was skipped.
+ - Do not silently swap an accepted process for a faster or simpler method. If the process matters to the quality target, the process is part of the task.
+ - For solved-category visual, animation, rigging, VFX, import, UI fidelity, generated-media, and comparable production tasks, use the research-first replication rule in Section 2 before implementation.
+@@ -206,6 +206,13 @@ Reported status: FULL/PARTIAL
+ - Prefer narrow path checks against the specific files being inspected. Broad scans can spawn many `git-lfs.exe` workers that hash large `.uasset` or generated asset files, saturating disk I/O and freezing the desktop.
+ - If a broad Git/LFS scan is necessary, warn the user first and explain that it may temporarily hammer disk. Treat high disk usage with many `git-lfs.exe` processes and little or no network activity as local LFS hashing/comparison, not a push or pull.
+ 
++### Report Artifact Routing
++
++- Store agent-authored reports, handoff packets, proof summaries, review packets, cleanup manifests, and temporary report runs under `Reports/`, following `Reports/AGENTS.md`.
++- Use `Audit/` only for user-requested audits or existing audit lifecycle workflows. Do not put ordinary reports there.
++- Report-only ToonStyle artifacts belong under `Reports/ToonStyle`, not under production ToonStyle folders.
++- Raw report/proof run folders are eligible for cleanup after 15 days only when they contain `.report-run.json`, have a durable summary outside the raw folder, and have no active references. Delete whole run folders only.
++
+ ### Script Lifecycle
+ 
+ - Keep reusable master scripts tight and documented. Delete task-specific scripts after the task is accomplished, but first move durable process improvements into the relevant master script, README, or process doc.
+diff --git a/Gameplay/Combat/MASTER_COMBAT.md b/Gameplay/Combat/MASTER_COMBAT.md
+index 3606d4a2..c3482e31 100644
+--- a/Gameplay/Combat/MASTER_COMBAT.md
++++ b/Gameplay/Combat/MASTER_COMBAT.md
+@@ -1,6 +1,6 @@
+ # T66 Master Combat
+ 
+-**Last updated:** 2026-05-26
++**Last updated:** 2026-05-27
+ **Scope:** Single-source handoff for combat runtime flow, targeting, damage routing, damage provenance logging, combat collision roles, debug visibility, hit feedback, spatial headshots, accuracy-driven aiming, and boss body-part combat.
+ **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`, `Gameplay/Combat/CombatVFXAuthoringProcedure.md`
+ **Maintenance rule:** Update this file after every material combat, targeting, damage-model, hitbox, projectile, boss-health, or combat-UI change.
+@@ -23,7 +23,7 @@
+ - Non-shipping builds now default to showing both combat hitboxes and damage volumes through `T66.Combat.DebugView=3`; Shipping builds default to `0`.
+ - Every successful hero HP loss now writes one `[CombatDamage]` line to the Unreal log from the shared `UT66RunStateSubsystem::ApplyDamage(...)` path.
+ - Backrooms chaser contact uses delivery method `BackroomsChaserTouch`. It bypasses Quick Revive, Saint Blessing, evasion, and invulnerability gates, restores the temporarily hidden inventory/weapon first, then kills the hero through the shared damage path.
+-- Last Stand, Survival Charge, and the legacy downed Quick Revive flow are removed from live lethal-save behavior. Reflected compatibility wrappers remain inert for old Blueprint/API callers. The only current quick-revive behavior is the reward-only `Item_BackroomsQuickRevive` inventory item, consumed by normal lethal damage for a one-heart revive.
++- Last Stand, Survival Charge, and the legacy downed Quick Revive flow are removed from live lethal-save behavior. The old Quick Revive charge/downed wrappers and vending actor have been removed; the only current quick-revive behavior is the reward-only `Item_BackroomsQuickRevive` inventory item, consumed by normal lethal damage for a one-heart revive.
+ - Unique unkillable chasers are authored through `Content/Data/UniqueEnemies.csv` and `/Game/Data/DT_UniqueEnemies`; the first row is `BackroomsChaser`, currently visualized with the existing `Slime` character visual.
+ - Hostile projectile damage now requires overlap with the actual hero capsule hurtbox. Hero-owned sensors such as the combat range sphere are logged as `RejectedNonHeroHurtbox` and cannot remove HP.
+ - Enemy, trap, unique/debuff, and boss projectile paths now emit `[ProjectileFired]` and `[ProjectileImpact]` logs with projectile/component locations, overlapped component identity, sweep/impact points, velocity, owner, source, and damage result.
+diff --git a/Gameplay/Movement/MASTER_MOVEMENT.md b/Gameplay/Movement/MASTER_MOVEMENT.md
+index 3d098023..34c3f502 100644
+--- a/Gameplay/Movement/MASTER_MOVEMENT.md
++++ b/Gameplay/Movement/MASTER_MOVEMENT.md
+@@ -1,6 +1,6 @@
+ # T66 Master Movement
+ 
+-**Last updated:** 2026-05-26  
++**Last updated:** 2026-05-27  
+ **Scope:** Single-source handoff for player-hero movement runtime: input, locomotion, jump, one-button forward roll, speed multipliers, velocity-affecting stage effects, and current movement blockers and overrides.  
+ **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Combat/MASTER_COMBAT.md`
+ **Maintenance rule:** Update this file after every material change to hero movement input, locomotion tuning, jump or roll rules, stage-effect movement, movement-state gating, or run-state speed modifiers.
+@@ -10,7 +10,7 @@
+ - `AT66PlayerController` currently owns raw movement input capture and still applies normal walking via `AddMovementInput`.
+ - `UT66HeroMovementComponent` owns movement configuration, cached move intent, jump routing, one-button forward roll routing, and final `MaxWalkSpeed` refreshes, but it is not yet the sole owner of locomotion.
+ - `UCharacterMovementComponent` on `AT66HeroBase` remains the live movement authority for walking, falling, friction, rotation-to-movement, and impulse response.
+-- Base walk speed starts at `1800`, then is seeded from the hero foundational `Speed` stat on the successful non-preview hero-initialize path. Live walking speed is `Speed * 840 UU/s`, with explicit item, stage, secondary, and status movement modifiers layered on top.
++- Base walk speed starts at `1800`, then is seeded from the hero foundational `Speed` stat on the successful non-preview hero-initialize path. Live walking speed is `Speed * 840 UU/s`, with explicit item, stage, and status movement modifiers layered on top.
+ - Jump is currently single-jump only and uses standard forward carry from the live movement state; it is not currently suppressing forward movement on takeoff.
+ - Roll is a one-button forward burst bound to `Roll`; it uses the hero actor's facing direction and does not require a movement-input chord.
+ - Movement state is split:
+@@ -18,8 +18,6 @@
+   - the Hero Speed subsystem only tracks binary move intent for visuals and companion state
+   - hero animation state also consults falling state, actual velocity, replicated velocity, and remote location delta
+ - Several movement-adjacent hooks exist but are not fully live:
+-  - `FT66HeroMovementTuning::DefaultWalkSpeed` is declared but not used by current speed authority
+-  - `UT66RunStateSubsystem::GetMovementSpeedSecondaryMultiplier()` currently returns `1.0f`
+   - `ApplyStatusBurn`, `ApplyStatusChill`, and `ApplyStatusCurse` are currently stubs, and the tick path says those enemy-applied status effects were removed
+ 
+ ## 2. Canonical Files
+@@ -105,7 +103,7 @@
+ 
+ ### 3.5 Walk-speed ownership
+ 
+-- The live base walk-speed variable is `UT66HeroMovementComponent::BaseWalkSpeed`, not `FT66HeroMovementTuning::DefaultWalkSpeed`.
++- The live base walk-speed variable is `UT66HeroMovementComponent::BaseWalkSpeed`.
+ - `BaseWalkSpeed` starts at `1800`.
+ - During `AT66HeroBase::InitializeHero()`, current runtime seeds fallback hero walk speed with:
+   - `HeroMovementComponent->SetHeroBaseSpeedStat(InHeroData.BaseSpeed)`
+@@ -113,7 +111,6 @@
+ - `RefreshWalkSpeedFromRunState()` then computes live `MaxWalkSpeed` as:
+   - `RunState->GetSpeedStat() * 840 UU/s` when RunState exists, otherwise fallback `BaseWalkSpeed`
+   - multiplied by `GetItemMoveSpeedMultiplier()`
+-  - multiplied by `GetMovementSpeedSecondaryMultiplier()`
+   - multiplied by `GetStageMoveSpeedMultiplier()`
+   - multiplied by `GetStatusMoveSpeedMultiplier()`
+ - The final result is clamped to `[200, 10000]`.
+@@ -122,7 +119,6 @@
+ 
+ - Hero foundational `Speed` stat is the base movement-speed authority.
+ - `HeroData.MaxSpeed` is reserved metadata for future cap semantics and is not part of the current live walking-speed stack.
+-- `GetHeroMoveSpeedMultiplier()` still exists for now as compatibility/dead formula code, but it is not consumed by live walking speed.
+ - Item-derived movement speed is represented by `ItemMoveSpeedMultiplier`.
+ - Stage speed boosts are live:
+   - `ApplyStageSpeedBoost()` clamps multiplier to `[0.25, 5.0]`
+@@ -133,8 +129,6 @@
+ - `AT66HeroBase` currently refreshes movement speed whenever RunState fires:
+   - `HeroProgressChanged`
+   - `InventoryChanged`
+-- The declared secondary-stat movement hook is not live yet:
+-  - `GetMovementSpeedSecondaryMultiplier()` currently returns `1.0f`
+ - Status-move slowdown is structurally present through `GetStatusMoveSpeedMultiplier()`, but the current public status application functions are stubs.
+ 
+ ## 4. Jump
+@@ -324,9 +318,6 @@
+ 
+ - Ordinary locomotion authority is split between controller and movement component.
+   - this is the biggest architectural simplification target if movement is refactored
+-- `FT66HeroMovementTuning::DefaultWalkSpeed` is currently dead configuration.
+-  - live speed authority uses the hero `Speed` stat converted through `UT66HeroMovementComponent`
+-- `UT66RunStateSubsystem::GetMovementSpeedSecondaryMultiplier()` advertises item-driven movement-speed secondary behavior but currently returns `1.0f`
+ - Status-effect move-speed plumbing exists structurally, but current public status application functions are stubs
+ - Hero Speed subsystem comments imply movement-speed ownership, but current live behavior is cosmetic or animation-facing only
+ - Roll currently reuses dash-named tuning/stat internals (`DashCooldownSeconds`, `DashStrength`, `GetDashCooldownMultiplier()`).
+diff --git a/Gameplay/Stats/MASTER_STATS.md b/Gameplay/Stats/MASTER_STATS.md
+index 79e5ce7f..ecc19930 100644
+--- a/Gameplay/Stats/MASTER_STATS.md
++++ b/Gameplay/Stats/MASTER_STATS.md
+@@ -170,9 +170,7 @@
+ - `GetHeroAttackSpeedMultiplier() = 1.0 + (AttackSpeed - 1) * 0.012`
+ - `GetHeroScaleMultiplier() = 1.0 + (AttackScale - 1) * 0.008`
+ - `GetHeroAccuracyMultiplier() = 1.0 + (Accuracy - 1) * 0.010`
+-- `GetHeroMoveSpeedMultiplier() = 1.0 + (Speed - 1) * 0.010`
+-  - retained as a compatibility/stat formula, but no longer consumed by live hero walking speed
+-  - live walking speed uses raw `GetSpeedStat() * 840 UU/s`; see `Gameplay/Movement/MASTER_MOVEMENT.md`
++- Live walking speed uses raw `GetSpeedStat() * 840 UU/s`; see `Gameplay/Movement/MASTER_MOVEMENT.md`
+ 
+ ### 5.3 Defensive totals
+ 
+@@ -458,15 +456,13 @@
+ - `UT66HeroMovementComponent` multiplies:
+   - raw primary `Speed` converted at `840 UU/s` per Speed point
+   - `GetItemMoveSpeedMultiplier()`
+-  - `GetMovementSpeedSecondaryMultiplier()`
+   - `GetStageMoveSpeedMultiplier()`
+   - `GetStatusMoveSpeedMultiplier()`
+ - Current caveat:
+   - primary `Speed` is now the base live hero walking-speed stat
+   - `HeroData.MaxSpeed` is reserved metadata for future cap semantics and is not currently part of live walking speed
+   - the item move-speed multiplier path is still at its default `1.0`
+-  - the secondary move-speed path is still hardcoded to `1.0`
+-  - current live movement scaling comes from `Speed` plus explicit item, secondary, stage, and status effects
++  - current live movement scaling comes from `Speed` plus explicit item, stage, and status effects
+ 
+ ### 12.4 Range caveat
+ 
+diff --git a/Gameplay/World/T66_MAP_DESIGN_REFERENCE.md b/Gameplay/World/T66_MAP_DESIGN_REFERENCE.md
+index 0d051549..c44dc4b3 100644
+--- a/Gameplay/World/T66_MAP_DESIGN_REFERENCE.md
++++ b/Gameplay/World/T66_MAP_DESIGN_REFERENCE.md
+@@ -1,6 +1,6 @@
+ # T66 Master Map Design
+ 
+-**Last updated:** 2026-05-26
++**Last updated:** 2026-05-27
+ **Scope:** Single-source handoff for the live tower-only Tribulation map runtime, stage-space flow, traversal structure, minimap behavior, miasma/blood pressure design, and the historical implementation plan that led to the tower layout.  
+ **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/World/T66_LIGHTING_REFERENCE.md`  
+ **Maintenance rule:** Update this file after every material map-layout, terrain-generation, stage-space, minimap, traversal-gate, floor-transition, miasma/blood-pressure, or preset-selection change.
+@@ -8,17 +8,14 @@
+ ## 1. Executive Summary
+ 
+ - The live Tribulation runtime is now `Tower`-only.
+-- Runtime map-layout selection has been removed:
+-  - no `Hilly`
+-  - no `Flat`
+-  - no config or console layout override
++- Runtime map-layout selection has been removed, including the old non-tower layout variants and config/console overrides.
+ - New runs and save-load restore now coerce the main gameplay map to the tower layout.
+ - The active gameplay map family is the tower generator and floor-based traversal path, not the old one-board terrain preset selection flow.
+-- The old `Hilly` / `Flat` discussion below is retained only as historical design context for how the tower split was originally planned.
+-- Current tower pacing still follows the same high-level runtime structure:
+-  - `1` `Start Level`
+-  - `5` gameplay levels
+-  - `1` `Boss Level`
++- Current normal tower pacing uses five floors:
++  - `Floor 1 - Start`: weapon altar only; no enemies and no normal interactable scatter
++  - `Floor 2` through `Floor 4`: gameplay floors with enemies and normal floor interactables
++  - `Floor 5 - Boss`: boss flow only
++- Boss-rush finale is a separate two-floor special case; it skips normal tower enemy and interactable population and must not be treated as the normal map-design floor-count contract.
+ 
+ ### 1.1 Current tower implementation status
+ 
+@@ -34,10 +31,10 @@
+   - randomizes each floor's square descent-hole position from the run seed instead of keeping the holes on a fixed shared pattern
+   - adds full-height internal maze walls on gameplay floors and teaches tower surface placement to treat those wall volumes as blocked space
+   - pushes maze-wall spans all the way into the outer shell so gameplay floors no longer keep an open perimeter ring around the tower walls
+-  - keeps the `Start Level` on the generic dungeon-tower scaffold again instead of the later enclosed-room pass, while still keeping tree props out of Stage 1
++  - keeps `Floor 1 - Start` on the generic dungeon-tower scaffold again instead of the later enclosed-room pass, while still keeping tree props out of Stage 1
+   - restores the original taller Stage 1 tower read by using the roof cap only at the top of the tower instead of adding the later low ceiling caps between floors
+-  - keeps the `Start Level` as a clean start floor with the idol and no guaranteed start-area interactable scatter
+-  - now places the start-floor idol altar on its own dedicated tower start anchor instead of directly on the player spawn point
++  - keeps `Floor 1 - Start` as a clean start floor with the weapon altar and no guaranteed start-area interactable scatter
++  - keeps the stage-entry idol altar out of the current tower bootstrap path so the start floor remains weapon-altar-only
+   - no longer spawns the old idol-area dummy enemy test targets
+   - starts real stage combat/timer pressure once the player reaches the gameplay floors
+   - builds blood-style miasma coverage across gameplay floors only
+@@ -47,17 +44,17 @@
+     - reinforcement enemies now emerge from tower wall surfaces instead of appearing from thin air
+     - reinforcement enemies are now restricted to the outer tower shell walls, not interior maze walls
+   - scopes minimap/full-map display to the current floor with floor-local reveal memory and polygon floor bounds
+-  - removes the old boss beacon pillar-of-light from tower runs
+-  - no longer spawns teleporter-pad interactables in stage population
+-  - allows compact casino/vendor utility opportunities to roll on gameplay floors only; quick revive is archived and should not spawn
++  - removes the old non-tower visual-navigation pillar from tower runs
++  - removes obsolete traversal-pad interactables from stage population
++  - allows compact casino/vendor utility opportunities to roll on gameplay floors only
+   - can spawn a rare Backrooms entrance door on a tower wall when the run does not already own the Backrooms Quick Revive item; the Backrooms maze is spawned with the stage as a hidden pocket space, not loaded later
+   - spawns exactly one saint on one gameplay floor per tower stage
+   - spawns exactly one difficulty totem on every gameplay floor using floor-specific `T66_Tower_DifficultyTotem_##` tags, independent of the randomized saint floor selection
+   - guarantees tower chest/crate rules by floor instead of using the old global stage scatter for those two interactables:
+-    - `Start Level`: no chest, no crate
+-    - gameplay floors: `1-3` chests and `1-3` crates per floor
+-    - `Boss Level`: no chest, no crate
+-  - now rejects cross-floor tower placement traces and retries tower floor placement more aggressively, so gameplay-floor chest/crate/casino/utility placement stays on the intended floor instead of bleeding through floor gaps to another level
++    - `Floor 1 - Start`: no chest, no crate
++    - floors `2-4`: `1-3` chests and `1-3` crates per floor
++    - `Floor 5 - Boss`: no chest, no crate
++  - now rejects cross-floor tower placement traces and retries tower floor placement more aggressively, so gameplay-floor chest/crate/casino/utility placement stays on the intended floor instead of bleeding through floor gaps to another floor
+   - snaps tower NPC/interactable spawns to an explicit requested floor and tags them with explicit tower-floor identity so floor-local placement and safety logic do not rely only on raw actor Z
+   - re-snaps tower chest/crate/totem/wheel placements after rarity/configuration work so floor-local mesh swaps cannot pull those actors back onto the wrong floor
+   - tower boss clears now spawn the next-stage gate at the dedicated tower boss exit location instead of trusting the exact boss death point
+@@ -67,13 +64,13 @@
+   - old tower-only collidable rock/deco scatter on gameplay floors has been disabled; keep floor dressing out of the map/runtime terrain path unless a new generated-prop pass is explicitly approved
+   - uses tower-only dungeon material instances for floor, wall, and roof surfaces instead of the inherited green/brown legacy terrain look
+   - uses dedicated tower descent-hole trigger actors for floor-to-floor progression while keeping the existing boss-kill `StageGate` portal for actual stage-to-stage travel
+-  - replaces the legacy boss-threshold gate on tower with final-hole boss entry, so dropping from `Level 5` into `Boss Level` pauses normal wave spawning and starts boss flow
+-  - keeps the `Boss Level` as the terminal floor with no further descent hole
++  - replaces the legacy boss-threshold gate on tower with final-hole boss entry, so dropping from `Floor 4` into `Floor 5 - Boss` pauses normal wave spawning and starts boss flow
++  - keeps `Floor 5 - Boss` as the terminal floor with no further descent hole
+   - uses tower-specific fall-rescue logic so normal hole descent does not snap players back onto upper floors
+-  - uses tighter floor-classification tolerance so falling between levels is not misread as standing on a gameplay floor
++  - uses tighter floor-classification tolerance so falling between floors is not misread as standing on a gameplay floor
+   - snaps tower bosses after boss initialization so tall boss meshes do not sink into the floor
+   - resets run-state and damage-log state on pause-menu restart so tower restarts follow the same reset path as the run-summary restart
+-  - no longer relies on stale static raw mesh pointers for tower prop decoration, fixing the packaged tower reload/restart crash that could happen while rebuilding the tower after a gameplay-level restart
++  - no longer relies on stale static raw mesh pointers for tower prop decoration, fixing the packaged tower reload/restart crash that could happen while rebuilding the tower after a gameplay map restart
+ - The tower preset is still not complete:
+   - broader tower-specific casino/vendor/NPC pacing beyond saint is still open
+ 
+@@ -107,14 +104,11 @@
+     - `MainBoard`
+     - `BossPath`
+     - `BossArea`
+-- `BuildPresetForDifficulty(...)`
+-  - uses one terrain family for all current presets
+-  - only changes hilliness when `Flat` is selected
+ - `Generate(...)`
+   - expects one contiguous grid footprint
+   - not stacked floors
+   - not cylindrical walls
+-  - not level-to-level descent holes
++  - not floor-to-floor descent holes
+ 
+ ### 2.3 Current stage flow
+ 
+@@ -122,7 +116,7 @@
+   - boots one stage as one play space
+   - current normal-stage sequence is:
+     1. spawn terrain
+-    2. place start area content
++    2. place tower start-floor content
+     3. player crosses start threshold
+     4. stage timer starts
+     5. miasma + enemy director activate
+@@ -130,7 +124,7 @@
+     7. boss awakens
+     8. boss dies
+     9. stage gate spawns
+-    10. stage transition reloads the gameplay level for the next stage
++    10. stage transition reloads the gameplay map for the next stage
+ - Current special flow actors:
+   - `AT66StartGate`
+   - `AT66BossGate`
+@@ -167,9 +161,7 @@
+ 
+ ### 2.6 Current NPC / interactable placement
+ 
+-- `Source/T66/Gameplay/T66GameMode.cpp`
+-  - `SpawnGuaranteedStartAreaInteractables()`
+-    - places fixed classic start-area interactables such as fountain, chest, loot bag, crate, vehicle, and arcade machine
++- `Source/T66/Gameplay/GameMode/T66GameMode_WorldInteractables.cpp`
+   - `SpawnWorldInteractablesForStage()`
+     - scatters world interactables across the stage, excluding reserved start/boss zones
+   - `SpawnSupportVendorAtStartIfNeeded()`
+@@ -186,8 +178,6 @@
+ - Entering the Backrooms pauses stage pressure, timers, enemies, traps, projectiles, miasma, and save-and-return. The hero and Backrooms chaser remain active; inventory and weapon state are temporarily hidden and restored on exit or death resolution.
+ - A successful Backrooms exit grants the reward-only `Item_BackroomsQuickRevive` item. Owning that item makes later Backrooms door rolls ineligible.
+ - Non-shipping QA uses `T66.Backrooms.ForceSpawn 1` plus `-T66BackroomsAutoQA=Exit|Death|Consume`. `-T66BackroomsAutoQAScreenshot=<path>` is requested by `AT66GameMode` only after the entry interaction has made `bBackroomsChallengeActive` true, so the proof image captures the active hidden pocket rather than the pre-entry tower wall.
+-- `SpawnTricksterAndCowardiceGate()`
+-  - places Trickster + cowardice gate before the boss area on non-boss stages
+ - `SpawnIdolAltarForPlayer()` / `SpawnIdolAltarAtLocation(...)`
+   - currently supports:
+     - stage-start altar
+@@ -199,8 +189,7 @@
+   - normal layouts still spawn around player world positions using min/max distance rings and safe-zone exclusion
+   - tower layout now filters by the active floor and spawns from the shell perimeter instead of below-ground rise locations
+ - `Source/T66/Gameplay/T66GameMode.cpp`
+-  - tower now disables the legacy boss beacon light pillar
+-  - teleporter-pad interactables are deprecated from stage population
++  - legacy visual-navigation and traversal-pad runtime paths have been removed
+   - tower terrain safety rescue now uses tower-local traces and a below-bottom-floor threshold so falling through holes is not treated as an out-of-bounds recovery
+ - `AT66BossGate`
+   - currently pauses the enemy director when the player enters the boss threshold
+@@ -211,25 +200,20 @@
+ 
+ - Start flow, combat activation, boss activation, miasma coverage, minimap, and interactable scatter all assume one board for one stage.
+ 
+-### 3.2 `Flat` is not a separate map type
+-
+-- It is just `Hilly` with hilliness zeroed.
+-- That means the tower preset should **not** be modeled as "another tweak value" on the current board generator.
+-
+-### 3.3 Save/load needs new floor-aware state
++### 3.2 Save/load needs new floor-aware state
+ 
+ - Layout variant is already saved.
+ - Floor index, current-floor hazard state, and per-floor reveal state are not.
+ 
+-### 3.4 The current minimap is too stage-global
++### 3.3 The current minimap is too stage-global
+ 
+ - Tower requires the minimap to become a current-floor system.
+ 
+-### 3.5 The current miasma system is too footprint-global
++### 3.4 The current miasma system is too footprint-global
+ 
+ - Tower blood pressure needs to care about the active floor only.
+ 
+-### 3.6 The current casino implementation is already a shell/interactable, not a gambler house NPC
++### 3.5 The current casino implementation is already a shell/interactable, not a gambler house NPC
+ 
+ - Recommended path:
+   - keep the casino as a variant of `AT66CircusInteractable`
+@@ -252,37 +236,33 @@
+ 
+ ### 4.2 Recommended first playable structure
+ 
+-- Initial recommended prototype:
+-  - `Start Level`: start floor only, modeled after the current start area, with the idol altar and no normal enemy/wave gameplay
+-  - `Level 1`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+-  - `Level 2`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+-  - `Level 3`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+-  - `Level 4`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
+-  - `Level 5`: final gameplay floor with monsters, world interactables, and the baby gate placed beside the boss descent hole
+-  - `Boss Level`: boss floor
++- Current normal tower structure:
++  - `Floor 1 - Start`: start floor only, modeled after the current start area, with the weapon altar and no normal enemy/wave gameplay
++  - `Floor 2`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
++  - `Floor 3`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
++  - `Floor 4`: gameplay floor with monsters, world interactables, and side-wall enemy spawning
++  - `Floor 5 - Boss`: boss floor
++- Boss-rush finale is an explicit two-floor exception and skips the normal enemy/interactable population rules.
+ - Reason for this recommendation:
+   - `7:00` total stage time is already established in runtime/UI/save logic
+   - `3:00` boss budget leaves `4:00` for non-boss gameplay
+   - separating the top floor as a start-only space preserves the current game feel
+-  - `5` gameplay floors gives the descent enough weight to feel like a full difficulty ladder instead of just a short vertical corridor
++  - `5` total floors keeps the descent readable without the old seven-floor confusion
+ 
+ ### 4.3 Traversal rules
+ 
+-- `Start Level` should own:
+-  - the stage-start idol altar
++- `Floor 1 - Start` should own:
++  - the stage-start weapon altar
+   - current start-area feel and breathing room
+   - no standard monster spawning
+   - no normal world-interactable scatter pass
+   - the first descent hole into real gameplay
+-- Each gameplay floor (`Level 1` through `Level 5`) should own:
++- Each gameplay floor (`Floor 2` through `Floor 4`) should own:
+   - one local exploration space
+-  - one altar
+   - one descent hole
+   - side-wall enemy spawn anchors
+   - optional small casino / vendor opportunities
+-- `Level 5` should also own:
+-  - baby gate directly beside the boss-hole descent
+-- `Boss Level` should own:
++- `Floor 5 - Boss` should own:
+   - boss entry point
+   - boss combat space
+   - no further descent hole
+@@ -316,14 +296,9 @@
+ - Casino:
+   - use a smaller circus/casino version
+   - chance to spawn on each gameplay floor
+-- Quick revive:
+-  - keep the start-area version on `Start Level`
+-  - optional chance on gameplay floors after that
+ - Saint:
+   - exactly once per stage
+   - only on one gameplay floor
+-- Trickster:
+-  - removed from tower preset
+ - Baby gate:
+   - placed beside the descent hole before the boss floor
+ 
+@@ -344,14 +319,11 @@
+ 
+ ### 5.1 Keep preset selection shared, but split geometry implementation
+ 
+-- Keep one shared preset enum:
+-  - `Hilly`
+-  - `Flat`
++- Keep one shared live preset enum value:
+   - `Tower`
+ - Do **not** force tower geometry into a long chain of `if (LayoutVariant == Tower)` inside `T66MainMapTerrain::Generate(...)`.
+ - Recommended implementation:
+-  - keep current `T66MainMapTerrain` for `Hilly` and `Flat`
+-  - create a separate tower runtime generator for `Tower`
++  - keep tower geometry in the tower runtime generator
+ 
+ ### 5.2 Use one runtime world, stacked vertically
+ 
+@@ -361,7 +333,7 @@
+   - descending through a hole moves the player to the next floor in the same map
+ - Reason:
+   - preserves current stage model
+-  - avoids per-floor level streaming as the first implementation burden
++  - avoids per-floor streaming as the first implementation burden
+   - keeps one stage timer and one stage save context
+ 
+ ### 5.3 Add floor-aware runtime state
+@@ -476,8 +448,7 @@
+ 
+ ### Phase 1. Lock the preset and floor model
+ 
+-- Add `Tower` as a third layout preset.
+-- Keep `Hilly` and `Flat` unchanged.
++- Keep the live layout locked to `Tower`.
+ - Lock initial stage shape:
+   - `1` start floor
+   - `4` gameplay floors
+@@ -491,20 +462,19 @@
+ - Add descent holes.
+ - Add active floor tracking.
+ - Let the player move from floor to floor.
+-- Keep `Start Level` as a start-only floor.
++- Keep `Floor 1 - Start` as a start-only, weapon-altar-only floor.
+ 
+ ### Phase 3. Move combat spawning to tower rules
+ 
+ - Add side-wall spawn anchors.
+ - Make enemy spawns floor-aware.
+ - Restrict spawns to the active floor.
+-- Keep normal monster spawning disabled on `Start Level`.
++- Keep normal monster spawning disabled on `Floor 1 - Start`.
+ 
+ ### Phase 4. Move stage systems to tower rules
+ 
+ - Replace boss-threshold assumptions with boss-floor entry behavior.
+ - Move baby gate to final traversal floor.
+-- Remove Trickster from tower preset.
+ 
+ ### Phase 5. Move hazard pressure to tower rules
+ 
+@@ -533,7 +503,7 @@
+ - Start floor count:
+   - `1`
+ - Gameplay floor count:
+-  - `4`
++  - `3` (`Floor 2` through `Floor 4`)
+ - Boss floor count:
+   - `1`
+ - Circus/casino:
+@@ -541,13 +511,8 @@
+   - chance per gameplay floor
+ - Saint:
+   - exactly once per stage
+-- Quick revive:
+-  - guaranteed on the start floor
+-  - optional chance on later gameplay floors
+-- Trickster:
+-  - disabled for tower preset
+ - Baby gate:
+-  - only on the last gameplay floor, beside boss descent hole
++  - not part of the current normal five-floor tower contract
+ - Art source:
+   - reuse current terrain textures/materials
+   - do not reuse old tree, dirt, or rock clutter props
+@@ -556,10 +521,9 @@
+ 
+ 1. Do we want the preset name to stay plain `Tower`, or should it be something more thematic like `Descent` while keeping the same design?
+ 2. Does altar interaction immediately arm blood pressure, or should blood begin after a short grace delay on that floor?
+-3. Should the timer remain frozen on `Start Level` and only begin once the player descends into `Level 1`, matching the current start-area philosophy?
+-4. Should the casino be allowed on `Level 5`, or should that floor be reserved for baby-gate / boss-entry setup?
+-5. Quick revive is archived; no tower floor should spawn or grant it.
+-6. Do we want one altar on every gameplay floor, or only on selected floors after pacing tests?
++3. Should the timer remain frozen on `Floor 1 - Start` and only begin once the player descends into `Floor 2`, matching the current start-area philosophy?
++4. Should the casino be allowed on `Floor 4`, or should that floor stay focused on pre-boss setup?
++5. Do we want one altar on every gameplay floor, or only on selected floors after pacing tests?
+ 
+ ## 10. Bottom Line
+ 
+diff --git a/Scripts/ImportInteractableUISprites.py b/Scripts/ImportInteractableUISprites.py
+deleted file mode 100644
+index dbb017d8..00000000
+--- a/Scripts/ImportInteractableUISprites.py
++++ /dev/null
+@@ -1,84 +0,0 @@
+-"""
+-Import interactable UI sprites from SourceAssets/Import into /Game/UI/Sprites/Interactables.
+-
+-Run with:
+-  UnrealEditor-Cmd.exe T66.uproject -run=pythonscript -script="C:/UE/T66/Scripts/ImportInteractableUISprites.py"
+-"""
+-
+-import os
+-import unreal
+-
+-
+-SPRITES = [
+-    ("QuickReviveIcon.png", "/Game/UI/Sprites/Interactables", "QuickReviveIcon"),
+-]
+-
+-
+-def ensure_directory(path):
+-    if not unreal.EditorAssetLibrary.does_directory_exist(path):
+-        unreal.EditorAssetLibrary.make_directory(path)
+-
+-
+-def import_texture(source_path, dest_dir, dest_name):
+-    ensure_directory(dest_dir)
+-
+-    task = unreal.AssetImportTask()
+-    task.automated = True
+-    task.save = False
+-    task.replace_existing = True
+-    task.replace_existing_settings = True
+-    task.filename = source_path
+-    task.destination_path = dest_dir
+-    task.destination_name = dest_name
+-
+-    unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+-
+-    asset_path = f"{dest_dir}/{dest_name}"
+-    asset = unreal.EditorAssetLibrary.load_asset(asset_path)
+-    if not asset or not isinstance(asset, unreal.Texture2D):
+-        raise RuntimeError(f"Texture import failed: {asset_path}")
+-
+-    try:
+-        asset.set_editor_property("compression_settings", unreal.TextureCompressionSettings.TC_EDITOR_ICON)
+-    except Exception:
+-        pass
+-    try:
+-        asset.set_editor_property("lod_group", unreal.TextureGroup.TEXTUREGROUP_UI)
+-    except Exception:
+-        pass
+-    try:
+-        asset.set_editor_property("mip_gen_settings", unreal.TextureMipGenSettings.TMGS_FROM_TEXTURE_GROUP)
+-    except Exception:
+-        pass
+-    try:
+-        asset.set_editor_property("filter", unreal.TextureFilter.TF_TRILINEAR)
+-    except Exception:
+-        pass
+-    try:
+-        asset.set_editor_property("never_stream", True)
+-    except Exception:
+-        pass
+-
+-    asset.set_editor_property("srgb", True)
+-    unreal.EditorAssetLibrary.save_asset(asset_path)
+-
+-
+-def main():
+-    project_dir = unreal.SystemLibrary.get_project_directory().replace("\\", "/").rstrip("/")
+-    source_dir = os.path.join(project_dir, "SourceAssets", "Import")
+-    if not os.path.isdir(source_dir):
+-        raise RuntimeError(f"Source import folder not found: {source_dir}")
+-
+-    imported_count = 0
+-    for source_name, dest_dir, dest_name in SPRITES:
+-        source_path = os.path.join(source_dir, source_name)
+-        if not os.path.exists(source_path):
+-            raise RuntimeError(f"Source sprite not found: {source_path}")
+-        import_texture(source_path, dest_dir, dest_name)
+-        imported_count += 1
+-
+-    unreal.log(f"[ImportInteractableUISprites] Imported {imported_count} sprite(s).")
+-
+-
+-if __name__ == "__main__":
+-    main()
+diff --git a/Source/T66/Core/RunState/T66RunStateSubsystem_Combat.cpp b/Source/T66/Core/RunState/T66RunStateSubsystem_Combat.cpp
+index 71257af4..95ddce14 100644
+--- a/Source/T66/Core/RunState/T66RunStateSubsystem_Combat.cpp
++++ b/Source/T66/Core/RunState/T66RunStateSubsystem_Combat.cpp
+@@ -653,17 +653,6 @@ void UT66RunStateSubsystem::SetBackroomsGameplayPaused(const bool bPaused)
+ }
+ 
+ 
+-bool UT66RunStateSubsystem::GrantQuickReviveCharge()
+-{
+-	return false;
+-}
+-
+-
+-void UT66RunStateSubsystem::ClearQuickReviveCharge()
+-{
+-}
+-
+-
+ bool UT66RunStateSubsystem::IsBossDamageSource(const AActor* Attacker)
+ {
+ 	return Cast<AT66BossBase>(Attacker) != nullptr;
+diff --git a/Source/T66/Core/RunState/T66RunStateSubsystem_Stats.cpp b/Source/T66/Core/RunState/T66RunStateSubsystem_Stats.cpp
+index 9f9c1bd2..1b19e236 100644
+--- a/Source/T66/Core/RunState/T66RunStateSubsystem_Stats.cpp
++++ b/Source/T66/Core/RunState/T66RunStateSubsystem_Stats.cpp
+@@ -630,12 +630,6 @@ float UT66RunStateSubsystem::GetHpRegenPerSecond() const
+ }
+ 
+ 
+-float UT66RunStateSubsystem::GetMovementSpeedSecondaryMultiplier() const
+-{
+-	return 1.f;
+-}
+-
+-
+ float UT66RunStateSubsystem::GetLootCrateRewardMultiplier() const
+ {
+ 	return GetSecondaryStatValue(ET66SecondaryStatType::LootCrate);
+@@ -720,15 +714,6 @@ float UT66RunStateSubsystem::GetLongRangeDamageMultiplier() const
+ }
+ 
+ 
+-float UT66RunStateSubsystem::GetHeroMoveSpeedMultiplier() const
+-{
+-	// Mapping is driven by the foundational Speed stat (not shown in the HUD stat panel).
+-	// Keep it modest because Speed gains are +1 per level.
+-	const float S = TenthsToFloatStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Speed));
+-	return 1.f + FMath::Max(0.f, S - 1.f) * 0.01f;
+-}
+-
+-
+ float UT66RunStateSubsystem::GetHeroDamageMultiplier() const
+ {
+ 	const float D = TenthsToFloatStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Damage));
+diff --git a/Source/T66/Core/T66RunStateSubsystem.h b/Source/T66/Core/T66RunStateSubsystem.h
+index 384411ae..e7e3cc66 100644
+--- a/Source/T66/Core/T66RunStateSubsystem.h
++++ b/Source/T66/Core/T66RunStateSubsystem.h
+@@ -873,10 +873,6 @@ public:
+ 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+ 	float GetHpRegenPerSecond() const;
+ 
+-	/** Movement speed secondary multiplier (1.0 = no bonus; items can add). */
+-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+-	float GetMovementSpeedSecondaryMultiplier() const;
+-
+ 	/** Crate reward rarity multiplier (1.0 = no bonus; higher shifts crate rewards upward). */
+ 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
+ 	float GetLootCrateRewardMultiplier() const;
+@@ -1108,9 +1104,6 @@ public:
+ 	void ResetTutorialInputFlags();
+ 
+ 	/** Derived multipliers from hero stats (separate from item multipliers). */
+-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
+-	float GetHeroMoveSpeedMultiplier() const;
+-
+ 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Derived")
+ 	float GetHeroDamageMultiplier() const;
+ 
+@@ -1291,25 +1284,6 @@ public:
+ 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Survival", meta=(DeprecatedFunction, DeprecationMessage="Last Stand was removed. This compatibility wrapper always returns 1."))
+ 	float GetLastStandAttackSpeedMultiplier() const { return 1.f; }
+ 
+-	// ============================================
+-	// Quick Revive
+-	// ============================================
+-
+-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Quick Revive is now the Backrooms Quick Revive inventory item. Use HasBackroomsQuickReviveItem()."))
+-	bool HasQuickReviveCharge() const { return HasBackroomsQuickReviveItem(); }
+-
+-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Downed Quick Revive was removed. This compatibility wrapper always returns false."))
+-	bool IsInQuickReviveDownedState() const { return false; }
+-
+-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Downed Quick Revive was removed. This compatibility wrapper always returns 0."))
+-	float GetQuickReviveDownedSecondsRemaining() const { return 0.f; }
+-
+-	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Quick Revive charges were removed. This compatibility wrapper is inert and returns false."))
+-	bool GrantQuickReviveCharge();
+-
+-	UFUNCTION(BlueprintCallable, Category = "RunState|Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Quick Revive charges were removed. This compatibility wrapper is inert."))
+-	void ClearQuickReviveCharge();
+-
+ 	// ============================================
+ 	// Stage effects (ground tiles)
+ 	// ============================================
+diff --git a/Source/T66/Core/pending_issues_Core.md b/Source/T66/Core/pending_issues_Core.md
+index 9188288a..bc61e5e3 100644
+--- a/Source/T66/Core/pending_issues_Core.md
++++ b/Source/T66/Core/pending_issues_Core.md
+@@ -1,12 +1,5 @@
+ # Pending Issues - Core
+ 
+-## Retire Unused Hero Move Speed Multiplier Formula
+-
+-- Severity tag: [Minor]
+-- What's wrong: `UT66RunStateSubsystem::GetHeroMoveSpeedMultiplier()` remains declared and defined as a legacy formula, but live hero walking speed now reads the raw `Speed` stat through `UT66HeroMovementComponent` instead of consuming this multiplier.
+-- Why it's out of scope now: The current pass changes movement authority to the user-approved Speed-stat model and updates docs; broad stat API deletion could affect UI/reference code and should be handled as a separate cleanup.
+-- What fixing it would entail: Remove or repurpose `GetHeroMoveSpeedMultiplier()`, audit any Blueprint or external references, and update stats documentation once the API is no longer needed for compatibility.
+-
+ ## Legacy Lab Unlock IDs In Existing Save Games
+ 
+ - Severity tag: [Minor]
+diff --git a/Source/T66/Gameplay/GameMode/T66GameMode_Bootstrap.cpp b/Source/T66/Gameplay/GameMode/T66GameMode_Bootstrap.cpp
+index d4b4388b..467a9ecf 100644
+--- a/Source/T66/Gameplay/GameMode/T66GameMode_Bootstrap.cpp
++++ b/Source/T66/Gameplay/GameMode/T66GameMode_Bootstrap.cpp
+@@ -462,7 +462,6 @@ SpawnWeaponAltarForPlayer(PC);
+ if (!IsUsingTowerMainMapLayout())
+ {
+ SpawnCasinoInteractableIfNeeded();
+-SpawnGuaranteedStartAreaInteractables();
+ }
+ else
+ {
+@@ -471,8 +470,6 @@ SpawnWorldInteractablesForStage();
+ 
+ if (!bUsingMainMapTerrain)
+ {
+-SpawnTricksterAndCowardiceGate();
+-SpawnBossBeaconIfNeeded();
+ SpawnWorldInteractablesForStage();
+ SpawnTutorialIfNeeded();
+ }
+diff --git a/Source/T66/Gameplay/GameMode/T66GameMode_BossFlow.cpp b/Source/T66/Gameplay/GameMode/T66GameMode_BossFlow.cpp
+index 61e8d20c..faf4860b 100644
+--- a/Source/T66/Gameplay/GameMode/T66GameMode_BossFlow.cpp
++++ b/Source/T66/Gameplay/GameMode/T66GameMode_BossFlow.cpp
+@@ -305,7 +305,6 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
+ 	if (Boss && StageBoss.Get() == Boss)
+ 	{
+ 		StageBoss = nullptr;
+-		DestroyBossBeacon();
+ 	}
+ 	UGameInstance* GI = World->GetGameInstance();
+ 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+@@ -527,10 +526,6 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
+ 		{
+ 			FallbackSpawnLoc = MainMapBossAreaCenterSurfaceLocation;
+ 		}
+-		else if (!MainMapBossBeaconSurfaceLocation.IsNearlyZero())
+-		{
+-			FallbackSpawnLoc = MainMapBossBeaconSurfaceLocation;
+-		}
+ 	}
+ 
+ 	FVector PlayerLocation = FVector::ZeroVector;
+@@ -554,7 +549,7 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
+ 	UE_LOG(
+ 		LogT66GameMode,
+ 		Warning,
+-		TEXT("SpawnStageGateAtLocation: request=(%.0f, %.0f, %.0f) requestFloor=%d anchorSource=%s resolvedAnchor=(%.0f, %.0f, %.0f) anchorFloor=%d player=(%.0f, %.0f, %.0f) playerFloor=%d bossSpawnSurface=(%.0f, %.0f, %.0f) bossAreaCenter=(%.0f, %.0f, %.0f) bossBeacon=(%.0f, %.0f, %.0f)"),
++		TEXT("SpawnStageGateAtLocation: request=(%.0f, %.0f, %.0f) requestFloor=%d anchorSource=%s resolvedAnchor=(%.0f, %.0f, %.0f) anchorFloor=%d player=(%.0f, %.0f, %.0f) playerFloor=%d bossSpawnSurface=(%.0f, %.0f, %.0f) bossAreaCenter=(%.0f, %.0f, %.0f)"),
+ 		RequestedLocation.X,
+ 		RequestedLocation.Y,
+ 		RequestedLocation.Z,
+@@ -573,10 +568,7 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
+ 		MainMapBossSpawnSurfaceLocation.Z,
+ 		MainMapBossAreaCenterSurfaceLocation.X,
+ 		MainMapBossAreaCenterSurfaceLocation.Y,
+-		MainMapBossAreaCenterSurfaceLocation.Z,
+-		MainMapBossBeaconSurfaceLocation.X,
+-		MainMapBossBeaconSurfaceLocation.Y,
+-		MainMapBossBeaconSurfaceLocation.Z);
++		MainMapBossAreaCenterSurfaceLocation.Z);
+ 
+ 	// Prefer the exact boss-death location. Only fall back to the boss-room anchor when that
+ 	// position cannot be grounded (for example if the boss dies above a hole or invalid surface).
+@@ -613,8 +605,7 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
+ 			{
+ 				SpawnAnchorSource =
+ 					FallbackSpawnLoc.Equals(MainMapBossSpawnSurfaceLocation, 1.0f) ? TEXT("BossSpawnSurface") :
+-					(FallbackSpawnLoc.Equals(MainMapBossAreaCenterSurfaceLocation, 1.0f) ? TEXT("BossAreaCenterSurface") :
+-						(FallbackSpawnLoc.Equals(MainMapBossBeaconSurfaceLocation, 1.0f) ? TEXT("BossBeaconSurface") : TEXT("TowerFallback")));
++					(FallbackSpawnLoc.Equals(MainMapBossAreaCenterSurfaceLocation, 1.0f) ? TEXT("BossAreaCenterSurface") : TEXT("TowerFallback"));
+ 			}
+ 		}
+ 	}
+@@ -822,7 +813,6 @@ void AT66GameMode::SpawnBossForCurrentStage()
+ 			TrySnapActorToTerrainAtLocation(Boss, StageBossSpawnLocation);
+ 		}
+ 		StageBoss = Boss;
+-		SpawnBossBeaconIfNeeded();
+ 		const int32 BossScoreBudget = PlayerExperience
+ 			? PlayerExperience->ResolveBossScore(T66GI->SelectedDifficulty, Boss->GetPointValue(), RunState->GetDifficultyScalar())
+ 			: FMath::Max(0, FMath::RoundToInt(static_cast<float>(Boss->GetPointValue()) * RunState->GetDifficultyScalar()));
+@@ -877,7 +867,6 @@ void AT66GameMode::SpawnBossForCurrentStage()
+ 							TrySnapActorToTerrainAtLocation(NewBoss, Loc);
+ 						}
+ 						StageBoss = NewBoss;
+-						SpawnBossBeaconIfNeeded();
+ 					}
+ 				}));
+ 			if (Handle.IsValid())
+@@ -964,278 +953,3 @@ void AT66GameMode::SpawnBossForCurrentStage()
+ 		}
+ 	}
+ }
+-
+-bool AT66GameMode::TryComputeBossBeaconBase(FVector& OutBeaconBase) const
+-{
+-	if (IsLabRun() || IsUsingTowerMainMapLayout() || !StageBoss.IsValid())
+-	{
+-		return false;
+-	}
+-
+-	UWorld* World = GetWorld();
+-	if (!World)
+-	{
+-		return false;
+-	}
+-
+-	if (T66UsesMainMapTerrainStage(World))
+-	{
+-		if (!MainMapBossBeaconSurfaceLocation.IsNearlyZero())
+-		{
+-			OutBeaconBase = MainMapBossBeaconSurfaceLocation;
+-			return true;
+-		}
+-
+-		if (!MainMapBossAreaCenterSurfaceLocation.IsNearlyZero())
+-		{
+-			OutBeaconBase = MainMapBossAreaCenterSurfaceLocation;
+-			return true;
+-		}
+-	}
+-
+-	FVector DesiredBase = StageBoss->GetActorLocation() + FVector(3400.f, 0.f, 0.f);
+-	DesiredBase.X = FMath::Clamp(DesiredBase.X, T66GameplayLayout::BossAreaWestX + 1000.f, T66GameplayLayout::BossPartitionEastX - 900.f);
+-	DesiredBase.Y = FMath::Clamp(DesiredBase.Y, -T66GameplayLayout::AreaHalfHeightY + 600.f, T66GameplayLayout::AreaHalfHeightY - 600.f);
+-	const float MinNormalZ = 0.88f;
+-
+-	auto TryTraceBossBeaconSurface = [&](float X, float Y, FVector& OutLoc) -> bool
+-	{
+-		FHitResult Hit;
+-		const FVector TraceStart(X, Y, 5000.f);
+-		const FVector TraceEnd(X, Y, -12000.f);
+-		if (!World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic))
+-		{
+-			return false;
+-		}
+-
+-		if (!T66GameplayLayout::IsValidGameplayGroundNormal(Hit.ImpactNormal, MinNormalZ))
+-		{
+-			return false;
+-		}
+-
+-		OutLoc = Hit.ImpactPoint;
+-		return true;
+-	};
+-
+-	FVector FallbackLoc = DesiredBase;
+-	{
+-		FHitResult FallbackHit;
+-		const FVector TraceStart = DesiredBase + FVector(0.f, 0.f, 5000.f);
+-		const FVector TraceEnd = DesiredBase - FVector(0.f, 0.f, 12000.f);
+-		if (World->LineTraceSingleByChannel(FallbackHit, TraceStart, TraceEnd, ECC_WorldStatic))
+-		{
+-			FallbackLoc = FallbackHit.ImpactPoint;
+-		}
+-	}
+-
+-	FVector BeaconBase = DesiredBase;
+-	BeaconBase.Z = 0.f;
+-	bool bFoundFlatSurface = false;
+-	for (float Radius = 0.f; Radius <= 1600.f && !bFoundFlatSurface; Radius += 220.f)
+-	{
+-		const int32 AngleSteps = (Radius <= KINDA_SMALL_NUMBER) ? 1 : 14;
+-		for (int32 AngleIndex = 0; AngleIndex < AngleSteps; ++AngleIndex)
+-		{
+-			const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(AngleIndex) / static_cast<float>(AngleSteps));
+-			const float X = DesiredBase.X + (Radius * FMath::Cos(Angle));
+-			const float Y = DesiredBase.Y + (Radius * FMath::Sin(Angle));
+-			if (TryTraceBossBeaconSurface(X, Y, BeaconBase))
+-			{
+-				bFoundFlatSurface = true;
+-				break;
+-			}
+-		}
+-	}
+-
+-	OutBeaconBase = bFoundFlatSurface ? BeaconBase : FallbackLoc;
+-	return true;
+-}
+-
+-void AT66GameMode::DestroyBossBeacon()
+-{
+-	if (AActor* BeaconActor = BossBeaconActor.Get())
+-	{
+-		BeaconActor->Destroy();
+-	}
+-	BossBeaconActor = nullptr;
+-}
+-
+-void AT66GameMode::UpdateBossBeaconTransform(bool bForceSpawnIfMissing)
+-{
+-	if (IsLabRun() || IsUsingTowerMainMapLayout() || !StageBoss.IsValid())
+-	{
+-		DestroyBossBeacon();
+-		return;
+-	}
+-
+-	FVector BeaconBase = FVector::ZeroVector;
+-	if (!TryComputeBossBeaconBase(BeaconBase))
+-	{
+-		return;
+-	}
+-
+-	if (AActor* BeaconActor = BossBeaconActor.Get())
+-	{
+-		BeaconActor->SetActorLocation(BeaconBase, false, nullptr, ETeleportType::TeleportPhysics);
+-		return;
+-	}
+-
+-	if (bForceSpawnIfMissing)
+-	{
+-		SpawnBossBeaconIfNeeded();
+-	}
+-}
+-
+-void AT66GameMode::SpawnBossBeaconIfNeeded()
+-{
+-	if (IsLabRun() || IsUsingTowerMainMapLayout())
+-	{
+-		DestroyBossBeacon();
+-		return;
+-	}
+-
+-	UWorld* World = GetWorld();
+-	if (!World) return;
+-
+-	static const FName BossBeaconTag(TEXT("T66_Boss_Beacon"));
+-
+-	TArray<AActor*> ExistingBeacons;
+-	// Stage-transition cleanup only. BossBeaconActor is cached after spawn, but
+-	// this pass removes legacy duplicate beacons from older saved maps.
+-	for (TActorIterator<AActor> It(World); It; ++It)
+-	{
+-		if (It->Tags.Contains(BossBeaconTag))
+-		{
+-			ExistingBeacons.Add(*It);
+-		}
+-	}
+-	for (AActor* Existing : ExistingBeacons)
+-	{
+-		if (Existing)
+-		{
+-			Existing->Destroy();
+-		}
+-	}
+-	BossBeaconActor = nullptr;
+-
+-	// The beacon is meant to sit behind the live stage boss.
+-	// If the boss has not spawned yet, do not place a fallback beam in the arena.
+-	FVector BeaconBase = FVector::ZeroVector;
+-	if (!TryComputeBossBeaconBase(BeaconBase))
+-	{
+-		return;
+-	}
+-
+-	constexpr float OuterHeight = 34000.f;
+-	constexpr float InnerHeight = 32000.f;
+-	constexpr float OuterRadius = 250.f;
+-	constexpr float InnerRadius = 90.f;
+-
+-	FActorSpawnParameters SpawnParams;
+-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+-
+-	AActor* BeaconActor = World->SpawnActor<AActor>(AActor::StaticClass(), BeaconBase, FRotator::ZeroRotator, SpawnParams);
+-	if (!BeaconActor)
+-	{
+-		return;
+-	}
+-
+-	BeaconActor->Tags.Add(BossBeaconTag);
+-
+-	USceneComponent* Root = NewObject<USceneComponent>(BeaconActor, TEXT("BossBeaconRoot"));
+-	if (!Root)
+-	{
+-		BeaconActor->Destroy();
+-		return;
+-	}
+-
+-	BeaconActor->SetRootComponent(Root);
+-	Root->SetMobility(EComponentMobility::Movable);
+-	Root->RegisterComponent();
+-
+-	UStaticMesh* CylinderMesh = FT66VisualUtil::GetBasicShapeCylinder();
+-	UMaterialInterface* EnvUnlitBase = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Unlit.M_Environment_Unlit"));
+-	UTexture* WhiteTexture = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
+-
+-	auto CreateBeamMaterial = [&](const FLinearColor& Tint, float Brightness) -> UMaterialInterface*
+-	{
+-		if (!EnvUnlitBase)
+-		{
+-			return nullptr;
+-		}
+-
+-		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(EnvUnlitBase, BeaconActor);
+-		if (!MID)
+-		{
+-			return nullptr;
+-		}
+-
+-		if (WhiteTexture)
+-		{
+-			MID->SetTextureParameterValue(TEXT("DiffuseColorMap"), WhiteTexture);
+-			MID->SetTextureParameterValue(TEXT("BaseColorTexture"), WhiteTexture);
+-		}
+-		MID->SetVectorParameterValue(TEXT("Tint"), Tint);
+-		MID->SetVectorParameterValue(TEXT("BaseColor"), Tint);
+-		MID->SetScalarParameterValue(TEXT("Brightness"), Brightness);
+-		return MID;
+-	};
+-
+-	auto ConfigureBeamMesh = [&](const TCHAR* ComponentName, float Radius, float Height, const FLinearColor& Tint, float Brightness)
+-	{
+-		if (!CylinderMesh)
+-		{
+-			return;
+-		}
+-
+-		UStaticMeshComponent* BeamMesh = NewObject<UStaticMeshComponent>(BeaconActor, ComponentName);
+-		if (!BeamMesh)
+-		{
+-			return;
+-		}
+-
+-		BeamMesh->SetStaticMesh(CylinderMesh);
+-		BeamMesh->SetRelativeLocation(FVector(0.f, 0.f, Height * 0.5f));
+-		BeamMesh->SetRelativeScale3D(FVector(Radius / 50.f, Radius / 50.f, Height / 100.f));
+-		BeamMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+-		BeamMesh->SetCastShadow(false);
+-		BeamMesh->SetReceivesDecals(false);
+-		BeamMesh->SetCanEverAffectNavigation(false);
+-		BeamMesh->SetMobility(EComponentMobility::Movable);
+-		BeamMesh->SetupAttachment(Root);
+-		if (UMaterialInterface* BeamMaterial = CreateBeamMaterial(Tint, Brightness))
+-		{
+-			BeamMesh->SetMaterial(0, BeamMaterial);
+-		}
+-		BeamMesh->RegisterComponent();
+-	};
+-
+-	ConfigureBeamMesh(TEXT("BossBeaconOuter"), OuterRadius, OuterHeight, FLinearColor(0.70f, 0.90f, 1.00f, 1.f), 9.5f);
+-	ConfigureBeamMesh(TEXT("BossBeaconInner"), InnerRadius, InnerHeight, FLinearColor(1.00f, 0.93f, 0.60f, 1.f), 26.0f);
+-
+-	auto ConfigureGlowLight = [&](const TCHAR* ComponentName, float HeightAlpha, float Intensity, float AttenuationRadius)
+-	{
+-		UPointLightComponent* Glow = NewObject<UPointLightComponent>(BeaconActor, ComponentName);
+-		if (!Glow)
+-		{
+-			return;
+-		}
+-
+-		Glow->SetMobility(EComponentMobility::Movable);
+-		Glow->SetupAttachment(Root);
+-		Glow->SetRelativeLocation(FVector(0.f, 0.f, OuterHeight * HeightAlpha));
+-		Glow->SetIntensity(Intensity);
+-		Glow->SetLightColor(FLinearColor(1.00f, 0.92f, 0.72f));
+-		Glow->SetAttenuationRadius(AttenuationRadius);
+-		Glow->SetCastShadows(false);
+-		Glow->bUseInverseSquaredFalloff = false;
+-		Glow->LightFalloffExponent = 3.0f;
+-		Glow->RegisterComponent();
+-	};
+-
+-	ConfigureGlowLight(TEXT("BossBeaconMidGlow"), 0.42f, 85000.f, 9000.f);
+-	ConfigureGlowLight(TEXT("BossBeaconTopGlow"), 0.86f, 125000.f, 14000.f);
+-
+-	BossBeaconActor = BeaconActor;
+-	SpawnedSetupActors.Add(BeaconActor);
+-}
+diff --git a/Source/T66/Gameplay/GameMode/T66GameMode_MainMap.cpp b/Source/T66/Gameplay/GameMode/T66GameMode_MainMap.cpp
+index 6a408ac9..299dc7a4 100644
+--- a/Source/T66/Gameplay/GameMode/T66GameMode_MainMap.cpp
++++ b/Source/T66/Gameplay/GameMode/T66GameMode_MainMap.cpp
+@@ -818,7 +818,6 @@ void AT66GameMode::SpawnMainMapTerrain()
+ 	MainMapStartAreaCenterSurfaceLocation = FVector::ZeroVector;
+ 	MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
+ 	MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
+-	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
+ 	MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
+ 	MainMapRescueAnchorLocations.Reset();
+ 	for (AT66TowerDescentHole* Hole : TowerDescentHoles)
+@@ -863,7 +862,6 @@ void AT66GameMode::SpawnMainMapTerrain()
+ 		MainMapStartAreaCenterSurfaceLocation = CachedTowerMainMapLayout.StartAreaCenterSurfaceLocation;
+ 		MainMapBossAnchorSurfaceLocation = CachedTowerMainMapLayout.BossAnchorSurfaceLocation;
+ 		MainMapBossSpawnSurfaceLocation = CachedTowerMainMapLayout.BossSpawnSurfaceLocation;
+-		MainMapBossBeaconSurfaceLocation = CachedTowerMainMapLayout.BossBeaconSurfaceLocation;
+ 		MainMapBossAreaCenterSurfaceLocation = CachedTowerMainMapLayout.BossAreaCenterSurfaceLocation;
+ 		MainMapRescueAnchorLocations = CachedTowerMainMapLayout.RescueAnchorLocations;
+ 
+@@ -924,16 +922,6 @@ void AT66GameMode::SpawnMainMapTerrain()
+ 		MainMapBossAreaCenterSurfaceLocation = MainMapBossSpawnSurfaceLocation;
+ 	}
+ 
+-	FVector BossBeaconLocation = FVector::ZeroVector;
+-	if (T66MainMapTerrain::TryGetCellLocation(Board, Board.BossSpawnCell - Board.BossOutwardDirection, 0.f, BossBeaconLocation))
+-	{
+-		MainMapBossBeaconSurfaceLocation = BossBeaconLocation;
+-	}
+-	else
+-	{
+-		MainMapBossBeaconSurfaceLocation = MainMapBossAreaCenterSurfaceLocation;
+-	}
+-
+ 	if (!MainMapBossAnchorSurfaceLocation.IsNearlyZero())
+ 	{
+ 		MainMapRescueAnchorLocations.Add(MainMapBossAnchorSurfaceLocation);
+@@ -997,7 +985,6 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
+ 	MainMapStartAreaCenterSurfaceLocation = FVector::ZeroVector;
+ 	MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
+ 	MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
+-	MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
+ 	MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
+ 	MainMapRescueAnchorLocations.Reset();
+ 	for (AT66TowerDescentHole* Hole : TowerDescentHoles)
+@@ -1034,7 +1021,6 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
+ 		ExistingBoss->Destroy();
+ 	}
+ 	StageBoss = nullptr;
+-	DestroyBossBeacon();
+ 
+ 	UT66GameInstance* GI = GetT66GameInstance();
+ 	if (GI)
+@@ -1045,11 +1031,6 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
+ 	SpawnMainMapTerrain();
+ 	if (T66UsesMainMapTerrainStage(World))
+ 	{
+-		SpawnTricksterAndCowardiceGate();
+ 		SpawnBossForCurrentStage();
+ 	}
+-	else
+-	{
+-		SpawnBossBeaconIfNeeded();
+-	}
+ }
+diff --git a/Source/T66/Gameplay/GameMode/T66GameMode_WorldInteractables.cpp b/Source/T66/Gameplay/GameMode/T66GameMode_WorldInteractables.cpp
+index 2920d0be..3881bddd 100644
+--- a/Source/T66/Gameplay/GameMode/T66GameMode_WorldInteractables.cpp
++++ b/Source/T66/Gameplay/GameMode/T66GameMode_WorldInteractables.cpp
+@@ -84,6 +84,17 @@ namespace
+ 		T66AssignTowerFloorTag(Actor, Wing.FloorNumber);
+ 	}
+ 
++	bool T66IsNormalTowerInteractableFloor(
++		const T66TowerMapTerrain::FLayout& Layout,
++		const T66TowerMapTerrain::FFloor& Floor)
++	{
++		return Floor.bGameplayFloor
++			&& Floor.FloorNumber != Layout.StartFloorNumber
++			&& Floor.FloorNumber != Layout.BossFloorNumber
++			&& Floor.FloorNumber >= Layout.FirstGameplayFloorNumber
++			&& Floor.FloorNumber <= Layout.LastGameplayFloorNumber;
++	}
++
+ 	int32 T66ResolveTowerFloorForActorPhysical(
+ 		const AT66GameMode* GameMode,
+ 		const T66TowerMapTerrain::FLayout& Layout,
+@@ -332,17 +343,6 @@ void AT66GameMode::SpawnStageEffectsForStage()
+ 		static_cast<int32>(Difficulty));
+ }
+ 
+-void AT66GameMode::SpawnTricksterAndCowardiceGate()
+-{
+-	if (CowardiceGate)
+-	{
+-		CowardiceGate->Destroy();
+-		CowardiceGate = nullptr;
+-	}
+-
+-	UE_LOG(LogT66GameMode, Verbose, TEXT("Cowardice Gate is deprecated; skipping Trickster/Cowardice spawn."));
+-}
+-
+ void AT66GameMode::SpawnCasinoInteractableIfNeeded()
+ {
+ 	if (IsLabRun())
+@@ -445,292 +445,6 @@ void AT66GameMode::SpawnPlateauAtLocation(UWorld* World, const FVector& TopCente
+ 	World->SpawnActor<AT66SpawnPlateau>(AT66SpawnPlateau::StaticClass(), PlateauLoc, FRotator::ZeroRotator, P);
+ }
+ 
+-void AT66GameMode::SpawnGuaranteedStartAreaInteractables()
+-{
+-	if (IsLabRun() || IsUsingTowerMainMapLayout())
+-	{
+-		return;
+-	}
+-
+-	UWorld* World = GetWorld();
+-	if (!World)
+-	{
+-		return;
+-	}
+-
+-	UT66GameInstance* T66GI = GetT66GameInstance();
+-	if (!T66GI)
+-	{
+-		return;
+-	}
+-
+-	const bool bUsingMainMapTerrain = T66UsesMainMapTerrainStage(World);
+-	if (bUsingMainMapTerrain && T66GI->CurrentMainMapLayoutVariant == ET66MainMapLayoutVariant::Tower)
+-	{
+-		return;
+-	}
+-
+-	UT66RunStateSubsystem* RunState = T66GI->GetSubsystem<UT66RunStateSubsystem>();
+-	UT66PlayerExperienceSubSystem* PlayerExperience = T66GI->GetSubsystem<UT66PlayerExperienceSubSystem>();
+-	UT66RngSubsystem* RngSub = T66GI->GetSubsystem<UT66RngSubsystem>();
+-	if (!RunState)
+-	{
+-		return;
+-	}
+-
+-	if (RngSub)
+-	{
+-		RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
+-	}
+-
+-	const ET66Difficulty Difficulty = T66GI->SelectedDifficulty;
+-	const int32 RunSeed = T66EnsureRunSeed(T66GI);
+-	const int32 StageNum = RunState->GetCurrentStage();
+-	FRandomStream Rng(RunSeed + StageNum * 1337 + 807);
+-
+-	FVector StartCenter = FVector::ZeroVector;
+-	if (bUsingMainMapTerrain)
+-	{
+-		StartCenter = MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
+-			? MainMapSpawnSurfaceLocation
+-			: MainMapStartAreaCenterSurfaceLocation;
+-	}
+-	else
+-	{
+-		StartCenter = T66GameplayLayout::GetStartAreaCenter();
+-
+-		FHitResult Hit;
+-		const FVector TraceStart = StartCenter + FVector(0.f, 0.f, 3000.f);
+-		const FVector TraceEnd = StartCenter - FVector(0.f, 0.f, 9000.f);
+-		if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic)
+-			|| World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Visibility))
+-		{
+-			StartCenter = Hit.ImpactPoint;
+-		}
+-	}
+-
+-	auto FindExistingTaggedActor = [World](const FName Tag) -> AActor*
+-	{
+-		return T66FindTaggedActor(World, Tag);
+-	};
+-
+-	auto FindClassicStartAreaSurface = [World](const FVector& DesiredLoc) -> FVector
+-	{
+-		static constexpr float TraceStartZ = 8000.f;
+-		static constexpr float TraceEndZ = -16000.f;
+-		static constexpr float MinNormalZ = 0.92f;
+-		static constexpr float SearchRadiusMax = 650.f;
+-		static constexpr float RadiusStep = 100.f;
+-		static constexpr int32 NumAngles = 12;
+-
+-		FVector Fallback = DesiredLoc;
+-		FHitResult Hit;
+-		if (World->LineTraceSingleByChannel(
+-			Hit,
+-			FVector(DesiredLoc.X, DesiredLoc.Y, TraceStartZ),
+-			FVector(DesiredLoc.X, DesiredLoc.Y, TraceEndZ),
+-			ECC_WorldStatic))
+-		{
+-			Fallback = Hit.ImpactPoint;
+-		}
+-
+-		for (float Radius = 0.f; Radius <= SearchRadiusMax; Radius += RadiusStep)
+-		{
+-			const int32 AngleSteps = (Radius <= 0.f) ? 1 : NumAngles;
+-			for (int32 AngleIndex = 0; AngleIndex < AngleSteps; ++AngleIndex)
+-			{
+-				const float Angle = (AngleSteps == 1) ? 0.f : (2.f * PI * static_cast<float>(AngleIndex) / static_cast<float>(AngleSteps));
+-				const float X = DesiredLoc.X + Radius * FMath::Cos(Angle);
+-				const float Y = DesiredLoc.Y + Radius * FMath::Sin(Angle);
+-				if (World->LineTraceSingleByChannel(Hit, FVector(X, Y, TraceStartZ), FVector(X, Y, TraceEndZ), ECC_WorldStatic)
+-					&& Hit.ImpactNormal.Z >= MinNormalZ)
+-				{
+-					return Hit.ImpactPoint;
+-				}
+-			}
+-		}
+-
+-		return Fallback;
+-	};
+-
+-	auto ResolveStartSpawnLocation = [&](const FVector& ClassicOffset, float SideCells, float InwardCells, FVector& OutLocation) -> bool
+-	{
+-		if (bUsingMainMapTerrain)
+-		{
+-			return TryGetMainMapStartPlacementLocation(SideCells, InwardCells, OutLocation);
+-		}
+-
+-		OutLocation = FindClassicStartAreaSurface(StartCenter + ClassicOffset);
+-		return true;
+-	};
+-
+-	auto BuildFacingRotation = [&](const FVector& SpawnLocation) -> FRotator
+-	{
+-		FRotator FacingRotation = FRotator::ZeroRotator;
+-		if (!T66TryBuildFacingRotation2D(SpawnLocation, StartCenter, FacingRotation))
+-		{
+-			FacingRotation = FRotator::ZeroRotator;
+-		}
+-		return FacingRotation;
+-	};
+-
+-	auto RollWeightedRarity = [&](const FT66RarityWeights& Weights) -> ET66Rarity
+-	{
+-		return (RngSub && PlayerExperience)
+-			? RngSub->RollRarityWeighted(Weights, Rng)
+-			: FT66RarityUtil::RollDefaultRarity(Rng);
+-	};
+-
+-	enum class EGuaranteedStartInteractable : uint8
+-	{
+-		Fountain,
+-		Chest,
+-		LootBag,
+-		Crate,
+-		Vehicle,
+-		ArcadeMachine,
+-	};
+-
+-	struct FGuaranteedStartSpec
+-	{
+-		EGuaranteedStartInteractable Kind;
+-		const TCHAR* TagName = nullptr;
+-		FVector ClassicOffset = FVector::ZeroVector;
+-		float SideCells = 0.f;
+-		float InwardCells = 0.f;
+-	};
+-
+-	const FGuaranteedStartSpec SpawnSpecs[] = {
+-		{ EGuaranteedStartInteractable::Fountain,    TEXT("T66_StartGuaranteed_Fountain"),    FVector(-900.f,  1400.f, 0.f), -1.10f,  0.75f },
+-		{ EGuaranteedStartInteractable::Chest,       TEXT("T66_StartGuaranteed_Chest"),       FVector(   0.f,  1800.f, 0.f), -0.20f,  1.30f },
+-		{ EGuaranteedStartInteractable::LootBag,     TEXT("T66_StartGuaranteed_LootBag"),     FVector( 900.f, -1400.f, 0.f),  0.35f,  0.45f },
+-		{ EGuaranteedStartInteractable::Crate,       TEXT("T66_StartGuaranteed_Crate"),       FVector(   0.f, -1800.f, 0.f),  0.00f,  0.55f },
+-		{ EGuaranteedStartInteractable::Vehicle,       TEXT("T66_StartGuaranteed_Vehicle"),       FVector(1500.f,   900.f, 0.f),  0.95f, -0.05f },
+-		{ EGuaranteedStartInteractable::ArcadeMachine, TEXT("T66_StartGuaranteed_ArcadeMachine"), FVector(1500.f,  -900.f, 0.f),  1.05f,  0.70f },
+-	};
+-
+-	FActorSpawnParameters SpawnParams;
+-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+-
+-	for (const FGuaranteedStartSpec& Spec : SpawnSpecs)
+-	{
+-		if (Spec.TagName == nullptr)
+-		{
+-			continue;
+-		}
+-
+-		if (Spec.Kind == EGuaranteedStartInteractable::ArcadeMachine
+-			&& T66DeprecatedFeatures::AreArcadeInteractablesDisabled())
+-		{
+-			continue;
+-		}
+-
+-		const FName Tag(Spec.TagName);
+-		if (FindExistingTaggedActor(Tag))
+-		{
+-			continue;
+-		}
+-
+-		FVector SpawnLoc = FVector::ZeroVector;
+-		if (!ResolveStartSpawnLocation(Spec.ClassicOffset, Spec.SideCells, Spec.InwardCells, SpawnLoc))
+-		{
+-			continue;
+-		}
+-
+-		const FRotator SpawnRotation = BuildFacingRotation(SpawnLoc);
+-		AActor* SpawnedActor = nullptr;
+-
+-		switch (Spec.Kind)
+-		{
+-		case EGuaranteedStartInteractable::Fountain:
+-			SpawnedActor = World->SpawnActor<AT66FountainInteractable>(
+-				AT66FountainInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
+-			break;
+-
+-		case EGuaranteedStartInteractable::Chest:
+-			if (AT66ChestInteractable* Chest = World->SpawnActor<AT66ChestInteractable>(
+-				AT66ChestInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams))
+-			{
+-				const FT66RarityWeights Weights = PlayerExperience
+-					? PlayerExperience->GetDifficultyChestRarityWeights(Difficulty)
+-					: FT66RarityWeights{};
+-				const bool bChestRarityReplayable = (RngSub && PlayerExperience);
+-				const ET66Rarity ChestRarity = RollWeightedRarity(Weights);
+-				const int32 ChestRarityDrawIndex = bChestRarityReplayable ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+-				const int32 ChestRarityPreDrawSeed = bChestRarityReplayable ? RngSub->GetLastRunPreDrawSeed() : 0;
+-				Chest->bIsMimic = false;
+-				Chest->SetRarity(ChestRarity);
+-				if (RunState)
+-				{
+-					RunState->RecordLuckQualityRarity(FName(TEXT("ChestRarity")), ChestRarity, ChestRarityDrawIndex, ChestRarityPreDrawSeed, bChestRarityReplayable ? &Weights : nullptr);
+-				}
+-				SpawnedActor = Chest;
+-			}
+-			break;
+-
+-		case EGuaranteedStartInteractable::LootBag:
+-			if (AT66LootBagPickup* LootBag = World->SpawnActor<AT66LootBagPickup>(
+-				AT66LootBagPickup::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams))
+-			{
+-				const FT66RarityWeights Weights = PlayerExperience
+-					? PlayerExperience->GetDifficultyEnemyLootBagRarityWeights(Difficulty)
+-					: FT66RarityWeights{};
+-				const bool bBagRarityReplayable = (RngSub && PlayerExperience);
+-				const ET66Rarity BagRarity = RollWeightedRarity(Weights);
+-				LootBag->SetLootRarity(BagRarity);
+-				LootBag->SetItemID(T66GI->GetRandomItemIDForLootRarityFromStream(BagRarity, Rng));
+-				if (RunState)
+-				{
+-					RunState->RecordLuckQualityRarity(
+-						FName(TEXT("GuaranteedStartLootBagRarity")),
+-						BagRarity,
+-						bBagRarityReplayable ? RngSub->GetLastRunDrawIndex() : INDEX_NONE,
+-						bBagRarityReplayable ? RngSub->GetLastRunPreDrawSeed() : 0,
+-						bBagRarityReplayable ? &Weights : nullptr);
+-				}
+-				SpawnedActor = LootBag;
+-			}
+-			break;
+-
+-		case EGuaranteedStartInteractable::Crate:
+-			if (AT66CrateInteractable* Crate = World->SpawnActor<AT66CrateInteractable>(
+-				AT66CrateInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams))
+-			{
+-				const FT66RarityWeights Weights = PlayerExperience
+-					? PlayerExperience->GetDifficultyCrateRarityWeights(Difficulty)
+-					: FT66RarityWeights{};
+-				const bool bCrateRarityReplayable = (RngSub && PlayerExperience);
+-				const ET66Rarity CrateRarity = RollWeightedRarity(Weights);
+-				const int32 CrateRarityDrawIndex = bCrateRarityReplayable ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+-				const int32 CrateRarityPreDrawSeed = bCrateRarityReplayable ? RngSub->GetLastRunPreDrawSeed() : 0;
+-				Crate->SetRarity(CrateRarity);
+-				if (RunState)
+-				{
+-					RunState->RecordLuckQualityRarity(FName(TEXT("CrateRarity")), CrateRarity, CrateRarityDrawIndex, CrateRarityPreDrawSeed, bCrateRarityReplayable ? &Weights : nullptr);
+-				}
+-				SpawnedActor = Crate;
+-			}
+-			break;
+-
+-		case EGuaranteedStartInteractable::Vehicle:
+-			SpawnedActor = World->SpawnActor<AT66VehicleInteractable>(
+-				AT66VehicleInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
+-			break;
+-
+-		case EGuaranteedStartInteractable::ArcadeMachine:
+-			SpawnedActor = World->SpawnActor<AT66ArcadeMachineInteractable>(
+-				AT66ArcadeMachineInteractable::StaticClass(), SpawnLoc, SpawnRotation, SpawnParams);
+-			break;
+-		}
+-
+-		if (SpawnedActor)
+-		{
+-			SpawnedActor->Tags.AddUnique(Tag);
+-			T66RememberTaggedActor(SpawnedActor, Tag);
+-		}
+-	}
+-}
+-
+ void AT66GameMode::SpawnWorldInteractablesForStage()
+ {
+ 	if (bWorldInteractablesSpawnedForStage)
+@@ -747,7 +461,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
+ 	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+ 	UT66GameInstance* T66GI = GetT66GameInstance();
+ 
+-	// Run-level seed so positions change every time "Enter the Tribulation" or PIE is started (like procedural terrain).
++	// Run seed so positions change every time "Enter the Tribulation" or PIE is started (like procedural terrain).
+ 	const int32 RunSeed = T66EnsureRunSeed(T66GI);
+ 	const int32 StageNum = RunState->GetCurrentStage();
+ 	FRandomStream Rng(RunSeed + StageNum * 1337 + 42);
+@@ -766,10 +480,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
+ 		FRandomStream TowerCountRng(RunSeed + StageNum * 1901 + 39);
+ 		for (const T66TowerMapTerrain::FFloor& Floor : CachedTowerMainMapLayout.Floors)
+ 		{
+-			if (!Floor.bGameplayFloor
+-				|| Floor.FloorNumber == CachedTowerMainMapLayout.StartFloorNumber
+-				|| Floor.FloorNumber < CachedTowerMainMapLayout.FirstGameplayFloorNumber
+-				|| Floor.FloorNumber > CachedTowerMainMapLayout.LastGameplayFloorNumber)
++			if (!T66IsNormalTowerInteractableFloor(CachedTowerMainMapLayout, Floor))
+ 			{
+ 				continue;
+ 			}
+@@ -1866,13 +1577,6 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
+ 		}
+ 	}
+ 
+-	if (!IsLabRun() && !bUsingMainMapTerrain)
+-	{
+-		SpawnModelShowcaseRow();
+-	}
+-
+-	// Teleport pads are deprecated and no longer part of stage population.
+-
+ 	for (int32 i = 0; i < RemainingCrates; ++i)
+ 	{
+ 		if (AT66CrateInteractable* Crate = Cast<AT66CrateInteractable>(SpawnOne(AT66CrateInteractable::StaticClass())))
+@@ -1900,11 +1604,6 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
+ 	bWorldInteractablesSpawnedForStage = true;
+ }
+ 
+-void AT66GameMode::SpawnModelShowcaseRow()
+-{
+-	UE_LOG(LogT66GameMode, Verbose, TEXT("Start-area model showcase props are disabled; generated world props are deprecated."));
+-}
+-
+ void AT66GameMode::SpawnStartGalleryShowcase()
+ {
+ 	if (bStartGalleryShowcaseSpawned || !IsUsingTowerMainMapLayout())
+@@ -2168,6 +1867,12 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
+ 	UWorld* World = GetWorld();
+ 	if (!World || !Player) return;
+ 
++	if (IsUsingTowerMainMapLayout())
++	{
++		UE_LOG(LogT66GameMode, Verbose, TEXT("Skipping tower stage-entry idol altar spawn; floor 1 is reserved for the weapon altar."));
++		return;
++	}
++
+ 	if (IsValid(IdolAltar))
+ 	{
+ 		return;
+@@ -2640,146 +2345,6 @@ void AT66GameMode::SpawnPixalTestDisplayModelsNearIdolAltar(AT66IdolAltar* Ancho
+ #endif
+ }
+ 
+-void AT66GameMode::SpawnIdolVFXTestTargets()
+-{
+-	if (!bSpawnIdolVFXTestTargetsAtStageStart || IsLabRun())
+-	{
+-		return;
+-	}
+-
+-	UWorld* World = GetWorld();
+-	if (!World)
+-	{
+-		return;
+-	}
+-
+-	for (AT66EnemyBase* ExistingTarget : IdolVFXTestTargets)
+-	{
+-		if (ExistingTarget)
+-		{
+-			ExistingTarget->Destroy();
+-		}
+-	}
+-	IdolVFXTestTargets.Reset();
+-
+-	TArray<FVector> SpawnLocations;
+-	SpawnLocations.Reserve(3);
+-
+-	APawn* HeroPawn = UGameplayStatics::GetPlayerPawn(World, 0);
+-	const FVector HeroLocation = HeroPawn ? HeroPawn->GetActorLocation() : FVector::ZeroVector;
+-	FVector ForwardDirection = HeroPawn ? HeroPawn->GetActorForwardVector().GetSafeNormal2D() : FVector::ZeroVector;
+-	FVector SideDirection = FVector::RightVector;
+-	float CellSize = 400.f;
+-	FVector ThresholdMidpoint = FVector::ZeroVector;
+-	bool bHasMainMapThreshold = false;
+-	if (T66UsesMainMapTerrainStage(World))
+-	{
+-		FVector Center = FVector::ZeroVector;
+-		FVector InwardDirection = FVector::ForwardVector;
+-		if (TryGetMainMapStartAxes(Center, InwardDirection, SideDirection, CellSize))
+-		{
+-			ForwardDirection = InwardDirection.GetSafeNormal2D();
+-			if (!MainMapStartAnchorSurfaceLocation.IsNearlyZero() && !MainMapStartPathSurfaceLocation.IsNearlyZero())
+-			{
+-				ThresholdMidpoint = (MainMapStartAnchorSurfaceLocation + MainMapStartPathSurfaceLocation) * 0.5f;
+-				bHasMainMapThreshold = true;
+-			}
+-		}
+-	}
+-	if (ForwardDirection.IsNearlyZero() && IdolAltar && !HeroLocation.IsNearlyZero())
+-	{
+-		ForwardDirection = (IdolAltar->GetActorLocation() - HeroLocation).GetSafeNormal2D();
+-	}
+-	if (ForwardDirection.IsNearlyZero())
+-	{
+-		ForwardDirection = FVector::ForwardVector;
+-	}
+-
+-	SideDirection = FVector::CrossProduct(FVector::UpVector, ForwardDirection).GetSafeNormal();
+-	if (SideDirection.IsNearlyZero())
+-	{
+-		SideDirection = FVector::RightVector;
+-	}
+-
+-	const FVector StartCenter = !MainMapStartAreaCenterSurfaceLocation.IsNearlyZero()
+-		? MainMapStartAreaCenterSurfaceLocation
+-		: T66GameplayLayout::GetStartAreaCenter(DefaultSpawnHeight);
+-	const FVector AnchorCenter = IdolAltar ? IdolAltar->GetActorLocation() : StartCenter;
+-	FVector FrontCenter = AnchorCenter + ForwardDirection * 650.f + FVector(0.f, 0.f, 180.f);
+-	if (bHasMainMapThreshold)
+-	{
+-		const float SafeSideOffset = FMath::Max(140.f, CellSize * 0.40f);
+-		FrontCenter = ThresholdMidpoint - ForwardDirection * SafeSideOffset + FVector(0.f, 0.f, 180.f);
+-	}
+-	static constexpr float TargetSideSpacing = 340.f;
+-	SpawnLocations.Add(FrontCenter - SideDirection * TargetSideSpacing);
+-	SpawnLocations.Add(FrontCenter);
+-	SpawnLocations.Add(FrontCenter + SideDirection * TargetSideSpacing);
+-
+-	static const FName TargetIds[] = {
+-		FName(TEXT("Slime")),
+-		FName(TEXT("TombSpider")),
+-		FName(TEXT("RatPack"))
+-	};
+-
+-	for (int32 Index = 0; Index < UE_ARRAY_COUNT(TargetIds) && SpawnLocations.IsValidIndex(Index); ++Index)
+-	{
+-		FTransform SpawnTransform(FRotator::ZeroRotator, SpawnLocations[Index]);
+-		FActorSpawnParameters SpawnParams;
+-		SpawnParams.Owner = this;
+-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+-
+-		AT66EnemyBase* TargetEnemy = World->SpawnActorDeferred<AT66EnemyBase>(
+-			AT66EnemyBase::StaticClass(),
+-			SpawnTransform,
+-			this,
+-			nullptr,
+-			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+-		if (!TargetEnemy)
+-		{
+-			continue;
+-		}
+-
+-		TargetEnemy->CharacterVisualID = TargetIds[Index];
+-		TargetEnemy->MobID = TargetIds[Index];
+-		TargetEnemy->MaxHP = 20000;
+-		TargetEnemy->CurrentHP = 20000;
+-		TargetEnemy->TouchDamageHearts = 0;
+-		TargetEnemy->PointValue = 0;
+-		TargetEnemy->XPValue = 0;
+-		TargetEnemy->bDropsLoot = false;
+-		TargetEnemy->Armor = 0.f;
+-
+-		UGameplayStatics::FinishSpawningActor(TargetEnemy, SpawnTransform);
+-		TargetEnemy->ConfigureAsMob(TargetIds[Index]);
+-		TrySnapActorToTerrainAtLocation(TargetEnemy, SpawnLocations[Index]);
+-
+-		if (UCharacterMovementComponent* Movement = TargetEnemy->GetCharacterMovement())
+-		{
+-			Movement->MaxWalkSpeed = 0.f;
+-			Movement->StopMovementImmediately();
+-			Movement->DisableMovement();
+-			Movement->SetMovementMode(MOVE_None);
+-		}
+-
+-		if (!HeroLocation.IsNearlyZero())
+-		{
+-			FVector Facing = HeroLocation - TargetEnemy->GetActorLocation();
+-			Facing.Z = 0.f;
+-			if (!Facing.Normalize())
+-			{
+-				Facing = FVector::BackwardVector;
+-			}
+-			TargetEnemy->SetActorRotation(Facing.Rotation());
+-		}
+-
+-		TargetEnemy->CurrentHP = TargetEnemy->MaxHP;
+-		TargetEnemy->Tags.AddUnique(FName(TEXT("IdolVFXTestTarget")));
+-		UE_LOG(LogT66GameMode, Log, TEXT("Spawned idol VFX test target %s at %s"), *TargetIds[Index].ToString(), *TargetEnemy->GetActorLocation().ToCompactString());
+-		IdolVFXTestTargets.Add(TargetEnemy);
+-	}
+-}
+-
+ AT66IdolAltar* AT66GameMode::SpawnIdolAltarAtLocation(const FVector& Location, const bool bAllowMultiple)
+ {
+ 	UWorld* World = GetWorld();
+diff --git a/Source/T66/Gameplay/Movement/T66HeroMovementComponent.cpp b/Source/T66/Gameplay/Movement/T66HeroMovementComponent.cpp
+index ae7853b6..b8836ae6 100644
+--- a/Source/T66/Gameplay/Movement/T66HeroMovementComponent.cpp
++++ b/Source/T66/Gameplay/Movement/T66HeroMovementComponent.cpp
+@@ -122,7 +122,6 @@ void UT66HeroMovementComponent::RefreshWalkSpeedFromRunState()
+ 		ResolvedBaseWalkSpeed = T66ResolveWalkSpeedFromSpeedStat(CachedRunState->GetSpeedStat());
+ 		Multiplier =
+ 			CachedRunState->GetItemMoveSpeedMultiplier() *
+-			CachedRunState->GetMovementSpeedSecondaryMultiplier() *
+ 			CachedRunState->GetStageMoveSpeedMultiplier() *
+ 			CachedRunState->GetStatusMoveSpeedMultiplier();
+ 	}
+diff --git a/Source/T66/Gameplay/Movement/T66HeroMovementTypes.h b/Source/T66/Gameplay/Movement/T66HeroMovementTypes.h
+index c6b40f17..7da5ab5f 100644
+--- a/Source/T66/Gameplay/Movement/T66HeroMovementTypes.h
++++ b/Source/T66/Gameplay/Movement/T66HeroMovementTypes.h
+@@ -24,9 +24,6 @@ struct T66_API FT66HeroMovementTuning
+ {
+ 	GENERATED_BODY()
+ 
+-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "100.0"))
+-	float DefaultWalkSpeed = 1800.f;
+-
+ 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
+ 	float MaxAcceleration = 9000.f;
+ 
+diff --git a/Source/T66/Gameplay/T66GameMode.cpp b/Source/T66/Gameplay/T66GameMode.cpp
+index 50f534ee..5fb0bd44 100644
+--- a/Source/T66/Gameplay/T66GameMode.cpp
++++ b/Source/T66/Gameplay/T66GameMode.cpp
+@@ -768,10 +768,36 @@ if (!World || GT66PlayerStartCache.World.Get() == World)
+ 	{
+ 		if (const AT66SessionPlayerState* SessionPlayerState = T66GetSessionPlayerState(Controller))
+ 		{
+-			return SessionPlayerState->GetSelectedCompanionID();
++			const FName SessionCompanionID = SessionPlayerState->GetSelectedCompanionID();
++			if (!SessionCompanionID.IsNone())
++			{
++				return SessionCompanionID;
++			}
++
++			// Local gameplay entry can spawn the companion before the fresh
++			// player state receives the lobby profile. Remote per-player None
++			// remains None so host GI state is not reused for another player.
++			if (Controller && !Controller->IsLocalController())
++			{
++				return NAME_None;
++			}
++
++			const FName GameInstanceCompanionID = GI ? GI->SelectedCompanionID : NAME_None;
++			UE_LOG(
++				LogT66GameMode,
++				Log,
++				TEXT("Companion spawn using local game-instance fallback because session companion is None. GICompanion=%s"),
++				*GameInstanceCompanionID.ToString());
++			return GameInstanceCompanionID;
+ 		}
+ 
+-		return GI ? GI->SelectedCompanionID : NAME_None;
++		const FName GameInstanceCompanionID = GI ? GI->SelectedCompanionID : NAME_None;
++		UE_LOG(
++			LogT66GameMode,
++			Log,
++			TEXT("Companion spawn using game-instance fallback because no session player state. GICompanion=%s"),
++			*GameInstanceCompanionID.ToString());
++		return GameInstanceCompanionID;
+ 	}
+ 
+ 	ET66BodyType T66GetSelectedHeroBodyType(const UT66GameInstance* GI, const AController* Controller)
+@@ -1115,8 +1141,6 @@ void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
+ 	EnemyDirector = nullptr;
+ 	TutorialManager = nullptr;
+ 	IdolAltar = nullptr;
+-	BossBeaconActor = nullptr;
+-	BossBeaconUpdateAccumulator = 0.f;
+ 	bTowerMiasmaActive = false;
+ 	TowerMiasmaStartWorldSeconds = 0.f;
+ 	TowerMiasmaUpdateAccumulator = 0.f;
+@@ -1148,13 +1172,6 @@ void AT66GameMode::Tick(float DeltaTime)
+ 	UpdateTowerMiasma(DeltaTime);
+ 	SyncTowerBossEntryState();
+ 
+-	BossBeaconUpdateAccumulator += DeltaTime;
+-	if (BossBeaconUpdateAccumulator >= 0.10f)
+-	{
+-		BossBeaconUpdateAccumulator = 0.f;
+-		UpdateBossBeaconTransform(true);
+-	}
+-
+ 	// Frame-level lag: log when a frame exceeded budget (e.g. >20ms).
+ 	if (DeltaTime > 0.02f)
+ 	{
+diff --git a/Source/T66/Gameplay/T66GameMode.h b/Source/T66/Gameplay/T66GameMode.h
+index 8494ae79..052f7ed3 100644
+--- a/Source/T66/Gameplay/T66GameMode.h
++++ b/Source/T66/Gameplay/T66GameMode.h
+@@ -43,13 +43,13 @@ class UActorComponent;
+ struct FStreamableHandle;
+ 
+ /**
+- * Game Mode for Tribulation 66 gameplay levels
++ * Game Mode for Tribulation 66 gameplay maps
+  *
+  * Responsibilities:
+  * - Spawn the correct hero based on Game Instance selection
+  * - Initialize hero with data from DataTable
+  * - Handle basic game flow
+- * - Auto-setup level with floor/lighting if missing (for development)
++ * - Auto-setup map with floor/lighting if missing (for development)
+  */
+ UCLASS(Blueprintable)
+ class T66_API AT66GameMode : public AGameModeBase
+@@ -90,10 +90,6 @@ public:
+ 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gates")
+ 	FVector CowardiceGateSpawnOffset = FVector(5200.f, 0.f, 200.f);
+ 
+-	/** Development/test helper: spawn a cow, pig, and goat near the stage-start altar as stationary idol test dummies. */
+-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Idols")
+-	bool bSpawnIdolVFXTestTargetsAtStageStart = true;
+-
+ 	/** Development/test helper: show Pixal3D experiment meshes beside Idol Altars without character data-table rows. */
+ 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Development|Pixal3D")
+ 	bool bSpawnPixalTestModelsAtIdolAltar = true;
+@@ -188,7 +184,7 @@ protected:
+ 	/** Get the Game Instance cast to our type */
+ 	UT66GameInstance* GetT66GameInstance() const;
+ 
+-	/** Set up basic level elements if missing (floor, lighting, player start) */
++	/** Set up basic map elements if missing (floor, lighting, player start) */
+ 	void EnsureLevelSetup();
+ 
+ 	/** Apply configured ground material to all tagged runtime floors (async-load safe). */
+@@ -223,14 +219,11 @@ protected:
+ 	void SpawnIdolAltarForPlayer(AController* Player);
+ 	void SpawnWeaponAltarForPlayer(AController* Player);
+ 	AT66IdolAltar* SpawnIdolAltarAtLocation(const FVector& Location, bool bAllowMultiple = false);
+-	void SpawnIdolVFXTestTargets();
+ 	void SpawnPixalTestDisplayModelsNearIdolAltar(AT66IdolAltar* AnchorAltar, bool bTrackAsLabSpawned = false);
+ 
+ 	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
+ 	void SpawnBossGateIfNeeded();
+ 	void SpawnWorldInteractablesForStage();
+-	void SpawnGuaranteedStartAreaInteractables();
+-	void SpawnModelShowcaseRow();
+ 	void SpawnStartGalleryShowcase();
+ 	void SpawnStageEffectsForStage();
+ 	void SpawnTutorialArenaIfNeeded();
+@@ -243,7 +236,6 @@ protected:
+ 
+ 	/** Spawn boss for current stage (dormant until player approaches). */
+ 	void SpawnBossForCurrentStage();
+-	void SpawnBossBeaconIfNeeded();
+ 
+ 	void SpawnCasinoInteractableIfNeeded();
+ 
+@@ -256,7 +248,6 @@ protected:
+ 	/** Spawn a flat plateau so its top surface is at TopCenterLoc (used under NPCs and world interactables). */
+ 	void SpawnPlateauAtLocation(UWorld* World, const FVector& TopCenterLoc);
+ 
+-	void SpawnTricksterAndCowardiceGate();
+ 	void SpawnTowerDescentHolesIfNeeded();
+ 	void SpawnBackroomsPocketIfNeeded();
+ 	void DestroyBackroomsPocket();
+@@ -378,9 +369,6 @@ private:
+ 	UPROPERTY()
+ 	TObjectPtr<AT66WeaponAltar> WeaponAltar;
+ 
+-	UPROPERTY()
+-	TArray<TObjectPtr<AT66EnemyBase>> IdolVFXTestTargets;
+-
+ 	UPROPERTY()
+ 	TArray<TObjectPtr<AStaticMeshActor>> PixalTestDisplayActors;
+ 
+@@ -412,8 +400,6 @@ private:
+ 	TWeakObjectPtr<AT66BossBase> StageBoss;
+ 	TWeakObjectPtr<AT66EnemyDirector> EnemyDirector;
+ 	TWeakObjectPtr<AT66TutorialManager> TutorialManager;
+-	TWeakObjectPtr<AActor> BossBeaconActor;
+-	float BossBeaconUpdateAccumulator = 0.f;
+ 
+ 	UPROPERTY(Transient)
+ 	TObjectPtr<UStaticMesh> CachedCubeMesh;
+@@ -422,9 +408,6 @@ private:
+ 	bool TrySnapActorToTerrain(AActor* Actor) const;
+ 	bool TrySnapActorToTerrainAtLocation(AActor* Actor, const FVector& TraceLocation) const;
+ 	void RestartPlayersMissingPawns();
+-	bool TryComputeBossBeaconBase(FVector& OutBeaconBase) const;
+-	void UpdateBossBeaconTransform(bool bForceSpawnIfMissing);
+-	void DestroyBossBeacon();
+ 	void SyncTowerBossEntryState();
+ 	void SyncTowerTrapActivation(bool bForce = false);
+ 	void SnapPlayersToTerrain();
+@@ -449,7 +432,6 @@ private:
+ 	FVector MainMapStartAreaCenterSurfaceLocation = FVector::ZeroVector;
+ 	FVector MainMapBossAnchorSurfaceLocation = FVector::ZeroVector;
+ 	FVector MainMapBossSpawnSurfaceLocation = FVector::ZeroVector;
+-	FVector MainMapBossBeaconSurfaceLocation = FVector::ZeroVector;
+ 	FVector MainMapBossAreaCenterSurfaceLocation = FVector::ZeroVector;
+ 	TArray<FVector> MainMapRescueAnchorLocations;
+ 	bool bUsingTowerMainMapLayout = false;
+diff --git a/Source/T66/Gameplay/T66HeroBase.h b/Source/T66/Gameplay/T66HeroBase.h
+index 7c7d97b2..2522e997 100644
+--- a/Source/T66/Gameplay/T66HeroBase.h
++++ b/Source/T66/Gameplay/T66HeroBase.h
+@@ -95,9 +95,6 @@ public:
+ 
+ 	AT66PilotableTractor* GetMountedTractor() const { return MountedTractor.Get(); }
+ 
+-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Hero|QuickRevive", meta=(DeprecatedFunction, DeprecationMessage="Downed Quick Revive was removed. This compatibility wrapper always returns false."))
+-	bool IsQuickReviveDowned() const { return false; }
+-
+ 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Movement")
+ 	UT66HeroMovementComponent* GetHeroMovementComponent() const { return HeroMovementComponent; }
+ 
+diff --git a/Source/T66/Gameplay/T66QuickReviveVendingMachine.cpp b/Source/T66/Gameplay/T66QuickReviveVendingMachine.cpp
+deleted file mode 100644
+index 88307980..00000000
+--- a/Source/T66/Gameplay/T66QuickReviveVendingMachine.cpp
++++ /dev/null
+@@ -1,64 +0,0 @@
+-// Copyright Tribulation 66. All Rights Reserved.
+-
+-#include "Gameplay/T66QuickReviveVendingMachine.h"
+-
+-#include "Gameplay/T66VisualUtil.h"
+-#include "Gameplay/T66HeroBase.h"
+-#include "Components/BoxComponent.h"
+-#include "Components/StaticMeshComponent.h"
+-#include "UObject/SoftObjectPath.h"
+-
+-AT66QuickReviveVendingMachine::AT66QuickReviveVendingMachine()
+-{
+-	SingleMesh = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/Vending/SM_QuickReviveVending_Pixal3D.SM_QuickReviveVending_Pixal3D")));
+-
+-	if (VisualMesh)
+-	{
+-		VisualMesh->SetRelativeScale3D(FVector(1.0f, 0.9f, 2.2f));
+-		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 110.f));
+-	}
+-
+-	if (TriggerBox)
+-	{
+-		TriggerBox->SetBoxExtent(FVector(380.f, 320.f, 240.f));
+-	}
+-
+-	ApplyRarityVisuals();
+-}
+-
+-void AT66QuickReviveVendingMachine::BeginPlay()
+-{
+-	Super::BeginPlay();
+-
+-	RefreshInteractionPrompt();
+-}
+-
+-void AT66QuickReviveVendingMachine::EndPlay(const EEndPlayReason::Type EndPlayReason)
+-{
+-	Super::EndPlay(EndPlayReason);
+-}
+-
+-void AT66QuickReviveVendingMachine::ApplyRarityVisuals()
+-{
+-	if (TryApplyImportedMesh())
+-	{
+-		return;
+-	}
+-
+-	if (!VisualMesh)
+-	{
+-		return;
+-	}
+-
+-	FT66VisualUtil::ApplyT66Color(VisualMesh, this, FLinearColor(0.70f, 0.12f, 0.12f, 1.f));
+-}
+-
+-bool AT66QuickReviveVendingMachine::ShouldShowInteractionPrompt(const AT66HeroBase* /*LocalHero*/) const
+-{
+-	return false;
+-}
+-
+-bool AT66QuickReviveVendingMachine::Interact(APlayerController* /*PC*/)
+-{
+-	return false;
+-}
+diff --git a/Source/T66/Gameplay/T66QuickReviveVendingMachine.h b/Source/T66/Gameplay/T66QuickReviveVendingMachine.h
+deleted file mode 100644
+index e2da3bad..00000000
+--- a/Source/T66/Gameplay/T66QuickReviveVendingMachine.h
++++ /dev/null
+@@ -1,26 +0,0 @@
+-// Copyright Tribulation 66. All Rights Reserved.
+-
+-#pragma once
+-
+-#include "CoreMinimal.h"
+-#include "Gameplay/T66WorldInteractableBase.h"
+-#include "T66QuickReviveVendingMachine.generated.h"
+-
+-UCLASS(Blueprintable)
+-class T66_API AT66QuickReviveVendingMachine : public AT66WorldInteractableBase
+-{
+-	GENERATED_BODY()
+-
+-public:
+-	AT66QuickReviveVendingMachine();
+-
+-	virtual bool Interact(APlayerController* PC) override;
+-
+-protected:
+-	virtual void BeginPlay() override;
+-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+-	virtual void ApplyRarityVisuals() override;
+-	virtual bool ShouldShowInteractionPrompt(const AT66HeroBase* LocalHero) const override;
+-	virtual float GetInteractionPromptWorldSize() const override { return 78.f; }
+-	virtual float GetInteractionPromptVerticalPadding() const override { return 170.f; }
+-};
+diff --git a/Source/T66/Gameplay/T66TowerMapTerrain.cpp b/Source/T66/Gameplay/T66TowerMapTerrain.cpp
+index f46bd093..56159d9a 100644
+--- a/Source/T66/Gameplay/T66TowerMapTerrain.cpp
++++ b/Source/T66/Gameplay/T66TowerMapTerrain.cpp
+@@ -4789,17 +4789,17 @@ namespace T66TowerMapTerrain
+ 		switch (Floor.FloorRole)
+ 		{
+ 		case ET66TowerFloorRole::Start:
+-			return NSLOCTEXT("T66.Tower", "StartLevel", "Start Level");
++			return FText::Format(
++				NSLOCTEXT("T66.Tower", "StartFloor", "Floor {0} - Start"),
++				FText::AsNumber(Floor.FloorNumber));
+ 		case ET66TowerFloorRole::Boss:
+-			return NSLOCTEXT("T66.Tower", "BossLevel", "Boss Level");
++			return FText::Format(
++				NSLOCTEXT("T66.Tower", "BossFloor", "Floor {0} - Boss"),
++				FText::AsNumber(Floor.FloorNumber));
+ 		case ET66TowerFloorRole::Gameplay:
+-			if (Floor.GameplayLevelNumber > 0)
+-			{
+-				return FText::Format(
+-					NSLOCTEXT("T66.Tower", "GameplayLevel", "Level {0}"),
+-					FText::AsNumber(Floor.GameplayLevelNumber));
+-			}
+-			break;
++			return FText::Format(
++				NSLOCTEXT("T66.Tower", "GameplayFloor", "Floor {0}"),
++				FText::AsNumber(Floor.FloorNumber));
+ 		default:
+ 			break;
+ 		}
+@@ -4819,11 +4819,15 @@ namespace T66TowerMapTerrain
+ 
+ 		if (FloorNumber == Layout.StartFloorNumber)
+ 		{
+-			return NSLOCTEXT("T66.Tower", "StartLevelByNumber", "Start Level");
++			return FText::Format(
++				NSLOCTEXT("T66.Tower", "StartFloorByNumber", "Floor {0} - Start"),
++				FText::AsNumber(FloorNumber));
+ 		}
+ 		if (FloorNumber == Layout.BossFloorNumber)
+ 		{
+-			return NSLOCTEXT("T66.Tower", "BossLevelByNumber", "Boss Level");
++			return FText::Format(
++				NSLOCTEXT("T66.Tower", "BossFloorByNumber", "Floor {0} - Boss"),
++				FText::AsNumber(FloorNumber));
+ 		}
+ 
+ 		return FText::Format(
+@@ -5005,7 +5009,6 @@ namespace T66TowerMapTerrain
+ 		OutLayout.BossAreaCenterSurfaceLocation = BossFloor->Center;
+ 		OutLayout.BossSpawnSurfaceLocation = BossFloor->Center;
+ 		OutLayout.BossAnchorSurfaceLocation = PreBossFloor->HoleCenter - (BossHoleDirection * 950.0f);
+-		OutLayout.BossBeaconSurfaceLocation = BossFloor->Center + (BossHoleDirection * 600.0f);
+ 
+ 		OutLayout.RescueAnchorLocations.Reset();
+ 		OutLayout.RescueAnchorLocations.Reserve(OutLayout.Floors.Num() * 3);
+diff --git a/Source/T66/Gameplay/T66TowerMapTerrain.h b/Source/T66/Gameplay/T66TowerMapTerrain.h
+index 19574b2e..da8bf51f 100644
+--- a/Source/T66/Gameplay/T66TowerMapTerrain.h
++++ b/Source/T66/Gameplay/T66TowerMapTerrain.h
+@@ -160,7 +160,6 @@ namespace T66TowerMapTerrain
+ 		FVector StartAreaCenterSurfaceLocation = FVector::ZeroVector;
+ 		FVector BossAnchorSurfaceLocation = FVector::ZeroVector;
+ 		FVector BossSpawnSurfaceLocation = FVector::ZeroVector;
+-		FVector BossBeaconSurfaceLocation = FVector::ZeroVector;
+ 		FVector BossAreaCenterSurfaceLocation = FVector::ZeroVector;
+ 		TArray<FVector> RescueAnchorLocations;
+ 		TArray<FStartGalleryWing> StartGalleryWings;
+diff --git a/Source/T66/UI/HUD/T66GameplayHUDWidget.cpp b/Source/T66/UI/HUD/T66GameplayHUDWidget.cpp
+index d4266d5d..dc187595 100644
+--- a/Source/T66/UI/HUD/T66GameplayHUDWidget.cpp
++++ b/Source/T66/UI/HUD/T66GameplayHUDWidget.cpp
+@@ -256,7 +256,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
+ 	}
+ 	RunState->HeroProgressChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+ 	RunState->UltimateChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+-	RunState->QuickReviveChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshQuickReviveState);
++	RunState->QuickReviveChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshBackroomsQuickReviveState);
+ 	RunState->TutorialHintChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
+ 	RunState->TutorialSubtitleChanged.AddDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialSubtitle);
+ 	RunState->DevCheatsChanged.AddDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+@@ -334,7 +334,7 @@ void UT66GameplayHUDWidget::NativeConstruct()
+ 	RefreshDPS();
+ 	RefreshLootPrompt();
+ 	RefreshHearts();
+-	RefreshQuickReviveState();
++	RefreshBackroomsQuickReviveState();
+ }
+ 
+ 
+@@ -381,7 +381,7 @@ void UT66GameplayHUDWidget::NativeDestruct()
+ 		}
+ 		RunState->HeroProgressChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+ 		RunState->UltimateChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+-		RunState->QuickReviveChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshQuickReviveState);
++		RunState->QuickReviveChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshBackroomsQuickReviveState);
+ 		RunState->TutorialHintChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialHint);
+ 		RunState->TutorialSubtitleChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::RefreshTutorialSubtitle);
+ 		RunState->DevCheatsChanged.RemoveDynamic(this, &UT66GameplayHUDWidget::MarkHUDDirty);
+diff --git a/Source/T66/UI/HUD/T66GameplayHUDWidget_Build.cpp b/Source/T66/UI/HUD/T66GameplayHUDWidget_Build.cpp
+index 9deed9a1..909c97f3 100644
+--- a/Source/T66/UI/HUD/T66GameplayHUDWidget_Build.cpp
++++ b/Source/T66/UI/HUD/T66GameplayHUDWidget_Build.cpp
+@@ -247,20 +247,20 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
+ 			}
+ 		}
+ 	}
+-	if (!QuickReviveBrush.IsValid())
++	if (!BackroomsReviveBrush.IsValid())
+ 	{
+-		QuickReviveBrush = MakeShared<FSlateBrush>();
+-		QuickReviveBrush->DrawAs = ESlateBrushDrawType::Image;
+-		QuickReviveBrush->ImageSize = FVector2D(26.f, 26.f);
+-		QuickReviveBrush->Tiling = ESlateBrushTileType::NoTile;
+-		QuickReviveBrush->SetResourceObject(nullptr);
++		BackroomsReviveBrush = MakeShared<FSlateBrush>();
++		BackroomsReviveBrush->DrawAs = ESlateBrushDrawType::Image;
++		BackroomsReviveBrush->ImageSize = FVector2D(26.f, 26.f);
++		BackroomsReviveBrush->Tiling = ESlateBrushTileType::NoTile;
++		BackroomsReviveBrush->SetResourceObject(nullptr);
+ 	}
+ 	{
+ 		UT66UITexturePoolSubsystem* TexPool = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
+ 		if (TexPool)
+ 		{
+-			const TSoftObjectPtr<UTexture2D> QuickReviveSoft(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
+-			T66SlateTexture::BindSharedBrushAsync(TexPool, QuickReviveSoft, this, QuickReviveBrush, FName(TEXT("HUDQuickRevive")), false);
++			const TSoftObjectPtr<UTexture2D> BackroomsQuickReviveSoft(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
++			T66SlateTexture::BindSharedBrushAsync(TexPool, BackroomsQuickReviveSoft, this, BackroomsReviveBrush, FName(TEXT("HUDBackroomsRevive")), false);
+ 		}
+ 	}
+ 
+@@ -455,17 +455,17 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
+ 			]
+ 		];
+ 
+-	TSharedRef<SWidget> QuickReviveIconRowRef =
+-		SAssignNew(QuickReviveIconRowBox, SBox)
++	TSharedRef<SWidget> BackroomsReviveIconRowRef =
++		SAssignNew(BackroomsReviveIconRowBox, SBox)
+ 		.Visibility(EVisibility::Collapsed)
+ 		.WidthOverride(GT66BottomLeftAbilityBoxSize)
+ 		.HeightOverride(GT66BottomLeftAbilityBoxSize)
+ 		[
+ 			FT66FlatStyle::AttachMetadata(StaticCastSharedRef<SWidget>(
+-				SAssignNew(QuickReviveIconImage, SImage)
+-				.Image(QuickReviveBrush.Get())
++				SAssignNew(BackroomsReviveIconImage, SImage)
++				.Image(BackroomsReviveBrush.Get())
+ 				.ColorAndOpacity(FLinearColor::White)),
+-				TEXT("GameplayHUD.QuickRevive.Icon"),
++				TEXT("GameplayHUD.BackroomsQuickRevive.Icon"),
+ 				TEXT("Icon"))
+ 		];
+ 
+@@ -1667,7 +1667,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
+ 											.VAlign(VAlign_Center)
+ 											.Visibility(EVisibility::HitTestInvisible)
+ 											[
+-												QuickReviveIconRowRef
++												BackroomsReviveIconRowRef
+ 											]
+ 										]
+ 									]
+diff --git a/Source/T66/UI/HUD/T66GameplayHUDWidget_Refresh.cpp b/Source/T66/UI/HUD/T66GameplayHUDWidget_Refresh.cpp
+index 970bd382..39f59f0c 100644
+--- a/Source/T66/UI/HUD/T66GameplayHUDWidget_Refresh.cpp
++++ b/Source/T66/UI/HUD/T66GameplayHUDWidget_Refresh.cpp
+@@ -737,7 +737,7 @@ void UT66GameplayHUDWidget::RefreshHearts()
+ }
+ 
+ 
+-void UT66GameplayHUDWidget::RefreshQuickReviveState()
++void UT66GameplayHUDWidget::RefreshBackroomsQuickReviveState()
+ {
+ 	UT66RunStateSubsystem* RunState = GetRunState();
+ 	if (!RunState)
+@@ -745,15 +745,15 @@ void UT66GameplayHUDWidget::RefreshQuickReviveState()
+ 		return;
+ 	}
+ 
+-	if (QuickReviveIconRowBox.IsValid())
++	if (BackroomsReviveIconRowBox.IsValid())
+ 	{
+-		QuickReviveIconRowBox->SetVisibility(RunState->HasBackroomsQuickReviveItem() ? EVisibility::Visible : EVisibility::Collapsed);
++		BackroomsReviveIconRowBox->SetVisibility(RunState->HasBackroomsQuickReviveItem() ? EVisibility::Visible : EVisibility::Collapsed);
+ 	}
+ 
+ 	FString BackroomsQAMode;
+ 	if (FParse::Value(FCommandLine::Get(), TEXT("T66BackroomsAutoQA="), BackroomsQAMode))
+ 	{
+-		const bool bIconVisible = QuickReviveIconRowBox.IsValid() && QuickReviveIconRowBox->GetVisibility() == EVisibility::Visible;
++		const bool bIconVisible = BackroomsReviveIconRowBox.IsValid() && BackroomsReviveIconRowBox->GetVisibility() == EVisibility::Visible;
+ 		UE_LOG(
+ 			LogT66HUD,
+ 			Log,
+diff --git a/Source/T66/UI/Screens/T66RunSummaryScreen.cpp b/Source/T66/UI/Screens/T66RunSummaryScreen.cpp
+index 8180a393..a73e06d9 100644
+--- a/Source/T66/UI/Screens/T66RunSummaryScreen.cpp
++++ b/Source/T66/UI/Screens/T66RunSummaryScreen.cpp
+@@ -3135,7 +3135,6 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
+ 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "ReflectDamage", "Reflect Damage"), FormatPercent(RunState->GetReflectDamageFraction()));
+ 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CrushChance", "Crush Chance"), FormatPercent(RunState->GetCrushChance01()));
+ 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "AssassinateChance", "Assassinate Chance"), FormatPercent(RunState->GetAssassinateChance01()));
+-				AddStatLineText(NSLOCTEXT("T66.RunSummary", "MoveSpeedMultiplier", "Move Speed Mult"), FormatMultiplier(RunState->GetMovementSpeedSecondaryMultiplier()));
+ 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "RollCooldown", "Roll Cooldown"), FormatMultiplier(RunState->GetDashCooldownMultiplier()));
+ 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "AttackRange", "Attack Range"), FormatFloat(RunState->GetHeroBaseAttackRange(), 0));
+ 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CloseRange", "Close Range"), FormatFloat(RunState->GetCloseRangeThreshold(), 0));
+diff --git a/Source/T66/UI/T66GameplayHUDWidget.h b/Source/T66/UI/T66GameplayHUDWidget.h
+index c0305cb3..a1df3f27 100644
+--- a/Source/T66/UI/T66GameplayHUDWidget.h
++++ b/Source/T66/UI/T66GameplayHUDWidget.h
+@@ -104,7 +104,7 @@ public:
+ 	void RefreshHearts();
+ 
+ 	UFUNCTION()
+-	void RefreshQuickReviveState();
++	void RefreshBackroomsQuickReviveState();
+ 
+ 	UFUNCTION()
+ 	void RefreshLootPrompt();
+@@ -325,9 +325,9 @@ protected:
+ 	TSharedPtr<FSlateBrush> HeartBrush;
+ 	TSharedPtr<FSlateBrush> HeartBlessingBrush;
+ 	TArray<TSharedPtr<FSlateBrush>> HeartTierBrushes;
+-	TSharedPtr<SBox> QuickReviveIconRowBox;
+-	TSharedPtr<SImage> QuickReviveIconImage;
+-	TSharedPtr<FSlateBrush> QuickReviveBrush;
++	TSharedPtr<SBox> BackroomsReviveIconRowBox;
++	TSharedPtr<SImage> BackroomsReviveIconImage;
++	TSharedPtr<FSlateBrush> BackroomsReviveBrush;
+ 	TSharedPtr<SBox> DifficultyRowBox;
+ 	TArray<TSharedPtr<SBorder>> DifficultyBorders;
+ 	TArray<TSharedPtr<SImage>> DifficultyImages;

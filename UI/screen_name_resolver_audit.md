@@ -23,7 +23,6 @@ After this audit, an unknown `-T66FrontendScreen=<name>` logs `Error` and reques
 | Settings | SettingsScreen | Settings |
 | LanguageSelect | Language | LanguageSelect |
 | Achievements |  | Achievements |
-| Minigames |  | Minigames |
 | PauseMenu | Pause | PauseMenu |
 | ReportBug |  | ReportBug |
 | RunSummary |  | RunSummary |
@@ -72,7 +71,6 @@ After this audit, an unknown `-T66FrontendScreen=<name>` logs `Error` and reques
 | Diplomas | PowerUp | Label mismatch. `Diplomas` is a Power Up tab/category, not a resolver screen. |
 | Drugs | PowerUp | Label mismatch. `Drugs` is a Power Up tab/category, not a resolver screen. |
 | Steam Achievements | Achievements | Label mismatch. `Steam` is an Achievements tab/category, not a resolver screen. |
-| Minigames | Minigames | OK. |
 | Settings -> Retro FX | Settings | Label mismatch only for the tab; resolver screen is `Settings`. |
 | Daily Descent | DailyDescent | OK. |
 | Challenges | Challenges | OK. |

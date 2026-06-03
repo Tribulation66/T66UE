@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tribulation66.local/performance/board_saturation_frame_sample.schema.v2.json",
+  "title": "T66 Performance Board Saturation Frame Sample",
+  "type": "object",
+  "required": [
+    "SchemaVersion",
+    "SessionTimeSeconds",
+    "GameTimeSeconds",
+    "FrameTimeMs",
+    "BoardSaturationValid",
+    "LiveRegularEnemies",
+    "PendingSpawns",
+    "ActiveEnemyProjectiles",
+    "TotalMassEnemyCount",
+    "MassEnemyCountByFamily",
+    "MassEnemyCountByLODTier",
+    "PromotedActorCount",
+    "PromotionsPerSecond",
+    "DemotionsPerSecond",
+    "MassProjectileFireRequestsPerSecond",
+    "MassProcessorFrameCostsUs",
+    "BoardSaturationSampleAgeSeconds",
+    "WorldName",
+    "MapName"
+  ],
+  "properties": {
+    "SchemaVersion": { "type": "integer", "const": 2 },
+    "SessionTimeSeconds": { "type": "number" },
+    "GameTimeSeconds": { "type": "number" },
+    "FrameTimeMs": { "type": "number" },
+    "BoardSaturationValid": { "type": "boolean" },
+    "LiveRegularEnemies": { "type": "integer" },
+    "PendingSpawns": { "type": "integer" },
+    "ActiveEnemyProjectiles": { "type": "integer" },
+    "TotalMassEnemyCount": { "type": "integer", "minimum": 0 },
+    "MassEnemyCountByFamily": {
+      "type": "object",
+      "required": ["Melee", "Ranged", "Rush", "Flying"],
+      "properties": {
+        "Melee": { "type": "integer", "minimum": 0 },
+        "Ranged": { "type": "integer", "minimum": 0 },
+        "Rush": { "type": "integer", "minimum": 0 },
+        "Flying": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "MassEnemyCountByLODTier": {
+      "type": "object",
+      "required": ["High", "Medium", "Low", "Off"],
+      "properties": {
+        "High": { "type": "integer", "minimum": 0 },
+        "Medium": { "type": "integer", "minimum": 0 },
+        "Low": { "type": "integer", "minimum": 0 },
+        "Off": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "PromotedActorCount": { "type": "integer", "minimum": 0 },
+    "PromotionsPerSecond": { "type": "number", "minimum": 0 },
+    "DemotionsPerSecond": { "type": "number", "minimum": 0 },
+    "MassProjectileFireRequestsPerSecond": { "type": "number", "minimum": 0 },
+    "MassProcessorFrameCostsUs": {
+      "type": "object",
+      "required": [
+        "Spawn",
+        "TargetAcquisition",
+        "SafeZone",
+        "MovementIntent",
+        "MovementApply",
+        "RangedFire",
+        "DamageApplication",
+        "TouchDamage",
+        "Lifecycle",
+        "LOD",
+        "DebugDraw",
+        "Representation"
+      ],
+      "properties": {
+        "Spawn": { "type": "number", "minimum": 0 },
+        "TargetAcquisition": { "type": "number", "minimum": 0 },
+        "SafeZone": { "type": "number", "minimum": 0 },
+        "MovementIntent": { "type": "number", "minimum": 0 },
+        "MovementApply": { "type": "number", "minimum": 0 },
+        "RangedFire": { "type": "number", "minimum": 0 },
+        "DamageApplication": { "type": "number", "minimum": 0 },
+        "TouchDamage": { "type": "number", "minimum": 0 },
+        "Lifecycle": { "type": "number", "minimum": 0 },
+        "LOD": { "type": "number", "minimum": 0 },
+        "DebugDraw": { "type": "number", "minimum": 0 },
+        "Representation": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "BoardSaturationSampleAgeSeconds": { "type": "number" },
+    "WorldName": { "type": "string" },
+    "MapName": { "type": "string" }
+  },
+  "additionalProperties": false
+}

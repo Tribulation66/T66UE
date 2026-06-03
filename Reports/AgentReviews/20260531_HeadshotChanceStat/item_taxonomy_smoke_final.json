@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "checks": [
+    { "name": "Context available", "ok": true, "detail": "World, GameInstance, and RunState are required." },
+    { "name": "Execute rejects boss", "ok": true, "detail": "Boss HP=1000/1000." },
+    { "name": "Execute allows miniboss enemy", "ok": true, "detail": "Enemy HP=0/100 MiniBoss=1." },
+    { "name": "Execute allows miniboss mob", "ok": true, "detail": "Mob HP=0.0/100.0 MiniBoss=1." },
+    { "name": "Assassinate rejects boss", "ok": true, "detail": "Boss HP=1000/1000." },
+    { "name": "Assassinate allows miniboss enemy", "ok": true, "detail": "Enemy HP=0/100 MiniBoss=1." },
+    { "name": "Assassinate allows miniboss mob", "ok": true, "detail": "Mob HP=0.0/100.0 MiniBoss=1." },
+    { "name": "Crush rejects boss", "ok": true, "detail": "Boss HP=1000/1000." },
+    { "name": "Crush allows miniboss enemy", "ok": true, "detail": "Enemy HP=0/100 MiniBoss=1." },
+    { "name": "Crush allows miniboss mob", "ok": true, "detail": "Mob HP=0.0/100.0 MiniBoss=1." },
+    { "name": "Counter damages boss non-lethally", "ok": true, "detail": "Boss HP 1000 -> 995." },
+    { "name": "Reflect damages boss non-lethally", "ok": true, "detail": "Boss HP 995 -> 990." },
+    { "name": "Loot Bag improves interactable reward", "ok": true, "detail": "LootBagMultiplier=2.395." },
+    { "name": "Loot Wheel improves interactable reward", "ok": true, "detail": "LootWheelMultiplier=2.395." },
+    { "name": "Retired item IDs skip inventory", "ok": true, "detail": "Inventory 2 -> 2." }
+  ]
+}

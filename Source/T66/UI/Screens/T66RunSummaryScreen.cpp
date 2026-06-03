@@ -13,6 +13,7 @@
 #include "Core/T66LocalizationSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66LeaderboardRunSummarySaveGame.h"
+#include "Core/T66SaveMigration.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -97,7 +98,7 @@ void UT66RunSummaryScreen::OnScreenActivated_Implementation()
 	const bool bWasViewingSaved = bViewingSavedLeaderboardRunSummary;
 	const TObjectPtr<UT66LeaderboardRunSummarySaveGame> PrevSummary = LoadedSavedSummary;
 	const bool bConsumedRequest = LoadSavedRunSummaryIfRequested();
-	if (!bConsumedRequest && bViewingSavedLeaderboardRunSummary && HasValidLiveRunSummaryContext())
+	if (!bConsumedRequest && bViewingSavedLeaderboardRunSummary)
 	{
 		UE_LOG(LogT66RunSummary, Log, TEXT("Run Summary: clearing stale cached viewer state before live activation."));
 		ResetSavedRunSummaryViewerState();
@@ -1512,11 +1513,11 @@ bool UT66RunSummaryScreen::LoadSavedRunSummaryIfRequested()
 		if (LoadedSavedSummary)
 		{
 			const int32 LoadedSummarySchemaVersion = LoadedSavedSummary->SchemaVersion;
-			if (LoadedSummarySchemaVersion < T66SparseActiveHeroIdRunSummarySchemaVersion)
-			{
-				LoadedSavedSummary->HeroID = T66MigrateSparseActiveHeroID(LoadedSavedSummary->HeroID);
-				LoadedSavedSummary->SchemaVersion = T66SparseActiveHeroIdRunSummarySchemaVersion;
-			}
+			T66MigrateLocalRunSummarySaveFields(
+				LoadedSavedSummary->SchemaVersion,
+				LoadedSavedSummary->HeroID,
+				LoadedSavedSummary->EquippedIdols,
+				LoadedSavedSummary->EquippedIdolTiers);
 			bViewingSavedLeaderboardRunSummary = true;
 			LoadedSavedSummarySlotName = SlotName;
 
@@ -1732,8 +1733,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		const FString FlatProofUrl = ProofOfRunUrl.IsEmpty()
 			? FString(TEXT("youtube.com/watch?v=run-proof-001"))
 			: ProofOfRunUrl;
-		const bool bShowFlatProofActions = bViewingSavedLeaderboardRunSummary
-			|| (!bDailyClimbSummaryMode && (bAwaitingBackendRankData || bBackendRankDataReceived));
+		const bool bShowFlatProofActions = bViewingSavedLeaderboardRunSummary;
 		const FText FlatScoreRankLabelText = NSLOCTEXT("T66.RunSummary", "ScoreRankLabel", "Score");
 		const FText FlatSpeedRunRankLabelText = NSLOCTEXT("T66.RunSummary", "SpeedRunRankLabel", "Speed Run");
 		FString AutoDumpPathForReferenceFixture;
@@ -1810,7 +1810,18 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 		{
 			FlatIdolsPtr = &LoadedSavedSummary->EquippedIdols;
-			FlatInventoryLocal = LoadedSavedSummary->Inventory;
+			if (LoadedSavedSummary->InventorySlots.Num() > 0)
+			{
+				FlatInventorySlotsPtr = &LoadedSavedSummary->InventorySlots;
+				for (const FT66InventorySlot& SavedSlot : LoadedSavedSummary->InventorySlots)
+				{
+					FlatInventoryLocal.Add(SavedSlot.ItemTemplateID);
+				}
+			}
+			else
+			{
+				FlatInventoryLocal = LoadedSavedSummary->Inventory;
+			}
 		}
 		else if (RunState)
 		{
@@ -3117,6 +3128,96 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			{
 				return FText::Format(NSLOCTEXT("T66.RunSummary", "MultiplierValue", "{0}x"), FormatFloat(Value, 2));
 			};
+			auto FormatCompactName = [](FName Value) -> FText
+			{
+				return Value.IsNone() ? NSLOCTEXT("T66.RunSummary", "NoneValue", "None") : FText::FromName(Value);
+			};
+			auto FormatAttackCategory = [](ET66AttackCategory Category) -> FText
+			{
+				switch (Category)
+				{
+				case ET66AttackCategory::AOE: return NSLOCTEXT("T66.RunSummary", "AttackCategoryAOE", "AOE");
+				case ET66AttackCategory::Bounce: return NSLOCTEXT("T66.RunSummary", "AttackCategoryBounce", "Bounce");
+				case ET66AttackCategory::DOT: return NSLOCTEXT("T66.RunSummary", "AttackCategoryDOT", "DOT");
+				case ET66AttackCategory::Pierce:
+				default:
+					return NSLOCTEXT("T66.RunSummary", "AttackCategoryPierce", "Pierce");
+				}
+			};
+			auto AddSecondaryStatValue = [&](ET66SecondaryStatType StatType, float Value)
+			{
+				if (!T66IsLiveSecondaryStatType(StatType))
+				{
+					return;
+				}
+				const FText Label = Loc ? Loc->GetText_SecondaryStatName(StatType) : StaticEnum<ET66SecondaryStatType>()->GetDisplayNameTextByValue(static_cast<int64>(StatType));
+				AddStatLineText(Label, FormatFloat(Value, 1));
+			};
+			auto AddSavedEnrichedLines = [&]()
+			{
+				if (!LoadedSavedSummary)
+				{
+					return;
+				}
+
+				AddStatLine(NSLOCTEXT("T66.RunSummary", "NoIdolStacks", "No Idol Stacks"), LoadedSavedSummary->NoIdolSelectionStacks);
+				AddSecondaryStatValue(ET66SecondaryStatType::FirePower, LoadedSavedSummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::FirePower));
+				AddSecondaryStatValue(ET66SecondaryStatType::IcePower, LoadedSavedSummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::IcePower));
+				AddSecondaryStatValue(ET66SecondaryStatType::ElectricityPower, LoadedSavedSummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::ElectricityPower));
+				AddSecondaryStatValue(ET66SecondaryStatType::NaturePower, LoadedSavedSummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::NaturePower));
+				AddStatLineText(
+					NSLOCTEXT("T66.RunSummary", "MobLoot", "Mob Loot"),
+					FText::Format(
+						NSLOCTEXT("T66.RunSummary", "MobLootSummaryValue", "{0} collected / {1} sold / {2} left"),
+						FText::AsNumber(LoadedSavedSummary->MobLootQuantityCollectedThisRun),
+						FText::AsNumber(LoadedSavedSummary->MobLootQuantitySoldThisRun),
+						FText::AsNumber(LoadedSavedSummary->MobLootRemainingStack)));
+				int32 SavedGamblerBetTotal = 0;
+				int32 SavedGamblerPayoutTotal = 0;
+				for (const FT66AntiCheatGamblerGameSummary& Summary : LoadedSavedSummary->GamblerOutcomeSummaries)
+				{
+					SavedGamblerBetTotal += Summary.TotalBetGold;
+					SavedGamblerPayoutTotal += Summary.TotalPayoutGold;
+				}
+				AddStatLineText(
+					NSLOCTEXT("T66.RunSummary", "GamblerResults", "Gambler"),
+					FText::Format(
+						NSLOCTEXT("T66.RunSummary", "GamblerSummaryValue", "{0} games / {1} bet / {2} paid"),
+						FText::AsNumber(LoadedSavedSummary->GamblerOutcomeSummaries.Num()),
+						FText::AsNumber(SavedGamblerBetTotal),
+						FText::AsNumber(SavedGamblerPayoutTotal)));
+				AddStatLineText(
+					NSLOCTEXT("T66.RunSummary", "Weapon", "Weapon"),
+					FText::Format(
+						NSLOCTEXT("T66.RunSummary", "WeaponSummaryValue", "{0} / {1} / {2} shots / {3} deg"),
+						FormatCompactName(LoadedSavedSummary->EquippedWeaponID),
+						FormatAttackCategory(LoadedSavedSummary->EquippedWeaponBranch),
+						FText::AsNumber(LoadedSavedSummary->EquippedWeaponProjectileCount),
+						FormatFloat(LoadedSavedSummary->EquippedWeaponSpreadAngleDegrees, 1)));
+				AddStatLineText(
+					NSLOCTEXT("T66.RunSummary", "Pet", "Pet"),
+					FText::Format(
+						NSLOCTEXT("T66.RunSummary", "PetSummaryValue", "{0} / skin {1} / bond {2} / loot {3}"),
+						FormatCompactName(LoadedSavedSummary->ActivePetID),
+						FormatCompactName(LoadedSavedSummary->ActivePetSkinID),
+						FText::AsNumber(LoadedSavedSummary->ActivePetBondStagesCleared),
+						FText::AsNumber(LoadedSavedSummary->PetMobLootQuantityCollectedThisRun)));
+				AddStatLineText(
+					NSLOCTEXT("T66.RunSummary", "VendorEconomy", "Vendor"),
+					FText::Format(
+						NSLOCTEXT("T66.RunSummary", "VendorSummaryValue", "{0} gold / {1} debt / {2} inventory value"),
+						FText::AsNumber(LoadedSavedSummary->CurrentGold),
+						FText::AsNumber(LoadedSavedSummary->CurrentDebt),
+						FText::AsNumber(LoadedSavedSummary->InventorySellValueTotal)));
+				AddStatLineText(
+					NSLOCTEXT("T66.RunSummary", "Boss", "Boss"),
+					FText::Format(
+						NSLOCTEXT("T66.RunSummary", "BossSummaryValue", "{0} / HP {1}/{2} / parts {3}"),
+						FormatCompactName(LoadedSavedSummary->ActiveBossID),
+						FText::AsNumber(LoadedSavedSummary->BossCurrentHP),
+						FText::AsNumber(LoadedSavedSummary->BossMaxHP),
+						FText::AsNumber(LoadedSavedSummary->BossParts.Num())));
+			};
 
 			StatsRowsBox->AddSlot().AutoHeight().Padding(0.f, 8.f, 0.f, 8.f)
 			[
@@ -3130,7 +3231,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			if (RunState)
 			{
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CritChance", "Crit Chance"), FormatPercent(RunState->GetCritChance01()));
-				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CritDamage", "Crit Damage"), FormatMultiplier(RunState->GetCritDamageMultiplier()));
+				AddStatLineText(NSLOCTEXT("T66.RunSummary", "HeadshotChance", "Headshot Chance"), FormatPercent(RunState->GetHeadshotChance01()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "LifeSteal", "Life Steal"), FormatPercent(RunState->GetLifeStealFraction()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "ReflectDamage", "Reflect Damage"), FormatPercent(RunState->GetReflectDamageFraction()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CrushChance", "Crush Chance"), FormatPercent(RunState->GetCrushChance01()));
@@ -3141,17 +3242,93 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "LongRange", "Long Range"), FormatFloat(RunState->GetLongRangeThreshold(), 0));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CloseRangeDamage", "Close Damage"), FormatMultiplier(RunState->GetCloseRangeDamageMultiplier()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "LongRangeDamage", "Long Damage"), FormatMultiplier(RunState->GetLongRangeDamageMultiplier()));
+				AddSecondaryStatValue(ET66SecondaryStatType::FirePower, RunState->GetSecondaryStatValue(ET66SecondaryStatType::FirePower));
+				AddSecondaryStatValue(ET66SecondaryStatType::IcePower, RunState->GetSecondaryStatValue(ET66SecondaryStatType::IcePower));
+				AddSecondaryStatValue(ET66SecondaryStatType::ElectricityPower, RunState->GetSecondaryStatValue(ET66SecondaryStatType::ElectricityPower));
+				AddSecondaryStatValue(ET66SecondaryStatType::NaturePower, RunState->GetSecondaryStatValue(ET66SecondaryStatType::NaturePower));
+				AddStatLine(NSLOCTEXT("T66.RunSummary", "NoIdolStacks", "No Idol Stacks"), RunState->GetNoIdolSelectionStacks());
+				AddStatLineText(
+					NSLOCTEXT("T66.RunSummary", "MobLoot", "Mob Loot"),
+					FText::Format(
+						NSLOCTEXT("T66.RunSummary", "MobLootSummaryValue", "{0} collected / {1} sold / {2} left"),
+						FText::AsNumber(RunState->GetMobLootQuantityCollectedThisRun()),
+						FText::AsNumber(RunState->GetMobLootQuantitySoldThisRun()),
+						FText::AsNumber(RunState->GetCollectedMobLootStack())));
+				{
+					TArray<FT66AntiCheatGamblerGameSummary> LiveGamblerSummaries;
+					RunState->GetAntiCheatGamblerSummaries(LiveGamblerSummaries);
+					int32 LiveGamblerBetTotal = 0;
+					int32 LiveGamblerPayoutTotal = 0;
+					for (const FT66AntiCheatGamblerGameSummary& Summary : LiveGamblerSummaries)
+					{
+						LiveGamblerBetTotal += Summary.TotalBetGold;
+						LiveGamblerPayoutTotal += Summary.TotalPayoutGold;
+					}
+					AddStatLineText(
+						NSLOCTEXT("T66.RunSummary", "GamblerResults", "Gambler"),
+						FText::Format(
+							NSLOCTEXT("T66.RunSummary", "GamblerSummaryValue", "{0} games / {1} bet / {2} paid"),
+							FText::AsNumber(LiveGamblerSummaries.Num()),
+							FText::AsNumber(LiveGamblerBetTotal),
+							FText::AsNumber(LiveGamblerPayoutTotal)));
+				}
+				if (const UT66WeaponManagerSubsystem* WeaponManager = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr)
+				{
+					FWeaponData WeaponData;
+					const bool bHasWeaponData = WeaponManager->GetEquippedWeaponData(WeaponData);
+					AddStatLineText(
+						NSLOCTEXT("T66.RunSummary", "Weapon", "Weapon"),
+						FText::Format(
+							NSLOCTEXT("T66.RunSummary", "WeaponSummaryValue", "{0} / {1} / {2} shots / {3} deg"),
+							FormatCompactName(WeaponManager->GetEquippedWeaponID()),
+							FormatAttackCategory(bHasWeaponData ? WeaponData.Branch : ET66AttackCategory::Pierce),
+							FText::AsNumber(bHasWeaponData ? WeaponData.ProjectileCount : 0),
+							FormatFloat(bHasWeaponData ? WeaponData.SpreadAngleDegrees : 0.f, 1)));
+				}
+				if (const UT66AchievementsSubsystem* Achievements = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
+				{
+					const FName ActivePetID = Achievements->GetActivePetID();
+					AddStatLineText(
+						NSLOCTEXT("T66.RunSummary", "Pet", "Pet"),
+						FText::Format(
+							NSLOCTEXT("T66.RunSummary", "PetSummaryValue", "{0} / skin {1} / bond {2} / loot {3}"),
+							FormatCompactName(ActivePetID),
+							FormatCompactName(!ActivePetID.IsNone() ? Achievements->GetEquippedPetSkinID(ActivePetID) : NAME_None),
+							FText::AsNumber(!ActivePetID.IsNone() ? Achievements->GetPetBondStagesCleared(ActivePetID) : 0),
+							FText::AsNumber(RunState->GetMobLootQuantityCollectedByPetThisRun())));
+				}
+				AddStatLineText(
+					NSLOCTEXT("T66.RunSummary", "VendorEconomy", "Vendor"),
+					FText::Format(
+						NSLOCTEXT("T66.RunSummary", "VendorSummaryValue", "{0} gold / {1} debt / {2} inventory value"),
+						FText::AsNumber(RunState->GetCurrentGold()),
+						FText::AsNumber(RunState->GetCurrentDebt()),
+						FText::AsNumber(RunState->GetInventorySellValueTotal())));
+				AddStatLineText(
+					NSLOCTEXT("T66.RunSummary", "Boss", "Boss"),
+					FText::Format(
+						NSLOCTEXT("T66.RunSummary", "BossSummaryValue", "{0} / HP {1}/{2} / parts {3}"),
+						FormatCompactName(RunState->GetActiveBossID()),
+						FText::AsNumber(RunState->GetBossCurrentHP()),
+						FText::AsNumber(RunState->GetBossMaxHP()),
+						FText::AsNumber(RunState->GetBossPartSnapshots().Num())));
 			}
-			else
+			else if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 			{
-				StatsRowsBox->AddSlot().AutoHeight()
-				[
-					SNew(STextBlock)
-					.Text(NSLOCTEXT("T66.RunSummary", "NoExtendedStatsSnapshot", "No extended stat snapshot saved."))
-					.Font(RunSummaryRegularFont(13))
-					.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
-					.AutoWrapText(true)
-				];
+				TArray<TPair<ET66SecondaryStatType, float>> SavedSecondaryStats;
+				for (const TPair<ET66SecondaryStatType, float>& Pair : LoadedSavedSummary->SecondaryStatValues)
+				{
+					SavedSecondaryStats.Add(Pair);
+				}
+				SavedSecondaryStats.Sort([](const TPair<ET66SecondaryStatType, float>& A, const TPair<ET66SecondaryStatType, float>& B)
+				{
+					return static_cast<uint8>(A.Key) < static_cast<uint8>(B.Key);
+				});
+				for (const TPair<ET66SecondaryStatType, float>& Pair : SavedSecondaryStats)
+				{
+					AddSecondaryStatValue(Pair.Key, Pair.Value);
+				}
+				AddSavedEnrichedLines();
 			}
 		}
 
@@ -3201,7 +3378,18 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 	{
 		IdolsPtr = &LoadedSavedSummary->EquippedIdols;
-		InventoryLocal = LoadedSavedSummary->Inventory;
+		if (LoadedSavedSummary->InventorySlots.Num() > 0)
+		{
+			InvSlotsPtr = &LoadedSavedSummary->InventorySlots;
+			for (const FT66InventorySlot& SavedSlot : LoadedSavedSummary->InventorySlots)
+			{
+				InventoryLocal.Add(SavedSlot.ItemTemplateID);
+			}
+		}
+		else
+		{
+			InventoryLocal = LoadedSavedSummary->Inventory;
+		}
 		TemporaryBuffSlots = LoadedSavedSummary->TemporaryBuffSlots;
 	}
 	else if (RunState)
@@ -3378,7 +3566,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 6.f)
 		[
 			SNew(STextBlock)
-			.Text(NSLOCTEXT("T66.RunSummary", "DrugsUsedTitle", "DRUGS USED"))
+			.Text(NSLOCTEXT("T66.RunSummary", "SteroidsUsedTitle", "STEROIDS USED"))
 			.Font(RunSummaryBoldFont(14))
 			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			.Justification(ETextJustify::Center)

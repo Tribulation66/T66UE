@@ -22,6 +22,26 @@ TABLES = [
         "struct_names": ("BossData", "T66BossData"),
     },
     {
+        "dt_path": "/Game/Data/DT_BossAttacks",
+        "csv": "BossAttacks.csv",
+        "struct_names": ("T66BossAttackOwnershipData", "BossAttackOwnershipData"),
+    },
+    {
+        "dt_path": "/Game/Data/DT_BossAttackDefinitions",
+        "csv": "BossAttackDefinitions.csv",
+        "struct_names": ("T66BossAttackDefinitionData", "BossAttackDefinitionData"),
+    },
+    {
+        "dt_path": "/Game/Data/DT_BossHazardDefinitions",
+        "csv": "BossHazardDefinitions.csv",
+        "struct_names": ("T66BossHazardDefinitionData", "BossHazardDefinitionData"),
+    },
+    {
+        "dt_path": "/Game/Data/DT_BossMovementPatterns",
+        "csv": "BossMovementPatterns.csv",
+        "struct_names": ("T66BossMovementPatternData", "BossMovementPatternData"),
+    },
+    {
         "dt_path": "/Game/Data/DT_Enemies",
         "csv": "Enemies.csv",
         "struct_names": ("T66EnemyData", "EnemyData"),

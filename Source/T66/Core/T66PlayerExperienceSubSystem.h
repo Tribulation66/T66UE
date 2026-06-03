@@ -131,6 +131,12 @@ struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|LevelUp", meta = (ClampMin = "0.0"))
 	float LevelUpWaveRadiusUU = 900.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Headshot", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float HeadshotChancePerBonusPoint = 0.005f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Headshot", meta = (ClampMin = "0.0"))
+	float HeadshotStunDurationSeconds = 0.75f;
 };
 
 class T66_API FT66PlayerExperienceTuningTable
@@ -195,6 +201,8 @@ public:
 	int32 ResolveBossScore(ET66Difficulty Difficulty, int32 BasePointValue, float DifficultyScalar) const;
 	int32 GetDifficultyLevelUpXPThreshold(ET66Difficulty Difficulty) const;
 	float GetDifficultyLevelUpWaveRadiusUU(ET66Difficulty Difficulty) const;
+	float GetDifficultyHeadshotChancePerBonusPoint(ET66Difficulty Difficulty) const;
+	float GetDifficultyHeadshotStunDurationSeconds(ET66Difficulty Difficulty) const;
 
 private:
 	void QueueTuningDataTableLoad();

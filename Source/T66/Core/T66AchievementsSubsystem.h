@@ -50,6 +50,11 @@ public:
 	static constexpr float UnionHealInterval_MediumSeconds = 3.f;
 	static constexpr float UnionHealInterval_HyperSeconds = 1.f;
 
+	/** Pet bond movement tiers. Bond affects pet movement speed only. */
+	static constexpr int32 PetBondTier_MaxStages = UnionTier_HyperStages;
+	static constexpr float PetBondSpeedMultiplierPerStage = 0.03f;
+	static constexpr float PetBondSpeedMultiplierMax = 1.6f;
+
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
@@ -61,6 +66,8 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Achievements")
 	FOnAchievementsUnlocked AchievementsUnlocked;
+
+	static const FName EnterTheKingdomAchievementID;
 
 	/** Current Chad Coupons balance. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements")
@@ -129,6 +136,50 @@ public:
 	/** Persist the current main-frontend hero/companion defaults into the profile. */
 	UFUNCTION(BlueprintCallable, Category = "Profile|Selection")
 	void RememberLastSelectedLoadout(FName HeroID, FName CompanionID);
+
+	/** Most recently selected active pet from the main frontend profile. NAME_None means no pet. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Pets")
+	FName GetActivePetID() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Pets")
+	FName GetLastSelectedPetID() const;
+
+	/** Persist active pet selection. Pet must already be captured unless NAME_None. */
+	UFUNCTION(BlueprintCallable, Category = "Profile|Pets")
+	bool SetActivePetID(FName PetID);
+
+	/** True when the profile owns/captured this pet. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Pets")
+	bool IsPetCaptured(FName PetID) const;
+
+	/** Add a captured pet. First-ever capture auto-equips only when no pet is active. */
+	UFUNCTION(BlueprintCallable, Category = "Profile|Pets")
+	bool CapturePet(FName PetID, bool& bOutAutoEquipped);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Pets")
+	TArray<FName> GetCapturedPetIDs() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Pets")
+	int32 GetPetBondStagesCleared(FName PetID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Pets")
+	float GetPetBondProgress01(FName PetID) const;
+
+	/** Movement-only pet bond multiplier. Does not affect collected amount/value/eligibility. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Pets")
+	float GetPetBondMovementSpeedMultiplier(FName PetID) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Profile|Pets")
+	void AddPetBondStagesCleared(FName PetID, int32 DeltaStagesCleared = 1);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Pets")
+	FName GetEquippedPetSkinID(FName PetID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Pets")
+	TArray<FName> GetOwnedPetSkinIDs(FName PetID) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Profile|Pets")
+	void SetEquippedPetSkinID(FName PetID, FName SkinID);
 
 	/** Hero skins: per-hero ownership. Default is always considered owned. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Achievements|Skins")
@@ -213,11 +264,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	void NotifyGamblerWin();
 
-	/** Highest unlocked Vendor Token level in the profile (0 = none, 1..6 = unlocked). */
+	/** Highest unlocked Vendor Token rank in the profile (0 = none, 1..6 = unlocked). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Vendor")
 	int32 GetVendorTokenUnlockedLevel() const;
 
-	/** Upgrade the persistent Vendor Token level after defeating the Vendor boss on a given difficulty. */
+	/** Upgrade the persistent Vendor Token rank after defeating the Vendor boss on a given difficulty. */
 	UFUNCTION(BlueprintCallable, Category = "Profile|Vendor")
 	int32 UpgradeVendorTokenForDifficulty(ET66Difficulty Difficulty);
 
@@ -247,6 +298,9 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
 	bool TryClaimAchievement(FName AchievementID);
+
+	UFUNCTION(BlueprintCallable, Category = "Achievements")
+	bool UnlockEnterTheKingdomAchievement();
 
 	/** Debug/dev: reset all achievements and Chad Coupons to zero. */
 	UFUNCTION(BlueprintCallable, Category = "Achievements")
@@ -408,4 +462,3 @@ private:
 	UFUNCTION()
 	void HandleLanguageChanged(ET66Language NewLanguage);
 };
-
