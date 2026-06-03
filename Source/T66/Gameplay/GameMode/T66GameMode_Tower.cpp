@@ -814,6 +814,47 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 			MobTouchHPBefore,
 			MobTouchHPAfter));
 
+	int32 SafeZoneRepelMovedAway = 0;
+	float SafeZoneRepelStartDist = -1.f;
+	float SafeZoneRepelEndDist = -1.f;
+	if (ProofWorld && RunState)
+	{
+		AT66PlayerController* PC = Cast<AT66PlayerController>(ProofWorld->GetFirstPlayerController());
+		AT66HeroBase* Hero = PC ? Cast<AT66HeroBase>(PC->GetPawn()) : nullptr;
+		UT66MobManagerSubsystem* MobManager = ProofWorld->GetSubsystem<UT66MobManagerSubsystem>();
+		if (Hero && MobManager)
+		{
+			if (Hero->IsInSafeZone())
+			{
+				Hero->AddSafeZoneOverlap(-1000);
+			}
+			Hero->AddSafeZoneOverlap(+1);
+
+			FActorSpawnParameters MobSpawnParams;
+			MobSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			const FVector MobSpawnLocation = Hero->GetActorLocation() + FVector(260.f, 0.f, 0.f);
+			if (AT66MobBase* ProofMob = ProofWorld->SpawnActor<AT66MobBase>(AT66MobBase::StaticClass(), MobSpawnLocation, FRotator::ZeroRotator, MobSpawnParams))
+			{
+				ProofMob->ConfigureAsMob(FName(TEXT("Slime")), ET66EnemyFamily::Melee, NAME_None, RunState->GetCurrentStage(), RunState->GetDifficultyScalar(), 1.f, RunState->GetFinalSurvivalEnemyScalar(), false);
+				SafeZoneRepelStartDist = FVector::Dist2D(ProofMob->GetActorLocation(), Hero->GetActorLocation());
+				MobManager->Tick(1.0f);
+				SafeZoneRepelEndDist = FVector::Dist2D(ProofMob->GetActorLocation(), Hero->GetActorLocation());
+				SafeZoneRepelMovedAway = SafeZoneRepelEndDist > SafeZoneRepelStartDist + 25.f ? 1 : 0;
+				ProofMob->Destroy();
+			}
+
+			Hero->AddSafeZoneOverlap(-1000);
+		}
+	}
+	RecordCheck(
+		TEXT("SafeZoneRepelsMobsAwayFromPlayer"),
+		SafeZoneRepelMovedAway != 0,
+		FString::Printf(
+			TEXT("MovedAway=%d StartDist=%.1f EndDist=%.1f"),
+			SafeZoneRepelMovedAway,
+			SafeZoneRepelStartDist,
+			SafeZoneRepelEndDist));
+
 	const bool bPass = FailedChecks.Num() == 0;
 	if (bPass)
 	{
