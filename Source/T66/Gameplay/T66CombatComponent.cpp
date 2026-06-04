@@ -4,6 +4,7 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66MobBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66HeroOneAttackVFX.h"
 #include "Gameplay/T66HeroProjectile.h"
@@ -11,6 +12,7 @@
 #include "Gameplay/T66DotMarkerVFX.h"
 #include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66CombatShared.h"
+#include "Gameplay/T66CombatHitZoneComponent.h"
 #include "Gameplay/T66TemporaryProjectileSystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66AudioSubsystem.h"
@@ -343,10 +345,15 @@ namespace
 		}
 
 		const float RadiusSq = Radius * Radius;
+		const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
 		for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
 		{
 			AT66BossBase* Boss = WeakBoss.Get();
 			if (!Boss || Boss == IgnoredActor || !Boss->IsAwakened() || !Boss->IsAlive())
+			{
+				continue;
+			}
+			if (GameMode && !GameMode->ShouldApplyTowerFloorDamage(IgnoredActor, Center, Boss))
 			{
 				continue;
 			}
@@ -372,9 +379,14 @@ namespace
 		}
 
 		const float RadiusSq = Radius * Radius;
+		const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
 		Registry->ForEachDamageableTarget([&](AActor* Target)
 		{
 			if (!Target || Target == IgnoredActor)
+			{
+				return;
+			}
+			if (GameMode && !GameMode->ShouldApplyTowerFloorDamage(IgnoredActor, Center, Target))
 			{
 				return;
 			}
@@ -404,7 +416,13 @@ namespace
 		World->OverlapMultiByChannel(Overlaps, Center, FQuat::Identity, ECC_Pawn, FCollisionShape::MakeSphere(Radius), Params);
 		for (const FOverlapResult& Overlap : Overlaps)
 		{
-			T66AddUniqueActor(Targets, Overlap.GetActor());
+			AActor* OverlapActor = Overlap.GetActor();
+			const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+			if (GameMode && !GameMode->ShouldApplyTowerFloorDamage(IgnoredActor, Center, OverlapActor))
+			{
+				continue;
+			}
+			T66AddUniqueActor(Targets, OverlapActor);
 		}
 
 		T66AppendDamageableTargetsInSphere(World, IgnoredActor, Center, Radius, Targets);
@@ -657,16 +675,48 @@ void UT66CombatComponent::OnRangeEndOverlap(UPrimitiveComponent* /*OverlappedCom
 // ---------------------------------------------------------------------------
 bool UT66CombatComponent::IsValidAutoTarget(AActor* A)
 {
-	if (!A) return false;
+	if (!IsValid(A) || A->IsActorBeingDestroyed()) return false;
 	if (AT66EnemyBase* E = Cast<AT66EnemyBase>(A)) return E->CurrentHP > 0;
 	if (AT66MobBase* M = Cast<AT66MobBase>(A)) return M->IsAliveAndActive();
-	if (AT66BossBase* B = Cast<AT66BossBase>(A)) return B->IsAwakened() && B->IsAlive();
+	if (AT66BossBase* B = Cast<AT66BossBase>(A)) return B->IsCombatTargetable();
 	return false;
 }
 
 bool UT66CombatComponent::IsValidTargetHandle(const FT66CombatTargetHandle& TargetHandle)
 {
-	return TargetHandle.IsValid() && IsValidAutoTarget(TargetHandle.Actor.Get());
+	if (!TargetHandle.IsValid() || !IsValidAutoTarget(TargetHandle.Actor.Get()))
+	{
+		return false;
+	}
+
+	if (UPrimitiveComponent* HitComponent = TargetHandle.HitComponent.Get())
+	{
+		if (!IsValid(HitComponent) || !HitComponent->IsCollisionEnabled())
+		{
+			return false;
+		}
+		if (const UT66CombatHitZoneComponent* HitZone = Cast<UT66CombatHitZoneComponent>(HitComponent))
+		{
+			if (!HitZone->bTargetable)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+bool UT66CombatComponent::IsTargetOnCompatibleTowerDamageFloor(AActor* Target, const FVector& DamageOrigin) const
+{
+	if (!Target)
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	return !GameMode || GameMode->ShouldApplyTowerFloorDamage(GetOwner(), DamageOrigin, Target);
 }
 
 FString UT66CombatComponent::MakeTargetHandleKey(const FT66CombatTargetHandle& TargetHandle)
@@ -844,6 +894,7 @@ AActor* UT66CombatComponent::FindClosestEnemyInRange(const FVector& FromLocation
 		if (!A) continue;
 		if (ExcludeSet && ExcludeSet->Contains(A)) continue;
 		if (!IsValidAutoTarget(A)) continue;
+		if (!IsTargetOnCompatibleTowerDamageFloor(A, FromLocation)) continue;
 		const FT66CombatTargetHandle CandidateHandle = MakeActorTargetHandle(A);
 		if (!HasUnblockedAutoAttackPath(FromLocation, CandidateHandle)) continue;
 		const float DistSq = FVector::DistSquared(FromLocation, GetTargetAimPoint(CandidateHandle));
@@ -863,6 +914,7 @@ AActor* UT66CombatComponent::FindClosestEnemyInRange(const FVector& FromLocation
 				if (!CandidateActor) return;
 				if (ExcludeSet && ExcludeSet->Contains(CandidateActor)) return;
 				if (!IsValidAutoTarget(CandidateActor)) return;
+				if (!IsTargetOnCompatibleTowerDamageFloor(CandidateActor, FromLocation)) return;
 				const FT66CombatTargetHandle CandidateHandle = MakeActorTargetHandle(CandidateActor);
 				if (!HasUnblockedAutoAttackPath(FromLocation, CandidateHandle)) return;
 				const float DistSq = FVector::DistSquared(FromLocation, GetTargetAimPoint(CandidateHandle));
@@ -879,6 +931,7 @@ AActor* UT66CombatComponent::FindClosestEnemyInRange(const FVector& FromLocation
 				if (!Boss) continue;
 				if (ExcludeSet && ExcludeSet->Contains(Boss)) continue;
 				if (!IsValidAutoTarget(Boss)) continue;
+				if (!IsTargetOnCompatibleTowerDamageFloor(Boss, FromLocation)) continue;
 				const FT66CombatTargetHandle CandidateHandle = MakeActorTargetHandle(Boss);
 				if (!HasUnblockedAutoAttackPath(FromLocation, CandidateHandle)) continue;
 				const float DistSq = FVector::DistSquared(FromLocation, GetTargetAimPoint(CandidateHandle));
@@ -928,6 +981,10 @@ FT66CombatTargetHandle UT66CombatComponent::FindClosestTargetHandleInRange(const
 	auto ConsiderActor = [&](AActor* CandidateActor)
 	{
 		if (!CandidateActor || SeenActors.Contains(CandidateActor) || !IsValidAutoTarget(CandidateActor))
+		{
+			return;
+		}
+		if (!IsTargetOnCompatibleTowerDamageFloor(CandidateActor, FromLocation))
 		{
 			return;
 		}
@@ -2499,10 +2556,25 @@ void UT66CombatComponent::TryFire()
 			return;
 		}
 
+		const FT66CombatTargetHandle VisualTargetHandle = MakeActorTargetHandle(Target);
+		if (!IsValidTargetHandle(VisualTargetHandle))
+		{
+			if (CVarT66OutgoingTravelerPoolForceTemporaryWeaponVisual.GetValueOnGameThread() != 0)
+			{
+				UE_LOG(
+					LogT66Combat,
+					Display,
+					TEXT("OutgoingTravelerPoolVisualSkipped Reason=InvalidTargetHandle SourceIdolID=%s Target=%s"),
+					*SourceIdolID.ToString(),
+					Target ? *Target->GetName() : TEXT("None"));
+			}
+			return;
+		}
+
 		const FVector RightVector = OwnerActor->GetActorRightVector().GetSafeNormal();
 		const float CenteredIndex = static_cast<float>(PayloadIndex) - (static_cast<float>(FMath::Max(1, PayloadCount) - 1) * 0.5f);
 		const FVector SpawnLoc = MyLoc + FVector(0.f, 0.f, 48.f) + RightVector * (CenteredIndex * 34.f);
-		const FVector TargetLoc = Target->GetActorLocation() + FVector(0.f, 0.f, 36.f);
+		const FVector TargetLoc = GetTargetAimPoint(VisualTargetHandle);
 		const FRotator SpawnRot = (TargetLoc - SpawnLoc).Rotation();
 		const FLinearColor CoreColor = FT66TemporaryProjectileSystem::HeroProjectileColor();
 		const FName CoreProfile = FT66TemporaryProjectileSystem::GetHeroAttackProfile(AttackCategory);
@@ -2528,7 +2600,7 @@ void UT66CombatComponent::TryFire()
 			FireParams.StartPosition = SpawnLoc;
 			FireParams.TargetPosition = TargetLoc;
 			FireParams.TargetOffset = TargetLoc - Target->GetActorLocation();
-			FireParams.TargetHandle = MakeActorTargetHandle(Target);
+			FireParams.TargetHandle = VisualTargetHandle;
 			FireParams.ProfileID = CoreProfile;
 			FireParams.Color = CoreColor;
 			FireParams.ScaleMultiplier = CoreScaleMultiplier;
@@ -3398,6 +3470,20 @@ void UT66CombatComponent::TryFire()
 		PrimaryTargetHandle.Reset();
 	}
 
+	if (!PrimaryTarget)
+	{
+		return;
+	}
+
+	if (!PrimaryTargetHandle.IsValid() || !IsValidTargetHandle(PrimaryTargetHandle))
+	{
+		if (LockedTarget.Actor.Get() == PrimaryTarget)
+		{
+			ClearLockedTarget();
+		}
+		return;
+	}
+	PrimaryTarget = PrimaryTargetHandle.Actor.Get();
 	if (!PrimaryTarget)
 	{
 		return;
@@ -4355,6 +4441,12 @@ void UT66CombatComponent::ApplyDamageToTargetHandle(const FT66CombatTargetHandle
 {
 	AActor* Target = TargetHandle.Actor.Get();
 	if (!Target) return;
+	AActor* Hero = GetOwner();
+	const FVector DamageOrigin = Hero ? Hero->GetActorLocation() : GetTargetAimPoint(TargetHandle);
+	if (!IsTargetOnCompatibleTowerDamageFloor(Target, DamageOrigin))
+	{
+		return;
+	}
 	// Toxin Stacking (Rogue): enemies with active DOT take +15% damage from all sources.
 	if (CachedRunState)
 	{
@@ -4364,7 +4456,6 @@ void UT66CombatComponent::ApplyDamageToTargetHandle(const FT66CombatTargetHandle
 	}
 	const FName ResolvedSource = SourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : SourceID;
 	UT66FloatingCombatTextSubsystem* FloatingText = CachedFloatingCombatText;
-	AActor* Hero = GetOwner();
 
 	if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Target))
 	{

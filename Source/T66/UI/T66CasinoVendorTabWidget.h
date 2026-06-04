@@ -106,13 +106,6 @@ private:
 	int32 SelectedInventoryIndex = -1;
 	int32 SellInventoryPageIndex = 0;
 
-	// Sell panel
-	TSharedPtr<SBox> SellPanelContainer;
-	TSharedPtr<STextBlock> SellItemNameText;
-	TSharedPtr<STextBlock> SellItemDescText;
-	TSharedPtr<STextBlock> SellItemPriceText;
-	TSharedPtr<SWidget> SellItemButton;
-
 	// Loans/sell controls
 	TSharedPtr<SSpinBox<int32>> BorrowAmountSpin;
 	TSharedPtr<SSpinBox<int32>> PaybackAmountSpin;

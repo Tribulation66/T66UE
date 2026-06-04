@@ -3,6 +3,7 @@
 #include "Gameplay/T66HeroPlagueCloud.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66GameMode.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Components/SphereComponent.h"
@@ -113,9 +114,14 @@ void AT66HeroPlagueCloud::InitFromUltimate(int32 UltimateDamage)
 			TArray<AActor*> Overlapping;
 			Zone->GetOverlappingActors(Overlapping);
 			const FName SourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+			const AT66GameMode* GameMode = Cloud->GetWorld() ? Cast<AT66GameMode>(Cloud->GetWorld()->GetAuthGameMode()) : nullptr;
 			for (AActor* Actor : Overlapping)
 			{
 				if (!IsValid(Actor))
+				{
+					continue;
+				}
+				if (GameMode && !GameMode->ShouldApplyTowerFloorDamage(Cloud, Cloud->GetActorLocation(), Actor))
 				{
 					continue;
 				}

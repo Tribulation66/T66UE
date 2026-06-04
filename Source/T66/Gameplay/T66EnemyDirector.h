@@ -113,6 +113,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Director|Tower")
 	int32 SpawnInitialPopulationForTowerFloor(int32 FloorNumber);
+	int32 DespawnTowerEnemiesAboveFloor(int32 CurrentFloorNumber);
 
 	int32 GetAliveEnemyCount() const { return AliveCount + LightweightAliveCount; }
 	int32 GetAliveRichEnemyCount() const { return AliveCount; }

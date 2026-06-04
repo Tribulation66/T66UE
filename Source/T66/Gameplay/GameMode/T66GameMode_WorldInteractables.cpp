@@ -1212,9 +1212,15 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 					continue;
 				}
 
+				const int32 StrictLocationFloorNumber = GetTowerFloorIndexForLocation(SpawnedActor->GetActorLocation());
+				if (StrictLocationFloorNumber != FloorNumber)
+				{
+					SpawnedActor->Destroy();
+					continue;
+				}
+
 				const int32 ResolvedFloorNumber = T66ResolveTowerFloorForActorPhysical(this, CachedTowerMainMapLayout, SpawnedActor);
-				if (ResolvedFloorNumber == CachedTowerMainMapLayout.StartFloorNumber
-					|| ResolvedFloorNumber == CachedTowerMainMapLayout.BossFloorNumber)
+				if (ResolvedFloorNumber != FloorNumber)
 				{
 					SpawnedActor->Destroy();
 					continue;
@@ -1628,10 +1634,73 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			SyncTowerTrapActivation(true);
 		}
 
+		int32 TowerRemovedStartFloorLeaks = 0;
+		FString TowerRemovedStartFloorLeakClasses;
+		for (TActorIterator<AActor> It(World); It; ++It)
+		{
+			AActor* Actor = *It;
+			if (!Actor)
+			{
+				continue;
+			}
+
+			const bool bExtraWorldInteractable =
+				Actor->IsA<AT66VendorInteractable>()
+				|| Actor->IsA<AT66CasinoInteractable>()
+				|| Actor->IsA<AT66ChestInteractable>()
+				|| Actor->IsA<AT66CrateInteractable>()
+				|| Actor->IsA<AT66LootWheelInteractable>()
+				|| Actor->IsA<AT66LootBagPickup>()
+				|| Actor->IsA<AT66FountainInteractable>()
+				|| Actor->IsA<AT66DifficultyTotem>()
+				|| Actor->IsA<AT66VehicleInteractable>()
+				|| Actor->IsA<AT66SaintNPC>()
+				|| Actor->IsA<AT66OuroborosNPC>();
+			if (!bExtraWorldInteractable)
+			{
+				continue;
+			}
+
+			const int32 TaggedFloorNumber = T66ReadTowerFloorTag(Actor);
+			const int32 StrictLocationFloorNumber = GetTowerFloorIndexForLocation(Actor->GetActorLocation());
+			const int32 PhysicalFloorNumber = T66ResolveTowerFloorForActorPhysical(this, CachedTowerMainMapLayout, Actor);
+			if (TaggedFloorNumber != CachedTowerMainMapLayout.StartFloorNumber
+				&& StrictLocationFloorNumber != CachedTowerMainMapLayout.StartFloorNumber
+				&& PhysicalFloorNumber != CachedTowerMainMapLayout.StartFloorNumber)
+			{
+				continue;
+			}
+
+			++TowerRemovedStartFloorLeaks;
+			if (TowerRemovedStartFloorLeakClasses.Len() < 256)
+			{
+				if (!TowerRemovedStartFloorLeakClasses.IsEmpty())
+				{
+					TowerRemovedStartFloorLeakClasses += TEXT(",");
+				}
+				TowerRemovedStartFloorLeakClasses += FString::Printf(
+					TEXT("%s(Tag=%d,Loc=%d,Phys=%d)"),
+					*Actor->GetClass()->GetName(),
+					TaggedFloorNumber,
+					StrictLocationFloorNumber,
+					PhysicalFloorNumber);
+			}
+			Actor->Destroy();
+		}
+		if (TowerRemovedStartFloorLeaks > 0)
+		{
+			UE_LOG(
+				LogT66GameMode,
+				Warning,
+				TEXT("[MAP] Removed %d invalid tower interactables from reserved start floor: %s"),
+				TowerRemovedStartFloorLeaks,
+				TowerRemovedStartFloorLeakClasses.IsEmpty() ? TEXT("Unknown") : *TowerRemovedStartFloorLeakClasses);
+		}
+
 		UE_LOG(
 			LogT66GameMode,
 			Log,
-			TEXT("[MAP] Tower population spawned on mob floors=%d: chests %d/%d, crates %d/%d, loot wheels %d/%d, fountains %d/%d, loot bags %d/%d, vendors %d/%d, casino interactables %d/%d chance %.0f%%, vehicles %d, ouroboros %d, saints %d, totems %d/%d."),
+			TEXT("[MAP] Tower population spawned on mob floors=%d: chests %d/%d, crates %d/%d, loot wheels %d/%d, fountains %d/%d, loot bags %d/%d, vendors %d/%d, casino interactables %d/%d chance %.0f%%, vehicles %d, ouroboros %d, saints %d, totems %d/%d, removed start-floor leaks %d."),
 			TowerMobFloorNumbers.Num(),
 			TowerSpawnedChests,
 			CountChests,
@@ -1652,7 +1721,8 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			TowerSpawnedOuroboros,
 			TowerSpawnedSaints,
 			TowerSpawnedTotems,
-			CountTotems);
+			CountTotems,
+			TowerRemovedStartFloorLeaks);
 
 		const bool bVendorProofPass = TowerSpawnedVendors == TowerMobFloorNumbers.Num();
 		if (bVendorProofPass)
@@ -2486,8 +2556,8 @@ AT66IdolAltar* AT66GameMode::SpawnIdolAltarAtLocation(const FVector& Location, c
 		IdolAltar = nullptr;
 	}
 
-	// Place near boss death, but offset so it doesn't overlap the Stage Gate.
-	FVector SpawnLoc = Location + FVector(420.f, 260.f, 0.f);
+	// Caller provides the final desired reward location so boss rewards can be spaced deterministically.
+	FVector SpawnLoc = Location;
 
 	// Trace down so altar sits on the ground.
 	FHitResult Hit;

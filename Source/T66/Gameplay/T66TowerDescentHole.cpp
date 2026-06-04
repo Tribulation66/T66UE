@@ -12,10 +12,12 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Components/SceneComponent.h"
 
 namespace
 {
 	static const TCHAR* T66TowerGateTexturePath = TEXT("/Game/World/Tower/Textures/T_TowerDescentGate_Closed.T_TowerDescentGate_Closed");
+	static constexpr float T66TowerDescentTriggerTopBelowSurface = 180.0f;
 
 	static UStaticMesh* T66GetGateCoverMesh()
 	{
@@ -57,14 +59,17 @@ AT66TowerDescentHole::AT66TowerDescentHole()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
+	USceneComponent* SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	RootComponent = SceneRoot;
+
 	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
+	TriggerBox->SetupAttachment(RootComponent);
 	TriggerBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	TriggerBox->SetGenerateOverlapEvents(true);
 	TriggerBox->SetCollisionObjectType(ECC_WorldDynamic);
 	TriggerBox->SetCollisionResponseToAllChannels(ECR_Ignore);
 	TriggerBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	TriggerBox->SetBoxExtent(FVector(900.0f, 900.0f, 1200.0f));
-	RootComponent = TriggerBox;
 
 	GateCoverMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("GateCoverMesh"));
 	GateCoverMesh->SetupAttachment(RootComponent);
@@ -95,12 +100,13 @@ void AT66TowerDescentHole::InitializeHole(
 	if (TriggerBox)
 	{
 		TriggerBox->SetBoxExtent(InTriggerExtent);
+		TriggerBox->SetRelativeLocation(FVector(0.0f, 0.0f, -InTriggerExtent.Z - T66TowerDescentTriggerTopBelowSurface));
 	}
 	if (GateCoverMesh)
 	{
 		const float CoverHalfX = FMath::Max(250.0f, InTriggerExtent.X * 1.05f);
 		const float CoverHalfY = FMath::Max(250.0f, InTriggerExtent.Y * 1.05f);
-		GateCoverMesh->SetRelativeLocation(FVector(0.0f, 0.0f, InTriggerExtent.Z - 110.0f));
+		GateCoverMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 10.0f));
 		GateCoverMesh->SetRelativeScale3D(FVector(CoverHalfX / 50.0f, CoverHalfY / 50.0f, 1.0f));
 	}
 	RefreshGateVisualState();
@@ -120,7 +126,10 @@ bool AT66TowerDescentHole::Interact(AT66HeroBase* Hero)
 
 	bGateOpen = true;
 	RefreshGateVisualState();
-	TriggerDescentForHero(Hero);
+	if (AT66GameMode* GameMode = GetWorld() ? Cast<AT66GameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+	{
+		GameMode->HandleTowerDescentGateOpened(FromFloorNumber, ToFloorNumber);
+	}
 	return true;
 }
 

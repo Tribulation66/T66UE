@@ -350,11 +350,6 @@ void UT66CasinoVendorTabWidget::ReleaseCachedSlateResources()
 	StatsPanelBox.Reset();
 	LiveStatsPanel.Reset();
 	ShopBuybackSwitcher.Reset();
-	SellPanelContainer.Reset();
-	SellItemNameText.Reset();
-	SellItemDescText.Reset();
-	SellItemPriceText.Reset();
-	SellItemButton.Reset();
 	BorrowAmountSpin.Reset();
 	PaybackAmountSpin.Reset();
 	StealPromptContainer.Reset();
@@ -478,8 +473,6 @@ TSharedRef<SWidget> UT66CasinoVendorTabWidget::RebuildWidget()
 	const float ShopCardPadding = bCompactCasinoLayout ? CompactPx(12.f) : FT66FlatStyle::Tokens::Space4;
 	const float ShopNameBoxHeight = bCompactCasinoLayout ? CompactPx(50.f) : 60.f;
 	const float ShopIconSize = ShopCardSize - ShopCardPadding * 2.f;
-	const float InventorySlotSize = bCompactCasinoLayout ? CompactPx(75.f) : FT66FlatStyle::Tokens::InventorySlotSize;
-	const float SellPanelSize = bCompactCasinoLayout ? CompactPx(92.f) : 160.f;
 	const float BankSpinBoxWidth = bCompactCasinoLayout ? CompactPx(140.f) : FT66FlatStyle::Tokens::NPCBankSpinBoxWidth;
 	const float BankSpinBoxHeight = bCompactCasinoLayout ? CompactPx(48.f) : FT66FlatStyle::Tokens::NPCBankSpinBoxHeight;
 	const float CardButtonMinWidth = bCompactCasinoLayout ? 0.f : 100.f;
@@ -965,10 +958,6 @@ TSharedRef<SWidget> UT66CasinoVendorTabWidget::RebuildWidget()
 			SellRow
 		];
 
-	TSharedRef<SUniformGridPanel> InventoryGrid = SNew(SUniformGridPanel);
-	TSharedRef<SWidget> SellBtnWidget = SNullWidget::NullWidget;
-	SellItemButton = SellBtnWidget;
-
 	const FText BuyTitle = Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY");
 	const FText SellTitle = Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL");
 	const FName ShopModeToggleGroup(TEXT("Vendor.ShopMode"));
@@ -1010,37 +999,6 @@ TSharedRef<SWidget> UT66CasinoVendorTabWidget::RebuildWidget()
 			bCompactCasinoLayout ? 22 : 16,
 			FName(TEXT("Vendor.ShopMode.RerollButton")));
 	ContextRerollButtonWidget = ContextRerollButton;
-
-	auto MakeInventoryRotationControls = [&](const int32 FontSize, const FName NamePrefix) -> TSharedRef<SWidget>
-	{
-		TSharedRef<SWidget> RotateButton = FT66FlatStyle::MakeFlatButton(
-			ET66FlatState::Default,
-			NSLOCTEXT("T66.Shop", "NextSellSlots", "NEXT"),
-			FOnClicked::CreateUObject(this, &UT66CasinoVendorTabWidget::OnRotateInventorySlotsClicked),
-			nullptr,
-			nullptr,
-			FMargin(10.f, 6.f),
-			0.f,
-			0.f,
-			true,
-			FontSize,
-			FName(*FString::Printf(TEXT("%s.NextButton"), *NamePrefix.ToString())));
-		InventoryRotateButtonWidget = RotateButton;
-
-		return SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 10.f, 0.f)
-			[
-				SAssignNew(InventoryPageText, STextBlock)
-				.Text(NSLOCTEXT("T66.Shop", "SellSlotPageInitial", "1/1"))
-				.TextStyle(&TextBody)
-				.Font(FT66FlatStyle::Tokens::FontBold(FontSize))
-				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
-			]
-			+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-			[
-				RotateButton
-			];
-	};
 
 	if (bCompactCasinoLayout)
 	{
@@ -1153,91 +1111,6 @@ TSharedRef<SWidget> UT66CasinoVendorTabWidget::RebuildWidget()
 				],
 				nullptr,
 				FName(TEXT("Vendor.BankPanel")));
-
-		TSharedRef<SWidget> InventoryPanel =
-			FT66FlatStyle::MakeFlatPanel(
-				ET66FlatState::Default,
-				FMargin(18.f, 18.f),
-				SNew(SVerticalBox)
-				+ SVerticalBox::Slot().AutoHeight()
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-					[
-						MakeVendorLabel(InventoryTitle, 28, FName(TEXT("Vendor.Inventory.Title")))
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(34.f, 0.f, 32.f, 0.f)
-					[
-						FT66FlatStyle::AttachMetadata(
-							SAssignNew(NetWorthText, STextBlock)
-								.Text(FText::Format(
-									Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}"),
-									FText::AsNumber(0)))
-								.Font(FT66FlatStyle::MakeBoldFont(18))
-								.ColorAndOpacity(FT66FlatStyle::GoodStandingGreen()),
-							FName(TEXT("Vendor.Inventory.NetWorth")),
-							TEXT("Label.Body"),
-							ET66FlatState::Default,
-							TOptional<FLinearColor>(),
-							false,
-							NAME_None,
-							true)
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 32.f, 0.f)
-					[
-						FT66FlatStyle::AttachMetadata(
-							SAssignNew(GoldText, STextBlock)
-								.Text(FText::Format(
-									Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}"),
-									FText::AsNumber(0)))
-								.Font(FT66FlatStyle::MakeBoldFont(18))
-								.ColorAndOpacity(FT66FlatStyle::PrimaryText()),
-							FName(TEXT("Vendor.Inventory.Gold")),
-							TEXT("Label.Body"),
-							ET66FlatState::Default,
-							TOptional<FLinearColor>(),
-							false,
-							NAME_None,
-							true)
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-					[
-						FT66FlatStyle::AttachMetadata(
-							SAssignNew(DebtText, STextBlock)
-								.Text(FText::Format(
-									Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}"),
-									FText::AsNumber(0)))
-								.Font(FT66FlatStyle::MakeBoldFont(18))
-								.ColorAndOpacity(FT66FlatStyle::SelectedText()),
-							FName(TEXT("Vendor.Inventory.Debt")),
-							TEXT("Label.Body"),
-							ET66FlatState::Default,
-							TOptional<FLinearColor>(),
-							false,
-							NAME_None,
-							true)
-					]
-					+ SHorizontalBox::Slot().FillWidth(1.f)
-					[
-						SNew(SSpacer)
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-					[
-						MakeInventoryRotationControls(16, FName(TEXT("Vendor.Inventory.CompactRotate")))
-					]
-				]
-				+ SVerticalBox::Slot().FillHeight(1.f).Padding(0.f, 22.f, 0.f, 0.f)
-				[
-					SNew(SScrollBox)
-					.Orientation(Orient_Horizontal)
-					.ScrollBarVisibility(EVisibility::Collapsed)
-					+ SScrollBox::Slot()
-					[
-						InventoryGrid
-					]
-				],
-				nullptr,
-				FName(TEXT("Vendor.InventoryPanel")));
 
 		TSharedRef<SConstraintCanvas> VendorCanvas = SNew(SConstraintCanvas);
 		AddVendorShopCanvasSlot(VendorCanvas, 17.f, 182.f, 270.f, 651.f,
@@ -1458,120 +1331,6 @@ TSharedRef<SWidget> UT66CasinoVendorTabWidget::RebuildWidget()
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space4 : FT66FlatStyle::Tokens::Space6, 0.f, 0.f)
 		[
 			MainRowContent
-		]
-		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space4 : FT66FlatStyle::Tokens::Space6, 0.f, 0.f)
-		[
-			FT66FlatStyle::MakeFlatOverlayPanel(
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-						[
-							SNew(STextBlock)
-								.Text(InventoryTitle)
-								.TextStyle(&TextHeading)
-								.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
-								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-							]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(bCompactCasinoLayout ? 10.f : 18.f, 0.f, bCompactCasinoLayout ? 10.f : 16.f, 0.f)
-					[
-						SAssignNew(NetWorthText, STextBlock)
-						.Text(FText::Format(
-							Loc ? Loc->GetText_NetWorthFormat() : NSLOCTEXT("T66.GameplayHUD", "NetWorthFormat", "Net Worth: {0}"),
-							FText::AsNumber(0)))
-						.TextStyle(&TextHeading)
-						.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
-						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, bCompactCasinoLayout ? 10.f : 16.f, 0.f)
-					[
-						SAssignNew(GoldText, STextBlock)
-						.Text(FText::Format(
-							Loc ? Loc->GetText_GoldFormat() : NSLOCTEXT("T66.GameplayHUD", "GoldFormat", "Gold: {0}"),
-							FText::AsNumber(0)))
-						.TextStyle(&TextHeading)
-						.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
-						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-					[
-						SAssignNew(DebtText, STextBlock)
-						.Text(FText::Format(
-							Loc ? Loc->GetText_OweFormat() : NSLOCTEXT("T66.GameplayHUD", "OweFormat", "Debt: {0}"),
-							FText::AsNumber(0)))
-						.TextStyle(&TextHeading)
-						.Font(FT66FlatStyle::Tokens::FontBold(SectionHeadingFontSize))
-						.ColorAndOpacity(FT66FlatStyle::Tokens::Danger)
-					]
-					+ SHorizontalBox::Slot().FillWidth(1.f)
-					[
-						SNew(SSpacer)
-					]
-					+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
-					[
-						MakeInventoryRotationControls(SectionHeadingFontSize, FName(TEXT("Vendor.Inventory.Rotate")))
-					]
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space3, 0.f, 0.f)
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(1.f)
-					[
-						SNew(SScrollBox)
-						.Orientation(Orient_Horizontal)
-						.ScrollBarVisibility(EVisibility::Visible)
-						+ SScrollBox::Slot()
-						[
-							InventoryGrid
-						]
-					]
-					+ SHorizontalBox::Slot().AutoWidth().Padding(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space6, 0.f, 0.f, 0.f)
-					[
-						// Sell details for selected item (sized to match inventory slot: 160x160)
-						SAssignNew(SellPanelContainer, SBox)
-						.WidthOverride(SellPanelSize)
-						.HeightOverride(SellPanelSize)
-						.Visibility(EVisibility::Visible)
-						[
-							FT66FlatStyle::MakeFlatOverlayPanel(
-								SNew(SVerticalBox)
-								+ SVerticalBox::Slot().AutoHeight()
-								[
-									SAssignNew(SellItemNameText, STextBlock)
-									.Text(FText::GetEmpty())
-									.TextStyle(&TextHeading)
-									.Font(FT66FlatStyle::Tokens::FontBold(CardHeadingFontSize))
-									.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-								]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
-								[
-									SAssignNew(SellItemDescText, STextBlock)
-									.Text(FText::GetEmpty())
-									.TextStyle(&TextBody)
-									.Font(FT66FlatStyle::Tokens::FontRegular(CardBodyFontSize))
-									.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
-									.AutoWrapText(true)
-								]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
-								[
-									SAssignNew(SellItemPriceText, STextBlock)
-									.Text(FText::GetEmpty())
-									.TextStyle(&TextChip)
-									.Font(FT66FlatStyle::Tokens::FontBold(CardButtonFontSize))
-									.ColorAndOpacity(FT66FlatStyle::Tokens::Accent2)
-								]
-								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 10.f, 0.f, 0.f)
-								[ SellBtnWidget ]
-							,
-								ET66FlatOverlayChromeBrush::InnerPanel,
-								FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space4))
-						]
-					]
-				]
-			,
-				ET66FlatOverlayChromeBrush::ContentPanelWide,
-				FMargin(bCompactCasinoLayout ? FT66FlatStyle::Tokens::Space3 : FT66FlatStyle::Tokens::Space4))
 		];
 
 	const TAttribute<FOptionalSize> ShopPageWidthAttr = TAttribute<FOptionalSize>::CreateLambda([this, OverlayPadding]() -> FOptionalSize
@@ -2295,109 +2054,7 @@ void UT66CasinoVendorTabWidget::RefreshInventory()
 
 void UT66CasinoVendorTabWidget::RefreshSellPanel()
 {
-	UWorld* World = GetWorld();
-	UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World);
-	if (!RunState) return;
-
-	const TArray<FName>& Inv = RunState->GetInventory();
-	const int32 MobLootStack = RunState->GetCollectedMobLootStack();
-	const bool bMobLootSelection = SelectedInventoryIndex == T66MobLootSellSelectionIndex && MobLootStack > 0;
-	const bool bValidSelection = Inv.IsValidIndex(SelectedInventoryIndex) && !Inv[SelectedInventoryIndex].IsNone();
-
-	if (SellPanelContainer.IsValid())
-	{
-		// Keep visible so the inventory layout doesn't "pop" when selecting an item.
-		SellPanelContainer->SetVisibility(EVisibility::Visible);
-	}
-	if (!bMobLootSelection && !bValidSelection)
-	{
-		if (SellItemNameText.IsValid()) SellItemNameText->SetText(FText::GetEmpty());
-		if (SellItemDescText.IsValid()) SellItemDescText->SetText(FText::GetEmpty());
-		if (SellItemPriceText.IsValid()) SellItemPriceText->SetText(FText::GetEmpty());
-		if (SellItemButton.IsValid()) SellItemButton->SetEnabled(false);
-		return;
-	}
-
-	if (bMobLootSelection)
-	{
-		if (SellItemNameText.IsValid())
-		{
-			SellItemNameText->SetText(NSLOCTEXT("T66.Shop", "MobLootSellName", "Mob Loot"));
-		}
-		if (SellItemDescText.IsValid())
-		{
-			SellItemDescText->SetText(NSLOCTEXT("T66.Shop", "MobLootSellDesc", "Collected monster loot. Sells for 1g each."));
-		}
-		if (SellItemPriceText.IsValid())
-		{
-			SellItemPriceText->SetText(FText::Format(
-				NSLOCTEXT("T66.Shop", "SellForFormat", "SELL FOR: {0}g"),
-				FText::AsNumber(RunState->GetCollectedMobLootSellValue())));
-		}
-		if (SellItemButton.IsValid())
-		{
-			SellItemButton->SetEnabled(!IsBossActive());
-		}
-		return;
-	}
-
-	UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
-	FItemData D;
-	const bool bHasData = GI && GI->GetItemData(Inv[SelectedInventoryIndex], D);
-	ET66ItemRarity SelectedRarity = ET66ItemRarity::Black;
-	int32 MainValue = 0;
-	float Line2Multiplier = 0.f;
-	if (RunState)
-	{
-		const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
-		if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
-		{
-			MainValue = Slots[SelectedInventoryIndex].Line1RolledValue;
-			SelectedRarity = Slots[SelectedInventoryIndex].Rarity;
-			Line2Multiplier = Slots[SelectedInventoryIndex].GetLine2Multiplier();
-		}
-	}
-	UT66LocalizationSubsystem* Loc = nullptr;
-	if (UGameInstance* GI2 = World ? World->GetGameInstance() : nullptr)
-	{
-		Loc = GI2->GetSubsystem<UT66LocalizationSubsystem>();
-	}
-
-	if (SellItemNameText.IsValid())
-	{
-		SellItemNameText->SetText(Loc ? Loc->GetText_ItemDisplayNameForRarity(Inv[SelectedInventoryIndex], SelectedRarity) : FText::FromName(Inv[SelectedInventoryIndex]));
-	}
-	if (SellItemDescText.IsValid())
-	{
-		if (!bHasData)
-		{
-			SellItemDescText->SetText(FText::GetEmpty());
-		}
-		else
-		{
-			const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
-			SellItemDescText->SetText(T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SelectedRarity, MainValue, ScaleMult, Line2Multiplier));
-		}
-	}
-	if (SellItemPriceText.IsValid())
-	{
-		int32 SellValue = 0;
-		if (bHasData && RunState)
-		{
-			const TArray<FT66InventorySlot>& Slots = RunState->GetInventorySlots();
-			if (SelectedInventoryIndex >= 0 && SelectedInventoryIndex < Slots.Num())
-			{
-				SellValue = RunState->GetSellGoldForInventorySlot(Slots[SelectedInventoryIndex]);
-			}
-		}
-		SellItemPriceText->SetText(FText::Format(
-			NSLOCTEXT("T66.Shop", "SellForFormat", "SELL FOR: {0}g"),
-			FText::AsNumber(SellValue)));
-	}
-	if (SellItemButton.IsValid())
-	{
-		SellItemButton->SetEnabled(!IsBossActive());
-	}
+	// Sell is card-based; RefreshInventory() updates the visible sell card window.
 }
 
 FReply UT66CasinoVendorTabWidget::OnBack()

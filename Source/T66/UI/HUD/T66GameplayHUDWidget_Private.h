@@ -411,6 +411,7 @@ namespace
 	{
 		Dot,
 		Icon,
+		Cross,
 	};
 
 	static TObjectPtr<UTexture2D> GMinimapIconAtlas = nullptr;
@@ -2218,7 +2219,67 @@ public:
 
 			const FVector2D P = ClampToBounds(RawP);
 
-			if (M.Visual == ET66MapMarkerVisual::Icon && M.IconBrush && M.IconBrush->GetResourceObject())
+			if (M.Visual == ET66MapMarkerVisual::Cross)
+			{
+				const FVector2D CrossSize = bMinimap ? M.DrawSize : (M.DrawSize + FVector2D(10.f, 10.f));
+				const FVector2D Half = CrossSize * 0.5f;
+				const FLinearColor ShadowColor(0.05f, 0.0f, 0.0f, 0.95f);
+				const FLinearColor CrossColor(M.Color.R, M.Color.G, M.Color.B, bMinimap ? 0.98f : 1.0f);
+				const float ShadowThickness = bMinimap ? 7.0f : 9.0f;
+				const float CrossThickness = bMinimap ? 4.5f : 6.5f;
+				const FVector2D ShadowOffset(1.5f, 1.5f);
+
+				const TArray<FVector2D> LineA = { P - Half, P + Half };
+				const TArray<FVector2D> LineB = { FVector2D(P.X - Half.X, P.Y + Half.Y), FVector2D(P.X + Half.X, P.Y - Half.Y) };
+				TArray<FVector2D> ShadowLineA = LineA;
+				TArray<FVector2D> ShadowLineB = LineB;
+				for (FVector2D& Point : ShadowLineA)
+				{
+					Point += ShadowOffset;
+				}
+				for (FVector2D& Point : ShadowLineB)
+				{
+					Point += ShadowOffset;
+				}
+
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId + 8,
+					AllottedGeometry.ToPaintGeometry(),
+					ShadowLineA,
+					ESlateDrawEffect::None,
+					ShadowColor,
+					true,
+					ShadowThickness);
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId + 8,
+					AllottedGeometry.ToPaintGeometry(),
+					ShadowLineB,
+					ESlateDrawEffect::None,
+					ShadowColor,
+					true,
+					ShadowThickness);
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId + 9,
+					AllottedGeometry.ToPaintGeometry(),
+					LineA,
+					ESlateDrawEffect::None,
+					CrossColor,
+					true,
+					CrossThickness);
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LayerId + 9,
+					AllottedGeometry.ToPaintGeometry(),
+					LineB,
+					ESlateDrawEffect::None,
+					CrossColor,
+					true,
+					CrossThickness);
+			}
+			else if (M.Visual == ET66MapMarkerVisual::Icon && M.IconBrush && M.IconBrush->GetResourceObject())
 			{
 				const FVector2D IconSize = bMinimap ? M.DrawSize : (M.DrawSize + FVector2D(4.f, 4.f));
 				const FVector2D TL = P - (IconSize * 0.5f);

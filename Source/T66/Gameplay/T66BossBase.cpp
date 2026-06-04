@@ -688,7 +688,7 @@ int32 AT66BossBase::FindFallbackBossPartIndex() const
 		}
 	}
 
-	return BossPartStates.Num() > 0 ? 0 : INDEX_NONE;
+	return INDEX_NONE;
 }
 
 int32 AT66BossBase::ResolveBossPartIndex(const UPrimitiveComponent* HitComponent, const ET66HitZoneType PreferredZone, const FName PreferredPartID) const
@@ -847,11 +847,22 @@ bool AT66BossBase::SupportsCombatHitZones() const
 FT66CombatTargetHandle AT66BossBase::ResolveCombatTargetHandle(const UPrimitiveComponent* HitComponent, const ET66HitZoneType PreferredZone) const
 {
 	FT66CombatTargetHandle Handle;
+	if (!IsAlive() || IsActorBeingDestroyed())
+	{
+		return Handle;
+	}
+
 	Handle.Actor = const_cast<AT66BossBase*>(this);
 
 	const int32 PartIndex = ResolveBossPartIndex(HitComponent, PreferredZone);
 	if (!BossPartStates.IsValidIndex(PartIndex))
 	{
+		if (BossPartStates.Num() > 0)
+		{
+			Handle.Reset();
+			return Handle;
+		}
+
 		Handle.HitZoneType = PreferredZone == ET66HitZoneType::None ? ET66HitZoneType::Core : PreferredZone;
 		Handle.HitZoneName = T66GetDefaultBossPartID(Handle.HitZoneType);
 		Handle.AimPoint = GetActorLocation();
@@ -873,6 +884,7 @@ FVector AT66BossBase::GetAimPointForHitZone(const ET66HitZoneType HitZoneType) c
 
 void AT66BossBase::InitializeBoss(const FBossData& BossData)
 {
+	bDefeated = false;
 	BossID = BossData.BossID;
 	// Standardized HP baseline: bosses are 1000+ HP.
 	MaxHP = FMath::Max(1000, BossData.MaxHP);
@@ -924,30 +936,73 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 		{
 			Mat->SetVectorParameterValue(TEXT("BaseColor"), BossData.PlaceholderColor);
 		}
+		if (!VisualMesh->GetStaticMesh())
+		{
+			if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
+			{
+				VisualMesh->SetStaticMesh(Sphere);
+			}
+		}
+		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 212.f));
+		VisualMesh->SetRelativeScale3D(FVector(6.f, 6.f, 6.f));
+		VisualMesh->SetHiddenInGame(false, true);
+		VisualMesh->SetVisibility(true, true);
 	}
 
+	bool bAppliedVisual = false;
 	if (UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr)
 	{
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
 			const FName BossVisualID = BossID.IsNone() ? FName(TEXT("Boss")) : BossID;
-			bool bApplied = Visuals->ApplyCharacterVisual(BossVisualID, GetMesh(), nullptr, true, false, false, VisualMesh);
-			if (!bApplied && BossVisualID != FName(TEXT("Boss")))
+			bAppliedVisual = Visuals->ApplyCharacterVisual(BossVisualID, GetMesh(), nullptr, true, false, false, VisualMesh);
+			if (!bAppliedVisual && BossVisualID != FName(TEXT("Boss")))
 			{
-				bApplied = Visuals->ApplyCharacterVisual(FName(TEXT("Boss")), GetMesh(), VisualMesh, true, false, false, VisualMesh);
+				bAppliedVisual = Visuals->ApplyCharacterVisual(FName(TEXT("Boss")), GetMesh(), VisualMesh, true, false, false, VisualMesh);
 			}
 			if (USkeletalMeshComponent* SkelMesh = GetMesh())
 			{
-				if (bApplied && SkelMesh->IsVisible())
+				if (bAppliedVisual && SkelMesh->IsVisible() && !SkelMesh->bHiddenInGame)
 				{
 					SkelMesh->SetRelativeScale3D(SkelMesh->GetRelativeScale3D() * 3.0f);
 				}
 				else
 				{
 					SkelMesh->SetVisibility(false, true);
+					SkelMesh->SetHiddenInGame(true, true);
 				}
 			}
 		}
+	}
+	const bool bSkeletalBodyVisible = GetMesh()
+		&& GetMesh()->GetSkeletalMeshAsset()
+		&& GetMesh()->IsVisible()
+		&& !GetMesh()->bHiddenInGame;
+	const bool bStaticBodyVisible = VisualMesh
+		&& VisualMesh->GetStaticMesh()
+		&& VisualMesh->IsVisible()
+		&& !VisualMesh->bHiddenInGame;
+	if (!bSkeletalBodyVisible && !bStaticBodyVisible && VisualMesh)
+	{
+		if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
+		{
+			VisualMesh->SetStaticMesh(Sphere);
+		}
+		VisualMesh->SetRelativeLocation(FVector(0.f, 0.f, 212.f));
+		VisualMesh->SetRelativeScale3D(FVector(6.f, 6.f, 6.f));
+		VisualMesh->SetHiddenInGame(false, true);
+		VisualMesh->SetVisibility(true, true);
+		if (UMaterialInstanceDynamic* Mat = VisualMesh->CreateAndSetMaterialInstanceDynamic(0))
+		{
+			Mat->SetVectorParameterValue(TEXT("BaseColor"), BossData.PlaceholderColor);
+		}
+		UE_LOG(
+			LogT66BossAttackOwnership,
+			Warning,
+			TEXT("BossVisualFallbackForced BossID=%s AppliedVisual=%d Location=%s"),
+			*BossID.ToString(),
+			bAppliedVisual ? 1 : 0,
+			*GetActorLocation().ToString());
 	}
 
 	// Apply current run difficulty (boss is usually dormant until awaken).
@@ -963,6 +1018,21 @@ void AT66BossBase::InitializeBoss(const FBossData& BossData)
 		RebuildBossPartState(false);
 	}
 }
+
+#if !UE_BUILD_SHIPPING
+bool AT66BossBase::HasVisibleBossBodyForAutomation() const
+{
+	const bool bSkeletalBodyVisible = GetMesh()
+		&& GetMesh()->GetSkeletalMeshAsset()
+		&& GetMesh()->IsVisible()
+		&& !GetMesh()->bHiddenInGame;
+	const bool bStaticBodyVisible = VisualMesh
+		&& VisualMesh->GetStaticMesh()
+		&& VisualMesh->IsVisible()
+		&& !VisualMesh->bHiddenInGame;
+	return bSkeletalBodyVisible || bStaticBodyVisible;
+}
+#endif
 
 void AT66BossBase::ApplyDifficultyScalar(float Scalar)
 {
@@ -2190,6 +2260,7 @@ void AT66BossBase::BeginPlay()
 	}
 
 	bAwakened = false;
+	bDefeated = false;
 	CurrentHP = 0;
 	ArmorDebuffAmount = 0.f;
 	ArmorDebuffSecondsRemaining = 0.f;
@@ -2772,6 +2843,7 @@ void AT66BossBase::ApplyPushAwayFrom(const FVector& PushOrigin, float Distance)
 void AT66BossBase::Awaken()
 {
 	if (bAwakened) return;
+	bDefeated = false;
 	bAwakened = true;
 	CurrentHP = MaxHP;
 	RebuildBossPartState(false);
@@ -3281,6 +3353,14 @@ void AT66BossBase::SetZeroDamageUnkillable(const bool bEnabled, const FName Reas
 	ZeroDamageUnkillableReason = bEnabled ? Reason : NAME_None;
 }
 
+bool AT66BossBase::IsCombatTargetable() const
+{
+	return IsValid(this)
+		&& !IsActorBeingDestroyed()
+		&& bAwakened
+		&& IsAlive();
+}
+
 float AT66BossBase::GetEffectiveArmor() const
 {
 	return FMath::Clamp(Armor - ArmorDebuffAmount, -0.5f, 0.95f);
@@ -3514,11 +3594,23 @@ APawn* AT66BossBase::ResolvePlayerPawn()
 void AT66BossBase::Die()
 {
 	UWorld* World = GetWorld();
+	bDefeated = true;
+	bAwakened = false;
+	CurrentHP = 0;
+	for (FT66BossPartRuntimeState& Part : BossPartStates)
+	{
+		Part.CurrentHP = 0;
+	}
+	RefreshCombatHitZoneState();
 	if (World)
 	{
 		ClearPendingAttackTimers();
 		World->GetTimerManager().ClearTimer(FireTimerHandle);
 		World->GetTimerManager().ClearTimer(AOETimerHandle);
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			Registry->UnregisterBoss(this);
+		}
 		UT66CombatComponent::SpawnDeathBurstAtLocation(World, GetActorLocation(), 32, 120.f);
 		UT66AudioSubsystem::PlayEventAtActorFromWorldContext(this, FName(TEXT("Combat.Boss.Death")), this);
 	}

@@ -7,6 +7,7 @@
 #include "T66SafeZoneComponent.generated.h"
 
 class AT66HeroBase;
+class UStaticMeshComponent;
 
 /** Reusable safe-zone trigger for non-NPC interactables that should protect the local hero. */
 UCLASS(ClassGroup = (T66), meta = (BlueprintSpawnableComponent))
@@ -23,6 +24,10 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "SafeZone")
 	float GetSafeZoneRadius() const { return GetScaledSphereRadius(); }
 
+#if !UE_BUILD_SHIPPING
+	bool HasSafeZoneVisualForAutomation() const;
+#endif
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -37,7 +42,12 @@ private:
 		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	AT66HeroBase* ResolveHero(AActor* OtherActor) const;
+	void EnsureSafeZoneVisual();
+	void UpdateSafeZoneVisual();
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AT66HeroBase> OverlappingHero;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMeshComponent> SafeZoneVisualComponent = nullptr;
 };

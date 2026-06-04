@@ -165,9 +165,13 @@ public:
 	bool GetTowerFloorLayout(int32 FloorNumber, T66TowerMapTerrain::FFloor& OutFloor) const;
 	int32 GetTowerFloorIndexForLocation(const FVector& Location) const;
 	int32 GetCurrentTowerFloorIndex() const;
+	int32 ResolveTowerFloorNumberForActor(const AActor* Actor) const;
+	bool ShouldApplyTowerFloorDamage(const AActor* SourceActor, const FVector& DamageOrigin, const AActor* TargetActor) const;
 	bool TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation) const;
 	bool TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation, FVector& OutWallNormal) const;
+	void HandleTowerDescentGateOpened(int32 FromFloorNumber, int32 ToFloorNumber);
 	void HandleTowerDescentHoleTriggered(APawn* Pawn, int32 FromFloorNumber, int32 ToFloorNumber);
+	int32 DespawnTowerEnemiesAboveFloor(int32 CurrentFloorNumber);
 	void HandleTowerGateGuardianDefeated(AT66EnemyBase* Guardian);
 	void SetEnemyDirectorSpawningPaused(bool bPaused);
 	AT66EnemyDirector* GetEnemyDirectorForDiagnostics();
@@ -260,6 +264,8 @@ protected:
 
 	/** Spawn boss for current stage (dormant until player approaches). */
 	void SpawnBossForCurrentStage();
+	FVector ResolveTowerBossWaitingLocation() const;
+	bool EnsureTowerBossEntryBossReady();
 
 	void SpawnCasinoInteractableIfNeeded();
 
@@ -476,6 +482,7 @@ private:
 	T66TowerMapTerrain::FLayout CachedTowerMainMapLayout;
 	bool bTowerBossEntryTriggered = false;
 	bool bTowerBossEntryApplied = false;
+	bool bTowerBossDefeated = false;
 	float TowerTerrainSafetyAccumulator = 0.f;
 	bool bBackroomsPocketSpawned = false;
 	bool bBackroomsChallengeActive = false;

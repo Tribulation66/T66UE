@@ -15,6 +15,7 @@
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 #include "Engine/World.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -43,10 +44,11 @@ AT66NPCBase::AT66NPCBase()
 	SafeZoneVisual->SetupAttachment(RootComponent);
 	SafeZoneVisual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SafeZoneVisual->SetCastShadow(false);
-	// Use a flat disc on the ground to visualize the safe zone (avoids huge "bubble sphere" confusion).
-	if (UStaticMesh* Cylinder = FT66VisualUtil::GetBasicShapeCylinder())
+	SafeZoneVisual->bReceivesDecals = false;
+	SafeZoneVisual->TranslucencySortPriority = 5;
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
 	{
-		SafeZoneVisual->SetStaticMesh(Cylinder);
+		SafeZoneVisual->SetStaticMesh(Sphere);
 	}
 
 	VisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("VisualMesh"));
@@ -171,13 +173,18 @@ void AT66NPCBase::ApplyVisuals()
 	}
 	if (SafeZoneVisual)
 	{
-		const float ScaleXY = SafeZoneRadius / 50.f; // cylinder radius ~50
-		SafeZoneVisual->SetRelativeScale3D(FVector(ScaleXY, ScaleXY, 0.03f)); // thin sheet
-		FT66VisualUtil::GroundMeshToActorOrigin(SafeZoneVisual);
-		const FVector DiscLoc = SafeZoneVisual->GetRelativeLocation();
-		SafeZoneVisual->SetRelativeLocation(FVector(DiscLoc.X, DiscLoc.Y, DiscLoc.Z + 2.f));
+		const float ScaleXY = SafeZoneRadius / 50.f;
+		const float ScaleZ = FMath::Max(1.0f, (SafeZoneRadius * 0.32f) / 50.f);
+		SafeZoneVisual->SetRelativeScale3D(FVector(ScaleXY, ScaleXY, ScaleZ));
+		SafeZoneVisual->SetRelativeLocation(FVector(0.f, 0.f, SafeZoneRadius * 0.12f));
 
-		if (ColorMat)
+		if (UMaterialInterface* BubbleMaterial = LoadObject<UMaterialInterface>(
+			nullptr,
+			TEXT("/Game/Stylized_VFX_StPack/Materials/M_Bubble.M_Bubble")))
+		{
+			SafeZoneVisual->SetMaterial(0, BubbleMaterial);
+		}
+		else if (ColorMat)
 		{
 			UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, this);
 			if (Mat)

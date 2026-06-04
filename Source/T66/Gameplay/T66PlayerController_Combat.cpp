@@ -52,6 +52,7 @@
 #include "Gameplay/T66TowerDescentHole.h"
 #include "Gameplay/T66CasinoNPC.h"
 #include "Gameplay/T66NPCBase.h"
+#include "Gameplay/T66PetCaptureInteractable.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
@@ -128,7 +129,7 @@ namespace
 		return ItemID == FName(TEXT("Item_VendorToken"));
 	}
 
-	static void ApplyUltimateDamageToRegisteredTargets(UWorld* World, int32 DamageAmount)
+	static void ApplyUltimateDamageToRegisteredTargets(UWorld* World, const AActor* SourceActor, int32 DamageAmount)
 	{
 		if (!World)
 		{
@@ -142,10 +143,16 @@ namespace
 			return;
 		}
 
+		const AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode());
+		const FVector DamageOrigin = SourceActor ? SourceActor->GetActorLocation() : FVector::ZeroVector;
 		for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : Registry->GetEnemies())
 		{
 			if (AT66EnemyBase* Enemy = WeakEnemy.Get())
 			{
+				if (GameMode && !GameMode->ShouldApplyTowerFloorDamage(SourceActor, DamageOrigin, Enemy))
+				{
+					continue;
+				}
 				Enemy->TakeDamageFromHero(DamageAmount, UltimateSourceID, NAME_None);
 			}
 		}
@@ -154,6 +161,10 @@ namespace
 		{
 			if (AT66BossBase* Boss = WeakBoss.Get())
 			{
+				if (GameMode && !GameMode->ShouldApplyTowerFloorDamage(SourceActor, DamageOrigin, Boss))
+				{
+					continue;
+				}
 				if (Boss->IsAwakened() && Boss->IsAlive())
 				{
 					Boss->TakeDamageFromHeroHit(DamageAmount, UltimateSourceID, NAME_None);
@@ -789,7 +800,7 @@ void AT66PlayerController::HandleUltimatePressed()
 		}
 		else
 		{
-			ApplyUltimateDamageToRegisteredTargets(World, UltDmg);
+			ApplyUltimateDamageToRegisteredTargets(World, Hero, UltDmg);
 		}
 		break;
 	case ET66UltimateType::MeteorStrike:
@@ -828,7 +839,7 @@ void AT66PlayerController::HandleUltimatePressed()
 			Combat->PerformUltimateChainLightning(UltDmg);
 		else
 		{
-			ApplyUltimateDamageToRegisteredTargets(World, UltDmg);
+			ApplyUltimateDamageToRegisteredTargets(World, Hero, UltDmg);
 		}
 		break;
 	case ET66UltimateType::PlagueCloud:
@@ -884,7 +895,7 @@ void AT66PlayerController::HandleUltimatePressed()
 	case ET66UltimateType::None:
 	default:
 	{
-		ApplyUltimateDamageToRegisteredTargets(World, UltDmg);
+		ApplyUltimateDamageToRegisteredTargets(World, Hero, UltDmg);
 		break;
 	}
 	}
@@ -1207,6 +1218,7 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66ChestInteractable* ClosestChest = nullptr;
 	AT66CrateInteractable* ClosestCrate = nullptr;
 	AT66GalleryDisplayActor* ClosestGalleryDisplay = nullptr;
+	AT66PetCaptureInteractable* ClosestPetCapture = nullptr;
 	AT66WorldInteractableBase* ClosestWorldInteractable = nullptr;
 	float ClosestStageGateDistSq = InteractRadius * InteractRadius;
 	float ClosestCowardiceGateDistSq = InteractRadius * InteractRadius;
@@ -1223,6 +1235,7 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestChestDistSq = InteractRadius * InteractRadius;
 	float ClosestCrateDistSq = InteractRadius * InteractRadius;
 	float ClosestGalleryDisplayDistSq = InteractRadius * InteractRadius;
+	float ClosestPetCaptureDistSq = InteractRadius * InteractRadius;
 	float ClosestWorldInteractableDistSq = InteractRadius * InteractRadius;
 
 	for (const FOverlapResult& R : Overlaps)
@@ -1270,6 +1283,10 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestTowerDescentHoleDistSq) { ClosestTowerDescentHoleDistSq = DistSq; ClosestTowerDescentHole = TowerDescentHole; }
 		}
+		else if (AT66PetCaptureInteractable* PetCapture = Cast<AT66PetCaptureInteractable>(A))
+		{
+			if (DistSq < ClosestPetCaptureDistSq) { ClosestPetCaptureDistSq = DistSq; ClosestPetCapture = PetCapture; }
+		}
 		else if (FT66ShelvedFeatureGate::IsVehicleInteractablesEnabled())
 		{
 			if (AT66PilotableTractor* Tractor = Cast<AT66PilotableTractor>(A))
@@ -1315,6 +1332,13 @@ void AT66PlayerController::HandleInteractPressed()
 	if (ClosestRecruitableCompanion && ClosestRecruitableCompanion->Interact(this))
 	{
 		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestRecruitableCompanion);
+		return;
+	}
+
+	// Pet capture also appears as a boss reward. Keep it ahead of the Stage Gate so the exit cannot steal the capture prompt.
+	if (ClosestPetCapture && ClosestPetCapture->Interact(this))
+	{
+		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestPetCapture);
 		return;
 	}
 

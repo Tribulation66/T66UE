@@ -2,9 +2,11 @@
 
 #include "Gameplay/T66MobLootSubsystem.h"
 
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Core/T66GameInstance.h"
 #include "Data/T66DataTypes.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Dom/JsonObject.h"
 #include "HAL/IConsoleManager.h"
 #include "Misc/FileHelper.h"
@@ -15,6 +17,8 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "Stats/Stats.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Materials/MaterialInterface.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66MobLoot, Log, All);
 
@@ -107,6 +111,11 @@ void UT66MobLootSubsystem::Deinitialize()
 		NiagaraComponent->DeactivateImmediate();
 		NiagaraComponent->DestroyComponent();
 		NiagaraComponent = nullptr;
+	}
+	if (FallbackVisualComponent)
+	{
+		FallbackVisualComponent->DestroyComponent();
+		FallbackVisualComponent = nullptr;
 	}
 	if (RenderHost)
 	{
@@ -545,7 +554,7 @@ void UT66MobLootSubsystem::InitializeSlots()
 
 bool UT66MobLootSubsystem::EnsureNiagaraComponent()
 {
-	if (NiagaraComponent && NiagaraComponent->IsRegistered())
+	if (NiagaraComponent && NiagaraComponent->IsRegistered() && EnsureFallbackVisualComponent())
 	{
 		return true;
 	}
@@ -554,16 +563,6 @@ bool UT66MobLootSubsystem::EnsureNiagaraComponent()
 	if (!World)
 	{
 		return false;
-	}
-
-	if (!NiagaraSystem)
-	{
-		NiagaraSystem = LoadObject<UNiagaraSystem>(nullptr, T66MobLootPoolAssetPath);
-		if (!NiagaraSystem)
-		{
-			UE_LOG(LogT66MobLoot, Warning, TEXT("[MobLoot] Missing Niagara system %s"), T66MobLootPoolAssetPath);
-			return false;
-		}
 	}
 
 	if (!RenderHost)
@@ -591,10 +590,22 @@ bool UT66MobLootSubsystem::EnsureNiagaraComponent()
 		return false;
 	}
 
+	EnsureFallbackVisualComponent();
+
+	if (!NiagaraSystem)
+	{
+		NiagaraSystem = LoadObject<UNiagaraSystem>(nullptr, T66MobLootPoolAssetPath);
+		if (!NiagaraSystem)
+		{
+			UE_LOG(LogT66MobLoot, Warning, TEXT("[MobLoot] Missing Niagara system %s; using static visible fallback."), T66MobLootPoolAssetPath);
+			return FallbackVisualComponent != nullptr;
+		}
+	}
+
 	NiagaraComponent = NewObject<UNiagaraComponent>(RenderHost, TEXT("MobLootPoolNiagara"), RF_Transient);
 	if (!NiagaraComponent)
 	{
-		return false;
+		return FallbackVisualComponent != nullptr;
 	}
 
 	NiagaraComponent->SetAsset(NiagaraSystem);
@@ -783,11 +794,6 @@ void UT66MobLootSubsystem::TickExpirations(const float DeltaTime)
 
 void UT66MobLootSubsystem::UploadLiveState()
 {
-	if (!NiagaraComponent)
-	{
-		return;
-	}
-
 	const uint64 StartCycles = FPlatformTime::Cycles64();
 	const int32 LiveCount = DenseSlots.Num();
 	PositionUpload.Reset(LiveCount);
@@ -815,23 +821,27 @@ void UT66MobLootSubsystem::UploadLiveState()
 	}
 
 	const uint64 PackEndCycles = FPlatformTime::Cycles64();
-	UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayVector(
-		NiagaraComponent,
-		T66MobLootPositionsParam,
-		PositionUpload);
-	UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayFloat(
-		NiagaraComponent,
-		T66MobLootScalesParam,
-		ScaleUpload);
-	UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayColor(
-		NiagaraComponent,
-		T66MobLootColorsParam,
-		ColorUpload);
-	UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayInt32(
-		NiagaraComponent,
-		T66MobLootQuantitiesParam,
-		QuantityUpload);
-	NiagaraComponent->SetVariableInt(T66MobLootLiveCountParam, LiveCount);
+	if (NiagaraComponent)
+	{
+		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayVector(
+			NiagaraComponent,
+			T66MobLootPositionsParam,
+			PositionUpload);
+		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayFloat(
+			NiagaraComponent,
+			T66MobLootScalesParam,
+			ScaleUpload);
+		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayColor(
+			NiagaraComponent,
+			T66MobLootColorsParam,
+			ColorUpload);
+		UNiagaraDataInterfaceArrayFunctionLibrary::SetNiagaraArrayInt32(
+			NiagaraComponent,
+			T66MobLootQuantitiesParam,
+			QuantityUpload);
+		NiagaraComponent->SetVariableInt(T66MobLootLiveCountParam, LiveCount);
+	}
+	UploadFallbackVisualState();
 
 	Diagnostics.LiveWorldDropCount = LiveCount;
 	Diagnostics.PeakLiveWorldDropCount = FMath::Max(Diagnostics.PeakLiveWorldDropCount, LiveCount);
@@ -863,3 +873,73 @@ void UT66MobLootSubsystem::UploadLiveState()
 			Diagnostics.ExpiredDropTotal);
 	}
 }
+
+bool UT66MobLootSubsystem::EnsureFallbackVisualComponent()
+{
+	if (FallbackVisualComponent && FallbackVisualComponent->IsRegistered())
+	{
+		return true;
+	}
+
+	if (!RenderHost || !RenderRoot)
+	{
+		return false;
+	}
+
+	FallbackVisualComponent = NewObject<UHierarchicalInstancedStaticMeshComponent>(RenderHost, TEXT("MobLootVisibleFallback"), RF_Transient);
+	if (!FallbackVisualComponent)
+	{
+		return false;
+	}
+
+	FallbackVisualComponent->SetMobility(EComponentMobility::Movable);
+	FallbackVisualComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	FallbackVisualComponent->SetGenerateOverlapEvents(false);
+	FallbackVisualComponent->SetCastShadow(false);
+	FallbackVisualComponent->bReceivesDecals = false;
+	FallbackVisualComponent->NumCustomDataFloats = 0;
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
+	{
+		FallbackVisualComponent->SetStaticMesh(Sphere);
+	}
+	if (UMaterialInterface* ColorMat = FT66VisualUtil::GetFlatColorMaterial())
+	{
+		if (UMaterialInstanceDynamic* Mat = UMaterialInstanceDynamic::Create(ColorMat, RenderHost))
+		{
+			FT66VisualUtil::ConfigureFlatColorMaterial(Mat, FLinearColor(1.0f, 0.78f, 0.16f, 1.0f));
+			FallbackVisualComponent->SetMaterial(0, Mat);
+		}
+	}
+	FallbackVisualComponent->SetupAttachment(RenderRoot);
+	FallbackVisualComponent->RegisterComponent();
+	return true;
+}
+
+void UT66MobLootSubsystem::UploadFallbackVisualState()
+{
+	if (!FallbackVisualComponent)
+	{
+		return;
+	}
+
+	FallbackVisualComponent->ClearInstances();
+	for (int32 Index = 0; Index < PositionUpload.Num(); ++Index)
+	{
+		const float SlotScale = ScaleUpload.IsValidIndex(Index) ? FMath::Max(0.01f, ScaleUpload[Index]) : 1.0f;
+		const FVector Position = PositionUpload[Index] + FVector(0.f, 0.f, 32.f * SlotScale);
+		const FTransform InstanceTransform(
+			FQuat::Identity,
+			Position,
+			FVector(0.34f * SlotScale, 0.34f * SlotScale, 0.22f * SlotScale));
+		FallbackVisualComponent->AddInstance(InstanceTransform, true);
+	}
+	FallbackVisualComponent->SetHiddenInGame(PositionUpload.Num() <= 0, true);
+	FallbackVisualComponent->SetVisibility(PositionUpload.Num() > 0, true);
+}
+
+#if !UE_BUILD_SHIPPING
+int32 UT66MobLootSubsystem::GetVisibleMobLootInstanceCountForAutomation() const
+{
+	return FallbackVisualComponent ? FallbackVisualComponent->GetInstanceCount() : 0;
+}
+#endif

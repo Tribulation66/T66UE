@@ -301,6 +301,10 @@ TSharedRef<SWidget> UT66CasinoGamblerTabWidget::RebuildWidget()
 					.MinValue(1)
 					.MaxValue(99999)
 					.Value(GambleAmount)
+					.IsEnabled_Lambda([this]()
+					{
+						return RoundState == ECasinoRoundState::NoGame || RoundState == ECasinoRoundState::ReadyForBet;
+					})
 					.OnValueChanged_Lambda([this](const int32 NewValue)
 					{
 						GambleAmount = FMath::Max(1, NewValue);
@@ -308,10 +312,22 @@ TSharedRef<SWidget> UT66CasinoGamblerTabWidget::RebuildWidget()
 				]
 				+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
 				[
-					MakeCasinoButton(
-						NSLOCTEXT("T66.Gambler", "LockBet", "LOCK BET"),
-						FOnClicked::CreateUObject(this, &UT66CasinoGamblerTabWidget::OnBetClicked),
-						ET66ButtonType::Primary)
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SAssignNew(MainActionButtonBox, SBox)
+						[
+							BuildMainActionButton()
+						]
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 0.f)
+					[
+						SAssignNew(WinCloseButtonBox, SBox)
+						.Visibility(EVisibility::Collapsed)
+						[
+							BuildWinCloseButton()
+						]
+					]
 				],
 				FT66PanelParams(ET66PanelType::Panel2).SetPadding(FT66FlatStyle::Tokens::Space4))
 		]
@@ -358,6 +374,7 @@ TSharedRef<SWidget> UT66CasinoGamblerTabWidget::RebuildWidget()
 	}
 
 	RefreshTopBar();
+	RefreshActionControls();
 	return Root;
 }
 
@@ -424,30 +441,45 @@ FReply UT66CasinoGamblerTabWidget::OnDialogueGamble()
 
 FReply UT66CasinoGamblerTabWidget::OnBetClicked()
 {
-	if (LockedBetAmount > 0)
+	if (RoundState == ECasinoRoundState::LostCloseOnly)
 	{
-		SetStatus(FText::Format(
-			NSLOCTEXT("T66.Gambler", "BetAlreadyLocked", "Bet already locked: {0}"),
-			FText::AsNumber(LockedBetAmount)),
-			FT66FlatStyle::Tokens::TextMuted);
+		FinalizeCasinoSessionIfResolved();
+		CloseOverlay();
 		return FReply::Handled();
 	}
 
-	const int32 BetAmount = FMath::Max(1, GambleAmount);
-	UT66RunStateSubsystem* RunState = ResolveCasinoRunState(this);
-	if (!RunState || !RunState->TrySpendGold(BetAmount))
+	if (RoundState == ECasinoRoundState::WonCanDoubleDown)
 	{
-		SetStatus(NSLOCTEXT("T66.Gambler", "NotEnoughGold", "Not enough gold."), FLinearColor::Red);
-		RefreshTopBar();
+		if (BeginCasinoRound(FMath::Max(1, InitialBetAmount * 2), true))
+		{
+			ResolveLockedCasinoGameAutomatically();
+		}
 		return FReply::Handled();
 	}
 
-	LockedBetAmount = BetAmount;
-	SetStatus(FText::Format(
-		NSLOCTEXT("T66.Gambler", "BetLocked", "Locked wager: {0}"),
-		FText::AsNumber(BetAmount)),
-		FT66FlatStyle::Tokens::Accent2);
-	RefreshTopBar();
+	if (RoundState == ECasinoRoundState::WaitingForChoice)
+	{
+		ResolveLockedCasinoGameAutomatically();
+		return FReply::Handled();
+	}
+
+	if (RoundState != ECasinoRoundState::ReadyForBet)
+	{
+		SetStatus(NSLOCTEXT("T66.Gambler", "ChooseGameFirst", "Choose a game first."), FT66FlatStyle::Tokens::TextMuted);
+		return FReply::Handled();
+	}
+
+	if (BeginCasinoRound(FMath::Max(1, GambleAmount), false))
+	{
+		ResolveLockedCasinoGameAutomatically();
+	}
+	return FReply::Handled();
+}
+
+FReply UT66CasinoGamblerTabWidget::OnWinCloseClicked()
+{
+	FinalizeCasinoSessionIfResolved();
+	CloseOverlay();
 	return FReply::Handled();
 }
 
@@ -456,6 +488,10 @@ FReply UT66CasinoGamblerTabWidget::OnOpenCoinFlip()
 	if (!IsCasinoGameAllowed(FName(TEXT("Casino_CoinFlip"))))
 	{
 		return HandleBlockedCasinoGame();
+	}
+	if (!LockCasinoGame(EGamblerPage::CoinFlip))
+	{
+		return FReply::Handled();
 	}
 	SetPage(EGamblerPage::CoinFlip);
 	ActivateCoinFlipPage();
@@ -468,6 +504,10 @@ FReply UT66CasinoGamblerTabWidget::OnOpenGuessCup()
 	{
 		return HandleBlockedCasinoGame();
 	}
+	if (!LockCasinoGame(EGamblerPage::GuessCup))
+	{
+		return FReply::Handled();
+	}
 	SetPage(EGamblerPage::GuessCup);
 	ActivateGuessCupPage();
 	return FReply::Handled();
@@ -479,6 +519,10 @@ FReply UT66CasinoGamblerTabWidget::OnOpenStickPick()
 	{
 		return HandleBlockedCasinoGame();
 	}
+	if (!LockCasinoGame(EGamblerPage::StickPick))
+	{
+		return FReply::Handled();
+	}
 	SetPage(EGamblerPage::StickPick);
 	ActivateStickPickPage();
 	return FReply::Handled();
@@ -489,6 +533,10 @@ FReply UT66CasinoGamblerTabWidget::OnOpenFindJoker()
 	if (!IsCasinoGameAllowed(FName(TEXT("Casino_FindJoker"))))
 	{
 		return HandleBlockedCasinoGame();
+	}
+	if (!LockCasinoGame(EGamblerPage::FindJoker))
+	{
+		return FReply::Handled();
 	}
 	SetPage(EGamblerPage::FindJoker);
 	ActivateFindJokerPage();
@@ -545,9 +593,16 @@ void UT66CasinoGamblerTabWidget::SetPage(const EGamblerPage Page)
 	{
 		CasinoSwitcher->SetActiveWidgetIndex(CasinoIndex);
 	}
-	bInputLocked = false;
-	SetStatus(FText::GetEmpty());
+	if (RoundState != ECasinoRoundState::WaitingForChoice)
+	{
+		bInputLocked = false;
+	}
+	if (RoundState == ECasinoRoundState::NoGame)
+	{
+		SetStatus(FText::GetEmpty());
+	}
 	RefreshTopBar();
+	RefreshActionControls();
 }
 
 FT66WidgetGameHostContext UT66CasinoGamblerTabWidget::BuildChildHostContext()
@@ -598,6 +653,12 @@ FT66WidgetGameHostContext UT66CasinoGamblerTabWidget::BuildChildHostContext()
 
 void UT66CasinoGamblerTabWidget::ReturnToGameSelection()
 {
+	if (LockedGamePage != EGamblerPage::Casino || RoundState != ECasinoRoundState::NoGame)
+	{
+		SetStatus(NSLOCTEXT("T66.Gambler", "GameLocked", "Game locked. Resolve the wager or close the gambler."), FT66FlatStyle::Tokens::TextMuted);
+		return;
+	}
+
 	if (CoinFlipGameWidget)
 	{
 		CoinFlipGameWidget->DeactivateWidgetGame();
@@ -640,39 +701,273 @@ void UT66CasinoGamblerTabWidget::RefreshTopBar()
 	{
 		FindJokerGameWidget->SetWagerAmount(GetCurrentCasinoWager());
 	}
+	RefreshActionControls();
 }
 
-bool UT66CasinoGamblerTabWidget::TryPayWithLockedBet(int32& OutBetAmount)
+void UT66CasinoGamblerTabWidget::RefreshActionControls()
 {
-	OutBetAmount = LockedBetAmount > 0 ? LockedBetAmount : FMath::Max(1, GambleAmount);
-	if (OutBetAmount <= 0)
+	if (MainActionButtonBox.IsValid())
 	{
-		SetStatus(NSLOCTEXT("T66.Gambler", "InvalidWager", "Choose a wager first."), FLinearColor::Red);
+		MainActionButtonBox->SetContent(BuildMainActionButton());
+	}
+
+	if (WinCloseButtonBox.IsValid())
+	{
+		WinCloseButtonBox->SetVisibility(RoundState == ECasinoRoundState::WonCanDoubleDown ? EVisibility::Visible : EVisibility::Collapsed);
+		WinCloseButtonBox->SetContent(BuildWinCloseButton());
+	}
+}
+
+FText UT66CasinoGamblerTabWidget::GetMainActionLabel() const
+{
+	switch (RoundState)
+	{
+	case ECasinoRoundState::ReadyForBet:
+		return NSLOCTEXT("T66.Gambler", "Bet", "BET");
+	case ECasinoRoundState::WaitingForChoice:
+		return NSLOCTEXT("T66.Gambler", "Resolving", "RESOLVING");
+	case ECasinoRoundState::WonCanDoubleDown:
+		return NSLOCTEXT("T66.Gambler", "DoubleDown", "DOUBLE DOWN");
+	case ECasinoRoundState::LostCloseOnly:
+		return NSLOCTEXT("T66.Gambler", "Close", "CLOSE");
+	case ECasinoRoundState::NoGame:
+	default:
+		return NSLOCTEXT("T66.Gambler", "ChooseGame", "CHOOSE GAME");
+	}
+}
+
+TSharedRef<SWidget> UT66CasinoGamblerTabWidget::BuildMainActionButton()
+{
+	const ET66ButtonType ButtonType = RoundState == ECasinoRoundState::LostCloseOnly
+		? ET66ButtonType::Neutral
+		: ET66ButtonType::Primary;
+	return MakeCasinoButton(
+		GetMainActionLabel(),
+		FOnClicked::CreateUObject(this, &UT66CasinoGamblerTabWidget::OnBetClicked),
+		ButtonType);
+}
+
+TSharedRef<SWidget> UT66CasinoGamblerTabWidget::BuildWinCloseButton()
+{
+	return MakeCasinoButton(
+		NSLOCTEXT("T66.Gambler", "CashOutClose", "CLOSE"),
+		FOnClicked::CreateUObject(this, &UT66CasinoGamblerTabWidget::OnWinCloseClicked),
+		ET66ButtonType::Neutral);
+}
+
+bool UT66CasinoGamblerTabWidget::LockCasinoGame(const EGamblerPage Page)
+{
+	if (LockedGamePage != EGamblerPage::Casino && LockedGamePage != Page)
+	{
+		SetStatus(NSLOCTEXT("T66.Gambler", "AlreadyLockedDifferentGame", "You are locked into your chosen game."), FT66FlatStyle::Tokens::TextMuted);
 		return false;
 	}
 
-	if (LockedBetAmount > 0)
+	if (RoundState == ECasinoRoundState::LostCloseOnly)
 	{
-		LockedBetAmount = 0;
-		RefreshTopBar();
-		return true;
+		SetStatus(NSLOCTEXT("T66.Gambler", "LostCloseOnly", "The wager is lost. Close the gambler."), FLinearColor::Red);
+		return false;
 	}
 
+	LockedGamePage = Page;
+	if (RoundState == ECasinoRoundState::NoGame)
+	{
+		RoundState = ECasinoRoundState::ReadyForBet;
+		SetStatus(NSLOCTEXT("T66.Gambler", "GameLockedReady", "Game locked. Enter a wager and press BET."), FT66FlatStyle::Tokens::Accent2);
+	}
+	RefreshTopBar();
+	return true;
+}
+
+bool UT66CasinoGamblerTabWidget::BeginCasinoRound(const int32 BetAmount, const bool bDoubleDown)
+{
+	if (LockedGamePage == EGamblerPage::Casino)
+	{
+		SetStatus(NSLOCTEXT("T66.Gambler", "ChooseGameBeforeBet", "Choose a game before betting."), FT66FlatStyle::Tokens::TextMuted);
+		return false;
+	}
+
+	const int32 ClampedBet = FMath::Max(1, BetAmount);
 	UT66RunStateSubsystem* RunState = ResolveCasinoRunState(this);
-	if (!RunState || !RunState->TrySpendGold(OutBetAmount))
+	if (!RunState || !RunState->TrySpendGold(ClampedBet))
 	{
 		SetStatus(NSLOCTEXT("T66.Gambler", "NotEnoughGold", "Not enough gold."), FLinearColor::Red);
 		RefreshTopBar();
 		return false;
 	}
 
+	if (!bDoubleDown || InitialBetAmount <= 0)
+	{
+		InitialBetAmount = ClampedBet;
+	}
+
+	LockedBetAmount = ClampedBet;
+	CurrentRoundBetAmount = ClampedBet;
+	RoundState = ECasinoRoundState::WaitingForChoice;
+	bInputLocked = false;
+	bCasinoSessionShouldConsumeOnClose = true;
+	LastResolvedCasinoGameID = NAME_None;
+	LastResolvedCasinoPayoutGold = 0;
+	bLastResolvedCasinoWin = false;
+
+	if (bDoubleDown)
+	{
+		ResetActiveGameForNextRound();
+	}
+
+	SetStatus(FText::Format(
+		bDoubleDown
+			? NSLOCTEXT("T66.Gambler", "DoubleDownLockedFmt", "Double down wager: {0}. Resolving.")
+			: NSLOCTEXT("T66.Gambler", "BetLockedFmt", "Wager: {0}. Resolving."),
+		FText::AsNumber(ClampedBet)),
+		FT66FlatStyle::Tokens::Accent2);
+	RefreshTopBar();
+	return true;
+}
+
+void UT66CasinoGamblerTabWidget::ResolveLockedCasinoGameAutomatically()
+{
+	if (!CanResolveCasinoChoice())
+	{
+		SetStatus(NSLOCTEXT("T66.Gambler", "PressBetFirst", "Press BET before resolving."), FLinearColor::Red);
+		return;
+	}
+
+	int32 ChoiceSeed = 0;
+	int32 ChoiceDrawIndex = INDEX_NONE;
+	switch (LockedGamePage)
+	{
+	case EGamblerPage::CoinFlip:
+		ResolveCoinFlip(DrawCasinoIndex(2, ChoiceSeed, ChoiceDrawIndex) == 0);
+		break;
+	case EGamblerPage::GuessCup:
+		ResolveGuessCup(DrawCasinoIndex(3, ChoiceSeed, ChoiceDrawIndex));
+		break;
+	case EGamblerPage::StickPick:
+		ResolveStickPick(DrawCasinoIndex(5, ChoiceSeed, ChoiceDrawIndex));
+		break;
+	case EGamblerPage::FindJoker:
+		ResolveFindJoker(DrawCasinoIndex(10, ChoiceSeed, ChoiceDrawIndex));
+		break;
+	default:
+		SetStatus(NSLOCTEXT("T66.Gambler", "ChooseGameBeforeResolve", "Choose a game before resolving."), FT66FlatStyle::Tokens::TextMuted);
+		break;
+	}
+}
+
+bool UT66CasinoGamblerTabWidget::CanResolveCasinoChoice() const
+{
+	return RoundState == ECasinoRoundState::WaitingForChoice && CurrentRoundBetAmount > 0;
+}
+
+void UT66CasinoGamblerTabWidget::HandleCasinoRoundCompleted(const FName GameID, const bool bSuccessful, const int32 PayoutGold)
+{
+	LastResolvedCasinoGameID = GameID;
+	LastResolvedCasinoPayoutGold = FMath::Max(0, PayoutGold);
+	bLastResolvedCasinoWin = bSuccessful;
+	CurrentRoundBetAmount = 0;
+	LockedBetAmount = 0;
+	RoundState = bSuccessful ? ECasinoRoundState::WonCanDoubleDown : ECasinoRoundState::LostCloseOnly;
+	bInputLocked = false;
+	bCasinoSessionShouldConsumeOnClose = true;
+
+	SetStatus(
+		bSuccessful
+			? FText::Format(
+				NSLOCTEXT("T66.Gambler", "WinDoubleDownPrompt", "Win. Double down for {0} or close."),
+				FText::AsNumber(FMath::Max(1, InitialBetAmount * 2)))
+			: NSLOCTEXT("T66.Gambler", "LoseClosePrompt", "Lose. Close the gambler."),
+		bSuccessful ? FT66FlatStyle::Tokens::Accent2 : FLinearColor::Red);
+	RefreshTopBar();
+}
+
+void UT66CasinoGamblerTabWidget::ResetActiveGameForNextRound()
+{
+	switch (LockedGamePage)
+	{
+	case EGamblerPage::CoinFlip:
+		if (CoinFlipGameWidget)
+		{
+			CoinFlipGameWidget->ResetForOpen();
+			CoinFlipGameWidget->SetWagerAmount(GetCurrentCasinoWager());
+		}
+		break;
+	case EGamblerPage::GuessCup:
+		if (GuessCupGameWidget)
+		{
+			GuessCupGameWidget->ResetForOpen();
+			GuessCupGameWidget->SetWagerAmount(GetCurrentCasinoWager());
+		}
+		break;
+	case EGamblerPage::StickPick:
+		ActivateStickPickPage();
+		break;
+	case EGamblerPage::FindJoker:
+		if (FindJokerGameWidget)
+		{
+			FindJokerGameWidget->ResetForOpen();
+			FindJokerGameWidget->SetWagerAmount(GetCurrentCasinoWager());
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void UT66CasinoGamblerTabWidget::ResetCasinoSessionState(const bool bClearLockedGame)
+{
+	bInputLocked = false;
+	LockedBetAmount = 0;
+	CurrentRoundBetAmount = 0;
+	InitialBetAmount = 0;
+	LastResolvedCasinoGameID = NAME_None;
+	LastResolvedCasinoPayoutGold = 0;
+	bLastResolvedCasinoWin = false;
+	bCasinoSessionShouldConsumeOnClose = false;
+	RoundState = ECasinoRoundState::NoGame;
+	if (bClearLockedGame)
+	{
+		LockedGamePage = EGamblerPage::Casino;
+	}
+	RefreshTopBar();
+}
+
+bool UT66CasinoGamblerTabWidget::TryPayWithLockedBet(int32& OutBetAmount)
+{
+	if (!CanResolveCasinoChoice())
+	{
+		SetStatus(NSLOCTEXT("T66.Gambler", "PressBetFirst", "Press BET before choosing."), FLinearColor::Red);
+		OutBetAmount = 0;
+		return false;
+	}
+
+	OutBetAmount = CurrentRoundBetAmount;
+	if (OutBetAmount <= 0)
+	{
+		SetStatus(NSLOCTEXT("T66.Gambler", "InvalidWager", "Choose a wager first."), FLinearColor::Red);
+		return false;
+	}
+
+	CurrentRoundBetAmount = 0;
 	RefreshTopBar();
 	return true;
 }
 
 int32 UT66CasinoGamblerTabWidget::GetCurrentCasinoWager() const
 {
-	return LockedBetAmount > 0 ? LockedBetAmount : FMath::Max(1, GambleAmount);
+	if (CurrentRoundBetAmount > 0)
+	{
+		return CurrentRoundBetAmount;
+	}
+	if (LockedBetAmount > 0)
+	{
+		return LockedBetAmount;
+	}
+	if (RoundState == ECasinoRoundState::WonCanDoubleDown && InitialBetAmount > 0)
+	{
+		return FMath::Max(1, InitialBetAmount * 2);
+	}
+	return FMath::Max(1, GambleAmount);
 }
 
 void UT66CasinoGamblerTabWidget::AwardPayoutGoldAmount(const int32 PayoutGold)
@@ -759,13 +1054,7 @@ void UT66CasinoGamblerTabWidget::HandleCasinoWidgetGameResult(const FT66WidgetGa
 		return;
 	}
 
-	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
-	{
-		PC->HandleCasinoInteractableGambleResolved(
-			Result.GameID,
-			Result.bSuccessful,
-			Result.bHasPayout ? Result.Payout : 0);
-	}
+	HandleCasinoRoundCompleted(Result.GameID, Result.bSuccessful, Result.bHasPayout ? Result.Payout : 0);
 }
 
 void UT66CasinoGamblerTabWidget::ReportCasinoResult(const FName GameID, const bool bSuccessful, const int32 PayoutGold)
@@ -921,9 +1210,6 @@ void UT66CasinoGamblerTabWidget::ResolveCoinFlip(const bool bChoseHeads)
 		ComputeCasinoExpectedChanceWithRescue(0.5f, ResolveGamblingLuckRescueChance01(this)),
 		ActionSequence);
 	ReportCasinoResult(FName(TEXT("Casino_CoinFlip")), bWin, PayoutGold);
-	SetStatus(bWin ? NSLOCTEXT("T66.Gambler", "CasinoWin", "Win.") : NSLOCTEXT("T66.Gambler", "CasinoLose", "Lose."),
-		bWin ? FT66FlatStyle::Tokens::Accent2 : FLinearColor::Red);
-	bInputLocked = false;
 }
 
 void UT66CasinoGamblerTabWidget::ResolveGuessCup(const int32 CupIndex)
@@ -970,9 +1256,6 @@ void UT66CasinoGamblerTabWidget::ResolveGuessCup(const int32 CupIndex)
 		ComputeCasinoExpectedChanceWithRescue(1.f / 3.f, ResolveGamblingLuckRescueChance01(this)),
 		ActionSequence);
 	ReportCasinoResult(FName(TEXT("Casino_GuessTheCup")), bWin, PayoutGold);
-	SetStatus(bWin ? NSLOCTEXT("T66.Gambler", "CasinoWin", "Win.") : NSLOCTEXT("T66.Gambler", "CasinoLose", "Lose."),
-		bWin ? FT66FlatStyle::Tokens::Accent2 : FLinearColor::Red);
-	bInputLocked = false;
 }
 
 void UT66CasinoGamblerTabWidget::ResolveStickPick(const int32 StickIndex)
@@ -1019,9 +1302,6 @@ void UT66CasinoGamblerTabWidget::ResolveStickPick(const int32 StickIndex)
 		ComputeCasinoExpectedChanceWithRescue(0.2f, ResolveGamblingLuckRescueChance01(this)),
 		ActionSequence);
 	ReportCasinoResult(FName(TEXT("Casino_PickLongestShortestStick")), bWin, PayoutGold);
-	SetStatus(bWin ? NSLOCTEXT("T66.Gambler", "CasinoWin", "Win.") : NSLOCTEXT("T66.Gambler", "CasinoLose", "Lose."),
-		bWin ? FT66FlatStyle::Tokens::Accent2 : FLinearColor::Red);
-	bInputLocked = false;
 }
 
 void UT66CasinoGamblerTabWidget::ResolveFindJoker(const int32 CardIndex)
@@ -1068,9 +1348,6 @@ void UT66CasinoGamblerTabWidget::ResolveFindJoker(const int32 CardIndex)
 		ComputeCasinoExpectedChanceWithRescue(0.1f, ResolveGamblingLuckRescueChance01(this)),
 		ActionSequence);
 	ReportCasinoResult(FName(TEXT("Casino_FindJoker")), bWin, PayoutGold);
-	SetStatus(bWin ? NSLOCTEXT("T66.Gambler", "CasinoWin", "Win.") : NSLOCTEXT("T66.Gambler", "CasinoLose", "Lose."),
-		bWin ? FT66FlatStyle::Tokens::Accent2 : FLinearColor::Red);
-	bInputLocked = false;
 }
 
 int32 UT66CasinoGamblerTabWidget::DrawCasinoIndex(const int32 ExclusiveMax, int32& OutPreDrawSeed, int32& OutDrawIndex) const
@@ -1153,10 +1430,28 @@ void UT66CasinoGamblerTabWidget::OpenCasinoPage()
 	SetPage(EGamblerPage::Casino);
 }
 
+void UT66CasinoGamblerTabWidget::FinalizeCasinoSessionIfResolved()
+{
+	if (!bCasinoSessionShouldConsumeOnClose)
+	{
+		return;
+	}
+
+	bCasinoSessionShouldConsumeOnClose = false;
+
+	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
+	{
+		PC->HandleCasinoInteractableGambleResolved(
+			LastResolvedCasinoGameID,
+			bLastResolvedCasinoWin,
+			LastResolvedCasinoPayoutGold);
+	}
+}
+
 void UT66CasinoGamblerTabWidget::CloseOverlay()
 {
-	bInputLocked = false;
-	LockedBetAmount = 0;
+	FinalizeCasinoSessionIfResolved();
+	ResetCasinoSessionState(true);
 
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
@@ -1173,3 +1468,71 @@ void UT66CasinoGamblerTabWidget::CloseOverlay()
 		PC->RestoreGameplayInputMode();
 	}
 }
+
+#if !UE_BUILD_SHIPPING
+bool UT66CasinoGamblerTabWidget::RunCasinoDoubleDownAutomationProof(FString& OutDetail)
+{
+	OutDetail.Reset();
+	UT66RunStateSubsystem* RunState = ResolveCasinoRunState(this);
+	if (!RunState)
+	{
+		OutDetail = TEXT("RunStateMissing");
+		return false;
+	}
+
+	const int32 GoldBefore = RunState->GetCurrentGold();
+	RunState->AddGold(10000, ET66GoldTransactionSource::Gambler);
+
+	ResetCasinoSessionState(true);
+	GambleAmount = 10;
+	if (!LockCasinoGame(EGamblerPage::CoinFlip))
+	{
+		OutDetail = TEXT("LockFailed");
+		return false;
+	}
+
+	const bool bInitialBet = BeginCasinoRound(10, false);
+	const int32 InitialRoundAmount = CurrentRoundBetAmount;
+	const bool bInitialWaiting = RoundState == ECasinoRoundState::WaitingForChoice && CurrentRoundBetAmount == 10 && InitialBetAmount == 10;
+	AwardPayoutGoldAmount(20);
+	ReportCasinoResult(FName(TEXT("Casino_CoinFlip")), true, 20);
+	const bool bWinState = RoundState == ECasinoRoundState::WonCanDoubleDown && GetCurrentCasinoWager() == 20;
+
+	const bool bDoubleDownBet = BeginCasinoRound(20, true);
+	const int32 DoubleDownRoundAmount = CurrentRoundBetAmount;
+	const bool bDoubleDownWaiting = RoundState == ECasinoRoundState::WaitingForChoice && CurrentRoundBetAmount == 20 && InitialBetAmount == 10;
+	ReportCasinoResult(FName(TEXT("Casino_CoinFlip")), false, 0);
+	const bool bLossState = RoundState == ECasinoRoundState::LostCloseOnly && bCasinoSessionShouldConsumeOnClose;
+	const bool bRejectAfterLoss = !LockCasinoGame(EGamblerPage::CoinFlip);
+
+	const int32 GoldAfter = RunState->GetCurrentGold();
+	const int32 GoldDelta = GoldAfter - GoldBefore;
+	const int32 ExpectedGoldDelta = 10000 - 10 + 20 - 20;
+	ResetCasinoSessionState(true);
+	OutDetail = FString::Printf(
+		TEXT("GoldBefore=%d GoldAfter=%d GoldDelta=%d ExpectedGoldDelta=%d InitialBet=%d InitialRoundAmount=%d InitialWaiting=%d WinState=%d DoubleDownBet=%d DoubleDownRoundAmount=%d DoubleDownWaiting=%d LossState=%d RejectAfterLoss=%d"),
+		GoldBefore,
+		GoldAfter,
+		GoldDelta,
+		ExpectedGoldDelta,
+		bInitialBet ? 1 : 0,
+		InitialRoundAmount,
+		bInitialWaiting ? 1 : 0,
+		bWinState ? 1 : 0,
+		bDoubleDownBet ? 1 : 0,
+		DoubleDownRoundAmount,
+		bDoubleDownWaiting ? 1 : 0,
+		bLossState ? 1 : 0,
+		bRejectAfterLoss ? 1 : 0);
+	return bInitialBet
+		&& InitialRoundAmount == 10
+		&& bInitialWaiting
+		&& bWinState
+		&& bDoubleDownBet
+		&& DoubleDownRoundAmount == 20
+		&& bDoubleDownWaiting
+		&& bLossState
+		&& bRejectAfterLoss
+		&& GoldDelta == ExpectedGoldDelta;
+}
+#endif

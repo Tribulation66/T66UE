@@ -180,9 +180,6 @@ void UT66GameplayHUDWidget::RefreshMapData()
 	static const TArray<FVector2D> EmptyTowerPolygon;
 	static const TArray<FBox2D> EmptyTowerWalkableFloorBoxes;
 	static const TArray<FBox2D> EmptyTowerMazeWallBoxes;
-	static constexpr float TowerMapRevealRadius = 2600.0f;
-	static constexpr float TowerMapObjectMarkerVisibilityRadius = 3400.0f;
-	const TArray<FVector2D>* ActiveTowerRevealPoints = nullptr;
 	FLinearColor ActiveTowerMapTint = FLinearColor::White;
 	FLinearColor ActiveTowerWallFillColor = FLinearColor(0.14f, 0.11f, 0.09f, 1.0f);
 	FLinearColor ActiveTowerWallStrokeColor = FLinearColor(0.92f, 0.86f, 0.72f, 1.0f);
@@ -268,8 +265,6 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			ActiveTowerWallFillColor = TowerArtStyle.WallFill;
 			ActiveTowerWallStrokeColor = TowerArtStyle.WallStroke;
 		}
-
-		ActiveTowerRevealPoints = TowerRevealPointsByFloor.Find(ActiveTowerFloorNumber);
 	}
 	else
 	{
@@ -285,7 +280,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 				ActiveTowerFloorCenter - ActiveTowerFloorHalfExtents,
 				ActiveTowerFloorCenter + ActiveTowerFloorHalfExtents);
 			MinimapWidget->SetMinimapHalfExtent(FMath::Max(ActiveTowerFloorHalfExtents.X, ActiveTowerFloorHalfExtents.Y));
-			MinimapWidget->SetRevealMask(true, ActiveTowerRevealPoints ? *ActiveTowerRevealPoints : EmptyRevealPoints, TowerMapRevealRadius);
+			MinimapWidget->SetRevealMask(false, EmptyRevealPoints, 0.0f);
 			MinimapWidget->SetTowerPolygon(ActiveTowerPolygon);
 			MinimapWidget->SetTowerHole(bHasActiveTowerHole, ActiveTowerHoleCenter, ActiveTowerHoleHalfExtents);
 			MinimapWidget->SetTowerWalkableFloorBoxes(ActiveTowerWalkableFloorBoxes);
@@ -321,7 +316,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 				ActiveTowerFloorCenter - ActiveTowerFloorHalfExtents,
 				ActiveTowerFloorCenter + ActiveTowerFloorHalfExtents);
 			FullMapWidget->SetLockFullMapToBounds(true);
-			FullMapWidget->SetRevealMask(true, ActiveTowerRevealPoints ? *ActiveTowerRevealPoints : EmptyRevealPoints, TowerMapRevealRadius);
+			FullMapWidget->SetRevealMask(false, EmptyRevealPoints, 0.0f);
 			FullMapWidget->SetTowerPolygon(ActiveTowerPolygon);
 			FullMapWidget->SetTowerHole(bHasActiveTowerHole, ActiveTowerHoleCenter, ActiveTowerHoleHalfExtents);
 			FullMapWidget->SetTowerWalkableFloorBoxes(ActiveTowerWalkableFloorBoxes);
@@ -357,7 +352,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			return false;
 		}
 
-		return IsTowerMapRevealPointVisible(ActiveTowerFloorNumber, FVector2D(Location.X, Location.Y));
+		return true;
 	};
 
 	auto ShouldShowTowerObjectMarker = [&](const FVector& Location) -> bool
@@ -372,7 +367,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			return false;
 		}
 
-		return FVector2D::DistSquared(PlayerXY, FVector2D(Location.X, Location.Y)) <= FMath::Square(TowerMapObjectMarkerVisibilityRadius);
+		return true;
 	};
 
 	const bool bWorldChanged = (MapCacheWorld.Get() != World);
@@ -545,6 +540,17 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		}
 
 		Markers.Add(M);
+	}
+
+	if (bTowerLayout && ActiveTowerFloor && bHasActiveTowerHole)
+	{
+		FT66MapMarker DownGateMarker;
+		DownGateMarker.WorldXY = ActiveTowerHoleCenter;
+		DownGateMarker.Color = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f);
+		DownGateMarker.Label = NSLOCTEXT("T66.Map", "TowerDownGate", "DOWN");
+		DownGateMarker.Visual = ET66MapMarkerVisual::Cross;
+		DownGateMarker.DrawSize = FVector2D(42.f, 42.f);
+		Markers.Add(MoveTemp(DownGateMarker));
 	}
 
 	{

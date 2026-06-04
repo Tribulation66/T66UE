@@ -4,11 +4,17 @@
 
 #include "Core/T66ReleaseVariantSubsystem.h"
 #include "Core/T66ShelvedFeatureGate.h"
+#include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66BossHazardSubsystem.h"
+#include "Gameplay/T66CombatComponent.h"
+#include "Gameplay/T66HeroProjectile.h"
 #include "Gameplay/T66MobBase.h"
+#include "Gameplay/T66MobLootSubsystem.h"
 #include "Gameplay/T66MobManagerSubsystem.h"
+#include "Gameplay/T66OutgoingTravelerPoolSubsystem.h"
 #include "Gameplay/T66ProjectileManagerSubsystem.h"
 #include "Gameplay/T66VendorBoss.h"
+#include "UI/T66CasinoGamblerTabWidget.h"
 #include "UI/T66CasinoVendorTabWidget.h"
 #include "UI/WidgetGames/T66WidgetGameRegistry.h"
 
@@ -23,6 +29,11 @@ namespace
 	static constexpr float T66PlacedTowerMinibossHPScalar = 3.0f;
 	static constexpr float T66PlacedTowerMinibossDamageScalar = 2.0f;
 	static constexpr float T66PlacedTowerMinibossScale = 1.75f;
+	static constexpr float T66SmokeBossRewardCompanionOffsetX = -760.0f;
+	static constexpr float T66SmokeBossRewardPetOffsetY = -900.0f;
+	static constexpr float T66SmokeBossRewardIdolOffsetY = 900.0f;
+	static constexpr float T66SmokeBossRewardGateOffsetX = 1250.0f;
+	static constexpr float T66SmokeBossRewardMinSeparation2D = 600.0f;
 	static const TCHAR* T66TowerTerrainFloorTagPrefix = TEXT("T66_Floor_Tower_");
 
 	static int32 T66ReadTerrainFloorTag(const AActor* Actor)
@@ -52,9 +63,15 @@ namespace
 		return INDEX_NONE;
 	}
 
-	static void T66SetTowerTerrainVisualFloor(UWorld* World, const int32 VisibleFloorNumber)
+	static bool T66IsTowerTerrainFloorVisible(const int32 ActorFloorNumber, const int32 PrimaryVisibleFloorNumber, const int32 SecondaryVisibleFloorNumber)
 	{
-		if (!World || VisibleFloorNumber == INDEX_NONE)
+		return ActorFloorNumber == PrimaryVisibleFloorNumber
+			|| (SecondaryVisibleFloorNumber != INDEX_NONE && ActorFloorNumber == SecondaryVisibleFloorNumber);
+	}
+
+	static void T66SetTowerTerrainVisualFloors(UWorld* World, const int32 PrimaryVisibleFloorNumber, const int32 SecondaryVisibleFloorNumber)
+	{
+		if (!World || PrimaryVisibleFloorNumber == INDEX_NONE)
 		{
 			return;
 		}
@@ -83,7 +100,7 @@ namespace
 				continue;
 			}
 
-			const bool bActiveFloor = ActorFloorNumber == VisibleFloorNumber;
+			const bool bActiveFloor = T66IsTowerTerrainFloorVisible(ActorFloorNumber, PrimaryVisibleFloorNumber, SecondaryVisibleFloorNumber);
 			if (bIsVisualActor)
 			{
 				const bool bShouldBeHidden = !bActiveFloor;
@@ -109,11 +126,17 @@ namespace
 			UE_LOG(
 				LogT66GameMode,
 				Log,
-				TEXT("[MAP] Tower terrain active floor %d (visual actors changed=%d, collision proxies changed=%d)."),
-				VisibleFloorNumber,
+				TEXT("[MAP] Tower terrain active floors primary=%d secondary=%d (visual actors changed=%d, collision proxies changed=%d)."),
+				PrimaryVisibleFloorNumber,
+				SecondaryVisibleFloorNumber,
 				ChangedVisualActors,
 				ChangedCollisionProxyActors);
 		}
+	}
+
+	static void T66SetTowerTerrainVisualFloor(UWorld* World, const int32 VisibleFloorNumber)
+	{
+		T66SetTowerTerrainVisualFloors(World, VisibleFloorNumber, INDEX_NONE);
 	}
 
 	static bool T66ValidateTowerGuardianCandidate(
@@ -385,6 +408,7 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
 	UT66ReleaseVariantSubsystem* ReleaseVariant = GI ? GI->GetSubsystem<UT66ReleaseVariantSubsystem>() : nullptr;
 	UT66CompanionUnlockSubsystem* CompanionUnlocks = GI ? GI->GetSubsystem<UT66CompanionUnlockSubsystem>() : nullptr;
+	UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 
 	const bool bShelvedGatesPass = !FT66ShelvedFeatureGate::IsDailyDescentEnabled();
 	RecordCheck(
@@ -594,7 +618,15 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 		for (TActorIterator<AActor> It(ProofWorld); It; ++It)
 		{
 			AActor* Actor = *It;
-			if (!Actor || T66ReadTowerFloorTag(Actor) != CachedTowerMainMapLayout.StartFloorNumber)
+			if (!Actor)
+			{
+				continue;
+			}
+
+			const int32 TaggedFloorNumber = T66ReadTowerFloorTag(Actor);
+			const int32 PhysicalFloorNumber = GetTowerFloorIndexForLocation(Actor->GetActorLocation());
+			if (TaggedFloorNumber != CachedTowerMainMapLayout.StartFloorNumber
+				&& PhysicalFloorNumber != CachedTowerMainMapLayout.StartFloorNumber)
 			{
 				continue;
 			}
@@ -623,7 +655,11 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 				{
 					StartFloorExtraInteractableNames += TEXT(",");
 				}
-				StartFloorExtraInteractableNames += Actor->GetClass()->GetName();
+				StartFloorExtraInteractableNames += FString::Printf(
+					TEXT("%s(Tag=%d,Phys=%d)"),
+					*Actor->GetClass()->GetName(),
+					TaggedFloorNumber,
+					PhysicalFloorNumber);
 			}
 		}
 
@@ -673,11 +709,33 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 			CasinoOverlayOpenAfterInteract,
 			CasinoActorsOnMobFloors));
 
+	int32 CasinoDoubleDownProofPass = 0;
+	FString CasinoDoubleDownProofDetail(TEXT("NotRun"));
+	if (ProofWorld)
+	{
+		if (APlayerController* PC = ProofWorld->GetFirstPlayerController())
+		{
+			if (UT66CasinoGamblerTabWidget* ProofGambler = CreateWidget<UT66CasinoGamblerTabWidget>(PC, UT66CasinoGamblerTabWidget::StaticClass()))
+			{
+				ProofGambler->SetGamblingOnlyKiosk(true);
+				ProofGambler->SetWinGoldAmount(10);
+				ProofGambler->TakeWidget();
+				CasinoDoubleDownProofPass = ProofGambler->RunCasinoDoubleDownAutomationProof(CasinoDoubleDownProofDetail) ? 1 : 0;
+				ProofGambler->RemoveFromParent();
+			}
+		}
+	}
+	RecordCheck(
+		TEXT("CasinoDoubleDownStateMachine"),
+		CasinoDoubleDownProofPass != 0,
+		CasinoDoubleDownProofDetail);
+
 	int32 CagedSpawned = 0;
 	int32 CagedFreed = 0;
 	int32 CageInteractHandled = 0;
 	int32 CageUnlockBranchGranted = 0;
 	int32 CageUnlockedAfterInteract = 0;
+	int32 CagePromptVisibleAfterFree = 0;
 	FName CageCompanionID = NAME_None;
 	const int32 StageBeforeCageProof = RunState ? RunState->GetCurrentStage() : 1;
 	if (ProofWorld && RunState && CompanionUnlocks)
@@ -691,6 +749,10 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 			: (!CachedTowerMainMapLayout.BossSpawnSurfaceLocation.IsNearlyZero()
 				? CachedTowerMainMapLayout.BossSpawnSurfaceLocation
 				: FVector(0.f, 0.f, 200.f));
+		if (PC && PC->GetPawn())
+		{
+			CageAnchor = PC->GetPawn()->GetActorLocation() + FVector(80.f, 0.f, 0.f);
+		}
 
 		CagedSpawned = SpawnCagedCompanionsForCurrentStage(CageAnchor);
 		CagedFreed = FreeCagedCompanionsForBossClear(CageAnchor);
@@ -707,6 +769,7 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 		if (ProofCompanion)
 		{
 			CageCompanionID = ProofCompanion->CompanionID;
+			CagePromptVisibleAfterFree = ProofCompanion->IsInteractionPromptVisibleForAutomation() ? 1 : 0;
 			CageInteractHandled = (PC && ProofCompanion->Interact(PC)) ? 1 : 0;
 			CageUnlockBranchGranted = ProofCompanion->HasGrantedBossCageUnlock() ? 1 : 0;
 			CageUnlockedAfterInteract = CompanionUnlocks->IsCompanionUnlocked(CageCompanionID) ? 1 : 0;
@@ -718,6 +781,7 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 	const bool bCompanionCagePass =
 		CagedSpawned > 0 &&
 		CagedFreed > 0 &&
+		CagePromptVisibleAfterFree &&
 		CageInteractHandled &&
 		CageUnlockBranchGranted &&
 		CageUnlockedAfterInteract;
@@ -725,10 +789,11 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 		TEXT("BossCagedCompanionInteractUnlock"),
 		bCompanionCagePass,
 		FString::Printf(
-			TEXT("Stage=5 CompanionID=%s Spawned=%d Freed=%d InteractHandled=%d UnlockBranchGranted=%d UnlockedAfter=%d RestoredStage=%d"),
+			TEXT("Stage=5 CompanionID=%s Spawned=%d Freed=%d PromptVisibleAfterFree=%d InteractHandled=%d UnlockBranchGranted=%d UnlockedAfter=%d RestoredStage=%d"),
 			*CageCompanionID.ToString(),
 			CagedSpawned,
 			CagedFreed,
+			CagePromptVisibleAfterFree,
 			CageInteractHandled,
 			CageUnlockBranchGranted,
 			CageUnlockedAfterInteract,
@@ -854,6 +919,893 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 			SafeZoneRepelMovedAway,
 			SafeZoneRepelStartDist,
 			SafeZoneRepelEndDist));
+
+	int32 SafeZoneComponents = 0;
+	int32 SafeZoneVisuals = 0;
+	if (ProofWorld)
+	{
+		for (TObjectIterator<UT66SafeZoneComponent> It; It; ++It)
+		{
+			UT66SafeZoneComponent* SafeZone = *It;
+			if (!SafeZone || SafeZone->GetWorld() != ProofWorld)
+			{
+				continue;
+			}
+			++SafeZoneComponents;
+			if (SafeZone->HasSafeZoneVisualForAutomation())
+			{
+				++SafeZoneVisuals;
+			}
+		}
+	}
+	RecordCheck(
+		TEXT("SafeZoneVisualBubblePresent"),
+		SafeZoneComponents > 0 && SafeZoneVisuals == SafeZoneComponents,
+		FString::Printf(
+			TEXT("Components=%d Visuals=%d"),
+			SafeZoneComponents,
+			SafeZoneVisuals));
+
+	int32 MobLootSpawned = 0;
+	int32 MobLootVisibleInstances = 0;
+	if (ProofWorld)
+	{
+		if (UT66MobLootSubsystem* MobLoot = ProofWorld->GetSubsystem<UT66MobLootSubsystem>())
+		{
+			FT66MobLootHandle MobLootHandle;
+			FT66MobLootSpawnParams MobLootParams;
+			MobLootParams.Position = FVector(1600.f, 0.f, 220.f);
+			MobLootParams.Quantity = 3;
+			MobLootParams.GoldValue = 3;
+			MobLootParams.SourceID = FName(TEXT("SmokeVisibleMobLoot"));
+			MobLootParams.Color = FLinearColor(1.0f, 0.78f, 0.16f, 1.0f);
+			MobLootParams.Scale = 1.25f;
+			MobLootParams.LifetimeSeconds = 30.f;
+			MobLootSpawned = MobLoot->SpawnMobLoot(MobLootParams, MobLootHandle) ? 1 : 0;
+			MobLoot->Tick(0.0f);
+			MobLootVisibleInstances = MobLoot->GetVisibleMobLootInstanceCountForAutomation();
+			MobLoot->ClearAllMobLootForAutomation();
+		}
+	}
+	RecordCheck(
+		TEXT("MobLootHasVisibleGroundMarker"),
+		MobLootSpawned != 0 && MobLootVisibleInstances > 0,
+		FString::Printf(
+			TEXT("Spawned=%d VisibleInstances=%d"),
+			MobLootSpawned,
+			MobLootVisibleInstances));
+
+	int32 LightweightMobLootBagBefore = 0;
+	int32 LightweightMobLootBagAfter = 0;
+	if (ProofWorld && RunState)
+	{
+		for (TActorIterator<AT66LootBagPickup> It(ProofWorld); It; ++It)
+		{
+			++LightweightMobLootBagBefore;
+		}
+		FActorSpawnParameters MobSpawnParams;
+		MobSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		if (AT66MobBase* ProofMob = ProofWorld->SpawnActor<AT66MobBase>(AT66MobBase::StaticClass(), FVector(1800.f, 160.f, 180.f), FRotator::ZeroRotator, MobSpawnParams))
+		{
+			ProofMob->Tags.AddUnique(FName(TEXT("T66_ForceMobLootBagDrop")));
+			ProofMob->ConfigureAsMob(FName(TEXT("Slime")), ET66EnemyFamily::Melee, NAME_None, RunState->GetCurrentStage(), RunState->GetDifficultyScalar(), 1.f, RunState->GetFinalSurvivalEnemyScalar(), false);
+			ProofMob->TakeDamageFromHeroHitZone(999999, ProofMob->ResolveCombatTargetHandle(), FName(TEXT("SmokeLootBag")), FName(TEXT("Automation")));
+		}
+		for (TActorIterator<AT66LootBagPickup> It(ProofWorld); It; ++It)
+		{
+			++LightweightMobLootBagAfter;
+		}
+	}
+	RecordCheck(
+		TEXT("LightweightMobDeathCanDropLootBag"),
+		LightweightMobLootBagAfter > LightweightMobLootBagBefore,
+		FString::Printf(
+			TEXT("Before=%d After=%d"),
+			LightweightMobLootBagBefore,
+			LightweightMobLootBagAfter));
+
+	int32 StageOneBossVisibleBody = 0;
+	int32 MissingVisualBossFallbackVisible = 0;
+	if (ProofWorld)
+	{
+		FActorSpawnParameters BossSpawnParams;
+		BossSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		FBossData StageOneBossData;
+		if (T66GI && T66GI->GetBossData(FName(TEXT("Dungeon_SewerSlimeKing")), StageOneBossData))
+		{
+			if (AT66BossBase* ProofBoss = ProofWorld->SpawnActor<AT66BossBase>(AT66BossBase::StaticClass(), FVector(2100.f, 0.f, 220.f), FRotator::ZeroRotator, BossSpawnParams))
+			{
+				ProofBoss->InitializeBoss(StageOneBossData);
+				StageOneBossVisibleBody = ProofBoss->HasVisibleBossBodyForAutomation() ? 1 : 0;
+				ProofBoss->Destroy();
+			}
+		}
+
+		FBossData MissingVisualBossData;
+		T66BuildFallbackBossData(1, FName(TEXT("Smoke_MissingVisualBoss")), MissingVisualBossData);
+		if (AT66BossBase* FallbackBoss = ProofWorld->SpawnActor<AT66BossBase>(AT66BossBase::StaticClass(), FVector(2300.f, 0.f, 220.f), FRotator::ZeroRotator, BossSpawnParams))
+		{
+			FallbackBoss->InitializeBoss(MissingVisualBossData);
+			MissingVisualBossFallbackVisible = FallbackBoss->HasVisibleBossBodyForAutomation() ? 1 : 0;
+			FallbackBoss->Destroy();
+		}
+	}
+	RecordCheck(
+		TEXT("BossVisibleBodyFallback"),
+		StageOneBossVisibleBody != 0 && MissingVisualBossFallbackVisible != 0,
+		FString::Printf(
+			TEXT("StageOneVisible=%d MissingVisualFallbackVisible=%d"),
+			StageOneBossVisibleBody,
+			MissingVisualBossFallbackVisible));
+
+	bool bNormalStagePetCaptureSpawned = false;
+	bool bNormalStagePetCaptureVisible = false;
+	int32 NormalStagePetCaptureFloorTag = INDEX_NONE;
+	FName NormalStagePetProofBossID = NAME_None;
+	FName NormalStagePetProofPetID = NAME_None;
+	int32 NormalStagePetCaptureBefore = 0;
+	int32 NormalStagePetCaptureAfter = 0;
+	if (ProofWorld && T66GI && RunState)
+	{
+		TArray<FName> CandidateBossIDs;
+		if (UDataTable* BossesTable = T66GI->GetBossesDataTable())
+		{
+			CandidateBossIDs = BossesTable->GetRowNames();
+		}
+		CandidateBossIDs.Insert(FName(TEXT("Dungeon_SewerSlimeKing")), 0);
+
+		for (const FName CandidateBossID : CandidateBossIDs)
+		{
+			if (CandidateBossID.IsNone())
+			{
+				continue;
+			}
+
+			const FName CandidatePetID = T66GI->ResolvePetIDForBossID(CandidateBossID);
+			FPetData CandidatePetData;
+			FBossData CandidateBossData;
+			if (CandidatePetID.IsNone()
+				|| !T66GI->GetPetData(CandidatePetID, CandidatePetData)
+				|| !T66GI->GetBossData(CandidateBossID, CandidateBossData)
+				|| (Achievements && Achievements->IsPetCaptured(CandidatePetID)))
+			{
+				continue;
+			}
+
+			NormalStagePetProofBossID = CandidateBossID;
+			NormalStagePetProofPetID = CandidatePetID;
+			break;
+		}
+
+		if (!NormalStagePetProofBossID.IsNone())
+		{
+			for (TActorIterator<AT66PetCaptureInteractable> It(ProofWorld); It; ++It)
+			{
+				++NormalStagePetCaptureBefore;
+			}
+
+			const int32 StageBeforePetProof = RunState->GetCurrentStage();
+			RunState->SetCurrentStage(1);
+			FVector PetProofLocation = IsUsingTowerMainMapLayout()
+				? ResolveTowerBossWaitingLocation()
+				: FVector(2600.f, 0.f, 220.f);
+			if (PetProofLocation.IsNearlyZero())
+			{
+				PetProofLocation = FVector(2600.f, 0.f, 220.f);
+			}
+
+			FActorSpawnParameters PetProofBossSpawnParams;
+			PetProofBossSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			if (AT66BossBase* PetProofBoss = ProofWorld->SpawnActor<AT66BossBase>(AT66BossBase::StaticClass(), PetProofLocation, FRotator::ZeroRotator, PetProofBossSpawnParams))
+			{
+				FBossData PetProofBossData;
+				if (T66GI->GetBossData(NormalStagePetProofBossID, PetProofBossData))
+				{
+					PetProofBoss->InitializeBoss(PetProofBossData);
+				}
+				else
+				{
+					PetProofBoss->BossID = NormalStagePetProofBossID;
+				}
+				bNormalStagePetCaptureSpawned = TrySpawnPetCaptureForBoss(PetProofBoss, PetProofLocation);
+				PetProofBoss->Destroy();
+			}
+			RunState->SetCurrentStage(StageBeforePetProof);
+
+			for (TActorIterator<AT66PetCaptureInteractable> It(ProofWorld); It; ++It)
+			{
+				++NormalStagePetCaptureAfter;
+				AT66PetCaptureInteractable* Capture = *It;
+				if (Capture && Capture->PetID == NormalStagePetProofPetID)
+				{
+					bNormalStagePetCaptureVisible = Capture->VisualMesh && Capture->VisualMesh->GetStaticMesh() && !Capture->IsHidden();
+					NormalStagePetCaptureFloorTag = T66ReadTowerFloorTag(Capture);
+					Capture->Destroy();
+				}
+			}
+		}
+	}
+	RecordCheck(
+		TEXT("NormalStageBossPetCaptureSpawnsVisible"),
+		bNormalStagePetCaptureSpawned
+			&& NormalStagePetCaptureAfter > NormalStagePetCaptureBefore
+			&& bNormalStagePetCaptureVisible
+			&& (!IsUsingTowerMainMapLayout() || NormalStagePetCaptureFloorTag == CachedTowerMainMapLayout.BossFloorNumber),
+		FString::Printf(
+			TEXT("BossID=%s PetID=%s Spawned=%d Before=%d After=%d Visible=%d FloorTag=%d BossFloor=%d"),
+			*NormalStagePetProofBossID.ToString(),
+			*NormalStagePetProofPetID.ToString(),
+			bNormalStagePetCaptureSpawned ? 1 : 0,
+			NormalStagePetCaptureBefore,
+			NormalStagePetCaptureAfter,
+			bNormalStagePetCaptureVisible ? 1 : 0,
+			NormalStagePetCaptureFloorTag,
+			CachedTowerMainMapLayout.BossFloorNumber));
+
+	int32 BossRewardStageGateBefore = 0;
+	int32 BossRewardStageGateAfter = 0;
+	int32 BossRewardStageGateDelta = 0;
+	int32 BossRewardFreedCompanions = 0;
+	bool bBossRewardPetSpawned = false;
+	bool bBossRewardIdolSpawned = false;
+	bool bBossRewardLayoutSeparated = false;
+	float BossRewardMinDistance2D = -1.0f;
+	if (ProofWorld && T66GI && RunState && !NormalStagePetProofBossID.IsNone())
+	{
+		for (TActorIterator<AT66StageGate> It(ProofWorld); It; ++It)
+		{
+			++BossRewardStageGateBefore;
+		}
+
+		const int32 StageBeforeRewardProof = RunState->GetCurrentStage();
+		RunState->SetCurrentStage(1);
+
+		FVector RewardAnchor = IsUsingTowerMainMapLayout()
+			? ResolveTowerBossWaitingLocation()
+			: FVector(3400.f, 0.f, 220.f);
+		if (RewardAnchor.IsNearlyZero())
+		{
+			RewardAnchor = FVector(3400.f, 0.f, 220.f);
+		}
+
+		const FVector CompanionRewardLocation = RewardAnchor + FVector(T66SmokeBossRewardCompanionOffsetX, 0.0f, 0.0f);
+		const FVector PetRewardLocation = RewardAnchor + FVector(0.0f, T66SmokeBossRewardPetOffsetY, 0.0f);
+		const FVector IdolRewardLocation = RewardAnchor + FVector(0.0f, T66SmokeBossRewardIdolOffsetY, 0.0f);
+		const FVector GateRewardLocation = RewardAnchor + FVector(T66SmokeBossRewardGateOffsetX, 0.0f, 0.0f);
+
+		ClearCagedStageCompanions(true);
+		SpawnCagedCompanionsForCurrentStage(RewardAnchor);
+		BossRewardFreedCompanions = FreeCagedCompanionsForBossClear(CompanionRewardLocation);
+
+		FActorSpawnParameters RewardBossParams;
+		RewardBossParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		if (AT66BossBase* RewardProofBoss = ProofWorld->SpawnActor<AT66BossBase>(AT66BossBase::StaticClass(), RewardAnchor, FRotator::ZeroRotator, RewardBossParams))
+		{
+			FBossData RewardProofBossData;
+			if (T66GI->GetBossData(NormalStagePetProofBossID, RewardProofBossData))
+			{
+				RewardProofBoss->InitializeBoss(RewardProofBossData);
+			}
+			else
+			{
+				RewardProofBoss->BossID = NormalStagePetProofBossID;
+			}
+			bBossRewardPetSpawned = TrySpawnPetCaptureForBoss(RewardProofBoss, PetRewardLocation);
+			RewardProofBoss->Destroy();
+		}
+
+		AT66IdolAltar* RewardIdolAltar = SpawnIdolAltarAtLocation(IdolRewardLocation, true);
+		bBossRewardIdolSpawned = RewardIdolAltar != nullptr;
+		SpawnStageGateAtLocation(GateRewardLocation);
+
+		AT66StageGate* RewardStageGate = nullptr;
+		AT66PetCaptureInteractable* RewardPetCapture = nullptr;
+		AT66RecruitableCompanion* RewardCompanion = nullptr;
+		float ClosestGateDistSq = FLT_MAX;
+		for (TActorIterator<AT66StageGate> It(ProofWorld); It; ++It)
+		{
+			++BossRewardStageGateAfter;
+			AT66StageGate* StageGate = *It;
+			const float DistSq = StageGate ? FVector::DistSquared2D(StageGate->GetActorLocation(), GateRewardLocation) : FLT_MAX;
+			if (StageGate && DistSq < ClosestGateDistSq)
+			{
+				ClosestGateDistSq = DistSq;
+				RewardStageGate = StageGate;
+			}
+		}
+		BossRewardStageGateDelta = BossRewardStageGateAfter - BossRewardStageGateBefore;
+
+		for (TActorIterator<AT66PetCaptureInteractable> It(ProofWorld); It; ++It)
+		{
+			AT66PetCaptureInteractable* Capture = *It;
+			if (Capture && Capture->PetID == NormalStagePetProofPetID)
+			{
+				RewardPetCapture = Capture;
+				break;
+			}
+		}
+		for (TActorIterator<AT66RecruitableCompanion> It(ProofWorld); It; ++It)
+		{
+			AT66RecruitableCompanion* Companion = *It;
+			if (Companion && Companion->IsBossCageUnlockReward() && !Companion->IsLockedInBossCage())
+			{
+				RewardCompanion = Companion;
+				break;
+			}
+		}
+
+		TArray<AActor*> RewardActors;
+		if (RewardStageGate)
+		{
+			RewardActors.Add(RewardStageGate);
+		}
+		if (RewardPetCapture)
+		{
+			RewardActors.Add(RewardPetCapture);
+		}
+		if (RewardCompanion)
+		{
+			RewardActors.Add(RewardCompanion);
+		}
+		if (RewardIdolAltar)
+		{
+			RewardActors.Add(RewardIdolAltar);
+		}
+		for (int32 A = 0; A < RewardActors.Num(); ++A)
+		{
+			for (int32 B = A + 1; B < RewardActors.Num(); ++B)
+			{
+				const float Dist2D = FVector::Dist2D(RewardActors[A]->GetActorLocation(), RewardActors[B]->GetActorLocation());
+				BossRewardMinDistance2D = BossRewardMinDistance2D < 0.0f
+					? Dist2D
+					: FMath::Min(BossRewardMinDistance2D, Dist2D);
+			}
+		}
+		bBossRewardLayoutSeparated = RewardActors.Num() >= 4
+			&& BossRewardMinDistance2D >= T66SmokeBossRewardMinSeparation2D;
+
+		if (RewardPetCapture)
+		{
+			RewardPetCapture->Destroy();
+		}
+		if (RewardStageGate)
+		{
+			RewardStageGate->Destroy();
+		}
+		if (RewardIdolAltar)
+		{
+			RewardIdolAltar->Destroy();
+		}
+		ClearCagedStageCompanions(true);
+		RunState->SetCurrentStage(StageBeforeRewardProof);
+	}
+	RecordCheck(
+		TEXT("BossRewardLayoutSeparatedOneGate"),
+		BossRewardStageGateDelta == 1
+			&& BossRewardFreedCompanions > 0
+			&& bBossRewardPetSpawned
+			&& bBossRewardIdolSpawned
+			&& bBossRewardLayoutSeparated,
+		FString::Printf(
+			TEXT("GateBefore=%d GateAfter=%d Delta=%d FreedCompanions=%d PetSpawned=%d IdolSpawned=%d MinDistance2D=%.1f Required=%.1f"),
+			BossRewardStageGateBefore,
+			BossRewardStageGateAfter,
+			BossRewardStageGateDelta,
+			BossRewardFreedCompanions,
+			bBossRewardPetSpawned ? 1 : 0,
+			bBossRewardIdolSpawned ? 1 : 0,
+			BossRewardMinDistance2D,
+			T66SmokeBossRewardMinSeparation2D));
+
+	int32 BossPreEntryReadyCount = 0;
+	int32 BossPreEntryFloorTaggedCount = 0;
+	float ClosestPreEntryBossDistance2D = -1.0f;
+	if (ProofWorld && IsUsingTowerMainMapLayout())
+	{
+		const FVector ExpectedBossWaitingLocation = ResolveTowerBossWaitingLocation();
+		for (TActorIterator<AT66BossBase> It(ProofWorld); It; ++It)
+		{
+			AT66BossBase* Boss = *It;
+			if (!IsValid(Boss) || Cast<AT66VendorBoss>(Boss))
+			{
+				continue;
+			}
+
+			++BossPreEntryReadyCount;
+			if (T66ReadTowerFloorTag(Boss) == CachedTowerMainMapLayout.BossFloorNumber)
+			{
+				++BossPreEntryFloorTaggedCount;
+			}
+			const float Distance2D = FVector::Dist2D(ExpectedBossWaitingLocation, Boss->GetActorLocation());
+			ClosestPreEntryBossDistance2D = ClosestPreEntryBossDistance2D < 0.0f
+				? Distance2D
+				: FMath::Min(ClosestPreEntryBossDistance2D, Distance2D);
+		}
+	}
+	RecordCheck(
+		TEXT("TowerBossPreSpawnedBeforeEntry"),
+		BossPreEntryReadyCount > 0
+			&& BossPreEntryFloorTaggedCount > 0
+			&& (ClosestPreEntryBossDistance2D < 0.0f || ClosestPreEntryBossDistance2D <= 1800.0f),
+		FString::Printf(
+			TEXT("Ready=%d FloorTagged=%d ClosestDist2D=%.1f BossFloor=%d"),
+			BossPreEntryReadyCount,
+			BossPreEntryFloorTaggedCount,
+			ClosestPreEntryBossDistance2D,
+			CachedTowerMainMapLayout.BossFloorNumber));
+
+	int32 TowerDescentChainLinks = 0;
+	float TowerDescentChainMaxDist2D = 0.0f;
+	float TowerDescentChainMaxZError = 0.0f;
+	int32 TowerDescentChainInsideFailures = 0;
+	if (IsUsingTowerMainMapLayout())
+	{
+		for (int32 FloorIndex = 1; FloorIndex < CachedTowerMainMapLayout.Floors.Num(); ++FloorIndex)
+		{
+			const T66TowerMapTerrain::FFloor& PreviousFloor = CachedTowerMainMapLayout.Floors[FloorIndex - 1];
+			const T66TowerMapTerrain::FFloor& Floor = CachedTowerMainMapLayout.Floors[FloorIndex];
+			if (!PreviousFloor.bHasDropHole)
+			{
+				continue;
+			}
+
+			++TowerDescentChainLinks;
+			TowerDescentChainMaxDist2D = FMath::Max(TowerDescentChainMaxDist2D, FVector::Dist2D(PreviousFloor.HoleCenter, Floor.ArrivalPoint));
+			TowerDescentChainMaxZError = FMath::Max(
+				TowerDescentChainMaxZError,
+				FMath::Abs((PreviousFloor.SurfaceZ - Floor.SurfaceZ) - CachedTowerMainMapLayout.FloorSpacing));
+			if (T66TowerMapTerrain::FindFloorIndexForLocation(CachedTowerMainMapLayout, Floor.ArrivalPoint, 80.0f) != Floor.FloorNumber)
+			{
+				++TowerDescentChainInsideFailures;
+			}
+		}
+	}
+	RecordCheck(
+		TEXT("TowerFloorDescentChainPhysicallyAligned"),
+		TowerDescentChainLinks > 0
+			&& TowerDescentChainMaxDist2D <= 1.0f
+			&& TowerDescentChainMaxZError <= 1.0f
+			&& TowerDescentChainInsideFailures == 0,
+		FString::Printf(
+			TEXT("Links=%d MaxDist2D=%.1f MaxZError=%.1f InsideFailures=%d"),
+			TowerDescentChainLinks,
+			TowerDescentChainMaxDist2D,
+			TowerDescentChainMaxZError,
+			TowerDescentChainInsideFailures));
+
+	bool bBossPhysicalFallbackApplied = false;
+	int32 BossPhysicalFallbackFloor = INDEX_NONE;
+	int32 BossPhysicalFallbackTag = INDEX_NONE;
+	int32 BossPhysicalFallbackVisibleCount = 0;
+	if (ProofWorld && IsUsingTowerMainMapLayout())
+	{
+		AT66PlayerController* PC = Cast<AT66PlayerController>(ProofWorld->GetFirstPlayerController());
+		APawn* HeroPawn = PC ? PC->GetPawn() : nullptr;
+		const T66TowerMapTerrain::FFloor* BossFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber);
+		if (HeroPawn && BossFloor)
+		{
+			const int32 PreBossFloorNumber = FMath::Max(CachedTowerMainMapLayout.StartFloorNumber, CachedTowerMainMapLayout.BossFloorNumber - 1);
+			FVector BossArrivalLocation = !BossFloor->ArrivalPoint.IsNearlyZero()
+				? BossFloor->ArrivalPoint
+				: BossFloor->Center;
+			BossArrivalLocation.Z = BossFloor->SurfaceZ;
+			T66TrySnapActorToTowerFloor(ProofWorld, HeroPawn, CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber, BossArrivalLocation);
+			T66AssignTowerFloorTag(HeroPawn, PreBossFloorNumber);
+			bTowerBossEntryTriggered = false;
+			bTowerBossEntryApplied = false;
+			ActiveTowerTrapFloorNumber = INDEX_NONE;
+			ActiveTowerTerrainVisualFloorNumber = INDEX_NONE;
+			SyncTowerTrapActivation(true);
+			BossPhysicalFallbackFloor = GetCurrentTowerFloorIndex();
+			BossPhysicalFallbackTag = T66ReadTowerFloorTag(HeroPawn);
+			bBossPhysicalFallbackApplied = bTowerBossEntryApplied;
+			for (TActorIterator<AT66BossBase> It(ProofWorld); It; ++It)
+			{
+				AT66BossBase* Boss = *It;
+				if (IsValid(Boss)
+					&& !Cast<AT66VendorBoss>(Boss)
+					&& T66ReadTowerFloorTag(Boss) == CachedTowerMainMapLayout.BossFloorNumber
+					&& !Boss->IsHidden()
+					&& Boss->GetActorEnableCollision())
+				{
+					++BossPhysicalFallbackVisibleCount;
+				}
+			}
+		}
+	}
+	RecordCheck(
+		TEXT("TowerBossPhysicalFloorFallbackActivatesEntry"),
+		bBossPhysicalFallbackApplied
+			&& BossPhysicalFallbackFloor == CachedTowerMainMapLayout.BossFloorNumber
+			&& BossPhysicalFallbackVisibleCount > 0,
+		FString::Printf(
+			TEXT("Applied=%d CurrentFloor=%d StaleTag=%d VisibleBosses=%d BossFloor=%d"),
+			bBossPhysicalFallbackApplied ? 1 : 0,
+			BossPhysicalFallbackFloor,
+			BossPhysicalFallbackTag,
+			BossPhysicalFallbackVisibleCount,
+			CachedTowerMainMapLayout.BossFloorNumber));
+
+	int32 BossFloorSnapFloor = INDEX_NONE;
+	int32 BossFloorSnapTag = INDEX_NONE;
+	float BossFloorSnapDeltaZ = -1.f;
+	float BossFloorSnapVelocityZ = 0.0f;
+	int32 BossFloorSnapMovementMode = INDEX_NONE;
+	if (ProofWorld && IsUsingTowerMainMapLayout())
+	{
+		AT66PlayerController* PC = Cast<AT66PlayerController>(ProofWorld->GetFirstPlayerController());
+		APawn* HeroPawn = PC ? PC->GetPawn() : nullptr;
+		const T66TowerMapTerrain::FFloor* BossFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber);
+		if (HeroPawn && BossFloor)
+		{
+			if (ACharacter* Character = Cast<ACharacter>(HeroPawn))
+			{
+				if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+				{
+					Movement->Velocity = FVector(0.0f, 0.0f, -3200.0f);
+					Movement->SetMovementMode(MOVE_Falling);
+				}
+			}
+			HandleTowerDescentHoleTriggered(
+				HeroPawn,
+				FMath::Max(CachedTowerMainMapLayout.StartFloorNumber, CachedTowerMainMapLayout.BossFloorNumber - 1),
+				CachedTowerMainMapLayout.BossFloorNumber);
+			BossFloorSnapFloor = GetCurrentTowerFloorIndex();
+			BossFloorSnapTag = T66ReadTowerFloorTag(HeroPawn);
+			const float HalfHeight = HeroPawn->FindComponentByClass<UCapsuleComponent>()
+				? HeroPawn->FindComponentByClass<UCapsuleComponent>()->GetScaledCapsuleHalfHeight()
+				: 0.0f;
+			BossFloorSnapDeltaZ = FMath::Abs(HeroPawn->GetActorLocation().Z - (BossFloor->SurfaceZ + HalfHeight + 5.0f));
+			if (ACharacter* Character = Cast<ACharacter>(HeroPawn))
+			{
+				if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+				{
+					BossFloorSnapVelocityZ = Movement->Velocity.Z;
+					BossFloorSnapMovementMode = static_cast<int32>(Movement->MovementMode);
+				}
+			}
+		}
+	}
+	RecordCheck(
+		TEXT("TowerBossFloorEntrySnapsHero"),
+		BossFloorSnapFloor == CachedTowerMainMapLayout.BossFloorNumber
+			&& BossFloorSnapTag == CachedTowerMainMapLayout.BossFloorNumber
+			&& BossFloorSnapDeltaZ >= 0.f
+			&& BossFloorSnapDeltaZ <= 80.f
+			&& FMath::Abs(BossFloorSnapVelocityZ) <= 1.0f
+			&& BossFloorSnapMovementMode == static_cast<int32>(MOVE_Walking),
+		FString::Printf(
+			TEXT("CurrentFloor=%d Tag=%d DeltaZ=%.1f VelocityZ=%.1f MovementMode=%d BossFloor=%d"),
+			BossFloorSnapFloor,
+			BossFloorSnapTag,
+			BossFloorSnapDeltaZ,
+			BossFloorSnapVelocityZ,
+			BossFloorSnapMovementMode,
+			CachedTowerMainMapLayout.BossFloorNumber));
+
+	int32 BossEntryReadyCount = 0;
+	int32 BossEntryVisibleCount = 0;
+	int32 BossEntryAwakenedCount = 0;
+	float ClosestEntryBossDistance2D = -1.0f;
+	if (ProofWorld && IsUsingTowerMainMapLayout())
+	{
+		APawn* HeroPawn = UGameplayStatics::GetPlayerPawn(ProofWorld, 0);
+		const FVector HeroLocation = HeroPawn ? HeroPawn->GetActorLocation() : FVector::ZeroVector;
+		for (TActorIterator<AT66BossBase> It(ProofWorld); It; ++It)
+		{
+			AT66BossBase* Boss = *It;
+			if (!IsValid(Boss)
+				|| Cast<AT66VendorBoss>(Boss)
+				|| T66ReadTowerFloorTag(Boss) != CachedTowerMainMapLayout.BossFloorNumber)
+			{
+				continue;
+			}
+
+			++BossEntryReadyCount;
+			if (!Boss->IsHidden() && Boss->GetActorEnableCollision())
+			{
+				++BossEntryVisibleCount;
+			}
+			if (Boss->IsAwakened())
+			{
+				++BossEntryAwakenedCount;
+			}
+			if (HeroPawn)
+			{
+				const float Distance2D = FVector::Dist2D(HeroLocation, Boss->GetActorLocation());
+				ClosestEntryBossDistance2D = ClosestEntryBossDistance2D < 0.0f
+					? Distance2D
+					: FMath::Min(ClosestEntryBossDistance2D, Distance2D);
+			}
+		}
+	}
+	RecordCheck(
+		TEXT("TowerBossFloorEntryEnsuresVisibleBoss"),
+		BossEntryReadyCount > 0
+			&& BossEntryVisibleCount > 0
+			&& BossEntryAwakenedCount > 0
+			&& (ClosestEntryBossDistance2D < 0.0f || ClosestEntryBossDistance2D <= 2600.0f),
+		FString::Printf(
+			TEXT("Ready=%d Visible=%d Awakened=%d ClosestDist2D=%.1f BossFloor=%d"),
+			BossEntryReadyCount,
+			BossEntryVisibleCount,
+			BossEntryAwakenedCount,
+			ClosestEntryBossDistance2D,
+			CachedTowerMainMapLayout.BossFloorNumber));
+
+	int32 SameFloorDamageAllowed = 0;
+	int32 CrossFloorDamageRejected = 0;
+	int32 TowerDespawnAboveCount = 0;
+	int32 TowerDespawnAboveInactive = 0;
+	int32 BossRespawnSuppressedRemainingBosses = -1;
+	int32 BossRespawnSuppressedApplied = -1;
+	int32 NoTargetHeroProjectilesBefore = -1;
+	int32 NoTargetHeroProjectilesAfter = -1;
+	int32 NoTargetTravelersBefore = -1;
+	int32 NoTargetTravelersAfter = -1;
+	int32 DeadBossStaleTargetKilled = 0;
+	int32 DeadBossStaleTargetProjectilesBefore = -1;
+	int32 DeadBossStaleTargetProjectilesAfter = -1;
+	int32 DeadBossStaleTargetTravelersBefore = -1;
+	int32 DeadBossStaleTargetTravelersAfter = -1;
+	if (ProofWorld && IsUsingTowerMainMapLayout())
+	{
+		const int32 DamageFloorNumber = CachedTowerMainMapLayout.FirstMobFloorNumber;
+		const int32 OtherFloorNumber = DamageFloorNumber + 1;
+		const T66TowerMapTerrain::FFloor* DamageFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, DamageFloorNumber);
+		const T66TowerMapTerrain::FFloor* OtherFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, OtherFloorNumber);
+		APawn* HeroPawn = UGameplayStatics::GetPlayerPawn(ProofWorld, 0);
+		if (DamageFloor && OtherFloor && HeroPawn)
+		{
+			FActorSpawnParameters MobParams;
+			MobParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AT66MobBase* SameFloorMob = ProofWorld->SpawnActor<AT66MobBase>(AT66MobBase::StaticClass(), DamageFloor->Center + FVector(0.f, 0.f, 140.f), FRotator::ZeroRotator, MobParams);
+			AT66MobBase* OtherFloorMob = ProofWorld->SpawnActor<AT66MobBase>(AT66MobBase::StaticClass(), OtherFloor->Center + FVector(0.f, 0.f, 140.f), FRotator::ZeroRotator, MobParams);
+			AT66MobBase* AboveFloorMob = ProofWorld->SpawnActor<AT66MobBase>(AT66MobBase::StaticClass(), DamageFloor->Center + FVector(260.f, 0.f, 140.f), FRotator::ZeroRotator, MobParams);
+			if (SameFloorMob)
+			{
+				SameFloorMob->ConfigureAsMob(FName(TEXT("SmokeSameFloorMob")));
+				T66AssignTowerFloorTag(SameFloorMob, DamageFloorNumber);
+			}
+			if (OtherFloorMob)
+			{
+				OtherFloorMob->ConfigureAsMob(FName(TEXT("SmokeOtherFloorMob")));
+				T66AssignTowerFloorTag(OtherFloorMob, OtherFloorNumber);
+			}
+			if (AboveFloorMob)
+			{
+				AboveFloorMob->ConfigureAsMob(FName(TEXT("SmokeAboveFloorMob")));
+				AboveFloorMob->OwningDirector = FindOrCacheEnemyDirector(ProofWorld);
+				T66AssignTowerFloorTag(AboveFloorMob, DamageFloorNumber);
+			}
+
+			FVector DamageOrigin = DamageFloor->Center;
+			DamageOrigin.Z = DamageFloor->SurfaceZ + 120.f;
+			SameFloorDamageAllowed = SameFloorMob && ShouldApplyTowerFloorDamage(HeroPawn, DamageOrigin, SameFloorMob) ? 1 : 0;
+			CrossFloorDamageRejected = OtherFloorMob && !ShouldApplyTowerFloorDamage(HeroPawn, DamageOrigin, OtherFloorMob) ? 1 : 0;
+
+			TowerDespawnAboveCount = DespawnTowerEnemiesAboveFloor(OtherFloorNumber);
+			TowerDespawnAboveInactive = AboveFloorMob && !AboveFloorMob->IsAliveAndActive() ? 1 : 0;
+
+			if (SameFloorMob)
+			{
+				SameFloorMob->Destroy();
+			}
+			if (OtherFloorMob)
+			{
+				OtherFloorMob->Destroy();
+			}
+		}
+
+		for (TActorIterator<AT66BossBase> It(ProofWorld); It; ++It)
+		{
+			AT66BossBase* Boss = *It;
+			if (IsValid(Boss) && !Cast<AT66VendorBoss>(Boss))
+			{
+				Boss->Destroy();
+			}
+		}
+		StageBoss.Reset();
+		bTowerBossDefeated = true;
+		bTowerBossEntryTriggered = true;
+		bTowerBossEntryApplied = false;
+		SyncTowerBossEntryState();
+		BossRespawnSuppressedApplied = bTowerBossEntryApplied ? 1 : 0;
+		BossRespawnSuppressedRemainingBosses = 0;
+		for (TActorIterator<AT66BossBase> It(ProofWorld); It; ++It)
+		{
+			AT66BossBase* Boss = *It;
+			if (IsValid(Boss) && !Cast<AT66VendorBoss>(Boss))
+			{
+				++BossRespawnSuppressedRemainingBosses;
+			}
+		}
+
+		for (TActorIterator<AT66EnemyBase> It(ProofWorld); It; ++It)
+		{
+			if (AT66EnemyBase* Enemy = *It)
+			{
+				Enemy->Destroy();
+			}
+		}
+		for (TActorIterator<AT66MobBase> It(ProofWorld); It; ++It)
+		{
+			if (AT66MobBase* Mob = *It)
+			{
+				Mob->Destroy();
+			}
+		}
+		for (TActorIterator<AT66BossBase> It(ProofWorld); It; ++It)
+		{
+			AT66BossBase* Boss = *It;
+			if (IsValid(Boss) && !Cast<AT66VendorBoss>(Boss))
+			{
+				Boss->Destroy();
+			}
+		}
+		StageBoss.Reset();
+
+		auto CountHeroProjectiles = [ProofWorld]() -> int32
+		{
+			int32 Count = 0;
+			if (!ProofWorld)
+			{
+				return Count;
+			}
+			for (TActorIterator<AT66HeroProjectile> It(ProofWorld); It; ++It)
+			{
+				++Count;
+			}
+			return Count;
+		};
+
+		if (AT66HeroBase* StaleTargetHeroPawn = Cast<AT66HeroBase>(UGameplayStatics::GetPlayerPawn(ProofWorld, 0)))
+		{
+			if (StaleTargetHeroPawn->CombatComponent && T66GI)
+			{
+				FActorSpawnParameters BossSpawnParams;
+				BossSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+				const FVector BossLocation = StaleTargetHeroPawn->GetActorLocation() + FVector(320.f, 0.f, 0.f);
+				if (AT66BossBase* StaleTargetBoss = ProofWorld->SpawnActor<AT66BossBase>(AT66BossBase::StaticClass(), BossLocation, FRotator::ZeroRotator, BossSpawnParams))
+				{
+					FBossData StaleTargetBossData;
+					if (T66GI->GetBossData(FName(TEXT("Dungeon_SewerSlimeKing")), StaleTargetBossData))
+					{
+						StaleTargetBoss->InitializeBoss(StaleTargetBossData);
+					}
+					else
+					{
+						T66BuildFallbackBossData(1, FName(TEXT("Smoke_DeadTargetBoss")), StaleTargetBossData);
+						StaleTargetBoss->InitializeBoss(StaleTargetBossData);
+					}
+					StaleTargetBoss->ForceAwaken();
+					StaleTargetHeroPawn->CombatComponent->SetLockedTarget(StaleTargetBoss->ResolveCombatTargetHandle(nullptr, ET66HitZoneType::Body));
+
+					static const ET66HitZoneType KillZones[] =
+					{
+						ET66HitZoneType::Head,
+						ET66HitZoneType::WeakPoint,
+						ET66HitZoneType::Core,
+						ET66HitZoneType::LeftArm,
+						ET66HitZoneType::RightArm,
+						ET66HitZoneType::LeftLeg,
+						ET66HitZoneType::RightLeg,
+						ET66HitZoneType::Body,
+					};
+					for (const ET66HitZoneType KillZone : KillZones)
+					{
+						if (!IsValid(StaleTargetBoss) || !StaleTargetBoss->IsAlive())
+						{
+							break;
+						}
+						const FT66CombatTargetHandle KillHandle = StaleTargetBoss->ResolveCombatTargetHandle(nullptr, KillZone);
+						if (KillHandle.IsValid())
+						{
+							StaleTargetBoss->TakeDamageFromHeroHitZone(9999999, KillHandle, FName(TEXT("SmokeDeadBossTarget")), FName(TEXT("Automation")));
+						}
+					}
+					DeadBossStaleTargetKilled = (!IsValid(StaleTargetBoss) || !StaleTargetBoss->IsAlive()) ? 1 : 0;
+				}
+
+				DeadBossStaleTargetProjectilesBefore = CountHeroProjectiles();
+				if (UT66OutgoingTravelerPoolSubsystem* Pool = ProofWorld->GetSubsystem<UT66OutgoingTravelerPoolSubsystem>())
+				{
+					DeadBossStaleTargetTravelersBefore = Pool->GetDiagnostics().FiredTotal;
+				}
+				else
+				{
+					DeadBossStaleTargetTravelersBefore = 0;
+				}
+
+				StaleTargetHeroPawn->CombatComponent->PerformAutomationAutoAttackNow();
+
+				DeadBossStaleTargetProjectilesAfter = CountHeroProjectiles();
+				if (UT66OutgoingTravelerPoolSubsystem* Pool = ProofWorld->GetSubsystem<UT66OutgoingTravelerPoolSubsystem>())
+				{
+					DeadBossStaleTargetTravelersAfter = Pool->GetDiagnostics().FiredTotal;
+				}
+				else
+				{
+					DeadBossStaleTargetTravelersAfter = DeadBossStaleTargetTravelersBefore;
+				}
+			}
+		}
+
+		NoTargetHeroProjectilesBefore = CountHeroProjectiles();
+		if (UT66OutgoingTravelerPoolSubsystem* Pool = ProofWorld->GetSubsystem<UT66OutgoingTravelerPoolSubsystem>())
+		{
+			NoTargetTravelersBefore = Pool->GetDiagnostics().FiredTotal;
+		}
+		else
+		{
+			NoTargetTravelersBefore = 0;
+		}
+
+		if (AT66HeroBase* NoTargetHeroPawn = Cast<AT66HeroBase>(UGameplayStatics::GetPlayerPawn(ProofWorld, 0)))
+		{
+			if (NoTargetHeroPawn->CombatComponent)
+			{
+				NoTargetHeroPawn->CombatComponent->ClearLockedTarget();
+				NoTargetHeroPawn->CombatComponent->PerformAutomationAutoAttackNow();
+			}
+		}
+
+		NoTargetHeroProjectilesAfter = CountHeroProjectiles();
+		if (UT66OutgoingTravelerPoolSubsystem* Pool = ProofWorld->GetSubsystem<UT66OutgoingTravelerPoolSubsystem>())
+		{
+			NoTargetTravelersAfter = Pool->GetDiagnostics().FiredTotal;
+		}
+		else
+		{
+			NoTargetTravelersAfter = NoTargetTravelersBefore;
+		}
+	}
+	RecordCheck(
+		TEXT("TowerFloorDamageRejectsCrossFloorTargets"),
+		SameFloorDamageAllowed != 0 && CrossFloorDamageRejected != 0,
+		FString::Printf(
+			TEXT("SameFloorAllowed=%d CrossFloorRejected=%d"),
+			SameFloorDamageAllowed,
+			CrossFloorDamageRejected));
+	RecordCheck(
+		TEXT("TowerDescentDespawnsAboveFloorEnemies"),
+		TowerDespawnAboveCount > 0 && TowerDespawnAboveInactive != 0,
+		FString::Printf(
+			TEXT("Despawned=%d AboveInactive=%d"),
+			TowerDespawnAboveCount,
+			TowerDespawnAboveInactive));
+	RecordCheck(
+		TEXT("TowerBossDefeatSuppressesRespawn"),
+		BossRespawnSuppressedRemainingBosses == 0 && BossRespawnSuppressedApplied == 0,
+		FString::Printf(
+			TEXT("RemainingBosses=%d EntryApplied=%d"),
+			BossRespawnSuppressedRemainingBosses,
+			BossRespawnSuppressedApplied));
+	RecordCheck(
+		TEXT("HeroNoTargetSuppressesProjectileFire"),
+		NoTargetHeroProjectilesBefore >= 0
+			&& NoTargetHeroProjectilesAfter == NoTargetHeroProjectilesBefore
+			&& NoTargetTravelersAfter == NoTargetTravelersBefore,
+		FString::Printf(
+			TEXT("ProjectilesBefore=%d ProjectilesAfter=%d TravelersBefore=%d TravelersAfter=%d"),
+			NoTargetHeroProjectilesBefore,
+			NoTargetHeroProjectilesAfter,
+			NoTargetTravelersBefore,
+			NoTargetTravelersAfter));
+	RecordCheck(
+		TEXT("HeroDeadBossTargetSuppressesProjectileFire"),
+		DeadBossStaleTargetKilled != 0
+			&& DeadBossStaleTargetProjectilesBefore >= 0
+			&& DeadBossStaleTargetProjectilesAfter == DeadBossStaleTargetProjectilesBefore
+			&& DeadBossStaleTargetTravelersAfter == DeadBossStaleTargetTravelersBefore,
+		FString::Printf(
+			TEXT("Killed=%d ProjectilesBefore=%d ProjectilesAfter=%d TravelersBefore=%d TravelersAfter=%d"),
+			DeadBossStaleTargetKilled,
+			DeadBossStaleTargetProjectilesBefore,
+			DeadBossStaleTargetProjectilesAfter,
+			DeadBossStaleTargetTravelersBefore,
+			DeadBossStaleTargetTravelersAfter));
 
 	const bool bPass = FailedChecks.Num() == 0;
 	if (bPass)
@@ -1441,7 +2393,7 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 			FMath::Max(250.0f, Floor.HoleHalfExtent.X * 0.88f),
 			FMath::Max(250.0f, Floor.HoleHalfExtent.Y * 0.88f),
 			VerticalExtent);
-		const FVector HoleLocation = Floor.HoleCenter + FVector(0.0f, 0.0f, -VerticalExtent + 120.0f);
+		const FVector HoleLocation = Floor.HoleCenter;
 
 		AT66TowerDescentHole* HoleActor = World->SpawnActor<AT66TowerDescentHole>(
 			AT66TowerDescentHole::StaticClass(),
@@ -1640,10 +2592,162 @@ int32 AT66GameMode::GetCurrentTowerFloorIndex() const
 			{
 				return FloorNumber;
 			}
+
+			const int32 TaggedFloorNumber = T66ReadTowerFloorTag(Pawn);
+			if (TaggedFloorNumber != INDEX_NONE && T66FindTowerFloorByNumber(CachedTowerMainMapLayout, TaggedFloorNumber))
+			{
+				return TaggedFloorNumber;
+			}
 		}
 	}
 
 	return CachedTowerMainMapLayout.StartFloorNumber;
+}
+
+int32 AT66GameMode::ResolveTowerFloorNumberForActor(const AActor* Actor) const
+{
+	if (!IsUsingTowerMainMapLayout() || !Actor)
+	{
+		return INDEX_NONE;
+	}
+
+	const int32 TaggedFloorNumber = T66ReadTowerFloorTag(Actor);
+	if (TaggedFloorNumber != INDEX_NONE && T66FindTowerFloorByNumber(CachedTowerMainMapLayout, TaggedFloorNumber))
+	{
+		return TaggedFloorNumber;
+	}
+
+	return GetTowerFloorIndexForLocation(Actor->GetActorLocation());
+}
+
+bool AT66GameMode::ShouldApplyTowerFloorDamage(const AActor* SourceActor, const FVector& DamageOrigin, const AActor* TargetActor) const
+{
+	if (!IsUsingTowerMainMapLayout() || !TargetActor)
+	{
+		return true;
+	}
+
+	const int32 TargetFloorNumber = ResolveTowerFloorNumberForActor(TargetActor);
+	int32 DamageFloorNumber = GetTowerFloorIndexForLocation(DamageOrigin);
+	if (DamageFloorNumber == INDEX_NONE)
+	{
+		DamageFloorNumber = ResolveTowerFloorNumberForActor(SourceActor);
+	}
+
+	if (TargetFloorNumber == INDEX_NONE || DamageFloorNumber == INDEX_NONE)
+	{
+		return true;
+	}
+
+	return TargetFloorNumber == DamageFloorNumber;
+}
+
+int32 AT66GameMode::DespawnTowerEnemiesAboveFloor(const int32 CurrentFloorNumber)
+{
+	if (!IsUsingTowerMainMapLayout() || CurrentFloorNumber == INDEX_NONE)
+	{
+		return 0;
+	}
+
+	int32 DespawnedCount = 0;
+	if (AT66EnemyDirector* ExistingEnemyDirector = FindOrCacheEnemyDirector(GetWorld()))
+	{
+		DespawnedCount = ExistingEnemyDirector->DespawnTowerEnemiesAboveFloor(CurrentFloorNumber);
+	}
+
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
+		{
+			AT66EnemyBase* Enemy = *It;
+			if (!IsValid(Enemy))
+			{
+				continue;
+			}
+			if (Enemy->IsActorBeingDestroyed() || Enemy->CurrentHP <= 0)
+			{
+				continue;
+			}
+
+			const int32 EnemyFloorNumber = ResolveTowerFloorNumberForActor(Enemy);
+			if (EnemyFloorNumber != INDEX_NONE && EnemyFloorNumber < CurrentFloorNumber)
+			{
+				Enemy->OwningDirector = nullptr;
+				Enemy->Destroy();
+				++DespawnedCount;
+			}
+		}
+
+		UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>();
+		for (TActorIterator<AT66MobBase> It(World); It; ++It)
+		{
+			AT66MobBase* Mob = *It;
+			if (!IsValid(Mob))
+			{
+				continue;
+			}
+			if (!Mob->IsAliveAndActive())
+			{
+				continue;
+			}
+
+			const int32 MobFloorNumber = ResolveTowerFloorNumberForActor(Mob);
+			if (MobFloorNumber != INDEX_NONE && MobFloorNumber < CurrentFloorNumber)
+			{
+				Mob->OwningDirector = nullptr;
+				if (MobManager)
+				{
+					MobManager->ReleaseMob(Mob);
+				}
+				else
+				{
+					Mob->Destroy();
+				}
+				++DespawnedCount;
+			}
+		}
+	}
+
+	UE_LOG(
+		LogT66GameMode,
+		Log,
+		TEXT("[MAP] Tower descent despawned enemies above current floor=%d count=%d"),
+		CurrentFloorNumber,
+		DespawnedCount);
+	return DespawnedCount;
+}
+
+FVector AT66GameMode::ResolveTowerBossWaitingLocation() const
+{
+	if (!IsUsingTowerMainMapLayout())
+	{
+		return FVector::ZeroVector;
+	}
+
+	const T66TowerMapTerrain::FFloor* BossFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber);
+	if (!BossFloor)
+	{
+		return FVector::ZeroVector;
+	}
+
+	FVector EntryLocation = !BossFloor->ArrivalPoint.IsNearlyZero()
+		? BossFloor->ArrivalPoint
+		: BossFloor->Center;
+	EntryLocation.Z = BossFloor->SurfaceZ;
+
+	FVector DirectionToCenter = BossFloor->Center - EntryLocation;
+	DirectionToCenter.Z = 0.0f;
+	if (DirectionToCenter.IsNearlyZero())
+	{
+		DirectionToCenter = FVector(1.0f, 0.0f, 0.0f);
+	}
+	DirectionToCenter.Normalize();
+
+	static constexpr float TowerBossWaitingOffsetFromEntry = 1200.0f;
+	FVector Candidate = EntryLocation + (DirectionToCenter * TowerBossWaitingOffsetFromEntry);
+	Candidate.Z = BossFloor->SurfaceZ;
+	return Candidate;
 }
 
 bool AT66GameMode::TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation) const
@@ -1676,6 +2780,35 @@ bool AT66GameMode::TryGetTowerEnemySpawnLocation(
 		OutWallNormal);
 }
 
+void AT66GameMode::HandleTowerDescentGateOpened(const int32 FromFloorNumber, const int32 ToFloorNumber)
+{
+	if (!IsUsingTowerMainMapLayout())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || FromFloorNumber == INDEX_NONE || ToFloorNumber == INDEX_NONE)
+	{
+		return;
+	}
+
+	if (!T66FindTowerFloorByNumber(CachedTowerMainMapLayout, FromFloorNumber)
+		|| !T66FindTowerFloorByNumber(CachedTowerMainMapLayout, ToFloorNumber))
+	{
+		return;
+	}
+
+	T66SetTowerTerrainVisualFloors(World, FromFloorNumber, ToFloorNumber);
+	ActiveTowerTerrainVisualFloorNumber = FromFloorNumber;
+	UE_LOG(
+		LogT66GameMode,
+		Log,
+		TEXT("[MAP] Tower descent gate opened (%d -> %d); keeping both floors active for physical drop."),
+		FromFloorNumber,
+		ToFloorNumber);
+}
+
 void AT66GameMode::HandleTowerDescentHoleTriggered(APawn* Pawn, const int32 FromFloorNumber, const int32 ToFloorNumber)
 {
 	if (!IsUsingTowerMainMapLayout() || !Pawn)
@@ -1702,6 +2835,38 @@ void AT66GameMode::HandleTowerDescentHoleTriggered(APawn* Pawn, const int32 From
 		ActiveTowerTerrainVisualFloorNumber = ToFloorNumber;
 	}
 
+	DespawnTowerEnemiesAboveFloor(ToFloorNumber);
+
+	if (ToFloorNumber == CachedTowerMainMapLayout.BossFloorNumber)
+	{
+		if (const T66TowerMapTerrain::FFloor* BossFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, ToFloorNumber))
+		{
+			FVector BossEntryLocation = !BossFloor->ArrivalPoint.IsNearlyZero()
+				? BossFloor->ArrivalPoint
+				: BossFloor->Center;
+			BossEntryLocation.Z = BossFloor->SurfaceZ;
+			const bool bSnappedToBossFloor = T66TrySnapActorToTowerFloor(GetWorld(), Pawn, CachedTowerMainMapLayout, ToFloorNumber, BossEntryLocation);
+			T66AssignTowerFloorTag(Pawn, ToFloorNumber);
+			if (ACharacter* Character = Cast<ACharacter>(Pawn))
+			{
+				if (UCharacterMovementComponent* Movement = Character->GetCharacterMovement())
+				{
+					Movement->StopMovementImmediately();
+					Movement->Velocity = FVector::ZeroVector;
+					Movement->SetMovementMode(MOVE_Walking);
+				}
+			}
+			UE_LOG(
+				LogT66GameMode,
+				Log,
+				TEXT("[MAP] Tower boss-floor entry snap pawn=%s snapped=%d floor=%d loc=%s movementReset=1"),
+				*Pawn->GetName(),
+				bSnappedToBossFloor ? 1 : 0,
+				ToFloorNumber,
+				*Pawn->GetActorLocation().ToCompactString());
+		}
+	}
+
 	if (!bTowerMiasmaActive && ToFloorNumber >= CachedTowerMainMapLayout.FirstMobFloorNumber)
 	{
 		const FVector FloorAnchor = Pawn->GetActorLocation();
@@ -1720,10 +2885,132 @@ void AT66GameMode::HandleTowerDescentHoleTriggered(APawn* Pawn, const int32 From
 
 	if (ToFloorNumber == CachedTowerMainMapLayout.BossFloorNumber)
 	{
-		bTowerBossEntryTriggered = true;
-		bTowerBossEntryApplied = false;
-		SyncTowerBossEntryState();
+		if (!bTowerBossDefeated)
+		{
+			bTowerBossEntryTriggered = true;
+			bTowerBossEntryApplied = false;
+			SyncTowerBossEntryState();
+		}
 	}
+}
+
+bool AT66GameMode::EnsureTowerBossEntryBossReady()
+{
+	if (!IsUsingTowerMainMapLayout())
+	{
+		return false;
+	}
+
+	if (bTowerBossDefeated)
+	{
+		UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Tower boss-floor entry skipped because the boss floor was already defeated."));
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	auto CollectBosses = [&]() -> TArray<AT66BossBase*>
+	{
+		TArray<AT66BossBase*> Bosses;
+		auto AddBoss = [&Bosses](AT66BossBase* Boss)
+		{
+			if (IsValid(Boss) && !Cast<AT66VendorBoss>(Boss))
+			{
+				Bosses.AddUnique(Boss);
+			}
+		};
+
+		AddBoss(StageBoss.Get());
+		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
+		{
+			for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
+			{
+				AddBoss(WeakBoss.Get());
+			}
+		}
+		for (TActorIterator<AT66BossBase> It(World); It; ++It)
+		{
+			AddBoss(*It);
+		}
+		return Bosses;
+	};
+
+	TArray<AT66BossBase*> Bosses = CollectBosses();
+	bool bSpawnedBoss = false;
+	if (Bosses.Num() <= 0)
+	{
+		SpawnBossForCurrentStage();
+		bSpawnedBoss = true;
+		Bosses = CollectBosses();
+	}
+
+	if (Bosses.Num() <= 0)
+	{
+		UE_LOG(LogT66GameMode, Warning, TEXT("[MAP] Tower boss-floor entry could not find or spawn a stage boss."));
+		return false;
+	}
+
+	const T66TowerMapTerrain::FFloor* BossFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber);
+	if (!BossFloor)
+	{
+		return false;
+	}
+
+	FVector BaseBossEntryLocation = ResolveTowerBossWaitingLocation();
+	if (BaseBossEntryLocation.IsNearlyZero())
+	{
+		BaseBossEntryLocation = BossFloor->Center;
+		BaseBossEntryLocation.Z = BossFloor->SurfaceZ;
+	}
+	int32 PreparedBosses = 0;
+	for (AT66BossBase* Boss : Bosses)
+	{
+		if (!IsValid(Boss))
+		{
+			continue;
+		}
+
+		FVector Placement = BaseBossEntryLocation;
+		if (Bosses.Num() > 1)
+		{
+			static constexpr float TowerBossEntryClusterOffset = 360.0f;
+			const float Angle = (2.0f * PI * static_cast<float>(PreparedBosses)) / static_cast<float>(FMath::Max(1, Bosses.Num()));
+			Placement.X += FMath::Cos(Angle) * TowerBossEntryClusterOffset;
+			Placement.Y += FMath::Sin(Angle) * TowerBossEntryClusterOffset;
+		}
+
+		bool bSnapped = T66TrySnapActorToTowerFloor(World, Boss, CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber, Placement);
+		if (!bSnapped)
+		{
+			FVector BossFloorCenter = BossFloor->Center;
+			BossFloorCenter.Z = BossFloor->SurfaceZ;
+			bSnapped = T66TrySnapActorToTowerFloor(World, Boss, CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber, BossFloorCenter);
+		}
+		T66AssignTowerFloorTag(Boss, CachedTowerMainMapLayout.BossFloorNumber);
+		Boss->SetActorHiddenInGame(false);
+		Boss->SetActorEnableCollision(true);
+		if (!Boss->IsAwakened())
+		{
+			Boss->ForceAwaken();
+		}
+
+		++PreparedBosses;
+		UE_LOG(
+			LogT66GameMode,
+			Log,
+			TEXT("[MAP] Tower boss-floor entry prepared boss=%s snapped=%d floor=%d loc=%s spawnedBossThisPass=%d"),
+			*Boss->GetName(),
+			bSnapped ? 1 : 0,
+			CachedTowerMainMapLayout.BossFloorNumber,
+			*Boss->GetActorLocation().ToCompactString(),
+			bSpawnedBoss ? 1 : 0);
+	}
+
+	return PreparedBosses > 0;
 }
 
 void AT66GameMode::SyncTowerBossEntryState()
@@ -1746,26 +3033,16 @@ void AT66GameMode::SyncTowerBossEntryState()
 		bHasEnemyDirector = true;
 	}
 
-	bool bHasBoss = false;
-	if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
-	{
-		for (const TWeakObjectPtr<AT66BossBase>& WeakBoss : Registry->GetBosses())
-		{
-			if (AT66BossBase* Boss = WeakBoss.Get())
-			{
-				bHasBoss = true;
-				if (!Boss->IsAwakened())
-				{
-					Boss->ForceAwaken();
-				}
-			}
-		}
-	}
+	const bool bHasBoss = EnsureTowerBossEntryBossReady();
 
-	if (bHasEnemyDirector && bHasBoss)
+	if (bHasBoss)
 	{
 		bTowerBossEntryApplied = true;
-		UE_LOG(LogT66GameMode, Log, TEXT("[MAP] Tower boss-floor entry activated via descent hole."));
+		UE_LOG(
+			LogT66GameMode,
+			Log,
+			TEXT("[MAP] Tower boss-floor entry activated via descent hole (enemyDirectorPaused=%d)."),
+			bHasEnemyDirector ? 1 : 0);
 	}
 }
 
@@ -1777,19 +3054,16 @@ void AT66GameMode::SyncTowerTrapActivation(const bool bForce)
 		return;
 	}
 
-	UT66TrapSubsystem* TrapSubsystem = World->GetSubsystem<UT66TrapSubsystem>();
-	if (!TrapSubsystem)
-	{
-		return;
-	}
-
 	if (!IsUsingTowerMainMapLayout())
 	{
 		TowerTrapActivationAccumulator = 0.f;
 		if (bForce || ActiveTowerTrapFloorNumber != INDEX_NONE)
 		{
 			ActiveTowerTrapFloorNumber = INDEX_NONE;
-			TrapSubsystem->SetActiveTowerFloor(INDEX_NONE);
+			if (UT66TrapSubsystem* TrapSubsystem = World->GetSubsystem<UT66TrapSubsystem>())
+			{
+				TrapSubsystem->SetActiveTowerFloor(INDEX_NONE);
+			}
 		}
 		ActiveTowerTerrainVisualFloorNumber = INDEX_NONE;
 		return;
@@ -1804,10 +3078,21 @@ void AT66GameMode::SyncTowerTrapActivation(const bool bForce)
 
 	TowerTrapActivationAccumulator = 0.f;
 	ActiveTowerTrapFloorNumber = CurrentFloorNumber;
-	TrapSubsystem->SetActiveTowerFloor(CurrentFloorNumber);
+	if (UT66TrapSubsystem* TrapSubsystem = World->GetSubsystem<UT66TrapSubsystem>())
+	{
+		TrapSubsystem->SetActiveTowerFloor(CurrentFloorNumber);
+	}
 	if (bForce || CurrentFloorNumber != ActiveTowerTerrainVisualFloorNumber)
 	{
 		T66SetTowerTerrainVisualFloor(World, CurrentFloorNumber);
 		ActiveTowerTerrainVisualFloorNumber = CurrentFloorNumber;
+	}
+	if (CurrentFloorNumber == CachedTowerMainMapLayout.BossFloorNumber && !bTowerBossEntryApplied)
+	{
+		if (!bTowerBossDefeated)
+		{
+			bTowerBossEntryTriggered = true;
+			SyncTowerBossEntryState();
+		}
 	}
 }

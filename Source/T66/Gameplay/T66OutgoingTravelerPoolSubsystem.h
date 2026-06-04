@@ -303,6 +303,7 @@ private:
 		int32 DamageAmount = 0;
 		int32 Generation = 0;
 		int32 DenseIndex = INDEX_NONE;
+		int32 SourceTowerFloorNumber = INDEX_NONE;
 		FName DamageSourceID = NAME_None;
 		FName EventType = NAME_None;
 		FT66OutgoingTravelerArrivalCallback OnArrived;

@@ -9,6 +9,12 @@ using namespace T66GameModePrivate;
 
 namespace
 {
+	static constexpr float T66BossRewardCompanionOffsetX = -760.0f;
+	static constexpr float T66BossRewardPetOffsetY = -900.0f;
+	static constexpr float T66BossRewardIdolOffsetY = 900.0f;
+	static constexpr float T66BossRewardGateOffsetX = 1250.0f;
+	static constexpr float T66BossRewardCompanionSpacingY = 420.0f;
+
 	void T66RetireSourceActorForEndgameTransform(AActor* Actor)
 	{
 		if (!Actor)
@@ -1082,9 +1088,56 @@ int32 AT66GameMode::SpawnCagedCompanionsForCurrentStage(const FVector& AnchorLoc
 		Recruit->SetCagedForBossReward();
 		if (IsUsingTowerMainMapLayout())
 		{
-			if (T66TrySnapActorToTowerFloor(World, Recruit, CachedTowerMainMapLayout, CachedTowerMainMapLayout.BossFloorNumber, RecruitSpawnLocation))
+			const int32 TargetFloorNumber = CachedTowerMainMapLayout.BossFloorNumber;
+			auto TryPlaceRecruitOnBossFloor = [&](const FVector& DesiredLocation) -> bool
 			{
-				T66AssignTowerFloorTag(Recruit, CachedTowerMainMapLayout.BossFloorNumber);
+				if (!T66TrySnapActorToTowerFloor(World, Recruit, CachedTowerMainMapLayout, TargetFloorNumber, DesiredLocation))
+				{
+					return false;
+				}
+
+				return true;
+			};
+
+			bool bSnappedToBossFloor = TryPlaceRecruitOnBossFloor(RecruitSpawnLocation);
+			bool bUsedBossFloorFallback = false;
+			if (!bSnappedToBossFloor)
+			{
+				FVector FallbackAnchor = ResolveTowerBossWaitingLocation();
+				if (FallbackAnchor.IsNearlyZero())
+				{
+					if (const T66TowerMapTerrain::FFloor* BossFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, TargetFloorNumber))
+					{
+						FallbackAnchor = BossFloor->Center;
+						FallbackAnchor.Z = BossFloor->SurfaceZ;
+					}
+				}
+
+				if (!FallbackAnchor.IsNearlyZero())
+				{
+					bUsedBossFloorFallback = true;
+					const FVector FallbackRecruitLocation = FallbackAnchor + FVector(-420.f, HorizontalOffset, 0.f);
+					bSnappedToBossFloor = TryPlaceRecruitOnBossFloor(FallbackRecruitLocation)
+						|| TryPlaceRecruitOnBossFloor(FallbackAnchor);
+				}
+			}
+
+			if (bSnappedToBossFloor)
+			{
+				T66AssignTowerFloorTag(Recruit, TargetFloorNumber);
+			}
+			else
+			{
+				UE_LOG(
+					LogT66GameMode,
+					Warning,
+					TEXT("[CompanionCage] Destroying caged companion because it could not be placed on boss floor. Stage=%d CompanionID=%s Requested=%s UsedFallback=%d"),
+					StageNum,
+					*CompanionToUnlock.ToString(),
+					*RecruitSpawnLocation.ToCompactString(),
+					bUsedBossFloorFallback ? 1 : 0);
+				Recruit->Destroy();
+				continue;
 			}
 		}
 		else
@@ -1128,6 +1181,16 @@ int32 AT66GameMode::FreeCagedCompanionsForBossClear(const FVector& FallbackLocat
 
 	int32 FreedCount = 0;
 	int32 TrackedRewardCount = 0;
+	int32 RewardIndex = 0;
+	int32 RewardCompanionCount = 0;
+	for (const TWeakObjectPtr<AT66RecruitableCompanion>& WeakCompanion : CagedStageCompanions)
+	{
+		const AT66RecruitableCompanion* Companion = WeakCompanion.Get();
+		if (Companion && Companion->IsBossCageUnlockReward())
+		{
+			++RewardCompanionCount;
+		}
+	}
 	for (const TWeakObjectPtr<AT66RecruitableCompanion>& WeakCompanion : CagedStageCompanions)
 	{
 		AT66RecruitableCompanion* Companion = WeakCompanion.Get();
@@ -1139,9 +1202,36 @@ int32 AT66GameMode::FreeCagedCompanionsForBossClear(const FVector& FallbackLocat
 		++TrackedRewardCount;
 		if (Companion->IsLockedInBossCage())
 		{
+			const float HorizontalOffset = (static_cast<float>(RewardIndex) - ((static_cast<float>(FMath::Max(1, RewardCompanionCount)) - 1.0f) * 0.5f)) * T66BossRewardCompanionSpacingY;
+			const FVector DesiredLocation = FallbackLocation + FVector(0.0f, HorizontalOffset, 0.0f);
+			if (IsUsingTowerMainMapLayout())
+			{
+				const int32 RequestedFloorNumber = GetTowerFloorIndexForLocation(FallbackLocation);
+				const int32 TargetFloorNumber = RequestedFloorNumber != INDEX_NONE
+					? RequestedFloorNumber
+					: CachedTowerMainMapLayout.BossFloorNumber;
+				if (TargetFloorNumber != INDEX_NONE)
+				{
+					if (T66TrySnapActorToTowerFloor(World, Companion, CachedTowerMainMapLayout, TargetFloorNumber, DesiredLocation))
+					{
+						T66AssignTowerFloorTag(Companion, TargetFloorNumber);
+					}
+					else
+					{
+						Companion->SetActorLocation(DesiredLocation);
+					}
+				}
+			}
+			else
+			{
+				Companion->SetActorLocation(DesiredLocation);
+				TrySnapActorToTerrainAtLocation(Companion, DesiredLocation);
+			}
+
 			Companion->FreeFromBossCage();
 			++FreedCount;
 		}
+		++RewardIndex;
 	}
 
 	if (TrackedRewardCount > 0)
@@ -1160,6 +1250,25 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	UWorld* World = GetWorld();
 	if (!World) return;
 	const FVector Location = Boss ? Boss->GetActorLocation() : FVector::ZeroVector;
+	if (IsUsingTowerMainMapLayout() && Boss)
+	{
+		const int32 BossTaggedFloorNumber = T66ReadTowerFloorTag(Boss);
+		const int32 BossPhysicalFloorNumber = GetTowerFloorIndexForLocation(Location);
+		if (BossTaggedFloorNumber == CachedTowerMainMapLayout.BossFloorNumber
+			|| BossPhysicalFloorNumber == CachedTowerMainMapLayout.BossFloorNumber)
+		{
+			bTowerBossDefeated = true;
+			bTowerBossEntryApplied = true;
+			UE_LOG(
+				LogT66GameMode,
+				Log,
+				TEXT("[MAP] Tower boss floor defeated; suppressing future boss-entry respawns. boss=%s taggedFloor=%d physicalFloor=%d bossFloor=%d"),
+				*GetNameSafe(Boss),
+				BossTaggedFloorNumber,
+				BossPhysicalFloorNumber,
+				CachedTowerMainMapLayout.BossFloorNumber);
+		}
+	}
 	if (Boss && StageBoss.Get() == Boss)
 	{
 		StageBoss = nullptr;
@@ -1296,14 +1405,20 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		return;
 	}
 
+	const FVector RewardAnchor = Location;
+	const FVector CompanionRewardLocation = RewardAnchor + FVector(T66BossRewardCompanionOffsetX, 0.0f, 0.0f);
+	const FVector PetRewardLocation = RewardAnchor + FVector(0.0f, T66BossRewardPetOffsetY, 0.0f);
+	const FVector IdolRewardLocation = RewardAnchor + FVector(0.0f, T66BossRewardIdolOffsetY, 0.0f);
+	const FVector GateRewardLocation = RewardAnchor + FVector(T66BossRewardGateOffsetX, 0.0f, 0.0f);
+
 	// Boss clear frees the staged cage reward only on non-difficulty-ending stages; the companion is unlocked only by interacting with the freed recruit.
-	FreeCagedCompanionsForBossClear(Location);
+	FreeCagedCompanionsForBossClear(CompanionRewardLocation);
 
 	// Normal stage: boss dead => miasma disappears and Stage Gate appears.
 	ClearMiasma();
-	TrySpawnPetCaptureForBoss(Boss, Location);
-	SpawnIdolAltarAtLocation(Location);
-	SpawnStageGateAtLocation(Location);
+	TrySpawnPetCaptureForBoss(Boss, PetRewardLocation);
+	SpawnIdolAltarAtLocation(IdolRewardLocation);
+	SpawnStageGateAtLocation(GateRewardLocation);
 
 	if (RunState)
 	{
@@ -1318,6 +1433,11 @@ bool AT66GameMode::TrySpawnPetCaptureForBoss(AT66BossBase* Boss, const FVector& 
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	if (!World || !T66GI || !Boss || Boss->BossID.IsNone())
 	{
+		const FString BossIDText = Boss ? Boss->BossID.ToString() : FString(TEXT("None"));
+		UE_LOG(LogT66GameMode, Warning, TEXT("[Pets] Capture spawn skipped: invalid context world=%d gi=%d boss=%s."),
+			World ? 1 : 0,
+			T66GI ? 1 : 0,
+			*BossIDText);
 		return false;
 	}
 
@@ -1335,6 +1455,8 @@ bool AT66GameMode::TrySpawnPetCaptureForBoss(AT66BossBase* Boss, const FVector& 
 	const FName PetID = T66GI->ResolvePetIDForBossID(Boss->BossID);
 	if (PetID.IsNone())
 	{
+		UE_LOG(LogT66GameMode, Warning, TEXT("[Pets] Boss %s has no resolvable pet ID; no capture interactable spawned."),
+			*Boss->BossID.ToString());
 		return false;
 	}
 
@@ -1350,24 +1472,96 @@ bool AT66GameMode::TrySpawnPetCaptureForBoss(AT66BossBase* Boss, const FVector& 
 	FPetData PetData;
 	if (!T66GI->GetPetData(PetID, PetData))
 	{
+		UE_LOG(LogT66GameMode, Warning, TEXT("[Pets] Pet data missing for boss %s pet %s; no capture interactable spawned."),
+			*Boss->BossID.ToString(),
+			*PetID.ToString());
 		return false;
 	}
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	FVector CaptureSpawnLocation = Location;
 	if (AT66PetCaptureInteractable* Capture = World->SpawnActor<AT66PetCaptureInteractable>(
 		AT66PetCaptureInteractable::StaticClass(),
-		Location,
+		CaptureSpawnLocation,
 		FRotator::ZeroRotator,
 		SpawnParams))
 	{
 		Capture->InitializePetCapture(PetData);
-		UE_LOG(LogT66GameMode, Log, TEXT("[Pets] Spawned guaranteed capture interactable for boss %s pet %s."),
+		if (IsUsingTowerMainMapLayout())
+		{
+			const int32 RequestedFloorNumber = GetTowerFloorIndexForLocation(Location);
+			const int32 TargetFloorNumber = RequestedFloorNumber != INDEX_NONE
+				? RequestedFloorNumber
+				: CachedTowerMainMapLayout.BossFloorNumber;
+			if (TargetFloorNumber != INDEX_NONE)
+			{
+				auto TryPlaceCaptureOnTargetFloor = [&](const FVector& DesiredLocation) -> bool
+				{
+					if (!T66TrySnapActorToTowerFloor(World, Capture, CachedTowerMainMapLayout, TargetFloorNumber, DesiredLocation))
+					{
+						return false;
+					}
+
+					return true;
+				};
+
+				bool bSnappedToTargetFloor = TryPlaceCaptureOnTargetFloor(CaptureSpawnLocation);
+				bool bUsedBossFloorFallback = false;
+				if (!bSnappedToTargetFloor)
+				{
+					FVector FallbackAnchor = ResolveTowerBossWaitingLocation();
+					if (FallbackAnchor.IsNearlyZero())
+					{
+						if (const T66TowerMapTerrain::FFloor* BossFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, TargetFloorNumber))
+						{
+							FallbackAnchor = BossFloor->Center;
+							FallbackAnchor.Z = BossFloor->SurfaceZ;
+						}
+					}
+
+					if (!FallbackAnchor.IsNearlyZero())
+					{
+						bUsedBossFloorFallback = true;
+						bSnappedToTargetFloor = TryPlaceCaptureOnTargetFloor(FallbackAnchor + FVector(0.f, T66BossRewardPetOffsetY, 0.f))
+							|| TryPlaceCaptureOnTargetFloor(FallbackAnchor);
+					}
+				}
+
+				if (bSnappedToTargetFloor)
+				{
+					T66AssignTowerFloorTag(Capture, TargetFloorNumber);
+				}
+				else
+				{
+					UE_LOG(
+						LogT66GameMode,
+						Warning,
+						TEXT("[Pets] Destroying capture interactable because it could not be placed on floor %d. Boss=%s Pet=%s Requested=%s UsedFallback=%d"),
+						TargetFloorNumber,
+						*Boss->BossID.ToString(),
+						*PetID.ToString(),
+						*CaptureSpawnLocation.ToCompactString(),
+						bUsedBossFloorFallback ? 1 : 0);
+					Capture->Destroy();
+					return false;
+				}
+			}
+		}
+		else
+		{
+			TrySnapActorToTerrainAtLocation(Capture, CaptureSpawnLocation);
+		}
+		UE_LOG(LogT66GameMode, Log, TEXT("[Pets] Spawned guaranteed capture interactable for boss %s pet %s at %s."),
 			*Boss->BossID.ToString(),
-			*PetID.ToString());
+			*PetID.ToString(),
+			*Capture->GetActorLocation().ToCompactString());
 		return true;
 	}
 
+	UE_LOG(LogT66GameMode, Warning, TEXT("[Pets] SpawnActor failed for boss %s pet %s."),
+		*Boss->BossID.ToString(),
+		*PetID.ToString());
 	return false;
 }
 
@@ -1516,41 +1710,6 @@ void AT66GameMode::SpawnStageGateAtLocation(const FVector& Location)
 			bHasGroundedSpawn ? TEXT("") : TEXT(" [location not grounded]"));
 	}
 
-	// Tower boss floors keep a second normal Stage Gate as a visibility fallback.
-	if (IsUsingTowerMainMapLayout())
-	{
-		const FVector VisibleFallbackLoc = SpawnLoc + FVector(220.f, 0.f, 0.f);
-		AT66StageGate* VisibleExitGate = World->SpawnActor<AT66StageGate>(AT66StageGate::StaticClass(), VisibleFallbackLoc, FRotator::ZeroRotator, SpawnParams);
-		if (VisibleExitGate)
-		{
-			const FVector SpawnedActorInitialLoc = VisibleExitGate->GetActorLocation();
-			if (TargetTowerFloorNumber != INDEX_NONE)
-			{
-				T66TrySnapActorToTowerFloor(World, VisibleExitGate, CachedTowerMainMapLayout, TargetTowerFloorNumber, VisibleFallbackLoc);
-				T66AssignTowerFloorTag(VisibleExitGate, TargetTowerFloorNumber);
-			}
-
-			const FVector SpawnedActorFinalLoc = VisibleExitGate->GetActorLocation();
-			const FVector GateMeshLoc = VisibleExitGate->GateMesh ? VisibleExitGate->GateMesh->GetComponentLocation() : FVector::ZeroVector;
-			const float PlayerDistance2D = !PlayerLocation.IsZero() ? FVector::Dist2D(PlayerLocation, SpawnedActorFinalLoc) : -1.0f;
-			const float PlayerDeltaZ = !PlayerLocation.IsZero() ? (SpawnedActorFinalLoc.Z - PlayerLocation.Z) : 0.0f;
-			UE_LOG(LogT66GameMode, Warning, TEXT("Spawned visible tower Stage Gate fallback desired=(%.0f, %.0f, %.0f) initial=(%.0f, %.0f, %.0f) final=(%.0f, %.0f, %.0f) mesh=(%.0f, %.0f, %.0f)%s"),
-				VisibleFallbackLoc.X,
-				VisibleFallbackLoc.Y,
-				VisibleFallbackLoc.Z,
-				SpawnedActorInitialLoc.X,
-				SpawnedActorInitialLoc.Y,
-				SpawnedActorInitialLoc.Z,
-				SpawnedActorFinalLoc.X,
-				SpawnedActorFinalLoc.Y,
-				SpawnedActorFinalLoc.Z,
-				GateMeshLoc.X,
-				GateMeshLoc.Y,
-				GateMeshLoc.Z,
-				bHasGroundedSpawn ? TEXT("") : TEXT(" [location not grounded]"));
-			UE_LOG(LogT66GameMode, Warning, TEXT("Visible Tower Exit Gate relation: playerDistance2D=%.0f playerDeltaZ=%.0f gateFloor=%d"), PlayerDistance2D, PlayerDeltaZ, TargetTowerFloorNumber);
-		}
-	}
 }
 
 void AT66GameMode::SpawnBossForCurrentStage()
@@ -1624,7 +1783,19 @@ void AT66GameMode::SpawnBossForCurrentStage()
 	const int32 StageEncounterBossCount = FMath::Max(1, EncounterBossIDs.Num());
 	const int32 FinalFloorBossCount = StageEncounterBossCount + FinalFloorOwedBossIDs.Num();
 
-	if (T66UsesMainMapTerrainStage(World) && !MainMapBossSpawnSurfaceLocation.IsNearlyZero())
+	if (IsUsingTowerMainMapLayout())
+	{
+		const FVector TowerBossWaitingLocation = ResolveTowerBossWaitingLocation();
+		if (!TowerBossWaitingLocation.IsNearlyZero())
+		{
+			StageData.BossSpawnLocation = TowerBossWaitingLocation;
+		}
+		else if (!MainMapBossSpawnSurfaceLocation.IsNearlyZero())
+		{
+			StageData.BossSpawnLocation = MainMapBossSpawnSurfaceLocation + FVector(0.f, 0.f, 100.f);
+		}
+	}
+	else if (T66UsesMainMapTerrainStage(World) && !MainMapBossSpawnSurfaceLocation.IsNearlyZero())
 	{
 		StageData.BossSpawnLocation = MainMapBossSpawnSurfaceLocation + FVector(0.f, 0.f, 100.f);
 	}

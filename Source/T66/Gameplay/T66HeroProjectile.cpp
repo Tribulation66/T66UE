@@ -4,6 +4,7 @@
 #include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66TemporaryProjectileSystem.h"
 #include "Core/T66DamageLogSubsystem.h"
 #include "Components/SphereComponent.h"
@@ -379,10 +380,23 @@ bool AT66HeroProjectile::IsTargetAlive() const
 	return true;
 }
 
+bool AT66HeroProjectile::CanDamageTargetOnTowerFloor(AActor* Target) const
+{
+	if (!Target)
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	return !GameMode || GameMode->ShouldApplyTowerFloorDamage(GetOwner(), GetActorLocation(), Target);
+}
+
 void AT66HeroProjectile::ApplyDamageToTarget(AActor* Target)
 {
 	if (!Target) return;
 	if (Damage <= 0) return;
+	if (!CanDamageTargetOnTowerFloor(Target)) return;
 	const FName SourceID = DamageSourceID.IsNone() ? UT66DamageLogSubsystem::SourceID_AutoAttack : DamageSourceID;
 
 	if (AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(Target))
@@ -437,7 +451,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 	}
 
 	AT66EnemyBase* Enemy = Cast<AT66EnemyBase>(OtherActor);
-	if (Enemy && Enemy->CurrentHP > 0)
+	if (Enemy && Enemy->CurrentHP > 0 && CanDamageTargetOnTowerFloor(Enemy))
 	{
 		Enemy->TakeDamageFromHero(Damage, SourceID, NAME_None);
 		Destroy();
@@ -446,7 +460,7 @@ void AT66HeroProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponen
 
 	// Boss (stage, Gambler, Shop) damage per hit
 	AT66BossBase* Boss = Cast<AT66BossBase>(OtherActor);
-	if (Boss && Boss->IsAwakened() && Boss->IsAlive())
+	if (Boss && Boss->IsAwakened() && Boss->IsAlive() && CanDamageTargetOnTowerFloor(Boss))
 	{
 		Boss->TakeDamageFromHeroHit(Damage, SourceID, NAME_None);
 		Destroy();

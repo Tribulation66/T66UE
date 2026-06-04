@@ -12,6 +12,7 @@ class UStaticMeshComponent;
 class USkeletalMeshComponent;
 class UMaterialInstanceDynamic;
 class APlayerController;
+class UPrimitiveComponent;
 
 /**
  * A companion actor placed in-world for recruitment/switching.
@@ -80,8 +81,13 @@ public:
 	/** Press-F interaction. Returns true if handled. */
 	virtual bool Interact(APlayerController* PC);
 
+#if !UE_BUILD_SHIPPING
+	bool IsInteractionPromptVisibleForAutomation() const { return bInteractionPromptVisible; }
+#endif
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
 	UPROPERTY()
@@ -102,9 +108,27 @@ private:
 	UPROPERTY(Transient)
 	bool bUnlockGrantedFromBossCage = false;
 
+	UPROPERTY(Transient)
+	int32 LocalHeroPromptOverlapCount = 0;
+
+	UPROPERTY(Transient)
+	bool bInteractionPromptVisible = false;
+
 	void ApplyPlaceholderColor(const FLinearColor& Color);
 	void ApplyCageColor(const FLinearColor& Color);
 	void SetCageVisualsVisible(bool bVisible);
 	void SnapToGround(bool bTreatOriginAsGroundContact);
+	void RefreshInteractionPrompt();
+	void HideInteractionPrompt();
+	bool IsLocalHeroActor(const AActor* OtherActor) const;
+	bool ShouldShowInteractionPrompt() const;
+
+	UFUNCTION()
+	void OnInteractionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnInteractionEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+		UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 };
 

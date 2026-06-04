@@ -4,6 +4,7 @@
 
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66CharacterVisualSubsystem.h"
+#include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66VisualUtil.h"
 
@@ -86,6 +87,16 @@ void AT66RecruitableCompanion::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (InteractionSphere)
+	{
+		InteractionSphere->OnComponentBeginOverlap.AddDynamic(this, &AT66RecruitableCompanion::OnInteractionBeginOverlap);
+		InteractionSphere->OnComponentEndOverlap.AddDynamic(this, &AT66RecruitableCompanion::OnInteractionEndOverlap);
+		if (const APawn* LocalPawn = UGameplayStatics::GetPlayerPawn(this, 0))
+		{
+			LocalHeroPromptOverlapCount = InteractionSphere->IsOverlappingActor(LocalPawn) ? 1 : 0;
+		}
+	}
+
 	if (VisualMesh && VisualMesh->GetMaterial(0))
 	{
 		PlaceholderMaterial = VisualMesh->CreateAndSetMaterialInstanceDynamic(0);
@@ -97,6 +108,19 @@ void AT66RecruitableCompanion::BeginPlay()
 
 	ApplyCageColor(FLinearColor(0.95f, 0.58f, 0.12f, 1.f));
 	SetCageVisualsVisible(bLockedInBossCage);
+	RefreshInteractionPrompt();
+}
+
+void AT66RecruitableCompanion::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	HideInteractionPrompt();
+	if (InteractionSphere)
+	{
+		InteractionSphere->OnComponentBeginOverlap.RemoveDynamic(this, &AT66RecruitableCompanion::OnInteractionBeginOverlap);
+		InteractionSphere->OnComponentEndOverlap.RemoveDynamic(this, &AT66RecruitableCompanion::OnInteractionEndOverlap);
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AT66RecruitableCompanion::ApplyPlaceholderColor(const FLinearColor& Color)
@@ -179,6 +203,8 @@ void AT66RecruitableCompanion::SetCagedForBossReward()
 	{
 		InteractionSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+	LocalHeroPromptOverlapCount = 0;
+	HideInteractionPrompt();
 	SetCageVisualsVisible(true);
 
 	UE_LOG(LogT66RecruitableCompanion, Log, TEXT("[CompanionCage] Caged CompanionID=%s Actor=%s"),
@@ -199,8 +225,14 @@ void AT66RecruitableCompanion::FreeFromBossCage()
 	if (InteractionSphere)
 	{
 		InteractionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		InteractionSphere->UpdateOverlaps();
+		if (const APawn* LocalPawn = UGameplayStatics::GetPlayerPawn(this, 0))
+		{
+			LocalHeroPromptOverlapCount = InteractionSphere->IsOverlappingActor(LocalPawn) ? 1 : 0;
+		}
 	}
 	SetCageVisualsVisible(false);
+	RefreshInteractionPrompt();
 
 	UE_LOG(LogT66RecruitableCompanion, Log, TEXT("[CompanionCage] Freed CompanionID=%s Actor=%s"),
 		*CompanionID.ToString(),
@@ -266,5 +298,69 @@ bool AT66RecruitableCompanion::Interact(APlayerController* PC)
 	// PlayerController owns the HUD-rendered world dialogue.
 	T66PC->OpenWorldDialogueCompanion(this);
 	return true;
+}
+
+bool AT66RecruitableCompanion::ShouldShowInteractionPrompt() const
+{
+	if (HasAnyFlags(RF_ClassDefaultObject) || !GetWorld() || LocalHeroPromptOverlapCount <= 0)
+	{
+		return false;
+	}
+
+	if (bBossCageUnlockReward && !bFreedFromBossCage)
+	{
+		return false;
+	}
+
+	return !CompanionID.IsNone();
+}
+
+void AT66RecruitableCompanion::RefreshInteractionPrompt()
+{
+	if (!ShouldShowInteractionPrompt())
+	{
+		HideInteractionPrompt();
+		return;
+	}
+
+	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+	{
+		T66PC->ShowInteractionPrompt(this, NSLOCTEXT("T66.Companion", "RecruitableGirlfriendPromptTarget", "Girlfriend"));
+		bInteractionPromptVisible = true;
+	}
+}
+
+void AT66RecruitableCompanion::HideInteractionPrompt()
+{
+	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(UGameplayStatics::GetPlayerController(this, 0)))
+	{
+		T66PC->HideInteractionPrompt(this);
+	}
+	bInteractionPromptVisible = false;
+}
+
+bool AT66RecruitableCompanion::IsLocalHeroActor(const AActor* OtherActor) const
+{
+	return OtherActor && GetWorld() && OtherActor == UGameplayStatics::GetPlayerPawn(this, 0);
+}
+
+void AT66RecruitableCompanion::OnInteractionBeginOverlap(UPrimitiveComponent* /*OverlappedComp*/, AActor* OtherActor,
+	UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/, bool /*bFromSweep*/, const FHitResult& /*SweepResult*/)
+{
+	if (IsLocalHeroActor(OtherActor))
+	{
+		++LocalHeroPromptOverlapCount;
+		RefreshInteractionPrompt();
+	}
+}
+
+void AT66RecruitableCompanion::OnInteractionEndOverlap(UPrimitiveComponent* /*OverlappedComp*/, AActor* OtherActor,
+	UPrimitiveComponent* /*OtherComp*/, int32 /*OtherBodyIndex*/)
+{
+	if (IsLocalHeroActor(OtherActor))
+	{
+		LocalHeroPromptOverlapCount = FMath::Max(0, LocalHeroPromptOverlapCount - 1);
+		RefreshInteractionPrompt();
+	}
 }
 

@@ -24,12 +24,13 @@
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
-// [GOLD] EngineUtils.h removed — TActorIterator replaced by ActorRegistry.
+#include "EngineUtils.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66EnemyPoolSubsystem.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
 #include "HAL/IConsoleManager.h"
+#include "UObject/ObjectKey.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66EnemyDirector, Log, All);
 
@@ -566,6 +567,137 @@ int32 AT66EnemyDirector::SpawnInitialPopulationForTowerFloor(const int32 Request
 			ActiveMobFloorNumber);
 	}
 	return SpawnedCount;
+}
+
+int32 AT66EnemyDirector::DespawnTowerEnemiesAboveFloor(const int32 CurrentFloorNumber)
+{
+	UWorld* World = GetWorld();
+	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	if (!World || !GameMode || !GameMode->IsUsingTowerMainMapLayout() || CurrentFloorNumber == INDEX_NONE)
+	{
+		return 0;
+	}
+
+	int32 RemovedPendingSpawns = 0;
+	for (int32 Index = PendingSpawns.Num() - 1; Index >= 0; --Index)
+	{
+		const int32 SpawnFloorNumber = GameMode->GetTowerFloorIndexForLocation(PendingSpawns[Index].GroundLocation);
+		if (SpawnFloorNumber != INDEX_NONE && SpawnFloorNumber < CurrentFloorNumber)
+		{
+			PendingSpawns.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+			++RemovedPendingSpawns;
+		}
+	}
+	if (PendingSpawns.Num() <= 0)
+	{
+		World->GetTimerManager().ClearTimer(StaggeredSpawnTimerHandle);
+	}
+
+	UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>();
+	if (!Registry)
+	{
+		return RemovedPendingSpawns;
+	}
+
+	int32 DespawnedRichEnemies = 0;
+	int32 DespawnedLightweightMobs = 0;
+	TSet<FObjectKey> ProcessedActors;
+	auto DespawnRichEnemy = [&](AT66EnemyBase* Enemy) -> bool
+	{
+		const FObjectKey EnemyKey(Enemy);
+		if (!IsValid(Enemy) || ProcessedActors.Contains(EnemyKey))
+		{
+			return false;
+		}
+		ProcessedActors.Add(EnemyKey);
+
+		const int32 EnemyFloorNumber = GameMode->ResolveTowerFloorNumberForActor(Enemy);
+		if (EnemyFloorNumber == INDEX_NONE || EnemyFloorNumber >= CurrentFloorNumber)
+		{
+			return false;
+		}
+
+		if (Enemy->CurrentHP > 0 && AliveCount > 0)
+		{
+			--AliveCount;
+		}
+		Enemy->OwningDirector = nullptr;
+		Enemy->Destroy();
+		++DespawnedRichEnemies;
+		return true;
+	};
+	auto DespawnLightweightMob = [&](AT66MobBase* Mob, UT66MobManagerSubsystem* MobManager) -> bool
+	{
+		const FObjectKey MobKey(Mob);
+		if (!IsValid(Mob) || ProcessedActors.Contains(MobKey))
+		{
+			return false;
+		}
+		ProcessedActors.Add(MobKey);
+
+		const int32 MobFloorNumber = GameMode->ResolveTowerFloorNumberForActor(Mob);
+		if (MobFloorNumber == INDEX_NONE || MobFloorNumber >= CurrentFloorNumber)
+		{
+			return false;
+		}
+
+		if (Mob->IsAliveAndActive())
+		{
+			if (LightweightAliveCount > 0)
+			{
+				--LightweightAliveCount;
+			}
+			T66DecrementLightweightFamilyCounter(Mob->GetEnemyFamily(), LightweightMeleeAliveCount, LightweightRushAliveCount, LightweightFlyingAliveCount, LightweightRangedAliveCount);
+		}
+		Mob->OwningDirector = nullptr;
+		if (MobManager)
+		{
+			MobManager->ReleaseMob(Mob);
+		}
+		else
+		{
+			Mob->Destroy();
+		}
+		++DespawnedLightweightMobs;
+		return true;
+	};
+
+	TArray<TWeakObjectPtr<AT66EnemyBase>> EnemySnapshot = Registry->GetEnemies();
+	for (const TWeakObjectPtr<AT66EnemyBase>& WeakEnemy : EnemySnapshot)
+	{
+		DespawnRichEnemy(WeakEnemy.Get());
+	}
+
+	UT66MobManagerSubsystem* MobManager = World->GetSubsystem<UT66MobManagerSubsystem>();
+	TArray<TWeakObjectPtr<AT66MobBase>> MobSnapshot = Registry->GetActiveMobs();
+	for (const TWeakObjectPtr<AT66MobBase>& WeakMob : MobSnapshot)
+	{
+		DespawnLightweightMob(WeakMob.Get(), MobManager);
+	}
+	for (TActorIterator<AT66EnemyBase> It(World); It; ++It)
+	{
+		DespawnRichEnemy(*It);
+	}
+	for (TActorIterator<AT66MobBase> It(World); It; ++It)
+	{
+		DespawnLightweightMob(*It, MobManager);
+	}
+
+	const int32 TotalDespawned = RemovedPendingSpawns + DespawnedRichEnemies + DespawnedLightweightMobs;
+	if (TotalDespawned > 0)
+	{
+		UE_LOG(
+			LogT66EnemyDirector,
+			Log,
+			TEXT("[SPAWN] Tower despawn above floor=%d rich=%d lightweight=%d pending=%d remainingRich=%d remainingLightweight=%d"),
+			CurrentFloorNumber,
+			DespawnedRichEnemies,
+			DespawnedLightweightMobs,
+			RemovedPendingSpawns,
+			AliveCount,
+			LightweightAliveCount);
+	}
+	return TotalDespawned;
 }
 
 void AT66EnemyDirector::NotifyEnemyDied(AT66EnemyBase* Enemy)

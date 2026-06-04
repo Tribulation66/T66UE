@@ -111,5 +111,6 @@ private:
 	bool bTimedVisualTravel = false;
 
 	bool IsTargetAlive() const;
+	bool CanDamageTargetOnTowerFloor(AActor* Target) const;
 	void ApplyDamageToTarget(AActor* Target);
 };

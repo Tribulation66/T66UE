@@ -8,6 +8,7 @@
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66CombatDebugDraw.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/SphereComponent.h"
@@ -280,6 +281,7 @@ void AT66BossGroundAOE::ActivateDamage()
 	DamageZone->UpdateOverlaps();
 
 	const FName UltimateSourceID = UT66DamageLogSubsystem::SourceID_Ultimate;
+	const AT66GameMode* GameMode = GetWorld() ? Cast<AT66GameMode>(GetWorld()->GetAuthGameMode()) : nullptr;
 
 	if (bDamageEnemies)
 	{
@@ -287,6 +289,10 @@ void AT66BossGroundAOE::ActivateDamage()
 		DamageZone->GetOverlappingActors(Overlapping);
 		for (AActor* Actor : Overlapping)
 		{
+			if (GameMode && !GameMode->ShouldApplyTowerFloorDamage(this, GetActorLocation(), Actor))
+			{
+				continue;
+			}
 			if (AT66EnemyBase* E = Cast<AT66EnemyBase>(Actor))
 			{
 				if (E->CurrentHP > 0)
@@ -311,6 +317,10 @@ void AT66BossGroundAOE::ActivateDamage()
 		{
 			AT66HeroBase* Hero = Cast<AT66HeroBase>(Actor);
 			if (!Hero || Hero->IsInSafeZone())
+			{
+				continue;
+			}
+			if (GameMode && !GameMode->ShouldApplyTowerFloorDamage(this, GetActorLocation(), Hero))
 			{
 				continue;
 			}

@@ -127,6 +127,7 @@ protected:
 	/** Returns true if an actor is a valid auto-attack target (alive enemy/boss). */
 	static bool IsValidAutoTarget(AActor* A);
 	static bool IsValidTargetHandle(const FT66CombatTargetHandle& TargetHandle);
+	bool IsTargetOnCompatibleTowerDamageFloor(AActor* Target, const FVector& DamageOrigin) const;
 	static FString MakeTargetHandleKey(const FT66CombatTargetHandle& TargetHandle);
 	FT66CombatTargetHandle MakeActorTargetHandle(AActor* Actor, ET66HitZoneType PreferredHitZone = ET66HitZoneType::Body) const;
 	FT66CombatTargetHandle ResolveAutoAttackTargetHandle(AActor* Actor, bool bFavorLockedZone, class UT66RngSubsystem* RngSub) const;

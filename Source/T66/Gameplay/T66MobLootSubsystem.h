@@ -11,6 +11,7 @@
 class UNiagaraComponent;
 class UNiagaraSystem;
 class USceneComponent;
+class UHierarchicalInstancedStaticMeshComponent;
 enum class ET66Difficulty : uint8;
 
 USTRUCT(BlueprintType)
@@ -138,6 +139,7 @@ public:
 
 #if !UE_BUILD_SHIPPING
 	void ClearAllMobLootForAutomation();
+	int32 GetVisibleMobLootInstanceCountForAutomation() const;
 #endif
 
 private:
@@ -178,6 +180,9 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UNiagaraSystem> NiagaraSystem = nullptr;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UHierarchicalInstancedStaticMeshComponent> FallbackVisualComponent = nullptr;
+
 	TArray<FT66MobLootSlot> Slots;
 	TArray<int32> FreeSlots;
 	TArray<int32> DenseSlots;
@@ -200,4 +205,6 @@ private:
 	void ReleaseSlot(int32 SlotIndex, EReleaseReason Reason, FT66MobLootCollectResult* InOutCollectResult = nullptr);
 	void TickExpirations(float DeltaTime);
 	void UploadLiveState();
+	bool EnsureFallbackVisualComponent();
+	void UploadFallbackVisualState();
 };

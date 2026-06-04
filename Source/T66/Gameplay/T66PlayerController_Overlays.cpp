@@ -7963,18 +7963,6 @@ void AT66PlayerController::HandleCasinoInteractableGambleResolved(const FName Ga
 
 	CasinoInteractable->HandleCasinoGambleCompleted();
 	ActiveCasinoInteractable.Reset();
-
-	if (UWorld* World = GetWorld())
-	{
-		TWeakObjectPtr<AT66PlayerController> WeakThis(this);
-		World->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateLambda([WeakThis]()
-		{
-			if (AT66PlayerController* PC = WeakThis.Get())
-			{
-				PC->CloseCasinoOverlay();
-			}
-		}));
-	}
 }
 
 

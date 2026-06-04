@@ -155,7 +155,8 @@ public:
 	FVector GetAimPointForHitZone(ET66HitZoneType HitZoneType) const;
 
 	bool IsAwakened() const { return bAwakened; }
-	bool IsAlive() const { return CurrentHP > 0; }
+	bool IsAlive() const { return !bDefeated && CurrentHP > 0; }
+	bool IsCombatTargetable() const;
 
 	/** Coliseum: start the fight immediately (bypasses proximity). */
 	void ForceAwaken() { Awaken(); }
@@ -165,6 +166,7 @@ public:
 #if !UE_BUILD_SHIPPING
 	void ResetBossAttackOwnershipAutomationCounters();
 	int32 GetBossAttackOwnershipAutomationCounter(FName EventID, FName AttackID, FName PartID) const;
+	bool HasVisibleBossBodyForAutomation() const;
 	bool KillBossPartForAutomation(FName PartID);
 	void ForceBossAttackForAutomation(FName AttackID, FName OwningPartID = NAME_None);
 	void ResetBossMovementAutomationState();
@@ -254,6 +256,7 @@ private:
 	int32 BaseMaxHP = 0;
 	int32 BaseProjectileDamageHearts = 0;
 	float BaseMoveSpeed = 350.f;
+	bool bDefeated = false;
 	bool bZeroDamageUnkillable = false;
 	FName ZeroDamageUnkillableReason = NAME_None;
 

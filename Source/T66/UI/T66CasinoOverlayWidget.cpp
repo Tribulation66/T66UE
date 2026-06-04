@@ -360,6 +360,10 @@ void UT66CasinoOverlayWidget::ReleaseCachedSlateResources()
 
 void UT66CasinoOverlayWidget::CloseOverlay()
 {
+	if (CasinoGamblerTabWidget)
+	{
+		CasinoGamblerTabWidget->FinalizeCasinoSessionIfResolved();
+	}
 	SharedOverlay::CloseOverlay(this);
 }
 

@@ -5,6 +5,7 @@
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66MobBase.h"
 #include "Gameplay/T66TemporaryProjectileSystem.h"
 #include "Components/SceneComponent.h"
@@ -197,6 +198,13 @@ bool UT66OutgoingTravelerPoolSubsystem::FireOutgoingTraveler(
 	Slot.TargetPosition = FireParams.TargetPosition;
 	Slot.TargetOffset = FireParams.TargetOffset;
 	Slot.LastKnownTargetPosition = FireParams.TargetPosition;
+	if (UWorld* World = GetWorld())
+	{
+		if (const AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode()))
+		{
+			Slot.SourceTowerFloorNumber = GameMode->GetTowerFloorIndexForLocation(FireParams.StartPosition);
+		}
+	}
 	Slot.TargetActorKey = FireParams.TargetHandle.Actor.IsValid()
 		? FObjectKey(FireParams.TargetHandle.Actor.Get())
 		: FObjectKey();
@@ -374,6 +382,7 @@ bool UT66OutgoingTravelerPoolSubsystem::AllocateSlot(
 	Slot.RemainingLifetimeSeconds = 0.0f;
 	Slot.ArrivalRadius = 30.0f;
 	Slot.DamageAmount = 0;
+	Slot.SourceTowerFloorNumber = INDEX_NONE;
 	Slot.DamageSourceID = NAME_None;
 	Slot.EventType = NAME_None;
 	Slot.OnArrived.Unbind();
@@ -435,6 +444,7 @@ void UT66OutgoingTravelerPoolSubsystem::ReleaseSlot(const int32 SlotIndex, const
 	Slot.RemainingLifetimeSeconds = 0.0f;
 	Slot.ArrivalRadius = 30.0f;
 	Slot.DamageAmount = 0;
+	Slot.SourceTowerFloorNumber = INDEX_NONE;
 	Slot.DamageSourceID = NAME_None;
 	Slot.EventType = NAME_None;
 	Slot.OnArrived.Unbind();
@@ -728,6 +738,20 @@ bool UT66OutgoingTravelerPoolSubsystem::ApplyArrivalDamage(
 	if (!IsValid(Actor))
 	{
 		return false;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (const AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode()))
+		{
+			if (GameMode->IsUsingTowerMainMapLayout() && Slot.SourceTowerFloorNumber != INDEX_NONE)
+			{
+				const int32 TargetTowerFloorNumber = GameMode->ResolveTowerFloorNumberForActor(Actor);
+				if (TargetTowerFloorNumber != INDEX_NONE && TargetTowerFloorNumber != Slot.SourceTowerFloorNumber)
+				{
+					return false;
+				}
+			}
+		}
 	}
 
 	FT66CombatTargetHandle ResolvedHandle = Slot.TargetHandle;

@@ -336,6 +336,10 @@ void FT66VisualUtil::SnapToGround(AActor* Actor, UWorld* World)
 	}
 
 	const FHitResult* SelectedHit = BestTaggedHit ? BestTaggedHit : BestHit;
+	if (TaggedTowerFloor != INDEX_NONE && !BestTaggedHit)
+	{
+		return;
+	}
 	if (!SelectedHit)
 	{
 		return;

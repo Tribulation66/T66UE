@@ -2,9 +2,12 @@
 
 #include "Gameplay/T66SafeZoneComponent.h"
 
+#include "Components/StaticMeshComponent.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66VisualUtil.h"
 #include "Engine/World.h"
+#include "Materials/MaterialInterface.h"
 
 UT66SafeZoneComponent::UT66SafeZoneComponent()
 {
@@ -14,6 +17,7 @@ UT66SafeZoneComponent::UT66SafeZoneComponent()
 void UT66SafeZoneComponent::ConfigureSafeZone(const float InRadius)
 {
 	SetSphereRadius(FMath::Max(1.f, InRadius));
+	UpdateSafeZoneVisual();
 }
 
 void UT66SafeZoneComponent::BeginPlay()
@@ -36,6 +40,9 @@ void UT66SafeZoneComponent::BeginPlay()
 			Registry->RegisterSafeZone(this);
 		}
 	}
+
+	EnsureSafeZoneVisual();
+	UpdateSafeZoneVisual();
 }
 
 void UT66SafeZoneComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -56,6 +63,12 @@ void UT66SafeZoneComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	OnComponentBeginOverlap.RemoveDynamic(this, &UT66SafeZoneComponent::HandleSafeZoneBeginOverlap);
 	OnComponentEndOverlap.RemoveDynamic(this, &UT66SafeZoneComponent::HandleSafeZoneEndOverlap);
+
+	if (SafeZoneVisualComponent)
+	{
+		SafeZoneVisualComponent->DestroyComponent();
+		SafeZoneVisualComponent = nullptr;
+	}
 
 	Super::EndPlay(EndPlayReason);
 }
@@ -108,3 +121,76 @@ AT66HeroBase* UT66SafeZoneComponent::ResolveHero(AActor* OtherActor) const
 {
 	return Cast<AT66HeroBase>(OtherActor);
 }
+
+void UT66SafeZoneComponent::EnsureSafeZoneVisual()
+{
+	if (SafeZoneVisualComponent && SafeZoneVisualComponent->IsRegistered())
+	{
+		return;
+	}
+
+	AActor* Owner = GetOwner();
+	UWorld* World = GetWorld();
+	if (!Owner || !World)
+	{
+		return;
+	}
+
+	const FName ComponentName(*FString::Printf(TEXT("%s_SafeZoneBubbleVisual"), *GetName()));
+	SafeZoneVisualComponent = NewObject<UStaticMeshComponent>(Owner, ComponentName, RF_Transient);
+	if (!SafeZoneVisualComponent)
+	{
+		return;
+	}
+
+	SafeZoneVisualComponent->Mobility = EComponentMobility::Movable;
+	SafeZoneVisualComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SafeZoneVisualComponent->SetGenerateOverlapEvents(false);
+	SafeZoneVisualComponent->SetCastShadow(false);
+	SafeZoneVisualComponent->bReceivesDecals = false;
+	SafeZoneVisualComponent->TranslucencySortPriority = 5;
+	if (UStaticMesh* Sphere = FT66VisualUtil::GetBasicShapeSphere())
+	{
+		SafeZoneVisualComponent->SetStaticMesh(Sphere);
+	}
+	if (UMaterialInterface* BubbleMaterial = LoadObject<UMaterialInterface>(
+		nullptr,
+		TEXT("/Game/Stylized_VFX_StPack/Materials/M_Bubble.M_Bubble")))
+	{
+		SafeZoneVisualComponent->SetMaterial(0, BubbleMaterial);
+	}
+	else
+	{
+		FT66VisualUtil::ApplyT66Color(SafeZoneVisualComponent, Owner, FLinearColor(0.65f, 0.95f, 0.72f, 0.35f));
+	}
+
+	SafeZoneVisualComponent->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
+	SafeZoneVisualComponent->RegisterComponent();
+}
+
+void UT66SafeZoneComponent::UpdateSafeZoneVisual()
+{
+	if (!SafeZoneVisualComponent)
+	{
+		return;
+	}
+
+	const float Radius = FMath::Max(1.f, GetUnscaledSphereRadius());
+	const float ScaleXY = Radius / 50.f;
+	const float ScaleZ = FMath::Max(1.0f, (Radius * 0.32f) / 50.f);
+	SafeZoneVisualComponent->SetRelativeLocation(FVector(0.f, 0.f, Radius * 0.12f));
+	SafeZoneVisualComponent->SetRelativeScale3D(FVector(ScaleXY, ScaleXY, ScaleZ));
+	SafeZoneVisualComponent->SetHiddenInGame(false, true);
+	SafeZoneVisualComponent->SetVisibility(true, true);
+}
+
+#if !UE_BUILD_SHIPPING
+bool UT66SafeZoneComponent::HasSafeZoneVisualForAutomation() const
+{
+	return SafeZoneVisualComponent
+		&& SafeZoneVisualComponent->IsRegistered()
+		&& SafeZoneVisualComponent->GetStaticMesh() != nullptr
+		&& SafeZoneVisualComponent->IsVisible()
+		&& !SafeZoneVisualComponent->bHiddenInGame;
+}
+#endif

@@ -7,6 +7,8 @@
 #include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66FloatingCombatTextSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66PlayerExperienceSubSystem.h"
+#include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "CollisionQueryParams.h"
 #include "Components/CapsuleComponent.h"
@@ -21,6 +23,7 @@
 #include "Gameplay/T66CombatHitZoneComponent.h"
 #include "Gameplay/T66EnemyDirector.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66MobManagerSubsystem.h"
 #include "Gameplay/T66MobLootSubsystem.h"
 #include "Gameplay/T66ProjectileManagerSubsystem.h"
@@ -39,6 +42,9 @@ const FName T66MobVATClip_HitReact(TEXT("HitReact"));
 const FName T66MobVATClip_Death(TEXT("Death"));
 constexpr float T66NormalMobStatBoostDropChance = 0.02f;
 constexpr float T66MiniBossStatBoostDropChance = 0.08f;
+#if !UE_BUILD_SHIPPING
+const FName T66ForceMobLootBagDropTag(TEXT("T66_ForceMobLootBagDrop"));
+#endif
 
 struct FT66MobKillBoostDropTarget
 {
@@ -105,6 +111,116 @@ void T66TrySpawnMobKillStatBoost(AActor* SourceActor, const bool bIsMiniBoss)
 			static_cast<int32>(Target.PrimaryStatType),
 			static_cast<int32>(Target.SecondaryStatType),
 			Target.bUsesSecondaryStat ? 1 : 0);
+	}
+}
+
+void T66TrySpawnMobKillLootBags(AActor* SourceActor, const bool bIsMiniBoss)
+{
+	if (!SourceActor)
+	{
+		return;
+	}
+
+	UWorld* World = SourceActor->GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	if (!World || !T66GI)
+	{
+		return;
+	}
+
+	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+	UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	if (RngSub && RunState)
+	{
+		RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
+	}
+
+	FRandomStream LocalRng(FPlatformTime::Cycles());
+	FRandomStream& Stream = RngSub ? RngSub->GetRunStream() : LocalRng;
+	const ET66Difficulty Difficulty = T66GI->SelectedDifficulty;
+	const float BaseDropChance = PlayerExperience
+		? PlayerExperience->GetDifficultyEnemyLootBagDropChanceBase(Difficulty)
+		: 0.10f;
+	const float DropChance = RngSub ? RngSub->BiasChance01(BaseDropChance) : FMath::Clamp(BaseDropChance, 0.f, 1.f);
+	const bool bRolledDrop = RngSub ? RngSub->RollChance01(DropChance) : (Stream.GetFraction() < DropChance);
+#if !UE_BUILD_SHIPPING
+	const bool bDroppedBag = bRolledDrop || SourceActor->ActorHasTag(T66ForceMobLootBagDropTag);
+#else
+	const bool bDroppedBag = bRolledDrop;
+#endif
+	const int32 DropDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+	const int32 DropPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+	if (RunState)
+	{
+		RunState->RecordLuckQuantityBool(FName(TEXT("EnemyLootBagDrop")), bDroppedBag, DropChance, DropDrawIndex, DropPreDrawSeed);
+	}
+	if (!bDroppedBag)
+	{
+		return;
+	}
+
+	const FT66IntRange BagCountRange = PlayerExperience
+		? PlayerExperience->GetDifficultyEnemyLootBagCountOnDrop(Difficulty)
+		: FT66IntRange{ 1, 1 };
+	const int32 BagCountMin = FMath::Max(1, FMath::Min(BagCountRange.Min, BagCountRange.Max));
+	const int32 BagCountMax = FMath::Max(BagCountMin, FMath::Max(BagCountRange.Min, BagCountRange.Max));
+	const int32 LootBagCount = RngSub
+		? FMath::Max(1, RngSub->RollIntRangeBiased(BagCountRange, Stream))
+		: FMath::Max(1, Stream.RandRange(BagCountMin, BagCountMax));
+	const float LootBagMultiplier = RunState ? RunState->GetRunModifierEnemyLootBagCountMultiplier() : 1.0f;
+	const int32 AdjustedLootBagCount = (LootBagMultiplier > 0.0f && !FMath::IsNearlyEqual(LootBagMultiplier, 1.0f))
+		? FMath::Max(1, FMath::RoundToInt(static_cast<float>(LootBagCount) * LootBagMultiplier))
+		: LootBagCount;
+	const int32 BagCountDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+	const int32 BagCountPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+	if (RunState)
+	{
+		RunState->RecordLuckQuantityRoll(FName(TEXT("EnemyLootBagCount")), AdjustedLootBagCount, BagCountMin, BagCountMax, BagCountDrawIndex, BagCountPreDrawSeed);
+	}
+
+	const FT66RarityWeights Weights = PlayerExperience
+		? PlayerExperience->GetDifficultyEnemyLootBagRarityWeights(Difficulty)
+		: FT66RarityWeights{};
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.Owner = SourceActor;
+	for (int32 BagIndex = 0; BagIndex < AdjustedLootBagCount; ++BagIndex)
+	{
+		ET66Rarity BagRarity = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
+		const int32 BagRarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+		const int32 BagRarityPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+		if (bIsMiniBoss)
+		{
+			const ET66Rarity R2 = RngSub ? RngSub->RollRarityWeighted(Weights, Stream) : FT66RarityUtil::RollDefaultRarity(Stream);
+			BagRarity = (static_cast<uint8>(R2) > static_cast<uint8>(BagRarity)) ? R2 : BagRarity;
+		}
+		if (RunState)
+		{
+			RunState->RecordLuckQualityRarity(
+				FName(TEXT("EnemyLootBagRarity")),
+				BagRarity,
+				bIsMiniBoss ? INDEX_NONE : BagRarityDrawIndex,
+				bIsMiniBoss ? 0 : BagRarityPreDrawSeed,
+				bIsMiniBoss ? nullptr : &Weights);
+		}
+
+		const FName ItemID = T66GI->GetRandomItemIDForLootRarityFromStream(BagRarity, Stream);
+		const float Angle = RngSub ? RngSub->RunFRandRange(0.f, 2.f * PI) : Stream.FRandRange(0.f, 2.f * PI);
+		const float Radius = (AdjustedLootBagCount > 1)
+			? (RngSub ? RngSub->RunFRandRange(0.f, 90.f) : Stream.FRandRange(0.f, 90.f))
+			: 0.f;
+		const FVector Offset(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, 90.f);
+		if (AT66LootBagPickup* Loot = World->SpawnActor<AT66LootBagPickup>(
+			AT66LootBagPickup::StaticClass(),
+			SourceActor->GetActorLocation() + Offset,
+			FRotator::ZeroRotator,
+			SpawnParams))
+		{
+			Loot->SetLootRarity(BagRarity);
+			Loot->SetItemID(ItemID);
+		}
 	}
 }
 
@@ -640,6 +756,7 @@ bool AT66MobBase::TakeDamageFromHeroHitZone(int32 Damage, const FT66CombatTarget
 				FT66MobLootHandle MobLootHandle;
 				MobLoot->SpawnMobLootFromNonBossDeath(this, MobID, bIsMiniBoss, MobLootHandle);
 			}
+			T66TrySpawnMobKillLootBags(this, bIsMiniBoss);
 			T66TrySpawnMobKillStatBoost(this, bIsMiniBoss);
 		}
 		NotifyOwningDirectorOfDeath();

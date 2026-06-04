@@ -8,6 +8,7 @@
 #include "T66CasinoGamblerTabWidget.generated.h"
 
 class STextBlock;
+class SBox;
 class SWidgetSwitcher;
 template<typename NumericType> class SSpinBox;
 class UT66CoinFlipGameWidget;
@@ -33,6 +34,11 @@ public:
 	void SetGamblingOnlyKiosk(bool bEnabled) { bGamblingOnlyKiosk = bEnabled; }
 	void OpenCasinoPage();
 	void SetWinGoldAmount(int32 InAmount);
+	void FinalizeCasinoSessionIfResolved();
+
+#if !UE_BUILD_SHIPPING
+	bool RunCasinoDoubleDownAutomationProof(FString& OutDetail);
+#endif
 
 private:
 	enum class EGamblerPage : uint8
@@ -45,11 +51,22 @@ private:
 		FindJoker = 5,
 	};
 
+	enum class ECasinoRoundState : uint8
+	{
+		NoGame = 0,
+		ReadyForBet,
+		WaitingForChoice,
+		WonCanDoubleDown,
+		LostCloseOnly,
+	};
+
 	TSharedPtr<SWidgetSwitcher> PageSwitcher;
 	TSharedPtr<SWidgetSwitcher> CasinoSwitcher;
 	TSharedPtr<STextBlock> GoldText;
 	TSharedPtr<STextBlock> StatusText;
 	TSharedPtr<SSpinBox<int32>> GambleAmountSpin;
+	TSharedPtr<SBox> MainActionButtonBox;
+	TSharedPtr<SBox> WinCloseButtonBox;
 
 	UPROPERTY()
 	TObjectPtr<UT66CoinFlipGameWidget> CoinFlipGameWidget;
@@ -65,15 +82,24 @@ private:
 
 	int32 GambleAmount = 10;
 	int32 LockedBetAmount = 0;
+	int32 InitialBetAmount = 0;
+	int32 CurrentRoundBetAmount = 0;
 	int32 WinGoldAmount = 10;
+	FName LastResolvedCasinoGameID = NAME_None;
+	int32 LastResolvedCasinoPayoutGold = 0;
+	EGamblerPage LockedGamePage = EGamblerPage::Casino;
+	ECasinoRoundState RoundState = ECasinoRoundState::NoGame;
 	bool bInputLocked = false;
 	bool bPendingStickTargetShortest = false;
 	bool bEmbeddedInCasinoShell = false;
 	bool bGamblingOnlyKiosk = false;
+	bool bCasinoSessionShouldConsumeOnClose = false;
+	bool bLastResolvedCasinoWin = false;
 
 	FReply OnBack();
 	FReply OnDialogueGamble();
 	FReply OnBetClicked();
+	FReply OnWinCloseClicked();
 	FReply OnOpenCoinFlip();
 	FReply OnOpenGuessCup();
 	FReply OnOpenStickPick();
@@ -84,6 +110,17 @@ private:
 	FT66WidgetGameHostContext BuildChildHostContext();
 	void ReturnToGameSelection();
 	void RefreshTopBar();
+	void RefreshActionControls();
+	FText GetMainActionLabel() const;
+	TSharedRef<SWidget> BuildMainActionButton();
+	TSharedRef<SWidget> BuildWinCloseButton();
+	bool LockCasinoGame(EGamblerPage Page);
+	bool BeginCasinoRound(int32 BetAmount, bool bDoubleDown);
+	void ResolveLockedCasinoGameAutomatically();
+	bool CanResolveCasinoChoice() const;
+	void HandleCasinoRoundCompleted(FName GameID, bool bSuccessful, int32 PayoutGold);
+	void ResetActiveGameForNextRound();
+	void ResetCasinoSessionState(bool bClearLockedGame);
 	bool IsCasinoGameAllowed(FName CasinoGameID) const;
 	FReply HandleBlockedCasinoGame();
 	bool TryPayWithLockedBet(int32& OutBetAmount);

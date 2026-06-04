@@ -808,6 +808,7 @@ void AT66GameMode::SpawnMainMapTerrain()
 	CachedTowerMainMapLayout = T66TowerMapTerrain::FLayout{};
 	bTowerBossEntryTriggered = false;
 	bTowerBossEntryApplied = false;
+	bTowerBossDefeated = false;
 	TowerTerrainSafetyAccumulator = 0.f;
 	TowerTrapActivationAccumulator = 0.f;
 	ActiveTowerTrapFloorNumber = INDEX_NONE;
@@ -981,6 +982,7 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	CachedTowerMainMapLayout = T66TowerMapTerrain::FLayout{};
 	bTowerBossEntryTriggered = false;
 	bTowerBossEntryApplied = false;
+	bTowerBossDefeated = false;
 	MainMapSpawnSurfaceLocation = FVector::ZeroVector;
 	MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
 	MainMapStartPathSurfaceLocation = FVector::ZeroVector;

@@ -4976,6 +4976,15 @@ namespace T66TowerMapTerrain
 				Floor.ArrivalPoint = Floor.Center;
 			}
 			Floor.ArrivalPoint.Z = Floor.SurfaceZ;
+			if (Floor.FloorNumber == OutLayout.BossFloorNumber && FloorIndex > 0)
+			{
+				Floor.Center.X = Floor.ArrivalPoint.X;
+				Floor.Center.Y = Floor.ArrivalPoint.Y;
+				Floor.HoleCenter = Floor.Center;
+				Floor.HoleCenter.Z = Floor.SurfaceZ;
+				Floor.ExitPoint = Floor.Center;
+				Floor.ExitPoint.Z = Floor.SurfaceZ;
+			}
 			FRandomStream FloorMazeRng(T66BuildTowerFloorSeed(Preset.Seed, Floor.FloorNumber, Floor.GameplayLevelNumber, Floor.Theme));
 			T66BuildFloorMazeWalls(OutLayout, Floor, FloorMazeRng);
 		}
