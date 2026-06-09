@@ -30,7 +30,11 @@ dark-inflatable look with red/green accents everywhere, and zero flip-caused big
 - Triage sheet (25 captures): `Saved/Codex/UI/FriendslopMigration/round1/triage_sheet.png`
 - Standouts reviewed full-size: pause menu (excellent), vendor/casinoshop (good),
   idol altar (good), settings (good), load game (good), HUD (good).
-- Wiring sanity: pre-release smoke suite result — see overnight_log.md tail.
+- Wiring sanity: smoke suite PASS — all 7 frontend tag-click cases (including case 04,
+  which was failing on the 2026-06-08 baseline) + DurableSaveIntegrity PASS;
+  LifecycleTransition reports BUILD_CONFIG_UNSUPPORTED (config status, not a failure).
+  First attempt hit one screenshot-timeout flake on case 05 (click+nav+dump all succeeded
+  in its log); retry passed everything. Run: Saved/PreReleaseSmokeSuite/20260609_175117.
 
 ## Morning decisions for you (none block anything)
 

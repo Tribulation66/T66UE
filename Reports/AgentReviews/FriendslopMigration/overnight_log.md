@@ -91,3 +91,25 @@ SteamAchievements, SecretAchievements, TopBar, Tooltips, minimap (today).
     button clips panel edge; settings wide dropdown bar stretches slice; loading screen
     is plain text (no plate, low priority).
 - [3] Phase 3 start: targeted HUD custom chrome (score block, XP box) + then docs + smoke.
+- [3] Phase 3 verdict: HUD already passes post-flip (score block plated; bUseAlternateHudChrome
+  flip judged too risky vs payoff at night-guardrail bar). Crosshair/bullseye/wheel dial/combat
+  text are gameplay viz (exempt per inventory). Minimap done earlier today. No work above bar.
+- [4] Docs updated: UI_AGENTS.md (Friendslop = active lane, FlatStyle = legacy adapter),
+  ART_DIRECTION.md (UI boundary), FRIENDSLOP authority doc (flip note). Commit a8288e61d.
+- [4] SMOKE: first run FAIL on case 05 (screenshot timeout AFTER successful click+nav+dump —
+  automation timing flake class, same as documented 2026-06-08 pending issue). RETRY PASS:
+  all 7 tag-click cases PASS (incl. 04 which was failing on 2026-06-08 baseline, and 05),
+  DurableSaveIntegrity PASS, LifecycleTransition BUILD_CONFIG_UNSUPPORTED (config status,
+  not a failure). Run: Saved/PreReleaseSmokeSuite/20260609_175117. WIRING VERDICT: PASS.
+
+## Close
+
+PPF close: Process used = FriendslopStyle infrastructure flip (user-approved deviation from
+per-screen reference generation: "main priority is infrastructure... this wont be the last
+attempt"; existing approved MainMenu/SharedPrimitives plates reused under the charter's
+blanket APPROVED_REUSE). Matches declared process: YES (as amended by user pre-run).
+Evidence: triage sheet (25 captures), full-size reviews, smoke suite 20260609_175117,
+commits d4123783a + a8288e61d on friendslop-migration.
+
+Result: FlatStyle is legacy. Every player-facing surface renders Friendslop chrome.
+Branch friendslop-migration, 3 commits, not pushed. See morning_review.md.
