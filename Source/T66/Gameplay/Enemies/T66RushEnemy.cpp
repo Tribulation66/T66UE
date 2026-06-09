@@ -9,7 +9,7 @@ AT66RushEnemy::AT66RushEnemy()
 	EnemyFamily = ET66EnemyFamily::Rush;
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		Move->MaxWalkSpeed = 330.f;
+		Move->MaxWalkSpeed = 165.f;
 	}
 }
 

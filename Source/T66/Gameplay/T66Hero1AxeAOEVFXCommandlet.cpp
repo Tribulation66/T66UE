@@ -116,6 +116,30 @@ namespace
 		}
 	};
 
+	bool T66UseHero1AxeAOEFullLayerStack()
+	{
+		return FParse::Param(FCommandLine::Get(), TEXT("T66Hero1AxeAOEFullLayerStack"));
+	}
+
+	bool T66ShouldBuildHero1AxeAOESlashLayer(const FT66SlashLayerConfig& Config)
+	{
+		return T66UseHero1AxeAOEFullLayerStack()
+			|| FCString::Strcmp(Config.EmitterName, TEXT("Emitter_AxeAOESlash_Body")) == 0;
+	}
+
+	int32 T66ExpectedHero1AxeAOESlashLayerCount()
+	{
+		int32 Count = 0;
+		for (const FT66SlashLayerConfig& Config : T66Hero1AxeAOESlashLayerConfigs)
+		{
+			if (T66ShouldBuildHero1AxeAOESlashLayer(Config))
+			{
+				++Count;
+			}
+		}
+		return Count;
+	}
+
 	struct FT66SupportEmitterConfig
 	{
 		const TCHAR* EmitterName;
@@ -834,15 +858,21 @@ namespace
 
 		for (const FT66SlashLayerConfig& Config : T66Hero1AxeAOESlashLayerConfigs)
 		{
+			if (!T66ShouldBuildHero1AxeAOESlashLayer(Config))
+			{
+				UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEVFX] Single-arc placeholder: skipped stacked slash layer emitter %s"), Config.EmitterName);
+				continue;
+			}
 			if (!T66AddSlashLayerEmitter(*SlashSystem, Config, DevSlowFactor))
 			{
 				UE_LOG(LogTemp, Error, TEXT("[Hero1AxeAOEVFX] Failed to add slash layer emitter %s"), Config.EmitterName);
 				return nullptr;
 			}
 		}
-		if (bCarrierOnly)
+		const bool bBuildSupportEmitters = !bCarrierOnly && T66UseHero1AxeAOEFullLayerStack();
+		if (!bBuildSupportEmitters)
 		{
-			UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEVFX] Carrier-only diagnostic mode: support emitters skipped."));
+			UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEVFX] Single-arc placeholder: support emitters skipped."));
 		}
 		else
 		{
@@ -1064,9 +1094,10 @@ int32 UT66Hero1AxeAOEVFXCommandlet::Main(const FString& Params)
 {
 	const bool bCarrierOnly = FParse::Param(FCommandLine::Get(), TEXT("T66Hero1AxeAOECarrierOnly"));
 	const bool bProductionPaths = T66UseHero1AxeAOEProductionPaths();
+	const bool bFullLayerStack = T66UseHero1AxeAOEFullLayerStack();
 	const float DevSlowFactor = T66GetDevSlowFactor();
 	const FString SlashNiagaraPath = T66ResolveHero1AxeAOEPath(T66Hero1AxeAOESlashNiagaraPath);
-	UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEVFX] Building mesh slash carrier and Niagara mesh renderer. CarrierOnly=%s ProductionPaths=%s DevSlowFactor=%.2f"), bCarrierOnly ? TEXT("true") : TEXT("false"), bProductionPaths ? TEXT("true") : TEXT("false"), DevSlowFactor);
+	UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEVFX] Building mesh slash carrier and Niagara mesh renderer. CarrierOnly=%s FullLayerStack=%s ProductionPaths=%s DevSlowFactor=%.2f"), bCarrierOnly ? TEXT("true") : TEXT("false"), bFullLayerStack ? TEXT("true") : TEXT("false"), bProductionPaths ? TEXT("true") : TEXT("false"), DevSlowFactor);
 
 #if WITH_EDITOR
 	UNiagaraSystem* SlashSystem = T66CreateSlashNiagaraSystem(bCarrierOnly, DevSlowFactor);
@@ -1084,6 +1115,10 @@ int32 UT66Hero1AxeAOEVFXCommandlet::Main(const FString& Params)
 	UMaterialInterface* BodyMaterial = nullptr;
 	for (const FT66SlashLayerConfig& Config : T66Hero1AxeAOESlashLayerConfigs)
 	{
+		if (!T66ShouldBuildHero1AxeAOESlashLayer(Config))
+		{
+			continue;
+		}
 		const FString MaterialPath = T66ResolveHero1AxeAOEPath(Config.MaterialPath);
 		UMaterialInterface* LayerMaterial = LoadObject<UMaterialInterface>(nullptr, *MaterialPath);
 		if (!LayerMaterial)
@@ -1106,7 +1141,8 @@ int32 UT66Hero1AxeAOEVFXCommandlet::Main(const FString& Params)
 			T66SaveAsset(ConcreteMaterial);
 		}
 	}
-	if (!bCarrierOnly)
+	const bool bBuildSupportEmitters = !bCarrierOnly && bFullLayerStack;
+	if (bBuildSupportEmitters)
 	{
 		for (const FT66SupportEmitterConfig& Config : T66Hero1AxeAOESupportEmitterConfigs)
 		{
@@ -1287,14 +1323,15 @@ int32 UT66Hero1AxeAOEVFXCommandlet::Main(const FString& Params)
 		UE_LOG(LogTemp, Error, TEXT("[Hero1AxeAOEVFX] Niagara system has no editable emitters."));
 		return 1;
 	}
-	if (BoundMeshRendererCount != UE_ARRAY_COUNT(T66Hero1AxeAOESlashLayerConfigs))
+	const int32 ExpectedSlashLayerCount = T66ExpectedHero1AxeAOESlashLayerCount();
+	if (BoundMeshRendererCount != ExpectedSlashLayerCount)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[Hero1AxeAOEVFX] Bound %d of %d slash layer emitters to mesh renderers."),
 			BoundMeshRendererCount,
-			UE_ARRAY_COUNT(T66Hero1AxeAOESlashLayerConfigs));
+			ExpectedSlashLayerCount);
 		return 1;
 	}
-	const int32 ExpectedSupportRendererCount = bCarrierOnly ? 0 : UE_ARRAY_COUNT(T66Hero1AxeAOESupportEmitterConfigs);
+	const int32 ExpectedSupportRendererCount = bBuildSupportEmitters ? UE_ARRAY_COUNT(T66Hero1AxeAOESupportEmitterConfigs) : 0;
 	if (BoundSupportRendererCount != ExpectedSupportRendererCount)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[Hero1AxeAOEVFX] Bound %d of %d support emitters to sprite renderers. CarrierOnly=%s"),
@@ -1315,11 +1352,12 @@ int32 UT66Hero1AxeAOEVFXCommandlet::Main(const FString& Params)
 		return 1;
 	}
 
-	UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEVFX] Bound %d layered Niagara mesh renderer(s) and %d support sprite renderer(s) to %s. CarrierOnly=%s DevSlowFactor=%.2f"),
+	UE_LOG(LogTemp, Display, TEXT("[Hero1AxeAOEVFX] Bound %d single-arc Niagara mesh renderer(s) and %d support sprite renderer(s) to %s. CarrierOnly=%s FullLayerStack=%s DevSlowFactor=%.2f"),
 		BoundMeshRendererCount,
 		BoundSupportRendererCount,
 		*SlashMesh->GetPathName(),
 		bCarrierOnly ? TEXT("true") : TEXT("false"),
+		bFullLayerStack ? TEXT("true") : TEXT("false"),
 		DevSlowFactor);
 	return 0;
 }

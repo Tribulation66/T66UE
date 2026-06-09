@@ -20,7 +20,6 @@
 #include "UI/Screens/T66SaveSlotsScreen.h"
 #include "UI/Screens/T66AchievementsScreen.h"
 #include "UI/Screens/T66PauseMenuScreen.h"
-#include "UI/Screens/T66ReportBugScreen.h"
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/Screens/T66QuitConfirmationModal.h"
 #include "UI/Screens/T66LanguageSelectScreen.h"
@@ -383,10 +382,10 @@ namespace
 			"GirlfriendSelection, GirlfriendSelect, "
 			"PetSelection, PetSelect, Pets, "
 			"Settings, SettingsScreen, LanguageSelect, Language, Achievements, PauseMenu, Pause, "
-			"ReportBug, GameOver, RunSummary, PowerUp, HeroGrid, CompanionGrid, GirlfriendGrid, QuitConfirmation, Quit, PartyInvite, "
+			"GameOver, RunSummary, PowerUp, HeroGrid, CompanionGrid, GirlfriendGrid, QuitConfirmation, Quit, PartyInvite, "
 			"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, "
 			"Challenges, DailyDescent, Overview, History, Relics, Steroids, Diplomas, "
-			"Drugs, SteamAchievements, Steam, SettingsRetroFX, RetroFX, SettingsGameplay, SettingsGraphics, "
+			"Drugs, SteamAchievements, Steam, SecretAchievements, Secret, SettingsGameplay, SettingsGraphics, "
 			"SettingsControls, SettingsMediaViewer, SettingsMedia, SettingsAudio, LoadGame");
 	}
 
@@ -423,13 +422,15 @@ namespace
 			|| Normalized.Equals(TEXT("PetSelect"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("Pets"), ESearchCase::IgnoreCase))
 		{
+			if (!FT66ShelvedFeatureGate::IsScreenAllowed(ET66ScreenType::PetSelection))
+			{
+				return false;
+			}
 			OutScreenType = ET66ScreenType::PetSelection;
 			return true;
 		}
 		if (Normalized.Equals(TEXT("Settings"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("SettingsScreen"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("SettingsRetroFX"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("RetroFX"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("SettingsGameplay"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("SettingsGraphics"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("SettingsControls"), ESearchCase::IgnoreCase)
@@ -448,7 +449,9 @@ namespace
 		}
 		if (Normalized.Equals(TEXT("Achievements"), ESearchCase::IgnoreCase)
 			|| Normalized.Equals(TEXT("SteamAchievements"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("Steam"), ESearchCase::IgnoreCase))
+			|| Normalized.Equals(TEXT("Steam"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("SecretAchievements"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Secret"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::Achievements;
 			return true;
@@ -457,11 +460,6 @@ namespace
 			|| Normalized.Equals(TEXT("Pause"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::PauseMenu;
-			return true;
-		}
-		if (Normalized.Equals(TEXT("ReportBug"), ESearchCase::IgnoreCase))
-		{
-			OutScreenType = ET66ScreenType::ReportBug;
 			return true;
 		}
 		if (Normalized.Equals(TEXT("GameOver"), ESearchCase::IgnoreCase)
@@ -591,6 +589,28 @@ namespace
 
 		return true;
 	}
+
+#if !UE_BUILD_SHIPPING
+	TSharedPtr<SButton> FindFirstDescendantButton(const TSharedRef<SWidget>& Widget)
+	{
+		if (Widget->GetTypeAsString().Equals(TEXT("SButton"), ESearchCase::IgnoreCase))
+		{
+			return StaticCastSharedRef<SButton>(Widget);
+		}
+
+		FChildren* Children = Widget->GetAllChildren();
+		const int32 NumChildren = Children ? Children->Num() : 0;
+		for (int32 Index = 0; Index < NumChildren; ++Index)
+		{
+			if (TSharedPtr<SButton> Result = FindFirstDescendantButton(Children->GetChildAt(Index)))
+			{
+				return Result;
+			}
+		}
+
+		return nullptr;
+	}
+#endif
 }
 
 TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenType ScreenType) const
@@ -627,8 +647,6 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66AchievementsScreen::StaticClass();
 	case ET66ScreenType::DailyDescent:
 		return UT66ShelvedFeatureScreen::StaticClass();
-	case ET66ScreenType::ReportBug:
-		return UT66ReportBugScreen::StaticClass();
 	case ET66ScreenType::Settings:
 		return UT66SettingsScreen::StaticClass();
 	case ET66ScreenType::LanguageSelect:
@@ -829,6 +847,8 @@ void AT66PlayerController::ApplyFrontendCommandLineOverrides(ET66ScreenType& Scr
 	FrontendAutomationWidgetDumpTarget.Reset();
 	FrontendAutomationWidgetDumpPath.Reset();
 	FrontendAutomationWidgetDumpDelaySeconds = 0.f;
+	FrontendAutomationClickTag.Reset();
+	FrontendAutomationClickDelaySeconds = 0.f;
 	FrontendAutomationModalToShow = ET66ScreenType::None;
 
 	FString RequestedScreenName;
@@ -905,6 +925,42 @@ void AT66PlayerController::ApplyFrontendCommandLineOverrides(ET66ScreenType& Scr
 			UE_LOG(LogT66Frontend, Error, TEXT("Frontend automation: invalid widget dump spec: %s"), *ParseError);
 			FPlatformMisc::RequestExitWithStatus(false, 67, TEXT("T66AutoDumpWidgetInvalid"));
 		}
+	}
+
+	FString RequestedClickTag;
+	if (FParse::Value(FCommandLine::Get(), TEXT("T66AutoClickTag="), RequestedClickTag))
+	{
+		FrontendAutomationClickTag = RequestedClickTag.TrimStartAndEnd().TrimQuotes();
+		if (FrontendAutomationClickTag.IsEmpty())
+		{
+			UE_LOG(LogT66Frontend, Error, TEXT("Frontend automation: -T66AutoClickTag was provided with an empty tag."));
+			FPlatformMisc::RequestExitWithStatus(false, 68, TEXT("T66AutoClickTagInvalid"));
+			return;
+		}
+
+		float DefaultClickDelaySeconds = 2.0f;
+		if (!FrontendAutomationScreenshotPath.IsEmpty())
+		{
+			DefaultClickDelaySeconds = FMath::Max(DefaultClickDelaySeconds, FrontendAutomationScreenshotDelaySeconds + 0.25f);
+		}
+		if (!FrontendAutomationDumpPath.IsEmpty())
+		{
+			DefaultClickDelaySeconds = FMath::Max(DefaultClickDelaySeconds, FrontendAutomationDumpDelaySeconds + 0.25f);
+		}
+		if (!FrontendAutomationWidgetDumpPath.IsEmpty())
+		{
+			DefaultClickDelaySeconds = FMath::Max(DefaultClickDelaySeconds, FrontendAutomationWidgetDumpDelaySeconds + 0.25f);
+		}
+
+		FrontendAutomationClickDelaySeconds = DefaultClickDelaySeconds;
+		FParse::Value(FCommandLine::Get(), TEXT("T66AutoClickDelay="), FrontendAutomationClickDelaySeconds);
+		FrontendAutomationClickDelaySeconds = FMath::Max(0.1f, FrontendAutomationClickDelaySeconds);
+		UE_LOG(
+			LogT66Frontend,
+			Log,
+			TEXT("Frontend automation: will click tag '%s' in %.2f seconds"),
+			*FrontendAutomationClickTag,
+			FrontendAutomationClickDelaySeconds);
 	}
 }
 
@@ -989,6 +1045,29 @@ void AT66PlayerController::QueueFrontendAutomationWidgetDumpIfRequested()
 		*FrontendAutomationWidgetDumpTarget,
 		*FrontendAutomationWidgetDumpPath,
 		FrontendAutomationWidgetDumpDelaySeconds);
+}
+
+void AT66PlayerController::QueueFrontendAutomationClickIfRequested()
+{
+	if (!GetWorld() || FrontendAutomationClickTag.IsEmpty())
+	{
+		return;
+	}
+
+	GetWorldTimerManager().ClearTimer(FrontendAutomationClickTimerHandle);
+	GetWorldTimerManager().SetTimer(
+		FrontendAutomationClickTimerHandle,
+		this,
+		&AT66PlayerController::HandleFrontendAutomationClick,
+		FMath::Max(0.1f, FrontendAutomationClickDelaySeconds),
+		false);
+
+	UE_LOG(
+		LogT66Frontend,
+		Log,
+		TEXT("Frontend automation: queued click Tag=%s in %.2f seconds"),
+		*FrontendAutomationClickTag,
+		FrontendAutomationClickDelaySeconds);
 }
 
 void AT66PlayerController::HandleFrontendAutomationScreenshot()
@@ -1085,6 +1164,90 @@ void AT66PlayerController::HandleFrontendAutomationWidgetDump()
 			*FrontendAutomationWidgetDumpPath,
 			*Error);
 	}
+}
+
+void AT66PlayerController::HandleFrontendAutomationClick()
+{
+	if (FrontendAutomationClickTag.IsEmpty())
+	{
+		return;
+	}
+
+#if UE_BUILD_SHIPPING
+	UE_LOG(LogT66Frontend, Warning, TEXT("Frontend automation: -T66AutoClickTag is unavailable in shipping builds."));
+	FPlatformMisc::RequestExitWithStatus(false, 68, TEXT("T66AutoClickTagShipping"));
+#else
+	TSharedPtr<SWidget> TargetWidget;
+	FString ResolvedName;
+	FString Error;
+	const FString TargetSpec = FString::Printf(TEXT("Tag=%s"), *FrontendAutomationClickTag);
+	if (!FT66WidgetDumpTargets::ResolveTargetWidget(GetWorld(), TargetSpec, TargetWidget, ResolvedName, Error) || !TargetWidget.IsValid())
+	{
+		UE_LOG(
+			LogT66Frontend,
+			Error,
+			TEXT("Frontend automation: failed to resolve click tag '%s'. Error=%s"),
+			*FrontendAutomationClickTag,
+			*Error);
+		FPlatformMisc::RequestExitWithStatus(false, 68, TEXT("T66AutoClickTagResolveFailed"));
+		return;
+	}
+
+	TSharedPtr<SButton> Button = FindFirstDescendantButton(TargetWidget.ToSharedRef());
+	if (!Button.IsValid())
+	{
+		UE_LOG(
+			LogT66Frontend,
+			Error,
+			TEXT("Frontend automation: resolved click tag '%s' to '%s', but no SButton was found at or below the tagged widget."),
+			*FrontendAutomationClickTag,
+			*ResolvedName);
+		FPlatformMisc::RequestExitWithStatus(false, 68, TEXT("T66AutoClickTagNoButton"));
+		return;
+	}
+
+	if (!Button->GetVisibility().IsVisible() || !Button->IsEnabled())
+	{
+		UE_LOG(
+			LogT66Frontend,
+			Error,
+			TEXT("Frontend automation: resolved click tag '%s' to a disabled or hidden SButton."),
+			*FrontendAutomationClickTag);
+		FPlatformMisc::RequestExitWithStatus(false, 68, TEXT("T66AutoClickTagNotClickable"));
+		return;
+	}
+
+	const FGeometry& Geometry = Button->GetTickSpaceGeometry();
+	const FVector2D LocalSize = Geometry.GetLocalSize();
+	if (LocalSize.X <= 0.f || LocalSize.Y <= 0.f)
+	{
+		UE_LOG(
+			LogT66Frontend,
+			Error,
+			TEXT("Frontend automation: resolved click tag '%s' to an SButton with invalid geometry %.2fx%.2f."),
+			*FrontendAutomationClickTag,
+			LocalSize.X,
+			LocalSize.Y);
+		FPlatformMisc::RequestExitWithStatus(false, 68, TEXT("T66AutoClickTagInvalidGeometry"));
+		return;
+	}
+
+	const FVector2D Center = Geometry.LocalToAbsolute(LocalSize * 0.5f);
+	UE_LOG(
+		LogT66Frontend,
+		Log,
+		TEXT("Frontend automation: simulating Slate click Tag=%s Resolved=%s ButtonSize=%.2fx%.2f Center=(%.2f, %.2f)"),
+		*FrontendAutomationClickTag,
+		*ResolvedName,
+		LocalSize.X,
+		LocalSize.Y,
+		Center.X,
+		Center.Y);
+
+	Button->SimulateClick();
+
+	UE_LOG(LogT66Frontend, Log, TEXT("Frontend automation: completed Slate click Tag=%s"), *FrontendAutomationClickTag);
+#endif
 }
 
 void AT66PlayerController::HandleFrontendAutomationQuit()
@@ -1294,10 +1457,6 @@ void AT66PlayerController::InitializeUI()
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::PlayerSummaryPicker, SummaryPickerClass);
 	}
-	if (TSubclassOf<UT66ScreenBase> ReportBugClass = ResolveScreenClass(ET66ScreenType::ReportBug))
-	{
-		UIManager->RegisterScreenClass(ET66ScreenType::ReportBug, ReportBugClass);
-	}
 	if (TSubclassOf<UT66ScreenBase> PauseClass = ResolveScreenClass(ET66ScreenType::PauseMenu))
 	{
 		UIManager->RegisterScreenClass(ET66ScreenType::PauseMenu, PauseClass);
@@ -1412,6 +1571,7 @@ void AT66PlayerController::InitializeUI()
 		QueueFrontendAutomationDumpIfRequested();
 		QueueFrontendAutomationWidgetDumpIfRequested();
 		QueueFrontendAutomationScreenshotIfRequested();
+		QueueFrontendAutomationClickIfRequested();
 	}
 
 	HideFrontendStartupOverlay();

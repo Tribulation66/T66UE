@@ -126,6 +126,7 @@ void UT66WeaponAltarOverlayWidget::ConsumeSelectionBudget()
 	if (AT66WeaponAltar* Altar = SourceAltar.Get())
 	{
 		Altar->RemainingSelections = FMath::Max(0, Altar->RemainingSelections - 1);
+		Altar->NotifySelectionCommitted();
 	}
 }
 

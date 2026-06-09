@@ -1,0 +1,9 @@
+/Game/World/LootBags/Black/BlackBag/Materials/Material_0
+/Game/World/LootBags/Black/Materials/M_SM_LootBag_Black_QuadRetro
+/Game/World/LootBags/Red/Materials/M_SM_LootBag_Red_QuadRetro
+/Game/World/LootBags/Red/RedBag/Materials/Material_0_005
+/Game/World/LootBags/Shared/Material_0
+/Game/World/LootBags/White/Materials/M_SM_LootBag_White_QuadRetro
+/Game/World/LootBags/White/WhiteBag/Materials/Material_0_007
+/Game/World/LootBags/Yellow/Materials/M_SM_LootBag_Yellow_QuadRetro
+/Game/World/LootBags/Yellow/YellowBag/Materials/Material_0_008

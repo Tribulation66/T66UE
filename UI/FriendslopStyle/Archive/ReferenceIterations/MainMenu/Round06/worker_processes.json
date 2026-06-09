@@ -1,0 +1,14 @@
+{
+  "Id": "01_current_capture_stronger_rubber",
+  "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round06\\main_menu_reference_01_current_capture_stronger_rubber_cli.png",
+  "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round06\\workers\\01_current_capture_stronger_rubber\\request.md",
+  "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round06\\logs\\01_current_capture_stronger_rubber.stdout.log",
+  "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round06\\logs\\01_current_capture_stronger_rubber.stderr.log",
+  "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round06\\workers\\01_current_capture_stronger_rubber\\last_message.txt",
+  "Started": "2026-06-05T12:14:05.3127516Z",
+  "FreshCapture": "C:\\UE\\T66\\Saved\\Codex\\UI\\MainMenu\\fresh_current_capture_20260605_091100.png",
+  "FreshDump": "C:\\UE\\T66\\Saved\\Codex\\UI\\MainMenu\\fresh_current_capture_20260605_091100_dump.json",
+  "Background": "C:\\UE\\T66\\RuntimeDependencies\\T66\\UI\\Reference\\Screens\\MainMenu\\ScreenArt\\mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_1920.png",
+  "Result": "IMAGE_SAVED",
+  "WorkerTokensSpent": 68497
+}

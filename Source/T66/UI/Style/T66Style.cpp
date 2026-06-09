@@ -33,10 +33,8 @@
 #include "Widgets/Layout/SDPIScaler.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Layout/Visibility.h"
-#include "Slate/SRetainerWidget.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SComboButton.h"
-#include "Widgets/SLeafWidget.h"
 #include "Widgets/SNullWidget.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
@@ -358,549 +356,6 @@ namespace
 	{
 		return FCoreStyle::Get().GetBrush("WhiteBrush");
 	}
-
-	static const TCHAR* RetroUIRetainerMaterialPath = TEXT("/Game/UI/Materials/M_UI_RetroRetainer.M_UI_RetroRetainer");
-	static const FName RetroUITextureParameterName(TEXT("Texture"));
-	static const FName RetroUIPixelationParameterName(TEXT("Pixelation"));
-	static const FName RetroUIDitheringParameterName(TEXT("Dithering"));
-	static const FName RetroUIVertexSnapParameterName(TEXT("VertexSnap"));
-	static const FName RetroUIVertexSnapResolutionParameterName(TEXT("VertexSnapResolution"));
-	static const FName RetroUIScanlineParameterName(TEXT("Scanline"));
-	static const FName RetroUIChromaticAberrationParameterName(TEXT("ChromaticAberration"));
-	static const FName RetroUISizeParameterName(TEXT("UITextureSize"));
-	static TWeakObjectPtr<UMaterialInterface> GRetroUIRetainerMaterial;
-	static bool bCheckedRetroUIRetainerMaterial = false;
-
-	static UMaterialInterface* GetRetroUIRetainerMaterial()
-	{
-		if (!GRetroUIRetainerMaterial.IsValid())
-		{
-			UMaterialInterface* Material = LoadObject<UMaterialInterface>(nullptr, RetroUIRetainerMaterialPath);
-			GRetroUIRetainerMaterial = Material;
-			if (!bCheckedRetroUIRetainerMaterial)
-			{
-				UE_LOG(LogT66Style, Log, TEXT("[T66Style] Load UI retro retainer material -> %s"), Material ? TEXT("OK") : TEXT("MISS"));
-			}
-		}
-
-		bCheckedRetroUIRetainerMaterial = true;
-		return GRetroUIRetainerMaterial.Get();
-	}
-
-	static UWorld* ResolveRetroUIWorld()
-	{
-		return GEngine && GEngine->GameViewport ? GEngine->GameViewport->GetWorld() : nullptr;
-	}
-
-	static FT66RetroFXSettings ReadRetroUISettings()
-	{
-		if (!GEngine || !GEngine->GameViewport)
-		{
-			return FT66RetroFXSettings();
-		}
-
-		UWorld* World = GEngine->GameViewport->GetWorld();
-		UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
-		UT66PlayerSettingsSubsystem* PlayerSettings = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
-		return PlayerSettings ? PlayerSettings->GetRetroFXSettings() : FT66RetroFXSettings();
-	}
-
-	struct FT66RetroUIEffects
-	{
-		float Pixelation = 0.0f;
-		float Dithering = 0.0f;
-		float VertexSnap = 0.0f;
-		float VertexSnapResolution = 0.5f;
-		float Scanline = 0.0f;
-		float ChromaticAberration = 0.0f;
-
-		bool HasAnyExplicitEffect() const
-		{
-			return Pixelation > KINDA_SMALL_NUMBER
-				|| Dithering > KINDA_SMALL_NUMBER
-				|| VertexSnap > KINDA_SMALL_NUMBER
-				|| Scanline > KINDA_SMALL_NUMBER
-				|| ChromaticAberration > KINDA_SMALL_NUMBER;
-		}
-
-		float GetOverallStrength() const
-		{
-			return FMath::Max(
-				FMath::Max(Pixelation, Dithering),
-				FMath::Max(FMath::Max(VertexSnap, Scanline), ChromaticAberration));
-		}
-	};
-
-	static float RetroPercentToUnit(float Value)
-	{
-		return FMath::Clamp(Value / 100.0f, 0.0f, 1.0f);
-	}
-
-	enum class ET66RetroUIOverlayPass : uint8
-	{
-		Chrome,
-		Text,
-		BackgroundImage,
-	};
-
-	static bool IsRetroUITextPass(const ET66RetroUIOverlayPass Pass)
-	{
-		return Pass == ET66RetroUIOverlayPass::Text;
-	}
-
-	static FT66RetroUIEffects ResolveRetroUIEffects(const ET66RetroUIOverlayPass Pass)
-	{
-		const FT66RetroFXSettings Settings = ReadRetroUISettings();
-		if (!Settings.bEnableRetroFXMaster)
-		{
-			return FT66RetroUIEffects();
-		}
-
-		FT66RetroUIEffects Effects;
-		if (Pass == ET66RetroUIOverlayPass::Text)
-		{
-			Effects.Pixelation = RetroPercentToUnit(Settings.UITextPixelationPercent);
-			Effects.Dithering = RetroPercentToUnit(Settings.UITextDitheringPercent);
-			Effects.VertexSnap = RetroPercentToUnit(Settings.UITextVertexSnapPercent);
-			Effects.VertexSnapResolution = RetroPercentToUnit(Settings.UITextVertexSnapResolutionPercent);
-			Effects.Scanline = RetroPercentToUnit(Settings.UITextScanlinePercent);
-			Effects.ChromaticAberration = RetroPercentToUnit(Settings.UITextChromaticAberrationPercent);
-			const float Legacy = RetroPercentToUnit(Settings.UITextTreatmentPercent);
-			if (!Effects.HasAnyExplicitEffect() && Legacy > KINDA_SMALL_NUMBER)
-			{
-				Effects.Pixelation = Legacy;
-				Effects.Dithering = Legacy * 0.55f;
-				Effects.Scanline = Legacy;
-				Effects.ChromaticAberration = Legacy * 0.45f;
-			}
-		}
-		else if (Pass == ET66RetroUIOverlayPass::BackgroundImage)
-		{
-			Effects.Pixelation = RetroPercentToUnit(Settings.UIBackgroundImagePixelationPercent);
-			Effects.Dithering = RetroPercentToUnit(Settings.UIBackgroundImageDitheringPercent);
-			Effects.VertexSnap = RetroPercentToUnit(Settings.UIBackgroundImageVertexSnapPercent);
-			Effects.VertexSnapResolution = RetroPercentToUnit(Settings.UIBackgroundImageVertexSnapResolutionPercent);
-			Effects.Scanline = RetroPercentToUnit(Settings.UIBackgroundImageScanlinePercent);
-			Effects.ChromaticAberration = RetroPercentToUnit(Settings.UIBackgroundImageChromaticAberrationPercent);
-			const float Legacy = RetroPercentToUnit(Settings.UIBackgroundImageTreatmentPercent);
-			if (!Effects.HasAnyExplicitEffect() && Legacy > KINDA_SMALL_NUMBER)
-			{
-				Effects.Pixelation = Legacy;
-				Effects.Dithering = Legacy * 0.70f;
-				Effects.VertexSnap = Legacy * 0.45f;
-				Effects.Scanline = Legacy;
-				Effects.ChromaticAberration = Legacy * 0.50f;
-			}
-		}
-		else
-		{
-			Effects.Pixelation = RetroPercentToUnit(Settings.UIChromePixelationPercent);
-			Effects.Dithering = RetroPercentToUnit(Settings.UIChromeDitheringPercent);
-			Effects.VertexSnap = RetroPercentToUnit(Settings.UIChromeVertexSnapPercent);
-			Effects.VertexSnapResolution = RetroPercentToUnit(Settings.UIChromeVertexSnapResolutionPercent);
-			Effects.Scanline = RetroPercentToUnit(Settings.UIChromeScanlinePercent);
-			Effects.ChromaticAberration = RetroPercentToUnit(Settings.UIChromeChromaticAberrationPercent);
-			const float Legacy = RetroPercentToUnit(Settings.UIChromeTreatmentPercent);
-			if (!Effects.HasAnyExplicitEffect() && Legacy > KINDA_SMALL_NUMBER)
-			{
-				Effects.Pixelation = Legacy;
-				Effects.Dithering = Legacy * 0.70f;
-				Effects.VertexSnap = Legacy * 0.45f;
-				Effects.Scanline = Legacy;
-				Effects.ChromaticAberration = Legacy * 0.50f;
-			}
-		}
-
-		return Effects;
-	}
-
-	static float ResolveRetroUIStrength(const ET66RetroUIOverlayPass Pass)
-	{
-		return ResolveRetroUIEffects(Pass).GetOverallStrength();
-	}
-
-	static TOptional<FSlateRenderTransform> ResolveRetroUIRenderTransform(const ET66RetroUIOverlayPass Pass)
-	{
-		const FT66RetroUIEffects Effects = ResolveRetroUIEffects(Pass);
-		if (Effects.VertexSnap <= KINDA_SMALL_NUMBER)
-		{
-			return TOptional<FSlateRenderTransform>();
-		}
-
-		const bool bText = IsRetroUITextPass(Pass);
-		const float MaxOffset = FMath::Lerp(bText ? 2.0f : 3.0f, bText ? 6.0f : 10.0f, Effects.VertexSnapResolution);
-		const float Offset = FMath::Max(1.0f, FMath::RoundToFloat(MaxOffset * Effects.VertexSnap));
-		if (FMath::Abs(Offset) <= KINDA_SMALL_NUMBER)
-		{
-			return TOptional<FSlateRenderTransform>();
-		}
-
-		return TOptional<FSlateRenderTransform>(FSlateRenderTransform(FVector2D(Offset, bText ? 0.0f : -Offset * 0.5f)));
-	}
-
-	class ST66RetroUIOverlay : public SLeafWidget
-	{
-	public:
-		SLATE_BEGIN_ARGS(ST66RetroUIOverlay) {}
-			SLATE_ARGUMENT(ET66RetroUIOverlayPass, Pass)
-		SLATE_END_ARGS()
-
-		void Construct(const FArguments& InArgs)
-		{
-			Pass = InArgs._Pass;
-		}
-
-		virtual FVector2D ComputeDesiredSize(float) const override
-		{
-			return FVector2D::ZeroVector;
-		}
-
-		virtual bool ComputeVolatility() const override
-		{
-			return true;
-		}
-
-		virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
-			FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
-		{
-			const FT66RetroUIEffects Effects = ResolveRetroUIEffects(Pass);
-			if (Effects.GetOverallStrength() <= KINDA_SMALL_NUMBER)
-			{
-				return LayerId;
-			}
-
-			const FVector2D Size = AllottedGeometry.GetLocalSize();
-			if (Size.X <= 1.0f || Size.Y <= 1.0f)
-			{
-				return LayerId;
-			}
-
-			if (Pass == ET66RetroUIOverlayPass::Text)
-			{
-				PaintTextTreatment(AllottedGeometry, OutDrawElements, LayerId, Size, Effects);
-			}
-			else
-			{
-				PaintChromeTreatment(AllottedGeometry, OutDrawElements, LayerId, Size, Effects);
-			}
-
-			return LayerId + 1;
-		}
-
-	private:
-		static void PaintBox(
-			const FGeometry& Geometry,
-			FSlateWindowElementList& OutDrawElements,
-			const int32 LayerId,
-			const FVector2D& Position,
-			const FVector2D& Size,
-			const FLinearColor& Color)
-		{
-			if (Size.X <= 0.5f || Size.Y <= 0.5f || Color.A <= 0.001f)
-			{
-				return;
-			}
-
-			FSlateDrawElement::MakeBox(
-				OutDrawElements,
-				LayerId,
-				Geometry.ToPaintGeometry(FVector2f(Size), FSlateLayoutTransform(FVector2f(Position))),
-				GetWhiteBrush(),
-				ESlateDrawEffect::None,
-				Color);
-		}
-
-		static void PaintPixelGrid(
-			const FGeometry& Geometry,
-			FSlateWindowElementList& OutDrawElements,
-			const int32 LayerId,
-			const FVector2D& Size,
-			const float Strength,
-			const bool bText)
-		{
-			if (Strength <= KINDA_SMALL_NUMBER)
-			{
-				return;
-			}
-
-			const float Block = FMath::RoundToFloat(FMath::Lerp(bText ? 3.0f : 6.0f, bText ? 8.0f : 16.0f, Strength));
-			const float StepX = FMath::Max(Block, Size.X / 96.0f);
-			const float StepY = FMath::Max(Block, Size.Y / 72.0f);
-			const float Alpha = Strength * (bText ? 0.050f : 0.085f);
-			const FLinearColor Light(1.0f, 1.0f, 1.0f, Alpha);
-			const FLinearColor Dark(0.0f, 0.0f, 0.0f, Alpha * 1.25f);
-
-			if (!bText)
-			{
-				PaintBox(Geometry, OutDrawElements, LayerId, FVector2D::ZeroVector, Size, FLinearColor(0.0f, 0.0f, 0.0f, Strength * 0.018f));
-			}
-
-			int32 Row = 0;
-			for (float Y = 0.0f; Y < Size.Y; Y += StepY, ++Row)
-			{
-				int32 Column = 0;
-				for (float X = 0.0f; X < Size.X; X += StepX, ++Column)
-				{
-					if (((Column + Row) % (bText ? 5 : 4)) != 0)
-					{
-						continue;
-					}
-
-					const FVector2D CellSize(FMath::Min(StepX * 0.45f, Size.X - X), FMath::Min(StepY * 0.45f, Size.Y - Y));
-					PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(X, Y), CellSize, ((Column + Row) % 2) == 0 ? Light : Dark);
-				}
-			}
-		}
-
-		static void PaintDitherGrid(
-			const FGeometry& Geometry,
-			FSlateWindowElementList& OutDrawElements,
-			const int32 LayerId,
-			const FVector2D& Size,
-			const float Strength,
-			const bool bText)
-		{
-			if (Strength <= KINDA_SMALL_NUMBER)
-			{
-				return;
-			}
-
-			const float Dot = FMath::RoundToFloat(FMath::Lerp(1.0f, bText ? 2.0f : 3.0f, Strength));
-			const float Step = FMath::RoundToFloat(FMath::Lerp(bText ? 4.0f : 6.0f, bText ? 2.0f : 4.0f, Strength));
-			const float EffectiveStep = FMath::Max(Dot + 1.0f, Step);
-			const float Alpha = Strength * (bText ? 0.075f : 0.12f);
-			const FLinearColor DotColor(0.0f, 0.0f, 0.0f, Alpha);
-
-			int32 Row = 0;
-			for (float Y = 0.0f; Y < Size.Y; Y += EffectiveStep, ++Row)
-			{
-				int32 Column = 0;
-				for (float X = 0.0f; X < Size.X; X += EffectiveStep, ++Column)
-				{
-					if (((Column * 3 + Row * 5) & 3) > 1)
-					{
-						continue;
-					}
-
-					PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(X, Y), FVector2D(Dot, Dot), DotColor);
-				}
-			}
-		}
-
-		static void PaintScanlines(
-			const FGeometry& Geometry,
-			FSlateWindowElementList& OutDrawElements,
-			const int32 LayerId,
-			const FVector2D& Size,
-			const float Strength,
-			const bool bText)
-		{
-			if (Strength <= KINDA_SMALL_NUMBER || Size.Y < 8.0f)
-			{
-				return;
-			}
-
-			const float Step = FMath::RoundToFloat(FMath::Lerp(bText ? 8.0f : 14.0f, bText ? 3.0f : 7.0f, Strength));
-			const float Alpha = Strength * (bText ? 0.12f : 0.15f);
-			for (float Y = Step; Y < Size.Y; Y += Step)
-			{
-				PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(0.0f, Y), FVector2D(Size.X, 1.0f), FLinearColor(0.0f, 0.0f, 0.0f, Alpha));
-			}
-		}
-
-		static void PaintChromaticEdges(
-			const FGeometry& Geometry,
-			FSlateWindowElementList& OutDrawElements,
-			const int32 LayerId,
-			const FVector2D& Size,
-			const float Strength,
-			const bool bText)
-		{
-			if (Strength <= KINDA_SMALL_NUMBER)
-			{
-				return;
-			}
-
-			const float Offset = FMath::RoundToFloat(FMath::Lerp(1.0f, bText ? 3.0f : 5.0f, Strength));
-			const float Thickness = bText ? 1.0f : FMath::RoundToFloat(FMath::Lerp(1.0f, 3.0f, Strength));
-			const FLinearColor Cyan(0.0f, 0.85f, 1.0f, Strength * (bText ? 0.10f : 0.16f));
-			const FLinearColor RedSplit(1.0f, 0.04f, 0.08f, Strength * (bText ? 0.09f : 0.14f));
-
-			PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(Offset, 0.0f), FVector2D(Thickness, Size.Y), Cyan);
-			PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(0.0f, Offset), FVector2D(Size.X, Thickness), Cyan);
-			PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(FMath::Max(0.0f, Size.X - Offset - Thickness), 0.0f), FVector2D(Thickness, Size.Y), RedSplit);
-			PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(0.0f, FMath::Max(0.0f, Size.Y - Offset - Thickness)), FVector2D(Size.X, Thickness), RedSplit);
-		}
-
-		static void PaintVertexSnapEdges(
-			const FGeometry& Geometry,
-			FSlateWindowElementList& OutDrawElements,
-			const int32 LayerId,
-			const FVector2D& Size,
-			const float Strength,
-			const float Resolution,
-			const bool bText)
-		{
-			if (Strength <= KINDA_SMALL_NUMBER)
-			{
-				return;
-			}
-
-			const float Step = FMath::RoundToFloat(FMath::Lerp(bText ? 3.0f : 6.0f, bText ? 10.0f : 22.0f, Resolution));
-			const float Thickness = FMath::RoundToFloat(FMath::Lerp(1.0f, bText ? 2.0f : 4.0f, Strength));
-			const float Jitter = FMath::RoundToFloat(FMath::Lerp(1.0f, bText ? 3.0f : 7.0f, Strength));
-			const FLinearColor Color(0.0f, 0.0f, 0.0f, Strength * (bText ? 0.13f : 0.22f));
-			const FLinearColor Accent(1.0f, 1.0f, 1.0f, Strength * (bText ? 0.05f : 0.10f));
-
-			for (float X = 0.0f; X < Size.X; X += Step * 1.7f)
-			{
-				const float Width = FMath::Min(Step, Size.X - X);
-				const float Offset = (FMath::FloorToInt(X / FMath::Max(1.0f, Step)) % 2) == 0 ? Jitter : -Jitter;
-				PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(X, FMath::Max(0.0f, Offset)), FVector2D(Width, Thickness), Color);
-				PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(X, FMath::Clamp(Size.Y - Thickness + Offset, 0.0f, Size.Y)), FVector2D(Width, Thickness), Color);
-			}
-
-			if (!bText)
-			{
-				const float Corner = FMath::Min(Step * 1.25f, FMath::Min(Size.X, Size.Y) * 0.35f);
-				PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(0.0f, 0.0f), FVector2D(Corner, Thickness), Accent);
-				PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(0.0f, 0.0f), FVector2D(Thickness, Corner), Accent);
-				PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(Size.X - Corner, Size.Y - Thickness), FVector2D(Corner, Thickness), Color);
-				PaintBox(Geometry, OutDrawElements, LayerId, FVector2D(Size.X - Thickness, Size.Y - Corner), FVector2D(Thickness, Corner), Color);
-			}
-		}
-
-		static void PaintChromeTreatment(
-			const FGeometry& Geometry,
-			FSlateWindowElementList& OutDrawElements,
-			const int32 LayerId,
-			const FVector2D& Size,
-			const FT66RetroUIEffects& Effects)
-		{
-			PaintPixelGrid(Geometry, OutDrawElements, LayerId, Size, Effects.Pixelation, false);
-			PaintDitherGrid(Geometry, OutDrawElements, LayerId, Size, Effects.Dithering, false);
-			PaintScanlines(Geometry, OutDrawElements, LayerId, Size, Effects.Scanline, false);
-			PaintChromaticEdges(Geometry, OutDrawElements, LayerId, Size, Effects.ChromaticAberration, false);
-			PaintVertexSnapEdges(Geometry, OutDrawElements, LayerId, Size, Effects.VertexSnap, Effects.VertexSnapResolution, false);
-		}
-
-		static void PaintTextTreatment(
-			const FGeometry& Geometry,
-			FSlateWindowElementList& OutDrawElements,
-			const int32 LayerId,
-			const FVector2D& Size,
-			const FT66RetroUIEffects& Effects)
-		{
-			PaintPixelGrid(Geometry, OutDrawElements, LayerId, Size, Effects.Pixelation, true);
-			PaintDitherGrid(Geometry, OutDrawElements, LayerId, Size, Effects.Dithering, true);
-			PaintScanlines(Geometry, OutDrawElements, LayerId, Size, Effects.Scanline, true);
-			PaintChromaticEdges(Geometry, OutDrawElements, LayerId, Size, Effects.ChromaticAberration, true);
-			PaintVertexSnapEdges(Geometry, OutDrawElements, LayerId, Size, Effects.VertexSnap, Effects.VertexSnapResolution, true);
-		}
-
-		ET66RetroUIOverlayPass Pass = ET66RetroUIOverlayPass::Chrome;
-	};
-
-	class ST66RetroUIRetainedSurface : public SCompoundWidget
-	{
-	public:
-		SLATE_BEGIN_ARGS(ST66RetroUIRetainedSurface)
-			: _Pass(ET66RetroUIOverlayPass::Chrome)
-		{}
-			SLATE_DEFAULT_SLOT(FArguments, Content)
-			SLATE_ARGUMENT(ET66RetroUIOverlayPass, Pass)
-		SLATE_END_ARGS()
-
-		void Construct(const FArguments& InArgs)
-		{
-			Pass = InArgs._Pass;
-
-			const ET66RetroUIOverlayPass RetainerPass = Pass;
-			TSharedRef<SWidget> ContentWidget = InArgs._Content.Widget;
-			TSharedRef<SWidget> TransformedContent =
-				SNew(SBox)
-				.RenderTransform(TAttribute<TOptional<FSlateRenderTransform>>::CreateLambda([RetainerPass]()
-				{
-					return ResolveRetroUIRenderTransform(RetainerPass);
-				}))
-				.RenderTransformPivot(FVector2D(0.5f, 0.5f))
-				[
-					ContentWidget
-				];
-
-			SAssignNew(RetainerWidget, SRetainerWidget)
-				.Visibility(EVisibility::SelfHitTestInvisible)
-				.RenderOnPhase(true)
-				.RenderOnInvalidation(true)
-				.Phase(0)
-				.PhaseCount(1)
-				.StatId(Pass == ET66RetroUIOverlayPass::Text
-					? FName(TEXT("T66RetroUITextRetainer"))
-					: (Pass == ET66RetroUIOverlayPass::BackgroundImage ? FName(TEXT("T66RetroUIBackgroundImageRetainer")) : FName(TEXT("T66RetroUIChromeRetainer"))))
-				[
-					TransformedContent
-				];
-
-			RetainerWidget->SetTextureParameter(RetroUITextureParameterName);
-			RetainerWidget->SetEffectMaterial(GetRetroUIRetainerMaterial());
-			if (UWorld* World = ResolveRetroUIWorld())
-			{
-				RetainerWidget->SetWorld(World);
-			}
-
-			ChildSlot
-			[
-				RetainerWidget.ToSharedRef()
-			];
-		}
-
-		virtual bool ComputeVolatility() const override
-		{
-			return true;
-		}
-
-		virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
-			FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override
-		{
-			UpdateRetainerMaterial(AllottedGeometry.GetLocalSize());
-			return SCompoundWidget::OnPaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
-		}
-
-	private:
-		void UpdateRetainerMaterial(const FVector2D& LocalSize) const
-		{
-			if (!RetainerWidget.IsValid())
-			{
-				return;
-			}
-
-			if (!RetainerWidget->GetEffectMaterial())
-			{
-				RetainerWidget->SetEffectMaterial(GetRetroUIRetainerMaterial());
-			}
-
-			UMaterialInstanceDynamic* Material = RetainerWidget->GetEffectMaterial();
-			if (!Material)
-			{
-				return;
-			}
-
-			const FT66RetroUIEffects Effects = ResolveRetroUIEffects(Pass);
-			Material->SetScalarParameterValue(RetroUIPixelationParameterName, Effects.Pixelation);
-			Material->SetScalarParameterValue(RetroUIDitheringParameterName, Effects.Dithering);
-			Material->SetScalarParameterValue(RetroUIVertexSnapParameterName, Effects.VertexSnap);
-			Material->SetScalarParameterValue(RetroUIVertexSnapResolutionParameterName, Effects.VertexSnapResolution);
-			Material->SetScalarParameterValue(RetroUIScanlineParameterName, Effects.Scanline);
-			Material->SetScalarParameterValue(RetroUIChromaticAberrationParameterName, Effects.ChromaticAberration);
-			Material->SetVectorParameterValue(
-				RetroUISizeParameterName,
-				FLinearColor(FMath::Max(1.0f, LocalSize.X), FMath::Max(1.0f, LocalSize.Y), 0.0f, 0.0f));
-			RetainerWidget->RequestRender();
-		}
-
-		ET66RetroUIOverlayPass Pass = ET66RetroUIOverlayPass::Chrome;
-		TSharedPtr<SRetainerWidget> RetainerWidget;
-	};
 
 	T66RuntimeUIBrushAccess::FOptionalTextureBrush& GetInventorySlotEntry()
 	{
@@ -1269,12 +724,12 @@ FLinearColor FT66Style::BossBarBackground() { return FLinearColor(0.04f, 0.04f, 
 FLinearColor FT66Style::BossBarFill() { return FLinearColor(0.70f, 0.17f, 0.12f, 0.98f); }
 FLinearColor FT66Style::PromptBackground() { return FLinearColor(0.015f, 0.020f, 0.028f, 0.92f); }
 FLinearColor FT66Style::SelectionFill() { return FLinearColor(42.f / 255.f, 72.f / 255.f, 104.f / 255.f, 0.96f); }
-FLinearColor FT66Style::MinimapBackground() { return FLinearColor(22.f / 255.f, 25.f / 255.f, 30.f / 255.f, 0.99f); }
-FLinearColor FT66Style::MinimapTerrain() { return FLinearColor(49.f / 255.f, 57.f / 255.f, 52.f / 255.f, 1.0f); }
-FLinearColor FT66Style::MinimapGrid() { return FLinearColor(88.f / 255.f, 94.f / 255.f, 91.f / 255.f, 0.30f); }
-FLinearColor FT66Style::MinimapFriendly() { return FLinearColor(0.220f, 0.930f, 0.510f, 1.0f); }
-FLinearColor FT66Style::MinimapEnemy() { return FLinearColor(0.920f, 0.220f, 0.155f, 1.0f); }
-FLinearColor FT66Style::MinimapNeutral() { return FLinearColor(0.665f, 0.595f, 0.340f, 1.0f); }
+FLinearColor FT66Style::MinimapBackground() { return FLinearColor(30.f / 255.f, 27.f / 255.f, 58.f / 255.f, 0.99f); }
+FLinearColor FT66Style::MinimapTerrain() { return FLinearColor(120.f / 255.f, 206.f / 255.f, 196.f / 255.f, 1.0f); }
+FLinearColor FT66Style::MinimapGrid() { return FLinearColor(1.0f, 1.0f, 1.0f, 0.12f); }
+FLinearColor FT66Style::MinimapFriendly() { return FLinearColor(0.300f, 0.920f, 0.560f, 1.0f); }
+FLinearColor FT66Style::MinimapEnemy() { return FLinearColor(0.970f, 0.330f, 0.380f, 1.0f); }
+FLinearColor FT66Style::MinimapNeutral() { return FLinearColor(0.980f, 0.800f, 0.330f, 1.0f); }
 FLinearColor FT66Style::ButtonNeutral() { return FLinearColor(10.f / 255.f, 13.f / 255.f, 18.f / 255.f, 1.0f); }
 FLinearColor FT66Style::ButtonHovered() { return FLinearColor(16.f / 255.f, 20.f / 255.f, 27.f / 255.f, 1.0f); }
 FLinearColor FT66Style::ButtonPressed() { return FLinearColor(7.f / 255.f, 9.f / 255.f, 13.f / 255.f, 1.0f); }
@@ -2090,7 +1545,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 					.HAlign(BtnHAlign)
 					.VAlign(BtnVAlign)
 					.OnClicked(SafeClick)
-					.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); RefreshMouseCursorQuery(); }))
+					.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { UT66AudioSubsystem::PlayUIEventFromAnyWorld(FName(TEXT("UI.Hover"))); SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); RefreshMouseCursorQuery(); }))
 					.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); RefreshMouseCursorQuery(); }))
 					.OnPressed(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonPressedGlowIntensity); SetBorderState(ET66ButtonBorderState::Pressed); }))
 					.OnReleased(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
@@ -2187,7 +1642,7 @@ TSharedRef<SWidget> FT66Style::MakeButton(const FT66ButtonParams& Params)
 				.HAlign(BtnHAlign)
 				.VAlign(BtnVAlign)
 				.OnClicked(SafeClick)
-				.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); RefreshMouseCursorQuery(); }))
+				.OnHovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { UT66AudioSubsystem::PlayUIEventFromAnyWorld(FName(TEXT("UI.Hover"))); SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); RefreshMouseCursorQuery(); }))
 				.OnUnhovered(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(0.f); SetBorderState(ET66ButtonBorderState::Normal); RefreshMouseCursorQuery(); }))
 				.OnPressed(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonPressedGlowIntensity); SetBorderState(ET66ButtonBorderState::Pressed); }))
 				.OnReleased(FSimpleDelegate::CreateLambda([SetGlow, SetBorderState]() { SetGlow(Tokens::ButtonHoverGlowIntensity); SetBorderState(ET66ButtonBorderState::Hovered); }))
@@ -2282,28 +1737,17 @@ bool FT66Style::HasPanelTextures()
 	return GPanelTexturesAvailable();
 }
 
-float FT66Style::GetRetroUIChromeStrength()
-{
-	return ResolveRetroUIStrength(ET66RetroUIOverlayPass::Chrome);
-}
-
-float FT66Style::GetRetroUITextStrength()
-{
-	return ResolveRetroUIStrength(ET66RetroUIOverlayPass::Text);
-}
-
 TSharedRef<SWidget> FT66Style::MakeRetroUIChromeOverlay()
 {
-	return SNew(ST66RetroUIOverlay)
-		.Visibility(EVisibility::HitTestInvisible)
-		.Pass(ET66RetroUIOverlayPass::Chrome);
+	// Retro FX was removed; this overlay no longer paints anything.
+	return SNullWidget::NullWidget;
 }
 
 TSharedRef<SWidget> FT66Style::MakeRetroUIChromeSurface(const TSharedRef<SWidget>& ChromeWidget)
 {
-	return SNew(ST66RetroUIRetainedSurface)
+	// Retro FX was removed; preserve the hit-test-invisible wrapping only.
+	return SNew(SBox)
 		.Visibility(EVisibility::HitTestInvisible)
-		.Pass(ET66RetroUIOverlayPass::Chrome)
 		[
 			ChromeWidget
 		];
@@ -2311,9 +1755,9 @@ TSharedRef<SWidget> FT66Style::MakeRetroUIChromeSurface(const TSharedRef<SWidget
 
 TSharedRef<SWidget> FT66Style::MakeRetroUIBackgroundImage(const TSharedRef<SWidget>& BackgroundImageWidget)
 {
-	return SNew(ST66RetroUIRetainedSurface)
+	// Retro FX was removed; preserve the hit-test-invisible wrapping only.
+	return SNew(SBox)
 		.Visibility(EVisibility::HitTestInvisible)
-		.Pass(ET66RetroUIOverlayPass::BackgroundImage)
 		[
 			BackgroundImageWidget
 		];
@@ -2321,11 +1765,8 @@ TSharedRef<SWidget> FT66Style::MakeRetroUIBackgroundImage(const TSharedRef<SWidg
 
 TSharedRef<SWidget> FT66Style::MakeRetroUIText(const TSharedRef<SWidget>& TextWidget)
 {
-	return SNew(ST66RetroUIRetainedSurface)
-		.Pass(ET66RetroUIOverlayPass::Text)
-		[
-			TextWidget
-		];
+	// Retro FX was removed; pass text through untouched.
+	return TextWidget;
 }
 
 TSharedRef<SWidget> FT66Style::MakeRetroUIIcon(const TSharedRef<SWidget>& IconWidget)

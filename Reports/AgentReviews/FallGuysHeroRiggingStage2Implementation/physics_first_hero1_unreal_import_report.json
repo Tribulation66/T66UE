@@ -1,0 +1,110 @@
+{
+  "ok": true,
+  "errors": [],
+  "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\Hero_1_Chad_PhysicsFirst_Skeletal.fbx",
+  "source_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX\\Hero_1_Chad_Male\\Textures\\Hero_1_Chad_Male_00_Image_0.png",
+  "target_dir": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst",
+  "skeletal_mesh": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/SK_Hero_1_Chad_PhysicsFirst.SK_Hero_1_Chad_PhysicsFirst",
+  "skeleton": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/SK_Hero_1_Chad_PhysicsFirst_Skeleton.SK_Hero_1_Chad_PhysicsFirst_Skeleton",
+  "physics_asset_after_import": "",
+  "texture": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/Textures/T_Hero_1_Chad_PhysicsFirst_BaseColor.T_Hero_1_Chad_PhysicsFirst_BaseColor",
+  "material": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/Materials/MI_SK_Hero_1_Chad_PhysicsFirst.MI_SK_Hero_1_Chad_PhysicsFirst",
+  "animations": {
+    "Idle": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Idle.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_Idle.AM_Hero_1_Chad_PhysicsFirst_Idle",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_Idle.AM_Hero_1_Chad_PhysicsFirst_Idle"
+      ],
+      "ok": true,
+      "error": ""
+    },
+    "Walk": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Walk.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_Walk.AM_Hero_1_Chad_PhysicsFirst_Walk",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_Walk.AM_Hero_1_Chad_PhysicsFirst_Walk"
+      ],
+      "ok": true,
+      "error": ""
+    },
+    "Jump": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Jump.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_Jump.AM_Hero_1_Chad_PhysicsFirst_Jump",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_Jump.AM_Hero_1_Chad_PhysicsFirst_Jump"
+      ],
+      "ok": true,
+      "error": ""
+    },
+    "Leap": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Leap.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_Leap.AM_Hero_1_Chad_PhysicsFirst_Leap",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_Leap.AM_Hero_1_Chad_PhysicsFirst_Leap"
+      ],
+      "ok": true,
+      "error": ""
+    },
+    "RecoverStand": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_RecoverStand.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_RecoverStand.AM_Hero_1_Chad_PhysicsFirst_RecoverStand",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_RecoverStand.AM_Hero_1_Chad_PhysicsFirst_RecoverStand"
+      ],
+      "ok": true,
+      "error": ""
+    },
+    "GetUp_Back": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_GetUp_Back.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_GetUp_Back.AM_Hero_1_Chad_PhysicsFirst_GetUp_Back",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_GetUp_Back.AM_Hero_1_Chad_PhysicsFirst_GetUp_Back"
+      ],
+      "ok": true,
+      "error": ""
+    },
+    "GetUp_Front": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_GetUp_Front.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_GetUp_Front.AM_Hero_1_Chad_PhysicsFirst_GetUp_Front",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_GetUp_Front.AM_Hero_1_Chad_PhysicsFirst_GetUp_Front"
+      ],
+      "ok": true,
+      "error": ""
+    }
+  },
+  "imported_object_paths": [
+    "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/SK_Hero_1_Chad_PhysicsFirst.SK_Hero_1_Chad_PhysicsFirst"
+  ],
+  "material_assignment": {
+    "ok": true,
+    "slot_count": 1,
+    "material_paths": [
+      "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/Materials/MI_SK_Hero_1_Chad_PhysicsFirst.MI_SK_Hero_1_Chad_PhysicsFirst"
+    ]
+  },
+  "bounds": {
+    "origin_cm": [
+      0.0,
+      0.0,
+      90.0
+    ],
+    "extent_cm": [
+      45.101593017578125,
+      26.218055725097656,
+      90.0
+    ],
+    "size_cm": [
+      90.20318603515625,
+      52.43611145019531,
+      180.0
+    ]
+  },
+  "import_uniform_scale": 0.01,
+  "process_boundary": {
+    "old_spike_assets_read": false,
+    "character_visuals_csv_touched": false,
+    "active_ragdoll_runtime_touched": false
+  }
+}

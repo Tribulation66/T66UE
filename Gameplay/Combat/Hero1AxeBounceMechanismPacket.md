@@ -34,8 +34,8 @@ Bounce is distinct from AOE and Pierce: AOE is a band-anchored frontal crescent;
 
 ## 3. Process Sources
 
-- `AGENTS.md`: PPF, artifact parity, mechanism manifest, anti-lookalike, Niagara combat VFX process, Unreal-owned capture, Claude Operator routing.
-- `OPERATOR_VALIDATOR_PROTOCOL.md`: phase-bounded Operator work after Codex approval; Codex validates actual results.
+- `AGENTS.md`: PPF, artifact parity, mechanism manifest, anti-lookalike, Niagara combat VFX process, Unreal-owned capture, and optional validator/direct-Claude routing.
+- `OPTIONAL_VALIDATOR_PROTOCOL.md`: optional validator and direct-Claude boundaries when cross-model validation or Claude direct work is explicitly requested.
 - `Gameplay/Combat/CombatVFXAuthoringProcedure.md`: carrier archetype, mask/material manifest, parameter-sweep discriminator, anti-bake, editor isolation, gameplay capture. Bounce is typically `BeamHop` plus `RibbonTrail`/`SupportImpact`; the user-requested slash carrier is declared and justified here.
 - `Gameplay/Combat/CombatVFXDefinitionOfDone.md`: production readiness needs packet, binding, visual/damage alignment, impact-context proof, gameplay capture, and Pablo visual approval.
 - `Gameplay/Combat/CombatVFXVisualDamageAlignmentContract.md`: anchor taxonomy and footprint mapping. Bounce uses a moving link carrier travelling between consecutive chain endpoints (per the carrier decision below).

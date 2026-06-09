@@ -433,7 +433,6 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatGraphicsSettingsUI()
 	AddN(0.503f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatGraphics", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
 	AddN(0.628f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatGraphics", "AUDIO"), 0.118f * CanvasW));
 	AddN(0.754f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatGraphics", "CRASHING"), 0.118f * CanvasW, 20));
-	AddN(0.879f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGraphics.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatGraphics", "RETRO FX"), 0.118f * CanvasW, 20));
 
 	AddN(0.002f, 0.223f, 0.978f, 0.724f,
 		FT66FlatStyle::AttachMetadata(

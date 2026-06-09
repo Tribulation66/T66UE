@@ -71,6 +71,7 @@ public:
 
 	/** Spend this altar and disable future player interaction while keeping the visual actor in place. */
 	void DisableAfterSelection();
+	void LinkToTowerGateFloor(int32 FromFloorNumber);
 
 protected:
 	virtual void BeginPlay() override;
@@ -78,5 +79,7 @@ protected:
 private:
 	void UpdateInteractionBounds();
 	void ConfigureVisualCollision(UPrimitiveComponent* Primitive, bool bEnableCollision) const;
+
+	int32 LinkedTowerGateFloorNumber = INDEX_NONE;
 };
 

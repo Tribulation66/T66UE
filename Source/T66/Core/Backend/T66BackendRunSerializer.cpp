@@ -97,6 +97,7 @@ namespace
 		case ET66AttackCategory::Bounce: return TEXT("bounce");
 		case ET66AttackCategory::AOE: return TEXT("aoe");
 		case ET66AttackCategory::DOT: return TEXT("dot");
+		case ET66AttackCategory::SingleTarget: return TEXT("single_target");
 		default: return TEXT("pierce");
 		}
 	}
@@ -109,6 +110,7 @@ namespace
 		case ET66IdolElement::Ice: return TEXT("ice");
 		case ET66IdolElement::Electricity: return TEXT("electricity");
 		case ET66IdolElement::Nature: return TEXT("nature");
+		case ET66IdolElement::Wind: return TEXT("wind");
 		default: return TEXT("fire");
 		}
 	}
@@ -194,6 +196,8 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 	}
 
 	RunObj->SetNumberField(TEXT("schema_version"), Snapshot->SchemaVersion);
+	RunObj->SetBoolField(TEXT("submit_score"), Snapshot->bSubmitHighScoreLeaderboard);
+	RunObj->SetBoolField(TEXT("submit_speedrun"), Snapshot->bSubmitSpeedRunLeaderboard);
 	RunObj->SetNumberField(TEXT("hero_level"), Snapshot->HeroLevel);
 	RunObj->SetNumberField(TEXT("hero_mastery_level"), Snapshot->HeroMasteryLevel);
 	RunObj->SetNumberField(TEXT("hero_mastery_xp"), Snapshot->HeroMasteryXP);
@@ -214,67 +218,68 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 	RunObj->SetObjectField(TEXT("stats"), StatsObj);
 
 	TSharedPtr<FJsonObject> SecObj = MakeShared<FJsonObject>();
-	for (const auto& Pair : Snapshot->SecondaryStatValues)
+	for (const auto& Pair : Snapshot->StatValues)
 	{
 		FString KeyName;
 		switch (Pair.Key)
 		{
-		case ET66SecondaryStatType::AoeDamage: KeyName = TEXT("AoeDamage"); break;
-		case ET66SecondaryStatType::BounceDamage: KeyName = TEXT("BounceDamage"); break;
-		case ET66SecondaryStatType::PierceDamage: KeyName = TEXT("PierceDamage"); break;
-		case ET66SecondaryStatType::DotDamage: KeyName = TEXT("DotDamage"); break;
-		case ET66SecondaryStatType::AoeSpeed: KeyName = TEXT("AoeSpeed"); break;
-		case ET66SecondaryStatType::BounceSpeed: KeyName = TEXT("BounceSpeed"); break;
-		case ET66SecondaryStatType::PierceSpeed: KeyName = TEXT("PierceSpeed"); break;
-		case ET66SecondaryStatType::DotSpeed: KeyName = TEXT("DotSpeed"); break;
-		case ET66SecondaryStatType::AoeScale: KeyName = TEXT("AoeScale"); break;
-		case ET66SecondaryStatType::BounceScale: KeyName = TEXT("BounceScale"); break;
-		case ET66SecondaryStatType::PierceScale: KeyName = TEXT("PierceScale"); break;
-		case ET66SecondaryStatType::DotScale: KeyName = TEXT("DotScale"); break;
-		case ET66SecondaryStatType::CritDamage: continue;
-		case ET66SecondaryStatType::CritChance: KeyName = TEXT("CritChance"); break;
-		case ET66SecondaryStatType::HeadshotChance: KeyName = TEXT("HeadshotChance"); break;
-		case ET66SecondaryStatType::CloseRangeDamage: KeyName = TEXT("CloseRangeDamage"); break;
-		case ET66SecondaryStatType::LongRangeDamage: KeyName = TEXT("LongRangeDamage"); break;
-		case ET66SecondaryStatType::AttackRange: KeyName = TEXT("AttackRange"); break;
-		case ET66SecondaryStatType::Taunt: KeyName = TEXT("Taunt"); break;
-		case ET66SecondaryStatType::ReflectDamage: KeyName = TEXT("ReflectDamage"); break;
-		case ET66SecondaryStatType::HpRegen: KeyName = TEXT("HpRegen"); break;
-		case ET66SecondaryStatType::Crush: KeyName = TEXT("Crush"); break;
-		case ET66SecondaryStatType::Invisibility: KeyName = TEXT("Invisibility"); break;
-		case ET66SecondaryStatType::CounterAttack: KeyName = TEXT("CounterAttack"); break;
-		case ET66SecondaryStatType::LifeSteal: KeyName = TEXT("LifeSteal"); break;
-		case ET66SecondaryStatType::Assassinate: KeyName = TEXT("Assassinate"); break;
-		case ET66SecondaryStatType::SpinWheel: KeyName = TEXT("SpinWheel"); break;
-		case ET66SecondaryStatType::Goblin: KeyName = TEXT("Goblin"); break;
-		case ET66SecondaryStatType::Leprechaun: KeyName = TEXT("Leprechaun"); break;
-		case ET66SecondaryStatType::TreasureChest: KeyName = TEXT("TreasureChest"); break;
-		case ET66SecondaryStatType::Fountain: KeyName = TEXT("Fountain"); break;
-		case ET66SecondaryStatType::Cheating: KeyName = TEXT("Cheating"); break;
-		case ET66SecondaryStatType::Stealing: KeyName = TEXT("Stealing"); break;
-		case ET66SecondaryStatType::MovementSpeed: KeyName = TEXT("MovementSpeed"); break;
-		case ET66SecondaryStatType::LootCrate: KeyName = TEXT("LootCrate"); break;
-		case ET66SecondaryStatType::DamageReduction: KeyName = TEXT("DamageReduction"); break;
-		case ET66SecondaryStatType::EvasionChance: KeyName = TEXT("EvasionChance"); break;
-		case ET66SecondaryStatType::Alchemy: KeyName = TEXT("Alchemy"); break;
-		case ET66SecondaryStatType::Accuracy: KeyName = TEXT("Accuracy"); break;
-		case ET66SecondaryStatType::Execute: KeyName = TEXT("Execute"); break;
-		case ET66SecondaryStatType::LootBag: KeyName = TEXT("LootBag"); break;
-		case ET66SecondaryStatType::LootWheel: KeyName = TEXT("LootWheel"); break;
-		case ET66SecondaryStatType::VendorToken: KeyName = TEXT("VendorToken"); break;
-		case ET66SecondaryStatType::FirePower: KeyName = TEXT("FirePower"); break;
-		case ET66SecondaryStatType::IcePower: KeyName = TEXT("IcePower"); break;
-		case ET66SecondaryStatType::ElectricityPower: KeyName = TEXT("ElectricityPower"); break;
-		case ET66SecondaryStatType::NaturePower: KeyName = TEXT("NaturePower"); break;
-		case ET66SecondaryStatType::InteractableLuck: KeyName = TEXT("InteractableLuck"); break;
-		case ET66SecondaryStatType::StealingLuck: KeyName = TEXT("StealingLuck"); break;
-		case ET66SecondaryStatType::GamblingLuck: KeyName = TEXT("GamblingLuck"); break;
-		case ET66SecondaryStatType::ProcLuck: KeyName = TEXT("ProcLuck"); break;
+		case ET66StatType::AoeDamage: KeyName = TEXT("AoeDamage"); break;
+		case ET66StatType::BounceDamage: KeyName = TEXT("BounceDamage"); break;
+		case ET66StatType::PierceDamage: KeyName = TEXT("PierceDamage"); break;
+		case ET66StatType::DotDamage: KeyName = TEXT("DotDamage"); break;
+		case ET66StatType::AoeSpeed: KeyName = TEXT("AoeSpeed"); break;
+		case ET66StatType::BounceSpeed: KeyName = TEXT("BounceSpeed"); break;
+		case ET66StatType::PierceSpeed: KeyName = TEXT("PierceSpeed"); break;
+		case ET66StatType::DotSpeed: KeyName = TEXT("DotSpeed"); break;
+		case ET66StatType::AoeScale: KeyName = TEXT("AoeScale"); break;
+		case ET66StatType::BounceScale: KeyName = TEXT("BounceScale"); break;
+		case ET66StatType::PierceScale: KeyName = TEXT("PierceScale"); break;
+		case ET66StatType::DotScale: KeyName = TEXT("DotScale"); break;
+		case ET66StatType::CritDamage: continue;
+		case ET66StatType::CritChance: KeyName = TEXT("CritChance"); break;
+		case ET66StatType::HeadshotChance: KeyName = TEXT("HeadshotChance"); break;
+		case ET66StatType::CloseRangeDamage: KeyName = TEXT("CloseRangeDamage"); break;
+		case ET66StatType::LongRangeDamage: KeyName = TEXT("LongRangeDamage"); break;
+		case ET66StatType::AttackRange: KeyName = TEXT("AttackRange"); break;
+		case ET66StatType::Taunt: KeyName = TEXT("Taunt"); break;
+		case ET66StatType::ReflectDamage: KeyName = TEXT("ReflectDamage"); break;
+		case ET66StatType::HpRegen: KeyName = TEXT("HpRegen"); break;
+		case ET66StatType::Crush: KeyName = TEXT("Crush"); break;
+		case ET66StatType::Invisibility: KeyName = TEXT("Invisibility"); break;
+		case ET66StatType::CounterAttack: KeyName = TEXT("CounterAttack"); break;
+		case ET66StatType::LifeSteal: KeyName = TEXT("LifeSteal"); break;
+		case ET66StatType::Assassinate: KeyName = TEXT("Assassinate"); break;
+		case ET66StatType::SpinWheel: KeyName = TEXT("SpinWheel"); break;
+		case ET66StatType::Goblin: KeyName = TEXT("Goblin"); break;
+		case ET66StatType::Leprechaun: KeyName = TEXT("Leprechaun"); break;
+		case ET66StatType::TreasureChest: KeyName = TEXT("TreasureChest"); break;
+		case ET66StatType::Fountain: KeyName = TEXT("Fountain"); break;
+		case ET66StatType::Cheating: KeyName = TEXT("Cheating"); break;
+		case ET66StatType::Stealing: KeyName = TEXT("Stealing"); break;
+		case ET66StatType::MovementSpeed: KeyName = TEXT("MovementSpeed"); break;
+		case ET66StatType::LootCrate: KeyName = TEXT("LootCrate"); break;
+		case ET66StatType::DamageReduction: KeyName = TEXT("DamageReduction"); break;
+		case ET66StatType::EvasionChance: KeyName = TEXT("EvasionChance"); break;
+		case ET66StatType::Alchemy: KeyName = TEXT("Alchemy"); break;
+		case ET66StatType::Accuracy: KeyName = TEXT("Accuracy"); break;
+		case ET66StatType::Execute: KeyName = TEXT("Execute"); break;
+		case ET66StatType::LootBag: KeyName = TEXT("LootBag"); break;
+		case ET66StatType::LootWheel: KeyName = TEXT("LootWheel"); break;
+		case ET66StatType::VendorToken: KeyName = TEXT("VendorToken"); break;
+		case ET66StatType::FirePower: KeyName = TEXT("FirePower"); break;
+		case ET66StatType::IcePower: KeyName = TEXT("IcePower"); break;
+		case ET66StatType::ElectricityPower: KeyName = TEXT("ElectricityPower"); break;
+		case ET66StatType::NaturePower: KeyName = TEXT("NaturePower"); break;
+		case ET66StatType::WindPower: KeyName = TEXT("WindPower"); break;
+		case ET66StatType::InteractableLuck: KeyName = TEXT("InteractableLuck"); break;
+		case ET66StatType::StealingLuck: KeyName = TEXT("StealingLuck"); break;
+		case ET66StatType::GamblingLuck: KeyName = TEXT("GamblingLuck"); break;
+		case ET66StatType::ProcLuck: KeyName = TEXT("ProcLuck"); break;
 		default: continue;
 		}
 		SecObj->SetNumberField(KeyName, Pair.Value);
 	}
-	RunObj->SetObjectField(TEXT("secondary_stats"), SecObj);
+	RunObj->SetObjectField(TEXT("stat_bonuses"), SecObj);
 
 	if (Snapshot->LuckRating0To100 >= 0) RunObj->SetNumberField(TEXT("luck_rating"), Snapshot->LuckRating0To100);
 	if (Snapshot->SeedLuck0To100 >= 0) RunObj->SetNumberField(TEXT("seed_luck"), Snapshot->SeedLuck0To100);
@@ -639,7 +644,7 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 		SlotObj->SetStringField(TEXT("item_id"), Slot.ItemTemplateID.ToString());
 		SlotObj->SetStringField(TEXT("rarity"), T66ItemRarityToApiString(Slot.Rarity));
 		SlotObj->SetNumberField(TEXT("line1_rolled_value"), Slot.Line1RolledValue);
-		SlotObj->SetNumberField(TEXT("secondary_stat_bonus_override"), Slot.SecondaryStatBonusOverride);
+		SlotObj->SetNumberField(TEXT("stat_bonus_override"), Slot.StatBonusOverride);
 		SlotObj->SetNumberField(TEXT("line2_multiplier_override"), Slot.Line2MultiplierOverride);
 		SlotObj->SetNumberField(TEXT("roll_seed"), Slot.RollSeed);
 		InventorySlotArr.Add(MakeShared<FJsonValueObject>(SlotObj));
@@ -648,14 +653,14 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 
 	TSharedPtr<FJsonObject> NoIdolObj = MakeShared<FJsonObject>();
 	NoIdolObj->SetNumberField(TEXT("stacks"), Snapshot->NoIdolSelectionStacks);
-	NoIdolObj->SetNumberField(TEXT("damage_tenths"), Snapshot->NoIdolPrimaryStatBonuses.DamageTenths);
-	NoIdolObj->SetNumberField(TEXT("attack_speed_tenths"), Snapshot->NoIdolPrimaryStatBonuses.AttackSpeedTenths);
-	NoIdolObj->SetNumberField(TEXT("attack_scale_tenths"), Snapshot->NoIdolPrimaryStatBonuses.AttackScaleTenths);
-	NoIdolObj->SetNumberField(TEXT("accuracy_tenths"), Snapshot->NoIdolPrimaryStatBonuses.AccuracyTenths);
-	NoIdolObj->SetNumberField(TEXT("armor_tenths"), Snapshot->NoIdolPrimaryStatBonuses.ArmorTenths);
-	NoIdolObj->SetNumberField(TEXT("evasion_tenths"), Snapshot->NoIdolPrimaryStatBonuses.EvasionTenths);
-	NoIdolObj->SetNumberField(TEXT("luck_tenths"), Snapshot->NoIdolPrimaryStatBonuses.LuckTenths);
-	NoIdolObj->SetNumberField(TEXT("speed_tenths"), Snapshot->NoIdolPrimaryStatBonuses.SpeedTenths);
+	NoIdolObj->SetNumberField(TEXT("damage_tenths"), Snapshot->NoIdolBaseStatBonuses.DamageTenths);
+	NoIdolObj->SetNumberField(TEXT("attack_speed_tenths"), Snapshot->NoIdolBaseStatBonuses.AttackSpeedTenths);
+	NoIdolObj->SetNumberField(TEXT("attack_scale_tenths"), Snapshot->NoIdolBaseStatBonuses.AttackScaleTenths);
+	NoIdolObj->SetNumberField(TEXT("accuracy_tenths"), Snapshot->NoIdolBaseStatBonuses.AccuracyTenths);
+	NoIdolObj->SetNumberField(TEXT("armor_tenths"), Snapshot->NoIdolBaseStatBonuses.ArmorTenths);
+	NoIdolObj->SetNumberField(TEXT("evasion_tenths"), Snapshot->NoIdolBaseStatBonuses.EvasionTenths);
+	NoIdolObj->SetNumberField(TEXT("luck_tenths"), Snapshot->NoIdolBaseStatBonuses.LuckTenths);
+	NoIdolObj->SetNumberField(TEXT("speed_tenths"), Snapshot->NoIdolBaseStatBonuses.SpeedTenths);
 	RunObj->SetObjectField(TEXT("no_idol"), NoIdolObj);
 
 	TSharedPtr<FJsonObject> MobLootObj = MakeShared<FJsonObject>();

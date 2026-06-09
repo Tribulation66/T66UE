@@ -49,31 +49,37 @@ public:
 
 	bool IsPickupCardVisible() const { return bPickupCardVisible; }
 	bool IsChestRewardVisible() const { return bChestRewardVisible; }
-	bool HasPendingPresentationWork() const { return ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible || QueuedChestRewards.Num() > 0 || QueuedPickupCards.Num() > 0; }
+	bool HasPendingPresentationWork() const { return ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible || bPickupCardVisible || QueuedPresentations.Num() > 0; }
 
 private:
-	struct FQueuedChestReward
+	enum class EQueuedPresentationType : uint8
 	{
+		CrateOpen,
+		LootWheelSpin,
+		ChestReward,
+		PickupCard,
+		LootBagReveal,
+	};
+
+	struct FQueuedPresentation
+	{
+		EQueuedPresentationType Type = EQueuedPresentationType::PickupCard;
 		ET66Rarity Rarity = ET66Rarity::Black;
 		int32 GoldAmount = 0;
+		FT66LootWheelPresentationParams LootWheelParams;
+		FName ItemID = NAME_None;
+		ET66ItemRarity ItemRarity = ET66ItemRarity::Black;
 		TFunction<void()> OnCommit;
 		TFunction<void()> OnFinished;
 	};
 
-	struct FQueuedPickupCard
-	{
-		FName ItemID = NAME_None;
-		ET66ItemRarity ItemRarity = ET66ItemRarity::Black;
-		bool bLootBagReveal = false;
-	};
-
-	void QueueActivePickupCardToFront();
+	bool IsRewardPresentationBusy() const;
 	void PopulatePickupCardContent(FName ItemID, ET66ItemRarity ItemRarity, bool bPopulateLootBagProxy);
 	void CompleteLootBagRevealToPickupCard();
 	void ResetLootBagRevealWidgets();
 	void DispatchChestRewardCommitIfNeeded();
 	void DispatchChestRewardFinishedIfNeeded();
-	void DrainQueuedChestRewardsForTeardown();
+	void DrainQueuedPresentationsForTeardown();
 
 	UT66GameplayHUDWidget& Owner;
 
@@ -85,6 +91,7 @@ private:
 	float ChestRewardElapsedSeconds = 0.f;
 	float LootBagRevealElapsedSeconds = 0.f;
 	float LootBagRevealRemainingSeconds = 0.f;
+	bool bResettingPresentations = false;
 	FName ActivePickupCardItemID = NAME_None;
 	ET66ItemRarity ActivePickupCardRarity = ET66ItemRarity::Black;
 	FName ActiveLootBagRevealItemID = NAME_None;
@@ -99,8 +106,7 @@ private:
 	FT66AnimationMarkerDispatcher ChestRewardMarkerDispatcher;
 	TFunction<void()> ActiveChestRewardCommitCallback;
 	TFunction<void()> ActiveChestRewardFinishedCallback;
-	TArray<FQueuedChestReward> QueuedChestRewards;
-	TArray<FQueuedPickupCard> QueuedPickupCards;
+	TArray<FQueuedPresentation> QueuedPresentations;
 
 	TWeakObjectPtr<UT66CrateOverlayWidget> ActiveCrateOverlay;
 	TWeakObjectPtr<UT66LootWheelOverlayWidget> ActiveLootWheelOverlay;

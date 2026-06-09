@@ -1,0 +1,696 @@
+{
+  "ok": true,
+  "asset_count": 49,
+  "render_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders",
+  "metadata_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata",
+  "min_triangles": 73952.0,
+  "max_triangles": 79896.0,
+  "results": [
+    {
+      "asset_id": "Companion_01",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Companion_01.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Companion_01.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Companion_01.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 78574,
+      "bounds_size": [
+        0.3802819848060608,
+        0.25691449642181396,
+        0.8906517028808594
+      ]
+    },
+    {
+      "asset_id": "Companion_02",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Companion_02.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Companion_02.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Companion_02.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76352,
+      "bounds_size": [
+        0.39541861414909363,
+        0.2557407021522522,
+        0.8832512497901917
+      ]
+    },
+    {
+      "asset_id": "Companion_03",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Companion_03.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Companion_03.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Companion_03.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 79755,
+      "bounds_size": [
+        0.36867988109588623,
+        0.2326693832874298,
+        0.8729879260063171
+      ]
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Pet_Dungeon_SewerSlimeKing.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Pet_Dungeon_SewerSlimeKing.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Pet_Dungeon_SewerSlimeKing.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 73952,
+      "bounds_size": [
+        0.8368180394172668,
+        0.837695837020874,
+        0.6793124079704285
+      ]
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Pet_Dungeon_WebMatriarch.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Pet_Dungeon_WebMatriarch.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Pet_Dungeon_WebMatriarch.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76038,
+      "bounds_size": [
+        0.995273768901825,
+        0.6241115927696228,
+        0.6331721544265747
+      ]
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Pet_Dungeon_BoneJailer.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Pet_Dungeon_BoneJailer.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Pet_Dungeon_BoneJailer.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 79896,
+      "bounds_size": [
+        0.9253012537956238,
+        0.4659532308578491,
+        0.8827003836631775
+      ]
+    },
+    {
+      "asset_id": "Slime",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Slime.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Slime.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Slime.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 77922,
+      "bounds_size": [
+        0.7912259101867676,
+        0.9789143204689026,
+        0.6144763827323914
+      ]
+    },
+    {
+      "asset_id": "BoneWalker",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\BoneWalker.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\BoneWalker.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\BoneWalker.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76883,
+      "bounds_size": [
+        0.49242088198661804,
+        0.2530592083930969,
+        0.889533519744873
+      ]
+    },
+    {
+      "asset_id": "CaveBat",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\CaveBat.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\CaveBat.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\CaveBat.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76296,
+      "bounds_size": [
+        0.9978337287902832,
+        0.2335251122713089,
+        0.42869529128074646
+      ]
+    },
+    {
+      "asset_id": "CryptWraith",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\CryptWraith.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\CryptWraith.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\CryptWraith.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76862,
+      "bounds_size": [
+        0.513908863067627,
+        0.5694025754928589,
+        0.8291778564453125
+      ]
+    },
+    {
+      "asset_id": "CursedCrow",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\CursedCrow.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\CursedCrow.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\CursedCrow.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 77934,
+      "bounds_size": [
+        1.0008994340896606,
+        0.30660802125930786,
+        0.45307981967926025
+      ]
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\FamishedGhoul.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\FamishedGhoul.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\FamishedGhoul.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 79616,
+      "bounds_size": [
+        0.4058120846748352,
+        0.316322922706604,
+        0.9091055989265442
+      ]
+    },
+    {
+      "asset_id": "HexSlinger",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\HexSlinger.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\HexSlinger.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\HexSlinger.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76010,
+      "bounds_size": [
+        0.5327646732330322,
+        0.5059707164764404,
+        0.882510781288147
+      ]
+    },
+    {
+      "asset_id": "MimicLure",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\MimicLure.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\MimicLure.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\MimicLure.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 79094,
+      "bounds_size": [
+        0.7570700645446777,
+        0.566780686378479,
+        0.9012818336486816
+      ]
+    },
+    {
+      "asset_id": "RatPack",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RatPack.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\RatPack.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\RatPack.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 78636,
+      "bounds_size": [
+        0.99305260181427,
+        0.7855396866798401,
+        0.6472057104110718
+      ]
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\StoneSentinel.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\StoneSentinel.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\StoneSentinel.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 78158,
+      "bounds_size": [
+        0.5128725171089172,
+        0.28316813707351685,
+        0.8786669373512268
+      ]
+    },
+    {
+      "asset_id": "TombSpider",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\TombSpider.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\TombSpider.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\TombSpider.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 75349,
+      "bounds_size": [
+        0.9965064525604248,
+        0.6638280153274536,
+        0.6409251689910889
+      ]
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\BoneConjurer.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\BoneConjurer.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\BoneConjurer.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76198,
+      "bounds_size": [
+        0.47128933668136597,
+        0.3870003819465637,
+        0.8746874332427979
+      ]
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Dungeon_BaelFallenChad.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Dungeon_BaelFallenChad.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Dungeon_BaelFallenChad.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 75642,
+      "bounds_size": [
+        1.000601887702942,
+        0.4214746952056885,
+        0.8466883301734924
+      ]
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Dungeon_BoneJailer.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Dungeon_BoneJailer.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Dungeon_BoneJailer.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 77701,
+      "bounds_size": [
+        0.5252922773361206,
+        0.28464680910110474,
+        0.8851257562637329
+      ]
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Dungeon_SewerSlimeKing.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Dungeon_SewerSlimeKing.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Dungeon_SewerSlimeKing.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76577,
+      "bounds_size": [
+        0.7829562425613403,
+        0.8408818244934082,
+        0.4880741238594055
+      ]
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Dungeon_WebMatriarch.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Dungeon_WebMatriarch.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Dungeon_WebMatriarch.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 79029,
+      "bounds_size": [
+        0.9875929355621338,
+        0.6664008498191833,
+        0.5983782410621643
+      ]
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\CasinoNPC.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\CasinoNPC.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\CasinoNPC.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 74671,
+      "bounds_size": [
+        0.4016527533531189,
+        0.20103372633457184,
+        0.8776311874389648
+      ]
+    },
+    {
+      "asset_id": "Saint",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Saint.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Saint.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Saint.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76600,
+      "bounds_size": [
+        0.37313640117645264,
+        0.25853729248046875,
+        0.849043071269989
+      ]
+    },
+    {
+      "asset_id": "Ouroboros",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Ouroboros.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Ouroboros.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Ouroboros.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76929,
+      "bounds_size": [
+        0.41436171531677246,
+        0.9743980169296265,
+        0.8306996822357178
+      ]
+    },
+    {
+      "asset_id": "VendorNPC",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\VendorNPC.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\VendorNPC.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\VendorNPC.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 77057,
+      "bounds_size": [
+        0.4301871657371521,
+        0.22171150147914886,
+        0.8809889554977417
+      ]
+    },
+    {
+      "asset_id": "LoanShark",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\LoanShark.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\LoanShark.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\LoanShark.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 79015,
+      "bounds_size": [
+        0.4910586178302765,
+        0.2533596456050873,
+        0.8544020056724548
+      ]
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\AccuracyBoost_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\AccuracyBoost_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\AccuracyBoost_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 77874,
+      "bounds_size": [
+        0.5496653318405151,
+        0.5626620650291443,
+        0.8677603006362915
+      ]
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\ArmorBoost_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\ArmorBoost_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\ArmorBoost_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 79566,
+      "bounds_size": [
+        0.5471014380455017,
+        0.5779076218605042,
+        0.8569537401199341
+      ]
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\AttackScaleBoost_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\AttackScaleBoost_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\AttackScaleBoost_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76196,
+      "bounds_size": [
+        0.5693776607513428,
+        0.9916480183601379,
+        0.9147360324859619
+      ]
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\AttackSpeedBoost_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\AttackSpeedBoost_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\AttackSpeedBoost_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76289,
+      "bounds_size": [
+        0.5629048347473145,
+        0.5797423124313354,
+        0.8585668802261353
+      ]
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\DamageBoost_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\DamageBoost_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\DamageBoost_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 78250,
+      "bounds_size": [
+        0.5610690116882324,
+        0.618867039680481,
+        0.9048386812210083
+      ]
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\EvasionBoost_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\EvasionBoost_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\EvasionBoost_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 78228,
+      "bounds_size": [
+        0.5358743071556091,
+        0.5972905158996582,
+        0.8606128692626953
+      ]
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\LuckBoost_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\LuckBoost_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\LuckBoost_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 75858,
+      "bounds_size": [
+        0.5656077861785889,
+        0.6475299596786499,
+        0.9152633547782898
+      ]
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\SpeedBoost_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\SpeedBoost_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\SpeedBoost_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 78243,
+      "bounds_size": [
+        0.5489794015884399,
+        0.7673747539520264,
+        0.9062721729278564
+      ]
+    },
+    {
+      "asset_id": "Chest_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Chest_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Chest_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Chest_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 77693,
+      "bounds_size": [
+        0.8457305431365967,
+        0.720564603805542,
+        0.8287930488586426
+      ]
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\CompanionCage_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\CompanionCage_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\CompanionCage_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 74489,
+      "bounds_size": [
+        0.6340199708938599,
+        0.6387141942977905,
+        0.893500804901123
+      ]
+    },
+    {
+      "asset_id": "CowardiceGate_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\CowardiceGate_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\CowardiceGate_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\CowardiceGate_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 75082,
+      "bounds_size": [
+        0.8121076822280884,
+        0.24030645191669464,
+        0.9134217500686646
+      ]
+    },
+    {
+      "asset_id": "LootCrate",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\LootCrate.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\LootCrate.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\LootCrate.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76886,
+      "bounds_size": [
+        0.8424433469772339,
+        0.8364059925079346,
+        0.8967100381851196
+      ]
+    },
+    {
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\DifficultyTotem_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\DifficultyTotem_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\DifficultyTotem_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 79589,
+      "bounds_size": [
+        0.32880187034606934,
+        0.29807034134864807,
+        0.8896968960762024
+      ]
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\TutorialGate_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\TutorialGate_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\TutorialGate_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 79429,
+      "bounds_size": [
+        0.8877518177032471,
+        0.8966091871261597,
+        0.5878400802612305
+      ]
+    },
+    {
+      "asset_id": "Fountain_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Fountain_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Fountain_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Fountain_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76122,
+      "bounds_size": [
+        0.8998807668685913,
+        0.9038617014884949,
+        0.7588301301002502
+      ]
+    },
+    {
+      "asset_id": "IdolAltar_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\IdolAltar_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\IdolAltar_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\IdolAltar_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 75820,
+      "bounds_size": [
+        0.6252069473266602,
+        0.5114773511886597,
+        0.84122633934021
+      ]
+    },
+    {
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\LootBag_Shared_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\LootBag_Shared_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\LootBag_Shared_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76250,
+      "bounds_size": [
+        0.7194315791130066,
+        0.7932529449462891,
+        0.8925505876541138
+      ]
+    },
+    {
+      "asset_id": "LootWheel_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\LootWheel_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\LootWheel_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\LootWheel_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 77782,
+      "bounds_size": [
+        0.7612816691398621,
+        0.2724902927875519,
+        0.8760882616043091
+      ]
+    },
+    {
+      "asset_id": "StageGate_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\StageGate_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\StageGate_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\StageGate_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 74995,
+      "bounds_size": [
+        0.798799455165863,
+        0.3026430308818817,
+        0.9385960698127747
+      ]
+    },
+    {
+      "asset_id": "Vehicle_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Vehicle_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\Vehicle_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\Vehicle_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 79707,
+      "bounds_size": [
+        0.8968863487243652,
+        0.9232691526412964,
+        0.5219411253929138
+      ]
+    },
+    {
+      "asset_id": "WeaponAltar_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\WeaponAltar_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\WeaponAltar_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\WeaponAltar_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 77102,
+      "bounds_size": [
+        0.6833081245422363,
+        0.7162812352180481,
+        0.8266422748565674
+      ]
+    },
+    {
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "input": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\SkullRemains_Easy_Pixal3D.glb",
+      "render": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Renders\\SkullRemains_Easy_Pixal3D.png",
+      "metadata": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\QA\\RawBlender\\Metadata\\SkullRemains_Easy_Pixal3D.json",
+      "exit_code": 0,
+      "ok": true,
+      "raw_triangles": 76223,
+      "bounds_size": [
+        0.881384551525116,
+        0.599092960357666,
+        0.5246143937110901
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/T66WorldRuntimeProofTypes.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "T66PixelVFXSubsystem.generated.h"
 
@@ -50,6 +51,10 @@ public:
 	int64 GetTotalRequested() const { return TotalRequested; }
 	int64 GetTotalEmitted() const { return TotalEmitted; }
 	int64 GetTotalDropped() const { return TotalDropped; }
+
+#if !UE_BUILD_SHIPPING
+	FT66WorldRuntimeDebugSnapshot GetWorldRuntimeDebugSnapshot() const;
+#endif
 
 private:
 	void RequestDefaultPixelSystemsAsync();

@@ -4,7 +4,7 @@ Generated during the 2026-05-12 audit session.
 
 This inventory covers UI surfaces outside the frontend screens already completed in the Stage 2 progress log. It is source-backed: rows are based on C++/Slate/Canvas widget classes and the runtime creation paths that add them to the viewport or widget components.
 
-The requested technical handoff path, `C:\UE\T66\UI\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md`, was not present in this checkout. The audit used `UI_FIDELITY_LOOP_INSTRUCTIONS.md`, `UI_FLAT_REDESIGN_REFERENCE.md`, `Saved\Codex\UI\overnight_progress_log.md`, and source inspection instead.
+The technical handoff now lives at `C:\UE\T66\Audit\Reference\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md`. This inventory also used `UI_FIDELITY_LOOP_INSTRUCTIONS.md`, `UI_FLAT_REDESIGN_REFERENCE.md`, `Saved\Codex\UI\overnight_progress_log.md`, and source inspection.
 
 Standard legacy chrome regex used:
 

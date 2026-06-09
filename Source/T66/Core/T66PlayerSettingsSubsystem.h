@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
-#include "Core/T66RetroFXSettings.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSaveGame.h"
 #include "UI/T66UITypes.h"
@@ -28,6 +27,8 @@ class T66_API UT66PlayerSettingsSubsystem : public UGameInstanceSubsystem
 
 public:
 	static const FString SlotName;
+	static const FName PopupIdRunSummaryChadCoupons;
+	static const FName PopupIdRunWillNotCount;
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
@@ -84,6 +85,12 @@ public:
 	bool GetSubmitLeaderboardAnonymous() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetHighScoreMode(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	bool GetHighScoreMode() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
 	void SetSpeedRunMode(bool bEnabled);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
@@ -130,6 +137,24 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
 	bool GetShowRunSummaryChadCouponsPopup() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
+	void SetShowPartySuspendedLeaderboardPopup(bool bEnabled);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
+	bool GetShowPartySuspendedLeaderboardPopup() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Popups")
+	bool IsPopupSuppressed(FName PopupId) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Popups")
+	void SetPopupSuppressed(FName PopupId, bool bSuppressed);
+
+	UFUNCTION(BlueprintCallable, Category = "Settings|Popups")
+	void ResetAllPopupSuppressions();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Popups")
+	int32 GetSuppressedPopupCount() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Settings|Gameplay")
 	void SetLockedChaseTurnSensitivityPercent(float NewValue);
@@ -262,21 +287,9 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|Gameplay")
 	float GetFogIntensityPercent() const;
 
-	// ===== Retro FX =====
-	UFUNCTION(BlueprintCallable, Category = "Settings|RetroFX")
-	void SetRetroFXSettings(const FT66RetroFXSettings& NewSettings);
-
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Settings|RetroFX")
-	FT66RetroFXSettings GetRetroFXSettings() const;
-
-	UFUNCTION(BlueprintCallable, Category = "Settings|RetroFX")
-	void ResetRetroFXSettingsToDefaults();
-
 	// ===== Utilities =====
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void ApplySafeModeSettings();
-
-	void RunRetroFXSealVerificationIfRequested(UWorld* World);
 
 	UPROPERTY(BlueprintAssignable, Category = "Settings")
 	FOnT66PlayerSettingsChanged OnSettingsChanged;

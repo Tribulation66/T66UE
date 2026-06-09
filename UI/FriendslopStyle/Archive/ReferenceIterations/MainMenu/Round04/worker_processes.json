@@ -1,0 +1,52 @@
+[
+  {
+    "Id": "01_midnight_cosmic_rubber",
+    "PID": 47540,
+    "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\main_menu_reference_01_midnight_cosmic_rubber_cli.png",
+    "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\workers\\01_midnight_cosmic_rubber\\request.md",
+    "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\logs\\01_midnight_cosmic_rubber.stdout.log",
+    "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\logs\\01_midnight_cosmic_rubber.stderr.log",
+    "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\workers\\01_midnight_cosmic_rubber\\last_message.txt",
+    "Started": "2026-06-05T11:33:15.9748692Z"
+  },
+  {
+    "Id": "02_post_apocalyptic_inflatable",
+    "PID": 38244,
+    "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\main_menu_reference_02_post_apocalyptic_inflatable_cli.png",
+    "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\workers\\02_post_apocalyptic_inflatable\\request.md",
+    "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\logs\\02_post_apocalyptic_inflatable.stdout.log",
+    "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\logs\\02_post_apocalyptic_inflatable.stderr.log",
+    "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\workers\\02_post_apocalyptic_inflatable\\last_message.txt",
+    "Started": "2026-06-05T11:33:16.0268406Z"
+  },
+  {
+    "Id": "03_bloody_horror_comedy_rubber",
+    "PID": 19064,
+    "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\main_menu_reference_03_bloody_horror_comedy_rubber_cli.png",
+    "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\workers\\03_bloody_horror_comedy_rubber\\request.md",
+    "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\logs\\03_bloody_horror_comedy_rubber.stdout.log",
+    "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\logs\\03_bloody_horror_comedy_rubber.stderr.log",
+    "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\workers\\03_bloody_horror_comedy_rubber\\last_message.txt",
+    "Started": "2026-06-05T11:33:16.0688590Z"
+  },
+  {
+    "Id": "04_dungeon_slime_rubber",
+    "PID": 36956,
+    "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\main_menu_reference_04_dungeon_slime_rubber_cli.png",
+    "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\workers\\04_dungeon_slime_rubber\\request.md",
+    "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\logs\\04_dungeon_slime_rubber.stdout.log",
+    "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\logs\\04_dungeon_slime_rubber.stderr.log",
+    "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\workers\\04_dungeon_slime_rubber\\last_message.txt",
+    "Started": "2026-06-05T11:33:16.1021838Z"
+  },
+  {
+    "Id": "05_isekai_guild_rubber",
+    "PID": 44120,
+    "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\main_menu_reference_05_isekai_guild_rubber_cli.png",
+    "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\workers\\05_isekai_guild_rubber\\request.md",
+    "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\logs\\05_isekai_guild_rubber.stdout.log",
+    "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\logs\\05_isekai_guild_rubber.stderr.log",
+    "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round04\\workers\\05_isekai_guild_rubber\\last_message.txt",
+    "Started": "2026-06-05T11:33:16.1300285Z"
+  }
+]

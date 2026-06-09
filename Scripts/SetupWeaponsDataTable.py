@@ -89,6 +89,32 @@ BRANCH_ID_SLUGS = {
 
 HERO1_AXE_AOE_CRESCENT_INNER_RADIUS_RATIO = 0.54
 
+# These temporary Hero 1 AOE placeholders use the black tier additive hit
+# bonus for every rarity so the damage multipliers below own the requested
+# relative damage ladder: black base, red 120%, yellow 150%, white 200%.
+HERO1_AXE_AOE_OVERRIDES = {
+    "Black": {
+        "damage": 1.20,
+        "hit": 3,
+        "aoe_radius": 120.0,
+    },
+    "Red": {
+        "damage": 1.44,
+        "hit": 3,
+        "aoe_radius": 322.5,
+    },
+    "Yellow": {
+        "damage": 1.80,
+        "hit": 3,
+        "aoe_radius": 416.3,
+    },
+    "White": {
+        "damage": 2.40,
+        "hit": 3,
+        "aoe_radius": 495.0,
+    },
+}
+
 DEFAULT_WEAPON_PATTERN = {
     "AttackPatternID": "Default",
     "ProjectileCount": "0",
@@ -97,14 +123,24 @@ DEFAULT_WEAPON_PATTERN = {
 
 HERO_AOE_PATTERNS = {
     ("Hero_1", "Black"): {
-        "AttackPatternID": "Single",
+        "AttackPatternID": "Hero1CrescentSingle",
         "ProjectileCount": "1",
         "SpreadAngleDegrees": "0.0",
     },
     ("Hero_1", "Red"): {
-        "AttackPatternID": "TwinFan",
-        "ProjectileCount": "2",
-        "SpreadAngleDegrees": "34.0",
+        "AttackPatternID": "Hero1CrescentTriple",
+        "ProjectileCount": "3",
+        "SpreadAngleDegrees": "0.0",
+    },
+    ("Hero_1", "Yellow"): {
+        "AttackPatternID": "Hero1CrescentFive",
+        "ProjectileCount": "5",
+        "SpreadAngleDegrees": "0.0",
+    },
+    ("Hero_1", "White"): {
+        "AttackPatternID": "Hero1CrescentFullContact",
+        "ProjectileCount": "1",
+        "SpreadAngleDegrees": "0.0",
     },
 }
 
@@ -334,6 +370,36 @@ BRANCH_DESCRIPTIONS = {
 }
 
 
+def _no_weapon_row():
+    return {
+        "---": "Weapon_NoWeapon",
+        "WeaponID": "Weapon_NoWeapon",
+        "HeroID": "None",
+        "DisplayName": "No Weapon",
+        "Description": "No weapon. Fire a white single-target placeholder attack and keep weapon synergies inactive.",
+        "Icon": "",
+        "Rarity": "Black",
+        "Branch": "SingleTarget",
+        "AttackPatternID": "NoWeaponSingleTarget",
+        "ProjectileCount": "1",
+        "SpreadAngleDegrees": "0.0",
+        "DamageMultiplier": "1.00",
+        "AttackSpeedMultiplier": "1.00",
+        "AttackScaleMultiplier": "1.00",
+        "RangeMultiplier": "1.00",
+        "BonusHitDamage": "0",
+        "BonusPierceCount": "0",
+        "BonusBounceCount": "0",
+        "BonusAoeCount": "0",
+        "BonusDotSources": "0",
+        "BonusAoeRadius": "0.0",
+        "AoeInnerRadiusRatio": "0.00",
+        "BonusDotDuration": "0.00",
+        "BonusDotTickDamageMultiplier": "1.00",
+        "FalloffPerHitMultiplier": "1.00",
+    }
+
+
 def _weapon_id(hero_id, rarity, branch):
     rarity_slug = RARITY_ID_SLUGS.get(rarity, rarity.lower())
     branch_slug = BRANCH_ID_SLUGS.get(branch, branch.lower())
@@ -379,6 +445,9 @@ def _upgrade_row(hero, rarity, branch, tuning):
     weapon_id = _weapon_id(hero_id, rarity, branch)
     pattern = _weapon_pattern(hero_id, rarity, branch)
     projectile_count = _int(pattern.get("ProjectileCount"), 0)
+    row_tuning = dict(tuning)
+    if hero_id == "Hero_1" and branch == "AOE":
+        row_tuning.update(HERO1_AXE_AOE_OVERRIDES.get(rarity, {}))
     return {
         "---": weapon_id,
         "WeaponID": weapon_id,
@@ -391,20 +460,20 @@ def _upgrade_row(hero, rarity, branch, tuning):
         "AttackPatternID": pattern.get("AttackPatternID", "Default"),
         "ProjectileCount": str(projectile_count),
         "SpreadAngleDegrees": f"{_float(pattern.get('SpreadAngleDegrees'), 0.0):.1f}",
-        "DamageMultiplier": f"{tuning['damage']:.2f}",
-        "AttackSpeedMultiplier": f"{tuning['speed']:.2f}",
-        "AttackScaleMultiplier": f"{tuning['scale']:.2f}",
-        "RangeMultiplier": f"{tuning['range']:.2f}",
-        "BonusHitDamage": str(tuning["hit"]),
-        "BonusPierceCount": str(tuning["pierce"] if branch == "Pierce" else 0),
-        "BonusBounceCount": str(tuning["bounce"] if branch == "Bounce" else 0),
+        "DamageMultiplier": f"{row_tuning['damage']:.2f}",
+        "AttackSpeedMultiplier": f"{row_tuning['speed']:.2f}",
+        "AttackScaleMultiplier": f"{row_tuning['scale']:.2f}",
+        "RangeMultiplier": f"{row_tuning['range']:.2f}",
+        "BonusHitDamage": str(row_tuning["hit"]),
+        "BonusPierceCount": str(row_tuning["pierce"] if branch == "Pierce" else 0),
+        "BonusBounceCount": str(row_tuning["bounce"] if branch == "Bounce" else 0),
         "BonusAoeCount": str(projectile_count if branch == "AOE" and projectile_count > 0 else (1 if branch == "AOE" else 0)),
         "BonusDotSources": "1" if branch == "DOT" else "0",
-        "BonusAoeRadius": f"{tuning['aoe_radius'] if branch == 'AOE' else 0.0:.1f}",
-        "AoeInnerRadiusRatio": f"{HERO1_AXE_AOE_CRESCENT_INNER_RADIUS_RATIO if weapon_id == 'Hero_1_black_aoe' else 0.0:.2f}",
-        "BonusDotDuration": f"{tuning['dot_duration'] if branch == 'DOT' else 0.0:.2f}",
-        "BonusDotTickDamageMultiplier": f"{tuning['dot_tick'] if branch == 'DOT' else 1.0:.2f}",
-        "FalloffPerHitMultiplier": f"{tuning['falloff'] if branch in ('Pierce', 'Bounce') else 1.0:.2f}",
+        "BonusAoeRadius": f"{row_tuning['aoe_radius'] if branch == 'AOE' else 0.0:.1f}",
+        "AoeInnerRadiusRatio": f"{HERO1_AXE_AOE_CRESCENT_INNER_RADIUS_RATIO if hero_id == 'Hero_1' and branch == 'AOE' else 0.0:.2f}",
+        "BonusDotDuration": f"{row_tuning['dot_duration'] if branch == 'DOT' else 0.0:.2f}",
+        "BonusDotTickDamageMultiplier": f"{row_tuning['dot_tick'] if branch == 'DOT' else 1.0:.2f}",
+        "FalloffPerHitMultiplier": f"{row_tuning['falloff'] if branch in ('Pierce', 'Bounce') else 1.0:.2f}",
     }
 
 
@@ -418,7 +487,7 @@ def generate_weapons_csv(project_dir):
     with open(heroes_path, newline="", encoding="utf-8-sig") as source:
         heroes = [row for row in csv.DictReader(source) if row.get("HeroID")]
 
-    rows = []
+    rows = [_no_weapon_row()]
     for hero in heroes:
         primary_branch = hero.get("PrimaryCategory") or "Pierce"
         if primary_branch not in BRANCHES:

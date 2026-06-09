@@ -1,0 +1,114 @@
+{
+  "asset_name": "TombSpider",
+  "bounds": {
+    "dimensions": [
+      178.80126953125,
+      119.10940551757812,
+      114.99999237060547
+    ],
+    "max": [
+      89.400634765625,
+      59.55470275878906,
+      114.99999237060547
+    ],
+    "min": [
+      -89.400634765625,
+      -59.55470275878906,
+      0.0
+    ]
+  },
+  "fbx_bytes": 5121884,
+  "fbx_export_options": {
+    "add_leaf_bones": false,
+    "apply_scale_options": "FBX_SCALE_ALL",
+    "apply_unit_scale": true,
+    "bake_space_transform": false,
+    "embed_textures": true,
+    "global_scale": 0.01,
+    "mesh_smooth_type": "FACE",
+    "object_types": [
+      "MESH"
+    ],
+    "path_mode": "COPY",
+    "use_mesh_modifiers": true,
+    "use_selection": true
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\TombSpider\\TombSpider_Textured.fbx",
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Outputs\\TombSpider.glb",
+  "material_count": 1,
+  "mtl_bytes": 262,
+  "mtl_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\TombSpider\\TombSpider_Textured.mtl",
+  "normalization": {
+    "bounds_max": [
+      89.400634765625,
+      59.55470275878906,
+      114.99999237060547
+    ],
+    "bounds_min": [
+      -89.400634765625,
+      -59.55470275878906,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      178.80126953125,
+      119.10940551757812,
+      114.99999237060547
+    ],
+    "height": 114.99999237060547,
+    "scale_factor": 179.42812291336136
+  },
+  "obj_bytes": 7923610,
+  "obj_export_options": {
+    "apply_modifiers": true,
+    "apply_transform": false,
+    "export_materials": true,
+    "export_normals": true,
+    "export_pbr_extensions": false,
+    "export_selected_objects": true,
+    "export_uv": true,
+    "global_scale": 1.0,
+    "path_mode": "RELATIVE"
+  },
+  "obj_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\TombSpider\\TombSpider_Textured.obj",
+  "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\TombSpider",
+  "texture_usage": [
+    {
+      "image": "Image_0",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture"
+    },
+    {
+      "image": "Image_1",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture.001"
+    }
+  ],
+  "textures": [
+    {
+      "image": "Image_0",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\TombSpider\\Textures\\TombSpider_00_Image_0.png",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "image": "Image_1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\TombSpider\\Textures\\TombSpider_01_Image_1.png",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "vertex_count": 50081
+}

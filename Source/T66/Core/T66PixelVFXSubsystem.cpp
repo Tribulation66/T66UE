@@ -113,6 +113,33 @@ void UT66PixelVFXSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
+#if !UE_BUILD_SHIPPING
+FT66WorldRuntimeDebugSnapshot UT66PixelVFXSubsystem::GetWorldRuntimeDebugSnapshot() const
+{
+	FT66WorldRuntimeDebugSnapshot Snapshot;
+	Snapshot.SystemName = TEXT("UT66PixelVFXSubsystem");
+	Snapshot.AddCounter(TEXT("requested_this_frame"), RequestedThisFrame);
+	Snapshot.AddCounter(TEXT("emitted_this_frame"), EmittedThisFrame);
+	Snapshot.AddCounter(TEXT("dropped_this_frame"), DroppedThisFrame);
+	Snapshot.AddCounter(TEXT("total_requested"), TotalRequested);
+	Snapshot.AddCounter(TEXT("total_emitted"), TotalEmitted);
+	Snapshot.AddCounter(TEXT("total_dropped"), TotalDropped);
+	Snapshot.AddCounter(TEXT("async_load_handles_valid"), DefaultPixelSystemsLoadHandle.IsValid() ? 1 : 0);
+	Snapshot.AddCounter(TEXT("async_load_handles_loading"), (DefaultPixelSystemsLoadHandle.IsValid() && !DefaultPixelSystemsLoadHandle->HasLoadCompleted()) ? 1 : 0);
+	Snapshot.AddCounter(TEXT("cached_pixel_system_count"), (CachedPixelSystem ? 1 : 0) + (CachedLegacyPixelSystem ? 1 : 0));
+	Snapshot.AddCounter(TEXT("known_timer_handles"), 0);
+	Snapshot.AddCounter(TEXT("known_external_delegate_handles"), 0);
+	Snapshot.AddFlag(TEXT("cached_pixel_system_valid"), CachedPixelSystem != nullptr);
+	Snapshot.AddFlag(TEXT("cached_legacy_pixel_system_valid"), CachedLegacyPixelSystem != nullptr);
+	Snapshot.AddEvidence(TEXT("timers"), TEXT("No stored timer handles found."));
+	Snapshot.AddEvidence(TEXT("delegates"), TEXT("No external delegate handle is stored by this subsystem."));
+	Snapshot.AddEvidence(TEXT("async_loads"), TEXT("Default Niagara system streamable handle is counted in async_load_handles_* fields."));
+	Snapshot.AddMeasurementGap(TEXT("spawned_auto_destroy_niagara_components_by_owner"));
+	Snapshot.AddNote(TEXT("Spawned pixel Niagara components are world-owned/auto-destroy and are counted globally by the proof harness, not retained by this subsystem."));
+	return Snapshot;
+}
+#endif
+
 bool UT66PixelVFXSubsystem::DoesSupportWorldType(EWorldType::Type WorldType) const
 {
 	return WorldType == EWorldType::Game || WorldType == EWorldType::PIE;

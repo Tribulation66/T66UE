@@ -1,0 +1,7 @@
+{
+  "ClaudeTokensSpent": null,
+  "Model": "claude-opus-4-8",
+  "Mode": "CrossReview",
+  "FailureKind": "ClaudeProcessFailed",
+  "CreatedAt": "20260605T131145"
+}

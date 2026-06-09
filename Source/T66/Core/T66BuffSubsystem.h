@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "T66BuffSubsystem.generated.h"
@@ -21,13 +22,13 @@ struct T66_API FT66RelicDefinition
 	FText DisplayName;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
-	ET66HeroStatType PrimaryStatType = ET66HeroStatType::Damage;
+	ET66HeroStatType BaseStatType = ET66HeroStatType::Damage;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
-	ET66SecondaryStatType SecondaryStatType = ET66SecondaryStatType::None;
+	ET66StatType StatType = ET66StatType::None;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
-	bool bUsesSecondaryStat = false;
+	bool bUsesStat = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
 	bool bIsSolomonsRing = false;
@@ -60,16 +61,18 @@ public:
 	static const FString BuffSaveSlotName;
 	static constexpr int32 BuffSaveUserIndex = 0;
 
-	/** Legacy fill-step constant retained for save compatibility; live permanent progression is flat Relics. */
+	/** Permanent Relic progression has four visible rarity tiers. Legacy wedge arrays still deserialize older saves. */
 	static constexpr int32 MaxFillStepsPerStat = 4;
+	static constexpr int32 MaxRelicRarityTier = 4;
 	static constexpr int32 PermanentBuffUnlockCostCC = 10;
 	static constexpr int32 RelicUnlockCostCC = 10;
 	static constexpr int32 RelicPermanentBonusStatPoints = 1;
 	static constexpr int32 SingleUseBuffCostCC = 1;
 	static constexpr int32 MaxSelectedSingleUseBuffs = 4;
-	static constexpr float SingleUseSecondaryBuffMultiplier = 1.10f;
+	static constexpr float SingleUseStatBuffMultiplier = 1.10f;
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Buffs")
 	int32 GetChadCouponBalance() const;
@@ -136,13 +139,22 @@ public:
 	int32 GetRelicCost(FName RelicID) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
+	int32 GetRelicTierValue(FName RelicID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
+	ET66ItemRarity GetRelicRarity(FName RelicID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
+	bool IsRelicMaxTier(FName RelicID) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
 	bool HasSolomonsRing() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
-	int32 GetRelicPrimaryStatBonus(ET66HeroStatType StatType) const;
+	int32 GetRelicBaseStatBonus(ET66HeroStatType StatType) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
-	int32 GetRelicSecondaryStatBonus(ET66SecondaryStatType StatType) const;
+	int32 GetRelicStatBonus(ET66StatType StatType) const;
 
 	static const TArray<FT66RelicDefinition>& GetAllRelicDefinitions();
 
@@ -152,34 +164,34 @@ public:
 
 	/** Returns true if at least one copy of this temporary buff is owned and available to be selected. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	bool HasPendingSingleUseBuff(ET66SecondaryStatType StatType) const;
+	bool HasPendingSingleUseBuff(ET66StatType StatType) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	int32 GetOwnedSingleUseBuffCount(ET66SecondaryStatType StatType) const;
+	int32 GetOwnedSingleUseBuffCount(ET66StatType StatType) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	bool IsSingleUseBuffSelected(ET66SecondaryStatType StatType) const;
+	bool IsSingleUseBuffSelected(ET66StatType StatType) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	int32 GetSelectedSingleUseBuffCountForStat(ET66SecondaryStatType StatType) const;
+	int32 GetSelectedSingleUseBuffCountForStat(ET66StatType StatType) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	int32 GetSelectedSingleUseBuffCount() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	TArray<ET66SecondaryStatType> GetOwnedSingleUseBuffs() const;
+	TArray<ET66StatType> GetOwnedSingleUseBuffs() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	TArray<ET66SecondaryStatType> GetSelectedSingleUseBuffs() const;
+	TArray<ET66StatType> GetSelectedSingleUseBuffs() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	TArray<ET66SecondaryStatType> GetSelectedSingleUseBuffSlots() const;
+	TArray<ET66StatType> GetSelectedSingleUseBuffSlots() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	ET66SecondaryStatType GetSelectedSingleUseBuffSlot(int32 SlotIndex) const;
+	ET66StatType GetSelectedSingleUseBuffSlot(int32 SlotIndex) const;
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	bool SetSelectedSingleUseBuffSlot(int32 SlotIndex, ET66SecondaryStatType StatType);
+	bool SetSelectedSingleUseBuffSlot(int32 SlotIndex, ET66StatType StatType);
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool ClearSelectedSingleUseBuffSlot(int32 SlotIndex);
@@ -188,7 +200,7 @@ public:
 	bool IsSelectedSingleUseBuffSlotOwned(int32 SlotIndex) const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
-	int32 GetSelectedSingleUseBuffSlotAssignedCountForStat(ET66SecondaryStatType StatType) const;
+	int32 GetSelectedSingleUseBuffSlotAssignedCountForStat(ET66StatType StatType) const;
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool PurchaseSelectedSingleUseBuffSlot(int32 SlotIndex);
@@ -209,13 +221,13 @@ public:
 	bool IsHeroSelectionSingleUseBuffEditActive() const { return bHeroSelectionSingleUseBuffEditActive; }
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	bool SetSingleUseBuffSelected(ET66SecondaryStatType StatType, bool bSelected);
+	bool SetSingleUseBuffSelected(ET66StatType StatType, bool bSelected);
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	bool AddSelectedSingleUseBuff(ET66SecondaryStatType StatType);
+	bool AddSelectedSingleUseBuff(ET66StatType StatType);
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	bool RemoveSelectedSingleUseBuff(ET66SecondaryStatType StatType);
+	bool RemoveSelectedSingleUseBuff(ET66StatType StatType);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	int32 GetSingleUseBuffCost() const { return SingleUseBuffCostCC; }
@@ -224,17 +236,17 @@ public:
 	bool AreSingleUseBuffPurchasesAllowed() const;
 
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
-	bool PurchaseSingleUseBuff(ET66SecondaryStatType StatType);
+	bool PurchaseSingleUseBuff(ET66StatType StatType);
 
-	TMap<ET66SecondaryStatType, float> GetPendingSingleUseBuffMultipliers() const;
+	TMap<ET66StatType, float> GetPendingSingleUseBuffMultipliers() const;
 
-	TMap<ET66SecondaryStatType, float> ConsumePendingSingleUseBuffMultipliers();
+	TMap<ET66StatType, float> ConsumePendingSingleUseBuffMultipliers();
 
-	static const TArray<ET66SecondaryStatType>& GetAllSingleUseBuffTypes();
+	static const TArray<ET66StatType>& GetAllSingleUseBuffTypes();
 
 #if !UE_BUILD_SHIPPING
 	void DebugSetDiplomaUnlockedSteps(ET66HeroStatType StatType, int32 Count);
-	void DebugGrantSingleUseBuff(ET66SecondaryStatType StatType, int32 Count, bool bSelectForNextRun);
+	void DebugGrantSingleUseBuff(ET66StatType StatType, int32 Count, bool bSelectForNextRun);
 #endif
 
 private:
@@ -253,14 +265,17 @@ private:
 	void MigrateV2ToV3BodyParts();
 	void MigrateV3ToV4FillSteps();
 	void MigrateV4ToV5UnifiedBuffs();
-	void MigrateV5ToV6SecondarySingleUseBuffs();
+	void MigrateV5ToV6StatSingleUseBuffs();
 	void MigrateV6ToV7SelectedSingleUseBuffs();
 	void MigrateV7ToV8TemporaryBuffPresets();
 	void MigrateV8ToV9PrimaryAccuracy();
 	void MigrateV9ToV10SingleLoadoutSlots();
 	void MigrateV10ToV11PrimarySpeed();
 	void MigrateV11ToV12Relics();
+	void MigrateV12ToV13RelicTiers();
 	void Save();
+	bool HandleShutdown(const FT66ShutdownContext& Context);
+	bool FlushPendingDurableState(const TCHAR* Reason);
 	TArray<uint8>* GetFillStepStatesForStat(ET66HeroStatType StatType);
 	const TArray<uint8>* GetFillStepStatesForStat(ET66HeroStatType StatType) const;
 	void EnsureFillStepStatesSize(TArray<uint8>& Arr);
@@ -271,15 +286,20 @@ private:
 	const TArray<uint8>* GetSelectedSingleUseStates() const;
 	void EnsureSelectedSingleUseStatesSize(TArray<uint8>& Arr) const;
 	void SanitizeSelectedSingleUseStates(TArray<uint8>& SelectedStates, const TArray<uint8>& OwnedStates) const;
-	void EnsureSelectedSingleUseBuffSlotsSize(TArray<ET66SecondaryStatType>& Slots) const;
+	void EnsureSelectedSingleUseBuffSlotsSize(TArray<ET66StatType>& Slots) const;
 	void BuildSelectedSingleUseStateSnapshot(const TArray<uint8>& OwnedStates, TArray<uint8>& OutSelectedStates) const;
 	bool EnsureSelectedSingleUseBuffLoadoutValid();
 	bool RebuildSelectedSingleUseStatesFromLoadout();
 	int32 GetRandomBonusForStat(ET66HeroStatType StatType) const;
 	int32 GetStatIndex(ET66HeroStatType StatType) const;
-	FName GetRelicIDForPrimaryStat(ET66HeroStatType StatType) const;
+	FName GetRelicIDForBaseStat(ET66HeroStatType StatType) const;
 	const FT66RelicDefinition* FindRelicDefinition(FName RelicID) const;
 	bool EnsureRelicOwnershipValid();
-	int32 GetSingleUseBuffIndex(ET66SecondaryStatType StatType) const;
+	int32 GetSingleUseBuffIndex(ET66StatType StatType) const;
 	void AddBonusForStat(FT66HeroStatBonuses& Bonuses, ET66HeroStatType StatType, int32 Amount) const;
+
+	bool bBuffSaveFlushNeeded = false;
+	int64 BuffSaveAsyncSequence = 0;
+	int64 PendingBuffSaveSequence = 0;
+	FT66ShutdownParticipantHandle ShutdownParticipantHandle;
 };

@@ -1,0 +1,247 @@
+[
+  {
+    "asset_id": "Companion_01",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Companions\\Demo\\Companion_01\\FriendSlop_Companion_01_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Companion_01.png"
+  },
+  {
+    "asset_id": "Companion_02",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Companions\\Demo\\Companion_02\\FriendSlop_Companion_02_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Companion_02.png"
+  },
+  {
+    "asset_id": "Companion_03",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Companions\\Demo\\Companion_03\\FriendSlop_Companion_03_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Companion_03.png"
+  },
+  {
+    "asset_id": "Pet_Dungeon_SewerSlimeKing",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Pets\\Easy\\Pet_Dungeon_SewerSlimeKing\\FriendSlop_Pet_Dungeon_SewerSlimeKing_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Pet_Dungeon_SewerSlimeKing.png"
+  },
+  {
+    "asset_id": "Pet_Dungeon_WebMatriarch",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Pets\\Easy\\Pet_Dungeon_WebMatriarch\\FriendSlop_Pet_Dungeon_WebMatriarch_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Pet_Dungeon_WebMatriarch.png"
+  },
+  {
+    "asset_id": "Pet_Dungeon_BoneJailer",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Pets\\Easy\\Pet_Dungeon_BoneJailer\\FriendSlop_Pet_Dungeon_BoneJailer_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Pet_Dungeon_BoneJailer.png"
+  },
+  {
+    "asset_id": "Slime",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\Slime\\FriendSlop_EasyMob_Slime_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Slime.png"
+  },
+  {
+    "asset_id": "BoneWalker",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\BoneWalker\\FriendSlop_EasyMob_BoneWalker_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\BoneWalker.png"
+  },
+  {
+    "asset_id": "CaveBat",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\CaveBat\\FriendSlop_EasyMob_CaveBat_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\CaveBat.png"
+  },
+  {
+    "asset_id": "CryptWraith",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\CryptWraith\\FriendSlop_EasyMob_CryptWraith_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\CryptWraith.png"
+  },
+  {
+    "asset_id": "CursedCrow",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\CursedCrow\\FriendSlop_EasyMob_CursedCrow_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\CursedCrow.png"
+  },
+  {
+    "asset_id": "FamishedGhoul",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\FamishedGhoul\\FriendSlop_EasyMob_FamishedGhoul_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\FamishedGhoul.png"
+  },
+  {
+    "asset_id": "HexSlinger",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\HexSlinger\\FriendSlop_EasyMob_HexSlinger_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\HexSlinger.png"
+  },
+  {
+    "asset_id": "MimicLure",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\MimicLure\\FriendSlop_EasyMob_MimicLure_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\MimicLure.png"
+  },
+  {
+    "asset_id": "RatPack",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\RatPack\\FriendSlop_EasyMob_RatPack_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\RatPack.png"
+  },
+  {
+    "asset_id": "StoneSentinel",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\StoneSentinel\\FriendSlop_EasyMob_StoneSentinel_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\StoneSentinel.png"
+  },
+  {
+    "asset_id": "TombSpider",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\TombSpider\\FriendSlop_EasyMob_TombSpider_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\TombSpider.png"
+  },
+  {
+    "asset_id": "BoneConjurer",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Mobs\\Easy\\BoneConjurer\\FriendSlop_EasyMob_BoneConjurer_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\BoneConjurer.png"
+  },
+  {
+    "asset_id": "Dungeon_BaelFallenChad",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Bosses\\Easy\\Dungeon_BaelFallenChad\\FriendSlop_EasyBoss_Dungeon_BaelFallenChad_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Dungeon_BaelFallenChad.png"
+  },
+  {
+    "asset_id": "Dungeon_BoneJailer",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Bosses\\Easy\\Dungeon_BoneJailer\\FriendSlop_EasyBoss_Dungeon_BoneJailer_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Dungeon_BoneJailer.png"
+  },
+  {
+    "asset_id": "Dungeon_SewerSlimeKing",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Bosses\\Easy\\Dungeon_SewerSlimeKing\\FriendSlop_EasyBoss_Dungeon_SewerSlimeKing_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Dungeon_SewerSlimeKing.png"
+  },
+  {
+    "asset_id": "Dungeon_WebMatriarch",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Bosses\\Easy\\Dungeon_WebMatriarch\\FriendSlop_EasyBoss_Dungeon_WebMatriarch_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Dungeon_WebMatriarch.png"
+  },
+  {
+    "asset_id": "CasinoNPC",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\NPCs\\Easy\\CasinoNPC\\FriendSlop_NPC_CasinoNPC_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\CasinoNPC.png"
+  },
+  {
+    "asset_id": "Saint",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\NPCs\\Easy\\Saint\\FriendSlop_NPC_Saint_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Saint.png"
+  },
+  {
+    "asset_id": "Ouroboros",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\NPCs\\Easy\\Ouroboros\\FriendSlop_NPC_Ouroboros_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Ouroboros.png"
+  },
+  {
+    "asset_id": "VendorNPC",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\NPCs\\Easy\\VendorNPC\\FriendSlop_NPC_VendorNPC_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\VendorNPC.png"
+  },
+  {
+    "asset_id": "LoanShark",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\NPCs\\Easy\\LoanShark\\FriendSlop_NPC_LoanShark_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\LoanShark.png"
+  },
+  {
+    "asset_id": "AccuracyBoost_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Boosts\\AccuracyBoost\\FriendSlop_Interactable_AccuracyBoost_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\AccuracyBoost_Pixal3D.png"
+  },
+  {
+    "asset_id": "ArmorBoost_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Boosts\\ArmorBoost\\FriendSlop_Interactable_ArmorBoost_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\ArmorBoost_Pixal3D.png"
+  },
+  {
+    "asset_id": "AttackScaleBoost_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Boosts\\AttackScaleBoost\\FriendSlop_Interactable_AttackScaleBoost_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\AttackScaleBoost_Pixal3D.png"
+  },
+  {
+    "asset_id": "AttackSpeedBoost_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Boosts\\AttackSpeedBoost\\FriendSlop_Interactable_AttackSpeedBoost_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\AttackSpeedBoost_Pixal3D.png"
+  },
+  {
+    "asset_id": "DamageBoost_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Boosts\\DamageBoost\\FriendSlop_Interactable_DamageBoost_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\DamageBoost_Pixal3D.png"
+  },
+  {
+    "asset_id": "EvasionBoost_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Boosts\\EvasionBoost\\FriendSlop_Interactable_EvasionBoost_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\EvasionBoost_Pixal3D.png"
+  },
+  {
+    "asset_id": "LuckBoost_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Boosts\\LuckBoost\\FriendSlop_Interactable_LuckBoost_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\LuckBoost_Pixal3D.png"
+  },
+  {
+    "asset_id": "SpeedBoost_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Boosts\\SpeedBoost\\FriendSlop_Interactable_SpeedBoost_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\SpeedBoost_Pixal3D.png"
+  },
+  {
+    "asset_id": "Chest_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Chest\\FriendSlop_Interactable_Chest_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Chest_Pixal3D.png"
+  },
+  {
+    "asset_id": "CompanionCage_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\CompanionCage\\FriendSlop_Interactable_CompanionCage_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\CompanionCage_Pixal3D.png"
+  },
+  {
+    "asset_id": "SM_CowardiceGate_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\CowardiceGate\\FriendSlop_Interactable_CowardiceGate_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\SM_CowardiceGate_Pixal3D.png"
+  },
+  {
+    "asset_id": "SM_LootCrate",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Crate\\FriendSlop_Interactable_Crate_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\SM_LootCrate.png"
+  },
+  {
+    "asset_id": "DifficultyTotem_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\DifficultyTotem\\FriendSlop_Interactable_DifficultyTotem_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\DifficultyTotem_Pixal3D.png"
+  },
+  {
+    "asset_id": "TutorialGate_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\FloorGate\\FriendSlop_Interactable_FloorGate_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\TutorialGate_Pixal3D.png"
+  },
+  {
+    "asset_id": "Fountain_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Fountain\\FriendSlop_Interactable_Fountain_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Fountain_Pixal3D.png"
+  },
+  {
+    "asset_id": "IdolAltar_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\IdolAltar\\FriendSlop_Interactable_IdolAltar_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\IdolAltar_Pixal3D.png"
+  },
+  {
+    "asset_id": "LootBag_Shared_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\LootBag\\FriendSlop_Interactable_LootBag_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\LootBag_Shared_Pixal3D.png"
+  },
+  {
+    "asset_id": "LootWheel_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\LootWheel\\FriendSlop_Interactable_LootWheel_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\LootWheel_Pixal3D.png"
+  },
+  {
+    "asset_id": "SM_StageGate_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\NextStageGate\\FriendSlop_Interactable_NextStageGate_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\SM_StageGate_Pixal3D.png"
+  },
+  {
+    "asset_id": "Vehicle_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\Vehicle\\FriendSlop_Interactable_Vehicle_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\Vehicle_Pixal3D.png"
+  },
+  {
+    "asset_id": "WeaponAltar_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\Interactables\\Easy\\WeaponAltar\\FriendSlop_Interactable_WeaponAltar_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\WeaponAltar_Pixal3D.png"
+  },
+  {
+    "asset_id": "SkullRemains_Easy_Pixal3D",
+    "source": "C:\\UE\\T66\\FriendSlop\\ImageGen\\MobLoot\\Easy\\BonesAndSkulls\\FriendSlop_MobLoot_BonesAndSkulls_v01.png",
+    "staged": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Sources\\SkullRemains_Easy_Pixal3D.png"
+  }
+]

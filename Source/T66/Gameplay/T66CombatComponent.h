@@ -137,6 +137,15 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
 
+	/**
+	 * Per-attack gate set by PerformSlash (Hero_1 AOE) and the Idol_Fire_Pierce dispatch
+	 * when the physical-knockback test path is applying its own ApplyPhysicalKnockback at
+	 * the per-target callsite. ApplyDamageToTargetHandle checks this flag and SKIPS the
+	 * legacy ApplyAutoAttackKnockback for enemies/mobs so the two paths never double-knock.
+	 * Always reset to false at the end of the attack lambda. Default false (legacy behavior).
+	 */
+	bool bSuppressLegacyAutoAttackKnockback = false;
+
 	UPROPERTY(Transient)
 	TObjectPtr<UT66FloatingCombatTextSubsystem> CachedFloatingCombatText = nullptr;
 
@@ -257,7 +266,7 @@ protected:
 	bool TrySpawnBoundWeaponBaseSlashVFX(const FT66CombatImpactContext& WeaponImpactContext, int32 EffectiveDamage, FName HeroID, ET66AttackCategory AttackCategory);
 	bool TrySpawnBoundIdolImpactVFX(const FT66CombatImpactContext& IdolImpactContext, FName IdolID, ET66ItemRarity Rarity, float Radius, bool& bOutBindingResolved);
 	void SpawnWaterIdolImpactPlaceholderVFX(const FT66CombatImpactContext& IdolImpactContext, float Radius);
-	void SpawnIdolImpactPlaceholderVFX(const FT66CombatImpactContext& IdolImpactContext, FName IdolID, ET66AttackCategory Category, float LingerSeconds);
+	void SpawnIdolImpactPlaceholderVFX(const FT66CombatImpactContext& IdolImpactContext, FName IdolID, ET66ItemRarity Rarity, ET66AttackCategory Category, float LingerSeconds);
 
 	float BaseAttackRange = 0.f;
 	float BaseFireIntervalSeconds = 0.f;

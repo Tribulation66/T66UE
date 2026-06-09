@@ -72,7 +72,8 @@ public:
 
 	/**
 	 * Create the retro chromatic-aberration post-process material.
-	 * Loaded at runtime by T66RetroFXSubsystem.
+	 * Legacy: the RetroFX runtime feature was removed; this remains only until the
+	 * Content/Materials/Retro assets are deleted in the asset-cleanup phase.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "T66 Setup")
 	bool CreateRetroChromaticAberrationMaterial();

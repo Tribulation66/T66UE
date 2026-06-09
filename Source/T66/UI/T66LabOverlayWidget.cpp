@@ -131,7 +131,7 @@ void UT66LabOverlayWidget::OnExitLab()
 			GI->SelectedRunCategory = ET66RunCategory::Tower;
 		}
 	}
-	UGameplayStatics::OpenLevel(GetWorld(), UT66GameInstance::GetFrontendLevelName());
+	UT66GameInstance::TransitionToFrontendLevel(GetWorld());
 }
 
 void UT66LabOverlayWidget::OnToggleLabPanel()

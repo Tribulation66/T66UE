@@ -88,13 +88,11 @@ private:
 	{
 		FString PlayerId;
 		FString FriendName;
-		int32 Level = 1;
 		bool bOnline = false;
 		TSharedPtr<SBox> RootBox;
 		TSharedPtr<SBorder> RowBorder;
-		TSharedPtr<STextBlock> LevelText;
 		TSharedPtr<SButton> FavoriteButton;
-		TSharedPtr<STextBlock> FavoriteGlyphText;
+		TSharedPtr<SImage> FavoriteGlyphImage;
 		TSharedPtr<SButton> ActionButton;
 		TSharedPtr<SBorder> ActionFillBorder;
 		TSharedPtr<STextBlock> ActionText;
@@ -111,8 +109,11 @@ private:
 	TObjectPtr<UT66FrontendVideoPlayer> MainMenuBackgroundVideoPlayer;
 	TSharedPtr<SVerticalBox> FriendsListContainer;
 	TSharedPtr<FSlateBrush> LocalProfileAvatarBrush;
+	TStrongObjectPtr<UTexture2D> FixtureAvatarTexture;
 	TSharedPtr<FSlateBrush> CtaSkullIconBrush;
 	TStrongObjectPtr<UTexture2D> CtaSkullIconTexture;
+	TSharedPtr<FSlateBrush> FriendFavoriteStarBrush;
+	TStrongObjectPtr<UTexture2D> FriendFavoriteStarTexture;
 	TSharedPtr<FSlateBrush> DailyDescentIconBrush;
 	TStrongObjectPtr<UTexture2D> DailyDescentIconTexture;
 	TMap<FString, TSharedPtr<FSlateBrush>> FriendAvatarBrushes;

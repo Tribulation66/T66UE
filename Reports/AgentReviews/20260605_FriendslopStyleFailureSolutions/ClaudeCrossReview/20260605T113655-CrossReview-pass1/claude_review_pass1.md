@@ -1,0 +1,23 @@
+﻿Result: OK
+
+## Summary
+The Codex draft is strong and substantively matches my independent answer on all three points: it correctly identifies the root cause (the verifier scores chosen per-widget assertions, never whole-screen fidelity), proposes a containment/overflow assertion class for the sizing failure, and redefines DONE so a green PASS count cannot stand in for visual fidelity. It is solutions-only with no edits, satisfying the contract. Result is OK — Codex can present this directly. The one real risk is a possible contradiction with the existing FriendslopStyle instructions in Point 1.
+
+## Suggested Answer Patch
+- Point 1: add a one-line reconciliation note so Codex doesn't silently contradict the repo. Suggested insert after the "production-authored UI plates first" bullet:
+  > Note: `FRIENDSLOP_STYLE_IMPLEMENTATION_INSTRUCTIONS.md` currently frames the reference as a *visual-direction target, not a runtime paintover*, with chrome authored as sliced raster atoms rendered by Slate. This proposal shifts toward external-authored per-element plates. That is a deliberate change to the documented method, so it should be presented as "amend the instructions doc," not as "we already do this." Text/data/state must still never be baked into a plate.
+- Point 3: the Codex draft says "both Codex and Claude visually inspect" — keep, but add that the Validator must record the holistic verdict line *before* citing the PASS count, since deferring to the green number was the actual failure mode.
+
+## Issues To Fix
+- Point 1 vs. repo instructions: Codex endorses the user's "everyone uses Photoshop" instinct and prescribes per-element authored plates. The existing instructions encode the opposite default (reference-as-direction + Slate-rendered sliced atoms). Codex should either confirm by reading instructions 1-3 and the "What Not To Reuse" list, or frame Point 1 explicitly as a proposed amendment to that doc — not as a restatement of current policy.
+- Minor: Codex asserts "the runtime did load PNG assets … it was not pure Slate." That matches the observed evidence (`FT66FriendslopStyle` loads MainMenu PNGs), so it's fine, but it should stay scoped to the generic-blank-chrome problem rather than implying the architecture itself was correct.
+
+## Question For User
+None required. The user asked for solutions only; approval to *implement* any of these gates is downstream and already implied by "no implementation for now."
+
+## Evidence Or Verification Gaps
+- Neither model opened the actual contact-sheet PNG or the Round06 checklist; the overflow/quality failures are inferred from the prompt's stated evidence. The *mechanism* (no holistic/containment gate in `VerifyUIFidelity.py`) is confirmed from source; the *specific render* is taken on the user's report. Acceptable for a solutions proposal.
+- The Point 1 method claim should be verified against `FRIENDSLOP_STYLE_IMPLEMENTATION_INSTRUCTIONS.md` before Codex presents authored-plates as either net-new or already-policy.
+
+## Notes
+Both answers correctly treat Point 3 as the keystone and converge on: decouple checklist-pass from screen-pass, add a blocking holistic gate, and require the Validator to look at the image first. The Codex scorecard (first-glance, silhouette, scale hierarchy, material fidelity, overflow, content preservation) is a good concrete artifact and slightly more actionable than my prose version — worth keeping as-is.

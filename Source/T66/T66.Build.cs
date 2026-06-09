@@ -19,6 +19,7 @@ public class T66 : ModuleRules
 			"UMG",
 			"HTTP",
 			"Json",
+			"PhysicsCore",
 			"DeveloperSettings"
 		});
 

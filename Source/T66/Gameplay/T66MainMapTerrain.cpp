@@ -875,7 +875,7 @@ namespace T66MainMapTerrain
 				return false;
 			}
 
-			OutAssets.EnvironmentUnlitMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_Environment_Lit.M_Environment_Lit"));
+			OutAssets.EnvironmentUnlitMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_FriendSlop_FallGuys.M_FriendSlop_FallGuys"));
 			OutAssets.BlockMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerForest/MI_TowerForestGround.MI_TowerForestGround"));
 			OutAssets.SlopeMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof"));
 			OutAssets.DirtMaterial = OutAssets.BlockMaterial;

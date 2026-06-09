@@ -1,0 +1,114 @@
+{
+  "asset_name": "CryptWraith",
+  "bounds": {
+    "dimensions": [
+      92.96717834472656,
+      103.00611877441406,
+      150.0
+    ],
+    "max": [
+      46.48358917236328,
+      51.50305938720703,
+      150.0
+    ],
+    "min": [
+      -46.48358917236328,
+      -51.50305938720703,
+      0.0
+    ]
+  },
+  "fbx_bytes": 6115436,
+  "fbx_export_options": {
+    "add_leaf_bones": false,
+    "apply_scale_options": "FBX_SCALE_ALL",
+    "apply_unit_scale": true,
+    "bake_space_transform": false,
+    "embed_textures": true,
+    "global_scale": 0.01,
+    "mesh_smooth_type": "FACE",
+    "object_types": [
+      "MESH"
+    ],
+    "path_mode": "COPY",
+    "use_mesh_modifiers": true,
+    "use_selection": true
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CryptWraith\\CryptWraith_Textured.fbx",
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Outputs\\CryptWraith.glb",
+  "material_count": 1,
+  "mtl_bytes": 263,
+  "mtl_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CryptWraith\\CryptWraith_Textured.mtl",
+  "normalization": {
+    "bounds_max": [
+      46.48358917236328,
+      51.50305938720703,
+      150.0
+    ],
+    "bounds_min": [
+      -46.48358917236328,
+      -51.50305938720703,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      92.96717834472656,
+      103.00611877441406,
+      150.0
+    ],
+    "height": 150.0,
+    "scale_factor": 180.90208130141147
+  },
+  "obj_bytes": 8245672,
+  "obj_export_options": {
+    "apply_modifiers": true,
+    "apply_transform": false,
+    "export_materials": true,
+    "export_normals": true,
+    "export_pbr_extensions": false,
+    "export_selected_objects": true,
+    "export_uv": true,
+    "global_scale": 1.0,
+    "path_mode": "RELATIVE"
+  },
+  "obj_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CryptWraith\\CryptWraith_Textured.obj",
+  "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CryptWraith",
+  "texture_usage": [
+    {
+      "image": "Image_0",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture"
+    },
+    {
+      "image": "Image_1",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture.001"
+    }
+  ],
+  "textures": [
+    {
+      "image": "Image_0",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CryptWraith\\Textures\\CryptWraith_00_Image_0.png",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "image": "Image_1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CryptWraith\\Textures\\CryptWraith_01_Image_1.png",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "vertex_count": 53316
+}

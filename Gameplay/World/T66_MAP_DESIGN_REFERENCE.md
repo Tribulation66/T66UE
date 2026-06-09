@@ -11,7 +11,7 @@
 - Runtime map-layout selection has been removed, including the old non-tower layout variants and config/console overrides.
 - New runs and save-load restore now coerce the main gameplay map to the tower layout.
 - The active gameplay map family is the tower generator and floor-based traversal path, not the old one-board terrain preset selection flow.
-- Current normal tower pacing uses five floors:
+- Target normal tower pacing uses five floors, but the current parity tuning default in `Config/DefaultT66TowerTuning.ini` preserves the live 4-floor runtime until a tuning pass explicitly changes it:
   - `Floor 1 - Start`: weapon altar only; no enemies and no normal interactable scatter
   - `Floor 2` through `Floor 4`: gameplay floors with enemies and normal floor interactables
   - `Floor 5 - Boss`: boss flow only
@@ -52,8 +52,9 @@
   - spawns exactly one difficulty totem on every gameplay floor using floor-specific `T66_Tower_DifficultyTotem_##` tags, independent of the randomized saint floor selection
   - guarantees tower chest/crate rules by floor instead of using the old global stage scatter for those two interactables:
     - `Floor 1 - Start`: no chest, no crate
-    - floors `2-4`: `1-3` chests and `1-3` crates per floor
-    - `Floor 5 - Boss`: no chest, no crate
+    - current parity config floors `2-3`: `1-3` chests and `1-3` crates per floor
+    - target five-floor tuning floors `2-4`: `1-3` chests and `1-3` crates per floor
+    - boss floor: no chest, no crate
   - now rejects cross-floor tower placement traces and retries tower floor placement more aggressively, so gameplay-floor chest/crate/casino/utility placement stays on the intended floor instead of bleeding through floor gaps to another floor
   - snaps tower NPC/interactable spawns to an explicit requested floor and tags them with explicit tower-floor identity so floor-local placement and safety logic do not rely only on raw actor Z
   - re-snaps tower chest/crate/totem/wheel placements after rarity/configuration work so floor-local mesh swaps cannot pull those actors back onto the wrong floor

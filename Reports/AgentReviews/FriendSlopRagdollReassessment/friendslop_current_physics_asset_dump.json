@@ -1,0 +1,86 @@
+{
+  "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/PA_Hero_1_Chad_Male_FriendSlop_TestRoom",
+  "error": "UE Python did not expose skeletal body/constraint arrays for PhysicsAsset",
+  "available_members": [
+    "get_constraint_by_bone_names",
+    "get_constraint_by_name",
+    "get_constraints"
+  ],
+  "get_constraints": [
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AB40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA80) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AB40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA80) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AB40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA80) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AB40) {}>",
+      "members": []
+    },
+    {
+      "type": "<class 'ConstraintInstanceAccessor'>",
+      "repr": "<Struct 'ConstraintInstanceAccessor' (0x000002110333AA40) {}>",
+      "members": []
+    }
+  ]
+}

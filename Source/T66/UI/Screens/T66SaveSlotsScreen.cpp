@@ -1062,6 +1062,7 @@ void UT66SaveSlotsScreen::OnScreenActivated_Implementation()
 	}
 
 	RebuildVisibleSlotIndices();
+	ForceRebuildSlate();
 }
 
 void UT66SaveSlotsScreen::RefreshScreen_Implementation()
@@ -1122,14 +1123,7 @@ void UT66SaveSlotsScreen::OnLoadClicked(const int32 SlotIndex)
 		UIManager->HideAllUI();
 	}
 
-	if (Loaded->RunSnapshot.bValid)
-	{
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
-	}
-	else
-	{
-		GI->TransitionToGameplayLevel();
-	}
+	GI->TransitionToGameplayLevel();
 }
 
 void UT66SaveSlotsScreen::OnPreviewClicked(const int32 SlotIndex)
@@ -1162,14 +1156,7 @@ void UT66SaveSlotsScreen::OnPreviewClicked(const int32 SlotIndex)
 		UIManager->HideAllUI();
 	}
 
-	if (Loaded->RunSnapshot.bValid)
-	{
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());
-	}
-	else
-	{
-		GI->TransitionToGameplayLevel();
-	}
+	GI->TransitionToGameplayLevel();
 }
 
 void UT66SaveSlotsScreen::OnSlotClicked(const int32 SlotIndex)

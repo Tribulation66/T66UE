@@ -9,6 +9,6 @@ AT66MeleeEnemy::AT66MeleeEnemy()
 	EnemyFamily = ET66EnemyFamily::Melee;
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		Move->MaxWalkSpeed = 350.f;
+		Move->MaxWalkSpeed = 175.f;
 	}
 }

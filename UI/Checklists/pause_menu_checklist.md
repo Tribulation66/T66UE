@@ -14,6 +14,7 @@ Baseline dump: `C:\UE\T66\Saved\Codex\UI\PauseMenu\baseline_dump.json`
 - [ ] PauseMenu.Title | exists=true
 - [ ] PauseMenu.ResumeButton | exists=true
 - [ ] PauseMenu.SaveAndQuitButton | exists=true
+- [ ] PauseMenu.QuitButton | exists=true
 - [ ] PauseMenu.RestartButton | exists=true
 - [ ] PauseMenu.SettingsButton | exists=true
 - [ ] PauseMenu.AchievementsButton | exists=true
@@ -26,24 +27,26 @@ Baseline dump: `C:\UE\T66\Saved\Codex\UI\PauseMenu\baseline_dump.json`
 - [ ] PauseMenu.Root | w=1.000 | 0.005
 - [ ] PauseMenu.Root | h=1.000 | 0.005
 - [ ] PauseMenu.ModalPanel | x=0.342 | 0.020
-- [ ] PauseMenu.ModalPanel | y=0.112 | 0.020
+- [ ] PauseMenu.ModalPanel | y=0.096 | 0.020
 - [ ] PauseMenu.ModalPanel | w=0.315 | 0.020
-- [ ] PauseMenu.ModalPanel | h=0.776 | 0.020
+- [ ] PauseMenu.ModalPanel | h=0.807 | 0.020
 - [ ] PauseMenu.Title | x=0.445 | 0.025
-- [ ] PauseMenu.Title | y=0.157 | 0.025
+- [ ] PauseMenu.Title | y=0.137 | 0.025
 - [ ] PauseMenu.ResumeButton | x=0.371 | 0.020
-- [ ] PauseMenu.ResumeButton | y=0.273 | 0.020
-- [ ] PauseMenu.SaveAndQuitButton | y=0.377 | 0.020
-- [ ] PauseMenu.RestartButton | y=0.481 | 0.020
-- [ ] PauseMenu.SettingsButton | y=0.585 | 0.020
-- [ ] PauseMenu.AchievementsButton | y=0.689 | 0.020
-- [ ] PauseMenu.LeaderboardButton | y=0.793 | 0.020
+- [ ] PauseMenu.ResumeButton | y=0.244 | 0.020
+- [ ] PauseMenu.SaveAndQuitButton | y=0.338 | 0.020
+- [ ] PauseMenu.QuitButton | y=0.431 | 0.020
+- [ ] PauseMenu.RestartButton | y=0.525 | 0.020
+- [ ] PauseMenu.SettingsButton | y=0.619 | 0.020
+- [ ] PauseMenu.AchievementsButton | y=0.712 | 0.020
+- [ ] PauseMenu.LeaderboardButton | y=0.806 | 0.020
 
 ## Colors
 
 - [ ] PauseMenu.ModalPanel | button_state=Default
 - [ ] PauseMenu.ResumeButton | button_state=Selected
 - [ ] PauseMenu.SaveAndQuitButton | button_state=Default
+- [ ] PauseMenu.QuitButton | button_state=Default
 - [ ] PauseMenu.RestartButton | button_state=Default
 - [ ] PauseMenu.SettingsButton | button_state=Default
 - [ ] PauseMenu.AchievementsButton | button_state=Default
@@ -56,6 +59,7 @@ Baseline dump: `C:\UE\T66\Saved\Codex\UI\PauseMenu\baseline_dump.json`
 - [ ] PauseMenu.Title | is_label=true
 - [ ] PauseMenu.ResumeButton | text=RESUME GAME
 - [ ] PauseMenu.SaveAndQuitButton | text=SAVE AND QUIT
+- [ ] PauseMenu.QuitButton | text=QUIT
 - [ ] PauseMenu.RestartButton | text=RESTART
 - [ ] PauseMenu.SettingsButton | text=SETTINGS
 - [ ] PauseMenu.AchievementsButton | text=ACHIEVEMENTS
@@ -67,6 +71,8 @@ Baseline dump: `C:\UE\T66\Saved\Codex\UI\PauseMenu\baseline_dump.json`
 - [ ] PauseMenu.ResumeButton | hover_capable=true
 - [ ] PauseMenu.SaveAndQuitButton | has_click_handler=true
 - [ ] PauseMenu.SaveAndQuitButton | hover_capable=true
+- [ ] PauseMenu.QuitButton | has_click_handler=true
+- [ ] PauseMenu.QuitButton | hover_capable=true
 - [ ] PauseMenu.RestartButton | has_click_handler=true
 - [ ] PauseMenu.RestartButton | hover_capable=true
 - [ ] PauseMenu.SettingsButton | has_click_handler=true

@@ -4,6 +4,7 @@
 
 #include "TimerManager.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SCheckBox.h"
 
 using namespace T66HeroSelectionPrivate;
 
@@ -315,19 +316,15 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 
 	auto MakeSkinRow = [&](
 		const TCHAR* RowTag,
-		const TCHAR* PortraitTag,
 		const TCHAR* NameTag,
 		const FName SkinID,
 		const FText& Name,
-		const FSlateBrush* Brush,
 		const float RowHeight,
 		TFunction<void(const TSharedRef<SConstraintCanvas>&)> AddActions)
 	{
 		const ET66FlatState RowState = CurrentFlatSkinID == SkinID ? ET66FlatState::Selected : ET66FlatState::Default;
 		const TSharedRef<SConstraintCanvas> RowCanvas = HSMakeCanvas();
-		HSAddCanvasSlot(RowCanvas, 0.f, 0.f, 127.f, RowHeight,
-			FT66FlatStyle::MakeFlatPortraitSlot(RowState, Brush, nullptr, FVector2D(118.f, RowHeight - 8.f), HSName(PortraitTag)));
-		HSAddCanvasSlot(RowCanvas, 147.f, 20.f, 185.f, 34.f,
+		HSAddCanvasSlot(RowCanvas, 20.f, 20.f, 300.f, 34.f,
 			HSTaggedText(NameTag, Name, 18, FT66FlatStyle::TextColorForState(RowState)));
 		AddActions(RowCanvas);
 
@@ -459,11 +456,9 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(SkinsCanvas, 19.f, 59.f, 495.f, 112.f,
 		MakeSkinRow(
 			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.Default"),
-			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.Default.Portrait"),
 			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.Default.Name"),
 			FName(TEXT("Default")),
 			NSLOCTEXT("T66.HeroSelection", "FlatSkinDefault", "DEFAULT"),
-			SkinDefaultBrush,
 			112.f,
 			[](const TSharedRef<SConstraintCanvas>& RowCanvas)
 			{
@@ -473,11 +468,9 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(SkinsCanvas, 19.f, 184.f, 495.f, 111.f,
 		MakeSkinRow(
 			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin"),
-			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin.Portrait"),
 			TEXT("HeroSelection.LeftColumn.SkinsPanel.SkinRow.DemoSkin.Name"),
 			UT66SkinSubsystem::DemoSkinID,
 			NSLOCTEXT("T66.HeroSelection", "FlatSkinHeroDemo", "DEMO"),
-			SkinBeachBrush,
 			111.f,
 			[&](const TSharedRef<SConstraintCanvas>& RowCanvas)
 			{
@@ -782,10 +775,8 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		GenderToggleButtons[0]);
 	HSAddCanvasSlot(CompanionPanel, 257.f, 13.f, 202.f, 58.f,
 		GenderToggleButtons[1]);
-	HSAddCanvasSlot(CompanionPanel, 19.f, 103.f, 211.f, 72.f,
+	HSAddCanvasSlot(CompanionPanel, 19.f, 103.f, 440.f, 72.f,
 		MakeButton(TEXT("HeroSelection.BottomRow.CompanionPanel.ChooseCompanionButton"), FText::FromString(TEXT("GIRLFRIEND")), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleCompanionClicked), 0.f, 72.f, 15));
-	HSAddCanvasSlot(CompanionPanel, 250.f, 103.f, 209.f, 72.f,
-		MakeButton(TEXT("HeroSelection.BottomRow.CompanionPanel.ChoosePetButton"), FText::FromString(TEXT("PET")), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandlePetClicked), 0.f, 72.f, 15));
 
 	auto MakeDifficultyMenu = [this, Loc, T66GI, Difficulties]() -> TSharedRef<SWidget>
 	{
@@ -855,8 +846,6 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 	HSAddCanvasSlot(RightClusterCanvas, 440.f, 82.f, 192.f, 48.f,
 		MakeButton(TEXT("HeroSelection.BottomRow.TutorialButton"), FText::FromString(TEXT("TUTORIAL")), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTutorialClicked), 0.f, 48.f, 16));
 	HSAddCanvasSlot(RightClusterCanvas, 440.f, 141.f, 192.f, 48.f,
-		MakeButton(TEXT("HeroSelection.BottomRow.ModsButton"), FText::FromString(TEXT("MODS")), ET66FlatState::Default, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleModsClicked), 0.f, 48.f, 16));
-	HSAddCanvasSlot(RightClusterCanvas, 440.f, 200.f, 192.f, 48.f,
 		MakeButton(TEXT("HeroSelection.BottomRow.TestButton"), FText::FromString(TEXT("TEST")), ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleTestClicked), 0.f, 48.f, 16));
 
 	const TSharedRef<SConstraintCanvas> BottomCanvas = HSMakeCanvas();
@@ -894,6 +883,90 @@ TSharedRef<SWidget> UT66HeroSelectionScreen::BuildSlateUI()
 		ET66FlatState::Default);
 
 	UpdateHeroDisplay();
+
+	if (bShowRunWillNotCountWarning)
+	{
+		const FText WarningBody = FText::FromString(RunWillNotCountReasonText.IsEmpty()
+			? FString(TEXT("This run will not count for the leaderboard."))
+			: RunWillNotCountReasonText);
+
+		Root = SNew(SOverlay)
+			+ SOverlay::Slot()
+			[
+				Root
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				FT66FlatStyle::AttachMetadata(
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+					.BorderBackgroundColor(FLinearColor(0.f, 0.f, 0.f, 0.72f))
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						FT66FlatStyle::MakeFlatPanel(
+							ET66FlatState::Selected,
+							FMargin(32.f, 28.f),
+							SNew(SBox)
+							.WidthOverride(620.f)
+							[
+								SNew(SVerticalBox)
+								+ SVerticalBox::Slot().AutoHeight()
+								[
+									HSTaggedText(TEXT("HeroSelection.RunWillNotCountWarning.Title"), NSLOCTEXT("T66.HeroSelection", "RunWillNotCountWarningTitle", "RUN WILL NOT COUNT"), 30, FSlateColor(FT66FlatStyle::PrimaryText()), ETextJustify::Center)
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 18.f, 0.f, 0.f)
+								[
+									FT66FlatStyle::AttachMetadata(
+										SNew(STextBlock)
+										.Text(WarningBody)
+										.Font(FT66FlatStyle::MakeBoldFont(20))
+										.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+										.AutoWrapText(true)
+										.WrapTextAt(560.f)
+										.Justification(ETextJustify::Center),
+										HSName(TEXT("HeroSelection.RunWillNotCountWarning.Body")),
+										TEXT("Label"),
+										ET66FlatState::Default)
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 22.f, 0.f, 0.f)
+								[
+									FT66FlatStyle::AttachMetadata(
+										SNew(SCheckBox)
+										.IsChecked_Lambda([this]()
+										{
+											return bRunWillNotCountDontShowAgainChecked ? ECheckBoxState::Checked : ECheckBoxState::Unchecked;
+										})
+										.OnCheckStateChanged_Lambda([this](ECheckBoxState NewState)
+										{
+											bRunWillNotCountDontShowAgainChecked = NewState == ECheckBoxState::Checked;
+										})
+										[
+											SNew(STextBlock)
+											.Text(NSLOCTEXT("T66.HeroSelection", "RunWillNotCountDoNotShowAgain", "DO NOT SHOW AGAIN"))
+											.Font(FT66FlatStyle::MakeBoldFont(16))
+											.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+										],
+										HSName(TEXT("HeroSelection.RunWillNotCountWarning.DoNotShowAgain")),
+										TEXT("Checkbox"),
+										ET66FlatState::Default)
+								]
+								+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 24.f, 0.f, 0.f)
+								.HAlign(HAlign_Center)
+								[
+									MakeButton(TEXT("HeroSelection.RunWillNotCountWarning.OkayButton"), NSLOCTEXT("T66.Common", "OkayAllCaps", "OKAY"), ET66FlatState::Selected, FOnClicked::CreateUObject(this, &UT66HeroSelectionScreen::HandleRunWillNotCountOkayClicked), 180.f, 54.f, 20)
+								]
+							],
+							nullptr,
+							HSName(TEXT("HeroSelection.RunWillNotCountWarning.Panel")))
+					],
+					HSName(TEXT("HeroSelection.RunWillNotCountWarning.Overlay")),
+					TEXT("ModalOverlay"),
+					ET66FlatState::Default)
+			];
+	}
 
 	return Root;
 }

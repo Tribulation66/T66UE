@@ -2,10 +2,7 @@
 
 #include "UI/T66UIManager.h"
 #include "Core/T66LagTrackerSubsystem.h"
-#include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66ReleaseVariantSubsystem.h"
-#include "Core/T66RetroFXSubsystem.h"
-#include "UI/Screens/T66SettingsScreen.h"
 #include "UI/T66FrontendUIRootWidget.h"
 #include "UI/T66FrontendTopBarWidget.h"
 #include "UI/T66ScreenBase.h"
@@ -15,8 +12,6 @@
 #include "Blueprint/UserWidget.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
-#include "Misc/CommandLine.h"
-#include "Misc/Parse.h"
 #include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66UIManager, Log, All);
@@ -31,21 +26,6 @@ namespace
 		}
 
 		return FString::Printf(TEXT("Screen_%d"), static_cast<int32>(ScreenType));
-	}
-
-	void ApplyFrontendCRTBypassIfRequested(FT66RetroFXSettings& Settings)
-	{
-		if (FParse::Param(FCommandLine::Get(), TEXT("T66DisableFrontendCRT")))
-		{
-			Settings.UIFullScreenCRTEnabled = false;
-			Settings.UICRTScanlineStrength = 0.0f;
-			Settings.UICRTPhosphorMaskStrength = 0.0f;
-			Settings.UICRTBloomStrength = 0.0f;
-			Settings.UICRTChromaticAberrationStrength = 0.0f;
-			Settings.UICRTBarrelDistortionStrength = 0.0f;
-			Settings.UICRTVignetteStrength = 0.0f;
-			Settings.UICRTColorQuantizationBits = 8;
-		}
 	}
 
 	void ApplyDirectModalInputMode(APlayerController* PlayerController, UUserWidget* FocusWidget)
@@ -72,7 +52,6 @@ UT66UIManager::UT66UIManager()
 	CurrentScreen = nullptr;
 	CurrentModal = nullptr;
 	FrontendTopBar = nullptr;
-	RetroFXPreviewPopup = nullptr;
 	FrontendRoot = nullptr;
 }
 
@@ -87,11 +66,6 @@ void UT66UIManager::Initialize(APlayerController* InOwningPlayer)
 		FrontendTopBar->RemoveFromParent();
 	}
 	FrontendTopBar = nullptr;
-	if (RetroFXPreviewPopup && RetroFXPreviewPopup->IsInViewport())
-	{
-		RetroFXPreviewPopup->RemoveFromParent();
-	}
-	RetroFXPreviewPopup = nullptr;
 	InitializeFrontendRootIfNeeded();
 }
 
@@ -411,7 +385,6 @@ void UT66UIManager::RebuildAllVisibleUI()
 		QueueFrontendRootLayerRefresh(CurrentScreen);
 		QueueFrontendRootLayerRefresh(CurrentModal);
 		QueueFrontendRootLayerRefresh(FrontendTopBar);
-		QueueFrontendRootLayerRefresh(RetroFXPreviewPopup);
 		return;
 	}
 
@@ -428,11 +401,6 @@ void UT66UIManager::RebuildAllVisibleUI()
 	if (FrontendTopBar && FrontendTopBar->IsInViewport())
 	{
 		FT66Style::DeferRebuild(FrontendTopBar, 50);
-	}
-
-	if (RetroFXPreviewPopup && RetroFXPreviewPopup->IsInViewport())
-	{
-		FT66Style::DeferRebuild(RetroFXPreviewPopup, 175);
 	}
 }
 
@@ -468,87 +436,8 @@ void UT66UIManager::RefreshDirectModalInputMode(UUserWidget* FocusWidget)
 	ApplyDirectModalInputMode(OwningPlayer, FocusWidget);
 }
 
-void UT66UIManager::ShowRetroFXPreviewPopup()
-{
-	if (!OwningPlayer)
-	{
-		UE_LOG(LogT66UIManager, Warning, TEXT("ShowRetroFXPreviewPopup: no owning player"));
-		return;
-	}
-
-	if (!RetroFXPreviewPopup)
-	{
-		RetroFXPreviewPopup = CreateWidget<UT66SettingsScreen>(OwningPlayer, UT66SettingsScreen::StaticClass());
-		if (!RetroFXPreviewPopup)
-		{
-			UE_LOG(LogT66UIManager, Warning, TEXT("ShowRetroFXPreviewPopup: failed to create settings preview widget"));
-			return;
-		}
-	}
-
-	RetroFXPreviewPopup->ConfigureAsRetroFXPreviewPopup(this);
-	if (IsFrontendRootActive())
-	{
-		if (!FrontendRoot->IsPopupVisible())
-		{
-			FrontendRoot->SetPopup(RetroFXPreviewPopup);
-			RetroFXPreviewPopup->OnScreenActivated();
-		}
-		else
-		{
-			QueueFrontendRootLayerRefresh(RetroFXPreviewPopup);
-		}
-		return;
-	}
-
-	if (!RetroFXPreviewPopup->IsInViewport())
-	{
-		RetroFXPreviewPopup->AddToViewport(175);
-		RetroFXPreviewPopup->OnScreenActivated();
-	}
-	else
-	{
-		FT66Style::DeferRebuild(RetroFXPreviewPopup, 175);
-	}
-}
-
-void UT66UIManager::HideRetroFXPreviewPopup()
-{
-	if (!RetroFXPreviewPopup)
-	{
-		return;
-	}
-
-	if (IsFrontendRootActive())
-	{
-		if (FrontendRoot->IsPopupVisible())
-		{
-			RetroFXPreviewPopup->OnScreenDeactivated();
-			FrontendRoot->ClearPopup();
-		}
-		return;
-	}
-
-	if (RetroFXPreviewPopup->IsInViewport())
-	{
-		RetroFXPreviewPopup->OnScreenDeactivated();
-		RetroFXPreviewPopup->RemoveFromParent();
-	}
-}
-
-bool UT66UIManager::IsRetroFXPreviewPopupVisible() const
-{
-	if (IsFrontendRootActive())
-	{
-		return FrontendRoot->IsPopupVisible();
-	}
-	return RetroFXPreviewPopup && RetroFXPreviewPopup->IsInViewport();
-}
-
 void UT66UIManager::HideAllUI()
 {
-	HideRetroFXPreviewPopup();
-
 	// Close modal if active
 	if (CurrentModal)
 	{
@@ -733,43 +622,14 @@ void UT66UIManager::InitializeFrontendRootIfNeeded()
 		}
 	}
 
-	ApplyCurrentRetroFXSettingsToFrontendRoot();
-
 	if (!FrontendRoot->IsInViewport())
 	{
 		FrontendRoot->AddToViewport(0);
 	}
-
-	if (!RetroFXSettingsAppliedHandle.IsValid())
-	{
-		if (UGameInstance* GI = OwningPlayer->GetGameInstance())
-		{
-			if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
-			{
-				RetroFXSettingsAppliedHandle = RetroFX->OnSettingsApplied().AddUObject(this, &UT66UIManager::HandleRetroFXSettingsApplied);
-			}
-		}
-	}
-	ApplyCurrentRetroFXSettingsToFrontendRoot();
 }
 
 void UT66UIManager::TearDownFrontendRoot()
 {
-	if (RetroFXSettingsAppliedHandle.IsValid())
-	{
-		if (OwningPlayer)
-		{
-			if (UGameInstance* GI = OwningPlayer->GetGameInstance())
-			{
-				if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
-				{
-					RetroFX->OnSettingsApplied().Remove(RetroFXSettingsAppliedHandle);
-				}
-			}
-		}
-		RetroFXSettingsAppliedHandle.Reset();
-	}
-
 	if (FrontendRoot)
 	{
 		FrontendRoot->ClearPopup();
@@ -782,34 +642,6 @@ void UT66UIManager::TearDownFrontendRoot()
 			FrontendRoot->RemoveFromParent();
 		}
 		FrontendRoot = nullptr;
-	}
-}
-
-void UT66UIManager::ApplyCurrentRetroFXSettingsToFrontendRoot()
-{
-	if (!FrontendRoot || !OwningPlayer)
-	{
-		return;
-	}
-
-	if (UGameInstance* GI = OwningPlayer->GetGameInstance())
-	{
-		if (UT66PlayerSettingsSubsystem* PlayerSettings = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
-		{
-			FT66RetroFXSettings Settings = PlayerSettings->GetRetroFXSettings();
-			ApplyFrontendCRTBypassIfRequested(Settings);
-			FrontendRoot->ApplyRetroFXSettings(Settings);
-		}
-	}
-}
-
-void UT66UIManager::HandleRetroFXSettingsApplied(const FT66RetroFXSettings& Settings)
-{
-	if (IsFrontendRootActive())
-	{
-		FT66RetroFXSettings FrontendSettings = Settings;
-		ApplyFrontendCRTBypassIfRequested(FrontendSettings);
-		FrontendRoot->ApplyRetroFXSettings(FrontendSettings);
 	}
 }
 

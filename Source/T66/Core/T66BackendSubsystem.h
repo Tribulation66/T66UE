@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Core/T66DailyClimbTypes.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Containers/Ticker.h"
 #include "Interfaces/IHttpRequest.h"
@@ -462,9 +463,12 @@ private:
 	bool bPartyInvitePollInFlight = false;
 	bool bPartyInvitePollRequestedWhileInFlight = false;
 	TMap<FString, FPendingCoopSubmit> PendingCoopSubmitRequests;
+	FT66ShutdownParticipantHandle ShutdownParticipantHandle;
 
 	void SeedDevelopmentDummyLeaderboardsIfNeeded();
 	bool TryPopulateDevelopmentDummyLeaderboard(const FString& Key);
+	bool HandleShutdown(const FT66ShutdownContext& Context);
+	void ShutdownRuntimeResources(const TCHAR* Reason);
 
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> CreateRequest(const FString& Verb, const FString& Endpoint) const;
 	void SetAuthHeaders(TSharedRef<IHttpRequest, ESPMode::ThreadSafe>& Request) const;

@@ -365,56 +365,22 @@ TArray<FSkinData> UT66SkinSubsystem::GetSkinsForEntity(ET66SkinEntityType Entity
 		Skin.bIsOwned = Skin.bIsDefault || IsSkinOwned(EntityType, EntityID, SkinID);
 		Skin.bIsEquipped = (SkinID == EquippedID);
 		Skin.CoinCost = Skin.bIsDefault ? 0 : DefaultSkinPriceAC;
-		Skin.Portrait = GetSkinPortrait(EntityType, EntityID, SkinID, false);
-		Skin.SelectionPortrait = GetSkinPortrait(EntityType, EntityID, SkinID, true);
-		if ((EntityType == ET66SkinEntityType::Hero || EntityType == ET66SkinEntityType::Companion) && SkinID == DemoSkinID)
+		if (Skin.bIsDefault)
+		{
+			Skin.Description = NSLOCTEXT("T66.Skins", "DefaultSkinDescription", "The original look for this character.");
+		}
+		else if ((EntityType == ET66SkinEntityType::Hero || EntityType == ET66SkinEntityType::Companion) && SkinID == DemoSkinID)
 		{
 			Skin.DisplayName = NSLOCTEXT("T66.Skins", "DemoSkin", "Demo Skin");
+			Skin.Description = NSLOCTEXT("T66.Skins", "DemoSkinDescription", "A showcase alternate look for this character.");
+		}
+		else
+		{
+			Skin.Description = NSLOCTEXT("T66.Skins", "RewardSkinDescription", "A special alternate look unlocked through progression.");
 		}
 		Out.Add(Skin);
 	}
 	return Out;
-}
-
-TSoftObjectPtr<UTexture2D> UT66SkinSubsystem::GetSkinPortrait(
-	const ET66SkinEntityType EntityType,
-	const FName EntityID,
-	const FName SkinID,
-	const bool bSelectionPortrait) const
-{
-	if (EntityID.IsNone())
-	{
-		return TSoftObjectPtr<UTexture2D>();
-	}
-
-	const FName EffectiveSkinID = SkinID.IsNone() ? DefaultSkinID : NormalizeSkinID(SkinID);
-
-	if (EntityType == ET66SkinEntityType::Companion)
-	{
-		if (const TSoftObjectPtr<UTexture2D> OverridePortrait = GetCompanionSkinPortraitOverride(EntityID, EffectiveSkinID, bSelectionPortrait);
-			!OverridePortrait.IsNull())
-		{
-			return OverridePortrait;
-		}
-
-		if (UT66GameInstance* T66GameInstance = Cast<UT66GameInstance>(GetGameInstance()))
-		{
-			FCompanionData CompanionData;
-			if (T66GameInstance->GetCompanionData(EntityID, CompanionData))
-			{
-				if (bSelectionPortrait)
-				{
-					return !CompanionData.SelectionPortrait.IsNull()
-						? CompanionData.SelectionPortrait
-						: CompanionData.Portrait;
-				}
-
-				return CompanionData.Portrait;
-			}
-		}
-	}
-
-	return TSoftObjectPtr<UTexture2D>();
 }
 
 int32 UT66SkinSubsystem::GetAchievementCoinsBalance() const
@@ -492,18 +458,4 @@ void UT66SkinSubsystem::ResetAllHeroSkinOwnership()
 	Profile->EquippedHeroSkinID = DefaultSkinID;
 	MarkProfileDirtyAndSave(false);
 	OnSkinStateChanged.Broadcast();
-}
-
-TSoftObjectPtr<UTexture2D> UT66SkinSubsystem::GetCompanionSkinPortraitOverride(
-	const FName CompanionID,
-	const FName SkinID,
-	const bool bSelectionPortrait) const
-{
-	(void)CompanionID;
-	(void)SkinID;
-	(void)bSelectionPortrait;
-
-	// Future hook for per-skin companion preview art. Add explicit overrides here when
-	// a skin gets its own companion portrait or selection/info portrait asset.
-	return TSoftObjectPtr<UTexture2D>();
 }

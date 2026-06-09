@@ -1,0 +1,10 @@
+{
+  "ok": false,
+  "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/PA_Hero_1_Chad_PhysicsFirst_Stage2Seed",
+  "error": "PhysicsAsset arrays are not exposed through UE Python",
+  "available_members": [
+    "get_constraint_by_bone_names",
+    "get_constraint_by_name",
+    "get_constraints"
+  ]
+}

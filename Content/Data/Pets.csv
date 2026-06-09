@@ -1,0 +1,4 @@
+---,PetID,SourceBossID,DisplayName,SelectionPortrait,CaptureVisualMesh,PlaceholderColor,PetActorClass,BaseFetchSpeed,BondFetchSpeedPerStage,MaxBondFetchSpeedMultiplier,SkinIDs
+Pet_Dungeon_SewerSlimeKing,Pet_Dungeon_SewerSlimeKing,Dungeon_SewerSlimeKing,Sewer Slime Pet,,/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/SM_Pet_Dungeon_SewerSlimeKing.SM_Pet_Dungeon_SewerSlimeKing,"(R=0.30,G=0.78,B=0.24,A=1.0)",,7.0,0.12,1.8,(Default)
+Pet_Dungeon_WebMatriarch,Pet_Dungeon_WebMatriarch,Dungeon_WebMatriarch,Web Matriarch Spiderling,,/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/SM_Pet_Dungeon_WebMatriarch.SM_Pet_Dungeon_WebMatriarch,"(R=0.50,G=0.42,B=0.68,A=1.0)",,7.0,0.12,1.8,(Default)
+Pet_Dungeon_BoneJailer,Pet_Dungeon_BoneJailer,Dungeon_BoneJailer,Bone Jailer Keyling,,/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/SM_Pet_Dungeon_BoneJailer.SM_Pet_Dungeon_BoneJailer,"(R=0.78,G=0.72,B=0.58,A=1.0)",,7.0,0.12,1.8,(Default)

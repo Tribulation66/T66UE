@@ -5,6 +5,8 @@ Workspace: `C:\UE\T66`
 Backend workspace: `C:\UE\Backend`
 Companion concept doc: `Backend/Community/T66_Community_Mods_And_Challenges.md`
 
+**Deprecation note (2026-06-07):** Mods are archived and no longer player-facing. This plan is retained for Challenge-specific implementation references and historical Mod context only.
+
 ## Objective
 
 Implement a full official/community mods and challenges system that:

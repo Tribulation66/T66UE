@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Data/T66DataTypes.h"
 #include "GameFramework/SaveGame.h"
-#include "Core/T66RetroFXSettings.h"
 #include "T66PlayerSettingsSaveGame.generated.h"
 
 UENUM(BlueprintType)
@@ -81,7 +80,7 @@ class T66_API UT66PlayerSettingsSaveGame : public USaveGame
 public:
 	// Bump when adding/changing fields in a breaking way.
 	UPROPERTY(SaveGame)
-	int32 SchemaVersion = 24;
+	int32 SchemaVersion = 27;
 
 	// ===== Settings UI =====
 	// Saved as an int so SettingsScreen doesn't need to include UI enums here.
@@ -94,6 +93,9 @@ public:
 
 	UPROPERTY(SaveGame)
 	bool bSubmitLeaderboardAnonymous = false;
+
+	UPROPERTY(SaveGame)
+	bool bHighScoreMode = true;
 
 	UPROPERTY(SaveGame)
 	bool bSpeedRunMode = true;
@@ -124,6 +126,14 @@ public:
 	/** Controls whether the Chad Coupons run-finish popup is shown before the run summary buttons. */
 	UPROPERTY(SaveGame)
 	bool bShowRunSummaryChadCouponsPopup = true;
+
+	/** Controls whether party leaderboard-ineligible warnings are shown before host travel. */
+	UPROPERTY(SaveGame)
+	bool bShowPartySuspendedLeaderboardPopup = true;
+
+	/** Stable popup ids whose "do not show again" checkbox has been accepted by the player. */
+	UPROPERTY(SaveGame)
+	TSet<FName> SuppressedPopupIds;
 
 	/** Locked chase camera A/D turn sensitivity, stored as 0..100 for the settings slider. */
 	UPROPERTY(SaveGame)
@@ -228,9 +238,5 @@ public:
 	/** Favorited leaderboard rows that can be selected as score/time targets in gameplay HUD. */
 	UPROPERTY(SaveGame)
 	TArray<FT66FavoriteLeaderboardRun> FavoriteLeaderboardRuns;
-
-	// ===== Retro FX =====
-	UPROPERTY(SaveGame)
-	FT66RetroFXSettings RetroFXSettings;
 };
 

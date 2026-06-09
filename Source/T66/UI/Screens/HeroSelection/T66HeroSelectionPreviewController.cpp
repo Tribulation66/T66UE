@@ -3,6 +3,8 @@
 #include "UI/Screens/HeroSelection/T66HeroSelectionPreviewController.h"
 #include "UI/Screens/HeroSelection/T66HeroSelectionScreen_Private.h"
 
+#include "Core/T66GameInstance.h"
+#include "Data/T66DataTypes.h"
 #include "UI/T66FrontendVideoCatalog.h"
 #include "UI/T66FrontendVideoPlayer.h"
 #include "Widgets/Images/SImage.h"
@@ -97,14 +99,12 @@ void UT66HeroSelectionPreviewController::RefreshCompanionPreviewPanel(
 	{
 		if (UT66UITexturePoolSubsystem* TexPool = GameInstance->GetSubsystem<UT66UITexturePoolSubsystem>())
 		{
-			if (UT66SkinSubsystem* SkinSubsystem = GameInstance->GetSubsystem<UT66SkinSubsystem>())
+			FCompanionData CompanionData;
+			if (GameInstance->GetCompanionData(PreviewedCompanionID, CompanionData))
 			{
-				const FName EffectiveCompanionSkinID = ResolveEffectiveCompanionSkinID(GameInstance, PreviewedCompanionID);
-				const TSoftObjectPtr<UTexture2D> PortraitSoft = SkinSubsystem->GetSkinPortrait(
-					ET66SkinEntityType::Companion,
-					PreviewedCompanionID,
-					EffectiveCompanionSkinID,
-					true);
+				const TSoftObjectPtr<UTexture2D> PortraitSoft = !CompanionData.SelectionPortrait.IsNull()
+					? CompanionData.SelectionPortrait
+					: CompanionData.Portrait;
 				if (!PortraitSoft.IsNull())
 				{
 					T66SlateTexture::BindSharedBrushAsync(

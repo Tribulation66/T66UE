@@ -2,6 +2,7 @@
 
 #include "Core/T66UITexturePoolSubsystem.h"
 
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/Texture2D.h"
@@ -26,7 +27,48 @@ UTexture2D* UT66UITexturePoolSubsystem::CacheLoadedTexture(const FSoftObjectPath
 	return Texture;
 }
 
+void UT66UITexturePoolSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Collection.InitializeDependency(UT66ShutdownSubsystem::StaticClass());
+	Super::Initialize(Collection);
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			ShutdownParticipantHandle = Shutdown->RegisterParticipant(
+				this,
+				FName(TEXT("UITexturePool.AsyncLoads")),
+				ET66ShutdownPhase::AsyncWork,
+				20,
+				1.0,
+				false,
+				FT66ShutdownParticipantDelegate::CreateUObject(this, &UT66UITexturePoolSubsystem::HandleShutdown));
+		}
+	}
+}
+
 void UT66UITexturePoolSubsystem::Deinitialize()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			Shutdown->UnregisterParticipant(ShutdownParticipantHandle);
+		}
+	}
+	ShutdownParticipantHandle.Reset();
+	ShutdownRuntimeResources(TEXT("Deinitialize"));
+	Super::Deinitialize();
+}
+
+bool UT66UITexturePoolSubsystem::HandleShutdown(const FT66ShutdownContext& /*Context*/)
+{
+	ShutdownRuntimeResources(TEXT("ShutdownSystem"));
+	return true;
+}
+
+void UT66UITexturePoolSubsystem::ShutdownRuntimeResources(const TCHAR* /*Reason*/)
 {
 	bIsDeinitializing = true;
 
@@ -42,8 +84,6 @@ void UT66UITexturePoolSubsystem::Deinitialize()
 	WaitersByPath.Reset();
 	LatestRequestedPathByKey.Reset();
 	LoadedTextures.Reset();
-
-	Super::Deinitialize();
 }
 
 UTexture2D* UT66UITexturePoolSubsystem::GetLoadedTexture(const TSoftObjectPtr<UTexture2D>& Soft) const

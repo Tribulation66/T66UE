@@ -33,9 +33,9 @@ public:
 	void SetSourceAltar(AT66IdolAltar* InSourceAltar) { SourceAltar = InSourceAltar; }
 
 private:
-	static constexpr int32 OfferSlotCount = 16;
+	static constexpr int32 OfferSlotCount = 20;
 	static constexpr int32 OfferSlotsPerCategory = 4;
-	static constexpr int32 OfferCategoryCount = 5;
+	static constexpr int32 OfferCategoryCount = 6;
 
 	TArray<TSharedPtr<SBox>> OfferCardBoxes;
 	TArray<TSharedPtr<STextBlock>> OfferNameTexts;

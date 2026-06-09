@@ -67,7 +67,7 @@ AT66RangedEnemy::AT66RangedEnemy()
 	ProjectileClass = AT66SpitProjectile::StaticClass();
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		Move->MaxWalkSpeed = 320.f;
+		Move->MaxWalkSpeed = 160.f;
 	}
 }
 

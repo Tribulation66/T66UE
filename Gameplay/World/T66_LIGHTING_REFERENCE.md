@@ -9,6 +9,7 @@
 ## 1. Executive Summary
 
 - T66 no longer has a runtime gameplay lighting stack.
+- `ART_DIRECTION.md` now declares FriendSlop as the active 3D/world art direction. The upcoming shared rubber master material is the convergence target, but its lit-vs-unlit implementation is still TBD and must be decided by the material migration pass rather than by this lighting reference.
 - The game no longer keeps or spawns:
   - `UT66LightingSubsystem`
   - `AT66QuakeSkyActor`
@@ -93,8 +94,9 @@ These still exist, but they are no longer part of core runtime world setup:
 - retro FX settings
   - still apply through `UT66RetroFXSubsystem`
   - separate from the deleted sky/light/fog stack
+  - not the canonical 3D/world art direction
 
-Those items are cleanup candidates if the goal is to remove more obsolete visual controls.
+Those items are cleanup candidates only if a separate product/runtime pass removes the corresponding live feature or settings surface.
 
 ## 7. Asset State
 

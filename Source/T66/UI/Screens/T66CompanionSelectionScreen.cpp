@@ -939,8 +939,6 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			CompanionSelectionTag(TEXT("CompanionSelection.BottomRow.DifficultyPanel.EnterButton"))));
 	AddBottomSlot(RightClusterCanvas, 440.f, 23.f, 192.f, 70.f,
 		FT66FlatStyle::MakeFlatButton(ET66FlatState::Default, NSLOCTEXT("T66.CompanionSelection", "ChallengesButtonText", "CHALLENGES"), FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleChallengesClicked), nullptr, nullptr, FMargin(12.f, 7.f), 0.f, 70.f, true, 18, CompanionSelectionTag(TEXT("CompanionSelection.BottomRow.ChallengesButton"))));
-	AddBottomSlot(RightClusterCanvas, 440.f, 115.f, 192.f, 70.f,
-		FT66FlatStyle::MakeFlatButton(ET66FlatState::Default, NSLOCTEXT("T66.CompanionSelection", "ModsButtonText", "MODS"), FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleModsClicked), nullptr, nullptr, FMargin(12.f, 7.f), 0.f, 70.f, true, 18, CompanionSelectionTag(TEXT("CompanionSelection.BottomRow.ModsButton"))));
 	AddSlot(1249.f, 815.f, 655.f, 216.f,
 		MakeBottomPanel(TEXT("CompanionSelection.BottomRow.RightCluster"), ET66FlatState::Default, RightClusterCanvas, FMargin(0.f)));
 
@@ -1559,9 +1557,8 @@ void UT66CompanionSelectionScreen::OnConfirmCompanionClicked()
 }
 void UT66CompanionSelectionScreen::OpenCommunityContent(const bool bOpenMods)
 {
-	const ET66CommunityContentKind ContentKind = bOpenMods
-		? ET66CommunityContentKind::Mod
-		: ET66CommunityContentKind::Challenge;
+	(void)bOpenMods;
+	const ET66CommunityContentKind ContentKind = ET66CommunityContentKind::Challenge;
 
 	ShowModal(ET66ScreenType::Challenges);
 
@@ -1581,7 +1578,7 @@ void UT66CompanionSelectionScreen::OpenCommunityContent(const bool bOpenMods)
 
 void UT66CompanionSelectionScreen::OnChallengesClicked() { OpenCommunityContent(false); }
 
-void UT66CompanionSelectionScreen::OnModsClicked() { OpenCommunityContent(true); }
+void UT66CompanionSelectionScreen::OnModsClicked() { OpenCommunityContent(false); }
 
 const FSlateBrush* UT66CompanionSelectionScreen::GetCompanionPreviewVideoBrush() const
 {

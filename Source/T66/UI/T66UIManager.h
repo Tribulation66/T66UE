@@ -8,11 +8,9 @@
 #include "T66UIManager.generated.h"
 
 class UT66ScreenBase;
-class UT66SettingsScreen;
 class UT66FrontendUIRootWidget;
 class UT66FrontendTopBarWidget;
 class UUserWidget;
-struct FT66RetroFXSettings;
 
 /**
  * UI Manager for Tribulation 66
@@ -119,10 +117,6 @@ public:
 	bool RequestFrontendRootPaintRefresh();
 	void RefreshDirectModalInputMode(UUserWidget* FocusWidget);
 
-	void ShowRetroFXPreviewPopup();
-	void HideRetroFXPreviewPopup();
-	bool IsRetroFXPreviewPopupVisible() const;
-
 	/**
 	 * Hide all UI (for transitioning to gameplay)
 	 */
@@ -167,9 +161,6 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UT66FrontendTopBarWidget> FrontendTopBar;
 
-	UPROPERTY()
-	TObjectPtr<UT66SettingsScreen> RetroFXPreviewPopup;
-
 	/** Single retained frontend root that owns UIManager layers while in frontend worlds. */
 	UPROPERTY()
 	TObjectPtr<UT66FrontendUIRootWidget> FrontendRoot;
@@ -189,9 +180,5 @@ protected:
 	bool IsFrontendRootActive() const;
 	void InitializeFrontendRootIfNeeded();
 	void TearDownFrontendRoot();
-	void ApplyCurrentRetroFXSettingsToFrontendRoot();
-	void HandleRetroFXSettingsApplied(const FT66RetroFXSettings& Settings);
 	void QueueFrontendRootLayerRefresh(UUserWidget* Widget);
-
-	FDelegateHandle RetroFXSettingsAppliedHandle;
 };

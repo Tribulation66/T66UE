@@ -2,66 +2,11 @@
 
 #include "UI/T66FrontendUIRootWidget.h"
 
-#include "Engine/Engine.h"
-#include "Engine/GameViewportClient.h"
 #include "Engine/World.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Materials/MaterialInterface.h"
 #include "Slate/SRetainerWidget.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/SNullWidget.h"
 #include "Widgets/SOverlay.h"
-#include "UObject/SoftObjectPath.h"
-
-DEFINE_LOG_CATEGORY_STATIC(LogT66FrontendUIRoot, Log, All);
-
-namespace
-{
-	static const TCHAR* FrontendCRTMaterialPath = TEXT("/Game/UI/Materials/M_T66_UI_CRTPostProcess.M_T66_UI_CRTPostProcess");
-	static const FName TextureParameterName(TEXT("Texture"));
-	static const FName CRTEnabledParameterName(TEXT("CRTEnabled"));
-	static const FName ScanlineStrengthParameterName(TEXT("ScanlineStrength"));
-	static const FName PhosphorMaskStrengthParameterName(TEXT("PhosphorMaskStrength"));
-	static const FName BloomStrengthParameterName(TEXT("BloomStrength"));
-	static const FName ChromaticAberrationStrengthParameterName(TEXT("ChromaticAberrationStrength"));
-	static const FName BarrelDistortionStrengthParameterName(TEXT("BarrelDistortionStrength"));
-	static const FName VignetteStrengthParameterName(TEXT("VignetteStrength"));
-	static const FName ColorQuantizationBitsParameterName(TEXT("ColorQuantizationBits"));
-	static const FName ReferenceResolutionHeightParameterName(TEXT("ReferenceResolutionHeight"));
-	static const FName UITextureSizeParameterName(TEXT("UITextureSize"));
-
-	static TWeakObjectPtr<UMaterialInterface> GCachedCRTMaterial;
-	static bool bCheckedCRTMaterial = false;
-
-	UMaterialInterface* LoadFrontendCRTMaterial()
-	{
-		if (!GCachedCRTMaterial.IsValid())
-		{
-			GCachedCRTMaterial = LoadObject<UMaterialInterface>(nullptr, FrontendCRTMaterialPath);
-			if (!bCheckedCRTMaterial && !GCachedCRTMaterial.IsValid())
-			{
-				UE_LOG(LogT66FrontendUIRoot, Warning, TEXT("Frontend CRT material not found: %s"), FrontendCRTMaterialPath);
-			}
-		}
-
-		bCheckedCRTMaterial = true;
-		return GCachedCRTMaterial.Get();
-	}
-
-	FVector2D ResolveViewportSize()
-	{
-		if (GEngine && GEngine->GameViewport && GEngine->GameViewport->Viewport)
-		{
-			const FIntPoint SizeXY = GEngine->GameViewport->Viewport->GetSizeXY();
-			if (SizeXY.X > 0 && SizeXY.Y > 0)
-			{
-				return FVector2D(static_cast<float>(SizeXY.X), static_cast<float>(SizeXY.Y));
-			}
-		}
-
-		return FVector2D(1920.f, 1080.f);
-	}
-}
 
 void UT66FrontendUIRootWidget::SetMainScreen(UUserWidget* Widget)
 {
@@ -121,12 +66,6 @@ bool UT66FrontendUIRootWidget::IsTopBarVisible() const
 bool UT66FrontendUIRootWidget::IsPopupVisible() const
 {
 	return PopupWidget != nullptr && PopupWidget->GetCachedWidget().IsValid();
-}
-
-void UT66FrontendUIRootWidget::ApplyRetroFXSettings(const FT66RetroFXSettings& Settings)
-{
-	CurrentSettings = Settings;
-	ApplySettingsToRetainer();
 }
 
 void UT66FrontendUIRootWidget::RefreshLayerWidget(UUserWidget* Widget)
@@ -281,20 +220,17 @@ TSharedRef<SWidget> UT66FrontendUIRootWidget::RebuildWidget()
 		.RenderOnInvalidation(true)
 		.Phase(0)
 		.PhaseCount(1)
-		.StatId(FName(TEXT("T66FrontendUIRootCRT")))
+		.StatId(FName(TEXT("T66FrontendUIRoot")))
 		[
 			LayerStack
 		];
 
-	RetainerWidget->SetTextureParameter(TextureParameterName);
-	EnsureRetainerMaterial();
 	if (UWorld* World = GetWorld())
 	{
 		RetainerWidget->SetWorld(World);
 	}
 
 	ReapplyAllLayerWidgets();
-	ApplySettingsToRetainer();
 	return RetainerWidget.ToSharedRef();
 }
 
@@ -345,47 +281,4 @@ void UT66FrontendUIRootWidget::ReapplyAllLayerWidgets()
 	ReapplyLayerWidget(ModalWidget, ModalBox);
 	ReapplyLayerWidget(LoadingWidget, LoadingBox);
 	ReapplyLayerWidget(PopupWidget, PopupBox);
-}
-
-void UT66FrontendUIRootWidget::ApplySettingsToRetainer()
-{
-	if (!RetainerWidget.IsValid())
-	{
-		return;
-	}
-
-	EnsureRetainerMaterial();
-	UMaterialInstanceDynamic* Material = RetainerWidget->GetEffectMaterial();
-	if (!Material)
-	{
-		return;
-	}
-
-	const float Enabled = CurrentSettings.UIFullScreenCRTEnabled ? 1.0f : 0.0f;
-	Material->SetScalarParameterValue(CRTEnabledParameterName, Enabled);
-	Material->SetScalarParameterValue(ScanlineStrengthParameterName, CurrentSettings.UIFullScreenCRTEnabled ? FMath::Clamp(CurrentSettings.UICRTScanlineStrength, 0.0f, 1.0f) : 0.0f);
-	Material->SetScalarParameterValue(PhosphorMaskStrengthParameterName, CurrentSettings.UIFullScreenCRTEnabled ? FMath::Clamp(CurrentSettings.UICRTPhosphorMaskStrength, 0.0f, 1.0f) : 0.0f);
-	Material->SetScalarParameterValue(BloomStrengthParameterName, CurrentSettings.UIFullScreenCRTEnabled ? FMath::Clamp(CurrentSettings.UICRTBloomStrength, 0.0f, 1.0f) : 0.0f);
-	Material->SetScalarParameterValue(ChromaticAberrationStrengthParameterName, CurrentSettings.UIFullScreenCRTEnabled ? FMath::Clamp(CurrentSettings.UICRTChromaticAberrationStrength, 0.0f, 1.0f) : 0.0f);
-	Material->SetScalarParameterValue(BarrelDistortionStrengthParameterName, CurrentSettings.UIFullScreenCRTEnabled ? FMath::Clamp(CurrentSettings.UICRTBarrelDistortionStrength, 0.0f, 1.0f) : 0.0f);
-	Material->SetScalarParameterValue(VignetteStrengthParameterName, CurrentSettings.UIFullScreenCRTEnabled ? FMath::Clamp(CurrentSettings.UICRTVignetteStrength, 0.0f, 1.0f) : 0.0f);
-	Material->SetScalarParameterValue(ColorQuantizationBitsParameterName, static_cast<float>(FMath::Clamp(CurrentSettings.UICRTColorQuantizationBits, 4, 8)));
-	Material->SetScalarParameterValue(ReferenceResolutionHeightParameterName, static_cast<float>(FMath::Max(CurrentSettings.UICRTReferenceResolutionHeight, 120)));
-
-	const FVector2D ViewportSize = ResolveViewportSize();
-	Material->SetVectorParameterValue(UITextureSizeParameterName, FLinearColor(ViewportSize.X, ViewportSize.Y, 0.0f, 0.0f));
-	RetainerWidget->RequestRender();
-}
-
-void UT66FrontendUIRootWidget::EnsureRetainerMaterial()
-{
-	if (!RetainerWidget.IsValid())
-	{
-		return;
-	}
-
-	if (!RetainerWidget->GetEffectMaterial())
-	{
-		RetainerWidget->SetEffectMaterial(LoadFrontendCRTMaterial());
-	}
 }

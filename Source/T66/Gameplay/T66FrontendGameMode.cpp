@@ -6,7 +6,6 @@
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
-#include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "UI/Style/T66Style.h"
 #include "Engine/World.h"
@@ -33,11 +32,7 @@ void AT66FrontendGameMode::BeginPlay()
 		{
 			if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 			{
-				RunState->ResetForNewRun();
-			}
-			if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
-			{
-				DamageLog->ResetForNewRun();
+				RunState->BeginNewRun();
 			}
 			if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 			{
@@ -82,8 +77,4 @@ void AT66FrontendGameMode::HandleSettingsChanged()
 	// Harmless on the empty frontend shell; retained to avoid exposing latent travel
 	// or settings-order dependencies while frontend world rendering is invisible.
 	FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(World);
-
-	// Frontend Retro FX is driven by UI retainer (UT66FrontendUIRootWidget).
-	// Gameplay Retro FX subsystem is intentionally not invoked here so frontend
-	// and gameplay have separated post-process retro behavior.
 }

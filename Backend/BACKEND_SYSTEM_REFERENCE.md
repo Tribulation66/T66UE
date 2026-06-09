@@ -1,6 +1,6 @@
 # T66 Master Backend
 
-**Last updated:** 2026-04-20
+**Last updated:** 2026-06-08
 **Scope:** Single-source handoff for T66 online state: Steam, Steamworks, Steam AppIDs, Vercel, backend services, live status, and the recommended path to private multiplayer testing under the real Steam AppID.
 **Companion policy doc:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`
 **Companion Steam ops doc:** `Release/Steam/STEAMWORKS_UPLOAD_AND_TESTING_INSTRUCTIONS.md`
@@ -47,6 +47,7 @@ Where this document contradicts the archived backend/reference docs, prefer this
 - Source now treats an empty Steam friends list as valid for the Friends leaderboard route and returns the requesting player's own row instead of failing the request.
 - Source now parses backend speedrun leaderboard values into `TimeSeconds` for UI display, and completed-run local rank handling now uses the backend speedrun rank rather than the score rank.
 - Stage-clear leaderboard submission now uses one authoritative completed-run request on the UE side instead of the earlier score-submit plus completed-run-submit pair.
+- `/api/submit-run` now accepts optional `submit_score` and `submit_speedrun` booleans in the serialized run payload. Omitted fields preserve legacy behavior; explicit `false` suppresses writes for that leaderboard family while still allowing selected eligible boards to be ranked.
 - `/api/submit-run` now accepts optional `submission_id` and caches the final response per `steam_id + submission_id`, so a retry of the same logical submission replays the same result instead of being treated as a second run.
 - Accepted leaderboard rows are now append-only per run instead of PB-only per player; `/api/my-rank` now resolves the player's single best row separately for the below-top-10 "you row".
 - Production `run_summaries` schema drift was fixed live on 2026-04-19 by adding the missing anti-cheat and integrity columns that `/api/submit-run` already writes.

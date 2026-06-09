@@ -11,6 +11,8 @@
 #include "Data/T66DataTypes.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
+#include "UI/T66TooltipResolvers.h"
+#include "UI/T66TooltipSlate.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Layout/SBorder.h"
@@ -48,9 +50,14 @@ static int32 GetVisibleSellSlotCount()
 	return UT66CasinoVendorTabWidget::SellVisibleSlotCount;
 }
 
-static int32 GetSellEntryCount(const TArray<FName>& Inventory, const bool bHasMobLootStack)
+static int32 GetSellEntryCount(const TArray<FName>& Inventory, const TArray<int32>& InventoryDisplayOrder, const bool bHasMobLootStack)
 {
 	int32 Count = bHasMobLootStack ? 1 : 0;
+	if (InventoryDisplayOrder.Num() > 0 || Inventory.Num() == 0)
+	{
+		return Count + InventoryDisplayOrder.Num();
+	}
+
 	for (const FName ItemID : Inventory)
 	{
 		if (!ItemID.IsNone())
@@ -61,7 +68,7 @@ static int32 GetSellEntryCount(const TArray<FName>& Inventory, const bool bHasMo
 	return Count;
 }
 
-static int32 ResolveSellEntryToInventoryIndex(const TArray<FName>& Inventory, const bool bHasMobLootStack, int32 EntryIndex)
+static int32 ResolveSellEntryToInventoryIndex(const TArray<FName>& Inventory, const TArray<int32>& InventoryDisplayOrder, const bool bHasMobLootStack, int32 EntryIndex)
 {
 	if (EntryIndex < 0)
 	{
@@ -75,6 +82,11 @@ static int32 ResolveSellEntryToInventoryIndex(const TArray<FName>& Inventory, co
 			return T66MobLootSellSelectionIndex;
 		}
 		--EntryIndex;
+	}
+
+	if (InventoryDisplayOrder.Num() > 0 || Inventory.Num() == 0)
+	{
+		return InventoryDisplayOrder.IsValidIndex(EntryIndex) ? InventoryDisplayOrder[EntryIndex] : INDEX_NONE;
 	}
 
 	int32 Seen = 0;
@@ -94,7 +106,7 @@ static int32 ResolveSellEntryToInventoryIndex(const TArray<FName>& Inventory, co
 	return INDEX_NONE;
 }
 
-static int32 FindSellEntryIndexForSelection(const TArray<FName>& Inventory, const bool bHasMobLootStack, const int32 SelectedInventoryIndex)
+static int32 FindSellEntryIndexForSelection(const TArray<FName>& Inventory, const TArray<int32>& InventoryDisplayOrder, const bool bHasMobLootStack, const int32 SelectedInventoryIndex)
 {
 	if (SelectedInventoryIndex == T66MobLootSellSelectionIndex)
 	{
@@ -104,6 +116,12 @@ static int32 FindSellEntryIndexForSelection(const TArray<FName>& Inventory, cons
 	if (!Inventory.IsValidIndex(SelectedInventoryIndex) || Inventory[SelectedInventoryIndex].IsNone())
 	{
 		return INDEX_NONE;
+	}
+
+	if (InventoryDisplayOrder.Num() > 0 || Inventory.Num() == 0)
+	{
+		const int32 DisplayIndex = InventoryDisplayOrder.Find(SelectedInventoryIndex);
+		return DisplayIndex != INDEX_NONE ? DisplayIndex + (bHasMobLootStack ? 1 : 0) : INDEX_NONE;
 	}
 
 	int32 EntryIndex = bHasMobLootStack ? 1 : 0;
@@ -216,9 +234,9 @@ namespace
 		return FText::FromString(FString::Printf(TEXT("%d/99"), FMath::Clamp(Value, 0, UT66RunStateSubsystem::MaxHeroStatValue)));
 	}
 
-	FText MakeVendorSecondaryStatValue(const UT66RunStateSubsystem* RunState, const ET66SecondaryStatType StatType)
+	FText MakeVendorStatValue(const UT66RunStateSubsystem* RunState, const ET66StatType StatType)
 	{
-		const int32 Value = RunState ? FMath::RoundToInt(RunState->GetSecondaryStatValue(StatType)) : 0;
+		const int32 Value = RunState ? FMath::RoundToInt(RunState->GetStatValue(StatType)) : 0;
 		return MakeVendorStatValue(Value);
 	}
 
@@ -268,9 +286,9 @@ namespace
 
 		AddVendorStatsSection(Content, NSLOCTEXT("T66.StatsPanel", "VendorDamageHeader", "DAMAGE:"), HeaderFontSize);
 		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorDamage", "Damage"), MakeVendorStatValue(RunState ? RunState->GetDamageStat() : 0)), BodyFontSize);
-		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorAoeDamage", "AOE Damage"), MakeVendorSecondaryStatValue(RunState, ET66SecondaryStatType::AoeDamage)), BodyFontSize);
-		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorBounceDamage", "Bounce Damage"), MakeVendorSecondaryStatValue(RunState, ET66SecondaryStatType::BounceDamage)), BodyFontSize);
-		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorPierceDamage", "Pierce Damage"), MakeVendorSecondaryStatValue(RunState, ET66SecondaryStatType::PierceDamage)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorAoeDamage", "AOE Damage"), MakeVendorStatValue(RunState, ET66StatType::AoeDamage)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorBounceDamage", "Bounce Damage"), MakeVendorStatValue(RunState, ET66StatType::BounceDamage)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorPierceDamage", "Pierce Damage"), MakeVendorStatValue(RunState, ET66StatType::PierceDamage)), BodyFontSize);
 
 		AddVendorStatsSection(Content, NSLOCTEXT("T66.StatsPanel", "VendorAttackSpeedHeader", "ATTACK SPEED:"), HeaderFontSize);
 		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorAttackSpeed", "Attack Speed"), MakeVendorStatValue(RunState ? RunState->GetAttackSpeedStat() : 0)), BodyFontSize);
@@ -1557,18 +1575,20 @@ void UT66CasinoVendorTabWidget::PrimeVisibleItemIconTextures()
 
 	const TArray<FName>& Inventory = RunState->GetInventory();
 	const TArray<FT66InventorySlot>& InventorySlots = RunState->GetInventorySlots();
+	TArray<int32> InventoryDisplayOrder;
+	RunState->BuildInventoryDisplayOrderByRarity(InventoryDisplayOrder);
 	const bool bHasMobLootStack = RunState->GetCollectedMobLootStack() > 0;
 	if (bHasMobLootStack)
 	{
 		AddItemIconPath(GI, T66MobLootItemID, ET66ItemRarity::Black, IconPaths);
 	}
-	const int32 EntryCount = GetSellEntryCount(Inventory, bHasMobLootStack);
+	const int32 EntryCount = GetSellEntryCount(Inventory, InventoryDisplayOrder, bHasMobLootStack);
 	const int32 MaxPage = EntryCount > 0 ? (EntryCount - 1) / FMath::Max(1, GetVisibleSellSlotCount()) : 0;
 	SellInventoryPageIndex = FMath::Clamp(SellInventoryPageIndex, 0, MaxPage);
 	for (int32 DisplaySlot = 0; DisplaySlot < GetVisibleSellSlotCount(); ++DisplaySlot)
 	{
 		const int32 EntryIndex = SellInventoryPageIndex * GetVisibleSellSlotCount() + DisplaySlot;
-		const int32 InventoryIndex = ResolveSellEntryToInventoryIndex(Inventory, bHasMobLootStack, EntryIndex);
+		const int32 InventoryIndex = ResolveSellEntryToInventoryIndex(Inventory, InventoryDisplayOrder, bHasMobLootStack, EntryIndex);
 		if (InventoryIndex < 0 || !InventorySlots.IsValidIndex(InventoryIndex) || !InventorySlots[InventoryIndex].IsValid())
 		{
 			continue;
@@ -1701,6 +1721,19 @@ void UT66CasinoVendorTabWidget::RefreshStock()
 		FItemData D;
 		const bool bHasData = bHasItem && GI && GI->GetItemData(Stock[i], D);
 		const ET66ItemRarity SlotRarity = StockSlots.IsValidIndex(i) ? StockSlots[i].Rarity : ET66ItemRarity::Black;
+		const int32 Price = bHasItem ? RunState->GetBuyGoldForShopStockSlot(i) : 0;
+		const FName CardSourceTag = FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d"), i + 1));
+		FT66TooltipPayload ItemTooltipPayload;
+		if (bHasData && StockSlots.IsValidIndex(i))
+		{
+			ItemTooltipPayload = T66TooltipResolvers::MakeItemTooltip(
+				Loc,
+				D,
+				StockSlots[i],
+				1,
+				0,
+				CardSourceTag);
+		}
 
 		if (ItemNameTexts.IsValidIndex(i) && ItemNameTexts[i].IsValid())
 		{
@@ -1745,10 +1778,26 @@ void UT66CasinoVendorTabWidget::RefreshStock()
 		if (ItemTileBorders.IsValidIndex(i) && ItemTileBorders[i].IsValid())
 		{
 			ItemTileBorders[i]->SetBorderBackgroundColor(bHasItem ? FT66FlatStyle::Tokens::Panel2 : FT66FlatStyle::Tokens::Panel);
+			T66TooltipSlate::SetTooltip(ItemTileBorders[i], ItemTooltipPayload, bHasItem);
+		}
+		if (ItemIconBorders.IsValidIndex(i) && ItemIconBorders[i].IsValid())
+		{
+			T66TooltipSlate::SetTooltip(ItemIconBorders[i], ItemTooltipPayload, bHasItem);
 		}
 		if (BuyButtons.IsValidIndex(i) && BuyButtons[i].IsValid())
 		{
-			BuyButtons[i]->SetEnabled(bHasItem && !bSold && !IsBossActive());
+			const bool bBuyEnabled = bHasItem && !bSold && !IsBossActive();
+			BuyButtons[i]->SetEnabled(bBuyEnabled);
+			T66TooltipSlate::SetTooltip(
+				BuyButtons[i],
+				T66TooltipResolvers::MakeVendorActionTooltip(
+					FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.Buy.Tooltip"), i + 1)),
+					Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
+					NSLOCTEXT("T66.Shop", "BuyActionTooltip", "Buy this item and add it to your inventory."),
+					Price,
+					!bBuyEnabled,
+					FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.Buy"), i + 1))),
+				true);
 		}
 		if (BuyButtonTexts.IsValidIndex(i) && BuyButtonTexts[i].IsValid())
 		{
@@ -1762,7 +1811,6 @@ void UT66CasinoVendorTabWidget::RefreshStock()
 			}
 			else
 			{
-				const int32 Price = RunState->GetBuyGoldForShopStockSlot(i);
 				BuyButtonTexts[i]->SetText(FText::Format(
 					NSLOCTEXT("T66.Shop", "BuyPriceFormat", "BUY ({0}g)"),
 					FText::AsNumber(Price)));
@@ -1770,8 +1818,19 @@ void UT66CasinoVendorTabWidget::RefreshStock()
 		}
 		if (StealButtons.IsValidIndex(i) && StealButtons[i].IsValid())
 		{
+			const bool bStealEnabled = bShopAllowsSteal && bHasItem && !bSold && bBoughtSomethingThisVisit && !IsBossActive();
 			StealButtons[i]->SetVisibility(bShopAllowsSteal ? EVisibility::Visible : EVisibility::Collapsed);
-			StealButtons[i]->SetEnabled(bShopAllowsSteal && bHasItem && !bSold && bBoughtSomethingThisVisit && !IsBossActive());
+			StealButtons[i]->SetEnabled(bStealEnabled);
+			T66TooltipSlate::SetTooltip(
+				StealButtons[i],
+				T66TooltipResolvers::MakeVendorActionTooltip(
+					FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.Steal.Tooltip"), i + 1)),
+					NSLOCTEXT("T66.Shop", "Steal", "STEAL"),
+					NSLOCTEXT("T66.Shop", "StealActionTooltip", "Attempt to steal this item. Buy one item first, then stop the timing marker."),
+					0,
+					!bStealEnabled,
+					FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.Steal"), i + 1))),
+				bShopAllowsSteal);
 		}
 	}
 }
@@ -1794,6 +1853,19 @@ void UT66CasinoVendorTabWidget::RefreshBuyback()
 		const bool bHasData = bHasSlot && GI && GI->GetItemData(Slots[i].ItemTemplateID, D);
 		const ET66ItemRarity SlotRarity = bHasSlot ? Slots[i].Rarity : ET66ItemRarity::Black;
 		const int32 SellPrice = (bHasSlot && RunState) ? RunState->GetSellGoldForInventorySlot(Slots[i]) : 0;
+		const int32 BuybackPrice = SellPrice > 0 ? SellPrice : 1;
+		const FName CardSourceTag = FName(*FString::Printf(TEXT("Vendor.BuybackCard.%02d"), i + 1));
+		FT66TooltipPayload ItemTooltipPayload;
+		if (bHasData)
+		{
+			ItemTooltipPayload = T66TooltipResolvers::MakeItemTooltip(
+				Loc,
+				D,
+				Slots[i],
+				1,
+				SellPrice,
+				CardSourceTag);
+		}
 
 		if (BuybackNameTexts.IsValidIndex(i) && BuybackNameTexts[i].IsValid())
 		{
@@ -1838,16 +1910,32 @@ void UT66CasinoVendorTabWidget::RefreshBuyback()
 		if (BuybackTileBorders.IsValidIndex(i) && BuybackTileBorders[i].IsValid())
 		{
 			BuybackTileBorders[i]->SetBorderBackgroundColor(FT66FlatStyle::Tokens::Panel2);
+			T66TooltipSlate::SetTooltip(BuybackTileBorders[i], ItemTooltipPayload, bHasSlot);
+		}
+		if (BuybackIconBorders.IsValidIndex(i) && BuybackIconBorders[i].IsValid())
+		{
+			T66TooltipSlate::SetTooltip(BuybackIconBorders[i], ItemTooltipPayload, bHasSlot);
 		}
 		if (BuybackPriceTexts.IsValidIndex(i) && BuybackPriceTexts[i].IsValid())
 		{
 			BuybackPriceTexts[i]->SetText(bHasSlot
-				? FText::Format(NSLOCTEXT("T66.Shop", "BuyPriceFormat", "BUY ({0}g)"), FText::AsNumber(SellPrice > 0 ? SellPrice : 1))
+				? FText::Format(NSLOCTEXT("T66.Shop", "BuyPriceFormat", "BUY ({0}g)"), FText::AsNumber(BuybackPrice))
 				: (Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY")));
 		}
 		if (BuybackBuyButtons.IsValidIndex(i) && BuybackBuyButtons[i].IsValid())
 		{
-			BuybackBuyButtons[i]->SetEnabled(bHasSlot && RunState->GetCurrentGold() >= (SellPrice > 0 ? SellPrice : 1) && RunState->HasInventorySpace());
+			const bool bBuybackEnabled = bHasSlot && RunState->GetCurrentGold() >= BuybackPrice && RunState->HasInventorySpace();
+			BuybackBuyButtons[i]->SetEnabled(bBuybackEnabled);
+			T66TooltipSlate::SetTooltip(
+				BuybackBuyButtons[i],
+				T66TooltipResolvers::MakeVendorActionTooltip(
+					FName(*FString::Printf(TEXT("Vendor.BuybackCard.%02d.Buy.Tooltip"), i + 1)),
+					Loc ? Loc->GetText_Buy() : NSLOCTEXT("T66.Common", "Buy", "BUY"),
+					NSLOCTEXT("T66.Shop", "BuybackActionTooltip", "Buy back this recently sold item."),
+					bHasSlot ? BuybackPrice : 0,
+					!bBuybackEnabled,
+					FName(*FString::Printf(TEXT("Vendor.BuybackCard.%02d.Buy"), i + 1))),
+				true);
 		}
 	}
 }
@@ -1905,6 +1993,8 @@ void UT66CasinoVendorTabWidget::RefreshInventory()
 	UT66UITexturePoolSubsystem* TexPool = GI ? GI->GetSubsystem<UT66UITexturePoolSubsystem>() : nullptr;
 	const TArray<FName>& Inv = RunState->GetInventory();
 	const TArray<FT66InventorySlot>& InvSlots = RunState->GetInventorySlots();
+	TArray<int32> InventoryDisplayOrder;
+	RunState->BuildInventoryDisplayOrderByRarity(InventoryDisplayOrder);
 	const int32 MobLootStack = RunState->GetCollectedMobLootStack();
 	const bool bHasMobLootStack = MobLootStack > 0;
 	TMap<FString, int32> StackCounts;
@@ -1917,18 +2007,18 @@ void UT66CasinoVendorTabWidget::RefreshInventory()
 	}
 
 	const int32 VisibleSlotCount = FMath::Max(1, GetVisibleSellSlotCount());
-	const int32 EntryCount = GetSellEntryCount(Inv, bHasMobLootStack);
+	const int32 EntryCount = GetSellEntryCount(Inv, InventoryDisplayOrder, bHasMobLootStack);
 	const int32 MaxPage = EntryCount > 0 ? (EntryCount - 1) / VisibleSlotCount : 0;
 	SellInventoryPageIndex = FMath::Clamp(SellInventoryPageIndex, 0, MaxPage);
 
-	if (FindSellEntryIndexForSelection(Inv, bHasMobLootStack, SelectedInventoryIndex) == INDEX_NONE)
+	if (FindSellEntryIndexForSelection(Inv, InventoryDisplayOrder, bHasMobLootStack, SelectedInventoryIndex) == INDEX_NONE)
 	{
 		SelectedInventoryIndex = EntryCount > 0
-			? ResolveSellEntryToInventoryIndex(Inv, bHasMobLootStack, SellInventoryPageIndex * VisibleSlotCount)
+			? ResolveSellEntryToInventoryIndex(Inv, InventoryDisplayOrder, bHasMobLootStack, SellInventoryPageIndex * VisibleSlotCount)
 			: INDEX_NONE;
 	}
 
-	const int32 SelectedEntryIndex = FindSellEntryIndexForSelection(Inv, bHasMobLootStack, SelectedInventoryIndex);
+	const int32 SelectedEntryIndex = FindSellEntryIndexForSelection(Inv, InventoryDisplayOrder, bHasMobLootStack, SelectedInventoryIndex);
 	if (SelectedEntryIndex != INDEX_NONE)
 	{
 		SellInventoryPageIndex = FMath::Clamp(SelectedEntryIndex / VisibleSlotCount, 0, MaxPage);
@@ -1951,7 +2041,7 @@ void UT66CasinoVendorTabWidget::RefreshInventory()
 	for (int32 i = 0; i < InventorySlotTexts.Num(); ++i)
 	{
 		const int32 EntryIndex = SellInventoryPageIndex * VisibleSlotCount + i;
-		const int32 InventoryIndex = ResolveSellEntryToInventoryIndex(Inv, bHasMobLootStack, EntryIndex);
+		const int32 InventoryIndex = ResolveSellEntryToInventoryIndex(Inv, InventoryDisplayOrder, bHasMobLootStack, EntryIndex);
 		const bool bMobLootSlot = InventoryIndex == T66MobLootSellSelectionIndex;
 		const bool bHasItem = bMobLootSlot || (Inv.IsValidIndex(InventoryIndex) && !Inv[InventoryIndex].IsNone());
 		const bool bHasInventorySlotData = !bMobLootSlot && bHasItem && InvSlots.IsValidIndex(InventoryIndex) && InvSlots[InventoryIndex].IsValid();
@@ -1959,6 +2049,36 @@ void UT66CasinoVendorTabWidget::RefreshInventory()
 		FItemData D;
 		const FName CardItemID = bMobLootSlot ? T66MobLootItemID : (bHasItem && Inv.IsValidIndex(InventoryIndex) ? Inv[InventoryIndex] : NAME_None);
 		const bool bHasData = bHasItem && GI && !CardItemID.IsNone() && GI->GetItemData(CardItemID, D);
+		const int32 StackCount = bMobLootSlot
+			? MobLootStack
+			: (bHasInventorySlotData
+				? StackCounts.FindRef(MakeShopInventoryStackKey(InvSlots[InventoryIndex]))
+				: 0);
+		int32 SellValue = 0;
+		if (bMobLootSlot)
+		{
+			SellValue = RunState->GetCollectedMobLootSellValue();
+		}
+		else if (bHasInventorySlotData)
+		{
+			SellValue = RunState->GetSellGoldForInventorySlot(InvSlots[InventoryIndex]);
+		}
+		const FName CardSourceTag = FName(*FString::Printf(TEXT("Vendor.SellCard.%02d"), i + 1));
+		FT66TooltipPayload ItemTooltipPayload;
+		if (bMobLootSlot)
+		{
+			ItemTooltipPayload = T66TooltipResolvers::MakeMobLootTooltip(StackCount, SellValue, CardSourceTag);
+		}
+		else if (bHasData && bHasInventorySlotData)
+		{
+			ItemTooltipPayload = T66TooltipResolvers::MakeItemTooltip(
+				Loc,
+				D,
+				InvSlots[InventoryIndex],
+				StackCount,
+				SellValue,
+				CardSourceTag);
+		}
 		if (InventorySlotTexts[i].IsValid())
 		{
 			InventorySlotTexts[i]->SetText(bHasItem
@@ -1989,25 +2109,10 @@ void UT66CasinoVendorTabWidget::RefreshInventory()
 		}
 		if (InventorySlotActionTexts.IsValidIndex(i) && InventorySlotActionTexts[i].IsValid())
 		{
-			int32 SellValue = 0;
-			if (bMobLootSlot)
-			{
-				SellValue = RunState->GetCollectedMobLootSellValue();
-			}
-			else if (bHasInventorySlotData)
-			{
-				SellValue = RunState->GetSellGoldForInventorySlot(InvSlots[InventoryIndex]);
-			}
-
 			InventorySlotActionTexts[i]->SetText(bHasItem
 				? FText::Format(NSLOCTEXT("T66.Shop", "SellPriceFormat", "SELL ({0}g)"), FText::AsNumber(FMath::Max(0, SellValue)))
 				: (Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL")));
 		}
-		const int32 StackCount = bMobLootSlot
-			? MobLootStack
-			: (bHasInventorySlotData
-				? StackCounts.FindRef(MakeShopInventoryStackKey(InvSlots[InventoryIndex]))
-				: 0);
 		if (InventorySlotCountTexts.IsValidIndex(i) && InventorySlotCountTexts[i].IsValid())
 		{
 			InventorySlotCountTexts[i]->SetText(
@@ -2030,6 +2135,7 @@ void UT66CasinoVendorTabWidget::RefreshInventory()
 				Fill = (Fill * 0.55f + FLinearColor(0.95f, 0.67f, 0.18f, 1.0f) * 0.45f);
 			}
 			InventorySlotBorders[i]->SetBorderBackgroundColor(Fill);
+			T66TooltipSlate::SetTooltip(InventorySlotBorders[i], ItemTooltipPayload, bHasItem);
 
 			if (InventorySlotIconBrushes.IsValidIndex(i) && InventorySlotIconBrushes[i].IsValid())
 			{
@@ -2048,6 +2154,19 @@ void UT66CasinoVendorTabWidget::RefreshInventory()
 				const bool bHasIcon = bHasData && !D.GetIconForRarity(SlotRarity).IsNull();
 				InventorySlotIconImages[i]->SetVisibility(bHasIcon ? EVisibility::Visible : EVisibility::Hidden);
 			}
+		}
+		if (InventorySlotButtons.IsValidIndex(i) && InventorySlotButtons[i].IsValid())
+		{
+			T66TooltipSlate::SetTooltip(
+				InventorySlotButtons[i],
+				T66TooltipResolvers::MakeVendorActionTooltip(
+					FName(*FString::Printf(TEXT("Vendor.SellCard.%02d.Sell.Tooltip"), i + 1)),
+					Loc ? Loc->GetText_Sell() : NSLOCTEXT("T66.Common", "Sell", "SELL"),
+					NSLOCTEXT("T66.Shop", "SellActionTooltip", "Sell this item for gold."),
+					bHasItem ? SellValue : 0,
+					!(bHasItem && !IsBossActive()),
+					FName(*FString::Printf(TEXT("Vendor.SellCard.%02d.Sell"), i + 1))),
+				true);
 		}
 	}
 }
@@ -2137,9 +2256,11 @@ FReply UT66CasinoVendorTabWidget::OnSelectInventorySlot(int32 InventoryIndex)
 	}
 
 	const TArray<FName>& Inv = RunState->GetInventory();
+	TArray<int32> InventoryDisplayOrder;
+	RunState->BuildInventoryDisplayOrderByRarity(InventoryDisplayOrder);
 	const bool bHasMobLootStack = RunState->GetCollectedMobLootStack() > 0;
 	const int32 EntryIndex = SellInventoryPageIndex * FMath::Max(1, GetVisibleSellSlotCount()) + InventoryIndex;
-	SelectedInventoryIndex = ResolveSellEntryToInventoryIndex(Inv, bHasMobLootStack, EntryIndex);
+	SelectedInventoryIndex = ResolveSellEntryToInventoryIndex(Inv, InventoryDisplayOrder, bHasMobLootStack, EntryIndex);
 	RefreshInventory();
 	RefreshSellPanel();
 	return FReply::Handled();
@@ -2155,13 +2276,15 @@ FReply UT66CasinoVendorTabWidget::OnRotateInventorySlotsClicked()
 	}
 
 	const TArray<FName>& Inv = RunState->GetInventory();
+	TArray<int32> InventoryDisplayOrder;
+	RunState->BuildInventoryDisplayOrderByRarity(InventoryDisplayOrder);
 	const bool bHasMobLootStack = RunState->GetCollectedMobLootStack() > 0;
 	const int32 VisibleSlotCount = FMath::Max(1, GetVisibleSellSlotCount());
-	const int32 EntryCount = GetSellEntryCount(Inv, bHasMobLootStack);
+	const int32 EntryCount = GetSellEntryCount(Inv, InventoryDisplayOrder, bHasMobLootStack);
 	const int32 MaxPage = EntryCount > 0 ? (EntryCount - 1) / VisibleSlotCount : 0;
 	SellInventoryPageIndex = MaxPage > 0 ? ((SellInventoryPageIndex + 1) % (MaxPage + 1)) : 0;
 	SelectedInventoryIndex = EntryCount > 0
-		? ResolveSellEntryToInventoryIndex(Inv, bHasMobLootStack, SellInventoryPageIndex * VisibleSlotCount)
+		? ResolveSellEntryToInventoryIndex(Inv, InventoryDisplayOrder, bHasMobLootStack, SellInventoryPageIndex * VisibleSlotCount)
 		: INDEX_NONE;
 
 	RefreshInventory();
@@ -2179,9 +2302,11 @@ FReply UT66CasinoVendorTabWidget::OnSellSlotClicked(const int32 DisplaySlotIndex
 	}
 
 	const TArray<FName>& Inv = RunState->GetInventory();
+	TArray<int32> InventoryDisplayOrder;
+	RunState->BuildInventoryDisplayOrderByRarity(InventoryDisplayOrder);
 	const bool bHasMobLootStack = RunState->GetCollectedMobLootStack() > 0;
 	const int32 EntryIndex = SellInventoryPageIndex * FMath::Max(1, GetVisibleSellSlotCount()) + DisplaySlotIndex;
-	SelectedInventoryIndex = ResolveSellEntryToInventoryIndex(Inv, bHasMobLootStack, EntryIndex);
+	SelectedInventoryIndex = ResolveSellEntryToInventoryIndex(Inv, InventoryDisplayOrder, bHasMobLootStack, EntryIndex);
 	return OnSellSelectedClicked();
 }
 

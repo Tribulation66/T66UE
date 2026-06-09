@@ -29,12 +29,12 @@ namespace T66GameplayLayout
 		return FVector((BossAreaWestX + BossPartitionEastX) * 0.5f, 0.f, Z);
 	}
 
-	inline FVector GetStartGateLocation(float Z = 0.f)
+	inline FVector GetStartEntryLocation(float Z = 0.f)
 	{
 		return FVector(StartMainEntranceX, 0.f, Z);
 	}
 
-	inline FVector GetBossGateLocation(float Z = 0.f)
+	inline FVector GetBossEntryLocation(float Z = 0.f)
 	{
 		return FVector(BossAreaWestX, 0.f, Z);
 	}
@@ -85,14 +85,14 @@ namespace T66GameplayLayout
 			|| IsInsideBossCorridor2D(Location, Margin);
 	}
 
-	inline bool IsInsideStartGateExitClearance2D(const FVector& Location, float Margin = 0.f)
+	inline bool IsInsideStartEntryClearance2D(const FVector& Location, float Margin = 0.f)
 	{
 		return Location.X >= (StartMainEntranceX - Margin)
 			&& Location.X <= (StartMainEntranceX + GateExitClearanceDepthX + Margin)
 			&& FMath::Abs(Location.Y) <= (GateExitClearanceHalfHeightY + Margin);
 	}
 
-	inline bool IsInsideBossGateExitClearance2D(const FVector& Location, float Margin = 0.f)
+	inline bool IsInsideBossEntryClearance2D(const FVector& Location, float Margin = 0.f)
 	{
 		return Location.X >= (BossMainEntranceX - GateExitClearanceDepthX - Margin)
 			&& Location.X <= (BossMainEntranceX + Margin)
@@ -102,8 +102,8 @@ namespace T66GameplayLayout
 	inline bool IsInsideTraversalKeepClearZone2D(const FVector& Location, float Margin = 0.f)
 	{
 		return IsInsideReservedTraversalZone2D(Location, Margin)
-			|| IsInsideStartGateExitClearance2D(Location, Margin)
-			|| IsInsideBossGateExitClearance2D(Location, Margin);
+			|| IsInsideStartEntryClearance2D(Location, Margin)
+			|| IsInsideBossEntryClearance2D(Location, Margin);
 	}
 
 	inline bool IsValidGameplayGroundNormal(const FVector& SurfaceNormal, float MinNormalZ = MinGameplayGroundNormalZ)

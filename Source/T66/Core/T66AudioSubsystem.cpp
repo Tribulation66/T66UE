@@ -3,6 +3,7 @@
 #include "Core/T66AudioSubsystem.h"
 
 #include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Engine/AssetManager.h"
 #include "Engine/DataTable.h"
 #include "Engine/Engine.h"
@@ -24,11 +25,46 @@ namespace
 
 void UT66AudioSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+	Collection.InitializeDependency(UT66ShutdownSubsystem::StaticClass());
 	Super::Initialize(Collection);
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			ShutdownParticipantHandle = Shutdown->RegisterParticipant(
+				this,
+				FName(TEXT("Audio.AsyncAssets")),
+				ET66ShutdownPhase::AsyncWork,
+				40,
+				1.0,
+				false,
+				FT66ShutdownParticipantDelegate::CreateUObject(this, &UT66AudioSubsystem::HandleShutdown));
+		}
+	}
 	LoadAudioEvents();
 }
 
 void UT66AudioSubsystem::Deinitialize()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			Shutdown->UnregisterParticipant(ShutdownParticipantHandle);
+		}
+	}
+	ShutdownParticipantHandle.Reset();
+	ShutdownRuntimeResources(TEXT("Deinitialize"));
+	Super::Deinitialize();
+}
+
+bool UT66AudioSubsystem::HandleShutdown(const FT66ShutdownContext& /*Context*/)
+{
+	ShutdownRuntimeResources(TEXT("ShutdownSystem"));
+	return true;
+}
+
+void UT66AudioSubsystem::ShutdownRuntimeResources(const TCHAR* /*Reason*/)
 {
 	if (AudioEventTableLoadHandle.IsValid())
 	{
@@ -69,7 +105,6 @@ void UT66AudioSubsystem::Deinitialize()
 	WarnedMissingAttenuationPaths.Reset();
 	WarnedMissingConcurrencyPaths.Reset();
 	WarnedUnreadyEventIDs.Reset();
-	Super::Deinitialize();
 }
 
 void UT66AudioSubsystem::LoadAudioEvents()

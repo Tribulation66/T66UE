@@ -1,0 +1,10 @@
+/Game/World/VisualProps/Easy/Material_0
+/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D
+/Game/World/VisualProps/Easy/SM_BrokenVase_Easy_Pixal3D_Outline
+/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline
+/Game/World/VisualProps/Easy/SM_WallLamp_Easy_Pixal3D_Outline
+/Game/World/VisualProps/Easy/SM_WallTorch_Easy_Pixal3D_Outline
+/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_1
+/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_1
+/Game/World/VisualProps/Easy/Textures/T_WallLamp_Easy_Pixal3D_1
+/Game/World/VisualProps/Easy/Textures/T_WallTorch_Easy_Pixal3D_1

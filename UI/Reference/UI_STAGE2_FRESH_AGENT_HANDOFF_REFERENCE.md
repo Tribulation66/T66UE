@@ -4,11 +4,13 @@
 
 Migrate the remaining eleven frontend screens to `FT66FlatStyle`, one screen at a time, following the UI Fidelity Loop until each screen is accepted. Do not migrate multiple screens in one session unless Pablo explicitly changes the scope.
 
+Art-direction boundary: `ART_DIRECTION.md` makes FriendSlop canonical for 3D/world work. This handoff remains a 2D UI migration contract. `Settings Retro FX` is archived as of 2026-06-07 and should be skipped unless a later product decision restores it.
+
 ## 2. Required Reading Order
 
 1. `C:\UE\T66\UI\Instructions\UI_FIDELITY_LOOP_INSTRUCTIONS.md` — canonical procedure and acceptance gate.
 2. `C:\UE\T66\UI\Reference\UI_FLAT_REDESIGN_REFERENCE.md` — master plan, palette, helper expectations, and per-screen specs.
-3. `C:\UE\T66\UI\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md` — existing UI architecture and legacy chrome audit context.
+3. `C:\UE\T66\Audit\Reference\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md` — existing UI architecture and legacy chrome audit context.
 4. `C:\UE\T66\UI\hero_selection_closeout_and_stage2_readiness.md` — Hero Selection closeout, open items, and Stage 2 lessons.
 5. Hero Selection final artifacts as the template:
    - `C:\UE\T66\Saved\Codex\UI\HeroSelection\pass_11_report.md`
@@ -27,11 +29,10 @@ Migrate the remaining eleven frontend screens to `FT66FlatStyle`, one screen at 
 3. Diplomas
 4. Drugs
 5. Steam Achievements
-7. Settings Retro FX
-8. Daily Descent
-9. Challenges
-10. Load Game
-11. Run Summary
+7. Daily Descent
+8. Challenges
+9. Load Game
+10. Run Summary
 
 Rationale: this order starts with the most refined and simplest account screen, then migrates paired screens that reuse patterns, then moves into leaf screens and dense summary layouts. Hero Selection is already the Stage 1 pilot and should be used as the working example, not re-migrated.
 
@@ -85,12 +86,12 @@ Toggle groups need explicit `FT66FlatStyle` construction. Mutual exclusion shoul
 
 Verifier passing is necessary but not sufficient. The automated report catches structural and measurable fidelity. Manual interaction remains the final gate, and any `Doesn't Work` result is a loop FAIL.
 
-Capture script fails loudly on unknown screen names. Do not accept fallback captures. Every migrated screen must be resolvable by `-T66FrontendScreen`, including tab/category screens such as `Overview`, `Drugs`, and `SettingsRetroFX`.
+Capture script fails loudly on unknown screen names. Do not accept fallback captures. Every migrated screen must be resolvable by `-T66FrontendScreen`, including tab/category screens such as `Overview` and `Drugs`. `SettingsRetroFX` is archived and no longer part of the active migration list.
 
 ## 7. Pre-Rollout State Confirmation
 
 - All eleven remaining Stage 2 screen names are accepted by the resolver. See `C:\UE\T66\UI\Reference\UI_STAGE2_CAPTURE_READINESS_REFERENCE.md`.
-- Parent-tab/category routing exists for Overview, History, Diplomas, Drugs, Steam Achievements, Settings Retro FX, and Load Game aliases.
+- Parent-tab/category routing exists for Overview, History, Diplomas, Drugs, Steam Achievements, and Load Game aliases. Settings Retro FX remains a legacy alias only.
 - All eleven per-screen specs in master plan section 7.2 include Interactivity, label-vs-button, and icon manifest notes.
 - The loop doc reflects Step 0, Step 0.5, M1 icon workflow, M2 label workflow, interactivity verification, manual interaction, resolver fail-loud behavior, pass log structure, content stub policy, termination conditions, and `-T66AutoDumpScreen`.
 - `T66.UI.DumpScreen` and `VerifyUIFidelity.py` are reusable for tagged `FT66FlatStyle` screens.

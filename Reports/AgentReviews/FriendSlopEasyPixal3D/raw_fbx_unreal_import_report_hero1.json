@@ -1,0 +1,54 @@
+{
+  "asset_count": 1,
+  "errors": [],
+  "fbx_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX",
+  "manifest": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\FriendSlopProbe_Hero1Male_20260604_1415_manifest.json",
+  "notes": [
+    "FBX fallback used because Unreal GLB Interchange returned zero StaticMesh assets.",
+    "FBX bundles are derived from raw Pixal3D GLBs and preserve raw material image payloads.",
+    "No ToonStyle, QuadRetro, outline, Tint, inner-line, or processed GLB stage was run."
+  ],
+  "ok": true,
+  "rows": [
+    {
+      "asset_id": "Hero_1_Chad_Male",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          45.101593017578125,
+          26.21806240081787,
+          90.00000117704246
+        ],
+        "origin_cm": [
+          0.0,
+          -1.430511474609375e-05,
+          89.99999882295754
+        ],
+        "size_cm": [
+          90.20318603515625,
+          52.43612480163574,
+          180.00000235408493
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/SM_Hero_1_Chad_Male.SM_Hero_1_Chad_Male",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX\\Hero_1_Chad_Male\\Hero_1_Chad_Male_Textured.fbx",
+      "imported_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/SM_Hero_1_Chad_Male.SM_Hero_1_Chad_Male"
+      ],
+      "material": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Materials/MI_SM_Hero_1_Chad_Male.MI_SM_Hero_1_Chad_Male",
+      "material_base_color_texture": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Textures/T_Hero_1_Chad_Male_BaseColor.T_Hero_1_Chad_Male_BaseColor",
+      "material_diffuse_texture": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Textures/T_Hero_1_Chad_Male_BaseColor.T_Hero_1_Chad_Male_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Materials/MI_SM_Hero_1_Chad_Male.MI_SM_Hero_1_Chad_Male",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Textures/T_Hero_1_Chad_Male_BaseColor.T_Hero_1_Chad_Male_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX\\Hero_1_Chad_Male\\Textures\\Hero_1_Chad_Male_00_Image_0.png"
+    }
+  ]
+}

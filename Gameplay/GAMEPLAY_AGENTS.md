@@ -2,15 +2,16 @@
 
 ## Owns
 
-Gameplay runtime systems and their documentation: combat, stats, movement, camera, traps, audio, and world/tower.
+Gameplay runtime systems and their documentation: combat, stats, movement, physics, camera, traps, audio, and world/tower.
 
 ## Trigger Words
 
-Combat, boss, enemy, stats, XP, movement, dash, camera, trap, audio, tower, world, map, stage.
+Combat, boss, enemy, stats, XP, movement, dash, physics, ragdoll, active ragdoll, PAC, PhysicsAsset, Chaos, knockback, camera, trap, audio, tower, world, map, stage.
 
 ## Read First
 
 - `Gameplay/README.md`
+- `ART_DIRECTION.md` for model/material/world visual direction questions.
 - Then the owning subfolder router if it exists.
 - If no subfolder router exists, read the relevant `MASTER_*` or implementation reference file before editing source.
 - For combat VFX authoring, read `Gameplay/Combat/CombatVFXAuthoringProcedure.md` before per-effect packets or Unreal asset work.

@@ -147,6 +147,43 @@ void UT66BossHazardSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
+#if !UE_BUILD_SHIPPING
+FT66WorldRuntimeDebugSnapshot UT66BossHazardSubsystem::GetWorldRuntimeDebugSnapshot() const
+{
+	FT66WorldRuntimeDebugSnapshot Snapshot;
+	Snapshot.SystemName = TEXT("UT66BossHazardSubsystem");
+
+	int32 ValidRenderComponents = 0;
+	int32 TotalRenderInstances = 0;
+	for (const TObjectPtr<UHierarchicalInstancedStaticMeshComponent>& Component : RenderComponents)
+	{
+		if (Component)
+		{
+			++ValidRenderComponents;
+			TotalRenderInstances += Component->GetInstanceCount();
+		}
+	}
+
+	Snapshot.AddCounter(TEXT("active_hazard_count"), ActiveHazards.Num());
+	Snapshot.AddCounter(TEXT("render_component_slots"), RenderComponents.Num());
+	Snapshot.AddCounter(TEXT("valid_render_components"), ValidRenderComponents);
+	Snapshot.AddCounter(TEXT("render_instance_count"), TotalRenderInstances);
+	Snapshot.AddCounter(TEXT("render_bucket_count"), RenderBuckets.Num());
+	Snapshot.AddCounter(TEXT("render_bucket_key_count"), RenderBucketByKey.Num());
+	Snapshot.AddCounter(TEXT("known_timer_handles"), 0);
+	Snapshot.AddCounter(TEXT("known_external_delegate_handles"), 0);
+	Snapshot.AddCounter(TEXT("async_load_handles_valid"), 0);
+	Snapshot.AddFlag(TEXT("initialized"), bInitialized);
+	Snapshot.AddFlag(TEXT("shutting_down"), bShuttingDown);
+	Snapshot.AddFlag(TEXT("render_host_valid"), RenderHost != nullptr);
+	Snapshot.AddFlag(TEXT("render_root_valid"), RenderRoot != nullptr);
+	Snapshot.AddEvidence(TEXT("timers"), TEXT("No stored timer handles found; hazard cadence is tick-driven."));
+	Snapshot.AddEvidence(TEXT("delegates"), TEXT("No external delegate handle is stored by this subsystem."));
+	Snapshot.AddEvidence(TEXT("async_loads"), TEXT("No async load handle is owned by this subsystem."));
+	return Snapshot;
+}
+#endif
+
 bool UT66BossHazardSubsystem::SpawnBossHazard(const FT66BossHazardSpawnParams& Params)
 {
 	FT66BossHazardDefinitionData Definition;

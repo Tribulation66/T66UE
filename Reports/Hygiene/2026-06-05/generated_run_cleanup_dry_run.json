@@ -1,0 +1,74 @@
+{
+  "generated_utc": "2026-06-05T08:26:18.875608+00:00",
+  "dry_run": true,
+  "runs_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D",
+  "deleted_count": 0,
+  "skipped_count": 8,
+  "deleted": [],
+  "skipped": [
+    {
+      "name": "Archive",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Archive",
+      "recommended_action": "keep_review",
+      "reason": "Current or archived provenance; delete only after import provenance is settled.",
+      "existed": true,
+      "skip_reason": "not_marked_delete_after_summary"
+    },
+    {
+      "name": "FriendSlopEasyBatch_20260604_1532",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532",
+      "recommended_action": "keep_review",
+      "reason": "Current or archived provenance; delete only after import provenance is settled.",
+      "existed": true,
+      "skip_reason": "not_marked_delete_after_summary"
+    },
+    {
+      "name": "FriendSlopEasyBatch_20260604_1532_retry1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532_retry1",
+      "recommended_action": "delete_after_summary",
+      "reason": "Generated retry, smoke, or guideline output is not durable source once summarized.",
+      "existed": true,
+      "skip_reason": "dry_run"
+    },
+    {
+      "name": "FriendSlopEasyBatch_20260604_1532_retry2_R1024",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532_retry2_R1024",
+      "recommended_action": "delete_after_summary",
+      "reason": "Generated retry, smoke, or guideline output is not durable source once summarized.",
+      "existed": true,
+      "skip_reason": "dry_run"
+    },
+    {
+      "name": "FriendSlopProbe_Hero1Male_20260604_1415",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415",
+      "recommended_action": "keep_review",
+      "reason": "Current or archived provenance; delete only after import provenance is settled.",
+      "existed": true,
+      "skip_reason": "not_marked_delete_after_summary"
+    },
+    {
+      "name": "HeroDemoLineup_20260522_AccuRig",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig",
+      "recommended_action": "keep_review",
+      "reason": "Current or archived provenance; delete only after import provenance is settled.",
+      "existed": true,
+      "skip_reason": "not_marked_delete_after_summary"
+    },
+    {
+      "name": "HumanoidGuidelineTest_20260522_100k",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HumanoidGuidelineTest_20260522_100k",
+      "recommended_action": "delete_after_summary",
+      "reason": "Generated retry, smoke, or guideline output is not durable source once summarized.",
+      "existed": true,
+      "skip_reason": "dry_run"
+    },
+    {
+      "name": "PipelineSmoke01",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\PipelineSmoke01",
+      "recommended_action": "delete_after_summary",
+      "reason": "Generated retry, smoke, or guideline output is not durable source once summarized.",
+      "existed": true,
+      "skip_reason": "dry_run"
+    }
+  ]
+}

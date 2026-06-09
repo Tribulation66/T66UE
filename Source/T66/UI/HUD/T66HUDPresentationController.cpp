@@ -2,6 +2,7 @@
 
 #include "UI/HUD/T66HUDPresentationController.h"
 #include "UI/HUD/T66GameplayHUDWidget_Private.h"
+#include "UI/T66CrateOverlayWidget.h"
 #include "UI/T66LootWheelOverlayWidget.h"
 
 FT66HUDPresentationController::FT66HUDPresentationController(UT66GameplayHUDWidget& InOwner)
@@ -20,6 +21,7 @@ void FT66HUDPresentationController::Tick(float InDeltaTime)
 
 void FT66HUDPresentationController::Reset()
 {
+	bResettingPresentations = true;
 	if (UWorld* World = Owner.GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(AchievementNotificationTimerHandle);
@@ -28,9 +30,8 @@ void FT66HUDPresentationController::Reset()
 	HidePickupCard();
 	HideLootBagReveal();
 	HideChestReward();
-	DrainQueuedChestRewardsForTeardown();
-	QueuedChestRewards.Reset();
-	QueuedPickupCards.Reset();
+	DrainQueuedPresentationsForTeardown();
+	QueuedPresentations.Reset();
 	AchievementNotificationQueue.Reset();
 
 	if (UT66CrateOverlayWidget* Overlay = ActiveCrateOverlay.Get())
@@ -52,6 +53,7 @@ void FT66HUDPresentationController::Reset()
 	{
 		Owner.AchievementNotificationTitleText->SetText(FText::GetEmpty());
 	}
+	bResettingPresentations = false;
 }
 
 
@@ -136,16 +138,15 @@ void FT66HUDPresentationController::HideAchievementNotificationAndShowNext()
 }
 
 
-void FT66HUDPresentationController::QueueActivePickupCardToFront()
+bool FT66HUDPresentationController::IsRewardPresentationBusy() const
 {
-	if (bPickupCardVisible && !ActivePickupCardItemID.IsNone())
-	{
-		QueuedPickupCards.InsertDefaulted(0, 1);
-		FQueuedPickupCard& QueuedPickup = QueuedPickupCards[0];
-		QueuedPickup.ItemID = ActivePickupCardItemID;
-		QueuedPickup.ItemRarity = ActivePickupCardRarity;
-		QueuedPickup.bLootBagReveal = false;
-	}
+	const UT66CrateOverlayWidget* CrateOverlay = ActiveCrateOverlay.Get();
+	const UT66LootWheelOverlayWidget* LootWheelOverlay = ActiveLootWheelOverlay.Get();
+	return (CrateOverlay && CrateOverlay->IsInViewport())
+		|| (LootWheelOverlay && LootWheelOverlay->IsInViewport())
+		|| bChestRewardVisible
+		|| bLootBagRevealVisible
+		|| bPickupCardVisible;
 }
 
 void FT66HUDPresentationController::DispatchChestRewardCommitIfNeeded()
@@ -174,19 +175,43 @@ void FT66HUDPresentationController::DispatchChestRewardFinishedIfNeeded()
 	}
 }
 
-void FT66HUDPresentationController::DrainQueuedChestRewardsForTeardown()
+void FT66HUDPresentationController::DrainQueuedPresentationsForTeardown()
 {
-	for (FQueuedChestReward& QueuedReward : QueuedChestRewards)
+	for (FQueuedPresentation& QueuedPresentation : QueuedPresentations)
 	{
-		if (QueuedReward.OnCommit)
+		if (QueuedPresentation.Type == EQueuedPresentationType::CrateOpen)
 		{
-			QueuedReward.OnCommit();
-			QueuedReward.OnCommit = nullptr;
+			UT66CrateOverlayWidget::CommitImmediateCrateReward(Owner.GetWorld(), QueuedPresentation.Rarity);
+			continue;
 		}
-		if (QueuedReward.OnFinished)
+
+		if (QueuedPresentation.Type == EQueuedPresentationType::ChestReward)
 		{
-			QueuedReward.OnFinished();
-			QueuedReward.OnFinished = nullptr;
+			if (QueuedPresentation.OnCommit)
+			{
+				QueuedPresentation.OnCommit();
+				QueuedPresentation.OnCommit = nullptr;
+			}
+			if (QueuedPresentation.OnFinished)
+			{
+				QueuedPresentation.OnFinished();
+				QueuedPresentation.OnFinished = nullptr;
+			}
+			continue;
+		}
+
+		if (QueuedPresentation.Type == EQueuedPresentationType::LootWheelSpin)
+		{
+			if (QueuedPresentation.LootWheelParams.OnLandingCommit)
+			{
+				QueuedPresentation.LootWheelParams.OnLandingCommit();
+				QueuedPresentation.LootWheelParams.OnLandingCommit = nullptr;
+			}
+			if (QueuedPresentation.LootWheelParams.OnFinished)
+			{
+				QueuedPresentation.LootWheelParams.OnFinished();
+				QueuedPresentation.LootWheelParams.OnFinished = nullptr;
+			}
 		}
 	}
 }
@@ -194,17 +219,27 @@ void FT66HUDPresentationController::DrainQueuedChestRewardsForTeardown()
 
 void FT66HUDPresentationController::StartCrateOpen(const ET66Rarity SourceCrateRarity)
 {
+	if (bResettingPresentations)
+	{
+		return;
+	}
+
 	APlayerController* PC = Owner.GetOwningPlayer();
 	if (!PC)
 	{
 		return;
 	}
 
-	HidePickupCard();
-	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible)
+	if (IsRewardPresentationBusy())
 	{
+		FQueuedPresentation& QueuedPresentation = QueuedPresentations.AddDefaulted_GetRef();
+		QueuedPresentation.Type = EQueuedPresentationType::CrateOpen;
+		QueuedPresentation.Rarity = SourceCrateRarity;
+		UE_LOG(LogT66HUD, Display, TEXT("[HUDPresentationQueue] queued type=CrateOpen pending=%d"), QueuedPresentations.Num());
 		return;
 	}
+
+	HidePickupCard();
 
 	UT66CrateOverlayWidget* Overlay = CreateWidget<UT66CrateOverlayWidget>(PC, UT66CrateOverlayWidget::StaticClass());
 	if (Overlay)
@@ -219,6 +254,19 @@ void FT66HUDPresentationController::StartCrateOpen(const ET66Rarity SourceCrateR
 
 bool FT66HUDPresentationController::StartLootWheelSpin(FT66LootWheelPresentationParams Params)
 {
+	if (bResettingPresentations)
+	{
+		if (Params.OnLandingCommit)
+		{
+			Params.OnLandingCommit();
+		}
+		if (Params.OnFinished)
+		{
+			Params.OnFinished();
+		}
+		return false;
+	}
+
 	APlayerController* PC = Owner.GetOwningPlayer();
 	if (!PC)
 	{
@@ -233,12 +281,15 @@ bool FT66HUDPresentationController::StartLootWheelSpin(FT66LootWheelPresentation
 		return false;
 	}
 
-	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible)
+	if (IsRewardPresentationBusy())
 	{
-		return false;
+		FQueuedPresentation& QueuedPresentation = QueuedPresentations.AddDefaulted_GetRef();
+		QueuedPresentation.Type = EQueuedPresentationType::LootWheelSpin;
+		QueuedPresentation.LootWheelParams = MoveTemp(Params);
+		UE_LOG(LogT66HUD, Display, TEXT("[HUDPresentationQueue] queued type=LootWheelSpin pending=%d"), QueuedPresentations.Num());
+		return true;
 	}
 
-	QueueActivePickupCardToFront();
 	HidePickupCard();
 
 	UT66LootWheelOverlayWidget* Overlay = CreateWidget<UT66LootWheelOverlayWidget>(PC, UT66LootWheelOverlayWidget::StaticClass());
@@ -270,6 +321,19 @@ bool FT66HUDPresentationController::StartChestReward(
 	TFunction<void()> OnCommit,
 	TFunction<void()> OnFinished)
 {
+	if (bResettingPresentations)
+	{
+		if (OnCommit)
+		{
+			OnCommit();
+		}
+		if (OnFinished)
+		{
+			OnFinished();
+		}
+		return false;
+	}
+
 	if (!Owner.ChestRewardBox.IsValid())
 	{
 		if (OnCommit)
@@ -283,17 +347,18 @@ bool FT66HUDPresentationController::StartChestReward(
 		return false;
 	}
 
-	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible)
+	if (IsRewardPresentationBusy())
 	{
-		FQueuedChestReward& QueuedReward = QueuedChestRewards.AddDefaulted_GetRef();
-		QueuedReward.Rarity = ChestRarity;
-		QueuedReward.GoldAmount = GoldAmount;
-		QueuedReward.OnCommit = MoveTemp(OnCommit);
-		QueuedReward.OnFinished = MoveTemp(OnFinished);
+		FQueuedPresentation& QueuedPresentation = QueuedPresentations.AddDefaulted_GetRef();
+		QueuedPresentation.Type = EQueuedPresentationType::ChestReward;
+		QueuedPresentation.Rarity = ChestRarity;
+		QueuedPresentation.GoldAmount = GoldAmount;
+		QueuedPresentation.OnCommit = MoveTemp(OnCommit);
+		QueuedPresentation.OnFinished = MoveTemp(OnFinished);
+		UE_LOG(LogT66HUD, Display, TEXT("[HUDPresentationQueue] queued type=ChestReward pending=%d"), QueuedPresentations.Num());
 		return true;
 	}
 
-	QueueActivePickupCardToFront();
 	HidePickupCard();
 
 	if (Owner.GoldCurrencyBrush.IsValid())
@@ -452,14 +517,22 @@ bool FT66HUDPresentationController::TrySkipActivePresentation()
 {
 	if (UT66CrateOverlayWidget* Overlay = ActiveCrateOverlay.Get())
 	{
-		Overlay->RequestSkip();
-		return true;
+		if (Overlay->IsInViewport())
+		{
+			Overlay->RequestSkip();
+			return true;
+		}
+		ActiveCrateOverlay.Reset();
 	}
 
 	if (UT66LootWheelOverlayWidget* Overlay = ActiveLootWheelOverlay.Get())
 	{
-		Overlay->RequestSkip();
-		return true;
+		if (Overlay->IsInViewport())
+		{
+			Overlay->RequestSkip();
+			return true;
+		}
+		ActiveLootWheelOverlay.Reset();
 	}
 
 	if (bChestRewardVisible)
@@ -827,35 +900,46 @@ void FT66HUDPresentationController::HideChestReward()
 
 void FT66HUDPresentationController::TryShowQueuedPresentation()
 {
-	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible || bPickupCardVisible)
+	if (bResettingPresentations)
 	{
 		return;
 	}
 
-	if (QueuedChestRewards.Num() > 0)
+	if (IsRewardPresentationBusy())
 	{
-		FQueuedChestReward NextChestReward = MoveTemp(QueuedChestRewards[0]);
-		QueuedChestRewards.RemoveAt(0);
+		return;
+	}
+
+	if (QueuedPresentations.Num() <= 0)
+	{
+		return;
+	}
+
+	FQueuedPresentation NextPresentation = MoveTemp(QueuedPresentations[0]);
+	QueuedPresentations.RemoveAt(0);
+	UE_LOG(LogT66HUD, Display, TEXT("[HUDPresentationQueue] dequeued type=%d remaining=%d"), static_cast<int32>(NextPresentation.Type), QueuedPresentations.Num());
+	switch (NextPresentation.Type)
+	{
+	case EQueuedPresentationType::CrateOpen:
+		StartCrateOpen(NextPresentation.Rarity);
+		return;
+	case EQueuedPresentationType::LootWheelSpin:
+		StartLootWheelSpin(MoveTemp(NextPresentation.LootWheelParams));
+		return;
+	case EQueuedPresentationType::ChestReward:
 		StartChestReward(
-			NextChestReward.Rarity,
-			NextChestReward.GoldAmount,
-			MoveTemp(NextChestReward.OnCommit),
-			MoveTemp(NextChestReward.OnFinished));
+			NextPresentation.Rarity,
+			NextPresentation.GoldAmount,
+			MoveTemp(NextPresentation.OnCommit),
+			MoveTemp(NextPresentation.OnFinished));
 		return;
-	}
-
-	if (QueuedPickupCards.Num() > 0)
-	{
-		const FQueuedPickupCard NextPickup = QueuedPickupCards[0];
-		QueuedPickupCards.RemoveAt(0);
-		if (NextPickup.bLootBagReveal)
-		{
-			ShowLootBagItemReveal(NextPickup.ItemID, NextPickup.ItemRarity);
-		}
-		else
-		{
-			ShowPickupItemCard(NextPickup.ItemID, NextPickup.ItemRarity);
-		}
+	case EQueuedPresentationType::LootBagReveal:
+		ShowLootBagItemReveal(NextPresentation.ItemID, NextPresentation.ItemRarity);
+		return;
+	case EQueuedPresentationType::PickupCard:
+	default:
+		ShowPickupItemCard(NextPresentation.ItemID, NextPresentation.ItemRarity);
+		return;
 	}
 }
 
@@ -976,16 +1060,22 @@ void FT66HUDPresentationController::PopulatePickupCardContent(const FName ItemID
 
 void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const ET66ItemRarity ItemRarity)
 {
+	if (bResettingPresentations)
+	{
+		return;
+	}
+
 	if (ItemID.IsNone() || !Owner.PickupCardBox.IsValid())
 	{
 		return;
 	}
-	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible || bPickupCardVisible)
+	if (IsRewardPresentationBusy())
 	{
-		FQueuedPickupCard& QueuedPickup = QueuedPickupCards.AddDefaulted_GetRef();
-		QueuedPickup.ItemID = ItemID;
-		QueuedPickup.ItemRarity = ItemRarity;
-		QueuedPickup.bLootBagReveal = false;
+		FQueuedPresentation& QueuedPresentation = QueuedPresentations.AddDefaulted_GetRef();
+		QueuedPresentation.Type = EQueuedPresentationType::PickupCard;
+		QueuedPresentation.ItemID = ItemID;
+		QueuedPresentation.ItemRarity = ItemRarity;
+		UE_LOG(LogT66HUD, Display, TEXT("[HUDPresentationQueue] queued type=PickupCard item=%s pending=%d"), *ItemID.ToString(), QueuedPresentations.Num());
 		return;
 	}
 
@@ -1008,17 +1098,23 @@ void FT66HUDPresentationController::ShowPickupItemCard(const FName ItemID, const
 
 void FT66HUDPresentationController::ShowLootBagItemReveal(const FName ItemID, const ET66ItemRarity ItemRarity)
 {
+	if (bResettingPresentations)
+	{
+		return;
+	}
+
 	if (ItemID.IsNone() || !Owner.LootBagRevealBox.IsValid() || !Owner.PickupCardBox.IsValid())
 	{
 		ShowPickupItemCard(ItemID, ItemRarity);
 		return;
 	}
-	if (ActiveCrateOverlay.IsValid() || ActiveLootWheelOverlay.IsValid() || bChestRewardVisible || bLootBagRevealVisible || bPickupCardVisible)
+	if (IsRewardPresentationBusy())
 	{
-		FQueuedPickupCard& QueuedPickup = QueuedPickupCards.AddDefaulted_GetRef();
-		QueuedPickup.ItemID = ItemID;
-		QueuedPickup.ItemRarity = ItemRarity;
-		QueuedPickup.bLootBagReveal = true;
+		FQueuedPresentation& QueuedPresentation = QueuedPresentations.AddDefaulted_GetRef();
+		QueuedPresentation.Type = EQueuedPresentationType::LootBagReveal;
+		QueuedPresentation.ItemID = ItemID;
+		QueuedPresentation.ItemRarity = ItemRarity;
+		UE_LOG(LogT66HUD, Display, TEXT("[HUDPresentationQueue] queued type=LootBagReveal item=%s pending=%d"), *ItemID.ToString(), QueuedPresentations.Num());
 		return;
 	}
 
@@ -1029,7 +1125,6 @@ void FT66HUDPresentationController::ShowLootBagItemReveal(const FName ItemID, co
 		return;
 	}
 
-	QueueActivePickupCardToFront();
 	HidePickupCard();
 	ResetLootBagRevealWidgets();
 	PopulatePickupCardContent(ItemID, ItemRarity, true);

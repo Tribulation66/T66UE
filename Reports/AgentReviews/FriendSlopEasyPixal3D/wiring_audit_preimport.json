@@ -1,0 +1,451 @@
+{
+  "asset_count": 49,
+  "assets": [
+    {
+      "asset_id": "Companion_01",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Companions/Companion_01/Default/Pixal3DToonStyle/SM_Companion_01.SM_Companion_01",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "Companion_02",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Companions/Companion_02/Default/Pixal3DToonStyle/SM_Companion_02.SM_Companion_02",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "Companion_03",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Companions/Companion_03/Default/Pixal3DToonStyle/SM_Companion_03.SM_Companion_03",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "evidence": [
+        "Pets.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3DToonStyle/SM_Pet_Dungeon_SewerSlimeKing.SM_Pet_Dungeon_SewerSlimeKing",
+      "owner": "Content/Data/Pets.csv CaptureVisualMesh",
+      "wired": true
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "evidence": [
+        "Pets.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3DToonStyle/SM_Pet_Dungeon_WebMatriarch.SM_Pet_Dungeon_WebMatriarch",
+      "owner": "Content/Data/Pets.csv CaptureVisualMesh",
+      "wired": true
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "evidence": [
+        "Pets.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3DToonStyle/SM_Pet_Dungeon_BoneJailer.SM_Pet_Dungeon_BoneJailer",
+      "owner": "Content/Data/Pets.csv CaptureVisualMesh",
+      "wired": true
+    },
+    {
+      "asset_id": "Slime",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/Slime/Pixal3DToonStyle/SM_Slime.SM_Slime",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "BoneWalker",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/BoneWalker/Pixal3DToonStyle/SM_BoneWalker.SM_BoneWalker",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "CaveBat",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/CaveBat/Pixal3DToonStyle/SM_CaveBat.SM_CaveBat",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "CryptWraith",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/CryptWraith/Pixal3DToonStyle/SM_CryptWraith.SM_CryptWraith",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "CursedCrow",
+      "evidence": [
+        "CharacterVisuals.csv",
+        "Enemies.csv ModelStatus=MeshReady"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/CursedCrow/Pixal3DToonStyle/SM_CursedCrow.SM_CursedCrow",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "evidence": [
+        "CharacterVisuals.csv",
+        "Enemies.csv ModelStatus=MeshReady"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/FamishedGhoul/Pixal3DToonStyle/SM_FamishedGhoul.SM_FamishedGhoul",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "HexSlinger",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/HexSlinger/Pixal3DToonStyle/SM_HexSlinger.SM_HexSlinger",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "MimicLure",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/MimicLure/Pixal3DToonStyle/SM_MimicLure.SM_MimicLure",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "RatPack",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/RatPack/Pixal3DToonStyle/SM_RatPack.SM_RatPack",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/StoneSentinel/Pixal3DToonStyle/SM_StoneSentinel.SM_StoneSentinel",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "TombSpider",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/TombSpider/Pixal3DToonStyle/SM_TombSpider.SM_TombSpider",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Mobs/BoneConjurer/Pixal3DToonStyle/SM_BoneConjurer.SM_BoneConjurer",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3DToonStyle/SM_Dungeon_BaelFallenChad.SM_Dungeon_BaelFallenChad",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3DToonStyle/SM_Dungeon_BoneJailer.SM_Dungeon_BoneJailer",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3DToonStyle/SM_Dungeon_SewerSlimeKing.SM_Dungeon_SewerSlimeKing",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3DToonStyle/SM_Dungeon_WebMatriarch.SM_Dungeon_WebMatriarch",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/NPCs/CasinoNPC/Pixal3DToonStyle/SM_CasinoNPC.SM_CasinoNPC",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "Saint",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/NPCs/Saint/Pixal3DToonStyle/SM_Saint.SM_Saint",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "Ouroboros",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/NPCs/Ouroboros/Pixal3DToonStyle/SM_Ouroboros.SM_Ouroboros",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "VendorNPC",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/NPCs/VendorNPC/Pixal3DToonStyle/SM_VendorNPC.SM_VendorNPC",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "LoanShark",
+      "evidence": [
+        "CharacterVisuals.csv"
+      ],
+      "expected_static_mesh": "/Game/Characters/NPCs/LoanShark/Pixal3DToonStyle/SM_LoanShark.SM_LoanShark",
+      "owner": "Content/Data/CharacterVisuals.csv",
+      "wired": true
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Boosts/SM_AccuracyBoost_Pixal3D.SM_AccuracyBoost_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Boosts/SM_ArmorBoost_Pixal3D.SM_ArmorBoost_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Boosts/SM_AttackScaleBoost_Pixal3D.SM_AttackScaleBoost_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Boosts/SM_AttackSpeedBoost_Pixal3D.SM_AttackSpeedBoost_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Boosts/SM_DamageBoost_Pixal3D.SM_DamageBoost_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Boosts/SM_EvasionBoost_Pixal3D.SM_EvasionBoost_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Boosts/SM_LuckBoost_Pixal3D.SM_LuckBoost_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Boosts/SM_SpeedBoost_Pixal3D.SM_SpeedBoost_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "Chest_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D.SM_Chest_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/CompanionCage/SM_CompanionCage_Pixal3D.SM_CompanionCage_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "CowardiceGate_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Gates/SM_CowardiceGate_Pixal3D.SM_CowardiceGate_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "LootCrate",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Crate/SM_LootCrate.SM_LootCrate",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D.SM_DifficultyTotem_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Gates/SM_TutorialGate_Pixal3D.SM_TutorialGate_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "Fountain_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D.SM_Fountain_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "IdolAltar_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D.SM_IdolAltar_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D.SM_LootBag_Shared_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "LootWheel_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D.SM_LootWheel_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "StageGate_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Gates/SM_StageGate_Pixal3D.SM_StageGate_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "Vehicle_Pixal3D",
+      "evidence": [
+        "VehicleInteractables.json"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D",
+      "owner": "Content/Data/VehicleInteractables.json",
+      "wired": true
+    },
+    {
+      "asset_id": "WeaponAltar_Pixal3D",
+      "evidence": [
+        "Gameplay source"
+      ],
+      "expected_static_mesh": "/Game/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D.SM_WeaponAltar_Pixal3D",
+      "owner": "Source/T66/Gameplay runtime soft path",
+      "wired": true
+    },
+    {
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "evidence": [
+        "WorldVisualProps.json"
+      ],
+      "expected_static_mesh": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D.SM_SkullRemains_Easy_Pixal3D",
+      "owner": "Content/Data/WorldVisualProps.json",
+      "wired": true
+    }
+  ],
+  "missing": [],
+  "missing_count": 0,
+  "ok": true
+}

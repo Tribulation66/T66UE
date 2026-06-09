@@ -5,6 +5,8 @@
 - Use this folder for T66 performance, diagnostics, profiling, telemetry, perception, and optimization-readiness work.
 - Keep human-readable contracts, schemas, reports, and sidecar notes under `PerformanceSystem/`.
 - Keep Unreal runtime code under `Source/T66/PerformanceSystem/` inside the existing `T66` game module unless a later prompt explicitly asks for a plugin or separate module.
+- Use `PerformanceSystem/RUNTIME_HEALTH_GATE.md` for packaged startup/runtime-health coordination and `Scripts/RunRuntimeHealthGate.ps1` for the reusable gate.
+- Use `PerformanceSystem/RUNTIME_OWNERSHIP_INVENTORY.md` when a task needs subsystem ownership mapped to startup, shutdown, lifecycle/reset, durable-state, or health-gate coverage.
 
 ## Rules
 
@@ -12,6 +14,7 @@
 - Treat sidecar hardware telemetry as optional enrichment. The in-engine system must run without the sidecar.
 - Keep Shipping privacy gates conservative: hardware model strings default off in Shipping and default on in Development.
 - Every event, report, and sidecar payload must carry `SchemaVersion`.
+- Runtime-health gates must assert schema freshness, required report fields, and clean writer state instead of only checking that PerformanceSystem files exist.
+- Keep the runtime ownership inventory cross-linked with `LifecycleSystem/` and `ShutdownSystem/`; do not let it become a replacement for those registries.
 - Add new detectors through the detector/runtime interfaces; avoid coupling one-off detector logic to unrelated gameplay classes.
 - If a change affects playable runtime behavior, follow the root standalone shortcut verification rule.
-

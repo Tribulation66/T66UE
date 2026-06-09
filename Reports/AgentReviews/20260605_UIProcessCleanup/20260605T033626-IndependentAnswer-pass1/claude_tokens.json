@@ -1,0 +1,58 @@
+﻿{
+    "ClaudeTokensSpent":  197722,
+    "Model":  "claude-opus-4-8",
+    "Mode":  "IndependentAnswer",
+    "ClaudeUsage":  {
+                        "input_tokens":  8,
+                        "cache_creation_input_tokens":  54054,
+                        "cache_read_input_tokens":  137110,
+                        "output_tokens":  5198,
+                        "server_tool_use":  {
+                                                "web_search_requests":  0,
+                                                "web_fetch_requests":  0
+                                            },
+                        "service_tier":  "standard",
+                        "cache_creation":  {
+                                               "ephemeral_1h_input_tokens":  54054,
+                                               "ephemeral_5m_input_tokens":  0
+                                           },
+                        "inference_geo":  "",
+                        "iterations":  [
+                                           {
+                                               "input_tokens":  2,
+                                               "output_tokens":  4040,
+                                               "cache_read_input_tokens":  47787,
+                                               "cache_creation_input_tokens":  27582,
+                                               "cache_creation":  {
+                                                                      "ephemeral_5m_input_tokens":  0,
+                                                                      "ephemeral_1h_input_tokens":  27582
+                                                                  },
+                                               "type":  "message"
+                                           }
+                                       ],
+                        "speed":  "standard"
+                    },
+    "ClaudeModelUsage":  {
+                             "claude-haiku-4-5-20251001":  {
+                                                               "inputTokens":  1330,
+                                                               "outputTokens":  22,
+                                                               "cacheReadInputTokens":  0,
+                                                               "cacheCreationInputTokens":  0,
+                                                               "webSearchRequests":  0,
+                                                               "costUSD":  0.00144,
+                                                               "contextWindow":  200000,
+                                                               "maxOutputTokens":  32000
+                                                           },
+                             "claude-opus-4-8":  {
+                                                     "inputTokens":  8,
+                                                     "outputTokens":  5198,
+                                                     "cacheReadInputTokens":  137110,
+                                                     "cacheCreationInputTokens":  54054,
+                                                     "webSearchRequests":  0,
+                                                     "costUSD":  0.5363825,
+                                                     "contextWindow":  200000,
+                                                     "maxOutputTokens":  32000
+                                                 }
+                         },
+    "CreatedAt":  "20260605T033626"
+}

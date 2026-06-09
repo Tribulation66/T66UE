@@ -2,6 +2,7 @@
 
 #include "UI/Screens/T66PauseMenuScreen.h"
 
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66LeaderboardSubsystem.h"
@@ -11,8 +12,8 @@
 #include "Core/T66RunSaveGame.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
-#include "Core/T66DamageLogSubsystem.h"
 #include "Core/T66SaveSubsystem.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66SessionPlayerState.h"
@@ -24,6 +25,7 @@
 
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
 #include "Engine/DataTable.h"
@@ -68,9 +70,9 @@ namespace
 			nullptr,
 			FMargin(18.f, 10.f),
 			496.f,
-			95.f,
+			84.f,
 			true,
-			28,
+			26,
 			Tag);
 	}
 
@@ -111,6 +113,8 @@ void UT66PauseMenuScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 
+	UT66AudioSubsystem::PlayUIEventFromAnyWorld(FName(TEXT("UI.Pause.Open")));
+
 	bLeaderboardModalOpen = false;
 	FlatLeaderboardPanel.Reset();
 }
@@ -123,6 +127,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 
 	const FText ResumeText = Loc ? Loc->GetText_Resume() : NSLOCTEXT("T66.PauseMenu", "Resume", "RESUME GAME");
 	const FText SaveAndQuitText = Loc ? Loc->GetText_SaveAndQuit() : NSLOCTEXT("T66.PauseMenu", "SaveAndQuit", "SAVE AND QUIT");
+	const FText QuitText = Loc ? Loc->GetText_Quit() : NSLOCTEXT("T66.PauseMenu", "Quit", "QUIT");
 	const FText RestartText = Loc ? Loc->GetText_Restart() : NSLOCTEXT("T66.PauseMenu", "Restart", "RESTART");
 	const FText SettingsText = Loc ? Loc->GetText_Settings() : NSLOCTEXT("T66.PauseMenu", "Settings", "SETTINGS");
 	const FText AchievementsText = Loc ? Loc->GetText_Achievements() : NSLOCTEXT("T66.Achievements", "Title", "ACHIEVEMENTS");
@@ -140,26 +145,27 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 	};
 
 	AddSlot(0.f, 0.f, 1920.f, 1080.f, MakePauseMenuScrim(PauseMenuTag(TEXT("PauseMenu.Scrim"))));
-	AddSlot(657.f, 121.f, 605.f, 838.f,
+	AddSlot(657.f, 104.f, 605.f, 872.f,
 		FT66FlatStyle::MakeFlatPanel(
 			ET66FlatState::Default,
 			FMargin(0.f),
 			SNullWidget::NullWidget,
 			nullptr,
 			PauseMenuTag(TEXT("PauseMenu.ModalPanel"))));
-	AddSlot(854.f, 170.f, 212.f, 90.f,
+	AddSlot(854.f, 148.f, 212.f, 90.f,
 		FT66FlatStyle::MakeFlatLabel(
 			NSLOCTEXT("T66.PauseMenu", "PausedTitle", "PAUSED"),
 			ET66FlatLabelRole::Title,
 			ETextJustify::Center,
 			PauseMenuTag(TEXT("PauseMenu.Title"))));
 
-	AddSlot(712.f, 295.f, 496.f, 95.f, MakePauseMenuButton(ResumeText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleResumeClicked), ET66FlatState::Selected, PauseMenuTag(TEXT("PauseMenu.ResumeButton"))));
-	AddSlot(712.f, 407.f, 496.f, 95.f, MakePauseMenuButton(SaveAndQuitText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleSaveAndQuitClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.SaveAndQuitButton"))));
-	AddSlot(712.f, 519.f, 496.f, 95.f, MakePauseMenuButton(RestartText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleRestartClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.RestartButton"))));
-	AddSlot(712.f, 631.f, 496.f, 95.f, MakePauseMenuButton(SettingsText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleSettingsClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.SettingsButton"))));
-	AddSlot(712.f, 744.f, 496.f, 95.f, MakePauseMenuButton(AchievementsText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleAchievementsClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.AchievementsButton"))));
-	AddSlot(712.f, 856.f, 496.f, 95.f, MakePauseMenuButton(LeaderboardText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleLeaderboardClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.LeaderboardButton"))));
+	AddSlot(712.f, 264.f, 496.f, 84.f, MakePauseMenuButton(ResumeText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleResumeClicked), ET66FlatState::Selected, PauseMenuTag(TEXT("PauseMenu.ResumeButton"))));
+	AddSlot(712.f, 365.f, 496.f, 84.f, MakePauseMenuButton(SaveAndQuitText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleSaveAndQuitClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.SaveAndQuitButton"))));
+	AddSlot(712.f, 466.f, 496.f, 84.f, MakePauseMenuButton(QuitText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleQuitClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.QuitButton"))));
+	AddSlot(712.f, 567.f, 496.f, 84.f, MakePauseMenuButton(RestartText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleRestartClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.RestartButton"))));
+	AddSlot(712.f, 668.f, 496.f, 84.f, MakePauseMenuButton(SettingsText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleSettingsClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.SettingsButton"))));
+	AddSlot(712.f, 769.f, 496.f, 84.f, MakePauseMenuButton(AchievementsText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleAchievementsClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.AchievementsButton"))));
+	AddSlot(712.f, 870.f, 496.f, 84.f, MakePauseMenuButton(LeaderboardText, FOnClicked::CreateUObject(this, &UT66PauseMenuScreen::HandleLeaderboardClicked), ET66FlatState::Default, PauseMenuTag(TEXT("PauseMenu.LeaderboardButton"))));
 
 	if (bLeaderboardModalOpen)
 	{
@@ -228,6 +234,7 @@ TSharedRef<SWidget> UT66PauseMenuScreen::BuildSlateUI()
 
 FReply UT66PauseMenuScreen::HandleResumeClicked() { OnResumeClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleSaveAndQuitClicked() { OnSaveAndQuitClicked(); return FReply::Handled(); }
+FReply UT66PauseMenuScreen::HandleQuitClicked() { OnQuitClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleRestartClicked() { OnRestartClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleSettingsClicked() { OnSettingsClicked(); return FReply::Handled(); }
 FReply UT66PauseMenuScreen::HandleAchievementsClicked() { OnAchievementsClicked(); return FReply::Handled(); }
@@ -273,16 +280,33 @@ void UT66PauseMenuScreen::OnSaveAndQuitClicked()
 	}
 }
 
+void UT66PauseMenuScreen::OnQuitClicked()
+{
+	AT66PlayerController* PC = GetT66PlayerController();
+	if (PC)
+	{
+		PC->SetPause(false);
+	}
+
+	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			Shutdown->RequestQuitGame(ET66ShutdownReason::UserQuit, 0);
+			return;
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[Shutdown] Pause menu quit fallback to UKismetSystemLibrary::QuitGame because UT66ShutdownSubsystem is unavailable."));
+	UKismetSystemLibrary::QuitGame(this, PC, EQuitPreference::Quit, false);
+}
+
 void UT66PauseMenuScreen::OnRestartClicked()
 {
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
 	{
-		RunState->ResetForNewRun();
-	}
-	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
-	{
-		DamageLog->ResetForNewRun();
+		RunState->BeginNewRun();
 	}
 
 	APlayerController* PC = GetOwningPlayer();

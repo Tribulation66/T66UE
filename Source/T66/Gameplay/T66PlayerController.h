@@ -27,8 +27,7 @@ class UT66LoadingScreenWidget;
 class AT66LootBagPickup;
 class AT66NPCBase;
 class AT66CasinoNPC;
-class AT66CasinoInteractable;
-class AT66VendorInteractable;
+class AT66VendorNPC;
 class AT66RecruitableCompanion;
 class AT66SaintNPC;
 class AT66HeroBase;
@@ -135,6 +134,12 @@ public:
 	UFUNCTION(Client, Reliable)
 	void ClientApplyGameplayRunSettings(int32 InRunSeed, ET66Difficulty InDifficulty, ET66MainMapLayoutVariant InLayoutVariant);
 
+	UFUNCTION(Client, Reliable)
+	void ClientShowPartyLeaderboardRestrictionWarning(const FString& RestrictedDisplayName);
+
+	UFUNCTION(Client, Reliable)
+	void ClientShowRunWillNotCountWarning(const FString& ReasonText);
+
 	bool IsHeroOneScopedUltActive() const { return bHeroOneScopedUltActive; }
 	bool IsHeroOneScopeViewEnabled() const { return bHeroOneScopeViewEnabled; }
 	float GetHeroOneScopedUltRemainingSeconds() const;
@@ -145,7 +150,7 @@ public:
 	/** Dev console overlay: Enter to open, Esc to close. Non-shipping builds only. */
 	void ToggleDevConsole();
 
-	/** Open the shared casino shell overlay (gambling + shop + alchemy). */
+	/** Open the shared casino shell overlay (gambling + shop). */
 	void OpenCasinoOverlay();
 
 	/** Close the shared casino shell overlay and return to gameplay input. */
@@ -153,15 +158,14 @@ public:
 
 	void SwitchCasinoOverlayToGamblerTab();
 	void SwitchCasinoOverlayToVendorTab();
-	void SwitchCasinoOverlayToAlchemy();
 	bool IsCasinoOverlayOpen() const;
 	bool SpawnVendorBoss();
 	void ApplyCasinoOverlayInputMode(bool bReassertNextTick = true);
 
 	void OpenCasinoVendorTab();
-	bool OpenCasinoGamblerInteractable(AT66CasinoInteractable* SourceInteractable);
-	bool OpenVendorInteractable(AT66VendorInteractable* SourceInteractable);
-	void HandleCasinoInteractableGambleResolved(FName GameID, bool bSuccessful, int32 PayoutGold);
+	bool OpenCasinoGamblerNPC(AT66CasinoNPC* SourceNPC);
+	bool OpenVendorNPC(AT66VendorNPC* SourceNPC);
+	void HandleCasinoGambleResolved(FName GameID, bool bSuccessful, int32 PayoutGold);
 
 	/** Open the Lab Collector full-screen overlay (non-pausing). */
 	void OpenCollectorOverlay();
@@ -240,7 +244,10 @@ protected:
 	/** Handle scroll wheel zoom (game world only) */
 	void HandleZoom(float Value);
 
-	/** Handle one-button forward roll (default: LeftShift) */
+	/** Handle one-button forward leap (default: LeftShift) */
+	void HandleLeapPressed();
+
+	/** Deprecated compatibility input handler; use HandleLeapPressed. */
 	void HandleRollPressed();
 
 	/** Handle jump */
@@ -334,10 +341,10 @@ private:
 	TObjectPtr<UT66CasinoOverlayWidget> CasinoOverlayWidget;
 
 	UPROPERTY()
-	TWeakObjectPtr<AT66CasinoInteractable> ActiveCasinoInteractable;
+	TWeakObjectPtr<AT66CasinoNPC> ActiveCasinoNPC;
 
 	UPROPERTY()
-	TWeakObjectPtr<AT66VendorInteractable> ActiveVendorInteractable;
+	TWeakObjectPtr<AT66VendorNPC> ActiveVendorNPC;
 
 	UPROPERTY()
 	TObjectPtr<UT66CowardicePromptWidget> CowardicePromptWidget;
@@ -384,9 +391,11 @@ private:
 	void QueueFrontendAutomationScreenshotIfRequested();
 	void QueueFrontendAutomationDumpIfRequested();
 	void QueueFrontendAutomationWidgetDumpIfRequested();
+	void QueueFrontendAutomationClickIfRequested();
 	void HandleFrontendAutomationScreenshot();
 	void HandleFrontendAutomationDump();
 	void HandleFrontendAutomationWidgetDump();
+	void HandleFrontendAutomationClick();
 	void HandleFrontendAutomationQuit();
 	void QueueGameplayAutomationScreenshotIfRequested();
 	void HandleGameplayAutomationPrepare();
@@ -408,10 +417,13 @@ private:
 	FString FrontendAutomationWidgetDumpTarget;
 	FString FrontendAutomationWidgetDumpPath;
 	float FrontendAutomationWidgetDumpDelaySeconds = 0.f;
+	FString FrontendAutomationClickTag;
+	float FrontendAutomationClickDelaySeconds = 0.f;
 	ET66ScreenType FrontendAutomationModalToShow = ET66ScreenType::None;
 	FTimerHandle FrontendAutomationScreenshotTimerHandle;
 	FTimerHandle FrontendAutomationDumpTimerHandle;
 	FTimerHandle FrontendAutomationWidgetDumpTimerHandle;
+	FTimerHandle FrontendAutomationClickTimerHandle;
 	FTimerHandle FrontendAutomationQuitTimerHandle;
 	FString GameplayAutomationScreenshotPath;
 	FString GameplayAutomationScreenshotSequenceDir;

@@ -12,6 +12,7 @@
 #include "UI/Screens/T66HeroGridScreen.h"
 #include "UI/Screens/T66CompanionGridScreen.h"
 #include "UI/Screens/T66SaveSlotsScreen.h"
+#include "UI/Screens/T66HeroSelectionScreen.h"
 #include "UI/Screens/T66AchievementsScreen.h"
 #include "UI/Screens/T66PartyInviteModal.h"
 
@@ -1262,6 +1263,38 @@ void AT66PlayerController::ServerSubmitPartyRunSummary_Implementation(const FStr
 				SessionSubsystem->StorePartyRunSummaryForSteamId(RequestKey, SessionPlayerState->GetSteamId(), RunSummaryJson);
 			}
 		}
+	}
+}
+
+void AT66PlayerController::ClientShowPartyLeaderboardRestrictionWarning_Implementation(const FString& RestrictedDisplayName)
+{
+	const FString DisplayName = RestrictedDisplayName.IsEmpty() ? TEXT("a party member") : RestrictedDisplayName;
+	ClientShowRunWillNotCountWarning_Implementation(FString::Printf(
+		TEXT("One of the party members, %s, is suspended. This run will not count for the leaderboard."),
+		*DisplayName));
+}
+
+void AT66PlayerController::ClientShowRunWillNotCountWarning_Implementation(const FString& ReasonText)
+{
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
+	{
+		T66GI->bRunIneligibleForLeaderboard = true;
+	}
+
+	if (!UIManager)
+	{
+		return;
+	}
+
+	if (UT66HeroSelectionScreen* HeroSelection = Cast<UT66HeroSelectionScreen>(UIManager->GetCurrentScreen()))
+	{
+		HeroSelection->ShowRunWillNotCountWarning(ReasonText);
+		return;
+	}
+
+	if (UT66HeroSelectionScreen* HeroSelection = Cast<UT66HeroSelectionScreen>(UIManager->GetCurrentModal()))
+	{
+		HeroSelection->ShowRunWillNotCountWarning(ReasonText);
 	}
 }
 

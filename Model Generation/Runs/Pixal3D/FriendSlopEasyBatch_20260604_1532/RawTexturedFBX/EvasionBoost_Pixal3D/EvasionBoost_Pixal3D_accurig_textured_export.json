@@ -1,0 +1,114 @@
+{
+  "asset_name": "EvasionBoost_Pixal3D",
+  "bounds": {
+    "dimensions": [
+      49.813270568847656,
+      55.5223388671875,
+      80.0
+    ],
+    "max": [
+      24.906635284423828,
+      27.76116943359375,
+      80.0
+    ],
+    "min": [
+      -24.906635284423828,
+      -27.76116943359375,
+      0.0
+    ]
+  },
+  "fbx_bytes": 4562556,
+  "fbx_export_options": {
+    "add_leaf_bones": false,
+    "apply_scale_options": "FBX_SCALE_ALL",
+    "apply_unit_scale": true,
+    "bake_space_transform": false,
+    "embed_textures": true,
+    "global_scale": 0.01,
+    "mesh_smooth_type": "FACE",
+    "object_types": [
+      "MESH"
+    ],
+    "path_mode": "COPY",
+    "use_mesh_modifiers": true,
+    "use_selection": true
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\EvasionBoost_Pixal3D\\EvasionBoost_Pixal3D_Textured.fbx",
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Outputs\\EvasionBoost_Pixal3D.glb",
+  "material_count": 1,
+  "mtl_bytes": 272,
+  "mtl_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\EvasionBoost_Pixal3D\\EvasionBoost_Pixal3D_Textured.mtl",
+  "normalization": {
+    "bounds_max": [
+      24.906635284423828,
+      27.76116943359375,
+      80.0
+    ],
+    "bounds_min": [
+      -24.906635284423828,
+      -27.76116943359375,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      49.813270568847656,
+      55.5223388671875,
+      80.0
+    ],
+    "height": 80.0,
+    "scale_factor": 92.95701105252776
+  },
+  "obj_bytes": 8033474,
+  "obj_export_options": {
+    "apply_modifiers": true,
+    "apply_transform": false,
+    "export_materials": true,
+    "export_normals": true,
+    "export_pbr_extensions": false,
+    "export_selected_objects": true,
+    "export_uv": true,
+    "global_scale": 1.0,
+    "path_mode": "RELATIVE"
+  },
+  "obj_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\EvasionBoost_Pixal3D\\EvasionBoost_Pixal3D_Textured.obj",
+  "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\EvasionBoost_Pixal3D",
+  "texture_usage": [
+    {
+      "image": "Image_0",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture"
+    },
+    {
+      "image": "Image_1",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture.001"
+    }
+  ],
+  "textures": [
+    {
+      "image": "Image_0",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\EvasionBoost_Pixal3D\\Textures\\EvasionBoost_Pixal3D_00_Image_0.png",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "image": "Image_1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\EvasionBoost_Pixal3D\\Textures\\EvasionBoost_Pixal3D_01_Image_1.png",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "vertex_count": 50363
+}

@@ -8,7 +8,6 @@
 #include "UI/T66ScreenBase.h"
 #include "Data/T66DataTypes.h"
 #include "Core/T66LocalizationSubsystem.h"
-#include "Core/T66RetroFXSettings.h"
 #include "UI/T66FrontendVideoCatalog.h"
 #include "T66HeroSelectionScreen.generated.h"
 
@@ -116,6 +115,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
 	void OnBackClicked();
 
+	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
+	void ShowPartyLeaderboardRestrictionWarning(const FString& RestrictedDisplayName);
+
+	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
+	bool ShowRunWillNotCountWarning(const FString& ReasonText);
+
 	UFUNCTION(BlueprintImplementableEvent, Category = "Hero Selection")
 	void OnPreviewedHeroChanged(const FHeroData& NewHeroData);
 
@@ -126,7 +131,6 @@ protected:
 	virtual TSharedRef<SWidget> BuildSlateUI() override;
 	virtual bool HandleBackAction() override;
 	virtual void NativeDestruct() override;
-	TSharedRef<SWidget> BuildInlineRetroFXPanel();
 
 private:
 	TArray<FName> AllHeroIDs;
@@ -254,15 +258,11 @@ private:
 	/** True when the left panel should show companion skins instead of hero skins. */
 	bool bShowingCompanionSkins = false;
 	bool bShowingCompanionInfo = false;
-	bool bShowingInlineRetroFXPanel = false;
-	bool bInlineRetroFXInitialized = false;
-	bool bInlineRetroFXDirty = false;
-	FT66RetroFXSettings PendingInlineRetroFXSettings;
-
-	void InitializeInlineRetroFXFromUserSettingsIfNeeded();
-	void ApplyPendingInlineRetroFX();
-	void CommitPendingInlineRetroFXOnClose();
-	void ResetPendingInlineRetroFXToDefaults();
+	bool bShowRunWillNotCountWarning = false;
+	bool bRunWillNotCountDontShowAgainChecked = false;
+	bool bRunWillNotCountAcknowledgedThisSession = false;
+	FString RunWillNotCountReasonText;
+	FString RunWillNotCountAcknowledgedReasonText;
 
 	// Handle language change to rebuild UI
 	UFUNCTION()
@@ -282,8 +282,8 @@ private:
 	FReply HandleCompanionClicked();
 	FReply HandleTemporaryBuffSlotClicked(int32 SlotIndex);
 	FReply HandleTemporaryBuffPickerCloseClicked();
-	FReply HandleTemporaryBuffBuyClicked(ET66SecondaryStatType StatType);
-	FReply HandleTemporaryBuffEquipClicked(ET66SecondaryStatType StatType);
+	FReply HandleTemporaryBuffBuyClicked(ET66StatType StatType);
+	FReply HandleTemporaryBuffEquipClicked(ET66StatType StatType);
 	FReply HandleClearTemporaryBuffsClicked();
 	FReply HandleLabClicked();
 	FReply HandleTutorialClicked();
@@ -301,9 +301,7 @@ private:
 	FReply HandleEnterClicked();
 	FReply HandleChallengesClicked();
 	FReply HandleModsClicked();
-	FReply HandleRetroFXSettingsClicked();
-	FReply HandleApplyInlineRetroFXClicked();
-	FReply HandleResetInlineRetroFXClicked();
+	FReply HandleRunWillNotCountOkayClicked();
 	FReply HandleBackClicked();
 	FReply HandleBackToPartyClicked();
 
@@ -329,6 +327,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UT66LeaderboardRunSummarySaveGame> HeroStatsSnapshot;
+
+	/** Stats Rework: resolved top-3 "Best stats" for the selected hero (authored, else category fallback). */
+	TArray<ET66StatType> CurrentHeroBestStats;
 
 	void ApplyKitPreviewVideo(ET66HeroKitPreviewSlot KitSlot);
 	void RefreshKitPreviewPanelText();

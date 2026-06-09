@@ -230,6 +230,7 @@ namespace
 		const FName MetadataTag = T66Metadata.IsValid() ? T66Metadata->Tag : NAME_None;
 		const FName EffectiveTag = !SlateTag.IsNone() ? SlateTag : MetadataTag;
 		const FString TagString = EffectiveTag.IsNone() ? FString() : EffectiveTag.ToString();
+		const bool bWidgetHasTooltip = Widget->GetToolTip().IsValid();
 
 		const FGeometry& Geometry = Widget->GetTickSpaceGeometry();
 		const FVector2D AbsolutePosition = Geometry.GetAbsolutePosition() - Context.RootOrigin;
@@ -360,9 +361,15 @@ namespace
 		Record->SetObjectField(TEXT("button_state"), ButtonStateObject);
 
 		const bool bReportedHoverCapable = T66Metadata.IsValid() && T66Metadata->bHoverCapable && Widget->IsEnabled();
+		const bool bReportedHasTooltip = bWidgetHasTooltip || (T66Metadata.IsValid() && T66Metadata->bHasTooltip);
+		const bool bTooltipRequired = T66Metadata.IsValid() && T66Metadata->bTooltipRequired;
 		TSharedRef<FJsonObject> InteractivityObject = MakeShared<FJsonObject>();
 		InteractivityObject->SetBoolField(TEXT("has_click_handler"), T66Metadata.IsValid() ? T66Metadata->bHasClickHandler : false);
 		InteractivityObject->SetBoolField(TEXT("hover_capable"), bReportedHoverCapable);
+		InteractivityObject->SetBoolField(TEXT("has_tooltip"), bReportedHasTooltip);
+		InteractivityObject->SetBoolField(TEXT("tooltip_required"), bTooltipRequired);
+		InteractivityObject->SetStringField(TEXT("tooltip_id"), T66Metadata.IsValid() && !T66Metadata->TooltipId.IsNone() ? T66Metadata->TooltipId.ToString() : FString());
+		InteractivityObject->SetStringField(TEXT("tooltip_kind"), T66Metadata.IsValid() ? T66Metadata->TooltipKind : FString());
 		InteractivityObject->SetStringField(TEXT("toggle_group"), T66Metadata.IsValid() && !T66Metadata->ToggleGroup.IsNone() ? T66Metadata->ToggleGroup.ToString() : FString());
 		Record->SetObjectField(TEXT("interactivity"), InteractivityObject);
 
@@ -379,6 +386,10 @@ namespace
 		MetadataObject->SetStringField(TEXT("intended_state"), T66Metadata.IsValid() ? FlatStateToString(T66Metadata->IntendedState) : FString());
 		MetadataObject->SetBoolField(TEXT("has_click_handler"), T66Metadata.IsValid() ? T66Metadata->bHasClickHandler : false);
 		MetadataObject->SetBoolField(TEXT("hover_capable"), bReportedHoverCapable);
+		MetadataObject->SetBoolField(TEXT("has_tooltip"), bReportedHasTooltip);
+		MetadataObject->SetBoolField(TEXT("tooltip_required"), bTooltipRequired);
+		MetadataObject->SetStringField(TEXT("tooltip_id"), T66Metadata.IsValid() && !T66Metadata->TooltipId.IsNone() ? T66Metadata->TooltipId.ToString() : FString());
+		MetadataObject->SetStringField(TEXT("tooltip_kind"), T66Metadata.IsValid() ? T66Metadata->TooltipKind : FString());
 		MetadataObject->SetStringField(TEXT("toggle_group"), T66Metadata.IsValid() && !T66Metadata->ToggleGroup.IsNone() ? T66Metadata->ToggleGroup.ToString() : FString());
 		MetadataObject->SetBoolField(TEXT("is_label"), T66Metadata.IsValid() ? T66Metadata->bIsLabel : false);
 		if (T66Metadata.IsValid() && T66Metadata->BorderColor.IsSet())

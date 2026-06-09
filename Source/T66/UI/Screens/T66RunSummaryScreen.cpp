@@ -64,6 +64,49 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66RunSummary, Log, All);
 
+namespace
+{
+	int32 T66RunSummaryInventoryRarityRank(const ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::White:
+			return 0;
+		case ET66ItemRarity::Yellow:
+			return 1;
+		case ET66ItemRarity::Red:
+			return 2;
+		case ET66ItemRarity::Black:
+		default:
+			return 3;
+		}
+	}
+
+	void T66SortInventorySlotsByRarityForSummary(TArray<FT66InventorySlot>& Slots)
+	{
+		Slots.StableSort([](const FT66InventorySlot& A, const FT66InventorySlot& B)
+		{
+			const int32 RankA = T66RunSummaryInventoryRarityRank(A.Rarity);
+			const int32 RankB = T66RunSummaryInventoryRarityRank(B.Rarity);
+			if (RankA != RankB)
+			{
+				return RankA < RankB;
+			}
+
+			return A.ItemTemplateID.ToString() < B.ItemTemplateID.ToString();
+		});
+	}
+
+	void T66CopyInventorySlotIDsForSummary(const TArray<FT66InventorySlot>& Slots, TArray<FName>& OutItemIDs)
+	{
+		OutItemIDs.Reset(Slots.Num());
+		for (const FT66InventorySlot& Slot : Slots)
+		{
+			OutItemIDs.Add(Slot.ItemTemplateID);
+		}
+	}
+}
+
 UT66RunSummaryScreen::UT66RunSummaryScreen(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
@@ -1306,23 +1349,37 @@ void UT66RunSummaryScreen::ProcessRunSummaryLeaderboardSubmission(const bool bTr
 		return;
 	}
 
+	const bool bHighScoreMode = PS ? PS->GetHighScoreMode() : true;
+	const bool bSpeedRunMode = PS ? PS->GetSpeedRunMode() : true;
 	const bool bShouldSubmitTime =
 		(RunState->DidRunEndInVictory() || bTreatAsVictoryForTime)
 		&& PS
-		&& PS->GetSpeedRunMode();
+		&& bSpeedRunMode;
 	bool bSubmittedTime = false;
 	bool bSubmittedScore = false;
-	if (bShouldSubmitTime)
+	if (bHighScoreMode && bShouldSubmitTime)
 	{
 		bSubmittedTime = LB->SubmitDifficultyClearRun(RunState->GetFinalRunElapsedSeconds(), SavedRunSummarySlotName);
 		bSubmittedScore = bSubmittedTime;
 		bNewPersonalBestScore = LB->WasLastScoreNewPersonalBest();
 		bNewPersonalBestTime = LB->WasLastCompletedRunTimeNewPersonalBest();
 	}
-	else
+	else if (bShouldSubmitTime)
+	{
+		bSubmittedTime = LB->SubmitCompletedRunTime(RunState->GetFinalRunElapsedSeconds(), SavedRunSummarySlotName);
+		bNewPersonalBestScore = false;
+		bNewPersonalBestTime = LB->WasLastCompletedRunTimeNewPersonalBest();
+	}
+	else if (bHighScoreMode)
 	{
 		bSubmittedScore = LB->SubmitRunScore(RunState->GetCurrentScore(), SavedRunSummarySlotName);
 		bNewPersonalBestScore = LB->WasLastScoreNewPersonalBest();
+		bNewPersonalBestTime = false;
+	}
+	else
+	{
+		UE_LOG(LogT66RunSummary, Log, TEXT("Run Summary: leaderboard submission skipped because no leaderboard submission mode is enabled."));
+		bNewPersonalBestScore = false;
 		bNewPersonalBestTime = false;
 	}
 
@@ -1807,16 +1864,16 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		const TArray<FName>* FlatIdolsPtr = nullptr;
 		TArray<FName> FlatInventoryLocal;
 		const TArray<FT66InventorySlot>* FlatInventorySlotsPtr = nullptr;
+		TArray<FT66InventorySlot> FlatInventorySlotsLocal;
 		if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 		{
 			FlatIdolsPtr = &LoadedSavedSummary->EquippedIdols;
 			if (LoadedSavedSummary->InventorySlots.Num() > 0)
 			{
-				FlatInventorySlotsPtr = &LoadedSavedSummary->InventorySlots;
-				for (const FT66InventorySlot& SavedSlot : LoadedSavedSummary->InventorySlots)
-				{
-					FlatInventoryLocal.Add(SavedSlot.ItemTemplateID);
-				}
+				FlatInventorySlotsLocal = LoadedSavedSummary->InventorySlots;
+				T66SortInventorySlotsByRarityForSummary(FlatInventorySlotsLocal);
+				FlatInventorySlotsPtr = &FlatInventorySlotsLocal;
+				T66CopyInventorySlotIDsForSummary(FlatInventorySlotsLocal, FlatInventoryLocal);
 			}
 			else
 			{
@@ -1833,8 +1890,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			{
 				FlatIdolsPtr = &RunState->GetEquippedIdols();
 			}
-			FlatInventoryLocal = RunState->GetInventory();
-			FlatInventorySlotsPtr = &RunState->GetInventorySlots();
+			RunState->GetInventorySlotsSortedByRarity(FlatInventorySlotsLocal);
+			FlatInventorySlotsPtr = &FlatInventorySlotsLocal;
+			T66CopyInventorySlotIDsForSummary(FlatInventorySlotsLocal, FlatInventoryLocal);
 		}
 		const TArray<FName> EmptyFlatIdols;
 		const TArray<FName>& FlatIdols = FlatIdolsPtr ? *FlatIdolsPtr : EmptyFlatIdols;
@@ -2159,7 +2217,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		AddN(0.319f, 0.498f, 0.338f, 0.176f, MakePanel(ET66FlatState::Default, DTag(TEXT("RunSummary.Middle.IdolsPanel"))));
 		AddN(0.331f, 0.508f, 0.024f, 0.042f, MakeIcon(DTag(TEXT("RunSummary.Middle.IdolsPanel.Icon")), TEXT("RuntimeDependencies/T66/UI/Icons/Flat/favorite_star_outline.png"), FVector2D(44.f, 44.f), Purple, FText::FromString(TEXT("*"))));
 		AddN(0.354f, 0.512f, 0.070f, 0.034f, MakeLabel(DTag(TEXT("RunSummary.Middle.IdolsPanel.Header")), NSLOCTEXT("T66.RunSummary", "IdolsHeader", "IDOLS"), 28, White, true));
-		constexpr int32 FlatIdolSlotCount = 4;
+		constexpr int32 FlatIdolSlotCount = UT66IdolManagerSubsystem::MaxEquippedIdolSlots;
 		constexpr float FlatIdolIconSize = 90.f;
 		for (int32 IdolIndex = 0; IdolIndex < FlatIdolSlotCount; ++IdolIndex)
 		{
@@ -3139,18 +3197,19 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				case ET66AttackCategory::AOE: return NSLOCTEXT("T66.RunSummary", "AttackCategoryAOE", "AOE");
 				case ET66AttackCategory::Bounce: return NSLOCTEXT("T66.RunSummary", "AttackCategoryBounce", "Bounce");
 				case ET66AttackCategory::DOT: return NSLOCTEXT("T66.RunSummary", "AttackCategoryDOT", "DOT");
+				case ET66AttackCategory::SingleTarget: return NSLOCTEXT("T66.RunSummary", "AttackCategorySingleTarget", "Single Target");
 				case ET66AttackCategory::Pierce:
 				default:
 					return NSLOCTEXT("T66.RunSummary", "AttackCategoryPierce", "Pierce");
 				}
 			};
-			auto AddSecondaryStatValue = [&](ET66SecondaryStatType StatType, float Value)
+			auto AddStatValue = [&](ET66StatType StatType, float Value)
 			{
-				if (!T66IsLiveSecondaryStatType(StatType))
+				if (!T66IsLiveStatType(StatType))
 				{
 					return;
 				}
-				const FText Label = Loc ? Loc->GetText_SecondaryStatName(StatType) : StaticEnum<ET66SecondaryStatType>()->GetDisplayNameTextByValue(static_cast<int64>(StatType));
+				const FText Label = Loc ? Loc->GetText_StatName(StatType) : StaticEnum<ET66StatType>()->GetDisplayNameTextByValue(static_cast<int64>(StatType));
 				AddStatLineText(Label, FormatFloat(Value, 1));
 			};
 			auto AddSavedEnrichedLines = [&]()
@@ -3161,10 +3220,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				}
 
 				AddStatLine(NSLOCTEXT("T66.RunSummary", "NoIdolStacks", "No Idol Stacks"), LoadedSavedSummary->NoIdolSelectionStacks);
-				AddSecondaryStatValue(ET66SecondaryStatType::FirePower, LoadedSavedSummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::FirePower));
-				AddSecondaryStatValue(ET66SecondaryStatType::IcePower, LoadedSavedSummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::IcePower));
-				AddSecondaryStatValue(ET66SecondaryStatType::ElectricityPower, LoadedSavedSummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::ElectricityPower));
-				AddSecondaryStatValue(ET66SecondaryStatType::NaturePower, LoadedSavedSummary->SecondaryStatValues.FindRef(ET66SecondaryStatType::NaturePower));
+				AddStatValue(ET66StatType::FirePower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::FirePower));
+				AddStatValue(ET66StatType::IcePower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::IcePower));
+				AddStatValue(ET66StatType::ElectricityPower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::ElectricityPower));
+				AddStatValue(ET66StatType::NaturePower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::NaturePower));
+				AddStatValue(ET66StatType::WindPower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::WindPower));
 				AddStatLineText(
 					NSLOCTEXT("T66.RunSummary", "MobLoot", "Mob Loot"),
 					FText::Format(
@@ -3236,16 +3296,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "ReflectDamage", "Reflect Damage"), FormatPercent(RunState->GetReflectDamageFraction()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CrushChance", "Crush Chance"), FormatPercent(RunState->GetCrushChance01()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "AssassinateChance", "Assassinate Chance"), FormatPercent(RunState->GetAssassinateChance01()));
-				AddStatLineText(NSLOCTEXT("T66.RunSummary", "RollCooldown", "Roll Cooldown"), FormatMultiplier(RunState->GetDashCooldownMultiplier()));
+				AddStatLineText(NSLOCTEXT("T66.RunSummary", "LeapCooldown", "Leap Cooldown"), FormatMultiplier(RunState->GetDashCooldownMultiplier()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "AttackRange", "Attack Range"), FormatFloat(RunState->GetHeroBaseAttackRange(), 0));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CloseRange", "Close Range"), FormatFloat(RunState->GetCloseRangeThreshold(), 0));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "LongRange", "Long Range"), FormatFloat(RunState->GetLongRangeThreshold(), 0));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "CloseRangeDamage", "Close Damage"), FormatMultiplier(RunState->GetCloseRangeDamageMultiplier()));
 				AddStatLineText(NSLOCTEXT("T66.RunSummary", "LongRangeDamage", "Long Damage"), FormatMultiplier(RunState->GetLongRangeDamageMultiplier()));
-				AddSecondaryStatValue(ET66SecondaryStatType::FirePower, RunState->GetSecondaryStatValue(ET66SecondaryStatType::FirePower));
-				AddSecondaryStatValue(ET66SecondaryStatType::IcePower, RunState->GetSecondaryStatValue(ET66SecondaryStatType::IcePower));
-				AddSecondaryStatValue(ET66SecondaryStatType::ElectricityPower, RunState->GetSecondaryStatValue(ET66SecondaryStatType::ElectricityPower));
-				AddSecondaryStatValue(ET66SecondaryStatType::NaturePower, RunState->GetSecondaryStatValue(ET66SecondaryStatType::NaturePower));
+				AddStatValue(ET66StatType::FirePower, RunState->GetStatValue(ET66StatType::FirePower));
+				AddStatValue(ET66StatType::IcePower, RunState->GetStatValue(ET66StatType::IcePower));
+				AddStatValue(ET66StatType::ElectricityPower, RunState->GetStatValue(ET66StatType::ElectricityPower));
+				AddStatValue(ET66StatType::NaturePower, RunState->GetStatValue(ET66StatType::NaturePower));
+				AddStatValue(ET66StatType::WindPower, RunState->GetStatValue(ET66StatType::WindPower));
 				AddStatLine(NSLOCTEXT("T66.RunSummary", "NoIdolStacks", "No Idol Stacks"), RunState->GetNoIdolSelectionStacks());
 				AddStatLineText(
 					NSLOCTEXT("T66.RunSummary", "MobLoot", "Mob Loot"),
@@ -3315,18 +3376,18 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 			}
 			else if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 			{
-				TArray<TPair<ET66SecondaryStatType, float>> SavedSecondaryStats;
-				for (const TPair<ET66SecondaryStatType, float>& Pair : LoadedSavedSummary->SecondaryStatValues)
+				TArray<TPair<ET66StatType, float>> SavedStats;
+				for (const TPair<ET66StatType, float>& Pair : LoadedSavedSummary->StatValues)
 				{
-					SavedSecondaryStats.Add(Pair);
+					SavedStats.Add(Pair);
 				}
-				SavedSecondaryStats.Sort([](const TPair<ET66SecondaryStatType, float>& A, const TPair<ET66SecondaryStatType, float>& B)
+				SavedStats.Sort([](const TPair<ET66StatType, float>& A, const TPair<ET66StatType, float>& B)
 				{
 					return static_cast<uint8>(A.Key) < static_cast<uint8>(B.Key);
 				});
-				for (const TPair<ET66SecondaryStatType, float>& Pair : SavedSecondaryStats)
+				for (const TPair<ET66StatType, float>& Pair : SavedStats)
 				{
-					AddSecondaryStatValue(Pair.Key, Pair.Value);
+					AddStatValue(Pair.Key, Pair.Value);
 				}
 				AddSavedEnrichedLines();
 			}
@@ -3374,17 +3435,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	const TArray<FName>* IdolsPtr = nullptr;
 	TArray<FName> InventoryLocal;
 	const TArray<FT66InventorySlot>* InvSlotsPtr = nullptr;
-	TArray<ET66SecondaryStatType> TemporaryBuffSlots;
+	TArray<FT66InventorySlot> InventorySlotsLocal;
+	TArray<ET66StatType> TemporaryBuffSlots;
 	if (bViewingSavedLeaderboardRunSummary && LoadedSavedSummary)
 	{
 		IdolsPtr = &LoadedSavedSummary->EquippedIdols;
 		if (LoadedSavedSummary->InventorySlots.Num() > 0)
 		{
-			InvSlotsPtr = &LoadedSavedSummary->InventorySlots;
-			for (const FT66InventorySlot& SavedSlot : LoadedSavedSummary->InventorySlots)
-			{
-				InventoryLocal.Add(SavedSlot.ItemTemplateID);
-			}
+			InventorySlotsLocal = LoadedSavedSummary->InventorySlots;
+			T66SortInventorySlotsByRarityForSummary(InventorySlotsLocal);
+			InvSlotsPtr = &InventorySlotsLocal;
+			T66CopyInventorySlotIDsForSummary(InventorySlotsLocal, InventoryLocal);
 		}
 		else
 		{
@@ -3402,8 +3463,9 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 		{
 			IdolsPtr = &RunState->GetEquippedIdols();
 		}
-		InventoryLocal = RunState->GetInventory();
-		InvSlotsPtr = &RunState->GetInventorySlots();
+		RunState->GetInventorySlotsSortedByRarity(InventorySlotsLocal);
+		InvSlotsPtr = &InventorySlotsLocal;
+		T66CopyInventorySlotIDsForSummary(InventorySlotsLocal, InventoryLocal);
 		if (UT66BuffSubsystem* Buffs = GetGameInstance() ? GetGameInstance()->GetSubsystem<UT66BuffSubsystem>() : nullptr)
 		{
 			TemporaryBuffSlots = Buffs->GetSelectedSingleUseBuffSlots();
@@ -3530,17 +3592,17 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 	bool bHasAnyTemporaryBuff = false;
 	for (int32 SlotIndex = 0; SlotIndex < UT66BuffSubsystem::MaxSelectedSingleUseBuffs; ++SlotIndex)
 	{
-		const ET66SecondaryStatType SlotStat = TemporaryBuffSlots.IsValidIndex(SlotIndex)
+		const ET66StatType SlotStat = TemporaryBuffSlots.IsValidIndex(SlotIndex)
 			? TemporaryBuffSlots[SlotIndex]
-			: ET66SecondaryStatType::None;
-		const bool bHasTemporaryBuff = T66IsLiveSecondaryStatType(SlotStat);
+			: ET66StatType::None;
+		const bool bHasTemporaryBuff = T66IsLiveStatType(SlotStat);
 		bHasAnyTemporaryBuff |= bHasTemporaryBuff;
 		TSharedPtr<FSlateBrush> TempBuffBrush = bHasTemporaryBuff
 			? T66TemporaryBuffUI::CreateSecondaryBuffBrush(TexPool, this, SlotStat, FVector2D(TempBuffSlotSize - 6.f, TempBuffSlotSize - 6.f))
 			: nullptr;
 		TemporaryBuffIconBrushes[SlotIndex] = TempBuffBrush;
 		const FText SlotTooltip = bHasTemporaryBuff
-			? (Loc ? Loc->GetText_SecondaryStatName(SlotStat) : FText::FromString(TEXT("Temporary Buff")))
+			? (Loc ? Loc->GetText_StatName(SlotStat) : FText::FromString(TEXT("Temporary Buff")))
 			: NSLOCTEXT("T66.RunSummary", "EmptyTemporaryBuffSlot", "Empty temporary buff slot");
 
 		TemporaryBuffSlotsRow->AddSlot()
@@ -4443,7 +4505,7 @@ void UT66RunSummaryScreen::OnRestartClicked()
 			UIManager->CloseModal();
 			return;
 		}
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
+		UT66GameInstance::TransitionToFrontendLevel(this);
 		return;
 	}
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
@@ -4460,16 +4522,12 @@ void UT66RunSummaryScreen::OnRestartClicked()
 			PC->SetPause(false);
 		}
 
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
+		UT66GameInstance::TransitionToFrontendLevel(this);
 		return;
 	}
 
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (RunState) RunState->ResetForNewRun();
-	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
-	{
-		DamageLog->ResetForNewRun();
-	}
+	if (RunState) RunState->BeginNewRun();
 	APlayerController* PC = GetOwningPlayer();
 	if (PC) PC->SetPause(false);
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
@@ -4505,16 +4563,12 @@ void UT66RunSummaryScreen::OnMainMenuClicked()
 			UIManager->CloseModal();
 			return;
 		}
-		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
+		UT66GameInstance::TransitionToFrontendLevel(this);
 		return;
 	}
 	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	if (RunState) RunState->ResetForNewRun();
-	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
-	{
-		DamageLog->ResetForNewRun();
-	}
+	if (RunState) RunState->BeginNewRun();
 	APlayerController* PC = GetOwningPlayer();
 	if (PC) PC->SetPause(false);
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
@@ -4526,7 +4580,7 @@ void UT66RunSummaryScreen::OnMainMenuClicked()
 		T66GI->PendingFrontendScreen = ET66ScreenType::MainMenu;
 	}
 
-	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
+	UT66GameInstance::TransitionToFrontendLevel(this);
 }
 
 void UT66RunSummaryScreen::OnViewLogClicked()

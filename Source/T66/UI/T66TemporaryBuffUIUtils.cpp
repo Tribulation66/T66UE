@@ -77,45 +77,49 @@ namespace
 	}
 }
 
-FString T66TemporaryBuffUI::GetSecondaryBuffIconSlug(ET66SecondaryStatType StatType)
+FString T66TemporaryBuffUI::GetSecondaryBuffIconSlug(ET66StatType StatType)
 {
 	switch (StatType)
 	{
-	case ET66SecondaryStatType::AoeDamage:       return TEXT("aoe-damage");
-	case ET66SecondaryStatType::BounceDamage:    return TEXT("bounce-damage");
-	case ET66SecondaryStatType::PierceDamage:    return TEXT("pierce-damage");
-	case ET66SecondaryStatType::DotDamage:       return TEXT("dot-damage");
-	case ET66SecondaryStatType::HeadshotChance:  return TEXT("headshot");
-	case ET66SecondaryStatType::AoeSpeed:        return TEXT("aoe-speed");
-	case ET66SecondaryStatType::BounceSpeed:     return TEXT("bounce-speed");
-	case ET66SecondaryStatType::PierceSpeed:     return TEXT("pierce-speed");
-	case ET66SecondaryStatType::DotSpeed:        return TEXT("dot-speed");
-	case ET66SecondaryStatType::CritChance:      return TEXT("crit-chance");
-	case ET66SecondaryStatType::AoeScale:        return TEXT("aoe-scale");
-	case ET66SecondaryStatType::BounceScale:     return TEXT("bounce-scale");
-	case ET66SecondaryStatType::PierceScale:     return TEXT("pierce-scale");
-	case ET66SecondaryStatType::DotScale:        return TEXT("dot-scale");
-	case ET66SecondaryStatType::AttackRange:     return TEXT("range");
-	case ET66SecondaryStatType::Execute:         return TEXT("execute");
-	case ET66SecondaryStatType::Taunt:           return TEXT("taunt");
-	case ET66SecondaryStatType::DamageReduction: return TEXT("damage-reduction");
-	case ET66SecondaryStatType::ReflectDamage:   return TEXT("damage-reflection");
-	case ET66SecondaryStatType::HpRegen:         return TEXT("hp-regen");
-	case ET66SecondaryStatType::Crush:           return TEXT("crush");
-	case ET66SecondaryStatType::EvasionChance:   return TEXT("dodge");
-	case ET66SecondaryStatType::CounterAttack:   return TEXT("counter-attack");
-	case ET66SecondaryStatType::LifeSteal:       return TEXT("life-steal");
-	case ET66SecondaryStatType::Invisibility:    return TEXT("invisibility");
-	case ET66SecondaryStatType::Assassinate:     return TEXT("assassinate");
-	case ET66SecondaryStatType::TreasureChest:   return TEXT("treasure-chest");
-	case ET66SecondaryStatType::Cheating:        return TEXT("cheating");
-	case ET66SecondaryStatType::Stealing:        return TEXT("stealing");
-	case ET66SecondaryStatType::LootCrate:       return TEXT("loot-crate");
-	case ET66SecondaryStatType::LootBag:         return TEXT("loot-bag");
-	case ET66SecondaryStatType::LootWheel:       return TEXT("loot-wheel");
-	case ET66SecondaryStatType::Alchemy:         return TEXT("alchemy");
-	case ET66SecondaryStatType::Accuracy:        return TEXT("accuracy");
-	case ET66SecondaryStatType::VendorToken:     return TEXT("vendor-token");
+	case ET66StatType::AoeDamage:       return TEXT("aoe-damage");
+	case ET66StatType::BounceDamage:    return TEXT("bounce-damage");
+	case ET66StatType::PierceDamage:    return TEXT("pierce-damage");
+	case ET66StatType::DotDamage:       return TEXT("dot-damage");
+	case ET66StatType::HeadshotChance:  return TEXT("headshot");
+	case ET66StatType::AoeSpeed:        return TEXT("aoe-speed");
+	case ET66StatType::BounceSpeed:     return TEXT("bounce-speed");
+	case ET66StatType::PierceSpeed:     return TEXT("pierce-speed");
+	case ET66StatType::DotSpeed:        return TEXT("dot-speed");
+	case ET66StatType::CritChance:      return TEXT("crit-chance");
+	case ET66StatType::AoeScale:        return TEXT("aoe-scale");
+	case ET66StatType::BounceScale:     return TEXT("bounce-scale");
+	case ET66StatType::PierceScale:     return TEXT("pierce-scale");
+	case ET66StatType::DotScale:        return TEXT("dot-scale");
+	case ET66StatType::AttackRange:     return TEXT("range");
+	case ET66StatType::Execute:         return TEXT("execute");
+	case ET66StatType::Taunt:           return TEXT("taunt");
+	case ET66StatType::DamageReduction: return TEXT("damage-reduction");
+	case ET66StatType::ReflectDamage:   return TEXT("damage-reflection");
+	case ET66StatType::HpRegen:         return TEXT("hp-regen");
+	case ET66StatType::Crush:           return TEXT("crush");
+	case ET66StatType::EvasionChance:   return TEXT("dodge");
+	case ET66StatType::CounterAttack:   return TEXT("counter-attack");
+	case ET66StatType::LifeSteal:       return TEXT("life-steal");
+	case ET66StatType::Invisibility:    return TEXT("invisibility");
+	case ET66StatType::Assassinate:     return TEXT("assassinate");
+	case ET66StatType::TreasureChest:   return TEXT("treasure-chest");
+	case ET66StatType::Cheating:        return TEXT("cheating");
+	case ET66StatType::Stealing:        return TEXT("stealing");
+	case ET66StatType::LootCrate:       return TEXT("loot-crate");
+	case ET66StatType::LootBag:         return TEXT("loot-bag");
+	case ET66StatType::LootWheel:       return TEXT("loot-wheel");
+	case ET66StatType::Alchemy:         return TEXT("alchemy");
+	case ET66StatType::Accuracy:        return TEXT("accuracy");
+	case ET66StatType::VendorToken:     return TEXT("vendor-token");
+	case ET66StatType::InteractableLuck:return TEXT("interactable-luck");
+	case ET66StatType::StealingLuck:    return TEXT("stealing-luck");
+	case ET66StatType::GamblingLuck:    return TEXT("gambling-luck");
+	case ET66StatType::ProcLuck:        return TEXT("proc-luck");
 	default:                                     return FString();
 	}
 }
@@ -123,7 +127,7 @@ FString T66TemporaryBuffUI::GetSecondaryBuffIconSlug(ET66SecondaryStatType StatT
 TSharedPtr<FSlateBrush> T66TemporaryBuffUI::CreateSecondaryBuffBrush(
 	UT66UITexturePoolSubsystem* TexPool,
 	UObject* Requester,
-	ET66SecondaryStatType StatType,
+	ET66StatType StatType,
 	const FVector2D& ImageSize)
 {
 	const FString Slug = GetSecondaryBuffIconSlug(StatType);

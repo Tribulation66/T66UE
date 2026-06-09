@@ -59,7 +59,6 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 	const int32 SkinActionFontSize = 13;
 	const int32 SkinPriceFontSize = 14;
 	const int32 SkinTitleFontSize = 24;
-	const FVector2D SkinPortraitSize(68.f, 68.f);
 
 	auto MakeSkinListRow = [](const TSharedRef<SWidget>& Content, const FMargin& RowPadding, const ET66FlatState RowState) -> TSharedRef<SWidget>
 	{
@@ -231,6 +230,7 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 		FText SkinDisplayName = !Skin.DisplayName.IsEmpty()
 			? Skin.DisplayName
 			: (Loc ? Loc->GetText_SkinName(Skin.SkinID) : FText::FromName(Skin.SkinID));
+		const FText SkinDescription = Skin.Description;
 		const int32 Price = FMath::Max(0, Skin.CoinCost);
 		const FText PriceText = FText::AsNumber(Price);
 		const FName SkinIDCopy = Skin.SkinID;
@@ -238,13 +238,6 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 		const bool bIsOwned = Skin.bIsOwned;
 		const bool bIsEquipped = Skin.bIsEquipped;
 		const bool bIsDemoSkin = (SkinIDCopy == UT66SkinSubsystem::DemoSkinID);
-
-		const FString SkinInitialText = SkinDisplayName.ToString().Left(2).ToUpper();
-		const FLinearColor SkinThumbnailFill = bIsDefault
-			? FLinearColor(0.16f, 0.08f, 0.05f, 1.0f)
-			: (bIsDemoSkin
-				? FLinearColor(0.07f, 0.18f, 0.25f, 1.0f)
-				: FLinearColor(0.09f, 0.08f, 0.12f, 1.0f));
 
 		TSharedRef<SHorizontalBox> ButtonRow = SNew(SHorizontalBox);
 		if (bIsDefault)
@@ -481,46 +474,30 @@ void UT66HeroSelectionScreen::AddSkinRowsToBox(const TSharedPtr<SVerticalBox>& B
 				MakeSkinListRow(
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
-					.AutoWidth()
-					.VAlign(VAlign_Center)
-					.Padding(0.f, 0.f, 14.f, 0.f)
-					[
-						SNew(SBox)
-						.WidthOverride(SkinPortraitSize.X)
-						.HeightOverride(SkinPortraitSize.Y)
-						[
-							FT66FlatStyle::MakeFlatSubPanel(
-								bIsEquipped ? ET66FlatState::Selected : ET66FlatState::Default,
-								FMargin(0.f),
-								SNew(SBorder)
-								.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
-								.BorderBackgroundColor(SkinThumbnailFill)
-								.Padding(0.f)
-								[
-									SNew(SOverlay)
-									+ SOverlay::Slot()
-									.HAlign(HAlign_Center)
-									.VAlign(VAlign_Center)
-									[
-										SNew(STextBlock)
-										.Text(FText::FromString(SkinInitialText))
-										.Font(FT66FlatStyle::MakeBoldFont(24))
-										.ColorAndOpacity(GetHeroSelectionParchmentMutedText())
-										.Justification(ETextJustify::Center)
-									]
-								]
-							)
-						]
-					]
-					+ SHorizontalBox::Slot()
 					.FillWidth(1.0f)
 					.VAlign(VAlign_Center)
 					[
-						SNew(STextBlock)
-						.Text(SkinDisplayName)
-						.Font(FT66FlatStyle::MakeBoldFont(SkinTitleFontSize))
-						.ColorAndOpacity(GetHeroSelectionParchmentText())
-						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						[
+							SNew(STextBlock)
+							.Text(SkinDisplayName)
+							.Font(FT66FlatStyle::MakeBoldFont(SkinTitleFontSize))
+							.ColorAndOpacity(GetHeroSelectionParchmentText())
+							.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+						]
+						+ SVerticalBox::Slot()
+						.AutoHeight()
+						.Padding(0.f, 2.f, 8.f, 0.f)
+						[
+							SNew(STextBlock)
+							.Text(SkinDescription)
+							.Font(FT66FlatStyle::MakeFont(10))
+							.ColorAndOpacity(GetHeroSelectionParchmentMutedText())
+							.AutoWrapText(true)
+							.WrapTextAt(230.f)
+						]
 					]
 					+ SHorizontalBox::Slot()
 					.AutoWidth()

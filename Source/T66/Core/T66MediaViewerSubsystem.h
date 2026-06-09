@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "T66MediaViewerSubsystem.generated.h"
 
@@ -33,6 +34,7 @@ class T66_API UT66MediaViewerSubsystem : public UGameInstanceSubsystem
 
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	virtual void Deinitialize() override;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "MediaViewer")
 	bool IsMediaViewerOpen() const { return bIsOpen; }
@@ -87,7 +89,10 @@ private:
 	bool bHasTikTokWebView2Rect = false;
 	FIntRect TikTokWebView2Rect;
 	bool bHasPrewarmedTikTok = false;
+	int32 WebView2ComInitBalance = 0;
 #endif
+
+	FT66ShutdownParticipantHandle ShutdownParticipantHandle;
 
 	// Snapshot of audio state before opening the viewer (so we can restore exactly).
 	float PrevMasterVolume01 = 1.0f;
@@ -97,5 +102,11 @@ private:
 
 	void ApplyMutedAudio();
 	void RestoreAudio();
+	bool HandleShutdown(const FT66ShutdownContext& Context);
+	void ShutdownRuntimeResources(const TCHAR* Reason);
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+	bool EnsureWebView2ComInitialized(const TCHAR* Context);
+	void ReleaseWebView2ComInitializations(const TCHAR* Context);
+#endif
 };
 

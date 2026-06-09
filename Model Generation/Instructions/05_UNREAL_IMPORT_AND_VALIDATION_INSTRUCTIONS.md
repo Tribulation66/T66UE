@@ -5,7 +5,7 @@ Generated assets are not runtime assets until they pass the Unreal import path a
 ## Import Script Pattern
 
 - Static meshes: `Scripts/ImportStaticMeshes.py` plus the relevant full-editor wrapper.
-- Skeletal meshes: use the relevant domain-specific rigging/animation import tool under `Model Generation/Rigging and Animation/Tools/` or a current QuadRetro importer. The old generic skeletal import batch was retired.
+- Skeletal meshes: use the relevant domain-specific rigging/animation import tool under `Model Generation/Rigging and Animation/Tools/`, such as the active FriendSlop raw humanoid rig import path. The old generic skeletal import batch was retired, and QuadRetro importers are historical unless explicitly revived.
 - Data reloads: the matching `Scripts/Setup*DataTable.py` script.
 - Material pass: `Scripts/MakeGLBImportsUnlit.py` remains part of the static mesh import core; otherwise use the domain-specific repair script for the asset family.
 - Verification: use the domain-specific verifier for the asset family.

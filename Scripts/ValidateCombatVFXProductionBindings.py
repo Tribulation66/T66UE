@@ -313,18 +313,31 @@ def validate_weapon_geometry_contract():
     if missing_field_rows:
         fail(f"Weapons.csv rows missing AoeInnerRadiusRatio: {missing_field_rows[:12]!r}")
 
-    hero_row = next((candidate for candidate in rows if candidate.get("---") == "Hero_1_black_aoe" or candidate.get("WeaponID") == "Hero_1_black_aoe"), None)
-    if hero_row is None:
-        fail("Weapons.csv is missing Hero_1_black_aoe row")
+    expected_hero1_aoe_rows = {
+        "Hero_1_black_aoe": ("Hero1CrescentSingle", 1),
+        "Hero_1_red_aoe": ("Hero1CrescentTriple", 3),
+        "Hero_1_yellow_aoe": ("Hero1CrescentFive", 5),
+        "Hero_1_white_aoe": ("Hero1CrescentFullContact", 1),
+    }
+    rows_by_name = {row.get("---") or row.get("WeaponID") or "<unknown>": row for row in rows}
+    for row_name, (expected_pattern, expected_projectiles) in expected_hero1_aoe_rows.items():
+        hero_row = rows_by_name.get(row_name)
+        if hero_row is None:
+            fail(f"Weapons.csv is missing {row_name} row")
 
-    hero_ratio = float(hero_row.get("AoeInnerRadiusRatio") or 0.0)
-    if abs(hero_ratio - 0.54) > 0.001:
-        fail(f"Hero_1_black_aoe AoeInnerRadiusRatio={hero_ratio:.3f}, expected 0.54")
+        hero_ratio = float(hero_row.get("AoeInnerRadiusRatio") or 0.0)
+        if abs(hero_ratio - 0.54) > 0.001:
+            fail(f"{row_name} AoeInnerRadiusRatio={hero_ratio:.3f}, expected 0.54")
+        if hero_row.get("AttackPatternID") != expected_pattern:
+            fail(f"{row_name} AttackPatternID={hero_row.get('AttackPatternID')!r}, expected {expected_pattern!r}")
+        projectile_count = int(float(hero_row.get("ProjectileCount") or 0))
+        if projectile_count != expected_projectiles:
+            fail(f"{row_name} ProjectileCount={projectile_count}, expected {expected_projectiles}")
 
     bad_other_aoes = []
     for row in rows:
         row_name = row.get("---") or row.get("WeaponID") or "<unknown>"
-        if row_name == "Hero_1_black_aoe":
+        if row_name in expected_hero1_aoe_rows:
             continue
         if row.get("Branch") != "AOE":
             continue
@@ -332,9 +345,9 @@ def validate_weapon_geometry_contract():
         if abs(ratio) > 0.001:
             bad_other_aoes.append((row_name, ratio))
     if bad_other_aoes:
-        fail(f"Only Hero_1_black_aoe may use the crescent-band AOE inner ratio; unexpected AOE ratios: {bad_other_aoes[:12]!r}")
+        fail(f"Only Hero 1 approved AOE placeholder rows may use the crescent-band inner ratio; unexpected AOE ratios: {bad_other_aoes[:12]!r}")
 
-    log("Weapon geometry contract is present: Hero_1_black_aoe uses AoeInnerRadiusRatio=0.54 and other AOE rows remain filled-sector")
+    log("Weapon geometry contract is present: Hero 1 AOE placeholder rows use crescent-band patterns and other AOE rows remain filled-sector")
 
 
 def validate_required_assets():

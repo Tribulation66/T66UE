@@ -20,9 +20,9 @@ fallback trigger. This helper reports typed outcomes so the active agent can
 apply the repository policy without treating malformed text as availability
 failure.
 
-The helper uses Claude JSON output by default so token usage can be captured in
-the returned object and a `claude_tokens.json` sidecar. The default max-turn cap
-is intentionally not tiny; use at least 5 turns for plan-review runs.
+The helper uses Claude JSON output by default so the Markdown response can be
+extracted from the CLI payload. The default max-turn cap is intentionally not
+tiny; use at least 5 turns for plan-review runs.
 
 .EXAMPLE
 powershell -ExecutionPolicy Bypass -File C:\UE\T66\Scripts\Invoke-ClaudePlanReview.ps1 `
@@ -299,89 +299,6 @@ function Get-ClaudeAttemptFailureKind {
     return "ClaudeProcessFailed"
 }
 
-function Get-ClaudeTokenTotal {
-    param($Payload)
-
-    if ($null -eq $Payload) {
-        return $null
-    }
-
-    $Total = [int64]0
-    $HasValue = $false
-
-    $PayloadNames = $Payload.PSObject.Properties.Name
-    if ($PayloadNames -contains "modelUsage" -and $null -ne $Payload.modelUsage) {
-        foreach ($ModelEntry in $Payload.modelUsage.PSObject.Properties) {
-            $Usage = $ModelEntry.Value
-            if ($null -eq $Usage) {
-                continue
-            }
-
-            $UsageNames = $Usage.PSObject.Properties.Name
-            foreach ($PropertyName in @("inputTokens", "outputTokens", "cacheCreationInputTokens", "cacheReadInputTokens")) {
-                if ($UsageNames -contains $PropertyName) {
-                    $PropertyValue = $Usage.PSObject.Properties[$PropertyName].Value
-                    if ($null -eq $PropertyValue) {
-                        continue
-                    }
-                    $Total += [int64]$PropertyValue
-                    $HasValue = $true
-                }
-            }
-        }
-
-        if ($HasValue) {
-            return $Total
-        }
-    }
-
-    if ($PayloadNames -contains "usage" -and $null -ne $Payload.usage) {
-        $Usage = $Payload.usage
-        $UsageNames = $Usage.PSObject.Properties.Name
-        foreach ($PropertyName in @("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")) {
-            if ($UsageNames -contains $PropertyName) {
-                $PropertyValue = $Usage.PSObject.Properties[$PropertyName].Value
-                if ($null -eq $PropertyValue) {
-                    continue
-                }
-                $Total += [int64]$PropertyValue
-                $HasValue = $true
-            }
-        }
-    }
-
-    if ($HasValue) {
-        return $Total
-    }
-
-    return $null
-}
-
-function Get-ClaudePayloadFromStdout {
-    param(
-        [AllowEmptyString()][string] $StdoutPath,
-        [Parameter(Mandatory = $true)][string] $ClaudeOutputFormat
-    )
-
-    if ($ClaudeOutputFormat -ne "json") {
-        return $null
-    }
-    if ([string]::IsNullOrWhiteSpace($StdoutPath) -or -not (Test-Path -LiteralPath $StdoutPath -PathType Leaf)) {
-        return $null
-    }
-
-    $Raw = Get-Content -LiteralPath $StdoutPath -Raw
-    if ([string]::IsNullOrWhiteSpace($Raw)) {
-        return $null
-    }
-
-    try {
-        return ($Raw | ConvertFrom-Json -ErrorAction Stop)
-    } catch {
-        return $null
-    }
-}
-
 function Export-ClaudeStdoutArtifact {
     param(
         [Parameter(Mandatory = $true)][string] $StdoutPath,
@@ -629,7 +546,7 @@ Rules:
 - Do not edit files.
 - Do not run mutating commands.
 - Inspect the live repo read-only when repo context is needed.
-- Treat Codex as the Operator/final router and you as the independent Validator.
+- Treat Codex as the active model/final router and you as the independent validator.
 - Produce the answer you would give to the user from the current evidence.
 - Look for scope constraints, repo instructions, user-only decisions, missing evidence, and caveats.
 - Ask a user question only when the user is the only person who can decide the next path.
@@ -672,7 +589,7 @@ Rules:
   result line or unambiguous OK / needs-user meaning elsewhere in the response.
 - Do not edit files.
 - Do not run mutating commands.
-- Treat Codex as the Operator/final router and you as the Validator.
+- Treat Codex as the active model/final router and you as the validator.
 - Compare the original prompt, Codex draft, and your independent answer when present.
 - Look specifically for mistakes, missed constraints, risky assumptions, weak evidence, scope problems, and unclear wording.
 - Patch the answer text when the fix is straightforward.
@@ -819,13 +736,11 @@ for ($Attempt = 1; $Attempt -le $Attempts; ++$Attempt) {
 
     if ($Result.Success) {
         $AttemptReviewPath = $Result.StdoutPath
-        $AttemptPayload = $null
         if ($ClaudeOutputFormat -eq "json") {
             $AttemptReviewPath = Join-Path $AttemptRoot "stdout_attempt$Attempt.result.md"
             try {
-                $AttemptPayload = Export-ClaudeStdoutArtifact -StdoutPath $Result.StdoutPath -OutputPath $AttemptReviewPath -ClaudeOutputFormat $ClaudeOutputFormat
+                $null = Export-ClaudeStdoutArtifact -StdoutPath $Result.StdoutPath -OutputPath $AttemptReviewPath -ClaudeOutputFormat $ClaudeOutputFormat
                 $Result | Add-Member -NotePropertyName ResultOutputPath -NotePropertyValue $AttemptReviewPath
-                $Result | Add-Member -NotePropertyName ClaudeTokensSpent -NotePropertyValue (Get-ClaudeTokenTotal -Payload $AttemptPayload)
             } catch {
                 $Result.Success = $false
                 $Result | Add-Member -NotePropertyName FailureKind -NotePropertyValue "ClaudeMalformedJson"
@@ -834,7 +749,6 @@ for ($Attempt = 1; $Attempt -le $Attempts; ++$Attempt) {
             }
         } else {
             $Result | Add-Member -NotePropertyName ResultOutputPath -NotePropertyValue $AttemptReviewPath
-            $Result | Add-Member -NotePropertyName ClaudeTokensSpent -NotePropertyValue $null
         }
 
         $ParsedAttemptResult = Get-ClaudeReviewResult -ReviewPath $AttemptReviewPath
@@ -869,44 +783,12 @@ if (-not $SuccessfulAttempt) {
             $FailureKind = "ClaudeMalformedResult"
         }
     }
-    $FailureTokensSpent = $null
-    foreach ($AttemptResult in $AttemptResults) {
-        if ($AttemptResult.PSObject.Properties.Name -contains "ClaudeTokensSpent" -and $null -ne $AttemptResult.ClaudeTokensSpent) {
-            $FailureTokensSpent = $AttemptResult.ClaudeTokensSpent
-            continue
-        }
-
-        $AttemptPayload = Get-ClaudePayloadFromStdout -StdoutPath $AttemptResult.StdoutPath -ClaudeOutputFormat $ClaudeOutputFormat
-        $AttemptTokens = Get-ClaudeTokenTotal -Payload $AttemptPayload
-        if ($null -ne $AttemptTokens) {
-            $FailureTokensSpent = $AttemptTokens
-        }
-    }
-    $FailureTokenSummaryPath = Join-Path $RunDir "claude_tokens.json"
-    ([ordered]@{
-        ClaudeTokensSpent = $FailureTokensSpent
-        Model = $Model
-        Mode = $Mode
-        FailureKind = $FailureKind
-        CreatedAt = $Stamp
-    } | ConvertTo-Json -Depth 8) | Set-Content -LiteralPath $FailureTokenSummaryPath -Encoding UTF8
     throw "FailureKind=$FailureKind; Claude review failed after $Attempts fresh attempt(s). Prompt artifact: $PromptPath. $($Summary -join '; ')"
 }
 
 $SuccessfulOutputPath = if ($SuccessfulAttempt.PSObject.Properties.Name -contains "ResultOutputPath") { $SuccessfulAttempt.ResultOutputPath } else { $SuccessfulAttempt.StdoutPath }
 Copy-Item -LiteralPath $SuccessfulOutputPath -Destination $ReviewPath -Force
 $ParsedResult = Get-ClaudeReviewResult -ReviewPath $ReviewPath
-$ClaudePayload = Get-ClaudePayloadFromStdout -StdoutPath $SuccessfulAttempt.StdoutPath -ClaudeOutputFormat $ClaudeOutputFormat
-$ClaudeTokensSpent = if ($SuccessfulAttempt.PSObject.Properties.Name -contains "ClaudeTokensSpent") { $SuccessfulAttempt.ClaudeTokensSpent } else { Get-ClaudeTokenTotal -Payload $ClaudePayload }
-$TokenSummaryPath = Join-Path $RunDir "claude_tokens.json"
-([ordered]@{
-    ClaudeTokensSpent = $ClaudeTokensSpent
-    Model = $Model
-    Mode = $Mode
-    ClaudeUsage = if ($ClaudePayload -and ($ClaudePayload.PSObject.Properties.Name -contains "usage")) { $ClaudePayload.usage } else { $null }
-    ClaudeModelUsage = if ($ClaudePayload -and ($ClaudePayload.PSObject.Properties.Name -contains "modelUsage")) { $ClaudePayload.modelUsage } else { $null }
-    CreatedAt = $Stamp
-} | ConvertTo-Json -Depth 8) | Set-Content -LiteralPath $TokenSummaryPath -Encoding UTF8
 
 [pscustomobject]@{
     Mode = $Mode
@@ -926,8 +808,6 @@ $TokenSummaryPath = Join-Path $RunDir "claude_tokens.json"
     ClaudeVersion = $ClaudeVersion
     SuccessfulStdoutPath = $SuccessfulAttempt.StdoutPath
     SuccessfulStderrPath = $SuccessfulAttempt.StderrPath
-    ClaudeTokensSpent = $ClaudeTokensSpent
-    TokenSummaryPath = $TokenSummaryPath
     Greenlit = $ParsedResult.Greenlit
     Result = $ParsedResult.Result
     ResultLine = $ParsedResult.ResultLine

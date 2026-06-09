@@ -1,0 +1,356 @@
+{
+  "asset_count": 49,
+  "entries": [
+    {
+      "asset_id": "Companion_01",
+      "generation_resolution": 1536,
+      "source_bytes": 7440356,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Companion_01.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Companion_01.glb"
+    },
+    {
+      "asset_id": "Companion_02",
+      "generation_resolution": 1536,
+      "source_bytes": 6179292,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Companion_02.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Companion_02.glb"
+    },
+    {
+      "asset_id": "Companion_03",
+      "generation_resolution": 1536,
+      "source_bytes": 6354532,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Companion_03.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Companion_03.glb"
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "generation_resolution": 1536,
+      "source_bytes": 4589716,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Pet_Dungeon_SewerSlimeKing.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Pet_Dungeon_SewerSlimeKing.glb"
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "generation_resolution": 1536,
+      "source_bytes": 4082408,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Pet_Dungeon_WebMatriarch.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Pet_Dungeon_WebMatriarch.glb"
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "generation_resolution": 1536,
+      "source_bytes": 5620584,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Pet_Dungeon_BoneJailer.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Pet_Dungeon_BoneJailer.glb"
+    },
+    {
+      "asset_id": "Slime",
+      "generation_resolution": 1536,
+      "source_bytes": 3528120,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Slime.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Slime.glb"
+    },
+    {
+      "asset_id": "BoneWalker",
+      "generation_resolution": 1536,
+      "source_bytes": 4989580,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/BoneWalker.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/BoneWalker.glb"
+    },
+    {
+      "asset_id": "CaveBat",
+      "generation_resolution": 1536,
+      "source_bytes": 4273632,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/CaveBat.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/CaveBat.glb"
+    },
+    {
+      "asset_id": "CryptWraith",
+      "generation_resolution": 1536,
+      "source_bytes": 5976876,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/CryptWraith.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/CryptWraith.glb"
+    },
+    {
+      "asset_id": "CursedCrow",
+      "generation_resolution": 1536,
+      "source_bytes": 5132856,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/CursedCrow.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/CursedCrow.glb"
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "generation_resolution": 1536,
+      "source_bytes": 4921040,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/FamishedGhoul.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/FamishedGhoul.glb"
+    },
+    {
+      "asset_id": "HexSlinger",
+      "generation_resolution": 1536,
+      "source_bytes": 4487048,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/HexSlinger.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/HexSlinger.glb"
+    },
+    {
+      "asset_id": "MimicLure",
+      "generation_resolution": 1024,
+      "source_bytes": 6400212,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/MimicLure.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/MimicLure.glb"
+    },
+    {
+      "asset_id": "RatPack",
+      "generation_resolution": 1536,
+      "source_bytes": 5422964,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/RatPack.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/RatPack.glb"
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "generation_resolution": 1536,
+      "source_bytes": 5653920,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/StoneSentinel.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/StoneSentinel.glb"
+    },
+    {
+      "asset_id": "TombSpider",
+      "generation_resolution": 1536,
+      "source_bytes": 5109212,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/TombSpider.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/TombSpider.glb"
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "generation_resolution": 1536,
+      "source_bytes": 5108352,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/BoneConjurer.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/BoneConjurer.glb"
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "generation_resolution": 1536,
+      "source_bytes": 6744888,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Dungeon_BaelFallenChad.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Dungeon_BaelFallenChad.glb"
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "generation_resolution": 1536,
+      "source_bytes": 6929276,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Dungeon_BoneJailer.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Dungeon_BoneJailer.glb"
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "generation_resolution": 1536,
+      "source_bytes": 4825060,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Dungeon_SewerSlimeKing.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Dungeon_SewerSlimeKing.glb"
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "generation_resolution": 1536,
+      "source_bytes": 5661228,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Dungeon_WebMatriarch.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Dungeon_WebMatriarch.glb"
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "generation_resolution": 1536,
+      "source_bytes": 5523792,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/CasinoNPC.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/CasinoNPC.glb"
+    },
+    {
+      "asset_id": "Saint",
+      "generation_resolution": 1536,
+      "source_bytes": 5128172,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Saint.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Saint.glb"
+    },
+    {
+      "asset_id": "Ouroboros",
+      "generation_resolution": 1024,
+      "source_bytes": 5457208,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Ouroboros.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Ouroboros.glb"
+    },
+    {
+      "asset_id": "VendorNPC",
+      "generation_resolution": 1536,
+      "source_bytes": 5565952,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/VendorNPC.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/VendorNPC.glb"
+    },
+    {
+      "asset_id": "LoanShark",
+      "generation_resolution": 1536,
+      "source_bytes": 5462932,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/LoanShark.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/LoanShark.glb"
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 4598512,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/AccuracyBoost_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/AccuracyBoost_Pixal3D.glb"
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 4580904,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/ArmorBoost_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/ArmorBoost_Pixal3D.glb"
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 4315496,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/AttackScaleBoost_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/AttackScaleBoost_Pixal3D.glb"
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 6028192,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/AttackSpeedBoost_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/AttackSpeedBoost_Pixal3D.glb"
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 4910984,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/DamageBoost_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/DamageBoost_Pixal3D.glb"
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 4809892,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/EvasionBoost_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/EvasionBoost_Pixal3D.glb"
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 5260492,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/LuckBoost_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/LuckBoost_Pixal3D.glb"
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "generation_resolution": 1024,
+      "source_bytes": 4909928,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/SpeedBoost_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/SpeedBoost_Pixal3D.glb"
+    },
+    {
+      "asset_id": "Chest_Pixal3D",
+      "generation_resolution": 1024,
+      "source_bytes": 6620448,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Chest_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Chest_Pixal3D.glb"
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 4701904,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/CompanionCage_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/CompanionCage_Pixal3D.glb"
+    },
+    {
+      "asset_id": "CowardiceGate_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 5424536,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/CowardiceGate_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/CowardiceGate_Pixal3D.glb"
+    },
+    {
+      "asset_id": "LootCrate",
+      "generation_resolution": 1024,
+      "source_bytes": 5718720,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/LootCrate.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/LootCrate.glb"
+    },
+    {
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 4854520,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/DifficultyTotem_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/DifficultyTotem_Pixal3D.glb"
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "generation_resolution": 1024,
+      "source_bytes": 5545280,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/TutorialGate_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/TutorialGate_Pixal3D.glb"
+    },
+    {
+      "asset_id": "Fountain_Pixal3D",
+      "generation_resolution": 1024,
+      "source_bytes": 4683744,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Fountain_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Fountain_Pixal3D.glb"
+    },
+    {
+      "asset_id": "IdolAltar_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 5138444,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/IdolAltar_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/IdolAltar_Pixal3D.glb"
+    },
+    {
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 5320244,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/LootBag_Shared_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/LootBag_Shared_Pixal3D.glb"
+    },
+    {
+      "asset_id": "LootWheel_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 5621280,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/LootWheel_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/LootWheel_Pixal3D.glb"
+    },
+    {
+      "asset_id": "StageGate_Pixal3D",
+      "generation_resolution": 1024,
+      "source_bytes": 4856696,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/StageGate_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/StageGate_Pixal3D.glb"
+    },
+    {
+      "asset_id": "Vehicle_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 6228048,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/Vehicle_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/Vehicle_Pixal3D.glb"
+    },
+    {
+      "asset_id": "WeaponAltar_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 4430776,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/WeaponAltar_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/WeaponAltar_Pixal3D.glb"
+    },
+    {
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "generation_resolution": 1536,
+      "source_bytes": 4513860,
+      "source_glb": "Model Generation/Runs/Pixal3D/FriendSlopEasyBatch_20260604_1532/Outputs/SkullRemains_Easy_Pixal3D.glb",
+      "source_import_relative": "FriendSlop/Pixal3D/FriendSlopEasyBatch_20260604_1532/SkullRemains_Easy_Pixal3D.glb"
+    }
+  ],
+  "notes": [
+    "Raw Pixal3D GLBs are copied directly for Unreal import.",
+    "No ToonStyle, Quad Retro, outline, or processed GLB stage was run for this import.",
+    "Eight assets generated at R1024 after repeated R1536 CuMesh OOM; see retry2_R1024 logs/context."
+  ],
+  "ok": true,
+  "run_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532",
+  "source_assets_import_root": "C:\\UE\\T66\\SourceAssets\\Import\\FriendSlop\\Pixal3D\\FriendSlopEasyBatch_20260604_1532"
+}

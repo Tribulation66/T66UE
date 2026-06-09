@@ -29,7 +29,11 @@ public:
 
 	bool TryJump();
 	void StopJumping();
+	bool TryLeap();
+	bool TryLeapInWorldDirection(const FVector& DesiredWorldDirection);
+	UE_DEPRECATED(5.7, "Use TryLeap.")
 	bool TryRollForward();
+	UE_DEPRECATED(5.7, "Use TryLeapInWorldDirection.")
 	bool TryDashInWorldDirection(const FVector& DesiredWorldDirection);
 
 	bool HasMovementInput() const;
@@ -40,13 +44,20 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
 	AT66HeroBase* ResolveHero() const;
 	UCharacterMovementComponent* ResolveCharacterMovement() const;
 	float ResolveCurrentMaxWalkSpeed() const;
 	bool CanUseMovementAbilities() const;
-	float ResolveDashCooldownSeconds() const;
+	float ResolveLeapCooldownSeconds() const;
+	void UpdateSurfaceBounce(float DeltaTime);
+	bool WantsSurfaceBounce(const AT66HeroBase* Hero, const UCharacterMovementComponent* Movement) const;
+	void UpdateSurfaceBounceAirborneState(AT66HeroBase* Hero, UCharacterMovementComponent* Movement, float Now);
+	bool TryApplyGroundLandingSurfaceBounce(AT66HeroBase* Hero, UCharacterMovementComponent* Movement, float Now, float ImpactDownSpeed, float FallHeight);
+	bool TryApplyWallSurfaceBounce(AT66HeroBase* Hero, UCharacterMovementComponent* Movement, float Now);
+	FVector ResolveSurfaceBounceDirection(const AT66HeroBase* Hero, const UCharacterMovementComponent* Movement) const;
 	void UpdateAnimationStateBridge() const;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Movement")
@@ -61,8 +72,13 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UT66HeroSpeedSubsystem> CachedHeroSpeedSubsystem = nullptr;
 
-	float BaseWalkSpeed = 1800.f;
+	float BaseWalkSpeed = 600.f;
 	float CachedForwardInput = 0.f;
 	float CachedRightInput = 0.f;
-	float LastDashTime = -9999.f;
+	float LastLeapTime = -9999.f;
+	float LastGroundSurfaceBounceTime = -9999.f;
+	float LastWallSurfaceBounceTime = -9999.f;
+	float SurfaceBounceAirbornePeakZ = 0.f;
+	float SurfaceBounceLastAirborneVelocityZ = 0.f;
+	bool bSurfaceBounceWasAirborne = false;
 };

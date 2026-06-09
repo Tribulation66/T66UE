@@ -1,0 +1,48 @@
+Use case: stylized-concept
+Asset type: FriendSlop male hero source candidate
+
+Primary request:
+Use the second provided hero reference image, the male founding-father-styled
+character, as the direct visual reference. Reproduce that male image as closely
+as possible.
+
+The character must clearly be the same huge adult male from the reference: very
+broad shoulders, huge thick arms, broad chest, thick neck, narrow but masculine
+waist, straight powerful male hips, muscular heroic build, no bust, no feminine
+torso, no curvy hips, no female silhouette. Keep the same front-facing full-body
+pose, same black background, same white swept-back founding-father hair with
+tied-back ponytail, same sleepy emoji-like face expression, same navy blue long
+coat with beige trim and cuffs, same beige vest/short pants, same white
+stockings, same black buckle shoes, same proportions and massive silhouette.
+
+Make exactly two design changes:
+
+1. Change all visible yellow character skin to a warmer pinkish nude human skin
+   tone. This applies to the face, neck, and hands. Keep the tone soft and
+   stylized, not realistic gritty skin.
+2. Change both hands into simple oven-mitt hands: each hand has only two large
+   readable areas, a rounded thumb and one merged mitten area for the rest of the
+   fingers. No individual fingers, no finger grooves, no claws. The hands should
+   look like simple game-character mitts attached to thick male wrists.
+
+Preserve everything else from the male reference: adult male fully clothed
+heroic body, white hair, outfit colors, coat shape, collar, cravat, buttons,
+stockings, shoes, front-facing model-sheet framing, black background, clean
+polished 3D stylized render.
+
+Avoid:
+
+- yellow skin
+- visible individual fingers
+- extra fingers
+- feminine body
+- female bust
+- curvy female hips
+- skinny body
+- changing the outfit
+- changing the hair
+- changing the pose
+- changing the facial expression
+- adding props
+- adding text
+- adding environment

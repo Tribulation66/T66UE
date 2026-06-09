@@ -1,0 +1,4 @@
+/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad
+/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin
+/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA

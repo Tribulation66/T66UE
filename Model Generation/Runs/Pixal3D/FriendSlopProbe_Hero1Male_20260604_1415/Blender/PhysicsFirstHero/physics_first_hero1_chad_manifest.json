@@ -1,0 +1,51 @@
+{
+  "source_glb": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Outputs\\Hero_1_Chad_Male.glb",
+  "output_root": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero",
+  "skeletal_fbx": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\Hero_1_Chad_PhysicsFirst_Skeletal.fbx",
+  "blend": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\Hero_1_Chad_PhysicsFirst.blend",
+  "normalization": {
+    "source_bounds_after_raw_front_rotation": {
+      "min": [
+        -0.21857942640781403,
+        -0.09447122365236282,
+        -0.4386693239212036
+      ],
+      "max": [
+        0.22167539596557617,
+        0.16145378351211548,
+        0.43985694646835327
+      ]
+    },
+    "scale_to_cm": 204.88857996265068,
+    "normalized_bounds_cm": {
+      "min": [
+        -45.101593017578125,
+        -26.218055725097656,
+        0.0
+      ],
+      "max": [
+        45.101593017578125,
+        26.218055725097656,
+        180.0
+      ]
+    },
+    "target_height_cm": 180.0,
+    "blender_front_axis": "-Y",
+    "expected_unreal_front_axis_after_fbx": "+X"
+  },
+  "animations": {
+    "Idle": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Idle.fbx",
+    "Walk": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Walk.fbx",
+    "Jump": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Jump.fbx",
+    "Leap": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Leap.fbx",
+    "RecoverStand": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_RecoverStand.fbx",
+    "GetUp_Back": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_GetUp_Back.fbx",
+    "GetUp_Front": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_GetUp_Front.fbx"
+  },
+  "retired_inputs_not_used": [
+    "old spike Blender/Rigging FBXs",
+    "old Idle/Walk/Jump/Roll source exports",
+    "Quaternius clips",
+    "Animated ToonStyle outputs"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "Id": "01_simple_fallguys_t66_palette",
+  "PID": 5628,
+  "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round05\\main_menu_reference_01_simple_fallguys_t66_palette_cli.png",
+  "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round05\\workers\\01_simple_fallguys_t66_palette\\request.md",
+  "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round05\\logs\\01_simple_fallguys_t66_palette.stdout.log",
+  "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round05\\logs\\01_simple_fallguys_t66_palette.stderr.log",
+  "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round05\\workers\\01_simple_fallguys_t66_palette\\last_message.txt",
+  "Started": "2026-06-05T11:54:22.5723944Z",
+  "Baseline": "C:\\UE\\T66\\Saved\\Codex\\UI\\MainMenu\\baseline_capture.png",
+  "Background": "C:\\UE\\T66\\RuntimeDependencies\\T66\\UI\\Reference\\Screens\\MainMenu\\ScreenArt\\mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_1920.png"
+}

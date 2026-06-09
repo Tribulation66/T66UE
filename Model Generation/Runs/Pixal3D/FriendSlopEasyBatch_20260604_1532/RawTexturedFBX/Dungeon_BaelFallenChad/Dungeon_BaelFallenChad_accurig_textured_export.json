@@ -1,0 +1,114 @@
+{
+  "asset_name": "Dungeon_BaelFallenChad",
+  "bounds": {
+    "dimensions": [
+      259.99224853515625,
+      109.51425170898438,
+      220.0
+    ],
+    "max": [
+      129.99612426757812,
+      54.75712585449219,
+      220.0
+    ],
+    "min": [
+      -129.99612426757812,
+      -54.75712585449219,
+      0.0
+    ]
+  },
+  "fbx_bytes": 6302684,
+  "fbx_export_options": {
+    "add_leaf_bones": false,
+    "apply_scale_options": "FBX_SCALE_ALL",
+    "apply_unit_scale": true,
+    "bake_space_transform": false,
+    "embed_textures": true,
+    "global_scale": 0.01,
+    "mesh_smooth_type": "FACE",
+    "object_types": [
+      "MESH"
+    ],
+    "path_mode": "COPY",
+    "use_mesh_modifiers": true,
+    "use_selection": true
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\Dungeon_BaelFallenChad\\Dungeon_BaelFallenChad_Textured.fbx",
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Outputs\\Dungeon_BaelFallenChad.glb",
+  "material_count": 1,
+  "mtl_bytes": 274,
+  "mtl_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\Dungeon_BaelFallenChad\\Dungeon_BaelFallenChad_Textured.mtl",
+  "normalization": {
+    "bounds_max": [
+      129.99612426757812,
+      54.75712585449219,
+      220.0
+    ],
+    "bounds_min": [
+      -129.99612426757812,
+      -54.75712585449219,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      259.99224853515625,
+      109.51425170898438,
+      220.0
+    ],
+    "height": 220.0,
+    "scale_factor": 259.8358713116082
+  },
+  "obj_bytes": 8919116,
+  "obj_export_options": {
+    "apply_modifiers": true,
+    "apply_transform": false,
+    "export_materials": true,
+    "export_normals": true,
+    "export_pbr_extensions": false,
+    "export_selected_objects": true,
+    "export_uv": true,
+    "global_scale": 1.0,
+    "path_mode": "RELATIVE"
+  },
+  "obj_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\Dungeon_BaelFallenChad\\Dungeon_BaelFallenChad_Textured.obj",
+  "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\Dungeon_BaelFallenChad",
+  "texture_usage": [
+    {
+      "image": "Image_0",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture"
+    },
+    {
+      "image": "Image_1",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture.001"
+    }
+  ],
+  "textures": [
+    {
+      "image": "Image_0",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\Dungeon_BaelFallenChad\\Textures\\Dungeon_BaelFallenChad_00_Image_0.png",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "image": "Image_1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\Dungeon_BaelFallenChad\\Textures\\Dungeon_BaelFallenChad_01_Image_1.png",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "vertex_count": 64072
+}

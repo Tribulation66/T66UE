@@ -36,6 +36,7 @@ public:
 	bool SelectWeapon(FName WeaponID);
 	bool IsWeaponOfferSelected(FName WeaponID) const { return !WeaponID.IsNone() && EquippedWeaponID == WeaponID; }
 
+	static FName NoWeaponID();
 	static FName MakeWeaponID(FName HeroID, ET66WeaponRarity Rarity, ET66AttackCategory Branch);
 	static FString WeaponRarityToString(ET66WeaponRarity Rarity);
 	static FString AttackBranchToString(ET66AttackCategory Branch);

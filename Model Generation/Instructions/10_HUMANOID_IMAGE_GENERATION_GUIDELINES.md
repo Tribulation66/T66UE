@@ -25,7 +25,7 @@ modules, UI portraits, marketing art, or contact sheets.
 ## Locked Humanoid Pose
 
 - Orthographic full-body front-view model-sheet stance.
-- Pure white background, one subject only.
+- One subject only, with clear subject/background separation.
 - Head, torso, hips, knees, and feet face squarely forward.
 - Use rigging-friendly A-pose 1.5: arms angled slightly downward from the
   shoulders, between A-pose 1 and A-pose 2.
@@ -161,7 +161,7 @@ temporary demo roster images.
   broad, clean sections.
 - Add one bright cone dunce demo hat.
 - The demo hat should be a saturated yellow, orange, magenta, or other clearly
-  bright color that separates from skin, hair, and white background.
+  bright color that separates from skin, hair, and the source background.
 - The demo hat must be blank: no letters, symbols, markings, icons, stripes,
   patterns, or text on the hat.
 - If the base identity has a hat or headwear, replace that hat with the dunce
@@ -191,9 +191,9 @@ temporary demo roster images.
   multiple workers are running in parallel. Use the session-specific generated
   path, a repo wrapper that saves exact names, or serialize copying inside each
   worker.
-- Normalize accepted source candidates to a portrait white canvas, preferably
-  `1024x1536`, with the full body visible and centered. Fit the character inside
-  the canvas instead of cropping limbs or hats.
+- Prefer accepted source candidates on a portrait canvas, preferably
+  `1024x1536`, with the full body visible and centered. Do not crop or repair
+  an accepted source just to change the background.
 - Keep original selected outputs only when the nonstandard dimensions are
   intentionally part of a test. For model-generation staging, use the normalized
   portrait canvas.
@@ -240,4 +240,4 @@ Reject or iterate if any of these occur:
 - demo variants add jewelry, earrings, necklaces, badges, buttons, or other
   small extras that were not explicitly requested
 - weapons or props appear outside explicit target exceptions
-- source is not full-body on a clean white background
+- source is not full-body or subject/background separation is unreadable

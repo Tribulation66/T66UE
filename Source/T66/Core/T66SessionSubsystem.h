@@ -8,6 +8,7 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSessionSettings.h"
 #include "Gameplay/T66SessionPlayerState.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "Containers/Ticker.h"
 #include "UI/T66UITypes.h"
@@ -55,6 +56,9 @@ public:
 	bool IsFriendInvitePending(const FString& FriendPlayerId);
 	bool GetHostLobbyProfile(struct FT66LobbyPlayerInfo& OutLobbyInfo) const;
 	void GetCurrentLobbyProfiles(TArray<FT66LobbyPlayerInfo>& OutProfiles) const;
+	bool FindLeaderboardRestrictedLobbyMember(FString& OutDisplayName) const;
+	void BroadcastRunWillNotCountWarning(const FString& ReasonText) const;
+	void BroadcastPartyLeaderboardRestrictionWarning(const FString& RestrictedDisplayName) const;
 	bool SubmitLocalPartyRunSummaryToHost(const FString& RequestKey, const FString& RunSummaryJson);
 	bool GetCachedPartyRunSummaryJson(const FString& RequestKey, const FString& SteamId, FString& OutRunSummaryJson) const;
 	int32 GetCachedPartyRunSummaryCount() const { return PartyRunSummaryJsonByRequestKey.Num(); }
@@ -64,6 +68,11 @@ public:
 	ET66Difficulty GetSharedLobbyDifficulty() const;
 	bool AreAllPartyMembersReadyForGameplay(FString* OutFailureReason = nullptr) const;
 	const FString& GetLastStatusText() const { return LastStatusText; }
+
+#if !UE_BUILD_SHIPPING
+	bool RunLoadedTravelSeedHarness(int32 SlotIndex, const FString& Marker, int32 ExitCode);
+	bool RunLoadedTravelPlanHarness(int32 SlotIndex, const FString& Marker, int32 ExitCode);
+#endif
 
 	FOnT66SessionStateChanged& OnSessionStateChanged() { return SessionStateChanged; }
 
@@ -111,6 +120,8 @@ private:
 	void ClearPendingFriendJoinRetry();
 	void ClearPendingJoinState();
 	void PruneInviteFeedbackState();
+	bool HandleShutdown(const FT66ShutdownContext& Context);
+	void ShutdownRuntimeResources(const TCHAR* Reason);
 	class UT66RunSaveGame* BuildCurrentRunSaveSnapshot(UObject* Outer) const;
 	void ApplyLoadedRunToGameInstance(const class UT66RunSaveGame* LoadedSave, int32 SaveSlotIndex) const;
 	void ApplySavedPartyProfilesToCurrentSession(const class UT66RunSaveGame* LoadedSave) const;
@@ -176,4 +187,5 @@ private:
 	TMap<FString, TMap<FString, FString>> PartyRunSummaryJsonByRequestKey;
 	FString LastStatusText;
 	FOnT66SessionStateChanged SessionStateChanged;
+	FT66ShutdownParticipantHandle ShutdownParticipantHandle;
 };

@@ -1,7 +1,7 @@
 # Pixal3D Troubleshooting
 
-Use this doc when Pixal3D setup, generation, export, Blender QA, or Quad Retro
-handoff behaves unexpectedly.
+Use this doc when Pixal3D setup, generation, export, Blender QA, or FriendSlop
+import handoff behaves unexpectedly.
 
 ## First Checks
 
@@ -28,7 +28,7 @@ The pipelines are intentionally separate.
 | Hugging Face 401 or gated model error | Missing or stale HF auth. | Use `Scripts/Invoke-Pixal3DHfLogin.ps1` with `Model Generation/LOCAL_ACCESS.env`. Do not paste tokens into docs. |
 | Blender opens only the default cube | The `.blend` was opened directly, or import script failed before saving/importing. | Check the Blender import log, use absolute paths, and verify the GLB exists before launching Blender. |
 | PNG links do not open in chat | Relative paths or generated paths outside the repo were used. | Use absolute filesystem paths in Markdown image links or open a `.blend` scene with imported models. |
-| GLB exists but looks wrong in Blender | Export succeeded but source/readability or orientation may be poor. | Run Blender QA, inspect bounds/triangle count, then apply Quad Retro only after visual review. |
+| GLB exists but looks wrong in Blender | Export succeeded but source/readability or orientation may be poor. | Run Blender QA, inspect bounds/triangle count, and reroute through the active FriendSlop import validation. Retired QuadRetro processing is historical unless the user explicitly revives it. |
 
 ## CuMesh Remesh Reality
 
@@ -133,7 +133,7 @@ A Pixal3D run is not proven by a GLB path alone. Capture:
   `fill_holes` fallback was used
 - Blender QA render
 - Blender QA metadata with triangle count and bounds
-- Quad Retro report for character-like outputs when used
+- FriendSlop import or rigging report for active character-like outputs, including material/texture binding proof; archived QuadRetro report only when the user explicitly revived that path
 
 If any of those are missing, say exactly what was skipped and why.
 

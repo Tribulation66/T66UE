@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Verifies strict Claude review verdict parsing and helper separation.
+Verifies Claude review result parsing and helper separation.
 
 .DESCRIPTION
 Creates temporary review artifacts under Saved\AgentReviews and calls
@@ -60,31 +60,24 @@ function Invoke-ParseAuthStatus {
 }
 
 $Cases = @(
-    [pscustomobject]@{ Name = "valid_approve"; Content = "Verdict: APPROVE`n`n## Blockers`nNone."; Greenlit = $true; Verdict = "APPROVE"; OutcomeKind = "ClaudeValidVerdict"; FailureKind = $null },
-    [pscustomobject]@{ Name = "valid_revise"; Content = "Verdict: REVISE`n`n## Major Issues`nOne."; Greenlit = $false; Verdict = "REVISE"; OutcomeKind = "ClaudeValidVerdict"; FailureKind = $null },
-    [pscustomobject]@{ Name = "valid_needs_human_decision"; Content = "Verdict: NEEDS_HUMAN_DECISION`n`n## Clarifying Questions`nOne."; Greenlit = $false; Verdict = "NEEDS_HUMAN_DECISION"; OutcomeKind = "ClaudeValidVerdict"; FailureKind = $null },
-    [pscustomobject]@{ Name = "valid_block"; Content = "Verdict: BLOCK`n`n## Blockers`nOne."; Greenlit = $false; Verdict = "BLOCK"; OutcomeKind = "ClaudeValidVerdict"; FailureKind = $null },
-    [pscustomobject]@{ Name = "prefaced_approve"; Content = "I reviewed it.`nVerdict: APPROVE"; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "body_approve"; Content = "Review body first.`n`nVerdict: APPROVE"; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "quoted_approve"; Content = "> Verdict: APPROVE`n`nBody."; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "heading_approve"; Content = "# Verdict: APPROVE`n`nBody."; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "indented_approve"; Content = " Verdict: APPROVE`n`nBody."; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "lowercase_token_approve"; Content = "Verdict: approve`n`nBody."; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "lowercase_prefix_approve"; Content = "verdict: APPROVE`n`nBody."; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "uppercase_prefix_approve"; Content = "VERDICT: APPROVE`n`nBody."; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "stale_approved"; Content = "Verdict: APPROVED`n`nBody."; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "stale_needs_user_decision"; Content = "Verdict: NEEDS_USER_DECISION`n`nBody."; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "no_verdict"; Content = "No verdict here."; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "empty"; Content = ""; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "whitespace"; Content = "   `r`n`t "; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" },
-    [pscustomobject]@{ Name = "conflicting_body"; Content = "Text first.`nVerdict: APPROVE`nVerdict: BLOCK"; Greenlit = $false; Verdict = $null; OutcomeKind = "ClaudeMalformedVerdict"; FailureKind = "ClaudeMalformedVerdict" }
+    [pscustomobject]@{ Name = "explicit_ok"; Content = "Result: OK`n`n## Issues`nNone."; Greenlit = $true; Result = "OK"; OutcomeKind = "ClaudeValidResult"; FailureKind = $null },
+    [pscustomobject]@{ Name = "explicit_needs_user"; Content = "Result: NEEDS_USER`n`n## Questions`nOne."; Greenlit = $false; Result = "NEEDS_USER"; OutcomeKind = "ClaudeValidResult"; FailureKind = $null },
+    [pscustomobject]@{ Name = "prefaced_ok"; Content = "I reviewed it.`nResult: OK"; Greenlit = $true; Result = "OK"; OutcomeKind = "ClaudeValidResult"; FailureKind = $null },
+    [pscustomobject]@{ Name = "lowercase_ok"; Content = "result: ok`n`nBody."; Greenlit = $true; Result = "OK"; OutcomeKind = "ClaudeValidResult"; FailureKind = $null },
+    [pscustomobject]@{ Name = "inferred_ok"; Content = "No blockers. Safe to proceed."; Greenlit = $true; Result = "OK"; OutcomeKind = "ClaudeValidResult"; FailureKind = $null },
+    [pscustomobject]@{ Name = "inferred_needs_user"; Content = "This requires approval because only the user can decide."; Greenlit = $false; Result = "NEEDS_USER"; OutcomeKind = "ClaudeValidResult"; FailureKind = $null },
+    [pscustomobject]@{ Name = "first_result_wins"; Content = "Result: NEEDS_USER`nResult: OK"; Greenlit = $false; Result = "NEEDS_USER"; OutcomeKind = "ClaudeValidResult"; FailureKind = $null },
+    [pscustomobject]@{ Name = "stale_approved"; Content = "Verdict: APPROVED`n`nBody."; Greenlit = $false; Result = $null; OutcomeKind = "ClaudeMalformedResult"; FailureKind = "ClaudeMalformedResult" },
+    [pscustomobject]@{ Name = "no_result"; Content = "No result here."; Greenlit = $false; Result = $null; OutcomeKind = "ClaudeMalformedResult"; FailureKind = "ClaudeMalformedResult" },
+    [pscustomobject]@{ Name = "empty"; Content = ""; Greenlit = $false; Result = $null; OutcomeKind = "ClaudeMalformedResult"; FailureKind = "ClaudeMalformedResult" },
+    [pscustomobject]@{ Name = "whitespace"; Content = "   `r`n`t "; Greenlit = $false; Result = $null; OutcomeKind = "ClaudeMalformedResult"; FailureKind = "ClaudeMalformedResult" }
 )
 
 foreach ($Case in $Cases) {
     $Path = New-Fixture -Name $Case.Name -Content $Case.Content
     $Result = Invoke-Parse -Path $Path
     Assert-Equal -Actual $Result.Greenlit -Expected $Case.Greenlit -Label "$($Case.Name) Greenlit"
-    Assert-Equal -Actual $Result.Verdict -Expected $Case.Verdict -Label "$($Case.Name) Verdict"
+    Assert-Equal -Actual $Result.Result -Expected $Case.Result -Label "$($Case.Name) Result"
     Assert-Equal -Actual $Result.OutcomeKind -Expected $Case.OutcomeKind -Label "$($Case.Name) OutcomeKind"
     Assert-Equal -Actual $Result.FailureKind -Expected $Case.FailureKind -Label "$($Case.Name) FailureKind"
 }

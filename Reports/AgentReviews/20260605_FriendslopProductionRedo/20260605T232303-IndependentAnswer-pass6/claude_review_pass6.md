@@ -1,0 +1,53 @@
+Result: OK
+
+## Independent Answer
+
+The approved fixed-plate direction is sound and the codebase is already structured for it — but the failure mode is in **asset authoring quality**, not Slate code. The pass10 FAIL was caused by the source plates being baked from a generic chrome sheet whose material (thick pipe/inner-groove framing) does not match Round06's softer inflated pills. No amount of margin/draw-type tuning fixes a plate that is the wrong material. So this pass is primarily an **asset-regeneration + per-element verification** task, with the C++ descriptor table as the binding contract.
+
+**1. Files/assets Codex should inspect and likely change**
+- `Source/T66/UI/Style/T66FriendslopStyle.cpp` — the `Descriptors[]` table is the single source of truth (FileName, Margin, DrawAs, FallbackSize, FallbackTint). Already mixes `Box` 9-slice atoms with `*_round06.png` fixed `Image` plates (`topbar_strip_round06`, `left_panel_round06`, `leaderboard_panel_round06`, `cta_*_round06`). For approved fixed plates, keep `DrawAs=Image`, `Margin(0)`, and set `FallbackSize` to the exact authored PNG dimensions.
+- Consumers that lay out at runtime size: `Source/T66/UI/Screens/T66MainMenuScreen.cpp`, `Source/T66/UI/T66FrontendTopBarWidget.cpp`, `Source/T66/UI/Components/T66FlatLeaderboardPanel.cpp`. Confirm the box housing each fixed plate matches the plate's native aspect (fixed plates do not stretch gracefully).
+- Source vs runtime plate pairs under `SourceAssets/.../MainMenu/` and `RuntimeDependencies/T66/UI/FriendslopStyle/MainMenu/` — the runtime copy is what loads (`RuntimeDependencies/...` path in the loader).
+- `UI/FriendslopStyle/SliceSpecs/main_menu_round06_production_slice_specs.md` and `friendslop_asset_registry.md` — update to reflect which elements are now fixed plates vs sliced atoms.
+
+**2. Implementation sequence**
+1. Triage the five pass10 FAIL areas (top bar, left panel, right/leaderboard panel, CTA/button family, whole-screen glance) and decide per-element: fixed plate vs slice-able atom. The four large/CTA surfaces are the approved fixed-plate candidates.
+2. Author/regenerate each fixed plate **from the Round06 reference region**, not the generic alpha sheet — crop or inpaint from `main_menu_reference_01_..._cli.png` so material matches.
+3. Stage to `RuntimeDependencies/...`, set descriptor `FallbackSize` to native px, `DrawAs=Image`, `Margin(0)`.
+4. Verify the live Slate tree still owns all dynamic content (Solobro/ticket 53/row counts/handlers/states) — plates are background chrome only.
+5. Capture → dump → fidelity → visual scorecard. Report residual gaps, don't paper over.
+
+**3. Traps that cause another false pass**
+- Regenerating from `friendslop_mainmenu_runtime_chrome_sheet_alpha.png` again — same baked-seam, wrong-material result.
+- Tuning margins/tints on an already-wrong-material plate and calling it improved.
+- A scorecard that re-passes on topology (counts/labels) while the four material rows stay FAIL — pass10 already passed topology; that is not the bar.
+- Fixed plate placed in a box of different aspect → visible squash, looks worse than slicing.
+- Letting a fixed plate carry baked-in text/data, turning it into a disguised full-screen mockup (violates the live-Slate rule).
+
+**4. Verification checklist additions (beyond current report)**
+- Per-element verdict for all five pass10 FAIL areas, each PASS/FAIL with a Round06 crop alongside the runtime crop (side-by-side, same px size).
+- Explicit "material match" line per element (bevel softness / no pipe framing), since topology already passes.
+- Native-size confirmation: each fixed plate rendered at native px with no stretch/squash.
+- Live-data assertion: dump confirms labels/scores/counts/handlers/states are live Slate, not baked into the plate.
+- Whole-screen glance verdict tied to whether ≥4 of the material rows now PASS.
+- Source-provenance line: each regenerated plate states it was authored from the Round06 reference region, not the generic sheet.
+
+**5. Concerns about fixed plates for panels/CTAs here**
+- Resolution/scaling: fixed `Image` plates won't reflow across DPI/viewport sizes the way 9-slice does. Acceptable if this screen targets a fixed design resolution; risky if it must scale. Confirm the target resolution assumption before committing large panels to fixed plates.
+- Maintenance: per-size plates multiply if the layout changes; keep the registry authoritative so future passes know which elements are fixed.
+- CTAs specifically: a fixed-image CTA still needs live hover/press/disabled states. Ensure state is driven by Slate (tint/overlay/swap) over the plate, not lost because the plate is a static image.
+
+## Evidence Checked
+- `T66FriendslopStyle.cpp` descriptor table (mixed Box atoms + `*_round06` fixed Image plates, per-element margins/sizes/tints).
+- Pass10 visual scorecard (`Result: FAIL`; topology PASS, four material rows + glance FAIL).
+- `friendslop_asset_registry.md` (generic-sheet source provenance; runtime rule forbidding full-screen mockup, requires live text/data).
+- Runtime plate directory (Round06 plates already staged) and SliceSpecs folder (`production`/`inpaint`/`clean_sheet` specs).
+- Consumer files: `T66MainMenuScreen.cpp`, `T66FrontendTopBarWidget.cpp`, `T66FlatLeaderboardPanel.cpp`.
+
+## Questions Or Blockers
+None requiring the user — direction was approved at the structural gate. One assumption Codex should confirm internally from the layout instructions (not the user): the target design resolution, since fixed plates depend on it.
+
+## Caveats
+- I did not open every instruction doc (`UI_LAYOUT_AND_SIZING_INSTRUCTIONS.md` etc.) line-by-line; Codex must reconcile the fixed-plate sizing against those before authoring.
+- I did not diff the actual PNG pixels of Round06 plates vs reference; the material-mismatch conclusion is taken from the pass10 scorecard findings, which Codex should re-confirm visually per element.
+- "Approved" covers the fixed-plate strategy generally; if a specific element needs an unusually large bespoke plate, that is within the approved scope but worth flagging in the report.

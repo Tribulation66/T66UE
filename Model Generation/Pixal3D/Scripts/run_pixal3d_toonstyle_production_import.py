@@ -126,8 +126,15 @@ def validate_manifest(manifest_path: Path, allow_template: bool = False, diagnos
         errors.append("manifest.production_cleared must be true")
 
     cfg = settings(manifest)
-    if int(cfg["decimation"]) != 200000:
-        errors.append("settings.decimation must be 200000 for production Pixal3D replacement runs")
+    decimation = int(cfg["decimation"])
+    decimation_exception_reason = str(manifest.get("decimation_exception_reason", "")).strip()
+    if decimation != 200000:
+        if decimation < 80000 or not decimation_exception_reason:
+            errors.append(
+                "settings.decimation must be 200000 for production Pixal3D replacement runs, "
+                "unless manifest.decimation_exception_reason documents an approved task-specific "
+                "exception at 80000 or higher"
+            )
     if int(cfg["fallback_decimation"]) > int(cfg["decimation"]):
         errors.append("settings.fallback_decimation cannot exceed settings.decimation")
     if int(cfg["fallback_decimation"]) < 80000:

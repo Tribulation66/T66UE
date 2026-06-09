@@ -1,0 +1,15 @@
+{
+  "blend_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Hero_1_Chad_Male_RawOutlineOnly.blend",
+  "render_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Hero_1_Chad_Male_raw_vs_black_outline.png",
+  "recipe_json": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\raw_black_outline_recipe.json",
+  "recipe_md": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\raw_black_outline_recipe.md",
+  "source_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Outputs\\Hero_1_Chad_Male.glb",
+  "raw_object_count": 1,
+  "outlined_object_count": 1,
+  "outline_method": "Pixel-exact outer silhouette overlay from luminance mask",
+  "outline_radius_px": 7,
+  "base_render_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Hero_1_Chad_Male_raw_vs_raw_base.png",
+  "mask_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Hero_1_Chad_Male_outline_mask.png",
+  "outline_overlay_image": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Hero_1_Chad_Male_outer_only_outline_overlay.png",
+  "proof_scene": "Raw_Pixal3D_OuterOnly_Final_Proof_Image"
+}

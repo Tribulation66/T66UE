@@ -1,0 +1,2 @@
+/Game/World/VisualProps/Easy/Material_0
+/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline

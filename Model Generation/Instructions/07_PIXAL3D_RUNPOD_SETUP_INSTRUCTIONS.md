@@ -8,7 +8,7 @@ separate from TRELLIS.
 
 1. `00_MODEL_GENERATION_ROUTING_INSTRUCTIONS.md`
 2. `02_SOURCE_IMAGE_RULES_INSTRUCTIONS.md`
-3. `09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md` for production assets
+3. `11_FRIENDSLOP_RAW_PIXAL3D_IMPORT_GUIDELINES.md` for active FriendSlop production assets
 4. `../Pixal3D/PIXAL3D_PIPELINE_REFERENCE.md`
 5. This setup doc
 6. `08_PIXAL3D_TROUBLESHOOTING_INSTRUCTIONS.md` if setup or export fails
@@ -166,7 +166,7 @@ For every generated row, verify:
   `fill_holes` fallback
 - Blender QA imports the GLB and writes a front render
 - Blender QA metadata includes triangle count and nonzero bounds
-- character-like rows can run Quad Retro when requested
+- character-like rows can run Blender QA and FriendSlop import validation; retired QuadRetro processing is archived and should not be used for active FriendSlop assets unless the user explicitly revives that path
 
 ## Detached Experiment Batch
 
@@ -214,7 +214,7 @@ folder.
 
 ## Promotion Boundary
 
-Pixal3D assets move into runtime content through
-`09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md`, the production
-replacement manifest, the ToonStyle foundation pipeline, Unreal import
-validation, and standalone verification gates.
+Pixal3D assets move into active runtime content through
+`11_FRIENDSLOP_RAW_PIXAL3D_IMPORT_GUIDELINES.md`, the relevant production
+manifest/source-run evidence, explicit texture/material binding, Unreal import
+validation, DataTable reloads when needed, and standalone verification gates.

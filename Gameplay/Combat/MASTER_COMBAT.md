@@ -1,6 +1,6 @@
 # T66 Master Combat
 
-**Last updated:** 2026-05-31
+**Last updated:** 2026-06-09
 **Scope:** Single-source handoff for combat runtime flow, targeting, damage routing, damage provenance logging, combat collision roles, debug visibility, hit feedback, spatial headshots, accuracy-driven aiming, and boss body-part combat.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Backend/Anti Cheat/ANTI_CHEAT_POLICY_REFERENCE.md`, `Gameplay/Combat/VFX_PROCESS_INDEX.md`, `Gameplay/Combat/CombatVFXAuthoringProcedure.md`
 **Maintenance rule:** Update this file after every material combat, targeting, damage-model, hitbox, projectile, boss-health, or combat-UI change.
@@ -24,6 +24,7 @@ Combat VFX process note: start future VFX work from `VFX_PROCESS_INDEX.md` and `
   - movement blockers, sensors, interact triggers, and visual-only actors are not part of the default combat debug view.
 - Non-shipping builds now default to showing both combat hitboxes and damage volumes through `T66.Combat.DebugView=3`; Shipping builds default to `0`.
 - Every successful hero HP loss now writes one `[CombatDamage]` line to the Unreal log from the shared `UT66RunStateSubsystem::ApplyDamage(...)` path.
+- Enemy damage always raises hero damage percent and applies knockback, but only triggers throw/disable ragdoll once the resulting damage percent is above `t66.HealthPercent.EnemyDisableStartPercent`. Enemy throw distance and disable duration scale through `t66.HealthPercent.EnemyDisableFullPercent`; death remains at 100 percent.
 - Backrooms chaser contact uses delivery method `BackroomsChaserTouch`. It bypasses the Backrooms Quick Revive item, Saint Blessing, evasion, and invulnerability gates, restores the temporarily hidden inventory/weapon first, then kills the hero through the shared damage path.
 - The current revive behavior is the reward-only `Item_BackroomsQuickRevive` inventory item, consumed by normal lethal damage for a one-heart revive.
 - Unique unkillable chasers are authored through `Content/Data/UniqueEnemies.csv` and `/Game/Data/DT_UniqueEnemies`; the first row is `BackroomsChaser`, currently visualized with the existing `Slime` character visual.
@@ -299,6 +300,7 @@ Damage provenance logging:
 - Runtime owner:
   - `Source/T66/Core/RunState/T66RunStateSubsystem_Combat.cpp`
 - Every successful `UT66RunStateSubsystem::ApplyDamage(...)` call emits one `LogT66DamageReceived` line tagged `[CombatDamage]`.
+- Each successful damage physics decision emits `[CombatDamagePhysics]` with `Mode=EnemyKnockbackOnly`, `Mode=EnemyRagdoll`, or `Mode=Ragdoll`. `EnemyKnockbackOnly` proves the hit added percent without disabling the hero; `EnemyRagdoll` proves the above-threshold enemy hit entered the hero physics reaction.
 - Hostile projectile sources also emit projectile-specific logs before damage routing:
   - `[ProjectileFired]` records actor-path projectiles where those paths still exist.
   - `[ProjectileManagerSummary]` records manager-owned enemy and boss projectile counts, active peak, dropped fires, invalid-source drops, visual bucket overflow, hit/expire/world-impact counts, and HISM/tick timings.
@@ -325,7 +327,7 @@ Damage provenance logging:
   - `LoanShark`
   - `TutorialScriptedDamage`
 - Non-shipping verification hook:
-  - `-T66GameplayAutoCapture=combatdamagelog` applies one controlled 20 HP hit through `ApplyDamage(...)` so agents can prove the log line in a staged run.
+  - `-T66GameplayAutoCapture=combatdamagelog` applies controlled enemy-delivery hits through `ApplyDamage(...)` so agents can prove below-threshold enemy knockback-only behavior and above-threshold enemy ragdoll behavior in one staged run.
   - `-T66GameplayAutoCapture=trapprojectilehitbox` spawns a stationary trap projectile so agents can verify the drawn damage box against the projectile body.
   - `-T66GameplayAutoCapture=trapcontainers` spawns representative wall projectile, floor burst, area-control, and pressure-plate trap visuals so agents can verify visual layer plus container layer together.
   - `-T66GameplayAutoCapture=hero1axeaoehitbox` equips the Hero 1 black AOE weapon, spawns fixed inside/outside proof targets, fires one real auto-attack AOE, draws the sector `DamageVolume`, and logs HP before/after pass/fail results for each target.

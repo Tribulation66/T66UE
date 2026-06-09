@@ -1,0 +1,83 @@
+{
+  "ok": true,
+  "errors": [],
+  "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Hero_1_Chad_Male_FriendSlop_Skeletal.fbx",
+  "source_texture": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX\\Hero_1_Chad_Male\\Textures\\Hero_1_Chad_Male_00_Image_0.png",
+  "target_dir": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal",
+  "skeletal_mesh": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/SK_Hero_1_Chad_Male_FriendSlop.SK_Hero_1_Chad_Male_FriendSlop",
+  "skeleton": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/SK_Hero_1_Chad_Male_FriendSlop_Skeleton.SK_Hero_1_Chad_Male_FriendSlop_Skeleton",
+  "physics_asset_after_import": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/PA_Hero_1_Chad_Male_FriendSlop_TestRoom.PA_Hero_1_Chad_Male_FriendSlop_TestRoom",
+  "texture": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Textures/T_Hero_1_Chad_Male_BaseColor.T_Hero_1_Chad_Male_BaseColor",
+  "material": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/Materials/MI_SK_Hero_1_Chad_Male_FriendSlop.MI_SK_Hero_1_Chad_Male_FriendSlop",
+  "animations": {
+    "idle": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\AnimationSources\\Hero_1_Chad_Male_FriendSlop_Idle.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Idle.AM_Hero_1_Chad_Male_FriendSlop_Idle",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Idle.AM_Hero_1_Chad_Male_FriendSlop_Idle"
+      ],
+      "ok": true,
+      "error": ""
+    },
+    "walk": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\AnimationSources\\Hero_1_Chad_Male_FriendSlop_Walk.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Walk.AM_Hero_1_Chad_Male_FriendSlop_Walk",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Walk.AM_Hero_1_Chad_Male_FriendSlop_Walk"
+      ],
+      "ok": true,
+      "error": ""
+    },
+    "jump": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\AnimationSources\\Hero_1_Chad_Male_FriendSlop_Jump.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Jump.AM_Hero_1_Chad_Male_FriendSlop_Jump",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Jump.AM_Hero_1_Chad_Male_FriendSlop_Jump"
+      ],
+      "ok": true,
+      "error": ""
+    },
+    "roll": {
+      "source_fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\AnimationSources\\Hero_1_Chad_Male_FriendSlop_Roll.fbx",
+      "asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Roll.AM_Hero_1_Chad_Male_FriendSlop_Roll",
+      "imported_object_paths": [
+        "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Roll.AM_Hero_1_Chad_Male_FriendSlop_Roll"
+      ],
+      "ok": true,
+      "error": ""
+    }
+  },
+  "imported_object_paths": [
+    "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/SK_Hero_1_Chad_Male_FriendSlop.SK_Hero_1_Chad_Male_FriendSlop"
+  ],
+  "material_assignment": {
+    "ok": true,
+    "slot_count": 1,
+    "material_paths": [
+      "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/Materials/MI_SK_Hero_1_Chad_Male_FriendSlop.MI_SK_Hero_1_Chad_Male_FriendSlop"
+    ]
+  },
+  "bounds": {
+    "origin_cm": [
+      9.5367431640625e-07,
+      0.0,
+      90.0
+    ],
+    "extent_cm": [
+      26.21805477142334,
+      45.101593017578125,
+      90.0
+    ],
+    "size_cm": [
+      52.43610954284668,
+      90.20318603515625,
+      180.0
+    ]
+  },
+  "process_boundary": {
+    "character_visuals_csv_touched": false,
+    "toonstyle_touched": false,
+    "quad_retro_touched": false,
+    "outline_sidecar_touched": false
+  }
+}

@@ -31,7 +31,6 @@ namespace
 	static constexpr float T66PlacedTowerMinibossScale = 1.75f;
 	static constexpr float T66SmokeBossRewardCompanionOffsetX = -760.0f;
 	static constexpr float T66SmokeBossRewardPetOffsetY = -900.0f;
-	static constexpr float T66SmokeBossRewardIdolOffsetY = 900.0f;
 	static constexpr float T66SmokeBossRewardGateOffsetX = 1250.0f;
 	static constexpr float T66SmokeBossRewardMinSeparation2D = 600.0f;
 	static const TCHAR* T66TowerTerrainFloorTagPrefix = TEXT("T66_Floor_Tower_");
@@ -581,12 +580,12 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 	int32 CasinoActorsOnMobFloors = 0;
 	int32 StartFloorExtraInteractables = 0;
 	FString StartFloorExtraInteractableNames;
-	int32 CasinoInteractableOpenHandled = 0;
+	int32 CasinoNPCOpenHandled = 0;
 	int32 CasinoOverlayOpenAfterInteract = 0;
 	if (ProofWorld && IsUsingTowerMainMapLayout())
 	{
 		ExpectedVendorFloors = FMath::Max(0, CachedTowerMainMapLayout.LastMobFloorNumber - CachedTowerMainMapLayout.FirstMobFloorNumber + 1);
-		for (TActorIterator<AT66VendorInteractable> It(ProofWorld); It; ++It)
+		for (TActorIterator<AT66VendorNPC> It(ProofWorld); It; ++It)
 		{
 			const int32 FloorNumber = T66ReadTowerFloorTag(*It);
 			if (FloorNumber >= CachedTowerMainMapLayout.FirstMobFloorNumber && FloorNumber <= CachedTowerMainMapLayout.LastMobFloorNumber)
@@ -606,7 +605,7 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 				++ExpectedCasinoFloors;
 			}
 		}
-		for (TActorIterator<AT66CasinoInteractable> It(ProofWorld); It; ++It)
+		for (TActorIterator<AT66CasinoNPC> It(ProofWorld); It; ++It)
 		{
 			const int32 FloorNumber = T66ReadTowerFloorTag(*It);
 			if (FloorNumber >= CachedTowerMainMapLayout.FirstMobFloorNumber && FloorNumber <= CachedTowerMainMapLayout.LastMobFloorNumber)
@@ -632,8 +631,8 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 			}
 
 			const bool bExtraWorldInteractable =
-				Actor->IsA<AT66VendorInteractable>()
-				|| Actor->IsA<AT66CasinoInteractable>()
+				Actor->IsA<AT66VendorNPC>()
+				|| Actor->IsA<AT66CasinoNPC>()
 				|| Actor->IsA<AT66ChestInteractable>()
 				|| Actor->IsA<AT66CrateInteractable>()
 				|| Actor->IsA<AT66LootWheelInteractable>()
@@ -663,16 +662,16 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 			}
 		}
 
-		AT66CasinoInteractable* ProofCasinoInteractable = nullptr;
-		for (TActorIterator<AT66CasinoInteractable> It(ProofWorld); It; ++It)
+		AT66CasinoNPC* ProofCasinoNPC = nullptr;
+		for (TActorIterator<AT66CasinoNPC> It(ProofWorld); It; ++It)
 		{
-			ProofCasinoInteractable = *It;
+			ProofCasinoNPC = *It;
 			break;
 		}
 
 		if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(ProofWorld->GetFirstPlayerController()))
 		{
-			CasinoInteractableOpenHandled = (ProofCasinoInteractable && T66PC->OpenCasinoGamblerInteractable(ProofCasinoInteractable)) ? 1 : 0;
+			CasinoNPCOpenHandled = (ProofCasinoNPC && T66PC->OpenCasinoGamblerNPC(ProofCasinoNPC)) ? 1 : 0;
 			CasinoOverlayOpenAfterInteract = T66PC->IsCasinoOverlayOpen() ? 1 : 0;
 			T66PC->CloseCasinoOverlay();
 		}
@@ -701,11 +700,11 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 			StartFloorExtraInteractables,
 			StartFloorExtraInteractableNames.IsEmpty() ? TEXT("None") : *StartFloorExtraInteractableNames));
 	RecordCheck(
-		TEXT("CasinoInteractableOpensGamblerOverlay"),
-		CasinoInteractableOpenHandled == 1 && CasinoOverlayOpenAfterInteract == 1,
+		TEXT("CasinoNPCOpensGamblerOverlay"),
+		CasinoNPCOpenHandled == 1 && CasinoOverlayOpenAfterInteract == 1,
 		FString::Printf(
 			TEXT("OpenHandled=%d OverlayOpen=%d CasinoActors=%d"),
-			CasinoInteractableOpenHandled,
+			CasinoNPCOpenHandled,
 			CasinoOverlayOpenAfterInteract,
 			CasinoActorsOnMobFloors));
 
@@ -1148,7 +1147,6 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 	int32 BossRewardStageGateDelta = 0;
 	int32 BossRewardFreedCompanions = 0;
 	bool bBossRewardPetSpawned = false;
-	bool bBossRewardIdolSpawned = false;
 	bool bBossRewardLayoutSeparated = false;
 	float BossRewardMinDistance2D = -1.0f;
 	if (ProofWorld && T66GI && RunState && !NormalStagePetProofBossID.IsNone())
@@ -1171,7 +1169,6 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 
 		const FVector CompanionRewardLocation = RewardAnchor + FVector(T66SmokeBossRewardCompanionOffsetX, 0.0f, 0.0f);
 		const FVector PetRewardLocation = RewardAnchor + FVector(0.0f, T66SmokeBossRewardPetOffsetY, 0.0f);
-		const FVector IdolRewardLocation = RewardAnchor + FVector(0.0f, T66SmokeBossRewardIdolOffsetY, 0.0f);
 		const FVector GateRewardLocation = RewardAnchor + FVector(T66SmokeBossRewardGateOffsetX, 0.0f, 0.0f);
 
 		ClearCagedStageCompanions(true);
@@ -1195,8 +1192,6 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 			RewardProofBoss->Destroy();
 		}
 
-		AT66IdolAltar* RewardIdolAltar = SpawnIdolAltarAtLocation(IdolRewardLocation, true);
-		bBossRewardIdolSpawned = RewardIdolAltar != nullptr;
 		SpawnStageGateAtLocation(GateRewardLocation);
 
 		AT66StageGate* RewardStageGate = nullptr;
@@ -1248,10 +1243,6 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 		{
 			RewardActors.Add(RewardCompanion);
 		}
-		if (RewardIdolAltar)
-		{
-			RewardActors.Add(RewardIdolAltar);
-		}
 		for (int32 A = 0; A < RewardActors.Num(); ++A)
 		{
 			for (int32 B = A + 1; B < RewardActors.Num(); ++B)
@@ -1262,7 +1253,7 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 					: FMath::Min(BossRewardMinDistance2D, Dist2D);
 			}
 		}
-		bBossRewardLayoutSeparated = RewardActors.Num() >= 4
+		bBossRewardLayoutSeparated = RewardActors.Num() >= 3
 			&& BossRewardMinDistance2D >= T66SmokeBossRewardMinSeparation2D;
 
 		if (RewardPetCapture)
@@ -1273,10 +1264,6 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 		{
 			RewardStageGate->Destroy();
 		}
-		if (RewardIdolAltar)
-		{
-			RewardIdolAltar->Destroy();
-		}
 		ClearCagedStageCompanions(true);
 		RunState->SetCurrentStage(StageBeforeRewardProof);
 	}
@@ -1285,16 +1272,14 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 		BossRewardStageGateDelta == 1
 			&& BossRewardFreedCompanions > 0
 			&& bBossRewardPetSpawned
-			&& bBossRewardIdolSpawned
 			&& bBossRewardLayoutSeparated,
 		FString::Printf(
-			TEXT("GateBefore=%d GateAfter=%d Delta=%d FreedCompanions=%d PetSpawned=%d IdolSpawned=%d MinDistance2D=%.1f Required=%.1f"),
+			TEXT("GateBefore=%d GateAfter=%d Delta=%d FreedCompanions=%d PetSpawned=%d MinDistance2D=%.1f Required=%.1f"),
 			BossRewardStageGateBefore,
 			BossRewardStageGateAfter,
 			BossRewardStageGateDelta,
 			BossRewardFreedCompanions,
 			bBossRewardPetSpawned ? 1 : 0,
-			bBossRewardIdolSpawned ? 1 : 0,
 			BossRewardMinDistance2D,
 			T66SmokeBossRewardMinSeparation2D));
 
@@ -2285,11 +2270,11 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 				Hero = Cast<AT66HeroBase>(PC->GetPawn());
 			}
 
-			int32 GuardianSpawned[3] = { 0, 0, 0 };
-			int32 BlockedWhileAlive[3] = { 0, 0, 0 };
-			int32 UnblockedAfterDeath[3] = { 0, 0, 0 };
-			int32 InteractAfterDeath[3] = { 0, 0, 0 };
-			static constexpr int32 ProofFloors[3] = { 2, 3, 4 };
+			int32 GuardianSpawned[2] = { 0, 0 };
+			int32 BlockedWhileAlive[2] = { 0, 0 };
+			int32 UnblockedAfterDeath[2] = { 0, 0 };
+			int32 InteractAfterDeath[2] = { 0, 0 };
+			static constexpr int32 ProofFloors[2] = { 2, 3 };
 
 			if (Hero)
 			{
@@ -2312,6 +2297,10 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 					}
 
 					AT66TowerDescentHole* Hole = FindTowerDescentHoleForFloor(FloorNumber);
+					if (Hole)
+					{
+						Hole->NotifyIdolSelectionSatisfied();
+					}
 					AT66EnemyBase* Guardian = EnsurePlacedTowerMinibossForFloor(FloorNumber);
 					if (!Guardian && Hole)
 					{
@@ -2337,14 +2326,14 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 			}
 
 			const bool bPass = Hero
-				&& GuardianSpawned[0] && GuardianSpawned[1] && GuardianSpawned[2]
-				&& BlockedWhileAlive[0] && BlockedWhileAlive[1] && BlockedWhileAlive[2]
-				&& UnblockedAfterDeath[0] && UnblockedAfterDeath[1] && UnblockedAfterDeath[2];
+				&& GuardianSpawned[0] && GuardianSpawned[1]
+				&& BlockedWhileAlive[0] && BlockedWhileAlive[1]
+				&& UnblockedAfterDeath[0] && UnblockedAfterDeath[1];
 
 			UE_LOG(
 				LogT66GameMode,
 				Log,
-				TEXT("[MinibossTraversalProofSummary] Terminal=1 Floors=2->3->4 Floor2GuardianSpawned=%d Floor2BlockedWhileAlive=%d Floor2UnblockedAfterDeath=%d Floor2InteractAfterDeath=%d Floor3GuardianSpawned=%d Floor3BlockedWhileAlive=%d Floor3UnblockedAfterDeath=%d Floor3InteractAfterDeath=%d Floor4GuardianSpawned=%d Floor4BlockedWhileAlive=%d Floor4UnblockedAfterDeath=%d Floor4InteractAfterDeath=%d Pass=%d"),
+				TEXT("[MinibossTraversalProofSummary] Terminal=1 Floors=2->3 Floor2GuardianSpawned=%d Floor2BlockedWhileAlive=%d Floor2UnblockedAfterDeath=%d Floor2InteractAfterDeath=%d Floor3GuardianSpawned=%d Floor3BlockedWhileAlive=%d Floor3UnblockedAfterDeath=%d Floor3InteractAfterDeath=%d Pass=%d"),
 				GuardianSpawned[0],
 				BlockedWhileAlive[0],
 				UnblockedAfterDeath[0],
@@ -2353,10 +2342,6 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 				BlockedWhileAlive[1],
 				UnblockedAfterDeath[1],
 				InteractAfterDeath[1],
-				GuardianSpawned[2],
-				BlockedWhileAlive[2],
-				UnblockedAfterDeath[2],
-				InteractAfterDeath[2],
 				bPass ? 1 : 0);
 			FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT("MinibossTraversalProofComplete"));
 		}));
@@ -2406,15 +2391,36 @@ void AT66GameMode::SpawnTowerDescentHolesIfNeeded()
 		}
 
 		const bool bRequiresWeaponSelection = Floor.FloorNumber == CachedTowerMainMapLayout.StartFloorNumber;
+		const bool bRequiresIdolSelection = true;
 		const bool bRequiresGuardianDefeated = IsPlacedTowerMinibossFloor(Floor.FloorNumber);
 		HoleActor->InitializeHole(
 			Floor.FloorNumber,
 			DestinationFloor->FloorNumber,
 			BoxExtent,
 			bRequiresWeaponSelection,
+			bRequiresIdolSelection,
 			bRequiresGuardianDefeated);
 		HoleActor->Tags.AddUnique(FName(TEXT("T66_Tower_DescentHole")));
 		TowerDescentHoles.Add(HoleActor);
+
+		FVector GateForward = (Floor.HoleCenter - Floor.Center).GetSafeNormal2D();
+		if (GateForward.IsNearlyZero())
+		{
+			GateForward = FVector::ForwardVector;
+		}
+
+		const float AltarOffset = FMath::Max(Floor.HoleHalfExtent.X, Floor.HoleHalfExtent.Y) + 700.0f;
+		FVector IdolAltarLocation = Floor.HoleCenter - GateForward * AltarOffset;
+		IdolAltarLocation.Z = Floor.SurfaceZ;
+		if (AT66IdolAltar* GateIdolAltar = SpawnIdolAltarAtLocation(IdolAltarLocation, true))
+		{
+			T66TrySnapActorToTowerFloor(World, GateIdolAltar, CachedTowerMainMapLayout, Floor.FloorNumber, IdolAltarLocation);
+			T66AssignTowerFloorTag(GateIdolAltar, Floor.FloorNumber);
+			T66FaceActorTowardLocation2D(GateIdolAltar, Floor.Center);
+			GateIdolAltar->RemainingSelections = 1;
+			GateIdolAltar->LinkToTowerGateFloor(Floor.FloorNumber);
+			SyncTowerMiasmaSourceAnchor(Floor.FloorNumber, GateIdolAltar->GetActorLocation());
+		}
 	}
 
 #if !UE_BUILD_SHIPPING
@@ -2439,6 +2445,21 @@ AT66TowerDescentHole* AT66GameMode::FindTowerDescentHoleForFloor(const int32 Flo
 		}
 	}
 	return nullptr;
+}
+
+void AT66GameMode::NotifyTowerIdolSelectionForGate(const int32 FromFloorNumber)
+{
+	if (AT66TowerDescentHole* Hole = FindTowerDescentHoleForFloor(FromFloorNumber))
+	{
+		Hole->NotifyIdolSelectionSatisfied();
+	}
+}
+
+void AT66GameMode::NotifyTowerWeaponSelectionForGate(const int32 FromFloorNumber)
+{
+	// Weapon gates read the selected weapon from the manager at interaction time.
+	// This hook keeps weapon altar selection explicit and mirrors the idol altar contract.
+	UE_LOG(LogT66GameMode, Verbose, TEXT("[MAP] Tower weapon selection committed for descent gate floor=%d."), FromFloorNumber);
 }
 
 AT66EnemyBase* AT66GameMode::EnsurePlacedTowerMinibossForFloor(const int32 FloorNumber)
@@ -2489,8 +2510,7 @@ void AT66GameMode::HandleTowerGateGuardianDefeated(AT66EnemyBase* Guardian)
 		return;
 	}
 
-	UWorld* World = GetWorld();
-	if (!World)
+	if (!GetWorld())
 	{
 		return;
 	}
@@ -2501,28 +2521,17 @@ void AT66GameMode::HandleTowerGateGuardianDefeated(AT66EnemyBase* Guardian)
 		GuardianFloorNumber = GetTowerFloorIndexForLocation(Guardian->GetActorLocation());
 	}
 
-	const FVector DropLocation = Guardian->GetActorLocation();
 	Guardian->Tags.Remove(T66TowerDescentGuardianTag);
 	if (GuardianFloorNumber != INDEX_NONE)
 	{
 		TowerPlacedMinibossDefeatedFloors.Add(GuardianFloorNumber);
 	}
 
-	AT66IdolAltar* SpawnedAltar = SpawnIdolAltarAtLocation(DropLocation, /*bAllowMultiple*/ true);
-	if (SpawnedAltar && GuardianFloorNumber != INDEX_NONE)
-	{
-		T66TrySnapActorToTowerFloor(World, SpawnedAltar, CachedTowerMainMapLayout, GuardianFloorNumber, SpawnedAltar->GetActorLocation());
-		T66AssignTowerFloorTag(SpawnedAltar, GuardianFloorNumber);
-		SyncTowerMiasmaSourceAnchor(GuardianFloorNumber, SpawnedAltar->GetActorLocation());
-	}
-
 	UE_LOG(
 		LogT66GameMode,
 		Log,
-		TEXT("[MAP] Tower gate guardian defeated floor=%d; idol altar %s at %s."),
-		GuardianFloorNumber,
-		SpawnedAltar ? TEXT("spawned") : TEXT("failed"),
-		SpawnedAltar ? *SpawnedAltar->GetActorLocation().ToCompactString() : TEXT("None"));
+		TEXT("[MAP] Tower gate guardian defeated floor=%d; gate guardian requirement cleared without idol drop."),
+		GuardianFloorNumber);
 }
 
 bool AT66GameMode::IsUsingTowerMainMapLayout() const

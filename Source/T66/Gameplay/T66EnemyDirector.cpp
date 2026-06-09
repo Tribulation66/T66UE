@@ -286,7 +286,7 @@ void AT66EnemyDirector::BeginPlay()
 		}
 	}
 
-	// Only begin spawning once the Stage Timer becomes active (after Start Gate).
+	// Only begin spawning once the Stage Timer becomes active.
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
@@ -1204,7 +1204,7 @@ void AT66EnemyDirector::SpawnRuntimeTrickleWave()
 	float EffectiveSpawnMax = SpawnMaxDistance;
 	if (RunState)
 	{
-		const float ActualAttackRange = RunState->GetSecondaryStatValue(ET66SecondaryStatType::AttackRange);
+		const float ActualAttackRange = RunState->GetStatValue(ET66StatType::AttackRange);
 		const float AttackRange = FMath::Max(400.f, ActualAttackRange);
 		EffectiveSpawnMin = AttackRange * 1.25f;  // always outside range
 		EffectiveSpawnMax = EffectiveSpawnMin + 400.f;

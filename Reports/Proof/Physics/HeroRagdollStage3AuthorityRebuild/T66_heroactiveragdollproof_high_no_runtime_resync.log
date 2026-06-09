@@ -1,0 +1,1109 @@
+﻿Log file open, 06/07/26 06:32:05
+LogWindows: Failed to load 'aqProf.dll' (GetLastError=126)
+LogWindows: File 'aqProf.dll' does not exist
+LogProfilingDebugging: Loading WinPixEventRuntime.dll for PIX profiling (from ../../../Engine/Binaries/ThirdParty/Windows/WinPixEventRuntime/x64).
+LogWindows: Failed to load 'VtuneApi.dll' (GetLastError=126)
+LogWindows: File 'VtuneApi.dll' does not exist
+LogWindows: Failed to load 'VtuneApi32e.dll' (GetLastError=126)
+LogWindows: File 'VtuneApi32e.dll' does not exist
+LogWindows: Started CrashReportClient (pid=37668)
+LogWindows: Enabling Tpause support
+LogWindows: Custom abort handler registered for crash reporting.
+LogInit: Display: Running engine for game: T66
+LogCore: UTS: Unreal Trace Server launched successfully
+LogTrace: Initializing trace...
+LogCore: Display: Requested channels: 'cpu,gpu,frame,log,bookmark,screenshot,region'
+LogCore: No trace connection. Tracing to in-memory cache.
+LogTrace: Display: Control listening on port 1985
+LogTrace: Finished trace initialization.
+LogCsvProfiler: Display: Metadata set : platform="Windows"
+LogCsvProfiler: Display: Metadata set : config="Development"
+LogCsvProfiler: Display: Metadata set : buildversion="++UE5+Release-5.7-CL-48512491"
+LogCsvProfiler: Display: Metadata set : engineversion="5.7.1-48512491+++UE5+Release-5.7"
+LogCsvProfiler: Display: Metadata set : enginereleaseversion="5.7.1"
+LogCsvProfiler: Display: Metadata set : os="Windows 11 (25H2) [10.0.26200.8457] "
+LogCsvProfiler: Display: Metadata set : cpu="GenuineIntel|Intel(R) Core(TM) i9-14900HX"
+LogCsvProfiler: Display: Metadata set : pgoenabled="0"
+LogCsvProfiler: Display: Metadata set : pgoprofilingenabled="0"
+LogCsvProfiler: Display: Metadata set : ltoenabled="0"
+LogCsvProfiler: Display: Metadata set : asan="0"
+LogCsvProfiler: Display: Metadata set : mergedmodules="0"
+LogCsvProfiler: Display: Metadata set : commandline="" C:\UE\T66\T66.uproject /Game/Maps/GameplayLevel -game -windowed -ResX=1280 -ResY=720 -T66AutomationResX=1280 -T66AutomationResY=720 -T66AutomationWindowed -T66GameplayAutoCapture=heroactiveragdollproof -T66GameplayAutoScreenshotSequenceDir=C:\UE\T66\Reports\Proof\Physics\HeroRagdollStage3AuthorityRebuild\frames_reaction_testroom_high_no_runtime_resync -T66GameplayAutoScreenshotSequencePrefix=frame -T66GameplayAutoScreenshotSequenceCount=96 -T66GameplayAutoScreenshotSequenceInterval=0.0625 -T66GameplayAutoScreenshotDelay=3 -T66GameplayAutoPostCaptureScreenshotDelay=0.1 -unattended -nop4 -nosplash -ExecCmds="t66.HeroPhysics.DebugLog 1,t66.HeroPhysics.DebugLogInterval 0.25" -T66HeroVisualOverride=Hero_1_Chad -T66TestRoomRagdollProofCameraDistance=850 -T66TestRoomRagdollProofCameraSideOffset=-260 -T66TestRoomRagdollProofFocusForwardOffset=500 -T66TestRoomRagdollProofCameraFOV=90 -T66TestRoomRagdollProofCameraHeight=850 -T66TestRoomRagdollProofMaxCameraZ=1400 -T66TestRoomRagdollProofFocusZ=130 -T66TestRoomRagdollProofFocusHeightOffset=40 -T66AutomationTestRoom -T66AutoCaptureHeroHPOverride=20000""
+LogCsvProfiler: Display: Metadata set : loginid="6e1893814737cdf6e2edcbb02b9a616f"
+LogCsvProfiler: Display: Metadata set : llm="0"
+LogStats: Stats thread started at 0.339879
+LogCsvProfiler: Display: Metadata set : systemresolution.resx="1280"
+LogCsvProfiler: Display: Metadata set : systemresolution.resy="720"
+LogICUInternationalization: ICU TimeZone Detection - Raw Offset: -3:00, Platform Override: ''
+LogInit: Session CrashGUID >====================================================
+         Session CrashGUID >   UECC-Windows-474374C944D4BD174E4A8F8B7152EC50
+         Session CrashGUID >====================================================
+LogConfig: No local boot hotfix file found at: [../../../../../../UE/T66/Saved/PersistentDownloadDir/HotfixForNextBoot.txt]
+LogAudio: Display: Pre-Initializing Audio Device Manager...
+LogAudio: Display: AudioInfo: 'OPUS' Registered
+LogAudioDebug: Display: Lib vorbis DLL was dynamically loaded.
+LogAudio: Display: AudioInfo: 'OGG' Registered
+LogAudio: Display: AudioInfo: 'ADPCM' Registered
+LogAudio: Display: AudioInfo: 'PCM' Registered
+LogAudio: Display: AudioInfo: 'BINKA' Registered
+LogAudio: Display: AudioInfo: 'RADA' Registered
+LogAudio: Display: Audio Device Manager Pre-Initialized
+LogPluginManager: Looking for build plugins target receipt
+LogConfig: Display: Loading Mac ini files took 0.05 seconds
+LogConfig: Display: Loading VulkanPC ini files took 0.05 seconds
+LogConfig: Display: Loading Android ini files took 0.05 seconds
+LogConfig: Display: Loading IOS ini files took 0.06 seconds
+LogConfig: Display: Loading Unix ini files took 0.06 seconds
+LogPluginManager: Found matching target receipt: ../../../../../../UE/T66/Binaries/Win64/T66Editor.target
+LogPluginManager: Looking for enabled plugins target receipt
+LogConfig: Display: Loading TVOS ini files took 0.07 seconds
+LogConfig: Display: Loading VisionOS ini files took 0.07 seconds
+LogConfig: Display: Loading Linux ini files took 0.07 seconds
+LogConfig: Display: Loading Windows ini files took 0.07 seconds
+LogPluginManager: Found matching target receipt: ../../../../../../UE/T66/Binaries/Win64/T66Editor.target
+LogPluginManager: Mounting Engine plugin AudioInsights
+LogPluginManager: Mounting Engine plugin BaseMaterial
+LogPluginManager: Mounting Engine plugin Bridge
+LogPluginManager: Mounting Engine plugin ChaosClothAsset
+LogPluginManager: Mounting Engine plugin ChaosCloth
+LogPluginManager: Mounting Engine plugin ChaosInsights
+LogPluginManager: Mounting Engine plugin ChaosVD
+LogPluginManager: Mounting Engine plugin CmdLinkServer
+LogPluginManager: Mounting Engine plugin EnhancedInput
+LogPluginManager: Mounting Engine plugin Fab
+LogPluginManager: Mounting Engine plugin IoStoreInsights
+LogPluginManager: Mounting Engine plugin MassInsights
+LogPluginManager: Mounting Engine plugin MeshPainting
+LogPluginManager: Mounting Engine plugin RenderGraphInsights
+LogPluginManager: Mounting Engine plugin TraceUtilities
+LogPluginManager: Mounting Engine plugin UbaController
+LogPluginManager: Mounting Engine plugin WorldMetrics
+LogPluginManager: Mounting Engine plugin XGEController
+LogPluginManager: Mounting Engine plugin AISupport
+LogPluginManager: Mounting Engine plugin EnvironmentQueryEditor
+LogPluginManager: Mounting Engine plugin OodleNetwork
+LogPluginManager: Mounting Engine plugin Cascade
+LogPluginManager: Mounting Engine plugin Niagara
+LogPluginManager: Mounting Engine plugin NiagaraPreviewContent
+LogPluginManager: Mounting Engine plugin NiagaraSimCaching
+LogPluginManager: Mounting Engine plugin FabLauncher
+LogPluginManager: Mounting Engine plugin ActorSequence
+LogPluginManager: Mounting Engine plugin LevelSequenceEditor
+LogPluginManager: Mounting Engine plugin MovieRenderPipeline
+LogPluginManager: Mounting Engine plugin SequencerScripting
+LogPluginManager: Mounting Engine plugin SequenceValidator
+LogPluginManager: Mounting Engine plugin TemplateSequence
+LogPluginManager: Mounting Engine plugin NNERuntimeORT
+LogPluginManager: Mounting Engine plugin LauncherChunkInstaller
+LogPluginManager: Mounting Engine plugin NNEDenoiser
+LogPluginManager: Mounting Engine plugin ActorLayerUtilities
+LogPluginManager: Mounting Engine plugin AndroidDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin AndroidMoviePlayer
+LogPluginManager: Mounting Engine plugin AndroidPermission
+LogPluginManager: Mounting Engine plugin AndroidFileServer
+LogPluginManager: Mounting Engine plugin AppleImageUtils
+LogPluginManager: Mounting Engine plugin ArchVisCharacter
+LogPluginManager: Mounting Engine plugin AssetTags
+LogPluginManager: Mounting Engine plugin AppleMoviePlayer
+LogPluginManager: Mounting Engine plugin AudioCapture
+LogPluginManager: Mounting Engine plugin AudioWidgets
+LogPluginManager: Mounting Engine plugin CableComponent
+LogPluginManager: Mounting Engine plugin AudioSynesthesia
+LogPluginManager: Mounting Engine plugin ComputeFramework
+LogPluginManager: Mounting Engine plugin ChunkDownloader
+LogPluginManager: Mounting Engine plugin CustomMeshComponent
+LogPluginManager: Mounting Engine plugin ExampleDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin GeometryProcessing
+LogPluginManager: Mounting Engine plugin GoogleCloudMessaging
+LogPluginManager: Mounting Engine plugin GooglePAD
+LogPluginManager: Mounting Engine plugin GeometryCache
+LogPluginManager: Mounting Engine plugin HairStrands
+LogPluginManager: Mounting Engine plugin InputDebugging
+LogPluginManager: Mounting Engine plugin IOSDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin LinuxDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin LocationServicesBPLibrary
+LogPluginManager: Mounting Engine plugin MeshModelingToolset
+LogPluginManager: Mounting Engine plugin Metasound
+LogPluginManager: Mounting Engine plugin MobilePatchingUtils
+LogPluginManager: Mounting Engine plugin MsQuic
+LogPluginManager: Mounting Engine plugin ProceduralMeshComponent
+LogPluginManager: Mounting Engine plugin PropertyBindingUtils
+LogPluginManager: Mounting Engine plugin PropertyAccessEditor
+LogPluginManager: Mounting Engine plugin ResonanceAudio
+LogPluginManager: Mounting Engine plugin RigVM
+LogPluginManager: Mounting Engine plugin SoundFields
+LogPluginManager: Mounting Engine plugin SignificanceManager
+LogPluginManager: Mounting Engine plugin USDCore
+LogPluginManager: Mounting Engine plugin StateTree
+LogPluginManager: Mounting Engine plugin Synthesis
+LogPluginManager: Mounting Engine plugin WaveTable
+LogPluginManager: Mounting Engine plugin WebMMoviePlayer
+LogPluginManager: Mounting Engine plugin WindowsDeviceProfileSelector
+LogPluginManager: Mounting Engine plugin WindowsMoviePlayer
+LogPluginManager: Mounting Engine plugin CompositeCore
+LogPluginManager: Mounting Engine plugin OpenColorIO
+LogPluginManager: Mounting Engine plugin BlueprintHeaderView
+LogPluginManager: Mounting Engine plugin ColorGrading
+LogPluginManager: Mounting Engine plugin CryptoKeys
+LogPluginManager: Mounting Engine plugin CurveEditorTools
+LogPluginManager: Mounting Engine plugin ChangelistReview
+LogPluginManager: Mounting Engine plugin EditorDebugTools
+LogPluginManager: Mounting Engine plugin DataValidation
+LogPluginManager: Mounting Engine plugin ConsoleVariables
+LogPluginManager: Mounting Engine plugin AssetManagerEditor
+LogPluginManager: Mounting Engine plugin EditorScriptingUtilities
+LogPluginManager: Mounting Engine plugin EngineAssetDefinitions
+LogPluginManager: Mounting Engine plugin FacialAnimation
+LogPluginManager: Mounting Engine plugin GeometryMode
+LogPluginManager: Mounting Engine plugin MaterialAnalyzer
+LogPluginManager: Mounting Engine plugin GameplayTagsEditor
+LogPluginManager: Mounting Engine plugin MeshLODToolset
+LogPluginManager: Mounting Engine plugin MobileLauncherProfileWizard
+LogPluginManager: Mounting Engine plugin ModelingToolsEditorMode
+LogPluginManager: Mounting Engine plugin PluginBrowser
+LogPluginManager: Mounting Engine plugin ProxyLODPlugin
+LogPluginManager: Mounting Engine plugin StylusInput
+LogPluginManager: Mounting Engine plugin SpeedTreeImporter
+LogPluginManager: Mounting Engine plugin MacGraphicsSwitching
+LogPluginManager: Mounting Engine plugin UVEditor
+LogPluginManager: Mounting Engine plugin UMGWidgetPreview
+LogPluginManager: Mounting Engine plugin TcpMessaging
+LogPluginManager: Mounting Engine plugin USDImporter
+LogPluginManager: Mounting Engine plugin WorldPartitionHLODUtilities
+LogPluginManager: Mounting Engine plugin UdpMessaging
+LogPluginManager: Mounting Engine plugin SequencerAnimTools
+LogPluginManager: Mounting Engine plugin AlembicImporter
+LogPluginManager: Mounting Engine plugin BackChannel
+LogPluginManager: Mounting Engine plugin AdvancedRenamer
+LogPluginManager: Mounting Engine plugin ChaosCaching
+LogPluginManager: Mounting Engine plugin AnimToTexture
+LogPluginManager: Mounting Engine plugin ChaosNiagara
+LogPluginManager: Mounting Engine plugin AutomationUtils
+LogPluginManager: Mounting Engine plugin ChaosEditor
+LogPluginManager: Mounting Engine plugin ChaosUserDataPT
+LogPluginManager: Mounting Engine plugin ChaosSolverPlugin
+LogPluginManager: Mounting Engine plugin CharacterAI
+LogPluginManager: Mounting Engine plugin Dataflow
+LogPluginManager: Mounting Engine plugin EditorPerformance
+LogPluginManager: Mounting Engine plugin EditorDataStorage
+LogPluginManager: Mounting Engine plugin Fracture
+LogPluginManager: Mounting Engine plugin EditorDataStorageFeatures
+LogPluginManager: Mounting Engine plugin EditorTelemetry
+LogPluginManager: Mounting Engine plugin FullBodyIK
+LogPluginManager: Mounting Engine plugin GeometryCollectionPlugin
+LogPluginManager: Mounting Engine plugin GeometryDataflow
+LogPluginManager: Mounting Engine plugin GeometryFlow
+LogPluginManager: Mounting Engine plugin LevelSequenceNavigatorBridge
+LogPluginManager: Mounting Engine plugin LowLevelNetTrace
+LogPluginManager: Mounting Engine plugin LocalizableMessage
+LogPluginManager: Mounting Engine plugin GlobalConfigurationData
+LogPluginManager: Mounting Engine plugin MeshModelingToolsetExp
+LogPluginManager: Mounting Engine plugin NFORDenoise
+LogPluginManager: Mounting Engine plugin PlanarCut
+LogPluginManager: Mounting Engine plugin PythonScriptPlugin
+LogPluginManager: Mounting Engine plugin PlatformCrypto
+LogPluginManager: Mounting Engine plugin RuntimeTelemetry
+LogPluginManager: Mounting Engine plugin SkeletalReduction
+LogPluginManager: Mounting Engine plugin SequenceNavigator
+LogPluginManager: Mounting Engine plugin ToolPresets
+LogPluginManager: Mounting Engine plugin InterchangeTests
+LogPluginManager: Mounting Engine plugin OnlineServices
+LogPluginManager: Mounting Engine plugin EOSShared
+LogPluginManager: Mounting Engine plugin OnlineSubsystem
+LogPluginManager: Mounting Engine plugin OnlineSubsystemNull
+LogPluginManager: Mounting Engine plugin ACLPlugin
+LogPluginManager: Mounting Engine plugin OnlineSubsystemUtils
+LogPluginManager: Mounting Engine plugin OnlineSubsystemSteam
+LogPluginManager: Mounting Engine plugin AnimationData
+LogPluginManager: Mounting Engine plugin Paper2D
+LogPluginManager: Mounting Engine plugin BlendSpaceMotionAnalysis
+LogPluginManager: Mounting Engine plugin OnlineBase
+LogPluginManager: Mounting Engine plugin ControlRig
+LogPluginManager: Mounting Engine plugin AnimationModifierLibrary
+LogPluginManager: Mounting Engine plugin GameplayInsights
+LogPluginManager: Mounting Engine plugin EaseCurveTool
+LogPluginManager: Mounting Engine plugin DeformerGraph
+LogPluginManager: Mounting Engine plugin ControlRigModules
+LogPluginManager: Mounting Engine plugin SocketSubsystemSteamIP
+LogPluginManager: Mounting Engine plugin IKRig
+LogPluginManager: Mounting Engine plugin CameraShakePreviewer
+LogPluginManager: Mounting Engine plugin TweeningUtils
+LogPluginManager: Mounting Engine plugin AnimationSharing
+LogPluginManager: Mounting Engine plugin SkeletalMeshModelingTools
+LogPluginManager: Mounting Engine plugin EngineCameras
+LogPluginManager: Mounting Engine plugin CodeLiteSourceCodeAccess
+LogPluginManager: Mounting Engine plugin GameplayCameras
+LogPluginManager: Mounting Engine plugin LiveLink
+LogPluginManager: Mounting Engine plugin CLionSourceCodeAccess
+LogPluginManager: Mounting Engine plugin GPUReshape
+LogPluginManager: Mounting Engine plugin PerforceSourceControl
+LogPluginManager: Mounting Engine plugin ControlRigSpline
+LogPluginManager: Mounting Engine plugin RigLogic
+LogPluginManager: Mounting Engine plugin ProjectLauncher
+LogPluginManager: Mounting Engine plugin KDevelopSourceCodeAccess
+LogPluginManager: Mounting Engine plugin NamingTokens
+LogPluginManager: Mounting Engine plugin SubversionSourceControl
+LogPluginManager: Mounting Engine plugin N10XSourceCodeAccess
+LogPluginManager: Mounting Engine plugin TextureFormatOodle
+LogPluginManager: Mounting Engine plugin PixWinPlugin
+LogPluginManager: Mounting Engine plugin GitSourceControl
+LogPluginManager: Mounting Engine plugin PlasticSourceControl
+LogPluginManager: Mounting Engine plugin PropertyAccessNode
+LogPluginManager: Mounting Engine plugin VisualStudioCodeSourceCodeAccess
+LogPluginManager: Mounting Engine plugin RenderDocPlugin
+LogPluginManager: Mounting Engine plugin RiderSourceCodeAccess
+LogPluginManager: Mounting Engine plugin VisualStudioSourceCodeAccess
+LogPluginManager: Mounting Engine plugin PluginUtils
+LogPluginManager: Mounting Engine plugin NullSourceCodeAccess
+LogPluginManager: Mounting Engine plugin DatasmithContent
+LogPluginManager: Mounting Engine plugin DumpGPUServices
+LogPluginManager: Mounting Engine plugin VariantManagerContent
+LogPluginManager: Mounting Engine plugin InterchangeAssets
+LogPluginManager: Mounting Engine plugin XCodeSourceCodeAccess
+LogPluginManager: Mounting Engine plugin InterchangeEditor
+LogPluginManager: Mounting Engine plugin Interchange
+LogPluginManager: Mounting Engine plugin AndroidMedia
+LogPluginManager: Mounting Engine plugin VariantManager
+LogPluginManager: Mounting Engine plugin AvfMedia
+LogPluginManager: Mounting Engine plugin UObjectPlugin
+LogPluginManager: Mounting Engine plugin D3D12VideoDecodersElectra
+LogPluginManager: Mounting Engine plugin ElectraSubtitles
+LogPluginManager: Mounting Engine plugin ElectraPlayer
+LogPluginManager: Mounting Engine plugin GLTFExporter
+LogPluginManager: Mounting Engine plugin ElectraCDM
+LogPluginManager: Mounting Engine plugin ElectraUtil
+LogPluginManager: Mounting Engine plugin ElectraCodecs
+LogPluginManager: Mounting Engine plugin MediaCompositing
+LogPluginManager: Mounting Engine plugin MediaPlate
+LogPluginManager: Mounting Engine plugin ImgMedia
+LogPluginManager: Mounting Engine plugin OpusDecoderElectra
+LogPluginManager: Mounting Engine plugin MediaPlayerEditor
+LogPluginManager: Mounting Engine plugin WmfMedia
+LogPluginManager: Mounting Engine plugin MetaHumanSDK
+LogPluginManager: Mounting Engine plugin WebMMedia
+LogPluginManager: Mounting Engine plugin Takes
+LogPluginManager: Mounting Engine plugin XInputDevice
+LogPluginManager: Mounting Engine plugin LightMixer
+LogPluginManager: Mounting Engine plugin ObjectMixer
+LogPluginManager: Mounting Engine plugin ContentBrowserClassDataSource
+LogPluginManager: Mounting Engine plugin PortableObjectFileDataSource
+LogPluginManager: Mounting Engine plugin ContentBrowserFileDataSource
+LogPluginManager: Mounting Engine plugin ContentBrowserAssetDataSource
+LogPluginManager: Mounting Engine plugin BaseCharacterFXEditor
+LogPluginManager: Mounting Engine plugin ConcertMain
+LogPluginManager: Mounting Engine plugin OnlineSubsystemIOS
+LogPluginManager: Mounting Engine plugin OnlineSubsystemGooglePlay
+LogPluginManager: Mounting Engine plugin SQLiteCore
+LogPluginManager: Mounting Engine plugin AnalyticsBlueprintLibrary
+LogPluginManager: Mounting Engine plugin SteamShared
+LogPluginManager: Mounting Engine plugin ConcertSharedSlate
+LogPluginManager: Mounting Engine plugin ConcertSyncClient
+LogPluginManager: Mounting Engine plugin ConcertSyncCore
+SourceControl: Revision control is disabled
+SourceControl: Revision control is disabled
+SourceControl: Revision control is disabled
+LogNFORDenoise: NFORDenoise function starting up
+LogStudioTelemetry: Started StudioTelemetry Session
+LogEOSShared: Loaded "C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/EOSSDK-Win64-Shipping.dll"
+LogEOSShared: FEOSSDKManager::Initialize Initializing EOSSDK Version:1.18.1.2-47370208
+LogInit: Using libcurl 8.12.1
+LogInit:  - built for Windows
+LogInit:  - supports SSL with OpenSSL/1.1.1t
+LogInit:  - supports HTTP deflate (compression) using libz 1.3
+LogInit:  - other features:
+LogInit:      CURL_VERSION_SSL
+LogInit:      CURL_VERSION_LIBZ
+LogInit:      CURL_VERSION_IPV6
+LogInit:      CURL_VERSION_ASYNCHDNS
+LogInit:      CURL_VERSION_LARGEFILE
+LogInit:      CURL_VERSION_TLSAUTH_SRP
+LogInit:      CURL_VERSION_HTTP2
+LogInit:  CurlRequestOptions (configurable via config and command line):
+LogInit:  - bVerifyPeer = true  - Libcurl will verify peer certificate
+LogInit:  - bUseHttpProxy = false  - Libcurl will NOT use HTTP proxy
+LogInit:  - CVarHttpCurlReuseConnectionEnabled = true  - Libcurl will reuse connections
+LogInit:  - MaxHostConnections = 16  - Libcurl will limit the number of connections to a host
+LogInit:  - LocalHostAddr = Default
+LogInit:  - BufferSize = 65536
+LogInit: CreateHttpThread using FCurlMultiPollEventLoopHttpThread
+LogInit: Creating http thread with maximum 256 concurrent requests
+LogSteamShared: Display: Loading Steam SDK 1.61
+LogSteamShared: Steam SDK Loaded!
+LogOnline: STEAM: Steam User is subscribed 1
+LogOnline: STEAM: [AppId: 4464300] Client API initialized 1
+LogOnline: STEAM: [AppId: 4464300] Game Server API initialized 1
+LogOnline: OSS: Created online subsystem instance for: Steam
+LogOnline: OSS: TryLoadSubsystemAndSetDefault: Loaded subsystem for type [Steam]
+LogSockets: Warning: bAllowP2PPacketRelay has moved from OnlineSubsystemSteam to SocketSubsystemSteamIP, previous location is depreceated
+LogSockets: Warning: P2PConnectionTimeout has moved from OnlineSubsystemSteam to SocketSubsystemSteamIP, previous location is depreceated
+LogSockets: Warning: Missing P2PCleanupTimeout key in SocketSubsystemSteamIP of DefaultEngine.ini
+LogInit: WinSock: version 1.1 (2.2), MaxSocks=32767, MaxUdp=65467
+LogWindows: Failed to load 'WinPixGpuCapturer.dll' (GetLastError=126)
+LogWindows: File 'WinPixGpuCapturer.dll' does not exist
+PixWinPlugin: PIX capture plugin failed to initialize! Check that the process is launched from PIX.
+RenderDocPlugin: Display: RenderDoc plugin will not be loaded. Use '-AttachRenderDoc' on the cmd line or enable 'renderdoc.AutoAttach' in the plugin settings.
+LogInit: ExecutableName: UnrealEditor.exe
+LogInit: Build: ++UE5+Release-5.7-CL-48512491
+LogInit: Platform=WindowsEditor
+LogInit: MachineId=6e1893814737cdf6e2edcbb02b9a616f
+LogInit: DeviceId=
+LogInit: Engine Version: 5.7.1-48512491+++UE5+Release-5.7
+LogInit: Compatible Engine Version: 5.7.0-47537391+++UE5+Release-5.7
+LogInit: Net CL: 47537391
+LogInit: OS: Windows 11 (25H2) [10.0.26200.8457] (), CPU: Intel(R) Core(TM) i9-14900HX, GPU: Intel(R) UHD Graphics
+LogInit: CPU Model ID: 6b71, microcode revision: 11f
+LogInit: Compiled (64-bit): Nov 20 2025 16:27:58
+LogInit: Architecture: x64
+LogInit: Compiled with Visual C++: 19.44.35220.00
+LogInit: Build Configuration: Development
+LogInit: Branch Name: ++UE5+Release-5.7
+LogInit: Command Line: /Game/Maps/GameplayLevel -game -windowed -ResX=1280 -ResY=720 -T66AutomationResX=1280 -T66AutomationResY=720 -T66AutomationWindowed -T66GameplayAutoCapture=heroactiveragdollproof -T66GameplayAutoScreenshotSequenceDir=C:\UE\T66\Reports\Proof\Physics\HeroRagdollStage3AuthorityRebuild\frames_reaction_testroom_high_no_runtime_resync -T66GameplayAutoScreenshotSequencePrefix=frame -T66GameplayAutoScreenshotSequenceCount=96 -T66GameplayAutoScreenshotSequenceInterval=0.0625 -T66GameplayAutoScreenshotDelay=3 -T66GameplayAutoPostCaptureScreenshotDelay=0.1 -unattended -nop4 -nosplash -ExecCmds="t66.HeroPhysics.DebugLog 1,t66.HeroPhysics.DebugLogInterval 0.25" -T66HeroVisualOverride=Hero_1_Chad -T66TestRoomRagdollProofCameraDistance=850 -T66TestRoomRagdollProofCameraSideOffset=-260 -T66TestRoomRagdollProofFocusForwardOffset=500 -T66TestRoomRagdollProofCameraFOV=90 -T66TestRoomRagdollProofCameraHeight=850 -T66TestRoomRagdollProofMaxCameraZ=1400 -T66TestRoomRagdollProofFocusZ=130 -T66TestRoomRagdollProofFocusHeightOffset=40 -T66AutomationTestRoom -T66AutoCaptureHeroHPOverride=20000
+LogInit: Base Directory: C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/
+LogInit: Allocator: Mimalloc
+LogInit: Installed Engine Build: 1
+LogInit: This binary is optimized with LTO: no, PGO: no, instrumented for PGO data collection: no
+LogDevObjectVersion: Number of dev versions registered: 36
+LogDevObjectVersion:   Dev-Blueprints (B0D832E4-1F89-4F0D-ACCF-7EB736FD4AA2): 10
+LogDevObjectVersion:   Dev-Build (E1C64328-A22C-4D53-A36C-8E866417BD8C): 0
+LogDevObjectVersion:   Dev-Core (375EC13C-06E4-48FB-B500-84F0262A717E): 4
+LogDevObjectVersion:   Dev-Editor (E4B068ED-F494-42E9-A231-DA0B2E46BB41): 40
+LogDevObjectVersion:   Dev-Framework (CFFC743F-43B0-4480-9391-14DF171D2073): 37
+LogDevObjectVersion:   Dev-Mobile (B02B49B5-BB20-44E9-A304-32B752E40360): 3
+LogDevObjectVersion:   Dev-Networking (A4E4105C-59A1-49B5-A7C5-40C4547EDFEE): 0
+LogDevObjectVersion:   Dev-Online (39C831C9-5AE6-47DC-9A44-9C173E1C8E7C): 0
+LogDevObjectVersion:   Dev-Physics (78F01B33-EBEA-4F98-B9B4-84EACCB95AA2): 20
+LogDevObjectVersion:   Dev-Platform (6631380F-2D4D-43E0-8009-CF276956A95A): 0
+LogDevObjectVersion:   Dev-Rendering (12F88B9F-8875-4AFC-A67C-D90C383ABD29): 49
+LogDevObjectVersion:   Dev-Sequencer (7B5AE74C-D270-4C10-A958-57980B212A5A): 13
+LogDevObjectVersion:   Dev-VR (D7296918-1DD6-4BDD-9DE2-64A83CC13884): 3
+LogDevObjectVersion:   Dev-LoadTimes (C2A15278-BFE7-4AFE-6C17-90FF531DF755): 1
+LogDevObjectVersion:   Private-Geometry (6EACA3D4-40EC-4CC1-B786-8BED09428FC5): 3
+LogDevObjectVersion:   Dev-AnimPhys (29E575DD-E0A3-4627-9D10-D276232CDCEA): 17
+LogDevObjectVersion:   Dev-Anim (AF43A65D-7FD3-4947-9873-3E8ED9C1BB05): 15
+LogDevObjectVersion:   Dev-ReflectionCapture (6B266CEC-1EC7-4B8F-A30B-E4D90942FC07): 1
+LogDevObjectVersion:   Dev-Automation (0DF73D61-A23F-47EA-B727-89E90C41499A): 1
+LogDevObjectVersion:   FortniteMain (601D1886-AC64-4F84-AA16-D3DE0DEAC7D6): 225
+LogDevObjectVersion:   FortniteValkyrie (8DBC2C5B-54A7-43E0-A768-FCBB7DA29060): 8
+LogDevObjectVersion:   FortniteSeason (5B4C06B7-2463-4AF8-805B-BF70CDF5D0DD): 15
+LogDevObjectVersion:   FortniteRelease (E7086368-6B23-4C58-8439-1B7016265E91): 17
+LogDevObjectVersion:   Dev-Enterprise (9DFFBCD6-494F-0158-E221-12823C92A888): 11
+LogDevObjectVersion:   Dev-Niagara (F2AED0AC-9AFE-416F-8664-AA7FFA26D6FC): 1
+LogDevObjectVersion:   Dev-Destruction (174F1F0B-B4C6-45A5-B13F-2EE8D0FB917D): 10
+LogDevObjectVersion:   Dev-Physics-Ext (35F94A83-E258-406C-A318-09F59610247C): 41
+LogDevObjectVersion:   Dev-PhysicsMaterial-Chaos (B68FC16E-8B1B-42E2-B453-215C058844FE): 1
+LogDevObjectVersion:   Dev-CineCamera (B2E18506-4273-CFC2-A54E-F4BB758BBA07): 1
+LogDevObjectVersion:   Dev-VirtualProduction (64F58936-FD1B-42BA-BA96-7289D5D0FA4E): 1
+LogDevObjectVersion:   UE5-Main (697DD581-E64F-41AB-AA4A-51ECBEB7B628): 121
+LogDevObjectVersion:   UE5-Release (D89B5E42-24BD-4D46-8412-ACA8DF641779): 61
+LogDevObjectVersion:   UE5-SpecialProject (59DA5D52-1232-4948-B878-597870B8E98B): 9
+LogDevObjectVersion:   Dev-MediaFramework (6F0ED827-A609-4895-9C91-998D90180EA4): 2
+LogDevObjectVersion:   Dev-NaniteResearch (30D58BE3-95EA-4282-A6E3-B159D8EBB06A): 1
+LogDevObjectVersion:   Dev-ComputeFramework (6304A3E7-0059-4F59-8CFC-21BD7721FD4E): 0
+LogOnline: Warning: STEAM: Failed to obtain steam user stats, user: Solobro [0x1100001701CE47D] has no stats entries
+LogInit: Presizing for max 25165824 objects, including 0 objects not considered by GC.
+LogInit: Object subsystem initialized
+[2026.06.07-09.32.06:494][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.06.07-09.32.06:496][  0]LogRHI: Using Default RHI: D3D12
+[2026.06.07-09.32.06:498][  0]LogRHI: Using Highest Feature Level of D3D12: SM6
+[2026.06.07-09.32.06:498][  0]LogRHI: Loading RHI module D3D12RHI
+[2026.06.07-09.32.06:501][  0]LogD3D12RHI: Loading WinPixEventRuntime.dll for PIX profiling (from ../../../Engine/Binaries/ThirdParty/Windows/WinPixEventRuntime/x64).
+[2026.06.07-09.32.06:501][  0]LogRHI: Checking if RHI D3D12 with Feature Level SM6 is supported by your system.
+[2026.06.07-09.32.07:091][  0]LogD3D12RHI: Found D3D12 adapter 0: NVIDIA GeForce RTX 4070 Laptop GPU (VendorId: 10de, DeviceId: 2860, SubSysId: 3e4517aa, Revision: 00a1
+[2026.06.07-09.32.07:091][  0]LogD3D12RHI:   Max supported Feature Level 12_2, shader model 6.7, binding tier 3, wave ops supported, atomic64 supported
+[2026.06.07-09.32.07:091][  0]LogD3D12RHI:   Adapter has 7948MB of dedicated video memory, 0MB of dedicated system memory, and 32621MB of shared system memory, 1 output[s], UMA:false
+[2026.06.07-09.32.07:091][  0]LogD3D12RHI:   Driver Version: 591.86 (internal:32.0.15.9186, unified:591.86)
+[2026.06.07-09.32.07:091][  0]LogD3D12RHI:      Driver Date: 1-20-2026
+[2026.06.07-09.32.07:161][  0]LogD3D12RHI: Intel Extensions Framework not supported by driver. Please check if a driver update is available.
+[2026.06.07-09.32.07:171][  0]LogD3D12RHI: Found D3D12 adapter 1: Intel(R) UHD Graphics (VendorId: 8086, DeviceId: a788, SubSysId: 3e4517aa, Revision: 0004
+[2026.06.07-09.32.07:171][  0]LogD3D12RHI:   Max supported Feature Level 12_1, shader model 6.7, binding tier 3, wave ops supported, atomic64 unsupported
+[2026.06.07-09.32.07:171][  0]LogD3D12RHI:   Adapter has 128MB of dedicated video memory, 0MB of dedicated system memory, and 32621MB of shared system memory, 1 output[s], UMA:true
+[2026.06.07-09.32.07:172][  0]LogD3D12RHI:   Driver Version: 32.0.101.6790 (internal:32.0.101.6790, unified:101.6790)
+[2026.06.07-09.32.07:172][  0]LogD3D12RHI:      Driver Date: 4-28-2025
+[2026.06.07-09.32.07:183][  0]LogD3D12RHI: Found D3D12 adapter 2: Microsoft Basic Render Driver (VendorId: 1414, DeviceId: 008c, SubSysId: 0000, Revision: 0000
+[2026.06.07-09.32.07:183][  0]LogD3D12RHI:   Max supported Feature Level 12_1, shader model 6.7, binding tier 3, wave ops supported, atomic64 supported
+[2026.06.07-09.32.07:183][  0]LogD3D12RHI:   Adapter has 0MB of dedicated video memory, 0MB of dedicated system memory, and 32621MB of shared system memory, 0 output[s], UMA:true
+[2026.06.07-09.32.07:185][  0]LogD3D12RHI:   D3D10Warp Version: 10.0.26100.8328
+[2026.06.07-09.32.07:185][  0]LogD3D12RHI: DirectX Agility SDK runtime found.
+[2026.06.07-09.32.07:185][  0]LogD3D12RHI: Chosen D3D12 Adapter Id = 0
+[2026.06.07-09.32.07:185][  0]LogRHI: RHI D3D12 with Feature Level SM6 is supported and will be used.
+[2026.06.07-09.32.07:185][  0]LogInit: Selected Device Profile: [WindowsEditor]
+[2026.06.07-09.32.07:185][  0]LogHAL: Display: Platform has ~ 64 GB [68413153280 / 68719476736 / 64], which maps to Largest [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2026.06.07-09.32.07:186][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.06.07-09.32.07:186][  0]LogInit: Computer: DDOS
+[2026.06.07-09.32.07:186][  0]LogInit: User: DoPra
+[2026.06.07-09.32.07:186][  0]LogInit: CPU Page size=4096, Cores=24
+[2026.06.07-09.32.07:186][  0]LogInit: High frequency timer resolution =10.000000 MHz
+[2026.06.07-09.32.07:186][  0]LogInit: Handheld Device: 0
+[2026.06.07-09.32.07:186][  0]LogMemory: Memory total: Physical=63.7GB (64GB approx) Virtual=79.7GB
+[2026.06.07-09.32.07:186][  0]LogMemory: Platform Memory Stats for WindowsEditor
+[2026.06.07-09.32.07:186][  0]LogMemory: Process Physical Memory: 647.57 MB used, 688.55 MB peak
+[2026.06.07-09.32.07:186][  0]LogMemory: Process Virtual Memory: 617.24 MB used, 620.74 MB peak
+[2026.06.07-09.32.07:186][  0]LogMemory: Physical Memory: 41129.64 MB used,  24114.22 MB free, 65243.87 MB total
+[2026.06.07-09.32.07:186][  0]LogMemory: Virtual Memory: 48529.21 MB used,  33098.66 MB free, 81627.87 MB total
+[2026.06.07-09.32.07:186][  0]LogCsvProfiler: Display: Metadata set : extradevelopmentmemorymb="0"
+[2026.06.07-09.32.07:188][  0]LogWindows: WindowsPlatformFeatures enabled
+[2026.06.07-09.32.07:190][  0]LogSpline: Registered spline type: TypeId=0x54E3AD22, Impl=MultiSpline, Value=Vector
+[2026.06.07-09.32.07:191][  0]LogChaosDD: Chaos Debug Draw Startup
+[2026.06.07-09.32.07:191][  0]LogInit: Physics initialised using underlying interface: Chaos
+[2026.06.07-09.32.07:191][  0]LogInit: Using OS detected language (en-US).
+[2026.06.07-09.32.07:191][  0]LogInit: Using OS detected locale (en-US).
+[2026.06.07-09.32.07:197][  0]LogTextLocalizationManager: No specific localization for 'en-US' exists, so 'en' will be used for the language.
+[2026.06.07-09.32.07:464][  0]LogWindowsTextInputMethodSystem: Available input methods:
+[2026.06.07-09.32.07:464][  0]LogWindowsTextInputMethodSystem:   - English (United States) - (Keyboard).
+[2026.06.07-09.32.07:464][  0]LogWindowsTextInputMethodSystem: Activated input method: English (United States) - (Keyboard).
+[2026.06.07-09.32.07:475][  0]LogWindowsTouchpad: Display: CacheForceMaxTouchpadSensitivityMode SetMaxTouchpadSensitivity
+[2026.06.07-09.32.07:478][  0]LogObj: Display: Attempting to load config data for Default__SlateThemeManager before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.06.07-09.32.07:481][  0]LogSlate: New Slate User Created. Platform User Id 0, User Index 0, Is Virtual User: 0
+[2026.06.07-09.32.07:481][  0]LogSlate: Slate User Registered.  User Index 0, Is Virtual User: 0
+[2026.06.07-09.32.07:513][  0]LogRHI: Using Default RHI: D3D12
+[2026.06.07-09.32.07:513][  0]LogRHI: Using Highest Feature Level of D3D12: SM6
+[2026.06.07-09.32.07:513][  0]LogRHI: Loading RHI module D3D12RHI
+[2026.06.07-09.32.07:513][  0]LogRHI: Checking if RHI D3D12 with Feature Level SM6 is supported by your system.
+[2026.06.07-09.32.07:513][  0]LogRHI: RHI D3D12 with Feature Level SM6 is supported and will be used.
+[2026.06.07-09.32.07:513][  0]LogD3D12RHI: Integrated GPU (iGPU): false
+[2026.06.07-09.32.07:513][  0]LogD3D12RHI: Display: Creating D3D12 RHI with Max Feature Level SM6
+[2026.06.07-09.32.07:513][  0]LogWindows: Attached monitors:
+[2026.06.07-09.32.07:513][  0]LogWindows:     resolution: 1920x1080, work area: (0, 0) -> (1920, 1032), device: '\\.\DISPLAY5' [PRIMARY]
+[2026.06.07-09.32.07:513][  0]LogWindows:     resolution: 1463x914, work area: (-2560, 0) -> (-1097, 866), device: '\\.\DISPLAY1'
+[2026.06.07-09.32.07:513][  0]LogWindows: Found 2 attached monitors.
+[2026.06.07-09.32.07:513][  0]LogWindows: Gathering driver information using Windows Setup API
+[2026.06.07-09.32.07:514][  0]LogRHI: RHI Adapter Info:
+[2026.06.07-09.32.07:514][  0]LogRHI:             Name: NVIDIA GeForce RTX 4070 Laptop GPU
+[2026.06.07-09.32.07:514][  0]LogRHI:   Driver Version: 591.86 (internal:32.0.15.9186, unified:591.86)
+[2026.06.07-09.32.07:514][  0]LogRHI:      Driver Date: 1-20-2026
+[2026.06.07-09.32.07:514][  0]LogD3D12RHI:     GPU DeviceId: 0x2860 (for the marketing name, search the web for "GPU Device Id")
+[2026.06.07-09.32.07:514][  0]LogD3D12RHI: InitD3DDevice: -D3DDebug = off -D3D12GPUValidation = off
+[2026.06.07-09.32.07:646][  0]LogNvidiaAftermath: Aftermath initialized
+[2026.06.07-09.32.07:646][  0]LogD3D12RHI: Emitting draw events for PIX profiling.
+[2026.06.07-09.32.07:708][  0]LogNvidiaAftermath: Aftermath enabled. Active feature flags: 
+[2026.06.07-09.32.07:708][  0]LogNvidiaAftermath:  - Feature: EnableResourceTracking
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device1 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device2 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device3 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device4 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device5 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device6 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device7 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device8 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device9 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device10 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device11 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: ID3D12Device12 is supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: Bindless is supported. MaxNonSamplerDescriptors: 1000000, MaxSamplerDescriptors: 2048
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: Stencil ref from pixel shader is not supported
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: Raster order views are supported
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: Wave Operations are supported (wave size: min=32 max=32).
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI:      Legacy Barriers Present in Build: Yes
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI:    Enhanced Barriers Present in Build: Yes
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI:      Enhanced Barriers Driver Support: Yes
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: Preferred Barrier Implementation Type: Legacy
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI:         Chosen Barrier Implementation: D3D12LegacyBarriers
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: D3D12 ray tracing tier 1.1 and bindless resources are supported.
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: Mesh shader tier 1.0 is supported
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: AtomicInt64OnTypedResource is supported
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: AtomicInt64OnGroupShared is supported
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: AtomicInt64OnDescriptorHeapResource is supported
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: Shader Model 6.6 atomic64 is supported
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: Work Graphs are supported
+[2026.06.07-09.32.07:708][  0]LogD3D12RHI: Bindless is enabled (Configuration=RayTracing). Initializing allocators with 32768 Resource and 2048 Sampler descriptors
+[2026.06.07-09.32.07:756][  0]LogD3D12RHI: [GPUBreadCrumb] Successfully setup breadcrumb resource for DiagnosticBuffer (Queue: 0x000002A159B36B80)
+[2026.06.07-09.32.07:756][  0]LogD3D12RHI: [GPUBreadCrumb] Successfully setup breadcrumb resource for DiagnosticBuffer (Queue: 0x000002A159B36E40)
+[2026.06.07-09.32.07:756][  0]LogD3D12RHI: [GPUBreadCrumb] Successfully setup breadcrumb resource for DiagnosticBuffer (Queue: 0x000002A159B37100)
+[2026.06.07-09.32.07:756][  0]LogD3D12RHI: Display: Not using pipeline state disk cache per r.D3D12.PSO.DiskCache=0
+[2026.06.07-09.32.07:756][  0]LogD3D12RHI: Display: Not using driver-optimized pipeline state disk cache per r.D3D12.PSO.DriverOptimizedDiskCache=0
+[2026.06.07-09.32.07:952][  0]LogD3D12RHI: NVIDIA Shader Execution Reordering interface supported!
+[2026.06.07-09.32.07:952][  0]LogD3D12RHI: NVIDIA Ray Tracing Cluster Operations supported and enabled
+[2026.06.07-09.32.07:952][  0]LogD3D12RHI: NVIDIA Extended ray tracing pipeline state applied.
+[2026.06.07-09.32.07:952][  0]LogD3D12RHI: Display: Batched command list execution is disabled for async queues due to known bugs in the current driver.
+[2026.06.07-09.32.07:952][  0]LogRHI: Texture pool is 4523 MB (70% of 6462 MB)
+[2026.06.07-09.32.07:952][  0]LogD3D12RHI: Async texture creation enabled
+[2026.06.07-09.32.07:952][  0]LogD3D12RHI: RHI has support for 64 bit atomics
+[2026.06.07-09.32.07:959][  0]LogVRS: Current RHI supports per-draw and screenspace Variable Rate Shading
+[2026.06.07-09.32.07:961][  0]LogCsvProfiler: Display: Metadata set : verbatimrhiname="D3D12"
+[2026.06.07-09.32.07:961][  0]LogCsvProfiler: Display: Metadata set : rhiname="D3D12"
+[2026.06.07-09.32.07:961][  0]LogCsvProfiler: Display: Metadata set : rhifeaturelevel="SM6"
+[2026.06.07-09.32.07:961][  0]LogCsvProfiler: Display: Metadata set : shaderplatform="PCD3D_SM6"
+[2026.06.07-09.32.07:961][  0]LogInit: Initializing FReadOnlyCVARCache
+[2026.06.07-09.32.07:971][  0]LogTextureFormatASTC: Display: ASTCEnc version 5.0.1 library loaded
+[2026.06.07-09.32.07:971][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatASTC
+[2026.06.07-09.32.07:971][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatDXT
+[2026.06.07-09.32.07:971][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatETC2
+[2026.06.07-09.32.07:971][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatIntelISPCTexComp
+[2026.06.07-09.32.07:971][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatUncompressed
+[2026.06.07-09.32.07:971][  0]LogTextureFormatOodle: Display: Oodle Texture TFO init; latest sdk version = 2.9.14
+[2026.06.07-09.32.07:971][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.14.dll
+[2026.06.07-09.32.07:971][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.5.dll
+[2026.06.07-09.32.07:973][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatOodle
+[2026.06.07-09.32.07:997][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Windows'
+[2026.06.07-09.32.07:997][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsEditor'
+[2026.06.07-09.32.07:997][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsServer'
+[2026.06.07-09.32.07:997][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsClient'
+[2026.06.07-09.32.07:997][  0]LogTargetPlatformManager: Display: Building Assets For WindowsEditor
+[2026.06.07-09.32.08:032][  0]LogRendererCore: Ray tracing is disabled. Reason: disabled through project setting (r.RayTracing=0).
+[2026.06.07-09.32.08:034][  0]LogDerivedDataCache: Display: Memory: Max Cache Size: -1 MB
+[2026.06.07-09.32.08:034][  0]LogDerivedDataCache: FDerivedDataBackendGraph: Pak pak cache file ../../../../../../UE/T66/DerivedDataCache/DDC.ddp not found, will not use a pak cache.
+[2026.06.07-09.32.08:034][  0]LogDerivedDataCache: Unable to find inner node Pak for hierarchy Hierarchy.
+[2026.06.07-09.32.08:034][  0]LogDerivedDataCache: FDerivedDataBackendGraph: CompressedPak pak cache file ../../../../../../UE/T66/DerivedDataCache/Compressed.ddp not found, will not use a pak cache.
+[2026.06.07-09.32.08:034][  0]LogDerivedDataCache: Unable to find inner node CompressedPak for hierarchy Hierarchy.
+[2026.06.07-09.32.08:277][  0]LogDerivedDataCache: Display: ../../../Engine/DerivedDataCache/Compressed.ddp: Opened pak cache for reading. (1732 MiB)
+[2026.06.07-09.32.08:279][  0]LogDerivedDataCache: FDerivedDataBackendGraph: EnterprisePak pak cache file ../../../Enterprise/DerivedDataCache/Compressed.ddp not found, will not use a pak cache.
+[2026.06.07-09.32.08:279][  0]LogDerivedDataCache: Unable to find inner node EnterprisePak for hierarchy Hierarchy.
+[2026.06.07-09.32.08:279][  0]LogZenServiceInstance: Found Zen config default=C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Data
+[2026.06.07-09.32.08:279][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zen.exe service status'.
+[2026.06.07-09.32.08:640][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zen.exe service status'.
+[2026.06.07-09.32.08:992][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/DoPra/AppData/Local/UnrealEngine/5.7/Saved/Zen/zen.version', version: '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.06.07-09.32.08:992][  0]LogZenServiceInstance: InTree version at 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zenserver.exe' is '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.06.07-09.32.08:992][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zen.version', version: '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.06.07-09.32.08:992][  0]LogZenServiceInstance: Installed version at 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.06.07-09.32.08:992][  0]LogZenServiceInstance: Display: Installed service at 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is up to date
+[2026.06.07-09.32.08:992][  0]LogZenServiceInstance: No current process using the data dir found, launching a new instance
+[2026.06.07-09.32.08:992][  0]LogZenServiceInstance: Display: Launching executable 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe', working dir 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install', data dir 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Data', args '--port 8558 --data-dir C:\Users\DoPra\AppData\Local\UnrealEngine\Common\Zen\Data --http asio --gc-cache-duration-seconds 1209600 --gc-interval-seconds 21600 --gc-low-diskspace-threshold 2147483648 --cache-bucket-limit-overwrites --quiet --http-forceloopback --owner-pid 2520  --child-id Zen_2520_Startup'
+[2026.06.07-09.32.09:152][  0]LogZenServiceInstance: Display: Unreal Zen Storage Server HTTP service at http://[::1]:8558 status: OK!.
+[2026.06.07-09.32.09:152][  0]LogZenServiceInstance: Local ZenServer AutoLaunch initialization completed in 0.160 seconds
+[2026.06.07-09.32.09:176][  0]LogDerivedDataCache: Display: ZenLocal: Using ZenServer HTTP service at [::1] with namespace ue.ddc status: OK!.
+[2026.06.07-09.32.09:186][  0]LogDerivedDataCache: C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: Speed tests took 0.01 seconds.
+[2026.06.07-09.32.09:187][  0]LogDerivedDataCache: Display: C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: Performance: Latency=0.03ms. RandomReadSpeed=1044.36MBs, RandomWriteSpeed=116.81MBs. Assigned SpeedClass 'Local'
+[2026.06.07-09.32.09:188][  0]LogDerivedDataCache: Local: Using data cache path C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: DeleteOnly
+[2026.06.07-09.32.09:188][  0]LogDerivedDataCache: ZenShared: Disabled because Host is set to 'None'
+[2026.06.07-09.32.09:188][  0]LogDerivedDataCache: Unable to find inner node ZenShared for hierarchy Hierarchy.
+[2026.06.07-09.32.09:188][  0]LogDerivedDataCache: Shared: Disabled because no path is configured.
+[2026.06.07-09.32.09:188][  0]LogDerivedDataCache: Unable to find inner node Shared for hierarchy Hierarchy.
+[2026.06.07-09.32.09:189][  0]LogDerivedDataCache: Cloud: Disabled because Host is set to 'None'
+[2026.06.07-09.32.09:189][  0]LogDerivedDataCache: Unable to find inner node Cloud for hierarchy Hierarchy.
+[2026.06.07-09.32.09:190][  0]LogShaderCompilers: Guid format shader working directory is 22 characters bigger than the processId version (../../../../../../UE/T66/Intermediate/Shaders/WorkingDirectory/2520/).
+[2026.06.07-09.32.09:190][  0]LogShaderCompilers: Cleaned the shader compiler working directory 'C:/Users/DoPra/AppData/Local/Temp/UnrealShaderWorkingDir/A742C899449EAE959144769A63A495BC/'.
+[2026.06.07-09.32.09:190][  0]LogXGEController: Cannot use XGE Controller as Incredibuild is not installed on this machine.
+[2026.06.07-09.32.09:190][  0]LogShaderCompilers: Display: No distributed shader compiler controller found
+[2026.06.07-09.32.09:190][  0]LogShaderCompilers: Display: Using 16 local workers for shader compilation
+[2026.06.07-09.32.09:204][  0]LogShaderCompilers: Display: Compiling shader autogen file: ../../../../../../UE/T66/Intermediate/ShaderAutogen/PCD3D_SM6/AutogenShaderHeaders.ush
+[2026.06.07-09.32.09:204][  0]LogShaderCompilers: Display: Autogen file is unchanged, skipping write.
+[2026.06.07-09.32.10:963][  0]LogSlate: Using FreeType 2.10.0
+[2026.06.07-09.32.10:965][  0]LogSlate: SlateFontServices - WITH_FREETYPE: 1, WITH_HARFBUZZ: 1
+[2026.06.07-09.32.10:967][  0]LogStreaming: Warning: Failed to read file '../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_128x.png' error.
+[2026.06.07-09.32.10:967][  0]LogSlate: Could not load file for Slate resource: [../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_128x.png] file: [../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_128x.png]
+[2026.06.07-09.32.10:967][  0]LogStreaming: Warning: Failed to read file '../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_24x.png' error.
+[2026.06.07-09.32.10:968][  0]LogSlate: Could not load file for Slate resource: [../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_24x.png] file: [../../../Engine/Platforms/VisionOS/Content/Editor/Slate/Launcher/Platform_VisionOS_24x.png]
+[2026.06.07-09.32.11:138][  0]LogInit: Using OS detected language (en-US).
+[2026.06.07-09.32.11:138][  0]LogInit: Using OS detected locale (en-US).
+[2026.06.07-09.32.11:139][  0]LogTextLocalizationManager: No specific localization for 'en-US' exists, so 'en' will be used for the language.
+[2026.06.07-09.32.11:139][  0]LogAssetRegistry: FAssetRegistry took 0.0004 seconds to start up
+[2026.06.07-09.32.11:546][  0]LogCsvProfiler: Display: Metadata set : deviceprofile="WindowsEditor"
+[2026.06.07-09.32.11:550][  0]LogStreaming: Display: FlushAsyncLoading(1): 1 QueuedPackages, 0 AsyncPackages
+[2026.06.07-09.32.11:555][  0]LogPackageLocalizationCache: Processed 81 localized package path(s) for 1 prioritized culture(s) in 0.005163 seconds
+[2026.06.07-09.32.11:557][  0]LogTextureEncodingSettings: Display: Texture Encode Speed: Final (cook).
+[2026.06.07-09.32.11:557][  0]LogTextureEncodingSettings: Display: Oodle Texture Encode Speed settings: Fast: RDO Off Lambda=0, Effort=Normal Final: RDO Off Lambda=0, Effort=Normal
+[2026.06.07-09.32.11:557][  0]LogTextureEncodingSettings: Display: Shared linear texture encoding: Disabled
+[2026.06.07-09.32.11:582][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:582][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness because of a recursive sync load
+[2026.06.07-09.32.11:582][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:582][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:583][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec because of a recursive sync load
+[2026.06.07-09.32.11:583][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:583][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/WorldGridMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:586][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/WorldGridMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:587][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:587][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultPostProcessMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:589][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultLightFunctionMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultPostProcessMaterial because of a recursive sync load
+[2026.06.07-09.32.11:589][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultPostProcessMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:630][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultDeferredDecalMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultLightFunctionMaterial because of a recursive sync load
+[2026.06.07-09.32.11:630][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:654][  0]LogStreaming: Display: Package /Engine/EngineMaterials/WorldGridMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultDeferredDecalMaterial because of a recursive sync load
+[2026.06.07-09.32.11:654][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/WorldGridMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:674][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/EngineMaterials/WorldGridMaterial because of a recursive sync load
+[2026.06.07-09.32.11:674][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/WorldGridMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.07-09.32.11:927][  0]LogMeshReduction: Display: Using QuadricMeshReduction for automatic static mesh reduction
+[2026.06.07-09.32.11:927][  0]LogMeshReduction: Display: Using SkeletalMeshReduction for automatic skeletal mesh reduction
+[2026.06.07-09.32.11:927][  0]LogMeshReduction: Display: Using ProxyLODMeshReduction for automatic mesh merging
+[2026.06.07-09.32.11:927][  0]LogMeshReduction: Display: No distributed automatic mesh merging module available
+[2026.06.07-09.32.11:927][  0]LogMeshMerging: No distributed automatic mesh merging module available
+[2026.06.07-09.32.12:398][  0]LogShaderCompilers: Display: Compiling shader autogen file: ../../../../../../UE/T66/Intermediate/ShaderAutogen/PCD3D_SM5/AutogenShaderHeaders.ush
+[2026.06.07-09.32.12:398][  0]LogShaderCompilers: Display: Autogen file is unchanged, skipping write.
+[2026.06.07-09.32.12:398][  0]LogVirtualization: Display: VirtualizationSystem name found in ini file: None
+[2026.06.07-09.32.12:398][  0]LogVirtualization: Display: FNullVirtualizationSystem mounted, virtualization will be disabled
+[2026.06.07-09.32.12:480][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize started...
+[2026.06.07-09.32.12:483][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize took 2.871 ms
+[2026.06.07-09.32.12:523][  0]LogMoviePlayer: Initializing movie player
+[2026.06.07-09.32.12:523][  0]LogInit: XR: Instanced Stereo Rendering is Disabled
+[2026.06.07-09.32.12:523][  0]LogInit: XR: MultiViewport is Disabled
+[2026.06.07-09.32.12:523][  0]LogInit: XR: Mobile Multiview is Disabled
+[2026.06.07-09.32.12:539][  0]LogStats: UGameplayTagsManager::InitializeManager -  0.000 s
+[2026.06.07-09.32.12:593][  0]LogCollectionManager: Loaded 0 collections in 0.001862 seconds
+[2026.06.07-09.32.12:596][  0]LogFileCache: Scanning file cache for directory 'C:/UE/T66/Saved/Collections/' took 0.00s
+[2026.06.07-09.32.12:596][  0]LogFileCache: Scanning file cache for directory 'C:/UE/T66/Content/Developers/DoPra/Collections/' took 0.00s
+[2026.06.07-09.32.12:596][  0]LogCollectionManager: Fixed up redirectors for 0 collections in 0.000000 seconds (updated 0 objects)
+[2026.06.07-09.32.12:596][  0]LogFileCache: Scanning file cache for directory 'C:/UE/T66/Content/Collections/' took 0.00s
+[2026.06.07-09.32.13:160][  0]LogMetaSound: Display: MetaSound Page Target Initialized to 'Default'
+[2026.06.07-09.32.13:161][  0]LogAudio: Display: Registering Engine Module Parameter Interfaces...
+[2026.06.07-09.32.13:166][  0]LogMetaSound: MetaSound Engine Initialized
+[2026.06.07-09.32.13:852][  0]LogAndroidPermission: UAndroidPermissionCallbackProxy::GetInstance
+[2026.06.07-09.32.14:124][  0]SourceControl: Revision control is disabled
+[2026.06.07-09.32.14:224][  0]LogUObjectArray: 45264 objects as part of root set at end of initial load.
+[2026.06.07-09.32.14:224][  0]LogUObjectArray: CloseDisregardForGC: 0/0 objects in disregard for GC pool
+[2026.06.07-09.32.14:480][  0]LogAutomationTest: Error: Saving and loading a serialized object containing FText properties failed to maintain FText values.
+[2026.06.07-09.32.14:480][  0]LogEngine: Initializing Engine...
+[2026.06.07-09.32.14:771][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.12.dll
+[2026.06.07-09.32.14:812][  0]LogNetVersion: Set ProjectVersion to 1.1. Version Checksum will be recalculated on next use.
+[2026.06.07-09.32.14:812][  0]LogInit: Texture streaming: Enabled
+[2026.06.07-09.32.14:869][  0]LogAudio: Display: Initializing Audio Device Manager...
+[2026.06.07-09.32.14:877][  0]LogAudio: Display: Loading Default Audio Settings Objects...
+[2026.06.07-09.32.14:877][  0]LogAudio: Display: No default SoundConcurrencyObject specified (or failed to load).
+[2026.06.07-09.32.14:878][  0]LogAudio: Display: Audio Device Manager Initialized
+[2026.06.07-09.32.14:878][  0]LogAudio: Display: Creating Audio Device:                 Id: 1, Scope: Shared, Realtime: True
+[2026.06.07-09.32.14:878][  0]LogAudioMixer: Display: Audio Mixer Platform Settings:
+[2026.06.07-09.32.14:878][  0]LogAudioMixer: Display: 	Sample Rate:						  48000
+[2026.06.07-09.32.14:878][  0]LogAudioMixer: Display: 	Callback Buffer Frame Size Requested: 1024
+[2026.06.07-09.32.14:878][  0]LogAudioMixer: Display: 	Callback Buffer Frame Size To Use:	  1024
+[2026.06.07-09.32.14:878][  0]LogAudioMixer: Display: 	Number of buffers to queue:			  1
+[2026.06.07-09.32.14:878][  0]LogAudioMixer: Display: 	Max Channels (voices):				  32
+[2026.06.07-09.32.14:878][  0]LogAudioMixer: Display: 	Number of Async Source Workers:		  4
+[2026.06.07-09.32.14:878][  0]LogAudio: Display: AudioDevice MaxSources: 32
+[2026.06.07-09.32.14:878][  0]LogAudio: Display: Audio Spatialization Plugin: None (built-in).
+[2026.06.07-09.32.14:878][  0]LogAudio: Display: Audio Reverb Plugin: None (built-in).
+[2026.06.07-09.32.14:878][  0]LogAudio: Display: Audio Occlusion Plugin: None (built-in).
+[2026.06.07-09.32.14:886][  0]LogAudioMixer: Display: Initializing audio mixer using platform API: 'XAudio2'
+[2026.06.07-09.32.14:906][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Render Role='Console', Device='Speakers (Realtek(R) Audio)'
+[2026.06.07-09.32.14:906][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Capture Role='Console', Device='Microphone Array (Realtek(R) Audio)'
+[2026.06.07-09.32.14:908][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Render Role='Multimedia', Device='Speakers (Realtek(R) Audio)'
+[2026.06.07-09.32.14:908][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Capture Role='Multimedia', Device='Microphone Array (Realtek(R) Audio)'
+[2026.06.07-09.32.14:911][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Render Role='Communications', Device='Speakers (Realtek(R) Audio)'
+[2026.06.07-09.32.14:912][  0]LogAudioEnumeration: Display: FWindowsMMDeviceCache: Default Capture Role='Communications', Device='Microphone Array (Realtek(R) Audio)'
+[2026.06.07-09.32.15:048][  0]LogAudioMixer: Display: Using Audio Hardware Device Speakers (Realtek(R) Audio)
+[2026.06.07-09.32.15:048][  0]LogAudioMixer: Display: Initializing Sound Submixes...
+[2026.06.07-09.32.15:049][  0]LogAudioMixer: Display: Creating Master Submix 'MasterSubmixDefault'
+[2026.06.07-09.32.15:049][  0]LogAudioMixer: Display: Creating Master Submix 'MasterReverbSubmixDefault'
+[2026.06.07-09.32.15:060][  0]LogAudioMixer: FMixerPlatformXAudio2::StartAudioStream() called. InstanceID=1
+[2026.06.07-09.32.15:060][  0]LogAudioMixer: Display: Output buffers initialized: Frames=1024, Channels=2, Samples=2048, InstanceID=1
+[2026.06.07-09.32.15:063][  0]LogAudioMixer: Display: Starting AudioMixerPlatformInterface::RunInternal(), InstanceID=1
+[2026.06.07-09.32.15:063][  0]LogAudioMixer: Display: FMixerPlatformXAudio2::SubmitBuffer() called for the first time. InstanceID=1
+[2026.06.07-09.32.15:066][  0]LogInit: FAudioDevice initialized with ID 1.
+[2026.06.07-09.32.15:066][  0]LogAudioMixer: Initializing Audio Bus Subsystem for audio device with ID 1
+[2026.06.07-09.32.15:075][  0]LogCsvProfiler: Display: Metadata set : largeworldcoordinates="1"
+[2026.06.07-09.32.15:080][  0]LogChaosDD: Creating Chaos Debug Draw Scene for world Untitled
+[2026.06.07-09.32.15:092][  0]LogT66Backend: Backend: configured URL = https://t66-backend.vercel.app
+[2026.06.07-09.32.15:092][  0]LogWindows: WindowsPlatformFeatures enabled
+[2026.06.07-09.32.15:092][  0]LogT66Buff: [Buffs] LoadOrCreateSave: Loaded existing save, legacyBalance=0
+[2026.06.07-09.32.15:103][  0]LogT66GameInstance: [LOAD] ResolveCachedDataTable waited 10.8ms for the existing core DataTable preload handle (/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals).
+[2026.06.07-09.32.15:105][  0]LogT66RuntimeData: RuntimeData: leaderboard targets initialized ScoreSource=None ScoreTargets=0 SpeedRunSource=None SpeedRunTargets=0
+[2026.06.07-09.32.15:158][  0]LogT66DifficultyTuning: Warning: Difficulty tuning requested by GetDifficultyTuning before DataTable '/Game/Data/DT_DifficultyTuning.DT_DifficultyTuning' was available; using built-in defaults.
+[2026.06.07-09.32.15:159][  0]LogT66PlayerExperience: Warning: PlayerExperience tuning requested by GetDifficultyTuning before DataTable '/Game/Data/DT_PlayerExperience.DT_PlayerExperience' was available; returning empty tuning.
+[2026.06.07-09.32.15:166][  0]LogT66Steam: SteamHelper: requested Web API ticket handle 301.
+[2026.06.07-09.32.15:169][  0]LogPackageLocalizationCache: Processed 81 localized package path(s) for 1 prioritized culture(s) in 0.003113 seconds
+[2026.06.07-09.32.15:169][  0]LogSlate: FontCache flush requested. Reason: Culture for localization was changed
+[2026.06.07-09.32.15:169][  0]LogSlate: FontCache flush requested. Reason: Culture for localization was changed
+[2026.06.07-09.32.15:402][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.06.07-09.32.15:404][  0]LogT66Achievements: [Progression] LoadOrCreateProfile: Loaded existing profile from save file
+[2026.06.07-09.32.15:404][  0]LogT66Achievements: [SKIN] LoadOrCreateProfile: OwnedHeroSkinsByHero.Num=0, CC Balance=14
+[2026.06.07-09.32.15:412][  0]LogT66DirectEntry: Display: Direct entry configured gameplay run Category=3 Hero=Hero_2 Difficulty=0 Source='-T66AutomationTestRoom'.
+[2026.06.07-09.32.15:412][  0]LogT66GameInstance: [LOAD] PrimeCorePresentationAssetsAsync queued 2 startup combat-presentation assets.
+[2026.06.07-09.32.15:417][  0]LogAudio: Display: Audio Device (ID: 1) registered with world 'Untitled'.
+[2026.06.07-09.32.15:417][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Default.png'.
+[2026.06.07-09.32.15:417][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Default@2x.png'.
+[2026.06.07-09.32.15:418][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Hand.png'.
+[2026.06.07-09.32.15:418][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Hand@2x.png'.
+[2026.06.07-09.32.15:418][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Crosshairs.png'.
+[2026.06.07-09.32.15:418][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_Crosshairs@2x.png'.
+[2026.06.07-09.32.15:418][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_GrabHandClosed.png'.
+[2026.06.07-09.32.15:418][  0]LogInit: Loading Cursor '../../../../../../UE/T66/Content/Slate/T66_Cursor_GrabHandClosed@2x.png'.
+[2026.06.07-09.32.15:419][  0]LogSlate: Updating window title bar state: overlay mode, drag disabled, window buttons hidden, title bar hidden
+[2026.06.07-09.32.15:419][  0]LogInit: Display: Game Engine Initialized.
+[2026.06.07-09.32.15:421][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/SC_Music (0xA50554B160CEB8C0) - The package to load does not exist on disk or in the loader
+[2026.06.07-09.32.15:421][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/SC_SFX (0xF74B0B9818B0CACA) - The package to load does not exist on disk or in the loader
+[2026.06.07-09.32.15:421][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/Music/MainTheme (0xA0EE5E1D7EC29F75) - The package to load does not exist on disk or in the loader
+[2026.06.07-09.32.15:421][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/MainTheme (0x92931D8621517077) - The package to load does not exist on disk or in the loader
+[2026.06.07-09.32.15:421][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/Music/Theme (0xA9D67F6E79B7345C) - The package to load does not exist on disk or in the loader
+[2026.06.07-09.32.15:421][  0]LogStreaming: Warning: LoadPackage: SkipPackage: /Game/Audio/Theme (0x282CC4AD87A4F790) - The package to load does not exist on disk or in the loader
+[2026.06.07-09.32.15:426][  0]LogNNEDenoiser: Ray Tracing is not enabled, therefore NNEDenoiser is not registered!
+[2026.06.07-09.32.15:428][  0]LogPython: Python enabled via CVar 'Engine.Python.IsEnabledByDefault'
+[2026.06.07-09.32.15:428][  0]LogPython: Using Python 3.11.8
+[2026.06.07-09.32.15:449][  0]LogPython: Display: No pip-enabled plugins with python dependencies found, skipping
+[2026.06.07-09.32.15:687][  0]LogNiagaraEditor: GEditor isn't valid! Particle reset commands will not work for Niagara components!
+[2026.06.07-09.32.15:711][  0]LogInit: Display: Starting Game.
+[2026.06.07-09.32.15:711][  0]LogGlobalStatus: UEngine::Browse Started Browse: "/Game/Maps/GameplayLevel?Name=Player"
+[2026.06.07-09.32.15:711][  0]LogNet: Browse: /Game/Maps/GameplayLevel?Name=Player
+[2026.06.07-09.32.16:329][  0]LogNiagaraEditor: Niagara graph NiagaraGraph /Niagara/Modules/Update/Material/DynamicMaterialParameters.DynamicMaterialParameters:NiagaraScriptSource_3.NiagaraGraph_0: The default value declaration for the variable 'Module.Index0Float3Write' is not consistent between the graph and the metadata.
+  Either change the default mode to 'custom' or check the input pins in the parameter map get node in the graph.
+[2026.06.07-09.32.16:329][  0]LogNiagaraEditor: Niagara graph NiagaraGraph /Niagara/Modules/Update/Material/DynamicMaterialParameters.DynamicMaterialParameters:NiagaraScriptSource_3.NiagaraGraph_0: The default value declaration for the variable 'Module.Index1Float3Write' is not consistent between the graph and the metadata.
+  Either change the default mode to 'custom' or check the input pins in the parameter map get node in the graph.
+[2026.06.07-09.32.16:498][  0]LogT66Steam: SteamHelper: Web API ticket obtained (234 bytes, 468 hex chars).
+[2026.06.07-09.32.16:498][  0]LogT66Backend: Backend: Steam ticket set (468 hex chars)
+[2026.06.07-09.32.16:571][  0]LogLoad: LoadMap: /Game/Maps/GameplayLevel?Name=Player
+[2026.06.07-09.32.16:571][  0]LogWorld: BeginTearingDown for /Temp/Untitled_0
+[2026.06.07-09.32.16:571][  0]LogWorld: UWorld::CleanupWorld for Untitled, bSessionEnded=true, bCleanupResources=true
+[2026.06.07-09.32.16:571][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.06.07-09.32.16:571][  0]LogT66EnemyPool: [GOLD] EnemyPool: shutting down. Total acquired=0, reused=0 (0%)
+[2026.06.07-09.32.16:595][  0]LogAudio: Display: Audio Device unregistered from world 'None'.
+[2026.06.07-09.32.16:601][  0]LogUObjectHash: Compacting FUObjectHashTables data took   1.11ms
+[2026.06.07-09.32.16:608][  0]LogAudio: Display: Audio Device (ID: 1) registered with world 'GameplayLevel'.
+[2026.06.07-09.32.16:608][  0]LogChaosDD: Creating Chaos Debug Draw Scene for world GameplayLevel
+[2026.06.07-09.32.16:614][  0]LogLoad: Game class is 'BP_GameplayGameMode_C'
+[2026.06.07-09.32.16:622][  0]LogWorld: Bringing World /Game/Maps/GameplayLevel.GameplayLevel up for play (max tick rate 0) at 2026.06.07-06.32.16
+[2026.06.07-09.32.16:622][  0]LogWorld: Bringing up level for play took: 0.000510
+[2026.06.07-09.32.16:623][  0]LogGameMode: FindPlayerStart: PATHS NOT DEFINED or NO PLAYERSTART with positive rating
+[2026.06.07-09.32.16:625][  0]LogT66GameMode: Spawning at PlayerStart: (0.0, 0.0, 0.0)
+[2026.06.07-09.32.16:627][  0]LogT66Hero: Hero body style set to: Chad (Cylinder)
+[2026.06.07-09.32.16:627][  0]LogT66Hero: Hero initialized: Chinese Chad, BodyStyle: Chad, Skin: Default, Color: (0.70, 0.30, 0.20)
+[2026.06.07-09.32.16:627][  0]LogT66Hero: [ANIM] HeroBase::InitializeHero using command-line visual override Hero_1_Chad instead of Hero_2_Chad
+[2026.06.07-09.32.16:627][  0]LogT66Hero: [ANIM] HeroBase::InitializeHero HeroID=Hero_2 BodyStyle=Chad SkinID=Default bPreviewMode=0 bUseIdleAnimation=0 VisualID=Hero_1_Chad
+[2026.06.07-09.32.16:720][  0]LogT66CharacterVisuals: [MESH] ResolveVisual VisualID=Hero_1_Chad ResolvedRow=Hero_1_Chad SkeletalMesh path=/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/SK_Hero_1_Chad_PhysicsFirst.SK_Hero_1_Chad_PhysicsFirst Loaded=YES
+[2026.06.07-09.32.16:794][  0]LogT66CharacterVisuals: [ANIM] ResolveVisual VisualID=Hero_1_Chad ResolvedRow=Hero_1_Chad IdleAnimation path=/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/AM_Hero_1_Chad_PhysicsFirst_Idle.AM_Hero_1_Chad_PhysicsFirst_Idle IdleAnim=AM_Hero_1_Chad_PhysicsFirst_Idle
+[2026.06.07-09.32.16:813][  0]LogSkinnedAsset: Display: Waiting for skinned assets to be ready 0/1 (SK_Hero_1_Chad_PhysicsFirst) ...
+[2026.06.07-09.32.16:832][  0]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshRootAttach Reason=InitAttachRoot WasAttached=1 Parent=CollisionCylinder Hero=V(X=850.00, Z=220.00) Mesh=CharacterMesh0 MeshRel=V(Z=-100.00) MeshWorld=V(X=850.00, Z=120.00)
+[2026.06.07-09.32.16:832][  0]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshPelvisAlign Reason=InitMeshPelvisAnchorAlign Pelvis=V(X=850.00, Y=-1.00, Z=204.00) Target=V(X=850.00, Z=232.00) Offset=V(Y=1.00, Z=28.00) MeshBefore=V(X=850.00, Z=120.00) MeshAfter=V(X=850.00, Y=1.00, Z=148.00) MeshRelBefore=V(Z=-100.00) MeshRelAfter=V(Y=1.00, Z=-72.00)
+[2026.06.07-09.32.16:833][  0]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Init OK Hero=BP_HeroBase_C_0 Mesh=SK_Hero_1_Chad_PhysicsFirst PhysicsAsset=/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/PA_Hero_1_Chad_PhysicsFirst_Stage2Seed.PA_Hero_1_Chad_PhysicsFirst_Stage2Seed Bodies=18 Constraints=17 SimulationRoot=pelvis Pelvis=pelvis PelvisSimulating=1 ComponentAuthority=SimulatedPelvisAnchoredToCapsule PACChildrenLocal=1 HipAnchorConstraint=1
+[2026.06.07-09.32.16:833][  0]LogT66GameMode: Spawned hero: Chinese Chad (Hero_2), BodyStyle: Chad, Skin: Default, Color: (0.70, 0.30, 0.20)
+[2026.06.07-09.32.16:833][  0]LogViewport: Display: Viewport MouseCaptureMode Changed, CapturePermanently_IncludingInitialMouseDown -> CapturePermanently
+[2026.06.07-09.32.16:833][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.06.07-09.32.16:858][  0]LogT66Style: [T66Style] Load UI retro retainer material -> OK
+[2026.06.07-09.32.16:859][  0]LogT66Backend: Backend: fetching leaderboard key=score_alltime_solo_easy_global
+[2026.06.07-09.32.16:859][  0]LogT66Backend: Backend: fetching leaderboard key=speedrun_alltime_solo_easy_global
+[2026.06.07-09.32.16:860][  0]r.SetRes = "1280x720w"
+[2026.06.07-09.32.16:860][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.06.07-09.32.16:860][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.06.07-09.32.16:860][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.06.07-09.32.16:976][  0]LogT66RunLifecycle: [RunLifecycle] Start Boundary=NewRun Reason=NewRun Stage=1 RunEnded=0 Victory=0
+[2026.06.07-09.32.16:979][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.06.07-09.32.16:979][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.06.07-09.32.16:979][  0]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.06.07-09.32.16:979][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 0 registered toon material(s).
+[2026.06.07-09.32.16:980][  0]LogT66RunLifecycle: [RunLifecycle] Complete Boundary=NewRun Reason=NewRun Stage=1 RunEnded=0 Victory=0
+[2026.06.07-09.32.16:981][  0]LogT66GameMode: Checking level setup...
+[2026.06.07-09.32.17:003][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 54 registered toon material(s).
+[2026.06.07-09.32.17:003][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=4 to 54 registered toon material(s).
+[2026.06.07-09.32.17:003][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 54 registered toon material(s).
+[2026.06.07-09.32.17:003][  0]LogTemp: Display: ToonStyle TestRoom G6 parameter probe applied Dungeon=54 Hell=54 RestoredDungeon=54.
+[2026.06.07-09.32.17:004][  0]LogTemp: Display: TestRoom wipeout arm trap scheduled at V(Z=178.00) using selected hero visuals.
+[2026.06.07-09.32.17:004][  0]LogTemp: Display: ToonStyle TestRoom using Phase 1C manual exposure path: AEM_Manual, Bias=+0.7.
+[2026.06.07-09.32.17:004][  0]LogT66GameMode: No PlayerStart found - spawning development PlayerStart
+[2026.06.07-09.32.17:004][  0]LogT66GameMode: Spawned development PlayerStart at X=850.000 Y=0.000 Z=220.000
+[2026.06.07-09.32.17:004][  0]LogT66WorldVisualSetup: [VISUAL] Removed 1 legacy lighting actor(s): atmosphere=0 directional=1 skylight=0 fog=0 quakeSky=0 eclipse=0
+[2026.06.07-09.32.17:004][  0]LogT66RunLifecycle: [RunLifecycle] Start Boundary=NewRun Reason=NewRun Stage=1 RunEnded=0 Victory=0
+[2026.06.07-09.32.17:006][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.06.07-09.32.17:006][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.06.07-09.32.17:006][  0]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.06.07-09.32.17:006][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 56 registered toon material(s).
+[2026.06.07-09.32.17:007][  0]LogT66RunLifecycle: [RunLifecycle] Complete Boundary=NewRun Reason=NewRun Stage=1 RunEnded=0 Victory=0
+[2026.06.07-09.32.17:007][  0]LogT66GameMode: Checking level setup...
+[2026.06.07-09.32.17:023][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 54 registered toon material(s).
+[2026.06.07-09.32.17:023][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=4 to 54 registered toon material(s).
+[2026.06.07-09.32.17:024][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 54 registered toon material(s).
+[2026.06.07-09.32.17:024][  0]LogTemp: Display: ToonStyle TestRoom G6 parameter probe applied Dungeon=54 Hell=54 RestoredDungeon=54.
+[2026.06.07-09.32.17:024][  0]LogTemp: Display: TestRoom wipeout arm trap scheduled at V(Z=178.00) using selected hero visuals.
+[2026.06.07-09.32.17:024][  0]LogTemp: Display: ToonStyle TestRoom using Phase 1C manual exposure path: AEM_Manual, Bias=+0.7.
+[2026.06.07-09.32.17:025][  0]LogT66GameMode: T66GameMode BeginPlay - TestRoom
+[2026.06.07-09.32.17:025][  0]LogT66GameMode: T66GameMode BeginPlay - special-mode startup initialized.
+[2026.06.07-09.32.17:025][  0]LogT66PlayerController: PlayerController: Gameplay input mode set for camera preset 0 (scoped state reset=0)
+[2026.06.07-09.32.17:025][  0]LogT66PlayerController: PlayerController: Gameplay mode initialized
+[2026.06.07-09.32.17:025][  0]LogT66Combat: [VFX] Pixel particle system loaded: NS_PixelParticle
+[2026.06.07-09.32.17:025][  0]LogT66Combat: [GOLD] CombatComponent: initialized — overlap sphere (radius=2032), VFX pooling (AutoRelease), timer-based fire (0.98s)
+[2026.06.07-09.32.17:025][  0]LogT66Hero: HeroBase BeginPlay - Location: (850.0, 0.0, 220.0)
+[2026.06.07-09.32.17:025][  0]LogT66Hero: HeroBase - FollowCamera is active: YES
+[2026.06.07-09.32.17:025][  0]LogT66GameMode: Warning: AT66GameMode recovered gameplay startup from StartPlay because BeginPlay initialization was skipped.
+[2026.06.07-09.32.17:027][  0]LogLoad: Took 0.457136 seconds to LoadMap(/Game/Maps/GameplayLevel)
+[2026.06.07-09.32.17:027][  0]LogGlobalStatus: UEngine::LoadMap Load map complete /Game/Maps/GameplayLevel
+[2026.06.07-09.32.17:027][  0]LogSlate: Took 0.000103 seconds to synchronously load lazily loaded font '../../../../../../UE/T66/RuntimeDependencies/T66/Fonts/Jersey10-Regular.ttf' (76K)
+[2026.06.07-09.32.17:111][  0]LogSlate: Took 0.000384 seconds to synchronously load lazily loaded font '../../../Engine/Content/Slate/Fonts/Roboto-Regular.ttf' (155K)
+[2026.06.07-09.32.17:352][  0]LogAssetRegistry: Display: Asset registry cache read as 77.5 MiB from ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_0.bin.
+[2026.06.07-09.32.17:352][  0]LogAssetRegistry: Display: AssetDataGatherer spent 0.082s loading caches ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_*.bin.
+[2026.06.07-09.32.17:418][  0]LogAssetRegistry: AssetRegistryGather time 0.1396s: AssetDataDiscovery 0.0000s, AssetDataGather 0.0938s, StoreResults 0.0457s. Wall time 6.2790s.
+	NumCachedDirectories 2943. NumUncachedDirectories 19. NumCachedFiles 11433. NumUncachedFiles 0.
+	BackgroundTickInterruptions 0.
+[2026.06.07-09.32.17:419][  0]LogAssetRegistry: Display: Starting OnFilesLoaded.Broadcast
+[2026.06.07-09.32.17:420][  0]LogAssetRegistry: Display: Completed OnFilesLoaded.Broadcast: 0.213s
+[2026.06.07-09.32.17:431][  0]LogInit: Display: Engine is initialized. Leaving FEngineLoop::Init()
+[2026.06.07-09.32.17:431][  0]LogLoad: (Engine Initialization) Total time: 12.09 seconds
+[2026.06.07-09.32.17:788][  0]LogT66WorldVisualSetup: [VISUAL] Removed 1 legacy lighting actor(s): atmosphere=0 directional=1 skylight=0 fog=0 quakeSky=0 eclipse=0
+[2026.06.07-09.32.17:788][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.06.07-09.32.17:788][  0]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.06.07-09.32.17:788][  0]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.06.07-09.32.17:788][  0]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 56 registered toon material(s).
+[2026.06.07-09.32.17:829][  0]LogT66OutgoingTravelerPool: Display: [OutgoingTravelerPool] phase=EnsureNiagara status=ready asset=/Game/VFX/Foundation/OutgoingTravelers/NS_OutgoingTravelerPool.NS_OutgoingTravelerPool logicalCapacity=20000 visualRowCapacity=80000 maxCarrierParts=4
+[2026.06.07-09.32.17:854][  0]LogT66MobLoot: Display: [MobLoot] phase=EnsureNiagara status=ready asset=/Game/VFX/Foundation/MobLoot/NS_MobLootPool.NS_MobLootPool capacity=20000
+[2026.06.07-09.32.17:855][  0]LogT66GameInstance: [LOAD] PrimeHeroSelectionAssetsAsync queued 103 startup hero-selection assets.
+[2026.06.07-09.32.17:855][  0]LogTemp: Warning: PlayerSettings: SFX SoundClass missing or wrong type after async preload at '/Game/Audio/SC_SFX.SC_SFX'.
+[2026.06.07-09.32.17:855][  0]LogTemp: Warning: PlayerSettings: Music SoundClass missing or wrong type after async preload at '/Game/Audio/SC_Music.SC_Music'.
+[2026.06.07-09.32.17:855][  0]LogT66Audio: Loaded 96 audio event rows from /Game/Data/DT_AudioEvents.DT_AudioEvents.
+[2026.06.07-09.32.17:856][  0]LogRenderer: Forcing update for all mesh draw commands: SkyLight change
+[2026.06.07-09.32.17:857][  0]LogT66RuntimeData: RuntimeData: loaded leaderboard score targets from cooked DataTable '/Game/Data/Leaderboard_ScoreTargets.Leaderboard_ScoreTargets' Added=20 Total=20
+[2026.06.07-09.32.17:857][  0]LogT66RuntimeData: RuntimeData: loaded leaderboard speed run targets from cooked DataTable '/Game/Data/DT_Leaderboard_SpeedrunTargets.DT_Leaderboard_SpeedrunTargets' Added=23 Total=23
+[2026.06.07-09.32.17:860][  0]LogT66GameInstance: [LOAD] Startup combat-presentation asset warmup completed.
+[2026.06.07-09.32.17:860][  0]LogContentStreaming: Texture pool size now 800 MB
+[2026.06.07-09.32.17:860][  0]LogCsvProfiler: Display: Metadata set : streamingpoolsizemb="800"
+[2026.06.07-09.32.17:872][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.06.07-09.32.17:998][  0]LogSlate: Took 0.000109 seconds to synchronously load lazily loaded font '../../../Engine/Content/Slate/Fonts/Roboto-Regular.ttf' (155K)
+[2026.06.07-09.32.18:028][  0]LogAutomationController: Ignoring very large delta of 17156096.40 seconds in calls to FAutomationControllerManager::Tick() and not penalizing unresponsive tests
+[2026.06.07-09.32.18:028][  0]LogDataTable: Warning: UDataTable::FindRow : 'GetItemData' requested row 'Item_Alchemy' not in DataTable '/Game/Data/DT_Items.DT_Items'.
+[2026.06.07-09.32.18:028][  0]LogT66CommunityContent: Warning: Clearing invalid community starting item 'Item_Alchemy' from 'Super Duper Challange'.
+[2026.06.07-09.32.18:028][  0]LogDataTable: Warning: UDataTable::FindRow : 'GetItemData' requested row 'Item_Alchemy' not in DataTable '/Game/Data/DT_Items.DT_Items'.
+[2026.06.07-09.32.18:028][  0]LogT66CommunityContent: Warning: Clearing invalid community starting item 'Item_Alchemy' from 'Super Duper Challange'.
+[2026.06.07-09.32.18:029][  0]LogT66Backend: Backend: leaderboard fetched key=score_alltime_solo_easy_global entries=10 total=16
+[2026.06.07-09.32.18:029][  0]LogT66Backend: Backend: leaderboard fetched key=speedrun_alltime_solo_easy_global entries=10 total=15
+[2026.06.07-09.32.18:029][  0]LogOnline: Warning: STEAM: AUTH: Unexpected TicketForWebResponse.
+[2026.06.07-09.32.18:029][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.06.07-09.32.18:029][  0]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.06.07-09.32.18:029][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... started...
+[2026.06.07-09.32.18:045][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... took 14.706 ms
+[2026.06.07-09.32.18:045][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... started...
+[2026.06.07-09.32.18:053][  0]LogPython: registering <class 'ControlRigWorkflows.workflow_deformation_rig_preset.provider'>
+
+[2026.06.07-09.32.18:061][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... took 16.264 ms (total: 30.970 ms)
+[2026.06.07-09.32.18:061][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Importers/USDImporter/Content/Python/init_unreal.py... started...
+[2026.06.07-09.32.18:061][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Importers/USDImporter/Content/Python/init_unreal.py... took 92 us (total: 31.062 ms)
+[2026.06.07-09.32.18:061][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/MovieScene/MovieRenderPipeline/Content/Python/init_unreal.py... started...
+[2026.06.07-09.32.18:062][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/MovieScene/MovieRenderPipeline/Content/Python/init_unreal.py... took 1.522 ms (total: 32.585 ms)
+[2026.06.07-09.32.18:063][  0]t66.HeroPhysics.DebugLog = "1"
+[2026.06.07-09.32.18:063][  0]t66.HeroPhysics.DebugLogInterval = "0.25"
+[2026.06.07-09.32.18:070][  1]LogNiagara: Compiling System NiagaraSystem /Game/VFX/Foundation/MobLoot/NS_MobLootPool.NS_MobLootPool took 0.230356 sec (time since issued).
+[2026.06.07-09.32.18:070][  1]LogStreaming: Display: FlushAsyncLoading(503): 1 QueuedPackages, 256 AsyncPackages
+[2026.06.07-09.32.18:078][  1]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=0.0 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=850.00, Z=220.00) MeshBefore=V(X=850.00, Y=1.00, Z=148.00) MeshAfter=V(X=850.00, Y=1.00, Z=148.00) Desired=V(X=850.00, Y=1.00, Z=148.00) Anchor=V(X=850.00, Z=232.00)
+[2026.06.07-09.32.18:078][  1]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=0.0 RawPelvisDist=0.0 ComponentSpacePelvisDist=862.8 ComponentBonePelvisDist=0.0 Anchor=V(X=850.00, Z=232.00) EffectivePelvis=V(X=850.00, Z=232.00) BodyRaw=V(X=850.00, Z=232.00) BoneRaw=V(X=850.00, Z=232.00) MeshWorld=V(X=850.00, Y=1.00, Z=148.00) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.284
+[2026.06.07-09.32.18:081][  1]LogSlate: Took 0.000145 seconds to synchronously load lazily loaded font '../../../Engine/Content/Slate/Fonts/Roboto-Regular.ttf' (155K)
+[2026.06.07-09.32.18:083][  1]LogSlate: Took 0.000109 seconds to synchronously load lazily loaded font '../../../../../../UE/T66/RuntimeDependencies/T66/Fonts/Jersey10-Regular.ttf' (76K)
+[2026.06.07-09.32.18:210][  4]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.06.07-09.32.18:210][  4]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.06.07-09.32.18:210][  4]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.06.07-09.32.18:210][  4]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 56 registered toon material(s).
+[2026.06.07-09.32.18:323][ 17]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=0.1 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=850.00, Z=102.15) MeshBefore=V(X=850.00, Y=1.00, Z=30.08) MeshAfter=V(X=850.00, Y=1.00, Z=30.08) Desired=V(X=850.00, Y=1.00, Z=30.15) Anchor=V(X=850.00, Z=114.15)
+[2026.06.07-09.32.18:323][ 17]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=150.2 RawPelvisDist=898.3 ComponentSpacePelvisDist=150.2 ComponentBonePelvisDist=898.3 Anchor=V(X=850.00, Z=114.15) EffectivePelvis=V(X=819.34, Y=-6.12, Z=-32.77) BodyRaw=V(X=-30.66, Y=-7.12, Z=-62.85) BoneRaw=V(X=-30.66, Y=-7.12, Z=-62.85) MeshWorld=V(X=850.00, Y=1.00, Z=30.08) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.015
+[2026.06.07-09.32.18:437][ 28]LogT66WorldVisualSetup: Display: [ATMOSPHERE] SkyLight setup: intensity=0.000 color=(1.000, 1.000, 1.000) (decommissioned as ambient source)
+[2026.06.07-09.32.18:437][ 28]LogT66WorldVisualSetup: Display: [ATMOSPHERE] Ambient cubemap setup: path=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap loaded=yes intensity=2.50 tint=(0.450, 0.600, 0.900) volume=PostProcessVolume_0 applied=/Engine/MapTemplates/Sky/DaylightAmbientCubemap.DaylightAmbientCubemap
+[2026.06.07-09.32.18:437][ 28]LogT66WorldVisualSetup: [ATMOSPHERE] Applied carry-light spec to 1/1 hero(es) (intensity=0.0 radius=350.0 color=(R=1.000000,G=0.700000,B=0.400000,A=1.000000) falloff=1.50 z=60.0).
+[2026.06.07-09.32.18:437][ 28]LogT66WorldVisualSetup: [TOON] Applied cel atmosphere theme=0 to 56 registered toon material(s).
+[2026.06.07-09.32.18:577][ 39]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=0.1 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=850.00, Z=102.15) MeshBefore=V(X=850.00, Y=1.00, Z=30.08) MeshAfter=V(X=850.00, Y=1.00, Z=30.08) Desired=V(X=850.00, Y=1.00, Z=30.15) Anchor=V(X=850.00, Z=114.15)
+[2026.06.07-09.32.18:577][ 39]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=156.1 RawPelvisDist=871.2 ComponentSpacePelvisDist=156.1 ComponentBonePelvisDist=871.2 Anchor=V(X=850.00, Z=114.15) EffectivePelvis=V(X=848.89, Y=0.50, Z=-41.91) BodyRaw=V(X=-1.11, Y=-0.50, Z=-71.99) BoneRaw=V(X=-1.11, Y=-0.50, Z=-71.99) MeshWorld=V(X=850.00, Y=1.00, Z=30.08) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.027
+[2026.06.07-09.32.18:816][ 65]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State Balanced -> KnockedDown Reason=TestRoomWipeoutArm PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.18:816][ 65]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Reaction Applied=1 Source=TestRoomWipeoutArm State=KnockedDown RequestedVelocity=V(X=10279.42, Y=2140.91, Z=750.00) AppliedVelocity=V(X=6347.28, Y=1321.96, Z=463.11) Hit=V(X=889.16, Y=8.16, Z=126.15) Pelvis=pelvis PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.18:816][ 65]LogTemp: Display: TestRoom wipeout arm impact routed to hero physics: ActiveTried=1 ActiveApplied=1 LegacyApplied=0 Launch=V(X=10279.42, Y=2140.91, Z=750.00) Hit=V(X=889.16, Y=8.16, Z=126.15) Radial=V(X=1.00) Tangent=V(X=0.18, Y=0.98) Incap=0.15s MaxRagdoll=3.10s VelocityChange=0 BelowFraction=1.00 LinearDamping=0.01 AngularDamping=0.02 Friction=0.04 Restitution=0.72 LegacyProfilePAC=0 LegacyDriveMode=0
+[2026.06.07-09.32.18:831][ 67]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=16.1 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=886.45, Y=7.59, Z=104.51) MeshBefore=V(X=870.70, Y=5.31, Z=31.58) MeshAfter=V(X=886.45, Y=8.59, Z=32.51) Desired=V(X=886.45, Y=8.59, Z=32.51) Anchor=V(X=886.45, Y=7.59, Z=116.51)
+[2026.06.07-09.32.18:831][ 67]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=KnockedDown PoseMult=0.10 AnchorMult=0.18 PelvisSimulating=1 PelvisCapsuleDist=157.9 RawPelvisDist=871.3 ComponentSpacePelvisDist=157.9 ComponentBonePelvisDist=871.3 Anchor=V(X=886.45, Y=7.59, Z=116.51) EffectivePelvis=V(X=921.66, Y=18.77, Z=-36.99) BodyRaw=V(X=35.21, Y=10.18, Z=-69.50) BoneRaw=V(X=35.21, Y=10.18, Z=-69.50) MeshWorld=V(X=886.45, Y=8.59, Z=32.51) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.008
+[2026.06.07-09.32.19:092][ 95]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=0.0 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=973.14, Y=25.65, Z=102.15) MeshBefore=V(X=973.14, Y=26.65, Z=30.15) MeshAfter=V(X=973.14, Y=26.65, Z=30.15) Desired=V(X=973.14, Y=26.65, Z=30.15) Anchor=V(X=973.14, Y=25.65, Z=114.15)
+[2026.06.07-09.32.19:092][ 95]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=KnockedDown PoseMult=0.10 AnchorMult=0.18 PelvisSimulating=1 PelvisCapsuleDist=155.9 RawPelvisDist=991.5 ComponentSpacePelvisDist=155.9 ComponentBonePelvisDist=991.5 Anchor=V(X=973.14, Y=25.65, Z=114.15) EffectivePelvis=V(X=972.60, Y=32.56, Z=-41.59) BodyRaw=V(X=-0.53, Y=5.91, Z=-71.74) BoneRaw=V(X=-0.53, Y=5.91, Z=-71.74) MeshWorld=V(X=973.14, Y=26.65, Z=30.15) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.012
+[2026.06.07-09.32.19:405][122]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=0.0 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=973.14, Y=25.65, Z=102.15) MeshBefore=V(X=973.14, Y=26.65, Z=30.15) MeshAfter=V(X=973.14, Y=26.65, Z=30.15) Desired=V(X=973.14, Y=26.65, Z=30.15) Anchor=V(X=973.14, Y=25.65, Z=114.15)
+[2026.06.07-09.32.19:405][122]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=KnockedDown PoseMult=0.10 AnchorMult=0.18 PelvisSimulating=1 PelvisCapsuleDist=155.9 RawPelvisDist=991.5 ComponentSpacePelvisDist=155.9 ComponentBonePelvisDist=991.5 Anchor=V(X=973.14, Y=25.65, Z=114.15) EffectivePelvis=V(X=972.61, Y=32.36, Z=-41.61) BodyRaw=V(X=-0.53, Y=5.72, Z=-71.76) BoneRaw=V(X=-0.53, Y=5.72, Z=-71.76) MeshWorld=V(X=973.14, Y=26.65, Z=30.15) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.087
+[2026.06.07-09.32.19:560][134]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State KnockedDown -> Recovering Reason=KnockdownHoldElapsed PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.19:662][145]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=0.0 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=973.14, Y=25.65, Z=102.15) MeshBefore=V(X=973.14, Y=26.65, Z=30.15) MeshAfter=V(X=973.14, Y=26.65, Z=30.15) Desired=V(X=973.14, Y=26.65, Z=30.15) Anchor=V(X=973.14, Y=25.65, Z=114.15)
+[2026.06.07-09.32.19:662][145]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Recovering PoseMult=0.13 AnchorMult=0.22 PelvisSimulating=1 PelvisCapsuleDist=155.9 RawPelvisDist=991.2 ComponentSpacePelvisDist=155.9 ComponentBonePelvisDist=991.5 Anchor=V(X=973.14, Y=25.65, Z=114.15) EffectivePelvis=V(X=972.91, Y=31.96, Z=-41.64) BodyRaw=V(X=-0.22, Y=5.31, Z=-71.79) BoneRaw=V(X=-0.53, Y=5.72, Z=-71.76) MeshWorld=V(X=973.14, Y=26.65, Z=30.15) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.008
+[2026.06.07-09.32.19:753][156]LogT66GameInstance: [LOAD] Startup hero-selection asset warmup completed.
+[2026.06.07-09.32.19:916][175]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=0.0 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=973.14, Y=25.65, Z=102.15) MeshBefore=V(X=973.14, Y=26.65, Z=30.15) MeshAfter=V(X=973.14, Y=26.65, Z=30.15) Desired=V(X=973.14, Y=26.65, Z=30.15) Anchor=V(X=973.14, Y=25.65, Z=114.15)
+[2026.06.07-09.32.19:916][175]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Recovering PoseMult=0.43 AnchorMult=0.60 PelvisSimulating=1 PelvisCapsuleDist=155.9 RawPelvisDist=991.2 ComponentSpacePelvisDist=155.9 ComponentBonePelvisDist=991.5 Anchor=V(X=973.14, Y=25.65, Z=114.15) EffectivePelvis=V(X=972.93, Y=31.11, Z=-41.70) BodyRaw=V(X=-0.21, Y=4.47, Z=-71.85) BoneRaw=V(X=-0.53, Y=5.72, Z=-71.76) MeshWorld=V(X=973.14, Y=26.65, Z=30.15) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.008
+[2026.06.07-09.32.20:161][200]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=0.0 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=973.14, Y=25.65, Z=102.15) MeshBefore=V(X=973.14, Y=26.65, Z=30.15) MeshAfter=V(X=973.14, Y=26.65, Z=30.15) Desired=V(X=973.14, Y=26.65, Z=30.15) Anchor=V(X=973.14, Y=25.65, Z=114.15)
+[2026.06.07-09.32.20:161][200]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Recovering PoseMult=0.71 AnchorMult=0.97 PelvisSimulating=1 PelvisCapsuleDist=156.0 RawPelvisDist=991.3 ComponentSpacePelvisDist=156.0 ComponentBonePelvisDist=991.5 Anchor=V(X=973.14, Y=25.65, Z=114.15) EffectivePelvis=V(X=972.89, Y=29.78, Z=-41.77) BodyRaw=V(X=-0.25, Y=3.13, Z=-71.92) BoneRaw=V(X=-0.53, Y=5.72, Z=-71.76) MeshWorld=V(X=973.14, Y=26.65, Z=30.15) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.011
+[2026.06.07-09.32.20:267][225]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State Recovering -> Balanced Reason=RecoveryComplete PoseMult=0.74 AnchorMult=1.00
+[2026.06.07-09.32.20:412][265]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=0.0 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=973.14, Y=25.65, Z=102.15) MeshBefore=V(X=973.14, Y=26.65, Z=30.15) MeshAfter=V(X=973.14, Y=26.65, Z=30.15) Desired=V(X=973.14, Y=26.65, Z=30.15) Anchor=V(X=973.14, Y=25.65, Z=114.15)
+[2026.06.07-09.32.20:412][265]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=156.0 RawPelvisDist=991.0 ComponentSpacePelvisDist=156.0 ComponentBonePelvisDist=991.5 Anchor=V(X=973.14, Y=25.65, Z=114.15) EffectivePelvis=V(X=973.23, Y=28.95, Z=-41.81) BodyRaw=V(X=0.09, Y=2.31, Z=-71.96) BoneRaw=V(X=-0.53, Y=5.72, Z=-71.76) MeshWorld=V(X=973.14, Y=26.65, Z=30.15) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.003
+[2026.06.07-09.32.20:662][334]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshCapsuleAuthoritySync Reason=TickCapsuleAuthority WasAttached=0 PreviousParent=None Parent=None LocationDelta=0.0 RotationDeltaDeg=0.0 ScaleDelta=0.000 Hero=V(X=973.14, Y=25.65, Z=102.15) MeshBefore=V(X=973.14, Y=26.65, Z=30.15) MeshAfter=V(X=973.14, Y=26.65, Z=30.15) Desired=V(X=973.14, Y=26.65, Z=30.15) Anchor=V(X=973.14, Y=25.65, Z=114.15)
+[2026.06.07-09.32.20:662][334]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=156.0 RawPelvisDist=991.0 ComponentSpacePelvisDist=156.0 ComponentBonePelvisDist=991.5 Anchor=V(X=973.14, Y=25.65, Z=114.15) EffectivePelvis=V(X=973.16, Y=28.46, Z=-41.83) BodyRaw=V(X=0.02, Y=1.81, Z=-71.98) BoneRaw=V(X=-0.53, Y=5.72, Z=-71.76) MeshWorld=V(X=973.14, Y=26.65, Z=30.15) Parent=None Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.003
+[2026.06.07-09.32.20:783][365]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshRootAttach Reason=ShutdownRestore WasAttached=0 Parent=CollisionCylinder Hero=V(X=850.00, Z=220.00) Mesh=CharacterMesh0 MeshRel=V(Z=-100.00) MeshWorld=V(X=850.00, Z=120.00)
+[2026.06.07-09.32.20:783][365]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshRootAttach Reason=InitAttachRoot WasAttached=1 Parent=CollisionCylinder Hero=V(X=850.00, Z=220.00) Mesh=CharacterMesh0 MeshRel=V(Z=-100.00) MeshWorld=V(X=850.00, Z=120.00)
+[2026.06.07-09.32.20:783][365]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshPelvisAlign Reason=InitMeshPelvisAnchorAlign Pelvis=V(X=850.00, Y=-0.02, Z=204.00) Target=V(X=850.00, Z=232.00) Offset=V(Y=0.02, Z=28.00) MeshBefore=V(X=850.00, Z=120.00) MeshAfter=V(X=850.00, Y=0.02, Z=148.00) MeshRelBefore=V(Z=-100.00) MeshRelAfter=V(Y=0.02, Z=-72.00)
+[2026.06.07-09.32.20:784][365]LogUObjectGlobals: Warning: Gamethread hitch waiting for resource cleanup on a UObject (SphereComponent /Game/Maps/GameplayLevel.GameplayLevel:PersistentLevel.BP_HeroBase_C_0.T66HeroPhysicsHipAnchor) overwrite took   0.45ms. Fix the higher level code so that this does not happen.
+[2026.06.07-09.32.20:785][365]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Init OK Hero=BP_HeroBase_C_0 Mesh=SK_Hero_1_Chad_PhysicsFirst PhysicsAsset=/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/PhysicsFirst/PA_Hero_1_Chad_PhysicsFirst_Stage2Seed.PA_Hero_1_Chad_PhysicsFirst_Stage2Seed Bodies=18 Constraints=17 SimulationRoot=pelvis Pelvis=pelvis PelvisSimulating=1 ComponentAuthority=SimulatedPelvisAnchoredToCapsule PACChildrenLocal=1 HipAnchorConstraint=1
+[2026.06.07-09.32.20:785][365]LogTemp: Display: [HeroActiveRagdollProof] Teleported pawn to TestRoom wipeout lane Location=V(X=850.00, Z=220.00).
+[2026.06.07-09.32.20:785][365]LogTemp: Display: Gameplay automation: TestRoom ragdoll proof camera Location=V(X=1090.00, Y=-850.00, Z=1020.00) Focus=V(X=1350.00, Z=170.00) PawnLocation=V(X=850.00, Z=220.00) PawnOrigin=V(X=644.81, Z=220.00) PawnExtent=V(X=2241.30, Y=2036.11, Z=2032.00) FOV=90.0.
+[2026.06.07-09.32.20:786][366]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=0.0 RawPelvisDist=0.0 ComponentSpacePelvisDist=862.8 ComponentBonePelvisDist=0.0 Anchor=V(X=850.00, Z=232.00) EffectivePelvis=V(X=850.00, Z=232.00) BodyRaw=V(X=850.00, Z=232.00) BoneRaw=V(X=850.00, Z=232.00) MeshWorld=V(X=850.00, Y=0.02, Z=148.00) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.005
+[2026.06.07-09.32.21:253][391]LogCore: Display: Tracing Screenshot "frame_0000" taken with size: 1280 x 720
+[2026.06.07-09.32.21:343][392]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=49.9 RawPelvisDist=830.2 ComponentSpacePelvisDist=49.9 ComponentBonePelvisDist=844.5 Anchor=V(X=850.00, Z=114.15) EffectivePelvis=V(X=873.12, Y=1.84, Z=69.97) BodyRaw=V(X=23.12, Y=1.82, Z=39.82) BoneRaw=V(X=23.12, Y=1.82, Z=-57.57) MeshWorld=V(X=850.00, Y=0.02, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.400
+[2026.06.07-09.32.21:356][392]LogCore: Display: Tracing Screenshot "frame_0001" taken with size: 1280 x 720
+[2026.06.07-09.32.21:474][393]LogCore: Display: Tracing Screenshot "frame_0002" taken with size: 1280 x 720
+[2026.06.07-09.32.21:576][394]LogCore: Display: Tracing Screenshot "frame_0003" taken with size: 1280 x 720
+[2026.06.07-09.32.21:663][395]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.4 RawPelvisDist=846.0 ComponentSpacePelvisDist=58.4 ComponentBonePelvisDist=846.0 Anchor=V(X=850.00, Z=114.15) EffectivePelvis=V(X=858.59, Y=1.15, Z=56.39) BodyRaw=V(X=8.59, Y=1.13, Z=26.24) BoneRaw=V(X=8.59, Y=1.13, Z=26.24) MeshWorld=V(X=850.00, Y=0.02, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.102
+[2026.06.07-09.32.21:676][395]LogCore: Display: Tracing Screenshot "frame_0004" taken with size: 1280 x 720
+[2026.06.07-09.32.21:793][396]LogCore: Display: Tracing Screenshot "frame_0005" taken with size: 1280 x 720
+[2026.06.07-09.32.21:915][397]LogCore: Display: Tracing Screenshot "frame_0006" taken with size: 1280 x 720
+[2026.06.07-09.32.22:006][398]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=55.0 RawPelvisDist=850.8 ComponentSpacePelvisDist=55.0 ComponentBonePelvisDist=850.1 Anchor=V(X=850.00, Z=114.15) EffectivePelvis=V(X=853.49, Y=0.80, Z=59.27) BodyRaw=V(X=3.49, Y=0.78, Z=29.12) BoneRaw=V(X=4.63, Y=0.94, Z=24.91) MeshWorld=V(X=850.00, Y=0.02, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.121
+[2026.06.07-09.32.22:019][398]LogCore: Display: Tracing Screenshot "frame_0007" taken with size: 1280 x 720
+[2026.06.07-09.32.22:128][399]LogCore: Display: Tracing Screenshot "frame_0008" taken with size: 1280 x 720
+[2026.06.07-09.32.22:229][400]LogCore: Display: Tracing Screenshot "frame_0009" taken with size: 1280 x 720
+[2026.06.07-09.32.22:324][401]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=63.7 RawPelvisDist=853.6 ComponentSpacePelvisDist=63.7 ComponentBonePelvisDist=850.1 Anchor=V(X=850.00, Z=114.15) EffectivePelvis=V(X=851.53, Y=0.49, Z=50.52) BodyRaw=V(X=1.53, Y=0.46, Z=20.37) BoneRaw=V(X=4.63, Y=0.94, Z=24.91) MeshWorld=V(X=850.00, Y=0.02, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.107
+[2026.06.07-09.32.22:338][401]LogCore: Display: Tracing Screenshot "frame_0010" taken with size: 1280 x 720
+[2026.06.07-09.32.22:483][402]LogCore: Display: Tracing Screenshot "frame_0011" taken with size: 1280 x 720
+[2026.06.07-09.32.22:582][403]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.0 RawPelvisDist=854.3 ComponentSpacePelvisDist=64.0 ComponentBonePelvisDist=850.1 Anchor=V(X=850.00, Z=114.15) EffectivePelvis=V(X=850.89, Y=0.30, Z=50.16) BodyRaw=V(X=0.89, Y=0.28, Z=20.01) BoneRaw=V(X=4.63, Y=0.94, Z=24.91) MeshWorld=V(X=850.00, Y=0.02, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.139
+[2026.06.07-09.32.22:605][403]LogCore: Display: Tracing Screenshot "frame_0012" taken with size: 1280 x 720
+[2026.06.07-09.32.22:753][404]LogCore: Display: Tracing Screenshot "frame_0013" taken with size: 1280 x 720
+[2026.06.07-09.32.22:868][405]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.1 RawPelvisDist=854.7 ComponentSpacePelvisDist=64.1 ComponentBonePelvisDist=850.1 Anchor=V(X=850.00, Z=114.15) EffectivePelvis=V(X=850.54, Y=0.18, Z=50.03) BodyRaw=V(X=0.54, Y=0.15, Z=19.88) BoneRaw=V(X=4.63, Y=0.94, Z=24.91) MeshWorld=V(X=850.00, Y=0.02, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.154
+[2026.06.07-09.32.22:883][405]LogCore: Display: Tracing Screenshot "frame_0014" taken with size: 1280 x 720
+[2026.06.07-09.32.22:997][406]LogCore: Display: Tracing Screenshot "frame_0015" taken with size: 1280 x 720
+[2026.06.07-09.32.23:108][407]LogCore: Display: Tracing Screenshot "frame_0016" taken with size: 1280 x 720
+[2026.06.07-09.32.23:202][408]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.5 RawPelvisDist=854.3 ComponentSpacePelvisDist=58.5 ComponentBonePelvisDist=850.1 Anchor=V(X=850.00, Z=114.15) EffectivePelvis=V(X=850.27, Y=0.04, Z=55.69) BodyRaw=V(X=0.27, Y=0.01, Z=25.54) BoneRaw=V(X=4.63, Y=0.94, Z=24.91) MeshWorld=V(X=850.00, Y=0.02, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.109
+[2026.06.07-09.32.23:216][408]LogCore: Display: Tracing Screenshot "frame_0017" taken with size: 1280 x 720
+[2026.06.07-09.32.23:325][409]LogCore: Display: Tracing Screenshot "frame_0018" taken with size: 1280 x 720
+[2026.06.07-09.32.23:427][410]LogCore: Display: Tracing Screenshot "frame_0019" taken with size: 1280 x 720
+[2026.06.07-09.32.23:521][411]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.2 RawPelvisDist=855.0 ComponentSpacePelvisDist=64.2 ComponentBonePelvisDist=850.1 Anchor=V(X=850.00, Z=114.15) EffectivePelvis=V(X=850.18, Y=0.05, Z=49.94) BodyRaw=V(X=0.18, Y=0.03, Z=19.79) BoneRaw=V(X=4.63, Y=0.94, Z=24.91) MeshWorld=V(X=850.00, Y=0.02, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.109
+[2026.06.07-09.32.23:523][411]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State Balanced -> KnockedDown Reason=TestRoomWipeoutArm PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.23:523][411]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Reaction Applied=1 Source=TestRoomWipeoutArm State=KnockedDown RequestedVelocity=V(X=10279.91, Y=2138.55, Z=750.00) AppliedVelocity=V(X=6347.58, Y=1320.50, Z=463.11) Hit=V(X=889.16, Y=8.15, Z=126.15) Pelvis=pelvis PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.23:523][411]LogTemp: Display: TestRoom wipeout arm impact routed to hero physics: ActiveTried=1 ActiveApplied=1 LegacyApplied=0 Launch=V(X=10279.91, Y=2138.55, Z=750.00) Hit=V(X=889.16, Y=8.15, Z=126.15) Radial=V(X=1.00) Tangent=V(X=0.18, Y=0.98) Incap=0.15s MaxRagdoll=3.10s VelocityChange=0 BelowFraction=1.00 LinearDamping=0.01 AngularDamping=0.02 Friction=0.04 Restitution=0.72 LegacyProfilePAC=0 LegacyDriveMode=0
+[2026.06.07-09.32.23:537][411]LogCore: Display: Tracing Screenshot "frame_0020" taken with size: 1280 x 720
+[2026.06.07-09.32.23:637][412]LogCore: Display: Tracing Screenshot "frame_0021" taken with size: 1280 x 720
+[2026.06.07-09.32.23:739][413]LogCore: Display: Tracing Screenshot "frame_0022" taken with size: 1280 x 720
+[2026.06.07-09.32.23:835][414]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=KnockedDown PoseMult=0.10 AnchorMult=0.18 PelvisSimulating=1 PelvisCapsuleDist=77.1 RawPelvisDist=918.1 ComponentSpacePelvisDist=77.1 ComponentBonePelvisDist=918.1 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=1019.59, Y=25.53, Z=58.06) BodyRaw=V(X=52.90, Y=1.23, Z=27.91) BoneRaw=V(X=52.90, Y=1.23, Z=27.91) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.109
+[2026.06.07-09.32.23:849][414]LogCore: Display: Tracing Screenshot "frame_0023" taken with size: 1280 x 720
+[2026.06.07-09.32.23:957][415]LogCore: Display: Tracing Screenshot "frame_0024" taken with size: 1280 x 720
+[2026.06.07-09.32.24:061][416]LogCore: Display: Tracing Screenshot "frame_0025" taken with size: 1280 x 720
+[2026.06.07-09.32.24:155][417]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=KnockedDown PoseMult=0.10 AnchorMult=0.18 PelvisSimulating=1 PelvisCapsuleDist=61.9 RawPelvisDist=950.6 ComponentSpacePelvisDist=61.9 ComponentBonePelvisDist=950.6 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=987.20, Y=23.62, Z=55.78) BodyRaw=V(X=20.50, Y=-0.68, Z=25.63) BoneRaw=V(X=20.50, Y=-0.68, Z=25.63) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.108
+[2026.06.07-09.32.24:167][417]LogCore: Display: Tracing Screenshot "frame_0026" taken with size: 1280 x 720
+[2026.06.07-09.32.24:267][418]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State KnockedDown -> Recovering Reason=KnockdownHoldElapsed PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.24:280][418]LogCore: Display: Tracing Screenshot "frame_0027" taken with size: 1280 x 720
+[2026.06.07-09.32.24:392][419]LogCore: Display: Tracing Screenshot "frame_0028" taken with size: 1280 x 720
+[2026.06.07-09.32.24:497][420]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Recovering PoseMult=0.23 AnchorMult=0.35 PelvisSimulating=1 PelvisCapsuleDist=58.8 RawPelvisDist=963.4 ComponentSpacePelvisDist=58.8 ComponentBonePelvisDist=963.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=974.40, Y=22.98, Z=55.87) BodyRaw=V(X=7.71, Y=-1.31, Z=25.72) BoneRaw=V(X=7.71, Y=-1.31, Z=25.72) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.118
+[2026.06.07-09.32.24:525][420]LogCore: Display: Tracing Screenshot "frame_0029" taken with size: 1280 x 720
+[2026.06.07-09.32.24:647][421]LogCore: Display: Tracing Screenshot "frame_0030" taken with size: 1280 x 720
+[2026.06.07-09.32.24:757][422]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Recovering PoseMult=0.61 AnchorMult=0.83 PelvisSimulating=1 PelvisCapsuleDist=58.4 RawPelvisDist=966.9 ComponentSpacePelvisDist=58.4 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=970.84, Y=23.34, Z=55.95) BodyRaw=V(X=4.14, Y=-0.96, Z=25.80) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.124
+[2026.06.07-09.32.24:773][422]LogCore: Display: Tracing Screenshot "frame_0031" taken with size: 1280 x 720
+[2026.06.07-09.32.24:899][423]LogCore: Display: Tracing Screenshot "frame_0032" taken with size: 1280 x 720
+[2026.06.07-09.32.25:006][424]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State Recovering -> Balanced Reason=RecoveryComplete PoseMult=0.74 AnchorMult=1.00
+[2026.06.07-09.32.25:020][424]LogCore: Display: Tracing Screenshot "frame_0033" taken with size: 1280 x 720
+[2026.06.07-09.32.25:128][425]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.1 RawPelvisDist=969.3 ComponentSpacePelvisDist=58.1 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=968.38, Y=24.02, Z=56.09) BodyRaw=V(X=1.69, Y=-0.28, Z=25.94) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.122
+[2026.06.07-09.32.25:145][425]LogCore: Display: Tracing Screenshot "frame_0034" taken with size: 1280 x 720
+[2026.06.07-09.32.25:287][426]LogCore: Display: Tracing Screenshot "frame_0035" taken with size: 1280 x 720
+[2026.06.07-09.32.25:397][427]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.0 RawPelvisDist=970.0 ComponentSpacePelvisDist=58.0 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=967.70, Y=24.19, Z=56.16) BodyRaw=V(X=1.00, Y=-0.10, Z=26.01) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.126
+[2026.06.07-09.32.25:411][427]LogCore: Display: Tracing Screenshot "frame_0036" taken with size: 1280 x 720
+[2026.06.07-09.32.25:541][428]LogCore: Display: Tracing Screenshot "frame_0037" taken with size: 1280 x 720
+[2026.06.07-09.32.25:648][429]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.2 RawPelvisDist=970.4 ComponentSpacePelvisDist=58.2 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=967.29, Y=24.34, Z=55.99) BodyRaw=V(X=0.60, Y=0.04, Z=25.84) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.122
+[2026.06.07-09.32.25:664][429]LogCore: Display: Tracing Screenshot "frame_0038" taken with size: 1280 x 720
+[2026.06.07-09.32.25:778][430]LogCore: Display: Tracing Screenshot "frame_0039" taken with size: 1280 x 720
+[2026.06.07-09.32.25:894][431]LogCore: Display: Tracing Screenshot "frame_0040" taken with size: 1280 x 720
+[2026.06.07-09.32.26:005][432]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.1 RawPelvisDist=971.4 ComponentSpacePelvisDist=64.1 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=966.89, Y=24.50, Z=50.09) BodyRaw=V(X=0.20, Y=0.20, Z=19.94) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.127
+[2026.06.07-09.32.26:038][432]LogCore: Display: Tracing Screenshot "frame_0041" taken with size: 1280 x 720
+[2026.06.07-09.32.26:175][433]LogCore: Display: Tracing Screenshot "frame_0042" taken with size: 1280 x 720
+[2026.06.07-09.32.26:288][434]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.1 RawPelvisDist=971.5 ComponentSpacePelvisDist=64.1 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=966.76, Y=24.58, Z=50.04) BodyRaw=V(X=0.07, Y=0.28, Z=19.89) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.143
+[2026.06.07-09.32.26:325][434]LogCore: Display: Tracing Screenshot "frame_0043" taken with size: 1280 x 720
+[2026.06.07-09.32.26:465][435]LogCore: Display: Tracing Screenshot "frame_0044" taken with size: 1280 x 720
+[2026.06.07-09.32.26:565][436]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.2 RawPelvisDist=971.6 ComponentSpacePelvisDist=64.2 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=966.68, Y=24.64, Z=49.98) BodyRaw=V(X=-0.01, Y=0.34, Z=19.83) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.133
+[2026.06.07-09.32.26:595][436]LogCore: Display: Tracing Screenshot "frame_0045" taken with size: 1280 x 720
+[2026.06.07-09.32.26:727][437]LogCore: Display: Tracing Screenshot "frame_0046" taken with size: 1280 x 720
+[2026.06.07-09.32.26:826][438]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.2 RawPelvisDist=971.6 ComponentSpacePelvisDist=64.2 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=966.63, Y=24.66, Z=49.96) BodyRaw=V(X=-0.06, Y=0.36, Z=19.81) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.133
+[2026.06.07-09.32.26:862][438]LogCore: Display: Tracing Screenshot "frame_0047" taken with size: 1280 x 720
+[2026.06.07-09.32.27:025][439]LogCore: Display: Tracing Screenshot "frame_0048" taken with size: 1280 x 720
+[2026.06.07-09.32.27:135][440]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.2 RawPelvisDist=971.7 ComponentSpacePelvisDist=64.2 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=966.60, Y=24.66, Z=49.95) BodyRaw=V(X=-0.09, Y=0.37, Z=19.80) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.168
+[2026.06.07-09.32.27:168][440]LogCore: Display: Tracing Screenshot "frame_0049" taken with size: 1280 x 720
+[2026.06.07-09.32.27:318][441]LogCore: Display: Tracing Screenshot "frame_0050" taken with size: 1280 x 720
+[2026.06.07-09.32.27:425][442]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.2 RawPelvisDist=971.7 ComponentSpacePelvisDist=64.2 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=966.61, Y=24.65, Z=49.95) BodyRaw=V(X=-0.09, Y=0.35, Z=19.80) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.147
+[2026.06.07-09.32.27:457][442]LogCore: Display: Tracing Screenshot "frame_0051" taken with size: 1280 x 720
+[2026.06.07-09.32.27:598][443]LogCore: Display: Tracing Screenshot "frame_0052" taken with size: 1280 x 720
+[2026.06.07-09.32.27:712][444]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.2 RawPelvisDist=971.7 ComponentSpacePelvisDist=64.2 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=966.61, Y=24.64, Z=49.95) BodyRaw=V(X=-0.09, Y=0.35, Z=19.80) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.150
+[2026.06.07-09.32.27:743][444]LogCore: Display: Tracing Screenshot "frame_0053" taken with size: 1280 x 720
+[2026.06.07-09.32.27:908][445]LogCore: Display: Tracing Screenshot "frame_0054" taken with size: 1280 x 720
+[2026.06.07-09.32.28:020][446]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.2 RawPelvisDist=971.7 ComponentSpacePelvisDist=64.2 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=966.59, Y=24.64, Z=49.95) BodyRaw=V(X=-0.10, Y=0.35, Z=19.80) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.162
+[2026.06.07-09.32.28:065][446]LogCore: Display: Tracing Screenshot "frame_0055" taken with size: 1280 x 720
+[2026.06.07-09.32.28:205][447]LogCore: Display: Tracing Screenshot "frame_0056" taken with size: 1280 x 720
+[2026.06.07-09.32.28:305][448]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.2 RawPelvisDist=971.7 ComponentSpacePelvisDist=64.2 ComponentBonePelvisDist=965.4 Anchor=V(X=966.69, Y=24.28, Z=114.15) EffectivePelvis=V(X=966.58, Y=24.64, Z=49.95) BodyRaw=V(X=-0.11, Y=0.34, Z=19.80) BoneRaw=V(X=5.64, Y=-1.21, Z=25.77) MeshWorld=V(X=966.69, Y=24.30, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.132
+[2026.06.07-09.32.28:306][448]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State Balanced -> KnockedDown Reason=TestRoomWipeoutArm PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.28:306][448]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Reaction Applied=1 Source=TestRoomWipeoutArm State=KnockedDown RequestedVelocity=V(X=10199.09, Y=2495.69, Z=750.00) AppliedVelocity=V(X=6297.68, Y=1541.03, Z=463.11) Hit=V(X=1005.55, Y=33.78, Z=126.15) Pelvis=pelvis PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.28:306][448]LogTemp: Display: TestRoom wipeout arm impact routed to hero physics: ActiveTried=1 ActiveApplied=1 LegacyApplied=0 Launch=V(X=10199.09, Y=2495.69, Z=750.00) Hit=V(X=1005.55, Y=33.78, Z=126.15) Radial=V(X=1.00, Y=0.03) Tangent=V(X=0.01, Y=1.00) Incap=0.15s MaxRagdoll=3.10s VelocityChange=0 BelowFraction=1.00 LinearDamping=0.01 AngularDamping=0.02 Friction=0.04 Restitution=0.72 LegacyProfilePAC=0 LegacyDriveMode=0
+[2026.06.07-09.32.28:353][448]LogCore: Display: Tracing Screenshot "frame_0057" taken with size: 1280 x 720
+[2026.06.07-09.32.28:494][449]LogCore: Display: Tracing Screenshot "frame_0058" taken with size: 1280 x 720
+[2026.06.07-09.32.28:606][450]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=KnockedDown PoseMult=0.10 AnchorMult=0.18 PelvisSimulating=1 PelvisCapsuleDist=86.7 RawPelvisDist=1032.8 ComponentSpacePelvisDist=86.7 ComponentBonePelvisDist=965.4 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1140.02, Y=58.68, Z=48.56) BodyRaw=V(X=56.36, Y=5.75, Z=18.41) BoneRaw=V(X=122.62, Y=27.41, Z=25.77) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.144
+[2026.06.07-09.32.28:675][450]LogCore: Display: Tracing Screenshot "frame_0059" taken with size: 1280 x 720
+[2026.06.07-09.32.28:817][451]LogCore: Display: Tracing Screenshot "frame_0060" taken with size: 1280 x 720
+[2026.06.07-09.32.28:919][452]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=KnockedDown PoseMult=0.10 AnchorMult=0.18 PelvisSimulating=1 PelvisCapsuleDist=69.8 RawPelvisDist=1039.8 ComponentSpacePelvisDist=69.8 ComponentBonePelvisDist=1039.8 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1131.83, Y=57.42, Z=63.79) BodyRaw=V(X=48.16, Y=4.50, Z=33.64) BoneRaw=V(X=48.16, Y=4.50, Z=33.64) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.142
+[2026.06.07-09.32.28:958][452]LogCore: Display: Tracing Screenshot "frame_0061" taken with size: 1280 x 720
+[2026.06.07-09.32.29:059][453]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State KnockedDown -> Recovering Reason=KnockdownHoldElapsed PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.29:104][453]LogCore: Display: Tracing Screenshot "frame_0062" taken with size: 1280 x 720
+[2026.06.07-09.32.29:208][454]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Recovering PoseMult=0.15 AnchorMult=0.25 PelvisSimulating=1 PelvisCapsuleDist=63.9 RawPelvisDist=1062.9 ComponentSpacePelvisDist=63.9 ComponentBonePelvisDist=1062.9 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1109.30, Y=55.30, Z=55.64) BodyRaw=V(X=25.63, Y=2.37, Z=25.49) BoneRaw=V(X=25.63, Y=2.37, Z=25.49) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.149
+[2026.06.07-09.32.29:237][454]LogCore: Display: Tracing Screenshot "frame_0063" taken with size: 1280 x 720
+[2026.06.07-09.32.29:396][455]LogCore: Display: Tracing Screenshot "frame_0064" taken with size: 1280 x 720
+[2026.06.07-09.32.29:509][456]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Recovering PoseMult=0.56 AnchorMult=0.77 PelvisSimulating=1 PelvisCapsuleDist=59.3 RawPelvisDist=1074.6 ComponentSpacePelvisDist=59.3 ComponentBonePelvisDist=1074.6 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1097.64, Y=53.28, Z=56.50) BodyRaw=V(X=13.98, Y=0.35, Z=26.35) BoneRaw=V(X=13.98, Y=0.35, Z=26.35) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.164
+[2026.06.07-09.32.29:545][456]LogCore: Display: Tracing Screenshot "frame_0065" taken with size: 1280 x 720
+[2026.06.07-09.32.29:683][457]LogCore: Display: Tracing Screenshot "frame_0066" taken with size: 1280 x 720
+[2026.06.07-09.32.29:787][458]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State Recovering -> Balanced Reason=RecoveryComplete PoseMult=0.74 AnchorMult=1.00
+[2026.06.07-09.32.29:787][458]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=59.7 RawPelvisDist=1081.3 ComponentSpacePelvisDist=59.7 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1091.04, Y=53.02, Z=54.89) BodyRaw=V(X=7.37, Y=0.10, Z=24.74) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.132
+[2026.06.07-09.32.29:825][458]LogCore: Display: Tracing Screenshot "frame_0067" taken with size: 1280 x 720
+[2026.06.07-09.32.29:970][459]LogCore: Display: Tracing Screenshot "frame_0068" taken with size: 1280 x 720
+[2026.06.07-09.32.30:083][460]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=57.2 RawPelvisDist=1084.6 ComponentSpacePelvisDist=57.2 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1087.57, Y=53.12, Z=57.05) BodyRaw=V(X=3.91, Y=0.20, Z=26.90) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.152
+[2026.06.07-09.32.30:117][460]LogCore: Display: Tracing Screenshot "frame_0069" taken with size: 1280 x 720
+[2026.06.07-09.32.30:259][461]LogCore: Display: Tracing Screenshot "frame_0070" taken with size: 1280 x 720
+[2026.06.07-09.32.30:359][462]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=57.8 RawPelvisDist=1086.4 ComponentSpacePelvisDist=57.8 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1085.74, Y=53.18, Z=56.37) BodyRaw=V(X=2.07, Y=0.26, Z=26.22) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.128
+[2026.06.07-09.32.30:391][462]LogCore: Display: Tracing Screenshot "frame_0071" taken with size: 1280 x 720
+[2026.06.07-09.32.30:513][463]LogCore: Display: Tracing Screenshot "frame_0072" taken with size: 1280 x 720
+[2026.06.07-09.32.30:620][464]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.1 RawPelvisDist=1087.5 ComponentSpacePelvisDist=58.1 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1084.74, Y=53.20, Z=56.03) BodyRaw=V(X=1.08, Y=0.28, Z=25.88) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.136
+[2026.06.07-09.32.30:652][464]LogCore: Display: Tracing Screenshot "frame_0073" taken with size: 1280 x 720
+[2026.06.07-09.32.30:810][465]LogCore: Display: Tracing Screenshot "frame_0074" taken with size: 1280 x 720
+[2026.06.07-09.32.30:921][466]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.3 RawPelvisDist=1088.0 ComponentSpacePelvisDist=58.3 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1084.20, Y=53.19, Z=55.84) BodyRaw=V(X=0.53, Y=0.27, Z=25.69) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.159
+[2026.06.07-09.32.30:936][466]LogCore: Display: Tracing Screenshot "frame_0075" taken with size: 1280 x 720
+[2026.06.07-09.32.31:078][467]LogCore: Display: Tracing Screenshot "frame_0076" taken with size: 1280 x 720
+[2026.06.07-09.32.31:183][468]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.4 RawPelvisDist=1088.3 ComponentSpacePelvisDist=58.4 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1083.88, Y=53.14, Z=55.73) BodyRaw=V(X=0.21, Y=0.22, Z=25.58) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.121
+[2026.06.07-09.32.31:197][468]LogCore: Display: Tracing Screenshot "frame_0077" taken with size: 1280 x 720
+[2026.06.07-09.32.31:316][469]LogCore: Display: Tracing Screenshot "frame_0078" taken with size: 1280 x 720
+[2026.06.07-09.32.31:436][470]LogCore: Display: Tracing Screenshot "frame_0079" taken with size: 1280 x 720
+[2026.06.07-09.32.31:544][471]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.2 RawPelvisDist=1089.1 ComponentSpacePelvisDist=64.2 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1083.62, Y=53.09, Z=49.98) BodyRaw=V(X=-0.05, Y=0.17, Z=19.83) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.124
+[2026.06.07-09.32.31:559][471]LogCore: Display: Tracing Screenshot "frame_0080" taken with size: 1280 x 720
+[2026.06.07-09.32.31:676][472]LogCore: Display: Tracing Screenshot "frame_0081" taken with size: 1280 x 720
+[2026.06.07-09.32.31:803][473]LogCore: Display: Tracing Screenshot "frame_0082" taken with size: 1280 x 720
+[2026.06.07-09.32.31:912][474]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.4 RawPelvisDist=1088.6 ComponentSpacePelvisDist=58.4 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1083.60, Y=53.12, Z=55.75) BodyRaw=V(X=-0.07, Y=0.19, Z=25.60) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.125
+[2026.06.07-09.32.31:927][474]LogCore: Display: Tracing Screenshot "frame_0083" taken with size: 1280 x 720
+[2026.06.07-09.32.32:055][475]LogCore: Display: Tracing Screenshot "frame_0084" taken with size: 1280 x 720
+[2026.06.07-09.32.32:164][476]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.4 RawPelvisDist=1088.6 ComponentSpacePelvisDist=58.4 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1083.58, Y=53.11, Z=55.75) BodyRaw=V(X=-0.08, Y=0.19, Z=25.60) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.125
+[2026.06.07-09.32.32:179][476]LogCore: Display: Tracing Screenshot "frame_0085" taken with size: 1280 x 720
+[2026.06.07-09.32.32:300][477]LogCore: Display: Tracing Screenshot "frame_0086" taken with size: 1280 x 720
+[2026.06.07-09.32.32:423][478]LogCore: Display: Tracing Screenshot "frame_0087" taken with size: 1280 x 720
+[2026.06.07-09.32.32:530][479]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=64.2 RawPelvisDist=1089.2 ComponentSpacePelvisDist=64.2 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1083.52, Y=53.08, Z=49.99) BodyRaw=V(X=-0.14, Y=0.16, Z=19.84) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.123
+[2026.06.07-09.32.32:545][479]LogCore: Display: Tracing Screenshot "frame_0088" taken with size: 1280 x 720
+[2026.06.07-09.32.32:663][480]LogCore: Display: Tracing Screenshot "frame_0089" taken with size: 1280 x 720
+[2026.06.07-09.32.32:779][481]LogCore: Display: Tracing Screenshot "frame_0090" taken with size: 1280 x 720
+[2026.06.07-09.32.32:887][482]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=58.4 RawPelvisDist=1088.6 ComponentSpacePelvisDist=58.4 ComponentBonePelvisDist=1078.3 Anchor=V(X=1083.67, Y=52.90, Z=114.15) EffectivePelvis=V(X=1083.59, Y=53.13, Z=55.75) BodyRaw=V(X=-0.08, Y=0.21, Z=25.60) BoneRaw=V(X=10.24, Y=0.13, Z=26.54) MeshWorld=V(X=1083.67, Y=52.92, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.122
+[2026.06.07-09.32.32:903][482]LogCore: Display: Tracing Screenshot "frame_0091" taken with size: 1280 x 720
+[2026.06.07-09.32.33:017][483]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State Balanced -> KnockedDown Reason=TestRoomWipeoutArm PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.33:017][483]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Reaction Applied=1 Source=TestRoomWipeoutArm State=KnockedDown RequestedVelocity=V(X=10130.22, Y=2761.99, Z=750.00) AppliedVelocity=V(X=6255.15, Y=1705.46, Z=463.11) Hit=V(X=1122.26, Y=63.42, Z=126.15) Pelvis=pelvis PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.33:017][483]LogTemp: Display: TestRoom wipeout arm impact routed to hero physics: ActiveTried=1 ActiveApplied=1 LegacyApplied=0 Launch=V(X=10130.22, Y=2761.99, Z=750.00) Hit=V(X=1122.26, Y=63.42, Z=126.15) Radial=V(X=1.00, Y=0.05) Tangent=V(X=-0.07, Y=1.00) Incap=0.15s MaxRagdoll=3.10s VelocityChange=0 BelowFraction=1.00 LinearDamping=0.01 AngularDamping=0.02 Friction=0.04 Restitution=0.72 LegacyProfilePAC=0 LegacyDriveMode=0
+[2026.06.07-09.32.33:031][483]LogCore: Display: Tracing Screenshot "frame_0092" taken with size: 1280 x 720
+[2026.06.07-09.32.33:149][484]LogCore: Display: Tracing Screenshot "frame_0093" taken with size: 1280 x 720
+[2026.06.07-09.32.33:255][485]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=KnockedDown PoseMult=0.10 AnchorMult=0.18 PelvisSimulating=1 PelvisCapsuleDist=87.1 RawPelvisDist=1145.8 ComponentSpacePelvisDist=87.1 ComponentBonePelvisDist=1078.3 Anchor=V(X=1196.24, Y=83.59, Z=114.15) EffectivePelvis=V(X=1253.14, Y=92.56, Z=48.77) BodyRaw=V(X=56.90, Y=8.94, Z=18.62) BoneRaw=V(X=122.81, Y=30.83, Z=26.54) MeshWorld=V(X=1196.24, Y=83.61, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.121
+[2026.06.07-09.32.33:271][485]LogCore: Display: Tracing Screenshot "frame_0094" taken with size: 1280 x 720
+[2026.06.07-09.32.33:393][486]LogCore: Display: Tracing Screenshot "frame_0095" taken with size: 1280 x 720
+[2026.06.07-09.32.33:507][489]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=KnockedDown PoseMult=0.10 AnchorMult=0.18 PelvisSimulating=1 PelvisCapsuleDist=66.6 RawPelvisDist=1152.5 ComponentSpacePelvisDist=66.6 ComponentBonePelvisDist=1152.5 Anchor=V(X=1196.24, Y=83.59, Z=114.15) EffectivePelvis=V(X=1245.25, Y=87.31, Z=69.15) BodyRaw=V(X=49.01, Y=3.69, Z=39.00) BoneRaw=V(X=49.01, Y=3.69, Z=39.00) MeshWorld=V(X=1196.24, Y=83.61, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.002
+[2026.06.07-09.32.33:740][541]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State KnockedDown -> Recovering Reason=KnockdownHoldElapsed PoseMult=0.10 AnchorMult=0.18
+[2026.06.07-09.32.33:758][545]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Recovering PoseMult=0.10 AnchorMult=0.18 PelvisSimulating=1 PelvisCapsuleDist=57.8 RawPelvisDist=1195.3 ComponentSpacePelvisDist=57.8 ComponentBonePelvisDist=1195.3 Anchor=V(X=1196.24, Y=83.59, Z=114.15) EffectivePelvis=V(X=1203.37, Y=83.05, Z=56.75) BodyRaw=V(X=7.13, Y=-0.56, Z=26.60) BoneRaw=V(X=7.13, Y=-0.56, Z=26.60) MeshWorld=V(X=1196.24, Y=83.61, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.005
+[2026.06.07-09.32.34:009][605]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Recovering PoseMult=0.28 AnchorMult=0.41 PelvisSimulating=1 PelvisCapsuleDist=57.5 RawPelvisDist=1198.3 ComponentSpacePelvisDist=57.5 ComponentBonePelvisDist=1198.3 Anchor=V(X=1196.24, Y=83.59, Z=114.15) EffectivePelvis=V(X=1200.28, Y=83.22, Z=56.82) BodyRaw=V(X=4.04, Y=-0.40, Z=26.67) BoneRaw=V(X=4.04, Y=-0.40, Z=26.67) MeshWorld=V(X=1196.24, Y=83.61, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.004
+[2026.06.07-09.32.34:262][668]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Recovering PoseMult=0.64 AnchorMult=0.88 PelvisSimulating=1 PelvisCapsuleDist=57.4 RawPelvisDist=1199.0 ComponentSpacePelvisDist=57.4 ComponentBonePelvisDist=1199.0 Anchor=V(X=1196.24, Y=83.59, Z=114.15) EffectivePelvis=V(X=1199.66, Y=83.39, Z=56.83) BodyRaw=V(X=3.42, Y=-0.23, Z=26.68) BoneRaw=V(X=3.42, Y=-0.23, Z=26.68) MeshWorld=V(X=1196.24, Y=83.61, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.004
+[2026.06.07-09.32.34:463][717]LogT66HeroPhysics: Display: [HeroActiveRagdoll] State Recovering -> Balanced Reason=RecoveryComplete PoseMult=0.74 AnchorMult=1.00
+[2026.06.07-09.32.34:513][729]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=57.4 RawPelvisDist=1199.1 ComponentSpacePelvisDist=57.4 ComponentBonePelvisDist=1199.1 Anchor=V(X=1196.24, Y=83.59, Z=114.15) EffectivePelvis=V(X=1199.53, Y=83.47, Z=56.86) BodyRaw=V(X=3.29, Y=-0.15, Z=26.71) BoneRaw=V(X=3.31, Y=-0.18, Z=26.71) MeshWorld=V(X=1196.24, Y=83.61, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.004
+[2026.06.07-09.32.34:764][790]LogT66HeroPhysics: Display: [HeroActiveRagdoll] Sample State=Balanced PoseMult=0.74 AnchorMult=1.00 PelvisSimulating=1 PelvisCapsuleDist=57.4 RawPelvisDist=1199.1 ComponentSpacePelvisDist=57.4 ComponentBonePelvisDist=1199.1 Anchor=V(X=1196.24, Y=83.59, Z=114.15) EffectivePelvis=V(X=1199.53, Y=83.45, Z=56.86) BodyRaw=V(X=3.29, Y=-0.16, Z=26.71) BoneRaw=V(X=3.31, Y=-0.18, Z=26.71) MeshWorld=V(X=1196.24, Y=83.61, Z=30.15) Parent=CollisionCylinder Bodies=18 Mesh=SK_Hero_1_Chad_PhysicsFirst Delta=0.004
+[2026.06.07-09.32.34:883][820]LogT66ProjectileManager: [ProjectileManagerSummary] Reason=GameplayAutomationQuit Terminal=1 WorldTime=17.04 ResetCount=1 ResetReason=Initialize Active=0 Fired=0 ActivePeak=0 HitHero=0 Expired=0 HitWorld=0 DroppedFires=0 DroppedInvalidSource=0 VisualBucketOverflow=0 ApplyDamageReturnedFalse=0 VisualProfilesResolved=0 VisualProfileFallbacks=0 NiagaraBodiesSpawned=0 VisualBuckets=0 ManagerTickMaxUs=0.0 ManagerTickAvgUs=0.0 HISMUpdateMaxUs=0.0 HISMUpdateAvgUs=0.0 BoundsOrigin=V(0) BoundsExtent=V(0) LastWorldImpactActor=
+[2026.06.07-09.32.34:883][820]Closing by request
+[2026.06.07-09.32.34:883][820]LogWindows: FPlatformMisc::RequestExit(0, UGameEngine::HandleExitCommand)
+[2026.06.07-09.32.34:883][820]LogWindows: FPlatformMisc::RequestExitWithStatus(0, 0, UGameEngine::HandleExitCommand)
+[2026.06.07-09.32.34:883][820]LogCore: Engine exit requested (reason: Win RequestExit)
+[2026.06.07-09.32.34:885][821]LogCore: Engine exit requested (reason: EngineExit() was called; note: exit was already requested)
+[2026.06.07-09.32.34:891][821]LogStaticMesh: Abandoning remaining async distance field tasks for shutdown
+[2026.06.07-09.32.34:891][821]LogStaticMesh: Abandoning remaining async card representation tasks for shutdown
+[2026.06.07-09.32.34:892][821]LogInit: Display: PreExit Game.
+[2026.06.07-09.32.34:892][821]LogWorld: BeginTearingDown for /Game/Maps/GameplayLevel
+[2026.06.07-09.32.34:893][821]LogT66HeroPhysics: Display: [HeroActiveRagdoll] MeshRootAttach Reason=ShutdownRestore WasAttached=1 Parent=CollisionCylinder Hero=V(X=1196.24, Y=83.59, Z=102.15) Mesh=CharacterMesh0 MeshRel=V(Z=-100.00) MeshWorld=V(X=1196.24, Y=83.59, Z=2.15)
+[2026.06.07-09.32.34:959][821]LogWorld: UWorld::CleanupWorld for GameplayLevel, bSessionEnded=true, bCleanupResources=true
+[2026.06.07-09.32.34:960][821]LogSlate: InvalidateAllWidgets triggered.  All widgets were invalidated
+[2026.06.07-09.32.34:960][821]LogT66EnemyPool: [GOLD] EnemyPool: shutting down. Total acquired=0, reused=0 (0%)
+[2026.06.07-09.32.34:960][821]LogRuntimeTelemetry: Recording EnginePreExit events
+[2026.06.07-09.32.35:619][821]LogAudio: Display: Beginning Audio Device Manager Shutdown (Module: AudioMixerXAudio2)...
+[2026.06.07-09.32.35:619][821]LogAudio: Display: Destroying 1 Remaining Audio Device(s)...
+[2026.06.07-09.32.35:619][821]LogAudio: Display: Audio Device unregistered from world 'GameplayLevel'.
+[2026.06.07-09.32.35:619][821]LogAudio: Display: Shutting down audio device while 1 references to it are still alive. For more information, compile with INSTRUMENT_AUDIODEVICE_HANDLES.
+[2026.06.07-09.32.35:644][821]LogAudioMixer: Display: FMixerPlatformXAudio2::StopAudioStream() called. InstanceID=1, StreamState=4
+[2026.06.07-09.32.35:646][821]LogAudioMixer: Display: FMixerPlatformXAudio2::StopAudioStream() called. InstanceID=1, StreamState=2
+[2026.06.07-09.32.35:660][821]LogAudioMixer: Deinitializing Audio Bus Subsystem for audio device with ID -1
+[2026.06.07-09.32.35:660][821]LogAudio: Display: Audio Device Manager Shutdown
+[2026.06.07-09.32.35:661][821]LogSlate: Window 'T66 (64-bit Development PCD3D_SM6) ' being destroyed
+[2026.06.07-09.32.35:664][821]LogWindowsTextInputMethodSystem: Activated input method: English (United States) - (Keyboard).
+[2026.06.07-09.32.35:678][821]LogSlate: Slate User Destroyed.  User Index 0, Is Virtual User: 0
+[2026.06.07-09.32.35:678][821]LogExit: Preparing to exit.
+[2026.06.07-09.32.35:717][821]LogUObjectHash: Compacting FUObjectHashTables data took   0.82ms
+[2026.06.07-09.32.35:771][821]LogMoviePlayer: Shutting down movie player
+[2026.06.07-09.32.35:790][821]LogSlate: Updating window title bar state: overlay mode, drag disabled, window buttons hidden, title bar hidden
+[2026.06.07-09.32.35:813][821]LogDemo: Cleaned up 0 splitscreen connections, owner deletion: enabled
+[2026.06.07-09.32.35:822][821]LogExit: Game engine shut down
+[2026.06.07-09.32.35:827][821]LogRenderer: Forcing update for all mesh draw commands: SkyLight change
+[2026.06.07-09.32.35:891][821]LogExit: Object subsystem successfully closed.
+[2026.06.07-09.32.35:936][821]LogShaderCompilers: Display: Shaders left to compile 0
+[2026.06.07-09.32.36:033][821]LogChaosDD: Chaos Debug Draw Shutdown
+[2026.06.07-09.32.36:037][821]RenderDocPlugin: plugin has been unloaded.
+[2026.06.07-09.32.36:038][821]LogOnline: Display: STEAM: OnlineSubsystemSteam::Shutdown()
+[2026.06.07-09.32.36:039][821]LogOnline: STEAM: AUTH: Revoking all tickets.
+[2026.06.07-09.32.36:039][821]LogSteamShared: Unloading the Steam server API...
+[2026.06.07-09.32.36:053][821]LogSteamShared: Unloading the Steam API...
+[2026.06.07-09.32.36:088][821]LogOnline: Display: STEAM: OnlineSubsystemSteam::Shutdown()
+[2026.06.07-09.32.36:088][821]LogSteamShared: Freeing the Steam Loaded Modules...
+[2026.06.07-09.32.36:095][821]LogEOSShared: FEOSSDKManager::Shutdown EOS_Shutdown Result=[EOS_Success]
+[2026.06.07-09.32.36:096][821]LogNFORDenoise: NFORDenoise function shutting down
+[2026.06.07-09.32.36:096][821]LogXGEController: Cleaning working directory: C:/Users/DoPra/AppData/Local/Temp/UnrealXGEWorkingDir/
+[2026.06.07-09.32.36:097][821]LogPakFile: Destroying PakPlatformFile
+[2026.06.07-09.32.36:189][821]LogD3D12RHI: ~FD3D12DynamicRHI
+[2026.06.07-09.32.36:238][821]LogExit: Exiting.
+[2026.06.07-09.32.36:250][821]Log file closed, 06/07/26 06:32:36

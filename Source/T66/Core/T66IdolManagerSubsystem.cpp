@@ -2,6 +2,7 @@
 
 #include "Core/T66IdolManagerSubsystem.h"
 
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66DifficultyTuningSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -158,6 +159,10 @@ const TArray<FName>& UT66IdolManagerSubsystem::GetAllIdolIDs()
 		FName(TEXT("Idol_Nature_AOE")),
 		FName(TEXT("Idol_Nature_Pierce")),
 		FName(TEXT("Idol_Nature_Bounce")),
+		FName(TEXT("Idol_Wind_DOT")),
+		FName(TEXT("Idol_Wind_AOE")),
+		FName(TEXT("Idol_Wind_Pierce")),
+		FName(TEXT("Idol_Wind_Bounce")),
 	};
 	return Idols;
 }
@@ -171,6 +176,7 @@ FLinearColor UT66IdolManagerSubsystem::GetIdolColor(FName IdolID)
 	if (IdolString.StartsWith(TEXT("Idol_Ice_")))         return FLinearColor(0.28f, 0.70f, 1.00f, 1.f);
 	if (IdolString.StartsWith(TEXT("Idol_Electricity_"))) return FLinearColor(0.62f, 0.20f, 1.00f, 1.f);
 	if (IdolString.StartsWith(TEXT("Idol_Nature_")))      return FLinearColor(0.20f, 0.78f, 0.32f, 1.f);
+	if (IdolString.StartsWith(TEXT("Idol_Wind_")))        return FLinearColor(0.62f, 0.65f, 0.68f, 1.f);
 
 	return FLinearColor(0.25f, 0.25f, 0.28f, 1.f);
 }
@@ -185,6 +191,7 @@ bool UT66IdolManagerSubsystem::EquipIdolInSlot(const int32 SlotIndex, const FNam
 
 	EquippedIdolIDs[SlotIndex] = NormalizedIdolID;
 	EquippedIdolLevels[SlotIndex] = 1;
+	UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Idol.Equip")));
 	BroadcastIdolStateChanged();
 	return true;
 }
@@ -201,6 +208,7 @@ bool UT66IdolManagerSubsystem::EquipIdolFirstEmpty(const FName IdolID)
 
 		EquippedIdolIDs[Index] = NormalizedIdolID;
 		EquippedIdolLevels[Index] = 1;
+		UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Idol.Equip")));
 		BroadcastIdolStateChanged();
 		return true;
 	}
@@ -226,6 +234,7 @@ bool UT66IdolManagerSubsystem::SelectIdolFromAltar(const FName IdolID)
 
 		EquippedIdolIDs[Index] = NormalizedIdolID;
 		EquippedIdolLevels[Index] = 1;
+		UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Idol.Equip")));
 		BroadcastIdolStateChanged();
 		return true;
 	}
@@ -356,6 +365,7 @@ bool UT66IdolManagerSubsystem::ApplyStockOfferToEquipped(const int32 SlotIndex)
 		}
 
 		EquippedIdolLevels[Index] = static_cast<uint8>(OfferedTierValue);
+		UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Idol.LevelUp")));
 		bApplied = true;
 		break;
 	}
@@ -368,6 +378,7 @@ bool UT66IdolManagerSubsystem::ApplyStockOfferToEquipped(const int32 SlotIndex)
 
 			EquippedIdolIDs[Index] = OfferedIdolID;
 			EquippedIdolLevels[Index] = static_cast<uint8>(OfferedTierValue);
+			UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Idol.Equip")));
 			bApplied = true;
 			break;
 		}

@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Build reusable skeletal FBX sources for the default animated ToonStyle heroes.
+Legacy bridge: build reusable skeletal FBX sources for animated ToonStyle heroes.
+
+Do not use this as the current FriendSlop raw model path. Current FriendSlop
+model work starts from the raw FriendSlop Pixal3D runs documented in
+Model Generation/README.md.
 
 Run with Blender in background mode:
 
@@ -33,7 +37,14 @@ PROJECT_ROOT = Path(os.environ.get("T66_PROJECT_ROOT", r"C:\UE\T66"))
 SOURCE_ROOT = Path(
     os.environ.get(
         "T66_ANIMATED_TOONSTYLE_SOURCE_ROOT",
-        PROJECT_ROOT / "Model Generation" / "Runs" / "Pixal3D" / "HeroDemoLineup_20260522_AccuRig" / "Outputs",
+        PROJECT_ROOT
+        / "Model Generation"
+        / "Runs"
+        / "Pixal3D"
+        / "Archive"
+        / "DeprecatedHeroLineups"
+        / "HeroDemoLineup_20260522_AccuRig"
+        / "Outputs",
     )
 )
 TEMPLATE_BLEND = Path(
@@ -43,6 +54,8 @@ TEMPLATE_BLEND = Path(
         / "Model Generation"
         / "Runs"
         / "Pixal3D"
+        / "Archive"
+        / "DeprecatedHeroLineups"
         / "HeroDemoLineup_20260522_AccuRig"
         / "RigifyWalkProbe_20260522"
         / "Hero_1_Chad_Rigify_AnimatedToonStyle_Template.blend",

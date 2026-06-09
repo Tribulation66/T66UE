@@ -59,7 +59,7 @@ UMaterialInterface* FT66TerrainThemeAssets::ResolveDifficultyGroundMaterial(UObj
 		}
 	}
 
-	UMaterialInterface* BaseMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_Environment_Lit.M_Environment_Lit"));
+	UMaterialInterface* BaseMaterial = T66FindOrLoadObject<UMaterialInterface>(TEXT("/Game/Materials/M_FriendSlop_FallGuys.M_FriendSlop_FallGuys"));
 	UTexture* DifficultyTexture = LoadDifficultyGroundTexture(Difficulty);
 	if (BaseMaterial && DifficultyTexture)
 	{

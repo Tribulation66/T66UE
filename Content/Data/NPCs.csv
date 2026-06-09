@@ -2,3 +2,5 @@
 CasinoNPC,CasinoNPC,Casino,"(R=0.8,G=0.1,B=0.1,A=1.0)",650.0,10
 Saint,Saint,Saint,"(R=0.9,G=0.9,B=0.9,A=1.0)",650.0,0
 Ouroboros,Ouroboros,Ouroboros,"(R=0.1,G=0.8,B=0.2,A=1.0)",650.0,0
+VendorNPC,VendorNPC,Vendor,"(R=0.16,G=0.58,B=0.35,A=1.0)",650.0,0
+LoanShark,LoanShark,Loan Shark,"(R=0.1,G=0.45,B=0.9,A=1.0)",650.0,0

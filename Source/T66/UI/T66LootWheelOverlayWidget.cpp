@@ -97,18 +97,20 @@ namespace
 		}
 	}
 
-	static FText LootWheelBoostSecondaryStatLabel(const ET66SecondaryStatType StatType)
+	static FText LootWheelBoostStatLabel(const ET66StatType StatType)
 	{
 		switch (StatType)
 		{
-		case ET66SecondaryStatType::FirePower:
+		case ET66StatType::FirePower:
 			return NSLOCTEXT("T66.LootWheel", "BoostFirePower", "Fire Power");
-		case ET66SecondaryStatType::IcePower:
+		case ET66StatType::IcePower:
 			return NSLOCTEXT("T66.LootWheel", "BoostIcePower", "Ice Power");
-		case ET66SecondaryStatType::ElectricityPower:
+		case ET66StatType::ElectricityPower:
 			return NSLOCTEXT("T66.LootWheel", "BoostElectricityPower", "Electricity Power");
-		case ET66SecondaryStatType::NaturePower:
+		case ET66StatType::NaturePower:
 			return NSLOCTEXT("T66.LootWheel", "BoostNaturePower", "Nature Power");
+		case ET66StatType::WindPower:
+			return NSLOCTEXT("T66.LootWheel", "BoostWindPower", "Wind Power");
 		default:
 			return NSLOCTEXT("T66.LootWheel", "BoostSecondaryFallback", "Stat");
 		}
@@ -1131,7 +1133,7 @@ FText UT66LootWheelOverlayWidget::BuildResultDetailText() const
 		return FText::Format(
 			NSLOCTEXT("T66.LootWheel", "BoostDetail", "+{0} {1} for {2}s"),
 			FText::AsNumber(FMath::Max(0, Params.BoostBonusStatPoints)),
-			Params.bBoostUsesSecondaryStat ? LootWheelBoostSecondaryStatLabel(Params.BoostSecondaryStatType) : LootWheelBoostStatLabel(Params.BoostStatType),
+			Params.bBoostUsesStat ? LootWheelBoostStatLabel(Params.BoostStatType) : LootWheelBoostStatLabel(Params.BoostStatType),
 			FText::AsNumber(FMath::RoundToInt(FMath::Max(0.f, Params.BoostDurationSeconds))));
 	default:
 		return FText::GetEmpty();

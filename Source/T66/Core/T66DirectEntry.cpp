@@ -161,7 +161,7 @@ namespace
 
 	static FAutoConsoleCommandWithWorldAndArgs T66ScreenCommand(
 		TEXT("T66.Screen"),
-		TEXT("Directly opens a frontend screen. Usage: T66.Screen Settings Modal=ReportBug"),
+		TEXT("Directly opens a frontend screen. Usage: T66.Screen Settings"),
 		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&ExecuteScreenConsoleCommand));
 
 	static FAutoConsoleCommandWithWorldAndArgs T66RunCommand(
@@ -177,10 +177,10 @@ FString T66DirectEntry::GetAcceptedFrontendScreenNamesForLog()
 		"GirlfriendSelection, GirlfriendSelect, "
 		"PetSelection, PetSelect, Pets, "
 		"Settings, SettingsScreen, LanguageSelect, Language, Achievements, PauseMenu, Pause, "
-		"ReportBug, RunSummary, PowerUp, HeroGrid, CompanionGrid, GirlfriendGrid, QuitConfirmation, Quit, PartyInvite, "
+		"RunSummary, PowerUp, HeroGrid, CompanionGrid, GirlfriendGrid, QuitConfirmation, Quit, PartyInvite, "
 		"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, "
 		"Challenges, DailyDescent, Overview, History, Relics, Steroids, Diplomas, "
-		"Drugs, SteamAchievements, Steam, SettingsRetroFX, RetroFX, SettingsGameplay, SettingsGraphics, "
+		"Drugs, SteamAchievements, Steam, SecretAchievements, Secret, SettingsGameplay, SettingsGraphics, "
 		"SettingsControls, SettingsMediaViewer, SettingsMedia, SettingsAudio, LoadGame");
 }
 
@@ -215,11 +215,15 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 	}
 	if (Key == TEXT("petselection") || Key == TEXT("petselect") || Key == TEXT("pets"))
 	{
+		if (!FT66ShelvedFeatureGate::IsScreenAllowed(ET66ScreenType::PetSelection))
+		{
+			return false;
+		}
 		OutScreenType = ET66ScreenType::PetSelection;
 		return true;
 	}
-	if (Key == TEXT("settings") || Key == TEXT("settingsscreen") || Key == TEXT("settingsretrofx")
-		|| Key == TEXT("retrofx") || Key == TEXT("settingsgameplay") || Key == TEXT("settingsgraphics")
+	if (Key == TEXT("settings") || Key == TEXT("settingsscreen")
+		|| Key == TEXT("settingsgameplay") || Key == TEXT("settingsgraphics")
 		|| Key == TEXT("settingscontrols") || Key == TEXT("settingsmediaviewer") || Key == TEXT("settingsmedia")
 		|| Key == TEXT("settingsaudio"))
 	{
@@ -231,7 +235,8 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 		OutScreenType = ET66ScreenType::LanguageSelect;
 		return true;
 	}
-	if (Key == TEXT("achievements") || Key == TEXT("steamachievements") || Key == TEXT("steam"))
+	if (Key == TEXT("achievements") || Key == TEXT("steamachievements") || Key == TEXT("steam")
+		|| Key == TEXT("secretachievements") || Key == TEXT("secret"))
 	{
 		OutScreenType = ET66ScreenType::Achievements;
 		return true;
@@ -239,11 +244,6 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 	if (Key == TEXT("pausemenu") || Key == TEXT("pause"))
 	{
 		OutScreenType = ET66ScreenType::PauseMenu;
-		return true;
-	}
-	if (Key == TEXT("reportbug"))
-	{
-		OutScreenType = ET66ScreenType::ReportBug;
 		return true;
 	}
 	if (Key == TEXT("runsummary"))
@@ -552,7 +552,7 @@ bool T66DirectEntry::ExecuteRequest(UWorld* World, const FT66DirectEntryRequest&
 		}
 		else
 		{
-			UGameplayStatics::OpenLevel(World, UT66GameInstance::GetFrontendLevelName());
+			UT66GameInstance::TransitionToFrontendLevel(World);
 		}
 		return true;
 	}

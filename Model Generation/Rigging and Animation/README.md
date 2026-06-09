@@ -1,6 +1,6 @@
 # T66 Rigging And Animation
 
-This folder owns the repo-native process for regular enemy/mob animation source work and the animated ToonStyle hero import bridge.
+This folder owns repo-native animation source work. Regular mobs still use the VAT-oriented process here; physics-first raw FriendSlop hero rigs route through the model-generation instruction set and are treated as gameplay-facing hero foundations, not the old Animated ToonStyle bridge.
 
 ## Scope
 
@@ -10,14 +10,17 @@ In scope:
 - Blender source scenes used to author mob motion
 - VAT source generation, import, verification, and preview videos
 - batch guidance for Stage 1 / Easy mobs
-- animated ToonStyle skeletal import/export for approved demo hero and companion visual rows
+- historical animated ToonStyle skeletal import/export evidence, archived and not active routing
+- physics-first raw FriendSlop hero rigging process routing
 
 Out of scope:
 
-- manual hero or companion rigging
+- broad manual hero or companion rigging outside an approved physics-first process
 - buying or authoring new humanoid animation packs outside the accepted Quaternius source
 
-Manual hero and companion rigging remains outside this automation path. The only active humanoid automation here is the reusable Animated ToonStyle bridge that turns approved Pixal3D humanoid meshes into skeletal ToonStyle game assets with `Idle/Walk/Jump/Roll` rows.
+Manual hero and companion rigging remains outside the mob/VAT automation path. Hero 1 Chad is the approved exception for a physics-first raw FriendSlop process.
+
+Explicit raw FriendSlop hero rigging for skeletal FBX, pose-target clips, later PhysicsAsset, and active-ragdoll readiness is routed through `../Instructions/13_FRIENDSLOP_RAW_HUMANOID_RIGGING_INSTRUCTIONS.md`, not through the retired humanoid bakeoff or the legacy Animated ToonStyle bridge.
 
 ## Primary Docs
 
@@ -27,7 +30,11 @@ Manual hero and companion rigging remains outside this automation path. The only
 - `04_MOB_VERTEX_ANIMATION_PIPELINE_INSTRUCTIONS.md`: full mob VAT pipeline contract
 - `05_EASY_MOB_VERTEX_ANIMATION_BATCH_INSTRUCTIONS.md`: Easy / Stage 1 enemy roster directions
 - `06_MOB_ANIMATION_GUIDELINES.md`: running creative and technical guidelines for future mob animation passes
-- `07_ANIMATED_TOONSTYLE_HERO_PIPELINE_INSTRUCTIONS.md`: skeletal ToonStyle import bridge for demo-scope heroes and companions
+- `../Instructions/13_FRIENDSLOP_RAW_HUMANOID_RIGGING_INSTRUCTIONS.md`: active physics-first raw FriendSlop humanoid rigging route
+
+Archived historical ToonStyle bridge doc:
+
+- `../../Archive/ToonStyle/Model Generation/Rigging and Animation/07_ANIMATED_TOONSTYLE_HERO_PIPELINE_INSTRUCTIONS.md`
 
 ## Current Accepted Baseline
 
@@ -57,14 +64,23 @@ Active mob tools live under `Tools/`:
 - `import_easy_mob_vat_to_unreal.py`
 - `verify_easy_mob_vat_in_unreal.py`
 
-Active animated hero tools live under `Tools/`:
+Legacy animated hero bridge tools live under `Tools/`:
 
 - `create_animated_toonstyle_hero_sources.py`
 - `import_animated_toonstyle_heroes_to_unreal.py`
 
+These tools are retained only as historical Animated ToonStyle bridge context. Do not use them as the current FriendSlop model source path. Current FriendSlop raw Pixal3D work starts from the FriendSlop runs documented in `../README.md` and `../Instructions/11_FRIENDSLOP_RAW_PIXAL3D_IMPORT_GUIDELINES.md`.
+
+Physics-first hero tools live under `Tools/`:
+
+- `create_physics_first_hero1_chad_sources.py`
+- `import_physics_first_hero1_chad_to_unreal.py`
+
+These start from the raw FriendSlop GLB and write fresh Stage 2 outputs under the Hero 1 FriendSlop run. Do not point them at old spike Rigging outputs.
+
 ## Humanoid Automation Boundary
 
-The old exploratory humanoid bakeoff workflow remains retired. The current humanoid path is narrower: use the accepted Hero 1 Rigify/Quaternius template and the production ToonStyle materials to generate importable skeletal assets for approved demo hero and companion visual rows.
+The old exploratory humanoid bakeoff workflow remains retired. The Animated ToonStyle bridge is legacy maintenance only. The current Hero 1 Chad path is the physics-first raw FriendSlop standard with `Idle`, `Walk`, `Jump`, and `Leap` pose-target clips.
 
 ## Runtime Boundary
 

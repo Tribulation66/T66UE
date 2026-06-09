@@ -29,4 +29,11 @@ This folder keeps audit material organized by action status.
 - `Reference/Historical/2026-04-16-optimization/`: superseded optimization drafts and review passes.
 - `Reference/Historical/2026-04-17-optimization-wave/T66_OPTIMIZATION_AGENT_ASSIGNMENTS.md`: old operational handoff kept as historical reference only.
 
+## Root Archive Pointers
+
+- `../Archive/ToonStyle/`: retired ToonStyle and Animated ToonStyle art/material/import docs.
+- `../Archive/RetroFX/`: retired QuadRetro / RetroFX 3D art-direction docs.
+
+These root archive folders are historical evidence only and are not active audit queues.
+
 Root-level audit files should be treated as an inbox for new in-progress drafts. Once a draft is accepted, classify it as `Pending`, `Finished`, or `Reference`.

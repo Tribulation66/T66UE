@@ -105,14 +105,32 @@ float UT66RunStateSubsystem::GetCurrentRunElapsedSeconds() const
 
 void UT66RunStateSubsystem::MarkRunEnded(bool bWasFullClear)
 {
+	EndRun(bWasFullClear);
+}
+
+
+void UT66RunStateSubsystem::EndRun(bool bWasFullClear)
+{
 	if (bRunEnded)
 	{
 		if (bWasFullClear)
 		{
 			bRunEndedAsVictory = true;
 		}
+		UE_LOG(LogTemp, Log, TEXT("[RunLifecycle] Duplicate EndRun ignored. Reason=%s Victory=%d"),
+			bWasFullClear ? TEXT("VictoryDuplicate") : TEXT("DeathDuplicate"),
+			bRunEndedAsVictory ? 1 : 0);
 		return;
 	}
+
+	if (bRunLifecycleBoundaryInProgress)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[RunLifecycle] EndRun requested while another boundary is active."));
+	}
+
+	bRunLifecycleBoundaryInProgress = true;
+	const FName BoundaryReason = bWasFullClear ? FName(TEXT("Victory")) : FName(TEXT("Death"));
+	BroadcastRunLifecycleBoundary(ET66RunLifecycleBoundary::RunEnded, BoundaryReason, false);
 
 	if (bWasFullClear)
 	{
@@ -122,6 +140,9 @@ void UT66RunStateSubsystem::MarkRunEnded(bool bWasFullClear)
 	FinalRunElapsedSeconds = GetCurrentRunElapsedSeconds();
 	bRunEnded = true;
 	bRunEndedAsVictory = bWasFullClear;
+
+	BroadcastRunLifecycleBoundary(ET66RunLifecycleBoundary::RunEnded, BoundaryReason, true);
+	bRunLifecycleBoundaryInProgress = false;
 }
 
 
@@ -194,8 +215,8 @@ void UT66RunStateSubsystem::SetCurrentStage(int32 Stage)
 	// New stage: clear transient movement/status effects so the Start Area is clean.
 	StageMoveSpeedMultiplier = 1.f;
 	StageMoveSpeedSecondsRemaining = 0.f;
-	TemporaryPrimaryStatAmplifiers.Reset();
-	TemporarySecondaryStatAmplifiers.Reset();
+	TemporaryBaseStatAmplifiers.Reset();
+	TemporaryStatAmplifiers.Reset();
 	StatusBurnSecondsRemaining = 0.f;
 	StatusBurnDamagePerSecond = 0.f;
 	StatusBurnAccumDamage = 0.f;

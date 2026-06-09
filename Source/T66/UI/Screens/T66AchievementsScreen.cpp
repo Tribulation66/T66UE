@@ -184,6 +184,181 @@ namespace
 		return FT66FlatStyle::GetFlatRedSquareButtonAssetPath(*StateName);
 	}
 
+	FString MakeAchievementsFriendslopPath(const TCHAR* ScreenFolder, const TCHAR* FileName)
+	{
+		return FString(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle"))
+			/ FString(ScreenFolder ? ScreenFolder : TEXT(""))
+			/ FString(FileName ? FileName : TEXT(""));
+	}
+
+	FString MakeSteamAchievementsPath(const TCHAR* FileName, const FString& FallbackPath)
+	{
+		const FString Name(FileName ? FileName : TEXT(""));
+		const FString FriendslopPath = MakeAchievementsFriendslopPath(TEXT("SteamAchievements"), *Name);
+		for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(FriendslopPath))
+		{
+			if (FPaths::FileExists(CandidatePath))
+			{
+				return FriendslopPath;
+			}
+		}
+		return FallbackPath;
+	}
+
+	FString MakeSteamAchievementTabPath(const bool bActive)
+	{
+		return MakeSteamAchievementsPath(
+			bActive ? TEXT("steam_achievement_tab_selected.png") : TEXT("steam_achievement_tab_default.png"),
+			MakeAchievementsButtonAssetPath(TEXT("Pill"), bActive ? TEXT("selected") : TEXT("normal")));
+	}
+
+	FString MakeSteamSummaryPanelPath()
+	{
+		return MakeSteamAchievementsPath(
+			TEXT("steam_summary_panel.png"),
+			MakeAchievementsAssetPath(TEXT("Panels/achievements_panels_reference_progress_panel_v2.png")));
+	}
+
+	FString MakeSteamSummaryLogoPlatePath()
+	{
+		return MakeSteamAchievementsPath(
+			TEXT("steam_summary_logo_plate.png"),
+			MakeAchievementsUltrakillSquareElementPath(TEXT("profile_slot_normal_square_variant.png")));
+	}
+
+	FString MakeSteamSummaryProgressTrackPath()
+	{
+		return MakeSteamAchievementsPath(
+			TEXT("steam_summary_progress_track.png"),
+			MakeAchievementsAssetPath(TEXT("Controls/achievements_controls_progress_track_v2.png")));
+	}
+
+	FString MakeSteamSummaryProgressFillPath()
+	{
+		return MakeSteamAchievementsPath(
+			TEXT("steam_summary_progress_fill.png"),
+			MakeAchievementsAssetPath(TEXT("Controls/achievements_controls_progress_fill_v2.png")));
+	}
+
+	FString MakeSteamAchievementListPanelPath()
+	{
+		return MakeSteamAchievementsPath(
+			TEXT("steam_achievement_list_panel.png"),
+			MakeAchievementsAssetPath(TEXT("Panels/achievements_panels_reference_list_panel_v2.png")));
+	}
+
+	FString MakeSteamAchievementRowShellPath()
+	{
+		return MakeSteamAchievementsPath(
+			TEXT("steam_achievement_row_shell.png"),
+			MakeAchievementsAssetPath(TEXT("Panels/achievements_panels_reference_row_shell_v2.png")));
+	}
+
+	FString MakeSteamClaimButtonPath()
+	{
+		return MakeSteamAchievementsPath(
+			TEXT("steam_claim_button.png"),
+			MakeAchievementsButtonAssetPath(TEXT("CTA"), TEXT("normal")));
+	}
+
+	FString MakeSteamFavoriteButtonPath()
+	{
+		return MakeSteamAchievementsPath(
+			TEXT("steam_favorite_button.png"),
+			MakeAchievementsButtonAssetPath(TEXT("SquareIcon"), TEXT("normal")));
+	}
+
+	FString MakeSteamRewardSlotPath()
+	{
+		return MakeSteamAchievementsPath(
+			TEXT("steam_reward_slot.png"),
+			MakeAchievementsUltrakillSquareElementPath(TEXT("profile_slot_normal_square_variant.png")));
+	}
+
+	FString MakeSecretAchievementsPath(const TCHAR* FileName, const FString& FallbackPath)
+	{
+		const FString Name(FileName ? FileName : TEXT(""));
+		const FString FriendslopPath = MakeAchievementsFriendslopPath(TEXT("SecretAchievements"), *Name);
+		for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(FriendslopPath))
+		{
+			if (FPaths::FileExists(CandidatePath))
+			{
+				return FriendslopPath;
+			}
+		}
+		return FallbackPath;
+	}
+
+	FString MakeSecretAchievementTabPath(const bool bActive)
+	{
+		return MakeSecretAchievementsPath(
+			bActive ? TEXT("secret_achievement_tab_selected.png") : TEXT("secret_achievement_tab_default.png"),
+			MakeAchievementsButtonAssetPath(TEXT("Pill"), bActive ? TEXT("selected") : TEXT("normal")));
+	}
+
+	FString MakeSecretSummaryPanelPath()
+	{
+		return MakeSecretAchievementsPath(
+			TEXT("secret_summary_panel.png"),
+			MakeAchievementsAssetPath(TEXT("Panels/achievements_panels_reference_progress_panel_v2.png")));
+	}
+
+	FString MakeSecretSummaryLogoPlatePath()
+	{
+		return MakeSecretAchievementsPath(
+			TEXT("secret_summary_logo_plate.png"),
+			MakeAchievementsUltrakillSquareElementPath(TEXT("profile_slot_normal_square_variant.png")));
+	}
+
+	FString MakeSecretSummaryProgressTrackPath()
+	{
+		return MakeSecretAchievementsPath(
+			TEXT("secret_summary_progress_track.png"),
+			MakeAchievementsAssetPath(TEXT("Controls/achievements_controls_progress_track_v2.png")));
+	}
+
+	FString MakeSecretSummaryProgressFillPath()
+	{
+		return MakeSecretAchievementsPath(
+			TEXT("secret_summary_progress_fill.png"),
+			MakeAchievementsAssetPath(TEXT("Controls/achievements_controls_progress_fill_v2.png")));
+	}
+
+	FString MakeSecretAchievementListPanelPath()
+	{
+		return MakeSecretAchievementsPath(
+			TEXT("secret_achievement_list_panel.png"),
+			MakeAchievementsAssetPath(TEXT("Panels/achievements_panels_reference_list_panel_v2.png")));
+	}
+
+	FString MakeSecretAchievementRowShellPath()
+	{
+		return MakeSecretAchievementsPath(
+			TEXT("secret_achievement_row_shell.png"),
+			MakeAchievementsAssetPath(TEXT("Panels/achievements_panels_reference_row_shell_v2.png")));
+	}
+
+	FString MakeSecretClaimButtonPath()
+	{
+		return MakeSecretAchievementsPath(
+			TEXT("secret_claim_button.png"),
+			MakeAchievementsButtonAssetPath(TEXT("CTA"), TEXT("normal")));
+	}
+
+	FString MakeSecretFavoriteButtonPath()
+	{
+		return MakeSecretAchievementsPath(
+			TEXT("secret_favorite_button.png"),
+			MakeAchievementsButtonAssetPath(TEXT("SquareIcon"), TEXT("normal")));
+	}
+
+	FString MakeSecretRewardSlotPath()
+	{
+		return MakeSecretAchievementsPath(
+			TEXT("secret_reward_slot.png"),
+			MakeAchievementsUltrakillSquareElementPath(TEXT("profile_slot_normal_square_variant.png")));
+	}
+
 	void SetAchievementsActiveStateFolder(const bool bShowingSecret)
 	{
 		(void)bShowingSecret;
@@ -637,6 +812,78 @@ namespace
 			MakeSettingsAssetPath(TEXT("settings_toggle_inactive_normal.png")));
 	}
 
+	const FButtonStyle* ResolveSteamAchievementTabButtonStyle(const bool bActive, const bool bLeft)
+	{
+		const FString ActivePath = MakeSteamAchievementTabPath(true);
+		const FString DefaultPath = MakeSteamAchievementTabPath(false);
+		return ResolveAchievementsGeneratedButtonStyle(
+			bActive
+				? (bLeft ? TEXT("SteamAchievements.ToggleLeftOn") : TEXT("SteamAchievements.ToggleRightOn"))
+				: (bLeft ? TEXT("SteamAchievements.ToggleLeftOff") : TEXT("SteamAchievements.ToggleRightOff")),
+			bActive ? ActivePath : DefaultPath,
+			bActive ? ActivePath : DefaultPath,
+			bActive ? ActivePath : DefaultPath,
+			DefaultPath);
+	}
+
+	const FButtonStyle* ResolveSteamClaimButtonStyle()
+	{
+		const FString ClaimPath = MakeSteamClaimButtonPath();
+		return ResolveAchievementsGeneratedButtonStyle(
+			TEXT("SteamAchievements.ClaimButton"),
+			ClaimPath,
+			ClaimPath,
+			ClaimPath,
+			ClaimPath);
+	}
+
+	const FButtonStyle* ResolveSteamFavoriteButtonStyle()
+	{
+		const FString FavoritePath = MakeSteamFavoriteButtonPath();
+		return ResolveAchievementsGeneratedButtonStyle(
+			TEXT("SteamAchievements.FavoriteButton"),
+			FavoritePath,
+			FavoritePath,
+			FavoritePath,
+			FavoritePath);
+	}
+
+	const FButtonStyle* ResolveSecretAchievementTabButtonStyle(const bool bActive, const bool bLeft)
+	{
+		const FString ActivePath = MakeSecretAchievementTabPath(true);
+		const FString DefaultPath = MakeSecretAchievementTabPath(false);
+		return ResolveAchievementsGeneratedButtonStyle(
+			bActive
+				? (bLeft ? TEXT("SecretAchievements.ToggleLeftOn") : TEXT("SecretAchievements.ToggleRightOn"))
+				: (bLeft ? TEXT("SecretAchievements.ToggleLeftOff") : TEXT("SecretAchievements.ToggleRightOff")),
+			bActive ? ActivePath : DefaultPath,
+			bActive ? ActivePath : DefaultPath,
+			bActive ? ActivePath : DefaultPath,
+			DefaultPath);
+	}
+
+	const FButtonStyle* ResolveSecretClaimButtonStyle()
+	{
+		const FString ClaimPath = MakeSecretClaimButtonPath();
+		return ResolveAchievementsGeneratedButtonStyle(
+			TEXT("SecretAchievements.ClaimButton"),
+			ClaimPath,
+			ClaimPath,
+			ClaimPath,
+			ClaimPath);
+	}
+
+	const FButtonStyle* ResolveSecretFavoriteButtonStyle()
+	{
+		const FString FavoritePath = MakeSecretFavoriteButtonPath();
+		return ResolveAchievementsGeneratedButtonStyle(
+			TEXT("SecretAchievements.FavoriteButton"),
+			FavoritePath,
+			FavoritePath,
+			FavoritePath,
+			FavoritePath);
+	}
+
 	FString MakeAchievementsDuoButtonPath(const bool bLeft, const TCHAR* State)
 	{
 		(void)bLeft;
@@ -791,6 +1038,57 @@ namespace
 			FVector2D(Width, BarHeight),
 			FLinearColor(0.92f, 0.05f, 0.12f, 1.0f),
 			FMargin(4.f, 3.f));
+	}
+
+	TSharedRef<SWidget> MakeAchievementsCustomProgressBarSized(
+		const FString& TrackPath,
+		const FString& FillPath,
+		const float Percent,
+		const float Width,
+		const float Height,
+		const FName Tag = NAME_None)
+	{
+		const float Pct = FMath::Clamp(Percent, 0.f, 1.f);
+		const float BarHeight = FMath::Max(16.f, Height + 5.f);
+		const FSlateBrush* TrackBrush = ResolveAchievementsGeneratedBrush(TrackPath, FVector2D(Width, BarHeight));
+		const FSlateBrush* FillBrush = ResolveAchievementsGeneratedBrush(FillPath, FVector2D(Width, BarHeight));
+
+		TSharedRef<SWidget> ProgressWidget = TrackBrush && FillBrush
+			? StaticCastSharedRef<SWidget>(
+				SNew(SBox)
+				.WidthOverride(Width)
+				.HeightOverride(BarHeight)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					[
+						SNew(SBorder)
+						.BorderImage(TrackBrush)
+						.BorderBackgroundColor(FLinearColor::White)
+						.Padding(FMargin(0.f))
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Left)
+					[
+						SNew(SBox)
+						.WidthOverride(FMath::Max(0.f, Width * Pct))
+						.HeightOverride(BarHeight)
+						.Visibility(Pct > 0.001f ? EVisibility::Visible : EVisibility::Collapsed)
+						[
+							SNew(SBorder)
+							.BorderImage(FillBrush)
+							.BorderBackgroundColor(FLinearColor::White)
+							.Padding(FMargin(0.f))
+						]
+					]
+				])
+			: MakeAchievementsProgressBarSized(Pct, Width, Height);
+
+		if (!Tag.IsNone())
+		{
+			return FT66FlatStyle::AttachMetadata(ProgressWidget, Tag, TEXT("ProgressBar"), ET66FlatState::Ready);
+		}
+		return ProgressWidget;
 	}
 
 	TSharedRef<SWidget> MakeAchievementsProgressBar(const float Percent, const float Height)
@@ -1057,7 +1355,9 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		FString RequestedFrontendScreen;
 		if (FParse::Value(FCommandLine::Get(), TEXT("T66FrontendScreen="), RequestedFrontendScreen)
 			&& (RequestedFrontendScreen.Equals(TEXT("SteamAchievements"), ESearchCase::IgnoreCase)
-				|| RequestedFrontendScreen.Equals(TEXT("Steam"), ESearchCase::IgnoreCase)))
+				|| RequestedFrontendScreen.Equals(TEXT("Steam"), ESearchCase::IgnoreCase)
+				|| RequestedFrontendScreen.Equals(TEXT("SecretAchievements"), ESearchCase::IgnoreCase)
+				|| RequestedFrontendScreen.Equals(TEXT("Secret"), ESearchCase::IgnoreCase)))
 		{
 			RequestedAchievementsTab = RequestedFrontendScreen;
 		}
@@ -1065,7 +1365,8 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 
 	if (!RequestedAchievementsTab.IsEmpty())
 	{
-		if (RequestedAchievementsTab.Equals(TEXT("Secret"), ESearchCase::IgnoreCase))
+		if (RequestedAchievementsTab.Equals(TEXT("Secret"), ESearchCase::IgnoreCase)
+			|| RequestedAchievementsTab.Equals(TEXT("SecretAchievements"), ESearchCase::IgnoreCase))
 		{
 			ActiveTab = EAchievementTab::Secret;
 		}
@@ -1131,6 +1432,33 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 
 		auto MakePanelSurface = [](const FName Tag, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
 		{
+			const FString TagString = Tag.ToString();
+			if (TagString.Contains(TEXT("SteamAchievements.SummaryPanel")))
+			{
+				return FT66FlatStyle::AttachMetadata(
+					MakeAchievementsGeneratedPanel(
+						MakeSteamSummaryPanelPath(),
+						SNew(SSpacer),
+						FMargin(0.f),
+						FLinearColor::White,
+						T66AchievementsInsetFill()),
+					Tag,
+					TEXT("Panel"),
+					State);
+			}
+			if (TagString.Contains(TEXT("SteamAchievements.ListPanel")))
+			{
+				return FT66FlatStyle::AttachMetadata(
+					MakeAchievementsGeneratedPanel(
+						MakeSteamAchievementListPanelPath(),
+						SNew(SSpacer),
+						FMargin(0.f),
+						FLinearColor::White,
+						T66AchievementsInsetFill()),
+					Tag,
+					TEXT("Panel"),
+					State);
+			}
 			return FT66FlatStyle::MakeFlatPanel(
 				State,
 				FMargin(0.f),
@@ -1217,7 +1545,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				ET66FlatState::Default);
 		};
 
-		auto MakeFlatTab = [&PlainText](
+		auto MakeFlatTab = [](
 			const FName Tag,
 			const FText& Text,
 			FOnClicked OnClicked,
@@ -1225,52 +1553,54 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			const float Width,
 			const float Height) -> TSharedRef<SWidget>
 		{
-			return FT66FlatStyle::MakeFlatToggleGroupButton(
-				State,
-				SNew(SBox)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					PlainText(Text, 28, State == ET66FlatState::Selected ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText(), true, ETextJustify::Center)
-				],
-				MoveTemp(OnClicked),
-				FMargin(0.f),
-				Width,
-				Height,
-				true,
-				Tag,
-				FName(TEXT("AchievementTabs")));
+			const bool bLeftTab = Tag.ToString().Contains(TEXT("SteamButton"));
+			return MakeAchievementsGeneratedButton(
+				FT66ButtonParams(Text, MoveTemp(OnClicked), State == ET66FlatState::Selected ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+				.SetMinWidth(Width)
+				.SetHeight(Height),
+				ResolveSteamAchievementTabButtonStyle(State == ET66FlatState::Selected, bLeftTab),
+				AchievementsBoldFont(28),
+				State == ET66FlatState::Selected ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText(),
+				FMargin(0.f));
 		};
 
 		auto MakeClaimButton = [](const FName Tag, FOnClicked OnClicked, const float Width, const float Height) -> TSharedRef<SWidget>
 		{
-			return FT66FlatStyle::MakeFlatButton(
-				ET66FlatState::Default,
-				NSLOCTEXT("T66.Achievements", "FlatClaim", "CLAIM"),
-				MoveTemp(OnClicked),
-				nullptr,
-				nullptr,
-				FMargin(0.f),
-				Width,
-				Height,
-				true,
-				24,
-				Tag);
+			return FT66FlatStyle::AttachMetadata(
+				MakeAchievementsGeneratedButton(
+					FT66ButtonParams(NSLOCTEXT("T66.Achievements", "FlatClaim", "CLAIM"), MoveTemp(OnClicked), ET66ButtonType::Primary)
+					.SetMinWidth(Width)
+					.SetHeight(Height),
+					ResolveSteamClaimButtonStyle(),
+					AchievementsBoldFont(24),
+					FT66FlatStyle::PrimaryText(),
+					FMargin(0.f)),
+				Tag,
+				TEXT("Button"),
+				ET66FlatState::Default);
 		};
 
 		auto MakeFavoriteButton = [](const FName Tag, const int32 RowIndex) -> TSharedRef<SWidget>
 		{
-			const FSlateBrush* FavoriteBrush = ResolveAchievementsGeneratedBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/favorite_star_outline.png"), FVector2D(48.f, 53.f));
-			return FT66FlatStyle::MakeFlatIconButton(
-				ET66FlatState::Default,
-				FavoriteBrush,
-				FOnClicked::CreateLambda([RowIndex]()
-				{
-					UE_LOG(LogTemp, Display, TEXT("Steam Achievements favorite placeholder toggled for reference row %d."), RowIndex + 1);
-					return FReply::Handled();
-				}),
-				FVector2D(48.f, 53.f),
-				Tag);
+			return FT66FlatStyle::AttachMetadata(
+				MakeAchievementsGeneratedButton(
+					FT66ButtonParams(
+						FText::FromString(TEXT("☆")),
+						FOnClicked::CreateLambda([RowIndex]()
+						{
+							UE_LOG(LogTemp, Display, TEXT("Steam Achievements favorite placeholder toggled for reference row %d."), RowIndex + 1);
+							return FReply::Handled();
+						}),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(48.f)
+					.SetHeight(53.f),
+					ResolveSteamFavoriteButtonStyle(),
+					AchievementsBoldFont(30),
+					FT66FlatStyle::PrimaryText(),
+					FMargin(0.f)),
+				Tag,
+				TEXT("Button"),
+				ET66FlatState::Default);
 		};
 
 		const FSlateBrush* InfoBrush = ResolveAchievementsGeneratedBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(32.f, 32.f));
@@ -1328,7 +1658,16 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		AddN(0.806f, 0.140f, 0.016f, 0.030f, FT66FlatStyle::MakeFlatTooltipIcon(ET66FlatState::Default, InfoBrush, NSLOCTEXT("T66.Achievements", "SecretTabInfoFlat", "Reveal hidden achievements by discovering secret conditions in runs."), FVector2D(31.f, 31.f), STag(TEXT("SteamAchievements.SubTabs.SecretInfoIcon")), FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleSecretTabClicked)));
 
 		AddN(0.024f, 0.225f, 0.951f, 0.213f, MakePanelSurface(STag(TEXT("SteamAchievements.SummaryPanel")), ET66FlatState::Selected));
-		AddN(0.060f, 0.239f, 0.114f, 0.185f, MakeIcon(STag(TEXT("SteamAchievements.Summary.SteamLogo")), SteamBrush, FVector2D(128.f, 128.f), FText::FromString(TEXT("S")), FLinearColor::White));
+		AddN(0.060f, 0.239f, 0.114f, 0.185f, FT66FlatStyle::AttachMetadata(
+			MakeAchievementsGeneratedPanel(
+				MakeSteamSummaryLogoPlatePath(),
+				MakeIcon(STag(TEXT("SteamAchievements.Summary.SteamLogo.Icon")), SteamBrush, FVector2D(128.f, 128.f), FText::FromString(TEXT("S")), FLinearColor::White),
+				FMargin(8.f),
+				FLinearColor::White,
+				T66AchievementsInsetFill()),
+			STag(TEXT("SteamAchievements.Summary.SteamLogo")),
+			TEXT("Icon"),
+			ET66FlatState::Default));
 		AddN(0.217f, 0.274f, 0.413f, 0.053f, TaggedText(
 			STag(TEXT("SteamAchievements.Summary.Header")),
 			NSLOCTEXT("T66.Achievements", "FlatSteamAchievementsHeader", "STEAM ACHIEVEMENTS"),
@@ -1343,9 +1682,12 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			FT66FlatStyle::SelectedText(),
 			true,
 			ETextJustify::Left));
-		AddN(0.217f, 0.357f, 0.719f, 0.038f, FT66FlatStyle::MakeFlatProgressBar(
-			TAttribute<float>(0.0f),
-			TOptional<FLinearColor>(FT66FlatStyle::SelectedBorder()),
+		AddN(0.217f, 0.357f, 0.719f, 0.038f, MakeAchievementsCustomProgressBarSized(
+			MakeSteamSummaryProgressTrackPath(),
+			MakeSteamSummaryProgressFillPath(),
+			0.f,
+			0.719f * SteamCanvasW,
+			0.038f * SteamCanvasH,
 			STag(TEXT("SteamAchievements.Summary.ProgressBar"))));
 
 		AddN(T66AchievementReferenceListPanelX, T66AchievementReferenceListPanelY, T66AchievementReferenceListPanelW, T66AchievementReferenceListPanelH, MakePanelSurface(STag(TEXT("SteamAchievements.ListPanel")), ET66FlatState::Default));
@@ -1362,13 +1704,31 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		{
 			const FString Prefix = FString::Printf(TEXT("SteamAchievements.Row%02d"), RowIndex + 1);
 			const FT66AchievementReferenceRowLayout& RowLayout = T66AchievementReferenceRows[RowIndex];
-			AddN(T66AchievementReferenceListPanelX, GetAchievementReferenceSlotRowY(RowIndex), T66AchievementReferenceListPanelW, GetAchievementReferenceSlotRowH(RowIndex), MakeMetadataRegion(FName(*Prefix), TEXT("AchievementRow")));
+			AddN(T66AchievementReferenceListPanelX, GetAchievementReferenceSlotRowY(RowIndex), T66AchievementReferenceListPanelW, GetAchievementReferenceSlotRowH(RowIndex), FT66FlatStyle::AttachMetadata(
+				MakeAchievementsGeneratedPanel(
+					MakeSteamAchievementRowShellPath(),
+					SNew(SSpacer),
+					FMargin(0.f),
+					FLinearColor::White,
+					T66AchievementsRowFill()),
+				FName(*Prefix),
+				TEXT("AchievementRow"),
+				ET66FlatState::Default));
 			AddN(T66AchievementReferenceNumberX, RowLayout.TextY, T66AchievementReferenceNumberW, T66AchievementReferenceNumberH, TaggedText(FName(*(Prefix + TEXT(".Number"))), Rows[RowIndex].Number, T66AchievementReferenceRowFontSize, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
 			AddN(T66AchievementReferenceNameX, RowLayout.TextY, T66AchievementReferenceNameW, T66AchievementReferenceTextH, TaggedText(FName(*(Prefix + TEXT(".Name"))), Rows[RowIndex].Name, T66AchievementReferenceRowFontSize, FT66FlatStyle::PrimaryText(), true, ETextJustify::Left));
 			AddN(T66AchievementReferenceDescriptionX, RowLayout.TextY, T66AchievementReferenceDescriptionW, T66AchievementReferenceTextH, TaggedText(FName(*(Prefix + TEXT(".Description"))), Rows[RowIndex].Description, T66AchievementReferenceRowFontSize, FT66FlatStyle::PrimaryText(), true, ETextJustify::Left));
 			AddN(T66AchievementReferenceProgressX, RowLayout.TextY, T66AchievementReferenceProgressW, T66AchievementReferenceTextH, TaggedText(FName(*(Prefix + TEXT(".Progress"))), FText::FromString(TEXT("0/1")), T66AchievementReferenceRowFontSize, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
 			AddN(T66AchievementReferenceRewardValueX, RowLayout.TextY, T66AchievementReferenceRewardValueW, T66AchievementReferenceTextH, TaggedText(FName(*(Prefix + TEXT(".RewardValue"))), FText::FromString(TEXT("5")), T66AchievementReferenceRowFontSize, FT66FlatStyle::PrimaryText(), true, ETextJustify::Center));
-			AddN(T66AchievementReferenceRewardIconX, RowLayout.TextY - 0.002f, T66AchievementReferenceRewardIconW, T66AchievementReferenceRewardIconH, MakeIcon(FName(*(Prefix + TEXT(".RewardIcon"))), TicketBrush, FVector2D(45.f, 38.f), FText::FromString(TEXT("[]")), FLinearColor::White));
+			AddN(T66AchievementReferenceRewardIconX, RowLayout.TextY - 0.002f, T66AchievementReferenceRewardIconW, T66AchievementReferenceRewardIconH, FT66FlatStyle::AttachMetadata(
+				MakeAchievementsGeneratedPanel(
+					MakeSteamRewardSlotPath(),
+					MakeIcon(FName(*(Prefix + TEXT(".RewardIcon.Icon"))), TicketBrush, FVector2D(45.f, 38.f), FText::FromString(TEXT("[]")), FLinearColor::White),
+					FMargin(2.f),
+					FLinearColor::White,
+					T66AchievementsInsetFill()),
+				FName(*(Prefix + TEXT(".RewardIcon"))),
+				TEXT("Icon"),
+				ET66FlatState::Default));
 			AddN(T66AchievementReferenceClaimButtonX, RowLayout.ButtonY, T66AchievementReferenceClaimButtonW, T66AchievementReferenceButtonH, MakeClaimButton(
 				FName(*(Prefix + TEXT(".ClaimButton"))),
 				FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleClaimClicked, FName()),
@@ -1448,6 +1808,33 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 
 		auto MakePanelSurface = [](const FName Tag, const ET66FlatState State = ET66FlatState::Default) -> TSharedRef<SWidget>
 		{
+			const FString TagString = Tag.ToString();
+			if (TagString.Contains(TEXT("SecretAchievements.SummaryPanel")))
+			{
+				return FT66FlatStyle::AttachMetadata(
+					MakeAchievementsGeneratedPanel(
+						MakeSecretSummaryPanelPath(),
+						SNew(SSpacer),
+						FMargin(0.f),
+						FLinearColor::White,
+						T66AchievementsInsetFill()),
+					Tag,
+					TEXT("Panel"),
+					State);
+			}
+			if (TagString.Contains(TEXT("SecretAchievements.ListPanel")))
+			{
+				return FT66FlatStyle::AttachMetadata(
+					MakeAchievementsGeneratedPanel(
+						MakeSecretAchievementListPanelPath(),
+						SNew(SSpacer),
+						FMargin(0.f),
+						FLinearColor::White,
+						T66AchievementsInsetFill()),
+					Tag,
+					TEXT("Panel"),
+					State);
+			}
 			return FT66FlatStyle::MakeFlatPanel(
 				State,
 				FMargin(0.f),
@@ -1529,7 +1916,7 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				ET66FlatState::Default);
 		};
 
-		auto MakeFlatTab = [&PlainText](
+		auto MakeFlatTab = [](
 			const FName Tag,
 			const FText& Text,
 			FOnClicked OnClicked,
@@ -1537,47 +1924,66 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			const float Width,
 			const float Height) -> TSharedRef<SWidget>
 		{
-			return FT66FlatStyle::MakeFlatToggleGroupButton(
-				State,
-				SNew(SBox)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					PlainText(Text, 28, State == ET66FlatState::Selected ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText(), true, ETextJustify::Center)
-				],
-				MoveTemp(OnClicked),
-				FMargin(0.f),
-				Width,
-				Height,
-				true,
-				Tag,
-				FName(TEXT("AchievementTabs")));
+			const bool bLeftTab = Tag.ToString().Contains(TEXT("SteamButton"));
+			return MakeAchievementsGeneratedButton(
+				FT66ButtonParams(Text, MoveTemp(OnClicked), State == ET66FlatState::Selected ? ET66ButtonType::ToggleActive : ET66ButtonType::Neutral)
+				.SetMinWidth(Width)
+				.SetHeight(Height),
+				ResolveSecretAchievementTabButtonStyle(State == ET66FlatState::Selected, bLeftTab),
+				AchievementsBoldFont(28),
+				State == ET66FlatState::Selected ? FT66FlatStyle::SelectedText() : FT66FlatStyle::PrimaryText(),
+				FMargin(0.f));
 		};
 
 		auto MakeClaimButton = [](const FName Tag, const float Width, const float Height) -> TSharedRef<SWidget>
 		{
-			return FT66FlatStyle::MakeFlatButton(
-				ET66FlatState::Default,
-				NSLOCTEXT("T66.Achievements", "SecretClaimButtonFlat", "CLAIM"),
-				FOnClicked::CreateLambda([]()
-				{
-					return FReply::Handled();
-				}),
-				nullptr,
-				nullptr,
-				FMargin(0.f),
-				Width,
-				Height,
-				true,
-				22,
-				Tag);
+			return FT66FlatStyle::AttachMetadata(
+				MakeAchievementsGeneratedButton(
+					FT66ButtonParams(
+						NSLOCTEXT("T66.Achievements", "SecretClaimButtonFlat", "CLAIM"),
+						FOnClicked::CreateLambda([]()
+						{
+							return FReply::Handled();
+						}),
+						ET66ButtonType::Primary)
+					.SetMinWidth(Width)
+					.SetHeight(Height),
+					ResolveSecretClaimButtonStyle(),
+					AchievementsBoldFont(22),
+					FT66FlatStyle::PrimaryText(),
+					FMargin(0.f)),
+				Tag,
+				TEXT("Button"),
+				ET66FlatState::Default);
+		};
+
+		auto MakeFavoriteButton = [](const FName Tag) -> TSharedRef<SWidget>
+		{
+			return FT66FlatStyle::AttachMetadata(
+				MakeAchievementsGeneratedButton(
+					FT66ButtonParams(
+						FText::FromString(TEXT("☆")),
+						FOnClicked::CreateLambda([]()
+						{
+							UE_LOG(LogTemp, Verbose, TEXT("Secret Achievements favorite placeholder clicked."));
+							return FReply::Handled();
+						}),
+						ET66ButtonType::Neutral)
+					.SetMinWidth(48.f)
+					.SetHeight(53.f),
+					ResolveSecretFavoriteButtonStyle(),
+					AchievementsBoldFont(30),
+					FT66FlatStyle::PrimaryText(),
+					FMargin(0.f)),
+				Tag,
+				TEXT("Button"),
+				ET66FlatState::Default);
 		};
 
 		const FText MaskedText = NSLOCTEXT("T66.Achievements", "SecretMaskedTextFlat", "???");
 		const FSlateBrush* InfoIconBrush = ResolveAchievementsGeneratedBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/info.png"), FVector2D(31.f, 31.f));
 		const FSlateBrush* SecretLogoBrush = ResolveAchievementsGeneratedBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/secret_occult_logo.png"), FVector2D(190.f, 174.f));
 		const FSlateBrush* TicketIconBrush = ResolveAchievementsGeneratedBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png"), FVector2D(45.f, 38.f));
-		const FSlateBrush* FavoriteIconBrush = ResolveAchievementsGeneratedBrush(TEXT("RuntimeDependencies/T66/UI/Icons/Flat/favorite_star_outline.png"), FVector2D(48.f, 53.f));
 
 		auto MakeSecretIcon = [](
 			const FName Tag,
@@ -1650,10 +2056,19 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			FOnClicked::CreateUObject(this, &UT66AchievementsScreen::HandleSecretTabClicked)));
 
 		AddN(0.024f, 0.225f, 0.951f, 0.213f, MakePanelSurface(STag(TEXT("SecretAchievements.SummaryPanel")), ET66FlatState::Selected));
-		AddN(0.060f, 0.239f, 0.114f, 0.185f, MakeSecretIcon(
+		AddN(0.060f, 0.239f, 0.114f, 0.185f, FT66FlatStyle::AttachMetadata(
+			MakeAchievementsGeneratedPanel(
+				MakeSecretSummaryLogoPlatePath(),
+				MakeSecretIcon(
+					STag(TEXT("SecretAchievements.Summary.SecretLogo.Icon")),
+					SecretLogoBrush,
+					FVector2D(190.f, 174.f)),
+				FMargin(8.f),
+				FLinearColor::White,
+				T66AchievementsInsetFill()),
 			STag(TEXT("SecretAchievements.Summary.SecretLogo")),
-			SecretLogoBrush,
-			FVector2D(190.f, 174.f)));
+			TEXT("Icon"),
+			ET66FlatState::Default));
 		AddN(0.217f, 0.274f, 0.413f, 0.053f, TaggedText(
 			STag(TEXT("SecretAchievements.Summary.Header")),
 			NSLOCTEXT("T66.Achievements", "SecretAchievementsSummaryHeaderFlat", "SECRET ACHIEVEMENTS"),
@@ -1668,9 +2083,12 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 			FT66FlatStyle::SelectedText(),
 			true,
 			ETextJustify::Left));
-		AddN(0.217f, 0.357f, 0.719f, 0.038f, FT66FlatStyle::MakeFlatProgressBar(
-			TAttribute<float>(0.0f),
-			TOptional<FLinearColor>(FT66FlatStyle::SelectedBorder()),
+		AddN(0.217f, 0.357f, 0.719f, 0.038f, MakeAchievementsCustomProgressBarSized(
+			MakeSecretSummaryProgressTrackPath(),
+			MakeSecretSummaryProgressFillPath(),
+			0.f,
+			0.719f * SecretCanvasW,
+			0.038f * SecretCanvasH,
 			STag(TEXT("SecretAchievements.Summary.ProgressBar"))));
 
 		AddN(T66AchievementReferenceListPanelX, T66AchievementReferenceListPanelY, T66AchievementReferenceListPanelW, T66AchievementReferenceListPanelH, MakePanelSurface(STag(TEXT("SecretAchievements.ListPanel")), ET66FlatState::Default));
@@ -1692,7 +2110,16 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 		{
 			const FString Prefix = FString::Printf(TEXT("SecretAchievements.Row%02d"), RowIndex + 1);
 			const FT66AchievementReferenceRowLayout& RowLayout = T66AchievementReferenceRows[RowIndex];
-			AddN(T66AchievementReferenceListPanelX, GetAchievementReferenceSlotRowY(RowIndex), T66AchievementReferenceListPanelW, GetAchievementReferenceSlotRowH(RowIndex), MakeMetadataRegion(FName(*Prefix), TEXT("AchievementRow")));
+			AddN(T66AchievementReferenceListPanelX, GetAchievementReferenceSlotRowY(RowIndex), T66AchievementReferenceListPanelW, GetAchievementReferenceSlotRowH(RowIndex), FT66FlatStyle::AttachMetadata(
+				MakeAchievementsGeneratedPanel(
+					MakeSecretAchievementRowShellPath(),
+					SNew(SSpacer),
+					FMargin(0.f),
+					FLinearColor::White,
+					T66AchievementsRowFill()),
+				FName(*Prefix),
+				TEXT("AchievementRow"),
+				ET66FlatState::Default));
 			AddN(T66AchievementReferenceNumberX, RowLayout.TextY, T66AchievementReferenceNumberW, T66AchievementReferenceNumberH, TaggedText(
 				FName(*(Prefix + TEXT(".Number"))),
 				FText::FromString(FString::Printf(TEXT("%02d"), RowIndex + 1)),
@@ -1728,24 +2155,24 @@ TSharedRef<SWidget> UT66AchievementsScreen::BuildSlateUI()
 				FT66FlatStyle::PrimaryText(),
 				true,
 				ETextJustify::Center));
-			AddN(T66AchievementReferenceRewardIconX, RowLayout.TextY - 0.002f, T66AchievementReferenceRewardIconW, T66AchievementReferenceRewardIconH, MakeSecretIcon(
+			AddN(T66AchievementReferenceRewardIconX, RowLayout.TextY - 0.002f, T66AchievementReferenceRewardIconW, T66AchievementReferenceRewardIconH, FT66FlatStyle::AttachMetadata(
+				MakeAchievementsGeneratedPanel(
+					MakeSecretRewardSlotPath(),
+					MakeSecretIcon(
+						FName(*(Prefix + TEXT(".RewardIcon.Icon"))),
+						TicketIconBrush,
+						FVector2D(45.f, 38.f)),
+					FMargin(2.f),
+					FLinearColor::White,
+					T66AchievementsInsetFill()),
 				FName(*(Prefix + TEXT(".RewardIcon"))),
-				TicketIconBrush,
-				FVector2D(45.f, 38.f)));
+				TEXT("Icon"),
+				ET66FlatState::Default));
 			AddN(T66AchievementReferenceClaimButtonX, RowLayout.ButtonY, T66AchievementReferenceClaimButtonW, T66AchievementReferenceButtonH, MakeClaimButton(
 				FName(*(Prefix + TEXT(".ClaimButton"))),
 				T66AchievementReferenceClaimButtonW * SecretCanvasW,
 				T66AchievementReferenceButtonH * SecretCanvasH));
-			AddN(T66AchievementReferenceFavoriteButtonX, RowLayout.ButtonY, T66AchievementReferenceFavoriteButtonW, T66AchievementReferenceButtonH, FT66FlatStyle::MakeFlatIconButton(
-				ET66FlatState::Default,
-				FavoriteIconBrush,
-				FOnClicked::CreateLambda([]()
-				{
-					UE_LOG(LogTemp, Verbose, TEXT("Secret Achievements favorite placeholder clicked."));
-					return FReply::Handled();
-				}),
-				FVector2D(48.f, 53.f),
-				FName(*(Prefix + TEXT(".FavoriteButton")))));
+			AddN(T66AchievementReferenceFavoriteButtonX, RowLayout.ButtonY, T66AchievementReferenceFavoriteButtonW, T66AchievementReferenceButtonH, MakeFavoriteButton(FName(*(Prefix + TEXT(".FavoriteButton")))));
 		}
 
 		for (int32 DividerIndex = 0; DividerIndex < UE_ARRAY_COUNT(T66AchievementReferenceDividerY); ++DividerIndex)

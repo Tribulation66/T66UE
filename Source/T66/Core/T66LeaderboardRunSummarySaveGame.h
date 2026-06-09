@@ -42,6 +42,14 @@ public:
 	UPROPERTY(SaveGame)
 	ET66LeaderboardType LeaderboardType = ET66LeaderboardType::Score;
 
+	/** True when this run should be eligible for high-score leaderboard submission. */
+	UPROPERTY(SaveGame)
+	bool bSubmitHighScoreLeaderboard = true;
+
+	/** True when this run should be eligible for speedrun leaderboard submission. */
+	UPROPERTY(SaveGame)
+	bool bSubmitSpeedRunLeaderboard = true;
+
 	UPROPERTY(SaveGame)
 	ET66Difficulty Difficulty = ET66Difficulty::Easy;
 
@@ -143,7 +151,7 @@ public:
 
 	/** Secondary stat values (for full stats panel in Run Summary). SchemaVersion>=6. Populated for fake snapshots and when saving local best. */
 	UPROPERTY(SaveGame)
-	TMap<ET66SecondaryStatType, float> SecondaryStatValues;
+	TMap<ET66StatType, float> StatValues;
 
 	// ===== Ratings (post-run) =====
 
@@ -301,7 +309,7 @@ public:
 	int32 NoIdolSelectionStacks = 0;
 
 	UPROPERTY(SaveGame)
-	FT66HeroPreciseStatBlock NoIdolPrimaryStatBonuses;
+	FT66HeroPreciseStatBlock NoIdolBaseStatBonuses;
 
 	/** Mob Loot quantities are sellable-stack quantities, not active world-drop counts. SchemaVersion>=24. */
 	UPROPERTY(SaveGame)
@@ -424,7 +432,7 @@ public:
 
 	/** Temporary buff loadout that was active when the run summary snapshot was captured. SchemaVersion>=17. */
 	UPROPERTY(SaveGame)
-	TArray<ET66SecondaryStatType> TemporaryBuffSlots;
+	TArray<ET66StatType> TemporaryBuffSlots;
 
 	UPROPERTY(SaveGame)
 	TArray<FString> EventLog;

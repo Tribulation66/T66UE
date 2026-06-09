@@ -1,7 +1,7 @@
 """
 Import animated ToonStyle hero FBXs into Unreal and update CharacterVisuals.csv.
 
-Run in the full Unreal editor after C++ has been rebuilt with Walk/Idle/Jump/Roll
+Run in the full Unreal editor after C++ has been rebuilt with Walk/Idle/Jump/Leap
 visual row fields:
 
   UnrealEditor.exe C:/UE/T66/T66.uproject -ExecutePythonScript="C:/UE/T66/Model Generation/Rigging and Animation/Tools/import_animated_toonstyle_heroes_to_unreal.py"
@@ -450,7 +450,7 @@ def update_character_visuals_csv(imports: list[dict[str, object]]) -> None:
         "WalkAnimation",
         "IdleAnimation",
         "JumpAnimation",
-        "RollAnimation",
+        "LeapAnimation",
         "MeshRelativeLocation",
         "MeshRelativeRotation",
         "MeshRelativeScale",
@@ -474,7 +474,7 @@ def update_character_visuals_csv(imports: list[dict[str, object]]) -> None:
             "WalkAnimation": "",
             "IdleAnimation": "",
             "JumpAnimation": "",
-            "RollAnimation": "",
+            "LeapAnimation": "",
             "MeshRelativeLocation": "(X=0,Y=0,Z=0)",
             "MeshRelativeRotation": "(Pitch=0,Yaw=-90.000000,Roll=0)",
             "MeshRelativeScale": "(X=1,Y=1,Z=1)",
@@ -494,7 +494,7 @@ def update_character_visuals_csv(imports: list[dict[str, object]]) -> None:
         row["WalkAnimation"] = str(animations["Walk"])
         row["IdleAnimation"] = str(animations["Idle"])
         row["JumpAnimation"] = str(animations["Jump"])
-        row["RollAnimation"] = str(animations["Roll"])
+        row["LeapAnimation"] = str(animations["Roll"])
         row["MeshRelativeLocation"] = str(csv_values.get("mesh_relative_location") or "(X=0,Y=0,Z=0)")
         row["MeshRelativeRotation"] = str(csv_values.get("mesh_relative_rotation") or "(Pitch=0,Yaw=-90.000000,Roll=0)")
         row["MeshRelativeScale"] = str(csv_values.get("mesh_relative_scale") or "(X=1,Y=1,Z=1)")

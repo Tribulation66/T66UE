@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/GameMode/T66GameModePrivate.h"
+#include "Core/T66AudioSubsystem.h"
 
 using namespace T66GameModePrivate;
 
@@ -94,13 +95,9 @@ IdolManager->IdolStateChanged.AddDynamic(this, &AT66GameMode::HandleIdolStateCha
 if (T66GI->bApplyLoadedRunSnapshot)
 {
 T66GI->bApplyLoadedRunSnapshot = false;
-RunState->ResetForNewRun();
-RunState->ImportSavedRunSnapshot(T66GI->PendingLoadedRunSnapshot);
+RunState->BeginNewRun();
+RunState->BeginLoadedRun(T66GI->PendingLoadedRunSnapshot);
 T66GI->PendingLoadedRunSnapshot = FT66SavedRunSnapshot{};
-if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
-{
-DamageLog->ResetForNewRun();
-}
 return;
 }
 
@@ -124,6 +121,7 @@ RunState->ResetDifficultyScore();
 T66GI->bIsStageTransition = false;
 RunState->ResetStageTimerToFull(); // New stage: timer is frozen at full until combat starts.
 RunState->ResetBossState(); // New stage: boss is dormant again; hide boss UI
+UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Run.StageAdvance")));
 return;
 }
 
@@ -147,7 +145,7 @@ else
 T66GI->bRunIneligibleForLeaderboard = T66GI->HasSelectedRunModifier();
 }
 T66GI->bPendingTowerStageDropIntro = false;
-RunState->ResetForNewRun();
+RunState->BeginNewRun();
 PendingRunStartItemId = RunState->ConsumeDeferredRunStartItemId();
 if (!PendingRunStartItemId.IsNone())
 {
@@ -176,10 +174,6 @@ RunState->AddItem(ItemID);
 }
 }
 }
-if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
-{
-DamageLog->ResetForNewRun();
-}
 }
 }
 
@@ -195,11 +189,7 @@ MutableT66GI->bRunIneligibleForLeaderboard = true;
 }
 if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 {
-RunState->ResetForNewRun();
-}
-if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
-{
-DamageLog->ResetForNewRun();
+RunState->BeginNewRun();
 }
 }
 if (bAutoSetupLevel)
@@ -231,11 +221,7 @@ T66GI->bRunIneligibleForLeaderboard = true;
 }
 if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 {
-RunState->ResetForNewRun();
-}
-if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
-{
-DamageLog->ResetForNewRun();
+RunState->BeginNewRun();
 }
 }
 
@@ -446,14 +432,6 @@ true);
 
 void AT66GameMode::SpawnStageStructuresAndInteractables(UWorld* World, bool bUsingMainMapTerrain)
 {
-if (!bUsingMainMapTerrain && !IsLabRun())
-{
-if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
-{
-SpawnStartGateForPlayer(PC);
-}
-}
-
 if (AController* PC = World ? World->GetFirstPlayerController() : nullptr)
 {
 SpawnWeaponAltarForPlayer(PC);
@@ -465,7 +443,7 @@ SpawnIdolAltarForPlayer(PC);
 
 if (!IsUsingTowerMainMapLayout())
 {
-SpawnCasinoInteractableIfNeeded();
+SpawnCasinoNPCIfNeeded();
 }
 else
 {
@@ -724,15 +702,12 @@ void AT66GameMode::SpawnStageEnemyDirector()
 void AT66GameMode::FinalizeStandardStageCombatBootstrap()
 {
 	SpawnBossForCurrentStage();
+	SpawnCowardiceGateIfNeeded();
 	if (IsUsingTowerMainMapLayout())
 	{
 		SpawnTowerDescentHolesIfNeeded();
 		SpawnBackroomsPocketIfNeeded();
 		SyncTowerBossEntryState();
-	}
-	else
-	{
-		SpawnBossGateIfNeeded();
 	}
 
 	RefreshProgressionDrivenSystems(false);

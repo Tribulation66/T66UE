@@ -58,7 +58,7 @@ namespace
 
 	static UMaterialInterface* T66CreateBoundaryLavaMaterial(UObject* Outer)
 	{
-		UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_Environment_Lit.M_Environment_Lit"));
+		UMaterialInterface* BaseMaterial = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_FriendSlop_FallGuys.M_FriendSlop_FallGuys"));
 		if (!BaseMaterial)
 		{
 			return nullptr;

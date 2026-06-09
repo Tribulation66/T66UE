@@ -608,7 +608,7 @@ void AT66GameMode::SpawnStartAreaWallsIfNeeded()
 	const float BoxSouthY = -2000.f;
 	const float BoxWidthX = BoxEastX - BoxWestX;   // 4000
 	const float BoxHeightY = BoxNorthY - BoxSouthY; // 4000
-	const float OpeningHalfY = 400.f;   // gap on east for Start Gate pillars (opening Y from -400 to +400)
+	const float OpeningHalfY = 400.f;   // gap on east for the start-area exit opening (Y from -400 to +400)
 	const float EastNorthLen = BoxNorthY - OpeningHalfY;   // north segment: 400 to 2000 -> length 1600
 	const float EastSouthLen = (-OpeningHalfY) - BoxSouthY; // south segment: -2000 to -400 -> length 1600 (was 2400, closed the gap)
 	const float EastNorthCenterY = BoxNorthY - (EastNorthLen * 0.5f);
@@ -1007,16 +1007,6 @@ void AT66GameMode::RegenerateMainMapTerrain(int32 Seed)
 	DestroyActorsWithTag(World, T66FloorMainTag);
 	DestroyActorsWithTag(World, T66TraversalBarrierTag);
 
-	if (StartGate)
-	{
-		StartGate->Destroy();
-		StartGate = nullptr;
-	}
-	if (BossGate)
-	{
-		BossGate->Destroy();
-		BossGate = nullptr;
-	}
 	if (CowardiceGate)
 	{
 		CowardiceGate->Destroy();

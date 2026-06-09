@@ -268,6 +268,11 @@ return;
 
 void AT66GameMode::SpawnPetForPlayer(AController* Player)
 {
+	if (!FT66ShelvedFeatureGate::IsPetsEnabled())
+	{
+		return;
+	}
+
 	UT66GameInstance* GI = GetT66GameInstance();
 	if (!GI)
 	{
@@ -368,57 +373,6 @@ void AT66GameMode::SpawnPetForPlayer(AController* Player)
 		}
 		UE_LOG(LogT66GameMode, Log, TEXT("[Pets] Spawned active pet %s (Mob Loot collection enabled)"), *SelectedPetID.ToString());
 	}
-}
-
-void AT66GameMode::SpawnStartGateForPlayer(AController* Player)
-{
-	(void)Player;
-	UWorld* World = GetWorld();
-	if (!World) return;
-	if (T66UsesMainMapTerrainStage(World)) return;
-
-	// Spawn once per level (gate is a world landmark).
-	if (StartGate) return;
-
-	// Gate at the start-corridor exit so combat starts only when the player enters the main arena.
-	static constexpr float GateZOffset = 5.f;
-	FVector GateLoc = T66GameplayLayout::GetStartGateLocation();
-	float GateGroundZ = 200.f;
-	FHitResult Hit;
-	if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
-	{
-		GateGroundZ = Hit.ImpactPoint.Z;
-		GateLoc.Z = GateGroundZ + GateZOffset;
-	}
-	else
-	{
-		GateLoc.Z = GateGroundZ;
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	StartGate = World->SpawnActor<AT66StartGate>(AT66StartGate::StaticClass(), GateLoc, FRotator::ZeroRotator, SpawnParams);
-	if (StartGate)
-	{
-		StartGate->TriggerDistance2D = 220.f;
-		if (StartGate->TriggerBox)
-		{
-			StartGate->TriggerBox->SetBoxExtent(FVector(120.f, T66GameplayLayout::CorridorHalfHeightY * 0.92f, 220.f));
-		}
-		if (StartGate->PoleLeft)
-		{
-			StartGate->PoleLeft->SetVisibility(false, true);
-			StartGate->PoleLeft->SetHiddenInGame(true, true);
-		}
-		if (StartGate->PoleRight)
-		{
-			StartGate->PoleRight->SetVisibility(false, true);
-			StartGate->PoleRight->SetHiddenInGame(true, true);
-		}
-		UE_LOG(LogT66GameMode, Log, TEXT("Spawned Start Gate at main-area entrance (%.0f, %.0f, %.0f)"), GateLoc.X, GateLoc.Y, GateLoc.Z);
-	}
-
 }
 
 void AT66GameMode::SpawnPlayerStartIfNeeded()

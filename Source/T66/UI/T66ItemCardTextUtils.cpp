@@ -6,7 +6,7 @@
 
 namespace T66ItemCardTextUtils
 {
-	FText GetPrimaryStatLabel(const UT66LocalizationSubsystem* Loc, ET66HeroStatType Type)
+	FText GetBaseStatLabel(const UT66LocalizationSubsystem* Loc, ET66HeroStatType Type)
 	{
 		if (Loc)
 		{
@@ -40,14 +40,14 @@ namespace T66ItemCardTextUtils
 		}
 	}
 
-	static FText BuildSecondaryStatLine(
+	static FText BuildStatLine(
 		const UT66LocalizationSubsystem* Loc,
 		const FItemData& ItemData,
 		ET66ItemRarity ItemRarity,
 		int32 MainValue,
 		float Line2MultiplierOverride)
 	{
-		if (ItemData.SecondaryStatType == ET66SecondaryStatType::VendorToken)
+		if (ItemData.StatType == ET66StatType::VendorToken)
 		{
 			const int32 TokenStacks = FMath::Clamp(MainValue, 1, 16);
 			const int32 SellPercent = FMath::Min(100, 70 + FMath::RoundToInt(static_cast<float>(TokenStacks) * 2.5f));
@@ -66,12 +66,12 @@ namespace T66ItemCardTextUtils
 				FText::AsNumber(static_cast<float>(BuyDiscountTenths) / 10.f, &BuyDiscountFormatting));
 		}
 
-		if (!Loc || ItemData.SecondaryStatType == ET66SecondaryStatType::None)
+		if (!Loc || ItemData.StatType == ET66StatType::None)
 		{
 			return FText::GetEmpty();
 		}
 
-		const FText Label = Loc->GetText_SecondaryStatName(ItemData.SecondaryStatType);
+		const FText Label = Loc->GetText_StatName(ItemData.StatType);
 		const FNumberFormattingOptions PercentFormatting = []()
 		{
 			FNumberFormattingOptions Options;
@@ -102,20 +102,20 @@ namespace T66ItemCardTextUtils
 	{
 		static_cast<void>(CurrentHeroScaleMultiplier);
 
-		if (ItemData.SecondaryStatType == ET66SecondaryStatType::VendorToken)
+		if (ItemData.StatType == ET66StatType::VendorToken)
 		{
-			return BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
+			return BuildStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
 		}
 
-		if (ItemData.PrimaryStatType == ET66HeroStatType::Special)
+		if (ItemData.BaseStatType == ET66HeroStatType::Special)
 		{
-			const FText CategoryLine = GetPrimaryStatLabel(Loc, ItemData.PrimaryStatType);
-			const FText Line2 = BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
+			const FText CategoryLine = GetBaseStatLabel(Loc, ItemData.BaseStatType);
+			const FText Line2 = BuildStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
 			return !Line2.IsEmpty()
 				? FText::Format(NSLOCTEXT("T66.Shop", "SpecialTwoLineDesc", "{0}\n{1}"), CategoryLine, Line2)
 			: CategoryLine;
 		}
 
-		return BuildSecondaryStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
+		return BuildStatLine(Loc, ItemData, ItemRarity, MainValue, Line2MultiplierOverride);
 	}
 }

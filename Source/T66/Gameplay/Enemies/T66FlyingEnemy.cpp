@@ -9,7 +9,7 @@ AT66FlyingEnemy::AT66FlyingEnemy()
 	EnemyFamily = ET66EnemyFamily::Flying;
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		Move->MaxWalkSpeed = 430.f;
+		Move->MaxWalkSpeed = 215.f;
 		Move->SetMovementMode(MOVE_Flying);
 	}
 }

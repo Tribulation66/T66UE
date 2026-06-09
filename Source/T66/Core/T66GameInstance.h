@@ -350,6 +350,12 @@ public:
 	/** Deterministic rarity-aware item roll using the caller-provided stream. */
 	FName GetRandomItemIDForLootRarityFromStream(ET66Rarity LootRarity, FRandomStream& Stream);
 
+	/** Build-aware candidate weight for item offers/drops. Returns a safe baseline when no build signal exists. */
+	float GetSmartLootItemTemplateWeight(FName ItemID);
+
+	/** Deterministic build-aware item roll from a caller-provided candidate pool. */
+	FName GetSmartLootItemIDFromPoolFromStream(const TArray<FName>& CandidateItemIDs, FRandomStream& Stream);
+
 	/** Get the loaded Bosses DataTable (loads if necessary) */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	UDataTable* GetBossesDataTable();
@@ -572,7 +578,7 @@ public:
 	// ============================================
 
 	/**
-	 * Get hero stat tuning (base stats and per-level gain ranges) for a hero.
+	 * Get hero stat tuning (base stats and fixed per-level gains) for a hero.
 	 * This is used both by the run-state leveling system and by the hero selection UI.
 	 */
 	bool GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBaseStats, FT66HeroPerLevelStatGains& OutPerLevelGains) const;
@@ -658,10 +664,19 @@ public:
 	bool IsPreloadingGameplayAssets() const { return bGameplayAssetsPreloadInFlight; }
 
 	/**
-	 * Show a loading screen, pre-load gameplay assets, then open GameplayLevel.
-	 * Call this instead of raw UGameplayStatics::OpenLevel for gameplay transitions.
+	 * Show a loading screen, pre-load gameplay assets, then locally open GameplayLevel.
+	 * Call this instead of raw UGameplayStatics::OpenLevel for local standalone gameplay transitions.
+	 * Multiplayer/session travel stays owned by UT66SessionSubsystem so it can preserve
+	 * ServerTravel, ClientTravel, and listen-server semantics.
 	 */
 	void TransitionToGameplayLevel();
+
+	/**
+	 * Open the frontend level through the GameInstance-owned travel boundary.
+	 * This intentionally preserves raw frontend travel behavior: no loading screen,
+	 * no gameplay preload, and no run/session side effects.
+	 */
+	static void TransitionToFrontendLevel(const UObject* WorldContextObject);
 
 	void MarkPendingDirectGameplayEntry(const FString& Source);
 	bool ConsumePendingDirectGameplayEntry(FString& OutSource);

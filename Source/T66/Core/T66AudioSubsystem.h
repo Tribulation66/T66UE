@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/T66AudioTypes.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "T66AudioSubsystem.generated.h"
 
@@ -38,6 +39,9 @@ public:
 	static bool PlayUIEventFromAnyWorld(FName EventID = FName(TEXT("UI.Click")));
 
 private:
+	bool HandleShutdown(const FT66ShutdownContext& Context);
+	void ShutdownRuntimeResources(const TCHAR* Reason);
+
 	void LoadAudioEvents();
 	void PrimeConfiguredAssets();
 	bool CacheAudioEventRows(UDataTable* LoadedTable);
@@ -84,4 +88,5 @@ private:
 	TSet<FString> WarnedMissingAttenuationPaths;
 	TSet<FString> WarnedMissingConcurrencyPaths;
 	TSet<FName> WarnedUnreadyEventIDs;
+	FT66ShutdownParticipantHandle ShutdownParticipantHandle;
 };

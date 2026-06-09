@@ -48,10 +48,35 @@ def get_param(name, default=None):
     return value
 
 
+def get_token_mode():
+    value = (get_param("T66AuditTokenMode", "package_and_name") or "").strip().lower()
+    if value not in {"package_and_name", "package_paths"}:
+        warn(f"Unknown T66AuditTokenMode={value}; using package_and_name")
+        return "package_and_name"
+    return value
+
+
 def split_csv(value):
     if not value:
         return []
     return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def read_package_file(path_value):
+    if not path_value:
+        return []
+    path = Path(path_value)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    if not path.exists():
+        raise RuntimeError(f"Package file does not exist: {path}")
+    packages = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        value = line.strip()
+        if not value or value.startswith("#"):
+            continue
+        packages.append(value)
+    return packages
 
 
 def normalize_package(value):
@@ -100,23 +125,35 @@ def file_contains_any(path, patterns):
         data = path.read_bytes()
     except Exception as exc:
         return None, str(exc)
-    hits = []
-    for token, encoded_patterns in patterns.items():
-        if any(pattern in data for pattern in encoded_patterns):
-            hits.append(token)
-    return sorted(hits), None
+    return patterns.find_tokens(data), None
 
 
-def build_patterns(tokens):
-    patterns = {}
-    for token in tokens:
-        encoded = [token.encode("utf-8", errors="ignore")]
-        try:
-            encoded.append(token.encode("utf-16-le", errors="ignore"))
-        except Exception:
-            pass
-        patterns[token] = encoded
-    return patterns
+class BinaryPatterns:
+    def __init__(self, tokens):
+        self.pattern_to_token = {}
+        parts = []
+        for token in tokens:
+            encoded = [token.encode("utf-8", errors="ignore")]
+            try:
+                encoded.append(token.encode("utf-16-le", errors="ignore"))
+            except Exception:
+                pass
+            for pattern in encoded:
+                if not pattern:
+                    continue
+                self.pattern_to_token[pattern] = token
+                parts.append(re.escape(pattern))
+        self.regex = re.compile(b"|".join(parts)) if parts else None
+
+    def find_tokens(self, data):
+        if not self.regex:
+            return []
+        hits = set()
+        for match in self.regex.finditer(data):
+            token = self.pattern_to_token.get(match.group(0))
+            if token:
+                hits.add(token)
+        return sorted(hits)
 
 
 def scan_text(tokens):
@@ -143,7 +180,7 @@ def scan_text(tokens):
 
 
 def scan_binary(tokens):
-    patterns = build_patterns(tokens)
+    patterns = BinaryPatterns(tokens)
     scanned = 0
     matches = []
     failures = []
@@ -197,9 +234,12 @@ def asset_data_for_package(registry_assets, package):
 
 
 def main():
-    packages = [normalize_package(value) for value in split_csv(get_param("T66AuditPackages"))]
+    packages = split_csv(get_param("T66AuditPackages"))
+    packages.extend(read_package_file(get_param("T66AuditPackageFile")))
+    packages = [normalize_package(value) for value in packages]
     packages = [package for package in dict.fromkeys(packages) if package.startswith("/Game/")]
     extra_tokens = split_csv(get_param("T66AuditTokens"))
+    token_mode = get_token_mode()
     output_path = Path(get_param("T66AuditOutput", str(DEFAULT_OUTPUT)))
     if not output_path.is_absolute():
         output_path = PROJECT_ROOT / output_path
@@ -212,7 +252,9 @@ def main():
     tokens = []
     for package in packages:
         asset_path = package_to_asset_path(package)
-        tokens.extend([package, asset_path, package.rsplit("/", 1)[-1]])
+        tokens.extend([package, asset_path])
+        if token_mode == "package_and_name":
+            tokens.append(package.rsplit("/", 1)[-1])
     tokens.extend(extra_tokens)
     tokens = [token for token in dict.fromkeys(tokens) if token]
 
@@ -238,6 +280,7 @@ def main():
         "packages": package_rows,
         "tokens": tokens,
         "metadata": metadata,
+        "token_mode": token_mode,
         "binary_content": scan_binary(tokens),
         "text": scan_text(tokens),
     }

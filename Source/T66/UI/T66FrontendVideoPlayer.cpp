@@ -2,22 +2,12 @@
 
 #include "UI/T66FrontendVideoPlayer.h"
 
-#include "Blueprint/UserWidget.h"
-#include "Components/ActorComponent.h"
-#include "Core/T66PlayerSettingsSubsystem.h"
-#include "Engine/Engine.h"
-#include "Engine/GameInstance.h"
-#include "Engine/GameViewportClient.h"
 #include "Engine/Texture2D.h"
-#include "Engine/World.h"
-#include "GameFramework/Actor.h"
 #include "Styling/SlateBrush.h"
 #include "FileMediaSource.h"
 #include "HAL/FileManager.h"
 #include "MediaPlayer.h"
 #include "MediaTexture.h"
-#include "Misc/CommandLine.h"
-#include "Misc/Parse.h"
 #include "UI/T66FrontendVideoCatalog.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 
@@ -25,65 +15,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66FrontendVideo, Log, All);
 
 namespace
 {
-	UWorld* ResolveFrontendVideoWorld(const UObject* Object)
-	{
-		if (!Object)
-		{
-			return nullptr;
-		}
-
-		for (const UObject* Outer = Object; Outer; Outer = Outer->GetOuter())
-		{
-			if (const UWorld* World = Cast<UWorld>(Outer))
-			{
-				return const_cast<UWorld*>(World);
-			}
-			if (const AActor* Actor = Cast<AActor>(Outer))
-			{
-				return Actor->GetWorld();
-			}
-			if (const UActorComponent* Component = Cast<UActorComponent>(Outer))
-			{
-				return Component->GetWorld();
-			}
-			if (const UUserWidget* UserWidget = Cast<UUserWidget>(Outer))
-			{
-				return UserWidget->GetWorld();
-			}
-			if (const UGameInstance* GameInstance = Cast<UGameInstance>(Outer))
-			{
-				return GameInstance->GetWorld();
-			}
-		}
-
-		return GEngine && GEngine->GameViewport
-			? GEngine->GameViewport->GetWorld()
-			: nullptr;
-	}
-
-	bool ShouldUsePosterSurfaceForRetainedCRT(const UObject* Object)
-	{
-		if (FParse::Param(FCommandLine::Get(), TEXT("T66DisableFrontendCRT")))
-		{
-			return false;
-		}
-
-		if (const UWorld* World = ResolveFrontendVideoWorld(Object))
-		{
-			if (const UGameInstance* GameInstance = World->GetGameInstance())
-			{
-				if (const UT66PlayerSettingsSubsystem* PlayerSettings = GameInstance->GetSubsystem<UT66PlayerSettingsSubsystem>())
-				{
-					const FT66RetroFXSettings Settings = PlayerSettings->GetRetroFXSettings();
-					return Settings.UIFullScreenCRTEnabled;
-				}
-			}
-		}
-
-		const FT66RetroFXSettings Defaults;
-		return Defaults.UIFullScreenCRTEnabled;
-	}
-
 	UTexture2D* LoadFrontendPosterTexture(const FString& PosterPath, const FName DebugName)
 	{
 		if (PosterPath.IsEmpty())
@@ -115,7 +46,7 @@ bool UT66FrontendVideoPlayer::OpenVideo(const FT66FrontendVideoAsset& Asset, con
 	const FString AbsoluteMoviePath = T66FrontendVideoCatalog::ResolveMovieAbsolutePath(Asset.MoviePath);
 	CurrentDebugName = DebugName;
 
-	if (Asset.bPosterOnly || ShouldUsePosterSurfaceForRetainedCRT(this))
+	if (Asset.bPosterOnly)
 	{
 		return OpenPosterSurface(Asset, ImageSize, DebugName);
 	}

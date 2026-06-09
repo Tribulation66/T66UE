@@ -2,9 +2,13 @@
 
 This document is the single source of truth for the T66 UI flat redesign initiative. It covers the locked design system, the three-stage rollout plan, and all reference data needed to execute the work. It is meant to be consumed by Codex (or any equivalent coding agent) as the primary brief, alongside the existing technical audit and the V3 screen reference images.
 
+Art-direction boundary: root `ART_DIRECTION.md` declares FriendSlop as the active 3D/world direction and future rubber material target. This UI flat redesign remains a 2D Slate/UI process; do not impose the 3D rubber material contract on UI chrome, icons, or content artwork.
+
+Deprecation note (2026-06-07): Mods and the player-facing Settings Retro FX tab are archived. Treat Mod buttons, Mod editor flows, and Settings Retro FX screen specs in this document as historical unless a later product decision explicitly restores them.
+
 The companion documents:
 
-- `C:\UE\T66\UI\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md` — the existing technical audit. Read this first for codebase architecture (how T66 builds Slate UI, where files live, what helpers exist, what the conventions are).
+- `C:\UE\T66\Audit\Reference\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md` — the existing technical audit. Read this first for codebase architecture (how T66 builds Slate UI, where files live, what helpers exist, what the conventions are).
 - `C:\UE\T66\UI\Screen References\` — the V3 mockup folder. Each major screen has at least one PNG reference rendered in the target flat style. These are visual targets, not pixel-perfect specs.
 
 This document complements the audit by specifying the *what* of the redesign. The audit specifies the *how* of the existing system.
@@ -382,7 +386,7 @@ Each Stage 2 session uses this prompt template to Codex:
 ```
 Reference docs:
 - C:\UE\T66\UI\Reference\UI_FLAT_REDESIGN_REFERENCE.md (this master plan)
-- C:\UE\T66\UI\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md (technical audit)
+- C:\UE\T66\Audit\Reference\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md (technical audit)
 
 Target screen: <ScreenName>
 V3 reference: C:\UE\T66\UI\Screen References\<screen_name>.png
@@ -568,7 +572,7 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
   - Buttons/dropdowns: top bar controls, OVERVIEW/HISTORY sub-tabs, sub-tab info tooltip controls, PERSONAL BEST dropdown, SOLO dropdown.
 - Icon manifest:
   - Existing flat icons: `gear.png`, `globe`/language icon if present or generate via M1, `ticket.png`, `shield.png`, `bar_chart.png`, `trophy_laurel.png`, `stopwatch.png`, `power` icon if present or generate via M1.
-  - Content art: player avatar is content; use live profile avatar if available, otherwise stub under `SourceAssets\UI\ContentStubs\Overview\`.
+  - Content art: player avatar is content; use live profile avatar if available, otherwise stub under `SourceAssets\UI\ContentStubs\Overview\` and record it in `UI\content_stubs_registry.md`.
 
 **History**
 - Top bar same as Overview, ACCOUNT button Default.
@@ -796,7 +800,7 @@ The full helper list is specified in Section 4.2. Reproduce as a quick-reference
 ### 7.5 File paths
 
 - This master plan: `C:\UE\T66\UI\Reference\UI_FLAT_REDESIGN_REFERENCE.md`
-- Technical audit: `C:\UE\T66\UI\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md`
+- Technical audit: `C:\UE\T66\Audit\Reference\T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md`
 - V3 reference images: `C:\UE\T66\UI\Screen References\*.png`
 - Icon manifest (Stage 1 output): `C:\UE\T66\UI\icon_manifest.md`
 - Generated icons (Stage 1 output): `C:\UE\T66\RuntimeDependencies\T66\UI\Icons\Flat\*.png`

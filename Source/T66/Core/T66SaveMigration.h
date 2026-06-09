@@ -11,12 +11,13 @@ constexpr int32 T66SparseActiveHeroIdRunSaveVersion = 11;
 constexpr int32 T66RunModeCategoryRunSaveVersion = 12;
 constexpr int32 T66CollectedMobLootRunSaveVersion = 13;
 constexpr int32 T66MobLootRunSummaryCountersRunSaveVersion = 14;
-constexpr int32 T66CurrentRunSaveVersion = T66MobLootRunSummaryCountersRunSaveVersion;
+constexpr int32 T66PercentDamageRunSaveVersion = 15;
+constexpr int32 T66CurrentRunSaveVersion = T66PercentDamageRunSaveVersion;
 constexpr int32 T66SparseActiveHeroIdRunSummarySchemaVersion = 22;
 constexpr int32 T66RunSummaryIdolTierSchemaVersion = 23;
 constexpr int32 T66RunSummaryEnrichedProjectionSchemaVersion = 24;
 constexpr int32 T66CurrentRunSummarySchemaVersion = T66RunSummaryEnrichedProjectionSchemaVersion;
-constexpr int32 T66SavedEquippedIdolSlotCount = 4;
+constexpr int32 T66SavedEquippedIdolSlotCount = 3;
 
 /**
  * One-time migration for the active roster moving from sparse authored IDs

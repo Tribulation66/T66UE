@@ -2,6 +2,7 @@
 
 #include "Gameplay/GameMode/T66GameModePrivate.h"
 #include "Core/T66ShelvedFeatureGate.h"
+#include "Core/T66TowerTuningConfig.h"
 #include "Gameplay/T66SafeZoneComponent.h"
 
 using namespace T66GameModePrivate;
@@ -356,7 +357,7 @@ void AT66GameMode::SpawnStageEffectsForStage()
 		static_cast<int32>(Difficulty));
 }
 
-void AT66GameMode::SpawnCasinoInteractableIfNeeded()
+void AT66GameMode::SpawnCasinoNPCIfNeeded()
 {
 	if (IsLabRun())
 	{
@@ -380,7 +381,7 @@ void AT66GameMode::SpawnCasinoInteractableIfNeeded()
 		return;
 	}
 
-	if (T66HasRegisteredCasinoInteractable(World))
+	if (T66HasRegisteredCasinoNPC(World))
 	{
 		return;
 	}
@@ -400,9 +401,9 @@ void AT66GameMode::SpawnCasinoInteractableIfNeeded()
 
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		if (AT66CasinoInteractable* CasinoInteractable = World->SpawnActor<AT66CasinoInteractable>(AT66CasinoInteractable::StaticClass(), CasinoLoc, FRotator::ZeroRotator, SpawnParams))
+		if (AT66CasinoNPC* CasinoNPC = World->SpawnActor<AT66CasinoNPC>(AT66CasinoNPC::StaticClass(), CasinoLoc, FRotator::ZeroRotator, SpawnParams))
 		{
-			CasinoInteractable->SetActorScale3D(FVector(0.82f));
+			CasinoNPC->SetActorScale3D(FVector(0.82f));
 		}
 		return;
 	}
@@ -442,9 +443,9 @@ void AT66GameMode::SpawnCasinoInteractableIfNeeded()
 	const FVector FlatLoc = FindClosestFlatSurface(RefX, RefY);
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-	if (AT66CasinoInteractable* CasinoInteractable = World->SpawnActor<AT66CasinoInteractable>(AT66CasinoInteractable::StaticClass(), FlatLoc, FRotator::ZeroRotator, SpawnParams))
+	if (AT66CasinoNPC* CasinoNPC = World->SpawnActor<AT66CasinoNPC>(AT66CasinoNPC::StaticClass(), FlatLoc, FRotator::ZeroRotator, SpawnParams))
 	{
-		CasinoInteractable->SetActorScale3D(FVector(0.82f));
+		CasinoNPC->SetActorScale3D(FVector(0.82f));
 	}
 }
 
@@ -485,6 +486,9 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	TMap<int32, int32> TowerCrateCountByFloor;
 	if (bTowerLayout)
 	{
+		const UT66TowerTuningConfig& TowerTuning = UT66TowerTuningConfig::GetRuntimeConfig();
+		const FT66IntRange TowerChestRange = TowerTuning.GetTowerChestCountRange();
+		const FT66IntRange TowerCrateRange = TowerTuning.GetTowerCrateCountRange();
 		FRandomStream TowerCountRng(RunSeed + StageNum * 1901 + 39);
 		for (const T66TowerMapTerrain::FFloor& Floor : CachedTowerMainMapLayout.Floors)
 		{
@@ -494,8 +498,8 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			}
 
 			TowerMobFloorNumbers.Add(Floor.FloorNumber);
-			TowerChestCountByFloor.Add(Floor.FloorNumber, TowerCountRng.RandRange(1, 3));
-			TowerCrateCountByFloor.Add(Floor.FloorNumber, TowerCountRng.RandRange(1, 3));
+			TowerChestCountByFloor.Add(Floor.FloorNumber, TowerCountRng.RandRange(TowerChestRange.Min, TowerChestRange.Max));
+			TowerCrateCountByFloor.Add(Floor.FloorNumber, TowerCountRng.RandRange(TowerCrateRange.Min, TowerCrateRange.Max));
 		}
 		TowerMobFloorNumbers.Sort();
 		TowerMobFloorNumbers.Remove(CachedTowerMainMapLayout.StartFloorNumber);
@@ -780,7 +784,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 	TSet<int32> TowerFountainFloorNumbers;
 	if (bTowerLayout)
 	{
-		static constexpr float TowerFountainChancePerFloor = 0.40f;
+		const float TowerFountainChancePerFloor = UT66TowerTuningConfig::GetRuntimeConfig().TowerFountainChancePerFloor;
 		FRandomStream TowerFountainRng(RunSeed + StageNum * 1901 + 38);
 		FountainsPreDrawSeed = RunSeed + StageNum * 1901 + 38;
 		for (const int32 FloorNumber : TowerMobFloorNumbers)
@@ -1013,7 +1017,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		int32 TowerSpawnedLootWheels = 0;
 		int32 TowerSpawnedFountains = 0;
 		int32 TowerSpawnedLootBags = 0;
-		int32 TowerSpawnedCasinoInteractables = 0;
+		int32 TowerSpawnedCasinoNPCs = 0;
 		int32 TowerSpawnedVendors = 0;
 		int32 TowerSpawnedVehicles = 0;
 		int32 TowerSpawnedOuroboros = 0;
@@ -1266,6 +1270,363 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			return SpawnedActor;
 		};
 
+		auto TryFindTowerRoomLocation =
+			[&](const T66TowerMapTerrain::FFloor& Floor, const T66TowerMapTerrain::FRoom& Room, const int32 SeedOffset, const float EdgePadding, const float HolePadding, FVector& OutLocation) -> bool
+		{
+			if (Floor.FloorNumber == INDEX_NONE
+				|| Floor.FloorNumber == CachedTowerMainMapLayout.StartFloorNumber
+				|| Floor.FloorNumber == CachedTowerMainMapLayout.BossFloorNumber)
+			{
+				return false;
+			}
+
+			for (int32 Attempt = 0; Attempt < 8; ++Attempt)
+			{
+				FRandomStream RoomRng(RunSeed + StageNum * 1901 + SeedOffset + Floor.FloorNumber * 53 + Room.RoomId * 101 + Attempt * 97);
+				if (!T66TowerMapTerrain::TryGetRoomSurfaceLocation(
+					World,
+					CachedTowerMainMapLayout,
+					Floor,
+					Room,
+					RoomRng,
+					OutLocation,
+					EdgePadding,
+					HolePadding,
+					500.f))
+				{
+					continue;
+				}
+
+				if (GetTowerFloorIndexForLocation(OutLocation) != Floor.FloorNumber)
+				{
+					continue;
+				}
+
+				if (IsGoodLoc(OutLocation))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		};
+
+		auto SpawnTowerActorInRoom =
+			[&](UClass* Cls, const T66TowerMapTerrain::FFloor& Floor, const T66TowerMapTerrain::FRoom& Room, const int32 SeedOffset, const float EdgePadding, const float HolePadding) -> AActor*
+		{
+			if (!Cls
+				|| Floor.FloorNumber == INDEX_NONE
+				|| Floor.FloorNumber == CachedTowerMainMapLayout.StartFloorNumber
+				|| Floor.FloorNumber == CachedTowerMainMapLayout.BossFloorNumber)
+			{
+				return nullptr;
+			}
+
+			for (int32 SpawnAttempt = 0; SpawnAttempt < 5; ++SpawnAttempt)
+			{
+				FVector SpawnLoc = FVector::ZeroVector;
+				if (!TryFindTowerRoomLocation(Floor, Room, SeedOffset + (SpawnAttempt * 197), EdgePadding, HolePadding, SpawnLoc))
+				{
+					continue;
+				}
+
+				AActor* SpawnedActor = World->SpawnActor<AActor>(Cls, SpawnLoc, FRotator::ZeroRotator, OccupantSpawnParams);
+				if (!SpawnedActor)
+				{
+					continue;
+				}
+
+				if (!ResnapTowerActorToFloor(SpawnedActor, Floor.FloorNumber))
+				{
+					SpawnedActor->Destroy();
+					continue;
+				}
+
+				const int32 StrictLocationFloorNumber = GetTowerFloorIndexForLocation(SpawnedActor->GetActorLocation());
+				if (StrictLocationFloorNumber != Floor.FloorNumber)
+				{
+					SpawnedActor->Destroy();
+					continue;
+				}
+
+				const int32 ResolvedFloorNumber = T66ResolveTowerFloorForActorPhysical(this, CachedTowerMainMapLayout, SpawnedActor);
+				if (ResolvedFloorNumber != Floor.FloorNumber)
+				{
+					SpawnedActor->Destroy();
+					continue;
+				}
+
+				UsedLocs.Add(SpawnedActor->GetActorLocation());
+				return SpawnedActor;
+			}
+
+			return nullptr;
+		};
+
+		const UT66TowerTuningConfig& TowerRoomTuning = UT66TowerTuningConfig::GetRuntimeConfig();
+		bool bTowerRoomContentMode = false;
+		int32 TowerRoomContentExpectedRooms = 0;
+		for (const int32 FloorNumber : TowerMobFloorNumbers)
+		{
+			const T66TowerMapTerrain::FFloor* Floor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, FloorNumber);
+			if (!Floor)
+			{
+				continue;
+			}
+
+			for (const T66TowerMapTerrain::FRoom& Room : Floor->Rooms)
+			{
+				const FT66TowerRoomRuleTuning* RoomRule = TowerRoomTuning.FindRoomRule(Room.RoomRuleID);
+				if (RoomRule && RoomRule->NonTrapContentSlots.Max > 0)
+				{
+					bTowerRoomContentMode = true;
+					++TowerRoomContentExpectedRooms;
+				}
+			}
+		}
+
+		if (bTowerRoomContentMode)
+		{
+			int32 TowerRoomContentPlaced = 0;
+			TSet<int32> FloorsWithLootBag;
+			TSet<int32> FloorsWithTotem;
+
+			auto RememberRoomContent = [&](AActor* Actor, const FName ContentTag, const FName ExtraTag = NAME_None)
+			{
+				if (!Actor)
+				{
+					return;
+				}
+
+				RememberTaggedTowerActor(Actor, ContentTag);
+				if (!ExtraTag.IsNone())
+				{
+					RememberTaggedTowerActor(Actor, ExtraTag);
+				}
+			};
+
+			for (const int32 FloorNumber : TowerMobFloorNumbers)
+			{
+				const T66TowerMapTerrain::FFloor* Floor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, FloorNumber);
+				if (!Floor)
+				{
+					continue;
+				}
+
+				TArray<const T66TowerMapTerrain::FRoom*, TInlineAllocator<16>> ContentRooms;
+				for (const T66TowerMapTerrain::FRoom& Room : Floor->Rooms)
+				{
+					const FT66TowerRoomRuleTuning* RoomRule = TowerRoomTuning.FindRoomRule(Room.RoomRuleID);
+					if (RoomRule && RoomRule->NonTrapContentSlots.Max > 0)
+					{
+						ContentRooms.Add(&Room);
+					}
+				}
+				if (ContentRooms.Num() <= 0)
+				{
+					continue;
+				}
+
+				int32 VendorRoomIndex = INDEX_NONE;
+				for (int32 RoomIndex = 0; RoomIndex < ContentRooms.Num(); ++RoomIndex)
+				{
+					const T66TowerMapTerrain::FRoom* Room = ContentRooms[RoomIndex];
+					if (Room && !Room->bContainsArrival && !Room->bContainsExit)
+					{
+						VendorRoomIndex = RoomIndex;
+						break;
+					}
+				}
+				if (VendorRoomIndex == INDEX_NONE)
+				{
+					VendorRoomIndex = 0;
+				}
+
+				for (int32 RoomIndex = 0; RoomIndex < ContentRooms.Num(); ++RoomIndex)
+				{
+					const T66TowerMapTerrain::FRoom* Room = ContentRooms[RoomIndex];
+					if (!Room)
+					{
+						continue;
+					}
+
+					const FName ContentTag(*FString::Printf(TEXT("T66_Tower_RoomContent_%02d_%02d"), FloorNumber, Room->RoomId));
+					if (ExistingTowerOccupantTags.Contains(ContentTag))
+					{
+						++TowerRoomContentPlaced;
+						continue;
+					}
+
+					AActor* SpawnedContent = nullptr;
+					if (RoomIndex == VendorRoomIndex)
+					{
+						const FName VendorTag(*FString::Printf(TEXT("T66_Tower_Vendor_%02d"), FloorNumber));
+						if (!ExistingTowerOccupantTags.Contains(VendorTag))
+						{
+							if (AT66VendorNPC* Vendor = Cast<AT66VendorNPC>(SpawnTowerActorInRoom(
+								AT66VendorNPC::StaticClass(),
+								*Floor,
+								*Room,
+								5100,
+								900.f,
+								1200.f)))
+							{
+								Vendor->SetActorScale3D(FVector(0.82f));
+								RememberRoomContent(Vendor, ContentTag, VendorTag);
+								SpawnedContent = Vendor;
+								++TowerSpawnedVendors;
+								UE_LOG(
+									LogT66GameMode,
+									Log,
+									TEXT("[T66Proof][VendorPerFloor] Stage=%d Floor=%d Spawned=1 ExpectedRule=GuaranteedPerMobFloor"),
+									StageNum,
+									FloorNumber);
+							}
+						}
+					}
+
+					if (!SpawnedContent
+						&& RemainingTotems > 0
+						&& !FloorsWithTotem.Contains(FloorNumber)
+						&& (!PlayerExperience
+							|| PlayerExperience->ShouldSpawnDifficultyTotemOnTowerFloor(
+								Difficulty,
+								false,
+								FloorNumber,
+								CachedTowerMainMapLayout.FirstMobFloorNumber,
+								CachedTowerMainMapLayout.LastMobFloorNumber)))
+					{
+						const FName TotemTag(*FString::Printf(TEXT("T66_Tower_DifficultyTotem_%02d"), FloorNumber));
+						if (!ExistingTowerOccupantTags.Contains(TotemTag))
+						{
+							if (AT66DifficultyTotem* Totem = Cast<AT66DifficultyTotem>(SpawnTowerActorInRoom(
+								AT66DifficultyTotem::StaticClass(),
+								*Floor,
+								*Room,
+								8500,
+								900.f,
+								1200.f)))
+							{
+								ConfigureTotem(Totem);
+								RememberRoomContent(Totem, ContentTag, TotemTag);
+								SpawnedContent = Totem;
+								FloorsWithTotem.Add(FloorNumber);
+								--RemainingTotems;
+								++TowerSpawnedTotems;
+							}
+						}
+					}
+
+					if (!SpawnedContent && !FloorsWithLootBag.Contains(FloorNumber))
+					{
+						const FName LootBagTag(*FString::Printf(TEXT("T66_Tower_LootBag_%02d"), FloorNumber));
+						if (!ExistingTowerOccupantTags.Contains(LootBagTag))
+						{
+							if (AT66LootBagPickup* LootBag = Cast<AT66LootBagPickup>(SpawnTowerActorInRoom(
+								AT66LootBagPickup::StaticClass(),
+								*Floor,
+								*Room,
+								4900,
+								900.f,
+								1200.f)))
+							{
+								ConfigureLootBag(LootBag, FName(TEXT("TowerLootBagRarity")));
+								RememberRoomContent(LootBag, ContentTag, LootBagTag);
+								SpawnedContent = LootBag;
+								FloorsWithLootBag.Add(FloorNumber);
+								++TowerSpawnedLootBags;
+							}
+						}
+					}
+
+					if (!SpawnedContent)
+					{
+						const bool bPreferChest = ((FloorNumber + RoomIndex) % 2) == 0;
+						if (bPreferChest)
+						{
+							if (AT66ChestInteractable* Chest = Cast<AT66ChestInteractable>(SpawnTowerActorInRoom(
+								AT66ChestInteractable::StaticClass(),
+								*Floor,
+								*Room,
+								7600 + RoomIndex * 41,
+								900.f,
+								1200.f)))
+							{
+								ConfigureChest(Chest);
+								RememberRoomContent(Chest, ContentTag);
+								SpawnedContent = Chest;
+								++TowerSpawnedChests;
+							}
+						}
+
+						if (!SpawnedContent)
+						{
+							if (AT66CrateInteractable* Crate = Cast<AT66CrateInteractable>(SpawnTowerActorInRoom(
+								AT66CrateInteractable::StaticClass(),
+								*Floor,
+								*Room,
+								7700 + RoomIndex * 41,
+								900.f,
+								1200.f)))
+							{
+								ConfigureCrate(Crate);
+								RememberRoomContent(Crate, ContentTag);
+								SpawnedContent = Crate;
+								++TowerSpawnedCrates;
+							}
+						}
+					}
+
+					if (SpawnedContent)
+					{
+						++TowerRoomContentPlaced;
+					}
+				}
+			}
+
+			CountChests = TowerSpawnedChests;
+			CountCrates = TowerSpawnedCrates;
+			CountLootWheels = TowerSpawnedLootWheels;
+			CountFountains = TowerSpawnedFountains;
+			CountTotems = TowerSpawnedTotems;
+			RemainingChests = 0;
+			RemainingCrates = 0;
+			RemainingLootWheels = 0;
+			RemainingFountains = 0;
+			RemainingTotems = 0;
+
+			const bool bRoomContentProofPass = TowerRoomContentPlaced == TowerRoomContentExpectedRooms
+				&& TowerSpawnedVendors == TowerMobFloorNumbers.Num();
+			if (bRoomContentProofPass)
+			{
+				UE_LOG(
+					LogT66GameMode,
+					Log,
+					TEXT("[T66Proof][TowerRoomContentSummary] Stage=%d Result=PASS Floors=%d Rooms=%d ContentRooms=%d Vendors=%d ExpectedVendors=%d Rule=RoomNonTrapContentSlots"),
+					StageNum,
+					TowerMobFloorNumbers.Num(),
+					TowerRoomContentExpectedRooms,
+					TowerRoomContentPlaced,
+					TowerSpawnedVendors,
+					TowerMobFloorNumbers.Num());
+			}
+			else
+			{
+				UE_LOG(
+					LogT66GameMode,
+					Warning,
+					TEXT("[T66Proof][TowerRoomContentSummary] Stage=%d Result=FAIL Floors=%d Rooms=%d ContentRooms=%d Vendors=%d ExpectedVendors=%d Rule=RoomNonTrapContentSlots"),
+					StageNum,
+					TowerMobFloorNumbers.Num(),
+					TowerRoomContentExpectedRooms,
+					TowerRoomContentPlaced,
+					TowerSpawnedVendors,
+					TowerMobFloorNumbers.Num());
+			}
+		}
+
+		if (!bTowerRoomContentMode)
+		{
 		int32 GuaranteedUtilityFountains = 0;
 		for (const int32 FloorNumber : MobFloorNumbers)
 		{
@@ -1411,8 +1772,8 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		for (const int32 FloorNumber : MobFloorNumbers)
 		{
 			const FName VendorTag(*FString::Printf(TEXT("T66_Tower_Vendor_%02d"), FloorNumber));
-			if (AT66VendorInteractable* Vendor = Cast<AT66VendorInteractable>(SpawnTaggedTowerActorOnFloor(
-				AT66VendorInteractable::StaticClass(),
+			if (AT66VendorNPC* Vendor = Cast<AT66VendorNPC>(SpawnTaggedTowerActorOnFloor(
+				AT66VendorNPC::StaticClass(),
 				FloorNumber,
 				5100,
 				1800.f,
@@ -1430,6 +1791,8 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			}
 		}
 
+		}
+
 		for (const int32 FloorNumber : MobFloorNumbers)
 		{
 			const FName CasinoTag(*FString::Printf(TEXT("T66_Tower_Casino_%02d"), FloorNumber));
@@ -1439,7 +1802,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			if (RunState)
 			{
 				RunState->RecordLuckQuantityBool(
-					FName(TEXT("TowerCasinoInteractableFloorSpawned")),
+					FName(TEXT("TowerCasinoNPCFloorSpawned")),
 					bShouldSpawnCasino,
 					T66TowerCasinoSpawnChance,
 					INDEX_NONE,
@@ -1451,16 +1814,16 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 				continue;
 			}
 
-			if (AT66CasinoInteractable* CasinoInteractable = Cast<AT66CasinoInteractable>(SpawnTaggedTowerActorOnFloor(
-				AT66CasinoInteractable::StaticClass(),
+			if (AT66CasinoNPC* CasinoNPC = Cast<AT66CasinoNPC>(SpawnTaggedTowerActorOnFloor(
+				AT66CasinoNPC::StaticClass(),
 				FloorNumber,
 				5600,
 				1800.f,
 				2200.f,
 				CasinoTag)))
 			{
-				CasinoInteractable->SetActorScale3D(FVector(0.82f));
-				++TowerSpawnedCasinoInteractables;
+				CasinoNPC->SetActorScale3D(FVector(0.82f));
+				++TowerSpawnedCasinoNPCs;
 				UE_LOG(
 					LogT66GameMode,
 					Log,
@@ -1645,8 +2008,8 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			}
 
 			const bool bExtraWorldInteractable =
-				Actor->IsA<AT66VendorInteractable>()
-				|| Actor->IsA<AT66CasinoInteractable>()
+				Actor->IsA<AT66VendorNPC>()
+				|| Actor->IsA<AT66CasinoNPC>()
 				|| Actor->IsA<AT66ChestInteractable>()
 				|| Actor->IsA<AT66CrateInteractable>()
 				|| Actor->IsA<AT66LootWheelInteractable>()
@@ -1700,7 +2063,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 		UE_LOG(
 			LogT66GameMode,
 			Log,
-			TEXT("[MAP] Tower population spawned on mob floors=%d: chests %d/%d, crates %d/%d, loot wheels %d/%d, fountains %d/%d, loot bags %d/%d, vendors %d/%d, casino interactables %d/%d chance %.0f%%, vehicles %d, ouroboros %d, saints %d, totems %d/%d, removed start-floor leaks %d."),
+				TEXT("[MAP] Tower population spawned on mob floors=%d: chests %d/%d, crates %d/%d, loot wheels %d/%d, fountains %d/%d, loot bags %d/%d, vendors %d/%d, casino NPCs %d/%d chance %.0f%%, vehicles %d, ouroboros %d, saints %d, totems %d/%d, removed start-floor leaks %d."),
 			TowerMobFloorNumbers.Num(),
 			TowerSpawnedChests,
 			CountChests,
@@ -1714,7 +2077,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			TowerMobFloorNumbers.Num(),
 			TowerSpawnedVendors,
 			TowerMobFloorNumbers.Num(),
-			TowerSpawnedCasinoInteractables,
+			TowerSpawnedCasinoNPCs,
 			TowerMobFloorNumbers.Num(),
 			T66TowerCasinoSpawnChance * 100.f,
 			TowerSpawnedVehicles,
@@ -1751,7 +2114,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			Log,
 			TEXT("[T66Proof][CasinoChanceSummary] Stage=%d Spawned=%d Floors=%d Chance=%.3f Rule=PerFloorChance"),
 			StageNum,
-			TowerSpawnedCasinoInteractables,
+			TowerSpawnedCasinoNPCs,
 			TowerMobFloorNumbers.Num(),
 			T66TowerCasinoSpawnChance);
 
@@ -2060,26 +2423,22 @@ void AT66GameMode::SpawnIdolAltarForPlayer(AController* Player)
 	IdolAltar = nullptr;
 
 	UGameInstance* GI = World->GetGameInstance();
-	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
 	UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
 	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
-	UT66DifficultyTuningSubsystem* DifficultyTuning = GI ? GI->GetSubsystem<UT66DifficultyTuningSubsystem>() : nullptr;
 	if (!IdolManager)
 	{
+		return;
+	}
+
+	if (IsUsingTowerMainMapLayout())
+	{
+		UE_LOG(LogT66GameMode, Verbose, TEXT("Skipping tower stage-entry idol altar spawn; tower idol altars are linked to descent gates."));
 		return;
 	}
 
 	const int32 SelectionBudget = 1;
 
 	const int32 CurrentStage = RunState ? RunState->GetCurrentStage() : 1;
-	const int32 LocalStageNumber = (T66GI && DifficultyTuning)
-		? DifficultyTuning->GetDifficultyLocalStage(T66GI->SelectedDifficulty, CurrentStage)
-		: 1;
-	if (IsUsingTowerMainMapLayout() && LocalStageNumber != 4)
-	{
-		UE_LOG(LogT66GameMode, Verbose, TEXT("Skipping tower stage-entry idol altar spawn for local stage %d; only local stage 4 receives the floor 1 idol altar."), LocalStageNumber);
-		return;
-	}
 	UE_LOG(
 		LogT66GameMode,
 		Log,
@@ -2268,6 +2627,10 @@ void AT66GameMode::SpawnWeaponAltarForPlayer(AController* Player)
 
 	WeaponAltar->RemainingSelections = 1;
 	WeaponAltar->WeaponOfferRarity = OfferRarity;
+	if (IsUsingTowerMainMapLayout())
+	{
+		WeaponAltar->LinkToTowerGateFloor(CachedTowerMainMapLayout.StartFloorNumber);
+	}
 	if (APawn* PlayerPawn = Player->GetPawn())
 	{
 		T66FaceActorTowardLocation2D(WeaponAltar, PlayerPawn->GetActorLocation());

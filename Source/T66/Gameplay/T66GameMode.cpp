@@ -414,7 +414,7 @@ if (!World || GT66PlayerStartCache.World.Get() == World)
 		}
 	}
 
-	bool T66HasRegisteredCasinoInteractable(UWorld* World)
+	bool T66HasRegisteredCasinoNPC(UWorld* World)
 	{
 		if (!World)
 		{
@@ -423,9 +423,9 @@ if (!World || GT66PlayerStartCache.World.Get() == World)
 
 		if (UT66ActorRegistrySubsystem* Registry = World->GetSubsystem<UT66ActorRegistrySubsystem>())
 		{
-			for (const TWeakObjectPtr<AT66WorldInteractableBase>& WeakInteractable : Registry->GetWorldInteractables())
+			for (const TWeakObjectPtr<AT66NPCBase>& WeakNPC : Registry->GetNPCs())
 			{
-				if (Cast<AT66CasinoInteractable>(WeakInteractable.Get()))
+				if (Cast<AT66CasinoNPC>(WeakNPC.Get()))
 				{
 					return true;
 				}
@@ -1490,29 +1490,6 @@ void AT66GameMode::HandleSettingsChanged()
 	{
 		ApplyStageProgressionVisuals();
 	}
-
-	if (UGameInstance* GI = GetGameInstance())
-	{
-		if (UT66RetroFXSubsystem* RetroFX = GI->GetSubsystem<UT66RetroFXSubsystem>())
-		{
-			if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
-			{
-				FT66RetroFXSettings RetroSettings = PS->GetRetroFXSettings();
-				if (bTestRoomRun)
-				{
-					RetroSettings.bEnableRetroFXMaster = false;
-					RetroSettings.bUseRealLowResolution = false;
-					RetroSettings.TargetResolutionHeightPercent = 100.0f;
-				}
-				RetroFX->ApplySettings(RetroSettings, GetWorld());
-				PS->RunRetroFXSealVerificationIfRequested(GetWorld());
-			}
-			else
-			{
-				RetroFX->ApplyCurrentSettings(GetWorld());
-			}
-		}
-	}
 }
 UT66GameInstance* AT66GameMode::GetT66GameInstance() const
 {
@@ -1693,11 +1670,11 @@ void AT66GameMode::MaintainPlayerTerrainSafety()
 		{
 			RescueAnchors.Reserve(4);
 			RescueAnchors.Add(T66GameplayLayout::GetStartAreaCenter(AnchorTraceZ));
-			RescueAnchors.Add(T66GameplayLayout::GetStartGateLocation(AnchorTraceZ));
+			RescueAnchors.Add(T66GameplayLayout::GetStartEntryLocation(AnchorTraceZ));
 		}
 		if (!bUsingMainMapTerrain && bStageTimerActive && PawnLoc.X > 0.f)
 		{
-			RescueAnchors.Add(T66GameplayLayout::GetBossGateLocation(AnchorTraceZ));
+			RescueAnchors.Add(T66GameplayLayout::GetBossEntryLocation(AnchorTraceZ));
 			RescueAnchors.Add(T66GameplayLayout::GetBossAreaCenter(AnchorTraceZ));
 		}
 

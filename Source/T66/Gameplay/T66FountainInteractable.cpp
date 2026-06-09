@@ -62,7 +62,6 @@ bool AT66FountainInteractable::Interact(APlayerController* PC)
 		return false;
 	}
 
-	RunState->AddMaxHearts(1);
 	RunState->HealToFull();
 	if (IsShowcaseReusable())
 	{

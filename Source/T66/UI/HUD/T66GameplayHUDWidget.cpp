@@ -47,6 +47,88 @@ const FT66HUDPresentationController& UT66GameplayHUDWidget::GetPresentationContr
 	return *PresentationController;
 }
 
+void UT66GameplayHUDWidget::UpdateRagdollRecoveryPrompt(const float InDeltaTime)
+{
+	static_cast<void>(InDeltaTime);
+
+	if (!RagdollRecoveryPromptBox.IsValid())
+	{
+		return;
+	}
+
+	FT66HeroRagdollRecoveryUIState RecoveryState;
+	bool bShowRecoveryPrompt = false;
+
+	APawn* Pawn = GetOwningPlayerPawn();
+	if (!Pawn)
+	{
+		if (APlayerController* PC = GetOwningPlayer())
+		{
+			Pawn = PC->GetPawn();
+		}
+	}
+
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(Pawn))
+	{
+		if (UT66HeroPhysicsComponent* HeroPhysics = Hero->GetHeroPhysicsComponent())
+		{
+			bShowRecoveryPrompt = HeroPhysics->GetRagdollRecoveryUIState(RecoveryState);
+		}
+	}
+
+	if (!bShowRecoveryPrompt)
+	{
+		if (RagdollRecoveryPromptBox->GetVisibility() != EVisibility::Collapsed)
+		{
+			RagdollRecoveryPromptBox->SetVisibility(EVisibility::Collapsed);
+		}
+		if (RagdollRecoveryFillBox.IsValid())
+		{
+			RagdollRecoveryFillBox->SetWidthOverride(0.f);
+		}
+		if (bLastRagdollRecoveryPromptVisible)
+		{
+			UE_LOG(LogT66HUD, Log, TEXT("[RagdollRecoveryUI] Visible=0"));
+		}
+		bLastRagdollRecoveryPromptVisible = false;
+		LastRagdollRecoveryAcceptedPresses = INDEX_NONE;
+		LastRagdollRecoveryProgressBucket = INDEX_NONE;
+		return;
+	}
+
+	RagdollRecoveryPromptBox->SetVisibility(EVisibility::HitTestInvisible);
+
+	const float Progress01 = FMath::Clamp(RecoveryState.Progress01, 0.0f, 1.0f);
+	if (RagdollRecoveryFillBox.IsValid())
+	{
+		RagdollRecoveryFillBox->SetWidthOverride(RagdollRecoveryBarWidth * Progress01);
+	}
+	if (RagdollRecoveryProgressText.IsValid())
+	{
+		RagdollRecoveryProgressText->SetText(FText::FromString(FString::Printf(
+			TEXT("RECOVERY %d%%"),
+			FMath::RoundToInt(Progress01 * 100.0f))));
+	}
+
+	const int32 ProgressBucket = FMath::RoundToInt(Progress01 * 10.0f);
+	if (!bLastRagdollRecoveryPromptVisible
+		|| RecoveryState.AcceptedJumpPresses != LastRagdollRecoveryAcceptedPresses
+		|| ProgressBucket != LastRagdollRecoveryProgressBucket)
+	{
+		UE_LOG(LogT66HUD, Log, TEXT("[RagdollRecoveryUI] Visible=1 Progress=%.3f Presses=%d Credit=%.3f UncreditedMax=%.3f EffectiveMax=%.3f Remaining=%.3f"),
+			Progress01,
+			RecoveryState.AcceptedJumpPresses,
+			RecoveryState.CreditSeconds,
+			RecoveryState.UncreditedMaxSeconds,
+			RecoveryState.EffectiveMaxSeconds,
+			RecoveryState.RemainingSeconds);
+	}
+
+	bLastRagdollRecoveryPromptVisible = true;
+	LastRagdollRecoveryAcceptedPresses = RecoveryState.AcceptedJumpPresses;
+	LastRagdollRecoveryProgressBucket = ProgressBucket;
+}
+
 
 void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
@@ -104,6 +186,8 @@ void UT66GameplayHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 	{
 		Presentation.Tick(InDeltaTime);
 	}
+
+	UpdateRagdollRecoveryPrompt(InDeltaTime);
 
 	if (AT66PlayerController* T66PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
@@ -322,7 +406,14 @@ void UT66GameplayHUDWidget::NativeConstruct()
 		}
 		if (UltimateBorder.IsValid())
 		{
-			UltimateBorder->SetToolTip(CreateRichTooltip(Loc->GetText_UltimateName(HD.UltimateType), Loc->GetText_UltimateDescription(HD.UltimateType)));
+			T66TooltipSlate::SetTooltip(
+				UltimateBorder,
+				T66TooltipResolvers::MakeRichTooltip(
+					FName(TEXT("GameplayHUD.Ultimate.Tooltip")),
+					ET66TooltipKind::Action,
+					Loc->GetText_UltimateName(HD.UltimateType),
+					Loc->GetText_UltimateDescription(HD.UltimateType),
+					FName(TEXT("GameplayHUD.Ultimate"))));
 		}
 	}
 

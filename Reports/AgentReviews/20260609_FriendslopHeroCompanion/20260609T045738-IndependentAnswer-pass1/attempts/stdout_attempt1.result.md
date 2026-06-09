@@ -1,0 +1,33 @@
+Result: NEEDS_USER
+
+## Independent Answer
+
+The FriendslopStyle implementation loop cannot reach its stop condition for Hero Selection and Companion Selection without a **user-provided visual family breakdown** for each screen. The process docs make this an explicit, user-only prerequisite, and it does not exist yet for either screen.
+
+`UI/FriendslopStyle/Screens/README.md` and the implementation instructions both state: *"The user provides the visual family breakdown for each new screen"* and list "User-provided visual family breakdown recorded in the screen folder" as a required artifact *before* any generation work or worker launch. Family count is screen-specific and drives the imagegen worker queue (one worker per failed family), so Codex cannot infer it — only the user declares the families.
+
+What Codex *can* do now without you, and should do to make the loop launch-ready:
+- Create the `Screens/HeroSelection/` and `Screens/CompanionSelection/` folders and `Reference/<Screen>/` folders.
+- Capture/dump the **current** state of the existing screens (the Slate source already exists under `Source/T66/UI/Screens/HeroSelection/...`) using the Unreal-owned capture/dump scripts as a baseline.
+- Inventory existing Slate widgets, live labels, player data, and skins so the live-text-prohibition boundary is mapped before any PNG work.
+
+What it cannot do without you:
+- Declare/launch the imagegen worker queue (blocked on the family breakdowns).
+- Generate the approved reference art direction and per-family textless crops.
+
+So the correct next step is to **stop and ask you for the family breakdown** for each screen (family name, reference region, included elements, which elements are live text/data/icons, which crop is worker context), per `Screens/README.md`. Note: I did not find a companion-selection Slate source folder (only `Screens/HeroSelection/...`), so you should also confirm whether Companion Selection is a distinct screen or a sub-region of Hero Selection.
+
+## Evidence Checked
+- `.t66/operator-state.json` — Codex=Operator, Claude=Validator (matches contract).
+- `UI/FriendslopStyle/Screens/README.md` — "user provides the visual family breakdown" as required starting point.
+- `UI/FriendslopStyle/FRIENDSLOP_STYLE_IMPLEMENTATION_INSTRUCTIONS.md` §4 (lines ~315-345) — per-screen required artifacts incl. user-provided family breakdown; one worker per FAIL family.
+- `UI/FriendslopStyle/Screens/` and `Reference/` — no HeroSelection or CompanionSelection folders exist yet.
+- `Source/T66/UI/Screens/HeroSelection/...` — existing Slate source present; no CompanionSelection source folder found.
+
+## Questions Or Blockers
+- Provide the visual family breakdown for Hero Selection and for Companion Selection (families, regions, included elements, live-text/data elements to preserve, worker-context crop).
+- Confirm whether Companion Selection is its own screen or a region within Hero Selection (no separate companion Slate source was found).
+
+## Caveats
+- Read-only inspection; I did not run captures or builds. The existing Hero Selection Slate may already render in-engine, but its current FriendslopStyle baseline capture/dump was not verified to exist.
+- "Preserve existing content/layout" and "don't regenerate shared top bar" are honored by the above prep-only steps; no generation should run before the breakdown lands.

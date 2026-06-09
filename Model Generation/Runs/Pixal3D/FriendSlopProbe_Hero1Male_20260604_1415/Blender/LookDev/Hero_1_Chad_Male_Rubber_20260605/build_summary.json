@@ -1,0 +1,41 @@
+{
+  "blend_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Hero_1_Chad_Male_RubberLookDev.blend",
+  "comparison_grid": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Hero_1_Chad_Male_rubber_comparison_grid.png",
+  "turntables": [
+    {
+      "variation": "V02_rubber_pop",
+      "frames_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V02_rubber_pop",
+      "frame_prefix": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V02_rubber_pop\\V02_rubber_pop_",
+      "expected_pattern": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V02_rubber_pop\\V02_rubber_pop_%04d.png"
+    },
+    {
+      "variation": "V03_vinyl_bounce",
+      "frames_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V03_vinyl_bounce",
+      "frame_prefix": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V03_vinyl_bounce\\V03_vinyl_bounce_",
+      "expected_pattern": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V03_vinyl_bounce\\V03_vinyl_bounce_%04d.png"
+    },
+    {
+      "variation": "V04_candy_rubber",
+      "frames_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V04_candy_rubber",
+      "frame_prefix": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V04_candy_rubber\\V04_candy_rubber_",
+      "expected_pattern": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V04_candy_rubber\\V04_candy_rubber_%04d.png"
+    },
+    {
+      "variation": "V06_toy_vinyl_gloss",
+      "frames_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V06_toy_vinyl_gloss",
+      "frame_prefix": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V06_toy_vinyl_gloss\\V06_toy_vinyl_gloss_",
+      "expected_pattern": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Renders\\Frames\\V06_toy_vinyl_gloss\\V06_toy_vinyl_gloss_%04d.png"
+    }
+  ],
+  "recipe_json": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\rubber_recipe.json",
+  "recipe_md": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\rubber_recipe.md",
+  "source_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Outputs\\Hero_1_Chad_Male.glb",
+  "variations": [
+    "V01_soft_satin",
+    "V02_rubber_pop",
+    "V03_vinyl_bounce",
+    "V04_candy_rubber",
+    "V05_matte_gum",
+    "V06_toy_vinyl_gloss"
+  ]
+}

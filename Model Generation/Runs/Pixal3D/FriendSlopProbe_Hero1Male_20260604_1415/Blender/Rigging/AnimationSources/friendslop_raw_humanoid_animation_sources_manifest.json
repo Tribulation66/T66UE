@@ -1,0 +1,17 @@
+{
+  "pipeline": "FriendSlopRawHumanoidAnimationSources",
+  "source_blend": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Hero_1_Chad_Male_FriendSlop_Rig.blend",
+  "output_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\AnimationSources",
+  "visual_id": "Hero_1_Chad_Male_FriendSlop",
+  "provenance": {
+    "template_method": "Quaternius-derived T66 gameplay clip roles",
+    "walk_action_role": "Walk_Fwd_Loop_LegsTorsoOnly",
+    "target_skeleton": "SK_Hero_1_Chad_Male_FriendSlop_Skeleton"
+  },
+  "animations": {
+    "Idle": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\AnimationSources\\Hero_1_Chad_Male_FriendSlop_Idle.fbx",
+    "Walk": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\AnimationSources\\Hero_1_Chad_Male_FriendSlop_Walk.fbx",
+    "Jump": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\AnimationSources\\Hero_1_Chad_Male_FriendSlop_Jump.fbx",
+    "Roll": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\AnimationSources\\Hero_1_Chad_Male_FriendSlop_Roll.fbx"
+  }
+}

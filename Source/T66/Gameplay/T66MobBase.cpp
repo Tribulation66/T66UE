@@ -10,6 +10,7 @@
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "CollisionQueryParams.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -48,26 +49,27 @@ const FName T66ForceMobLootBagDropTag(TEXT("T66_ForceMobLootBagDrop"));
 
 struct FT66MobKillBoostDropTarget
 {
-	bool bUsesSecondaryStat = false;
-	ET66HeroStatType PrimaryStatType = ET66HeroStatType::Damage;
-	ET66SecondaryStatType SecondaryStatType = ET66SecondaryStatType::None;
+	bool bUsesStat = false;
+	ET66HeroStatType BaseStatType = ET66HeroStatType::Damage;
+	ET66StatType StatType = ET66StatType::None;
 };
 
 const TArray<FT66MobKillBoostDropTarget>& T66GetMobKillBoostDropTargets()
 {
 	static const TArray<FT66MobKillBoostDropTarget> Targets = {
-		{ false, ET66HeroStatType::Damage, ET66SecondaryStatType::None },
-		{ false, ET66HeroStatType::AttackSpeed, ET66SecondaryStatType::None },
-		{ false, ET66HeroStatType::AttackScale, ET66SecondaryStatType::None },
-		{ false, ET66HeroStatType::Accuracy, ET66SecondaryStatType::None },
-		{ false, ET66HeroStatType::Armor, ET66SecondaryStatType::None },
-		{ false, ET66HeroStatType::Evasion, ET66SecondaryStatType::None },
-		{ false, ET66HeroStatType::Luck, ET66SecondaryStatType::None },
-		{ false, ET66HeroStatType::Speed, ET66SecondaryStatType::None },
-		{ true, ET66HeroStatType::Special, ET66SecondaryStatType::FirePower },
-		{ true, ET66HeroStatType::Special, ET66SecondaryStatType::IcePower },
-		{ true, ET66HeroStatType::Special, ET66SecondaryStatType::ElectricityPower },
-		{ true, ET66HeroStatType::Special, ET66SecondaryStatType::NaturePower },
+		{ false, ET66HeroStatType::Damage, ET66StatType::None },
+		{ false, ET66HeroStatType::AttackSpeed, ET66StatType::None },
+		{ false, ET66HeroStatType::AttackScale, ET66StatType::None },
+		{ false, ET66HeroStatType::Accuracy, ET66StatType::None },
+		{ false, ET66HeroStatType::Armor, ET66StatType::None },
+		{ false, ET66HeroStatType::Evasion, ET66StatType::None },
+		{ false, ET66HeroStatType::Luck, ET66StatType::None },
+		{ false, ET66HeroStatType::Speed, ET66StatType::None },
+		{ true, ET66HeroStatType::Special, ET66StatType::FirePower },
+		{ true, ET66HeroStatType::Special, ET66StatType::IcePower },
+		{ true, ET66HeroStatType::Special, ET66StatType::ElectricityPower },
+		{ true, ET66HeroStatType::Special, ET66StatType::NaturePower },
+		{ true, ET66HeroStatType::Special, ET66StatType::WindPower },
 	};
 	return Targets;
 }
@@ -75,6 +77,10 @@ const TArray<FT66MobKillBoostDropTarget>& T66GetMobKillBoostDropTargets()
 void T66TrySpawnMobKillStatBoost(AActor* SourceActor, const bool bIsMiniBoss)
 {
 	if (!SourceActor)
+	{
+		return;
+	}
+	if (!FT66ShelvedFeatureGate::IsMobLootEnabled())
 	{
 		return;
 	}
@@ -97,26 +103,30 @@ void T66TrySpawnMobKillStatBoost(AActor* SourceActor, const bool bIsMiniBoss)
 		FRotator::ZeroRotator,
 		SpawnParams))
 	{
-		if (Target.bUsesSecondaryStat)
+		if (Target.bUsesStat)
 		{
-			Boost->ConfigureSecondaryBoost(Target.SecondaryStatType, 8, 10.f);
+			Boost->ConfigureStatBoost(Target.StatType, 8, 10.f);
 		}
 		else
 		{
-			Boost->ConfigureBoost(Target.PrimaryStatType, 8, 10.f);
+			Boost->ConfigureBoost(Target.BaseStatType, 8, 10.f);
 		}
 		UE_LOG(LogT66MobBase, Display, TEXT("[T66Proof][StatBoostDrop] Source=LightweightMob MiniBoss=%d Chance=%.3f Primary=%d Secondary=%d UsesSecondary=%d"),
 			bIsMiniBoss ? 1 : 0,
 			DropChance,
-			static_cast<int32>(Target.PrimaryStatType),
-			static_cast<int32>(Target.SecondaryStatType),
-			Target.bUsesSecondaryStat ? 1 : 0);
+			static_cast<int32>(Target.BaseStatType),
+			static_cast<int32>(Target.StatType),
+			Target.bUsesStat ? 1 : 0);
 	}
 }
 
 void T66TrySpawnMobKillLootBags(AActor* SourceActor, const bool bIsMiniBoss)
 {
 	if (!SourceActor)
+	{
+		return;
+	}
+	if (!FT66ShelvedFeatureGate::IsMobLootEnabled())
 	{
 		return;
 	}
@@ -250,14 +260,14 @@ float T66ResolveFamilyChaseSpeed(const ET66EnemyFamily Family)
 	switch (Family)
 	{
 	case ET66EnemyFamily::Flying:
-		return 430.f;
+		return 215.f;
 	case ET66EnemyFamily::Ranged:
-		return 320.f;
+		return 160.f;
 	case ET66EnemyFamily::Rush:
-		return 330.f;
+		return 165.f;
 	case ET66EnemyFamily::Melee:
 	default:
-		return 350.f;
+		return 175.f;
 	}
 }
 }
@@ -740,6 +750,9 @@ bool AT66MobBase::TakeDamageFromHeroHitZone(int32 Damage, const FT66CombatTarget
 		LifecycleState = ET66MobLifecycleState::Dying;
 		StoredVelocity = FVector::ZeroVector;
 		KnockbackVelocity = FVector::ZeroVector;
+		bPhysicalLaunchActive = false;
+		PhysicalLaunchVelocity = FVector::ZeroVector;
+		PhysicalLaunchSecondsRemaining = 0.f;
 		SetMobVertexAnimationClip(T66MobVATClip_Death, 0.45f);
 		if (UWorld* World = GetWorld())
 		{
@@ -840,6 +853,39 @@ void AT66MobBase::ApplyAutoAttackKnockback(const FVector& HitOrigin, float Stren
 	KnockbackVelocity = Direction * ResolvedSpeed;
 	KnockbackDurationSeconds = KnockbackDuration;
 	KnockbackSecondsRemaining = FMath::Max(KnockbackSecondsRemaining, KnockbackDuration);
+}
+
+void AT66MobBase::ApplyPhysicalKnockback(const FVector& LaunchVelocity)
+{
+	if (LifecycleState != ET66MobLifecycleState::Active || CurrentHP <= 0.f)
+	{
+		return;
+	}
+	if (LaunchVelocity.IsNearlyZero())
+	{
+		return;
+	}
+
+	FVector Clamped = LaunchVelocity;
+	const float MaxSpeed = FMath::Max(0.f, PhysicalKnockbackMaxLaunchSpeed);
+	if (MaxSpeed > 0.f && Clamped.SizeSquared() > FMath::Square(MaxSpeed))
+	{
+		Clamped = Clamped.GetSafeNormal() * MaxSpeed;
+	}
+
+	PhysicalLaunchVelocity = Clamped;
+	PhysicalLaunchRestZ = GetActorLocation().Z;
+	PhysicalLaunchSecondsRemaining = FMath::Max(0.05f, PhysicalKnockbackMaxAirborneSeconds);
+	bPhysicalLaunchActive = true;
+
+	// Clear the legacy planar knockback so the two paths never fight; the manager checks
+	// bPhysicalLaunchActive first and uses ballistic integration while the launch is live.
+	KnockbackVelocity = FVector::ZeroVector;
+	KnockbackSecondsRemaining = 0.f;
+	KnockbackDurationSeconds = 0.f;
+
+	UE_LOG(LogT66MobBase, VeryVerbose, TEXT("ApplyPhysicalKnockback mob=%s launch=%s restZ=%.1f"),
+		*GetName(), *Clamped.ToCompactString(), PhysicalLaunchRestZ);
 }
 
 void AT66MobBase::ApplyPullTowards(const FVector& PullOrigin, float Distance)
@@ -1034,6 +1080,10 @@ void AT66MobBase::ResetForReuse()
 	KnockbackSecondsRemaining = 0.f;
 	KnockbackDurationSeconds = 0.f;
 	KnockbackVelocity = FVector::ZeroVector;
+	bPhysicalLaunchActive = false;
+	PhysicalLaunchVelocity = FVector::ZeroVector;
+	PhysicalLaunchSecondsRemaining = 0.f;
+	PhysicalLaunchRestZ = 0.f;
 	TouchDamageCooldownSeconds = 0.f;
 	bIsTouchingHero = false;
 	HideLockIndicator();

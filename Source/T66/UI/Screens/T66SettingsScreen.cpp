@@ -52,11 +52,6 @@ namespace
 			OutTab = ET66SettingsTab::Crashing;
 			return true;
 		}
-		if (Name.Equals(TEXT("RetroFX"), ESearchCase::IgnoreCase))
-		{
-			OutTab = ET66SettingsTab::RetroFX;
-			return true;
-		}
 
 		return false;
 	}
@@ -90,11 +85,6 @@ UT66PlayerSettingsSubsystem* UT66SettingsScreen::GetPlayerSettings() const
 
 FReply UT66SettingsScreen::HandleCloseClicked()
 {
-	if (bRetroFXPreviewPopup)
-	{
-		return HandleCloseRetroFXPreviewPopupClicked();
-	}
-
 	OnCloseClicked();
 	return FReply::Handled();
 }
@@ -103,7 +93,7 @@ void UT66SettingsScreen::OnScreenActivated_Implementation()
 {
 	Super::OnScreenActivated_Implementation();
 
-	CurrentTab = ET66SettingsTab::RetroFX;
+	CurrentTab = ET66SettingsTab::Gameplay;
 	ApplyCommandLineTabOverride();
 	OnTabChanged(CurrentTab);
 	if (ContentSwitcher.IsValid())
@@ -131,13 +121,11 @@ void UT66SettingsScreen::ApplyCommandLineTabOverride()
 
 void UT66SettingsScreen::OnScreenDeactivated_Implementation()
 {
-	CommitPendingRetroFXOnClose();
 	Super::OnScreenDeactivated_Implementation();
 }
 
 void UT66SettingsScreen::NativeDestruct()
 {
-	CommitPendingRetroFXOnClose();
 	Super::NativeDestruct();
 }
 
@@ -162,14 +150,6 @@ void UT66SettingsScreen::SwitchToTab(ET66SettingsTab Tab)
 }
 void UT66SettingsScreen::OnCloseClicked()
 {
-	if (bRetroFXPreviewPopup)
-	{
-		HandleCloseRetroFXPreviewPopupClicked();
-		return;
-	}
-
-	CommitPendingRetroFXOnClose();
-
 	// If a video-mode confirm is active, closing should not keep the new settings.
 	if (bVideoModeConfirmActive)
 	{
@@ -203,12 +183,6 @@ void UT66SettingsScreen::OnCloseClicked()
 
 bool UT66SettingsScreen::HandleBackAction()
 {
-	if (bRetroFXPreviewPopup)
-	{
-		HandleCloseRetroFXPreviewPopupClicked();
-		return true;
-	}
-
 	if (bWaitingForRebind)
 	{
 		bWaitingForRebind = false;

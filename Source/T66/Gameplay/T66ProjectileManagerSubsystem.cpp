@@ -119,6 +119,56 @@ const FName T66ManagedProjectileProfile_EnemyWeb(TEXT("ManagedProjectile.EnemyWe
 const FName T66ManagedProjectileProfile_EnemyWebNiagara(TEXT("ManagedProjectile.EnemyWeb.NiagaraBody"));
 const FName T66ManagedProjectileProfile_BossWebNeedle(TEXT("ManagedProjectile.Boss.WebNeedle"));
 
+TMap<FString, TWeakObjectPtr<UNiagaraSystem>>& GetManagedBossProjectileSystemCache()
+{
+	static TMap<FString, TWeakObjectPtr<UNiagaraSystem>> Cache;
+	return Cache;
+}
+
+TMap<FString, TSharedPtr<FStreamableHandle>>& GetManagedBossProjectileActiveLoads()
+{
+	static TMap<FString, TSharedPtr<FStreamableHandle>> ActiveLoads;
+	return ActiveLoads;
+}
+
+#if !UE_BUILD_SHIPPING
+void GetManagedBossProjectileAsyncDebug(
+	int32& OutCacheEntries,
+	int32& OutValidCachedSystems,
+	int32& OutActiveLoadEntries,
+	int32& OutValidLoadHandles,
+	int32& OutLoadingLoadHandles)
+{
+	const TMap<FString, TWeakObjectPtr<UNiagaraSystem>>& Cache = GetManagedBossProjectileSystemCache();
+	const TMap<FString, TSharedPtr<FStreamableHandle>>& ActiveLoads = GetManagedBossProjectileActiveLoads();
+
+	OutCacheEntries = Cache.Num();
+	OutValidCachedSystems = 0;
+	for (const TPair<FString, TWeakObjectPtr<UNiagaraSystem>>& Pair : Cache)
+	{
+		if (Pair.Value.IsValid())
+		{
+			++OutValidCachedSystems;
+		}
+	}
+
+	OutActiveLoadEntries = ActiveLoads.Num();
+	OutValidLoadHandles = 0;
+	OutLoadingLoadHandles = 0;
+	for (const TPair<FString, TSharedPtr<FStreamableHandle>>& Pair : ActiveLoads)
+	{
+		if (Pair.Value.IsValid())
+		{
+			++OutValidLoadHandles;
+			if (!Pair.Value->HasLoadCompleted())
+			{
+				++OutLoadingLoadHandles;
+			}
+		}
+	}
+}
+#endif
+
 struct FT66ManagedProjectileVisualProfileSpec
 {
 	FName ProfileID = NAME_None;
@@ -140,8 +190,8 @@ UNiagaraSystem* ResolveManagedBossProjectileSystem(const TCHAR* AssetPath)
 		return nullptr;
 	}
 
-	static TMap<FString, TWeakObjectPtr<UNiagaraSystem>> Cache;
-	static TMap<FString, TSharedPtr<FStreamableHandle>> ActiveLoads;
+	TMap<FString, TWeakObjectPtr<UNiagaraSystem>>& Cache = GetManagedBossProjectileSystemCache();
+	TMap<FString, TSharedPtr<FStreamableHandle>>& ActiveLoads = GetManagedBossProjectileActiveLoads();
 	const FSoftObjectPath Path(AssetPath);
 	const FString Key = Path.ToString();
 	if (const TWeakObjectPtr<UNiagaraSystem>* Found = Cache.Find(Key))
@@ -582,6 +632,87 @@ void UT66ProjectileManagerSubsystem::Deinitialize()
 	bInitialized = false;
 	Super::Deinitialize();
 }
+
+#if !UE_BUILD_SHIPPING
+FT66WorldRuntimeDebugSnapshot UT66ProjectileManagerSubsystem::GetWorldRuntimeDebugSnapshot() const
+{
+	FT66WorldRuntimeDebugSnapshot Snapshot;
+	Snapshot.SystemName = TEXT("UT66ProjectileManagerSubsystem");
+
+	int32 ValidRenderComponents = 0;
+	int32 TotalRenderInstances = 0;
+	for (const TObjectPtr<UHierarchicalInstancedStaticMeshComponent>& Component : ProjectileComponents)
+	{
+		if (Component)
+		{
+			++ValidRenderComponents;
+			TotalRenderInstances += Component->GetInstanceCount();
+		}
+	}
+
+	int32 ActiveSlots = 0;
+	int32 ValidSourceRefs = 0;
+	int32 ValidBodyComponents = 0;
+	int32 ValidTrailComponents = 0;
+	for (const FT66ManagedProjectile& Projectile : Projectiles)
+	{
+		if (!Projectile.bIsActive)
+		{
+			continue;
+		}
+		++ActiveSlots;
+		if (Projectile.SourceMob.IsValid())
+		{
+			++ValidSourceRefs;
+		}
+		if (Projectile.BodyComponent.IsValid())
+		{
+			++ValidBodyComponents;
+		}
+		if (Projectile.TrailComponent.IsValid())
+		{
+			++ValidTrailComponents;
+		}
+	}
+
+	int32 CacheEntries = 0;
+	int32 ValidCachedSystems = 0;
+	int32 ActiveLoadEntries = 0;
+	int32 ValidLoadHandles = 0;
+	int32 LoadingLoadHandles = 0;
+	GetManagedBossProjectileAsyncDebug(CacheEntries, ValidCachedSystems, ActiveLoadEntries, ValidLoadHandles, LoadingLoadHandles);
+
+	Snapshot.AddCounter(TEXT("active_projectile_count"), ActiveProjectileCount);
+	Snapshot.AddCounter(TEXT("active_projectile_slots"), ActiveSlots);
+	Snapshot.AddCounter(TEXT("projectile_slot_capacity"), Projectiles.Num());
+	Snapshot.AddCounter(TEXT("valid_source_refs"), ValidSourceRefs);
+	Snapshot.AddCounter(TEXT("valid_body_components"), ValidBodyComponents);
+	Snapshot.AddCounter(TEXT("valid_trail_components"), ValidTrailComponents);
+	Snapshot.AddCounter(TEXT("render_component_slots"), ProjectileComponents.Num());
+	Snapshot.AddCounter(TEXT("valid_render_components"), ValidRenderComponents);
+	Snapshot.AddCounter(TEXT("render_instance_count"), TotalRenderInstances);
+	Snapshot.AddCounter(TEXT("visual_bucket_count"), ProjectileVisualBuckets.Num());
+	Snapshot.AddCounter(TEXT("managed_visual_bucket_key_count"), ManagedVisualBucketByProfileID.Num());
+	Snapshot.AddCounter(TEXT("boss_visual_bucket_key_count"), BossVisualBucketByKey.Num());
+	Snapshot.AddCounter(TEXT("boss_overflow_bucket_key_count"), BossOverflowBucketByProfile.Num());
+	Snapshot.AddCounter(TEXT("async_cache_entries"), CacheEntries);
+	Snapshot.AddCounter(TEXT("async_cached_systems_valid"), ValidCachedSystems);
+	Snapshot.AddCounter(TEXT("async_load_entries"), ActiveLoadEntries);
+	Snapshot.AddCounter(TEXT("async_load_handles_valid"), ValidLoadHandles);
+	Snapshot.AddCounter(TEXT("async_load_handles_loading"), LoadingLoadHandles);
+	Snapshot.AddCounter(TEXT("known_timer_handles"), 0);
+	Snapshot.AddCounter(TEXT("known_external_delegate_handles"), 0);
+	Snapshot.AddFlag(TEXT("initialized"), bInitialized);
+	Snapshot.AddFlag(TEXT("shutting_down"), bShuttingDown);
+	Snapshot.AddFlag(TEXT("projectile_instances_dirty"), bProjectileInstancesDirty);
+	Snapshot.AddFlag(TEXT("render_host_valid"), RenderHost != nullptr);
+	Snapshot.AddFlag(TEXT("render_root_valid"), RenderRoot != nullptr);
+	Snapshot.AddEvidence(TEXT("timers"), TEXT("No stored timer handles found; projectile lifetime is tick-driven."));
+	Snapshot.AddEvidence(TEXT("delegates"), TEXT("No external delegate handle is stored by this subsystem."));
+	Snapshot.AddEvidence(TEXT("async_loads"), TEXT("Managed boss projectile Niagara systems use the static streamable cache counted in async_* fields."));
+	return Snapshot;
+}
+#endif
 
 bool UT66ProjectileManagerSubsystem::FireProjectile(
 	AActor* SourceMob,

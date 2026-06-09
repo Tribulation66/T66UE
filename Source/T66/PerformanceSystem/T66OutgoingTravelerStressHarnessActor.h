@@ -84,6 +84,7 @@ private:
 	int32 ArrivalCallbackLiveTargetCount = 0;
 	int32 ArrivalCallbackTargetLostCount = 0;
 	TArray<FName> VisualProfilesUsed;
+	TArray<FString> VisualRecipeSignaturesUsed;
 
 	FMetricAccumulator FrameMs;
 	FMetricAccumulator Fps;

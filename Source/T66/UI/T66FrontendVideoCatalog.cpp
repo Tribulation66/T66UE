@@ -305,7 +305,7 @@ namespace T66FrontendVideoCatalog
 		}
 
 		OutAsset.MoviePath = TEXT("MainMenuBackground.mp4");
-		OutAsset.PosterPath = TEXT("RuntimeDependencies/T66/UI/Reference/Screens/MainMenu/ScreenArt/mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_clean_bloodyretro_1920.png");
+		OutAsset.PosterPath = TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/MainMenu/mainmenu_screen_art_mainmenu_newmm_rubbery_friendslop_pass25_1920.png");
 		return true;
 	}
 

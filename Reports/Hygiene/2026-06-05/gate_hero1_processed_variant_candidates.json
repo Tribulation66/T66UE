@@ -1,0 +1,525 @@
+{
+  "generated_utc": "2026-06-05T07:59:21.719180+00:00",
+  "group": "hero1_processed_variant_candidates",
+  "source_manifest": {
+    "character_audit": "C:\\UE\\T66\\Saved\\Audits\\CharacterModelDataAudit.json",
+    "world_audit": "C:\\UE\\T66\\Saved\\Audits\\WorldAssetAudit.json",
+    "runs_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D"
+  },
+  "package_count": 33,
+  "approved_count": 29,
+  "skipped_count": 4,
+  "approved_packages": [
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Idle",
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Jump",
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Roll",
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Walk",
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_Idle",
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_RigIdleV2",
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer_Outline",
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_1",
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Idle",
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Jump",
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Roll",
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Walk",
+    "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad",
+    "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline",
+    "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_1",
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/RoyalChad_QuadRetro/Textures/RoyalChad_QuadRetro_Pixelated_512_Normalized",
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/SM_Hero_1_Chad_QuadRetro",
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Idle",
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Jump",
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Roll",
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Walk",
+    "/Game/Characters/Heroes/Hero_1/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_Beachgoer_1",
+    "/Game/Characters/Heroes/Hero_1/Stacy/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_1",
+    "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512",
+    "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512_Normalized",
+    "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro",
+    "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible",
+    "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible"
+  ],
+  "skipped_packages": [
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+      "reasons": [
+        "external_binary_token_match"
+      ]
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+      "reasons": [
+        "external_binary_token_match"
+      ]
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+      "reasons": [
+        "external_binary_token_match"
+      ]
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+      "reasons": [
+        "external_binary_token_match"
+      ]
+    }
+  ],
+  "external_package_refs": {},
+  "external_binary_refs": {
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad_Skeleton": [
+      "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer_Skeleton": [
+      "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin_Skeleton": [
+      "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA_Skeleton": [
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+    ]
+  },
+  "internal_binary_refs": {
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Idle": [
+      "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Idle",
+      "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Jump": [
+      "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Jump",
+      "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Roll": [
+      "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Roll",
+      "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Walk": [
+      "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Walk",
+      "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad": [
+      "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_Idle": [
+      "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_Idle",
+      "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_RigIdleV2": [
+      "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_RigIdleV2",
+      "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer": [
+      "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer": [
+      "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer_Outline": [
+      "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer",
+      "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer_Outline"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_1": [
+      "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_1"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Idle": [
+      "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Idle",
+      "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Jump": [
+      "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Jump",
+      "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Roll": [
+      "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Roll",
+      "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Walk": [
+      "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Walk",
+      "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin": [
+      "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad": [
+      "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline": [
+      "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad",
+      "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_1": [
+      "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_1"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/SM_Hero_1_Chad_QuadRetro": [
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/SM_Hero_1_Chad_QuadRetro"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/RoyalChad_QuadRetro/Textures/RoyalChad_QuadRetro_Pixelated_512_Normalized": [
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/RoyalChad_QuadRetro/Textures/RoyalChad_QuadRetro_Pixelated_512_Normalized"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Idle": [
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Idle",
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Jump": [
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Jump",
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Roll": [
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Roll",
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Walk": [
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Walk",
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA": [
+      "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_Beachgoer_1": [
+      "/Game/Characters/Heroes/Hero_1/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_Beachgoer_1"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Stacy/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_1": [
+      "/Game/Characters/Heroes/Hero_1/Stacy/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_1"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro": [
+      "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512",
+      "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512": [
+      "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512"
+    ],
+    "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512_Normalized": [
+      "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512",
+      "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512_Normalized"
+    ],
+    "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible": [
+      "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible"
+    ],
+    "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible": [
+      "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible"
+    ]
+  },
+  "blocking_text_refs": [
+    {
+      "path": "Source\\T66\\Core\\pending_issues_Core.md",
+      "hits": [
+        "SK_Hero_1_Chad"
+      ]
+    },
+    {
+      "path": "Content\\Data\\CharacterVisuals.csv",
+      "hits": [
+        "SM_Hero_1_Chad"
+      ]
+    }
+  ],
+  "nonblocking_text_refs": [
+    {
+      "path": "Scripts\\ValidateFriendSlopRawPixal3DAndExit.py",
+      "hits": [
+        "SM_Hero_1_Chad"
+      ]
+    },
+    {
+      "path": "Reports\\AgentReviews\\FriendSlopEasyPixal3D\\raw_fbx_unreal_import_report_hero1.json",
+      "hits": [
+        "SM_Hero_1_Chad"
+      ]
+    },
+    {
+      "path": "Reports\\AgentReviews\\FriendSlopEasyPixal3D\\raw_runtime_reference_validation.json",
+      "hits": [
+        "SM_Hero_1_Chad"
+      ]
+    },
+    {
+      "path": "Reports\\AgentReviews\\FriendSlopRawImportRepair\\codex_draft.md",
+      "hits": [
+        "SM_Hero_1_Chad"
+      ]
+    },
+    {
+      "path": "Reports\\AgentReviews\\FriendSlopRawImportRepair\\ClaudeReview\\20260605T030240-IndependentAnswer-pass1\\claude_review_pass1.md",
+      "hits": [
+        "SK_Hero_1_Chad",
+        "SM_Hero_1_Chad"
+      ]
+    },
+    {
+      "path": "Reports\\AgentReviews\\FriendSlopRawImportRepair\\ClaudeReview\\20260605T030240-IndependentAnswer-pass1\\attempts\\stdout_attempt1.md",
+      "hits": [
+        "SK_Hero_1_Chad",
+        "SM_Hero_1_Chad"
+      ]
+    },
+    {
+      "path": "Reports\\AgentReviews\\FriendSlopRawImportRepair\\ClaudeReview\\20260605T030240-IndependentAnswer-pass1\\attempts\\stdout_attempt1.result.md",
+      "hits": [
+        "SK_Hero_1_Chad",
+        "SM_Hero_1_Chad"
+      ]
+    },
+    {
+      "path": "Reports\\AgentReviews\\FriendSlopRawImportRepair\\ClaudeReview\\20260605T033218-CrossReview-pass2\\claude_review_prompt_pass2.md",
+      "hits": [
+        "SK_Hero_1_Chad",
+        "SM_Hero_1_Chad"
+      ]
+    },
+    {
+      "path": "Reports\\AgentReviews\\FriendSlopRawImportRepair\\ClaudeReview\\20260605T033614-CrossReview-pass3\\claude_review_prompt_pass3.md",
+      "hits": [
+        "SK_Hero_1_Chad",
+        "SM_Hero_1_Chad"
+      ]
+    },
+    {
+      "path": "Reports\\Hygiene\\2026-05-27\\hero_movement_qa_log_excerpt.txt",
+      "hits": [
+        "AM_Hero_1_Chad_Walk"
+      ]
+    },
+    {
+      "path": "Reports\\Hygiene\\2026-05-27\\hero_movement_qa_verification.json",
+      "hits": [
+        "AM_Hero_1_Chad_Walk"
+      ]
+    },
+    {
+      "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_candidate_manifest.json",
+      "hits": [
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Idle.AM_Hero_1_Chad_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Jump",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Jump.AM_Hero_1_Chad_Jump",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Roll",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Roll.AM_Hero_1_Chad_Roll",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Walk",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Walk.AM_Hero_1_Chad_Walk",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_Idle.AM_Hero_1_Chad_Beachgoer_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_RigIdleV2",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_RigIdleV2.AM_Hero_1_Chad_Beachgoer_RigIdleV2",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer.SM_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer_Outline.SM_Hero_1_Chad_Beachgoer_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_1",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_1.T_Hero_1_Chad_Beachgoer_1",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Idle.AM_Hero_1_Chad_DemoSkin_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Jump",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Jump.AM_Hero_1_Chad_DemoSkin_Jump",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Roll",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Roll.AM_Hero_1_Chad_DemoSkin_Roll",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Walk",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Walk.AM_Hero_1_Chad_DemoSkin_Walk",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad.SM_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline.SM_Hero_1_Chad_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_1",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_1.T_Hero_1_Chad_1",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/RoyalChad_QuadRetro/Textures/RoyalChad_QuadRetro_Pixelated_512_Normalized",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/RoyalChad_QuadRetro/Textures/RoyalChad_QuadRetro_Pixelated_512_Normalized.RoyalChad_QuadRetro_Pixelated_512_Normalized",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/SM_Hero_1_Chad_QuadRetro",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/SM_Hero_1_Chad_QuadRetro.SM_Hero_1_Chad_QuadRetro",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Idle.AM_Hero_1_Chad_QuadRetroUALQA_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Jump",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Jump.AM_Hero_1_Chad_QuadRetroUALQA_Jump",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Roll",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Roll.AM_Hero_1_Chad_QuadRetroUALQA_Roll",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Walk",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Walk.AM_Hero_1_Chad_QuadRetroUALQA_Walk",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+        "/Game/Characters/Heroes/Hero_1/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_Beachgoer_1",
+        "/Game/Characters/Heroes/Hero_1/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_Beachgoer_1.T_Hero_1_Stacy_Beachgoer_1",
+        "/Game/Characters/Heroes/Hero_1/Stacy/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_1",
+        "/Game/Characters/Heroes/Hero_1/Stacy/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_1.T_Hero_1_Stacy_1",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512.RoyalStacy_QuadRetro_Pixelated_512",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512_Normalized",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512_Normalized.RoyalStacy_QuadRetro_Pixelated_512_Normalized",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro.SM_Hero_1_Stacy_QuadRetro",
+        "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible",
+        "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible.T_Hero_1_Chad_Invincible",
+        "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible",
+        "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible.T_Hero_1_Stacy_Invincible",
+        "AM_Hero_1_Chad_Beachgoer_Idle",
+        "AM_Hero_1_Chad_Beachgoer_RigIdleV2",
+        "AM_Hero_1_Chad_DemoSkin_Idle",
+        "AM_Hero_1_Chad_DemoSkin_Jump",
+        "AM_Hero_1_Chad_DemoSkin_Roll",
+        "AM_Hero_1_Chad_DemoSkin_Walk",
+        "AM_Hero_1_Chad_Idle",
+        "AM_Hero_1_Chad_Jump",
+        "AM_Hero_1_Chad_QuadRetroUALQA_Idle",
+        "AM_Hero_1_Chad_QuadRetroUALQA_Jump",
+        "AM_Hero_1_Chad_QuadRetroUALQA_Roll",
+        "AM_Hero_1_Chad_QuadRetroUALQA_Walk",
+        "AM_Hero_1_Chad_Roll",
+        "AM_Hero_1_Chad_Walk",
+        "RoyalChad_QuadRetro_Pixelated_512_Normalized",
+        "RoyalStacy_QuadRetro_Pixelated_512",
+        "RoyalStacy_QuadRetro_Pixelated_512_Normalized",
+        "SK_Hero_1_Chad",
+        "SK_Hero_1_Chad_Beachgoer",
+        "SK_Hero_1_Chad_DemoSkin",
+        "SK_Hero_1_Chad_QuadRetroUALQA",
+        "SM_Hero_1_Chad",
+        "SM_Hero_1_Chad_Beachgoer",
+        "SM_Hero_1_Chad_Beachgoer_Outline",
+        "SM_Hero_1_Chad_Outline",
+        "SM_Hero_1_Chad_QuadRetro",
+        "SM_Hero_1_Stacy_QuadRetro",
+        "T_Hero_1_Chad_1",
+        "T_Hero_1_Chad_Beachgoer_1",
+        "T_Hero_1_Chad_Invincible",
+        "T_Hero_1_Stacy_1",
+        "T_Hero_1_Stacy_Beachgoer_1",
+        "T_Hero_1_Stacy_Invincible"
+      ]
+    },
+    {
+      "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_candidate_manifest_hero1_processed_variant_candidates_packages.txt",
+      "hits": [
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Jump",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Roll",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Walk",
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_RigIdleV2",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_1",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Jump",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Roll",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Walk",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_1",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/RoyalChad_QuadRetro/Textures/RoyalChad_QuadRetro_Pixelated_512_Normalized",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/SM_Hero_1_Chad_QuadRetro",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Idle",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Jump",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Roll",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Walk",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+        "/Game/Characters/Heroes/Hero_1/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_Beachgoer_1",
+        "/Game/Characters/Heroes/Hero_1/Stacy/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_1",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512_Normalized",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro",
+        "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible",
+        "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible",
+        "AM_Hero_1_Chad_Beachgoer_Idle",
+        "AM_Hero_1_Chad_Beachgoer_RigIdleV2",
+        "AM_Hero_1_Chad_DemoSkin_Idle",
+        "AM_Hero_1_Chad_DemoSkin_Jump",
+        "AM_Hero_1_Chad_DemoSkin_Roll",
+        "AM_Hero_1_Chad_DemoSkin_Walk",
+        "AM_Hero_1_Chad_Idle",
+        "AM_Hero_1_Chad_Jump",
+        "AM_Hero_1_Chad_QuadRetroUALQA_Idle",
+        "AM_Hero_1_Chad_QuadRetroUALQA_Jump",
+        "AM_Hero_1_Chad_QuadRetroUALQA_Roll",
+        "AM_Hero_1_Chad_QuadRetroUALQA_Walk",
+        "AM_Hero_1_Chad_Roll",
+        "AM_Hero_1_Chad_Walk",
+        "RoyalChad_QuadRetro_Pixelated_512_Normalized",
+        "RoyalStacy_QuadRetro_Pixelated_512",
+        "RoyalStacy_QuadRetro_Pixelated_512_Normalized",
+        "SK_Hero_1_Chad",
+        "SK_Hero_1_Chad_Beachgoer",
+        "SK_Hero_1_Chad_DemoSkin",
+        "SK_Hero_1_Chad_QuadRetroUALQA",
+        "SM_Hero_1_Chad",
+        "SM_Hero_1_Chad_Beachgoer",
+        "SM_Hero_1_Chad_Beachgoer_Outline",
+        "SM_Hero_1_Chad_Outline",
+        "SM_Hero_1_Chad_QuadRetro",
+        "SM_Hero_1_Stacy_QuadRetro",
+        "T_Hero_1_Chad_1",
+        "T_Hero_1_Chad_Beachgoer_1",
+        "T_Hero_1_Chad_Invincible",
+        "T_Hero_1_Stacy_1",
+        "T_Hero_1_Stacy_Beachgoer_1",
+        "T_Hero_1_Stacy_Invincible"
+      ]
+    },
+    {
+      "path": "Model Generation\\Pixal3D\\production_asset_replacement_manifest.json",
+      "hits": [
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro.SM_Hero_1_Stacy_QuadRetro",
+        "SK_Hero_1_Chad",
+        "SK_Hero_1_Chad_Beachgoer",
+        "SK_Hero_1_Chad_QuadRetroUALQA",
+        "SM_Hero_1_Stacy_QuadRetro"
+      ]
+    },
+    {
+      "path": "Model Generation\\Pixal3D\\production_testroom_character_no_face_mask_manifest_20260520.json",
+      "hits": [
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro",
+        "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro.SM_Hero_1_Stacy_QuadRetro",
+        "SK_Hero_1_Chad",
+        "SK_Hero_1_Chad_Beachgoer",
+        "SM_Hero_1_Stacy_QuadRetro"
+      ]
+    },
+    {
+      "path": "Model Generation\\Runs\\Pixal3D\\Archive\\Agent2Characters_2026-05-19\\Reports\\Agent2_Characters_Import_Report.md",
+      "hits": [
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer.SM_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad.SM_Hero_1_Chad",
+        "SM_Hero_1_Chad",
+        "SM_Hero_1_Chad_Beachgoer"
+      ]
+    },
+    {
+      "path": "Model Generation\\Runs\\Pixal3D\\Archive\\Agent2Characters_2026-05-19\\Reports\\Agent2_Characters_TestRoom_Handoff.md",
+      "hits": [
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer.SM_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer_Outline.SM_Hero_1_Chad_Beachgoer_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad.SM_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline.SM_Hero_1_Chad_Outline",
+        "SM_Hero_1_Chad",
+        "SM_Hero_1_Chad_Beachgoer",
+        "SM_Hero_1_Chad_Beachgoer_Outline",
+        "SM_Hero_1_Chad_Outline"
+      ]
+    }
+  ],
+  "notes": [
+    "Internal candidate-set references are allowed for chain deletion.",
+    "Reports, generated manifests, and script/import references are recorded but not treated as runtime blockers.",
+    "Source, Config, and Content/Data text hits are deletion blockers."
+  ]
+}

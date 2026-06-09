@@ -1,0 +1,214 @@
+[2026.06.05-06.17.06:972][  0]LogInit: Display: Running engine for game: T66
+[2026.06.05-06.17.06:972][  0]LogCore: Display: Requested channels: 'cpu,gpu,frame,log,bookmark,screenshot,region'
+[2026.06.05-06.17.06:972][  0]LogTrace: Display: Control listening on port 1985
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : platform="Windows"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : config="Development"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : buildversion="++UE5+Release-5.7-CL-48512491"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : engineversion="5.7.1-48512491+++UE5+Release-5.7"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : enginereleaseversion="5.7.1"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : os="Windows 11 (25H2) [10.0.26200.8457] "
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : cpu="GenuineIntel|Intel(R) Core(TM) i9-14900HX"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : pgoenabled="0"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : pgoprofilingenabled="0"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : ltoenabled="0"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : asan="0"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : mergedmodules="0"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : commandline="" C:\UE\T66\T66.uproject -run=pythonscript -script=C:\UE\T66\Scripts\ImportFriendSlopRawPixal3DFBXAndExit.py -unattended -nop4 -NoSound -log""
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : loginid="6e1893814737cdf6e2edcbb02b9a616f"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : llm="0"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resx="1280"
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resy="720"
+[2026.06.05-06.17.06:972][  0]LogAudio: Display: Audio Device Manager not initializing due to all audio being disabled. If this is not intentional, please check command line arguments for "-nosound".
+[2026.06.05-06.17.06:972][  0]LogConfig: Display: Loading VulkanPC ini files took 0.04 seconds
+[2026.06.05-06.17.06:972][  0]LogConfig: Display: Loading Windows ini files took 0.06 seconds
+[2026.06.05-06.17.06:972][  0]LogConfig: Display: Loading Unix ini files took 0.07 seconds
+[2026.06.05-06.17.06:972][  0]LogConfig: Display: Loading Mac ini files took 0.07 seconds
+[2026.06.05-06.17.06:972][  0]LogConfig: Display: Loading Linux ini files took 0.09 seconds
+[2026.06.05-06.17.06:972][  0]LogConfig: Display: Loading IOS ini files took 0.11 seconds
+[2026.06.05-06.17.06:972][  0]LogConfig: Display: Loading Android ini files took 0.11 seconds
+[2026.06.05-06.17.06:972][  0]LogConfig: Display: Loading TVOS ini files took 0.11 seconds
+[2026.06.05-06.17.06:972][  0]LogConfig: Display: Loading VisionOS ini files took 0.11 seconds
+[2026.06.05-06.17.06:972][  0]RenderDocPlugin: Display: RenderDoc plugin will not be loaded. Use '-AttachRenderDoc' on the cmd line or enable 'renderdoc.AutoAttach' in the plugin settings.
+[2026.06.05-06.17.06:972][  0]LogSteamShared: Display: Loading Steam SDK 1.61
+[2026.06.05-06.17.06:972][  0]LogOnline: Display: STEAM: OnlineSubsystemSteam::Shutdown()
+[2026.06.05-06.17.06:972][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.06.05-06.17.06:972][  0]LogHAL: Display: Platform has ~ 64 GB [68413153280 / 68719476736 / 64], which maps to Largest [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2026.06.05-06.17.06:972][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.06.05-06.17.06:972][  0]LogCsvProfiler: Display: Metadata set : extradevelopmentmemorymb="0"
+[2026.06.05-06.17.07:529][  0]LogObj: Display: Attempting to load config data for Default__SlateThemeManager before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.06.05-06.17.12:352][  0]LogCsvProfiler: Display: Metadata set : verbatimrhiname="Null"
+[2026.06.05-06.17.12:352][  0]LogCsvProfiler: Display: Metadata set : rhiname="Null"
+[2026.06.05-06.17.12:352][  0]LogCsvProfiler: Display: Metadata set : rhifeaturelevel="SM6"
+[2026.06.05-06.17.12:352][  0]LogCsvProfiler: Display: Metadata set : shaderplatform="PCD3D_SM6"
+[2026.06.05-06.17.12:360][  0]LogTextureFormatASTC: Display: ASTCEnc version 5.0.1 library loaded
+[2026.06.05-06.17.12:360][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatASTC
+[2026.06.05-06.17.12:360][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatDXT
+[2026.06.05-06.17.12:360][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatETC2
+[2026.06.05-06.17.12:360][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatIntelISPCTexComp
+[2026.06.05-06.17.12:360][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatUncompressed
+[2026.06.05-06.17.12:360][  0]LogTextureFormatOodle: Display: Oodle Texture TFO init; latest sdk version = 2.9.14
+[2026.06.05-06.17.12:360][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.14.dll
+[2026.06.05-06.17.12:361][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.5.dll
+[2026.06.05-06.17.12:362][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatOodle
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ASTC'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_DXT'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ETC2'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_OpenXR'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'AndroidClient'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ASTCClient'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_DXTClient'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ETC2Client'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_OpenXRClient'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_Multi'
+[2026.06.05-06.17.12:389][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_MultiClient'
+[2026.06.05-06.17.12:403][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'IOS'
+[2026.06.05-06.17.12:403][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'IOSClient'
+[2026.06.05-06.17.12:419][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Linux'
+[2026.06.05-06.17.12:419][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'LinuxEditor'
+[2026.06.05-06.17.12:419][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'LinuxServer'
+[2026.06.05-06.17.12:420][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'LinuxClient'
+[2026.06.05-06.17.12:434][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Mac'
+[2026.06.05-06.17.12:435][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'MacEditor'
+[2026.06.05-06.17.12:435][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'MacServer'
+[2026.06.05-06.17.12:435][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'MacClient'
+[2026.06.05-06.17.12:448][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'TVOS'
+[2026.06.05-06.17.12:448][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'TVOSClient'
+[2026.06.05-06.17.12:463][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Windows'
+[2026.06.05-06.17.12:463][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsEditor'
+[2026.06.05-06.17.12:463][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsServer'
+[2026.06.05-06.17.12:463][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsClient'
+[2026.06.05-06.17.12:463][  0]LogTargetPlatformManager: Display: Building Assets For WindowsEditor
+[2026.06.05-06.17.12:471][  0]LogAudioDebug: Display: Lib vorbis DLL was dynamically loaded.
+[2026.06.05-06.17.12:537][  0]LogDerivedDataCache: Display: Memory: Max Cache Size: -1 MB
+[2026.06.05-06.17.12:883][  0]LogDerivedDataCache: Display: ../../../Engine/DerivedDataCache/Compressed.ddp: Opened pak cache for reading. (1732 MiB)
+[2026.06.05-06.17.12:884][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zen.exe service status'.
+[2026.06.05-06.17.13:210][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zen.exe service status'.
+[2026.06.05-06.17.13:526][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/DoPra/AppData/Local/UnrealEngine/5.7/Saved/Zen/zen.version', version: '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.06.05-06.17.13:528][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zen.version', version: '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.06.05-06.17.13:528][  0]LogZenServiceInstance: Display: Installed service at 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is up to date
+[2026.06.05-06.17.13:528][  0]LogZenServiceInstance: Display: Launching executable 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe', working dir 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install', data dir 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Data', args '--port 8558 --data-dir C:\Users\DoPra\AppData\Local\UnrealEngine\Common\Zen\Data --http asio --gc-cache-duration-seconds 1209600 --gc-interval-seconds 21600 --gc-low-diskspace-threshold 2147483648 --cache-bucket-limit-overwrites --quiet --http-forceloopback --owner-pid 17108  --child-id Zen_17108_Startup'
+[2026.06.05-06.17.26:525][  0]LogZenServiceInstance: Display: Unreal Zen Storage Server HTTP service at http://[::1]:8558 status: OK!.
+[2026.06.05-06.17.26:527][  0]LogDerivedDataCache: Display: ZenLocal: Using ZenServer HTTP service at [::1] with namespace ue.ddc status: OK!.
+[2026.06.05-06.17.26:649][  0]LogDerivedDataCache: Display: C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: Performance: Latency=0.03ms. RandomReadSpeed=7.96MBs, RandomWriteSpeed=160.68MBs. Assigned SpeedClass 'Local'
+[2026.06.05-06.17.26:658][  0]LogUbaHorde: Display: UBA/Horde Configuration [Uba.Provider.Horde]: Not Enabled
+[2026.06.05-06.17.26:658][  0]LogShaderCompilers: Display: No distributed shader compiler controller found
+[2026.06.05-06.17.26:658][  0]LogShaderCompilers: Display: Using 29 local workers for shader compilation
+[2026.06.05-06.17.26:660][  0]LogShaderCompilers: Display: Compiling shader autogen file: ../../../../../../UE/T66/Intermediate/ShaderAutogen/PCD3D_SM6/AutogenShaderHeaders.ush
+[2026.06.05-06.17.26:668][  0]LogShaderCompilers: Display: Autogen file is unchanged, skipping write.
+[2026.06.05-06.17.39:970][  0]LogEditorDomain: Display: EditorDomain is Disabled
+[2026.06.05-06.17.40:471][  0]LogCsvProfiler: Display: Metadata set : deviceprofile="WindowsEditor"
+[2026.06.05-06.17.40:475][  0]LogStreaming: Display: FlushAsyncLoading(1): 1 QueuedPackages, 0 AsyncPackages
+[2026.06.05-06.17.40:551][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:564][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness because of a recursive sync load
+[2026.06.05-06.17.40:564][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:565][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:571][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec because of a recursive sync load
+[2026.06.05-06.17.40:571][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:572][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/WorldGridMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:608][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/WorldGridMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:621][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:629][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultPostProcessMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:642][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultLightFunctionMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultPostProcessMaterial because of a recursive sync load
+[2026.06.05-06.17.40:642][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultPostProcessMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:643][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultDeferredDecalMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultLightFunctionMaterial because of a recursive sync load
+[2026.06.05-06.17.40:643][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:644][  0]LogStreaming: Display: Package /Engine/EngineMaterials/WorldGridMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultDeferredDecalMaterial because of a recursive sync load
+[2026.06.05-06.17.40:644][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/WorldGridMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:647][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/EngineMaterials/WorldGridMaterial because of a recursive sync load
+[2026.06.05-06.17.40:647][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/WorldGridMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.05-06.17.40:648][  0]LogTextureEncodingSettings: Display: Texture Encode Speed: Final (cook).
+[2026.06.05-06.17.40:648][  0]LogTextureEncodingSettings: Display: Oodle Texture Encode Speed settings: Fast: RDO Off Lambda=0, Effort=Normal Final: RDO Off Lambda=0, Effort=Normal
+[2026.06.05-06.17.40:648][  0]LogTextureEncodingSettings: Display: Shared linear texture encoding: Disabled
+[2026.06.05-06.17.40:684][  0]LogMeshReduction: Display: Using QuadricMeshReduction for automatic static mesh reduction
+[2026.06.05-06.17.40:684][  0]LogMeshReduction: Display: Using SkeletalMeshReduction for automatic skeletal mesh reduction
+[2026.06.05-06.17.40:684][  0]LogMeshReduction: Display: Using ProxyLODMeshReduction for automatic mesh merging
+[2026.06.05-06.17.40:684][  0]LogMeshReduction: Display: No distributed automatic mesh merging module available
+[2026.06.05-06.17.41:693][  0]LogShaderCompilers: Display: Compiling shader autogen file: ../../../../../../UE/T66/Intermediate/ShaderAutogen/PCD3D_SM5/AutogenShaderHeaders.ush
+[2026.06.05-06.17.41:706][  0]LogShaderCompilers: Display: Autogen file is unchanged, skipping write.
+[2026.06.05-06.17.41:706][  0]LogVirtualization: Display: VirtualizationSystem name found in ini file: None
+[2026.06.05-06.17.41:706][  0]LogVirtualization: Display: FNullVirtualizationSystem mounted, virtualization will be disabled
+[2026.06.05-06.17.41:849][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize started...
+[2026.06.05-06.17.41:854][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize took 5.514 ms
+[2026.06.05-06.17.42:809][  0]LogMetaSound: Display: MetaSound Page Target Initialized to 'Default'
+[2026.06.05-06.17.42:810][  0]LogAudio: Display: Registering Engine Module Parameter Interfaces...
+[2026.06.05-06.17.45:990][  0]LogFabLauncher: Display: FabLauncher (version 0.5.0) active
+[2026.06.05-06.17.46:720][  0]LogAssetRegistry: Display: PlatformFileJournal journal has wrapped for volume 'C:'. AssetRegistry discovery of files on this volume will be uncached. Notes on wrapping:
+
+NTFS Journal has wrapped for volume 'C:'; the number of files written to this volume exceeded the buffer size of the journal and some entries were dropped.
+
+If this happens frequently increase the buffer size of the journal:
+
+Launch cmd.exe as admin and run command `fsutil usn createJournal C: m=<SizeInBytes>`
+
+<SizeInBytes> defaults to 33554432 (32MB), Recommended <SizeInBytes> is 0x40000000 (1GB). You can see the current value via `fsutil usn queryJournal C:`, 'Maximum Size' field.
+[2026.06.05-06.17.46:849][  0]LogAssetRegistry: Display: Asset registry cache read as 77.6 MiB from ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_0.bin.
+[2026.06.05-06.17.46:850][  0]LogAssetRegistry: Display: AssetDataGatherer spent 0.128s loading caches ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_*.bin.
+[2026.06.05-06.17.47:240][  0]LogCsvProfiler: Display: Metadata set : largeworldcoordinates="1"
+[2026.06.05-06.17.47:389][  0]LogPython: Display: No pip-enabled plugins with python dependencies found, skipping
+[2026.06.05-06.17.48:241][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... started...
+[2026.06.05-06.17.48:591][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... took 349.324 ms
+[2026.06.05-06.17.48:591][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... started...
+[2026.06.05-06.17.48:776][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... took 184.991 ms (total: 534.315 ms)
+[2026.06.05-06.17.48:776][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/MovieScene/MovieRenderPipeline/Content/Python/init_unreal.py... started...
+[2026.06.05-06.17.48:797][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/MovieScene/MovieRenderPipeline/Content/Python/init_unreal.py... took 21.621 ms (total: 555.936 ms)
+[2026.06.05-06.17.48:799][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Importers/USDImporter/Content/Python/init_unreal.py... started...
+[2026.06.05-06.17.48:799][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Importers/USDImporter/Content/Python/init_unreal.py... took 251 us (total: 556.187 ms)
+[2026.06.05-06.17.48:800][  0]LogPythonScriptCommandlet: Display: Running Python script: C:\UE\T66\Scripts\ImportFriendSlopRawPixal3DFBXAndExit.py
+[2026.06.05-06.17.50:730][  0]LogSourceControl: Display: Uncontrolled Changelist persistency file loaded ../../../../../../UE/T66/Saved/SourceControl/UncontrolledChangelists.json
+[2026.06.05-06.17.50:737][  0]LogOutputDevice: Warning: 
+
+Script Stack (1 frames) :
+/Script/AssetTools.AssetTools.ImportAssetTasks
+
+[2026.06.05-06.17.50:750][  0]LogWindows: Error: appError called: Assertion failed: CurrentApplication.IsValid() [File:D:\build\++UE5\Sync\Engine\Source\Runtime\Slate\Public\Framework\Application\SlateApplication.h] [Line: 321] 
+
+
+[2026.06.05-06.17.50:751][  0]LogWindows: Error: Windows GetLastError: The handle is invalid. (6)
+[2026.06.05-06.17.55:493][  0]LogWindows: Error: === Critical error: ===
+[2026.06.05-06.17.55:493][  0]LogWindows: Error: 
+[2026.06.05-06.17.55:493][  0]LogWindows: Error: Assertion failed: CurrentApplication.IsValid() [File:D:\build\++UE5\Sync\Engine\Source\Runtime\Slate\Public\Framework\Application\SlateApplication.h] [Line: 321] 
+[2026.06.05-06.17.55:493][  0]LogWindows: Error: 
+[2026.06.05-06.17.55:493][  0]LogWindows: Error: 
+[2026.06.05-06.17.55:493][  0]LogWindows: Error: 
+[2026.06.05-06.17.55:493][  0]LogWindows: Error: [Callstack] 0x00007ffd33017f58 UnrealEditor-Core.dll!UnknownFunction []
+[2026.06.05-06.17.55:494][  0]LogWindows: Error: [Callstack] 0x00007ffd5bd84f9f UnrealEditor-Slate.dll!UnknownFunction []
+[2026.06.05-06.17.55:494][  0]LogWindows: Error: [Callstack] 0x00007ffd5bd6611f UnrealEditor-Slate.dll!UnknownFunction []
+[2026.06.05-06.17.55:494][  0]LogWindows: Error: [Callstack] 0x00007ffd5bf0a168 UnrealEditor-Slate.dll!UnknownFunction []
+[2026.06.05-06.17.55:495][  0]LogWindows: Error: [Callstack] 0x00007ffd5bf09d38 UnrealEditor-Slate.dll!UnknownFunction []
+[2026.06.05-06.17.55:495][  0]LogWindows: Error: [Callstack] 0x00007ffd5bee9059 UnrealEditor-Slate.dll!UnknownFunction []
+[2026.06.05-06.17.55:495][  0]LogWindows: Error: [Callstack] 0x00007ffd5bf15859 UnrealEditor-Slate.dll!UnknownFunction []
+[2026.06.05-06.17.55:496][  0]LogWindows: Error: [Callstack] 0x00007ffd1a530228 UnrealEditor-ContentBrowser.dll!UnknownFunction []
+[2026.06.05-06.17.55:496][  0]LogWindows: Error: [Callstack] 0x00007ffd1a4fad65 UnrealEditor-ContentBrowser.dll!UnknownFunction []
+[2026.06.05-06.17.55:496][  0]LogWindows: Error: [Callstack] 0x00007ffd1a530680 UnrealEditor-ContentBrowser.dll!UnknownFunction []
+[2026.06.05-06.17.55:496][  0]LogWindows: Error: [Callstack] 0x00007ffd1a5305cf UnrealEditor-ContentBrowser.dll!UnknownFunction []
+[2026.06.05-06.17.55:496][  0]LogWindows: Error: [Callstack] 0x00007ffd21444335 UnrealEditor-AssetTools.dll!UnknownFunction []
+[2026.06.05-06.17.55:498][  0]LogWindows: Error: [Callstack] 0x00007ffd213ebcda UnrealEditor-AssetTools.dll!UnknownFunction []
+[2026.06.05-06.17.55:498][  0]LogWindows: Error: [Callstack] 0x00007ffd218d87ac UnrealEditor-InterchangeEngine.dll!UnknownFunction []
+[2026.06.05-06.17.55:498][  0]LogWindows: Error: [Callstack] 0x00007ffd2141ebcd UnrealEditor-AssetTools.dll!UnknownFunction []
+[2026.06.05-06.17.55:498][  0]LogWindows: Error: [Callstack] 0x00007ffd2141c90c UnrealEditor-AssetTools.dll!UnknownFunction []
+[2026.06.05-06.17.55:499][  0]LogWindows: Error: [Callstack] 0x00007ffd213ca37e UnrealEditor-AssetTools.dll!UnknownFunction []
+[2026.06.05-06.17.55:499][  0]LogWindows: Error: [Callstack] 0x00007ffd30f8d08a UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.06.05-06.17.55:499][  0]LogWindows: Error: [Callstack] 0x00007ffd312b10d2 UnrealEditor-CoreUObject.dll!UnknownFunction []
+[2026.06.05-06.17.55:499][  0]LogWindows: Error: [Callstack] 0x00007ffcf84a8d93 UnrealEditor-PythonScriptPlugin.dll!UnknownFunction []
+[2026.06.05-06.17.55:499][  0]LogWindows: Error: [Callstack] 0x00007ffcf84f5fba UnrealEditor-PythonScriptPlugin.dll!UnknownFunction []
+[2026.06.05-06.17.55:499][  0]LogWindows: Error: [Callstack] 0x00007ffcf84f50ce UnrealEditor-PythonScriptPlugin.dll!UnknownFunction []
+[2026.06.05-06.17.55:499][  0]LogWindows: Error: [Callstack] 0x00007ffcf84f7305 UnrealEditor-PythonScriptPlugin.dll!UnknownFunction []
+[2026.06.05-06.17.55:500][  0]LogWindows: Error: [Callstack] 0x00007ffcf8483bee UnrealEditor-PythonScriptPlugin.dll!UnknownFunction []
+[2026.06.05-06.17.55:500][  0]LogWindows: Error: [Callstack] 0x00007ffd15af1263 python311.dll!UnknownFunction []
+[2026.06.05-06.17.55:500][  0]LogWindows: Error: [Callstack] 0x00007ffd15af48df python311.dll!UnknownFunction []
+[2026.06.05-06.17.55:500][  0]LogWindows: Error: [Callstack] 0x00007ffd15af60b2 python311.dll!UnknownFunction []
+[2026.06.05-06.17.55:500][  0]LogWindows: Error: [Callstack] 0x00007ffd15b556bf python311.dll!UnknownFunction []
+[2026.06.05-06.17.55:500][  0]LogWindows: Error: [Callstack] 0x00007ffd15b570bf python311.dll!UnknownFunction []
+[2026.06.05-06.17.55:501][  0]LogWindows: Error: [Callstack] 0x00007ffcf8491d90 UnrealEditor-PythonScriptPlugin.dll!UnknownFunction []
+[2026.06.05-06.17.55:501][  0]LogWindows: Error: [Callstack] 0x00007ffcf84bbba4 UnrealEditor-PythonScriptPlugin.dll!UnknownFunction []
+[2026.06.05-06.17.55:501][  0]LogWindows: Error: [Callstack] 0x00007ffcf8492398 UnrealEditor-PythonScriptPlugin.dll!UnknownFunction []
+[2026.06.05-06.17.55:501][  0]LogWindows: Error: [Callstack] 0x00007ffcf84ab47d UnrealEditor-PythonScriptPlugin.dll!UnknownFunction []
+[2026.06.05-06.17.55:502][  0]LogWindows: Error: [Callstack] 0x00007ff75655a5c1 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.06.05-06.17.55:502][  0]LogWindows: Error: [Callstack] 0x00007ff756550a1b UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.06.05-06.17.55:502][  0]LogWindows: Error: [Callstack] 0x00007ff756550d0a UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.06.05-06.17.55:502][  0]LogWindows: Error: [Callstack] 0x00007ff756554590 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.06.05-06.17.55:503][  0]LogWindows: Error: [Callstack] 0x00007ff756565bd4 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.06.05-06.17.55:503][  0]LogWindows: Error: [Callstack] 0x00007ff7565682e6 UnrealEditor-Cmd.exe!UnknownFunction []
+[2026.06.05-06.17.55:503][  0]LogWindows: Error: [Callstack] 0x00007ffe1b53e957 KERNEL32.DLL!UnknownFunction []
+[2026.06.05-06.17.55:503][  0]LogWindows: Error: 

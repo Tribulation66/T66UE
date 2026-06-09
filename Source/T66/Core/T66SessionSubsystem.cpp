@@ -5,6 +5,7 @@
 #include "Core/T66GameInstance.h"
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
+#include "Core/T66LeaderboardSubsystem.h"
 #include "Core/T66PartySubsystem.h"
 #include "Core/T66RunIntegritySubsystem.h"
 #include "Core/T66RunSaveGame.h"
@@ -12,6 +13,7 @@
 #include "Core/T66SaveMigration.h"
 #include "Core/T66SaveSubsystem.h"
 #include "Core/T66ShelvedFeatureGate.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Core/T66SteamHelper.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66GameMode.h"
@@ -46,6 +48,163 @@ namespace
 	constexpr int32 T66MaxPendingFriendJoinLookupAttempts = 10;
 	constexpr double T66InviteFeedbackLifetimeSeconds = 12.0;
 	constexpr int32 T66DefaultSteamJoinPort = 7777;
+
+#if !UE_BUILD_SHIPPING
+	static constexpr const TCHAR* T66SessionLoadedTravelOwnerId = TEXT("t66_session_loaded_travel_harness");
+	static constexpr const TCHAR* T66SessionLoadedTravelGuestId = TEXT("t66_session_loaded_travel_guest");
+	static constexpr const TCHAR* T66SessionLoadedTravelConfirmToken = TEXT("CONFIRM");
+
+	static FString T66_BuildSessionLoadedTravelMapName(const FString& Marker)
+	{
+		return FString::Printf(TEXT("T66_SessionLoadedTravel_%s"), *Marker);
+	}
+
+	static FString T66_NetModeToString(const ENetMode NetMode)
+	{
+		switch (NetMode)
+		{
+		case NM_Standalone:
+			return TEXT("Standalone");
+		case NM_DedicatedServer:
+			return TEXT("DedicatedServer");
+		case NM_ListenServer:
+			return TEXT("ListenServer");
+		case NM_Client:
+			return TEXT("Client");
+		default:
+			return TEXT("Unknown");
+		}
+	}
+
+	static FString T66_PartySizeToString(const ET66PartySize PartySize)
+	{
+		switch (PartySize)
+		{
+		case ET66PartySize::Solo:
+			return TEXT("Solo");
+		case ET66PartySize::Duo:
+			return TEXT("Duo");
+		case ET66PartySize::Trio:
+			return TEXT("Trio");
+		case ET66PartySize::Quad:
+			return TEXT("Quad");
+		default:
+			return TEXT("Unknown");
+		}
+	}
+
+	static bool T66_ParseSessionLoadedTravelArgs(
+		const TArray<FString>& Args,
+		int32& OutSlotIndex,
+		FString& OutMarker,
+		int32& OutExitCode)
+	{
+		if (Args.Num() < 3)
+		{
+			return false;
+		}
+
+		if (!LexTryParseString(OutSlotIndex, *Args[0]))
+		{
+			return false;
+		}
+
+		OutMarker = Args[1].TrimStartAndEnd();
+		if (OutMarker.IsEmpty())
+		{
+			return false;
+		}
+
+		if (!Args[2].Equals(T66SessionLoadedTravelConfirmToken, ESearchCase::IgnoreCase))
+		{
+			return false;
+		}
+
+		OutExitCode = 0;
+		if (Args.Num() > 3)
+		{
+			LexTryParseString(OutExitCode, *Args[3]);
+		}
+
+		return true;
+	}
+
+	static bool T66_RequestSessionLoadedTravelExit(UGameInstance* GameInstance, const int32 ExitCode, const TCHAR* ExitTag)
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GameInstance ? GameInstance->GetSubsystem<UT66ShutdownSubsystem>() : nullptr)
+		{
+			Shutdown->RunShutdown(ET66ShutdownReason::TestHarness, true, ExitCode, ExitTag);
+			return true;
+		}
+
+		UE_LOG(LogT66Session, Error, TEXT("[SessionLoadedTravel] Unable to request proof exit through shutdown: missing shutdown subsystem."));
+		FPlatformMisc::RequestExitWithStatus(false, ExitCode, ExitTag);
+		return false;
+	}
+
+	static UT66SessionSubsystem* T66_GetSessionSubsystemFromWorld(UWorld* World)
+	{
+		if (!World)
+		{
+			UE_LOG(LogT66Session, Warning, TEXT("[SessionLoadedTravel] Command failed: no world."));
+			return nullptr;
+		}
+
+		UGameInstance* GameInstance = World->GetGameInstance();
+		UT66SessionSubsystem* SessionSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SessionSubsystem>() : nullptr;
+		if (!SessionSubsystem)
+		{
+			UE_LOG(LogT66Session, Warning, TEXT("[SessionLoadedTravel] Command failed: no session subsystem."));
+			return nullptr;
+		}
+
+		return SessionSubsystem;
+	}
+
+	static void T66_QueueLoadedTravelSeedCommand(const TArray<FString>& Args, UWorld* World)
+	{
+		int32 SlotIndex = INDEX_NONE;
+		FString Marker;
+		int32 ExitCode = 0;
+		if (!T66_ParseSessionLoadedTravelArgs(Args, SlotIndex, Marker, ExitCode))
+		{
+			UE_LOG(LogT66Session, Warning, TEXT("[SessionLoadedTravelSeed] Usage: T66.Session.QueueLoadedTravelSeed <slot 0-8> <marker> CONFIRM [exitCode]"));
+			return;
+		}
+
+		if (UT66SessionSubsystem* SessionSubsystem = T66_GetSessionSubsystemFromWorld(World))
+		{
+			SessionSubsystem->RunLoadedTravelSeedHarness(SlotIndex, Marker, ExitCode);
+		}
+	}
+
+	static void T66_VerifyLoadedTravelPlanCommand(const TArray<FString>& Args, UWorld* World)
+	{
+		int32 SlotIndex = INDEX_NONE;
+		FString Marker;
+		int32 ExitCode = 0;
+		if (!T66_ParseSessionLoadedTravelArgs(Args, SlotIndex, Marker, ExitCode))
+		{
+			UE_LOG(LogT66Session, Warning, TEXT("[SessionLoadedTravel] Usage: T66.Session.VerifyLoadedTravelPlan <slot 0-8> <marker> CONFIRM [exitCode]"));
+			return;
+		}
+
+		if (UT66SessionSubsystem* SessionSubsystem = T66_GetSessionSubsystemFromWorld(World))
+		{
+			SessionSubsystem->RunLoadedTravelPlanHarness(SlotIndex, Marker, ExitCode);
+		}
+	}
+
+	static FAutoConsoleCommandWithWorldAndArgs T66SessionQueueLoadedTravelSeedCommand(
+		TEXT("T66.Session.QueueLoadedTravelSeed"),
+		TEXT("Development automation: write a Duo loaded-save fixture owned by the session travel harness. Args: <slot 0-8> <marker> CONFIRM [exitCode]."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_QueueLoadedTravelSeedCommand));
+
+	static FAutoConsoleCommandWithWorldAndArgs T66SessionVerifyLoadedTravelPlanCommand(
+		TEXT("T66.Session.VerifyLoadedTravelPlan"),
+		TEXT("Development automation: verify a loaded-save session travel plan without calling ServerTravel. Args: <slot 0-8> <marker> CONFIRM [exitCode]."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66_VerifyLoadedTravelPlanCommand));
+#endif
 
 	FString T66JoinSessionResultToString(EOnJoinSessionCompleteResult::Type Result)
 	{
@@ -111,6 +270,7 @@ namespace
 
 void UT66SessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+	Collection.InitializeDependency(UT66ShutdownSubsystem::StaticClass());
 	Super::Initialize(Collection);
 
 	CreateSessionCompleteDelegate = FOnCreateSessionCompleteDelegate::CreateUObject(this, &UT66SessionSubsystem::HandleCreateSessionComplete);
@@ -135,9 +295,44 @@ void UT66SessionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		SteamLobbyJoinRequestedHandle = SteamHelper->OnSteamLobbyJoinRequested().AddUObject(this, &UT66SessionSubsystem::HandleSteamLobbyJoinRequested);
 		SteamJoinRequestedHandle = SteamHelper->OnSteamJoinRequested().AddUObject(this, &UT66SessionSubsystem::HandleSteamJoinRequested);
 	}
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			ShutdownParticipantHandle = Shutdown->RegisterParticipant(
+				this,
+				FName(TEXT("Session.SteamDelegates")),
+				ET66ShutdownPhase::NetworkPlatform,
+				20,
+				1.0,
+				false,
+				FT66ShutdownParticipantDelegate::CreateUObject(this, &UT66SessionSubsystem::HandleShutdown));
+		}
+	}
 }
 
 void UT66SessionSubsystem::Deinitialize()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			Shutdown->UnregisterParticipant(ShutdownParticipantHandle);
+		}
+	}
+	ShutdownParticipantHandle.Reset();
+	ShutdownRuntimeResources(TEXT("Deinitialize"));
+	Super::Deinitialize();
+}
+
+bool UT66SessionSubsystem::HandleShutdown(const FT66ShutdownContext& /*Context*/)
+{
+	ShutdownRuntimeResources(TEXT("ShutdownSystem"));
+	return true;
+}
+
+void UT66SessionSubsystem::ShutdownRuntimeResources(const TCHAR* /*Reason*/)
 {
 	ClearSteamRichPresence();
 	ClearPendingFriendJoinRetry();
@@ -147,38 +342,58 @@ void UT66SessionSubsystem::Deinitialize()
 		if (CreateSessionCompleteHandle.IsValid())
 		{
 			SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteHandle);
+			CreateSessionCompleteHandle.Reset();
 		}
 		if (DestroySessionCompleteHandle.IsValid())
 		{
 			SessionInterface->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteHandle);
+			DestroySessionCompleteHandle.Reset();
 		}
 		if (FindFriendSessionCompleteHandle.IsValid())
 		{
 			SessionInterface->ClearOnFindFriendSessionCompleteDelegate_Handle(0, FindFriendSessionCompleteHandle);
+			FindFriendSessionCompleteHandle.Reset();
 		}
 		if (JoinSessionCompleteHandle.IsValid())
 		{
 			SessionInterface->ClearOnJoinSessionCompleteDelegate_Handle(JoinSessionCompleteHandle);
+			JoinSessionCompleteHandle.Reset();
 		}
 		if (StartSessionCompleteHandle.IsValid())
 		{
 			SessionInterface->ClearOnStartSessionCompleteDelegate_Handle(StartSessionCompleteHandle);
+			StartSessionCompleteHandle.Reset();
 		}
 		if (SessionInviteAcceptedHandle.IsValid())
 		{
 			SessionInterface->ClearOnSessionUserInviteAcceptedDelegate_Handle(SessionInviteAcceptedHandle);
+			SessionInviteAcceptedHandle.Reset();
 		}
 	}
 
 	if (UT66SteamHelper* SteamHelper = GetSteamHelper())
 	{
-		SteamHelper->OnSteamLobbyJoinRequested().Remove(SteamLobbyJoinRequestedHandle);
-		SteamLobbyJoinRequestedHandle.Reset();
-		SteamHelper->OnSteamJoinRequested().Remove(SteamJoinRequestedHandle);
-		SteamJoinRequestedHandle.Reset();
+		if (SteamLobbyJoinRequestedHandle.IsValid())
+		{
+			SteamHelper->OnSteamLobbyJoinRequested().Remove(SteamLobbyJoinRequestedHandle);
+			SteamLobbyJoinRequestedHandle.Reset();
+		}
+		if (SteamJoinRequestedHandle.IsValid())
+		{
+			SteamHelper->OnSteamJoinRequested().Remove(SteamJoinRequestedHandle);
+			SteamJoinRequestedHandle.Reset();
+		}
 	}
 
-	Super::Deinitialize();
+	ClearPendingJoinState();
+	InviteFeedbackExpiryByFriendId.Reset();
+	PartyRunSummaryJsonByRequestKey.Reset();
+	bPendingCreateLobbySession = false;
+	bJoinInProgress = false;
+	bDestroyInProgress = false;
+	bPendingJoinAfterDestroy = false;
+	bPendingTravelToStandaloneFrontendAfterDestroy = false;
+	bGameplaySaveAndReturnInProgress = false;
 }
 
 bool UT66SessionSubsystem::PrepareToHostFrontendLobby(ET66PartySize DesiredPartySize)
@@ -737,6 +952,278 @@ bool UT66SessionSubsystem::PreparePartySessionForWorldTravel(const TCHAR* Contex
 	return true;
 }
 
+#if !UE_BUILD_SHIPPING
+bool UT66SessionSubsystem::RunLoadedTravelSeedHarness(const int32 SlotIndex, const FString& Marker, const int32 ExitCode)
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	UT66SaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SaveSubsystem>() : nullptr;
+	UT66ShutdownSubsystem* Shutdown = GameInstance ? GameInstance->GetSubsystem<UT66ShutdownSubsystem>() : nullptr;
+	if (!SaveSubsystem || !Shutdown)
+	{
+		UE_LOG(LogT66Session, Error, TEXT("[SessionLoadedTravelSeed] FAIL Slot=%d Marker=%s Reason=MissingSubsystem SaveSubsystem=%d ShutdownSubsystem=%d"),
+			SlotIndex,
+			*Marker,
+			SaveSubsystem ? 1 : 0,
+			Shutdown ? 1 : 0);
+		T66_RequestSessionLoadedTravelExit(GameInstance, 66, TEXT("T66SessionLoadedTravelSeed"));
+		return false;
+	}
+
+	if (SlotIndex < 0 || SlotIndex >= UT66SaveSubsystem::MaxSlots || Marker.IsEmpty())
+	{
+		UE_LOG(LogT66Session, Error, TEXT("[SessionLoadedTravelSeed] FAIL Slot=%d Marker=%s Reason=InvalidArguments"),
+			SlotIndex,
+			*Marker);
+		T66_RequestSessionLoadedTravelExit(GameInstance, 66, TEXT("T66SessionLoadedTravelSeed"));
+		return false;
+	}
+
+	bool bWasOccupied = false;
+	FString PreviousUtc;
+	FString PreviousHero;
+	FString PreviousMap;
+	SaveSubsystem->GetSlotMeta(SlotIndex, bWasOccupied, PreviousUtc, PreviousHero, PreviousMap);
+
+	UT66RunSaveGame* SaveGameObject = NewObject<UT66RunSaveGame>(this);
+	if (!SaveGameObject)
+	{
+		UE_LOG(LogT66Session, Error, TEXT("[SessionLoadedTravelSeed] FAIL Slot=%d Marker=%s Reason=CreateSaveGameFailed"),
+			SlotIndex,
+			*Marker);
+		T66_RequestSessionLoadedTravelExit(GameInstance, 66, TEXT("T66SessionLoadedTravelSeed"));
+		return false;
+	}
+
+	const FString ExpectedMapName = T66_BuildSessionLoadedTravelMapName(Marker);
+	const FString LastPlayedUtc = FDateTime::UtcNow().ToIso8601();
+	const FString HostDisplayName = FString::Printf(TEXT("SessionLoadedTravelHost:%s"), *Marker);
+	const FString GuestDisplayName = FString::Printf(TEXT("SessionLoadedTravelGuest:%s"), *Marker);
+
+	SaveGameObject->SaveVersion = T66CurrentRunSaveVersion;
+	SaveGameObject->HeroID = FName(TEXT("Hero_1"));
+	SaveGameObject->HeroBodyType = ET66BodyType::Chad;
+	SaveGameObject->CompanionID = NAME_None;
+	SaveGameObject->Difficulty = ET66Difficulty::Easy;
+	SaveGameObject->RunMode = ET66RunMode::Regular;
+	SaveGameObject->RunCategory = ET66RunCategory::Tower;
+	SaveGameObject->PartySize = ET66PartySize::Duo;
+	SaveGameObject->MapName = ExpectedMapName;
+	SaveGameObject->PlayerTransform = FTransform(FRotator::ZeroRotator, FVector(77.f, 0.f, 0.f), FVector::OneVector);
+	SaveGameObject->LastPlayedUtc = LastPlayedUtc;
+	SaveGameObject->OwnerPlayerId = T66SessionLoadedTravelOwnerId;
+	SaveGameObject->OwnerDisplayName = HostDisplayName;
+	SaveGameObject->StageReached = 77;
+	SaveGameObject->RunSeed = 770077;
+	SaveGameObject->RunSnapshot.bValid = true;
+	SaveGameObject->RunSnapshot.CurrentStage = 77;
+	SaveGameObject->RunSnapshot.CurrentHP = 77.f;
+	SaveGameObject->RunSnapshot.MaxHP = 77.f;
+	SaveGameObject->RunSnapshot.EventLog.Add(FString::Printf(TEXT("SessionLoadedTravelMarker=%s"), *Marker));
+	SaveGameObject->PartyMemberIds.Add(T66SessionLoadedTravelOwnerId);
+	SaveGameObject->PartyMemberIds.Add(T66SessionLoadedTravelGuestId);
+	SaveGameObject->PartyMemberDisplayNames.Add(HostDisplayName);
+	SaveGameObject->PartyMemberDisplayNames.Add(GuestDisplayName);
+
+	FT66SavedPartyPlayerState& HostPlayer = SaveGameObject->SavedPartyPlayers.AddDefaulted_GetRef();
+	HostPlayer.PlayerId = T66SessionLoadedTravelOwnerId;
+	HostPlayer.DisplayName = HostDisplayName;
+	HostPlayer.HeroID = SaveGameObject->HeroID;
+	HostPlayer.HeroBodyType = ET66BodyType::Chad;
+	HostPlayer.HeroSkinID = FName(TEXT("Default"));
+	HostPlayer.CompanionID = NAME_None;
+	HostPlayer.CompanionBodyType = ET66BodyType::Chad;
+	HostPlayer.PlayerTransform = SaveGameObject->PlayerTransform;
+	HostPlayer.bIsPartyHost = true;
+
+	FT66SavedPartyPlayerState& GuestPlayer = SaveGameObject->SavedPartyPlayers.AddDefaulted_GetRef();
+	GuestPlayer.PlayerId = T66SessionLoadedTravelGuestId;
+	GuestPlayer.DisplayName = GuestDisplayName;
+	GuestPlayer.HeroID = SaveGameObject->HeroID;
+	GuestPlayer.HeroBodyType = ET66BodyType::Chad;
+	GuestPlayer.HeroSkinID = FName(TEXT("Default"));
+	GuestPlayer.CompanionID = NAME_None;
+	GuestPlayer.CompanionBodyType = ET66BodyType::Chad;
+	GuestPlayer.PlayerTransform = FTransform(FRotator::ZeroRotator, FVector(77.f, 177.f, 0.f), FVector::OneVector);
+	GuestPlayer.bIsPartyHost = false;
+
+	UE_LOG(LogT66Session, Log, TEXT("[SessionLoadedTravelSeed] Queue Slot=%d Marker=%s WasOccupied=%d PreviousMap=%s LastPlayedUtc=%s"),
+		SlotIndex,
+		*Marker,
+		bWasOccupied ? 1 : 0,
+		*PreviousMap,
+		*LastPlayedUtc);
+
+	if (!SaveSubsystem->SaveToSlot(SlotIndex, SaveGameObject))
+	{
+		UE_LOG(LogT66Session, Error, TEXT("[SessionLoadedTravelSeed] FAIL Slot=%d Marker=%s Reason=SaveToSlotFailed"),
+			SlotIndex,
+			*Marker);
+		T66_RequestSessionLoadedTravelExit(GameInstance, 66, TEXT("T66SessionLoadedTravelSeed"));
+		return false;
+	}
+
+	const bool bShutdownOk = Shutdown->RunShutdown(ET66ShutdownReason::TestHarness, false, 0, TEXT("T66SessionLoadedTravelSeed"));
+
+	UT66RunSaveGame* LoadedSave = SaveSubsystem->LoadFromSlot(SlotIndex);
+	bool bMetaOccupied = false;
+	FString MetaUtc;
+	FString MetaHero;
+	FString MetaMap;
+	SaveSubsystem->GetSlotMeta(SlotIndex, bMetaOccupied, MetaUtc, MetaHero, MetaMap);
+
+	const bool bLoadedOk = LoadedSave
+		&& LoadedSave->MapName == ExpectedMapName
+		&& LoadedSave->OwnerPlayerId == T66SessionLoadedTravelOwnerId
+		&& LoadedSave->OwnerDisplayName.Contains(Marker);
+	const bool bMetaOk = bMetaOccupied && MetaMap == ExpectedMapName && MetaUtc == LastPlayedUtc;
+	const bool bPartyShapeOk = LoadedSave
+		&& LoadedSave->PartySize == ET66PartySize::Duo
+		&& LoadedSave->SavedPartyPlayers.Num() >= 2
+		&& LoadedSave->PartyMemberIds.Contains(T66SessionLoadedTravelOwnerId)
+		&& LoadedSave->PartyMemberIds.Contains(T66SessionLoadedTravelGuestId);
+	const bool bSnapshotOk = LoadedSave
+		&& LoadedSave->RunSnapshot.bValid
+		&& LoadedSave->RunSnapshot.CurrentStage == 77
+		&& FMath::IsNearlyEqual(LoadedSave->RunSnapshot.CurrentHP, 77.f)
+		&& FMath::IsNearlyEqual(LoadedSave->RunSnapshot.MaxHP, 77.f);
+	const bool bPass = bShutdownOk && bLoadedOk && bMetaOk && bPartyShapeOk && bSnapshotOk;
+
+	UE_LOG(LogT66Session, Log, TEXT("[SessionLoadedTravelSeed] %s Slot=%d Marker=%s ShutdownOk=%d LoadedOk=%d MetaOk=%d PartyShapeOk=%d SnapshotOk=%d ExpectedMap=%s LoadedMap=%s MetaMap=%s MetaUtc=%s SavedPlayers=%d PartyMembers=%d"),
+		bPass ? TEXT("PASS") : TEXT("FAIL"),
+		SlotIndex,
+		*Marker,
+		bShutdownOk ? 1 : 0,
+		bLoadedOk ? 1 : 0,
+		bMetaOk ? 1 : 0,
+		bPartyShapeOk ? 1 : 0,
+		bSnapshotOk ? 1 : 0,
+		*ExpectedMapName,
+		LoadedSave ? *LoadedSave->MapName : TEXT("<null>"),
+		*MetaMap,
+		*MetaUtc,
+		LoadedSave ? LoadedSave->SavedPartyPlayers.Num() : 0,
+		LoadedSave ? LoadedSave->PartyMemberIds.Num() : 0);
+
+	T66_RequestSessionLoadedTravelExit(GameInstance, bPass ? ExitCode : 66, TEXT("T66SessionLoadedTravelSeed"));
+	return bPass;
+}
+
+bool UT66SessionSubsystem::RunLoadedTravelPlanHarness(const int32 SlotIndex, const FString& Marker, const int32 ExitCode)
+{
+	UGameInstance* GameInstance = GetGameInstance();
+	UT66GameInstance* GI = GetT66GameInstance();
+	UT66SaveSubsystem* SaveSubsystem = GameInstance ? GameInstance->GetSubsystem<UT66SaveSubsystem>() : nullptr;
+	UWorld* World = GetWorld();
+	if (!GI || !SaveSubsystem || !World)
+	{
+		UE_LOG(LogT66Session, Error, TEXT("[SessionLoadedTravel] FAIL Slot=%d Marker=%s Reason=MissingSubsystem GameInstance=%d SaveSubsystem=%d World=%d"),
+			SlotIndex,
+			*Marker,
+			GI ? 1 : 0,
+			SaveSubsystem ? 1 : 0,
+			World ? 1 : 0);
+		T66_RequestSessionLoadedTravelExit(GameInstance, 66, TEXT("T66SessionLoadedTravelPlan"));
+		return false;
+	}
+
+	if (SlotIndex < 0 || SlotIndex >= UT66SaveSubsystem::MaxSlots || Marker.IsEmpty())
+	{
+		UE_LOG(LogT66Session, Error, TEXT("[SessionLoadedTravel] FAIL Slot=%d Marker=%s Reason=InvalidArguments"),
+			SlotIndex,
+			*Marker);
+		T66_RequestSessionLoadedTravelExit(GameInstance, 66, TEXT("T66SessionLoadedTravelPlan"));
+		return false;
+	}
+
+	const FString ExpectedMapName = T66_BuildSessionLoadedTravelMapName(Marker);
+	UT66RunSaveGame* LoadedSave = SaveSubsystem->LoadFromSlot(SlotIndex);
+
+	bool bMetaOccupied = false;
+	FString MetaUtc;
+	FString MetaHero;
+	FString MetaMap;
+	SaveSubsystem->GetSlotMeta(SlotIndex, bMetaOccupied, MetaUtc, MetaHero, MetaMap);
+
+	const bool bSlotExists = SaveSubsystem->DoesSlotExist(SlotIndex);
+	const bool bLoadedOk = LoadedSave
+		&& LoadedSave->MapName == ExpectedMapName
+		&& LoadedSave->OwnerPlayerId == T66SessionLoadedTravelOwnerId
+		&& LoadedSave->OwnerDisplayName.Contains(Marker);
+	const bool bMetaOk = bMetaOccupied && MetaMap == ExpectedMapName;
+	const bool bOwnerOk = LoadedSave
+		&& LoadedSave->OwnerPlayerId == T66SessionLoadedTravelOwnerId
+		&& LoadedSave->PartyMemberIds.Contains(T66SessionLoadedTravelOwnerId)
+		&& LoadedSave->PartyMemberIds.Contains(T66SessionLoadedTravelGuestId);
+	const bool bPartyShapeOk = LoadedSave
+		&& LoadedSave->PartySize == ET66PartySize::Duo
+		&& LoadedSave->SavedPartyPlayers.Num() >= 2
+		&& LoadedSave->PartyMemberIds.Num() >= 2
+		&& LoadedSave->PartyMemberDisplayNames.Num() >= 2;
+	const bool bSnapshotOk = LoadedSave
+		&& LoadedSave->RunSnapshot.bValid
+		&& LoadedSave->RunSnapshot.CurrentStage == 77
+		&& FMath::IsNearlyEqual(LoadedSave->RunSnapshot.CurrentHP, 77.f)
+		&& FMath::IsNearlyEqual(LoadedSave->RunSnapshot.MaxHP, 77.f);
+
+	if (LoadedSave)
+	{
+		ApplyLoadedRunToGameInstance(LoadedSave, SlotIndex);
+		ApplySavedPartyProfilesToCurrentSession(LoadedSave);
+	}
+
+	const bool bApplyPlanOk = LoadedSave
+		&& GI->CurrentSaveSlotIndex == SlotIndex
+		&& GI->SelectedPartySize == ET66PartySize::Duo
+		&& GI->RunSeed == 770077
+		&& GI->CurrentRunOwnerPlayerId == T66SessionLoadedTravelOwnerId
+		&& GI->CurrentRunPartyMemberIds.Contains(T66SessionLoadedTravelOwnerId)
+		&& GI->CurrentRunPartyMemberIds.Contains(T66SessionLoadedTravelGuestId)
+		&& GI->bApplyLoadedRunSnapshot
+		&& GI->PendingLoadedRunSnapshot.CurrentStage == 77;
+
+	const FName LevelToOpen = UT66GameInstance::GetGameplayLevelName();
+	const FString TravelURL = FString::Printf(TEXT("%s?listen"), *LevelToOpen.ToString());
+	const ENetMode NetMode = World->GetNetMode();
+	const bool bTravelPlanOk = !LevelToOpen.IsNone()
+		&& TravelURL.EndsWith(TEXT("?listen"))
+		&& NetMode != NM_Client;
+	const bool bPass = bSlotExists
+		&& bLoadedOk
+		&& bMetaOk
+		&& bOwnerOk
+		&& bPartyShapeOk
+		&& bSnapshotOk
+		&& bApplyPlanOk
+		&& bTravelPlanOk;
+
+	const FString LoadedPartySize = LoadedSave ? T66_PartySizeToString(LoadedSave->PartySize) : TEXT("<null>");
+	UE_LOG(LogT66Session, Log, TEXT("[SessionLoadedTravel] %s Slot=%d Marker=%s SlotExists=%d LoadedOk=%d MetaOk=%d OwnerOk=%d PartyShapeOk=%d SnapshotOk=%d ApplyPlanOk=%d TravelPlanOk=%d ExpectedMap=%s LoadedMap=%s MetaMap=%s LoadedPartySize=%s TravelURL=%s NetMode=%s SessionActive=%d Hosting=%d LobbyPlayers=%d LiveTravelSkipped=1 RequiresActiveSession=1 RequiresHost=1"),
+		bPass ? TEXT("PASS") : TEXT("FAIL"),
+		SlotIndex,
+		*Marker,
+		bSlotExists ? 1 : 0,
+		bLoadedOk ? 1 : 0,
+		bMetaOk ? 1 : 0,
+		bOwnerOk ? 1 : 0,
+		bPartyShapeOk ? 1 : 0,
+		bSnapshotOk ? 1 : 0,
+		bApplyPlanOk ? 1 : 0,
+		bTravelPlanOk ? 1 : 0,
+		*ExpectedMapName,
+		LoadedSave ? *LoadedSave->MapName : TEXT("<null>"),
+		*MetaMap,
+		*LoadedPartySize,
+		*TravelURL,
+		*T66_NetModeToString(NetMode),
+		IsPartySessionActive() ? 1 : 0,
+		IsHostingPartySession() ? 1 : 0,
+		GetCurrentLobbyPlayerCount());
+
+	T66_RequestSessionLoadedTravelExit(GameInstance, bPass ? ExitCode : 66, TEXT("T66SessionLoadedTravelPlan"));
+	return bPass;
+}
+#endif
+
 UT66RunSaveGame* UT66SessionSubsystem::BuildCurrentRunSaveSnapshot(UObject* Outer) const
 {
 	UT66GameInstance* GI = GetT66GameInstance();
@@ -987,7 +1474,7 @@ bool UT66SessionSubsystem::SaveCurrentRunAndReturnToFrontend()
 		PlayerController->SetPause(false);
 	}
 
-	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
+	UT66GameInstance::TransitionToFrontendLevel(this);
 	return true;
 }
 
@@ -1452,6 +1939,47 @@ void UT66SessionSubsystem::GetCurrentLobbyProfiles(TArray<FT66LobbyPlayerInfo>& 
 
 		return A.SteamId < B.SteamId;
 	});
+}
+
+bool UT66SessionSubsystem::FindLeaderboardRestrictedLobbyMember(FString& OutDisplayName) const
+{
+	TArray<FT66LobbyPlayerInfo> LobbyProfiles;
+	GetCurrentLobbyProfiles(LobbyProfiles);
+	for (const FT66LobbyPlayerInfo& LobbyInfo : LobbyProfiles)
+	{
+		if (LobbyInfo.bAccountRestrictedForLeaderboard)
+		{
+			OutDisplayName = LobbyInfo.DisplayName.IsEmpty() ? TEXT("a party member") : LobbyInfo.DisplayName;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void UT66SessionSubsystem::BroadcastRunWillNotCountWarning(const FString& ReasonText) const
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (AT66PlayerController* PlayerController = Cast<AT66PlayerController>(It->Get()))
+		{
+			PlayerController->ClientShowRunWillNotCountWarning(ReasonText);
+		}
+	}
+}
+
+void UT66SessionSubsystem::BroadcastPartyLeaderboardRestrictionWarning(const FString& RestrictedDisplayName) const
+{
+	const FString DisplayName = RestrictedDisplayName.IsEmpty() ? TEXT("a party member") : RestrictedDisplayName;
+	BroadcastRunWillNotCountWarning(FString::Printf(
+		TEXT("One of the party members, %s, is suspended. This run will not count for the leaderboard."),
+		*DisplayName));
 }
 
 bool UT66SessionSubsystem::GetCachedPartyRunSummaryJson(const FString& RequestKey, const FString& SteamId, FString& OutRunSummaryJson) const
@@ -1934,6 +2462,28 @@ FT66LobbyPlayerInfo UT66SessionSubsystem::BuildLocalLobbyProfile() const
 	if (LobbyInfo.DisplayName.IsEmpty())
 	{
 		LobbyInfo.DisplayName = TEXT("You");
+	}
+
+	if (const UT66GameInstance* GI = GetT66GameInstance())
+	{
+		if (const UT66LeaderboardSubsystem* Leaderboard = GI->GetSubsystem<UT66LeaderboardSubsystem>())
+		{
+			const FT66AccountRestrictionRecord Restriction = Leaderboard->GetAccountRestrictionRecord();
+			LobbyInfo.bAccountRestrictedForLeaderboard = Restriction.Restriction != ET66AccountRestrictionKind::None;
+			switch (Restriction.Restriction)
+			{
+			case ET66AccountRestrictionKind::Suspicion:
+				LobbyInfo.AccountRestrictionLabel = TEXT("Suspicion");
+				break;
+			case ET66AccountRestrictionKind::CheatingCertainty:
+				LobbyInfo.AccountRestrictionLabel = TEXT("CheatingCertainty");
+				break;
+			case ET66AccountRestrictionKind::None:
+			default:
+				LobbyInfo.AccountRestrictionLabel = TEXT("None");
+				break;
+			}
+		}
 	}
 
 	LobbyInfo.bLobbyReady = bLocalReadyState;

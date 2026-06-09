@@ -1,0 +1,10 @@
+{
+  "Id": "04_gamble_friends_tabletop_regen1",
+  "PID": 42936,
+  "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\main_menu_reference_04_gamble_friends_tabletop_cli.png",
+  "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\04_gamble_friends_tabletop_regen1\\request.md",
+  "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\04_gamble_friends_tabletop_regen1.stdout.log",
+  "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\04_gamble_friends_tabletop_regen1.stderr.log",
+  "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\04_gamble_friends_tabletop_regen1\\last_message.txt",
+  "Started": "2026-06-05T10:07:00.6320072Z"
+}

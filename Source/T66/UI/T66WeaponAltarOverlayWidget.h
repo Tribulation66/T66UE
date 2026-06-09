@@ -27,7 +27,7 @@ public:
 	void SetSourceAltar(AT66WeaponAltar* InSourceAltar) { SourceAltar = InSourceAltar; }
 
 private:
-	static constexpr int32 OfferSlotCount = 4;
+	static constexpr int32 OfferSlotCount = 5;
 
 	TArray<TSharedPtr<SBox>> OfferCardBoxes;
 	TArray<TSharedPtr<STextBlock>> OfferNameTexts;

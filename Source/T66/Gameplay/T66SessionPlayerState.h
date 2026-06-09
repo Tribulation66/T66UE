@@ -52,6 +52,12 @@ struct T66_API FT66LobbyPlayerInfo
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
 	bool bPartyHost = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	bool bAccountRestrictedForLeaderboard = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lobby")
+	FString AccountRestrictionLabel;
 };
 
 DECLARE_MULTICAST_DELEGATE(FOnT66LobbyInfoChanged);

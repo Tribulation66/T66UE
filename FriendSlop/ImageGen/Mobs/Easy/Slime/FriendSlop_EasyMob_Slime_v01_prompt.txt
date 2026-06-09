@@ -1,0 +1,13 @@
+Create one full-body front-facing model-sheet render of the Easy mob Slime for the game CHADPOCALYPSE in the new FriendSlop style.
+
+Use only this visual direction: smooth stylized 3D render language like the locked rose-pink Hero 1 references: black background, centered single subject, clean rounded toy-like forms, broad simple material regions, soft studio render, no scene, no text.
+
+Subject identity: Slime enemy. A bouncy round green blob, no legs, no arms, no accessories. Single droplet/blob silhouette with a slightly domed top and heavy rounded base. It should feel like a creature that can bounce forward in gameplay.
+
+Face: one wide slack simple mouth is the main facial feature, centered on the front. The mouth should read goofy and vacant, not scary. Add only very simple half-lidded pale eyes if needed to connect it to the FriendSlop hero face language, but keep the face extremely minimal.
+
+Color and material: bright readable slime green body with subtle lighter green belly/front plane, broad hard-to-read-at-distance regions only. Smooth clay-toy surface, no slime drips, no wet realism, no bubbles, no texture noise, no veins, no spots, no grime.
+
+Composition: portrait source image, one subject only, full body visible with generous padding, orthographic front view, model standing/settled on invisible ground, black background matching the two locked FriendSlop Hero 1 references.
+
+Avoid: old ToonStyle, old clay pack look, low-poly STL asset-pack look, Fortnite polish, Disney/Pixar face, detailed environment, props, contact-sheet layout, labels, text, watermark, multiple slimes, cropped body, realistic fluid simulation, translucent glass, messy surface details.

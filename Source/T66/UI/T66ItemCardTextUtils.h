@@ -9,7 +9,7 @@ class UT66LocalizationSubsystem;
 
 namespace T66ItemCardTextUtils
 {
-	FText GetPrimaryStatLabel(const UT66LocalizationSubsystem* Loc, ET66HeroStatType Type);
+	FText GetBaseStatLabel(const UT66LocalizationSubsystem* Loc, ET66HeroStatType Type);
 
 	FText BuildItemCardDescription(
 		const UT66LocalizationSubsystem* Loc,

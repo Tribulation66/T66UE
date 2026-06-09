@@ -1,0 +1,94 @@
+{
+  "out_dir": "C:/UE/T66/Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Blender/DungeonTex",
+  "exported": [
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_StoneSlabs_A_UnrealReady_BaseColor_00",
+      "png": "C:/UE/T66/Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Blender/DungeonTex\\DungeonFloor_StoneSlabs_A_UnrealReady_BaseColor_00.png",
+      "ok": true,
+      "exists": true,
+      "size_kb": 4080.0,
+      "dims": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Bones_A_UnrealReady_BaseColor_00",
+      "png": "C:/UE/T66/Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Blender/DungeonTex\\DungeonFloor_Bones_A_UnrealReady_BaseColor_00.png",
+      "ok": true,
+      "exists": true,
+      "size_kb": 4894.2,
+      "dims": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Cracked_A_UnrealReady_BaseColor_00",
+      "png": "C:/UE/T66/Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Blender/DungeonTex\\DungeonFloor_Cracked_A_UnrealReady_BaseColor_00.png",
+      "ok": true,
+      "exists": true,
+      "size_kb": 4459.4,
+      "dims": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonFloor_Drain_A_UnrealReady_BaseColor_00",
+      "png": "C:/UE/T66/Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Blender/DungeonTex\\DungeonFloor_Drain_A_UnrealReady_BaseColor_00.png",
+      "ok": true,
+      "exists": true,
+      "size_kb": 5126.4,
+      "dims": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_StoneBlocks_A_UnrealReady_BaseColor_00",
+      "png": "C:/UE/T66/Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Blender/DungeonTex\\DungeonWall_StoneBlocks_A_UnrealReady_BaseColor_00.png",
+      "ok": true,
+      "exists": true,
+      "size_kb": 4208.5,
+      "dims": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_BonesNiche_A_UnrealReady_BaseColor_00",
+      "png": "C:/UE/T66/Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Blender/DungeonTex\\DungeonWall_BonesNiche_A_UnrealReady_BaseColor_00.png",
+      "ok": true,
+      "exists": true,
+      "size_kb": 4451.4,
+      "dims": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_Chains_A_UnrealReady_BaseColor_00",
+      "png": "C:/UE/T66/Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Blender/DungeonTex\\DungeonWall_Chains_A_UnrealReady_BaseColor_00.png",
+      "ok": true,
+      "exists": true,
+      "size_kb": 5263.4,
+      "dims": [
+        2048,
+        2048
+      ]
+    },
+    {
+      "asset": "/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01/DungeonWall_TorchSconce_A_UnrealReady_BaseColor_00",
+      "png": "C:/UE/T66/Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Blender/DungeonTex\\DungeonWall_TorchSconce_A_UnrealReady_BaseColor_00.png",
+      "ok": true,
+      "exists": true,
+      "size_kb": 4506.5,
+      "dims": [
+        2048,
+        2048
+      ]
+    }
+  ],
+  "errors": []
+}

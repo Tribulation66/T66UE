@@ -60,6 +60,10 @@
 		{
 			"Name": "MovieRenderPipeline",
 			"Enabled": true
+		},
+		{
+			"Name": "PhysicsControl",
+			"Enabled": true
 		}
 	]
 }

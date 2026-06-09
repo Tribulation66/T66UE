@@ -4,12 +4,14 @@
 
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66StageProgressionSubsystem.h"
+#include "Core/T66TowerTuningConfig.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66SafeZoneComponent.h"
 #include "Gameplay/Traps/T66FloorFlameTrap.h"
 #include "Gameplay/Traps/T66FloorSpikePatchTrap.h"
+#include "Gameplay/Traps/T66ObstacleTrap.h"
 #include "Gameplay/Traps/T66TrapBase.h"
 #include "Gameplay/Traps/T66TrapPressurePlate.h"
 #include "Gameplay/Traps/T66WallArrowTrap.h"
@@ -24,6 +26,7 @@ namespace
 	static const FName TrapFamilyWallProjectile(TEXT("WallProjectile"));
 	static const FName TrapFamilyFloorBurst(TEXT("FloorBurst"));
 	static const FName TrapFamilyAreaControl(TEXT("AreaControl"));
+	static const FName TrapFamilyObstacle(TEXT("Obstacle"));
 
 	enum class ET66TrapSpawnSurface : uint8
 	{
@@ -138,7 +141,7 @@ namespace
 		static const TArray<FT66TrapRegistryEntry> Registry = []
 		{
 			TArray<FT66TrapRegistryEntry> Entries;
-			Entries.Reserve(15);
+			Entries.Reserve(19);
 
 			Entries.Add(MakeRegistryEntry(
 				TEXT("DungeonWallArrow"),
@@ -173,6 +176,47 @@ namespace
 					FLinearColor(0.92f, 0.22f, 0.18f, 0.92f),
 					FLinearColor(0.82f, 0.82f, 0.86f, 1.f),
 					FLinearColor(1.00f, 0.55f, 0.24f, 0.95f))));
+
+			Entries.Add(MakeRegistryEntry(
+				TEXT("ObstacleSweeperArm"),
+				TrapFamilyObstacle,
+				ET66TrapSpawnSurface::TileCenter,
+				AT66SweeperArmTrap::StaticClass(),
+				MakeTrapStyle(
+					FLinearColor(0.14f, 0.16f, 0.18f, 1.f),
+					FLinearColor(1.00f, 0.82f, 0.22f, 1.f),
+					FLinearColor(1.00f, 0.72f, 0.18f, 1.f),
+					FLinearColor(1.00f, 0.84f, 0.28f, 0.95f))));
+			Entries.Add(MakeRegistryEntry(
+				TEXT("ObstacleFloorBumper"),
+				TrapFamilyObstacle,
+				ET66TrapSpawnSurface::TileCenter,
+				AT66BumperTrap::StaticClass(),
+				MakeTrapStyle(
+					FLinearColor(0.08f, 0.16f, 0.20f, 1.f),
+					FLinearColor(0.18f, 0.88f, 1.00f, 1.f),
+					FLinearColor(0.22f, 0.72f, 1.00f, 1.f),
+					FLinearColor(0.56f, 0.94f, 1.00f, 0.95f))));
+			Entries.Add(MakeRegistryEntry(
+				TEXT("ObstacleWallBumper"),
+				TrapFamilyObstacle,
+				ET66TrapSpawnSurface::MazeWall,
+				AT66WallBumperTrap::StaticClass(),
+				MakeTrapStyle(
+					FLinearColor(0.10f, 0.14f, 0.10f, 1.f),
+					FLinearColor(0.42f, 1.00f, 0.34f, 1.f),
+					FLinearColor(0.38f, 0.92f, 0.24f, 1.f),
+					FLinearColor(0.66f, 1.00f, 0.42f, 0.95f))));
+			Entries.Add(MakeRegistryEntry(
+				TEXT("ObstacleCeilingHammer"),
+				TrapFamilyObstacle,
+				ET66TrapSpawnSurface::TileCenter,
+				AT66CeilingHammerTrap::StaticClass(),
+				MakeTrapStyle(
+					FLinearColor(0.13f, 0.12f, 0.16f, 1.f),
+					FLinearColor(1.00f, 0.36f, 0.22f, 1.f),
+					FLinearColor(0.94f, 0.28f, 0.18f, 1.f),
+					FLinearColor(1.00f, 0.52f, 0.24f, 0.95f))));
 
 			Entries.Add(MakeRegistryEntry(
 				TEXT("ForestThornVolley"),
@@ -329,20 +373,32 @@ namespace
 		return nullptr;
 	}
 
-	const TArray<FName>& GetTrapPoolForTowerFloor(const int32 TowerFloorNumber)
+	FName GetTowerFloorRoleName(const T66TowerMapTerrain::ET66TowerFloorRole Role)
+	{
+		switch (Role)
+		{
+		case T66TowerMapTerrain::ET66TowerFloorRole::Start:
+			return TEXT("Start");
+		case T66TowerMapTerrain::ET66TowerFloorRole::Mob:
+			return TEXT("Mob");
+		case T66TowerMapTerrain::ET66TowerFloorRole::Boss:
+			return TEXT("Boss");
+		default:
+			return NAME_None;
+		}
+	}
+
+	const TArray<FName>& GetTrapPoolForTowerFloor(const T66TowerMapTerrain::FFloor& Floor)
 	{
 		static const TArray<FName> Empty;
-		static const TArray<FName> Floor2 = { TEXT("DungeonWallArrow"), TEXT("DungeonFloorFlame"), TEXT("DungeonFloorSpikePatch") };
-		static const TArray<FName> Floor3 = { TEXT("ForestThornVolley"), TEXT("ForestSporeBurst"), TEXT("ForestBramblePatch") };
-		static const TArray<FName> Floor4 = { TEXT("OceanHarpoonVolley"), TEXT("OceanSteamBurst"), TEXT("OceanUrchinPatch") };
 
-		switch (TowerFloorNumber)
+		const UT66TowerTuningConfig& TowerTuning = UT66TowerTuningConfig::GetRuntimeConfig();
+		if (const FT66TowerFloorTrapPoolTuning* TrapPool = TowerTuning.FindTrapPoolForFloor(Floor.FloorNumber, GetTowerFloorRoleName(Floor.FloorRole)))
 		{
-		case 2: return Floor2;
-		case 3: return Floor3;
-		case 4: return Floor4;
-		default: return Empty;
+			return TrapPool->TrapPool;
 		}
+
+		return Empty;
 	}
 
 	bool IsTrapTowerFloor(const T66TowerMapTerrain::FLayout& Layout, const T66TowerMapTerrain::FFloor& Floor)
@@ -352,7 +408,7 @@ namespace
 			return false;
 		}
 
-		return Floor.FloorNumber == 2 || Floor.FloorNumber == 3 || Floor.FloorNumber == 4;
+		return GetTrapPoolForTowerFloor(Floor).Num() > 0;
 	}
 
 	int32 RollSpawnCount(const FT66IntRange& Range, FRandomStream& Rng)
@@ -419,6 +475,58 @@ namespace
 		Trap->WarningColor = Style.WarningColor;
 		Trap->SpikeColor = Style.AccentColor;
 		Trap->BurstColor = Style.BurstColor;
+	}
+
+	void ApplyObstacleStyle(AT66ObstacleTrapBase* Trap, const FT66TrapVisualStyle& Style)
+	{
+		if (!Trap)
+		{
+			return;
+		}
+
+		Trap->BaseColor = Style.BaseColor;
+		Trap->AccentColor = Style.AccentColor;
+	}
+
+	void ApplyObstacleTuning(AT66ObstacleTrapBase* Trap, const FT66ObstacleTrapTuning& Tuning)
+	{
+		if (!Trap)
+		{
+			return;
+		}
+
+		Trap->LaunchXY = Tuning.LaunchXY;
+		Trap->LaunchZ = Tuning.LaunchZ;
+		Trap->ReactionCooldownSeconds = Tuning.CooldownSeconds;
+
+		if (AT66SweeperArmTrap* Sweeper = Cast<AT66SweeperArmTrap>(Trap))
+		{
+			Sweeper->ArmLength = Tuning.PrimarySize;
+			Sweeper->ArmThickness = Tuning.SecondarySize;
+			Sweeper->ArmHeight = Tuning.Height;
+			Sweeper->RotationSpeedDegPerSecond = Tuning.SpeedOrPeriod;
+		}
+		else if (AT66BumperTrap* Bumper = Cast<AT66BumperTrap>(Trap))
+		{
+			Bumper->Radius = Tuning.PrimarySize;
+			Bumper->TravelDistance = Tuning.SecondarySize;
+			Bumper->Height = Tuning.Height;
+			Bumper->CyclePeriodSeconds = FMath::Max(0.20f, Tuning.SpeedOrPeriod);
+		}
+		else if (AT66WallBumperTrap* WallBumper = Cast<AT66WallBumperTrap>(Trap))
+		{
+			WallBumper->Width = Tuning.PrimarySize;
+			WallBumper->TravelDistance = Tuning.SecondarySize;
+			WallBumper->Height = Tuning.Height;
+			WallBumper->CyclePeriodSeconds = FMath::Max(0.20f, Tuning.SpeedOrPeriod);
+		}
+		else if (AT66CeilingHammerTrap* Hammer = Cast<AT66CeilingHammerTrap>(Trap))
+		{
+			Hammer->HammerLength = Tuning.PrimarySize;
+			Hammer->HammerHeadSize = Tuning.SecondarySize;
+			Hammer->HangHeight = Tuning.Height;
+			Hammer->SwingPeriodSeconds = FMath::Max(0.20f, Tuning.SpeedOrPeriod);
+		}
 	}
 }
 
@@ -724,6 +832,14 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 					bHasTuning = true;
 				}
 			}
+			else if (Entry->FamilyKey == TrapFamilyObstacle)
+			{
+				if (const FT66ObstacleTrapTuning* Tuning = CachedTuning.FindObstacleTuning(TrapKey))
+				{
+					SpawnRange = Tuning->Spawn.SpawnCount;
+					bHasTuning = true;
+				}
+			}
 
 			if (!bHasTuning)
 			{
@@ -777,6 +893,92 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 		}
 	};
 
+	auto SpawnObstacleTrapInRoom =
+		[&](
+			const T66TowerMapTerrain::FFloor& Floor,
+			const T66TowerMapTerrain::FRoom& Room,
+			const FT66TrapRegistryEntry& Entry,
+			const FT66ObstacleTrapTuning& Tuning,
+			FRandomStream& SpawnRng,
+			const float PaddingScale,
+			const float MinSpacingScale) -> bool
+	{
+		const float FootprintRadius = FMath::Max(0.0f, Tuning.FootprintRadius);
+		const float ClampedPaddingScale = FMath::Clamp(PaddingScale, 0.0f, 1.0f);
+		const float EdgePadding = FMath::Max(FootprintRadius * 0.35f, FMath::Max(Tuning.EdgePadding, FootprintRadius * 1.10f) * ClampedPaddingScale);
+		const float HolePadding = FMath::Max(FootprintRadius * 0.50f, FMath::Max(Tuning.HolePadding, FootprintRadius * 1.20f) * ClampedPaddingScale);
+		const float WallPadding = FMath::Max(FootprintRadius * 0.25f, FMath::Max(Layout.PlacementCellSize * 0.35f, FootprintRadius * 0.80f) * ClampedPaddingScale);
+		const float MinTrapSpacing = FMath::Max(0.0f, Tuning.Spawn.MinTrapSpacing * FMath::Max(0.0f, MinSpacingScale));
+		const int32 SpawnAttempts = FMath::Max(Tuning.Spawn.SpawnAttempts, 12);
+
+		for (int32 Attempt = 0; Attempt < SpawnAttempts; ++Attempt)
+		{
+			FVector SpawnLocation = FVector::ZeroVector;
+			if (!T66TowerMapTerrain::TryGetRoomSurfaceLocation(
+				World,
+				Layout,
+				Floor,
+				Room,
+				SpawnRng,
+				SpawnLocation,
+				EdgePadding,
+				HolePadding,
+				WallPadding))
+			{
+				continue;
+			}
+
+			SpawnLocation.Z = Floor.SurfaceZ + 6.f;
+			if (!IsLocationClear(SpawnLocation, Floor.FloorNumber, MinTrapSpacing))
+			{
+				continue;
+			}
+
+			const FRotator SpawnRotation(0.f, SpawnRng.FRandRange(0.f, 360.f), 0.f);
+			const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
+			AT66ObstacleTrapBase* ObstacleTrap = World->SpawnActorDeferred<AT66ObstacleTrapBase>(
+				Entry.TrapClass.Get(),
+				SpawnTransform,
+				GameMode,
+				nullptr,
+				ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			if (!ObstacleTrap)
+			{
+				continue;
+			}
+
+			ObstacleTrap->SetTrapTypeID(Entry.RegistryKey);
+			ObstacleTrap->SetTrapFamilyID(Entry.FamilyKey);
+			ObstacleTrap->SetTowerFloorNumber(Floor.FloorNumber);
+			ObstacleTrap->SetActivationMode(Entry.ActivationMode);
+			ObstacleTrap->SetTriggerTargetMode(Entry.TriggerTargetMode);
+			ObstacleTrap->SetDamagesHeroes(false);
+			ObstacleTrap->SetDamagesEnemies(false);
+			ApplyObstacleTuning(ObstacleTrap, Tuning);
+			ApplyObstacleStyle(ObstacleTrap, Entry.VisualStyle);
+			if (AT66CeilingHammerTrap* Hammer = Cast<AT66CeilingHammerTrap>(ObstacleTrap))
+			{
+				Hammer->InitialPhaseSeconds = RollFloatRange(Tuning.InitialPhaseSeconds, SpawnRng);
+			}
+			else if (AT66BumperTrap* Bumper = Cast<AT66BumperTrap>(ObstacleTrap))
+			{
+				Bumper->InitialPhaseSeconds = RollFloatRange(Tuning.InitialPhaseSeconds, SpawnRng);
+			}
+			else if (AT66WallBumperTrap* WallBumper = Cast<AT66WallBumperTrap>(ObstacleTrap))
+			{
+				WallBumper->InitialPhaseSeconds = RollFloatRange(Tuning.InitialPhaseSeconds, SpawnRng);
+			}
+			ObstacleTrap->FinishSpawning(SpawnTransform);
+
+			RegisterManagedTrap(ObstacleTrap, Floor.FloorNumber);
+			return true;
+		}
+
+		return false;
+	};
+
+	const UT66TowerTuningConfig& TowerTuning = UT66TowerTuningConfig::GetRuntimeConfig();
+
 	for (const T66TowerMapTerrain::FFloor& Floor : Layout.Floors)
 	{
 		if (!IsTrapTowerFloor(Layout, Floor))
@@ -785,15 +987,205 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 		}
 
 		const int32 TowerFloorNumber = Floor.FloorNumber;
-		const TArray<FName>& TrapPool = GetTrapPoolForTowerFloor(TowerFloorNumber);
+		const TArray<FName>& TrapPool = GetTrapPoolForTowerFloor(Floor);
+		UE_LOG(
+			LogT66TrapSubsystem,
+			Verbose,
+			TEXT("[Traps][FloorScan] Floor=%d bMob=%d Pool=%d"),
+			TowerFloorNumber,
+			Floor.bMobFloor ? 1 : 0,
+			TrapPool.Num());
 		if (TrapPool.Num() <= 0)
 		{
+			continue;
+		}
+
+		TArray<const FT66TrapRegistryEntry*, TInlineAllocator<8>> RoomPlaceableObstacleEntries;
+		for (const FName TrapKey : TrapPool)
+		{
+			const FT66TrapRegistryEntry* Entry = FindTrapRegistryEntry(TrapKey);
+			if (Entry
+				&& Entry->TrapClass
+				&& Entry->FamilyKey == TrapFamilyObstacle
+				&& Entry->SpawnSurface == ET66TrapSpawnSurface::TileCenter
+				&& CachedTuning.FindObstacleTuning(Entry->RegistryKey))
+			{
+				RoomPlaceableObstacleEntries.Add(Entry);
+			}
+		}
+
+		struct FRoomTrapPlan
+		{
+			const T66TowerMapTerrain::FRoom* Room = nullptr;
+			int32 MinCount = 0;
+			int32 MaxCount = 0;
+			int32 DesiredCount = 0;
+		};
+
+		TArray<FRoomTrapPlan, TInlineAllocator<16>> RoomTrapPlans;
+		FRandomStream RoomCountRng(RunSeed + StageNum * 2903 + Floor.FloorNumber * 521 + 149);
+		for (const T66TowerMapTerrain::FRoom& Room : Floor.Rooms)
+		{
+			const FT66TowerRoomRuleTuning* RoomRule = TowerTuning.FindRoomRule(Room.RoomRuleID);
+			if (!RoomRule || RoomRule->TrapSlots.Max <= 0)
+			{
+				continue;
+			}
+
+			FRoomTrapPlan& Plan = RoomTrapPlans.AddDefaulted_GetRef();
+			Plan.Room = &Room;
+			Plan.MinCount = FMath::Max(0, RoomRule->TrapSlots.Min);
+			Plan.MaxCount = FMath::Max(Plan.MinCount, RoomRule->TrapSlots.Max);
+			Plan.DesiredCount = RoomCountRng.RandRange(Plan.MinCount, Plan.MaxCount);
+		}
+
+		bool bHasTwoTrapRoom = false;
+		int32 FirstExpandableRoomIndex = INDEX_NONE;
+		for (int32 PlanIndex = 0; PlanIndex < RoomTrapPlans.Num(); ++PlanIndex)
+		{
+			const FRoomTrapPlan& Plan = RoomTrapPlans[PlanIndex];
+			if (Plan.DesiredCount > Plan.MinCount)
+			{
+				bHasTwoTrapRoom = true;
+			}
+			if (FirstExpandableRoomIndex == INDEX_NONE && Plan.MaxCount > Plan.MinCount)
+			{
+				FirstExpandableRoomIndex = PlanIndex;
+			}
+		}
+		if (!bHasTwoTrapRoom && FirstExpandableRoomIndex != INDEX_NONE)
+		{
+			RoomTrapPlans[FirstExpandableRoomIndex].DesiredCount = RoomTrapPlans[FirstExpandableRoomIndex].MaxCount;
+		}
+
+		if (RoomTrapPlans.Num() > 0 && RoomPlaceableObstacleEntries.Num() > 0)
+		{
+			auto TrySpawnRoomTrapSlot =
+				[&](
+					const T66TowerMapTerrain::FFloor& RoomFloor,
+					const FRoomTrapPlan& Plan,
+					const int32 TrapIndex,
+					const int32 PassIndex,
+					const float PaddingScale,
+					const float MinSpacingScale) -> bool
+			{
+				if (!Plan.Room)
+				{
+					return false;
+				}
+
+				FRandomStream RoomTrapRng(
+					RunSeed
+					+ StageNum * 3301
+					+ RoomFloor.FloorNumber * 1009
+					+ Plan.Room->RoomId * 131
+					+ TrapIndex * 37
+					+ PassIndex * 733);
+				const int32 StartEntryIndex = RoomTrapRng.RandRange(0, RoomPlaceableObstacleEntries.Num() - 1);
+				for (int32 EntryOffset = 0; EntryOffset < RoomPlaceableObstacleEntries.Num(); ++EntryOffset)
+				{
+					const FT66TrapRegistryEntry* Entry = RoomPlaceableObstacleEntries[(StartEntryIndex + EntryOffset) % RoomPlaceableObstacleEntries.Num()];
+					const FT66ObstacleTrapTuning* Tuning = Entry ? CachedTuning.FindObstacleTuning(Entry->RegistryKey) : nullptr;
+					if (Entry && Tuning && SpawnObstacleTrapInRoom(RoomFloor, *Plan.Room, *Entry, *Tuning, RoomTrapRng, PaddingScale, MinSpacingScale))
+					{
+						return true;
+					}
+				}
+
+				return false;
+			};
+
+			int32 RoomTrapExpectedMin = 0;
+			int32 RoomTrapExpectedMax = 0;
+			int32 RoomTrapDesired = 0;
+			int32 RoomTrapSpawned = 0;
+			int32 RoomTrapRoomsWithSpawn = 0;
+			for (int32 PlanIndex = 0; PlanIndex < RoomTrapPlans.Num(); ++PlanIndex)
+			{
+				const FRoomTrapPlan& Plan = RoomTrapPlans[PlanIndex];
+				if (!Plan.Room || Plan.DesiredCount <= 0)
+				{
+					continue;
+				}
+
+				RoomTrapExpectedMin += Plan.MinCount;
+				RoomTrapExpectedMax += Plan.MaxCount;
+				RoomTrapDesired += Plan.DesiredCount;
+				int32 SpawnedInRoom = 0;
+				for (int32 TrapIndex = 0; TrapIndex < Plan.DesiredCount; ++TrapIndex)
+				{
+					bool bSpawnedSlot = false;
+					constexpr float PaddingScales[] = { 1.00f, 0.70f, 0.45f };
+					constexpr float MinSpacingScales[] = { 1.00f, 0.70f, 0.45f };
+					for (int32 PassIndex = 0; PassIndex < UE_ARRAY_COUNT(PaddingScales); ++PassIndex)
+					{
+						if (TrySpawnRoomTrapSlot(Floor, Plan, TrapIndex, PassIndex, PaddingScales[PassIndex], MinSpacingScales[PassIndex]))
+						{
+							bSpawnedSlot = true;
+							break;
+						}
+					}
+
+					if (!bSpawnedSlot && SpawnedInRoom <= 0)
+					{
+						bSpawnedSlot = TrySpawnRoomTrapSlot(Floor, Plan, TrapIndex, 97, 0.25f, 0.0f);
+					}
+
+					if (bSpawnedSlot)
+					{
+						++SpawnedInRoom;
+						++RoomTrapSpawned;
+					}
+				}
+				if (SpawnedInRoom > 0)
+				{
+					++RoomTrapRoomsWithSpawn;
+				}
+			}
+
+			const bool bRoomTrapProofPass = RoomTrapSpawned >= RoomTrapDesired && RoomTrapRoomsWithSpawn == RoomTrapPlans.Num();
+			if (bRoomTrapProofPass)
+			{
+				UE_LOG(
+					LogT66TrapSubsystem,
+					Log,
+					TEXT("[T66Proof][TowerRoomTrapSummary] Stage=%d Floor=%d Result=PASS Rooms=%d RoomsWithTrap=%d Desired=%d Spawned=%d ExpectedRange=%d-%d Rule=RoomTrapSlots"),
+					StageNum,
+					Floor.FloorNumber,
+					RoomTrapPlans.Num(),
+					RoomTrapRoomsWithSpawn,
+					RoomTrapDesired,
+					RoomTrapSpawned,
+					RoomTrapExpectedMin,
+					RoomTrapExpectedMax);
+			}
+			else
+			{
+				UE_LOG(
+					LogT66TrapSubsystem,
+					Warning,
+					TEXT("[T66Proof][TowerRoomTrapSummary] Stage=%d Floor=%d Result=FAIL Rooms=%d RoomsWithTrap=%d Desired=%d Spawned=%d ExpectedRange=%d-%d Rule=RoomTrapSlots"),
+					StageNum,
+					Floor.FloorNumber,
+					RoomTrapPlans.Num(),
+					RoomTrapRoomsWithSpawn,
+					RoomTrapDesired,
+					RoomTrapSpawned,
+					RoomTrapExpectedMin,
+					RoomTrapExpectedMax);
+			}
 			continue;
 		}
 
 		FRandomStream FloorCountRng(RunSeed + StageNum * 2903 + Floor.FloorNumber * 311 + 97);
 		TArray<FT66ResolvedTrapSpawnRequest, TInlineAllocator<8>> SpawnRequests;
 		BuildSpawnRequestsForFloor(TowerFloorNumber, TrapPool, FloorCountRng, SpawnRequests);
+		UE_LOG(
+			LogT66TrapSubsystem,
+			Verbose,
+			TEXT("[Traps][FloorRequests] Floor=%d Requests=%d"),
+			TowerFloorNumber,
+			SpawnRequests.Num());
 
 		for (const FT66ResolvedTrapSpawnRequest& SpawnRequest : SpawnRequests)
 		{
@@ -999,6 +1391,124 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 						SpawnPressurePlateForTrap(SpikePatchTrap, *Entry, Floor.FloorNumber);
 						break;
 					}
+				}
+			}
+			else if (Entry->FamilyKey == TrapFamilyObstacle)
+			{
+				const FT66ObstacleTrapTuning* Tuning = CachedTuning.FindObstacleTuning(TrapKey);
+				if (!Tuning)
+				{
+					continue;
+				}
+
+				const int32 DesiredCount = SpawnRequest.DesiredCount;
+				int32 SpawnedForRequest = 0;
+				int32 LocationFailureCount = 0;
+				int32 ClearFailureCount = 0;
+				int32 SpawnFailureCount = 0;
+				for (int32 SpawnIndex = 0; SpawnIndex < DesiredCount; ++SpawnIndex)
+				{
+					FRandomStream SpawnRng(RunSeed + StageNum * 3301 + Floor.FloorNumber * 197 + KeySeed + SpawnIndex * 31);
+					for (int32 Attempt = 0; Attempt < Tuning->Spawn.SpawnAttempts; ++Attempt)
+					{
+						FVector SpawnLocation = FVector::ZeroVector;
+						FRotator SpawnRotation = FRotator::ZeroRotator;
+						if (Entry->SpawnSurface == ET66TrapSpawnSurface::MazeWall)
+						{
+							FVector WallNormal = FVector::ZeroVector;
+							if (!T66TowerMapTerrain::TryGetMazeWallSpawnLocation(
+								World,
+								Layout,
+								Floor.FloorNumber,
+								SpawnRng,
+								SpawnLocation,
+								WallNormal,
+								Tuning->EdgePadding))
+							{
+								++LocationFailureCount;
+								continue;
+							}
+							SpawnRotation = WallNormal.Rotation();
+						}
+						else
+						{
+							if (!T66TowerMapTerrain::TryGetObstacleTrapSpawnLocation(
+								World,
+								Layout,
+								Floor.FloorNumber,
+								SpawnRng,
+								SpawnLocation,
+								Tuning->FootprintRadius,
+								Tuning->EdgePadding,
+								Tuning->HolePadding))
+							{
+								++LocationFailureCount;
+								continue;
+							}
+							SpawnRotation = FRotator(0.f, SpawnRng.FRandRange(0.f, 360.f), 0.f);
+						}
+
+						SpawnLocation.Z = Floor.SurfaceZ + 6.f;
+						if (!IsLocationClear(SpawnLocation, Floor.FloorNumber, Tuning->Spawn.MinTrapSpacing))
+						{
+							++ClearFailureCount;
+							continue;
+						}
+
+						const FTransform SpawnTransform(SpawnRotation, SpawnLocation);
+						AT66ObstacleTrapBase* ObstacleTrap = World->SpawnActorDeferred<AT66ObstacleTrapBase>(
+							Entry->TrapClass.Get(),
+							SpawnTransform,
+							GameMode,
+							nullptr,
+							ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+						if (!ObstacleTrap)
+						{
+							++SpawnFailureCount;
+							continue;
+						}
+
+						ObstacleTrap->SetTrapTypeID(Entry->RegistryKey);
+						ObstacleTrap->SetTrapFamilyID(Entry->FamilyKey);
+						ObstacleTrap->SetTowerFloorNumber(Floor.FloorNumber);
+						ObstacleTrap->SetActivationMode(Entry->ActivationMode);
+						ObstacleTrap->SetTriggerTargetMode(Entry->TriggerTargetMode);
+						ObstacleTrap->SetDamagesHeroes(false);
+						ObstacleTrap->SetDamagesEnemies(false);
+						ApplyObstacleTuning(ObstacleTrap, *Tuning);
+						ApplyObstacleStyle(ObstacleTrap, Entry->VisualStyle);
+						if (AT66CeilingHammerTrap* Hammer = Cast<AT66CeilingHammerTrap>(ObstacleTrap))
+						{
+							Hammer->InitialPhaseSeconds = RollFloatRange(Tuning->InitialPhaseSeconds, SpawnRng);
+						}
+						else if (AT66BumperTrap* Bumper = Cast<AT66BumperTrap>(ObstacleTrap))
+						{
+							Bumper->InitialPhaseSeconds = RollFloatRange(Tuning->InitialPhaseSeconds, SpawnRng);
+						}
+						else if (AT66WallBumperTrap* WallBumper = Cast<AT66WallBumperTrap>(ObstacleTrap))
+						{
+							WallBumper->InitialPhaseSeconds = RollFloatRange(Tuning->InitialPhaseSeconds, SpawnRng);
+						}
+						ObstacleTrap->FinishSpawning(SpawnTransform);
+
+						RegisterManagedTrap(ObstacleTrap, Floor.FloorNumber);
+						++SpawnedForRequest;
+						break;
+					}
+				}
+				if (SpawnedForRequest < DesiredCount)
+				{
+					UE_LOG(
+						LogT66TrapSubsystem,
+						Verbose,
+						TEXT("[Traps][ObstacleSpawnMiss] Floor=%d Type=%s Desired=%d Spawned=%d LocationFailures=%d ClearFailures=%d SpawnFailures=%d"),
+						Floor.FloorNumber,
+						*TrapKey.ToString(),
+						DesiredCount,
+						SpawnedForRequest,
+						LocationFailureCount,
+						ClearFailureCount,
+						SpawnFailureCount);
 				}
 			}
 		}

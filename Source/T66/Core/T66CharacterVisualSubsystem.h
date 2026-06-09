@@ -43,9 +43,9 @@ struct FT66ResolvedCharacterVisual
 	UPROPERTY()
 	TObjectPtr<UAnimationAsset> JumpAnim = nullptr;
 
-	/** Optional one-shot roll animation. */
+	/** Optional one-shot leap animation. */
 	UPROPERTY()
-	TObjectPtr<UAnimationAsset> RollAnim = nullptr;
+	TObjectPtr<UAnimationAsset> LeapAnim = nullptr;
 
 	UPROPERTY()
 	FT66CharacterVisualRow Row;
@@ -102,9 +102,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
 	bool IsCharacterVisualReady(FName VisualID) const;
 
-	/** Get walk, jump, idle, and roll animations for a visual. OutJump/OutIdle/OutRoll may be null. */
+	/** Get walk, jump, idle, and leap animations for a visual. OutJump/OutIdle/OutLeap may be null. */
 	UFUNCTION(BlueprintCallable, Category = "T66|Visuals")
-	void GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutJump, UAnimationAsset*& OutIdle, UAnimationAsset*& OutRoll);
+	void GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutJump, UAnimationAsset*& OutIdle, UAnimationAsset*& OutLeap);
 
 	/** Returns true when a visual row exists for this ID or its fallback ID. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|Visuals")

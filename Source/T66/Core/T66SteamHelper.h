@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "T66SteamHelper.generated.h"
 
@@ -127,6 +128,9 @@ public:
 	void HandleWebApiTicketReady(uint32 InTicketHandle, bool bSuccess, const uint8* TicketBytes, int32 TicketByteCount);
 
 private:
+	bool HandleShutdown(const FT66ShutdownContext& Context);
+	void ShutdownRuntimeResources(const TCHAR* Reason);
+
 	bool bSteamReady = false;
 	FString LocalSteamIdStr;
 	FString LocalDisplayName;
@@ -147,6 +151,7 @@ private:
 	class FT66SteamJoinRequestBridge* SteamJoinRequestBridge = nullptr;
 	FOnT66SteamJoinRequested SteamJoinRequested;
 	FOnT66SteamLobbyJoinRequested SteamLobbyJoinRequested;
+	FT66ShutdownParticipantHandle ShutdownParticipantHandle;
 
 	void ObtainTicket();
 	void CollectFriendsList();

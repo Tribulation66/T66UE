@@ -1,0 +1,17 @@
+/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad
+/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad
+/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad
+/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad
+/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad
+/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad
+/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer
+/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad

@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Core/T66RetroFXSettings.h"
 #include "T66FrontendUIRootWidget.generated.h"
 
 class SBox;
@@ -14,7 +13,7 @@ class SRetainerWidget;
  * Frontend-only retained root for UIManager-owned screens and chrome.
  *
  * Gameplay HUDs, in-run overlays, world prompts, and the dev console must stay
- * outside this root so the frontend CRT pass cannot leak into active gameplay.
+ * outside this root.
  */
 UCLASS()
 class T66_API UT66FrontendUIRootWidget : public UUserWidget
@@ -40,7 +39,6 @@ public:
 	bool IsTopBarVisible() const;
 	bool IsPopupVisible() const;
 
-	void ApplyRetroFXSettings(const FT66RetroFXSettings& Settings);
 	void RefreshLayerWidget(UUserWidget* Widget);
 	void RequestFrontendPaintRefresh();
 
@@ -52,8 +50,6 @@ private:
 	void SetLayerWidget(TObjectPtr<UUserWidget>& StoredWidget, const TSharedPtr<SBox>& LayerBox, UUserWidget* Widget);
 	void ReapplyLayerWidget(const TObjectPtr<UUserWidget>& StoredWidget, const TSharedPtr<SBox>& LayerBox);
 	void ReapplyAllLayerWidgets();
-	void ApplySettingsToRetainer();
-	void EnsureRetainerMaterial();
 
 	UPROPERTY()
 	TObjectPtr<UUserWidget> MainScreenWidget;
@@ -69,8 +65,6 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UUserWidget> PopupWidget;
-
-	FT66RetroFXSettings CurrentSettings;
 
 	TSharedPtr<SRetainerWidget> RetainerWidget;
 	TSharedPtr<SBox> MainScreenBox;

@@ -19,9 +19,9 @@ class T66_API UT66IdolManagerSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
-	static constexpr int32 MaxEquippedIdolSlots = 4;
+	static constexpr int32 MaxEquippedIdolSlots = 3;
 	static constexpr int32 MaxIdolLevel = 4;
-	static constexpr int32 IdolStockSlotCount = 16;
+	static constexpr int32 IdolStockSlotCount = 20;
 
 	UPROPERTY(BlueprintAssignable, Category = "Idols")
 	FOnIdolStateChanged IdolStateChanged;

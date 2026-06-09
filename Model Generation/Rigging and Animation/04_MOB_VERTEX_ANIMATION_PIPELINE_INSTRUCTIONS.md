@@ -66,7 +66,7 @@ The Easy-mob VAT implementation adds a dedicated runtime seam instead of overloa
 - runtime loader/application: `UT66CharacterVisualSubsystem::TryGetMobVertexAnimationRow(...)` and `ApplyMobVertexAnimationVisual(...)`
 - enemy playback owner: `AT66EnemyBase`, which selects `Idle`/`Move` by velocity and short one-shot overrides for `AttackCue`, `HitReact`, and `Death`
 
-`CharacterVisuals.csv` remains the static fallback visual table. Do not overload `LoopingAnimation`, `AlertAnimation`, `RunAnimation`, or `RollAnimation` with VAT clip state.
+`CharacterVisuals.csv` remains the static fallback visual table. Do not overload `WalkAnimation`, `IdleAnimation`, `JumpAnimation`, or `LeapAnimation` with VAT clip state.
 
 ## Required Runtime Data Seam
 

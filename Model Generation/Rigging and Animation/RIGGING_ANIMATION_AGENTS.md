@@ -6,7 +6,7 @@ Blender source-of-truth mob animation, vertex animation texture source generatio
 
 ## Out Of Scope
 
-Automated hero and humanoid companion rigging research is out of scope for this folder. The user is handling manual rigging decisions. Do not revive the retired humanoid bakeoff process unless the user explicitly asks to restart that research. The narrow Animated ToonStyle bridge for approved demo hero/companion meshes is still in scope as import/export infrastructure.
+Automated hero and humanoid companion rigging research is out of scope for this folder. The user is handling manual rigging decisions. Do not revive the retired humanoid bakeoff process unless the user explicitly asks to restart that research. The narrow Animated ToonStyle bridge is archived historical infrastructure; active FriendSlop humanoid work routes through `../Instructions/13_FRIENDSLOP_RAW_HUMANOID_RIGGING_INSTRUCTIONS.md`.
 
 ## Trigger Words
 

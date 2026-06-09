@@ -306,11 +306,11 @@ Rules:
 
 ### 9.2 Primary growth rules
 
-- per-level primary growth ranges are active and loaded from the selected hero row
-- `AddHeroXP(...)` rolls and applies primary growth when XP crosses the current threshold
+- fixed per-level primary growth values are active and loaded from the selected hero row through the retained `Lvl*Min` / `Lvl*Max` schema
+- `AddHeroXP(...)` applies primary growth when XP crosses the current threshold; live rows set Min and Max equal, so the existing roll path resolves deterministically
 - level-up heals HP to full
 - level-up triggers a non-boss OHKO wave at the authored radius
-- luck bias can affect level-up rolls through the run state's existing biased primary-gain roll path
+- the biased primary-gain roll path remains for compatibility, but fixed live rows do not vary per level-up
 
 ### 9.3 Secondary proxy growth rules
 
@@ -339,9 +339,9 @@ The design intent is:
 
 Important current-state note:
 
-- hero base stats and per-level growth ranges are sourced through the cooked Heroes DataTable path via `FHeroData`, `UT66GameInstance::GetHeroData`, and `UT66GameInstance::GetHeroStatTuning`
+- hero base stats and fixed per-level growth values are sourced through the cooked Heroes DataTable path via `FHeroData`, `UT66GameInstance::GetHeroData`, and `UT66GameInstance::GetHeroStatTuning`
 - runtime supports tenths for base stats, level-up gains, diploma bonuses, and item-derived secondary bonuses
-- the hero row schema supports decimal-authored primary gain ranges for all foundational stats, including `Speed`, and those ranges are live
+- the hero row schema still exposes primary gain Min/Max fields for all foundational stats, including `Speed`, but live rows set Min and Max equal to fixed `1-5` gains
 - the final authored hero tables still need to be reviewed to fully align all heroes with the intended `1-10` base-proficiency story
 
 ## 10. Item And Alchemy Stat Pressure

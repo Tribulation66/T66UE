@@ -36,6 +36,9 @@ public:
 	/** Hide the webview window (keeps session). */
 	void Hide();
 
+	/** Deterministically release WebView2/controller/window/DLL resources. Safe to call more than once. */
+	void Shutdown();
+
 	/** Navigate to an allowed short-form video URL. */
 	void Navigate(const FString& Url);
 

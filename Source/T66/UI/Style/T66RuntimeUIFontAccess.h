@@ -10,7 +10,10 @@
 namespace T66RuntimeUIFontAccess
 {
 	FString ResolveLockedUIFontPath();
+	FString ResolveFriendslopUIFontPath();
 	bool IsBoldWeight(const TCHAR* Weight);
 	FSlateFontInfo MakeFontFromAbsoluteFile(const FString& Path, int32 Size);
+	FSlateFontInfo MakeFriendslopFont(int32 Size, bool bBold);
 	FSlateFontInfo MakeLocalizedEngineFont(int32 Size, bool bBold);
+	FSlateFontInfo MakeLocalizedEngineSlateFont(const TCHAR* RelativeFontFile, int32 Size);
 }

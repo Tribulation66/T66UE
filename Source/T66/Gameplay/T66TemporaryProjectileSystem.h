@@ -37,12 +37,14 @@ struct FT66TemporaryProjectileSystem
 	static FName ProfileHeroAOE();
 	static FName ProfileHeroBounce();
 	static FName ProfileHeroDOT();
+	static FName ProfileHeroSingleTarget();
 	static FName ProfileIdolOverlay();
 	static FName ProfileEnemySpit();
 	static FName ProfileTrapArrow();
 	static FName ProfileHostileAccent();
 
 	static FLinearColor HeroProjectileColor();
+	static FLinearColor NoWeaponProjectileColor();
 	static FLinearColor HostileProjectileColor();
 
 	static FName GetHeroAttackProfile(ET66AttackCategory AttackCategory);

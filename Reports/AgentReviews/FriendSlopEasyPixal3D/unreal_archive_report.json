@@ -1,0 +1,1975 @@
+{
+  "archive_root": "/Game/Archive/FriendSlopEasyPixal3D_20260604",
+  "archived": [
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Boosts/Materials/MI_AccuracyBoost_Pixal3D",
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_AccuracyBoost_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Boosts/Materials/MI_ArmorBoost_Pixal3D",
+      "asset_id": "ArmorBoost_Pixal3D",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_ArmorBoost_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Boosts/Materials/MI_AttackScaleBoost_Pixal3D",
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_AttackScaleBoost_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Boosts/Materials/MI_AttackSpeedBoost_Pixal3D",
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_AttackSpeedBoost_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Boosts/Materials/MI_DamageBoost_Pixal3D",
+      "asset_id": "DamageBoost_Pixal3D",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_DamageBoost_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Boosts/Materials/MI_EvasionBoost_Pixal3D",
+      "asset_id": "EvasionBoost_Pixal3D",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_EvasionBoost_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Boosts/Materials/MI_LuckBoost_Pixal3D",
+      "asset_id": "LuckBoost_Pixal3D",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_LuckBoost_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Boosts/Materials/MI_SpeedBoost_Pixal3D",
+      "asset_id": "SpeedBoost_Pixal3D",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_SpeedBoost_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D",
+      "asset_id": "Chest_Pixal3D",
+      "source": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+      "asset_id": "Chest_Pixal3D",
+      "source": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_0",
+      "asset_id": "Chest_Pixal3D",
+      "source": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_Tint",
+      "asset_id": "Chest_Pixal3D",
+      "source": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_InnerLines",
+      "asset_id": "Chest_Pixal3D",
+      "source": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Chests/ChestModel/Materials/MI_Chest_Pixal3D",
+      "asset_id": "Chest_Pixal3D",
+      "source": "/Game/World/Interactables/Chests/ChestModel/Materials/MI_Chest_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Chests/ChestModel/Materials/MI_Chest_Pixal3D_Outline",
+      "asset_id": "Chest_Pixal3D",
+      "source": "/Game/World/Interactables/Chests/ChestModel/Materials/MI_Chest_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/SM_CowardiceGate_Pixal3D",
+      "asset_id": "CowardiceGate_Pixal3D",
+      "source": "/Game/World/Gates/SM_CowardiceGate_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+      "asset_id": "CowardiceGate_Pixal3D",
+      "source": "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/Textures/T_CowardiceGate_Pixal3D_0",
+      "asset_id": "CowardiceGate_Pixal3D",
+      "source": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/Textures/T_CowardiceGate_Pixal3D_Tint",
+      "asset_id": "CowardiceGate_Pixal3D",
+      "source": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/Textures/T_CowardiceGate_Pixal3D_InnerLines",
+      "asset_id": "CowardiceGate_Pixal3D",
+      "source": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/Materials/MI_CowardiceGate_Pixal3D",
+      "asset_id": "CowardiceGate_Pixal3D",
+      "source": "/Game/World/Gates/Materials/MI_CowardiceGate_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/Materials/MI_CowardiceGate_Pixal3D_Outline",
+      "asset_id": "CowardiceGate_Pixal3D",
+      "source": "/Game/World/Gates/Materials/MI_CowardiceGate_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Crate/SM_LootCrate",
+      "asset_id": "LootCrate",
+      "source": "/Game/World/Interactables/Crate/SM_LootCrate"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Crate/SM_LootCrate_Outline",
+      "asset_id": "LootCrate",
+      "source": "/Game/World/Interactables/Crate/SM_LootCrate_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Crate/Textures/T_LootCrate_0",
+      "asset_id": "LootCrate",
+      "source": "/Game/World/Interactables/Crate/Textures/T_LootCrate_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Crate/Textures/T_LootCrate_Tint",
+      "asset_id": "LootCrate",
+      "source": "/Game/World/Interactables/Crate/Textures/T_LootCrate_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Crate/Textures/T_LootCrate_InnerLines",
+      "asset_id": "LootCrate",
+      "source": "/Game/World/Interactables/Crate/Textures/T_LootCrate_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Crate/Materials/MI_LootCrate",
+      "asset_id": "LootCrate",
+      "source": "/Game/World/Interactables/Crate/Materials/MI_LootCrate"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Crate/Materials/MI_LootCrate_Outline",
+      "asset_id": "LootCrate",
+      "source": "/Game/World/Interactables/Crate/Materials/MI_LootCrate_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D",
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "source": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "source": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_0",
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "source": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_Tint",
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "source": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_InnerLines",
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "source": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/DifficultyTotem/Materials/MI_DifficultyTotem_Pixal3D",
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "source": "/Game/World/Interactables/DifficultyTotem/Materials/MI_DifficultyTotem_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/DifficultyTotem/Materials/MI_DifficultyTotem_Pixal3D_Outline",
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "source": "/Game/World/Interactables/DifficultyTotem/Materials/MI_DifficultyTotem_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/TutorialGate_Pixal3D",
+      "asset_id": "TutorialGate_Pixal3D",
+      "source": "/Game/World/Gates/TutorialGate_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Fountain/SM_Fountain_Pixal3D",
+      "asset_id": "Fountain_Pixal3D",
+      "source": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+      "asset_id": "Fountain_Pixal3D",
+      "source": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_0",
+      "asset_id": "Fountain_Pixal3D",
+      "source": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_Tint",
+      "asset_id": "Fountain_Pixal3D",
+      "source": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_InnerLines",
+      "asset_id": "Fountain_Pixal3D",
+      "source": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Fountain/Materials/MI_Fountain_Pixal3D",
+      "asset_id": "Fountain_Pixal3D",
+      "source": "/Game/World/Interactables/Fountain/Materials/MI_Fountain_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Fountain/Materials/MI_Fountain_Pixal3D_Outline",
+      "asset_id": "Fountain_Pixal3D",
+      "source": "/Game/World/Interactables/Fountain/Materials/MI_Fountain_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D",
+      "asset_id": "IdolAltar_Pixal3D",
+      "source": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+      "asset_id": "IdolAltar_Pixal3D",
+      "source": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_0",
+      "asset_id": "IdolAltar_Pixal3D",
+      "source": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_Tint",
+      "asset_id": "IdolAltar_Pixal3D",
+      "source": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_InnerLines",
+      "asset_id": "IdolAltar_Pixal3D",
+      "source": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/IdolAltar/Materials/MI_IdolAltar_Pixal3D",
+      "asset_id": "IdolAltar_Pixal3D",
+      "source": "/Game/World/Interactables/IdolAltar/Materials/MI_IdolAltar_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/IdolAltar/Materials/MI_IdolAltar_Pixal3D_Outline",
+      "asset_id": "IdolAltar_Pixal3D",
+      "source": "/Game/World/Interactables/IdolAltar/Materials/MI_IdolAltar_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D",
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "source": "/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D_Outline",
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "source": "/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_0",
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "source": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_Tint",
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "source": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_InnerLines",
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "source": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/LootBags/Shared/Materials/MI_LootBag_Shared_Pixal3D",
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "source": "/Game/World/LootBags/Shared/Materials/MI_LootBag_Shared_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/LootBags/Shared/Materials/MI_LootBag_Shared_Pixal3D_Outline",
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "source": "/Game/World/LootBags/Shared/Materials/MI_LootBag_Shared_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/LootWheel/SM_LootWheel_Pixal3D",
+      "asset_id": "LootWheel_Pixal3D",
+      "source": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+      "asset_id": "LootWheel_Pixal3D",
+      "source": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_0",
+      "asset_id": "LootWheel_Pixal3D",
+      "source": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_Tint",
+      "asset_id": "LootWheel_Pixal3D",
+      "source": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_InnerLines",
+      "asset_id": "LootWheel_Pixal3D",
+      "source": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/LootWheel/Materials/MI_LootWheel_Pixal3D",
+      "asset_id": "LootWheel_Pixal3D",
+      "source": "/Game/World/Interactables/LootWheel/Materials/MI_LootWheel_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/LootWheel/Materials/MI_LootWheel_Pixal3D_Outline",
+      "asset_id": "LootWheel_Pixal3D",
+      "source": "/Game/World/Interactables/LootWheel/Materials/MI_LootWheel_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/SM_StageGate_Pixal3D",
+      "asset_id": "StageGate_Pixal3D",
+      "source": "/Game/World/Gates/SM_StageGate_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/SM_StageGate_Pixal3D_Outline",
+      "asset_id": "StageGate_Pixal3D",
+      "source": "/Game/World/Gates/SM_StageGate_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/Textures/T_StageGate_Pixal3D_0",
+      "asset_id": "StageGate_Pixal3D",
+      "source": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/Textures/T_StageGate_Pixal3D_Tint",
+      "asset_id": "StageGate_Pixal3D",
+      "source": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/Textures/T_StageGate_Pixal3D_InnerLines",
+      "asset_id": "StageGate_Pixal3D",
+      "source": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/Materials/MI_StageGate_Pixal3D",
+      "asset_id": "StageGate_Pixal3D",
+      "source": "/Game/World/Gates/Materials/MI_StageGate_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Gates/Materials/MI_StageGate_Pixal3D_Outline",
+      "asset_id": "StageGate_Pixal3D",
+      "source": "/Game/World/Gates/Materials/MI_StageGate_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Vehicles/SM_Vehicle_Pixal3D",
+      "asset_id": "Vehicle_Pixal3D",
+      "source": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Vehicles/SM_Vehicle_Pixal3D_Outline",
+      "asset_id": "Vehicle_Pixal3D",
+      "source": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_0",
+      "asset_id": "Vehicle_Pixal3D",
+      "source": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_Tint",
+      "asset_id": "Vehicle_Pixal3D",
+      "source": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_InnerLines",
+      "asset_id": "Vehicle_Pixal3D",
+      "source": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Vehicles/Materials/MI_Vehicle_Pixal3D",
+      "asset_id": "Vehicle_Pixal3D",
+      "source": "/Game/World/Interactables/Vehicles/Materials/MI_Vehicle_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/Vehicles/Materials/MI_Vehicle_Pixal3D_Outline",
+      "asset_id": "Vehicle_Pixal3D",
+      "source": "/Game/World/Interactables/Vehicles/Materials/MI_Vehicle_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D",
+      "asset_id": "WeaponAltar_Pixal3D",
+      "source": "/Game/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D_Outline",
+      "asset_id": "WeaponAltar_Pixal3D",
+      "source": "/Game/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_0",
+      "asset_id": "WeaponAltar_Pixal3D",
+      "source": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_Tint",
+      "asset_id": "WeaponAltar_Pixal3D",
+      "source": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_InnerLines",
+      "asset_id": "WeaponAltar_Pixal3D",
+      "source": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/WeaponAltar/Materials/MI_WeaponAltar_Pixal3D",
+      "asset_id": "WeaponAltar_Pixal3D",
+      "source": "/Game/World/Interactables/WeaponAltar/Materials/MI_WeaponAltar_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/Interactables/WeaponAltar/Materials/MI_WeaponAltar_Pixal3D_Outline",
+      "asset_id": "WeaponAltar_Pixal3D",
+      "source": "/Game/World/Interactables/WeaponAltar/Materials/MI_WeaponAltar_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D",
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "source": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "source": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_0",
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "source": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_0"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_Tint",
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "source": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_Tint"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_InnerLines",
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "source": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_InnerLines"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/VisualProps/Easy/Materials/MI_SkullRemains_Easy_Pixal3D",
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "source": "/Game/World/VisualProps/Easy/Materials/MI_SkullRemains_Easy_Pixal3D"
+    },
+    {
+      "archive": "/Game/Archive/FriendSlopEasyPixal3D_20260604/World/VisualProps/Easy/Materials/MI_SkullRemains_Easy_Pixal3D_Outline",
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "source": "/Game/World/VisualProps/Easy/Materials/MI_SkullRemains_Easy_Pixal3D_Outline"
+    }
+  ],
+  "errors": [],
+  "manifest": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\FriendSlopEasyBatch_20260604_1532_manifest.json",
+  "ok": true,
+  "skipped": [
+    {
+      "asset_id": "Companion_01",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/SM_Companion_01"
+    },
+    {
+      "asset_id": "Companion_01",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/SM_Companion_01_Outline"
+    },
+    {
+      "asset_id": "Companion_01",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Textures/T_Companion_01"
+    },
+    {
+      "asset_id": "Companion_01",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Textures/T_Companion_01_0"
+    },
+    {
+      "asset_id": "Companion_01",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Textures/T_Companion_01_Tint"
+    },
+    {
+      "asset_id": "Companion_01",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Textures/T_Companion_01_InnerLines"
+    },
+    {
+      "asset_id": "Companion_01",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Materials/MI_Companion_01"
+    },
+    {
+      "asset_id": "Companion_01",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Materials/MI_Companion_01_Outline"
+    },
+    {
+      "asset_id": "Companion_02",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/SM_Companion_02"
+    },
+    {
+      "asset_id": "Companion_02",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/SM_Companion_02_Outline"
+    },
+    {
+      "asset_id": "Companion_02",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Textures/T_Companion_02"
+    },
+    {
+      "asset_id": "Companion_02",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Textures/T_Companion_02_0"
+    },
+    {
+      "asset_id": "Companion_02",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Textures/T_Companion_02_Tint"
+    },
+    {
+      "asset_id": "Companion_02",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Textures/T_Companion_02_InnerLines"
+    },
+    {
+      "asset_id": "Companion_02",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Materials/MI_Companion_02"
+    },
+    {
+      "asset_id": "Companion_02",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Materials/MI_Companion_02_Outline"
+    },
+    {
+      "asset_id": "Companion_03",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/SM_Companion_03"
+    },
+    {
+      "asset_id": "Companion_03",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/SM_Companion_03_Outline"
+    },
+    {
+      "asset_id": "Companion_03",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Textures/T_Companion_03"
+    },
+    {
+      "asset_id": "Companion_03",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Textures/T_Companion_03_0"
+    },
+    {
+      "asset_id": "Companion_03",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Textures/T_Companion_03_Tint"
+    },
+    {
+      "asset_id": "Companion_03",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Textures/T_Companion_03_InnerLines"
+    },
+    {
+      "asset_id": "Companion_03",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Materials/MI_Companion_03"
+    },
+    {
+      "asset_id": "Companion_03",
+      "reason": "missing",
+      "source": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Materials/MI_Companion_03_Outline"
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/SM_Pet_Dungeon_SewerSlimeKing"
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/SM_Pet_Dungeon_SewerSlimeKing_Outline"
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Pet_Dungeon_SewerSlimeKing"
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Pet_Dungeon_SewerSlimeKing_0"
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Pet_Dungeon_SewerSlimeKing_Tint"
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Pet_Dungeon_SewerSlimeKing_InnerLines"
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Materials/MI_Pet_Dungeon_SewerSlimeKing"
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Materials/MI_Pet_Dungeon_SewerSlimeKing_Outline"
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/SM_Pet_Dungeon_WebMatriarch"
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/SM_Pet_Dungeon_WebMatriarch_Outline"
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Textures/T_Pet_Dungeon_WebMatriarch"
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Textures/T_Pet_Dungeon_WebMatriarch_0"
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Textures/T_Pet_Dungeon_WebMatriarch_Tint"
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Textures/T_Pet_Dungeon_WebMatriarch_InnerLines"
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Materials/MI_Pet_Dungeon_WebMatriarch"
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Materials/MI_Pet_Dungeon_WebMatriarch_Outline"
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/SM_Pet_Dungeon_BoneJailer"
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/SM_Pet_Dungeon_BoneJailer_Outline"
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Textures/T_Pet_Dungeon_BoneJailer"
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Textures/T_Pet_Dungeon_BoneJailer_0"
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Textures/T_Pet_Dungeon_BoneJailer_Tint"
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Textures/T_Pet_Dungeon_BoneJailer_InnerLines"
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Materials/MI_Pet_Dungeon_BoneJailer"
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Materials/MI_Pet_Dungeon_BoneJailer_Outline"
+    },
+    {
+      "asset_id": "Slime",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/Slime/Pixal3D/SM_Slime"
+    },
+    {
+      "asset_id": "Slime",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/Slime/Pixal3D/SM_Slime_Outline"
+    },
+    {
+      "asset_id": "Slime",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/Slime/Pixal3D/Textures/T_Slime"
+    },
+    {
+      "asset_id": "Slime",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/Slime/Pixal3D/Textures/T_Slime_0"
+    },
+    {
+      "asset_id": "Slime",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/Slime/Pixal3D/Textures/T_Slime_Tint"
+    },
+    {
+      "asset_id": "Slime",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/Slime/Pixal3D/Textures/T_Slime_InnerLines"
+    },
+    {
+      "asset_id": "Slime",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/Slime/Pixal3D/Materials/MI_Slime"
+    },
+    {
+      "asset_id": "Slime",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/Slime/Pixal3D/Materials/MI_Slime_Outline"
+    },
+    {
+      "asset_id": "BoneWalker",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneWalker/Pixal3D/SM_BoneWalker"
+    },
+    {
+      "asset_id": "BoneWalker",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneWalker/Pixal3D/SM_BoneWalker_Outline"
+    },
+    {
+      "asset_id": "BoneWalker",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Textures/T_BoneWalker"
+    },
+    {
+      "asset_id": "BoneWalker",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Textures/T_BoneWalker_0"
+    },
+    {
+      "asset_id": "BoneWalker",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Textures/T_BoneWalker_Tint"
+    },
+    {
+      "asset_id": "BoneWalker",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Textures/T_BoneWalker_InnerLines"
+    },
+    {
+      "asset_id": "BoneWalker",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Materials/MI_BoneWalker"
+    },
+    {
+      "asset_id": "BoneWalker",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Materials/MI_BoneWalker_Outline"
+    },
+    {
+      "asset_id": "CaveBat",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CaveBat/Pixal3D/SM_CaveBat"
+    },
+    {
+      "asset_id": "CaveBat",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CaveBat/Pixal3D/SM_CaveBat_Outline"
+    },
+    {
+      "asset_id": "CaveBat",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CaveBat/Pixal3D/Textures/T_CaveBat"
+    },
+    {
+      "asset_id": "CaveBat",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CaveBat/Pixal3D/Textures/T_CaveBat_0"
+    },
+    {
+      "asset_id": "CaveBat",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CaveBat/Pixal3D/Textures/T_CaveBat_Tint"
+    },
+    {
+      "asset_id": "CaveBat",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CaveBat/Pixal3D/Textures/T_CaveBat_InnerLines"
+    },
+    {
+      "asset_id": "CaveBat",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CaveBat/Pixal3D/Materials/MI_CaveBat"
+    },
+    {
+      "asset_id": "CaveBat",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CaveBat/Pixal3D/Materials/MI_CaveBat_Outline"
+    },
+    {
+      "asset_id": "CryptWraith",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CryptWraith/Pixal3D/SM_CryptWraith"
+    },
+    {
+      "asset_id": "CryptWraith",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CryptWraith/Pixal3D/SM_CryptWraith_Outline"
+    },
+    {
+      "asset_id": "CryptWraith",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Textures/T_CryptWraith"
+    },
+    {
+      "asset_id": "CryptWraith",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Textures/T_CryptWraith_0"
+    },
+    {
+      "asset_id": "CryptWraith",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Textures/T_CryptWraith_Tint"
+    },
+    {
+      "asset_id": "CryptWraith",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Textures/T_CryptWraith_InnerLines"
+    },
+    {
+      "asset_id": "CryptWraith",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Materials/MI_CryptWraith"
+    },
+    {
+      "asset_id": "CryptWraith",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Materials/MI_CryptWraith_Outline"
+    },
+    {
+      "asset_id": "CursedCrow",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CursedCrow/Pixal3D/SM_CursedCrow"
+    },
+    {
+      "asset_id": "CursedCrow",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CursedCrow/Pixal3D/SM_CursedCrow_Outline"
+    },
+    {
+      "asset_id": "CursedCrow",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Textures/T_CursedCrow"
+    },
+    {
+      "asset_id": "CursedCrow",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Textures/T_CursedCrow_0"
+    },
+    {
+      "asset_id": "CursedCrow",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Textures/T_CursedCrow_Tint"
+    },
+    {
+      "asset_id": "CursedCrow",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Textures/T_CursedCrow_InnerLines"
+    },
+    {
+      "asset_id": "CursedCrow",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Materials/MI_CursedCrow"
+    },
+    {
+      "asset_id": "CursedCrow",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Materials/MI_CursedCrow_Outline"
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/SM_FamishedGhoul"
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/SM_FamishedGhoul_Outline"
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Textures/T_FamishedGhoul"
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Textures/T_FamishedGhoul_0"
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Textures/T_FamishedGhoul_Tint"
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Textures/T_FamishedGhoul_InnerLines"
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Materials/MI_FamishedGhoul"
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Materials/MI_FamishedGhoul_Outline"
+    },
+    {
+      "asset_id": "HexSlinger",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/HexSlinger/Pixal3D/SM_HexSlinger"
+    },
+    {
+      "asset_id": "HexSlinger",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/HexSlinger/Pixal3D/SM_HexSlinger_Outline"
+    },
+    {
+      "asset_id": "HexSlinger",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Textures/T_HexSlinger"
+    },
+    {
+      "asset_id": "HexSlinger",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Textures/T_HexSlinger_0"
+    },
+    {
+      "asset_id": "HexSlinger",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Textures/T_HexSlinger_Tint"
+    },
+    {
+      "asset_id": "HexSlinger",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Textures/T_HexSlinger_InnerLines"
+    },
+    {
+      "asset_id": "HexSlinger",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Materials/MI_HexSlinger"
+    },
+    {
+      "asset_id": "HexSlinger",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Materials/MI_HexSlinger_Outline"
+    },
+    {
+      "asset_id": "MimicLure",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/MimicLure/Pixal3D/SM_MimicLure"
+    },
+    {
+      "asset_id": "MimicLure",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/MimicLure/Pixal3D/SM_MimicLure_Outline"
+    },
+    {
+      "asset_id": "MimicLure",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/MimicLure/Pixal3D/Textures/T_MimicLure"
+    },
+    {
+      "asset_id": "MimicLure",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/MimicLure/Pixal3D/Textures/T_MimicLure_0"
+    },
+    {
+      "asset_id": "MimicLure",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/MimicLure/Pixal3D/Textures/T_MimicLure_Tint"
+    },
+    {
+      "asset_id": "MimicLure",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/MimicLure/Pixal3D/Textures/T_MimicLure_InnerLines"
+    },
+    {
+      "asset_id": "MimicLure",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/MimicLure/Pixal3D/Materials/MI_MimicLure"
+    },
+    {
+      "asset_id": "MimicLure",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/MimicLure/Pixal3D/Materials/MI_MimicLure_Outline"
+    },
+    {
+      "asset_id": "RatPack",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/RatPack/Pixal3D/SM_RatPack"
+    },
+    {
+      "asset_id": "RatPack",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/RatPack/Pixal3D/SM_RatPack_Outline"
+    },
+    {
+      "asset_id": "RatPack",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/RatPack/Pixal3D/Textures/T_RatPack"
+    },
+    {
+      "asset_id": "RatPack",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/RatPack/Pixal3D/Textures/T_RatPack_0"
+    },
+    {
+      "asset_id": "RatPack",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/RatPack/Pixal3D/Textures/T_RatPack_Tint"
+    },
+    {
+      "asset_id": "RatPack",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/RatPack/Pixal3D/Textures/T_RatPack_InnerLines"
+    },
+    {
+      "asset_id": "RatPack",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/RatPack/Pixal3D/Materials/MI_RatPack"
+    },
+    {
+      "asset_id": "RatPack",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/RatPack/Pixal3D/Materials/MI_RatPack_Outline"
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/SM_StoneSentinel"
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/SM_StoneSentinel_Outline"
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Textures/T_StoneSentinel"
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Textures/T_StoneSentinel_0"
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Textures/T_StoneSentinel_Tint"
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Textures/T_StoneSentinel_InnerLines"
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Materials/MI_StoneSentinel"
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Materials/MI_StoneSentinel_Outline"
+    },
+    {
+      "asset_id": "TombSpider",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/TombSpider/Pixal3D/SM_TombSpider"
+    },
+    {
+      "asset_id": "TombSpider",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/TombSpider/Pixal3D/SM_TombSpider_Outline"
+    },
+    {
+      "asset_id": "TombSpider",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/TombSpider/Pixal3D/Textures/T_TombSpider"
+    },
+    {
+      "asset_id": "TombSpider",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/TombSpider/Pixal3D/Textures/T_TombSpider_0"
+    },
+    {
+      "asset_id": "TombSpider",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/TombSpider/Pixal3D/Textures/T_TombSpider_Tint"
+    },
+    {
+      "asset_id": "TombSpider",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/TombSpider/Pixal3D/Textures/T_TombSpider_InnerLines"
+    },
+    {
+      "asset_id": "TombSpider",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/TombSpider/Pixal3D/Materials/MI_TombSpider"
+    },
+    {
+      "asset_id": "TombSpider",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/TombSpider/Pixal3D/Materials/MI_TombSpider_Outline"
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/SM_BoneConjurer"
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/SM_BoneConjurer_Outline"
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Textures/T_BoneConjurer"
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Textures/T_BoneConjurer_0"
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Textures/T_BoneConjurer_Tint"
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Textures/T_BoneConjurer_InnerLines"
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Materials/MI_BoneConjurer"
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "reason": "missing",
+      "source": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Materials/MI_BoneConjurer_Outline"
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/SM_Dungeon_BaelFallenChad"
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/SM_Dungeon_BaelFallenChad_Outline"
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Textures/T_Dungeon_BaelFallenChad"
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Textures/T_Dungeon_BaelFallenChad_0"
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Textures/T_Dungeon_BaelFallenChad_Tint"
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Textures/T_Dungeon_BaelFallenChad_InnerLines"
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Materials/MI_Dungeon_BaelFallenChad"
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Materials/MI_Dungeon_BaelFallenChad_Outline"
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/SM_Dungeon_BoneJailer"
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/SM_Dungeon_BoneJailer_Outline"
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Textures/T_Dungeon_BoneJailer"
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Textures/T_Dungeon_BoneJailer_0"
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Textures/T_Dungeon_BoneJailer_Tint"
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Textures/T_Dungeon_BoneJailer_InnerLines"
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Materials/MI_Dungeon_BoneJailer"
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Materials/MI_Dungeon_BoneJailer_Outline"
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/SM_Dungeon_SewerSlimeKing"
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/SM_Dungeon_SewerSlimeKing_Outline"
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Dungeon_SewerSlimeKing"
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Dungeon_SewerSlimeKing_0"
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Dungeon_SewerSlimeKing_Tint"
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Dungeon_SewerSlimeKing_InnerLines"
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Materials/MI_Dungeon_SewerSlimeKing"
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Materials/MI_Dungeon_SewerSlimeKing_Outline"
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/SM_Dungeon_WebMatriarch"
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/SM_Dungeon_WebMatriarch_Outline"
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Textures/T_Dungeon_WebMatriarch"
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Textures/T_Dungeon_WebMatriarch_0"
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Textures/T_Dungeon_WebMatriarch_Tint"
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Textures/T_Dungeon_WebMatriarch_InnerLines"
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Materials/MI_Dungeon_WebMatriarch"
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "reason": "missing",
+      "source": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Materials/MI_Dungeon_WebMatriarch_Outline"
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/SM_CasinoNPC"
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/SM_CasinoNPC_Outline"
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Textures/T_CasinoNPC"
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Textures/T_CasinoNPC_0"
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Textures/T_CasinoNPC_Tint"
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Textures/T_CasinoNPC_InnerLines"
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Materials/MI_CasinoNPC"
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Materials/MI_CasinoNPC_Outline"
+    },
+    {
+      "asset_id": "Saint",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Saint/Pixal3D/SM_Saint"
+    },
+    {
+      "asset_id": "Saint",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Saint/Pixal3D/SM_Saint_Outline"
+    },
+    {
+      "asset_id": "Saint",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Saint/Pixal3D/Textures/T_Saint"
+    },
+    {
+      "asset_id": "Saint",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Saint/Pixal3D/Textures/T_Saint_0"
+    },
+    {
+      "asset_id": "Saint",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Saint/Pixal3D/Textures/T_Saint_Tint"
+    },
+    {
+      "asset_id": "Saint",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Saint/Pixal3D/Textures/T_Saint_InnerLines"
+    },
+    {
+      "asset_id": "Saint",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Saint/Pixal3D/Materials/MI_Saint"
+    },
+    {
+      "asset_id": "Saint",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Saint/Pixal3D/Materials/MI_Saint_Outline"
+    },
+    {
+      "asset_id": "Ouroboros",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Ouroboros/Pixal3D/SM_Ouroboros"
+    },
+    {
+      "asset_id": "Ouroboros",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Ouroboros/Pixal3D/SM_Ouroboros_Outline"
+    },
+    {
+      "asset_id": "Ouroboros",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Textures/T_Ouroboros"
+    },
+    {
+      "asset_id": "Ouroboros",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Textures/T_Ouroboros_0"
+    },
+    {
+      "asset_id": "Ouroboros",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Textures/T_Ouroboros_Tint"
+    },
+    {
+      "asset_id": "Ouroboros",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Textures/T_Ouroboros_InnerLines"
+    },
+    {
+      "asset_id": "Ouroboros",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Materials/MI_Ouroboros"
+    },
+    {
+      "asset_id": "Ouroboros",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Materials/MI_Ouroboros_Outline"
+    },
+    {
+      "asset_id": "VendorNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/VendorNPC/Pixal3D/SM_VendorNPC"
+    },
+    {
+      "asset_id": "VendorNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/VendorNPC/Pixal3D/SM_VendorNPC_Outline"
+    },
+    {
+      "asset_id": "VendorNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Textures/T_VendorNPC"
+    },
+    {
+      "asset_id": "VendorNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Textures/T_VendorNPC_0"
+    },
+    {
+      "asset_id": "VendorNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Textures/T_VendorNPC_Tint"
+    },
+    {
+      "asset_id": "VendorNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Textures/T_VendorNPC_InnerLines"
+    },
+    {
+      "asset_id": "VendorNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Materials/MI_VendorNPC"
+    },
+    {
+      "asset_id": "VendorNPC",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Materials/MI_VendorNPC_Outline"
+    },
+    {
+      "asset_id": "LoanShark",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/LoanShark/Pixal3D/SM_LoanShark"
+    },
+    {
+      "asset_id": "LoanShark",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/LoanShark/Pixal3D/SM_LoanShark_Outline"
+    },
+    {
+      "asset_id": "LoanShark",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/LoanShark/Pixal3D/Textures/T_LoanShark"
+    },
+    {
+      "asset_id": "LoanShark",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/LoanShark/Pixal3D/Textures/T_LoanShark_0"
+    },
+    {
+      "asset_id": "LoanShark",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/LoanShark/Pixal3D/Textures/T_LoanShark_Tint"
+    },
+    {
+      "asset_id": "LoanShark",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/LoanShark/Pixal3D/Textures/T_LoanShark_InnerLines"
+    },
+    {
+      "asset_id": "LoanShark",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/LoanShark/Pixal3D/Materials/MI_LoanShark"
+    },
+    {
+      "asset_id": "LoanShark",
+      "reason": "missing",
+      "source": "/Game/Characters/NPCs/LoanShark/Pixal3D/Materials/MI_LoanShark_Outline"
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_AccuracyBoost_Pixal3D"
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_AccuracyBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AccuracyBoost_Pixal3D"
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AccuracyBoost_Pixal3D_0"
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AccuracyBoost_Pixal3D_Tint"
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AccuracyBoost_Pixal3D_InnerLines"
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_AccuracyBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_ArmorBoost_Pixal3D"
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_ArmorBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_ArmorBoost_Pixal3D"
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_ArmorBoost_Pixal3D_0"
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_ArmorBoost_Pixal3D_Tint"
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_ArmorBoost_Pixal3D_InnerLines"
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_ArmorBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_AttackScaleBoost_Pixal3D"
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_AttackScaleBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AttackScaleBoost_Pixal3D"
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AttackScaleBoost_Pixal3D_0"
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AttackScaleBoost_Pixal3D_Tint"
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AttackScaleBoost_Pixal3D_InnerLines"
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_AttackScaleBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_AttackSpeedBoost_Pixal3D"
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_AttackSpeedBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AttackSpeedBoost_Pixal3D"
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AttackSpeedBoost_Pixal3D_0"
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AttackSpeedBoost_Pixal3D_Tint"
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_AttackSpeedBoost_Pixal3D_InnerLines"
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_AttackSpeedBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_DamageBoost_Pixal3D"
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_DamageBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_DamageBoost_Pixal3D"
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_DamageBoost_Pixal3D_0"
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_DamageBoost_Pixal3D_Tint"
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_DamageBoost_Pixal3D_InnerLines"
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_DamageBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_EvasionBoost_Pixal3D"
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_EvasionBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_EvasionBoost_Pixal3D"
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_EvasionBoost_Pixal3D_0"
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_EvasionBoost_Pixal3D_Tint"
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_EvasionBoost_Pixal3D_InnerLines"
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_EvasionBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_LuckBoost_Pixal3D"
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_LuckBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_LuckBoost_Pixal3D"
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_LuckBoost_Pixal3D_0"
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_LuckBoost_Pixal3D_Tint"
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_LuckBoost_Pixal3D_InnerLines"
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_LuckBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_SpeedBoost_Pixal3D"
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/SM_SpeedBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_SpeedBoost_Pixal3D"
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_SpeedBoost_Pixal3D_0"
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_SpeedBoost_Pixal3D_Tint"
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Textures/T_SpeedBoost_Pixal3D_InnerLines"
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Boosts/Materials/MI_SpeedBoost_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "Chest_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D"
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/CompanionCage/SM_CompanionCage_Pixal3D"
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/CompanionCage/SM_CompanionCage_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/CompanionCage/Textures/T_CompanionCage_Pixal3D"
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/CompanionCage/Textures/T_CompanionCage_Pixal3D_0"
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/CompanionCage/Textures/T_CompanionCage_Pixal3D_Tint"
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/CompanionCage/Textures/T_CompanionCage_Pixal3D_InnerLines"
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/CompanionCage/Materials/MI_CompanionCage_Pixal3D"
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/CompanionCage/Materials/MI_CompanionCage_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "CowardiceGate_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D"
+    },
+    {
+      "asset_id": "LootCrate",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Crate/Textures/T_LootCrate"
+    },
+    {
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D"
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Gates/SM_TutorialGate_Pixal3D"
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Gates/SM_TutorialGate_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Gates/Textures/T_TutorialGate_Pixal3D"
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Gates/Textures/T_TutorialGate_Pixal3D_0"
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Gates/Textures/T_TutorialGate_Pixal3D_Tint"
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Gates/Textures/T_TutorialGate_Pixal3D_InnerLines"
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Gates/Materials/MI_TutorialGate_Pixal3D"
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Gates/Materials/MI_TutorialGate_Pixal3D_Outline"
+    },
+    {
+      "asset_id": "Fountain_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D"
+    },
+    {
+      "asset_id": "IdolAltar_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D"
+    },
+    {
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D"
+    },
+    {
+      "asset_id": "LootWheel_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D"
+    },
+    {
+      "asset_id": "StageGate_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Gates/Textures/T_StageGate_Pixal3D"
+    },
+    {
+      "asset_id": "Vehicle_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D"
+    },
+    {
+      "asset_id": "WeaponAltar_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D"
+    },
+    {
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "reason": "missing",
+      "source": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D"
+    }
+  ]
+}

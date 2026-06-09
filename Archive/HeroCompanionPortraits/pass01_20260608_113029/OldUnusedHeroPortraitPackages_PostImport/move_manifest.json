@@ -1,0 +1,296 @@
+{
+  "moved": [
+    {
+      "Moved": "Hero_1\\T_Hero_1_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_1\\T_Hero_1_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_1\\T_Hero_1_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_1\\T_Hero_1_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_1\\T_Hero_1_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_1\\T_Hero_1_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_1\\T_Hero_1_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_1\\T_Hero_1_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_1\\T_Hero_1_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_1\\T_Hero_1_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_1\\T_Hero_1_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_1\\T_Hero_1_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_10\\T_Hero_10_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_10\\T_Hero_10_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_10\\T_Hero_10_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_10\\T_Hero_10_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_10\\T_Hero_10_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_10\\T_Hero_10_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_10\\T_Hero_10_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_10\\T_Hero_10_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_10\\T_Hero_10_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_10\\T_Hero_10_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_10\\T_Hero_10_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_10\\T_Hero_10_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_11\\T_Hero_11_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_11\\T_Hero_11_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_11\\T_Hero_11_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_11\\T_Hero_11_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_11\\T_Hero_11_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_11\\T_Hero_11_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_11\\T_Hero_11_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_11\\T_Hero_11_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_11\\T_Hero_11_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_11\\T_Hero_11_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_11\\T_Hero_11_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_11\\T_Hero_11_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_12\\T_Hero_12_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_12\\T_Hero_12_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_12\\T_Hero_12_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_12\\T_Hero_12_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_12\\T_Hero_12_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_12\\T_Hero_12_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_12\\T_Hero_12_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_12\\T_Hero_12_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_12\\T_Hero_12_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_12\\T_Hero_12_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_12\\T_Hero_12_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_12\\T_Hero_12_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_2\\T_Hero_2_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_2\\T_Hero_2_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_2\\T_Hero_2_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_2\\T_Hero_2_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_2\\T_Hero_2_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_2\\T_Hero_2_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_2\\T_Hero_2_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_2\\T_Hero_2_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_2\\T_Hero_2_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_2\\T_Hero_2_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_2\\T_Hero_2_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_2\\T_Hero_2_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_3\\T_Hero_3_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_3\\T_Hero_3_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_3\\T_Hero_3_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_3\\T_Hero_3_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_3\\T_Hero_3_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_3\\T_Hero_3_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_3\\T_Hero_3_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_3\\T_Hero_3_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_3\\T_Hero_3_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_3\\T_Hero_3_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_3\\T_Hero_3_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_3\\T_Hero_3_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_4\\T_Hero_4_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_4\\T_Hero_4_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_4\\T_Hero_4_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_4\\T_Hero_4_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_4\\T_Hero_4_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_4\\T_Hero_4_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_4\\T_Hero_4_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_4\\T_Hero_4_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_4\\T_Hero_4_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_4\\T_Hero_4_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_4\\T_Hero_4_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_4\\T_Hero_4_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_5\\T_Hero_5_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_5\\T_Hero_5_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_5\\T_Hero_5_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_5\\T_Hero_5_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_5\\T_Hero_5_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_5\\T_Hero_5_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_5\\T_Hero_5_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_5\\T_Hero_5_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_5\\T_Hero_5_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_5\\T_Hero_5_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_5\\T_Hero_5_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_5\\T_Hero_5_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_6\\T_Hero_6_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_6\\T_Hero_6_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_6\\T_Hero_6_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_6\\T_Hero_6_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_6\\T_Hero_6_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_6\\T_Hero_6_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_6\\T_Hero_6_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_6\\T_Hero_6_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_6\\T_Hero_6_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_6\\T_Hero_6_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_6\\T_Hero_6_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_6\\T_Hero_6_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_7\\T_Hero_7_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_7\\T_Hero_7_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_7\\T_Hero_7_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_7\\T_Hero_7_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_7\\T_Hero_7_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_7\\T_Hero_7_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_7\\T_Hero_7_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_7\\T_Hero_7_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_7\\T_Hero_7_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_7\\T_Hero_7_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_7\\T_Hero_7_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_7\\T_Hero_7_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_8\\T_Hero_8_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_8\\T_Hero_8_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_8\\T_Hero_8_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_8\\T_Hero_8_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_8\\T_Hero_8_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_8\\T_Hero_8_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_8\\T_Hero_8_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_8\\T_Hero_8_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_8\\T_Hero_8_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_8\\T_Hero_8_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_8\\T_Hero_8_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_8\\T_Hero_8_Stacy.uasset"
+    },
+    {
+      "Moved": "Hero_9\\T_Hero_9_Chad_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_9\\T_Hero_9_Chad_Full.uasset"
+    },
+    {
+      "Moved": "Hero_9\\T_Hero_9_Chad_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_9\\T_Hero_9_Chad_Low.uasset"
+    },
+    {
+      "Moved": "Hero_9\\T_Hero_9_Chad.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_9\\T_Hero_9_Chad.uasset"
+    },
+    {
+      "Moved": "Hero_9\\T_Hero_9_Stacy_Full.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_9\\T_Hero_9_Stacy_Full.uasset"
+    },
+    {
+      "Moved": "Hero_9\\T_Hero_9_Stacy_Low.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_9\\T_Hero_9_Stacy_Low.uasset"
+    },
+    {
+      "Moved": "Hero_9\\T_Hero_9_Stacy.uasset",
+      "Destination": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport\\Hero_9\\T_Hero_9_Stacy.uasset"
+    }
+  ],
+  "archive_root": "C:\\UE\\T66\\Archive\\HeroCompanionPortraits\\pass01_20260608_113029\\OldUnusedHeroPortraitPackages_PostImport",
+  "content_root": "C:\\UE\\T66\\Content\\UI\\Sprites\\Heroes",
+  "moved_at": "2026-06-08T12:23:27.3822928-03:00",
+  "moved_count": 72
+}

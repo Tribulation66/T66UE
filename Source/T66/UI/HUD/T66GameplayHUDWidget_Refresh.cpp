@@ -712,6 +712,22 @@ void UT66GameplayHUDWidget::RefreshHearts()
 	UT66RunStateSubsystem* RunState = GetRunState();
 	if (!RunState) return;
 
+	const float DamagePercent = FMath::Clamp(RunState->GetHeroDamagePercent(), 0.f, RunState->GetHeroDamageDeathPercent());
+	if (HeroDamagePercentText.IsValid())
+	{
+		HeroDamagePercentText->SetText(FText::Format(
+			NSLOCTEXT("T66.GameplayHUD", "HeroDamagePercent", "{0}%"),
+			FText::AsNumber(FMath::RoundToInt(DamagePercent))));
+		HeroDamagePercentText->SetColorAndOpacity(DamagePercent >= 80.f
+			? FLinearColor(1.f, 0.86f, 0.24f, 1.f)
+			: FLinearColor::White);
+	}
+	if (HeroDamagePercentFillBox.IsValid())
+	{
+		const float FillAlpha = FMath::Clamp(DamagePercent / RunState->GetHeroDamageDeathPercent(), 0.f, 1.f);
+		HeroDamagePercentFillBox->SetWidthOverride(GT66DisplayedHeartAreaWidth * FillAlpha);
+	}
+
 	// Hearts: split each gameplay slot into two visual segments so the HUD shows ten hearts total.
 	for (int32 i = 0; i < HeartImages.Num(); ++i)
 	{
@@ -925,7 +941,14 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		{
 			if (bHasDesiredWeaponData)
 			{
-				PassiveBorder->SetToolTip(CreateRichTooltip(DesiredWeaponData.DisplayName, DesiredWeaponData.Description));
+				T66TooltipSlate::SetTooltip(
+					PassiveBorder,
+					T66TooltipResolvers::MakeRichTooltip(
+						FName(TEXT("GameplayHUD.Weapon.Tooltip")),
+						ET66TooltipKind::Weapon,
+						DesiredWeaponData.DisplayName,
+						DesiredWeaponData.Description,
+						FName(TEXT("GameplayHUD.Weapon"))));
 			}
 			else
 			{
@@ -1076,7 +1099,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		if (!IdolSlotBorders[i].IsValid()) continue;
 		FLinearColor C = FT66FlatStyle::DefaultBorder();
 		TSoftObjectPtr<UTexture2D> IdolIconSoft;
-		TSharedPtr<IToolTip> IdolTooltipWidget;
+		FT66TooltipPayload IdolTooltipPayload;
 		if (i < Idols.Num() && !Idols[i].IsNone())
 		{
 			C = UT66IdolManagerSubsystem::GetIdolColor(Idols[i]);
@@ -1086,23 +1109,24 @@ void UT66GameplayHUDWidget::RefreshHUD()
 				if (GIAsT66->GetIdolData(Idols[i], IdolData))
 				{
 					IdolIconSoft = IdolData.Icon;
-					if (Loc)
-					{
-						IdolTooltipWidget = CreateRichTooltip(
-							Loc->GetText_IdolDisplayName(Idols[i]),
-							Loc->GetText_IdolTooltip(Idols[i]));
-					}
-					else
-					{
-						IdolTooltipWidget = CreateCustomTooltip(FText::FromName(Idols[i]));
-					}
+					IdolTooltipPayload = T66TooltipResolvers::MakeIdolTooltip(
+						Loc,
+						Idols[i],
+						FName(*FString::Printf(TEXT("GameplayHUD.IdolSlot.%02d"), i + 1)));
 				}
 			}
 		}
 		IdolSlotBorders[i]->SetBorderBackgroundColor(C);
 		if (IdolSlotContainers.IsValidIndex(i) && IdolSlotContainers[i].IsValid())
 		{
-			IdolSlotContainers[i]->SetToolTip(IdolTooltipWidget);
+			if (IdolTooltipPayload.IsEmpty())
+			{
+				IdolSlotContainers[i]->SetToolTip(nullptr);
+			}
+			else
+			{
+				T66TooltipSlate::SetTooltip(IdolSlotContainers[i], IdolTooltipPayload, true);
+			}
 		}
 
 		if (IdolSlotBrushes.IsValidIndex(i) && IdolSlotBrushes[i].IsValid())
@@ -1134,6 +1158,8 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	DisplayInventorySlots.Reserve(InventorySlotBorders.Num());
 	DisplayStackCounts.Reserve(InventorySlotBorders.Num());
 	DisplayMobLootFlags.Reserve(InventorySlotBorders.Num());
+	TArray<int32> InventoryDisplayOrder;
+	RunState->BuildInventoryDisplayOrderByRarity(InventoryDisplayOrder);
 
 	const int32 MobLootStack = RunState->GetCollectedMobLootStack();
 	if (MobLootStack > 0 && DisplayInventory.Num() < InventorySlotBorders.Num())
@@ -1153,8 +1179,14 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		}
 	}
 
-	for (int32 SourceIndex = 0; SourceIndex < EquippedInventorySlots.Num() && DisplayInventory.Num() < InventorySlotBorders.Num(); ++SourceIndex)
+	for (int32 OrderIndex = 0; OrderIndex < InventoryDisplayOrder.Num() && DisplayInventory.Num() < InventorySlotBorders.Num(); ++OrderIndex)
 	{
+		const int32 SourceIndex = InventoryDisplayOrder[OrderIndex];
+		if (!EquippedInventorySlots.IsValidIndex(SourceIndex))
+		{
+			continue;
+		}
+
 		if (!EquippedInventorySlots[SourceIndex].IsValid())
 		{
 			continue;
@@ -1175,9 +1207,11 @@ void UT66GameplayHUDWidget::RefreshHUD()
 		if (!InventorySlotBorders[i].IsValid()) continue;
 
 		FLinearColor SlotColor = FT66FlatStyle::DefaultBorder();
-		FText Tooltip = FText::GetEmpty();
+		FT66TooltipPayload TooltipPayload;
 		TSoftObjectPtr<UTexture2D> SlotIconSoft;
 		const bool bMobLootSlot = DisplayMobLootFlags.IsValidIndex(i) && DisplayMobLootFlags[i];
+		const FName CurrentItemID = (i < Inv.Num()) ? Inv[i] : NAME_None;
+		const int32 CurrentStackCount = DisplayStackCounts.IsValidIndex(i) ? DisplayStackCounts[i] : 0;
 		if (i < Inv.Num() && !Inv[i].IsNone())
 		{
 			const FName ItemID = Inv[i];
@@ -1188,10 +1222,10 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			}
 			if (bMobLootSlot)
 			{
-				Tooltip = FText::Format(
-					NSLOCTEXT("T66.ItemTooltip", "MobLootStackTooltip", "Mob Loot\nSell-only monster loot.\nStack: {0}\nSell: {1} gold"),
-					FText::AsNumber(MobLootStack),
-					FText::AsNumber(RunState->GetCollectedMobLootSellValue()));
+				TooltipPayload = T66TooltipResolvers::MakeMobLootTooltip(
+					MobLootStack,
+					RunState->GetCollectedMobLootSellValue(),
+					FName(*FString::Printf(TEXT("GameplayHUD.InventorySlot.%02d"), i + 1)));
 				if (InventoryGI && InventoryGI->GetItemData(ItemID, D))
 				{
 					SlotIconSoft = D.GetIconForRarity(ET66ItemRarity::Black);
@@ -1200,50 +1234,36 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			else if (InventoryGI && InventoryGI->GetItemData(ItemID, D))
 			{
 				SlotColor = InvSlots.IsValidIndex(i) ? FItemData::GetItemRarityColor(InvSlots[i].Rarity) : FT66FlatStyle::Tokens::Panel2;
-				TArray<FText> TipLines;
-				TipLines.Reserve(8);
 				const ET66ItemRarity SlotRarity = InvSlots.IsValidIndex(i) ? InvSlots[i].Rarity : ET66ItemRarity::Black;
-				TipLines.Add(Loc ? Loc->GetText_ItemDisplayNameForRarity(ItemID, SlotRarity) : FText::FromName(ItemID));
 
 				// Icon (optional). Do NOT sync-load in gameplay UI; request via the UI texture pool.
 				SlotIconSoft = D.GetIconForRarity(SlotRarity);
 
-				int32 MainValue = 0;
-				if (InvSlots.IsValidIndex(i))
+				int32 SellValue = 0;
+				if (RunState && i >= 0 && i < InvSlots.Num())
 				{
-					MainValue = InvSlots[i].Line1RolledValue;
+					SellValue = RunState->GetSellGoldForInventorySlot(InvSlots[i]);
 				}
-				const float ScaleMult = RunState ? RunState->GetHeroScaleMultiplier() : 1.f;
-				const FText CardDesc = T66ItemCardTextUtils::BuildItemCardDescription(Loc, D, SlotRarity, MainValue, ScaleMult, InvSlots.IsValidIndex(i) ? InvSlots[i].GetLine2Multiplier() : 0.f);
-				if (!CardDesc.IsEmpty())
-				{
-					TipLines.Add(CardDesc);
-				}
-				{
-					int32 SellValue = 0;
-					if (RunState && i >= 0 && i < InvSlots.Num())
-					{
-						SellValue = RunState->GetSellGoldForInventorySlot(InvSlots[i]);
-					}
-					if (SellValue > 0)
-					{
-						TipLines.Add(FText::Format(
-							NSLOCTEXT("T66.ItemTooltip", "SellValueGold", "Sell: {0} gold"),
-							FText::AsNumber(SellValue)));
-					}
-				}
-
-				Tooltip = TipLines.Num() > 0 ? FText::Join(NSLOCTEXT("T66.Common", "NewLine", "\n"), TipLines) : FText::GetEmpty();
+				TooltipPayload = T66TooltipResolvers::MakeItemTooltip(
+					Loc,
+					D,
+					InvSlots.IsValidIndex(i) ? InvSlots[i] : FT66InventorySlot(ItemID, SlotRarity, 0),
+					CurrentStackCount,
+					SellValue,
+					FName(*FString::Printf(TEXT("GameplayHUD.InventorySlot.%02d"), i + 1)));
 			}
 			else
 			{
 				SlotColor = FLinearColor(0.95f, 0.15f, 0.15f, 1.f);
-				Tooltip = FText::FromName(ItemID);
+				TooltipPayload = T66TooltipResolvers::MakeRichTooltip(
+					FName(*FString::Printf(TEXT("GameplayHUD.InventorySlot.%02d.UnknownItem"), i + 1)),
+					ET66TooltipKind::Item,
+					FText::FromName(ItemID),
+					FText::GetEmpty(),
+					FName(*FString::Printf(TEXT("GameplayHUD.InventorySlot.%02d"), i + 1)));
 			}
 		}
 		InventorySlotBorders[i]->SetBorderBackgroundColor(SlotColor);
-		const FName CurrentItemID = (i < Inv.Num()) ? Inv[i] : NAME_None;
-		const int32 CurrentStackCount = DisplayStackCounts.IsValidIndex(i) ? DisplayStackCounts[i] : 0;
 		if (!CachedInventorySlotIDs.IsValidIndex(i) || CachedInventorySlotIDs[i] != CurrentItemID
 			|| !CachedInventorySlotCounts.IsValidIndex(i) || CachedInventorySlotCounts[i] != CurrentStackCount)
 		{
@@ -1251,7 +1271,14 @@ void UT66GameplayHUDWidget::RefreshHUD()
 			if (CachedInventorySlotCounts.IsValidIndex(i)) CachedInventorySlotCounts[i] = CurrentStackCount;
 			if (InventorySlotContainers.IsValidIndex(i) && InventorySlotContainers[i].IsValid())
 			{
-				InventorySlotContainers[i]->SetToolTip(CreateCustomTooltip(Tooltip));
+				if (TooltipPayload.IsEmpty())
+				{
+					InventorySlotContainers[i]->SetToolTip(nullptr);
+				}
+				else
+				{
+					T66TooltipSlate::SetTooltip(InventorySlotContainers[i], TooltipPayload, true);
+				}
 			}
 		}
 

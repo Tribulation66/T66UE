@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "run_id": "FriendSlopProbe_Hero1Male_20260604_1415",
+  "assets": [
+    {
+      "asset_id": "Hero_1_Chad_Male",
+      "character_visual_rows": [
+        "Hero_1_Chad",
+        "Hero_1_Chad_DemoSkin"
+      ],
+      "character_visual_yaw": 90.0,
+      "target_dir": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw",
+      "target_height": 180.0
+    }
+  ]
+}

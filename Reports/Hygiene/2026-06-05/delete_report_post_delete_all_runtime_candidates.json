@@ -1,0 +1,424 @@
+{
+  "generated_utc": "2026-06-05T08:32:52.171677+00:00",
+  "gate_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\gate_post_delete_all_runtime_candidates.json",
+  "group": "post_delete_all_runtime_candidates",
+  "approved_count": 59,
+  "deleted_count": 59,
+  "skipped_count": 0,
+  "deleted": [
+    {
+      "package": "/Game/World/Interactables/Fountain/Fountain",
+      "asset_path": "/Game/World/Interactables/Fountain/Fountain.Fountain",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Beachgoer.MI_Hero_1_Chad_Beachgoer",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Beachgoer_Outline",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Beachgoer_Outline.MI_Hero_1_Chad_Beachgoer_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Materials/MI_Hero_1_Chad",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Materials/MI_Hero_1_Chad.MI_Hero_1_Chad",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Outline",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Outline.MI_Hero_1_Chad_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Material_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Material_0.Material_0",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Material_0_001",
+      "asset_path": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Material_0_001.Material_0_001",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D.MI_Boost_Accuracy_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D_Outline.MI_Boost_Accuracy_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D.MI_Boost_Armor_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D_Outline.MI_Boost_Armor_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D.MI_Boost_AttackScale_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D_Outline.MI_Boost_AttackScale_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D.MI_Boost_AttackSpeed_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D_Outline.MI_Boost_AttackSpeed_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D.MI_Boost_DamageStrength_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D_Outline.MI_Boost_DamageStrength_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D.MI_Boost_Evasion_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D_Outline.MI_Boost_Evasion_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D.MI_Boost_Luck_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D_Outline.MI_Boost_Luck_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D.MI_Boost_Speed_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D_Outline.MI_Boost_Speed_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Gates/Materials/M_StageGate_Pixal3D",
+      "asset_path": "/Game/World/Gates/Materials/M_StageGate_Pixal3D.M_StageGate_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Gates/Materials/M_StartGate_Pixal3D",
+      "asset_path": "/Game/World/Gates/Materials/M_StartGate_Pixal3D.M_StartGate_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Altar/Materials/Material_0_006",
+      "asset_path": "/Game/World/Interactables/Altar/Materials/Material_0_006.Material_0_006",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Boosts/Materials/MI_SpeedBoost_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Boosts/Materials/MI_SpeedBoost_Pixal3D.MI_SpeedBoost_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest",
+      "asset_path": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest.M_Chest",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest_QuadRetro",
+      "asset_path": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest_QuadRetro.M_Chest_QuadRetro",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Crate/Materials/M_Crate_QuadRetro",
+      "asset_path": "/Game/World/Interactables/Crate/Materials/M_Crate_QuadRetro.M_Crate_QuadRetro",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Fountain/Materials/M_Fountain_QuadRetro",
+      "asset_path": "/Game/World/Interactables/Fountain/Materials/M_Fountain_QuadRetro.M_Fountain_QuadRetro",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/IdolAltar/Materials/M_IdolAltar_QuadRetro",
+      "asset_path": "/Game/World/Interactables/IdolAltar/Materials/M_IdolAltar_QuadRetro.M_IdolAltar_QuadRetro",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Vehicles/Materials/M_Tractor_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Vehicles/Materials/M_Tractor_Pixal3D.M_Tractor_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/LootBags/Black/BlackBag/Materials/Material_0",
+      "asset_path": "/Game/World/LootBags/Black/BlackBag/Materials/Material_0.Material_0",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/LootBags/Black/Materials/M_SM_LootBag_Black_QuadRetro",
+      "asset_path": "/Game/World/LootBags/Black/Materials/M_SM_LootBag_Black_QuadRetro.M_SM_LootBag_Black_QuadRetro",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/LootBags/Red/Materials/M_SM_LootBag_Red_QuadRetro",
+      "asset_path": "/Game/World/LootBags/Red/Materials/M_SM_LootBag_Red_QuadRetro.M_SM_LootBag_Red_QuadRetro",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/LootBags/Red/RedBag/Materials/Material_0_005",
+      "asset_path": "/Game/World/LootBags/Red/RedBag/Materials/Material_0_005.Material_0_005",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/LootBags/White/Materials/M_SM_LootBag_White_QuadRetro",
+      "asset_path": "/Game/World/LootBags/White/Materials/M_SM_LootBag_White_QuadRetro.M_SM_LootBag_White_QuadRetro",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/LootBags/White/WhiteBag/Materials/Material_0_007",
+      "asset_path": "/Game/World/LootBags/White/WhiteBag/Materials/Material_0_007.Material_0_007",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/LootBags/Yellow/Materials/M_SM_LootBag_Yellow_QuadRetro",
+      "asset_path": "/Game/World/LootBags/Yellow/Materials/M_SM_LootBag_Yellow_QuadRetro.M_SM_LootBag_Yellow_QuadRetro",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/LootBags/Yellow/YellowBag/Materials/Material_0_008",
+      "asset_path": "/Game/World/LootBags/Yellow/YellowBag/Materials/Material_0_008.Material_0_008",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D",
+      "asset_path": "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D.MI_BrokenVase_Easy_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D_Outline",
+      "asset_path": "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D_Outline.MI_BrokenVase_Easy_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Materials/MI_WallLamp_Easy_Pixal3D_Outline",
+      "asset_path": "/Game/World/VisualProps/Easy/Materials/MI_WallLamp_Easy_Pixal3D_Outline.MI_WallLamp_Easy_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Materials/MI_WallTorch_Easy_Pixal3D_Outline",
+      "asset_path": "/Game/World/VisualProps/Easy/Materials/MI_WallTorch_Easy_Pixal3D_Outline.MI_WallTorch_Easy_Pixal3D_Outline",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_11/Chad/Image_0_001",
+      "asset_path": "/Game/Characters/Heroes/Hero_11/Chad/Image_0_001.Image_0_001",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_11/Chad/Retro_geometry_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_11/Chad/Retro_geometry_0.Retro_geometry_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_12/Chad/Retro_geometry_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_12/Chad/Retro_geometry_0.Retro_geometry_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/Retro_geometry_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/Retro_geometry_0.Retro_geometry_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/Retro_geometry_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/Retro_geometry_0.Retro_geometry_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/Retro_geometry_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/Retro_geometry_0.Retro_geometry_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_7/Chad/Retro_geometry_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_7/Chad/Retro_geometry_0.Retro_geometry_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/Image_0_001",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/Image_0_001.Image_0_001",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/Retro_geometry_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/Retro_geometry_0.Retro_geometry_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_9/Chad/Retro_geometry_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_9/Chad/Retro_geometry_0.Retro_geometry_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Gates/Textures/T_BossGate_Pixal3D_BaseColor",
+      "asset_path": "/Game/World/Gates/Textures/T_BossGate_Pixal3D_BaseColor.T_BossGate_Pixal3D_BaseColor",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_QuadRetro_Pixelated_512.T_DifficultyTotem_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Fountain/Fountain/Textures/Image_0_003",
+      "asset_path": "/Game/World/Interactables/Fountain/Fountain/Textures/Image_0_003.Image_0_003",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Fountain/Fountain/Textures/Image_1",
+      "asset_path": "/Game/World/Interactables/Fountain/Fountain/Textures/Image_1.Image_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    }
+  ],
+  "skipped": []
+}

@@ -212,7 +212,7 @@ void AT66TutorialManager::StartPickupItemStep()
 	if (Bag)
 	{
 		Bag->SetLootRarity(ET66Rarity::Black);
-		Bag->SetItemID(PickTutorialPrimaryStatItemID());
+		Bag->SetItemID(PickTutorialBaseStatItemID());
 	}
 }
 
@@ -252,7 +252,7 @@ void AT66TutorialManager::StartFountainLessonStep()
 	Step = ET66TutorialStep::FountainLesson;
 	AdvanceGuideToMarker(TutorialFountainMarkerTag);
 	SetTutorialPresentation(
-		NSLOCTEXT("T66.Tutorial", "FountainSubtitle", "Fountain. It heals you to full and gives you another max heart. Learn to value it before you're desperate."),
+		NSLOCTEXT("T66.Tutorial", "FountainSubtitle", "Fountain. It drops your damage back to zero percent. Learn to value it before you're desperate."),
 		NSLOCTEXT("T66.Tutorial", "FountainObjective", "Use the Fountain"));
 
 	MaxHPBeforeFountainUse = RunState ? RunState->GetMaxHP() : 0.f;
@@ -566,7 +566,7 @@ void AT66TutorialManager::TryFinishFinalArenaStep()
 	SpawnGateAndFinish();
 }
 
-FName AT66TutorialManager::PickTutorialPrimaryStatItemID() const
+FName AT66TutorialManager::PickTutorialBaseStatItemID() const
 {
 	if (!RunState)
 	{
@@ -622,7 +622,7 @@ FName AT66TutorialManager::PickTutorialPrimaryStatItemID() const
 				continue;
 			}
 
-			if (ItemData.BaseBuyGold > 0 && ItemData.PrimaryStatType == BestType)
+			if (ItemData.BaseBuyGold > 0 && ItemData.BaseStatType == BestType)
 			{
 				return ItemID;
 			}
@@ -776,7 +776,7 @@ void AT66TutorialManager::HandleHeartsChanged()
 		return;
 	}
 
-	if (Step == ET66TutorialStep::FountainLesson && RunState->GetMaxHP() > MaxHPBeforeFountainUse)
+	if (Step == ET66TutorialStep::FountainLesson && RunState->GetHeroDamagePercent() <= 0.1f)
 	{
 		StartTotemLessonStep();
 	}

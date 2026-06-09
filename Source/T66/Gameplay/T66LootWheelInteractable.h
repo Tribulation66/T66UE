@@ -49,9 +49,9 @@ private:
 		int32 PreDrawSeed = 0;
 		FName ItemID = NAME_None;
 		ET66ItemRarity ItemRarity = ET66ItemRarity::Black;
-		ET66HeroStatType BoostStatType = ET66HeroStatType::Damage;
-		ET66SecondaryStatType BoostSecondaryStatType = ET66SecondaryStatType::None;
-		bool bBoostUsesSecondaryStat = false;
+		ET66HeroStatType BoostBaseStatType = ET66HeroStatType::Damage;
+		ET66StatType BoostStatType = ET66StatType::None;
+		bool bBoostUsesStat = false;
 		int32 BoostBonusStatPoints = 8;
 		float BoostDurationSeconds = 10.f;
 		TWeakObjectPtr<APlayerController> PlayerController;

@@ -1,0 +1,1369 @@
+{
+  "generated_utc": "2026-06-05T08:25:09.697908+00:00",
+  "gate_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\gate_all_runtime_candidates.json",
+  "group": "all_runtime_candidates",
+  "approved_count": 194,
+  "deleted_count": 194,
+  "skipped_count": 0,
+  "deleted": [
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Idle.AM_Hero_1_Chad_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Jump.AM_Hero_1_Chad_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Roll",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Roll.AM_Hero_1_Chad_Roll",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/AM_Hero_1_Chad_Walk.AM_Hero_1_Chad_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_Idle.AM_Hero_1_Chad_Beachgoer_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/AM_Hero_1_Chad_Beachgoer_RigIdleV2.AM_Hero_1_Chad_Beachgoer_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Idle.AM_Hero_1_Chad_DemoSkin_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Jump.AM_Hero_1_Chad_DemoSkin_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Roll",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Roll.AM_Hero_1_Chad_DemoSkin_Roll",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/AM_Hero_1_Chad_DemoSkin_Walk.AM_Hero_1_Chad_DemoSkin_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Idle.AM_Hero_1_Chad_QuadRetroUALQA_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Jump.AM_Hero_1_Chad_QuadRetroUALQA_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Roll",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Roll.AM_Hero_1_Chad_QuadRetroUALQA_Roll",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/AM_Hero_1_Chad_QuadRetroUALQA_Walk.AM_Hero_1_Chad_QuadRetroUALQA_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_11/Chad/AM_Hero_11_Chad_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_11/Chad/AM_Hero_11_Chad_Jump.AM_Hero_11_Chad_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_11/Chad/AM_Hero_11_Chad_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_11/Chad/AM_Hero_11_Chad_RigIdleV2.AM_Hero_11_Chad_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_11/Chad/AM_Hero_11_Chad_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_11/Chad/AM_Hero_11_Chad_Walk.AM_Hero_11_Chad_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_12/Chad/AM_Hero_12_Chad_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_12/Chad/AM_Hero_12_Chad_Jump.AM_Hero_12_Chad_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_12/Chad/AM_Hero_12_Chad_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_12/Chad/AM_Hero_12_Chad_RigIdleV2.AM_Hero_12_Chad_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_12/Chad/AM_Hero_12_Chad_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_12/Chad/AM_Hero_12_Chad_Walk.AM_Hero_12_Chad_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/AM_Hero_2_Chad_Beachgoer_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/AM_Hero_2_Chad_Beachgoer_Idle.AM_Hero_2_Chad_Beachgoer_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/AM_Hero_2_Chad_Beachgoer_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/AM_Hero_2_Chad_Beachgoer_RigIdleV2.AM_Hero_2_Chad_Beachgoer_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/AM_Hero_3_Chad_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/AM_Hero_3_Chad_Jump.AM_Hero_3_Chad_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/AM_Hero_3_Chad_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/AM_Hero_3_Chad_RigIdleV2.AM_Hero_3_Chad_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/AM_Hero_3_Chad_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/AM_Hero_3_Chad_Walk.AM_Hero_3_Chad_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/AM_Hero_3_Chad_Beachgoer_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/AM_Hero_3_Chad_Beachgoer_Idle.AM_Hero_3_Chad_Beachgoer_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/AM_Hero_3_Chad_Beachgoer_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/AM_Hero_3_Chad_Beachgoer_RigIdleV2.AM_Hero_3_Chad_Beachgoer_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/AM_Hero_4_Chad_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/AM_Hero_4_Chad_Jump.AM_Hero_4_Chad_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/AM_Hero_4_Chad_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/AM_Hero_4_Chad_RigIdleV2.AM_Hero_4_Chad_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/AM_Hero_4_Chad_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/AM_Hero_4_Chad_Walk.AM_Hero_4_Chad_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/AM_Hero_4_Chad_Beachgoer_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/AM_Hero_4_Chad_Beachgoer_Idle.AM_Hero_4_Chad_Beachgoer_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/AM_Hero_4_Chad_Beachgoer_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/AM_Hero_4_Chad_Beachgoer_RigIdleV2.AM_Hero_4_Chad_Beachgoer_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/AM_Hero_5_Chad_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/AM_Hero_5_Chad_Jump.AM_Hero_5_Chad_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/AM_Hero_5_Chad_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/AM_Hero_5_Chad_RigIdleV2.AM_Hero_5_Chad_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/AM_Hero_5_Chad_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/AM_Hero_5_Chad_Walk.AM_Hero_5_Chad_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/AM_Hero_5_Chad_Beachgoer_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/AM_Hero_5_Chad_Beachgoer_Idle.AM_Hero_5_Chad_Beachgoer_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/AM_Hero_5_Chad_Beachgoer_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/AM_Hero_5_Chad_Beachgoer_RigIdleV2.AM_Hero_5_Chad_Beachgoer_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/AM_Hero_6_Chad_Beachgoer_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/AM_Hero_6_Chad_Beachgoer_Idle.AM_Hero_6_Chad_Beachgoer_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/AM_Hero_6_Chad_Beachgoer_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/AM_Hero_6_Chad_Beachgoer_RigIdleV2.AM_Hero_6_Chad_Beachgoer_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/AM_Hero_6_Chad_Beachgoer_RigIdleV2Rig_H8_TA_Beach_AM_Hero_6_Chad_Beachgoer_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/AM_Hero_6_Chad_Beachgoer_RigIdleV2Rig_H8_TA_Beach_AM_Hero_6_Chad_Beachgoer_Idle.AM_Hero_6_Chad_Beachgoer_RigIdleV2Rig_H8_TA_Beach_AM_Hero_6_Chad_Beachgoer_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_7/Chad/AM_Hero_7_Chad_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_7/Chad/AM_Hero_7_Chad_Jump.AM_Hero_7_Chad_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_7/Chad/AM_Hero_7_Chad_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_7/Chad/AM_Hero_7_Chad_RigIdleV2.AM_Hero_7_Chad_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_7/Chad/AM_Hero_7_Chad_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_7/Chad/AM_Hero_7_Chad_Walk.AM_Hero_7_Chad_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/AM_Hero_7_Chad_Beachgoer_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/AM_Hero_7_Chad_Beachgoer_Idle.AM_Hero_7_Chad_Beachgoer_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/AM_Hero_7_Chad_Beachgoer_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/AM_Hero_7_Chad_Beachgoer_RigIdleV2.AM_Hero_7_Chad_Beachgoer_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/AM_Hero_8_Chad_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/AM_Hero_8_Chad_Jump.AM_Hero_8_Chad_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/AM_Hero_8_Chad_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/AM_Hero_8_Chad_RigIdleV2.AM_Hero_8_Chad_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/AM_Hero_8_Chad_RigIdleV2Rig_H8_TA_Std_AM_Hero_8_Chad_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/AM_Hero_8_Chad_RigIdleV2Rig_H8_TA_Std_AM_Hero_8_Chad_Idle.AM_Hero_8_Chad_RigIdleV2Rig_H8_TA_Std_AM_Hero_8_Chad_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/AM_Hero_8_Chad_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/AM_Hero_8_Chad_Walk.AM_Hero_8_Chad_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/AM_Hero_8_Chad_Beachgoer_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/AM_Hero_8_Chad_Beachgoer_Idle.AM_Hero_8_Chad_Beachgoer_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/AM_Hero_8_Chad_Beachgoer_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/AM_Hero_8_Chad_Beachgoer_RigIdleV2.AM_Hero_8_Chad_Beachgoer_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_9/Chad/AM_Hero_9_Chad_Jump",
+      "asset_path": "/Game/Characters/Heroes/Hero_9/Chad/AM_Hero_9_Chad_Jump.AM_Hero_9_Chad_Jump",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_9/Chad/AM_Hero_9_Chad_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_9/Chad/AM_Hero_9_Chad_RigIdleV2.AM_Hero_9_Chad_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_9/Chad/AM_Hero_9_Chad_Walk",
+      "asset_path": "/Game/Characters/Heroes/Hero_9/Chad/AM_Hero_9_Chad_Walk.AM_Hero_9_Chad_Walk",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/AM_Hero_9_Chad_Beachgoer_Idle",
+      "asset_path": "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/AM_Hero_9_Chad_Beachgoer_Idle.AM_Hero_9_Chad_Beachgoer_Idle",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/AM_Hero_9_Chad_Beachgoer_RigIdleV2",
+      "asset_path": "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/AM_Hero_9_Chad_Beachgoer_RigIdleV2.AM_Hero_9_Chad_Beachgoer_RigIdleV2",
+      "class": "AnimSequence",
+      "exists": true,
+      "delete_order": 10
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/SK_Hero_10_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/SK_Hero_10_Chad_Beachgoer.SK_Hero_10_Chad_Beachgoer",
+      "class": "SkeletalMesh",
+      "exists": true,
+      "delete_order": 20
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/SK_Hero_10_Chad_Beachgoer_Skeleton",
+      "asset_path": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/SK_Hero_10_Chad_Beachgoer_Skeleton.SK_Hero_10_Chad_Beachgoer_Skeleton",
+      "class": "Skeleton",
+      "exists": true,
+      "delete_order": 30
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer_Skeleton",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer_Skeleton.SK_Hero_2_Chad_Beachgoer_Skeleton",
+      "class": "Skeleton",
+      "exists": true,
+      "delete_order": 30
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer_Skeleton",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer_Skeleton.SK_Hero_6_Chad_Beachgoer_Skeleton",
+      "class": "Skeleton",
+      "exists": true,
+      "delete_order": 30
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer.SM_Hero_1_Chad_Beachgoer",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer_Outline",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/SM_Hero_1_Chad_Beachgoer_Outline.SM_Hero_1_Chad_Beachgoer_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad.SM_Hero_1_Chad",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/SM_Hero_1_Chad_Outline.SM_Hero_1_Chad_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/SM_Hero_1_Chad_QuadRetro",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/SM_Hero_1_Chad_QuadRetro.SM_Hero_1_Chad_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/SM_Hero_1_Stacy_QuadRetro.SM_Hero_1_Stacy_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Chad/QuadRetro/SM_Hero_2_Chad_QuadRetro",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Chad/QuadRetro/SM_Hero_2_Chad_QuadRetro.SM_Hero_2_Chad_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Stacy/QuadRetro/SM_Hero_2_Stacy_QuadRetro",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Stacy/QuadRetro/SM_Hero_2_Stacy_QuadRetro.SM_Hero_2_Stacy_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/QuadRetro/SM_Hero_3_Chad_QuadRetro",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/QuadRetro/SM_Hero_3_Chad_QuadRetro.SM_Hero_3_Chad_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Stacy/QuadRetro/SM_Hero_3_Stacy_QuadRetro",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Stacy/QuadRetro/SM_Hero_3_Stacy_QuadRetro.SM_Hero_3_Stacy_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/QuadRetro/SM_Hero_4_Chad_QuadRetro",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/QuadRetro/SM_Hero_4_Chad_QuadRetro.SM_Hero_4_Chad_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Stacy/QuadRetro/SM_Hero_4_Stacy_QuadRetro",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Stacy/QuadRetro/SM_Hero_4_Stacy_QuadRetro.SM_Hero_4_Stacy_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Chad/QuadRetro/SM_Hero_6_Chad_QuadRetro",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Chad/QuadRetro/SM_Hero_6_Chad_QuadRetro.SM_Hero_6_Chad_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Stacy/QuadRetro/SM_Hero_6_Stacy_QuadRetro",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Stacy/QuadRetro/SM_Hero_6_Stacy_QuadRetro.SM_Hero_6_Stacy_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_Accuracy_Pixal3D",
+      "asset_path": "/Game/World/Boosts/SM_Boost_Accuracy_Pixal3D.SM_Boost_Accuracy_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_Accuracy_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/SM_Boost_Accuracy_Pixal3D_Outline.SM_Boost_Accuracy_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_Armor_Pixal3D",
+      "asset_path": "/Game/World/Boosts/SM_Boost_Armor_Pixal3D.SM_Boost_Armor_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_Armor_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/SM_Boost_Armor_Pixal3D_Outline.SM_Boost_Armor_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_AttackScale_Pixal3D",
+      "asset_path": "/Game/World/Boosts/SM_Boost_AttackScale_Pixal3D.SM_Boost_AttackScale_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_AttackScale_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/SM_Boost_AttackScale_Pixal3D_Outline.SM_Boost_AttackScale_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_AttackSpeed_Pixal3D",
+      "asset_path": "/Game/World/Boosts/SM_Boost_AttackSpeed_Pixal3D.SM_Boost_AttackSpeed_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_AttackSpeed_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/SM_Boost_AttackSpeed_Pixal3D_Outline.SM_Boost_AttackSpeed_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_DamageStrength_Pixal3D",
+      "asset_path": "/Game/World/Boosts/SM_Boost_DamageStrength_Pixal3D.SM_Boost_DamageStrength_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_DamageStrength_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/SM_Boost_DamageStrength_Pixal3D_Outline.SM_Boost_DamageStrength_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_Evasion_Pixal3D",
+      "asset_path": "/Game/World/Boosts/SM_Boost_Evasion_Pixal3D.SM_Boost_Evasion_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_Evasion_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/SM_Boost_Evasion_Pixal3D_Outline.SM_Boost_Evasion_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_Luck_Pixal3D",
+      "asset_path": "/Game/World/Boosts/SM_Boost_Luck_Pixal3D.SM_Boost_Luck_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_Luck_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/SM_Boost_Luck_Pixal3D_Outline.SM_Boost_Luck_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_Speed_Pixal3D",
+      "asset_path": "/Game/World/Boosts/SM_Boost_Speed_Pixal3D.SM_Boost_Speed_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Boosts/SM_Boost_Speed_Pixal3D_Outline",
+      "asset_path": "/Game/World/Boosts/SM_Boost_Speed_Pixal3D_Outline.SM_Boost_Speed_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Gates/StageGate_Pixal3D",
+      "asset_path": "/Game/World/Gates/StageGate_Pixal3D.StageGate_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Gates/StartGate_Pixal3D",
+      "asset_path": "/Game/World/Gates/StartGate_Pixal3D.StartGate_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Interactables/Boosts/SpeedBoost_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Boosts/SpeedBoost_Pixal3D.SpeedBoost_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Interactables/Chests/ChestModel/Chest_QuadRetro",
+      "asset_path": "/Game/World/Interactables/Chests/ChestModel/Chest_QuadRetro.Chest_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Interactables/Crate/Crate_QuadRetro",
+      "asset_path": "/Game/World/Interactables/Crate/Crate_QuadRetro.Crate_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Interactables/Fountain/Fountain_QuadRetro",
+      "asset_path": "/Game/World/Interactables/Fountain/Fountain_QuadRetro.Fountain_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Interactables/IdolAltar/IdolAltar_QuadRetro",
+      "asset_path": "/Game/World/Interactables/IdolAltar/IdolAltar_QuadRetro.IdolAltar_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Interactables/LootWheel/LootWheel_Pixal3D",
+      "asset_path": "/Game/World/Interactables/LootWheel/LootWheel_Pixal3D.LootWheel_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Interactables/SM_IdolAltar",
+      "asset_path": "/Game/World/Interactables/SM_IdolAltar.SM_IdolAltar",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/Interactables/Vehicles/Tractor_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Vehicles/Tractor_Pixal3D.Tractor_Pixal3D",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/LootBags/Black/SM_LootBag_Black",
+      "asset_path": "/Game/World/LootBags/Black/SM_LootBag_Black.SM_LootBag_Black",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro",
+      "asset_path": "/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro.SM_LootBag_Black_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/LootBags/Red/SM_LootBag_Red",
+      "asset_path": "/Game/World/LootBags/Red/SM_LootBag_Red.SM_LootBag_Red",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/LootBags/Red/SM_LootBag_Red_QuadRetro",
+      "asset_path": "/Game/World/LootBags/Red/SM_LootBag_Red_QuadRetro.SM_LootBag_Red_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/LootBags/White/SM_LootBag_White",
+      "asset_path": "/Game/World/LootBags/White/SM_LootBag_White.SM_LootBag_White",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/LootBags/White/SM_LootBag_White_QuadRetro",
+      "asset_path": "/Game/World/LootBags/White/SM_LootBag_White_QuadRetro.SM_LootBag_White_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/LootBags/Yellow/SM_LootBag_Yellow",
+      "asset_path": "/Game/World/LootBags/Yellow/SM_LootBag_Yellow.SM_LootBag_Yellow",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/LootBags/Yellow/SM_LootBag_Yellow_QuadRetro",
+      "asset_path": "/Game/World/LootBags/Yellow/SM_LootBag_Yellow_QuadRetro.SM_LootBag_Yellow_QuadRetro",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/SM_BrokenVase_Easy_Pixal3D_Outline",
+      "asset_path": "/Game/World/VisualProps/Easy/SM_BrokenVase_Easy_Pixal3D_Outline.SM_BrokenVase_Easy_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/SM_WallLamp_Easy_Pixal3D_Outline",
+      "asset_path": "/Game/World/VisualProps/Easy/SM_WallLamp_Easy_Pixal3D_Outline.SM_WallLamp_Easy_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/SM_WallTorch_Easy_Pixal3D_Outline",
+      "asset_path": "/Game/World/VisualProps/Easy/SM_WallTorch_Easy_Pixal3D_Outline.SM_WallTorch_Easy_Pixal3D_Outline",
+      "class": "StaticMesh",
+      "exists": true,
+      "delete_order": 40
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_11/Chad/Material_0_001",
+      "asset_path": "/Game/Characters/Heroes/Hero_11/Chad/Material_0_001.Material_0_001",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_11/Chad/Retro_geometry_01",
+      "asset_path": "/Game/Characters/Heroes/Hero_11/Chad/Retro_geometry_01.Retro_geometry_01",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_12/Chad/Retro_geometry_01",
+      "asset_path": "/Game/Characters/Heroes/Hero_12/Chad/Retro_geometry_01.Retro_geometry_01",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/Retro_geometry_01",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/Retro_geometry_01.Retro_geometry_01",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/Retro_geometry_01",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/Retro_geometry_01.Retro_geometry_01",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/Retro_geometry_01",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/Retro_geometry_01.Retro_geometry_01",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_7/Chad/Retro_geometry_01",
+      "asset_path": "/Game/Characters/Heroes/Hero_7/Chad/Retro_geometry_01.Retro_geometry_01",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/Material_0_001",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/Material_0_001.Material_0_001",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/Retro_geometry_01",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/Retro_geometry_01.Retro_geometry_01",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_9/Chad/Retro_geometry_01",
+      "asset_path": "/Game/Characters/Heroes/Hero_9/Chad/Retro_geometry_01.Retro_geometry_01",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Gates/Materials/M_BossGate_Pixal3D",
+      "asset_path": "/Game/World/Gates/Materials/M_BossGate_Pixal3D.M_BossGate_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Boosts/Materials/MI_AccuracyBoost_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Boosts/Materials/MI_AccuracyBoost_Pixal3D.MI_AccuracyBoost_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Boosts/Materials/MI_ArmorBoost_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Boosts/Materials/MI_ArmorBoost_Pixal3D.MI_ArmorBoost_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Boosts/Materials/MI_AttackScaleBoost_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Boosts/Materials/MI_AttackScaleBoost_Pixal3D.MI_AttackScaleBoost_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Boosts/Materials/MI_AttackSpeedBoost_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Boosts/Materials/MI_AttackSpeedBoost_Pixal3D.MI_AttackSpeedBoost_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Boosts/Materials/MI_DamageBoost_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Boosts/Materials/MI_DamageBoost_Pixal3D.MI_DamageBoost_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Boosts/Materials/MI_EvasionBoost_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Boosts/Materials/MI_EvasionBoost_Pixal3D.MI_EvasionBoost_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Boosts/Materials/MI_LuckBoost_Pixal3D",
+      "asset_path": "/Game/World/Interactables/Boosts/Materials/MI_LuckBoost_Pixal3D.MI_LuckBoost_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/DifficultyTotem/Materials/M_DifficultyTotem_QuadRetro",
+      "asset_path": "/Game/World/Interactables/DifficultyTotem/Materials/M_DifficultyTotem_QuadRetro.M_DifficultyTotem_QuadRetro",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/Fountain/Fountain/Materials/Material_0_003",
+      "asset_path": "/Game/World/Interactables/Fountain/Fountain/Materials/Material_0_003.Material_0_003",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/World/Interactables/IdolAltar/Materials/M_IdolAltar_Pixal3D",
+      "asset_path": "/Game/World/Interactables/IdolAltar/Materials/M_IdolAltar_Pixal3D.M_IdolAltar_Pixal3D",
+      "class": "MaterialInstanceConstant",
+      "exists": true,
+      "delete_order": 50
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_1.T_Hero_1_Chad_Beachgoer_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_1.T_Hero_1_Chad_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/RoyalChad_QuadRetro/Textures/RoyalChad_QuadRetro_Pixelated_512_Normalized",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetro/RoyalChad_QuadRetro/Textures/RoyalChad_QuadRetro_Pixelated_512_Normalized.RoyalChad_QuadRetro_Pixelated_512_Normalized",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_Beachgoer_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_Beachgoer_1.T_Hero_1_Stacy_Beachgoer_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Stacy/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Stacy/Pixal3DToonStyle/Textures/T_Hero_1_Stacy_1.T_Hero_1_Stacy_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512.RoyalStacy_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512_Normalized",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Stacy/QuadRetro/RoyalStacy_QuadRetro/Textures/RoyalStacy_QuadRetro_Pixelated_512_Normalized.RoyalStacy_QuadRetro_Pixelated_512_Normalized",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Chad/Pixal3DToonStyle/Textures/T_Hero_2_Chad_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Chad/Pixal3DToonStyle/Textures/T_Hero_2_Chad_1.T_Hero_2_Chad_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Chad/QuadRetro/ChineseChad_QuadRetro/Textures/ChineseChad_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Chad/QuadRetro/ChineseChad_QuadRetro/Textures/ChineseChad_QuadRetro_Pixelated_512.ChineseChad_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Chad/QuadRetro/ChineseChad_QuadRetro/Textures/ChineseChad_QuadRetro_Pixelated_512_Normalized",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Chad/QuadRetro/ChineseChad_QuadRetro/Textures/ChineseChad_QuadRetro_Pixelated_512_Normalized.ChineseChad_QuadRetro_Pixelated_512_Normalized",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Stacy/Pixal3DToonStyle/Textures/T_Hero_2_Stacy_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Stacy/Pixal3DToonStyle/Textures/T_Hero_2_Stacy_1.T_Hero_2_Stacy_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Stacy/QuadRetro/ChineseStacy_QuadRetro/Textures/ChineseStacy_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Stacy/QuadRetro/ChineseStacy_QuadRetro/Textures/ChineseStacy_QuadRetro_Pixelated_512.ChineseStacy_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Stacy/QuadRetro/ChineseStacy_QuadRetro/Textures/ChineseStacy_QuadRetro_Pixelated_512_Normalized",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Stacy/QuadRetro/ChineseStacy_QuadRetro/Textures/ChineseStacy_QuadRetro_Pixelated_512_Normalized.ChineseStacy_QuadRetro_Pixelated_512_Normalized",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_3_Chad_Beachgoer_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_3_Chad_Beachgoer_1.T_Hero_3_Chad_Beachgoer_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/Pixal3DToonStyle/Textures/T_Hero_3_Chad_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/Pixal3DToonStyle/Textures/T_Hero_3_Chad_1.T_Hero_3_Chad_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/QuadRetro/BoxerChad_QuadRetro/Textures/BoxerChad_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/QuadRetro/BoxerChad_QuadRetro/Textures/BoxerChad_QuadRetro_Pixelated_512.BoxerChad_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/QuadRetro/BoxerChad_QuadRetro/Textures/BoxerChad_QuadRetro_Pixelated_512_Normalized",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/QuadRetro/BoxerChad_QuadRetro/Textures/BoxerChad_QuadRetro_Pixelated_512_Normalized.BoxerChad_QuadRetro_Pixelated_512_Normalized",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_3_Stacy_Beachgoer_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_3_Stacy_Beachgoer_1.T_Hero_3_Stacy_Beachgoer_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Stacy/Pixal3DToonStyle/Textures/T_Hero_3_Stacy_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Stacy/Pixal3DToonStyle/Textures/T_Hero_3_Stacy_1.T_Hero_3_Stacy_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Stacy/QuadRetro/BoxerStacy_QuadRetro/Textures/BoxerStacy_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Stacy/QuadRetro/BoxerStacy_QuadRetro/Textures/BoxerStacy_QuadRetro_Pixelated_512.BoxerStacy_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Stacy/QuadRetro/BoxerStacy_QuadRetro/Textures/BoxerStacy_QuadRetro_Pixelated_512_Normalized",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Stacy/QuadRetro/BoxerStacy_QuadRetro/Textures/BoxerStacy_QuadRetro_Pixelated_512_Normalized.BoxerStacy_QuadRetro_Pixelated_512_Normalized",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_4_Chad_Beachgoer_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_4_Chad_Beachgoer_1.T_Hero_4_Chad_Beachgoer_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/Pixal3DToonStyle/Textures/T_Hero_4_Chad_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/Pixal3DToonStyle/Textures/T_Hero_4_Chad_1.T_Hero_4_Chad_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/QuadRetro/FoundingChad_QuadRetro/Textures/FoundingChad_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/QuadRetro/FoundingChad_QuadRetro/Textures/FoundingChad_QuadRetro_Pixelated_512.FoundingChad_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/QuadRetro/FoundingChad_QuadRetro/Textures/FoundingChad_QuadRetro_Pixelated_512_Normalized",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/QuadRetro/FoundingChad_QuadRetro/Textures/FoundingChad_QuadRetro_Pixelated_512_Normalized.FoundingChad_QuadRetro_Pixelated_512_Normalized",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_4_Stacy_Beachgoer_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_4_Stacy_Beachgoer_1.T_Hero_4_Stacy_Beachgoer_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Stacy/Pixal3DToonStyle/Textures/T_Hero_4_Stacy_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Stacy/Pixal3DToonStyle/Textures/T_Hero_4_Stacy_1.T_Hero_4_Stacy_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Stacy/QuadRetro/FoundingStacy_QuadRetro/Textures/FoundingStacy_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Stacy/QuadRetro/FoundingStacy_QuadRetro/Textures/FoundingStacy_QuadRetro_Pixelated_512.FoundingStacy_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Stacy/QuadRetro/FoundingStacy_QuadRetro/Textures/FoundingStacy_QuadRetro_Pixelated_512_Normalized",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Stacy/QuadRetro/FoundingStacy_QuadRetro/Textures/FoundingStacy_QuadRetro_Pixelated_512_Normalized.FoundingStacy_QuadRetro_Pixelated_512_Normalized",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_5_Chad_Beachgoer_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_5_Chad_Beachgoer_1.T_Hero_5_Chad_Beachgoer_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/Pixal3DToonStyle/Textures/T_Hero_5_Chad_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/Pixal3DToonStyle/Textures/T_Hero_5_Chad_1.T_Hero_5_Chad_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_5_Stacy_Beachgoer_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Stacy/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_5_Stacy_Beachgoer_1.T_Hero_5_Stacy_Beachgoer_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Stacy/Pixal3DToonStyle/Textures/T_Hero_5_Stacy_1",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Stacy/Pixal3DToonStyle/Textures/T_Hero_5_Stacy_1.T_Hero_5_Stacy_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Chad/QuadRetro/BillyChad_QuadRetro/Textures/BillyChad_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Chad/QuadRetro/BillyChad_QuadRetro/Textures/BillyChad_QuadRetro_Pixelated_512.BillyChad_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Chad/QuadRetro/BillyChad_QuadRetro/Textures/BillyChad_QuadRetro_Pixelated_512_Normalized",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Chad/QuadRetro/BillyChad_QuadRetro/Textures/BillyChad_QuadRetro_Pixelated_512_Normalized.BillyChad_QuadRetro_Pixelated_512_Normalized",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Stacy/QuadRetro/BillyStacy_QuadRetro/Textures/BillyStacy_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Stacy/QuadRetro/BillyStacy_QuadRetro/Textures/BillyStacy_QuadRetro_Pixelated_512.BillyStacy_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Stacy/QuadRetro/BillyStacy_QuadRetro/Textures/BillyStacy_QuadRetro_Pixelated_512_Normalized",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Stacy/QuadRetro/BillyStacy_QuadRetro/Textures/BillyStacy_QuadRetro_Pixelated_512_Normalized.BillyStacy_QuadRetro_Pixelated_512_Normalized",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible",
+      "asset_path": "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Chad_Invincible.T_Hero_1_Chad_Invincible",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible",
+      "asset_path": "/Game/UI/Sprites/Heroes/Hero_1/T_Hero_1_Stacy_Invincible.T_Hero_1_Stacy_Invincible",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_1",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_1.T_Boost_Accuracy_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_1",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_1.T_Boost_Armor_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_1",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_1.T_Boost_AttackScale_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_1",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_1.T_Boost_AttackSpeed_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_1",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_1.T_Boost_DamageStrength_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_1",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_1.T_Boost_Evasion_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_1",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_1.T_Boost_Luck_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_1",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_1.T_Boost_Speed_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_1",
+      "asset_path": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_1.T_CowardiceGate_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_1",
+      "asset_path": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_1.T_StageGate_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_1",
+      "asset_path": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_1.T_Chest_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Crate/Textures/T_LootCrate_1",
+      "asset_path": "/Game/World/Interactables/Crate/Textures/T_LootCrate_1.T_LootCrate_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_1",
+      "asset_path": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_1.T_DifficultyTotem_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_1",
+      "asset_path": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_1.T_Fountain_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_1",
+      "asset_path": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_1.T_IdolAltar_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_1",
+      "asset_path": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_1.T_LootWheel_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_1",
+      "asset_path": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_1.T_Vehicle_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_1",
+      "asset_path": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_1.T_WeaponAltar_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_1",
+      "asset_path": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_1.T_LootBag_Shared_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_1",
+      "asset_path": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_1.T_BrokenVase_Easy_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_1",
+      "asset_path": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_1.T_SkullRemains_Easy_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Textures/T_WallLamp_Easy_Pixal3D_1",
+      "asset_path": "/Game/World/VisualProps/Easy/Textures/T_WallLamp_Easy_Pixal3D_1.T_WallLamp_Easy_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Textures/T_WallTorch_Easy_Pixal3D_1",
+      "asset_path": "/Game/World/VisualProps/Easy/Textures/T_WallTorch_Easy_Pixal3D_1.T_WallTorch_Easy_Pixal3D_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    }
+  ],
+  "skipped": []
+}

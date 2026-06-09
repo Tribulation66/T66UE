@@ -8,6 +8,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/World.h"
 #include "UObject/SoftObjectPath.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66VisualUtil.h"
 
 AT66IdolAltar::AT66IdolAltar()
@@ -124,6 +125,19 @@ void AT66IdolAltar::DisableAfterSelection()
 		InteractTrigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		InteractTrigger->SetGenerateOverlapEvents(false);
 	}
+
+	if (LinkedTowerGateFloorNumber != INDEX_NONE)
+	{
+		if (AT66GameMode* GameMode = GetWorld() ? Cast<AT66GameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+		{
+			GameMode->NotifyTowerIdolSelectionForGate(LinkedTowerGateFloorNumber);
+		}
+	}
+}
+
+void AT66IdolAltar::LinkToTowerGateFloor(const int32 FromFloorNumber)
+{
+	LinkedTowerGateFloorNumber = FromFloorNumber;
 }
 
 void AT66IdolAltar::ConfigureVisualCollision(UPrimitiveComponent* Primitive, bool bEnableCollision) const

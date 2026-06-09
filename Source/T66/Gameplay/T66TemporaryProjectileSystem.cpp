@@ -35,6 +35,11 @@ namespace
 			return FT66TemporaryProjectileSystem::HeroProjectileColor();
 		}
 
+		if (ProfileID == FT66TemporaryProjectileSystem::ProfileHeroSingleTarget())
+		{
+			return FT66TemporaryProjectileSystem::NoWeaponProjectileColor();
+		}
+
 		if (ProfileID == FT66TemporaryProjectileSystem::ProfileEnemySpit()
 			|| ProfileID == FT66TemporaryProjectileSystem::ProfileTrapArrow()
 			|| ProfileID == FT66TemporaryProjectileSystem::ProfileHostileAccent())
@@ -70,6 +75,12 @@ FName FT66TemporaryProjectileSystem::ProfileHeroDOT()
 	return Profile;
 }
 
+FName FT66TemporaryProjectileSystem::ProfileHeroSingleTarget()
+{
+	static const FName Profile(TEXT("HeroSingleTarget"));
+	return Profile;
+}
+
 FName FT66TemporaryProjectileSystem::ProfileIdolOverlay()
 {
 	static const FName Profile(TEXT("IdolOverlay"));
@@ -99,6 +110,11 @@ FLinearColor FT66TemporaryProjectileSystem::HeroProjectileColor()
 	return FLinearColor(0.08f, 0.52f, 1.f, 1.f);
 }
 
+FLinearColor FT66TemporaryProjectileSystem::NoWeaponProjectileColor()
+{
+	return FLinearColor(0.92f, 0.95f, 1.f, 1.f);
+}
+
 FLinearColor FT66TemporaryProjectileSystem::HostileProjectileColor()
 {
 	return FLinearColor(1.f, 0.04f, 0.02f, 1.f);
@@ -114,6 +130,8 @@ FName FT66TemporaryProjectileSystem::GetHeroAttackProfile(const ET66AttackCatego
 		return ProfileHeroBounce();
 	case ET66AttackCategory::DOT:
 		return ProfileHeroDOT();
+	case ET66AttackCategory::SingleTarget:
+		return ProfileHeroSingleTarget();
 	case ET66AttackCategory::AOE:
 	default:
 		return ProfileHeroAOE();
@@ -146,6 +164,11 @@ FT66TemporaryProjectileVisualSpec FT66TemporaryProjectileSystem::MakeSpec(
 		Spec.Shape = ET66TemporaryProjectileShape::Cylinder;
 		Spec.RelativeRotation = FRotator(90.f, 0.f, 0.f);
 		Spec.RelativeScale = FVector(0.62f, 0.62f, 0.50f) * S;
+	}
+	else if (ProfileID == ProfileHeroSingleTarget())
+	{
+		Spec.Shape = ET66TemporaryProjectileShape::Sphere;
+		Spec.RelativeScale = FVector(0.82f, 0.82f, 0.82f) * S;
 	}
 	else if (ProfileID == ProfileIdolOverlay())
 	{

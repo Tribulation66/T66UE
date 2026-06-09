@@ -1,6 +1,8 @@
 # T66 UI Fidelity Loop
 
-This document defines the operational loop for migrating any T66 UI screen to the flat redesign with reference-image fidelity. It is the procedural counterpart to the master plan (`UI_FLAT_REDESIGN_REFERENCE.md`) and the technical audit (`T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md`).
+This document defines the operational loop for migrating any T66 UI screen to the flat redesign with reference-image fidelity. It is the procedural counterpart to the master plan (`UI_FLAT_REDESIGN_REFERENCE.md`) and the technical handoff (`Audit/Reference/T66_UI_TECHNICAL_HANDOFF_FOR_CLAUDE.md`).
+
+Root `ART_DIRECTION.md` declares FriendSlop as the active 3D/world direction and future rubber material target. This loop remains a 2D UI fidelity process; it does not apply the 3D rubber material contract to Slate chrome, FriendslopStyle raster chrome, icons, or content artwork.
 
 Codex follows this loop for every Stage 1 and Stage 2 screen migration. `AGENTS.md` enforces the loop as the acceptance gate.
 
@@ -45,15 +47,27 @@ Migration is destructive of legacy paths, not additive on top of them. Before an
 
 This is the most common failure mode in the current state: building flat chrome alongside legacy chrome, leaving the legacy paths active, and surfacing rendering artifacts (e.g., the magenta scrollbar block) whose root cause is in unaudited helper code.
 
-### 2.3 Structural verification beats visual judgment
+### 2.3 Structural verification is necessary but not sufficient
 
 LLM visual comparison is unreliable for fine-grained chrome deviations (slightly wrong color, slightly wrong panel width, missing border). LLM structural verification against a tagged widget dump is reliable: "panel `HeroSelection.RightPanel` border color is `DefaultBorder`" is a string compare, not a visual judgment.
 
 The loop converts visual claims into structural claims wherever possible. The Slate dump JSON is the source of truth for structural claims. The captured screenshot is the source of truth for purely visual judgments (content artwork resemblance, font character, anti-aliasing quality) that the dump can't capture.
 
+A clean structural report does not mean a screen visually matches the reference.
+For FriendslopStyle work, `UI/FriendslopStyle/FRIENDSLOP_STYLE_IMPLEMENTATION_INSTRUCTIONS.md`
+owns the screen-specific exception: Codex produces capture/dump/contact evidence
+for user visual review and reports only the wiring/functionality gate as
+PASS/FAIL. `VerifyUIFidelity.py` may still be used as a structural or wiring
+helper, but it is not the Friendslop final gate.
+
 ### 2.4 Content stubs via imagegen
 
 When the V3 reference shows content artwork (portrait, character art, illustration) and the production content pipeline doesn't yet provide it, Codex generates a stub via imagegen that closely reproduces the reference imagery. Stubs go in a designated path and are flagged in code for later replacement. See Section 9 for the policy.
+
+For FriendslopStyle work, the Friendslop authority file owns the stricter
+imagegen route: generation must run through separate local Codex CLI workers
+using account-backed built-in imagegen, not through the main Codex app chat and
+not through `OPENAI_API_KEY` API scripts.
 
 This means: a "missing skin portrait" never becomes a Slate-rendered colored box with initials. It becomes a generated PNG that visually matches the reference closely enough that both structural verification ("portrait slot exists, right size, right position") and visual sanity check pass.
 
@@ -193,6 +207,30 @@ If the selected dump root has no Slate tag and no `FT66FlatWidgetMetadata` tag, 
 .\Scripts\CaptureT66UIWidget.ps1 -Target "Tag=MainMenu.Right.LeaderboardPanel" -FrontendScreen MainMenu -Output <baseline_capture.png> -Dump <baseline_dump.json>
 ```
 
+### 3.1.2 Frontend tag-click automation
+
+Frontend interaction proof should use tagged Slate widgets instead of OS-level mouse injection or hardcoded pixel coordinates. The runtime flag is:
+
+```
+-T66AutoClickTag=<FNameTag>
+```
+
+Optional delay:
+
+```
+-T66AutoClickDelay=<seconds>
+```
+
+`-T66AutoClickTag` resolves the requested tag with the same active-viewport Slate/FlatStyle metadata resolver used by `T66.UI.DumpWidget`. In non-shipping builds it finds the tagged `SButton` at or below the resolved widget, validates that the button is visible, enabled, and laid out, then simulates the click through Slate.
+
+The frontend capture helper exposes this as:
+
+```
+.\Scripts\CaptureT66UIScreen.ps1 -Screen MainMenu -Modal QuitConfirmation -ClickTag "QuitConfirmation.QuitButton" -ClickDelaySeconds 2.5 -WaitForExit
+```
+
+Use `-WaitForExit` for Quit Game proof because a successful quit exits the process before a post-click screenshot exists. For visual interaction proof, capture or dump before the click, or set explicit delays so dump/screenshot happen before the tagged click.
+
 For gameplay HUD and overlay captures, the helper launches `/Game/Maps/GameplayLevel` by default and reuses the existing gameplay automation modes through `-T66GameplayAutoCapture=<mode>`. For frontend-embedded components, pass `-FrontendScreen <ScreenName>` and the helper uses the frontend capture path.
 
 **HUD/overlay/in-world distinctions:**
@@ -209,7 +247,7 @@ For gameplay HUD and overlay captures, the helper launches `/Game/Maps/GameplayL
 - Lab overlay: `-T66GameplayAutoCapture=lab`, target `Class=UT66LabOverlayWidget`.
 - Crate overlay: `-T66GameplayAutoCapture=crate`, target `Class=UT66CrateOverlayWidget`.
 - Collector overlay: `-T66GameplayAutoCapture=collector`, target `Class=UT66CollectorOverlayWidget`.
-- Casino/gambler overlays: `-T66GameplayAutoCapture=casinoshop`, `casinogambling`, or `casinoalchemy`, target the active casino/gambler class.
+- Casino/gambler overlays: `-T66GameplayAutoCapture=casinoshop` or `casinogambling`, target the active casino/gambler class. Casino Alchemy is retired and should not be captured as an active UI surface.
 - World interactable prompt: `-T66GameplayAutoCapture=worldprompt`, target `Actor=T66WidgetDump_WorldInteractablePrompt`.
 - Cowardice prompt: use a natural cowardice-gate trigger or a debug trigger that calls `OpenCowardicePrompt`; then target `Class=UT66CowardicePromptWidget`.
 - Loading screen: `-T66GameplayAutoCapture=loading`, target `Class=UT66LoadingScreenWidget`; natural gameplay/frontend transitions can also be captured while the widget is active.
@@ -229,6 +267,19 @@ python Scripts\VerifyUIFidelity.py ^
   --contact-sheet C:\UE\T66\Saved\Codex\UI\HeroSelection\pass5_contact.png
 ```
 
+For checklists that include a visual gate:
+
+```
+python Scripts\VerifyUIFidelity.py ^
+  --reference <reference.png> ^
+  --capture <capture.png> ^
+  --dump <dump.json> ^
+  --checklist <checklist.md> ^
+  --output <report.md> ^
+  --contact-sheet <contact.png> ^
+  --visual-scorecard <visual_scorecard.md>
+```
+
 **Outputs:**
 
 1. **Report** (markdown). One line per checklist item with verdict: `PASS` / `FAIL` / `UNSURE`. For FAIL, the line includes the expected and actual values from the dump. For UNSURE, a reason ("requires visual judgment", "tag not found in dump", "dimension comparison ambiguous").
@@ -241,6 +292,15 @@ python Scripts\VerifyUIFidelity.py ^
 
 - Structural items (color, text content, widget presence, button state, border brush type): compare dump value to checklist expected value. Binary PASS/FAIL.
 - Geometric items (position, size, proportion): compare dump value to checklist expected range (with tolerance). PASS if within tolerance, FAIL with deviation amount otherwise.
+- Containment items use `contained_in=<ParentTag>` and optional pixel tolerance
+  to verify a child absolute rect stays inside its parent absolute rect.
+  Checklist authors may specify parent insets with
+  `contained_in=<ParentTag> inset=<left>,<top>,<right>,<bottom>` when a row or
+  control must fit inside a panel's content area rather than the outer border.
+- Visual gate items use `visual_gate=PASS` and require a scorecard file passed
+  through `--visual-scorecard`. The scorecard must include `Result: PASS` to
+  pass. Missing scorecard, missing verdict, or `Result: FAIL` blocks the report
+  even when all structured widget items pass.
 - Visual items (artwork resemblance, font character, overall composition feel): mark UNSURE if the dump can't verify and a visual judgment is required. Codex reviews these qualitatively per iteration; persistent UNSUREs escalate to Pablo.
 
 **Normalization:**
@@ -341,7 +401,7 @@ rg -n "SourceAssets/UI/Reference|RuntimeDependencies/T66/UI/Reference|MakeRefere
 
 **0.3 Confirm `bUseGlow = false`.** Every flat-style construction in the screen must use `FT66FlatButtonParams` (or equivalent flat-only struct). Legacy `FT66ButtonParams` calls with `bUseGlow = true` are removed.
 
-**0.4 Inventory content stubs needed.** From the V3 reference, identify content artwork that requires imagegen stubs. List them in the pass log under "Content Stubs Needed" with target paths under `SourceAssets/UI/ContentStubs/<ScreenName>/`. See Section 9 for the imagegen workflow.
+**0.4 Inventory content stubs needed.** From the V3 reference, identify content artwork that requires imagegen stubs. List them in the pass log under "Content Stubs Needed" with target paths under `SourceAssets/UI/ContentStubs/<ScreenName>/`. See Section 9 for the imagegen workflow and record every stub in `UI/content_stubs_registry.md`.
 
 **0.6 Compile.** After cleanup, the project must compile cleanly. Compile failures here indicate the cleanup removed something a non-chrome path depended on — investigate before continuing.
 
@@ -440,10 +500,13 @@ python Scripts\VerifyUIFidelity.py ^
   --dump Saved\Codex\UI\<ScreenName>\pass_<N>_dump.json ^
   --checklist C:\UE\T66\UI\Checklists\<screen>_checklist.md ^
   --output Saved\Codex\UI\<ScreenName>\pass_<N>_report.md ^
-  --contact-sheet Saved\Codex\UI\<ScreenName>\pass_<N>_contact.png
+  --contact-sheet Saved\Codex\UI\<ScreenName>\pass_<N>_contact.png ^
+  --visual-scorecard Saved\Codex\UI\<ScreenName>\pass_<N>_visual_scorecard.md
 ```
 
-Outputs: report + contact sheet. Counts of PASS/FAIL/UNSURE recorded in the pass log.
+Pass `--visual-scorecard` when the checklist contains a `visual_gate=PASS`
+item. Outputs: report + contact sheet. Counts of PASS/FAIL/UNSURE and the
+scorecard verdict are recorded in the pass log.
 
 ### Step 5: Triage
 
@@ -452,7 +515,33 @@ Codex reads the report and categorizes each non-PASS item:
 - **Auto-fixable FAIL:** the deviation is objective and the fix is mechanical (wrong hex color, wrong text content, missing widget, wrong button state, wrong tag attachment). Auto-fix.
 - **Code-fixable FAIL with judgment:** the deviation is objective but the fix requires choice (wrong panel width by 50px — adjust to what value exactly? wrong child count — add or remove which?). Codex makes a reasoned fix and notes the reasoning in the pass log.
 - **UNSURE requiring visual review:** the verification can't determine if it's correct (font character, artwork match, subjective proportion). Note in the pass log; do not block iteration on these.
+- **Visual gate FAIL:** the structured assertions may pass, but the
+  reference/capture/contact sheet does not meet the scorecard. Treat this as a
+  blocking FAIL and continue visual correction.
 - **Unfixable in this pass:** the deviation requires asset generation, backend wiring, or external decision. Note in the pass log; flag for Pablo if it blocks fidelity.
+
+For generated-raster visual screens such as FriendslopStyle, do not collapse the
+screen judgment into this verifier item list. The verifier still reports
+`PASS` / `FAIL` / `UNSURE` for structured checklist rows, but the visual
+iteration uses a separate ordered process:
+
+1. Check the screen's small set of visual families and mark each family visual
+   `PASS` or visual `FAIL`.
+2. For every visual `FAIL` family, check all elements inside that family and
+   mark each element visual `PASS` or visual `FAIL`.
+3. Launch one approved imagegen worker per visual `FAIL` family. That worker
+   generates the sheet/assets for all visual `FAIL` elements in that family.
+4. Implement every regenerated family element onto the screen.
+5. Run a layout `PASS`/`FAIL` pass for the same families and correct layout
+   failures until fixed or blocked.
+6. Run a wiring `PASS`/`FAIL` pass for the same families and correct wiring
+   failures until fixed or blocked.
+
+Visual `PASS` means no image regeneration is needed. Visual `FAIL` means image
+regeneration is required in that iteration. Layout and wiring have their own
+`PASS`/`FAIL` gates after generated assets are implemented. A clean structured
+verifier report is not a visual screen pass when a generated-raster family
+scorecard still fails.
 
 ### Step 6: Apply fixes
 
@@ -464,7 +553,7 @@ Loop back to Step 2 with iteration counter incremented.
 
 ### Manual Interaction Verification
 
-Run after the latest automated verifier report has zero FAIL and zero UNSURE, or all remaining UNSURE items have already been accepted as content deltas.
+Run after the latest automated verifier report has zero FAIL and zero UNSURE, or all remaining UNSURE items have already been accepted as content deltas, and any required visual scorecard is `Result: PASS`.
 
 Create or update:
 
@@ -478,12 +567,17 @@ The checklist must enumerate every toggle group, single-action button, and dropd
 
 After each iteration, check termination conditions before continuing:
 
-**Terminate as DONE if:** zero FAIL items and zero UNSURE items in the latest report, and Manual Interaction Verification has no `Doesn't Work` items.
+**Terminate as DONE if:** zero FAIL items and zero UNSURE items in the latest report, any required visual scorecard has `Result: PASS`, every generated-raster visual family is visual `PASS`, every regenerated family asset is implemented, layout and wiring are `PASS`, and Manual Interaction Verification has no `Doesn't Work` items.
 
 **Terminate as ESCALATE if any of these:**
 - Iteration counter reaches 5.
 - The latest report's FAIL set is identical to the previous iteration's FAIL set (a stuck loop — the fixes are not landing).
 - The latest report has zero FAIL but non-zero UNSURE that require visual review.
+- The latest report has zero structured FAIL but the visual scorecard is missing
+  or has `Result: FAIL`.
+- A generated-raster screen has an unreviewed visual family, a visual `FAIL`
+  family without a worker, generated assets not implemented, layout `FAIL`, or
+  wiring `FAIL`.
 - Codex encounters an unfixable deviation that blocks further fidelity (missing backend, missing asset Codex can't generate, ambiguous spec).
 
 **On ESCALATE:** stop iterating, compile the pass log + final contact sheet + remaining FAIL/UNSURE list into a Pablo-review packet at `Saved\Codex\UI\<ScreenName>\pablo_review.md`, and request review before continuing.
@@ -567,7 +661,7 @@ Each screen has a checklist file at `C:\UE\T66\UI\Checklists\<screen>_checklist.
 
 ### 6.1 Structure
 
-The checklist has five sections in order: **Structure**, **Geometry**, **Colors**, **Content**, **Interactivity**.
+The checklist has five core sections in order: **Structure**, **Geometry**, **Colors**, **Content**, **Interactivity**. Screen families may add stricter sections such as **Containment** and **Visual Gate** when the reference requires them.
 
 Each item is a single line in this format:
 
@@ -578,6 +672,24 @@ Each item is a single line in this format:
 The script parses each line, looks up `<Tag>` in the dump, reads `<property>`, compares to `<expected_value>` within `<tolerance>` if specified, and produces PASS/FAIL/UNSURE.
 
 The **Geometry** section's expected coordinates come from `C:\UE\T66\UI\Geometry\<screen>_reference_geometry.md`, produced in Step 0.5 after the visual overlay sanity check. Checklist authors should copy the normalized bounding boxes from the corrected table and apply explicit tolerances there, rather than estimating coordinates directly in the checklist.
+
+The **Containment** section is required for lists, tables, rows, tabs, nested
+panels, and any UI where a child can visually escape its parent while still
+having a plausible absolute position. Use `contained_in=<ParentTag>` for outer
+containment and `contained_in=<ParentTag> inset=<left>,<top>,<right>,<bottom>`
+for content-area containment.
+
+The **Visual Gate** section is required for visual-direction migrations where
+the reference style matters beyond structure. It should include exactly one
+blocking item such as:
+
+```markdown
+- [ ] <ScreenName>.VisualScorecard | visual_gate=PASS
+```
+
+That item is backed by a separate markdown scorecard, not by automated image
+similarity. Codex and the Validator must inspect the reference/capture/contact
+sheet before recording `Result: PASS`.
 
 Non-interactive text elements must be labels. Screen titles, panel headers, subtitles, name displays, stat labels, stat values, descriptions, and captions are constructed with `FT66FlatStyle::MakeFlatLabel` or a clearly label-only wrapper. They must not use `MakeFlatButton`, `MakeFlatPanel`, or any helper that produces a border. The dump reports `is_label=true` only for label-only widgets. The checklist asserts `is_label=true` and `border_color=none` for every text tag that should render as plain text. `VerifyUIFidelity.py` fails a label check if the widget is not label metadata, or if the tagged label reports a visible border.
 
@@ -666,7 +778,7 @@ The **Interactivity** section's expected values come from the per-screen Interac
 
 ### 6.3 Authoring
 
-The first screen's checklist (Hero Selection) is hand-authored as part of the Stage 1 pilot. From the experience of authoring it, the per-screen spec format in the master plan becomes refined for parseability, and subsequent screens' checklists are auto-generated from their specs. For every screen, the geometry section is authored from the Step 0.5 geometry table.
+Hero Selection established the checklist format during the Stage 1 pilot. Later screen checklists may be hand-authored from the per-screen spec and Step 0.5 geometry table, or generated by a reviewed helper when such a helper exists. Do not assume checklist auto-generation exists unless the current repo contains the helper and the task explicitly uses it.
 
 ---
 
@@ -768,7 +880,7 @@ Each iteration produces an entry in `Saved\Codex\UI\<ScreenName>\pass_log.md`. T
 
 ### 7.2 What the pass log enables
 
-- **Iteration cap check.** After each pass, Codex reads the FAIL set and compares to the previous pass's FAIL set. If identical, escalate.
+- **Iteration cap check.** After each pass, Codex reads the FAIL set and compares to the previous pass's FAIL set. If identical, escalate. For generated-raster screens, compare failed visual families, failed elements inside those families, generated worker coverage, layout failures, and wiring failures.
 - **Pablo review.** Pablo reads the log to understand what was attempted and why.
 - **Cross-screen learning.** Patterns that recur across multiple screens' pass logs become candidates for new `FT66FlatStyle` helpers, new checklist categories, or AGENTS.md updates.
 
@@ -781,6 +893,7 @@ Each iteration produces an entry in `Saved\Codex\UI\<ScreenName>\pass_log.md`. T
 Conditions:
 - Latest report has zero FAIL items.
 - Latest report has zero UNSURE items, OR all UNSURE items are previously accepted as content deltas (logged in the pass log with Pablo's sign-off from a prior session).
+- Any required visual scorecard exists and has `Result: PASS`.
 - Manual Interaction Verification has no `Doesn't Work` items. If Pablo has not returned the manual checklist yet, the automated visual/data gate can be marked clean, but strict DONE is still pending.
 
 Outputs:
@@ -794,6 +907,11 @@ Conditions (any):
 - Iteration counter reaches 5.
 - Latest report's FAIL set is identical to the previous report's FAIL set (stuck loop).
 - Latest report has zero FAIL but UNSURE items remain that require visual review (and they're not previously accepted).
+- Required visual scorecard is missing, not inspected by both agents when a
+  Validator is available, or has `Result: FAIL`.
+- A generated-raster screen has an unreviewed visual family, a visual `FAIL`
+  family without a worker, generated assets not implemented, layout `FAIL`, or
+  wiring `FAIL`.
 - Codex encounters an unfixable deviation (missing backend, ambiguous spec, etc.).
 
 Outputs:
@@ -865,7 +983,7 @@ The registry is appended to during every Stage 1 / Stage 2 migration. It becomes
 
 Stubs are not the answer to:
 - Missing chrome (panels, borders, buttons) — that's flat Slate.
-- Missing icons in the icon manifest — those are generated as icons under `SourceAssets/UI/Icons/Flat/`, not content stubs.
+- Missing icons in the icon manifest — those are generated as icons under `RuntimeDependencies/T66/UI/Icons/Flat/`, not content stubs.
 - Backend gaps where the data structure is missing (stats, names, scores) — those use placeholder text or `FText::GetEmpty()` per the screen's spec.
 
 ---
@@ -930,6 +1048,24 @@ Stubs are not the answer to:
 - **Convert UNSUREs to structural checks.** If "panel proportion looks off" recurs as UNSURE across multiple iterations, add bounding-box dimension fields to the checklist so the comparison becomes structural.
 - **Escalate to Pablo for visual review.** For UNSUREs that genuinely require human judgment (does this generated stub portrait look enough like the reference?), produce the contact sheet and ask.
 
+### 10.7 Checklist PASS count masks poor whole-screen fidelity
+
+**Symptom:** `VerifyUIFidelity.py` reports zero FAIL items, but the contact sheet
+does not match the approved reference at a glance.
+
+**Root cause:** The checklist asserted selected structure/geometry/content
+facts but did not assert load-bearing containment, scale relationships, or the
+visual scorecard gate.
+
+**Recovery:**
+1. Do not report DONE.
+2. Add or tighten missing structural assertions, especially `contained_in`
+   checks for rows, tables, tabs, and nested panels.
+3. Fill out the visual scorecard with `Result: FAIL` and concrete failed
+   categories.
+4. Continue the correction loop or escalate if the same visual failure survives
+   two passes.
+
 ---
 
 ## 11. Stage 1 Specifics
@@ -951,7 +1087,7 @@ Acceptance for Stage 1 includes both:
 For each Stage 2 screen, the loop runs end-to-end:
 
 1. Pablo identifies the next screen in the migration order (master plan Section 5.3).
-2. Codex auto-generates the screen's verification checklist from its per-screen spec in the master plan.
+2. Codex creates the screen's verification checklist from its per-screen spec in the master plan and the Step 0.5 geometry table. Use a generator only when a current reviewed helper exists; otherwise hand-author it.
 3. Codex runs Step 0 (legacy cleanup) for that screen.
 4. Pablo reviews the content delta report (per the master plan Section 5.2 per-screen workflow).
 5. Codex runs Steps 1–7 to convergence.
@@ -986,13 +1122,18 @@ Specifically:
 
 3. Iterate Steps 1-7. The screen is not done until the verification
    report shows zero FAIL items and either zero UNSURE items or all
-   UNSURE items previously accepted as content deltas.
+   UNSURE items previously accepted as content deltas. When the screen's
+   checklist contains containment or visual-gate items, those must also pass.
 
 4. Terminate per Section 8 of the loop doc. On ESCALATE, produce the
    Pablo review packet and stop.
 
 5. Compile success and "looks roughly right" are necessary but not
-   sufficient. The VerifyUIFidelity report is the gate.
+   sufficient. For FlatStyle/reference-checklist work, the VerifyUIFidelity
+   report is one required gate and visual direction work also requires the
+   scorecard/contact-sheet gate. For FriendslopStyle work, the Friendslop
+   authority file replaces this with capture/dump/contact evidence for user
+   visual review plus a wiring/functionality PASS/FAIL gate.
 
 Do not declare a UI migration complete without running the loop.
 Do not skip Step 0. Do not resume an in-progress migration without

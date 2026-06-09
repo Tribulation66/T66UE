@@ -2,6 +2,7 @@
 
 #include "Core/T66BackendSubsystem.h"
 #include "Core/Backend/T66BackendPrivate.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Core/T66SaveMigration.h"
 
 DEFINE_LOG_CATEGORY(LogT66Backend);
@@ -174,22 +175,19 @@ namespace
 		Summary->EquippedIdols = {
 			FName(TEXT("Idol_Fire_AOE")),
 			FName(TEXT("Idol_Ice_Pierce")),
-			FName(TEXT("Idol_Electricity_Bounce")),
-			FName(TEXT("Idol_Nature_DOT"))
+			FName(TEXT("Idol_Wind_Bounce"))
 		};
-		Summary->EquippedIdolTiers = { 1, 2, 3, 4 };
+		Summary->EquippedIdolTiers = { 1, 2, 3 };
 		T66NormalizeEquippedIdolSaveArrays(Summary->EquippedIdols, Summary->EquippedIdolTiers);
 		Summary->EquippedIdolElements = {
 			ET66IdolElement::Fire,
 			ET66IdolElement::Ice,
-			ET66IdolElement::Electricity,
-			ET66IdolElement::Nature
+			ET66IdolElement::Wind
 		};
 		Summary->EquippedIdolCategories = {
 			ET66AttackCategory::AOE,
 			ET66AttackCategory::Pierce,
-			ET66AttackCategory::Bounce,
-			ET66AttackCategory::DOT
+			ET66AttackCategory::Bounce
 		};
 		Summary->Inventory = { FName(TEXT("Item_GoldTooth")), FName(TEXT("Item_TravelerBoots")), FName(TEXT("Item_LuckyCoin")) };
 		Summary->InventorySlots = {
@@ -198,9 +196,9 @@ namespace
 			FT66InventorySlot(FName(TEXT("Item_LuckyCoin")), ET66ItemRarity::Yellow, 9, 0.f, 0, 1103)
 		};
 		Summary->NoIdolSelectionStacks = 1;
-		Summary->NoIdolPrimaryStatBonuses.DamageTenths = 10;
-		Summary->NoIdolPrimaryStatBonuses.AttackSpeedTenths = 10;
-		Summary->NoIdolPrimaryStatBonuses.AttackScaleTenths = 10;
+		Summary->NoIdolBaseStatBonuses.DamageTenths = 10;
+		Summary->NoIdolBaseStatBonuses.AttackSpeedTenths = 10;
+		Summary->NoIdolBaseStatBonuses.AttackScaleTenths = 10;
 		Summary->MobLootDropsCollectedThisRun = 24 + Entry.Rank;
 		Summary->MobLootQuantityCollectedThisRun = 64 + Entry.Rank;
 		Summary->MobLootGoldValueCollectedThisRun = Summary->MobLootQuantityCollectedThisRun;
@@ -273,6 +271,7 @@ namespace
 
 void UT66BackendSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+	Collection.InitializeDependency(UT66ShutdownSubsystem::StaticClass());
 	Super::Initialize(Collection);
 
 	GConfig->GetString(TEXT("T66.Online"), TEXT("BackendBaseUrl"), BackendBaseUrl, GGameIni);
@@ -295,9 +294,44 @@ void UT66BackendSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	PartyInvitePollTickerHandle = FTSTicker::GetCoreTicker().AddTicker(
 		FTickerDelegate::CreateUObject(this, &UT66BackendSubsystem::HandlePartyInvitePollTicker),
 		FMath::Max(0.05f, CVarT66PartyInvitePollTickerIntervalSeconds.GetValueOnGameThread()));
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			ShutdownParticipantHandle = Shutdown->RegisterParticipant(
+				this,
+				FName(TEXT("Backend.NetworkRuntime")),
+				ET66ShutdownPhase::NetworkPlatform,
+				10,
+				1.0,
+				false,
+				FT66ShutdownParticipantDelegate::CreateUObject(this, &UT66BackendSubsystem::HandleShutdown));
+		}
+	}
 }
 
 void UT66BackendSubsystem::Deinitialize()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			Shutdown->UnregisterParticipant(ShutdownParticipantHandle);
+		}
+	}
+	ShutdownParticipantHandle.Reset();
+	ShutdownRuntimeResources(TEXT("Deinitialize"));
+	Super::Deinitialize();
+}
+
+bool UT66BackendSubsystem::HandleShutdown(const FT66ShutdownContext& /*Context*/)
+{
+	ShutdownRuntimeResources(TEXT("ShutdownSystem"));
+	return true;
+}
+
+void UT66BackendSubsystem::ShutdownRuntimeResources(const TCHAR* /*Reason*/)
 {
 	if (PartyInvitePollTickerHandle.IsValid())
 	{
@@ -324,8 +358,6 @@ void UT66BackendSubsystem::Deinitialize()
 	PendingCoopSubmitRequests.Reset();
 	PendingPartyInvitesChanged.Clear();
 	PartyInviteActionComplete.Clear();
-
-	Super::Deinitialize();
 }
 
 void UT66BackendSubsystem::SetSteamTicketHex(const FString& TicketHex)

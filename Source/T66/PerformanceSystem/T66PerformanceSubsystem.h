@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Containers/Ticker.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "HAL/CriticalSection.h"
 #include "Misc/OutputDevice.h"
 #include "Subsystems/GameInstanceSubsystem.h"
@@ -171,6 +172,8 @@ private:
 	void HandlePreGarbageCollect();
 	void HandlePostGarbageCollect();
 	void HandleSystemError();
+	bool HandleShutdown(const FT66ShutdownContext& Context);
+	void ShutdownRuntimeResources(const TCHAR* Reason);
 
 	void CheckFrameDetectors(float DeltaSeconds);
 	void CheckSingleFrameHitch(float DeltaSeconds);
@@ -240,6 +243,7 @@ private:
 	FDelegateHandle SystemErrorHandle;
 	TUniquePtr<FPerformanceLogOutputDevice> LogOutputDevice;
 	FPerformanceWriteWorker* WriteWorker = nullptr;
+	FT66ShutdownParticipantHandle ShutdownParticipantHandle;
 
 	TArray<FFrameSample> FrameSamples;
 	TArray<FMemorySample> MemorySamples;

@@ -9,7 +9,9 @@
 #include "Gameplay/T66SessionPlayerState.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66CombatComponent.h"
+#include "Gameplay/T66KnockbackComponent.h"
 #include "Gameplay/Movement/T66HeroMovementComponent.h"
+#include "Gameplay/Physics/T66HeroPhysicsComponent.h"
 #include "Core/T66CharacterVisualSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66HeroSpeedSubsystem.h"
@@ -195,6 +197,8 @@ AT66HeroBase::AT66HeroBase()
 
 	CombatComponent = CreateDefaultSubobject<UT66CombatComponent>(TEXT("CombatComponent"));
 	HeroMovementComponent = CreateDefaultSubobject<UT66HeroMovementComponent>(TEXT("HeroMovementComponent"));
+	KnockbackComponent = CreateDefaultSubobject<UT66KnockbackComponent>(TEXT("KnockbackComponent"));
+	HeroPhysicsComponent = CreateDefaultSubobject<UT66HeroPhysicsComponent>(TEXT("HeroPhysicsComponent"));
 	if (HeroMovementComponent)
 	{
 		HeroMovementComponent->ApplyDefaultMovementConfig();
@@ -575,7 +579,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 		T66CombatDebugDraw::DrawPlayerHurtCapsule(GetCapsuleComponent(), TEXT("Hero Hurtbox"));
 	}
 
-	if (!bIsPreviewMode && !bVehicleMounted)
+	if (!bIsPreviewMode && !bVehicleMounted && !IsKnockbackActive())
 	{
 		if (!bLobbyDrivenVisualsApplied)
 		{
@@ -670,8 +674,8 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 		}
 	}
 
-	// Hero animation: roll while its one-shot clip is active, jump while airborne, idle/walk otherwise.
-	if (!bIsPreviewMode && !bVehicleMounted)
+	// Hero animation: leap while its one-shot clip is active, jump while airborne, idle/walk otherwise.
+	if (!bIsPreviewMode && !bVehicleMounted && !IsKnockbackActive())
 	{
 		const bool bHasMovementInput = HeroMovementComponent
 			? HeroMovementComponent->HasMovementInput()
@@ -688,15 +692,15 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 		}
 		LastAnimSampleLocation = GetActorLocation();
 		bHasLastAnimSampleLocation = true;
-		const bool bRollAnimationActive = CachedRollAnim
+		const bool bLeapAnimationActive = CachedLeapAnim
 			&& GetWorld()
-			&& static_cast<float>(GetWorld()->GetTimeSeconds()) < RollAnimLockEndTimeSeconds;
-		if (GetMesh() && GetMesh()->IsVisible() && (CachedIdleAnim || CachedJumpAnim || CachedWalkAnim || CachedRollAnim))
+			&& static_cast<float>(GetWorld()->GetTimeSeconds()) < LeapAnimLockEndTimeSeconds;
+		if (GetMesh() && GetMesh()->IsVisible() && (CachedIdleAnim || CachedJumpAnim || CachedWalkAnim || CachedLeapAnim))
 		{
 			EMovementAnimState NewState = EMovementAnimState::Idle;
-			if (bRollAnimationActive)
+			if (bLeapAnimationActive)
 			{
-				NewState = EMovementAnimState::Roll;
+				NewState = EMovementAnimState::Leap;
 			}
 			else if (UCharacterMovementComponent* Movement = GetCharacterMovement(); Movement && Movement->IsFalling())
 			{
@@ -725,8 +729,8 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 				case EMovementAnimState::Jump:
 					ToPlay = CachedJumpAnim ? CachedJumpAnim : CachedWalkAnim;
 					break;
-				case EMovementAnimState::Roll:
-					ToPlay = CachedRollAnim;
+				case EMovementAnimState::Leap:
+					ToPlay = CachedLeapAnim;
 					bLoopAnimation = false;
 					break;
 				case EMovementAnimState::Walk:
@@ -791,7 +795,7 @@ void AT66HeroBase::Tick(float DeltaSeconds)
 						Away.Z = 0.f;
 						Away.Normalize();
 						const FVector BounceVel = Away * EnemyBounceStrength + FVector(0.f, 0.f, EnemyBounceZ);
-						if (UCharacterMovementComponent* Move = GetCharacterMovement())
+						if (!IsKnockbackActive())
 						{
 							LaunchCharacter(BounceVel, true, true);
 						}
@@ -865,7 +869,7 @@ void AT66HeroBase::TryApplyLobbyDrivenVisuals()
 	}
 
 	const bool bMeshVisible = GetMesh() && GetMesh()->IsVisible();
-	const bool bAnimationsCached = CachedIdleAnim || CachedWalkAnim || CachedJumpAnim || CachedRollAnim;
+	const bool bAnimationsCached = CachedIdleAnim || CachedWalkAnim || CachedJumpAnim || CachedLeapAnim;
 	const bool bNeedsRefresh =
 		!bLobbyDrivenVisualsApplied
 		|| HeroID != DesiredHeroData.HeroID
@@ -1032,6 +1036,10 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 			const bool bApplied = Visuals->ApplyCharacterVisual(VisualID, GetMesh(), PlaceholderMesh, true, bUseIdleAnimation, bPreviewMode, StaticVisualMesh);
 			if (!bApplied)
 			{
+				if (HeroPhysicsComponent)
+				{
+					HeroPhysicsComponent->ShutdownActiveRagdoll();
+				}
 				if (GetMesh())
 				{
 					GetMesh()->SetVisibility(false, true);
@@ -1056,22 +1064,26 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 			}
 			if (bApplied && !bPreviewMode && GetMesh() && GetMesh()->GetSkeletalMeshAsset())
 			{
-				// Cache idle/walk/jump/roll anims and init hero speed params.
+				// Cache idle/walk/jump/leap anims and init hero speed params.
 				UAnimationAsset* WalkRaw = nullptr;
 				UAnimationAsset* JumpRaw = nullptr;
 				UAnimationAsset* IdleRaw = nullptr;
-				UAnimationAsset* RollRaw = nullptr;
-				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, JumpRaw, IdleRaw, RollRaw);
+				UAnimationAsset* LeapRaw = nullptr;
+				Visuals->GetMovementAnimsForVisual(VisualID, WalkRaw, JumpRaw, IdleRaw, LeapRaw);
 				CachedWalkAnim = WalkRaw;
 				CachedJumpAnim = JumpRaw;
 				CachedIdleAnim = IdleRaw;
-				CachedRollAnim = RollRaw;
-				RollAnimLockEndTimeSeconds = -1.f;
+				CachedLeapAnim = LeapRaw;
+				LeapAnimLockEndTimeSeconds = -1.f;
 				// Force first Tick to play idle (speed 0); if we left Idle we wouldn't call PlayAnimation.
 				LastMovementAnimState = EMovementAnimState::Walk;
 				if (HeroMovementComponent)
 				{
 					HeroMovementComponent->SetHeroBaseSpeedStat(InHeroData.BaseSpeed);
+				}
+				if (HeroPhysicsComponent)
+				{
+					HeroPhysicsComponent->InitializeForHero(this, GetMesh());
 				}
 			}
 		}
@@ -1166,31 +1178,55 @@ void AT66HeroBase::SetPreviewMode(bool bPreview)
 
 }
 
-bool AT66HeroBase::RollForward()
+bool AT66HeroBase::IsKnockbackActive() const
 {
-	if (HeroMovementComponent && HeroMovementComponent->TryRollForward())
+	return (KnockbackComponent && KnockbackComponent->IsKnockbackActive())
+		|| (HeroPhysicsComponent && HeroPhysicsComponent->IsRagdollActive());
+}
+
+bool AT66HeroBase::IsKnockbackIncapacitated() const
+{
+	return (KnockbackComponent && KnockbackComponent->IsIncapacitated())
+		|| (HeroPhysicsComponent && HeroPhysicsComponent->IsIncapacitated());
+}
+
+bool AT66HeroBase::ApplyKnockbackLaunch(FVector LaunchVelocity)
+{
+	return KnockbackComponent
+		? KnockbackComponent->ApplyKnockbackLaunch(LaunchVelocity)
+		: false;
+}
+
+bool AT66HeroBase::Leap()
+{
+	if (HeroMovementComponent && HeroMovementComponent->TryLeap())
 	{
-		PlayRollAnimation();
+		PlayLeapAnimation();
 		return true;
 	}
 
 	return false;
 }
 
-void AT66HeroBase::DashForward()
+bool AT66HeroBase::RollForward()
 {
-	RollForward();
+	return Leap();
 }
 
-void AT66HeroBase::PlayRollAnimation()
+void AT66HeroBase::DashForward()
 {
-	if (!CachedRollAnim || !GetWorld() || !GetMesh() || !GetMesh()->IsVisible())
+	Leap();
+}
+
+void AT66HeroBase::PlayLeapAnimation()
+{
+	if (!CachedLeapAnim || !GetWorld() || !GetMesh() || !GetMesh()->IsVisible())
 	{
 		return;
 	}
 
-	const float DurationSeconds = FMath::Max(CachedRollAnim->GetPlayLength(), 0.1f);
-	RollAnimLockEndTimeSeconds = static_cast<float>(GetWorld()->GetTimeSeconds()) + DurationSeconds;
-	LastMovementAnimState = EMovementAnimState::Roll;
-	GetMesh()->PlayAnimation(CachedRollAnim, false);
+	const float DurationSeconds = FMath::Max(CachedLeapAnim->GetPlayLength(), 0.1f);
+	LeapAnimLockEndTimeSeconds = static_cast<float>(GetWorld()->GetTimeSeconds()) + DurationSeconds;
+	LastMovementAnimState = EMovementAnimState::Leap;
+	GetMesh()->PlayAnimation(CachedLeapAnim, false);
 }

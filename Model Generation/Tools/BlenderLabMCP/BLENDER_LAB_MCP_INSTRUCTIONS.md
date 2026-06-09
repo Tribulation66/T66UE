@@ -48,3 +48,35 @@ Start with a visible Blender window:
 ```
 
 The official add-on requires Blender online access for its local socket server, so the launcher starts Blender with `--online-mode`.
+
+## Required Preflight For Blender Work
+
+Always launch or verify the official Blender Lab MCP bridge before Blender inspection, import, render, rigging, cleanup, or user-facing scene-open work. After the launcher reports that `127.0.0.1:9876` is accepting connections, confirm the session with a Blender MCP summary call before proceeding. If the MCP bridge cannot be started or reached, stop and report that concrete blocker instead of silently falling back to a non-MCP path.
+
+When the user asks to open a `.blend`, do not start `blender.exe` with a raw or unquoted file argument. Use one of these paths:
+
+```powershell
+.\Model Generation\Scripts\Core\Blender\OpenBlenderScene.ps1 -BlendFile "<path-to-blend>"
+```
+
+or, from a connected Blender MCP session:
+
+```python
+bpy.ops.wm.open_mainfile(filepath=r"<path-to-blend>")
+```
+
+The repo open helper resolves the path, loads the file once in background for verification, and starts the visible Blender process with `ProcessStartInfo.ArgumentList`, which preserves spaces in paths such as `Model Generation`. Verify the final scene by checking the window title, `bpy.data.filepath`, or a Blender MCP object/data-block summary from the intended file. A running Blender process showing only the startup cube is not sufficient evidence that the requested scene opened.
+
+## T66 Unreal/FriendSlop Preview Lighting
+
+When launching Blender on Windows for FriendSlop raw Pixal3D model review, use the T66 Unreal preview setup rather than Blender's startup/default lighting. Scene builders should import and call:
+
+```python
+from t66_unreal_friend_slop_preview import apply_unreal_friend_slop_preview
+
+apply_unreal_friend_slop_preview(bpy.context.scene)
+```
+
+with `Model Generation/Scripts/Core/Blender` on `sys.path`.
+
+This preview setup mirrors the current Unreal runtime contract for raw FriendSlop assets: `/Game/Materials/M_GLB_Unlit`, generated base-color texture, neutral `Tint`, `Brightness=1`, and `Opacity=1`. In Blender that means the primary material preview is emission/unlit texture color, not default Principled lighting. The helper also installs the locked Hero 1 softbox rig as the standard review environment, so model form is readable while the material response remains Unreal-unlit. Verify the result through MCP by checking the scene custom property `T66_UnrealPreview_Profile`, converted materials with `T66_UnrealPreview`, and lights named `T66_Key_Softbox_L`, `T66_Key_Softbox_R`, `T66_Top_Soft_Fill`, and `T66_Front_Fill`.

@@ -445,7 +445,7 @@ public:
 		static constexpr float ButtonPressedGlowIntensity = 1.10f;
 		static constexpr float ButtonGlowFallbackOpacity = 0.28f;
 
-		// Font: all text uses the locked Jersey 10 UI stack.
+		// Font: all text uses the locked Friendslop UI stack.
 		static FSlateFontInfo FontRegular(int32 Size);
 		static FSlateFontInfo FontBold(int32 Size);
 		static FSlateFontInfo FontTitle();
@@ -518,25 +518,19 @@ public:
 	/** Check whether panel textures are loaded. */
 	static bool HasPanelTextures();
 
-	/** Current saved Retro FX UI chrome strength in 0..1, respecting the Retro FX master toggle. */
-	static float GetRetroUIChromeStrength();
-
-	/** Current saved Retro FX UI text strength in 0..1, respecting the Retro FX master toggle. */
-	static float GetRetroUITextStrength();
-
-	/** Paint-only pixel/scanline layer used by chrome wrappers. */
+	/** Legacy Retro FX overlay hook; now renders nothing (feature removed). */
 	static TSharedRef<SWidget> MakeRetroUIChromeOverlay();
 
-	/** Wrap non-text chrome so Retro FX can affect panels, button plates, and images without distorting child text. */
+	/** Legacy Retro FX chrome wrapper; now a hit-test-invisible passthrough (feature removed). */
 	static TSharedRef<SWidget> MakeRetroUIChromeSurface(const TSharedRef<SWidget>& ChromeWidget);
 
-	/** Wrap screen/background art so Retro FX can affect background images separately from chrome and text. */
+	/** Legacy Retro FX background wrapper; now a hit-test-invisible passthrough (feature removed). */
 	static TSharedRef<SWidget> MakeRetroUIBackgroundImage(const TSharedRef<SWidget>& BackgroundImageWidget);
 
-	/** Wrap text only when the separate UI text slider is raised. */
+	/** Legacy Retro FX text wrapper; now a passthrough (feature removed). */
 	static TSharedRef<SWidget> MakeRetroUIText(const TSharedRef<SWidget>& TextWidget);
 
-	/** Wrap icon/glyph imagery so icons follow the UI text treatment instead of chrome. */
+	/** Legacy Retro FX icon wrapper; now a passthrough (feature removed). */
 	static TSharedRef<SWidget> MakeRetroUIIcon(const TSharedRef<SWidget>& IconWidget);
 
 	/** Shared combo style (Panel bg, Text for arrow). Use for MakeDropdown and for SComboBox::ComboButtonStyle(). */

@@ -185,6 +185,14 @@ if ($UseHero1AxePreviewStaging) {
 }
 
 $normalizedCaptureMode = $CaptureMode.Trim().ToLowerInvariant()
+if ($normalizedCaptureMode -eq "heroactiveragdollproof") {
+    if (-not ($ExtraArgs | Where-Object { $_ -ieq "-T66AutomationTestRoom" })) {
+        $ExtraArgs += "-T66AutomationTestRoom"
+    }
+    if (-not ($ExtraArgs | Where-Object { $_ -like "-T66AutoCaptureHeroHPOverride=*" })) {
+        $ExtraArgs += "-T66AutoCaptureHeroHPOverride=20000"
+    }
+}
 if ($normalizedCaptureMode -eq "hero1axeaoehitbox" -or $normalizedCaptureMode -eq "hero1axeaoevfxbinding" -or $normalizedCaptureMode -eq "hero1axepiercevfxbinding" -or $normalizedCaptureMode -eq "hero1axebouncevfxbinding" -or $normalizedCaptureMode -eq "hero1axedotvfxbinding" -or $normalizedCaptureMode -eq "hero1axeaoewateridolimpact") {
     $ExtraArgs += @(
         "-T66Hero1AxeAOEHitboxFireDelay=$Hero1AxeHitboxFireDelay",

@@ -22,8 +22,25 @@
 #include "Materials/MaterialInterface.h"
 #include "Misc/PackageName.h"
 #include "UObject/SoftObjectPath.h"
+#include "HAL/IConsoleManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66CharacterVisuals, Log, All);
+
+// FallGuys lit look — THE character material path. Every character visual gets a dynamic
+// instance of the one M_FriendSlop_FallGuys master (Default Lit): full-treatment visuals carry
+// their own raw albedo; placeholder visuals (engine basic-shape primitives in the visual row)
+// get one shared neutral-gray look. CVar kept as a dead-simple off switch.
+static TAutoConsoleVariable<int32> CVarT66CharFallGuysLit(
+	TEXT("t66.Char.FallGuysLit"),
+	1,
+	TEXT("1 = all characters use the lit M_FriendSlop_FallGuys master; 0 = legacy unlit."),
+	ECVF_Default);
+
+// Placeholder visuals are rows repointed at engine basic shapes (assets pending replacement).
+static bool T66IsPlaceholderPrimitiveMesh(const UObject* Mesh)
+{
+	return Mesh && Mesh->GetPathName().StartsWith(TEXT("/Engine/BasicShapes/"));
+}
 
 static const TCHAR* T66_DefaultCharacterVisualsDTPath = TEXT("/Game/Data/DT_CharacterVisuals.DT_CharacterVisuals");
 static const TCHAR* T66_DefaultMobVertexAnimationsDTPath = TEXT("/Game/Data/DT_MobVertexAnimations.DT_MobVertexAnimations");
@@ -31,7 +48,6 @@ static const FName T66_AnimSkeletonTag(TEXT("Skeleton"));
 static const FName T66_CharactersRootPath(TEXT("/Game/Characters"));
 static const TCHAR* T66_CharacterBaseMaterialPath = TEXT("/Game/Materials/M_Character_Unlit.M_Character_Unlit");
 static const TCHAR* T66_FbxBaseMaterialPath = TEXT("/Game/Materials/M_FBX_Unlit.M_FBX_Unlit");
-static const TCHAR* T66_QuadRetroSharedMaterialPath = TEXT("/Game/Materials/MI_GLB_Unlit_Character_Shared.MI_GLB_Unlit_Character_Shared");
 static const FName T66_OutlineSidecarTag(TEXT("T66OutlineSidecar"));
 static constexpr float T66_CharacterVisualBrightness = 0.8f;
 
@@ -155,11 +171,11 @@ static void T66AppendCharacterVisualAssetPaths(const FT66CharacterVisualRow& Row
 	T66AddUniqueCharacterVisualPath(Row.WalkAnimation.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.IdleAnimation.ToSoftObjectPath(), OutPaths);
 	T66AddUniqueCharacterVisualPath(Row.JumpAnimation.ToSoftObjectPath(), OutPaths);
-	T66AddUniqueCharacterVisualPath(Row.RollAnimation.ToSoftObjectPath(), OutPaths);
+	T66AddUniqueCharacterVisualPath(Row.LeapAnimation.ToSoftObjectPath(), OutPaths);
 	T66AppendAnimationFallbackPreloadPaths(Row.WalkAnimation, OutPaths);
 	T66AppendAnimationFallbackPreloadPaths(Row.IdleAnimation, OutPaths);
 	T66AppendAnimationFallbackPreloadPaths(Row.JumpAnimation, OutPaths);
-	T66AppendAnimationFallbackPreloadPaths(Row.RollAnimation, OutPaths);
+	T66AppendAnimationFallbackPreloadPaths(Row.LeapAnimation, OutPaths);
 }
 
 static FName T66GetOutlineOwnerTag(const UStaticMeshComponent* BaseComponent)
@@ -557,6 +573,79 @@ static FT66ResolvedImportedTextureSet T66ResolveImportedCharacterTextures(const 
 	return ResolvedTextures;
 }
 
+// FallGuys lit-look application — the one character material path (skeletal AND static visuals).
+// Assigns the lit M_FriendSlop_FallGuys master (DMI per slot). Full-treatment visuals carry their
+// own RAW albedo (passed in, or auto-resolved from the current imported materials); placeholder
+// visuals — or any visual with no resolvable albedo — get the shared neutral-gray look (white
+// fallback texture x gray Tint) so the master's default texture never leaks onto the wrong body.
+static void T66TryApplyFallGuysLitMaterial(UMeshComponent* TargetMesh, FName VisualID, UTexture* AlbedoOverride = nullptr, bool bPlaceholderGray = false)
+{
+	if (!TargetMesh)
+	{
+		return;
+	}
+	if (CVarT66CharFallGuysLit.GetValueOnGameThread() == 0)
+	{
+		return; // gated off -> legacy unlit behavior
+	}
+
+	static const TCHAR* FallGuysMasterPath = TEXT("/Game/Materials/M_FriendSlop_FallGuys.M_FriendSlop_FallGuys");
+	UMaterialInterface* Master = LoadObject<UMaterialInterface>(nullptr, FallGuysMasterPath);
+	if (!Master)
+	{
+		UE_LOG(LogT66CharacterVisuals, Warning, TEXT("[FallGuys] lit master not found: %s"), FallGuysMasterPath);
+		return;
+	}
+
+	// Raw albedo from the current imported material (lit material adds shading -> use raw, not baked).
+	UTexture* Albedo = AlbedoOverride;
+	const int32 NumMats = FMath::Max(1, TargetMesh->GetNumMaterials());
+	if (!Albedo && !bPlaceholderGray)
+	{
+		for (int32 i = 0; i < NumMats; ++i)
+		{
+			const FT66ResolvedImportedTextureSet Tex = T66ResolveImportedCharacterTextures(TargetMesh->GetMaterial(i));
+			if (Tex.DiffuseTexture.IsValid())
+			{
+				Albedo = Tex.DiffuseTexture.Get();
+				break;
+			}
+		}
+	}
+
+	for (int32 i = 0; i < NumMats; ++i)
+	{
+		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Master, TargetMesh);
+		if (!MID)
+		{
+			continue;
+		}
+		if (!bPlaceholderGray && Albedo)
+		{
+			MID->SetTextureParameterValue(TEXT("BaseColorTexture"), Albedo);
+			MID->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
+		}
+		else
+		{
+			// Shared neutral-gray placeholder look (one flat-color instance of the master).
+			MID->SetTextureParameterValue(TEXT("BaseColorTexture"), GetWhiteFallbackTexture());
+			MID->SetVectorParameterValue(TEXT("Tint"), FLinearColor(0.5f, 0.5f, 0.5f, 1.0f));
+		}
+		// Master is DEFAULT LIT (was MSM_SUBSURFACE — its scatter-luminance term blew near-white albedo
+		// regardless of Opacity; Opacity gates the blend, not the scatter). The soft Fall-Guys read comes
+		// from the soft rig + smooth normals + albedo. Subsurface/emissive-sheen inputs are disconnected
+		// in the master; only Specular/Roughness remain live here.
+		// (5.7 Python lacks disconnect_material_property, so the emissive Fresnel stays WIRED in the
+		// master with SheenIntensity default 0.35 — zero it here so no self-glow under Default Lit.)
+		MID->SetScalarParameterValue(TEXT("SheenIntensity"), 0.0f);
+		MID->SetScalarParameterValue(TEXT("Specular"), 0.30f);
+		MID->SetScalarParameterValue(TEXT("Roughness"), 0.60f);
+		TargetMesh->SetMaterial(i, MID);
+	}
+	UE_LOG(LogT66CharacterVisuals, Display, TEXT("[FallGuys] Applied lit master to VisualID=%s Albedo=%s Slots=%d Placeholder=%d"),
+		*VisualID.ToString(), Albedo ? *Albedo->GetName() : TEXT("none"), NumMats, bPlaceholderGray ? 1 : 0);
+}
+
 static void T66ApplySafeCharacterMaterialOverrides(USkeletalMeshComponent* TargetMesh, FName VisualID)
 {
 	if (!TargetMesh)
@@ -650,80 +739,6 @@ static void T66ApplySafeCharacterMaterialOverrides(USkeletalMeshComponent* Targe
 				*SourceMaterialPath,
 				DiffuseTexture ? *DiffuseTexture->GetPathName() : TEXT("(fallback white)"),
 				TextureSet.NormalTexture.IsValid() ? *TextureSet.NormalTexture->GetPathName() : TEXT("(fallback white)"),
-				T66_CharacterVisualBrightness);
-		}
-	}
-}
-
-static bool T66IsQuadRetroStaticVisual(const FT66ResolvedCharacterVisual& Res)
-{
-	if (!Res.StaticMesh)
-	{
-		return false;
-	}
-	const FString MeshPath = Res.StaticMesh->GetPathName();
-	return Res.StaticMesh->GetName().EndsWith(TEXT("_QuadRetro"))
-		|| MeshPath.StartsWith(TEXT("/Game/Characters/Mobs/"));
-}
-
-static UMaterialInterface* T66LoadQuadRetroSharedMaterial()
-{
-	static TWeakObjectPtr<UMaterialInterface> CachedSharedMaterial;
-	if (CachedSharedMaterial.IsValid())
-	{
-		return CachedSharedMaterial.Get();
-	}
-
-	UMaterialInterface* SharedMaterial = LoadObject<UMaterialInterface>(nullptr, T66_QuadRetroSharedMaterialPath);
-	if (SharedMaterial)
-	{
-		CachedSharedMaterial = SharedMaterial;
-	}
-	return SharedMaterial;
-}
-
-static void T66ApplyQuadRetroStaticMaterialOverrides(
-	UStaticMeshComponent* TargetStaticMesh,
-	UMaterialInterface* SharedMaterial,
-	UTexture* PixelatedTexture,
-	FName VisualID)
-{
-	if (!TargetStaticMesh || !SharedMaterial || !PixelatedTexture)
-	{
-		return;
-	}
-
-	static TSet<FString> LoggedStaticMaterialRebuilds;
-	const int32 NumMaterials = FMath::Max(1, TargetStaticMesh->GetNumMaterials());
-	for (int32 MaterialIndex = 0; MaterialIndex < NumMaterials; ++MaterialIndex)
-	{
-		UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(SharedMaterial, TargetStaticMesh);
-		if (!DynamicMaterial)
-		{
-			continue;
-		}
-
-		DynamicMaterial->SetTextureParameterValue(TEXT("EmissiveTexture"), PixelatedTexture);
-		DynamicMaterial->SetTextureParameterValue(TEXT("BaseColorTexture"), PixelatedTexture);
-		DynamicMaterial->SetTextureParameterValue(TEXT("DiffuseColorMap"), PixelatedTexture);
-		DynamicMaterial->SetScalarParameterValue(TEXT("Brightness"), T66_CharacterVisualBrightness);
-		DynamicMaterial->SetVectorParameterValue(TEXT("EmissiveFactor"), FLinearColor::White);
-		DynamicMaterial->SetVectorParameterValue(TEXT("BaseColorFactor"), FLinearColor::Black);
-		DynamicMaterial->SetVectorParameterValue(TEXT("Tint"), FLinearColor::White);
-		TargetStaticMesh->SetMaterial(MaterialIndex, DynamicMaterial);
-
-		const FString LogKey = FString::Printf(TEXT("%s:%d:%s"), *VisualID.ToString(), MaterialIndex, *PixelatedTexture->GetPathName());
-		if (!LoggedStaticMaterialRebuilds.Contains(LogKey))
-		{
-			LoggedStaticMaterialRebuilds.Add(LogKey);
-			UE_LOG(
-				LogT66CharacterVisuals,
-				Verbose,
-				TEXT("[MATERIAL] Applied QuadRetro static DMI for VisualID=%s Slot=%d Shared=%s Texture=%s Brightness=%.2f"),
-				*VisualID.ToString(),
-				MaterialIndex,
-				*SharedMaterial->GetPathName(),
-				*PixelatedTexture->GetPathName(),
 				T66_CharacterVisualBrightness);
 		}
 	}
@@ -1326,13 +1341,13 @@ FT66ResolvedCharacterVisual UT66CharacterVisualSubsystem::ResolveVisual(FName Vi
 			if (!Res.JumpAnim)
 				Res.JumpAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.JumpAnimation);
 		}
-		if (!Res.Row.RollAnimation.IsNull())
+		if (!Res.Row.LeapAnimation.IsNull())
 		{
-			Res.RollAnim = ResolveSoftObjectIfPackageExists(Res.Row.RollAnimation);
-			if (!Res.RollAnim)
-				Res.RollAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.RollAnimation);
-			if (!Res.RollAnim)
-				Res.RollAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.RollAnimation);
+			Res.LeapAnim = ResolveSoftObjectIfPackageExists(Res.Row.LeapAnimation);
+			if (!Res.LeapAnim)
+				Res.LeapAnim = LoadAnimationFallbackWithAnimSuffix(Res.Row.LeapAnimation);
+			if (!Res.LeapAnim)
+				Res.LeapAnim = LoadAnimationFallbackStripPackageAnimSuffix(Res.Row.LeapAnimation);
 		}
 		if (bMissingRequiredLoadedAsset)
 		{
@@ -1481,18 +1496,18 @@ FName UT66CharacterVisualSubsystem::GetCompanionVisualID(FName CompanionID, FNam
 	return FName(*(CompanionID.ToString() + TEXT("_") + SkinID.ToString()));
 }
 
-void UT66CharacterVisualSubsystem::GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutJump, UAnimationAsset*& OutIdle, UAnimationAsset*& OutRoll)
+void UT66CharacterVisualSubsystem::GetMovementAnimsForVisual(FName VisualID, UAnimationAsset*& OutWalk, UAnimationAsset*& OutJump, UAnimationAsset*& OutIdle, UAnimationAsset*& OutLeap)
 {
 	OutWalk = nullptr;
 	OutJump = nullptr;
 	OutIdle = nullptr;
-	OutRoll = nullptr;
+	OutLeap = nullptr;
 	const FT66ResolvedCharacterVisual Res = ResolveVisual(VisualID);
 	if (!Res.bHasRow) return;
 	OutWalk = Res.WalkAnim;
 	OutJump = Res.JumpAnim;
 	OutIdle = Res.IdleAnim;
-	OutRoll = Res.RollAnim;
+	OutLeap = Res.LeapAnim;
 }
 
 bool UT66CharacterVisualSubsystem::HasCharacterVisual(FName VisualID) const
@@ -1550,34 +1565,31 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 		TargetStaticMesh->SetRelativeLocation(RelLoc);
 		TargetStaticMesh->SetHiddenInGame(false, true);
 		TargetStaticMesh->SetVisibility(true, true);
-		T66ApplyOutlineSidecarComponent(VisualID, TargetStaticMesh, Res.OutlineStaticMesh);
-		if (T66IsQuadRetroStaticVisual(Res))
+		// Outline sidecars are part of the superseded toon look; under the FallGuys master they are
+		// destroyed instead of applied (legacy path keeps them when the CVar is off).
+		if (CVarT66CharFallGuysLit.GetValueOnGameThread() != 0)
 		{
-			UMaterialInterface* SharedMaterial = T66LoadQuadRetroSharedMaterial();
-			UTexture2D* PixelatedTexture = nullptr;
-			if (!Res.Row.PixelatedTextureAssetPath.IsNull())
+			T66DestroyOutlineSidecarComponent(TargetStaticMesh);
+		}
+		else
+		{
+			T66ApplyOutlineSidecarComponent(VisualID, TargetStaticMesh, Res.OutlineStaticMesh);
+		}
+		{
+			// One master for every static visual: placeholders (engine basic shapes) get the shared
+			// gray instance; QuadRetro rows reuse their pixelated capture as albedo; everything else
+			// auto-resolves its raw albedo from the imported slot materials.
+			const bool bPlaceholder = T66IsPlaceholderPrimitiveMesh(Res.StaticMesh);
+			UTexture* StaticAlbedo = nullptr;
+			if (!bPlaceholder && !Res.Row.PixelatedTextureAssetPath.IsNull())
 			{
-				PixelatedTexture = Res.Row.PixelatedTextureAssetPath.Get();
-				if (!PixelatedTexture)
+				StaticAlbedo = Res.Row.PixelatedTextureAssetPath.Get();
+				if (!StaticAlbedo)
 				{
-					PixelatedTexture = Res.Row.PixelatedTextureAssetPath.LoadSynchronous();
+					StaticAlbedo = Res.Row.PixelatedTextureAssetPath.LoadSynchronous();
 				}
 			}
-
-			if (SharedMaterial && PixelatedTexture)
-			{
-				T66ApplyQuadRetroStaticMaterialOverrides(TargetStaticMesh, SharedMaterial, PixelatedTexture, VisualID);
-			}
-			else
-			{
-				UE_LOG(
-					LogT66CharacterVisuals,
-					Warning,
-					TEXT("[MATERIAL] QuadRetro static visual %s missing shared material or pixelated texture. Shared=%s Texture=%s"),
-					*VisualID.ToString(),
-					SharedMaterial ? *SharedMaterial->GetPathName() : TEXT("(null)"),
-					PixelatedTexture ? *PixelatedTexture->GetPathName() : TEXT("(null)"));
-			}
+			T66TryApplyFallGuysLitMaterial(TargetStaticMesh, VisualID, StaticAlbedo, bPlaceholder);
 		}
 
 		if (TargetMesh)
@@ -1650,6 +1662,7 @@ bool UT66CharacterVisualSubsystem::ApplyCharacterVisual(
 	}
 	TargetMesh->SetRelativeLocation(RelLoc);
 	T66ApplySafeCharacterMaterialOverrides(TargetMesh, VisualID);
+	T66TryApplyFallGuysLitMaterial(TargetMesh, VisualID);
 
 	TargetMesh->SetHiddenInGame(false, true);
 	TargetMesh->SetVisibility(true, true);

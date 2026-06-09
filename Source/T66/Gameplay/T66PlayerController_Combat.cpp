@@ -1283,7 +1283,9 @@ void AT66PlayerController::HandleInteractPressed()
 		{
 			if (DistSq < ClosestTowerDescentHoleDistSq) { ClosestTowerDescentHoleDistSq = DistSq; ClosestTowerDescentHole = TowerDescentHole; }
 		}
-		else if (AT66PetCaptureInteractable* PetCapture = Cast<AT66PetCaptureInteractable>(A))
+		else if (AT66PetCaptureInteractable* PetCapture = FT66ShelvedFeatureGate::IsPetsEnabled()
+			? Cast<AT66PetCaptureInteractable>(A)
+			: nullptr)
 		{
 			if (DistSq < ClosestPetCaptureDistSq) { ClosestPetCaptureDistSq = DistSq; ClosestPetCapture = PetCapture; }
 		}

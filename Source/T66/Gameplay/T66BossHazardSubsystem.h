@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/T66WorldRuntimeProofTypes.h"
 #include "Data/T66DataTypes.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "Tickable.h"
@@ -68,6 +69,7 @@ public:
 #if !UE_BUILD_SHIPPING
 	bool RunBossHazardDefinitionProof();
 	bool StartBossHazardDamageProof();
+	FT66WorldRuntimeDebugSnapshot GetWorldRuntimeDebugSnapshot() const;
 #endif
 
 	virtual void Tick(float DeltaTime) override;

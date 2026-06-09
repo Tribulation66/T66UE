@@ -5,6 +5,7 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Dom/JsonObject.h"
@@ -26,8 +27,8 @@ namespace
 {
 	static TAutoConsoleVariable<int32> CVarT66MobLootEnabled(
 		TEXT("T66.MobLoot.Enabled"),
-		1,
-		TEXT("Enables the actorless Mob Loot world-drop subsystem."),
+		0,
+		TEXT("Enables the actorless Mob Loot world-drop subsystem when Mob Loot is not shelved."),
 		ECVF_Default);
 
 	static TAutoConsoleVariable<int32> CVarT66MobLootRenderEnabled(
@@ -516,7 +517,8 @@ bool UT66MobLootSubsystem::SpawnMobLootFromNonBossDeath(
 
 bool UT66MobLootSubsystem::IsEnabled()
 {
-	return CVarT66MobLootEnabled.GetValueOnGameThread() != 0;
+	return FT66ShelvedFeatureGate::IsMobLootEnabled()
+		&& CVarT66MobLootEnabled.GetValueOnGameThread() != 0;
 }
 
 #if !UE_BUILD_SHIPPING
@@ -941,5 +943,37 @@ void UT66MobLootSubsystem::UploadFallbackVisualState()
 int32 UT66MobLootSubsystem::GetVisibleMobLootInstanceCountForAutomation() const
 {
 	return FallbackVisualComponent ? FallbackVisualComponent->GetInstanceCount() : 0;
+}
+
+FT66WorldRuntimeDebugSnapshot UT66MobLootSubsystem::GetWorldRuntimeDebugSnapshot() const
+{
+	FT66WorldRuntimeDebugSnapshot Snapshot;
+	Snapshot.SystemName = TEXT("UT66MobLootSubsystem");
+	Snapshot.AddCounter(TEXT("active_drop_count"), GetActiveMobLootDropCount());
+	Snapshot.AddCounter(TEXT("slot_capacity"), Slots.Num());
+	Snapshot.AddCounter(TEXT("free_slot_count"), FreeSlots.Num());
+	Snapshot.AddCounter(TEXT("dense_slot_count"), DenseSlots.Num());
+	Snapshot.AddCounter(TEXT("position_upload_count"), PositionUpload.Num());
+	Snapshot.AddCounter(TEXT("scale_upload_count"), ScaleUpload.Num());
+	Snapshot.AddCounter(TEXT("color_upload_count"), ColorUpload.Num());
+	Snapshot.AddCounter(TEXT("quantity_upload_count"), QuantityUpload.Num());
+	Snapshot.AddCounter(TEXT("fallback_instance_count"), FallbackVisualComponent ? FallbackVisualComponent->GetInstanceCount() : 0);
+	Snapshot.AddCounter(TEXT("known_timer_handles"), 0);
+	Snapshot.AddCounter(TEXT("known_external_delegate_handles"), 0);
+	Snapshot.AddCounter(TEXT("async_load_handles_valid"), 0);
+	Snapshot.AddFlag(TEXT("initialized_slots"), bInitializedSlots);
+	Snapshot.AddFlag(TEXT("dirty"), bDirty);
+	Snapshot.AddFlag(TEXT("render_host_valid"), RenderHost != nullptr);
+	Snapshot.AddFlag(TEXT("render_root_valid"), RenderRoot != nullptr);
+	Snapshot.AddFlag(TEXT("niagara_component_valid"), NiagaraComponent != nullptr);
+	Snapshot.AddFlag(TEXT("niagara_component_registered"), NiagaraComponent ? NiagaraComponent->IsRegistered() : false);
+	Snapshot.AddFlag(TEXT("niagara_component_active"), NiagaraComponent ? NiagaraComponent->IsActive() : false);
+	Snapshot.AddFlag(TEXT("niagara_system_valid"), NiagaraSystem != nullptr);
+	Snapshot.AddFlag(TEXT("fallback_visual_component_valid"), FallbackVisualComponent != nullptr);
+	Snapshot.AddFlag(TEXT("fallback_visual_component_registered"), FallbackVisualComponent ? FallbackVisualComponent->IsRegistered() : false);
+	Snapshot.AddEvidence(TEXT("timers"), TEXT("No stored timer handles found; expiration work is tick-driven."));
+	Snapshot.AddEvidence(TEXT("delegates"), TEXT("No external delegate handle is stored by this subsystem."));
+	Snapshot.AddEvidence(TEXT("async_loads"), TEXT("No async load handle is owned by this subsystem."));
+	return Snapshot;
 }
 #endif

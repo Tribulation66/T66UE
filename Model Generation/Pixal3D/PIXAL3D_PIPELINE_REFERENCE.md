@@ -1,15 +1,19 @@
 # Pixal3D Pipeline
 
 This folder owns the production-cleared Pixal3D RunPod path for T66 model
-generation and ToonStyle asset replacement. It remains technically separate
+generation and active FriendSlop raw asset replacement. It remains technically separate
 from the existing TRELLIS.2 pipeline so failures and settings do not cross
 contaminate.
 
 ## Status
 
-Pixal3D is production-cleared for T66 replacement assets. Production imports
-must use the manifest-driven ToonStyle workflow in
-`../Instructions/09_PIXAL3D_TOONSTYLE_PRODUCTION_IMPORT_INSTRUCTIONS.md`.
+Pixal3D is production-cleared for T66 replacement assets. Active production
+imports must use the FriendSlop raw workflow in
+`../Instructions/11_FRIENDSLOP_RAW_PIXAL3D_IMPORT_GUIDELINES.md`.
+
+Archived ToonStyle and QuadRetro references in this file are historical
+pipeline notes only. Root `ART_DIRECTION.md` owns the current FriendSlop
+canonical direction.
 
 ## Sources Checked
 
@@ -29,16 +33,14 @@ Checked on 2026-05-12:
 - `Scripts/Invoke-Pixal3DHfLogin.ps1`: optional Hugging Face login helper using
   the repo-local `Model Generation/LOCAL_ACCESS.env` convention.
 - `Scripts/run_pixal3d_smoke.py`: local smoke runner that creates source plates,
-  uploads them to RunPod, calls Pixal3D, downloads GLBs, and can run Blender QA
-  plus Quad Retro post-processing.
+  uploads them to RunPod, calls Pixal3D, downloads GLBs, and can run Blender QA.
 - `Scripts/run_pixal3d_batch.py`: reusable detached batch runner for arbitrary
   experiment source folders. It launches generation on the pod with `nohup`,
   writes JSONL status plus a `DONE` sentinel, polls with short SSH calls, and
   downloads GLBs/logs after completion.
-- `Scripts/run_pixal3d_toonstyle_production_import.py`: production wrapper that
-  validates the replacement manifest, drives Pixal3D generation, runs the
-  ToonStyle Blender foundation pipeline, imports to Unreal, and verifies hard
-  ToonStyle bindings.
+- Legacy `Scripts/run_pixal3d_toonstyle_production_import.py`: retired
+  ToonStyle production wrapper kept as historical script context, not the
+  active FriendSlop import route.
 - `production_asset_replacement_manifest.json`: manifest template/source of
   truth for replacement assets.
 - `../Instructions/07_PIXAL3D_RUNPOD_SETUP_INSTRUCTIONS.md`: step-by-step RunPod setup and
@@ -58,7 +60,7 @@ The current T66 flow is:
 2. Send it to a RunPod TRELLIS.2 server through `/generate`.
 3. Save raw GLB output under batch-specific raw-output folders.
 4. Run Blender QA renders.
-5. For characters or retro assets, run Quad Retro and optionally Quad Remesher.
+5. For active FriendSlop assets, run Blender QA and preserve the raw GLB base-color texture; retired QuadRetro/Quad Remesher processing is historical unless explicitly revived.
 6. Import into Unreal only after visual review and validation.
 
 The current TRELLIS server accepts:
@@ -108,9 +110,9 @@ Output namespaces should use Pixal3D-specific names:
 - `QA/Pixal3DFront/...`
 - manifest fields such as `raw_pixal3d_glb`
 
-The downstream Blender QA and Quad Retro scripts already accept arbitrary GLB
-paths. The main integration work is naming and manifest plumbing, not a new
-post-processing backend.
+The downstream Blender QA scripts already accept arbitrary GLB paths. The main
+integration work is naming, manifest/source-run evidence, texture binding, and
+Unreal import validation, not a new post-processing backend.
 
 ## Current Smoke Result
 
@@ -124,9 +126,10 @@ Validated on 2026-05-12 against an A40 RunPod:
 - `stone_wall_module` hit a CuMesh UV atlas illegal-memory-access failure with
   default remesh, then generated with `X-Remesh: 0` and passed Blender QA.
 - `humanoid_character` generated with default remesh, passed Blender QA, and
-  passed Quad Retro.
+  passed the then-current QuadRetro smoke path.
 - `horned_monster` hit the same CuMesh remesh failure with default remesh, then
-  generated with `X-Remesh: 0`, passed Blender QA, and passed Quad Retro.
+  generated with `X-Remesh: 0`, passed Blender QA, and passed the then-current
+  QuadRetro smoke path.
 
 The consolidated report for that run is:
 
@@ -173,8 +176,9 @@ decimation control is export-time mesh reduction. It is useful for prototypes
 and static props.
 
 Do not treat Pixal3D export decimation as production topology for deformation
-critical characters. Keep Quad Retro or human-authored topology for characters
-that need animation or deformation.
+critical characters. For current FriendSlop humanoids that need animation or
+deformation, use `../Instructions/13_FRIENDSLOP_RAW_HUMANOID_RIGGING_INSTRUCTIONS.md`
+or another approved human-authored topology/rigging plan.
 
 ## Production Test Matrix
 
@@ -207,8 +211,9 @@ local SSH session remains stuck waiting on a shell pipe or transport state. The
 batch runner avoids that by using status files and a final sentinel on the pod.
 
 For every generated GLB, run Blender QA and capture triangle count, bounds, file
-size, and front render. For character-like samples, also run the Quad Retro
-wrapper to prove the existing post-processing path can consume the output.
+size, and front render. For active FriendSlop samples, also prove the generated
+base-color texture survives the import path and is bound to the imported mesh.
 
-Import into Unreal through the production ToonStyle wrapper and hard validators:
-`Scripts/run_pixal3d_toonstyle_production_import.py`.
+Import active FriendSlop assets into Unreal through
+`../Instructions/11_FRIENDSLOP_RAW_PIXAL3D_IMPORT_GUIDELINES.md` and its hard
+validators.

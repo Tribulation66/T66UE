@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/T66WorldRuntimeProofTypes.h"
 #include "Gameplay/T66WorldSystemsAPI.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "UObject/ObjectKey.h"
@@ -140,6 +141,7 @@ public:
 #if !UE_BUILD_SHIPPING
 	void ClearAllMobLootForAutomation();
 	int32 GetVisibleMobLootInstanceCountForAutomation() const;
+	FT66WorldRuntimeDebugSnapshot GetWorldRuntimeDebugSnapshot() const;
 #endif
 
 private:

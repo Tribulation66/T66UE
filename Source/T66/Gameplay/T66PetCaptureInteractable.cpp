@@ -5,6 +5,7 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66BuffSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -54,6 +55,11 @@ void AT66PetCaptureInteractable::ApplyPetCaptureVisual()
 
 bool AT66PetCaptureInteractable::Interact(APlayerController* PC)
 {
+	if (!FT66ShelvedFeatureGate::IsPetsEnabled())
+	{
+		return false;
+	}
+
 	if (bConsumed || PetID.IsNone())
 	{
 		return false;
@@ -95,6 +101,11 @@ bool AT66PetCaptureInteractable::Interact(APlayerController* PC)
 
 FText AT66PetCaptureInteractable::BuildInteractionPromptTargetName() const
 {
+	if (!FT66ShelvedFeatureGate::IsPetsEnabled())
+	{
+		return FText::FromString(FT66ShelvedFeatureGate::GetShelvedReason(ET66ShelvedFeature::Pets));
+	}
+
 	const FText PetName = PetData.DisplayName.IsEmpty() ? FText::FromName(PetID) : PetData.DisplayName;
 	UGameInstance* GIBase = GetGameInstance();
 	const UT66BuffSubsystem* Buffs = GIBase ? GIBase->GetSubsystem<UT66BuffSubsystem>() : nullptr;

@@ -4,6 +4,7 @@
 
 #include "PerformanceSystem/T66PerformanceSystemSettings.h"
 
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Gameplay/Enemies/Projectiles/T66EnemyProjectileBase.h"
 #include "Gameplay/T66ProjectileManagerSubsystem.h"
@@ -717,6 +718,7 @@ void UT66PerformanceSubsystem::RunWriteQueueOrderingSelfTest()
 
 void UT66PerformanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+	Collection.InitializeDependency(UT66ShutdownSubsystem::StaticClass());
 	Super::Initialize(Collection);
 
 	Settings = GetDefault<UT66PerformanceSystemSettings>();
@@ -785,15 +787,50 @@ void UT66PerformanceSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	WritePeriodicSnapshot(true);
 	RunWriteQueueOrderingSelfTest();
 	EnforceRetentionBudget();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			ShutdownParticipantHandle = Shutdown->RegisterParticipant(
+				this,
+				FName(TEXT("PerformanceSystem.Diagnostics")),
+				ET66ShutdownPhase::RuntimeTick,
+				10,
+				T66PerformanceWriteQueueShutdownTimeoutSeconds,
+				false,
+				FT66ShutdownParticipantDelegate::CreateUObject(this, &UT66PerformanceSubsystem::HandleShutdown));
+		}
+	}
 }
 
 void UT66PerformanceSubsystem::Deinitialize()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			Shutdown->UnregisterParticipant(ShutdownParticipantHandle);
+		}
+	}
+	ShutdownParticipantHandle.Reset();
+	ShutdownRuntimeResources(TEXT("SubsystemDeinitialize"));
+	Super::Deinitialize();
+}
+
+bool UT66PerformanceSubsystem::HandleShutdown(const FT66ShutdownContext& /*Context*/)
+{
+	ShutdownRuntimeResources(TEXT("ShutdownSystem"));
+	return true;
+}
+
+void UT66PerformanceSubsystem::ShutdownRuntimeResources(const TCHAR* Reason)
 {
 	if (bInitialized)
 	{
 		BeginPerformanceWriteShutdown();
 		FlushPerformanceWrites(T66PerformanceWriteQueueShutdownTimeoutSeconds, TEXT("PreFinalReport"));
-		WriteFinalReport(TEXT("SubsystemDeinitialize"));
+		WriteFinalReport(Reason ? Reason : TEXT("ShutdownRuntimeResources"));
 		StopPerformanceWriteWorker();
 	}
 	else
@@ -832,7 +869,6 @@ void UT66PerformanceSubsystem::Deinitialize()
 	}
 
 	bInitialized = false;
-	Super::Deinitialize();
 }
 
 void UT66PerformanceSubsystem::RecordMeasuredOperation(

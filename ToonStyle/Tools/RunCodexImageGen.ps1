@@ -10,7 +10,8 @@ param(
     [string]$Quality = "high",
     [string]$Model,
     [switch]$Force,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$NoValidator
 )
 
 $ErrorActionPreference = "Stop"
@@ -77,10 +78,22 @@ $ModelLine = if ([string]::IsNullOrWhiteSpace($Model)) {
     "Use image model preference: $Model."
 }
 
+$ValidatorInstruction = if ($NoValidator) {
+@"
+
+Process override for this image-generation run:
+- Do not invoke Claude, validator review helpers, Operator/Validator scripts, or create AgentReview/decision-block artifacts.
+- This wrapper's scope is only to generate or copy the PNG using built-in Codex image generation.
+"@
+} else {
+    ""
+}
+
 $Request = @"
 This is a trusted local Codex CLI image-generation run for the T66 workspace.
 
 Use the built-in Codex image generation capability. Do not use OPENAI_API_KEY, the OpenAI API fallback script, web search, or external image URLs.
+$ValidatorInstruction
 
 Generate exactly one raster image.
 

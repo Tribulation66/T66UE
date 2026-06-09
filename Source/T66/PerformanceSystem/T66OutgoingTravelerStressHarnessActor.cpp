@@ -79,11 +79,15 @@ namespace
 		}
 		if (Name.Contains(TEXT(".Electricity.")))
 		{
-			return FLinearColor(1.0f, 0.92f, 0.10f, 1.0f);
+			return FLinearColor(0.62f, 0.20f, 1.0f, 1.0f);
 		}
 		if (Name.Contains(TEXT(".Nature.")))
 		{
 			return FLinearColor(0.20f, 0.95f, 0.34f, 1.0f);
+		}
+		if (Name.Contains(TEXT(".Wind.")))
+		{
+			return FLinearColor(0.62f, 0.65f, 0.68f, 1.0f);
 		}
 		return FT66TemporaryProjectileSystem::HeroProjectileColor();
 	}
@@ -427,6 +431,7 @@ void AT66OutgoingTravelerStressHarnessActor::SpawnTravelers()
 					});
 			}
 			VisualProfilesUsed.Reset();
+			VisualRecipeSignaturesUsed.Reset();
 		}
 
 		for (int32 Index = 0; Index < RequestedCount; ++Index)
@@ -458,6 +463,8 @@ void AT66OutgoingTravelerStressHarnessActor::SpawnTravelers()
 				Params.TravelerVisualProfileID = VisualProfileID;
 				Params.Color = TravelerVisualProfileStressColor(VisualProfileID);
 				VisualProfilesUsed.AddUnique(VisualProfileID);
+				VisualRecipeSignaturesUsed.AddUnique(
+					UT66OutgoingTravelerPoolSubsystem::GetCarrierRecipeSignatureForTravelerVisualProfileID(VisualProfileID));
 			}
 			Params.ScaleMultiplier = VisualScaleMultiplier;
 			Params.Speed = TravelerSpeed;
@@ -656,6 +663,15 @@ void AT66OutgoingTravelerStressHarnessActor::WriteManifest(const TCHAR* Reason)
 	}
 	Root->SetArrayField(TEXT("visual_profiles_used"), VisualProfileValues);
 	Root->SetNumberField(TEXT("visual_profiles_used_count"), VisualProfilesUsed.Num());
+	TArray<TSharedPtr<FJsonValue>> VisualRecipeSignatureValues;
+	VisualRecipeSignatureValues.Reserve(VisualRecipeSignaturesUsed.Num());
+	for (const FString& Signature : VisualRecipeSignaturesUsed)
+	{
+		VisualRecipeSignatureValues.Add(MakeShared<FJsonValueString>(Signature));
+	}
+	Root->SetArrayField(TEXT("visual_recipe_signatures_used"), VisualRecipeSignatureValues);
+	Root->SetNumberField(TEXT("visual_recipe_signatures_used_count"), VisualRecipeSignaturesUsed.Num());
+	Root->SetNumberField(TEXT("max_carrier_recipe_parts"), UT66OutgoingTravelerPoolSubsystem::MaxCarrierRecipeParts);
 	Root->SetNumberField(TEXT("arrival_callback_count"), ArrivalCallbackCount);
 	Root->SetNumberField(TEXT("arrival_callback_live_target_count"), ArrivalCallbackLiveTargetCount);
 	Root->SetNumberField(TEXT("arrival_callback_target_lost_count"), ArrivalCallbackTargetLostCount);
@@ -718,6 +734,9 @@ void AT66OutgoingTravelerStressHarnessActor::WriteManifest(const TCHAR* Reason)
 	PoolObject->SetNumberField(TEXT("arrival_callback_total"), PoolDiagnostics.ArrivalCallbackTotal);
 	PoolObject->SetNumberField(TEXT("arrival_fizzle_no_target_total"), PoolDiagnostics.ArrivalFizzleNoTargetTotal);
 	PoolObject->SetNumberField(TEXT("last_uploaded_live_count"), PoolDiagnostics.LastUploadedLiveCount);
+	PoolObject->SetNumberField(TEXT("last_uploaded_visual_row_count"), PoolDiagnostics.LastUploadedVisualRowCount);
+	PoolObject->SetNumberField(TEXT("peak_uploaded_visual_row_count"), PoolDiagnostics.PeakUploadedVisualRowCount);
+	PoolObject->SetNumberField(TEXT("last_carrier_recipe_expanded_traveler_count"), PoolDiagnostics.LastCarrierRecipeExpandedTravelerCount);
 	PoolObject->SetNumberField(TEXT("last_upload_ms"), PoolDiagnostics.LastUploadMs);
 	PoolObject->SetNumberField(TEXT("last_pack_ms"), PoolDiagnostics.LastPackMs);
 	PoolObject->SetNumberField(TEXT("last_niagara_array_upload_ms"), PoolDiagnostics.LastNiagaraArrayUploadMs);

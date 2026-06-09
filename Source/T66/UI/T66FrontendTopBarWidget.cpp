@@ -10,14 +10,19 @@
 #include "UI/T66DemoModeUIUtils.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66FlatStyle.h"
+#include "UI/Style/T66FriendslopStyle.h"
 #include "UI/Style/T66ReferenceLayout.h"
+#include "UI/Style/T66RuntimeUIFontAccess.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/Style/T66Style.h"
 
 #include "Engine/Texture2D.h"
+#include "Fonts/FontMeasure.h"
+#include "Framework/Application/SlateApplication.h"
 #include "HAL/FileManager.h"
 #include "Misc/Parse.h"
+#include "Rendering/SlateRenderer.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66FrontendTopBar, Log, All);
 #include "Kismet/GameplayStatics.h"
@@ -88,6 +93,41 @@ namespace
 		return FMath::Max(
 			T66MainMenuReferenceLayout::TopBarSurfaceHeight,
 			GetTopBarReferenceReservedHeight());
+	}
+
+	int32 FitTopBarLabelFontSize(const FText& Label, const int32 PreferredSize, const int32 MinSize, const float AvailableWidth)
+	{
+		const FString LabelString = Label.ToString();
+		if (LabelString.IsEmpty())
+		{
+			return PreferredSize;
+		}
+
+		const float ClampedAvailableWidth = FMath::Max(1.f, AvailableWidth);
+		for (int32 FontSize = PreferredSize; FontSize >= MinSize; --FontSize)
+		{
+			if (FSlateApplication::IsInitialized())
+			{
+				FSlateRenderer* Renderer = FSlateApplication::Get().GetRenderer();
+				if (Renderer)
+				{
+					const FVector2D MeasuredSize = Renderer->GetFontMeasureService()->Measure(LabelString, FT66FlatStyle::MakeBoldFont(FontSize));
+					if (MeasuredSize.X <= ClampedAvailableWidth)
+					{
+						return FontSize;
+					}
+					continue;
+				}
+			}
+
+			const float EstimatedWidth = static_cast<float>(LabelString.Len()) * static_cast<float>(FontSize) * 0.78f;
+			if (EstimatedWidth <= ClampedAvailableWidth)
+			{
+				return FontSize;
+			}
+		}
+
+		return MinSize;
 	}
 
 	TArray<FVector2D> MakeCirclePoints(const FVector2D& Center, float Radius, int32 Segments, float StartAngle = 0.f, float EndAngle = 2.f * PI)
@@ -757,6 +797,11 @@ UT66FrontendTopBarWidget::ETopBarSection UT66FrontendTopBarWidget::GetActiveSect
 
 FText UT66FrontendTopBarWidget::GetChadCouponsValueText() const
 {
+	if (FParse::Param(FCommandLine::Get(), TEXT("T66FriendslopReferenceFixture")))
+	{
+		return FText::AsNumber(53);
+	}
+
 	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
 	{
 		if (UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
@@ -814,6 +859,7 @@ void UT66FrontendTopBarWidget::RequestTopBarAssets()
 		TextureFilter::TF_Nearest);
 	LoadLooseBrushFromCandidatePaths(
 		{
+			TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/MainMenu/topbar_coupon_ticket_icon_round09.png"),
 			TEXT("RuntimeDependencies/T66/UI/Reference/Screens/MainMenu/BloodyRetro/Elements/coupon_ticket_icon.png"),
 			TEXT("RuntimeDependencies/T66/UI/Icons/Flat/ticket.png")
 		},
@@ -954,21 +1000,19 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			}
 		};
 
-		const FNormalizedTopBarRect OuterRect{ 0.006f, 0.000f, 0.988f, 0.089f };
-		const float TopBarSidePaddingPx = (0.013f - OuterRect.X) * T66MainMenuReferenceLayout::CanvasWidth;
-		const float TopBarVerticalPadding = TopBarSidePaddingPx / T66MainMenuReferenceLayout::CanvasHeight;
-		const float TopBarControlY = OuterRect.Y + TopBarVerticalPadding;
-		const float TopBarControlH = FMath::Max(0.001f, OuterRect.H - (2.f * TopBarVerticalPadding));
-		const FNormalizedTopBarRect SettingsRect{ 0.013f, TopBarControlY, 0.046f, TopBarControlH };
-		const FNormalizedTopBarRect LanguageRect{ 0.073f, TopBarControlY, 0.046f, TopBarControlH };
-		const FNormalizedTopBarRect AccountRect{ 0.133f, TopBarControlY, 0.148f, TopBarControlH };
-		const FNormalizedTopBarRect ProfileRect{ 0.294f, TopBarControlY, 0.177f, TopBarControlH };
-		const FNormalizedTopBarRect PowerUpRect{ 0.485f, TopBarControlY, 0.142f, TopBarControlH };
-		const FNormalizedTopBarRect AchievementsRect{ 0.639f, TopBarControlY, 0.153f, TopBarControlH };
-		const FNormalizedTopBarRect TicketRect{ 0.819f, TopBarControlY, 0.087f, TopBarControlH };
-		const FNormalizedTopBarRect QuitRect{ 0.923f, TopBarControlY, 0.063f, TopBarControlH };
+		const FNormalizedTopBarRect OuterRect{ 0.000f, 0.000f, 1.000f, 0.117f };
+		const float TopBarControlY = 0.026f;
+		const float TopBarControlH = 0.070f;
+		const FNormalizedTopBarRect SettingsRect{ 0.018f, TopBarControlY, 0.052f, TopBarControlH };
+		const FNormalizedTopBarRect LanguageRect{ 0.079f, TopBarControlY, 0.052f, TopBarControlH };
+		const FNormalizedTopBarRect AccountRect{ 0.142f, TopBarControlY, 0.155f, TopBarControlH };
+		const FNormalizedTopBarRect ProfileRect{ 0.313f, TopBarControlY, 0.171f, TopBarControlH };
+		const FNormalizedTopBarRect PowerUpRect{ 0.497f, TopBarControlY, 0.157f, TopBarControlH };
+		const FNormalizedTopBarRect AchievementsRect{ 0.667f, TopBarControlY, 0.165f, TopBarControlH };
+		const FNormalizedTopBarRect TicketRect{ 0.830f, TopBarControlY, 0.095f, TopBarControlH };
+		const FNormalizedTopBarRect QuitRect{ 0.934f, TopBarControlY, 0.052f, TopBarControlH };
 
-		const float IconSize = 46.f;
+		const float IconSize = 42.f;
 		auto MakeTaggedIconWidget = [](const TSharedRef<SWidget>& IconContent, const FVector2D& Size, const FName Tag) -> TSharedRef<SWidget>
 		{
 			return FT66FlatStyle::AttachMetadata(
@@ -998,23 +1042,30 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			return MakeTaggedIconWidget(IconContent, Size, Tag);
 		};
 
-		auto MakeIconActionButton = [this](const ET66FlatState State, const TSharedRef<SWidget>& Icon, FReply (UT66FrontendTopBarWidget::*ClickFunc)(), const FName Tag, const FNormalizedTopBarRect& Rect) -> TSharedRef<SWidget>
+		auto MakePairedIconButtonContent = [&MakeTaggedIconWidget](const FName Tag) -> TSharedRef<SWidget>
 		{
-			return FT66FlatStyle::MakeFlatToggleGroupButton(
+			return MakeTaggedIconWidget(SNew(SBox), FVector2D(1.f, 1.f), Tag);
+		};
+
+		auto MakeIconActionButton = [this](const ET66FlatState State, const TSharedRef<SWidget>& Icon, FReply (UT66FrontendTopBarWidget::*ClickFunc)(), const FName Tag, const FNormalizedTopBarRect& Rect, const ET66FriendslopChrome Chrome) -> TSharedRef<SWidget>
+		{
+			return FT66FriendslopStyle::MakeToggleGroupButton(
 				State,
 				Icon,
 				FOnClicked::CreateUObject(this, ClickFunc),
-				FMargin(8.f),
+				FMargin(6.f),
 				Rect.ReferenceWidth(),
 				Rect.ReferenceHeight(),
 				true,
-				Tag);
+				Tag,
+				NAME_None,
+				Chrome);
 		};
 
 		const bool bDailyDescentTopBar = UIManager && UIManager->GetCurrentScreenType() == ET66ScreenType::DailyDescent;
 		if (bDailyDescentTopBar)
 		{
-			const FNormalizedTopBarRect DailyOuterRect{ 0.010f, 0.001f, 0.981f, 0.104f };
+			const FNormalizedTopBarRect DailyOuterRect{ 0.010f, 0.000f, 0.981f, 0.105f };
 			const FNormalizedTopBarRect DailySettingsRect{ 0.023f, 0.016f, 0.044f, 0.073f };
 			const FNormalizedTopBarRect DailyLanguageRect{ 0.083f, 0.016f, 0.045f, 0.074f };
 			const FNormalizedTopBarRect DailyBackRect{ 0.322f, 0.016f, 0.347f, 0.076f };
@@ -1022,17 +1073,19 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 
 			const TSharedRef<SWidget> SettingsButtonWidget = MakeIconActionButton(
 				ET66FlatState::Default,
-				MakeTaggedIconWidget(SNew(ST66TopBarGearGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.SettingsButton.Icon")),
+				MakePairedIconButtonContent(TEXT("FrontendTopBar.SettingsButton.Icon")),
 				&UT66FrontendTopBarWidget::HandleSettingsClicked,
 				TEXT("FrontendTopBar.SettingsButton"),
-				DailySettingsRect);
+				DailySettingsRect,
+				ET66FriendslopChrome::TopbarSettingsIconButtonRound06);
 			const TSharedRef<SWidget> LanguageButtonWidget = MakeIconActionButton(
 				ET66FlatState::Default,
 				MakeTaggedIconWidget(SNew(ST66TopBarGlobeGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.GlobeButton.Icon")),
 				&UT66FrontendTopBarWidget::HandleLanguageClicked,
 				TEXT("FrontendTopBar.GlobeButton"),
-				DailyLanguageRect);
-			const TSharedRef<SWidget> BackToMainMenuButtonWidget = FT66FlatStyle::MakeFlatToggleGroupButton(
+				DailyLanguageRect,
+				ET66FriendslopChrome::TopbarIconDarkRound06);
+			const TSharedRef<SWidget> BackToMainMenuButtonWidget = FT66FriendslopStyle::MakeToggleGroupButton(
 				ET66FlatState::Default,
 				FT66FlatStyle::MakeFlatLabel(BackToMainMenuText, ET66FlatLabelRole::Button, ETextJustify::Center, TEXT("FrontendTopBar.BackToMainMenuButton.Label")),
 				FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleHomeClicked),
@@ -1040,13 +1093,16 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				DailyBackRect.ReferenceWidth(),
 				DailyBackRect.ReferenceHeight(),
 				true,
-				TEXT("FrontendTopBar.BackToMainMenuButton"));
+				TEXT("FrontendTopBar.BackToMainMenuButton"),
+				NAME_None,
+				ET66FriendslopChrome::TopbarTabDarkRound06);
 			const TSharedRef<SWidget> PowerButtonWidget = MakeIconActionButton(
 				ET66FlatState::Selected,
-				MakeTaggedIconWidget(SNew(ST66TopBarPowerGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.PowerButton.Icon")),
+				MakePairedIconButtonContent(TEXT("FrontendTopBar.PowerButton.Icon")),
 				&UT66FrontendTopBarWidget::HandleQuitClicked,
 				TEXT("FrontendTopBar.PowerButton"),
-				DailyQuitRect);
+				DailyQuitRect,
+				ET66FriendslopChrome::TopbarPowerIconButtonRound06);
 			PowerButtonWidget->SetToolTipText(QuitTooltipText);
 
 			const TSharedRef<SConstraintCanvas> DailyTopBarCanvas = SNew(SConstraintCanvas);
@@ -1054,11 +1110,13 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				.Alignment(FVector2D(0.f, 0.f))
 				.Offset(DailyOuterRect.ToReferenceOffset())
 				[
-					FT66FlatStyle::MakeFlatTransparentRegion(
+					FT66FriendslopStyle::MakePanel(
 						ET66FlatState::Default,
 						FMargin(0.f),
 						SNew(SBox),
-						TEXT("FrontendTopBar.OuterContainer"))
+						nullptr,
+						TEXT("FrontendTopBar.OuterContainer"),
+						ET66FriendslopChrome::TopbarStripRound06)
 				];
 
 			auto AddDailyControl = [&DailyTopBarCanvas](const FNormalizedTopBarRect& Rect, const TSharedRef<SWidget>& Widget)
@@ -1108,6 +1166,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 								SNew(SScaleBox)
 								.Stretch(EStretch::ScaleToFitX)
 								.StretchDirection(EStretchDirection::Both)
+								.VAlign(VAlign_Top)
 								[
 									ReservedReferenceCanvas
 								]
@@ -1132,18 +1191,26 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		CategoryGroup.GroupName = TEXT("FrontendCategorySelection");
 		CategoryGroup.bMutuallyExclusive = true;
 
-		auto MakeCategoryItem = [this](const FText& Label, FReply (UT66FrontendTopBarWidget::*ClickFunc)(), const FName Tag, const FNormalizedTopBarRect& Rect, const bool bSelected, const bool bEnabled = true) -> FT66FlatToggleGroupItem
+		const FVector2D TopBarViewportSize = GetEffectiveFrontendViewportSize();
+		const int32 CategoryTabFontSize = TopBarViewportSize.X <= 1366.f
+			? 20
+			: (TopBarViewportSize.X <= 1600.f ? 22 : 24);
+		const int32 ProfileTabFontSize = TopBarViewportSize.X <= 1366.f
+			? 19
+			: (TopBarViewportSize.X <= 1600.f ? 21 : 23);
+
+		auto MakeCategoryItem = [this, CategoryTabFontSize](const FText& Label, FReply (UT66FrontendTopBarWidget::*ClickFunc)(), const FName Tag, const FNormalizedTopBarRect& Rect, const bool bSelected, const bool bEnabled = true) -> FT66FlatToggleGroupItem
 		{
 			FT66FlatToggleGroupItem Item;
 			Item.State = bEnabled ? ET66FlatState::Default : ET66FlatState::Disabled;
 			Item.bIsSelected = bEnabled && bSelected;
 			Item.Label = Label;
 			Item.OnClicked = bEnabled ? FOnClicked::CreateUObject(this, ClickFunc) : FOnClicked();
-			Item.Padding = FMargin(12.f, 8.f);
+			Item.Padding = FMargin(10.f, 7.f);
 			Item.MinWidth = Rect.ReferenceWidth();
 			Item.Height = Rect.ReferenceHeight();
 			Item.IsEnabled = bEnabled;
-			Item.FontSize = 30;
+			Item.FontSize = FitTopBarLabelFontSize(Label, CategoryTabFontSize, 18, Rect.ReferenceWidth() - 28.f);
 			Item.Tag = Tag;
 			return Item;
 		};
@@ -1166,87 +1233,113 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			TEXT("FrontendTopBar.AchievementsButton"),
 			AchievementsRect,
 			ActiveSection == ETopBarSection::Achievements));
-		const TArray<TSharedRef<SWidget>> CategoryButtons = FT66FlatStyle::MakeFlatToggleGroup(CategoryGroup);
+		TArray<TSharedRef<SWidget>> CategoryButtons;
+		CategoryButtons.Reserve(CategoryGroup.Items.Num());
+		for (const FT66FlatToggleGroupItem& Item : CategoryGroup.Items)
+		{
+			const bool bSelected = Item.bIsSelected.Get(false);
+			const ET66FlatState RenderState = bSelected ? ET66FlatState::Selected : Item.State;
+			CategoryButtons.Add(FT66FriendslopStyle::MakeButton(
+				RenderState,
+				Item.Label,
+				Item.OnClicked,
+				Item.OptionalLeftIcon,
+				Item.OptionalRightIcon,
+				Item.Padding,
+				Item.MinWidth,
+				Item.Height,
+				Item.IsEnabled,
+				Item.FontSize,
+				Item.Tag,
+				CategoryGroup.GroupName,
+				RenderState == ET66FlatState::Selected ? ET66FriendslopChrome::TopbarTabRedRound06 : ET66FriendslopChrome::TopbarTabDarkRound06));
+		}
 
 		const TSharedRef<SWidget> SettingsButtonWidget = MakeIconActionButton(
 			ActiveSection == ETopBarSection::Settings ? ET66FlatState::Selected : ET66FlatState::Default,
-			MakeTaggedIconWidget(SNew(ST66TopBarGearGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.SettingsButton.Icon")),
+			MakePairedIconButtonContent(TEXT("FrontendTopBar.SettingsButton.Icon")),
 			&UT66FrontendTopBarWidget::HandleSettingsClicked,
 			TEXT("FrontendTopBar.SettingsButton"),
-			SettingsRect);
+			SettingsRect,
+			ET66FriendslopChrome::TopbarSettingsIconButtonRound06);
 		const TSharedRef<SWidget> LanguageButtonWidget = MakeIconActionButton(
 			ActiveSection == ETopBarSection::Language ? ET66FlatState::Selected : ET66FlatState::Default,
 			MakeTaggedIconWidget(SNew(ST66TopBarGlobeGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.GlobeButton.Icon")),
 			&UT66FrontendTopBarWidget::HandleLanguageClicked,
 			TEXT("FrontendTopBar.GlobeButton"),
-			LanguageRect);
-		const TSharedRef<SWidget> ProfileButtonWidget = FT66FlatStyle::MakeFlatButton(
-			ActiveSection == ETopBarSection::Home ? ET66FlatState::Selected : ET66FlatState::Default,
+			LanguageRect,
+			ActiveSection == ETopBarSection::Language ? ET66FriendslopChrome::TopbarPowerRedRound06 : ET66FriendslopChrome::TopbarIconDarkRound06);
+		const ET66FlatState ProfileState = ActiveSection == ETopBarSection::Home ? ET66FlatState::Selected : ET66FlatState::Default;
+		const TSharedRef<SWidget> ProfileButtonWidget = FT66FriendslopStyle::MakeButton(
+			ProfileState,
 			HomeText,
 			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleHomeClicked),
 			nullptr,
 			nullptr,
-			FMargin(8.f),
+			FMargin(8.f, 6.f),
 			ProfileRect.ReferenceWidth(),
 			ProfileRect.ReferenceHeight(),
 			true,
-			26,
-			TEXT("FrontendTopBar.ProfileButton"));
+			ProfileTabFontSize,
+			TEXT("FrontendTopBar.ProfileButton"),
+			NAME_None,
+			ProfileState == ET66FlatState::Selected ? ET66FriendslopChrome::TopbarTabRedRound06 : ET66FriendslopChrome::TopbarTabDarkRound06);
 		const TSharedRef<SWidget> PowerButtonWidget = MakeIconActionButton(
 			ET66FlatState::Selected,
-			MakeTaggedIconWidget(SNew(ST66TopBarPowerGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.PowerButton.Icon")),
+			MakePairedIconButtonContent(TEXT("FrontendTopBar.PowerButton.Icon")),
 			&UT66FrontendTopBarWidget::HandleQuitClicked,
 			TEXT("FrontendTopBar.PowerButton"),
-			QuitRect);
+			QuitRect,
+			ET66FriendslopChrome::TopbarPowerIconButtonRound06);
 		PowerButtonWidget->SetToolTipText(QuitTooltipText);
 
-		const TSharedRef<SWidget> TicketIcon = MakeTaggedIcon(CurrencyIconBrush, FText::FromString(TEXT("T")), FVector2D(40.f, 40.f), TEXT("FrontendTopBar.TicketBadge.Icon"));
-		const TSharedRef<SWidget> TicketValue = FT66FlatStyle::MakeFlatLabel(
-			TAttribute<FText>::Create(TAttribute<FText>::FGetter::CreateUObject(this, &UT66FrontendTopBarWidget::GetChadCouponsValueText)),
-			ET66FlatLabelRole::Button,
-			ETextJustify::Center,
-			TEXT("FrontendTopBar.TicketBadge.Value"));
-		const TSharedRef<SConstraintCanvas> TicketCanvas = SNew(SConstraintCanvas);
-		TicketCanvas->AddSlot()
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(36.f, 15.f, 40.f, 40.f))
-			[
-				TicketIcon
-			];
-		TicketCanvas->AddSlot()
-			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(96.f, 18.f, 52.f, 30.f))
-			[
-				TicketValue
-			];
+		const TSharedRef<SWidget> TicketValue = FT66FlatStyle::AttachMetadata(
+			SNew(STextBlock)
+			.Text(TAttribute<FText>::Create(TAttribute<FText>::FGetter::CreateUObject(this, &UT66FrontendTopBarWidget::GetChadCouponsValueText)))
+			.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(18, true))
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+			.Justification(ETextJustify::Center),
+			TEXT("FrontendTopBar.TicketBadge.Value"),
+			TEXT("Label.Button"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true);
 		const TSharedRef<SWidget> TicketContent =
 			SNew(SBox)
 			.WidthOverride(FMath::Max(1.f, TicketRect.ReferenceWidth() - 16.f))
 			.HeightOverride(FMath::Max(1.f, TicketRect.ReferenceHeight() - 12.f))
+			.HAlign(HAlign_Right)
+			.VAlign(VAlign_Center)
+			.Padding(FMargin(0.f, 0.f, 14.f, 0.f))
 			[
-				TicketCanvas
+				TicketValue
 			];
-		const TSharedRef<SWidget> TicketBadgeWidget = FT66FlatStyle::MakeFlatToggleGroupButton(
+		const TSharedRef<SWidget> TicketBadgeWidget = FT66FriendslopStyle::MakeToggleGroupButton(
 			ET66FlatState::Default,
 			TicketContent,
 			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandlePowerUpClicked),
-			FMargin(8.f, 6.f),
+			FMargin(8.f, 5.f),
 			TicketRect.ReferenceWidth(),
 			TicketRect.ReferenceHeight(),
 			true,
-			TEXT("FrontendTopBar.TicketBadge"));
+			TEXT("FrontendTopBar.TicketBadge"),
+			NAME_None,
+			ET66FriendslopChrome::TopbarCouponIconButtonRound06);
 
 		const TSharedRef<SConstraintCanvas> TopBarCanvas = SNew(SConstraintCanvas);
 		TopBarCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
 			.Offset(OuterRect.ToReferenceOffset())
 			[
-				FT66FlatStyle::MakeFlatPanel(
+				FT66FriendslopStyle::MakePanel(
 					ET66FlatState::Default,
 					FMargin(0.f),
 					SNew(SBox),
 					nullptr,
-					TEXT("FrontendTopBar.OuterContainer"))
+					TEXT("FrontendTopBar.OuterContainer"),
+					ET66FriendslopChrome::TopbarStripRound06)
 			];
 
 		auto AddControl = [&TopBarCanvas](const FNormalizedTopBarRect& Rect, const TSharedRef<SWidget>& Widget)
@@ -1300,6 +1393,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 							SNew(SScaleBox)
 							.Stretch(EStretch::ScaleToFitX)
 							.StretchDirection(EStretchDirection::Both)
+							.VAlign(VAlign_Top)
 							[
 								ReservedReferenceCanvas
 							]

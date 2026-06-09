@@ -14,10 +14,14 @@
 #include "Gameplay/T66MiasmaManager.h"
 #include "Gameplay/T66MiasmaTile.h"
 #include "Gameplay/T66TutorialManager.h"
+#include "Gameplay/T66HeroBase.h"
+#include "Gameplay/Physics/T66HeroPhysicsComponent.h"
 #include "CollisionQueryParams.h"
 #include "Engine/World.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/Pawn.h"
+#include "HAL/IConsoleManager.h"
 
 using namespace T66RunStatePrivate;
 
@@ -28,6 +32,107 @@ namespace
 {
 	static const FName T66BackroomsChaserTouchDelivery(TEXT("BackroomsChaserTouch"));
 	static const FName T66OuroborosLethalZoneDelivery(TEXT("OuroborosLethalZone"));
+	static float GT66DamagePercentGainScaleAt100 = 1.75f;
+	static float GT66DamagePercentLaunchScaleAt100 = 2.25f;
+	static float GT66DamagePercentBaseLaunchXY = 1250.f;
+	static float GT66DamagePercentLaunchXYPerPercent = 32.f;
+	static float GT66DamagePercentBaseLaunchZ = 460.f;
+	static float GT66DamagePercentLaunchZPerPercent = 6.f;
+	static float GT66EnemyDamageDisableStartPercent = 50.f;
+	static float GT66EnemyDamageDisableFullPercent = 99.f;
+	static float GT66EnemyDamageKnockbackOnlyXY = 520.f;
+	static float GT66EnemyDamageKnockbackOnlyZ = 140.f;
+
+	static FAutoConsoleVariableRef CVarT66DamagePercentGainScaleAt100(
+		TEXT("t66.HealthPercent.DamageGainScaleAt100"),
+		GT66DamagePercentGainScaleAt100,
+		TEXT("Damage-percent gain multiplier when the hero is already at 100%. Interpolates from 1.0 at 0%."),
+		ECVF_Default);
+
+	static FAutoConsoleVariableRef CVarT66DamagePercentLaunchScaleAt100(
+		TEXT("t66.HealthPercent.LaunchScaleAt100"),
+		GT66DamagePercentLaunchScaleAt100,
+		TEXT("Physics launch multiplier when the hero is already at 100%. Interpolates from 1.0 at 0%."),
+		ECVF_Default);
+
+	static FAutoConsoleVariableRef CVarT66DamagePercentBaseLaunchXY(
+		TEXT("t66.HealthPercent.BaseLaunchXY"),
+		GT66DamagePercentBaseLaunchXY,
+		TEXT("Base horizontal launch speed requested for every accepted hero damage source."),
+		ECVF_Default);
+
+	static FAutoConsoleVariableRef CVarT66DamagePercentLaunchXYPerPercent(
+		TEXT("t66.HealthPercent.LaunchXYPerPercent"),
+		GT66DamagePercentLaunchXYPerPercent,
+		TEXT("Additional horizontal launch speed per gained damage percent."),
+		ECVF_Default);
+
+	static FAutoConsoleVariableRef CVarT66DamagePercentBaseLaunchZ(
+		TEXT("t66.HealthPercent.BaseLaunchZ"),
+		GT66DamagePercentBaseLaunchZ,
+		TEXT("Base vertical launch speed requested for every accepted hero damage source."),
+		ECVF_Default);
+
+	static FAutoConsoleVariableRef CVarT66DamagePercentLaunchZPerPercent(
+		TEXT("t66.HealthPercent.LaunchZPerPercent"),
+		GT66DamagePercentLaunchZPerPercent,
+		TEXT("Additional vertical launch speed per gained damage percent."),
+		ECVF_Default);
+
+	static FAutoConsoleVariableRef CVarT66EnemyDamageDisableStartPercent(
+		TEXT("t66.HealthPercent.EnemyDisableStartPercent"),
+		GT66EnemyDamageDisableStartPercent,
+		TEXT("Enemy damage only starts throw/disable reactions after the hero damage percent rises above this value."),
+		ECVF_Default);
+
+	static FAutoConsoleVariableRef CVarT66EnemyDamageDisableFullPercent(
+		TEXT("t66.HealthPercent.EnemyDisableFullPercent"),
+		GT66EnemyDamageDisableFullPercent,
+		TEXT("Enemy throw distance and disable duration reach their full percent-scaled value at this hero damage percent."),
+		ECVF_Default);
+
+	static FAutoConsoleVariableRef CVarT66EnemyDamageKnockbackOnlyXY(
+		TEXT("t66.HealthPercent.EnemyKnockbackOnlyXY"),
+		GT66EnemyDamageKnockbackOnlyXY,
+		TEXT("Horizontal launch speed for enemy damage that is below the throw/disable threshold."),
+		ECVF_Default);
+
+	static FAutoConsoleVariableRef CVarT66EnemyDamageKnockbackOnlyZ(
+		TEXT("t66.HealthPercent.EnemyKnockbackOnlyZ"),
+		GT66EnemyDamageKnockbackOnlyZ,
+		TEXT("Vertical launch speed for enemy damage that is below the throw/disable threshold."),
+		ECVF_Default);
+
+	bool T66IsEnemyDamageReactionSource(const AActor* Attacker, const FName DeliveryMethod)
+	{
+		if (Cast<AT66EnemyBase>(Attacker) || Cast<AT66MobBase>(Attacker))
+		{
+			return true;
+		}
+
+		const FString DeliveryText = DeliveryMethod.ToString();
+		return DeliveryText.StartsWith(TEXT("Enemy"));
+	}
+
+	float T66GetEnemyDamageDisableStartPercent()
+	{
+		return FMath::Clamp(GT66EnemyDamageDisableStartPercent, 0.f, 99.f);
+	}
+
+	float T66GetEnemyDamageDisableFullPercent()
+	{
+		return FMath::Clamp(
+			GT66EnemyDamageDisableFullPercent,
+			T66GetEnemyDamageDisableStartPercent() + 1.f,
+			100.f);
+	}
+
+	float T66GetEnemyDamageThrowAlpha(const float DamagePercent)
+	{
+		const float StartPercent = T66GetEnemyDamageDisableStartPercent();
+		const float FullPercent = T66GetEnemyDamageDisableFullPercent();
+		return FMath::Clamp((DamagePercent - StartPercent) / FMath::Max(1.f, FullPercent - StartPercent), 0.f, 1.f);
+	}
 
 	FString T66FormatDamageActorLocation(const AActor* Actor)
 	{
@@ -286,6 +391,179 @@ void UT66RunStateSubsystem::SyncMaxHPToHeartTiers()
 }
 
 
+void UT66RunStateSubsystem::SyncCompatibilityHPFromHeroDamagePercent()
+{
+	MaxHP = FMath::Max(1.f, MaxHP);
+	const float RemainingFraction = 1.f - FMath::Clamp(HeroDamagePercent / HeroDamageDeathPercent, 0.f, 1.f);
+	CurrentHP = FMath::Clamp(MaxHP * RemainingFraction, 0.f, MaxHP);
+}
+
+
+void UT66RunStateSubsystem::SetHeroDamagePercent(const float NewPercent, const bool bBroadcast)
+{
+	const float ClampedPercent = FMath::Clamp(NewPercent, 0.f, HeroDamageDeathPercent);
+	const bool bChanged = !FMath::IsNearlyEqual(HeroDamagePercent, ClampedPercent, 0.01f);
+	HeroDamagePercent = ClampedPercent;
+	SyncCompatibilityHPFromHeroDamagePercent();
+	if (bBroadcast && bChanged)
+	{
+		HeartsChanged.Broadcast();
+	}
+}
+
+
+float UT66RunStateSubsystem::GetHeroDamagePercentGainScale(const float PercentBeforeDamage) const
+{
+	const float Alpha = FMath::Clamp(PercentBeforeDamage / HeroDamageDeathPercent, 0.f, 1.f);
+	return FMath::Lerp(1.f, FMath::Max(1.f, GT66DamagePercentGainScaleAt100), Alpha);
+}
+
+
+float UT66RunStateSubsystem::GetHeroDamageLaunchScale(const float PercentBeforeDamage) const
+{
+	const float Alpha = FMath::Clamp(PercentBeforeDamage / HeroDamageDeathPercent, 0.f, 1.f);
+	return FMath::Lerp(1.f, FMath::Max(1.f, GT66DamagePercentLaunchScaleAt100), Alpha);
+}
+
+
+float UT66RunStateSubsystem::ApplyHeroDamagePercent(const float BaseDamagePercent)
+{
+	if (BaseDamagePercent <= 0.f)
+	{
+		return 0.f;
+	}
+
+	const float PreviousPercent = HeroDamagePercent;
+	const float ScaledGain = BaseDamagePercent * GetHeroDamagePercentGainScale(PreviousPercent);
+	SetHeroDamagePercent(PreviousPercent + ScaledGain, false);
+	return FMath::Max(0.f, HeroDamagePercent - PreviousPercent);
+}
+
+
+float UT66RunStateSubsystem::HealHeroDamagePercent(const float PercentAmount)
+{
+	if (PercentAmount <= 0.f)
+	{
+		return 0.f;
+	}
+
+	const float PreviousPercent = HeroDamagePercent;
+	SetHeroDamagePercent(PreviousPercent - PercentAmount, true);
+	return FMath::Max(0.f, PreviousPercent - HeroDamagePercent);
+}
+
+
+void UT66RunStateSubsystem::ResetHeroDamagePercent()
+{
+	SetHeroDamagePercent(0.f, true);
+}
+
+
+void UT66RunStateSubsystem::ApplyDamagePhysicsReaction(
+	AActor* Attacker,
+	AActor* DamageCauser,
+	APawn* HeroPawn,
+	const FName SourceTag,
+	const float AppliedDamagePercent,
+	const float PercentBeforeDamage,
+	const float PercentAfterDamage) const
+{
+	if (!HeroPawn)
+	{
+		return;
+	}
+
+	const AActor* LaunchSource = DamageCauser ? DamageCauser : Attacker;
+	FVector Direction = FVector::ZeroVector;
+	if (LaunchSource)
+	{
+		Direction = HeroPawn->GetActorLocation() - LaunchSource->GetActorLocation();
+	}
+	if (Direction.IsNearlyZero())
+	{
+		Direction = HeroPawn->GetActorForwardVector();
+	}
+	Direction.Z = 0.f;
+	Direction = Direction.GetSafeNormal();
+	if (Direction.IsNearlyZero())
+	{
+		Direction = FVector::ForwardVector;
+	}
+
+	const bool bEnemyDamageReaction = T66IsEnemyDamageReactionSource(Attacker, SourceTag);
+	const float EnemyDisableStartPercent = T66GetEnemyDamageDisableStartPercent();
+	const bool bEnemyBelowDisableThreshold = bEnemyDamageReaction && PercentAfterDamage <= EnemyDisableStartPercent;
+	if (bEnemyBelowDisableThreshold)
+	{
+		const FVector RequestedVelocity =
+			Direction * FMath::Max(0.f, GT66EnemyDamageKnockbackOnlyXY)
+			+ FVector::UpVector * FMath::Max(0.f, GT66EnemyDamageKnockbackOnlyZ);
+		bool bAppliedKnockback = false;
+		if (ACharacter* HeroCharacter = Cast<ACharacter>(HeroPawn))
+		{
+			HeroCharacter->LaunchCharacter(RequestedVelocity, true, true);
+			bAppliedKnockback = true;
+		}
+
+		UE_LOG(
+			LogT66DamageReceived,
+			Log,
+			TEXT("[CombatDamagePhysics] Applied=%d Mode=EnemyKnockbackOnly Source=%s PercentBefore=%.2f PercentAfter=%.2f Threshold=%.2f PercentGained=%.2f RequestedVelocity=%s"),
+			bAppliedKnockback ? 1 : 0,
+			*SourceTag.ToString(),
+			PercentBeforeDamage,
+			PercentAfterDamage,
+			EnemyDisableStartPercent,
+			AppliedDamagePercent,
+			*RequestedVelocity.ToCompactString());
+		return;
+	}
+
+	UT66HeroPhysicsComponent* HeroPhysics = HeroPawn->FindComponentByClass<UT66HeroPhysicsComponent>();
+	if (!HeroPhysics)
+	{
+		return;
+	}
+
+	const float HorizontalSpeed = FMath::Max(0.f, GT66DamagePercentBaseLaunchXY)
+		+ FMath::Max(0.f, AppliedDamagePercent) * FMath::Max(0.f, GT66DamagePercentLaunchXYPerPercent);
+	const float UpSpeed = FMath::Max(0.f, GT66DamagePercentBaseLaunchZ)
+		+ FMath::Max(0.f, AppliedDamagePercent) * FMath::Max(0.f, GT66DamagePercentLaunchZPerPercent);
+	const FVector RequestedVelocity = Direction * HorizontalSpeed + FVector::UpVector * UpSpeed;
+	const float EnemyThrowAlpha = bEnemyDamageReaction ? T66GetEnemyDamageThrowAlpha(PercentAfterDamage) : 0.f;
+	const float LaunchScale = bEnemyDamageReaction
+		? FMath::Lerp(1.f, FMath::Max(1.f, GT66DamagePercentLaunchScaleAt100), EnemyThrowAlpha)
+		: GetHeroDamageLaunchScale(PercentBeforeDamage);
+	const float DurationDamagePercent = bEnemyDamageReaction ? PercentAfterDamage : PercentBeforeDamage;
+	const float DurationScaleStartPercent = bEnemyDamageReaction ? EnemyDisableStartPercent : 0.f;
+	const float DurationScaleFullPercent = bEnemyDamageReaction ? T66GetEnemyDamageDisableFullPercent() : -1.f;
+	const bool bApplied = HeroPhysics->ApplyPhysicsReaction(
+		RequestedVelocity,
+		HeroPawn->GetActorLocation(),
+		SourceTag,
+		LaunchScale,
+		DurationDamagePercent,
+		DurationScaleStartPercent,
+		DurationScaleFullPercent);
+
+	UE_LOG(
+		LogT66DamageReceived,
+		Log,
+		TEXT("[CombatDamagePhysics] Applied=%d Mode=%s Source=%s PercentBefore=%.2f PercentAfter=%.2f PercentGained=%.2f LaunchScale=%.2f ThrowAlpha=%.3f DurationScaleStart=%.2f DurationScaleFull=%.2f RequestedVelocity=%s"),
+		bApplied ? 1 : 0,
+		bEnemyDamageReaction ? TEXT("EnemyRagdoll") : TEXT("Ragdoll"),
+		*SourceTag.ToString(),
+		PercentBeforeDamage,
+		PercentAfterDamage,
+		AppliedDamagePercent,
+		LaunchScale,
+		EnemyThrowAlpha,
+		DurationScaleStartPercent,
+		DurationScaleFullPercent,
+		*RequestedVelocity.ToCompactString());
+}
+
+
 int32 UT66RunStateSubsystem::FindUpgradeableHeartSlot() const
 {
 	int32 BestSlot = INDEX_NONE;
@@ -335,7 +613,7 @@ void UT66RunStateSubsystem::RebuildHeartSlotTiersFromMaxHP()
 	}
 
 	SyncMaxHPToHeartTiers();
-	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
+	SyncCompatibilityHPFromHeroDamagePercent();
 }
 
 
@@ -377,7 +655,6 @@ void UT66RunStateSubsystem::AddMaxHearts(int32 DeltaHearts)
 		RebuildHeartSlotTiersFromMaxHP();
 	}
 
-	const float PreviousMaxHP = MaxHP;
 	bool bUpgraded = false;
 	for (int32 UpgradeIndex = 0; UpgradeIndex < DeltaHearts; ++UpgradeIndex)
 	{
@@ -397,7 +674,7 @@ void UT66RunStateSubsystem::AddMaxHearts(int32 DeltaHearts)
 	}
 
 	SyncMaxHPToHeartTiers();
-	CurrentHP = FMath::Clamp(CurrentHP + (MaxHP - PreviousMaxHP), 0.f, MaxHP);
+	SyncCompatibilityHPFromHeroDamagePercent();
 	HeartsChanged.Broadcast();
 }
 
@@ -426,7 +703,7 @@ float UT66RunStateSubsystem::ApplyAutomationHeroHPOverride(const float Requested
 	}
 
 	MaxHP = AppliedHP;
-	CurrentHP = AppliedHP;
+	SetHeroDamagePercent(0.f, false);
 	if (HeartSlotTiers.Num() != DefaultMaxHearts)
 	{
 		ResetHeartSlotTiers();
@@ -511,14 +788,14 @@ int32 UT66RunStateSubsystem::GetChaosTheoryBonusBounceCount() const
 float UT66RunStateSubsystem::GetEnduranceAttackSpeedMultiplier() const
 {
 	if (PassiveType != ET66PassiveType::Endurance) return 1.f;
-	return (CurrentHP > 0.f && CurrentHP <= MaxHP * 0.3f) ? 2.f : 1.f;
+	return (HeroDamagePercent >= 70.f && HeroDamagePercent < HeroDamageDeathPercent) ? 2.f : 1.f;
 }
 
 
 float UT66RunStateSubsystem::GetEnduranceDamageMultiplier() const
 {
 	if (PassiveType != ET66PassiveType::Endurance) return 1.f;
-	return (CurrentHP > 0.f && CurrentHP <= MaxHP * 0.3f) ? 1.25f : 1.f;
+	return (HeroDamagePercent >= 70.f && HeroDamagePercent < HeroDamageDeathPercent) ? 1.25f : 1.f;
 }
 
 
@@ -564,7 +841,7 @@ void UT66RunStateSubsystem::ApplyStageSpeedBoost(float MoveSpeedMultiplier, floa
 }
 
 
-void UT66RunStateSubsystem::ApplyTemporaryPrimaryStatAmplifier(
+void UT66RunStateSubsystem::ApplyTemporaryBaseStatAmplifier(
 	const ET66HeroStatType StatType,
 	const int32 BonusStatPoints,
 	const float DurationSeconds)
@@ -574,24 +851,24 @@ void UT66RunStateSubsystem::ApplyTemporaryPrimaryStatAmplifier(
 		return;
 	}
 
-	FT66TemporaryPrimaryStatAmplifier& Amplifier = TemporaryPrimaryStatAmplifiers.AddDefaulted_GetRef();
+	FT66TemporaryBaseStatAmplifier& Amplifier = TemporaryBaseStatAmplifiers.AddDefaulted_GetRef();
 	Amplifier.StatType = StatType;
 	Amplifier.BonusTenths = WholeStatToTenths(FMath::Max(1, BonusStatPoints));
 	Amplifier.SecondsRemaining = FMath::Max(0.1f, DurationSeconds);
 	HeroProgressChanged.Broadcast();
 }
 
-void UT66RunStateSubsystem::ApplyTemporarySecondaryStatAmplifier(
-	const ET66SecondaryStatType StatType,
+void UT66RunStateSubsystem::ApplyTemporaryStatAmplifier(
+	const ET66StatType StatType,
 	const int32 BonusStatPoints,
 	const float DurationSeconds)
 {
-	if (!T66IsLiveSecondaryStatType(StatType) || BonusStatPoints <= 0 || DurationSeconds <= 0.f)
+	if (!T66IsLiveStatType(StatType) || BonusStatPoints <= 0 || DurationSeconds <= 0.f)
 	{
 		return;
 	}
 
-	FT66TemporarySecondaryStatAmplifier& Amplifier = TemporarySecondaryStatAmplifiers.AddDefaulted_GetRef();
+	FT66TemporaryStatAmplifier& Amplifier = TemporaryStatAmplifiers.AddDefaulted_GetRef();
 	Amplifier.StatType = StatType;
 	Amplifier.BonusTenths = WholeStatToTenths(FMath::Max(1, BonusStatPoints));
 	Amplifier.SecondsRemaining = FMath::Max(0.1f, DurationSeconds);
@@ -665,23 +942,23 @@ void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)
 	}
 
 	bool bAmplifiersChanged = false;
-	for (int32 Index = TemporaryPrimaryStatAmplifiers.Num() - 1; Index >= 0; --Index)
+	for (int32 Index = TemporaryBaseStatAmplifiers.Num() - 1; Index >= 0; --Index)
 	{
-		FT66TemporaryPrimaryStatAmplifier& Amplifier = TemporaryPrimaryStatAmplifiers[Index];
+		FT66TemporaryBaseStatAmplifier& Amplifier = TemporaryBaseStatAmplifiers[Index];
 		Amplifier.SecondsRemaining = FMath::Max(0.f, Amplifier.SecondsRemaining - DeltaTime);
 		if (Amplifier.SecondsRemaining <= 0.f)
 		{
-			TemporaryPrimaryStatAmplifiers.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+			TemporaryBaseStatAmplifiers.RemoveAtSwap(Index, 1, EAllowShrinking::No);
 			bAmplifiersChanged = true;
 		}
 	}
-	for (int32 Index = TemporarySecondaryStatAmplifiers.Num() - 1; Index >= 0; --Index)
+	for (int32 Index = TemporaryStatAmplifiers.Num() - 1; Index >= 0; --Index)
 	{
-		FT66TemporarySecondaryStatAmplifier& Amplifier = TemporarySecondaryStatAmplifiers[Index];
+		FT66TemporaryStatAmplifier& Amplifier = TemporaryStatAmplifiers[Index];
 		Amplifier.SecondsRemaining = FMath::Max(0.f, Amplifier.SecondsRemaining - DeltaTime);
 		if (Amplifier.SecondsRemaining <= 0.f)
 		{
-			TemporarySecondaryStatAmplifiers.RemoveAtSwap(Index, 1, EAllowShrinking::No);
+			TemporaryStatAmplifiers.RemoveAtSwap(Index, 1, EAllowShrinking::No);
 			bAmplifiersChanged = true;
 		}
 	}
@@ -718,7 +995,7 @@ void UT66RunStateSubsystem::HandleLethalDamage(AActor* Attacker, const FName Del
 	// Dev Immortality: never end the run.
 	if (bDevImmortality)
 	{
-		CurrentHP = 0.f;
+		SetHeroDamagePercent(FMath::Min(HeroDamagePercent, HeroDamageDeathPercent - 0.1f), false);
 		LastDamageTime = -9999.f;
 		HeartsChanged.Broadcast();
 		return;
@@ -726,12 +1003,7 @@ void UT66RunStateSubsystem::HandleLethalDamage(AActor* Attacker, const FName Del
 
 	if (!bBypassesQuickRevive && ConsumeBackroomsQuickReviveItem())
 	{
-		if (HeartSlotTiers.Num() != DefaultMaxHearts)
-		{
-			RebuildHeartSlotTiersFromMaxHP();
-		}
-
-		CurrentHP = FMath::Clamp(GetHeartSlotCapacity(0), 1.f, MaxHP);
+		ResetHeroDamagePercent();
 		if (UWorld* World = GetWorld())
 		{
 			LastDamageTime = static_cast<float>(World->GetTimeSeconds());
@@ -740,11 +1012,10 @@ void UT66RunStateSubsystem::HandleLethalDamage(AActor* Attacker, const FName Del
 		{
 			LastDamageTime = 0.f;
 		}
-		HeartsChanged.Broadcast();
 		return;
 	}
 
-	CurrentHP = 0.f;
+	SetHeroDamagePercent(HeroDamageDeathPercent, false);
 	LastDamageTime = -9999.f;
 	HeartsChanged.Broadcast();
 	OnPlayerDied.Broadcast();
@@ -839,12 +1110,29 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker, const 
 	const float Armor = GetArmorReduction01();
 	const float Reduced = static_cast<float>(FMath::Max(1, FMath::CeilToInt(static_cast<float>(DamageHP) * (1.f - Armor))));
 	const int32 IncomingDamageHP = DamageHP;
-	const int32 AppliedDamageHP = FMath::RoundToInt(Reduced);
 
 	UGameInstance* GI = GetGameInstance();
 	UWorld* World = GI ? GI->GetWorld() : nullptr;
 	const float Now = World ? static_cast<float>(World->GetTimeSeconds()) : 0.f;
-	if (!bBackroomsChaserTouch && Now - LastDamageTime < InvulnDurationSeconds)
+	APawn* HeroPawn = nullptr;
+	FString HeroLocation(TEXT("None"));
+	AT66HeroBase* HeroActor = nullptr;
+	if (World)
+	{
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			HeroPawn = PC->GetPawn();
+			HeroActor = Cast<AT66HeroBase>(HeroPawn);
+			if (HeroPawn)
+			{
+				HeroLocation = HeroPawn->GetActorLocation().ToCompactString();
+			}
+		}
+	}
+
+	const bool bWithinDamageInvuln = !bBackroomsChaserTouch && Now - LastDamageTime < InvulnDurationSeconds;
+	const bool bBypassedDamageInvulnForKnockback = bWithinDamageInvuln && HeroActor && HeroActor->IsKnockbackActive();
+	if (bWithinDamageInvuln && !bBypassedDamageInvulnForKnockback)
 	{
 		// Any resolved non-dodge hit check breaks the consecutive dodge streak,
 		// even when invulnerability prevents damage from being applied.
@@ -897,25 +1185,13 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker, const 
 
 	LastDamageTime = Now;
 	const float PreviousHP = CurrentHP;
-	CurrentHP = FMath::Max(0.f, CurrentHP - Reduced);
+	const float PreviousDamagePercent = HeroDamagePercent;
+	const float AppliedDamagePercent = ApplyHeroDamagePercent(Reduced);
+	const int32 AppliedDamagePercentRounded = FMath::Max(1, FMath::RoundToInt(AppliedDamagePercent));
 	const FName DamageSourceID = T66ResolveDamageReceivedSourceID(Attacker);
 	if (UT66DamageLogSubsystem* DamageLog = GI ? GI->GetSubsystem<UT66DamageLogSubsystem>() : nullptr)
 	{
-		DamageLog->RecordDamageReceived(DamageSourceID, AppliedDamageHP);
-	}
-
-	APawn* HeroPawn = nullptr;
-	FString HeroLocation(TEXT("None"));
-	if (World)
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			HeroPawn = PC->GetPawn();
-			if (HeroPawn)
-			{
-				HeroLocation = HeroPawn->GetActorLocation().ToCompactString();
-			}
-		}
+		DamageLog->RecordDamageReceived(DamageSourceID, AppliedDamagePercentRounded);
 	}
 
 	AActor* ResolvedDamageCauser = DamageCauser ? DamageCauser : Attacker;
@@ -932,14 +1208,19 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker, const 
 	const float SourceDist3D = T66Distance3DOrNegative(Attacker, HeroPawn);
 	const float CauserDist2D = T66Distance2DOrNegative(ResolvedDamageCauser, HeroPawn);
 	const float CauserDist3D = T66Distance3DOrNegative(ResolvedDamageCauser, HeroPawn);
+	ApplyDamagePhysicsReaction(Attacker, ResolvedDamageCauser, HeroPawn, ResolvedDeliveryMethod, AppliedDamagePercent, PreviousDamagePercent, HeroDamagePercent);
 
 	UE_LOG(
 		LogT66DamageReceived,
 		Log,
-		TEXT("[CombatDamage] AppliedHP=%d RequestedHP=%d IncomingHP=%d SourceID=%s Delivery=%s SourceActor=%s SourceClass=%s DamageCauser=%s CauserClass=%s HeroHP=%.1f->%.1f MaxHP=%.1f HeroLoc=%s SourceLoc=%s CauserLoc=%s SourceDist2D=%.1f SourceDist3D=%.1f CauserDist2D=%.1f CauserDist3D=%.1f CauserLOS=%s LOSBlocker=%s Stage=%d WorldTime=%.2f"),
-		AppliedDamageHP,
+		TEXT("[CombatDamage] AppliedPercent=%.2f Percent=%.2f->%.2f RequestedHP=%d IncomingHP=%d ReducedBaseHP=%.2f BypassedInvulnForKnockback=%d SourceID=%s Delivery=%s SourceActor=%s SourceClass=%s DamageCauser=%s CauserClass=%s HeroHP=%.1f->%.1f MaxHP=%.1f HeroLoc=%s SourceLoc=%s CauserLoc=%s SourceDist2D=%.1f SourceDist3D=%.1f CauserDist2D=%.1f CauserDist3D=%.1f CauserLOS=%s LOSBlocker=%s Stage=%d WorldTime=%.2f"),
+		AppliedDamagePercent,
+		PreviousDamagePercent,
+		HeroDamagePercent,
 		RequestedDamageHP,
 		IncomingDamageHP,
+		Reduced,
+		bBypassedDamageInvulnForKnockback ? 1 : 0,
 		*DamageSourceID.ToString(),
 		*ResolvedDeliveryMethod.ToString(),
 		*T66FormatDamageActorName(Attacker),
@@ -976,13 +1257,13 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker, const 
 	{
 		if (UT66FloatingCombatTextSubsystem* FCT = GI ? GI->GetSubsystem<UT66FloatingCombatTextSubsystem>() : nullptr)
 		{
-			FCT->ShowDamageTaken(HeroPawn, FMath::RoundToInt(Reduced));
+			FCT->ShowDamageTaken(HeroPawn, AppliedDamagePercentRounded);
 		}
 	}
 
 	HeartsChanged.Broadcast();
 
-	if (CurrentHP <= 0.f)
+	if (HeroDamagePercent >= HeroDamageDeathPercent)
 	{
 		HandleLethalDamage(Attacker, ResolvedDeliveryMethod);
 	}
@@ -992,8 +1273,7 @@ bool UT66RunStateSubsystem::ApplyDamage(int32 DamageHP, AActor* Attacker, const 
 
 void UT66RunStateSubsystem::HealToFull()
 {
-	CurrentHP = MaxHP;
-	HeartsChanged.Broadcast();
+	ResetHeroDamagePercent();
 }
 
 
@@ -1001,10 +1281,7 @@ void UT66RunStateSubsystem::HealHP(float Amount)
 {
 	if (Amount <= 0.f) return;
 
-	const float NewHP = FMath::Clamp(CurrentHP + Amount, 0.f, MaxHP);
-	if (FMath::IsNearlyEqual(NewHP, CurrentHP)) return;
-	CurrentHP = NewHP;
-	HeartsChanged.Broadcast();
+	HealHeroDamagePercent(Amount);
 }
 
 
@@ -1012,9 +1289,9 @@ void UT66RunStateSubsystem::HealHPFromCompanion(float Amount)
 {
 	if (Amount <= 0.f) return;
 
-	const float PreviousHP = CurrentHP;
+	const float PreviousPercent = HeroDamagePercent;
 	HealHP(Amount);
-	const float AppliedHealing = FMath::Max(0.f, CurrentHP - PreviousHP);
+	const float AppliedHealing = FMath::Max(0.f, PreviousPercent - HeroDamagePercent);
 	if (AppliedHealing > 0.f)
 	{
 		CompanionHealingDoneThisRun += AppliedHealing;
@@ -1041,6 +1318,6 @@ void UT66RunStateSubsystem::ApplyHpRegen(float DeltaTime)
 
 void UT66RunStateSubsystem::KillPlayer(const FName DeliveryMethod)
 {
-	CurrentHP = 0.f;
+	SetHeroDamagePercent(HeroDamageDeathPercent, false);
 	HandleLethalDamage(nullptr, DeliveryMethod);
 }

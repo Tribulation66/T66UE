@@ -8,15 +8,20 @@
 #include "Styling/CoreStyle.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66RuntimeUIBrushAccess.h"
+#include "UI/Style/T66FriendslopStyle.h"
+#include "UI/Style/T66RuntimeUIFontAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
+#include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SGridPanel.h"
 #include "Widgets/Layout/SScaleBox.h"
 #include "Widgets/Layout/SSpacer.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SLeafWidget.h"
+#include "Widgets/SNullWidget.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
@@ -1297,6 +1302,470 @@ namespace T66ScreenSlateHelpers
 				SizedContent
 			]);
 		return Scrim;
+	}
+
+	ET66FlatState ToFlatState(const EFriendslopStandardModalButtonState State)
+	{
+		switch (State)
+		{
+		case EFriendslopStandardModalButtonState::Selected:
+			return ET66FlatState::Selected;
+		case EFriendslopStandardModalButtonState::Ready:
+			return ET66FlatState::Ready;
+		case EFriendslopStandardModalButtonState::Disabled:
+			return ET66FlatState::Disabled;
+		case EFriendslopStandardModalButtonState::Default:
+		default:
+			return ET66FlatState::Default;
+		}
+	}
+
+	FName MakeFriendslopStandardModalButtonChildTag(const FName Tag, const TCHAR* Suffix)
+	{
+		if (Tag.IsNone())
+		{
+			return NAME_None;
+		}
+
+		return FName(*(Tag.ToString() + TEXT(".") + Suffix));
+	}
+
+	FName MakeFriendslopStandardModalCheckboxChildTag(const FName Tag, const TCHAR* Suffix)
+	{
+		if (Tag.IsNone())
+		{
+			return NAME_None;
+		}
+
+		return FName(*(Tag.ToString() + TEXT(".") + Suffix));
+	}
+
+	const TCHAR* GetFriendslopStandardModalButtonAssetPath(const EFriendslopStandardModalButtonChrome Chrome)
+	{
+		switch (Chrome)
+		{
+		case EFriendslopStandardModalButtonChrome::Green:
+			return TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/SharedPrimitives/standard_modal_button_action_green.png");
+		case EFriendslopStandardModalButtonChrome::Dark:
+			return TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/SharedPrimitives/standard_modal_button_long_dark.png");
+		case EFriendslopStandardModalButtonChrome::Red:
+		default:
+			return TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/SharedPrimitives/standard_modal_button_primary_red.png");
+		}
+	}
+
+	const TCHAR* GetFriendslopStandardModalCheckboxAssetPath(const bool bChecked)
+	{
+		return bChecked
+			? TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/SharedPrimitives/standard_modal_checkbox_checked.png")
+			: TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/SharedPrimitives/standard_modal_checkbox_unchecked.png");
+	}
+
+	T66RuntimeUIBrushAccess::FOptionalTextureBrush& GetFriendslopStandardModalCheckboxBrushEntry(const bool bChecked)
+	{
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush CheckedBrush;
+		static T66RuntimeUIBrushAccess::FOptionalTextureBrush UncheckedBrush;
+		return bChecked ? CheckedBrush : UncheckedBrush;
+	}
+
+	const FSlateBrush* ResolveFriendslopStandardModalCheckboxBrush(const bool bChecked)
+	{
+		const FString FallbackFilePath = FPaths::ProjectDir() / GetFriendslopStandardModalCheckboxAssetPath(bChecked);
+		const FSlateBrush* Brush = T66RuntimeUIBrushAccess::ResolveOptionalTextureBrush(
+			GetFriendslopStandardModalCheckboxBrushEntry(bChecked),
+			nullptr,
+			FallbackFilePath,
+			FMargin(0.0f),
+			bChecked ? TEXT("FriendslopStandardModalCheckboxChecked") : TEXT("FriendslopStandardModalCheckboxUnchecked"));
+
+		return Brush ? Brush : FCoreStyle::Get().GetBrush(TEXT("NoBrush"));
+	}
+
+	FVector2D GetFriendslopStandardModalButtonFallbackSize(const EFriendslopStandardModalButtonChrome Chrome)
+	{
+		switch (Chrome)
+		{
+		case EFriendslopStandardModalButtonChrome::Dark:
+			return FVector2D(300.0f, 58.0f);
+		case EFriendslopStandardModalButtonChrome::Green:
+		case EFriendslopStandardModalButtonChrome::Red:
+		default:
+			return FVector2D(300.0f, 58.0f);
+		}
+	}
+
+	FLinearColor GetFriendslopStandardModalButtonFallbackTint(const EFriendslopStandardModalButtonChrome Chrome)
+	{
+		switch (Chrome)
+		{
+		case EFriendslopStandardModalButtonChrome::Green:
+			return FLinearColor(0.05f, 0.46f, 0.12f, 1.0f);
+		case EFriendslopStandardModalButtonChrome::Dark:
+			return FLinearColor(0.015f, 0.018f, 0.024f, 1.0f);
+		case EFriendslopStandardModalButtonChrome::Red:
+		default:
+			return FLinearColor(0.62f, 0.04f, 0.075f, 1.0f);
+		}
+	}
+
+	TSharedRef<SWidget> MakeFriendslopModalText(
+		const FText& Text,
+		const int32 FontSize,
+		const bool bBold,
+		const FLinearColor& Color,
+		const float WrapTextAt,
+		const FName Tag,
+		const TCHAR* Role,
+		const bool bScaleDown,
+		const bool bAutoWrap = true)
+	{
+		TSharedRef<STextBlock> TextBlock =
+			SNew(STextBlock)
+			.Text(Text)
+			.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(FontSize, bBold))
+			.ColorAndOpacity(Color)
+			.ShadowOffset(FVector2D(2.0f, 2.0f))
+			.ShadowColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 0.58f))
+			.Justification(ETextJustify::Center)
+			.AutoWrapText(bAutoWrap)
+			.WrapTextAt(bAutoWrap ? WrapTextAt : 0.0f)
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+			.Clipping(EWidgetClipping::ClipToBounds);
+
+		TSharedRef<SWidget> TextWidget = TextBlock;
+		if (bScaleDown)
+		{
+			TextWidget =
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					TextBlock
+				];
+		}
+		else
+		{
+			TextWidget =
+				SNew(SBox)
+				.WidthOverride(WrapTextAt)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					TextBlock
+				];
+		}
+
+		return FT66FlatStyle::AttachMetadata(
+			TextWidget,
+			Tag,
+			Role,
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			false,
+			NAME_None,
+			true);
+	}
+
+	TSharedRef<SWidget> MakeFriendslopStandardModalButton(const FFriendslopStandardModalButton& Button)
+	{
+		const ET66FlatState FlatState = ToFlatState(Button.State);
+		const float ButtonWidth = Button.MinWidth > 0.0f ? Button.MinWidth : 300.0f;
+		const float ButtonHeight = Button.Height > 0.0f ? Button.Height : 58.0f;
+		const float LabelWidth = FMath::Max(96.0f, ButtonWidth - 74.0f);
+		const float LabelHeight = FMath::Max(24.0f, ButtonHeight - 22.0f);
+
+		const TSharedRef<SWidget> Label =
+			FT66FlatStyle::AttachMetadata(
+				SNew(STextBlock)
+				.Text(Button.Label)
+				.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(Button.FontSize, true))
+				.ColorAndOpacity(FT66FriendslopStyle::TextColorForState(FlatState))
+				.Justification(ETextJustify::Center)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				.ShadowOffset(FVector2D(2.0f, 2.0f))
+				.ShadowColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 0.55f)),
+				MakeFriendslopStandardModalButtonChildTag(Button.Tag, TEXT("Label")),
+				TEXT("Label.Button"),
+				FlatState,
+				TOptional<FLinearColor>(),
+				false,
+				NAME_None,
+				true);
+
+		return FT66FriendslopStyle::MakeCustomToggleGroupButton(
+			GetFriendslopStandardModalButtonAssetPath(Button.Chrome),
+			FMargin(0.0f),
+			GetFriendslopStandardModalButtonFallbackSize(Button.Chrome),
+			FlatState,
+			SNew(SBox)
+			.WidthOverride(LabelWidth)
+			.HeightOverride(LabelHeight)
+			[
+				SNew(SScaleBox)
+				.Stretch(EStretch::ScaleToFit)
+				.StretchDirection(EStretchDirection::DownOnly)
+				[
+					Label
+				]
+			],
+			Button.OnClicked,
+			FMargin(34.0f, 11.0f),
+			ButtonWidth,
+			ButtonHeight,
+			Button.IsEnabled,
+			Button.Tag,
+			NAME_None,
+			GetFriendslopStandardModalButtonFallbackTint(Button.Chrome),
+			ESlateBrushDrawType::Image);
+	}
+
+	TSharedRef<SWidget> MakeFriendslopStandardModalCheckboxRow(const FFriendslopStandardModalCheckboxRow& Checkbox)
+	{
+		const float CheckboxSize = Checkbox.CheckboxSize > 0.0f ? Checkbox.CheckboxSize : 44.0f;
+		const TAttribute<bool> IsChecked = Checkbox.IsChecked;
+		const FName GlyphTag = Checkbox.CheckboxTag.IsNone()
+			? MakeFriendslopStandardModalCheckboxChildTag(Checkbox.RowTag, TEXT("Checkbox"))
+			: Checkbox.CheckboxTag;
+		const FName LabelTag = Checkbox.LabelTag.IsNone()
+			? MakeFriendslopStandardModalCheckboxChildTag(Checkbox.RowTag, TEXT("Label"))
+			: Checkbox.LabelTag;
+
+		const TSharedRef<SWidget> Glyph =
+			FT66FlatStyle::AttachMetadata(
+				SNew(SBox)
+				.WidthOverride(CheckboxSize)
+				.HeightOverride(CheckboxSize)
+				[
+					SNew(SImage)
+					.Image_Lambda([IsChecked]() -> const FSlateBrush*
+					{
+						return ResolveFriendslopStandardModalCheckboxBrush(IsChecked.Get(false));
+					})
+				],
+				GlyphTag,
+				TEXT("Checkbox.Glyph"),
+				ET66FlatState::Default);
+
+		const TSharedRef<SWidget> Label =
+			FT66FlatStyle::AttachMetadata(
+				SNew(SBox)
+				.WidthOverride(360.0f)
+				.HeightOverride(38.0f)
+				.HAlign(HAlign_Left)
+				.VAlign(VAlign_Center)
+				[
+					SNew(SScaleBox)
+					.Stretch(EStretch::ScaleToFit)
+					.StretchDirection(EStretchDirection::DownOnly)
+					.HAlign(HAlign_Left)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Text(Checkbox.Label)
+						.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(Checkbox.FontSize, true))
+						.ColorAndOpacity(FLinearColor(0.90f, 0.92f, 0.96f, 1.0f))
+						.ShadowOffset(FVector2D(2.0f, 2.0f))
+						.ShadowColorAndOpacity(FLinearColor(0.0f, 0.0f, 0.0f, 0.55f))
+						.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+						.Clipping(EWidgetClipping::ClipToBounds)
+					]
+				],
+				LabelTag,
+				TEXT("Label.Checkbox"),
+				ET66FlatState::Default,
+				TOptional<FLinearColor>(),
+				false,
+				NAME_None,
+				true);
+
+		TSharedRef<SWidget> Row =
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				Glyph
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(14.0f, 0.0f, 0.0f, 0.0f)
+			[
+				Label
+			];
+
+		TSharedRef<SButton> Button =
+			SNew(SButton)
+			.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder")))
+			.ContentPadding(FMargin(0.0f))
+			.ClickMethod(EButtonClickMethod::MouseDown)
+			.IsEnabled(Checkbox.IsEnabled)
+			.OnClicked(Checkbox.OnClicked)
+			[
+				Row
+			];
+
+		return FT66FlatStyle::AttachMetadata(
+			Button,
+			Checkbox.RowTag,
+			TEXT("CheckboxButton"),
+			ET66FlatState::Default,
+			TOptional<FLinearColor>(),
+			Checkbox.OnClicked.IsBound(),
+			NAME_None,
+			false,
+			Checkbox.OnClicked.IsBound());
+	}
+
+	TSharedRef<SWidget> MakeFriendslopStandardModal(const FFriendslopStandardModalParams& Params)
+	{
+		constexpr float PanelWidth = 1120.0f;
+		const bool bHasCheckboxRow = Params.bShowCheckboxRow;
+		const float PanelHeight = bHasCheckboxRow ? 490.0f : 400.0f;
+		const float ButtonY = bHasCheckboxRow ? 360.0f : 274.0f;
+		const float StatusY = bHasCheckboxRow ? 250.0f : 244.0f;
+		const float CheckboxY = bHasCheckboxRow ? 296.0f : 252.0f;
+		const FString ModalAssetPath(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/SharedPrimitives/standard_modal_panel_textless.png"));
+
+		TSharedRef<SConstraintCanvas> ContentCanvas = SNew(SConstraintCanvas);
+		auto AddSlot = [&ContentCanvas](
+			const float X,
+			const float Y,
+			const float W,
+			const float H,
+			const TSharedRef<SWidget>& Widget)
+		{
+			ContentCanvas->AddSlot()
+				.Anchors(FAnchors(0.0f, 0.0f))
+				.Alignment(FVector2D(0.0f, 0.0f))
+				.Offset(FMargin(X, Y, W, H))
+				[
+					Widget
+				];
+		};
+
+		AddSlot(
+			0.0f,
+			0.0f,
+			PanelWidth,
+			PanelHeight,
+			FT66FriendslopStyle::MakeCustomPanel(
+				ModalAssetPath,
+				FMargin(0.14f, 0.20f, 0.14f, 0.16f),
+				FVector2D(PanelWidth, PanelHeight),
+				ET66FlatState::Default,
+				FMargin(0.0f),
+				SNullWidget::NullWidget,
+				nullptr,
+				Params.PanelTag,
+				FLinearColor(0.035f, 0.038f, 0.047f, 1.0f)));
+
+		AddSlot(
+			190.0f,
+			59.0f,
+			740.0f,
+			60.0f,
+			MakeFriendslopModalText(
+				Params.TitleText,
+				30,
+				true,
+				FLinearColor::White,
+				700.0f,
+				Params.TitleTag,
+				TEXT("Label.Title"),
+				true,
+				false));
+
+		AddSlot(
+			200.0f,
+			156.0f,
+			720.0f,
+			88.0f,
+			MakeFriendslopModalText(
+				Params.BodyText,
+				16,
+				false,
+				FLinearColor(0.90f, 0.92f, 0.96f, 1.0f),
+				650.0f,
+				Params.BodyTag,
+				TEXT("Label.Body"),
+				false));
+
+		AddSlot(
+			170.0f,
+			StatusY,
+			780.0f,
+			32.0f,
+			SNew(SBox)
+			.Visibility(Params.StatusText.IsEmpty() ? EVisibility::Collapsed : EVisibility::HitTestInvisible)
+			[
+				MakeFriendslopModalText(
+					Params.StatusText,
+					16,
+					true,
+					FLinearColor(1.0f, 0.78f, 0.32f, 1.0f),
+					730.0f,
+					Params.StatusTag,
+					TEXT("Label.Status"),
+					true)
+			]);
+
+		if (bHasCheckboxRow)
+		{
+			AddSlot(
+				340.0f,
+				CheckboxY,
+				440.0f,
+				52.0f,
+				MakeFriendslopStandardModalCheckboxRow(Params.CheckboxRow));
+		}
+
+		AddSlot(
+			230.0f,
+			ButtonY,
+			300.0f,
+			58.0f,
+			MakeFriendslopStandardModalButton(Params.LeftButton));
+
+		AddSlot(
+			590.0f,
+			ButtonY,
+			300.0f,
+			58.0f,
+			MakeFriendslopStandardModalButton(Params.RightButton));
+
+		const TSharedRef<SWidget> Root =
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			[
+				FT66FlatStyle::AttachMetadata(
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush(TEXT("WhiteBrush")))
+					.BorderBackgroundColor(FLinearColor(0.0f, 0.0f, 0.0f, 0.62f))
+					.Padding(0.0f),
+					Params.ScrimTag,
+					TEXT("Scrim"),
+					ET66FlatState::Default)
+			]
+			+ SOverlay::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				SNew(SBox)
+				.WidthOverride(PanelWidth)
+				.HeightOverride(PanelHeight)
+				[
+					ContentCanvas
+				]
+			];
+
+		return FT66FlatStyle::AttachMetadata(
+			Root,
+			Params.RootTag,
+			TEXT("Root"),
+			ET66FlatState::Default);
 	}
 
 	TSharedRef<SWidget> MakeTwoButtonRow(

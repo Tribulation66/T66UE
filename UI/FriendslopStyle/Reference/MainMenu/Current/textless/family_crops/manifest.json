@@ -1,0 +1,86 @@
+{
+  "source": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Current\\textless\\main_menu_reference_04_textless_cli.png",
+  "source_size": [
+    1672,
+    941
+  ],
+  "crops": {
+    "TopBar": {
+      "box": [
+        0,
+        0,
+        1672,
+        126
+      ],
+      "current_path": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Current\\textless\\family_crops\\topbar_textless_family_crop.png",
+      "pass_path": "C:\\UE\\T66\\Saved\\Codex\\UI\\FriendslopStyle\\MainMenu\\pass25_textless_family_crops\\topbar_textless_family_crop.png",
+      "size": [
+        1672,
+        126
+      ],
+      "sha256": "827E555F0CCDA3A15D948FF3DB33F5334C80A639F82D5FE651426B5B0431C490"
+    },
+    "LeftSocialPanel": {
+      "box": [
+        0,
+        120,
+        475,
+        941
+      ],
+      "current_path": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Current\\textless\\family_crops\\left_social_panel_textless_family_crop.png",
+      "pass_path": "C:\\UE\\T66\\Saved\\Codex\\UI\\FriendslopStyle\\MainMenu\\pass25_textless_family_crops\\left_social_panel_textless_family_crop.png",
+      "size": [
+        475,
+        821
+      ],
+      "sha256": "7A93EBAF5A5CF79FAB432CF920461CC145A3A24A7D8A2C44AD419C2D73260D0F"
+    },
+    "RightLeaderboardPanel": {
+      "box": [
+        1160,
+        110,
+        1672,
+        941
+      ],
+      "current_path": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Current\\textless\\family_crops\\right_leaderboard_panel_textless_family_crop.png",
+      "pass_path": "C:\\UE\\T66\\Saved\\Codex\\UI\\FriendslopStyle\\MainMenu\\pass25_textless_family_crops\\right_leaderboard_panel_textless_family_crop.png",
+      "size": [
+        512,
+        831
+      ],
+      "sha256": "BBCB249B1C86A20CE32ED37BA2422C5B92C19E8CF24183943EAA81DE75A8FB8A"
+    },
+    "CenterButtonStack": {
+      "box": [
+        475,
+        115,
+        1225,
+        941
+      ],
+      "current_path": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Current\\textless\\family_crops\\center_button_stack_textless_family_crop.png",
+      "pass_path": "C:\\UE\\T66\\Saved\\Codex\\UI\\FriendslopStyle\\MainMenu\\pass25_textless_family_crops\\center_button_stack_textless_family_crop.png",
+      "size": [
+        750,
+        826
+      ],
+      "sha256": "F483FE23693C23D1CE8E1E6BB2100DCB33C50ED4FD84674A3F0C194F742A3920"
+    },
+    "Background": {
+      "box": [
+        420,
+        110,
+        1250,
+        941
+      ],
+      "current_path": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Current\\textless\\family_crops\\background_textless_family_crop.png",
+      "pass_path": "C:\\UE\\T66\\Saved\\Codex\\UI\\FriendslopStyle\\MainMenu\\pass25_textless_family_crops\\background_textless_family_crop.png",
+      "size": [
+        830,
+        831
+      ],
+      "sha256": "8BC2FDBCFA5050DADD17D1C19CDC233D6E27C824F4AC307760E6B46AC7A65149"
+    }
+  },
+  "overlay_current_path": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Current\\textless\\family_crops\\textless_family_crop_overlay.png",
+  "overlay_pass_path": "C:\\UE\\T66\\Saved\\Codex\\UI\\FriendslopStyle\\MainMenu\\pass25_textless_family_crops\\textless_family_crop_overlay.png"
+}

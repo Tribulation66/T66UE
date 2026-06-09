@@ -8,7 +8,9 @@
 enum class ET66ShelvedFeature : uint8
 {
 	DailyDescent,
-	VehicleInteractables
+	VehicleInteractables,
+	Pets,
+	MobLoot
 };
 
 struct T66_API FT66ShelvedFeatureGate
@@ -17,5 +19,7 @@ struct T66_API FT66ShelvedFeatureGate
 	static bool IsScreenAllowed(ET66ScreenType ScreenType);
 	static bool IsDailyDescentEnabled();
 	static bool IsVehicleInteractablesEnabled();
+	static bool IsPetsEnabled();
+	static bool IsMobLootEnabled();
 	static const TCHAR* GetShelvedReason(ET66ShelvedFeature Feature);
 };

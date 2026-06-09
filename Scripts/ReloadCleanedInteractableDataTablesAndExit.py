@@ -14,6 +14,7 @@ if SCRIPT_DIR not in sys.path:
 import SetupAudioEventsDataTable
 import SetupCharacterVisualsDataTable
 import SetupNPCsDataTable
+import SetupPetsDataTable
 import SetupPlayerExperienceDataTable
 import SetupVehicleInteractablesDataTable
 
@@ -24,6 +25,7 @@ def main():
     SetupVehicleInteractablesDataTable.main()
     SetupCharacterVisualsDataTable.main()
     SetupNPCsDataTable.main()
+    SetupPetsDataTable.main()
     audio_json_path = SetupAudioEventsDataTable.project_root() / SetupAudioEventsDataTable.JSON_RELATIVE_PATH
     SetupAudioEventsDataTable.reload_datatable(audio_json_path)
     unreal.log("=== ReloadCleanedInteractableDataTablesAndExit DONE ===")

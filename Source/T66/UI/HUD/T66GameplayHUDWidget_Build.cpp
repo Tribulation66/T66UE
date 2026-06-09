@@ -344,7 +344,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	}
 
 	// Difficulty row (5-slot skull sprites).
-	static constexpr float MinimapWidth = MinimapPanelWidth;
+	static constexpr float MinimapWidth = 200.f;
 	static constexpr float DiffGap = 1.f;
 	static constexpr float DiffSize = 30.f;
 	TSharedRef<SHorizontalBox> DifficultyRowRef = SNew(SHorizontalBox);
@@ -390,7 +390,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		ClownImages[i] = ClownImg;
 	}
 
-	// Build a 10-heart display as two rows of five segments.
+	// Build legacy heart widgets off-screen for compatibility with refresh code; the visible
+	// health surface is the percent readout below.
 	static constexpr float HeartWidth = GT66DisplayedHeartWidth;
 	static constexpr float HeartHeight = GT66DisplayedHeartHeight;
 	static constexpr float HeartPad = GT66DisplayedHeartColumnGap;
@@ -446,14 +447,38 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 		.WidthOverride(GT66DisplayedHeartAreaWidth)
 		.HeightOverride(GT66DisplayedHeartAreaHeight)
 		[
-			SNew(SVerticalBox)
-			+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill)
+			SNew(SOverlay)
+			+ SOverlay::Slot()
 			[
-				TopHeartsRowRef
-			]
-			+ SVerticalBox::Slot().FillHeight(1.f).HAlign(HAlign_Fill).Padding(0.f, HeartRowGap, 0.f, 0.f)
-			[
-				BottomHeartsRowRef
+				SNew(SBorder)
+				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+				.BorderBackgroundColor(FLinearColor(0.05f, 0.05f, 0.055f, 0.92f))
+				.Padding(2.f)
+				[
+					SNew(SOverlay)
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Left)
+					[
+						SAssignNew(HeroDamagePercentFillBox, SBox)
+						.WidthOverride(0.f)
+						.HeightOverride(GT66DisplayedHeartAreaHeight - 4.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.92f, 0.12f, 0.08f, 0.82f))
+						]
+					]
+					+ SOverlay::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						SAssignNew(HeroDamagePercentText, STextBlock)
+						.Text(NSLOCTEXT("T66.GameplayHUD", "HeroDamagePercentInitial", "0%"))
+						.Font(FT66FlatStyle::Tokens::FontBold(22))
+						.ColorAndOpacity(FLinearColor::White)
+						.Justification(ETextJustify::Center)
+					]
+				]
 			]
 		];
 
@@ -482,7 +507,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const float InventoryPanelVisibleHeight = BottomRightInventoryPanelHeight;
 	const float AbilityColumnWidth = GT66BottomLeftAbilityBoxSize;
 	const float AbilityIconSize = GT66BottomLeftAbilityBoxSize;
-	const float PrimaryStatsPanelWidth = GT66BottomLeftPrimaryStatsWidth;
+	const float BaseStatsPanelWidth = GT66BottomLeftBaseStatsWidth;
 	const float AbilityInputBadgeWidth = 28.f;
 	const float AbilityInputBadgeHeight = 18.f;
 	const float AbilityIconInset = 6.f;
@@ -494,7 +519,7 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 	const FLinearColor IdolSectionBorderColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultBorder(), 0.95f) : T66HudBorderRed;
 	const FLinearColor PortraitSectionBorderColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultBorder(), 0.98f) : T66HudBorderRed;
 	const FLinearColor AbilitySectionBorderColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultBorder(), 0.96f) : T66HudBorderRed;
-	const FLinearColor PrimaryStatsSectionBorderColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultBorder(), 0.96f) : T66HudBorderRed;
+	const FLinearColor BaseStatsSectionBorderColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultBorder(), 0.96f) : T66HudBorderRed;
 	const FLinearColor SharedSectionFillColor = bUseAlternateHudChrome ? WithAlpha(FT66FlatStyle::DefaultFill(), 0.98f) : T66HudDeepRed;
 	const FLinearColor LevelTextColor = bUseAlternateHudChrome ? FT66FlatStyle::PrimaryText() : T66HudTextRed;
 	TSharedRef<SWidget> LevelBadgeRef =
@@ -625,10 +650,10 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 				])
 			: MakeGameplayHudSquareSlot(Content, InnerPadding, bUseRedSlot);
 	};
-	auto MakePrimaryStatLine = [&](TSharedPtr<STextBlock>& OutText) -> TSharedRef<SWidget>
+	auto MakeBaseStatLine = [&](TSharedPtr<STextBlock>& OutText) -> TSharedRef<SWidget>
 	{
 		return SAssignNew(OutText, STextBlock)
-			.Text(NSLOCTEXT("T66.GameplayHUD", "PrimaryStatPending", "--"))
+			.Text(NSLOCTEXT("T66.GameplayHUD", "BaseStatPending", "--"))
 			.Font(FT66FlatStyle::Tokens::FontBold(13))
 			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
 			.Justification(ETextJustify::Left)
@@ -1177,6 +1202,8 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 			.ColorAndOpacity(FLinearColor::White)
 		]
 	];
+
+	const FText JumpKeycapText = ResolveGameplayJumpKeycapText();
 
 	TSharedRef<SOverlay> Root = SNew(SOverlay)
 		+ SOverlay::Slot()
@@ -1831,37 +1858,37 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 							+ SHorizontalBox::Slot().AutoWidth().Padding(BottomLeftColumnGap, 0.f, 0.f, 0.f)
 							[
 								SNew(SBox)
-								.WidthOverride(PrimaryStatsPanelWidth)
+								.WidthOverride(BaseStatsPanelWidth)
 								.HeightOverride(PortraitPanelSize)
 								[
 									MakeBottomLeftSectionPanel(
 										SNew(SVerticalBox)
 										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 										[
-											MakePrimaryStatLine(StatDamageText)
+											MakeBaseStatLine(StatDamageText)
 										]
 										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 										[
-											MakePrimaryStatLine(StatAttackSpeedText)
+											MakeBaseStatLine(StatAttackSpeedText)
 										]
 										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 										[
-											MakePrimaryStatLine(StatAttackScaleText)
+											MakeBaseStatLine(StatAttackScaleText)
 										]
 										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 										[
-											MakePrimaryStatLine(StatArmorText)
+											MakeBaseStatLine(StatArmorText)
 										]
 										+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
 										[
-											MakePrimaryStatLine(StatEvasionText)
+											MakeBaseStatLine(StatEvasionText)
 										]
 										+ SVerticalBox::Slot().AutoHeight()
 										[
-											MakePrimaryStatLine(StatLuckText)
+											MakeBaseStatLine(StatLuckText)
 										],
 										FMargin(8.f, 6.f),
-										PrimaryStatsSectionBorderColor)
+										BaseStatsSectionBorderColor)
 								]
 							]
 							,
@@ -1884,17 +1911,12 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 					.WidthOverride(MinimapWidth)
 					.HeightOverride(MinimapWidth)
 					[
-						FT66FlatStyle::MakeFlatPanel(
-							ET66FlatState::Default,
-							FMargin(8.f),
-							FT66AnimatedStyle::AttachMetadata(
-								SAssignNew(MinimapWidget, ST66WorldMapWidget)
-								.bMinimap(true)
-								.bShowLabels(false),
-								TEXT("GameplayHUD.Minimap.Map"),
-								TEXT("Minimap")),
-							nullptr,
-							TEXT("GameplayHUD.Minimap.Frame"))
+						FT66AnimatedStyle::AttachMetadata(
+							SAssignNew(MinimapWidget, ST66WorldMapWidget)
+							.bMinimap(true)
+							.bShowLabels(false),
+							TEXT("GameplayHUD.Minimap.Map"),
+							TEXT("Minimap"))
 					]
 				]
 				// Stage number + skulls beneath minimap, grouped in one compact black panel.
@@ -2345,6 +2367,90 @@ TSharedRef<SWidget> UT66GameplayHUDWidget::BuildSlateUI()
 						]
 					]
 				]
+			]
+		]
+		// Ragdoll recovery: center-bottom mash prompt and recovery meter.
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Bottom)
+		.Padding(0.f, 0.f, 0.f, 162.f)
+		[
+			SAssignNew(RagdollRecoveryPromptBox, SBox)
+			.WidthOverride(RagdollRecoveryPromptWidth)
+			.Visibility(EVisibility::Collapsed)
+			[
+				MakeGameplayHudSquarePanel(
+					SNew(SVerticalBox)
+					+ SVerticalBox::Slot().AutoHeight()
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(NSLOCTEXT("T66.GameplayHUD", "RagdollRecoveryPress", "PRESS"))
+							.Font(FT66FlatStyle::Tokens::FontBold(12))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
+						]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(8.f, 0.f)
+						[
+							SNew(SBorder)
+							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+							.BorderBackgroundColor(FLinearColor(0.02f, 0.018f, 0.014f, 0.98f))
+							.Padding(FMargin(10.f, 3.f))
+							[
+								SNew(STextBlock)
+								.Text(JumpKeycapText)
+								.Font(FT66FlatStyle::Tokens::FontBold(15))
+								.ColorAndOpacity(FLinearColor(1.0f, 0.88f, 0.38f, 1.0f))
+								.Justification(ETextJustify::Center)
+							]
+						]
+						+ SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(NSLOCTEXT("T66.GameplayHUD", "RagdollRecoveryMashJump", "MASH JUMP"))
+							.Font(FT66FlatStyle::Tokens::FontBold(17))
+							.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
+						]
+					]
+					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 0.f)
+					[
+						SNew(SBox)
+						.WidthOverride(RagdollRecoveryBarWidth)
+						.HeightOverride(26.f)
+						[
+							SNew(SOverlay)
+							+ SOverlay::Slot()
+							[
+								SNew(SBorder)
+								.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+								.BorderBackgroundColor(FLinearColor(0.025f, 0.025f, 0.028f, 0.94f))
+							]
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Left)
+							.VAlign(VAlign_Fill)
+							[
+								SAssignNew(RagdollRecoveryFillBox, SBox)
+								.WidthOverride(0.f)
+								[
+									SNew(SBorder)
+									.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
+									.BorderBackgroundColor(FLinearColor(0.88f, 0.18f, 0.12f, 0.96f))
+								]
+							]
+							+ SOverlay::Slot()
+							.HAlign(HAlign_Center)
+							.VAlign(VAlign_Center)
+							[
+								SAssignNew(RagdollRecoveryProgressText, STextBlock)
+								.Text(NSLOCTEXT("T66.GameplayHUD", "RagdollRecoveryProgressInit", "RECOVERY 0%"))
+								.Font(FT66FlatStyle::Tokens::FontBold(12))
+								.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
+								.Justification(ETextJustify::Center)
+							]
+						]
+					],
+					FMargin(14.f, 10.f))
 			]
 		]
 		// Tutorial subtitle (guide dialogue)

@@ -20,6 +20,12 @@ import unreal
 RARITIES = ("black", "red", "yellow", "white")
 DEST_DIR = "/Game/Items/Sprites"
 DEPRECATED_SECONDARY_STATS = {"Alchemy"}
+PRESERVED_OBSOLETE_ASSET_PREFIXES = {
+    "Item_HpRegen",
+    "Item_LifeSteal",
+    "Item_TreasureChest",
+    "Item_LootCrate",
+}
 
 
 def ensure_directory(path):
@@ -125,6 +131,9 @@ def delete_obsolete_assets(desired_names):
     deleted = []
     for asset_path in existing_paths:
         package_path = asset_path.split(".", 1)[0]
+        asset_name = package_path.rsplit("/", 1)[-1]
+        if any(asset_name.startswith(prefix) for prefix in PRESERVED_OBSOLETE_ASSET_PREFIXES):
+            continue
         if package_path not in desired_paths:
             if unreal.EditorAssetLibrary.delete_asset(asset_path):
                 deleted.append(asset_path)

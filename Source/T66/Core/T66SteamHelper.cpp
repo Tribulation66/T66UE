@@ -2,6 +2,7 @@
 
 #include "Core/T66SteamHelper.h"
 #include "Core/T66BackendSubsystem.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Misc/ConfigCacheIni.h"
 #include "Engine/Texture2D.h"
 
@@ -248,9 +249,25 @@ FString UT66SteamHelper::GetCurrentSteamBetaName() const
 
 void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 {
+	Collection.InitializeDependency(UT66ShutdownSubsystem::StaticClass());
 	Super::Initialize(Collection);
 	LocalAvatarTexture = nullptr;
 	FriendAvatarTextures.Reset();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			ShutdownParticipantHandle = Shutdown->RegisterParticipant(
+				this,
+				FName(TEXT("Steam.AuthAndCallbacks")),
+				ET66ShutdownPhase::NetworkPlatform,
+				30,
+				1.0,
+				false,
+				FT66ShutdownParticipantDelegate::CreateUObject(this, &UT66SteamHelper::HandleShutdown));
+		}
+	}
 
 	// Try real Steam first
 	if (SteamAPI_Init())
@@ -330,6 +347,26 @@ void UT66SteamHelper::Initialize(FSubsystemCollectionBase& Collection)
 
 void UT66SteamHelper::Deinitialize()
 {
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			Shutdown->UnregisterParticipant(ShutdownParticipantHandle);
+		}
+	}
+	ShutdownParticipantHandle.Reset();
+	ShutdownRuntimeResources(TEXT("Deinitialize"));
+	Super::Deinitialize();
+}
+
+bool UT66SteamHelper::HandleShutdown(const FT66ShutdownContext& /*Context*/)
+{
+	ShutdownRuntimeResources(TEXT("ShutdownSystem"));
+	return true;
+}
+
+void UT66SteamHelper::ShutdownRuntimeResources(const TCHAR* /*Reason*/)
+{
 	if (SteamJoinRequestBridge)
 	{
 		SteamJoinRequestBridge->Unregister();
@@ -348,7 +385,11 @@ void UT66SteamHelper::Deinitialize()
 		TicketHandle = 0;
 	}
 
-	Super::Deinitialize();
+	TicketHex.Reset();
+	bSteamReady = false;
+	OnSteamTicketReady.Clear();
+	SteamJoinRequested.Clear();
+	SteamLobbyJoinRequested.Clear();
 }
 
 void UT66SteamHelper::RequestNewTicket()

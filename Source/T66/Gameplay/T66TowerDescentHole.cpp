@@ -17,6 +17,7 @@
 namespace
 {
 	static const TCHAR* T66TowerGateTexturePath = TEXT("/Game/World/Tower/Textures/T_TowerDescentGate_Closed.T_TowerDescentGate_Closed");
+	static const FName T66TowerDescentNoSurfaceBounceTag(TEXT("T66_NoSurfaceBounce"));
 	static constexpr float T66TowerDescentTriggerTopBelowSurface = 180.0f;
 
 	static UStaticMesh* T66GetGateCoverMesh()
@@ -78,11 +79,14 @@ AT66TowerDescentHole::AT66TowerDescentHole()
 	GateCoverMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	GateCoverMesh->SetGenerateOverlapEvents(false);
 	GateCoverMesh->SetCanEverAffectNavigation(false);
+	GateCoverMesh->ComponentTags.AddUnique(T66TowerDescentNoSurfaceBounceTag);
 	if (UStaticMesh* CoverMesh = T66GetGateCoverMesh())
 	{
 		GateCoverMesh->SetStaticMesh(CoverMesh);
 	}
 	T66ApplyGateCoverMaterial(GateCoverMesh, this);
+
+	Tags.AddUnique(T66TowerDescentNoSurfaceBounceTag);
 }
 
 void AT66TowerDescentHole::InitializeHole(
@@ -90,11 +94,14 @@ void AT66TowerDescentHole::InitializeHole(
 	const int32 InToFloorNumber,
 	const FVector& InTriggerExtent,
 	const bool bInRequiresWeaponSelection,
+	const bool bInRequiresIdolSelection,
 	const bool bInRequiresGuardianDefeated)
 {
 	FromFloorNumber = InFromFloorNumber;
 	ToFloorNumber = InToFloorNumber;
 	bRequiresWeaponSelection = bInRequiresWeaponSelection;
+	bRequiresIdolSelection = bInRequiresIdolSelection;
+	bIdolSelectionSatisfied = !bRequiresIdolSelection;
 	bRequiresGuardianDefeated = bInRequiresGuardianDefeated;
 	bGateOpen = false;
 	if (TriggerBox)
@@ -115,6 +122,16 @@ void AT66TowerDescentHole::InitializeHole(
 void AT66TowerDescentHole::SetGuardianEnemy(AT66EnemyBase* InGuardianEnemy)
 {
 	GuardianEnemy = InGuardianEnemy;
+}
+
+void AT66TowerDescentHole::NotifyIdolSelectionSatisfied()
+{
+	if (!bRequiresIdolSelection)
+	{
+		return;
+	}
+
+	bIdolSelectionSatisfied = true;
 }
 
 bool AT66TowerDescentHole::Interact(AT66HeroBase* Hero)
@@ -212,6 +229,11 @@ bool AT66TowerDescentHole::CanOpenGate(const AT66HeroBase* Hero) const
 		{
 			return false;
 		}
+	}
+
+	if (bRequiresIdolSelection && !bIdolSelectionSatisfied)
+	{
+		return false;
 	}
 
 	if (bRequiresGuardianDefeated && !IsGuardianDefeated())

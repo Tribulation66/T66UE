@@ -94,7 +94,7 @@ void UT66CollectorOverlayWidget::OnExitLab()
 	RemoveFromParent();
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 		PC->RestoreGameplayInputMode();
-	UGameplayStatics::OpenLevel(World, UT66GameInstance::GetFrontendLevelName());
+	UT66GameInstance::TransitionToFrontendLevel(World);
 }
 
 void UT66CollectorOverlayWidget::CloseOverlay()
@@ -331,17 +331,17 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 			if (GI && GI->GetItemData(ItemID, ItemData))
 			{
 				// Build description from primary + secondary stat types.
-				const FText PrimaryStat = StaticEnum<ET66HeroStatType>()->GetDisplayNameTextByValue(static_cast<int64>(ItemData.PrimaryStatType));
-				const FText SecondaryStat = StaticEnum<ET66SecondaryStatType>()->GetDisplayNameTextByValue(static_cast<int64>(ItemData.SecondaryStatType));
-				if (ItemData.PrimaryStatType == ET66HeroStatType::Special)
+				const FText BaseStat = StaticEnum<ET66HeroStatType>()->GetDisplayNameTextByValue(static_cast<int64>(ItemData.BaseStatType));
+				const FText Stat = StaticEnum<ET66StatType>()->GetDisplayNameTextByValue(static_cast<int64>(ItemData.StatType));
+				if (ItemData.BaseStatType == ET66HeroStatType::Special)
 				{
-					DescText = ItemData.SecondaryStatType != ET66SecondaryStatType::None
-						? FText::Format(LOCTEXT("SpecialDescLineWithSecondary", "Primary: {0}\nLine 2: {1}"), PrimaryStat, SecondaryStat)
-						: FText::Format(LOCTEXT("SpecialDescLine", "Primary: {0}"), PrimaryStat);
+					DescText = ItemData.StatType != ET66StatType::None
+						? FText::Format(LOCTEXT("SpecialDescLineWithSecondary", "Primary: {0}\nLine 2: {1}"), BaseStat, Stat)
+						: FText::Format(LOCTEXT("SpecialDescLine", "Primary: {0}"), BaseStat);
 				}
 				else
 				{
-					DescText = FText::Format(LOCTEXT("DescLine", "Line 1: +{0}\nLine 2: {1}"), PrimaryStat, SecondaryStat);
+					DescText = FText::Format(LOCTEXT("DescLine", "Line 1: +{0}\nLine 2: {1}"), BaseStat, Stat);
 				}
 			}
 			AddItemCard(ItemID, NameText, DescText);
@@ -378,6 +378,7 @@ TSharedRef<SWidget> UT66CollectorOverlayWidget::RebuildWidget()
 	{
 		AddSpawnCard(LOCTEXT("FountainInteractableName", "Fountain"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("Fountain"))); });
 		AddSpawnCard(LOCTEXT("Chest", "Chest"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("Chest"))); });
+		AddSpawnCard(LOCTEXT("TNTInteractableName", "TNT"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("TNT"))); });
 		AddSpawnCard(LOCTEXT("IdolAltar", "Idol Altar"), FText::FromString(TEXT("Interactable")), [this]() { OnSpawnInteractable(FName(TEXT("IdolAltar"))); });
 	}
 

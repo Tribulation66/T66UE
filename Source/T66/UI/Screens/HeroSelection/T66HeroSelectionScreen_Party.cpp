@@ -141,8 +141,6 @@ void UT66HeroSelectionScreen::RefreshDifficultyDropdownText()
 
 void UT66HeroSelectionScreen::OnScreenDeactivated_Implementation()
 {
-	CommitPendingInlineRetroFXOnClose();
-
 	if (UT66LocalizationSubsystem* Loc = GetLocSubsystem())
 	{
 		Loc->OnLanguageChanged.RemoveDynamic(this, &UT66HeroSelectionScreen::OnLanguageChanged);
@@ -198,6 +196,11 @@ void UT66HeroSelectionScreen::OnScreenActivated_Implementation()
 	}
 	RefreshHeroList();
 	bShowingStatsPanel = false;
+	bShowRunWillNotCountWarning = false;
+	bRunWillNotCountDontShowAgainChecked = false;
+	bRunWillNotCountAcknowledgedThisSession = false;
+	RunWillNotCountReasonText.Reset();
+	RunWillNotCountAcknowledgedReasonText.Reset();
 
 	if (UT66GameInstance* GIPreload = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{

@@ -31,8 +31,10 @@ public:
 		int32 InToFloorNumber,
 		const FVector& InTriggerExtent,
 		bool bInRequiresWeaponSelection,
+		bool bInRequiresIdolSelection,
 		bool bInRequiresGuardianDefeated);
 	void SetGuardianEnemy(AT66EnemyBase* InGuardianEnemy);
+	void NotifyIdolSelectionSatisfied();
 	bool Interact(AT66HeroBase* Hero);
 	int32 GetFromFloorNumber() const { return FromFloorNumber; }
 	int32 GetToFloorNumber() const { return ToFloorNumber; }
@@ -62,6 +64,8 @@ private:
 	int32 ToFloorNumber = INDEX_NONE;
 	bool bGateOpen = false;
 	bool bRequiresWeaponSelection = false;
+	bool bRequiresIdolSelection = false;
+	bool bIdolSelectionSatisfied = false;
 	bool bRequiresGuardianDefeated = false;
 	TSet<TWeakObjectPtr<AActor>> ActiveActors;
 	TWeakObjectPtr<AT66EnemyBase> GuardianEnemy;

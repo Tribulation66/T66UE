@@ -1,6 +1,6 @@
 # T66 Master Anti-Cheat
 
-**Last updated:** 2026-04-20
+**Last updated:** 2026-06-08
 **Scope:** Single-source handoff for anti-cheat policy, ranked eligibility, integrity attestation, provenance validation, moderation, and leaderboard authority.  
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Backend/BACKEND_SYSTEM_REFERENCE.md`  
 **Execution checklist:** `Backend/Anti Cheat/ANTI_CHEAT_IMPLEMENTATION_INSTRUCTIONS.md`  
@@ -34,6 +34,7 @@ A run is ranked only if all of the following are true:
 
 - the player is not restricted
 - the run is submitted to the backend successfully
+- at least one selected leaderboard family is eligible for the run: `submit_score` permits score boards when `score > 0`; `submit_speedrun` permits speedrun boards only for completed timed runs
 - the build/integrity attestation matches an allowlisted pristine build
 - no challenge or mod run modifier is active
 - no extra mounted content or runtime mutation marks the run as modded/unranked
@@ -162,7 +163,7 @@ This layer should stay cheap and event-driven. It exists to make common cheat pa
 3. `UT66SkillRatingSubsystem` computes the combat-pressure skill signal.
 4. `UT66LeaderboardSubsystem` snapshots run data into `UT66LeaderboardRunSummarySaveGame`.
 5. `UT66BackendSubsystem` serializes the run summary, `anti_cheat_context`, and the future `integrity_context`.
-6. `POST /api/submit-run` authenticates the player, checks account restrictions, evaluates heuristics, integrity, and provenance, then returns a verdict.
+6. `POST /api/submit-run` authenticates the player, applies the selected leaderboard-family flags (`submit_score`, `submit_speedrun`), checks account restrictions, evaluates heuristics, integrity, and provenance, then returns a verdict.
 7. Only `accepted` should advance ranked leaderboard rows and the local ranked PB/rank cache.
 8. `unranked` runs may still keep recent-run history or audit records, but must not become ranked PBs.
 9. `flagged` runs continue through quarantine and restriction review.

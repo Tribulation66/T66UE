@@ -12,6 +12,8 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Engine/DirectionalLight.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Gameplay/T66ThemeAtmosphereData.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/SkyLight.h"
@@ -49,7 +51,8 @@ namespace
 	static FVector T66ResolveCharacterLightDirection(UMeshComponent* Component, const FT66ThemeCelAtmosphere& Cel)
 	{
 		FVector LightDirection = Cel.LightDirection;
-		if (Component)
+		// Per-actor light-direction override is disabled under the single shared rig (reversible).
+		if (Component && !T66ThemeAtmosphereData::IsSingleLightingRigEnabled())
 		{
 			if (const AActor* Owner = Component->GetOwner())
 			{
@@ -526,6 +529,88 @@ namespace
 			*Volume->GetName(),
 			*AppliedCubemapPath);
 	}
+
+	// Soft directional rig for the single shared lighting: one soft KEY + two neutral FILL directionals
+	// (the exact rig that proved out on Hero 1). The per-theme atmospheres carried directional shading
+	// via the cel system (now disabled), so the single rig provides real directionals. The fills replace
+	// the ambient's role so the world stays clearly lit without a strong ambient cubemap (which would
+	// over-brighten the subsurface character material). All tagged spared so neutral re-setup keeps them.
+	static void T66EnsureSingleRigDirectionalLight(UWorld* World)
+	{
+		if (!World)
+		{
+			return;
+		}
+		struct FT66RigLight { const TCHAR* Tag; FRotator Rot; float Intensity; bool bShadows; float SourceAngle; };
+		static const FT66RigLight RigLights[] = {
+			{ TEXT("T66_SingleRigKey"),   FRotator(-50.f, -40.f, 0.f), 9.0f, true,  3.0f }, // soft key
+			{ TEXT("T66_SingleRigFillA"), FRotator(-22.f, 150.f, 0.f), 3.5f, false, 0.f },  // opposite fill
+			{ TEXT("T66_SingleRigFillB"), FRotator(-8.f,  25.f,  0.f), 2.0f, false, 0.f },  // gentle front fill
+		};
+		for (const FT66RigLight& L : RigLights)
+		{
+			const FName Tag(L.Tag);
+			ADirectionalLight* D = T66FindActorWithTag<ADirectionalLight>(World, Tag);
+			if (!D)
+			{
+				FActorSpawnParameters SpawnParams;
+				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+				D = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FVector(0.f, 0.f, 2000.f), L.Rot, SpawnParams);
+			}
+			if (!D)
+			{
+				continue;
+			}
+			D->Tags.AddUnique(T66AtmosphereSparedTag);
+			D->Tags.AddUnique(Tag);
+			D->SetMobility(EComponentMobility::Movable);
+			D->SetActorRotation(L.Rot);
+			if (UDirectionalLightComponent* DLC = Cast<UDirectionalLightComponent>(D->GetLightComponent()))
+			{
+				DLC->SetIntensity(L.Intensity);
+				DLC->SetLightColor(FLinearColor::White);
+				DLC->LightSourceAngle = L.SourceAngle;
+				DLC->SetCastShadows(L.bShadows);
+				DLC->MarkRenderStateDirty();
+			}
+		}
+		int32 DirectionalCount = 0;
+		for (TActorIterator<ADirectionalLight> It(World); It; ++It)
+		{
+			++DirectionalCount;
+		}
+		UE_LOG(LogT66WorldVisualSetup, Display, TEXT("[SingleRig] Directional light count in world = %d (expected 3)"), DirectionalCount);
+	}
+
+	// THE lighting + post state, applied to every world (gameplay, hub, menus, boss floors):
+	// the 3-directional soft rig plus the single winning post-process volume — fixed manual
+	// exposure (AEM_Manual, the proven recipe; histogram clamps are adaptive and blow bright
+	// subjects on dark scenes), neutral white/saturation, clamped bloom, no vignette. Priority
+	// 3000 outranks any leftover volume (TestRoom legacy=2000, theme default=1000, neutral=0).
+	static void T66ApplySingleRigToWorld(UWorld* World, APostProcessVolume* WinningVolume)
+	{
+		T66EnsureSingleRigDirectionalLight(World);
+		if (!WinningVolume)
+		{
+			return;
+		}
+		WinningVolume->bUnbound = true;
+		WinningVolume->Priority = 3000.f;
+		FPostProcessSettings& PPS = WinningVolume->Settings;
+		PPS.bOverride_AutoExposureMethod = true; PPS.AutoExposureMethod = AEM_Manual;
+		PPS.bOverride_AutoExposureApplyPhysicalCameraExposure = true; PPS.AutoExposureApplyPhysicalCameraExposure = false;
+		PPS.bOverride_AutoExposureBias = true; PPS.AutoExposureBias = 0.0f;
+		PPS.bOverride_AutoExposureMinBrightness = false;
+		PPS.bOverride_AutoExposureMaxBrightness = false;
+		PPS.bOverride_WhiteTemp = true; PPS.WhiteTemp = 6500.f;
+		PPS.bOverride_ColorSaturation = true; PPS.ColorSaturation = FVector4(1.f, 1.f, 1.f, 1.f);
+		PPS.bOverride_BloomIntensity = true; PPS.BloomIntensity = 0.10f;
+		PPS.bOverride_VignetteIntensity = true; PPS.VignetteIntensity = 0.0f;
+		UE_LOG(LogT66WorldVisualSetup, Display,
+			TEXT("[SingleRig] Winning PPV=%s priority=%.0f exposure(method=Manual bias=%.2f) bloom=%.2f whiteTemp=%.0f"),
+			*WinningVolume->GetName(), WinningVolume->Priority,
+			PPS.AutoExposureBias, PPS.BloomIntensity, PPS.WhiteTemp);
+	}
 }
 
 void FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(UWorld* World)
@@ -536,7 +621,7 @@ void FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(UWorld* World)
 	}
 
 	const int32 RemovedAtmospheres = T66DestroyActorsOfType<ASkyAtmosphere>(World);
-	const int32 RemovedDirectionalLights = T66DestroyActorsOfType<ADirectionalLight>(World);
+	const int32 RemovedDirectionalLights = T66DestroyActorsOfTypeExceptTagged<ADirectionalLight>(World, T66AtmosphereSparedTag);
 	const int32 RemovedSkyLights = T66DestroyActorsOfTypeExceptTagged<ASkyLight>(World, T66AtmosphereSparedTag);
 	const int32 RemovedFogActors = T66DestroyActorsOfTypeExceptTagged<AExponentialHeightFog>(World, T66AtmosphereSparedTag);
 	const int32 RemovedTaggedQuakeSkyActors = T66DestroyActorsWithTag(World, QuakeSkyTag);
@@ -546,6 +631,13 @@ void FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(UWorld* World)
 	if (APostProcessVolume* PPVolume = T66FindOrCreateUnboundPostProcessVolume(World))
 	{
 		T66ApplyNeutralPostProcess(PPVolume);
+	}
+
+	// The single rig is THE lighting path everywhere — hub, menus, and bootstrap worlds included
+	// (these only run the neutral setup, never the themed atmosphere path).
+	if (T66ThemeAtmosphereData::IsSingleLightingRigEnabled())
+	{
+		T66ApplySingleRigToWorld(World, T66FindOrCreateThemePostProcessVolume(World));
 	}
 
 	const int32 RemovedActorCount = RemovedAtmospheres
@@ -593,9 +685,20 @@ void FT66WorldVisualSetup::EnsureAtmosphereForWorld(UWorld* World, const T66Towe
 	const FT66ThemeAtmosphereSpec& Spec = T66ThemeAtmosphereData::GetSpecForTheme(Theme);
 	T66ApplyAtmosphereSkyLight(T66FindOrCreateAtmosphereSkyLight(World), Spec);
 	T66ApplyAtmosphereFog(World, T66FindOrCreateAtmosphereFog(World), Spec);
-	T66ApplyThemePostProcess(T66FindOrCreateThemePostProcessVolume(World), Spec);
-	ApplyAtmosphereToHeroCarryLights(World, Spec);
-	ApplyToonCelAtmosphereToRegisteredMaterials(Theme);
+	APostProcessVolume* ThemePostProcess = T66FindOrCreateThemePostProcessVolume(World);
+	T66ApplyThemePostProcess(ThemePostProcess, Spec);
+	if (T66ThemeAtmosphereData::IsSingleLightingRigEnabled())
+	{
+		// One shared bright soft rig everywhere: real soft directional key + fills, one winning PPV.
+		// Torches + carry are already zeroed by the single-rig spec; carry-light + cel-atmosphere
+		// applies are skipped so the per-theme look stays fully bypassed.
+		T66ApplySingleRigToWorld(World, ThemePostProcess);
+	}
+	else
+	{
+		ApplyAtmosphereToHeroCarryLights(World, Spec);
+		ApplyToonCelAtmosphereToRegisteredMaterials(Theme);
+	}
 }
 
 void FT66WorldVisualSetup::ApplyAtmosphereToHeroCarryLights(UWorld* World, const FT66ThemeAtmosphereSpec& Spec)

@@ -12,15 +12,15 @@ namespace T66MainMenuReferenceLayout
 
 	namespace TopBar
 	{
-		inline constexpr FT66ReferenceRect TopbarStripFull{12.0f, 12.0f, 1896.0f, 118.0f};
-		inline constexpr FT66ReferenceRect ButtonSettings{10.0f, 0.0f, 112.0f, 106.0f};
-		inline constexpr FT66ReferenceRect ButtonChat{136.0f, 0.0f, 112.0f, 106.0f};
-		inline constexpr FT66ReferenceRect TabAccount{249.0f, 0.0f, 340.0f, 106.0f};
-		inline constexpr FT66ReferenceRect BadgeProfile{606.0f, 0.0f, 134.0f, 128.0f};
-		inline constexpr FT66ReferenceRect TabPowerUp{760.0f, 0.0f, 295.0f, 106.0f};
-		inline constexpr FT66ReferenceRect TabAchievements{1067.0f, 0.0f, 305.0f, 106.0f};
-		inline constexpr FT66ReferenceRect CurrencySlot{1616.0f, 0.0f, 154.0f, 106.0f};
-		inline constexpr FT66ReferenceRect ButtonPower{1788.0f, 0.0f, 112.0f, 106.0f};
+		inline constexpr FT66ReferenceRect TopbarStripFull{0.0f, 0.0f, 1920.0f, 127.0f};
+		inline constexpr FT66ReferenceRect ButtonSettings{35.0f, 28.0f, 100.0f, 76.0f};
+		inline constexpr FT66ReferenceRect ButtonChat{152.0f, 28.0f, 100.0f, 76.0f};
+		inline constexpr FT66ReferenceRect TabAccount{273.0f, 28.0f, 298.0f, 76.0f};
+		inline constexpr FT66ReferenceRect BadgeProfile{601.0f, 28.0f, 328.0f, 76.0f};
+		inline constexpr FT66ReferenceRect TabPowerUp{954.0f, 28.0f, 301.0f, 76.0f};
+		inline constexpr FT66ReferenceRect TabAchievements{1281.0f, 28.0f, 317.0f, 76.0f};
+		inline constexpr FT66ReferenceRect CurrencySlot{1594.0f, 28.0f, 182.0f, 76.0f};
+		inline constexpr FT66ReferenceRect ButtonPower{1793.0f, 28.0f, 100.0f, 76.0f};
 	}
 
 	namespace Center
@@ -75,8 +75,8 @@ namespace T66MainMenuReferenceLayout
 	namespace MainMenu
 	{
 		inline constexpr FT66ReferenceRect FullCanvas{0.0f, 0.0f, 1920.0f, 1080.0f};
-		inline constexpr FT66ReferenceRect LeftPanelAssembly{16.0f, 148.0f, 464.0f, 884.0f};
-		inline constexpr FT66ReferenceRect RightPanelAssembly{1424.0f, 148.0f, 476.0f, 884.0f};
+		inline constexpr FT66ReferenceRect LeftPanelAssembly{0.0f, 145.0f, 640.0f, 935.0f};
+		inline constexpr FT66ReferenceRect RightPanelAssembly{1340.0f, 130.0f, 580.0f, 950.0f};
 	}
 
 }

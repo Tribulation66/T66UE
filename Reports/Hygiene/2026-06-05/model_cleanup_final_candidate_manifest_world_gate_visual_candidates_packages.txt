@@ -1,0 +1,5 @@
+/Game/World/Gates/Material_0
+/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline
+/Game/World/Gates/SM_StageGate_Pixal3D_Outline
+/Game/World/Gates/Textures/T_StartGate_Pixal3D_BaseColor
+/Game/World/Gates/TutorialGate_Pixal3D

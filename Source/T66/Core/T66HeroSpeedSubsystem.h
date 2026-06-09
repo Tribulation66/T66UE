@@ -9,7 +9,7 @@
 /**
  * Hero movement speed and movement-state signaling.
  * No acceleration: speed is always the resolved movement speed when moving, 0 when idle.
- * Movement animation state: 0 = Idle, 1 = Walk, 2 = Jump, 3 = Roll.
+ * Movement animation state: 0 = Idle, 1 = Walk, 2 = Jump, 3 = Leap.
  * Companions mirror this state for their own visuals.
  */
 UCLASS()
@@ -34,7 +34,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|HeroSpeed")
 	float GetMaxSpeed() const { return MaxSpeed; }
 
-	/** Movement state for hero/companion visuals. 0 = Idle, 1 = Walk, 2 = Jump, 3 = Roll. */
+	/** Movement state for hero/companion visuals. 0 = Idle, 1 = Walk, 2 = Jump, 3 = Leap. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "T66|HeroSpeed")
 	int32 GetMovementAnimState() const;
 

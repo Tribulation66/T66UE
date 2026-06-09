@@ -33,6 +33,7 @@ public:
 	void SetPresentationHost(UT66GameplayHUDWidget* InPresentationHost);
 	void SetSourceCrateRarity(ET66Rarity InSourceCrateRarity);
 	void RequestSkip();
+	static bool CommitImmediateCrateReward(UWorld* World, ET66Rarity SourceCrateRarity);
 
 private:
 	enum class ECrateAnimationPhase : uint8

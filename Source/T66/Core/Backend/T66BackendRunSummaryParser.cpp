@@ -39,6 +39,8 @@ namespace
 		if (Value.Equals(TEXT("bounce"), ESearchCase::IgnoreCase)) return ET66AttackCategory::Bounce;
 		if (Value.Equals(TEXT("dot"), ESearchCase::IgnoreCase)) return ET66AttackCategory::DOT;
 		if (Value.Equals(TEXT("pierce"), ESearchCase::IgnoreCase)) return ET66AttackCategory::Pierce;
+		if (Value.Equals(TEXT("single_target"), ESearchCase::IgnoreCase)
+			|| Value.Equals(TEXT("singletarget"), ESearchCase::IgnoreCase)) return ET66AttackCategory::SingleTarget;
 		return DefaultValue;
 	}
 
@@ -47,6 +49,7 @@ namespace
 		if (Value.Equals(TEXT("ice"), ESearchCase::IgnoreCase)) return ET66IdolElement::Ice;
 		if (Value.Equals(TEXT("electricity"), ESearchCase::IgnoreCase)) return ET66IdolElement::Electricity;
 		if (Value.Equals(TEXT("nature"), ESearchCase::IgnoreCase)) return ET66IdolElement::Nature;
+		if (Value.Equals(TEXT("wind"), ESearchCase::IgnoreCase)) return ET66IdolElement::Wind;
 		if (Value.Equals(TEXT("fire"), ESearchCase::IgnoreCase)) return ET66IdolElement::Fire;
 		return DefaultValue;
 	}
@@ -174,7 +177,7 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 	}
 
 	const TSharedPtr<FJsonObject>* SecObj = nullptr;
-	if (Json->TryGetObjectField(TEXT("secondary_stats"), SecObj) && SecObj && (*SecObj).IsValid())
+	if (Json->TryGetObjectField(TEXT("stat_bonuses"), SecObj) && SecObj && (*SecObj).IsValid())
 	{
 		for (const auto& Pair : (*SecObj)->Values)
 		{
@@ -182,71 +185,72 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 			if (Pair.Value.IsValid() && Pair.Value->TryGetNumber(Val))
 			{
 				const FString& Key = Pair.Key;
-				ET66SecondaryStatType StatType = ET66SecondaryStatType::None;
+				ET66StatType StatType = ET66StatType::None;
 				bool bFound = true;
 				bool bLegacyCritDamageKey = false;
 
-				if (Key == TEXT("CritChance")) StatType = ET66SecondaryStatType::CritChance;
-				else if (Key == TEXT("HeadshotChance")) StatType = ET66SecondaryStatType::HeadshotChance;
+				if (Key == TEXT("CritChance")) StatType = ET66StatType::CritChance;
+				else if (Key == TEXT("HeadshotChance")) StatType = ET66StatType::HeadshotChance;
 				else if (Key == TEXT("CritDamage"))
 				{
-					StatType = ET66SecondaryStatType::HeadshotChance;
+					StatType = ET66StatType::HeadshotChance;
 					bLegacyCritDamageKey = true;
 				}
-				else if (Key == TEXT("Crush")) StatType = ET66SecondaryStatType::Crush;
-				else if (Key == TEXT("Invisibility")) StatType = ET66SecondaryStatType::Invisibility;
-				else if (Key == TEXT("LifeSteal")) StatType = ET66SecondaryStatType::LifeSteal;
-				else if (Key == TEXT("Assassinate")) StatType = ET66SecondaryStatType::Assassinate;
-				else if (Key == TEXT("Cheating")) StatType = ET66SecondaryStatType::Cheating;
-				else if (Key == TEXT("Stealing")) StatType = ET66SecondaryStatType::Stealing;
-				else if (Key == TEXT("AoeDamage")) StatType = ET66SecondaryStatType::AoeDamage;
-				else if (Key == TEXT("BounceDamage")) StatType = ET66SecondaryStatType::BounceDamage;
-				else if (Key == TEXT("PierceDamage")) StatType = ET66SecondaryStatType::PierceDamage;
-				else if (Key == TEXT("DotDamage")) StatType = ET66SecondaryStatType::DotDamage;
-				else if (Key == TEXT("CloseRangeDamage")) StatType = ET66SecondaryStatType::CloseRangeDamage;
-				else if (Key == TEXT("LongRangeDamage")) StatType = ET66SecondaryStatType::LongRangeDamage;
-				else if (Key == TEXT("AoeSpeed")) StatType = ET66SecondaryStatType::AoeSpeed;
-				else if (Key == TEXT("BounceSpeed")) StatType = ET66SecondaryStatType::BounceSpeed;
-				else if (Key == TEXT("PierceSpeed")) StatType = ET66SecondaryStatType::PierceSpeed;
-				else if (Key == TEXT("DotSpeed")) StatType = ET66SecondaryStatType::DotSpeed;
-				else if (Key == TEXT("AoeScale")) StatType = ET66SecondaryStatType::AoeScale;
-				else if (Key == TEXT("BounceScale")) StatType = ET66SecondaryStatType::BounceScale;
-				else if (Key == TEXT("PierceScale")) StatType = ET66SecondaryStatType::PierceScale;
-				else if (Key == TEXT("DotScale")) StatType = ET66SecondaryStatType::DotScale;
-				else if (Key == TEXT("AttackRange")) StatType = ET66SecondaryStatType::AttackRange;
-				else if (Key == TEXT("Taunt")) StatType = ET66SecondaryStatType::Taunt;
-				else if (Key == TEXT("ReflectDamage")) StatType = ET66SecondaryStatType::ReflectDamage;
-				else if (Key == TEXT("CounterAttack")) StatType = ET66SecondaryStatType::CounterAttack;
-				else if (Key == TEXT("HpRegen")) StatType = ET66SecondaryStatType::HpRegen;
-				else if (Key == TEXT("SpinWheel")) StatType = ET66SecondaryStatType::SpinWheel;
-				else if (Key == TEXT("Goblin")) StatType = ET66SecondaryStatType::Goblin;
-				else if (Key == TEXT("Leprechaun")) StatType = ET66SecondaryStatType::Leprechaun;
-				else if (Key == TEXT("TreasureChest")) StatType = ET66SecondaryStatType::TreasureChest;
-				else if (Key == TEXT("Fountain")) StatType = ET66SecondaryStatType::Fountain;
-				else if (Key == TEXT("MovementSpeed")) StatType = ET66SecondaryStatType::MovementSpeed;
-				else if (Key == TEXT("LootCrate")) StatType = ET66SecondaryStatType::LootCrate;
-				else if (Key == TEXT("DamageReduction")) StatType = ET66SecondaryStatType::DamageReduction;
-				else if (Key == TEXT("EvasionChance")) StatType = ET66SecondaryStatType::EvasionChance;
-				else if (Key == TEXT("Alchemy")) StatType = ET66SecondaryStatType::Alchemy;
-				else if (Key == TEXT("Accuracy")) StatType = ET66SecondaryStatType::Accuracy;
-				else if (Key == TEXT("Execute")) StatType = ET66SecondaryStatType::Execute;
-				else if (Key == TEXT("LootBag")) StatType = ET66SecondaryStatType::LootBag;
-				else if (Key == TEXT("LootWheel")) StatType = ET66SecondaryStatType::LootWheel;
-				else if (Key == TEXT("VendorToken")) StatType = ET66SecondaryStatType::VendorToken;
-				else if (Key == TEXT("FirePower")) StatType = ET66SecondaryStatType::FirePower;
-				else if (Key == TEXT("IcePower")) StatType = ET66SecondaryStatType::IcePower;
-				else if (Key == TEXT("ElectricityPower")) StatType = ET66SecondaryStatType::ElectricityPower;
-				else if (Key == TEXT("NaturePower")) StatType = ET66SecondaryStatType::NaturePower;
-				else if (Key == TEXT("InteractableLuck")) StatType = ET66SecondaryStatType::InteractableLuck;
-				else if (Key == TEXT("StealingLuck")) StatType = ET66SecondaryStatType::StealingLuck;
-				else if (Key == TEXT("GamblingLuck")) StatType = ET66SecondaryStatType::GamblingLuck;
-				else if (Key == TEXT("ProcLuck")) StatType = ET66SecondaryStatType::ProcLuck;
+				else if (Key == TEXT("Crush")) StatType = ET66StatType::Crush;
+				else if (Key == TEXT("Invisibility")) StatType = ET66StatType::Invisibility;
+				else if (Key == TEXT("LifeSteal")) StatType = ET66StatType::LifeSteal;
+				else if (Key == TEXT("Assassinate")) StatType = ET66StatType::Assassinate;
+				else if (Key == TEXT("Cheating")) StatType = ET66StatType::Cheating;
+				else if (Key == TEXT("Stealing")) StatType = ET66StatType::Stealing;
+				else if (Key == TEXT("AoeDamage")) StatType = ET66StatType::AoeDamage;
+				else if (Key == TEXT("BounceDamage")) StatType = ET66StatType::BounceDamage;
+				else if (Key == TEXT("PierceDamage")) StatType = ET66StatType::PierceDamage;
+				else if (Key == TEXT("DotDamage")) StatType = ET66StatType::DotDamage;
+				else if (Key == TEXT("CloseRangeDamage")) StatType = ET66StatType::CloseRangeDamage;
+				else if (Key == TEXT("LongRangeDamage")) StatType = ET66StatType::LongRangeDamage;
+				else if (Key == TEXT("AoeSpeed")) StatType = ET66StatType::AoeSpeed;
+				else if (Key == TEXT("BounceSpeed")) StatType = ET66StatType::BounceSpeed;
+				else if (Key == TEXT("PierceSpeed")) StatType = ET66StatType::PierceSpeed;
+				else if (Key == TEXT("DotSpeed")) StatType = ET66StatType::DotSpeed;
+				else if (Key == TEXT("AoeScale")) StatType = ET66StatType::AoeScale;
+				else if (Key == TEXT("BounceScale")) StatType = ET66StatType::BounceScale;
+				else if (Key == TEXT("PierceScale")) StatType = ET66StatType::PierceScale;
+				else if (Key == TEXT("DotScale")) StatType = ET66StatType::DotScale;
+				else if (Key == TEXT("AttackRange")) StatType = ET66StatType::AttackRange;
+				else if (Key == TEXT("Taunt")) StatType = ET66StatType::Taunt;
+				else if (Key == TEXT("ReflectDamage")) StatType = ET66StatType::ReflectDamage;
+				else if (Key == TEXT("CounterAttack")) StatType = ET66StatType::CounterAttack;
+				else if (Key == TEXT("HpRegen")) StatType = ET66StatType::HpRegen;
+				else if (Key == TEXT("SpinWheel")) StatType = ET66StatType::SpinWheel;
+				else if (Key == TEXT("Goblin")) StatType = ET66StatType::Goblin;
+				else if (Key == TEXT("Leprechaun")) StatType = ET66StatType::Leprechaun;
+				else if (Key == TEXT("TreasureChest")) StatType = ET66StatType::TreasureChest;
+				else if (Key == TEXT("Fountain")) StatType = ET66StatType::Fountain;
+				else if (Key == TEXT("MovementSpeed")) StatType = ET66StatType::MovementSpeed;
+				else if (Key == TEXT("LootCrate")) StatType = ET66StatType::LootCrate;
+				else if (Key == TEXT("DamageReduction")) StatType = ET66StatType::DamageReduction;
+				else if (Key == TEXT("EvasionChance")) StatType = ET66StatType::EvasionChance;
+				else if (Key == TEXT("Alchemy")) StatType = ET66StatType::Alchemy;
+				else if (Key == TEXT("Accuracy")) StatType = ET66StatType::Accuracy;
+				else if (Key == TEXT("Execute")) StatType = ET66StatType::Execute;
+				else if (Key == TEXT("LootBag")) StatType = ET66StatType::LootBag;
+				else if (Key == TEXT("LootWheel")) StatType = ET66StatType::LootWheel;
+				else if (Key == TEXT("VendorToken")) StatType = ET66StatType::VendorToken;
+				else if (Key == TEXT("FirePower")) StatType = ET66StatType::FirePower;
+				else if (Key == TEXT("IcePower")) StatType = ET66StatType::IcePower;
+				else if (Key == TEXT("ElectricityPower")) StatType = ET66StatType::ElectricityPower;
+				else if (Key == TEXT("NaturePower")) StatType = ET66StatType::NaturePower;
+				else if (Key == TEXT("WindPower")) StatType = ET66StatType::WindPower;
+				else if (Key == TEXT("InteractableLuck")) StatType = ET66StatType::InteractableLuck;
+				else if (Key == TEXT("StealingLuck")) StatType = ET66StatType::StealingLuck;
+				else if (Key == TEXT("GamblingLuck")) StatType = ET66StatType::GamblingLuck;
+				else if (Key == TEXT("ProcLuck")) StatType = ET66StatType::ProcLuck;
 				else { bFound = false; }
 
 				if (bFound)
 				{
 					float ParsedValue = static_cast<float>(Val);
-					if (StatType == ET66SecondaryStatType::HeadshotChance)
+					if (StatType == ET66StatType::HeadshotChance)
 					{
 						if (bLegacyCritDamageKey && (ParsedValue < 0.f || ParsedValue > 1.f))
 						{
@@ -254,7 +258,7 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 						}
 						ParsedValue = FMath::Clamp(ParsedValue, 0.f, 1.f);
 					}
-					S->SecondaryStatValues.Add(StatType, ParsedValue);
+					S->StatValues.Add(StatType, ParsedValue);
 				}
 			}
 		}
@@ -385,9 +389,17 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 	{
 		S->EquippedIdolElements.Add(ET66IdolElement::Fire);
 	}
+	if (S->EquippedIdolElements.Num() > S->EquippedIdols.Num())
+	{
+		S->EquippedIdolElements.SetNum(S->EquippedIdols.Num());
+	}
 	while (S->EquippedIdolCategories.Num() < S->EquippedIdols.Num())
 	{
 		S->EquippedIdolCategories.Add(ET66AttackCategory::Pierce);
+	}
+	if (S->EquippedIdolCategories.Num() > S->EquippedIdols.Num())
+	{
+		S->EquippedIdolCategories.SetNum(S->EquippedIdols.Num());
 	}
 
 	const TArray<TSharedPtr<FJsonValue>>* InvArr = nullptr;
@@ -419,7 +431,7 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 			Slot.ItemTemplateID = ItemIdStr.IsEmpty() ? NAME_None : FName(*ItemIdStr);
 			Slot.Rarity = T66RunSummaryParseItemRarity(T66RunSummaryGetJsonStringOrDefault(*SlotObj, TEXT("rarity"), TEXT("black")));
 			Slot.Line1RolledValue = T66RunSummaryGetJsonIntOrDefault(*SlotObj, TEXT("line1_rolled_value"), 1);
-			Slot.SecondaryStatBonusOverride = T66RunSummaryGetJsonIntOrDefault(*SlotObj, TEXT("secondary_stat_bonus_override"), 0);
+			Slot.StatBonusOverride = T66RunSummaryGetJsonIntOrDefault(*SlotObj, TEXT("stat_bonus_override"), 0);
 			Slot.Line2MultiplierOverride = T66RunSummaryGetJsonFloatOrDefault(*SlotObj, TEXT("line2_multiplier_override"), 0.f);
 			Slot.RollSeed = T66RunSummaryGetJsonIntOrDefault(*SlotObj, TEXT("roll_seed"), 0);
 		}
@@ -439,14 +451,14 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 	if (Json->TryGetObjectField(TEXT("no_idol"), NoIdolObj) && NoIdolObj && (*NoIdolObj).IsValid())
 	{
 		S->NoIdolSelectionStacks = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("stacks"), 0);
-		S->NoIdolPrimaryStatBonuses.DamageTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("damage_tenths"), 0);
-		S->NoIdolPrimaryStatBonuses.AttackSpeedTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("attack_speed_tenths"), 0);
-		S->NoIdolPrimaryStatBonuses.AttackScaleTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("attack_scale_tenths"), 0);
-		S->NoIdolPrimaryStatBonuses.AccuracyTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("accuracy_tenths"), 0);
-		S->NoIdolPrimaryStatBonuses.ArmorTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("armor_tenths"), 0);
-		S->NoIdolPrimaryStatBonuses.EvasionTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("evasion_tenths"), 0);
-		S->NoIdolPrimaryStatBonuses.LuckTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("luck_tenths"), 0);
-		S->NoIdolPrimaryStatBonuses.SpeedTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("speed_tenths"), 0);
+		S->NoIdolBaseStatBonuses.DamageTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("damage_tenths"), 0);
+		S->NoIdolBaseStatBonuses.AttackSpeedTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("attack_speed_tenths"), 0);
+		S->NoIdolBaseStatBonuses.AttackScaleTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("attack_scale_tenths"), 0);
+		S->NoIdolBaseStatBonuses.AccuracyTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("accuracy_tenths"), 0);
+		S->NoIdolBaseStatBonuses.ArmorTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("armor_tenths"), 0);
+		S->NoIdolBaseStatBonuses.EvasionTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("evasion_tenths"), 0);
+		S->NoIdolBaseStatBonuses.LuckTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("luck_tenths"), 0);
+		S->NoIdolBaseStatBonuses.SpeedTenths = T66RunSummaryGetJsonIntOrDefault(*NoIdolObj, TEXT("speed_tenths"), 0);
 	}
 
 	const TSharedPtr<FJsonObject>* MobLootObj = nullptr;

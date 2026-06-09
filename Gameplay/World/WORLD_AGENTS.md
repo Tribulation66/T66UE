@@ -11,7 +11,9 @@ World, tower, map, stage layout, lighting, HY-World, WorldMirror, modular dungeo
 ## Read First
 
 - `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md` for tower map/runtime design.
+- `Gameplay/World/T66_TUNING_SURFACE.md` for the human-facing tower/gameplay tuning index.
 - `Gameplay/World/T66_LIGHTING_REFERENCE.md` for lighting.
+- `ART_DIRECTION.md` for FriendSlop 3D/world art direction and rubber-material migration boundaries.
 - `Gameplay/World/MODULAR_DUNGEON_KIT_INSTRUCTIONS.md` for generated environment modules.
 - `Gameplay/World/HY_WORLD_RESEARCH_REFERENCE.md` for HY-World research boundaries.
 - `Model Generation/Instructions/00_MODEL_GENERATION_ROUTING_INSTRUCTIONS.md` and specific model-generation instructions when generating meshes.
@@ -21,3 +23,4 @@ World, tower, map, stage layout, lighting, HY-World, WorldMirror, modular dungeo
 - Do not treat HY-World as a production replacement for the current runtime terrain.
 - Do not use full-room generation as the default modular-kit path.
 - Keep gameplay collision authored through simple runtime proxies rather than deriving collision from high-poly generated visuals.
+- Do not pre-commit rubber material lit-vs-unlit behavior in world docs; that decision belongs to the material migration pass.

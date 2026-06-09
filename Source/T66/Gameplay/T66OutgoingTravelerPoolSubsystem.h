@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/T66WorldRuntimeProofTypes.h"
 #include "Gameplay/T66CombatTargetTypes.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "UObject/ObjectKey.h"
@@ -195,6 +196,15 @@ struct FT66OutgoingTravelerPoolDiagnostics
 	int32 LastUploadedLiveCount = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "T66|Outgoing Travelers")
+	int32 LastUploadedVisualRowCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "T66|Outgoing Travelers")
+	int32 PeakUploadedVisualRowCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "T66|Outgoing Travelers")
+	int32 LastCarrierRecipeExpandedTravelerCount = 0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "T66|Outgoing Travelers")
 	double LastUploadMs = 0.0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "T66|Outgoing Travelers")
@@ -260,8 +270,10 @@ class T66_API UT66OutgoingTravelerPoolSubsystem : public UTickableWorldSubsystem
 public:
 	static constexpr int32 MaxOutgoingTravelers = 20000;
 	static constexpr int32 TemporaryProjectileMeshSlotCount = 4;
-	static constexpr int32 TravelerVisualProfileSlotBase = TemporaryProjectileMeshSlotCount;
-	static constexpr int32 TravelerVisualProfileSlotCount = 16;
+	static constexpr int32 TravelerVisualProfileSlotBase = 0;
+	static constexpr int32 TravelerVisualProfileSlotCount = 20;
+	static constexpr int32 MaxCarrierRecipeParts = 4;
+	static constexpr int32 MaxOutgoingTravelerVisualRows = MaxOutgoingTravelers * MaxCarrierRecipeParts;
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
@@ -284,8 +296,45 @@ public:
 
 	static int32 GetMeshIndexForTemporaryProjectileShape(ET66TemporaryProjectileShape Shape);
 	static int32 GetMeshIndexForTravelerVisualProfileID(FName TravelerVisualProfileID, int32 FallbackMeshIndex);
+	static int32 GetCarrierRecipePartCountForTravelerVisualProfileID(FName TravelerVisualProfileID);
+	static FString GetCarrierRecipeSignatureForTravelerVisualProfileID(FName TravelerVisualProfileID);
 	static void AppendKnownTravelerVisualProfileIDs(TArray<FName>& OutProfileIDs);
 	static bool IsEnabled();
+
+#if !UE_BUILD_SHIPPING
+	FT66WorldRuntimeDebugSnapshot GetWorldRuntimeDebugSnapshot() const
+	{
+		FT66WorldRuntimeDebugSnapshot Snapshot;
+		Snapshot.SystemName = TEXT("UT66OutgoingTravelerPoolSubsystem");
+		Snapshot.AddCounter(TEXT("live_traveler_count"), Diagnostics.LiveCount);
+		Snapshot.AddCounter(TEXT("peak_live_traveler_count"), Diagnostics.PeakLiveCount);
+		Snapshot.AddCounter(TEXT("slot_capacity"), Slots.Num());
+		Snapshot.AddCounter(TEXT("free_slot_count"), FreeSlots.Num());
+		Snapshot.AddCounter(TEXT("dense_slot_count"), DenseSlots.Num());
+		Snapshot.AddCounter(TEXT("target_snapshot_count"), TargetSnapshot.Num());
+		Snapshot.AddCounter(TEXT("target_snapshot_index_count"), TargetSnapshotIndexByActor.Num());
+		Snapshot.AddCounter(TEXT("position_upload_count"), PositionUpload.Num());
+		Snapshot.AddCounter(TEXT("rotation_upload_count"), RotationUpload.Num());
+		Snapshot.AddCounter(TEXT("scale_upload_count"), ScaleUpload.Num());
+		Snapshot.AddCounter(TEXT("color_upload_count"), ColorUpload.Num());
+		Snapshot.AddCounter(TEXT("mesh_index_upload_count"), MeshIndexUpload.Num());
+		Snapshot.AddCounter(TEXT("known_timer_handles"), 0);
+		Snapshot.AddCounter(TEXT("known_external_delegate_handles"), 0);
+		Snapshot.AddCounter(TEXT("async_load_handles_valid"), 0);
+		Snapshot.AddFlag(TEXT("initialized_slots"), bInitializedSlots);
+		Snapshot.AddFlag(TEXT("dirty"), bDirty);
+		Snapshot.AddFlag(TEXT("manifest_written"), bManifestWritten);
+		Snapshot.AddFlag(TEXT("render_host_valid"), RenderHost != nullptr);
+		Snapshot.AddFlag(TEXT("render_root_valid"), RenderRoot != nullptr);
+		Snapshot.AddFlag(TEXT("niagara_component_valid"), NiagaraComponent != nullptr);
+		Snapshot.AddFlag(TEXT("niagara_system_valid"), NiagaraSystem != nullptr);
+		Snapshot.AddEvidence(TEXT("timers"), TEXT("No stored timer handles found; traveler simulation is tick-driven."));
+		Snapshot.AddEvidence(TEXT("delegates"), TEXT("Arrival callbacks are per-slot delegates and clear on slot release; no external registration handle is stored."));
+		Snapshot.AddEvidence(TEXT("async_loads"), TEXT("No async load handle is owned by this subsystem."));
+		Snapshot.AddMeasurementGap(TEXT("niagara_component_registered_active_state"));
+		return Snapshot;
+	}
+#endif
 
 private:
 	struct FT66OutgoingTravelerSlot
@@ -306,6 +355,7 @@ private:
 		int32 SourceTowerFloorNumber = INDEX_NONE;
 		FName DamageSourceID = NAME_None;
 		FName EventType = NAME_None;
+		FName TravelerVisualProfileID = NAME_None;
 		FT66OutgoingTravelerArrivalCallback OnArrived;
 		bool bActive = false;
 		bool bSimulated = false;
@@ -394,6 +444,7 @@ private:
 		uint64& InOutArrivalCollisionCycles);
 	bool ApplyArrivalDamage(const FT66OutgoingTravelerSlot& Slot, const FT66OutgoingTravelerTargetSnapshotEntry* SnapshotEntry);
 	void TickSimulatedTravelers(float DeltaTime);
+	void AppendVisualRowsForSlot(const FT66OutgoingTravelerSlot& Slot);
 	void UploadLiveState();
 	void SampleProofMetrics(float DeltaTime);
 	void WriteProofManifest(const TCHAR* Reason);

@@ -24,6 +24,7 @@ enum class ET66AttackCategory : uint8
 	Bounce UMETA(DisplayName = "Bounce"),
 	AOE UMETA(DisplayName = "AOE"),
 	DOT UMETA(DisplayName = "DOT"),
+	SingleTarget UMETA(DisplayName = "Single Target"),
 };
 
 /** Source row family for combat VFX bindings. */
@@ -142,6 +143,100 @@ enum class ET66PassiveType : uint8
 	Frostbite UMETA(DisplayName = "Frostbite"),
 };
 
+/** Foundational hero stats that items can roll as their primary stat line (Line 1). Special is reward-only/non-stat. */
+UENUM(BlueprintType)
+enum class ET66HeroStatType : uint8
+{
+	Damage UMETA(DisplayName = "Damage"),
+	AttackSpeed UMETA(DisplayName = "AttackSpeed"),
+	AttackScale UMETA(DisplayName = "AttackScale"),
+	Armor UMETA(DisplayName = "Armor"),
+	Evasion UMETA(DisplayName = "Evasion"),
+	Luck UMETA(DisplayName = "Luck"),
+	Speed UMETA(DisplayName = "Speed"),
+	/** Appended values preserve serialized enum values for existing save data and data tables. */
+	Accuracy UMETA(DisplayName = "Accuracy"),
+	Special UMETA(DisplayName = "Special"),
+};
+
+/**
+ * Secondary stat types (Line 2 of items).
+ * Each item template maps to exactly one secondary stat. The multiplier is derived from rarity.
+ */
+UENUM(BlueprintType)
+enum class ET66StatType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	// Category Damage (4)
+	AoeDamage UMETA(DisplayName = "AOE Damage"),
+	BounceDamage UMETA(DisplayName = "Bounce Damage"),
+	PierceDamage UMETA(DisplayName = "Pierce Damage"),
+	DotDamage UMETA(DisplayName = "DOT Damage"),
+	// Category Speed (4)
+	AoeSpeed UMETA(DisplayName = "AOE Speed"),
+	BounceSpeed UMETA(DisplayName = "Bounce Speed"),
+	PierceSpeed UMETA(DisplayName = "Pierce Speed"),
+	DotSpeed UMETA(DisplayName = "DOT Speed"),
+	// Category Scale (4)
+	AoeScale UMETA(DisplayName = "AOE Scale"),
+	BounceScale UMETA(DisplayName = "Bounce Scale"),
+	PierceScale UMETA(DisplayName = "Pierce Scale"),
+	DotScale UMETA(DisplayName = "DOT Scale"),
+	// Crit / headshot (2)
+	CritDamage UMETA(DisplayName = "Crit Damage"),
+	CritChance UMETA(DisplayName = "Crit Chance"),
+	// Range-conditional (3)
+	CloseRangeDamage UMETA(DisplayName = "Close Range Damage"),
+	LongRangeDamage UMETA(DisplayName = "Long Range Damage"),
+	AttackRange UMETA(DisplayName = "Attack Range"),
+	// Armor-defensive (4)
+	Taunt UMETA(DisplayName = "Taunt Chance"),
+	ReflectDamage UMETA(DisplayName = "Reflect Chance"),
+	HpRegen UMETA(DisplayName = "HP Regen"),
+	Crush UMETA(DisplayName = "Crush Chance"),
+	// Evasion-offensive (4)
+	Invisibility UMETA(DisplayName = "Invisibility Chance"),
+	CounterAttack UMETA(DisplayName = "Counter Chance"),
+	LifeSteal UMETA(DisplayName = "Life Steal"),
+	Assassinate UMETA(DisplayName = "Assassinate Chance"),
+	// Luck-world live (5) + compatibility (2)
+	SpinWheel UMETA(DisplayName = "Spin Wheel"),
+	Goblin UMETA(Hidden),
+	Leprechaun UMETA(Hidden),
+	TreasureChest UMETA(DisplayName = "Loot Chest"),
+	Fountain UMETA(Hidden),
+	Cheating UMETA(DisplayName = "Cheating"),
+	Stealing UMETA(DisplayName = "Stealing"),
+	// Speed (1)
+	MovementSpeed UMETA(DisplayName = "Movement Speed"),
+	// Luck-world (crate rewards)
+	LootCrate UMETA(DisplayName = "Loot Crate"),
+	// Defensive item-only bonuses that scale from their parent primary stat.
+	DamageReduction UMETA(DisplayName = "Damage Reduction"),
+	EvasionChance UMETA(DisplayName = "Dodge Chance"),
+	Alchemy UMETA(DisplayName = "Alchemy"),
+	/** Appended to preserve serialized enum values for existing save data and data tables. */
+	Accuracy UMETA(DisplayName = "Accuracy"),
+	Execute UMETA(DisplayName = "Execute Chance"),
+	LootBag UMETA(DisplayName = "Loot Bag"),
+	LootWheel UMETA(DisplayName = "Loot Wheel"),
+	VendorToken UMETA(DisplayName = "Vendor Token"),
+	HeadshotChance UMETA(DisplayName = "Headshot Chance"),
+	FirePower UMETA(DisplayName = "Fire Power"),
+	IcePower UMETA(DisplayName = "Ice Power"),
+	ElectricityPower UMETA(DisplayName = "Electricity Power"),
+	NaturePower UMETA(DisplayName = "Nature Power"),
+	InteractableLuck UMETA(DisplayName = "Interactable Luck"),
+	StealingLuck UMETA(DisplayName = "Stealing Luck"),
+	GamblingLuck UMETA(DisplayName = "Gambling Luck"),
+	ProcLuck UMETA(DisplayName = "Proc Luck"),
+	WindPower UMETA(DisplayName = "Wind Power"),
+	// --- Stats Rework: unified single-tier additions. Appended to preserve serialized enum values. ---
+	AllDamage UMETA(DisplayName = "All Damage"),
+	AllAttackSpeed UMETA(DisplayName = "All Attack Speed"),
+	AllScale UMETA(DisplayName = "All Scale"),
+	Luck UMETA(DisplayName = "Luck"),
+};
 /**
  * Hero data row for the Hero DataTable
  * Each row represents one selectable hero in the game
@@ -241,6 +336,17 @@ struct T66_API FHeroData : public FTableRowBase
 	ET66PassiveType PassiveType = ET66PassiveType::None;
 
 	// ============================================
+	// Hero Selection "Best Stats" (authored top-3 shown on the hero card).
+	// Leave entries as None to fall back to this hero's primary attack-category triple.
+	// ============================================
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|BestStats")
+	ET66StatType BestStat1 = ET66StatType::None;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|BestStats")
+	ET66StatType BestStat2 = ET66StatType::None;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|BestStats")
+	ET66StatType BestStat3 = ET66StatType::None;
+
+	// ============================================
 	// Generic Base Stats (leveled up via RNG)
 	// ============================================
 
@@ -262,41 +368,42 @@ struct T66_API FHeroData : public FTableRowBase
 	int32 BaseSpeed = 1;
 
 	// ============================================
-	// Deprecated per-level gain ranges retained for Heroes.csv/DataTable compatibility.
+	// Per-level fixed gains. Min/Max remain in the schema for Heroes.csv/DataTable compatibility;
+	// live hero rows set both values equal.
 	// ============================================
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlDmgMin = 0.5f;
+	float LvlDmgMin = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlDmgMax = 1.0f;
+	float LvlDmgMax = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlAtkSpdMin = 0.2f;
+	float LvlAtkSpdMin = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlAtkSpdMax = 0.4f;
+	float LvlAtkSpdMax = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlAtkScaleMin = 0.2f;
+	float LvlAtkScaleMin = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlAtkScaleMax = 0.4f;
+	float LvlAtkScaleMax = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlAccuracyMin = 0.2f;
+	float LvlAccuracyMin = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlAccuracyMax = 0.4f;
+	float LvlAccuracyMax = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlArmorMin = 0.2f;
+	float LvlArmorMin = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlArmorMax = 0.4f;
+	float LvlArmorMax = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlEvasionMin = 0.2f;
+	float LvlEvasionMin = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlEvasionMax = 0.4f;
+	float LvlEvasionMax = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlLuckMin = 0.2f;
+	float LvlLuckMin = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlLuckMax = 0.4f;
+	float LvlLuckMax = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlSpeedMin = 0.2f;
+	float LvlSpeedMin = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|LevelGains")
-	float LvlSpeedMax = 0.4f;
+	float LvlSpeedMax = 2.0f;
 
 	// ============================================
 	// Category-Specific Base Stats (all 4 categories; boosted by items)
@@ -753,7 +860,7 @@ struct T66_API FT66HeroStatGainRange
 	}
 };
 
-/** Deprecated per-level gain ranges retained for hero row compatibility. */
+/** Per-level fixed gains; Min/Max remain for hero row compatibility and are equal in live data. */
 USTRUCT(BlueprintType)
 struct T66_API FT66HeroPerLevelStatGains
 {
@@ -914,116 +1021,25 @@ enum class ET66ItemEffectType : uint8
 	BonusLuckFlat UMETA(DisplayName = "BonusLuckFlat"),
 };
 
-/** Foundational hero stats that items can roll as their primary stat line (Line 1). Special is reward-only/non-stat. */
-UENUM(BlueprintType)
-enum class ET66HeroStatType : uint8
-{
-	Damage UMETA(DisplayName = "Damage"),
-	AttackSpeed UMETA(DisplayName = "AttackSpeed"),
-	AttackScale UMETA(DisplayName = "AttackScale"),
-	Armor UMETA(DisplayName = "Armor"),
-	Evasion UMETA(DisplayName = "Evasion"),
-	Luck UMETA(DisplayName = "Luck"),
-	Speed UMETA(DisplayName = "Speed"),
-	/** Appended values preserve serialized enum values for existing save data and data tables. */
-	Accuracy UMETA(DisplayName = "Accuracy"),
-	Special UMETA(DisplayName = "Special"),
-};
 
-/**
- * Secondary stat types (Line 2 of items).
- * Each item template maps to exactly one secondary stat. The multiplier is derived from rarity.
- */
-UENUM(BlueprintType)
-enum class ET66SecondaryStatType : uint8
+FORCEINLINE bool T66IsDeprecatedStatType(ET66StatType StatType)
 {
-	None UMETA(DisplayName = "None"),
-	// Category Damage (4)
-	AoeDamage UMETA(DisplayName = "AOE Damage"),
-	BounceDamage UMETA(DisplayName = "Bounce Damage"),
-	PierceDamage UMETA(DisplayName = "Pierce Damage"),
-	DotDamage UMETA(DisplayName = "DOT Damage"),
-	// Category Speed (4)
-	AoeSpeed UMETA(DisplayName = "AOE Speed"),
-	BounceSpeed UMETA(DisplayName = "Bounce Speed"),
-	PierceSpeed UMETA(DisplayName = "Pierce Speed"),
-	DotSpeed UMETA(DisplayName = "DOT Speed"),
-	// Category Scale (4)
-	AoeScale UMETA(DisplayName = "AOE Scale"),
-	BounceScale UMETA(DisplayName = "Bounce Scale"),
-	PierceScale UMETA(DisplayName = "Pierce Scale"),
-	DotScale UMETA(DisplayName = "DOT Scale"),
-	// Crit / headshot (2)
-	CritDamage UMETA(DisplayName = "Crit Damage"),
-	CritChance UMETA(DisplayName = "Crit Chance"),
-	// Range-conditional (3)
-	CloseRangeDamage UMETA(DisplayName = "Close Range Damage"),
-	LongRangeDamage UMETA(DisplayName = "Long Range Damage"),
-	AttackRange UMETA(DisplayName = "Attack Range"),
-	// Armor-defensive (4)
-	Taunt UMETA(DisplayName = "Taunt Chance"),
-	ReflectDamage UMETA(DisplayName = "Reflect Chance"),
-	HpRegen UMETA(DisplayName = "HP Regen"),
-	Crush UMETA(DisplayName = "Crush Chance"),
-	// Evasion-offensive (4)
-	Invisibility UMETA(DisplayName = "Invisibility Chance"),
-	CounterAttack UMETA(DisplayName = "Counter Chance"),
-	LifeSteal UMETA(DisplayName = "Life Steal"),
-	Assassinate UMETA(DisplayName = "Assassinate Chance"),
-	// Luck-world live (5) + compatibility (2)
-	SpinWheel UMETA(DisplayName = "Spin Wheel"),
-	Goblin UMETA(Hidden),
-	Leprechaun UMETA(Hidden),
-	TreasureChest UMETA(DisplayName = "Loot Chest"),
-	Fountain UMETA(Hidden),
-	Cheating UMETA(DisplayName = "Cheating"),
-	Stealing UMETA(DisplayName = "Stealing"),
-	// Speed (1)
-	MovementSpeed UMETA(DisplayName = "Movement Speed"),
-	// Luck-world (crate rewards)
-	LootCrate UMETA(DisplayName = "Loot Crate"),
-	// Defensive item-only bonuses that scale from their parent primary stat.
-	DamageReduction UMETA(DisplayName = "Damage Reduction"),
-	EvasionChance UMETA(DisplayName = "Dodge Chance"),
-	Alchemy UMETA(DisplayName = "Alchemy"),
-	/** Appended to preserve serialized enum values for existing save data and data tables. */
-	Accuracy UMETA(DisplayName = "Accuracy"),
-	Execute UMETA(DisplayName = "Execute Chance"),
-	LootBag UMETA(DisplayName = "Loot Bag"),
-	LootWheel UMETA(DisplayName = "Loot Wheel"),
-	VendorToken UMETA(DisplayName = "Vendor Token"),
-	HeadshotChance UMETA(DisplayName = "Headshot Chance"),
-	FirePower UMETA(DisplayName = "Fire Power"),
-	IcePower UMETA(DisplayName = "Ice Power"),
-	ElectricityPower UMETA(DisplayName = "Electricity Power"),
-	NaturePower UMETA(DisplayName = "Nature Power"),
-	InteractableLuck UMETA(DisplayName = "Interactable Luck"),
-	StealingLuck UMETA(DisplayName = "Stealing Luck"),
-	GamblingLuck UMETA(DisplayName = "Gambling Luck"),
-	ProcLuck UMETA(DisplayName = "Proc Luck"),
-};
-
-FORCEINLINE bool T66IsDeprecatedSecondaryStatType(ET66SecondaryStatType StatType)
-{
-	return StatType == ET66SecondaryStatType::CritDamage
-		|| StatType == ET66SecondaryStatType::Goblin
-		|| StatType == ET66SecondaryStatType::Leprechaun
-		|| StatType == ET66SecondaryStatType::Fountain
-		|| StatType == ET66SecondaryStatType::CloseRangeDamage
-		|| StatType == ET66SecondaryStatType::LongRangeDamage
-		|| StatType == ET66SecondaryStatType::SpinWheel
-		|| StatType == ET66SecondaryStatType::MovementSpeed
-		|| StatType == ET66SecondaryStatType::HpRegen
-		|| StatType == ET66SecondaryStatType::LifeSteal
-		|| StatType == ET66SecondaryStatType::Alchemy
-		|| StatType == ET66SecondaryStatType::Accuracy
-		|| StatType == ET66SecondaryStatType::Cheating
-		|| StatType == ET66SecondaryStatType::Stealing
-		|| StatType == ET66SecondaryStatType::TreasureChest
-		|| StatType == ET66SecondaryStatType::LootCrate
-		|| StatType == ET66SecondaryStatType::LootBag
-		|| StatType == ET66SecondaryStatType::LootWheel
-		|| StatType == ET66SecondaryStatType::VendorToken;
+	return StatType == ET66StatType::CritDamage
+		|| StatType == ET66StatType::Goblin
+		|| StatType == ET66StatType::Leprechaun
+		|| StatType == ET66StatType::Fountain
+		|| StatType == ET66StatType::CloseRangeDamage
+		|| StatType == ET66StatType::LongRangeDamage
+		|| StatType == ET66StatType::SpinWheel
+		|| StatType == ET66StatType::LifeSteal
+		|| StatType == ET66StatType::Alchemy
+		|| StatType == ET66StatType::Cheating
+		|| StatType == ET66StatType::Stealing
+		|| StatType == ET66StatType::TreasureChest
+		|| StatType == ET66StatType::LootCrate
+		|| StatType == ET66StatType::LootBag
+		|| StatType == ET66StatType::LootWheel
+		|| StatType == ET66StatType::VendorToken;
 }
 
 /** Element family used by the 4x4 idol grid and elemental-power scaling. */
@@ -1034,6 +1050,7 @@ enum class ET66IdolElement : uint8
 	Ice UMETA(DisplayName = "Ice"),
 	Electricity UMETA(DisplayName = "Electricity"),
 	Nature UMETA(DisplayName = "Nature"),
+	Wind UMETA(DisplayName = "Wind"),
 };
 
 /** Data-only delivery discriminator. Traveler delivery is reserved for the Foundation API adapter. */
@@ -1044,36 +1061,37 @@ enum class ET66IdolDelivery : uint8
 	Traveler UMETA(DisplayName = "Traveler"),
 };
 
-FORCEINLINE ET66SecondaryStatType T66GetElementPowerStatType(const ET66IdolElement Element)
+FORCEINLINE ET66StatType T66GetElementPowerStatType(const ET66IdolElement Element)
 {
 	switch (Element)
 	{
-	case ET66IdolElement::Fire:        return ET66SecondaryStatType::FirePower;
-	case ET66IdolElement::Ice:         return ET66SecondaryStatType::IcePower;
-	case ET66IdolElement::Electricity: return ET66SecondaryStatType::ElectricityPower;
-	case ET66IdolElement::Nature:      return ET66SecondaryStatType::NaturePower;
-	default:                           return ET66SecondaryStatType::FirePower;
+	case ET66IdolElement::Fire:        return ET66StatType::FirePower;
+	case ET66IdolElement::Ice:         return ET66StatType::IcePower;
+	case ET66IdolElement::Electricity: return ET66StatType::ElectricityPower;
+	case ET66IdolElement::Nature:      return ET66StatType::NaturePower;
+	case ET66IdolElement::Wind:        return ET66StatType::WindPower;
+	default:                           return ET66StatType::FirePower;
 	}
 }
 
-FORCEINLINE bool T66IsLiveSecondaryStatType(ET66SecondaryStatType StatType)
+FORCEINLINE bool T66IsLiveStatType(ET66StatType StatType)
 {
-	return StatType != ET66SecondaryStatType::None && !T66IsDeprecatedSecondaryStatType(StatType);
+	return StatType != ET66StatType::None && !T66IsDeprecatedStatType(StatType);
 }
 
-FORCEINLINE bool T66IsAccuracyFamilySecondaryStatType(ET66SecondaryStatType StatType)
+FORCEINLINE bool T66IsAccuracyFamilyStatType(ET66StatType StatType)
 {
-	return StatType == ET66SecondaryStatType::CritChance
-		|| StatType == ET66SecondaryStatType::HeadshotChance
-		|| StatType == ET66SecondaryStatType::AttackRange
-		|| StatType == ET66SecondaryStatType::Execute;
+	return StatType == ET66StatType::CritChance
+		|| StatType == ET66StatType::HeadshotChance
+		|| StatType == ET66StatType::AttackRange
+		|| StatType == ET66StatType::Execute;
 }
 
-FORCEINLINE ET66HeroStatType T66ResolveEffectivePrimaryStatType(ET66HeroStatType PrimaryStatType, ET66SecondaryStatType SecondaryStatType)
+FORCEINLINE ET66HeroStatType T66ResolveEffectiveBaseStatType(ET66HeroStatType BaseStatType, ET66StatType StatType)
 {
-	return T66IsAccuracyFamilySecondaryStatType(SecondaryStatType)
+	return T66IsAccuracyFamilyStatType(StatType)
 		? ET66HeroStatType::Accuracy
-		: PrimaryStatType;
+		: BaseStatType;
 }
 
 UENUM(BlueprintType)
@@ -1122,11 +1140,11 @@ struct T66_API FItemData : public FTableRowBase
 
 	/** Line 1: Primary stat this item boosts (additive flat bonus, rolled at drop time), or Special for reward-only/non-stat templates. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	ET66HeroStatType PrimaryStatType = ET66HeroStatType::Damage;
+	ET66HeroStatType BaseStatType = ET66HeroStatType::Damage;
 
 	/** Line 2: Secondary effect provided by this item (multiplied by rarity multiplier). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
-	ET66SecondaryStatType SecondaryStatType = ET66SecondaryStatType::None;
+	ET66StatType StatType = ET66StatType::None;
 
 	/** Base buy price in gold (scaled by rarity multiplier at shop time). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Economy")
@@ -1157,7 +1175,7 @@ struct T66_API FItemData : public FTableRowBase
 		}
 	}
 
-	static int32 GetFlatSecondaryStatBonus(ET66ItemRarity Rarity)
+	static int32 GetFlatStatBonus(ET66ItemRarity Rarity)
 	{
 		int32 OutMin = 1;
 		int32 OutMax = 1;
@@ -1267,7 +1285,7 @@ struct T66_API FT66InventorySlot
 
 	/** Optional runtime override for the flat secondary stat reward on this slot. <= 0 uses the rarity default. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
-	int32 SecondaryStatBonusOverride = 0;
+	int32 StatBonusOverride = 0;
 
 	/** Optional runtime override for Line 2 multiplier. <= 0 means use the default rarity multiplier. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory")
@@ -1281,25 +1299,25 @@ struct T66_API FT66InventorySlot
 		: ItemTemplateID(NAME_None)
 		, Rarity(ET66ItemRarity::Black)
 		, Line1RolledValue(1)
-		, SecondaryStatBonusOverride(0)
+		, StatBonusOverride(0)
 		, Line2MultiplierOverride(0.f)
 		, RollSeed(0)
 	{}
 
-	FT66InventorySlot(FName InTemplateID, ET66ItemRarity InRarity, int32 InRolledValue, float InLine2MultiplierOverride = 0.f, int32 InSecondaryStatBonusOverride = 0, int32 InRollSeed = 0)
+	FT66InventorySlot(FName InTemplateID, ET66ItemRarity InRarity, int32 InRolledValue, float InLine2MultiplierOverride = 0.f, int32 InStatBonusOverride = 0, int32 InRollSeed = 0)
 		: ItemTemplateID(InTemplateID)
 		, Rarity(InRarity)
 		, Line1RolledValue(InRolledValue)
-		, SecondaryStatBonusOverride(InSecondaryStatBonusOverride)
+		, StatBonusOverride(InStatBonusOverride)
 		, Line2MultiplierOverride(InLine2MultiplierOverride)
 		, RollSeed(InRollSeed)
 	{}
 
 	bool IsValid() const { return !ItemTemplateID.IsNone(); }
 
-	int32 GetSecondaryStatBonusValue() const
+	int32 GetStatBonusValue() const
 	{
-		return SecondaryStatBonusOverride > 0 ? SecondaryStatBonusOverride : FItemData::GetFlatSecondaryStatBonus(Rarity);
+		return StatBonusOverride > 0 ? StatBonusOverride : FItemData::GetFlatStatBonus(Rarity);
 	}
 
 	/** Get the Line 2 multiplier for this slot's rarity. */
@@ -2213,7 +2231,7 @@ struct T66_API FUniqueEnemyData : public FTableRowBase
  * - WalkAnimation: looping walk animation used while moving
  * - IdleAnimation: looping idle/stand animation used when stationary and in selection previews
  * - JumpAnimation: one-shot jump animation used when the player jumps
- * - RollAnimation: one-shot forward roll animation
+ * - LeapAnimation: one-shot forward leap animation
  * - MeshRelative*: applied directly to the target component
  */
 USTRUCT(BlueprintType)
@@ -2249,9 +2267,9 @@ struct T66_API FT66CharacterVisualRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	TSoftObjectPtr<UAnimationAsset> JumpAnimation;
 
-	/** Roll animation (one-shot). Used when the player triggers forward roll. */
+	/** Leap animation (one-shot). Used when the player triggers forward leap. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
-	TSoftObjectPtr<UAnimationAsset> RollAnimation;
+	TSoftObjectPtr<UAnimationAsset> LeapAnimation;
 
 	/** Relative location applied to the target mesh component. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
@@ -2830,6 +2848,10 @@ struct T66_API FSkinData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FText DisplayName;
 
+	/** Short description shown in UI. Skin rows no longer carry portrait art. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity", meta = (MultiLine = true))
+	FText Description;
+
 	/** Hero or Companion ID this skin belongs to */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	FName OwnerID;
@@ -2849,14 +2871,6 @@ struct T66_API FSkinData : public FTableRowBase
 	/** Whether this is the default skin (always owned) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
 	bool bIsDefault = false;
-
-	/** Optional portrait override for this skin. Falls back to the owning entity portrait when unset. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSoftObjectPtr<UTexture2D> Portrait;
-
-	/** Optional selection/info portrait override for this skin. Falls back to Portrait or the owning entity selection portrait when unset. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
-	TSoftObjectPtr<UTexture2D> SelectionPortrait;
 
 	FSkinData()
 		: SkinID(NAME_None)

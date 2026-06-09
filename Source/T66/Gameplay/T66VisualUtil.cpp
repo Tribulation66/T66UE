@@ -22,22 +22,27 @@ static const TCHAR* T66TowerFloorTagPrefix = TEXT("T66_TowerFloor_");
 
 static UMaterialInterface* GetActorUnlitMaterial()
 {
-	static TObjectPtr<UMaterialInterface> Cached = nullptr;
-	if (!Cached)
+	// Flat-color visuals are instances of the ONE master (white texture x Tint color), lit by
+	// the single rig — the legacy M_GLB_Unlit base is superseded.
+	// WEAK cache + reload: a raw static TObjectPtr dangles when map-transition GC collects the
+	// material between worlds (hub -> gameplay crashed exactly there); TWeakObjectPtr detects
+	// the collect and reloads instead of dereferencing freed memory.
+	static TWeakObjectPtr<UMaterialInterface> Cached;
+	if (!Cached.IsValid())
 	{
-		Cached = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_GLB_Unlit.M_GLB_Unlit"));
+		Cached = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Materials/M_FriendSlop_FallGuys.M_FriendSlop_FallGuys"));
 	}
 	return Cached.Get();
 }
 
 static UTexture* GetWhiteFallbackTexture()
 {
-	static TObjectPtr<UTexture> Cached = nullptr;
-	if (!Cached)
+	static TWeakObjectPtr<UTexture> Cached;
+	if (!Cached.IsValid())
 	{
 		Cached = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/WhiteSquareTexture.WhiteSquareTexture"));
 	}
-	if (!Cached)
+	if (!Cached.IsValid())
 	{
 		Cached = LoadObject<UTexture>(nullptr, TEXT("/Engine/EngineResources/DefaultTexture.DefaultTexture"));
 	}

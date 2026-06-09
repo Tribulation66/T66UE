@@ -339,7 +339,8 @@ void AT66PlayerController::SetupInputComponent()
 		// Zoom (scroll wheel, game world only)
 		InputComponent->BindAxis(TEXT("Zoom"), this, &AT66PlayerController::HandleZoom);
 
-		// Roll (default: LeftShift; configured in DefaultInput.ini)
+		// Leap (default: LeftShift; configured in DefaultInput.ini). Keep Roll as a migration alias.
+		InputComponent->BindAction(TEXT("Leap"), IE_Pressed, this, &AT66PlayerController::HandleLeapPressed);
 		InputComponent->BindAction(TEXT("Roll"), IE_Pressed, this, &AT66PlayerController::HandleRollPressed);
 		
 		// Jump (Space)

@@ -1,0 +1,10 @@
+/Game/World/LootBags/Black/SM_LootBag_Black
+/Game/World/LootBags/Black/SM_LootBag_Black_QuadRetro
+/Game/World/LootBags/Red/SM_LootBag_Red
+/Game/World/LootBags/Red/SM_LootBag_Red_QuadRetro
+/Game/World/LootBags/Shared/Material_0
+/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_1
+/Game/World/LootBags/White/SM_LootBag_White
+/Game/World/LootBags/White/SM_LootBag_White_QuadRetro
+/Game/World/LootBags/Yellow/SM_LootBag_Yellow
+/Game/World/LootBags/Yellow/SM_LootBag_Yellow_QuadRetro

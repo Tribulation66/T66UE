@@ -2,6 +2,9 @@
 
 #include "Core/RunState/T66RunStateSubsystem_Private.h"
 
+#include "Core/T66AudioSubsystem.h"
+#include "Core/T66RunSaveGame.h"
+#include "Core/T66SmartLootTuningConfig.h"
 #include "Gameplay/T66WorldSystemsAPI.h"
 #include "HAL/IConsoleManager.h"
 
@@ -57,6 +60,22 @@ namespace
 	ET66ItemRarity T66_RollShopSlotRarity(FRandomStream& Rng)
 	{
 		return UT66RunStateSubsystem::RollShopSlotRarity(Rng);
+	}
+
+	int32 T66_GetInventoryRarityDisplayRank(const ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::White:
+			return 0;
+		case ET66ItemRarity::Yellow:
+			return 1;
+		case ET66ItemRarity::Red:
+			return 2;
+		case ET66ItemRarity::Black:
+		default:
+			return 3;
+		}
 	}
 
 	void T66RunShopWeightedOddsProofCommand(const TArray<FString>& Args, UWorld* World)
@@ -162,10 +181,155 @@ namespace
 		}
 	}
 
+	void T66RunSmartLootBiasProofCommand(const TArray<FString>& Args, UWorld* World)
+	{
+		(void)Args;
+
+		UT66GameInstance* GI = World ? Cast<UT66GameInstance>(World->GetGameInstance()) : nullptr;
+		UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+		UT66IdolManagerSubsystem* IdolManager = GI ? GI->GetSubsystem<UT66IdolManagerSubsystem>() : nullptr;
+		if (!GI || !RunState || !IdolManager)
+		{
+			UE_LOG(LogT66ShopProof, Warning, TEXT("[T66Proof][SmartLootBias] Result=FAIL Reason=MissingRuntime GI=%d RunState=%d IdolManager=%d"),
+				GI ? 1 : 0,
+				RunState ? 1 : 0,
+				IdolManager ? 1 : 0);
+			return;
+		}
+
+		const TArray<FT66InventorySlot> SavedInventory = RunState->GetInventorySlots();
+		const TArray<FName> SavedIdols = IdolManager->GetEquippedIdols();
+		const TArray<uint8> SavedIdolTiers = IdolManager->GetEquippedIdolTierValues();
+		const ET66Difficulty SavedDifficulty = GI->SelectedDifficulty;
+		FT66SavedRunSnapshot SavedRunSnapshot;
+		RunState->ExportSavedRunSnapshot(SavedRunSnapshot);
+
+		auto RestoreProofState = [RunState, IdolManager, SavedInventory, SavedIdols, SavedIdolTiers, SavedDifficulty, SavedRunSnapshot]()
+		{
+			if (SavedRunSnapshot.bValid)
+			{
+				RunState->BeginLoadedRun(SavedRunSnapshot);
+			}
+			else
+			{
+				RunState->RestoreInventoryFromBackroomsSnapshot(SavedInventory);
+			}
+			IdolManager->RestoreState(SavedIdols, SavedIdolTiers, SavedDifficulty);
+		};
+
+		RunState->ClearInventory();
+		IdolManager->ClearEquippedIdols();
+		const float NeutralAoeDamageWeight = GI->GetSmartLootItemTemplateWeight(FName(TEXT("Item_AoeDamage")));
+		const float NeutralCritWeight = GI->GetSmartLootItemTemplateWeight(FName(TEXT("Item_CritChance")));
+
+		RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_CritChance")), ET66ItemRarity::Black, 1));
+		RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_AoeDamage")), ET66ItemRarity::White, 27));
+		RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_PierceDamage")), ET66ItemRarity::Red, 3));
+
+		TArray<int32> DisplayOrder;
+		RunState->BuildInventoryDisplayOrderByRarity(DisplayOrder);
+		const TArray<FT66InventorySlot>& InventorySlots = RunState->GetInventorySlots();
+		const bool bSortedByRarity =
+			DisplayOrder.Num() == 3
+			&& InventorySlots.IsValidIndex(DisplayOrder[0])
+			&& InventorySlots.IsValidIndex(DisplayOrder[1])
+			&& InventorySlots.IsValidIndex(DisplayOrder[2])
+			&& InventorySlots[DisplayOrder[0]].Rarity == ET66ItemRarity::White
+			&& InventorySlots[DisplayOrder[1]].Rarity == ET66ItemRarity::Red
+			&& InventorySlots[DisplayOrder[2]].Rarity == ET66ItemRarity::Black;
+
+		const int32 DisplaySellCanonicalIndex = bSortedByRarity ? DisplayOrder[0] : INDEX_NONE;
+		const FName DisplaySellExpectedItem = InventorySlots.IsValidIndex(DisplaySellCanonicalIndex)
+			? InventorySlots[DisplaySellCanonicalIndex].ItemTemplateID
+			: NAME_None;
+		const int32 InventoryCountBeforeDisplaySell = InventorySlots.Num();
+		const bool bDisplaySellSucceeded = DisplaySellCanonicalIndex != INDEX_NONE && RunState->SellInventoryItemAt(DisplaySellCanonicalIndex);
+		const TArray<FT66InventorySlot>& InventoryAfterDisplaySell = RunState->GetInventorySlots();
+		bool bDisplaySellRemovedExpectedSlot =
+			bDisplaySellSucceeded
+			&& !DisplaySellExpectedItem.IsNone()
+			&& InventoryAfterDisplaySell.Num() == InventoryCountBeforeDisplaySell - 1;
+		for (const FT66InventorySlot& SlotAfterSell : InventoryAfterDisplaySell)
+		{
+			if (SlotAfterSell.ItemTemplateID == DisplaySellExpectedItem)
+			{
+				bDisplaySellRemovedExpectedSlot = false;
+				break;
+			}
+		}
+
+		RunState->ClearInventory();
+		RunState->AddItemSlot(FT66InventorySlot(FName(TEXT("Item_AoeDamage")), ET66ItemRarity::Yellow, 9));
+		const float AoeItemSelfWeight = GI->GetSmartLootItemTemplateWeight(FName(TEXT("Item_AoeDamage")));
+		const float AoeItemSiblingWeight = GI->GetSmartLootItemTemplateWeight(FName(TEXT("Item_AoeSpeed")));
+		const float AoeItemOffBuildWeight = GI->GetSmartLootItemTemplateWeight(FName(TEXT("Item_CritChance")));
+
+		RunState->ClearInventory();
+		TArray<FName> ProofIdols;
+		ProofIdols.Init(NAME_None, UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
+		TArray<uint8> ProofIdolTiers;
+		ProofIdolTiers.Init(0, UT66IdolManagerSubsystem::MaxEquippedIdolSlots);
+		ProofIdols[0] = FName(TEXT("Idol_Fire_AOE"));
+		ProofIdolTiers[0] = 1;
+		IdolManager->RestoreState(ProofIdols, ProofIdolTiers, SavedDifficulty);
+		const float AoeIdolSiblingWeight = GI->GetSmartLootItemTemplateWeight(FName(TEXT("Item_AoeSpeed")));
+		const float AoeIdolOffBuildWeight = GI->GetSmartLootItemTemplateWeight(FName(TEXT("Item_CritChance")));
+
+		const bool bItemBias =
+			AoeItemSelfWeight > NeutralAoeDamageWeight
+			&& AoeItemSelfWeight > AoeItemOffBuildWeight
+			&& AoeItemSiblingWeight > AoeItemOffBuildWeight;
+		const bool bIdolBias = AoeIdolSiblingWeight > AoeIdolOffBuildWeight;
+		const bool bNeutralUniform = FMath::IsNearlyEqual(NeutralAoeDamageWeight, NeutralCritWeight, 0.001f);
+		const bool bPass = bNeutralUniform && bItemBias && bIdolBias && bSortedByRarity && bDisplaySellRemovedExpectedSlot;
+
+		RestoreProofState();
+
+		if (bPass)
+		{
+			UE_LOG(
+				LogT66ShopProof,
+				Display,
+				TEXT("[T66Proof][SmartLootBias] Result=PASS NeutralAoe=%.3f NeutralCrit=%.3f ItemSelf=%.3f ItemSibling=%.3f ItemOff=%.3f IdolSibling=%.3f IdolOff=%.3f Sorted=%d SellRemap=%d SoldItem=%s"),
+				NeutralAoeDamageWeight,
+				NeutralCritWeight,
+				AoeItemSelfWeight,
+				AoeItemSiblingWeight,
+				AoeItemOffBuildWeight,
+				AoeIdolSiblingWeight,
+				AoeIdolOffBuildWeight,
+				bSortedByRarity ? 1 : 0,
+				bDisplaySellRemovedExpectedSlot ? 1 : 0,
+				*DisplaySellExpectedItem.ToString());
+		}
+		else
+		{
+			UE_LOG(
+				LogT66ShopProof,
+				Warning,
+				TEXT("[T66Proof][SmartLootBias] Result=FAIL NeutralAoe=%.3f NeutralCrit=%.3f ItemSelf=%.3f ItemSibling=%.3f ItemOff=%.3f IdolSibling=%.3f IdolOff=%.3f Sorted=%d SellRemap=%d SoldItem=%s"),
+				NeutralAoeDamageWeight,
+				NeutralCritWeight,
+				AoeItemSelfWeight,
+				AoeItemSiblingWeight,
+				AoeItemOffBuildWeight,
+				AoeIdolSiblingWeight,
+				AoeIdolOffBuildWeight,
+				bSortedByRarity ? 1 : 0,
+				bDisplaySellRemovedExpectedSlot ? 1 : 0,
+				*DisplaySellExpectedItem.ToString());
+		}
+	}
+
 	FAutoConsoleCommandWithWorldAndArgs T66ShopWeightedOddsProofCommand(
 		TEXT("T66.Proof.ShopWeightedOdds"),
 		TEXT("Runs a deterministic shop rarity weighted-odds proof. Args: <Samples> <Seed>."),
 		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66RunShopWeightedOddsProofCommand));
+
+	FAutoConsoleCommandWithWorldAndArgs T66SmartLootBiasProofCommand(
+		TEXT("T66.Proof.SmartLootBias"),
+		TEXT("Runs a deterministic smart-loot bias and inventory rarity-sort proof."),
+		FConsoleCommandWithWorldAndArgsDelegate::CreateStatic(&T66RunSmartLootBiasProofCommand));
 }
 
 const FName UT66RunStateSubsystem::BackroomsQuickReviveItemID(TEXT("Item_BackroomsQuickRevive"));
@@ -264,7 +428,7 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 				continue;
 			}
 
-			if (!T66_IsRewardOnlySpecialItem(ItemID) && T66IsLiveSecondaryStatType(ItemData.SecondaryStatType))
+			if (!T66_IsRewardOnlySpecialItem(ItemID) && T66IsLiveStatType(ItemData.StatType))
 			{
 				TemplatePool.Add(ItemID);
 			}
@@ -275,7 +439,7 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 		FItemData ExecuteItemData;
 		const FName ExecuteItemID(TEXT("Item_Execute"));
 		if (GI->GetItemData(ExecuteItemID, ExecuteItemData)
-			&& T66IsLiveSecondaryStatType(ExecuteItemData.SecondaryStatType)
+			&& T66IsLiveStatType(ExecuteItemData.StatType)
 			&& !TemplatePool.Contains(ExecuteItemID))
 		{
 			TemplatePool.Add(ExecuteItemID);
@@ -302,15 +466,19 @@ void UT66RunStateSubsystem::EnsureShopStockForCurrentStage()
 	}
 	FRandomStream Rng(Seed);
 
-	// Smart reroll: weight = 1/(1 + SeenCount*Decay), floor 0.05. Build weights and pick unique cards.
-	constexpr float DecayFactor = 2.0f;
-	constexpr float WeightFloor = 0.05f;
+	// Smart reroll: build weight from current inventory/idols, then decay already-seen shop cards.
+	UT66SmartLootTuningConfig SmartLootTuning;
+	SmartLootTuning.LoadFromConfig();
 	TArray<float> Weights;
 	Weights.SetNumUninitialized(TemplatePool.Num());
 	for (int32 TemplateIndex = 0; TemplateIndex < TemplatePool.Num(); ++TemplateIndex)
 	{
 		const int32 Seen = ShopSeenCounts.FindRef(TemplatePool[TemplateIndex]);
-		Weights[TemplateIndex] = FMath::Max(WeightFloor, 1.0f / (1.0f + static_cast<float>(Seen) * DecayFactor));
+		const float BuildWeight = GI ? GI->GetSmartLootItemTemplateWeight(TemplatePool[TemplateIndex]) : FMath::Max(0.01f, SmartLootTuning.BaseCandidateWeight);
+		const float SeenWeight = FMath::Max(
+			SmartLootTuning.ShopRerollSeenWeightFloor,
+			1.0f / (1.0f + static_cast<float>(Seen) * SmartLootTuning.ShopRerollSeenDecayFactor));
+		Weights[TemplateIndex] = FMath::Max(0.01f, BuildWeight * SeenWeight);
 	}
 
 	for (int32 SlotIndex = 0; SlotIndex < ShopDisplaySlotCount; ++SlotIndex)
@@ -429,11 +597,16 @@ bool UT66RunStateSubsystem::TryBuyShopStockSlot(int32 Index)
 	if (!GI || !GI->GetItemData(Slot.ItemTemplateID, D)) return false;
 	const int32 BuyPrice = GetBuyGoldForShopStockSlot(Index);
 	if (BuyPrice <= 0) return false;
-	if (!TrySpendGold(BuyPrice)) return false;
+	if (!TrySpendGold(BuyPrice))
+	{
+		UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Shop.Deny")));
+		return false;
+	}
 
 	AddItemSlot(Slot);
 	ShopStockSold[Index] = true;
 	bBoughtFromShopThisStage = true;
+	UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Shop.Buy")));
 	AddStructuredEvent(ET66RunEventType::ItemAcquired, FString::Printf(TEXT("ShopPurchase=%s"), *Slot.ItemTemplateID.ToString()));
 	ShopChanged.Broadcast();
 	return true;
@@ -606,9 +779,14 @@ bool UT66RunStateSubsystem::TryBuybackSlot(int32 DisplayIndex)
 		BuyPrice = GetSellGoldForInventorySlot(Slot);
 	}
 	if (BuyPrice <= 0) BuyPrice = 1;
-	if (CurrentGold < BuyPrice) return false;
+	if (CurrentGold < BuyPrice)
+	{
+		UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Shop.Deny")));
+		return false;
+	}
 
 	CurrentGold -= BuyPrice;
+	UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Shop.Buy")));
 	BuybackPool.RemoveAt(PoolIndex);
 	AddItemSlot(Slot);
 	RecomputeItemDerivedStats();
@@ -789,6 +967,61 @@ int32 UT66RunStateSubsystem::PayDebt(int32 Amount)
 		bLoanSharkPending = false;
 	}
 	return Pay;
+}
+
+
+void UT66RunStateSubsystem::BuildInventoryDisplayOrderByRarity(TArray<int32>& OutInventoryIndices) const
+{
+	OutInventoryIndices.Reset();
+	OutInventoryIndices.Reserve(InventorySlots.Num());
+	for (int32 Index = 0; Index < InventorySlots.Num(); ++Index)
+	{
+		if (InventorySlots[Index].IsValid())
+		{
+			OutInventoryIndices.Add(Index);
+		}
+	}
+
+	OutInventoryIndices.StableSort([this](const int32 A, const int32 B)
+	{
+		if (!InventorySlots.IsValidIndex(A) || !InventorySlots.IsValidIndex(B))
+		{
+			return A < B;
+		}
+
+		const FT66InventorySlot& SlotA = InventorySlots[A];
+		const FT66InventorySlot& SlotB = InventorySlots[B];
+		const int32 RankA = T66_GetInventoryRarityDisplayRank(SlotA.Rarity);
+		const int32 RankB = T66_GetInventoryRarityDisplayRank(SlotB.Rarity);
+		if (RankA != RankB)
+		{
+			return RankA < RankB;
+		}
+
+		const int32 NameCompare = SlotA.ItemTemplateID.ToString().Compare(SlotB.ItemTemplateID.ToString());
+		if (NameCompare != 0)
+		{
+			return NameCompare < 0;
+		}
+
+		return A < B;
+	});
+}
+
+
+void UT66RunStateSubsystem::GetInventorySlotsSortedByRarity(TArray<FT66InventorySlot>& OutInventorySlots) const
+{
+	TArray<int32> DisplayOrder;
+	BuildInventoryDisplayOrderByRarity(DisplayOrder);
+
+	OutInventorySlots.Reset(DisplayOrder.Num());
+	for (const int32 Index : DisplayOrder)
+	{
+		if (InventorySlots.IsValidIndex(Index))
+		{
+			OutInventorySlots.Add(InventorySlots[Index]);
+		}
+	}
 }
 
 
@@ -1097,6 +1330,7 @@ bool UT66RunStateSubsystem::SellInventoryItemAt(int32 InventoryIndex)
 	const int32 SellGold = GetSellGoldForInventorySlot(Slot);
 
 	CurrentGold += SellGold;
+	UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Shop.Sell")));
 	BuybackPool.Add(Slot);
 	InventorySlots.RemoveAt(InventoryIndex);
 	RecomputeItemDerivedStats();
@@ -1279,7 +1513,7 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 {
 	// Reset all accumulators.
 	ItemStatBonuses = FT66HeroStatBonuses{};
-	ItemPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	ItemBaseStatBonusesPrecise = FT66HeroPreciseStatBlock{};
 	ItemPowerGivenPercent = 0.f;
 	BonusDamagePercent = 0.f;
 	BonusAttackSpeedPercent = 0.f;
@@ -1292,8 +1526,8 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 	ItemArmorBonus01 = 0.f;
 	ItemEvasionBonus01 = 0.f;
 	ItemBonusLuckFlat = 0;
-	SecondaryMultipliers.Reset();
-	ItemSecondaryStatBonusTenths.Reset();
+	StatMultipliers.Reset();
+	ItemStatBonusTenths.Reset();
 
 	UT66GameInstance* GI = Cast<UT66GameInstance>(GetGameInstance());
 	for (const FT66InventorySlot& Slot : InventorySlots)
@@ -1304,40 +1538,40 @@ void UT66RunStateSubsystem::RecomputeItemDerivedStats()
 		const bool bHasRow = (GI && GI->GetItemData(Slot.ItemTemplateID, D));
 		if (!bHasRow) continue;
 		if (T66_IsRewardOnlySpecialItem(Slot.ItemTemplateID)
-			|| D.SecondaryStatType == ET66SecondaryStatType::VendorToken)
+			|| D.StatType == ET66StatType::VendorToken)
 		{
 			continue;
 		}
-		if (D.PrimaryStatType == ET66HeroStatType::Special)
+		if (D.BaseStatType == ET66HeroStatType::Special)
 		{
 			continue;
 		}
 
 		// Items now only apply their secondary line. Primary growth comes from level-up and diplomas.
-		if (D.SecondaryStatType != ET66SecondaryStatType::None)
+		if (D.StatType != ET66StatType::None)
 		{
-			AddItemSecondaryStatBonusTenths(D.SecondaryStatType, WholeStatToTenths(Slot.GetSecondaryStatBonusValue()));
+			AddItemStatBonusTenths(D.StatType, WholeStatToTenths(Slot.GetStatBonusValue()));
 		}
 	}
 
-	ItemStatBonuses.Damage = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemPrimaryStatBonusesPrecise.DamageTenths);
-	ItemStatBonuses.AttackSpeed = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemPrimaryStatBonusesPrecise.AttackSpeedTenths);
-	ItemStatBonuses.AttackScale = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemPrimaryStatBonusesPrecise.AttackScaleTenths);
-	ItemStatBonuses.Accuracy = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemPrimaryStatBonusesPrecise.AccuracyTenths);
-	ItemStatBonuses.Armor = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemPrimaryStatBonusesPrecise.ArmorTenths);
-	ItemStatBonuses.Evasion = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemPrimaryStatBonusesPrecise.EvasionTenths);
-	ItemStatBonuses.Luck = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemPrimaryStatBonusesPrecise.LuckTenths);
+	ItemStatBonuses.Damage = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemBaseStatBonusesPrecise.DamageTenths);
+	ItemStatBonuses.AttackSpeed = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemBaseStatBonusesPrecise.AttackSpeedTenths);
+	ItemStatBonuses.AttackScale = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemBaseStatBonusesPrecise.AttackScaleTenths);
+	ItemStatBonuses.Accuracy = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemBaseStatBonusesPrecise.AccuracyTenths);
+	ItemStatBonuses.Armor = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemBaseStatBonusesPrecise.ArmorTenths);
+	ItemStatBonuses.Evasion = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemBaseStatBonusesPrecise.EvasionTenths);
+	ItemStatBonuses.Luck = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemBaseStatBonusesPrecise.LuckTenths);
 
-	ItemStatBonuses.PierceDmg = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::PierceDamage));
-	ItemStatBonuses.PierceAtkSpd = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::PierceSpeed));
-	ItemStatBonuses.PierceAtkScale = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::PierceScale));
-	ItemStatBonuses.BounceDmg = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::BounceDamage));
-	ItemStatBonuses.BounceAtkSpd = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::BounceSpeed));
-	ItemStatBonuses.BounceAtkScale = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::BounceScale));
-	ItemStatBonuses.AoeDmg = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::AoeDamage));
-	ItemStatBonuses.AoeAtkSpd = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::AoeSpeed));
-	ItemStatBonuses.AoeAtkScale = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::AoeScale));
-	ItemStatBonuses.DotDmg = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::DotDamage));
-	ItemStatBonuses.DotAtkSpd = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::DotSpeed));
-	ItemStatBonuses.DotAtkScale = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemSecondaryStatBonusTenths.FindRef(ET66SecondaryStatType::DotScale));
+	ItemStatBonuses.PierceDmg = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::PierceDamage));
+	ItemStatBonuses.PierceAtkSpd = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::PierceSpeed));
+	ItemStatBonuses.PierceAtkScale = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::PierceScale));
+	ItemStatBonuses.BounceDmg = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::BounceDamage));
+	ItemStatBonuses.BounceAtkSpd = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::BounceSpeed));
+	ItemStatBonuses.BounceAtkScale = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::BounceScale));
+	ItemStatBonuses.AoeDmg = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::AoeDamage));
+	ItemStatBonuses.AoeAtkSpd = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::AoeSpeed));
+	ItemStatBonuses.AoeAtkScale = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::AoeScale));
+	ItemStatBonuses.DotDmg = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::DotDamage));
+	ItemStatBonuses.DotAtkSpd = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::DotSpeed));
+	ItemStatBonuses.DotAtkScale = FT66HeroPreciseStatBlock::TenthsToDisplayStat(ItemStatBonusTenths.FindRef(ET66StatType::DotScale));
 }

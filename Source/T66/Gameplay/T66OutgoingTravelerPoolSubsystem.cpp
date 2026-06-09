@@ -57,23 +57,208 @@ namespace
 
 	const FT66TravelerVisualProfileSlot T66TravelerVisualProfileSlots[] =
 	{
-		{ TEXT("TravelerVisual.Fire.AOE"), 4 },
-		{ TEXT("TravelerVisual.Fire.Pierce"), 5 },
-		{ TEXT("TravelerVisual.Fire.Bounce"), 6 },
-		{ TEXT("TravelerVisual.Fire.DOT"), 7 },
-		{ TEXT("TravelerVisual.Ice.AOE"), 8 },
-		{ TEXT("TravelerVisual.Ice.Pierce"), 9 },
-		{ TEXT("TravelerVisual.Ice.Bounce"), 10 },
-		{ TEXT("TravelerVisual.Ice.DOT"), 11 },
-		{ TEXT("TravelerVisual.Electricity.AOE"), 12 },
-		{ TEXT("TravelerVisual.Electricity.Pierce"), 13 },
-		{ TEXT("TravelerVisual.Electricity.Bounce"), 14 },
-		{ TEXT("TravelerVisual.Electricity.DOT"), 15 },
-		{ TEXT("TravelerVisual.Nature.AOE"), 16 },
-		{ TEXT("TravelerVisual.Nature.Pierce"), 17 },
-		{ TEXT("TravelerVisual.Nature.Bounce"), 18 },
-		{ TEXT("TravelerVisual.Nature.DOT"), 19 }
+		{ TEXT("TravelerVisual.Fire.AOE"), 0 },
+		{ TEXT("TravelerVisual.Fire.Pierce"), 1 },
+		{ TEXT("TravelerVisual.Fire.Bounce"), 0 },
+		{ TEXT("TravelerVisual.Fire.DOT"), 1 },
+		{ TEXT("TravelerVisual.Ice.AOE"), 2 },
+		{ TEXT("TravelerVisual.Ice.Pierce"), 2 },
+		{ TEXT("TravelerVisual.Ice.Bounce"), 1 },
+		{ TEXT("TravelerVisual.Ice.DOT"), 0 },
+		{ TEXT("TravelerVisual.Electricity.AOE"), 0 },
+		{ TEXT("TravelerVisual.Electricity.Pierce"), 2 },
+		{ TEXT("TravelerVisual.Electricity.Bounce"), 3 },
+		{ TEXT("TravelerVisual.Electricity.DOT"), 0 },
+		{ TEXT("TravelerVisual.Nature.AOE"), 0 },
+		{ TEXT("TravelerVisual.Nature.Pierce"), 2 },
+		{ TEXT("TravelerVisual.Nature.Bounce"), 0 },
+		{ TEXT("TravelerVisual.Nature.DOT"), 0 },
+		{ TEXT("TravelerVisual.Wind.AOE"), 1 },
+		{ TEXT("TravelerVisual.Wind.Pierce"), 1 },
+		{ TEXT("TravelerVisual.Wind.Bounce"), 1 },
+		{ TEXT("TravelerVisual.Wind.DOT"), 1 }
 	};
+
+	struct FT66TravelerCarrierPartRecipe
+	{
+		ET66TemporaryProjectileShape Shape = ET66TemporaryProjectileShape::Sphere;
+		FVector LocalOffset = FVector::ZeroVector;
+		FRotator LocalRotation = FRotator::ZeroRotator;
+		FVector LocalScale = FVector::OneVector;
+		FLinearColor ColorMultiplier = FLinearColor::White;
+	};
+
+	struct FT66TravelerCarrierRecipe
+	{
+		const TCHAR* ProfileID = TEXT("");
+		const TCHAR* Signature = TEXT("");
+		int32 PartCount = 0;
+		FT66TravelerCarrierPartRecipe Parts[UT66OutgoingTravelerPoolSubsystem::MaxCarrierRecipeParts];
+	};
+
+	FT66TravelerCarrierPartRecipe T66CarrierPart(
+		const ET66TemporaryProjectileShape Shape,
+		const FVector& LocalOffset,
+		const FRotator& LocalRotation,
+		const FVector& LocalScale,
+		const FLinearColor& ColorMultiplier = FLinearColor::White)
+	{
+		FT66TravelerCarrierPartRecipe Part;
+		Part.Shape = Shape;
+		Part.LocalOffset = LocalOffset;
+		Part.LocalRotation = LocalRotation;
+		Part.LocalScale = LocalScale;
+		Part.ColorMultiplier = ColorMultiplier;
+		return Part;
+	}
+
+	const FT66TravelerCarrierRecipe T66TravelerCarrierRecipes[] =
+	{
+		{ TEXT("TravelerVisual.Fire.AOE"), TEXT("FireAOE.FireBomb.SphereConeEmbers"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector::ZeroVector, FRotator::ZeroRotator, FVector(0.74f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, 0.f, 32.f), FRotator::ZeroRotator, FVector(0.42f, 0.42f, 0.66f), FLinearColor(1.15f, 0.82f, 0.62f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-42.f, 30.f, -6.f), FRotator::ZeroRotator, FVector(0.26f), FLinearColor(1.0f, 0.62f, 0.42f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-42.f, -30.f, -6.f), FRotator::ZeroRotator, FVector(0.26f), FLinearColor(1.0f, 0.62f, 0.42f, 1.f)) } },
+		{ TEXT("TravelerVisual.Fire.Pierce"), TEXT("FirePierce.FireLance.ConeShaftEmbers"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(34.f, 0.f, 0.f), FRotator(-90.f, 0.f, 0.f), FVector(0.36f, 0.36f, 1.18f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-24.f, 0.f, 0.f), FRotator(0.f, 90.f, 0.f), FVector(0.22f, 0.22f, 0.86f), FLinearColor(0.82f, 0.58f, 0.48f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-6.f, 26.f, 0.f), FRotator::ZeroRotator, FVector(0.18f), FLinearColor(1.0f, 0.7f, 0.5f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-48.f, -22.f, 0.f), FRotator::ZeroRotator, FVector(0.16f), FLinearColor(1.0f, 0.7f, 0.5f, 1.f)) } },
+		{ TEXT("TravelerVisual.Fire.Bounce"), TEXT("FireBounce.SnappingEmberCluster.Staggered"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(26.f, 0.f, 0.f), FRotator::ZeroRotator, FVector(0.34f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-18.f, 26.f, 8.f), FRotator::ZeroRotator, FVector(0.26f), FLinearColor(1.0f, 0.66f, 0.44f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-26.f, -24.f, -8.f), FRotator::ZeroRotator, FVector(0.24f), FLinearColor(1.0f, 0.66f, 0.44f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cube, FVector(-2.f, 0.f, 0.f), FRotator(0.f, 45.f, 45.f), FVector(0.18f), FLinearColor(1.08f, 0.75f, 0.5f, 1.f)) } },
+		{ TEXT("TravelerVisual.Fire.DOT"), TEXT("FireDOT.FlameSeed.VerticalConeSparks"), 3, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector::ZeroVector, FRotator::ZeroRotator, FVector(0.42f, 0.42f, 0.92f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-28.f, 20.f, 14.f), FRotator::ZeroRotator, FVector(0.18f), FLinearColor(1.0f, 0.66f, 0.42f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-36.f, -18.f, -4.f), FRotator::ZeroRotator, FVector(0.16f), FLinearColor(1.0f, 0.66f, 0.42f, 1.f)) } },
+
+		{ TEXT("TravelerVisual.Ice.AOE"), TEXT("IceAOE.SnowflakePuck.DiscEdgeSpikes"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector::ZeroVector, FRotator(90.f, 0.f, 0.f), FVector(0.72f, 0.72f, 0.16f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, 38.f, 0.f), FRotator(0.f, 0.f, 90.f), FVector(0.20f, 0.20f, 0.48f), FLinearColor(0.82f, 1.12f, 1.18f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, -38.f, 0.f), FRotator(0.f, 0.f, -90.f), FVector(0.20f, 0.20f, 0.48f), FLinearColor(0.82f, 1.12f, 1.18f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(38.f, 0.f, 0.f), FRotator(-90.f, 0.f, 0.f), FVector(0.20f, 0.20f, 0.48f), FLinearColor(0.82f, 1.12f, 1.18f, 1.f)) } },
+		{ TEXT("TravelerVisual.Ice.Pierce"), TEXT("IcePierce.IcicleSpear.ThinShaftPoint"), 3, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-20.f, 0.f, 0.f), FRotator(0.f, 90.f, 0.f), FVector(0.16f, 0.16f, 1.08f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(46.f, 0.f, 0.f), FRotator(-90.f, 0.f, 0.f), FVector(0.24f, 0.24f, 0.64f), FLinearColor(0.88f, 1.15f, 1.2f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cube, FVector(-54.f, 0.f, 0.f), FRotator(0.f, 45.f, 45.f), FVector(0.22f), FLinearColor(0.8f, 1.08f, 1.15f, 1.f)) } },
+		{ TEXT("TravelerVisual.Ice.Bounce"), TEXT("IceBounce.ShardFan.TripleConeV"), 3, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(34.f, 0.f, 0.f), FRotator(-90.f, 0.f, 0.f), FVector(0.24f, 0.24f, 0.68f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(-8.f, 30.f, 2.f), FRotator(-90.f, 18.f, 18.f), FVector(0.18f, 0.18f, 0.52f), FLinearColor(0.82f, 1.12f, 1.18f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(-8.f, -30.f, -2.f), FRotator(-90.f, -18.f, -18.f), FVector(0.18f, 0.18f, 0.52f), FLinearColor(0.82f, 1.12f, 1.18f, 1.f)) } },
+		{ TEXT("TravelerVisual.Ice.DOT"), TEXT("IceDOT.FrostCapsule.SphereCrystalShell"), 3, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector::ZeroVector, FRotator::ZeroRotator, FVector(0.56f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cube, FVector(0.f, 0.f, 20.f), FRotator(0.f, 45.f, 45.f), FVector(0.34f), FLinearColor(0.88f, 1.16f, 1.22f, 0.82f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cube, FVector(0.f, 0.f, -20.f), FRotator(0.f, -45.f, 45.f), FVector(0.24f), FLinearColor(0.88f, 1.16f, 1.22f, 0.82f)) } },
+
+		{ TEXT("TravelerVisual.Electricity.AOE"), TEXT("ElectricityAOE.StormNode.CoreStrikeRods"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector::ZeroVector, FRotator::ZeroRotator, FVector(0.44f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(0.f, 0.f, 34.f), FRotator::ZeroRotator, FVector(0.10f, 0.10f, 0.72f), FLinearColor(1.12f, 1.0f, 1.18f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-18.f, 24.f, 0.f), FRotator(42.f, 0.f, 35.f), FVector(0.08f, 0.08f, 0.62f), FLinearColor(1.12f, 1.0f, 1.18f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-18.f, -24.f, 0.f), FRotator(-42.f, 0.f, -35.f), FVector(0.08f, 0.08f, 0.62f), FLinearColor(1.12f, 1.0f, 1.18f, 1.f)) } },
+		{ TEXT("TravelerVisual.Electricity.Pierce"), TEXT("ElectricityPierce.LightningBolt.SegmentedZig"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-34.f, -18.f, 0.f), FRotator(0.f, 62.f, 0.f), FVector(0.10f, 0.10f, 0.56f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(0.f, 18.f, 0.f), FRotator(0.f, -62.f, 0.f), FVector(0.10f, 0.10f, 0.56f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(34.f, -18.f, 0.f), FRotator(0.f, 62.f, 0.f), FVector(0.10f, 0.10f, 0.56f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cube, FVector(0.f, 0.f, 0.f), FRotator(0.f, 45.f, 45.f), FVector(0.18f), FLinearColor(1.16f, 1.f, 1.22f, 1.f)) } },
+		{ TEXT("TravelerVisual.Electricity.Bounce"), TEXT("ElectricityBounce.ChainSpark.DiamondEnds"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cube, FVector::ZeroVector, FRotator(0.f, 45.f, 45.f), FVector(0.30f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(34.f, 0.f, 0.f), FRotator(0.f, 90.f, 0.f), FVector(0.08f, 0.08f, 0.38f), FLinearColor(1.14f, 1.f, 1.2f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-34.f, 0.f, 0.f), FRotator(0.f, 90.f, 0.f), FVector(0.08f, 0.08f, 0.38f), FLinearColor(1.14f, 1.f, 1.2f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(0.f, 0.f, 24.f), FRotator::ZeroRotator, FVector(0.14f), FLinearColor(1.16f, 1.f, 1.2f, 1.f)) } },
+		{ TEXT("TravelerVisual.Electricity.DOT"), TEXT("ElectricityDOT.ShockCage.CrossingArcs"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector::ZeroVector, FRotator::ZeroRotator, FVector(0.30f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector::ZeroVector, FRotator(36.f, 0.f, 45.f), FVector(0.07f, 0.07f, 0.72f), FLinearColor(1.14f, 1.f, 1.22f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector::ZeroVector, FRotator(-36.f, 0.f, -45.f), FVector(0.07f, 0.07f, 0.72f), FLinearColor(1.14f, 1.f, 1.22f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector::ZeroVector, FRotator(0.f, 90.f, 0.f), FVector(0.06f, 0.06f, 0.58f), FLinearColor(1.14f, 1.f, 1.22f, 1.f)) } },
+
+		{ TEXT("TravelerVisual.Nature.AOE"), TEXT("NatureAOE.SeedPodBurst.RadialBranches"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector::ZeroVector, FRotator::ZeroRotator, FVector(0.42f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(32.f, 0.f, 0.f), FRotator(0.f, 90.f, 0.f), FVector(0.10f, 0.10f, 0.48f), FLinearColor(0.72f, 1.0f, 0.72f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-18.f, 26.f, 0.f), FRotator(0.f, -35.f, 0.f), FVector(0.08f, 0.08f, 0.42f), FLinearColor(0.72f, 1.0f, 0.72f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-18.f, -26.f, 0.f), FRotator(0.f, 35.f, 0.f), FVector(0.08f, 0.08f, 0.42f), FLinearColor(0.72f, 1.0f, 0.72f, 1.f)) } },
+		{ TEXT("TravelerVisual.Nature.Pierce"), TEXT("NaturePierce.GroundRoot.LowChainBulbs"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-34.f, 0.f, -18.f), FRotator(0.f, 90.f, 0.f), FVector(0.16f, 0.16f, 0.82f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(4.f, 0.f, -16.f), FRotator::ZeroRotator, FVector(0.20f), FLinearColor(0.82f, 1.0f, 0.74f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(42.f, 0.f, -14.f), FRotator::ZeroRotator, FVector(0.17f), FLinearColor(0.82f, 1.0f, 0.74f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(68.f, 0.f, -14.f), FRotator(-90.f, 0.f, 0.f), FVector(0.18f, 0.18f, 0.42f), FLinearColor(0.82f, 1.0f, 0.74f, 1.f)) } },
+		{ TEXT("TravelerVisual.Nature.Bounce"), TEXT("NatureBounce.SeedDart.PodPoint"), 3, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-10.f, 0.f, 0.f), FRotator::ZeroRotator, FVector(0.34f, 0.24f, 0.24f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(30.f, 0.f, 0.f), FRotator(-90.f, 0.f, 0.f), FVector(0.20f, 0.20f, 0.40f), FLinearColor(0.84f, 1.08f, 0.76f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-38.f, 0.f, 0.f), FRotator::ZeroRotator, FVector(0.14f), FLinearColor(0.72f, 0.92f, 0.62f, 1.f)) } },
+		{ TEXT("TravelerVisual.Nature.DOT"), TEXT("NatureDOT.SporePod.ClusteredSpheres"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector::ZeroVector, FRotator::ZeroRotator, FVector(0.34f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(24.f, 0.f, 12.f), FRotator::ZeroRotator, FVector(0.18f), FLinearColor(0.82f, 1.08f, 0.76f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-20.f, 20.f, -8.f), FRotator::ZeroRotator, FVector(0.16f), FLinearColor(0.82f, 1.08f, 0.76f, 1.f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-20.f, -20.f, 8.f), FRotator::ZeroRotator, FVector(0.16f), FLinearColor(0.82f, 1.08f, 0.76f, 1.f)) } },
+
+		{ TEXT("TravelerVisual.Wind.AOE"), TEXT("WindAOE.TornadoSeed.SquatSpiral"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, 0.f, -24.f), FRotator::ZeroRotator, FVector(0.42f, 0.42f, 0.34f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(0.f, 0.f, 0.f), FRotator::ZeroRotator, FVector(0.32f, 0.32f, 0.28f), FLinearColor(1.12f, 1.12f, 1.12f, 0.9f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, 0.f, 28.f), FRotator(180.f, 0.f, 0.f), FVector(0.24f, 0.24f, 0.34f), FLinearColor(1.16f, 1.16f, 1.16f, 0.9f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-34.f, 18.f, 0.f), FRotator::ZeroRotator, FVector(0.13f), FLinearColor(1.14f, 1.14f, 1.14f, 0.78f)) } },
+		{ TEXT("TravelerVisual.Wind.Pierce"), TEXT("WindPierce.SkinnyTornadoSpear.StackedForward"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(-34.f, 0.f, -20.f), FRotator::ZeroRotator, FVector(0.26f, 0.26f, 0.38f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-2.f, 0.f, 0.f), FRotator::ZeroRotator, FVector(0.20f, 0.20f, 0.46f), FLinearColor(1.12f, 1.12f, 1.12f, 0.9f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(34.f, 0.f, 22.f), FRotator(180.f, 0.f, 0.f), FVector(0.16f, 0.16f, 0.34f), FLinearColor(1.16f, 1.16f, 1.16f, 0.9f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(62.f, 0.f, 0.f), FRotator(0.f, 90.f, 0.f), FVector(0.08f, 0.08f, 0.42f), FLinearColor(1.18f, 1.18f, 1.18f, 0.86f)) } },
+		{ TEXT("TravelerVisual.Wind.Bounce"), TEXT("WindBounce.MiniWhirlwind.OffsetSpiral"), 4, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, 0.f, -18.f), FRotator::ZeroRotator, FVector(0.28f, 0.28f, 0.28f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(10.f, 0.f, 4.f), FRotator::ZeroRotator, FVector(0.20f, 0.20f, 0.24f), FLinearColor(1.12f, 1.12f, 1.12f, 0.88f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(18.f, 0.f, 22.f), FRotator(180.f, 0.f, 0.f), FVector(0.14f, 0.14f, 0.24f), FLinearColor(1.16f, 1.16f, 1.16f, 0.88f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-22.f, 18.f, 0.f), FRotator::ZeroRotator, FVector(0.12f), FLinearColor(1.12f, 1.12f, 1.12f, 0.78f)) } },
+		{ TEXT("TravelerVisual.Wind.DOT"), TEXT("WindDOT.DustDevilSeed.CompactStack"), 3, {
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, 0.f, -22.f), FRotator::ZeroRotator, FVector(0.30f, 0.30f, 0.30f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(0.f, 0.f, 4.f), FRotator::ZeroRotator, FVector(0.22f, 0.22f, 0.24f), FLinearColor(1.12f, 1.12f, 1.12f, 0.88f)),
+			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, 0.f, 28.f), FRotator(180.f, 0.f, 0.f), FVector(0.16f, 0.16f, 0.24f), FLinearColor(1.16f, 1.16f, 1.16f, 0.88f)) } }
+	};
+
+	FName T66NormalizeTravelerVisualProfileID(const FName TravelerVisualProfileID)
+	{
+		if (TravelerVisualProfileID.IsNone())
+		{
+			return NAME_None;
+		}
+
+		FString Profile = TravelerVisualProfileID.ToString();
+		for (const TCHAR* Suffix : { TEXT(".Black"), TEXT(".Red"), TEXT(".Yellow"), TEXT(".White") })
+		{
+			if (Profile.EndsWith(Suffix, ESearchCase::IgnoreCase))
+			{
+				Profile.LeftChopInline(FCString::Strlen(Suffix), EAllowShrinking::No);
+				return FName(*Profile);
+			}
+		}
+		return TravelerVisualProfileID;
+	}
+
+	const FT66TravelerCarrierRecipe* T66FindTravelerCarrierRecipe(const FName TravelerVisualProfileID)
+	{
+		const FName NormalizedProfile = T66NormalizeTravelerVisualProfileID(TravelerVisualProfileID);
+		if (NormalizedProfile.IsNone())
+		{
+			return nullptr;
+		}
+
+		for (const FT66TravelerCarrierRecipe& Recipe : T66TravelerCarrierRecipes)
+		{
+			if (NormalizedProfile == FName(Recipe.ProfileID))
+			{
+				return &Recipe;
+			}
+		}
+		return nullptr;
+	}
+
+	FLinearColor T66MultiplyTravelerColor(const FLinearColor& BaseColor, const FLinearColor& Multiplier)
+	{
+		return FLinearColor(
+			BaseColor.R * Multiplier.R,
+			BaseColor.G * Multiplier.G,
+			BaseColor.B * Multiplier.B,
+			BaseColor.A * Multiplier.A);
+	}
 
 	FString T66FormatMaybeNumber(const double Value)
 	{
@@ -198,6 +383,7 @@ bool UT66OutgoingTravelerPoolSubsystem::FireOutgoingTraveler(
 	Slot.TargetPosition = FireParams.TargetPosition;
 	Slot.TargetOffset = FireParams.TargetOffset;
 	Slot.LastKnownTargetPosition = FireParams.TargetPosition;
+	Slot.TravelerVisualProfileID = FireParams.TravelerVisualProfileID;
 	if (UWorld* World = GetWorld())
 	{
 		if (const AT66GameMode* GameMode = Cast<AT66GameMode>(World->GetAuthGameMode()))
@@ -228,12 +414,14 @@ bool UT66OutgoingTravelerPoolSubsystem::FireOutgoingTraveler(
 	if (CVarT66OutgoingTravelerPoolVerbose.GetValueOnGameThread() != 0)
 	{
 		UE_LOG(LogT66OutgoingTravelerPool, Display,
-			TEXT("[OutgoingTravelerPool] phase=FireSimulated slot=%d generation=%d live=%d profile=%s visualProfile=%s meshIndex=%d start=%s target=%s speed=%.1f lifetime=%.2f"),
+			TEXT("[OutgoingTravelerPool] phase=FireSimulated slot=%d generation=%d live=%d profile=%s visualProfile=%s recipe=%s partCount=%d meshIndex=%d start=%s target=%s speed=%.1f lifetime=%.2f"),
 			OutHandle.SlotIndex,
 			OutHandle.Generation,
 			Diagnostics.LiveCount,
 			*FireParams.ProfileID.ToString(),
 			*FireParams.TravelerVisualProfileID.ToString(),
+			*GetCarrierRecipeSignatureForTravelerVisualProfileID(FireParams.TravelerVisualProfileID),
+			GetCarrierRecipePartCountForTravelerVisualProfileID(FireParams.TravelerVisualProfileID),
 			InitialState.MeshIndex,
 			*FireParams.StartPosition.ToCompactString(),
 			*FireParams.TargetPosition.ToCompactString(),
@@ -290,6 +478,13 @@ int32 UT66OutgoingTravelerPoolSubsystem::GetMeshIndexForTravelerVisualProfileID(
 	const FName TravelerVisualProfileID,
 	const int32 FallbackMeshIndex)
 {
+	if (const FT66TravelerCarrierRecipe* Recipe = T66FindTravelerCarrierRecipe(TravelerVisualProfileID))
+	{
+		return Recipe->PartCount > 0
+			? GetMeshIndexForTemporaryProjectileShape(Recipe->Parts[0].Shape)
+			: FallbackMeshIndex;
+	}
+
 	if (TravelerVisualProfileID.IsNone())
 	{
 		return FallbackMeshIndex;
@@ -304,6 +499,26 @@ int32 UT66OutgoingTravelerPoolSubsystem::GetMeshIndexForTravelerVisualProfileID(
 	}
 
 	return FallbackMeshIndex;
+}
+
+int32 UT66OutgoingTravelerPoolSubsystem::GetCarrierRecipePartCountForTravelerVisualProfileID(
+	const FName TravelerVisualProfileID)
+{
+	if (const FT66TravelerCarrierRecipe* Recipe = T66FindTravelerCarrierRecipe(TravelerVisualProfileID))
+	{
+		return FMath::Clamp(Recipe->PartCount, 1, MaxCarrierRecipeParts);
+	}
+	return 1;
+}
+
+FString UT66OutgoingTravelerPoolSubsystem::GetCarrierRecipeSignatureForTravelerVisualProfileID(
+	const FName TravelerVisualProfileID)
+{
+	if (const FT66TravelerCarrierRecipe* Recipe = T66FindTravelerCarrierRecipe(TravelerVisualProfileID))
+	{
+		return FString(Recipe->Signature);
+	}
+	return TEXT("Default.SinglePrimitive");
 }
 
 void UT66OutgoingTravelerPoolSubsystem::AppendKnownTravelerVisualProfileIDs(TArray<FName>& OutProfileIDs)
@@ -334,11 +549,11 @@ void UT66OutgoingTravelerPoolSubsystem::InitializeSlots()
 		FreeSlots.Add(Index);
 	}
 	DenseSlots.Reserve(MaxOutgoingTravelers);
-	PositionUpload.Reserve(MaxOutgoingTravelers);
-	RotationUpload.Reserve(MaxOutgoingTravelers);
-	ScaleUpload.Reserve(MaxOutgoingTravelers);
-	ColorUpload.Reserve(MaxOutgoingTravelers);
-	MeshIndexUpload.Reserve(MaxOutgoingTravelers);
+	PositionUpload.Reserve(MaxOutgoingTravelerVisualRows);
+	RotationUpload.Reserve(MaxOutgoingTravelerVisualRows);
+	ScaleUpload.Reserve(MaxOutgoingTravelerVisualRows);
+	ColorUpload.Reserve(MaxOutgoingTravelerVisualRows);
+	MeshIndexUpload.Reserve(MaxOutgoingTravelerVisualRows);
 	bInitializedSlots = true;
 }
 
@@ -385,6 +600,7 @@ bool UT66OutgoingTravelerPoolSubsystem::AllocateSlot(
 	Slot.SourceTowerFloorNumber = INDEX_NONE;
 	Slot.DamageSourceID = NAME_None;
 	Slot.EventType = NAME_None;
+	Slot.TravelerVisualProfileID = NAME_None;
 	Slot.OnArrived.Unbind();
 	Slot.bSimulated = false;
 	Slot.bTrackTarget = false;
@@ -447,6 +663,7 @@ void UT66OutgoingTravelerPoolSubsystem::ReleaseSlot(const int32 SlotIndex, const
 	Slot.SourceTowerFloorNumber = INDEX_NONE;
 	Slot.DamageSourceID = NAME_None;
 	Slot.EventType = NAME_None;
+	Slot.TravelerVisualProfileID = NAME_None;
 	Slot.OnArrived.Unbind();
 	Slot.bSimulated = false;
 	Slot.bTrackTarget = false;
@@ -531,7 +748,7 @@ bool UT66OutgoingTravelerPoolSubsystem::EnsureNiagaraComponent()
 	}
 	NiagaraComponent->SetAsset(NiagaraSystem);
 	NiagaraComponent->bAutoActivate = false;
-	NiagaraComponent->SetVariableInt(T66TravelerPoolCapacityParam, MaxOutgoingTravelers);
+	NiagaraComponent->SetVariableInt(T66TravelerPoolCapacityParam, MaxOutgoingTravelerVisualRows);
 	NiagaraComponent->SetUsingAbsoluteLocation(true);
 	NiagaraComponent->SetUsingAbsoluteRotation(true);
 	NiagaraComponent->SetUsingAbsoluteScale(true);
@@ -540,12 +757,14 @@ bool UT66OutgoingTravelerPoolSubsystem::EnsureNiagaraComponent()
 	NiagaraComponent->SetVisibility(true, true);
 	NiagaraComponent->SetHiddenInGame(false);
 	NiagaraComponent->SetComponentTickEnabled(true);
-	NiagaraComponent->SetVariableInt(T66TravelerPoolCapacityParam, MaxOutgoingTravelers);
+	NiagaraComponent->SetVariableInt(T66TravelerPoolCapacityParam, MaxOutgoingTravelerVisualRows);
 	bDirty = true;
 
-	UE_LOG(LogT66OutgoingTravelerPool, Display, TEXT("[OutgoingTravelerPool] phase=EnsureNiagara status=ready asset=%s capacity=%d"),
+	UE_LOG(LogT66OutgoingTravelerPool, Display, TEXT("[OutgoingTravelerPool] phase=EnsureNiagara status=ready asset=%s logicalCapacity=%d visualRowCapacity=%d maxCarrierParts=%d"),
 		T66OutgoingTravelerPoolAssetPath,
-		MaxOutgoingTravelers);
+		MaxOutgoingTravelers,
+		MaxOutgoingTravelerVisualRows,
+		MaxCarrierRecipeParts);
 	return true;
 }
 
@@ -895,6 +1114,34 @@ void UT66OutgoingTravelerPoolSubsystem::TickSimulatedTravelers(const float Delta
 	}
 }
 
+void UT66OutgoingTravelerPoolSubsystem::AppendVisualRowsForSlot(const FT66OutgoingTravelerSlot& Slot)
+{
+	const FT66OutgoingTravelerVisualState& State = Slot.State;
+	const FT66TravelerCarrierRecipe* Recipe = T66FindTravelerCarrierRecipe(Slot.TravelerVisualProfileID);
+	if (!Recipe || Recipe->PartCount <= 0)
+	{
+		PositionUpload.Add(State.Position);
+		RotationUpload.Add(State.Rotation);
+		ScaleUpload.Add(State.Scale);
+		ColorUpload.Add(State.Color);
+		MeshIndexUpload.Add(State.MeshIndex);
+		return;
+	}
+
+	const int32 PartCount = FMath::Clamp(Recipe->PartCount, 1, MaxCarrierRecipeParts);
+	const FQuat TravelRotation = State.Rotation * Slot.ProfileRotation.Inverse();
+	const float UniformScale = FMath::Max(0.01f, State.Scale.GetAbsMax());
+	for (int32 PartIndex = 0; PartIndex < PartCount; ++PartIndex)
+	{
+		const FT66TravelerCarrierPartRecipe& Part = Recipe->Parts[PartIndex];
+		PositionUpload.Add(State.Position + TravelRotation.RotateVector(Part.LocalOffset * UniformScale));
+		RotationUpload.Add(TravelRotation * Part.LocalRotation.Quaternion());
+		ScaleUpload.Add(Part.LocalScale * UniformScale);
+		ColorUpload.Add(T66MultiplyTravelerColor(State.Color, Part.ColorMultiplier));
+		MeshIndexUpload.Add(GetMeshIndexForTemporaryProjectileShape(Part.Shape));
+	}
+}
+
 void UT66OutgoingTravelerPoolSubsystem::UploadLiveState()
 {
 	if (!NiagaraComponent)
@@ -904,24 +1151,28 @@ void UT66OutgoingTravelerPoolSubsystem::UploadLiveState()
 
 	const uint64 StartCycles = FPlatformTime::Cycles64();
 	const int32 LiveCount = DenseSlots.Num();
-	PositionUpload.Reset(LiveCount);
-	RotationUpload.Reset(LiveCount);
-	ScaleUpload.Reset(LiveCount);
-	ColorUpload.Reset(LiveCount);
-	MeshIndexUpload.Reset(LiveCount);
+	const int32 EstimatedVisualRows = FMath::Clamp(LiveCount * MaxCarrierRecipeParts, LiveCount, MaxOutgoingTravelerVisualRows);
+	PositionUpload.Reset(EstimatedVisualRows);
+	RotationUpload.Reset(EstimatedVisualRows);
+	ScaleUpload.Reset(EstimatedVisualRows);
+	ColorUpload.Reset(EstimatedVisualRows);
+	MeshIndexUpload.Reset(EstimatedVisualRows);
 
+	int32 ExpandedTravelerCount = 0;
 	for (const int32 SlotIndex : DenseSlots)
 	{
-		const FT66OutgoingTravelerVisualState& State = Slots[SlotIndex].State;
-		PositionUpload.Add(State.Position);
-		RotationUpload.Add(State.Rotation);
-		ScaleUpload.Add(State.Scale);
-		ColorUpload.Add(State.Color);
-		MeshIndexUpload.Add(State.MeshIndex);
+		const FT66OutgoingTravelerSlot& Slot = Slots[SlotIndex];
+		const int32 BeforeRows = PositionUpload.Num();
+		AppendVisualRowsForSlot(Slot);
+		if ((PositionUpload.Num() - BeforeRows) > 1)
+		{
+			++ExpandedTravelerCount;
+		}
 	}
 
+	const int32 VisualRowCount = PositionUpload.Num();
 	const uint64 PackEndCycles = FPlatformTime::Cycles64();
-	const bool bActivateAfterUpload = LiveCount > 0 && !NiagaraComponent->IsActive();
+	const bool bActivateAfterUpload = VisualRowCount > 0 && !NiagaraComponent->IsActive();
 	if (bActivateAfterUpload)
 	{
 		NiagaraComponent->SetComponentTickEnabled(true);
@@ -947,7 +1198,7 @@ void UT66OutgoingTravelerPoolSubsystem::UploadLiveState()
 		NiagaraComponent,
 		T66TravelerMeshIndicesParam,
 		MeshIndexUpload);
-	NiagaraComponent->SetVariableInt(T66TravelerLiveCountParam, LiveCount);
+	NiagaraComponent->SetVariableInt(T66TravelerLiveCountParam, VisualRowCount);
 	if (bActivateAfterUpload)
 	{
 		NiagaraComponent->Activate(true);
@@ -957,6 +1208,9 @@ void UT66OutgoingTravelerPoolSubsystem::UploadLiveState()
 	Diagnostics.LiveCount = LiveCount;
 	Diagnostics.PeakLiveCount = FMath::Max(Diagnostics.PeakLiveCount, LiveCount);
 	Diagnostics.LastUploadedLiveCount = LiveCount;
+	Diagnostics.LastUploadedVisualRowCount = VisualRowCount;
+	Diagnostics.PeakUploadedVisualRowCount = FMath::Max(Diagnostics.PeakUploadedVisualRowCount, VisualRowCount);
+	Diagnostics.LastCarrierRecipeExpandedTravelerCount = ExpandedTravelerCount;
 	const uint64 EndCycles = FPlatformTime::Cycles64();
 	Diagnostics.LastPackMs = FPlatformTime::ToMilliseconds64(PackEndCycles - StartCycles);
 	Diagnostics.LastNiagaraArrayUploadMs = FPlatformTime::ToMilliseconds64(EndCycles - PackEndCycles);
@@ -974,8 +1228,10 @@ void UT66OutgoingTravelerPoolSubsystem::UploadLiveState()
 	if (CVarT66OutgoingTravelerPoolVerbose.GetValueOnGameThread() != 0)
 	{
 		UE_LOG(LogT66OutgoingTravelerPool, Display,
-			TEXT("[OutgoingTravelerPool] phase=Upload live=%d uploadMs=%.3f packMs=%.3f niagaraArrayMs=%.3f fired=%d canceled=%d dropped=%d suppressedMeshes=%d"),
+			TEXT("[OutgoingTravelerPool] phase=Upload live=%d visualRows=%d expandedTravelers=%d uploadMs=%.3f packMs=%.3f niagaraArrayMs=%.3f fired=%d canceled=%d dropped=%d suppressedMeshes=%d"),
 			LiveCount,
+			VisualRowCount,
+			ExpandedTravelerCount,
 			Diagnostics.LastUploadMs,
 			Diagnostics.LastPackMs,
 			Diagnostics.LastNiagaraArrayUploadMs,
@@ -1060,6 +1316,9 @@ void UT66OutgoingTravelerPoolSubsystem::WriteProofManifest(const TCHAR* Reason)
 	Root->SetNumberField(TEXT("arrival_callback_total"), Diagnostics.ArrivalCallbackTotal);
 	Root->SetNumberField(TEXT("arrival_fizzle_no_target_total"), Diagnostics.ArrivalFizzleNoTargetTotal);
 	Root->SetNumberField(TEXT("last_uploaded_live_count"), Diagnostics.LastUploadedLiveCount);
+	Root->SetNumberField(TEXT("last_uploaded_visual_row_count"), Diagnostics.LastUploadedVisualRowCount);
+	Root->SetNumberField(TEXT("peak_uploaded_visual_row_count"), Diagnostics.PeakUploadedVisualRowCount);
+	Root->SetNumberField(TEXT("last_carrier_recipe_expanded_traveler_count"), Diagnostics.LastCarrierRecipeExpandedTravelerCount);
 	Root->SetNumberField(TEXT("last_upload_ms"), Diagnostics.LastUploadMs);
 	Root->SetNumberField(TEXT("last_pack_ms"), Diagnostics.LastPackMs);
 	Root->SetNumberField(TEXT("last_niagara_array_upload_ms"), Diagnostics.LastNiagaraArrayUploadMs);
@@ -1095,6 +1354,8 @@ void UT66OutgoingTravelerPoolSubsystem::WriteProofManifest(const TCHAR* Reason)
 	Root->SetNumberField(TEXT("temporary_projectile_mesh_slot_count"), TemporaryProjectileMeshSlotCount);
 	Root->SetNumberField(TEXT("traveler_visual_profile_slot_base"), TravelerVisualProfileSlotBase);
 	Root->SetNumberField(TEXT("traveler_visual_profile_slot_count"), TravelerVisualProfileSlotCount);
+	Root->SetNumberField(TEXT("max_carrier_recipe_parts"), MaxCarrierRecipeParts);
+	Root->SetNumberField(TEXT("visual_row_capacity"), MaxOutgoingTravelerVisualRows);
 	Root->SetBoolField(TEXT("niagara_component_exists"), NiagaraComponent != nullptr);
 	Root->SetBoolField(TEXT("niagara_system_exists"), NiagaraSystem != nullptr);
 	if (NiagaraSystem)

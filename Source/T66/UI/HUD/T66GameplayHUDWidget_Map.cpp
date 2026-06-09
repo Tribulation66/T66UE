@@ -2,7 +2,18 @@
 
 #include "UI/HUD/T66GameplayHUDWidget_Private.h"
 
+#include "Core/T66TrapSubsystem.h"
 #include "Gameplay/T66MobBase.h"
+#include "Gameplay/Traps/T66TrapBase.h"
+#include "HAL/IConsoleManager.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
+
+static TAutoConsoleVariable<int32> CVarT66MinimapDebugMarkers(
+	TEXT("T66.Minimap.DebugMarkers"),
+	0,
+	TEXT("Non-shipping: when >0, draw one of every POI marker icon in a ring around the player on the minimap/full map (for visual review)."),
+	ECVF_Default);
 
 void UT66GameplayHUDWidget::SetFullMapOpen(bool bOpen)
 {
@@ -279,7 +290,9 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			MinimapWidget->SetFullWorldBounds(
 				ActiveTowerFloorCenter - ActiveTowerFloorHalfExtents,
 				ActiveTowerFloorCenter + ActiveTowerFloorHalfExtents);
-			MinimapWidget->SetMinimapHalfExtent(FMath::Max(ActiveTowerFloorHalfExtents.X, ActiveTowerFloorHalfExtents.Y));
+			// Player-centered local zoom: show the maze around the player instead of squishing the
+			// whole 400m floor into ~150px (which made walls sub-pixel and unreadable).
+			MinimapWidget->SetMinimapHalfExtent(6500.0f);
 			MinimapWidget->SetRevealMask(false, EmptyRevealPoints, 0.0f);
 			MinimapWidget->SetTowerPolygon(ActiveTowerPolygon);
 			MinimapWidget->SetTowerHole(bHasActiveTowerHole, ActiveTowerHoleCenter, ActiveTowerHoleHalfExtents);
@@ -291,7 +304,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 				ActiveTowerMapTint,
 				ActiveTowerWallFillColor,
 				ActiveTowerWallStrokeColor);
-			MinimapWidget->SetLockFullMapToBounds(true);
+			MinimapWidget->SetLockFullMapToBounds(false);
 		}
 		else
 		{
@@ -420,6 +433,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		MapCacheWorld = World;
 		MapCacheLastRefreshTime = Now;
 		MapCache.Reset();
+		int32 CachedTrapMarkers = 0;
 
 		// [GOLD] Use the actor registry instead of 4x TActorIterator (O(1) list lookup).
 		if (Registry)
@@ -480,6 +494,28 @@ void UT66GameplayHUDWidget::RefreshMapData()
 				Registry->GetEnemies().Num(), Registry->GetActiveMobs().Num(), Registry->GetMiasmaBoundaries().Num(),
 				Registry->GetWorldInteractables().Num(), Registry->GetLootBags().Num());
 		}
+
+		if (UT66TrapSubsystem* TrapSubsystem = UT66TrapSubsystem::Get(World))
+		{
+			for (const TWeakObjectPtr<AT66TrapBase>& WeakTrap : TrapSubsystem->GetRegisteredTraps())
+			{
+				AT66TrapBase* Trap = WeakTrap.Get();
+				if (!IsValid(Trap))
+				{
+					continue;
+				}
+
+				FMapCacheEntry Entry;
+				Entry.Actor = Trap;
+				Entry.Type = EMapCacheMarkerType::Trap;
+				Entry.Color = FLinearColor(1.f, 0.03f, 0.03f, 1.f);
+				Entry.MarkerKey = FName(TEXT("Trap"));
+				MapCache.Add(Entry);
+				++CachedTrapMarkers;
+			}
+		}
+
+		UE_LOG(LogT66HUD, Verbose, TEXT("[MapTrapMarkers] CachedTrapMarkers=%d TotalMapCache=%d"), CachedTrapMarkers, MapCache.Num());
 	}
 
 	// Build markers from cache (positions only; cache has static Color/Label).
@@ -492,6 +528,7 @@ void UT66GameplayHUDWidget::RefreshMapData()
 		const bool bUseObjectVisibilityRadius =
 			E.Type == EMapCacheMarkerType::NPC
 			|| E.Type == EMapCacheMarkerType::Gate
+			|| E.Type == EMapCacheMarkerType::Trap
 			|| E.Type == EMapCacheMarkerType::POI;
 		if (bUseObjectVisibilityRadius ? !ShouldShowTowerObjectMarker(L) : !ShouldShowTowerFloorLocation(L))
 		{
@@ -531,6 +568,10 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			M.Visual = ET66MapMarkerVisual::Icon;
 			M.IconBrush = GetMinimapSymbolBrush(E.MarkerKey);
 			M.DrawSize = GetMinimapSymbolDrawSize(E.MarkerKey);
+			break;
+		case EMapCacheMarkerType::Trap:
+			M.Visual = ET66MapMarkerVisual::Dot;
+			M.DrawSize = FVector2D(8.f, 8.f);
 			break;
 		case EMapCacheMarkerType::Enemy:
 		default:
@@ -612,6 +653,30 @@ void UT66GameplayHUDWidget::RefreshMapData()
 			}
 		}
 	}
+
+#if !UE_BUILD_SHIPPING
+	static const bool bT66MinimapDebugMarkerParam = FParse::Param(FCommandLine::Get(), TEXT("T66MinimapDebugMarkers"));
+	if (bT66MinimapDebugMarkerParam || CVarT66MinimapDebugMarkers.GetValueOnGameThread() > 0)
+	{
+		static const TArray<FName> DebugMarkerKeys = {
+			FName(TEXT("Chest")), FName(TEXT("Crate")), FName(TEXT("Gate")), FName(TEXT("NPC")),
+			FName(TEXT("LootBag")), FName(TEXT("Miasma")), FName(TEXT("Saint")), FName(TEXT("Collector")),
+			FName(TEXT("Ouroboros")), FName(TEXT("CasinoNPC")) };
+		const int32 DebugMarkerCount = DebugMarkerKeys.Num();
+		const float DebugMarkerRing = 2600.0f;
+		for (int32 DebugIndex = 0; DebugIndex < DebugMarkerCount; ++DebugIndex)
+		{
+			const float DebugAngle = (2.0f * PI * static_cast<float>(DebugIndex)) / static_cast<float>(DebugMarkerCount);
+			FT66MapMarker DebugMarker;
+			DebugMarker.WorldXY = PlayerXY + FVector2D(FMath::Cos(DebugAngle) * DebugMarkerRing, FMath::Sin(DebugAngle) * DebugMarkerRing);
+			DebugMarker.Color = FLinearColor::White;
+			DebugMarker.Visual = ET66MapMarkerVisual::Icon;
+			DebugMarker.IconBrush = GetMinimapSymbolBrush(DebugMarkerKeys[DebugIndex]);
+			DebugMarker.DrawSize = GetMinimapSymbolDrawSize(DebugMarkerKeys[DebugIndex]);
+			Markers.Add(DebugMarker);
+		}
+	}
+#endif
 
 	const FSlateBrush* PlayerMarkerBrush = (PortraitBrush.IsValid() && PortraitBrush->GetResourceObject())
 		? PortraitBrush.Get()

@@ -40,7 +40,19 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTutorialInputChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDevCheatsChanged);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCowardiceGatesTakenChanged);
 
+UENUM(BlueprintType)
+enum class ET66RunLifecycleBoundary : uint8
+{
+	NewRun UMETA(DisplayName = "New Run"),
+	LoadedRun UMETA(DisplayName = "Loaded Run"),
+	RunEnded UMETA(DisplayName = "Run Ended"),
+	ReturnToFrontend UMETA(DisplayName = "Return To Frontend"),
+};
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnRunLifecycleBoundary, ET66RunLifecycleBoundary, Boundary, FName, Reason);
+
 class AActor;
+class APawn;
 class FSubsystemCollectionBase;
 struct FT66MobLootCollectResult;
 struct FT66MobLootCollectorRef;
@@ -221,6 +233,14 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnCowardiceGatesTakenChanged CowardiceGatesTakenChanged;
 
+	/** Fired before a run lifecycle boundary mutates or announces run state. */
+	UPROPERTY(BlueprintAssignable, Category = "RunState|Lifecycle")
+	FOnRunLifecycleBoundary RunLifecycleBoundaryStarted;
+
+	/** Fired after a run lifecycle boundary has completed its owner-local work. */
+	UPROPERTY(BlueprintAssignable, Category = "RunState|Lifecycle")
+	FOnRunLifecycleBoundary RunLifecycleBoundaryCompleted;
+
 	/** Compatibility delegate: idol state now lives in UT66IdolManagerSubsystem. */
 	UPROPERTY(BlueprintAssignable, Category = "RunState")
 	FOnIdolsChanged IdolsChanged;
@@ -272,6 +292,13 @@ public:
 	/** Max HP (numerical). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	float GetMaxHP() const { return MaxHP; }
+
+	/** Smash-style damage taken. Starts at 0%, scales future damage/launch, and dies at 100%. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetHeroDamagePercent() const { return HeroDamagePercent; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
+	float GetHeroDamageDeathPercent() const { return HeroDamageDeathPercent; }
 
 #if !UE_BUILD_SHIPPING
 	/** Non-shipping AutoQA: clear the post-hit invulnerability window so the next ApplyDamage is not gated. */
@@ -387,6 +414,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void AddMaxHearts(int32 DeltaHearts);
 
+	UFUNCTION(BlueprintCallable, Category = "RunState")
+	void ResetHeroDamagePercent();
+
 	/** Automation-only measurement hook. Does not persist and is gated by callers to autocapture modes. */
 	float ApplyAutomationHeroHPOverride(float RequestedHP, const TCHAR* Reason);
 
@@ -468,6 +498,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FT66InventorySlot>& GetInventorySlots() const { return InventorySlots; }
+
+	/** Rarest-first display order over InventorySlots. Mutating systems should keep using canonical slot indices. */
+	void BuildInventoryDisplayOrderByRarity(TArray<int32>& OutInventoryIndices) const;
+
+	/** Rarest-first display copy of inventory slots for read-only UI surfaces. */
+	void GetInventorySlotsSortedByRarity(TArray<FT66InventorySlot>& OutInventorySlots) const;
 
 	/** Legacy: returns template IDs only (for backward compat with UI that expects FName array). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
@@ -563,9 +599,9 @@ public:
 
 	void ApplyNoIdolSelection(ET66ItemRarity Rarity);
 	int32 GetNoIdolSelectionStacks() const { return NoIdolSelectionStacks; }
-	const FT66HeroPreciseStatBlock& GetNoIdolPrimaryStatBonuses() const { return NoIdolPrimaryStatBonusesPrecise; }
+	const FT66HeroPreciseStatBlock& GetNoIdolBaseStatBonuses() const { return NoIdolBaseStatBonusesPrecise; }
 	void RestoreNoIdolState(int32 Stacks, const FT66HeroPreciseStatBlock& Bonuses);
-	static int32 GetNoIdolPrimaryBonusTenthsForRarity(ET66ItemRarity Rarity);
+	static int32 GetNoIdolBaseBonusTenthsForRarity(ET66ItemRarity Rarity);
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState")
 	const TArray<FString>& GetEventLog() const { return EventLog; }
@@ -649,11 +685,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void MarkRunEnded(bool bWasFullClear);
 
+	/** Lifecycle boundary for run end. Compatibility MarkRunEnded calls this path. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Lifecycle")
+	void EndRun(bool bWasFullClear);
+
 	/** Export the resumable subset of run state used by chained-difficulty save and quit. */
 	void ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnapshot) const;
 
 	/** Restore a previously exported chained-difficulty save snapshot. */
 	void ImportSavedRunSnapshot(const FT66SavedRunSnapshot& Snapshot);
+
+	/** Lifecycle boundary for loaded-run restore. Compatibility ImportSavedRunSnapshot calls this path. */
+	void BeginLoadedRun(const FT66SavedRunSnapshot& Snapshot);
 
 	/** Reset timer to full duration and freeze (e.g. when entering next stage so start gate starts it again). */
 	void ResetStageTimerToFull();
@@ -948,10 +991,10 @@ public:
 
 	/** Get the effective value of a secondary stat (hero base * accumulated item Line 2 multipliers). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
-	float GetSecondaryStatValue(ET66SecondaryStatType StatType) const;
+	float GetStatValue(ET66StatType StatType) const;
 
 	/** Get the raw hero-base value of a secondary stat before primary-stat scaling and Line 2 multipliers. */
-	float GetSecondaryStatBaselineValue(ET66SecondaryStatType StatType) const;
+	float GetStatBaselineValue(ET66StatType StatType) const;
 
 	/** Aggro multiplier (base * taunt items). Higher = enemies target this hero more. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
@@ -1084,7 +1127,7 @@ public:
 
 #if !UE_BUILD_SHIPPING
 	void DebugActivatePendingSingleUseBuffsForRunStartWithoutConsuming();
-	void DebugAddPersistentSecondaryStatBonusTenths(ET66SecondaryStatType StatType, int32 DeltaTenths);
+	void DebugAddPersistentStatBonusTenths(ET66StatType StatType, int32 DeltaTenths);
 #endif
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Finale")
@@ -1449,10 +1492,10 @@ public:
 
 	/** Temporary stat boost from boost interactables. */
 	UFUNCTION(BlueprintCallable, Category = "RunState|StageEffects")
-	void ApplyTemporaryPrimaryStatAmplifier(ET66HeroStatType StatType, int32 BonusStatPoints, float DurationSeconds);
+	void ApplyTemporaryBaseStatAmplifier(ET66HeroStatType StatType, int32 BonusStatPoints, float DurationSeconds);
 
 	UFUNCTION(BlueprintCallable, Category = "RunState|StageEffects")
-	void ApplyTemporarySecondaryStatAmplifier(ET66SecondaryStatType StatType, int32 BonusStatPoints, float DurationSeconds);
+	void ApplyTemporaryStatAmplifier(ET66StatType StatType, int32 BonusStatPoints, float DurationSeconds);
 
 	// ============================================
 	// Hero status effects (Unique enemy debuffs)
@@ -1521,6 +1564,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "RunState")
 	void ResetForNewRun();
 
+	/** Lifecycle boundary for fresh run start. Compatibility ResetForNewRun calls this path. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Lifecycle")
+	void BeginNewRun();
+
+	/** Notification-only lifecycle boundary for future frontend return routing. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Lifecycle")
+	void ReturnRunToFrontend();
+
 	FName ConsumeDeferredRunStartItemId();
 
 	UFUNCTION(BlueprintCallable, Category = "RunState")
@@ -1552,16 +1603,18 @@ public:
 		const FString& ActionSequence = FString());
 
 private:
-	struct FT66TemporaryPrimaryStatAmplifier
+	void BroadcastRunLifecycleBoundary(ET66RunLifecycleBoundary Boundary, FName Reason, bool bCompleted);
+
+	struct FT66TemporaryBaseStatAmplifier
 	{
 		ET66HeroStatType StatType = ET66HeroStatType::Damage;
 		int32 BonusTenths = 0;
 		float SecondsRemaining = 0.f;
 	};
 
-	struct FT66TemporarySecondaryStatAmplifier
+	struct FT66TemporaryStatAmplifier
 	{
-		ET66SecondaryStatType StatType = ET66SecondaryStatType::None;
+		ET66StatType StatType = ET66StatType::None;
 		int32 BonusTenths = 0;
 		float SecondsRemaining = 0.f;
 	};
@@ -1623,27 +1676,25 @@ private:
 	float GetDataDrivenLevelUpWaveRadiusUU() const;
 	float GetDataDrivenHeadshotChancePerBonusPoint() const;
 	float GetDataDrivenHeadshotStunDurationSeconds() const;
-	void ApplyLevelUpPrimaryGainTenths(ET66HeroStatType StatType, int32 GainTenths);
 	int32 ApplyLevelUpWave(float RadiusUU);
 	static int32 WholeStatToTenths(int32 WholeValue);
 	static int32 TenthsToDisplayStat(int32 ValueTenths);
 	static float TenthsToFloatStat(int32 ValueTenths);
-	int32 GetPrecisePrimaryStatTenths(ET66HeroStatType StatType) const;
-	int32 GetItemPrimaryStatTenths(ET66HeroStatType StatType) const;
-	int32 GetPermanentPrimaryBuffTenths(ET66HeroStatType StatType) const;
-	int32 GetSaintBlessingPrimaryStatTenths(ET66HeroStatType StatType) const;
-	int32 GetTemporaryPrimaryStatAmplifierTenths(ET66HeroStatType StatType) const;
-	int32 GetTemporarySecondaryStatAmplifierTenths(ET66SecondaryStatType StatType) const;
-	int32 GetSecondaryStatBonusTenths(ET66SecondaryStatType StatType) const;
-	float GetSecondaryStatBonusValue(ET66SecondaryStatType StatType) const;
-	int32 GetCategoryBaseStatTenths(ET66SecondaryStatType StatType) const;
-	int32 GetCategoryTotalStatTenths(ET66SecondaryStatType StatType) const;
+	int32 GetPreciseBaseStatTenths(ET66HeroStatType StatType) const;
+	int32 GetItemBaseStatTenths(ET66HeroStatType StatType) const;
+	int32 GetPermanentBaseBuffTenths(ET66HeroStatType StatType) const;
+	int32 GetSaintBlessingBaseStatTenths(ET66HeroStatType StatType) const;
+	int32 GetTemporaryBaseStatAmplifierTenths(ET66HeroStatType StatType) const;
+	int32 GetTemporaryStatAmplifierTenths(ET66StatType StatType) const;
+	int32 GetStatBonusTenths(ET66StatType StatType) const;
+	float GetStatBonusValue(ET66StatType StatType) const;
+	int32 GetCategoryBaseStatTenths(ET66StatType StatType) const;
+	int32 GetCategoryTotalStatTenths(ET66StatType StatType) const;
 	void SyncLegacyHeroStatsFromPrecise();
-	void ClearPersistentSecondaryStatBonuses();
-	void AddPersistentSecondaryStatBonusTenths(ET66SecondaryStatType StatType, int32 DeltaTenths);
-	void AddItemSecondaryStatBonusTenths(ET66SecondaryStatType StatType, int32 DeltaTenths);
-	int32 RollHeroPrimaryGainTenthsBiased(const FT66HeroStatGainRange& Range, FName Category);
-	void ApplyPrimaryGainToSecondaryBonuses(ET66HeroStatType PrimaryStatType, int32 PrimaryGainTenths, TMap<ET66SecondaryStatType, int32>& TargetBonuses, int32 SeedSalt = 0) const;
+	void ClearPersistentStatBonuses();
+	void AddPersistentStatBonusTenths(ET66StatType StatType, int32 DeltaTenths);
+	void AddItemStatBonusTenths(ET66StatType StatType, int32 DeltaTenths);
+	int32 RollHeroBaseGainTenthsBiased(const FT66HeroStatGainRange& Range, FName Category);
 	static bool IsBossDamageSource(const AActor* Attacker);
 	static float GetHPForHeartTier(int32 Tier);
 	float GetHeartSlotCapacity(int32 SlotIndex) const;
@@ -1651,14 +1702,26 @@ private:
 	void RefreshActiveRunModifiersFromGameInstance();
 	void ResetHeartSlotTiers();
 	void SyncMaxHPToHeartTiers();
+	void SyncCompatibilityHPFromHeroDamagePercent();
+	void SetHeroDamagePercent(float NewPercent, bool bBroadcast = true);
+	float ApplyHeroDamagePercent(float BaseDamagePercent);
+	float HealHeroDamagePercent(float PercentAmount);
+	float GetHeroDamagePercentGainScale(float PercentBeforeDamage) const;
+	float GetHeroDamageLaunchScale(float PercentBeforeDamage) const;
+	void ApplyDamagePhysicsReaction(AActor* Attacker, AActor* DamageCauser, APawn* HeroPawn, FName SourceTag, float AppliedDamagePercent, float PercentBeforeDamage, float PercentAfterDamage) const;
 	void RebuildHeartSlotTiersFromMaxHP();
 	int32 FindUpgradeableHeartSlot() const;
+
+	static constexpr float HeroDamageDeathPercent = 100.f;
 
 	UPROPERTY()
 	float CurrentHP = DefaultMaxHP;
 
 	UPROPERTY()
 	float MaxHP = DefaultMaxHP;
+
+	UPROPERTY()
+	float HeroDamagePercent = 0.f;
 
 	FT66RunModifierSnapshot ActiveRunModifiers;
 
@@ -1785,6 +1848,8 @@ private:
 	UPROPERTY()
 	bool bRunEndedAsVictory = false;
 
+	bool bRunLifecycleBoundaryInProgress = false;
+
 	/** Saint blessing used during the post-boss survival extraction. */
 	UPROPERTY()
 	bool bSaintBlessingActive = false;
@@ -1809,10 +1874,10 @@ private:
 	float FinalSurvivalEnemyScalar = 1.f;
 
 	UPROPERTY()
-	FT66HeroPreciseStatBlock SaintBlessingPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	FT66HeroPreciseStatBlock SaintBlessingBaseStatBonusesPrecise = FT66HeroPreciseStatBlock{};
 
 	UPROPERTY()
-	TMap<ET66SecondaryStatType, int32> SaintBlessingSecondaryStatBonusTenths;
+	TMap<ET66StatType, int32> SaintBlessingStatBonusTenths;
 
 	UPROPERTY()
 	int32 CurrentScore = 0;
@@ -1900,10 +1965,10 @@ private:
 	FT66HeroStatBonuses PermanentBuffStatBonuses = FT66HeroStatBonuses{};
 
 	/** Secondary stat bonuses derived from permanent diploma primary bonuses. */
-	TMap<ET66SecondaryStatType, int32> PermanentSecondaryStatBonusTenths;
+	TMap<ET66StatType, int32> PermanentStatBonusTenths;
 
 	/** Single-use secondary multipliers purchased in the shop and consumed at the start of the current run. */
-	TMap<ET66SecondaryStatType, float> SingleUseSecondaryMultipliers;
+	TMap<ET66StatType, float> SingleUseStatMultipliers;
 
 	float ItemPowerGivenPercent = 0.f;
 	float BonusDamagePercent = 0.f;
@@ -1935,7 +2000,7 @@ private:
 	/** Authoritative foundational hero stats stored in fixed-point tenths. */
 	FT66HeroPreciseStatBlock HeroPreciseStats = FT66HeroPreciseStatBlock{};
 
-	/** Data-authored per-level primary gain ranges. */
+	/** Data-authored fixed per-level primary gains. */
 	FT66HeroPerLevelStatGains HeroPerLevelGains = FT66HeroPerLevelStatGains{};
 
 	/** Category-specific base stats loaded from Heroes DataTable before item and level-up secondary bonuses. */
@@ -1969,11 +2034,11 @@ private:
 	// Accumulated secondary stat multipliers from items (product of Line 2 multipliers)
 	// Reset and recomputed in RecomputeItemDerivedStats()
 	// ============================================
-	TMap<ET66SecondaryStatType, float> SecondaryMultipliers;
-	TMap<ET66SecondaryStatType, int32> PersistentSecondaryStatBonusTenths;
-	TMap<ET66SecondaryStatType, int32> ItemSecondaryStatBonusTenths;
-	FT66HeroPreciseStatBlock ItemPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
-	FT66HeroPreciseStatBlock NoIdolPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	TMap<ET66StatType, float> StatMultipliers;
+	TMap<ET66StatType, int32> PersistentStatBonusTenths;
+	TMap<ET66StatType, int32> ItemStatBonusTenths;
+	FT66HeroPreciseStatBlock ItemBaseStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	FT66HeroPreciseStatBlock NoIdolBaseStatBonusesPrecise = FT66HeroPreciseStatBlock{};
 	int32 NoIdolSelectionStacks = 0;
 
 	bool bSuppressLevelUpWaveXP = false;
@@ -2058,8 +2123,8 @@ private:
 	// Stage effects
 	float StageMoveSpeedMultiplier = 1.f;
 	float StageMoveSpeedSecondsRemaining = 0.f;
-	TArray<FT66TemporaryPrimaryStatAmplifier> TemporaryPrimaryStatAmplifiers;
-	TArray<FT66TemporarySecondaryStatAmplifier> TemporarySecondaryStatAmplifiers;
+	TArray<FT66TemporaryBaseStatAmplifier> TemporaryBaseStatAmplifiers;
+	TArray<FT66TemporaryStatAmplifier> TemporaryStatAmplifiers;
 
 	// Status effects
 	float StatusBurnSecondsRemaining = 0.f;

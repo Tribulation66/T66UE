@@ -28,7 +28,7 @@ exhaustion (error_max_turns / terminal_reason
 max_turns) and persistence is on, the helper auto-continues the same session_id
 via --resume, bounded by -MaxTurnContinuations. A manifest is written even when
 the run ultimately fails, including FailureKind, attempt stdout/stderr paths,
-whether continuation was attempted, and token usage when parseable.
+and whether continuation was attempted.
 #>
 
 [CmdletBinding()]
@@ -406,64 +406,6 @@ function Export-ClaudeStdoutArtifact {
 
     Set-Content -LiteralPath $OutputPath -Value $ResultText -Encoding UTF8
     return $Payload
-}
-
-function Get-ClaudeTokenTotal {
-    param($Payload)
-
-    if ($null -eq $Payload) {
-        return $null
-    }
-
-    $Total = [int64]0
-    $HasValue = $false
-
-    $PayloadNames = $Payload.PSObject.Properties.Name
-    if ($PayloadNames -contains "modelUsage" -and $null -ne $Payload.modelUsage) {
-        foreach ($ModelEntry in $Payload.modelUsage.PSObject.Properties) {
-            $Usage = $ModelEntry.Value
-            if ($null -eq $Usage) {
-                continue
-            }
-
-            foreach ($PropertyName in @("inputTokens", "outputTokens", "cacheCreationInputTokens", "cacheReadInputTokens")) {
-                $UsageNames = $Usage.PSObject.Properties.Name
-                if ($UsageNames -contains $PropertyName) {
-                    $PropertyValue = $Usage.PSObject.Properties[$PropertyName].Value
-                    if ($null -eq $PropertyValue) {
-                        continue
-                    }
-                    $Total += [int64]$PropertyValue
-                    $HasValue = $true
-                }
-            }
-        }
-
-        if ($HasValue) {
-            return $Total
-        }
-    }
-
-    if ($PayloadNames -contains "usage" -and $null -ne $Payload.usage) {
-        $Usage = $Payload.usage
-        $UsageNames = $Usage.PSObject.Properties.Name
-        foreach ($PropertyName in @("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")) {
-            if ($UsageNames -contains $PropertyName) {
-                $PropertyValue = $Usage.PSObject.Properties[$PropertyName].Value
-                if ($null -eq $PropertyValue) {
-                    continue
-                }
-                $Total += [int64]$PropertyValue
-                $HasValue = $true
-            }
-        }
-    }
-
-    if ($HasValue) {
-        return $Total
-    }
-
-    return $null
 }
 
 function Join-CommandArguments {
@@ -938,13 +880,11 @@ for ($Attempt = 1; $Attempt -le $Attempts; ++$Attempt) {
     }
 
     $AttemptOutputPath = $Result.StdoutPath
-    $AttemptPayload = $null
     if ($ClaudeOutputFormat -eq "json") {
         $AttemptOutputPath = Join-Path $AttemptRoot "stdout_attempt$Attempt.result.md"
         try {
-            $AttemptPayload = Export-ClaudeStdoutArtifact -StdoutPath $Result.StdoutPath -OutputPath $AttemptOutputPath -ClaudeOutputFormat $ClaudeOutputFormat
+            $null = Export-ClaudeStdoutArtifact -StdoutPath $Result.StdoutPath -OutputPath $AttemptOutputPath -ClaudeOutputFormat $ClaudeOutputFormat
             $Result | Add-Member -NotePropertyName ResultOutputPath -NotePropertyValue $AttemptOutputPath
-            $Result | Add-Member -NotePropertyName ClaudeTokensSpent -NotePropertyValue (Get-ClaudeTokenTotal -Payload $AttemptPayload)
         } catch {
             $Result.Success = $false
             $Result | Add-Member -NotePropertyName FailureKind -NotePropertyValue "ClaudeMalformedJson"
@@ -994,26 +934,6 @@ if (-not $SuccessfulAttempt) {
         }
     }
 
-    # Parse usage from the last attempt that exposes a token total so a failed run still reports tokens when known.
-    $FailureTokensSpent = $null
-    foreach ($AttemptResult in $AttemptResults) {
-        $AttemptPayload = Get-ClaudePayloadFromStdout -StdoutPath $AttemptResult.StdoutPath -ClaudeOutputFormat $ClaudeOutputFormat
-        $AttemptTokens = Get-ClaudeTokenTotal -Payload $AttemptPayload
-        if ($null -ne $AttemptTokens) {
-            $FailureTokensSpent = $AttemptTokens
-        }
-    }
-
-    $FailureTokenSummaryPath = Join-Path $RunDir "claude_tokens.json"
-    ([ordered]@{
-        ClaudeTokensSpent = $FailureTokensSpent
-        Model = $Model
-        Mode = $Mode
-        ToolProfile = $ToolProfile
-        FailureKind = $FailureKind
-        CreatedAt = $Stamp
-    } | ConvertTo-Json -Depth 8) | Set-Content -LiteralPath $FailureTokenSummaryPath -Encoding UTF8
-
     $FailureManifestPath = Join-Path $RunDir "manifest.json"
     $FailureManifest = [ordered]@{
         ArtifactKind = "ClaudeHelperFailed"
@@ -1042,8 +962,6 @@ if (-not $SuccessfulAttempt) {
         ClaudeVersion = $ClaudeVersion
         FailureKind = $FailureKind
         MaxTurnContinuationAttempted = $AnyMaxTurns
-        ClaudeTokensSpent = $FailureTokensSpent
-        TokenSummaryPath = $FailureTokenSummaryPath
         Attempts = @($AttemptResults | ForEach-Object {
             [ordered]@{
                 StdoutPath = $_.StdoutPath
@@ -1063,21 +981,7 @@ if (-not $SuccessfulAttempt) {
 }
 
 $OutputPath = Join-Path $RunDir "claude_direct_read_$($Mode.ToLowerInvariant()).md"
-$ClaudePayload = Export-ClaudeStdoutArtifact -StdoutPath $SuccessfulAttempt.StdoutPath -OutputPath $OutputPath -ClaudeOutputFormat $ClaudeOutputFormat
-$ClaudeTokensSpent = Get-ClaudeTokenTotal -Payload $ClaudePayload
-
-# Sidecar token summary so the completion/report flow can consume token spend without parsing the Claude output
-# (appending tokens to the output would risk the strict first-line verdict contract for Review runs).
-$TokenSummaryPath = Join-Path $RunDir "claude_tokens.json"
-([ordered]@{
-    ClaudeTokensSpent = $ClaudeTokensSpent
-    Model = $Model
-    Mode = $Mode
-    ToolProfile = $ToolProfile
-    ClaudeUsage = if ($ClaudePayload -and ($ClaudePayload.PSObject.Properties.Name -contains "usage")) { $ClaudePayload.usage } else { $null }
-    ClaudeModelUsage = if ($ClaudePayload -and ($ClaudePayload.PSObject.Properties.Name -contains "modelUsage")) { $ClaudePayload.modelUsage } else { $null }
-    CreatedAt = $Stamp
-} | ConvertTo-Json -Depth 8) | Set-Content -LiteralPath $TokenSummaryPath -Encoding UTF8
+$null = Export-ClaudeStdoutArtifact -StdoutPath $SuccessfulAttempt.StdoutPath -OutputPath $OutputPath -ClaudeOutputFormat $ClaudeOutputFormat
 
 $ParsedVerdict = $null
 if ($Mode -eq "Review") {
@@ -1103,7 +1007,6 @@ $Manifest = [ordered]@{
     PromptPath = $ResolvedPromptPath
     EffectivePromptPath = $EffectivePromptPath
     OutputPath = $OutputPath
-    TokenSummaryPath = $TokenSummaryPath
     ReviewedOperatorRun = if ([string]::IsNullOrWhiteSpace($ReviewedOperatorRun)) { $null } else { $ReviewedOperatorRun }
     AttemptsRequested = $Attempts
     TimeoutSeconds = $TimeoutSeconds
@@ -1118,9 +1021,6 @@ $Manifest = [ordered]@{
     SuccessfulStdoutPath = $SuccessfulAttempt.StdoutPath
     SuccessfulStderrPath = $SuccessfulAttempt.StderrPath
     ClaudeJsonPath = if ($ClaudeOutputFormat -eq "json") { $SuccessfulAttempt.StdoutPath } else { $null }
-    ClaudeTokensSpent = $ClaudeTokensSpent
-    ClaudeUsage = if ($ClaudePayload -and ($ClaudePayload.PSObject.Properties.Name -contains "usage")) { $ClaudePayload.usage } else { $null }
-    ClaudeModelUsage = if ($ClaudePayload -and ($ClaudePayload.PSObject.Properties.Name -contains "modelUsage")) { $ClaudePayload.modelUsage } else { $null }
     Greenlit = if ($ParsedVerdict) { $ParsedVerdict.Greenlit } else { $false }
     Verdict = if ($ParsedVerdict) { $ParsedVerdict.Verdict } else { $null }
     VerdictLine = if ($ParsedVerdict) { $ParsedVerdict.VerdictLine } else { $null }
@@ -1153,8 +1053,6 @@ $RetentionPath = Join-Path $RunDir ".report-run.json"
     ApprovalRequired = $ApprovalRequired
     CodexApprovalPath = $ResolvedCodexApprovalPath
     AllowedTools = ($AllowedTools -join ",")
-    ClaudeTokensSpent = $ClaudeTokensSpent
-    TokenSummaryPath = $TokenSummaryPath
     ReviewedOperatorRun = if ([string]::IsNullOrWhiteSpace($ReviewedOperatorRun)) { $null } else { $ReviewedOperatorRun }
     Greenlit = if ($ParsedVerdict) { $ParsedVerdict.Greenlit } else { $false }
     Verdict = if ($ParsedVerdict) { $ParsedVerdict.Verdict } else { $null }

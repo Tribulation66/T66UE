@@ -11,7 +11,6 @@ namespace
 {
 	static constexpr float T66BossRewardCompanionOffsetX = -760.0f;
 	static constexpr float T66BossRewardPetOffsetY = -900.0f;
-	static constexpr float T66BossRewardIdolOffsetY = 900.0f;
 	static constexpr float T66BossRewardGateOffsetX = 1250.0f;
 	static constexpr float T66BossRewardCompanionSpacingY = 420.0f;
 
@@ -54,42 +53,81 @@ bool AT66GameMode::IsBossRushFinaleStage() const
 	return RunState->GetCurrentStage() == DifficultyEndStage;
 }
 
-void AT66GameMode::SpawnBossGateIfNeeded()
+void AT66GameMode::SpawnCowardiceGateIfNeeded()
 {
-	if (IsUsingTowerMainMapLayout()) return;
-	if (BossGate) return;
+	if (IsLabRun() || CowardiceGate || !StageBoss.IsValid())
+	{
+		return;
+	}
 
 	UWorld* World = GetWorld();
-	if (!World) return;
+	if (!World)
+	{
+		return;
+	}
+
+	UGameInstance* GI = GetGameInstance();
+	const UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	const int32 StageNum = RunState ? RunState->GetCurrentStage() : INDEX_NONE;
+	if (StageNum == INDEX_NONE || StageNum >= 17 || T66_IsDifficultyBossStage(StageNum))
+	{
+		return;
+	}
+
+	FVector GateLoc = T66GameplayLayout::GetCowardiceGateLocation();
+	int32 TowerTargetFloor = INDEX_NONE;
+
+	if (IsUsingTowerMainMapLayout())
+	{
+		TowerTargetFloor = CachedTowerMainMapLayout.BossFloorNumber;
+		FVector Anchor = ResolveTowerBossWaitingLocation();
+		if (Anchor.IsNearlyZero() && TowerTargetFloor != INDEX_NONE)
+		{
+			if (const T66TowerMapTerrain::FFloor* BossFloor = T66FindTowerFloorByNumber(CachedTowerMainMapLayout, TowerTargetFloor))
+			{
+				Anchor = BossFloor->Center;
+				Anchor.Z = BossFloor->SurfaceZ;
+			}
+		}
+
+		if (Anchor.IsNearlyZero())
+		{
+			return;
+		}
+
+		GateLoc = Anchor + FVector(-900.f, 620.f, 0.f);
+	}
+	else
+	{
+		FHitResult Hit;
+		if (World->LineTraceSingleByChannel(Hit, GateLoc + FVector(0.f, 0.f, 3000.f), GateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+		{
+			GateLoc.Z = Hit.ImpactPoint.Z;
+		}
+	}
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	// Trigger right at the boss-area threshold. The visible pillars are hidden so the fight starts on entry.
-	FVector BossGateLoc = T66GameplayLayout::GetBossGateLocation();
-	FHitResult Hit;
-	if (World->LineTraceSingleByChannel(Hit, BossGateLoc + FVector(0.f, 0.f, 3000.f), BossGateLoc - FVector(0.f, 0.f, 9000.f), ECC_WorldStatic))
+	CowardiceGate = World->SpawnActor<AT66CowardiceGate>(AT66CowardiceGate::StaticClass(), GateLoc, FRotator::ZeroRotator, SpawnParams);
+	if (!CowardiceGate)
 	{
-		BossGateLoc.Z = Hit.ImpactPoint.Z;
+		return;
 	}
-	BossGate = World->SpawnActor<AT66BossGate>(AT66BossGate::StaticClass(), BossGateLoc, FRotator::ZeroRotator, SpawnParams);
-	if (BossGate)
+
+	if (IsUsingTowerMainMapLayout() && TowerTargetFloor != INDEX_NONE)
 	{
-		BossGate->TriggerDistance2D = 220.f;
-		if (BossGate->TriggerBox)
+		if (T66TrySnapActorToTowerFloor(World, CowardiceGate, CachedTowerMainMapLayout, TowerTargetFloor, GateLoc))
 		{
-			BossGate->TriggerBox->SetBoxExtent(FVector(120.f, T66GameplayLayout::CorridorHalfHeightY * 0.92f, 220.f));
+			T66AssignTowerFloorTag(CowardiceGate, TowerTargetFloor);
 		}
-		if (BossGate->PoleLeft)
+		else
 		{
-			BossGate->PoleLeft->SetVisibility(false, true);
-			BossGate->PoleLeft->SetHiddenInGame(true, true);
+			TrySnapActorToTerrainAtLocation(CowardiceGate, GateLoc);
 		}
-		if (BossGate->PoleRight)
-		{
-			BossGate->PoleRight->SetVisibility(false, true);
-			BossGate->PoleRight->SetHiddenInGame(true, true);
-		}
+	}
+	else
+	{
+		TrySnapActorToTerrainAtLocation(CowardiceGate, GateLoc);
 	}
 }
 
@@ -534,6 +572,11 @@ void AT66GameMode::SpawnFinalBossSecondPhase(const FVector& Location)
 
 FName AT66GameMode::ResolveBossIDForActivePet() const
 {
+	if (!FT66ShelvedFeatureGate::IsPetsEnabled())
+	{
+		return NAME_None;
+	}
+
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	if (!T66GI)
 	{
@@ -816,7 +859,7 @@ bool AT66GameMode::RunEndgameSaintSmoke(UWorld* ProofWorld, const FString& Outpu
 	T66GI->SelectedDifficulty = ET66Difficulty::Impossible;
 	T66GI->SelectedCompanionID = NAME_None;
 	T66GI->SelectedPetID = NAME_None;
-	RunState->ResetForNewRun();
+	RunState->BeginNewRun();
 	RunState->SetCurrentStage(20);
 	RunState->ClearInventory();
 	Achievements->ResetCurrentRunAchievementUnlockSummary();
@@ -861,7 +904,7 @@ bool AT66GameMode::RunEndgameSaintSmoke(UWorld* ProofWorld, const FString& Outpu
 	Check(TEXT("SaintLeaveOpensVictorySummary"), RunState->HasRunEnded() && RunState->DidRunEndInVictory(),
 		FString::Printf(TEXT("Ended=%d Victory=%d"), RunState->HasRunEnded() ? 1 : 0, RunState->DidRunEndInVictory() ? 1 : 0));
 	PC->SetPause(false);
-	RunState->ResetForNewRun();
+	RunState->BeginNewRun();
 	RunState->SetCurrentStage(20);
 	DestroyProofActors();
 
@@ -869,9 +912,9 @@ bool AT66GameMode::RunEndgameSaintSmoke(UWorld* ProofWorld, const FString& Outpu
 	HandleSaintEndgameChoice(PC, 1, BlessingSaint);
 	const bool bPrimaryBoosts = RunState->GetDamageStat() >= T66SaintBlessingStatBoostPoints && RunState->GetAttackSpeedStat() >= T66SaintBlessingStatBoostPoints && RunState->GetScaleStat() >= T66SaintBlessingStatBoostPoints && RunState->GetAccuracyStat() >= T66SaintBlessingStatBoostPoints && RunState->GetArmorStat() >= T66SaintBlessingStatBoostPoints && RunState->GetEvasionStat() >= T66SaintBlessingStatBoostPoints && RunState->GetLuckStat() >= T66SaintBlessingStatBoostPoints && RunState->GetSpeedStat() >= T66SaintBlessingStatBoostPoints;
 	const float ExpectedElementPower = 1.f + (static_cast<float>(T66SaintBlessingStatBoostPoints) * T66SaintBlessingElementPowerPerPoint);
-	const bool bElementBoosts = RunState->GetSecondaryStatValue(ET66SecondaryStatType::FirePower) >= ExpectedElementPower && RunState->GetSecondaryStatValue(ET66SecondaryStatType::IcePower) >= ExpectedElementPower && RunState->GetSecondaryStatValue(ET66SecondaryStatType::ElectricityPower) >= ExpectedElementPower && RunState->GetSecondaryStatValue(ET66SecondaryStatType::NaturePower) >= ExpectedElementPower;
+	const bool bElementBoosts = RunState->GetStatValue(ET66StatType::FirePower) >= ExpectedElementPower && RunState->GetStatValue(ET66StatType::IcePower) >= ExpectedElementPower && RunState->GetStatValue(ET66StatType::ElectricityPower) >= ExpectedElementPower && RunState->GetStatValue(ET66StatType::NaturePower) >= ExpectedElementPower && RunState->GetStatValue(ET66StatType::WindPower) >= ExpectedElementPower;
 	Check(TEXT("SaintBlessingStartsPandemonium"), bFinalDifficultySurvivalActive && ShouldEndgameDeathOpenRunSummary() && RunState->IsSaintBlessingActive() && bPrimaryBoosts && bElementBoosts && FMath::IsNearlyEqual(RunState->GetFinalSurvivalEnemyScalar(), T66PandemoniumEnemyScalar),
-		FString::Printf(TEXT("Active=%d SummaryOnDeath=%d Blessing=%d Scalar=%.2f Primary=%d Element=%d Fire=%.2f Expected=%.2f"), bFinalDifficultySurvivalActive ? 1 : 0, ShouldEndgameDeathOpenRunSummary() ? 1 : 0, RunState->IsSaintBlessingActive() ? 1 : 0, RunState->GetFinalSurvivalEnemyScalar(), bPrimaryBoosts ? 1 : 0, bElementBoosts ? 1 : 0, RunState->GetSecondaryStatValue(ET66SecondaryStatType::FirePower), ExpectedElementPower));
+		FString::Printf(TEXT("Active=%d SummaryOnDeath=%d Blessing=%d Scalar=%.2f Primary=%d Element=%d Fire=%.2f Expected=%.2f"), bFinalDifficultySurvivalActive ? 1 : 0, ShouldEndgameDeathOpenRunSummary() ? 1 : 0, RunState->IsSaintBlessingActive() ? 1 : 0, RunState->GetFinalSurvivalEnemyScalar(), bPrimaryBoosts ? 1 : 0, bElementBoosts ? 1 : 0, RunState->GetStatValue(ET66StatType::FirePower), ExpectedElementPower));
 	const int32 ScoreBeforePandemoniumProof = RunState->GetCurrentScore();
 	const int32 EnemyScoreBeforePandemoniumProof = RunState->GetScoreBudgetContext().EnemyScoreAwarded;
 	RunState->RegisterSpawnedEnemyScoreBudget(T66PandemoniumSmokeEnemyScoreProofPoints, RunState->GetCurrentStage());
@@ -882,7 +925,7 @@ bool AT66GameMode::RunEndgameSaintSmoke(UWorld* ProofWorld, const FString& Outpu
 	Check(TEXT("PandemoniumDeathCountsAsDifficultyComplete"), RunState->HasRunEnded() && RunState->DidRunEndInVictory(),
 		FString::Printf(TEXT("Ended=%d Victory=%d"), RunState->HasRunEnded() ? 1 : 0, RunState->DidRunEndInVictory() ? 1 : 0));
 	PC->SetPause(false);
-	RunState->ResetForNewRun();
+	RunState->BeginNewRun();
 	RunState->SetCurrentStage(20);
 	DestroyProofActors();
 
@@ -918,7 +961,7 @@ bool AT66GameMode::RunEndgameSaintSmoke(UWorld* ProofWorld, const FString& Outpu
 	Check(TEXT("FinalGFOnlyDeathOpensVictorySummary"), RunState->HasRunEnded() && RunState->DidRunEndInVictory(),
 		FString::Printf(TEXT("Ended=%d Victory=%d"), RunState->HasRunEnded() ? 1 : 0, RunState->DidRunEndInVictory() ? 1 : 0));
 	PC->SetPause(false);
-	RunState->ResetForNewRun();
+	RunState->BeginNewRun();
 	RunState->SetCurrentStage(20);
 	DestroyProofActors();
 
@@ -944,7 +987,7 @@ bool AT66GameMode::RunEndgameSaintSmoke(UWorld* ProofWorld, const FString& Outpu
 	Check(TEXT("FinalPetOnlyDeathOpensVictorySummary"), RunState->HasRunEnded() && RunState->DidRunEndInVictory(),
 		FString::Printf(TEXT("Ended=%d Victory=%d"), RunState->HasRunEnded() ? 1 : 0, RunState->DidRunEndInVictory() ? 1 : 0));
 	PC->SetPause(false);
-	RunState->ResetForNewRun();
+	RunState->BeginNewRun();
 	RunState->SetCurrentStage(20);
 	DestroyProofActors();
 
@@ -959,7 +1002,7 @@ bool AT66GameMode::RunEndgameSaintSmoke(UWorld* ProofWorld, const FString& Outpu
 	Check(TEXT("FinalBothDeathOpensVictorySummary"), RunState->HasRunEnded() && RunState->DidRunEndInVictory(),
 		FString::Printf(TEXT("Ended=%d Victory=%d"), RunState->HasRunEnded() ? 1 : 0, RunState->DidRunEndInVictory() ? 1 : 0));
 	PC->SetPause(false);
-	RunState->ResetForNewRun();
+	RunState->BeginNewRun();
 	RunState->SetCurrentStage(20);
 	DestroyProofActors();
 
@@ -979,7 +1022,7 @@ bool AT66GameMode::RunEndgameSaintSmoke(UWorld* ProofWorld, const FString& Outpu
 	Check(TEXT("SaintSkinChangesKromerOptionText"), PC->GetSaintKromerDialogueOptionTextForAutomation().ToString() == TEXT("Hello fellow saint"),
 		FString::Printf(TEXT("Variant=%s"), *PC->GetSaintKromerDialogueOptionTextForAutomation().ToString()));
 	PC->SetPause(false);
-	RunState->ResetForNewRun();
+	RunState->BeginNewRun();
 	RunState->SetCurrentStage(4);
 	T66GI->SelectedDifficulty = ET66Difficulty::Easy;
 	DestroyProofActors();
@@ -1389,7 +1432,7 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 		if (bUsesFinalSequence)
 		{
 			const bool bHasCompanion = T66GI && !T66GI->SelectedCompanionID.IsNone();
-			const bool bHasPet = T66GI && !T66GI->SelectedPetID.IsNone();
+			const bool bHasPet = FT66ShelvedFeatureGate::IsPetsEnabled() && T66GI && !T66GI->SelectedPetID.IsNone();
 			if (!bHasCompanion && !bHasPet)
 			{
 				SpawnFinalBossSecondPhase(Location);
@@ -1408,7 +1451,6 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	const FVector RewardAnchor = Location;
 	const FVector CompanionRewardLocation = RewardAnchor + FVector(T66BossRewardCompanionOffsetX, 0.0f, 0.0f);
 	const FVector PetRewardLocation = RewardAnchor + FVector(0.0f, T66BossRewardPetOffsetY, 0.0f);
-	const FVector IdolRewardLocation = RewardAnchor + FVector(0.0f, T66BossRewardIdolOffsetY, 0.0f);
 	const FVector GateRewardLocation = RewardAnchor + FVector(T66BossRewardGateOffsetX, 0.0f, 0.0f);
 
 	// Boss clear frees the staged cage reward only on non-difficulty-ending stages; the companion is unlocked only by interacting with the freed recruit.
@@ -1417,18 +1459,22 @@ void AT66GameMode::HandleBossDefeated(AT66BossBase* Boss)
 	// Normal stage: boss dead => miasma disappears and Stage Gate appears.
 	ClearMiasma();
 	TrySpawnPetCaptureForBoss(Boss, PetRewardLocation);
-	SpawnIdolAltarAtLocation(IdolRewardLocation);
 	SpawnStageGateAtLocation(GateRewardLocation);
 
 	if (RunState)
 	{
 		const int32 ClearedStage = RunState->GetCurrentStage();
-		UE_LOG(LogT66GameMode, Verbose, TEXT("Stage %d cleared; post-boss idol altar and stage gate spawned."), ClearedStage);
+		UE_LOG(LogT66GameMode, Verbose, TEXT("Stage %d cleared; post-boss stage gate spawned without idol altar reward."), ClearedStage);
 	}
 }
 
 bool AT66GameMode::TrySpawnPetCaptureForBoss(AT66BossBase* Boss, const FVector& Location)
 {
+	if (!FT66ShelvedFeatureGate::IsPetsEnabled())
+	{
+		return false;
+	}
+
 	UWorld* World = GetWorld();
 	UT66GameInstance* T66GI = GetT66GameInstance();
 	if (!World || !T66GI || !Boss || Boss->BossID.IsNone())

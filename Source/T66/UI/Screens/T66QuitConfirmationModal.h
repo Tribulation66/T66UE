@@ -29,4 +29,9 @@ protected:
 private:
 	FReply HandleStayClicked();
 	FReply HandleQuitClicked();
+	FReply HandleDoNotAskAgainClicked();
+	bool IsDoNotAskAgainPreviewChecked() const;
+
+	bool bDoNotAskAgainPreviewInitialized = false;
+	bool bDoNotAskAgainPreviewChecked = false;
 };

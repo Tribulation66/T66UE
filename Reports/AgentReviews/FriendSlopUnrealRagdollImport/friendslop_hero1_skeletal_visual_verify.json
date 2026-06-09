@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "errors": [],
+  "dt_path": "/Game/Data/DT_CharacterVisuals",
+  "row": "Hero_1_Chad",
+  "actual": {
+    "SkeletalMesh": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/SK_Hero_1_Chad_Male_FriendSlop.SK_Hero_1_Chad_Male_FriendSlop",
+    "WalkAnimation": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Walk.AM_Hero_1_Chad_Male_FriendSlop_Walk",
+    "IdleAnimation": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Idle.AM_Hero_1_Chad_Male_FriendSlop_Idle",
+    "JumpAnimation": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Jump.AM_Hero_1_Chad_Male_FriendSlop_Jump",
+    "RollAnimation": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/AM_Hero_1_Chad_Male_FriendSlop_Roll.AM_Hero_1_Chad_Male_FriendSlop_Roll",
+    "StaticMesh": ""
+  },
+  "loaded_assets": {
+    "SkeletalMesh": true,
+    "WalkAnimation": true,
+    "IdleAnimation": true,
+    "JumpAnimation": true,
+    "RollAnimation": true
+  }
+}

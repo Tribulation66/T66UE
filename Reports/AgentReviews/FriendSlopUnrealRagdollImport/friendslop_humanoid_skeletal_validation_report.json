@@ -1,0 +1,64 @@
+{
+  "ok": true,
+  "errors": [],
+  "skeletal_mesh": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/SK_Hero_1_Chad_Male_FriendSlop.SK_Hero_1_Chad_Male_FriendSlop",
+  "skeleton": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/SK_Hero_1_Chad_Male_FriendSlop_Skeleton.SK_Hero_1_Chad_Male_FriendSlop_Skeleton",
+  "assigned_physics_asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/PA_Hero_1_Chad_Male_FriendSlop_TestRoom.PA_Hero_1_Chad_Male_FriendSlop_TestRoom",
+  "expected_physics_asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/PA_Hero_1_Chad_Male_FriendSlop_TestRoom.PA_Hero_1_Chad_Male_FriendSlop_TestRoom",
+  "material_paths": [
+    "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/Materials/MI_SK_Hero_1_Chad_Male_FriendSlop.MI_SK_Hero_1_Chad_Male_FriendSlop"
+  ],
+  "bounds": {
+    "origin_cm": [
+      9.5367431640625e-07,
+      0.0,
+      90.0
+    ],
+    "extent_cm": [
+      26.21805477142334,
+      45.101593017578125,
+      90.0
+    ],
+    "size_cm": [
+      52.43610954284668,
+      90.20318603515625,
+      180.0
+    ]
+  },
+  "physics_asset": {
+    "ok": true,
+    "body_count": 24,
+    "constraint_count": 23,
+    "body_bones": [
+      "Hero_1_Chad_Male_FriendSlop_Armature",
+      "root",
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "spine_03",
+      "neck_01",
+      "head",
+      "clavicle_l",
+      "upperarm_l",
+      "lowerarm_l",
+      "hand_l",
+      "clavicle_r",
+      "upperarm_r",
+      "lowerarm_r",
+      "hand_r",
+      "thigh_l",
+      "calf_l",
+      "foot_l",
+      "ball_l",
+      "thigh_r",
+      "calf_r",
+      "foot_r",
+      "ball_r"
+    ],
+    "missing_required_body_bones": [],
+    "min_body_count": 15,
+    "min_constraint_count": 12,
+    "body_source": "commandlet_report",
+    "commandlet_report": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopUnrealRagdollImport\\friendslop_humanoid_physics_asset_report.json"
+  }
+}

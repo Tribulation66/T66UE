@@ -1,0 +1,1414 @@
+{
+  "character_visuals": [
+    {
+      "actual": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/SM_Companion_01.SM_Companion_01",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/SM_Companion_01.SM_Companion_01",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Companion_01"
+    },
+    {
+      "actual": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/SM_Companion_02.SM_Companion_02",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/SM_Companion_02.SM_Companion_02",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Companion_02"
+    },
+    {
+      "actual": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/SM_Companion_03.SM_Companion_03",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/SM_Companion_03.SM_Companion_03",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Companion_03"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/Slime/Pixal3D/SM_Slime.SM_Slime",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/Slime/Pixal3D/SM_Slime.SM_Slime",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Slime"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/BoneWalker/Pixal3D/SM_BoneWalker.SM_BoneWalker",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/BoneWalker/Pixal3D/SM_BoneWalker.SM_BoneWalker",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "BoneWalker"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/CaveBat/Pixal3D/SM_CaveBat.SM_CaveBat",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/CaveBat/Pixal3D/SM_CaveBat.SM_CaveBat",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "CaveBat"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/CryptWraith/Pixal3D/SM_CryptWraith.SM_CryptWraith",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/CryptWraith/Pixal3D/SM_CryptWraith.SM_CryptWraith",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "CryptWraith"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/CursedCrow/Pixal3D/SM_CursedCrow.SM_CursedCrow",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/CursedCrow/Pixal3D/SM_CursedCrow.SM_CursedCrow",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "CursedCrow"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/SM_FamishedGhoul.SM_FamishedGhoul",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/SM_FamishedGhoul.SM_FamishedGhoul",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "FamishedGhoul"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/HexSlinger/Pixal3D/SM_HexSlinger.SM_HexSlinger",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/HexSlinger/Pixal3D/SM_HexSlinger.SM_HexSlinger",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "HexSlinger"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/MimicLure/Pixal3D/SM_MimicLure.SM_MimicLure",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/MimicLure/Pixal3D/SM_MimicLure.SM_MimicLure",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "MimicLure"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/RatPack/Pixal3D/SM_RatPack.SM_RatPack",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/RatPack/Pixal3D/SM_RatPack.SM_RatPack",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "RatPack"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/SM_StoneSentinel.SM_StoneSentinel",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/SM_StoneSentinel.SM_StoneSentinel",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "StoneSentinel"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/TombSpider/Pixal3D/SM_TombSpider.SM_TombSpider",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/TombSpider/Pixal3D/SM_TombSpider.SM_TombSpider",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "TombSpider"
+    },
+    {
+      "actual": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/SM_BoneConjurer.SM_BoneConjurer",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/SM_BoneConjurer.SM_BoneConjurer",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "BoneConjurer"
+    },
+    {
+      "actual": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/SM_Dungeon_BaelFallenChad.SM_Dungeon_BaelFallenChad",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/SM_Dungeon_BaelFallenChad.SM_Dungeon_BaelFallenChad",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Dungeon_BaelFallenChad"
+    },
+    {
+      "actual": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/SM_Dungeon_BoneJailer.SM_Dungeon_BoneJailer",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/SM_Dungeon_BoneJailer.SM_Dungeon_BoneJailer",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Dungeon_BoneJailer"
+    },
+    {
+      "actual": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/SM_Dungeon_SewerSlimeKing.SM_Dungeon_SewerSlimeKing",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/SM_Dungeon_SewerSlimeKing.SM_Dungeon_SewerSlimeKing",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Dungeon_SewerSlimeKing"
+    },
+    {
+      "actual": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/SM_Dungeon_WebMatriarch.SM_Dungeon_WebMatriarch",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/SM_Dungeon_WebMatriarch.SM_Dungeon_WebMatriarch",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Dungeon_WebMatriarch"
+    },
+    {
+      "actual": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/SM_CasinoNPC.SM_CasinoNPC",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/SM_CasinoNPC.SM_CasinoNPC",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "CasinoNPC"
+    },
+    {
+      "actual": "/Game/Characters/NPCs/Saint/Pixal3D/SM_Saint.SM_Saint",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/NPCs/Saint/Pixal3D/SM_Saint.SM_Saint",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Saint"
+    },
+    {
+      "actual": "/Game/Characters/NPCs/Ouroboros/Pixal3D/SM_Ouroboros.SM_Ouroboros",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/NPCs/Ouroboros/Pixal3D/SM_Ouroboros.SM_Ouroboros",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Ouroboros"
+    },
+    {
+      "actual": "/Game/Characters/NPCs/VendorNPC/Pixal3D/SM_VendorNPC.SM_VendorNPC",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/NPCs/VendorNPC/Pixal3D/SM_VendorNPC.SM_VendorNPC",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "VendorNPC"
+    },
+    {
+      "actual": "/Game/Characters/NPCs/LoanShark/Pixal3D/SM_LoanShark.SM_LoanShark",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/NPCs/LoanShark/Pixal3D/SM_LoanShark.SM_LoanShark",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "LoanShark"
+    }
+  ],
+  "errors": [],
+  "hero1_raw_rows": [
+    {
+      "actual_rotation": "(Pitch=0,Yaw=90.000000,Roll=0)",
+      "actual_static": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/SM_Hero_1_Chad_Male.SM_Hero_1_Chad_Male",
+      "actual_yaw": 90.0,
+      "animation_values": {
+        "IdleAnimation": "",
+        "JumpAnimation": "",
+        "RollAnimation": "",
+        "WalkAnimation": ""
+      },
+      "animations_blank": true,
+      "class": "StaticMesh",
+      "expected_static": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/SM_Hero_1_Chad_Male.SM_Hero_1_Chad_Male",
+      "expected_yaw": 90.0,
+      "loads_as_static_mesh": true,
+      "row": "Hero_1_Chad",
+      "skeletal_mesh_blank": true,
+      "static_path_ok": true,
+      "yaw_ok": true
+    },
+    {
+      "actual_rotation": "(Pitch=0,Yaw=90.000000,Roll=0)",
+      "actual_static": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/SM_Hero_1_Chad_Male.SM_Hero_1_Chad_Male",
+      "actual_yaw": 90.0,
+      "animation_values": {
+        "IdleAnimation": "",
+        "JumpAnimation": "",
+        "RollAnimation": "",
+        "WalkAnimation": ""
+      },
+      "animations_blank": true,
+      "class": "StaticMesh",
+      "expected_static": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/SM_Hero_1_Chad_Male.SM_Hero_1_Chad_Male",
+      "expected_yaw": 90.0,
+      "loads_as_static_mesh": true,
+      "row": "Hero_1_Chad_DemoSkin",
+      "skeletal_mesh_blank": true,
+      "static_path_ok": true,
+      "yaw_ok": true
+    }
+  ],
+  "imported_assets": [
+    {
+      "asset_id": "Companion_01",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Textures/T_Companion_01_BaseColor.T_Companion_01_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Textures/T_Companion_01_BaseColor.T_Companion_01_BaseColor",
+      "expected_material": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Materials/MI_SM_Companion_01.MI_SM_Companion_01",
+      "expected_texture": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Textures/T_Companion_01_BaseColor.T_Companion_01_BaseColor",
+      "material": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Materials/MI_SM_Companion_01.MI_SM_Companion_01",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Materials/MI_SM_Companion_01.MI_SM_Companion_01"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/SM_Companion_01.SM_Companion_01",
+      "texture": "/Game/Characters/Companions/Companion_01/Default/Pixal3D/Textures/T_Companion_01_BaseColor.T_Companion_01_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Companion_02",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Textures/T_Companion_02_BaseColor.T_Companion_02_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Textures/T_Companion_02_BaseColor.T_Companion_02_BaseColor",
+      "expected_material": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Materials/MI_SM_Companion_02.MI_SM_Companion_02",
+      "expected_texture": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Textures/T_Companion_02_BaseColor.T_Companion_02_BaseColor",
+      "material": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Materials/MI_SM_Companion_02.MI_SM_Companion_02",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Materials/MI_SM_Companion_02.MI_SM_Companion_02"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/SM_Companion_02.SM_Companion_02",
+      "texture": "/Game/Characters/Companions/Companion_02/Default/Pixal3D/Textures/T_Companion_02_BaseColor.T_Companion_02_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Companion_03",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Textures/T_Companion_03_BaseColor.T_Companion_03_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Textures/T_Companion_03_BaseColor.T_Companion_03_BaseColor",
+      "expected_material": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Materials/MI_SM_Companion_03.MI_SM_Companion_03",
+      "expected_texture": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Textures/T_Companion_03_BaseColor.T_Companion_03_BaseColor",
+      "material": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Materials/MI_SM_Companion_03.MI_SM_Companion_03",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Materials/MI_SM_Companion_03.MI_SM_Companion_03"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/SM_Companion_03.SM_Companion_03",
+      "texture": "/Game/Characters/Companions/Companion_03/Default/Pixal3D/Textures/T_Companion_03_BaseColor.T_Companion_03_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Pet_Dungeon_SewerSlimeKing",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Pet_Dungeon_SewerSlimeKing_BaseColor.T_Pet_Dungeon_SewerSlimeKing_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Pet_Dungeon_SewerSlimeKing_BaseColor.T_Pet_Dungeon_SewerSlimeKing_BaseColor",
+      "expected_material": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Materials/MI_SM_Pet_Dungeon_SewerSlimeKing.MI_SM_Pet_Dungeon_SewerSlimeKing",
+      "expected_texture": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Pet_Dungeon_SewerSlimeKing_BaseColor.T_Pet_Dungeon_SewerSlimeKing_BaseColor",
+      "material": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Materials/MI_SM_Pet_Dungeon_SewerSlimeKing.MI_SM_Pet_Dungeon_SewerSlimeKing",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Materials/MI_SM_Pet_Dungeon_SewerSlimeKing.MI_SM_Pet_Dungeon_SewerSlimeKing"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/SM_Pet_Dungeon_SewerSlimeKing.SM_Pet_Dungeon_SewerSlimeKing",
+      "texture": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Pet_Dungeon_SewerSlimeKing_BaseColor.T_Pet_Dungeon_SewerSlimeKing_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Pet_Dungeon_WebMatriarch",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Textures/T_Pet_Dungeon_WebMatriarch_BaseColor.T_Pet_Dungeon_WebMatriarch_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Textures/T_Pet_Dungeon_WebMatriarch_BaseColor.T_Pet_Dungeon_WebMatriarch_BaseColor",
+      "expected_material": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Materials/MI_SM_Pet_Dungeon_WebMatriarch.MI_SM_Pet_Dungeon_WebMatriarch",
+      "expected_texture": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Textures/T_Pet_Dungeon_WebMatriarch_BaseColor.T_Pet_Dungeon_WebMatriarch_BaseColor",
+      "material": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Materials/MI_SM_Pet_Dungeon_WebMatriarch.MI_SM_Pet_Dungeon_WebMatriarch",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Materials/MI_SM_Pet_Dungeon_WebMatriarch.MI_SM_Pet_Dungeon_WebMatriarch"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/SM_Pet_Dungeon_WebMatriarch.SM_Pet_Dungeon_WebMatriarch",
+      "texture": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/Textures/T_Pet_Dungeon_WebMatriarch_BaseColor.T_Pet_Dungeon_WebMatriarch_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Pet_Dungeon_BoneJailer",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Textures/T_Pet_Dungeon_BoneJailer_BaseColor.T_Pet_Dungeon_BoneJailer_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Textures/T_Pet_Dungeon_BoneJailer_BaseColor.T_Pet_Dungeon_BoneJailer_BaseColor",
+      "expected_material": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Materials/MI_SM_Pet_Dungeon_BoneJailer.MI_SM_Pet_Dungeon_BoneJailer",
+      "expected_texture": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Textures/T_Pet_Dungeon_BoneJailer_BaseColor.T_Pet_Dungeon_BoneJailer_BaseColor",
+      "material": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Materials/MI_SM_Pet_Dungeon_BoneJailer.MI_SM_Pet_Dungeon_BoneJailer",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Materials/MI_SM_Pet_Dungeon_BoneJailer.MI_SM_Pet_Dungeon_BoneJailer"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/SM_Pet_Dungeon_BoneJailer.SM_Pet_Dungeon_BoneJailer",
+      "texture": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/Textures/T_Pet_Dungeon_BoneJailer_BaseColor.T_Pet_Dungeon_BoneJailer_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Slime",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/Slime/Pixal3D/Textures/T_Slime_BaseColor.T_Slime_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/Slime/Pixal3D/Textures/T_Slime_BaseColor.T_Slime_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/Slime/Pixal3D/Materials/MI_SM_Slime.MI_SM_Slime",
+      "expected_texture": "/Game/Characters/Mobs/Slime/Pixal3D/Textures/T_Slime_BaseColor.T_Slime_BaseColor",
+      "material": "/Game/Characters/Mobs/Slime/Pixal3D/Materials/MI_SM_Slime.MI_SM_Slime",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/Slime/Pixal3D/Materials/MI_SM_Slime.MI_SM_Slime"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/Slime/Pixal3D/SM_Slime.SM_Slime",
+      "texture": "/Game/Characters/Mobs/Slime/Pixal3D/Textures/T_Slime_BaseColor.T_Slime_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "BoneWalker",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Textures/T_BoneWalker_BaseColor.T_BoneWalker_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Textures/T_BoneWalker_BaseColor.T_BoneWalker_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Materials/MI_SM_BoneWalker.MI_SM_BoneWalker",
+      "expected_texture": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Textures/T_BoneWalker_BaseColor.T_BoneWalker_BaseColor",
+      "material": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Materials/MI_SM_BoneWalker.MI_SM_BoneWalker",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/BoneWalker/Pixal3D/Materials/MI_SM_BoneWalker.MI_SM_BoneWalker"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/BoneWalker/Pixal3D/SM_BoneWalker.SM_BoneWalker",
+      "texture": "/Game/Characters/Mobs/BoneWalker/Pixal3D/Textures/T_BoneWalker_BaseColor.T_BoneWalker_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "CaveBat",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/CaveBat/Pixal3D/Textures/T_CaveBat_BaseColor.T_CaveBat_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/CaveBat/Pixal3D/Textures/T_CaveBat_BaseColor.T_CaveBat_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/CaveBat/Pixal3D/Materials/MI_SM_CaveBat.MI_SM_CaveBat",
+      "expected_texture": "/Game/Characters/Mobs/CaveBat/Pixal3D/Textures/T_CaveBat_BaseColor.T_CaveBat_BaseColor",
+      "material": "/Game/Characters/Mobs/CaveBat/Pixal3D/Materials/MI_SM_CaveBat.MI_SM_CaveBat",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/CaveBat/Pixal3D/Materials/MI_SM_CaveBat.MI_SM_CaveBat"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/CaveBat/Pixal3D/SM_CaveBat.SM_CaveBat",
+      "texture": "/Game/Characters/Mobs/CaveBat/Pixal3D/Textures/T_CaveBat_BaseColor.T_CaveBat_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "CryptWraith",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Textures/T_CryptWraith_BaseColor.T_CryptWraith_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Textures/T_CryptWraith_BaseColor.T_CryptWraith_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Materials/MI_SM_CryptWraith.MI_SM_CryptWraith",
+      "expected_texture": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Textures/T_CryptWraith_BaseColor.T_CryptWraith_BaseColor",
+      "material": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Materials/MI_SM_CryptWraith.MI_SM_CryptWraith",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/CryptWraith/Pixal3D/Materials/MI_SM_CryptWraith.MI_SM_CryptWraith"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/CryptWraith/Pixal3D/SM_CryptWraith.SM_CryptWraith",
+      "texture": "/Game/Characters/Mobs/CryptWraith/Pixal3D/Textures/T_CryptWraith_BaseColor.T_CryptWraith_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "CursedCrow",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Textures/T_CursedCrow_BaseColor.T_CursedCrow_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Textures/T_CursedCrow_BaseColor.T_CursedCrow_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Materials/MI_SM_CursedCrow.MI_SM_CursedCrow",
+      "expected_texture": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Textures/T_CursedCrow_BaseColor.T_CursedCrow_BaseColor",
+      "material": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Materials/MI_SM_CursedCrow.MI_SM_CursedCrow",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/CursedCrow/Pixal3D/Materials/MI_SM_CursedCrow.MI_SM_CursedCrow"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/CursedCrow/Pixal3D/SM_CursedCrow.SM_CursedCrow",
+      "texture": "/Game/Characters/Mobs/CursedCrow/Pixal3D/Textures/T_CursedCrow_BaseColor.T_CursedCrow_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "FamishedGhoul",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Textures/T_FamishedGhoul_BaseColor.T_FamishedGhoul_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Textures/T_FamishedGhoul_BaseColor.T_FamishedGhoul_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Materials/MI_SM_FamishedGhoul.MI_SM_FamishedGhoul",
+      "expected_texture": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Textures/T_FamishedGhoul_BaseColor.T_FamishedGhoul_BaseColor",
+      "material": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Materials/MI_SM_FamishedGhoul.MI_SM_FamishedGhoul",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Materials/MI_SM_FamishedGhoul.MI_SM_FamishedGhoul"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/SM_FamishedGhoul.SM_FamishedGhoul",
+      "texture": "/Game/Characters/Mobs/FamishedGhoul/Pixal3D/Textures/T_FamishedGhoul_BaseColor.T_FamishedGhoul_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "HexSlinger",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Textures/T_HexSlinger_BaseColor.T_HexSlinger_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Textures/T_HexSlinger_BaseColor.T_HexSlinger_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Materials/MI_SM_HexSlinger.MI_SM_HexSlinger",
+      "expected_texture": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Textures/T_HexSlinger_BaseColor.T_HexSlinger_BaseColor",
+      "material": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Materials/MI_SM_HexSlinger.MI_SM_HexSlinger",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/HexSlinger/Pixal3D/Materials/MI_SM_HexSlinger.MI_SM_HexSlinger"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/HexSlinger/Pixal3D/SM_HexSlinger.SM_HexSlinger",
+      "texture": "/Game/Characters/Mobs/HexSlinger/Pixal3D/Textures/T_HexSlinger_BaseColor.T_HexSlinger_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "MimicLure",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/MimicLure/Pixal3D/Textures/T_MimicLure_BaseColor.T_MimicLure_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/MimicLure/Pixal3D/Textures/T_MimicLure_BaseColor.T_MimicLure_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/MimicLure/Pixal3D/Materials/MI_SM_MimicLure.MI_SM_MimicLure",
+      "expected_texture": "/Game/Characters/Mobs/MimicLure/Pixal3D/Textures/T_MimicLure_BaseColor.T_MimicLure_BaseColor",
+      "material": "/Game/Characters/Mobs/MimicLure/Pixal3D/Materials/MI_SM_MimicLure.MI_SM_MimicLure",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/MimicLure/Pixal3D/Materials/MI_SM_MimicLure.MI_SM_MimicLure"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/MimicLure/Pixal3D/SM_MimicLure.SM_MimicLure",
+      "texture": "/Game/Characters/Mobs/MimicLure/Pixal3D/Textures/T_MimicLure_BaseColor.T_MimicLure_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "RatPack",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/RatPack/Pixal3D/Textures/T_RatPack_BaseColor.T_RatPack_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/RatPack/Pixal3D/Textures/T_RatPack_BaseColor.T_RatPack_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/RatPack/Pixal3D/Materials/MI_SM_RatPack.MI_SM_RatPack",
+      "expected_texture": "/Game/Characters/Mobs/RatPack/Pixal3D/Textures/T_RatPack_BaseColor.T_RatPack_BaseColor",
+      "material": "/Game/Characters/Mobs/RatPack/Pixal3D/Materials/MI_SM_RatPack.MI_SM_RatPack",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/RatPack/Pixal3D/Materials/MI_SM_RatPack.MI_SM_RatPack"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/RatPack/Pixal3D/SM_RatPack.SM_RatPack",
+      "texture": "/Game/Characters/Mobs/RatPack/Pixal3D/Textures/T_RatPack_BaseColor.T_RatPack_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "StoneSentinel",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Textures/T_StoneSentinel_BaseColor.T_StoneSentinel_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Textures/T_StoneSentinel_BaseColor.T_StoneSentinel_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Materials/MI_SM_StoneSentinel.MI_SM_StoneSentinel",
+      "expected_texture": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Textures/T_StoneSentinel_BaseColor.T_StoneSentinel_BaseColor",
+      "material": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Materials/MI_SM_StoneSentinel.MI_SM_StoneSentinel",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Materials/MI_SM_StoneSentinel.MI_SM_StoneSentinel"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/SM_StoneSentinel.SM_StoneSentinel",
+      "texture": "/Game/Characters/Mobs/StoneSentinel/Pixal3D/Textures/T_StoneSentinel_BaseColor.T_StoneSentinel_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "TombSpider",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/TombSpider/Pixal3D/Textures/T_TombSpider_BaseColor.T_TombSpider_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/TombSpider/Pixal3D/Textures/T_TombSpider_BaseColor.T_TombSpider_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/TombSpider/Pixal3D/Materials/MI_SM_TombSpider.MI_SM_TombSpider",
+      "expected_texture": "/Game/Characters/Mobs/TombSpider/Pixal3D/Textures/T_TombSpider_BaseColor.T_TombSpider_BaseColor",
+      "material": "/Game/Characters/Mobs/TombSpider/Pixal3D/Materials/MI_SM_TombSpider.MI_SM_TombSpider",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/TombSpider/Pixal3D/Materials/MI_SM_TombSpider.MI_SM_TombSpider"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/TombSpider/Pixal3D/SM_TombSpider.SM_TombSpider",
+      "texture": "/Game/Characters/Mobs/TombSpider/Pixal3D/Textures/T_TombSpider_BaseColor.T_TombSpider_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "BoneConjurer",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Textures/T_BoneConjurer_BaseColor.T_BoneConjurer_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Textures/T_BoneConjurer_BaseColor.T_BoneConjurer_BaseColor",
+      "expected_material": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Materials/MI_SM_BoneConjurer.MI_SM_BoneConjurer",
+      "expected_texture": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Textures/T_BoneConjurer_BaseColor.T_BoneConjurer_BaseColor",
+      "material": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Materials/MI_SM_BoneConjurer.MI_SM_BoneConjurer",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Materials/MI_SM_BoneConjurer.MI_SM_BoneConjurer"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/SM_BoneConjurer.SM_BoneConjurer",
+      "texture": "/Game/Characters/Mobs/BoneConjurer/Pixal3D/Textures/T_BoneConjurer_BaseColor.T_BoneConjurer_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Dungeon_BaelFallenChad",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Textures/T_Dungeon_BaelFallenChad_BaseColor.T_Dungeon_BaelFallenChad_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Textures/T_Dungeon_BaelFallenChad_BaseColor.T_Dungeon_BaelFallenChad_BaseColor",
+      "expected_material": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Materials/MI_SM_Dungeon_BaelFallenChad.MI_SM_Dungeon_BaelFallenChad",
+      "expected_texture": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Textures/T_Dungeon_BaelFallenChad_BaseColor.T_Dungeon_BaelFallenChad_BaseColor",
+      "material": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Materials/MI_SM_Dungeon_BaelFallenChad.MI_SM_Dungeon_BaelFallenChad",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Materials/MI_SM_Dungeon_BaelFallenChad.MI_SM_Dungeon_BaelFallenChad"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/SM_Dungeon_BaelFallenChad.SM_Dungeon_BaelFallenChad",
+      "texture": "/Game/Characters/Enemies/Bosses/Dungeon_BaelFallenChad/Pixal3D/Textures/T_Dungeon_BaelFallenChad_BaseColor.T_Dungeon_BaelFallenChad_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Dungeon_BoneJailer",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Textures/T_Dungeon_BoneJailer_BaseColor.T_Dungeon_BoneJailer_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Textures/T_Dungeon_BoneJailer_BaseColor.T_Dungeon_BoneJailer_BaseColor",
+      "expected_material": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Materials/MI_SM_Dungeon_BoneJailer.MI_SM_Dungeon_BoneJailer",
+      "expected_texture": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Textures/T_Dungeon_BoneJailer_BaseColor.T_Dungeon_BoneJailer_BaseColor",
+      "material": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Materials/MI_SM_Dungeon_BoneJailer.MI_SM_Dungeon_BoneJailer",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Materials/MI_SM_Dungeon_BoneJailer.MI_SM_Dungeon_BoneJailer"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/SM_Dungeon_BoneJailer.SM_Dungeon_BoneJailer",
+      "texture": "/Game/Characters/Enemies/Bosses/Dungeon_BoneJailer/Pixal3D/Textures/T_Dungeon_BoneJailer_BaseColor.T_Dungeon_BoneJailer_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Dungeon_SewerSlimeKing",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Dungeon_SewerSlimeKing_BaseColor.T_Dungeon_SewerSlimeKing_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Dungeon_SewerSlimeKing_BaseColor.T_Dungeon_SewerSlimeKing_BaseColor",
+      "expected_material": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Materials/MI_SM_Dungeon_SewerSlimeKing.MI_SM_Dungeon_SewerSlimeKing",
+      "expected_texture": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Dungeon_SewerSlimeKing_BaseColor.T_Dungeon_SewerSlimeKing_BaseColor",
+      "material": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Materials/MI_SM_Dungeon_SewerSlimeKing.MI_SM_Dungeon_SewerSlimeKing",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Materials/MI_SM_Dungeon_SewerSlimeKing.MI_SM_Dungeon_SewerSlimeKing"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/SM_Dungeon_SewerSlimeKing.SM_Dungeon_SewerSlimeKing",
+      "texture": "/Game/Characters/Enemies/Bosses/Dungeon_SewerSlimeKing/Pixal3D/Textures/T_Dungeon_SewerSlimeKing_BaseColor.T_Dungeon_SewerSlimeKing_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Dungeon_WebMatriarch",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Textures/T_Dungeon_WebMatriarch_BaseColor.T_Dungeon_WebMatriarch_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Textures/T_Dungeon_WebMatriarch_BaseColor.T_Dungeon_WebMatriarch_BaseColor",
+      "expected_material": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Materials/MI_SM_Dungeon_WebMatriarch.MI_SM_Dungeon_WebMatriarch",
+      "expected_texture": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Textures/T_Dungeon_WebMatriarch_BaseColor.T_Dungeon_WebMatriarch_BaseColor",
+      "material": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Materials/MI_SM_Dungeon_WebMatriarch.MI_SM_Dungeon_WebMatriarch",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Materials/MI_SM_Dungeon_WebMatriarch.MI_SM_Dungeon_WebMatriarch"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/SM_Dungeon_WebMatriarch.SM_Dungeon_WebMatriarch",
+      "texture": "/Game/Characters/Enemies/Bosses/Dungeon_WebMatriarch/Pixal3D/Textures/T_Dungeon_WebMatriarch_BaseColor.T_Dungeon_WebMatriarch_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "CasinoNPC",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Textures/T_CasinoNPC_BaseColor.T_CasinoNPC_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Textures/T_CasinoNPC_BaseColor.T_CasinoNPC_BaseColor",
+      "expected_material": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Materials/MI_SM_CasinoNPC.MI_SM_CasinoNPC",
+      "expected_texture": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Textures/T_CasinoNPC_BaseColor.T_CasinoNPC_BaseColor",
+      "material": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Materials/MI_SM_CasinoNPC.MI_SM_CasinoNPC",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Materials/MI_SM_CasinoNPC.MI_SM_CasinoNPC"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/SM_CasinoNPC.SM_CasinoNPC",
+      "texture": "/Game/Characters/NPCs/CasinoNPC/Pixal3D/Textures/T_CasinoNPC_BaseColor.T_CasinoNPC_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Saint",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/NPCs/Saint/Pixal3D/Textures/T_Saint_BaseColor.T_Saint_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/NPCs/Saint/Pixal3D/Textures/T_Saint_BaseColor.T_Saint_BaseColor",
+      "expected_material": "/Game/Characters/NPCs/Saint/Pixal3D/Materials/MI_SM_Saint.MI_SM_Saint",
+      "expected_texture": "/Game/Characters/NPCs/Saint/Pixal3D/Textures/T_Saint_BaseColor.T_Saint_BaseColor",
+      "material": "/Game/Characters/NPCs/Saint/Pixal3D/Materials/MI_SM_Saint.MI_SM_Saint",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/NPCs/Saint/Pixal3D/Materials/MI_SM_Saint.MI_SM_Saint"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/NPCs/Saint/Pixal3D/SM_Saint.SM_Saint",
+      "texture": "/Game/Characters/NPCs/Saint/Pixal3D/Textures/T_Saint_BaseColor.T_Saint_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Ouroboros",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Textures/T_Ouroboros_BaseColor.T_Ouroboros_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Textures/T_Ouroboros_BaseColor.T_Ouroboros_BaseColor",
+      "expected_material": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Materials/MI_SM_Ouroboros.MI_SM_Ouroboros",
+      "expected_texture": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Textures/T_Ouroboros_BaseColor.T_Ouroboros_BaseColor",
+      "material": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Materials/MI_SM_Ouroboros.MI_SM_Ouroboros",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/NPCs/Ouroboros/Pixal3D/Materials/MI_SM_Ouroboros.MI_SM_Ouroboros"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/NPCs/Ouroboros/Pixal3D/SM_Ouroboros.SM_Ouroboros",
+      "texture": "/Game/Characters/NPCs/Ouroboros/Pixal3D/Textures/T_Ouroboros_BaseColor.T_Ouroboros_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "VendorNPC",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Textures/T_VendorNPC_BaseColor.T_VendorNPC_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Textures/T_VendorNPC_BaseColor.T_VendorNPC_BaseColor",
+      "expected_material": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Materials/MI_SM_VendorNPC.MI_SM_VendorNPC",
+      "expected_texture": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Textures/T_VendorNPC_BaseColor.T_VendorNPC_BaseColor",
+      "material": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Materials/MI_SM_VendorNPC.MI_SM_VendorNPC",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/NPCs/VendorNPC/Pixal3D/Materials/MI_SM_VendorNPC.MI_SM_VendorNPC"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/NPCs/VendorNPC/Pixal3D/SM_VendorNPC.SM_VendorNPC",
+      "texture": "/Game/Characters/NPCs/VendorNPC/Pixal3D/Textures/T_VendorNPC_BaseColor.T_VendorNPC_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "LoanShark",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/Characters/NPCs/LoanShark/Pixal3D/Textures/T_LoanShark_BaseColor.T_LoanShark_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/Characters/NPCs/LoanShark/Pixal3D/Textures/T_LoanShark_BaseColor.T_LoanShark_BaseColor",
+      "expected_material": "/Game/Characters/NPCs/LoanShark/Pixal3D/Materials/MI_SM_LoanShark.MI_SM_LoanShark",
+      "expected_texture": "/Game/Characters/NPCs/LoanShark/Pixal3D/Textures/T_LoanShark_BaseColor.T_LoanShark_BaseColor",
+      "material": "/Game/Characters/NPCs/LoanShark/Pixal3D/Materials/MI_SM_LoanShark.MI_SM_LoanShark",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/Characters/NPCs/LoanShark/Pixal3D/Materials/MI_SM_LoanShark.MI_SM_LoanShark"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/Characters/NPCs/LoanShark/Pixal3D/SM_LoanShark.SM_LoanShark",
+      "texture": "/Game/Characters/NPCs/LoanShark/Pixal3D/Textures/T_LoanShark_BaseColor.T_LoanShark_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "AccuracyBoost_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Boosts/Textures/T_AccuracyBoost_Pixal3D_BaseColor.T_AccuracyBoost_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Boosts/Textures/T_AccuracyBoost_Pixal3D_BaseColor.T_AccuracyBoost_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Boosts/Materials/MI_SM_AccuracyBoost_Pixal3D.MI_SM_AccuracyBoost_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Boosts/Textures/T_AccuracyBoost_Pixal3D_BaseColor.T_AccuracyBoost_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Boosts/Materials/MI_SM_AccuracyBoost_Pixal3D.MI_SM_AccuracyBoost_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Boosts/Materials/MI_SM_AccuracyBoost_Pixal3D.MI_SM_AccuracyBoost_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Boosts/SM_AccuracyBoost_Pixal3D.SM_AccuracyBoost_Pixal3D",
+      "texture": "/Game/World/Interactables/Boosts/Textures/T_AccuracyBoost_Pixal3D_BaseColor.T_AccuracyBoost_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "ArmorBoost_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Boosts/Textures/T_ArmorBoost_Pixal3D_BaseColor.T_ArmorBoost_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Boosts/Textures/T_ArmorBoost_Pixal3D_BaseColor.T_ArmorBoost_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Boosts/Materials/MI_SM_ArmorBoost_Pixal3D.MI_SM_ArmorBoost_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Boosts/Textures/T_ArmorBoost_Pixal3D_BaseColor.T_ArmorBoost_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Boosts/Materials/MI_SM_ArmorBoost_Pixal3D.MI_SM_ArmorBoost_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Boosts/Materials/MI_SM_ArmorBoost_Pixal3D.MI_SM_ArmorBoost_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Boosts/SM_ArmorBoost_Pixal3D.SM_ArmorBoost_Pixal3D",
+      "texture": "/Game/World/Interactables/Boosts/Textures/T_ArmorBoost_Pixal3D_BaseColor.T_ArmorBoost_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "AttackScaleBoost_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Boosts/Textures/T_AttackScaleBoost_Pixal3D_BaseColor.T_AttackScaleBoost_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Boosts/Textures/T_AttackScaleBoost_Pixal3D_BaseColor.T_AttackScaleBoost_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Boosts/Materials/MI_SM_AttackScaleBoost_Pixal3D.MI_SM_AttackScaleBoost_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Boosts/Textures/T_AttackScaleBoost_Pixal3D_BaseColor.T_AttackScaleBoost_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Boosts/Materials/MI_SM_AttackScaleBoost_Pixal3D.MI_SM_AttackScaleBoost_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Boosts/Materials/MI_SM_AttackScaleBoost_Pixal3D.MI_SM_AttackScaleBoost_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Boosts/SM_AttackScaleBoost_Pixal3D.SM_AttackScaleBoost_Pixal3D",
+      "texture": "/Game/World/Interactables/Boosts/Textures/T_AttackScaleBoost_Pixal3D_BaseColor.T_AttackScaleBoost_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "AttackSpeedBoost_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Boosts/Textures/T_AttackSpeedBoost_Pixal3D_BaseColor.T_AttackSpeedBoost_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Boosts/Textures/T_AttackSpeedBoost_Pixal3D_BaseColor.T_AttackSpeedBoost_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Boosts/Materials/MI_SM_AttackSpeedBoost_Pixal3D.MI_SM_AttackSpeedBoost_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Boosts/Textures/T_AttackSpeedBoost_Pixal3D_BaseColor.T_AttackSpeedBoost_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Boosts/Materials/MI_SM_AttackSpeedBoost_Pixal3D.MI_SM_AttackSpeedBoost_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Boosts/Materials/MI_SM_AttackSpeedBoost_Pixal3D.MI_SM_AttackSpeedBoost_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Boosts/SM_AttackSpeedBoost_Pixal3D.SM_AttackSpeedBoost_Pixal3D",
+      "texture": "/Game/World/Interactables/Boosts/Textures/T_AttackSpeedBoost_Pixal3D_BaseColor.T_AttackSpeedBoost_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "DamageBoost_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Boosts/Textures/T_DamageBoost_Pixal3D_BaseColor.T_DamageBoost_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Boosts/Textures/T_DamageBoost_Pixal3D_BaseColor.T_DamageBoost_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Boosts/Materials/MI_SM_DamageBoost_Pixal3D.MI_SM_DamageBoost_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Boosts/Textures/T_DamageBoost_Pixal3D_BaseColor.T_DamageBoost_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Boosts/Materials/MI_SM_DamageBoost_Pixal3D.MI_SM_DamageBoost_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Boosts/Materials/MI_SM_DamageBoost_Pixal3D.MI_SM_DamageBoost_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Boosts/SM_DamageBoost_Pixal3D.SM_DamageBoost_Pixal3D",
+      "texture": "/Game/World/Interactables/Boosts/Textures/T_DamageBoost_Pixal3D_BaseColor.T_DamageBoost_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "EvasionBoost_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Boosts/Textures/T_EvasionBoost_Pixal3D_BaseColor.T_EvasionBoost_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Boosts/Textures/T_EvasionBoost_Pixal3D_BaseColor.T_EvasionBoost_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Boosts/Materials/MI_SM_EvasionBoost_Pixal3D.MI_SM_EvasionBoost_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Boosts/Textures/T_EvasionBoost_Pixal3D_BaseColor.T_EvasionBoost_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Boosts/Materials/MI_SM_EvasionBoost_Pixal3D.MI_SM_EvasionBoost_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Boosts/Materials/MI_SM_EvasionBoost_Pixal3D.MI_SM_EvasionBoost_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Boosts/SM_EvasionBoost_Pixal3D.SM_EvasionBoost_Pixal3D",
+      "texture": "/Game/World/Interactables/Boosts/Textures/T_EvasionBoost_Pixal3D_BaseColor.T_EvasionBoost_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "LuckBoost_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Boosts/Textures/T_LuckBoost_Pixal3D_BaseColor.T_LuckBoost_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Boosts/Textures/T_LuckBoost_Pixal3D_BaseColor.T_LuckBoost_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Boosts/Materials/MI_SM_LuckBoost_Pixal3D.MI_SM_LuckBoost_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Boosts/Textures/T_LuckBoost_Pixal3D_BaseColor.T_LuckBoost_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Boosts/Materials/MI_SM_LuckBoost_Pixal3D.MI_SM_LuckBoost_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Boosts/Materials/MI_SM_LuckBoost_Pixal3D.MI_SM_LuckBoost_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Boosts/SM_LuckBoost_Pixal3D.SM_LuckBoost_Pixal3D",
+      "texture": "/Game/World/Interactables/Boosts/Textures/T_LuckBoost_Pixal3D_BaseColor.T_LuckBoost_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "SpeedBoost_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Boosts/Textures/T_SpeedBoost_Pixal3D_BaseColor.T_SpeedBoost_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Boosts/Textures/T_SpeedBoost_Pixal3D_BaseColor.T_SpeedBoost_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Boosts/Materials/MI_SM_SpeedBoost_Pixal3D.MI_SM_SpeedBoost_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Boosts/Textures/T_SpeedBoost_Pixal3D_BaseColor.T_SpeedBoost_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Boosts/Materials/MI_SM_SpeedBoost_Pixal3D.MI_SM_SpeedBoost_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Boosts/Materials/MI_SM_SpeedBoost_Pixal3D.MI_SM_SpeedBoost_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Boosts/SM_SpeedBoost_Pixal3D.SM_SpeedBoost_Pixal3D",
+      "texture": "/Game/World/Interactables/Boosts/Textures/T_SpeedBoost_Pixal3D_BaseColor.T_SpeedBoost_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Chest_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_BaseColor.T_Chest_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_BaseColor.T_Chest_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Chests/ChestModel/Materials/MI_SM_Chest_Pixal3D.MI_SM_Chest_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_BaseColor.T_Chest_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Chests/ChestModel/Materials/MI_SM_Chest_Pixal3D.MI_SM_Chest_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Chests/ChestModel/Materials/MI_SM_Chest_Pixal3D.MI_SM_Chest_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D.SM_Chest_Pixal3D",
+      "texture": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_Pixal3D_BaseColor.T_Chest_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "CompanionCage_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/CompanionCage/Textures/T_CompanionCage_Pixal3D_BaseColor.T_CompanionCage_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/CompanionCage/Textures/T_CompanionCage_Pixal3D_BaseColor.T_CompanionCage_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/CompanionCage/Materials/MI_SM_CompanionCage_Pixal3D.MI_SM_CompanionCage_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/CompanionCage/Textures/T_CompanionCage_Pixal3D_BaseColor.T_CompanionCage_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/CompanionCage/Materials/MI_SM_CompanionCage_Pixal3D.MI_SM_CompanionCage_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/CompanionCage/Materials/MI_SM_CompanionCage_Pixal3D.MI_SM_CompanionCage_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/CompanionCage/SM_CompanionCage_Pixal3D.SM_CompanionCage_Pixal3D",
+      "texture": "/Game/World/Interactables/CompanionCage/Textures/T_CompanionCage_Pixal3D_BaseColor.T_CompanionCage_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "CowardiceGate_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_BaseColor.T_CowardiceGate_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_BaseColor.T_CowardiceGate_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Gates/Materials/MI_SM_CowardiceGate_Pixal3D.MI_SM_CowardiceGate_Pixal3D",
+      "expected_texture": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_BaseColor.T_CowardiceGate_Pixal3D_BaseColor",
+      "material": "/Game/World/Gates/Materials/MI_SM_CowardiceGate_Pixal3D.MI_SM_CowardiceGate_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Gates/Materials/MI_SM_CowardiceGate_Pixal3D.MI_SM_CowardiceGate_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Gates/SM_CowardiceGate_Pixal3D.SM_CowardiceGate_Pixal3D",
+      "texture": "/Game/World/Gates/Textures/T_CowardiceGate_Pixal3D_BaseColor.T_CowardiceGate_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "LootCrate",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Crate/Textures/T_LootCrate_BaseColor.T_LootCrate_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Crate/Textures/T_LootCrate_BaseColor.T_LootCrate_BaseColor",
+      "expected_material": "/Game/World/Interactables/Crate/Materials/MI_SM_LootCrate.MI_SM_LootCrate",
+      "expected_texture": "/Game/World/Interactables/Crate/Textures/T_LootCrate_BaseColor.T_LootCrate_BaseColor",
+      "material": "/Game/World/Interactables/Crate/Materials/MI_SM_LootCrate.MI_SM_LootCrate",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Crate/Materials/MI_SM_LootCrate.MI_SM_LootCrate"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Crate/SM_LootCrate.SM_LootCrate",
+      "texture": "/Game/World/Interactables/Crate/Textures/T_LootCrate_BaseColor.T_LootCrate_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "DifficultyTotem_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_BaseColor.T_DifficultyTotem_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_BaseColor.T_DifficultyTotem_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/DifficultyTotem/Materials/MI_SM_DifficultyTotem_Pixal3D.MI_SM_DifficultyTotem_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_BaseColor.T_DifficultyTotem_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/DifficultyTotem/Materials/MI_SM_DifficultyTotem_Pixal3D.MI_SM_DifficultyTotem_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/DifficultyTotem/Materials/MI_SM_DifficultyTotem_Pixal3D.MI_SM_DifficultyTotem_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D.SM_DifficultyTotem_Pixal3D",
+      "texture": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_Pixal3D_BaseColor.T_DifficultyTotem_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "TutorialGate_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Gates/Textures/T_TutorialGate_Pixal3D_BaseColor.T_TutorialGate_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Gates/Textures/T_TutorialGate_Pixal3D_BaseColor.T_TutorialGate_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Gates/Materials/MI_SM_TutorialGate_Pixal3D.MI_SM_TutorialGate_Pixal3D",
+      "expected_texture": "/Game/World/Gates/Textures/T_TutorialGate_Pixal3D_BaseColor.T_TutorialGate_Pixal3D_BaseColor",
+      "material": "/Game/World/Gates/Materials/MI_SM_TutorialGate_Pixal3D.MI_SM_TutorialGate_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Gates/Materials/MI_SM_TutorialGate_Pixal3D.MI_SM_TutorialGate_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Gates/SM_TutorialGate_Pixal3D.SM_TutorialGate_Pixal3D",
+      "texture": "/Game/World/Gates/Textures/T_TutorialGate_Pixal3D_BaseColor.T_TutorialGate_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Fountain_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_BaseColor.T_Fountain_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_BaseColor.T_Fountain_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Fountain/Materials/MI_SM_Fountain_Pixal3D.MI_SM_Fountain_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_BaseColor.T_Fountain_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Fountain/Materials/MI_SM_Fountain_Pixal3D.MI_SM_Fountain_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Fountain/Materials/MI_SM_Fountain_Pixal3D.MI_SM_Fountain_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D.SM_Fountain_Pixal3D",
+      "texture": "/Game/World/Interactables/Fountain/Textures/T_Fountain_Pixal3D_BaseColor.T_Fountain_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "IdolAltar_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_BaseColor.T_IdolAltar_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_BaseColor.T_IdolAltar_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/IdolAltar/Materials/MI_SM_IdolAltar_Pixal3D.MI_SM_IdolAltar_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_BaseColor.T_IdolAltar_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/IdolAltar/Materials/MI_SM_IdolAltar_Pixal3D.MI_SM_IdolAltar_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/IdolAltar/Materials/MI_SM_IdolAltar_Pixal3D.MI_SM_IdolAltar_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D.SM_IdolAltar_Pixal3D",
+      "texture": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_Pixal3D_BaseColor.T_IdolAltar_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "LootBag_Shared_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_BaseColor.T_LootBag_Shared_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_BaseColor.T_LootBag_Shared_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/LootBags/Shared/Materials/MI_SM_LootBag_Shared_Pixal3D.MI_SM_LootBag_Shared_Pixal3D",
+      "expected_texture": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_BaseColor.T_LootBag_Shared_Pixal3D_BaseColor",
+      "material": "/Game/World/LootBags/Shared/Materials/MI_SM_LootBag_Shared_Pixal3D.MI_SM_LootBag_Shared_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/LootBags/Shared/Materials/MI_SM_LootBag_Shared_Pixal3D.MI_SM_LootBag_Shared_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/LootBags/Shared/SM_LootBag_Shared_Pixal3D.SM_LootBag_Shared_Pixal3D",
+      "texture": "/Game/World/LootBags/Shared/Textures/T_LootBag_Shared_Pixal3D_BaseColor.T_LootBag_Shared_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "LootWheel_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_BaseColor.T_LootWheel_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_BaseColor.T_LootWheel_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/LootWheel/Materials/MI_SM_LootWheel_Pixal3D.MI_SM_LootWheel_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_BaseColor.T_LootWheel_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/LootWheel/Materials/MI_SM_LootWheel_Pixal3D.MI_SM_LootWheel_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/LootWheel/Materials/MI_SM_LootWheel_Pixal3D.MI_SM_LootWheel_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D.SM_LootWheel_Pixal3D",
+      "texture": "/Game/World/Interactables/LootWheel/Textures/T_LootWheel_Pixal3D_BaseColor.T_LootWheel_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "StageGate_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_BaseColor.T_StageGate_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_BaseColor.T_StageGate_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Gates/Materials/MI_SM_StageGate_Pixal3D.MI_SM_StageGate_Pixal3D",
+      "expected_texture": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_BaseColor.T_StageGate_Pixal3D_BaseColor",
+      "material": "/Game/World/Gates/Materials/MI_SM_StageGate_Pixal3D.MI_SM_StageGate_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Gates/Materials/MI_SM_StageGate_Pixal3D.MI_SM_StageGate_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Gates/SM_StageGate_Pixal3D.SM_StageGate_Pixal3D",
+      "texture": "/Game/World/Gates/Textures/T_StageGate_Pixal3D_BaseColor.T_StageGate_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "Vehicle_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_BaseColor.T_Vehicle_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_BaseColor.T_Vehicle_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/Vehicles/Materials/MI_SM_Vehicle_Pixal3D.MI_SM_Vehicle_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_BaseColor.T_Vehicle_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/Vehicles/Materials/MI_SM_Vehicle_Pixal3D.MI_SM_Vehicle_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/Vehicles/Materials/MI_SM_Vehicle_Pixal3D.MI_SM_Vehicle_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D",
+      "texture": "/Game/World/Interactables/Vehicles/Textures/T_Vehicle_Pixal3D_BaseColor.T_Vehicle_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "WeaponAltar_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_BaseColor.T_WeaponAltar_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_BaseColor.T_WeaponAltar_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/Interactables/WeaponAltar/Materials/MI_SM_WeaponAltar_Pixal3D.MI_SM_WeaponAltar_Pixal3D",
+      "expected_texture": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_BaseColor.T_WeaponAltar_Pixal3D_BaseColor",
+      "material": "/Game/World/Interactables/WeaponAltar/Materials/MI_SM_WeaponAltar_Pixal3D.MI_SM_WeaponAltar_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/Interactables/WeaponAltar/Materials/MI_SM_WeaponAltar_Pixal3D.MI_SM_WeaponAltar_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/Interactables/WeaponAltar/SM_WeaponAltar_Pixal3D.SM_WeaponAltar_Pixal3D",
+      "texture": "/Game/World/Interactables/WeaponAltar/Textures/T_WeaponAltar_Pixal3D_BaseColor.T_WeaponAltar_Pixal3D_BaseColor",
+      "texture_ok": true
+    },
+    {
+      "asset_id": "SkullRemains_Easy_Pixal3D",
+      "base_color_ok": true,
+      "base_color_texture": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_BaseColor.T_SkullRemains_Easy_Pixal3D_BaseColor",
+      "class": "StaticMesh",
+      "diffuse_ok": true,
+      "diffuse_texture": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_BaseColor.T_SkullRemains_Easy_Pixal3D_BaseColor",
+      "expected_material": "/Game/World/VisualProps/Easy/Materials/MI_SM_SkullRemains_Easy_Pixal3D.MI_SM_SkullRemains_Easy_Pixal3D",
+      "expected_texture": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_BaseColor.T_SkullRemains_Easy_Pixal3D_BaseColor",
+      "material": "/Game/World/VisualProps/Easy/Materials/MI_SM_SkullRemains_Easy_Pixal3D.MI_SM_SkullRemains_Easy_Pixal3D",
+      "material_ok": true,
+      "material_parent": "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit",
+      "mesh_material_slots": [
+        "/Game/World/VisualProps/Easy/Materials/MI_SM_SkullRemains_Easy_Pixal3D.MI_SM_SkullRemains_Easy_Pixal3D"
+      ],
+      "mesh_slots_ok": true,
+      "ok": true,
+      "ref": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D.SM_SkullRemains_Easy_Pixal3D",
+      "texture": "/Game/World/VisualProps/Easy/Textures/T_SkullRemains_Easy_Pixal3D_BaseColor.T_SkullRemains_Easy_Pixal3D_BaseColor",
+      "texture_ok": true
+    }
+  ],
+  "manifest": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\FriendSlopEasyBatch_20260604_1532_manifest.json",
+  "mob_vat_disabled_rows": [
+    {
+      "actual_b_enabled": "false",
+      "disabled": true,
+      "row": "Slime"
+    },
+    {
+      "actual_b_enabled": "false",
+      "disabled": true,
+      "row": "CaveBat"
+    },
+    {
+      "actual_b_enabled": "false",
+      "disabled": true,
+      "row": "BoneWalker"
+    },
+    {
+      "actual_b_enabled": "false",
+      "disabled": true,
+      "row": "RatPack"
+    },
+    {
+      "actual_b_enabled": "false",
+      "disabled": true,
+      "row": "TombSpider"
+    },
+    {
+      "actual_b_enabled": "false",
+      "disabled": true,
+      "row": "HexSlinger"
+    },
+    {
+      "actual_b_enabled": "false",
+      "disabled": true,
+      "row": "StoneSentinel"
+    },
+    {
+      "actual_b_enabled": "false",
+      "disabled": true,
+      "row": "MimicLure"
+    },
+    {
+      "actual_b_enabled": "false",
+      "disabled": true,
+      "row": "BoneConjurer"
+    },
+    {
+      "actual_b_enabled": "false",
+      "disabled": true,
+      "row": "CryptWraith"
+    }
+  ],
+  "notes": [
+    "Validation expects raw Pixal3D StaticMesh imports.",
+    "ToonStyle outline/material/texture validators are intentionally not used for this FriendSlop raw import pass."
+  ],
+  "ok": true,
+  "pets": [
+    {
+      "actual": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/SM_Pet_Dungeon_SewerSlimeKing.SM_Pet_Dungeon_SewerSlimeKing",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Pets/Pet_Dungeon_SewerSlimeKing/Pixal3D/SM_Pet_Dungeon_SewerSlimeKing.SM_Pet_Dungeon_SewerSlimeKing",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Pet_Dungeon_SewerSlimeKing"
+    },
+    {
+      "actual": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/SM_Pet_Dungeon_WebMatriarch.SM_Pet_Dungeon_WebMatriarch",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Pets/Pet_Dungeon_WebMatriarch/Pixal3D/SM_Pet_Dungeon_WebMatriarch.SM_Pet_Dungeon_WebMatriarch",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Pet_Dungeon_WebMatriarch"
+    },
+    {
+      "actual": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/SM_Pet_Dungeon_BoneJailer.SM_Pet_Dungeon_BoneJailer",
+      "class": "StaticMesh",
+      "expected": "/Game/Characters/Pets/Pet_Dungeon_BoneJailer/Pixal3D/SM_Pet_Dungeon_BoneJailer.SM_Pet_Dungeon_BoneJailer",
+      "loads_as_static_mesh": true,
+      "path_ok": true,
+      "row": "Pet_Dungeon_BoneJailer"
+    }
+  ],
+  "vehicle_refs": [
+    {
+      "class": "StaticMesh",
+      "file": "Content/Data/VehicleInteractables.json",
+      "id": "Vehicle",
+      "index": 0,
+      "loads_as_static_mesh": true,
+      "ref": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D"
+    },
+    {
+      "class": "StaticMesh",
+      "file": "Content/Data/VehicleInteractables.json",
+      "id": "Vehicle",
+      "index": 1,
+      "loads_as_static_mesh": true,
+      "ref": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D"
+    },
+    {
+      "class": "StaticMesh",
+      "file": "Content/Data/VehicleInteractables.json",
+      "id": "Vehicle",
+      "index": 2,
+      "loads_as_static_mesh": true,
+      "ref": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D"
+    },
+    {
+      "class": "StaticMesh",
+      "file": "Content/Data/VehicleInteractables.json",
+      "id": "Vehicle",
+      "index": 3,
+      "loads_as_static_mesh": true,
+      "ref": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D"
+    },
+    {
+      "class": "StaticMesh",
+      "file": "Content/Data/VehicleInteractables.json",
+      "id": "Vehicle",
+      "index": 4,
+      "loads_as_static_mesh": true,
+      "ref": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D"
+    },
+    {
+      "class": "StaticMesh",
+      "file": "Content/Data/VehicleInteractables.json",
+      "id": "Vehicle",
+      "index": 5,
+      "loads_as_static_mesh": true,
+      "ref": "/Game/World/Interactables/Vehicles/SM_Vehicle_Pixal3D.SM_Vehicle_Pixal3D"
+    }
+  ],
+  "world_visual_props": [
+    {
+      "class": "StaticMesh",
+      "file": "Content/Data/WorldVisualProps.json",
+      "id": "SkullRemains",
+      "index": 3,
+      "loads_as_static_mesh": true,
+      "ref": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D.SM_SkullRemains_Easy_Pixal3D"
+    }
+  ]
+}

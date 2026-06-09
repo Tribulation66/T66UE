@@ -33,8 +33,7 @@ bool AT66CasinoNPC::Interact(APlayerController* PC)
 {
 	AT66PlayerController* T66PC = Cast<AT66PlayerController>(PC);
 	if (!T66PC) return false;
-	T66PC->OpenCasinoOverlay();
-	return true;
+	return T66PC->OpenCasinoGamblerNPC(this);
 }
 
 void AT66CasinoNPC::ApplyCasinoNPCStaticVisual()

@@ -5,6 +5,7 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/Movement/T66HeroMovementComponent.h"
+#include "Gameplay/Physics/T66HeroPhysicsComponent.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
@@ -50,6 +51,11 @@ void AT66PlayerController::UpdateHeroMovementIntent()
 
 	if (const AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
 	{
+		if (Hero->IsKnockbackIncapacitated())
+		{
+			AppliedForward = 0.f;
+			AppliedRight = 0.f;
+		}
 		if (Hero->IsVehicleMounted())
 		{
 			AppliedForward = 0.f;
@@ -60,7 +66,7 @@ void AT66PlayerController::UpdateHeroMovementIntent()
 	HeroMovement->SetMoveInputAxes(AppliedForward, AppliedRight);
 }
 
-void AT66PlayerController::HandleRollPressed()
+void AT66PlayerController::HandleLeapPressed()
 {
 	if (!IsGameplayLevel())
 	{
@@ -69,8 +75,13 @@ void AT66PlayerController::HandleRollPressed()
 
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
 	{
-		Hero->RollForward();
+		Hero->Leap();
 	}
+}
+
+void AT66PlayerController::HandleRollPressed()
+{
+	HandleLeapPressed();
 }
 
 void AT66PlayerController::HandleMoveForward(const float Value)
@@ -107,6 +118,10 @@ void AT66PlayerController::HandleMoveForward(const float Value)
 
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
 	{
+		if (Hero->IsKnockbackIncapacitated())
+		{
+			return;
+		}
 		if (Hero->IsVehicleMounted())
 		{
 			if (AT66PilotableTractor* Tractor = Hero->GetMountedTractor())
@@ -172,6 +187,10 @@ void AT66PlayerController::HandleMoveRight(const float Value)
 
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
 	{
+		if (Hero->IsKnockbackIncapacitated())
+		{
+			return;
+		}
 		if (Hero->IsVehicleMounted())
 		{
 			if (AT66PilotableTractor* Tractor = Hero->GetMountedTractor())
@@ -199,6 +218,10 @@ void AT66PlayerController::HandleMoveRight(const float Value)
 	{
 		if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
 		{
+			if (Hero->IsKnockbackIncapacitated())
+			{
+				return;
+			}
 			float TurnRate = FMath::Max(0.0f, CVarT66LockedChaseTurnRate.GetValueOnGameThread());
 			if (UGameInstance* GI = GetGameInstance())
 			{
@@ -233,6 +256,18 @@ void AT66PlayerController::HandleJumpPressed()
 	if (!IsGameplayLevel())
 	{
 		return;
+	}
+
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
+	{
+		if (UT66HeroPhysicsComponent* HeroPhysics = Hero->GetHeroPhysicsComponent())
+		{
+			if (HeroPhysics->NotifyJumpRecoveryInput())
+			{
+				UE_LOG(LogT66PlayerMovement, Log, TEXT("[JUMP_RAGDOLL_RECOVERY] Jump press consumed by active ragdoll recovery."));
+				return;
+			}
+		}
 	}
 
 	UT66HeroMovementComponent* HeroMovement = T66ResolveHeroMovementComponent(GetPawn());

@@ -16,6 +16,7 @@
 #include "Engine/World.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Kismet/GameplayStatics.h"
+#include "UObject/SoftObjectPath.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66RecruitableCompanion, Log, All);
 
@@ -45,6 +46,14 @@ AT66RecruitableCompanion::AT66RecruitableCompanion()
 	}
 
 	UStaticMesh* CageCube = FT66VisualUtil::GetBasicShapeCube();
+	CageVisualMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CageVisualMesh"));
+	CageVisualMesh->SetupAttachment(RootComponent);
+	CageVisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CageVisualMesh->SetGenerateOverlapEvents(false);
+	CageVisualMesh->SetVisibility(false, true);
+	CageVisualMesh->SetHiddenInGame(true, true);
+	CageMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Interactables/CompanionCage/SM_CompanionCage_Pixal3D.SM_CompanionCage_Pixal3D")));
+
 	auto ConfigureCageBar = [CageCube, this](UStaticMeshComponent* CageBar, const FVector& RelativeLocation, const FVector& RelativeScale)
 	{
 		if (!CageBar)
@@ -107,6 +116,18 @@ void AT66RecruitableCompanion::BeginPlay()
 	SnapToGround(bUsingCharacterVisual);
 
 	ApplyCageColor(FLinearColor(0.95f, 0.58f, 0.12f, 1.f));
+	if (CageVisualMesh && !CageMeshOverride.IsNull())
+	{
+		if (UStaticMesh* CageMesh = CageMeshOverride.LoadSynchronous())
+		{
+			CageVisualMesh->EmptyOverrideMaterials();
+			CageVisualMesh->SetStaticMesh(CageMesh);
+			CageVisualMesh->SetRelativeScale3D(FVector::OneVector);
+			CageVisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
+			FT66VisualUtil::GroundMeshToActorOrigin(CageVisualMesh, CageMesh);
+			bImportedCageVisualReady = true;
+		}
+	}
 	SetCageVisualsVisible(bLockedInBossCage);
 	RefreshInteractionPrompt();
 }
@@ -149,22 +170,30 @@ void AT66RecruitableCompanion::ApplyCageColor(const FLinearColor& Color)
 
 void AT66RecruitableCompanion::SetCageVisualsVisible(const bool bVisible)
 {
-	auto SetBarVisible = [bVisible](UStaticMeshComponent* CageBar)
+	const bool bUseImportedCage = bVisible && bImportedCageVisualReady && CageVisualMesh && CageVisualMesh->GetStaticMesh();
+	if (CageVisualMesh)
+	{
+		CageVisualMesh->SetVisibility(bUseImportedCage, true);
+		CageVisualMesh->SetHiddenInGame(!bUseImportedCage, true);
+	}
+
+	const bool bShowFallbackBars = bVisible && !bUseImportedCage;
+	auto SetFallbackBarVisible = [bShowFallbackBars](UStaticMeshComponent* CageBar)
 	{
 		if (!CageBar)
 		{
 			return;
 		}
 
-		CageBar->SetVisibility(bVisible, true);
-		CageBar->SetHiddenInGame(!bVisible, true);
+		CageBar->SetVisibility(bShowFallbackBars, true);
+		CageBar->SetHiddenInGame(!bShowFallbackBars, true);
 	};
 
-	SetBarVisible(CageBarFrontLeft);
-	SetBarVisible(CageBarFrontRight);
-	SetBarVisible(CageBarBackLeft);
-	SetBarVisible(CageBarBackRight);
-	SetBarVisible(CageTopBar);
+	SetFallbackBarVisible(CageBarFrontLeft);
+	SetFallbackBarVisible(CageBarFrontRight);
+	SetFallbackBarVisible(CageBarBackLeft);
+	SetFallbackBarVisible(CageBarBackRight);
+	SetFallbackBarVisible(CageTopBar);
 }
 
 void AT66RecruitableCompanion::InitializeRecruit(const FCompanionData& InData)

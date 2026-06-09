@@ -258,7 +258,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatControlsSettingsUI()
 		{ TEXT("InspectInventory"), Loc ? Loc->GetText_ControlInspectInventory() : NSLOCTEXT("T66.Settings.Fallback", "Inspect Inventory Flat", "Inspect Inventory"), false, FName(TEXT("InspectInventory")), 1.f, true, true },
 		{ TEXT("ToggleGamerMode"), Loc ? Loc->GetText_ControlToggleGamerMode() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Gamer Mode Flat", "Toggle Gamer Mode (Hitboxes)"), false, FName(TEXT("ToggleGamerMode")), 1.f, true, false },
 		{ TEXT("RestartRun"), Loc ? Loc->GetText_ControlRestartRun() : NSLOCTEXT("T66.Settings.Fallback", "Restart Run Flat", "Restart Run"), false, FName(TEXT("RestartRun")), 1.f, true, false },
-		{ TEXT("Roll"), Loc ? Loc->GetText_ControlDash() : NSLOCTEXT("T66.Settings.Fallback", "Roll Flat", "Roll"), false, FName(TEXT("Roll")), 1.f, true, true },
+		{ TEXT("Leap"), Loc ? Loc->GetText_ControlLeap() : NSLOCTEXT("T66.Settings.Fallback", "Leap Flat", "Leap"), false, FName(TEXT("Leap")), 1.f, true, true },
 		{ TEXT("Ultimate"), Loc ? Loc->GetText_ControlUltimate() : NSLOCTEXT("T66.Settings.Fallback", "Ultimate Flat", "Ultimate"), false, FName(TEXT("Ultimate")), 1.f, true, true },
 		{ TEXT("AttackLock"), Loc ? Loc->GetText_ControlAttackLock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Lock Flat", "Attack Lock"), false, FName(TEXT("AttackLock")), 1.f, true, true },
 		{ TEXT("AttackUnlock"), Loc ? Loc->GetText_ControlAttackUnlock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Unlock Flat", "Attack Unlock"), false, FName(TEXT("AttackUnlock")), 1.f, true, true },
@@ -328,7 +328,6 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatControlsSettingsUI()
 	AddN(0.503f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatControls", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
 	AddN(0.628f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatControls", "AUDIO"), 0.118f * CanvasW));
 	AddN(0.754f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatControls", "CRASHING"), 0.118f * CanvasW, 20));
-	AddN(0.879f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsControls.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatControls", "RETRO FX"), 0.118f * CanvasW, 20));
 
 	AddN(0.004f, 0.225f, 0.134f, 0.059f, MakeDeviceButton(DTag(TEXT("SettingsControls.DeviceTabs.KeyboardMouseButton")), ET66ControlsDeviceTab::KeyboardMouse, Loc ? Loc->GetText_KeyboardAndMouse() : NSLOCTEXT("T66.Settings.Fallback", "Keyboard Mouse Flat", "KEYBOARD & MOUSE"), 0.134f * CanvasW));
 	AddN(0.144f, 0.225f, 0.086f, 0.059f, MakeDeviceButton(DTag(TEXT("SettingsControls.DeviceTabs.ControllerButton")), ET66ControlsDeviceTab::Controller, Loc ? Loc->GetText_Controller() : NSLOCTEXT("T66.Settings.Fallback", "Controller Flat", "CONTROLLER"), 0.086f * CanvasW, 19));
@@ -574,7 +573,7 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 		{ Loc ? Loc->GetText_ControlInspectInventory() : NSLOCTEXT("T66.Settings.Fallback", "Inspect Inventory", "Inspect Inventory"), false, FName(TEXT("InspectInventory")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlToggleGamerMode() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Gamer Mode (Hitboxes)", "Toggle Gamer Mode (Hitboxes)"), false, FName(TEXT("ToggleGamerMode")), 1.f, true, false },
 		{ Loc ? Loc->GetText_ControlRestartRun() : NSLOCTEXT("T66.Settings.Fallback", "Restart Run", "Restart Run"), false, FName(TEXT("RestartRun")), 1.f, true, false },
-		{ Loc ? Loc->GetText_ControlDash() : NSLOCTEXT("T66.Settings.Fallback", "Roll", "Roll"), false, FName(TEXT("Roll")), 1.f, true, true },
+		{ Loc ? Loc->GetText_ControlLeap() : NSLOCTEXT("T66.Settings.Fallback", "Leap", "Leap"), false, FName(TEXT("Leap")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlUltimate() : NSLOCTEXT("T66.Settings.Fallback", "Ultimate", "Ultimate"), false, FName(TEXT("Ultimate")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlAttackLock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Lock", "Attack Lock"), false, FName(TEXT("AttackLock")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlAttackUnlock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Unlock", "Attack Unlock"), false, FName(TEXT("AttackUnlock")), 1.f, true, true },

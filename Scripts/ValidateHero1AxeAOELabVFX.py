@@ -113,9 +113,9 @@ def validate_assets_exist():
 
 def validate_layer_material_assets():
     expected_blends = {
-        f"{LAB_SHARED_PREFIX}/M_Hero1AxeAOE_Slash_Bright.M_Hero1AxeAOE_Slash_Bright": unreal.BlendMode.BLEND_ADDITIVE,
-        f"{LAB_SHARED_PREFIX}/M_Hero1AxeAOE_Slash_Body.M_Hero1AxeAOE_Slash_Body": unreal.BlendMode.BLEND_ADDITIVE,
-        f"{LAB_SHARED_PREFIX}/M_Hero1AxeAOE_Slash_Dark.M_Hero1AxeAOE_Slash_Dark": unreal.BlendMode.BLEND_TRANSLUCENT,
+        f"{LAB_SHARED_PREFIX}/M_Hero1AxeAOE_Slash_Bright.M_Hero1AxeAOE_Slash_Bright": unreal.BlendMode.BLEND_MASKED,
+        f"{LAB_SHARED_PREFIX}/M_Hero1AxeAOE_Slash_Body.M_Hero1AxeAOE_Slash_Body": unreal.BlendMode.BLEND_MASKED,
+        f"{LAB_SHARED_PREFIX}/M_Hero1AxeAOE_Slash_Dark.M_Hero1AxeAOE_Slash_Dark": unreal.BlendMode.BLEND_MASKED,
     }
     for asset_path, expected_blend in expected_blends.items():
         material = unreal.EditorAssetLibrary.load_asset(asset_path)

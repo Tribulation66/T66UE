@@ -26,6 +26,8 @@ namespace
 			return NSLOCTEXT("T66.HeroSelection", "AttackCategoryAoe", "AOE");
 		case ET66AttackCategory::DOT:
 			return NSLOCTEXT("T66.HeroSelection", "AttackCategoryDot", "DOT");
+		case ET66AttackCategory::SingleTarget:
+			return NSLOCTEXT("T66.HeroSelection", "AttackCategorySingleTarget", "Single Target");
 		case ET66AttackCategory::Pierce:
 		default:
 			return NSLOCTEXT("T66.HeroSelection", "AttackCategoryPierce", "Pierce");

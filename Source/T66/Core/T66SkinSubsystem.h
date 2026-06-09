@@ -84,9 +84,6 @@ public:
 	TArray<FSkinData> GetSkinsForEntity(ET66SkinEntityType EntityType, FName EntityID) const;
 
 	/** Resolve the portrait used for an entity skin; falls back to the entity portrait when no skin-specific override is defined. */
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
-	TSoftObjectPtr<UTexture2D> GetSkinPortrait(ET66SkinEntityType EntityType, FName EntityID, FName SkinID, bool bSelectionPortrait = false) const;
-
 	/** Current Chad Coupons balance (from profile). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Skins")
 	int32 GetAchievementCoinsBalance() const;
@@ -124,7 +121,6 @@ private:
 	void MarkProfileDirtyAndSave(bool bBroadcastCoinsChanged);
 	bool IsSkinOfferedForEntity(ET66SkinEntityType EntityType, FName EntityID, FName SkinID) const;
 	TArray<FName> GetSkinIDsForEntity(ET66SkinEntityType EntityType, FName EntityID) const;
-	TSoftObjectPtr<UTexture2D> GetCompanionSkinPortraitOverride(FName CompanionID, FName SkinID, bool bSelectionPortrait) const;
 	static const FName LegacyBeachgoerSkinID;
 	static FName NormalizeSkinID(FName SkinID);
 };

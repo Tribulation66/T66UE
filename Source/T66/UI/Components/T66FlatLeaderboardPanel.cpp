@@ -19,32 +19,46 @@
 #include "Internationalization/Text.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Style/T66FlatStyle.h"
+#include "UI/Style/T66FriendslopStyle.h"
+#include "UI/Style/T66RuntimeUIFontAccess.h"
 #include "UI/Style/T66RuntimeUITextureAccess.h"
 #include "UI/T66DemoModeUIUtils.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66UIManager.h"
+#include "Misc/Parse.h"
 #include "Misc/Paths.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
+#include "Widgets/Input/SComboButton.h"
 #include "Widgets/Input/SEditableTextBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SConstraintCanvas.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace
 {
-constexpr float PanelWidth = 476.0f;
-	constexpr float PanelHeight = 884.0f;
-	constexpr float FilterButtonWidth = 72.0f;
-	constexpr float FilterButtonHeight = 72.0f;
-	constexpr float ContentWidth = 390.0f;
-	constexpr float ContentHeight = PanelHeight;
-	constexpr float DropdownColumnWidth = (ContentWidth - 32.0f) * 0.5f;
+	constexpr float ContentWidth = ST66FlatLeaderboardPanel::GetContentWidth();
+	constexpr float PanelContentInset = ST66FlatLeaderboardPanel::GetPanelContentInset();
+	constexpr float PanelWidth = ST66FlatLeaderboardPanel::GetPanelWidth();
+	constexpr float PanelHeight = ST66FlatLeaderboardPanel::GetPanelHeight();
+	constexpr float FilterPanelWidth = PanelWidth;
+	constexpr float FilterPanelHeight = 90.0f;
+	constexpr float FilterPanelGap = 14.0f;
+	constexpr float FilterButtonWidth = 132.0f;
+	constexpr float FilterButtonHeight = 58.0f;
+	constexpr float FilterButtonGap = 18.0f;
+	constexpr float FilterButtonX = (PanelWidth - ((FilterButtonWidth * 3.0f) + (FilterButtonGap * 2.0f))) * 0.5f;
+	constexpr float FilterButtonY = 16.0f;
+	constexpr float ContentHeight = PanelHeight - FilterPanelHeight - FilterPanelGap;
+	constexpr float LeaderboardColumnGap = 10.0f;
+	constexpr float DropdownColumnWidth = (ContentWidth - LeaderboardColumnGap) * 0.5f;
+	constexpr float LeaderboardRowWidth = ContentWidth;
 	constexpr float RowHeight = 42.0f;
-	constexpr float FlatRowPortraitSize = 30.0f;
+	constexpr float FlatRowPortraitSize = 28.0f;
 	constexpr int32 VisibleRemoteEntryCount = 10;
 
 	bool IsFlatSyntheticLeaderboardName(const FString& Name)
@@ -102,6 +116,25 @@ constexpr float PanelWidth = 476.0f;
 		default:
 			return TEXT("RuntimeDependencies/T66/UI/Reference/Screens/MainMenu/BloodyRetro/Elements/leaderboard_filter_global_icon.png");
 		}
+	}
+
+	ET66FriendslopChrome GetFriendslopFilterButtonChrome(const ET66LeaderboardFilter Filter)
+	{
+		switch (Filter)
+		{
+		case ET66LeaderboardFilter::Friends:
+			return ET66FriendslopChrome::FilterFriendsIconButtonRound06;
+		case ET66LeaderboardFilter::Streamers:
+			return ET66FriendslopChrome::FilterStreamerIconButtonRound06;
+		case ET66LeaderboardFilter::Global:
+		default:
+			return ET66FriendslopChrome::FilterGlobalIconButtonRound06;
+		}
+	}
+
+	bool IsFriendslopReferenceFixture()
+	{
+		return FParse::Param(FCommandLine::Get(), TEXT("T66FriendslopReferenceFixture"));
 	}
 }
 
@@ -201,28 +234,42 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPanel()
 
 	Canvas->AddSlot()
 		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(0.f, 0.f, FilterButtonWidth, FilterButtonHeight))
+		.Offset(FMargin(0.f, 0.f, FilterPanelWidth, FilterPanelHeight))
+		[
+			FT66FriendslopStyle::MakeSurface(
+				ET66FriendslopChrome::FilterPanelRound09,
+				ET66FlatState::Default,
+				FMargin(0.f),
+				SNew(SBox),
+				nullptr,
+				Tag(TEXT("FilterPanel")),
+				TEXT("FilterPanel"))
+		];
+
+	Canvas->AddSlot()
+		.Alignment(FVector2D(0.f, 0.f))
+		.Offset(FMargin(FilterButtonX, FilterButtonY, FilterButtonWidth, FilterButtonHeight))
 		[
 			BuildFilterButton(ET66LeaderboardFilter::Global, NSLOCTEXT("T66.FlatLeaderboard", "World", "WORLD"), TEXT("FilterWorldButton"))
 		];
 
 	Canvas->AddSlot()
 		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(0.f, 86.f, FilterButtonWidth, FilterButtonHeight))
+		.Offset(FMargin(FilterButtonX + FilterButtonWidth + FilterButtonGap, FilterButtonY, FilterButtonWidth, FilterButtonHeight))
 		[
 			BuildFilterButton(ET66LeaderboardFilter::Friends, NSLOCTEXT("T66.FlatLeaderboard", "Friends", "FRIENDS"), TEXT("FilterFriendsButton"))
 		];
 
 	Canvas->AddSlot()
 		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(0.f, 172.f, FilterButtonWidth, FilterButtonHeight))
+		.Offset(FMargin(FilterButtonX + ((FilterButtonWidth + FilterButtonGap) * 2.f), FilterButtonY, FilterButtonWidth, FilterButtonHeight))
 		[
 			BuildFilterButton(ET66LeaderboardFilter::Streamers, NSLOCTEXT("T66.FlatLeaderboard", "Stream", "STREAM"), TEXT("FilterStreamersButton"))
 		];
 
 	Canvas->AddSlot()
 		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(86.f, 0.f, ContentWidth, ContentHeight))
+		.Offset(FMargin(0.f, FilterPanelHeight + FilterPanelGap, PanelWidth, ContentHeight))
 		[
 			BuildContentPanel()
 		];
@@ -252,7 +299,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 			.VAlign(VAlign_Center)
 			.Padding(8.f, 0.f, 0.f, 0.f)
 			[
-				FT66FlatStyle::MakeFlatButton(
+				FT66FriendslopStyle::MakeButton(
 					bStreamerRequestOpen ? ET66FlatState::Selected : ET66FlatState::Default,
 					bStreamerRequestOpen
 						? NSLOCTEXT("T66.FlatLeaderboard", "StreamerList", "LIST")
@@ -265,20 +312,22 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 					30.f,
 					true,
 					13,
-					Tag(TEXT("StreamerRequestButton")))
+					Tag(TEXT("StreamerRequestButton")),
+					NAME_None,
+					FT66FriendslopStyle::ButtonChromeForState(bStreamerRequestOpen ? ET66FlatState::Selected : ET66FlatState::Default))
 			];
 	}
 
 	TSharedRef<SHorizontalBox> TimeRow = SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
-		.Padding(0.f, 0.f, 6.f, 0.f)
+		.Padding(0.f, 0.f, LeaderboardColumnGap * 0.5f, 0.f)
 		[
 			BuildTimeButton(ET66LeaderboardTime::Current, NSLOCTEXT("T66.FlatLeaderboard", "Weekly", "WEEKLY"), TEXT("TimeWeeklyButton"))
 		]
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
-		.Padding(6.f, 0.f, 0.f, 0.f)
+		.Padding(LeaderboardColumnGap * 0.5f, 0.f, 0.f, 0.f)
 		[
 			BuildTimeButton(ET66LeaderboardTime::AllTime, NSLOCTEXT("T66.FlatLeaderboard", "AllTime", "ALL TIME"), TEXT("TimeAllTimeButton"))
 		];
@@ -286,13 +335,13 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 	TSharedRef<SHorizontalBox> DropdownRow = SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
-		.Padding(0.f, 0.f, 6.f, 0.f)
+		.Padding(0.f, 0.f, LeaderboardColumnGap * 0.5f, 0.f)
 		[
 			BuildPartySizeDropdown()
 		]
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
-		.Padding(6.f, 0.f, 0.f, 0.f)
+		.Padding(LeaderboardColumnGap * 0.5f, 0.f, 0.f, 0.f)
 		[
 			BuildDifficultyDropdown()
 		];
@@ -300,13 +349,13 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 	TSharedRef<SHorizontalBox> MetricRow = SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
-		.Padding(0.f, 0.f, 6.f, 0.f)
+		.Padding(0.f, 0.f, LeaderboardColumnGap * 0.5f, 0.f)
 		[
 			BuildMetricCheckButton(ET66LeaderboardType::Score, NSLOCTEXT("T66.FlatLeaderboard", "HighScore", "High Score"), TEXT("HighScoreMetricButton"))
 		]
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
-		.Padding(6.f, 0.f, 0.f, 0.f)
+		.Padding(LeaderboardColumnGap * 0.5f, 0.f, 0.f, 0.f)
 		[
 			BuildMetricCheckButton(ET66LeaderboardType::SpeedRun, NSLOCTEXT("T66.FlatLeaderboard", "SpeedRunMixedCase", "Speed Run"), TEXT("SpeedRunMetricButton"))
 		];
@@ -314,7 +363,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 	TSharedRef<SVerticalBox> Column = SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 8.f)
+		.Padding(0.f, 0.f, 0.f, 28.f)
 		[
 			SNew(SBox)
 			.HeightOverride(32.f)
@@ -327,19 +376,9 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 		.Padding(0.f, 0.f, 0.f, 8.f)
 		[
 			SNew(SBox)
-			.HeightOverride(57.f)
+			.HeightOverride(50.f)
 			[
 				TimeRow
-			]
-		]
-		+ SVerticalBox::Slot()
-		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 10.f)
-		[
-			SNew(SBox)
-			.HeightOverride(57.f)
-			[
-				DropdownRow
 			]
 		]
 		+ SVerticalBox::Slot()
@@ -347,7 +386,17 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 		.Padding(0.f, 0.f, 0.f, 12.f)
 		[
 			SNew(SBox)
-			.HeightOverride(57.f)
+			.HeightOverride(50.f)
+			[
+				DropdownRow
+			]
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.f, 0.f, 0.f, 40.f)
+		[
+			SNew(SBox)
+			.HeightOverride(50.f)
 			[
 				MetricRow
 			]
@@ -367,23 +416,32 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 			.AutoHeight()
 			.Padding(0.f, 0.f, 0.f, 5.f)
 			[
-				SNew(SHorizontalBox)
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					FT66FlatStyle::MakeFlatLabel(NSLOCTEXT("T66.FlatLeaderboard", "RankHeader", "RANK"), ET66FlatLabelRole::StatLabel, ETextJustify::Left, Tag(TEXT("RankHeader")))
-				]
-				+ SHorizontalBox::Slot()
-				.FillWidth(1.f)
-				.Padding(55.f, 0.f, 0.f, 0.f)
-				[
-					FT66FlatStyle::MakeFlatLabel(NSLOCTEXT("T66.FlatLeaderboard", "NameHeader", "NAME"), ET66FlatLabelRole::StatLabel, ETextJustify::Left, Tag(TEXT("NameHeader")))
-				]
-				+ SHorizontalBox::Slot()
-				.AutoWidth()
-				[
-					FT66FlatStyle::MakeFlatLabel(TAttribute<FText>::CreateSP(this, &ST66FlatLeaderboardPanel::GetMetricHeaderText), ET66FlatLabelRole::StatLabel, ETextJustify::Right, Tag(TEXT("ScoreHeader")))
-				]
+				FT66FlatStyle::AttachMetadata(
+					SNew(SBorder)
+					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
+					.Padding(FMargin(12.f, 3.f))
+					[
+						SNew(SHorizontalBox)
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							FT66FlatStyle::MakeFlatLabel(NSLOCTEXT("T66.FlatLeaderboard", "RankHeader", "RANK"), ET66FlatLabelRole::Button, ETextJustify::Left, Tag(TEXT("RankHeader")))
+						]
+						+ SHorizontalBox::Slot()
+						.FillWidth(1.f)
+						.Padding(55.f, 0.f, 0.f, 0.f)
+						[
+							FT66FlatStyle::MakeFlatLabel(NSLOCTEXT("T66.FlatLeaderboard", "NameHeader", "NAME"), ET66FlatLabelRole::Button, ETextJustify::Left, Tag(TEXT("NameHeader")))
+						]
+						+ SHorizontalBox::Slot()
+						.AutoWidth()
+						[
+							FT66FlatStyle::MakeFlatLabel(TAttribute<FText>::CreateSP(this, &ST66FlatLeaderboardPanel::GetMetricHeaderText), ET66FlatLabelRole::Button, ETextJustify::Right, Tag(TEXT("ScoreHeader")))
+						]
+					],
+					Tag(TEXT("TableHeaderLabels")),
+					TEXT("TableHeaderLabels"),
+					ET66FlatState::Default)
 			];
 
 		Column->AddSlot()
@@ -393,12 +451,13 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 			];
 	}
 
-	return FT66FlatStyle::MakeFlatPanel(
+	return FT66FriendslopStyle::MakePanel(
 		ET66FlatState::Default,
-		FMargin(8.f),
+		FMargin(PanelContentInset, 20.f, PanelContentInset, 20.f),
 		Column,
 		nullptr,
-		Tag(TEXT("LeaderboardPanel")));
+		Tag(TEXT("LeaderboardPanel")),
+		ET66FriendslopChrome::LeaderboardPanelRound06);
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRowsPanel()
@@ -425,65 +484,65 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRowsPanel()
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildFilterButton(const ET66LeaderboardFilter Filter, const FText& Label, const FString& Name)
 {
-	const FSlateBrush* IconBrush = GetFilterIconBrush(Filter);
-	const TSharedRef<SWidget> IconContent = IconBrush
-		? StaticCastSharedRef<SWidget>(SNew(SImage).Image(IconBrush).ColorAndOpacity(FLinearColor::White))
-		: FT66FlatStyle::MakeFlatLabel(Label, ET66FlatLabelRole::Button, ETextJustify::Center, Tag(Name + TEXT(".FallbackLabel")));
-	const TSharedRef<SWidget> Content = SNew(SBox)
-		.WidthOverride(42.f)
-		.HeightOverride(42.f)
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
-		[
-			IconContent
-		];
-
-	TSharedRef<SWidget> Button = FT66FlatStyle::MakeFlatToggleGroupButton(
-		CurrentFilter == Filter ? ET66FlatState::Selected : ET66FlatState::Default,
+	const ET66FlatState State = CurrentFilter == Filter ? ET66FlatState::Selected : ET66FlatState::Default;
+	const TSharedRef<SWidget> Content = FT66FlatStyle::AttachMetadata(
+		SNew(SBox)
+		.WidthOverride(1.f)
+		.HeightOverride(1.f),
+		Tag(Name + TEXT(".Icon")),
+		TEXT("Icon"),
+		State);
+	TSharedRef<SWidget> Button = FT66FriendslopStyle::MakeToggleGroupButton(
+		State,
 		Content,
 		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetFilter, Filter),
-		FMargin(12.f, 8.f),
+		FMargin(10.f, 7.f),
 		FilterButtonWidth,
 		FilterButtonHeight,
 		true,
 		Tag(Name),
-		FName(TEXT("MainMenuLeaderboardFilter")));
+		FName(TEXT("MainMenuLeaderboardFilter")),
+		GetFriendslopFilterButtonChrome(Filter));
 	Button->SetToolTipText(Label);
 	return Button;
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTypeButton(const ET66LeaderboardType Type, const FText& Label, const FString& Name)
 {
-	return FT66FlatStyle::MakeFlatButton(
-		CurrentType == Type ? ET66FlatState::Selected : ET66FlatState::Default,
+	const ET66FlatState State = CurrentType == Type ? ET66FlatState::Selected : ET66FlatState::Default;
+	return FT66FriendslopStyle::MakeButton(
+		State,
 		Label,
 		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetLeaderboardType, Type),
 		nullptr,
 		nullptr,
 		FMargin(12.f, 8.f),
 		0.f,
-		57.f,
+		50.f,
 		true,
 		18,
 		Tag(Name),
-		FName(TEXT("MainMenuLeaderboardScope")));
+		FName(TEXT("MainMenuLeaderboardScope")),
+		FT66FriendslopStyle::ButtonChromeForState(State));
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTimeButton(const ET66LeaderboardTime TimeFilter, const FText& Label, const FString& Name)
 {
-	return FT66FlatStyle::MakeFlatButton(
-		CurrentTimeFilter == TimeFilter ? ET66FlatState::Selected : ET66FlatState::Default,
+	const ET66FlatState State = CurrentTimeFilter == TimeFilter ? ET66FlatState::Selected : ET66FlatState::Default;
+	return FT66FriendslopStyle::MakeButton(
+		State,
 		Label,
 		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetTimeFilter, TimeFilter),
 		nullptr,
 		nullptr,
-		FMargin(12.f, 8.f),
+		FMargin(10.f, 7.f),
 		0.f,
-		57.f,
+		50.f,
 		TimeFilter != ET66LeaderboardTime::Daily,
 		18,
 		Tag(Name),
-		FName(TEXT("MainMenuLeaderboardTime")));
+		FName(TEXT("MainMenuLeaderboardTime")),
+		State == ET66FlatState::Selected ? ET66FriendslopChrome::LeaderboardTabRedRound06 : ET66FriendslopChrome::LeaderboardTabDarkRound06);
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTimeDropdown()
@@ -497,7 +556,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTimeDropdown()
 		},
 		false,
 		ContentWidth,
-		57.f,
+		52.f,
 		18,
 		Tag(TEXT("TypeDropdown")));
 }
@@ -513,47 +572,147 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRuleDropdown()
 		},
 		false,
 		ContentWidth,
-		57.f,
+		52.f,
 		16,
 		Tag(TEXT("ModeDropdown")));
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPartySizeDropdown()
 {
-	return FT66FlatStyle::MakeFlatDropdown(
+	TSharedRef<SHorizontalBox> ButtonRow = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.f)
+		.VAlign(VAlign_Center)
+		[
+			SNew(STextBlock)
+			.Text(TAttribute<FText>::CreateLambda([this]()
+			{
+				return PartySizeText(CurrentPartySize);
+			}))
+					.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(16, true))
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.VAlign(VAlign_Center)
+		.Padding(8.f, 0.f, 0.f, 0.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(TEXT("v")))
+			.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(12, true))
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+		];
+
+	TSharedPtr<SComboButton> Combo;
+	SAssignNew(Combo, SComboButton)
+		.HasDownArrow(false)
+		.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder")))
+		.ContentPadding(FMargin(0.f))
+		.MenuPlacement(MenuPlacement_BelowAnchor)
+		.OnGetMenuContent_Lambda([this]()
+		{
+			return FT66FlatStyle::MakeFlatDropdownMenuPanel(BuildPartySizeMenu(), DropdownColumnWidth);
+		})
+		.ButtonContent()
+		[
+			FT66FriendslopStyle::MakeSurface(
+				ET66FriendslopChrome::DropdownDarkRound06,
+				ET66FlatState::Default,
+				FMargin(12.f, 6.f),
+				ButtonRow,
+				nullptr,
+				NAME_None,
+				TEXT("DropdownSurface"),
+				true,
+				NAME_None,
+				true)
+		];
+
+	return FT66FlatStyle::AttachMetadata(
+		SNew(SBox)
+		.WidthOverride(DropdownColumnWidth)
+		.HeightOverride(50.f)
+		[
+			Combo.ToSharedRef()
+		],
+		Tag(TEXT("PartySizeDropdown")),
+		TEXT("Dropdown"),
 		ET66FlatState::Default,
-		TAttribute<FText>::CreateLambda([this]()
-		{
-			return PartySizeText(CurrentPartySize);
-		}),
-		[this]()
-		{
-			return BuildPartySizeMenu();
-		},
+		TOptional<FLinearColor>(),
+		true,
+		NAME_None,
 		false,
-		DropdownColumnWidth,
-		57.f,
-		16,
-		Tag(TEXT("PartySizeDropdown")));
+		true);
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyDropdown()
 {
-	return FT66FlatStyle::MakeFlatDropdown(
+	TSharedRef<SHorizontalBox> ButtonRow = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.f)
+		.VAlign(VAlign_Center)
+		[
+			SNew(STextBlock)
+			.Text(TAttribute<FText>::CreateLambda([this]()
+			{
+				return DifficultyText(CurrentDifficulty);
+			}))
+					.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(16, true))
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.VAlign(VAlign_Center)
+		.Padding(8.f, 0.f, 0.f, 0.f)
+		[
+			SNew(STextBlock)
+			.Text(FText::FromString(TEXT("v")))
+			.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(12, true))
+			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
+		];
+
+	TSharedPtr<SComboButton> Combo;
+	SAssignNew(Combo, SComboButton)
+		.HasDownArrow(false)
+		.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder")))
+		.ContentPadding(FMargin(0.f))
+		.MenuPlacement(MenuPlacement_BelowAnchor)
+		.OnGetMenuContent_Lambda([this]()
+		{
+			return FT66FlatStyle::MakeFlatDropdownMenuPanel(BuildDifficultyMenu(), DropdownColumnWidth);
+		})
+		.ButtonContent()
+		[
+			FT66FriendslopStyle::MakeSurface(
+				ET66FriendslopChrome::DropdownDarkRound06,
+				ET66FlatState::Default,
+				FMargin(12.f, 6.f),
+				ButtonRow,
+				nullptr,
+				NAME_None,
+				TEXT("DropdownSurface"),
+				true,
+				NAME_None,
+				true)
+		];
+
+	return FT66FlatStyle::AttachMetadata(
+		SNew(SBox)
+		.WidthOverride(DropdownColumnWidth)
+		.HeightOverride(50.f)
+		[
+			Combo.ToSharedRef()
+		],
+		Tag(TEXT("DifficultyDropdown")),
+		TEXT("Dropdown"),
 		ET66FlatState::Default,
-		TAttribute<FText>::CreateLambda([this]()
-		{
-			return DifficultyText(CurrentDifficulty);
-		}),
-		[this]()
-		{
-			return BuildDifficultyMenu();
-		},
+		TOptional<FLinearColor>(),
+		true,
+		NAME_None,
 		false,
-		DropdownColumnWidth,
-		57.f,
-		16,
-		Tag(TEXT("DifficultyDropdown")));
+		true);
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMetricCheckButton(const ET66LeaderboardType Type, const FText& Label, const FString& Name)
@@ -562,7 +721,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMetricCheckButton(const ET66L
 	const ET66FlatState State = bSelected ? ET66FlatState::Selected : ET66FlatState::Default;
 	TSharedRef<SWidget> Content = SNew(SBorder)
 		.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-		.Padding(FMargin(12.f, 8.f))
+		.Padding(FMargin(10.f, 7.f))
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
@@ -571,19 +730,12 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMetricCheckButton(const ET66L
 			[
 				FT66FlatStyle::AttachMetadata(
 					SNew(SBox)
-					.WidthOverride(20.f)
-					.HeightOverride(20.f)
+					.WidthOverride(24.f)
+					.HeightOverride(24.f)
 					[
 						SNew(SBorder)
-						.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-						.BorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::DefaultBorder())
-						.Padding(2.f)
-						[
-							SNew(SBorder)
-							.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-							.BorderBackgroundColor(bSelected ? FT66FlatStyle::SelectedBorder() : FT66FlatStyle::PanelInner())
-							.Padding(0.f)
-						]
+						.BorderImage(FT66FriendslopStyle::GetCheckboxBrush(bSelected))
+						.Padding(FMargin(0.f))
 					],
 					Tag(Name + TEXT(".Check")),
 					TEXT("CheckboxSquare"),
@@ -591,8 +743,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMetricCheckButton(const ET66L
 					TOptional<FLinearColor>(),
 					false,
 					NAME_None,
-					false,
-					false)
+					true)
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
@@ -614,7 +765,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMetricCheckButton(const ET66L
 		.OnClicked(FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetLeaderboardType, Type))
 		[
 			SNew(SBox)
-			.HeightOverride(57.f)
+			.HeightOverride(50.f)
 			[
 				Content
 			]
@@ -760,7 +911,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyMenu()
 		Option.bEnabled = true;
 		Option.bShowUnavailableOverlay = false;
 		Option.MinWidth = DropdownColumnWidth;
-		Option.Height = 57.f;
+		Option.Height = 52.f;
 		Option.FontSize = 16;
 		Option.Tag = Tag(FString::Printf(TEXT("Difficulty%sOption"), *DifficultyText(Difficulty).ToString().Replace(TEXT(" "), TEXT(""))));
 		Option.OverlayTag = Tag(FString::Printf(TEXT("Difficulty%sOption.DemoOverlay"), *DifficultyText(Difficulty).ToString().Replace(TEXT(" "), TEXT(""))));
@@ -770,7 +921,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyMenu()
 	return FT66FlatStyle::MakeFlatDropdownOptionsMenu(
 		Options,
 		DropdownColumnWidth,
-		57.f,
+		52.f,
 		16,
 		Tag(TEXT("DifficultyOptionsMenu")));
 }
@@ -885,7 +1036,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildStreamerRequestPanel()
 		.AutoHeight()
 		.Padding(0.f, 0.f, 0.f, 12.f)
 		[
-			FT66FlatStyle::MakeFlatButton(
+			FT66FriendslopStyle::MakeButton(
 				bStreamerRequestSubmitting ? ET66FlatState::Disabled : ET66FlatState::Ready,
 				bStreamerRequestSubmitting
 					? NSLOCTEXT("T66.FlatLeaderboard", "Submitting", "SUBMITTING")
@@ -898,7 +1049,9 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildStreamerRequestPanel()
 				44.f,
 				!bStreamerRequestSubmitting,
 				16,
-				Tag(TEXT("StreamerSubmitButton")))
+				Tag(TEXT("StreamerSubmitButton")),
+				NAME_None,
+				FT66FriendslopStyle::ButtonChromeForState(bStreamerRequestSubmitting ? ET66FlatState::Disabled : ET66FlatState::Ready))
 		];
 
 	if (!StreamerRequestStatusText.IsEmpty())
@@ -914,7 +1067,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildStreamerRequestPanel()
 			];
 	}
 
-	return FT66FlatStyle::MakeFlatPanel(
+	return FT66FriendslopStyle::MakePanel(
 		ET66FlatState::Default,
 		FMargin(10.f),
 		Form,
@@ -941,7 +1094,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildLeaderboardRow(const FLeaderb
 			[
 				SNew(STextBlock)
 				.Text(GetRankText(Entry, bLocalRow))
-				.Font(FT66FlatStyle::MakeBoldFont(14))
+				.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(14, true))
 				.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 			]
@@ -964,7 +1117,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildLeaderboardRow(const FLeaderb
 		[
 			SNew(STextBlock)
 			.Text(FText::FromString(ResolveEntryDisplayName(Entry)))
-			.Font(FT66FlatStyle::MakeBoldFont(14))
+			.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(14, true))
 			.ColorAndOpacity(bLocalRow ? FT66FlatStyle::DataAccent() : FT66FlatStyle::PrimaryText())
 			.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 		]
@@ -974,32 +1127,48 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildLeaderboardRow(const FLeaderb
 		.Padding(8.f, 0.f, 0.f, 0.f)
 		[
 			SNew(SBox)
-			.WidthOverride(82.f)
+		.WidthOverride(74.f)
 			[
 				SNew(STextBlock)
 				.Text(HasEntryMetricValue(Entry, bLocalRow)
 					? GetEntryMetricText(Entry)
 					: NSLOCTEXT("T66.FlatLeaderboard", "NoLocalMetric", "N/A"))
-				.Font(FT66FlatStyle::MakeBoldFont(14))
+				.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(14, true))
 				.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 				.Justification(ETextJustify::Right)
 				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 			]
 		];
 
-	TSharedRef<SWidget> RowButton = FT66FlatStyle::MakeFlatToggleGroupButton(
-		RowState,
-		RowContent,
-		FOnClicked::CreateLambda([this, Entry]()
-		{
-			return HandleEntryClicked(Entry);
-		}),
-		FMargin(7.f, 4.f),
-		bFavoritable ? 386.f : 426.f,
-		RowHeight,
-		true,
-		Tag(RowLeaf),
-		NAME_None);
+	TSharedRef<SWidget> RowButton = bLocalRow
+		? FT66FriendslopStyle::MakeToggleGroupButton(
+			RowState,
+			RowContent,
+			FOnClicked::CreateLambda([this, Entry]()
+			{
+				return HandleEntryClicked(Entry);
+			}),
+			FMargin(7.f, 4.f),
+			LeaderboardRowWidth,
+			RowHeight,
+			true,
+			Tag(RowLeaf),
+			NAME_None,
+			ET66FriendslopChrome::RankingRowRedRound06)
+		: FT66FriendslopStyle::MakeToggleGroupButton(
+			RowState,
+			RowContent,
+			FOnClicked::CreateLambda([this, Entry]()
+			{
+				return HandleEntryClicked(Entry);
+			}),
+			FMargin(7.f, 4.f),
+			bFavoritable ? LeaderboardRowWidth - 20.f : LeaderboardRowWidth,
+			RowHeight,
+			true,
+			Tag(RowLeaf),
+			NAME_None,
+			ET66FriendslopChrome::FriendRowRound06);
 
 	if (!bFavoritable)
 	{
@@ -1016,7 +1185,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildLeaderboardRow(const FLeaderb
 		.AutoWidth()
 		.Padding(5.f, 0.f, 0.f, 0.f)
 		[
-			FT66FlatStyle::MakeFlatButton(
+			FT66FriendslopStyle::MakeButton(
 				bFavorited ? ET66FlatState::Selected : ET66FlatState::Default,
 				bFavorited ? FText::FromString(TEXT("*")) : FText::FromString(TEXT("+")),
 				FOnClicked::CreateLambda([this, Entry]()
@@ -1030,12 +1199,33 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildLeaderboardRow(const FLeaderb
 				RowHeight,
 				true,
 				16,
-				Tag(RowLeaf + TEXT(".FavoriteButton")))
+				Tag(RowLeaf + TEXT(".FavoriteButton")),
+				NAME_None,
+				bFavorited ? ET66FriendslopChrome::ButtonPrimaryRed : ET66FriendslopChrome::IconButtonDark)
 		];
 }
 
 void ST66FlatLeaderboardPanel::RefreshLeaderboard()
 {
+	if (IsFriendslopReferenceFixture())
+	{
+		bIsLoading = false;
+		LeaderboardEntries.Reset();
+		DedicatedLocalEntry = MakeDedicatedLocalEntryPlaceholder();
+		DedicatedLocalEntry.Rank = 0;
+		DedicatedLocalEntry.PlayerName = TEXT("Solobro");
+		DedicatedLocalEntry.PlayerNames = { TEXT("Solobro") };
+		DedicatedLocalEntry.Score = 0;
+		DedicatedLocalEntry.TimeSeconds = 0.f;
+		DedicatedLocalEntry.PartySize = ET66PartySize::Solo;
+		DedicatedLocalEntry.Difficulty = ET66Difficulty::Easy;
+		DedicatedLocalEntry.bIsLocalPlayer = true;
+		DedicatedLocalEntry.bHasRunSummary = false;
+		StatusText = FText::GetEmpty();
+		RebuildEntryList();
+		return;
+	}
+
 	UT66BackendSubsystem* Backend = GetBackendSubsystem();
 	if (!Backend)
 	{

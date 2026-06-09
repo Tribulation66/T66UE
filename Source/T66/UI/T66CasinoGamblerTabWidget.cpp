@@ -2,6 +2,7 @@
 
 #include "UI/T66CasinoGamblerTabWidget.h"
 
+#include "Core/T66AudioSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunSaveGame.h"
@@ -791,10 +792,13 @@ bool UT66CasinoGamblerTabWidget::BeginCasinoRound(const int32 BetAmount, const b
 	UT66RunStateSubsystem* RunState = ResolveCasinoRunState(this);
 	if (!RunState || !RunState->TrySpendGold(ClampedBet))
 	{
+		UT66AudioSubsystem::PlayUIEventFromAnyWorld(FName(TEXT("UI.Deny")));
 		SetStatus(NSLOCTEXT("T66.Gambler", "NotEnoughGold", "Not enough gold."), FLinearColor::Red);
 		RefreshTopBar();
 		return false;
 	}
+
+	UT66AudioSubsystem::PlayUIEventFromAnyWorld(FName(TEXT("Casino.Bet")));
 
 	if (!bDoubleDown || InitialBetAmount <= 0)
 	{
@@ -870,6 +874,8 @@ void UT66CasinoGamblerTabWidget::HandleCasinoRoundCompleted(const FName GameID, 
 	RoundState = bSuccessful ? ECasinoRoundState::WonCanDoubleDown : ECasinoRoundState::LostCloseOnly;
 	bInputLocked = false;
 	bCasinoSessionShouldConsumeOnClose = true;
+
+	UT66AudioSubsystem::PlayUIEventFromAnyWorld(FName(bSuccessful ? TEXT("Casino.Win") : TEXT("Casino.Lose")));
 
 	SetStatus(
 		bSuccessful
@@ -1441,7 +1447,7 @@ void UT66CasinoGamblerTabWidget::FinalizeCasinoSessionIfResolved()
 
 	if (AT66PlayerController* PC = Cast<AT66PlayerController>(GetOwningPlayer()))
 	{
-		PC->HandleCasinoInteractableGambleResolved(
+		PC->HandleCasinoGambleResolved(
 			LastResolvedCasinoGameID,
 			bLastResolvedCasinoWin,
 			LastResolvedCasinoPayoutGold);

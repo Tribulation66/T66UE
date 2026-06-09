@@ -5,7 +5,6 @@
 #include "UI/Screens/T66SettingsScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66LocalizationSubsystem.h"
-#include "Core/T66RetroFXSubsystem.h"
 #include "Core/T66RuntimePlatformSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66PlayerSettingsSaveGame.h"
@@ -99,36 +98,6 @@ namespace T66SettingsScreenPrivate
 	inline FLinearColor GetSettingsButtonText()
 	{
 		return FT66FlatStyle::PrimaryText();
-	}
-
-	inline FLinearColor GetRetroButtonBackground()
-	{
-		return T66SettingsButtonNeutralFill();
-	}
-
-	inline FLinearColor GetRetroButtonSelectedBackground()
-	{
-		return FT66FlatStyle::SelectedFill();
-	}
-
-	inline FLinearColor GetRetroButtonOutline()
-	{
-		return T66SettingsButtonOutline();
-	}
-
-	inline FLinearColor GetRetroButtonText()
-	{
-		return GetSettingsButtonText();
-	}
-
-	inline FText FormatRetroPercent(float Value)
-	{
-		const float ClampedValue = FMath::Clamp(Value, 0.0f, 100.0f);
-		if (FMath::IsNearlyEqual(ClampedValue, FMath::RoundToFloat(ClampedValue)))
-		{
-			return FText::AsNumber(FMath::RoundToInt(ClampedValue));
-		}
-		return FText::FromString(FString::Printf(TEXT("%.2f"), ClampedValue));
 	}
 
 	inline FText GetSettingsOnText(UT66LocalizationSubsystem* Loc)
@@ -255,7 +224,6 @@ namespace T66SettingsScreenPrivate
 			{ TEXT("SettingsTabs.MediaViewerButton"), ET66SettingsTab::MediaViewer, NSLOCTEXT("T66.Settings", "StableTabMediaViewer", "MEDIA VIEWER"), 0.503f, 0.118f, 18 },
 			{ TEXT("SettingsTabs.AudioButton"), ET66SettingsTab::Audio, NSLOCTEXT("T66.Settings", "StableTabAudio", "AUDIO"), 0.628f, 0.118f, 22 },
 			{ TEXT("SettingsTabs.CrashingButton"), ET66SettingsTab::Crashing, NSLOCTEXT("T66.Settings", "StableTabCrashing", "CRASHING"), 0.754f, 0.118f, 20 },
-			{ TEXT("SettingsTabs.RetroFXButton"), ET66SettingsTab::RetroFX, NSLOCTEXT("T66.Settings", "StableTabRetroFX", "RETRO FX"), 0.879f, 0.118f, 20 },
 		};
 
 		for (const FStableSettingsTabSpec& Spec : Specs)

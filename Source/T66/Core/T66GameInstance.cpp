@@ -8,6 +8,7 @@
 #include "Core/T66ShelvedFeatureGate.h"
 #include "Core/T66RngSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66SmartLootTuningConfig.h"
 #include "Core/T66IdolManagerSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "UI/T66LoadingScreenWidget.h"
@@ -117,11 +118,180 @@ namespace
 		OutItemData.RedIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
 		OutItemData.YellowIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
 		OutItemData.WhiteIcon = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/Items/Sprites/Item_BackroomsQuickRevive.Item_BackroomsQuickRevive")));
-		OutItemData.PrimaryStatType = ET66HeroStatType::Special;
-		OutItemData.SecondaryStatType = ET66SecondaryStatType::VendorToken;
+		OutItemData.BaseStatType = ET66HeroStatType::Special;
+		OutItemData.StatType = ET66StatType::VendorToken;
 		OutItemData.BaseBuyGold = 100;
 		OutItemData.BaseSellGold = 0;
 		return true;
+	}
+
+	struct FT66SmartLootBuildProfile
+	{
+		TMap<int32, float> BaseStatWeights;
+		TMap<int32, float> StatWeights;
+		TMap<int32, float> AttackCategoryWeights;
+		bool bHasSignal = false;
+	};
+
+	static void AddSmartLootWeight(TMap<int32, float>& Weights, const int32 Key, const float Delta, bool& bHasSignal)
+	{
+		if (Delta <= 0.f)
+		{
+			return;
+		}
+
+		Weights.FindOrAdd(Key) += Delta;
+		bHasSignal = true;
+	}
+
+	static bool TryGetSmartLootAttackCategoryForStat(const ET66StatType StatType, ET66AttackCategory& OutCategory)
+	{
+		switch (StatType)
+		{
+		case ET66StatType::AoeDamage:
+		case ET66StatType::AoeSpeed:
+		case ET66StatType::AoeScale:
+			OutCategory = ET66AttackCategory::AOE;
+			return true;
+
+		case ET66StatType::BounceDamage:
+		case ET66StatType::BounceSpeed:
+		case ET66StatType::BounceScale:
+			OutCategory = ET66AttackCategory::Bounce;
+			return true;
+
+		case ET66StatType::PierceDamage:
+		case ET66StatType::PierceSpeed:
+		case ET66StatType::PierceScale:
+			OutCategory = ET66AttackCategory::Pierce;
+			return true;
+
+		case ET66StatType::DotDamage:
+		case ET66StatType::DotSpeed:
+		case ET66StatType::DotScale:
+			OutCategory = ET66AttackCategory::DOT;
+			return true;
+
+		default:
+			return false;
+		}
+	}
+
+	static void AddSmartLootItemSignal(
+		FT66SmartLootBuildProfile& Profile,
+		const FItemData& ItemData,
+		const UT66SmartLootTuningConfig& Tuning)
+	{
+		if (ItemData.BaseStatType != ET66HeroStatType::Special)
+		{
+			AddSmartLootWeight(
+				Profile.BaseStatWeights,
+				static_cast<int32>(ItemData.BaseStatType),
+				Tuning.InventoryBaseStatWeight,
+				Profile.bHasSignal);
+		}
+
+		if (T66IsLiveStatType(ItemData.StatType))
+		{
+			AddSmartLootWeight(
+				Profile.StatWeights,
+				static_cast<int32>(ItemData.StatType),
+				Tuning.InventoryStatWeight,
+				Profile.bHasSignal);
+
+			ET66AttackCategory Category = ET66AttackCategory::SingleTarget;
+			if (TryGetSmartLootAttackCategoryForStat(ItemData.StatType, Category))
+			{
+				AddSmartLootWeight(
+					Profile.AttackCategoryWeights,
+					static_cast<int32>(Category),
+					Tuning.InventoryAttackCategoryWeight,
+					Profile.bHasSignal);
+			}
+		}
+	}
+
+	static void AddSmartLootIdolSignal(
+		FT66SmartLootBuildProfile& Profile,
+		const FIdolData& IdolData,
+		const UT66SmartLootTuningConfig& Tuning)
+	{
+		AddSmartLootWeight(
+			Profile.StatWeights,
+			static_cast<int32>(T66GetElementPowerStatType(IdolData.Element)),
+			Tuning.IdolElementWeight,
+			Profile.bHasSignal);
+
+		AddSmartLootWeight(
+			Profile.AttackCategoryWeights,
+			static_cast<int32>(IdolData.Category),
+			Tuning.IdolAttackCategoryWeight,
+			Profile.bHasSignal);
+	}
+
+	static FT66SmartLootBuildProfile BuildSmartLootProfile(
+		UT66GameInstance* GI,
+		const UT66SmartLootTuningConfig& Tuning)
+	{
+		FT66SmartLootBuildProfile Profile;
+		if (!GI || !Tuning.bEnableSmartLoot)
+		{
+			return Profile;
+		}
+
+		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
+		{
+			for (const FT66InventorySlot& Slot : RunState->GetInventorySlots())
+			{
+				if (!Slot.IsValid())
+				{
+					continue;
+				}
+
+				FItemData ItemData;
+				if (GI->GetItemData(Slot.ItemTemplateID, ItemData))
+				{
+					AddSmartLootItemSignal(Profile, ItemData, Tuning);
+				}
+			}
+		}
+
+		if (UT66IdolManagerSubsystem* IdolManager = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+		{
+			for (const FName IdolID : IdolManager->GetEquippedIdols())
+			{
+				if (IdolID.IsNone())
+				{
+					continue;
+				}
+
+				FIdolData IdolData;
+				if (GI->GetIdolData(IdolID, IdolData))
+				{
+					AddSmartLootIdolSignal(Profile, IdolData, Tuning);
+				}
+			}
+		}
+
+		return Profile;
+	}
+
+	static float GetSmartLootWeightForItemData(
+		const FItemData& ItemData,
+		const FT66SmartLootBuildProfile& Profile,
+		const UT66SmartLootTuningConfig& Tuning)
+	{
+		float Weight = FMath::Max(0.01f, Tuning.BaseCandidateWeight);
+		Weight += Profile.BaseStatWeights.FindRef(static_cast<int32>(ItemData.BaseStatType));
+		Weight += Profile.StatWeights.FindRef(static_cast<int32>(ItemData.StatType));
+
+		ET66AttackCategory Category = ET66AttackCategory::SingleTarget;
+		if (TryGetSmartLootAttackCategoryForStat(ItemData.StatType, Category))
+		{
+			Weight += Profile.AttackCategoryWeights.FindRef(static_cast<int32>(Category));
+		}
+
+		return FMath::Clamp(Weight, 0.01f, FMath::Max(Tuning.BaseCandidateWeight, Tuning.MaxCandidateWeight));
 	}
 
 	static const TCHAR* FrontendLevelName = TEXT("/Game/Maps/FrontendLevel");
@@ -179,6 +349,7 @@ UT66GameInstance::UT66GameInstance()
 	BossEncountersDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossEncounters.DT_BossEncounters")));
 	BossEncounterMembersDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_BossEncounterMembers.DT_BossEncounterMembers")));
 	NPCsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_NPCs.DT_NPCs")));
+	PetsDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_Pets.DT_Pets")));
 	UniqueEnemiesDataTable = TSoftObjectPtr<UDataTable>(FSoftObjectPath(TEXT("/Game/Data/DT_UniqueEnemies.DT_UniqueEnemies")));
 
 	// Default selections
@@ -277,6 +448,7 @@ void UT66GameInstance::Init()
 			TEXT("pierce-scale"),
 			TEXT("dot-scale"),
 			TEXT("range"),
+			TEXT("execute"),
 			TEXT("taunt"),
 			TEXT("damage-reduction"),
 			TEXT("damage-reflection"),
@@ -291,8 +463,15 @@ void UT66GameInstance::Init()
 			TEXT("cheating"),
 			TEXT("stealing"),
 			TEXT("loot-crate"),
+			TEXT("loot-bag"),
+			TEXT("loot-wheel"),
 			TEXT("alchemy"),
-			TEXT("accuracy")
+			TEXT("accuracy"),
+			TEXT("vendor-token"),
+			TEXT("interactable-luck"),
+			TEXT("stealing-luck"),
+			TEXT("gambling-luck"),
+			TEXT("proc-luck")
 		};
 
 		for (const TCHAR* BuffSlug : PowerUpBuffSlugs)
@@ -503,7 +682,7 @@ void UT66GameInstance::PrimeHeroSelectionAssetsAsync()
 		AddPath(VisualRow->WalkAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->IdleAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->JumpAnimation.ToSoftObjectPath());
-		AddPath(VisualRow->RollAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->LeapAnimation.ToSoftObjectPath());
 	};
 
 	TArray<FHeroData*> HeroRows;
@@ -629,7 +808,7 @@ void UT66GameInstance::PrimeHeroSelectionPreviewVisualsAsync()
 		AddPath(VisualRow->WalkAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->IdleAnimation.ToSoftObjectPath());
 		AddPath(VisualRow->JumpAnimation.ToSoftObjectPath());
-		AddPath(VisualRow->RollAnimation.ToSoftObjectPath());
+		AddPath(VisualRow->LeapAnimation.ToSoftObjectPath());
 	}
 
 	bHeroSelectionPreviewVisualsLoadRequested = true;
@@ -809,7 +988,7 @@ void UT66GameInstance::EnsureCachedItemIDs()
 				continue;
 			}
 
-			if (IsRandomItemPoolEligible(ItemID) && T66IsLiveSecondaryStatType(ItemData.SecondaryStatType))
+			if (IsRandomItemPoolEligible(ItemID) && T66IsLiveStatType(ItemData.StatType))
 			{
 				CachedItemIDs.Add(ItemID);
 			}
@@ -856,7 +1035,9 @@ FName UT66GameInstance::GetRandomItemID()
 	{
 		return FName(TEXT("Item_AoeDamage"));
 	}
-	return CachedItemIDs[FMath::RandRange(0, CachedItemIDs.Num() - 1)];
+
+	FRandomStream LocalStream(FMath::Rand());
+	return GetSmartLootItemIDFromPoolFromStream(CachedItemIDs, LocalStream);
 }
 
 FName UT66GameInstance::GetRandomItemIDFromStream(FRandomStream& Stream)
@@ -867,15 +1048,122 @@ FName UT66GameInstance::GetRandomItemIDFromStream(FRandomStream& Stream)
 		return FName(TEXT("Item_AoeDamage"));
 	}
 
+	return GetSmartLootItemIDFromPoolFromStream(CachedItemIDs, Stream);
+}
+
+float UT66GameInstance::GetSmartLootItemTemplateWeight(FName ItemID)
+{
+	UT66SmartLootTuningConfig Tuning;
+	Tuning.LoadFromConfig();
+
+	if (!Tuning.bEnableSmartLoot)
+	{
+		return FMath::Max(0.01f, Tuning.BaseCandidateWeight);
+	}
+
+	FItemData ItemData;
+	if (!GetItemData(ItemID, ItemData) || !T66IsLiveStatType(ItemData.StatType))
+	{
+		return FMath::Max(0.01f, Tuning.BaseCandidateWeight);
+	}
+
+	const FT66SmartLootBuildProfile Profile = BuildSmartLootProfile(this, Tuning);
+	if (!Profile.bHasSignal)
+	{
+		return FMath::Max(0.01f, Tuning.BaseCandidateWeight);
+	}
+
+	return GetSmartLootWeightForItemData(ItemData, Profile, Tuning);
+}
+
+FName UT66GameInstance::GetSmartLootItemIDFromPoolFromStream(const TArray<FName>& CandidateItemIDs, FRandomStream& Stream)
+{
+	if (CandidateItemIDs.Num() <= 0)
+	{
+		return FName(TEXT("Item_AoeDamage"));
+	}
+
 	if (UT66RngSubsystem* RngSub = GetSubsystem<UT66RngSubsystem>())
 	{
 		if (RngSub->UsesRunStream(Stream))
 		{
-			return CachedItemIDs[RngSub->RunRandRange(0, CachedItemIDs.Num() - 1)];
+			UT66SmartLootTuningConfig Tuning;
+			Tuning.LoadFromConfig();
+			const FT66SmartLootBuildProfile Profile = BuildSmartLootProfile(this, Tuning);
+			if (!Tuning.bEnableSmartLoot || !Profile.bHasSignal)
+			{
+				return CandidateItemIDs[RngSub->RunRandRange(0, CandidateItemIDs.Num() - 1)];
+			}
+
+			TArray<float> Weights;
+			Weights.SetNumZeroed(CandidateItemIDs.Num());
+			float TotalWeight = 0.f;
+			for (int32 Index = 0; Index < CandidateItemIDs.Num(); ++Index)
+			{
+				FItemData ItemData;
+				const float Weight = GetItemData(CandidateItemIDs[Index], ItemData)
+					? GetSmartLootWeightForItemData(ItemData, Profile, Tuning)
+					: FMath::Max(0.01f, Tuning.BaseCandidateWeight);
+				Weights[Index] = Weight;
+				TotalWeight += Weight;
+			}
+
+			if (TotalWeight <= KINDA_SMALL_NUMBER)
+			{
+				return CandidateItemIDs[RngSub->RunRandRange(0, CandidateItemIDs.Num() - 1)];
+			}
+
+			float Roll = RngSub->RunFRandRange(0.f, TotalWeight);
+			for (int32 Index = 0; Index < CandidateItemIDs.Num(); ++Index)
+			{
+				Roll -= Weights[Index];
+				if (Roll <= 0.f)
+				{
+					return CandidateItemIDs[Index];
+				}
+			}
+
+			return CandidateItemIDs.Last();
 		}
 	}
 
-	return CachedItemIDs[Stream.RandRange(0, CachedItemIDs.Num() - 1)];
+	UT66SmartLootTuningConfig Tuning;
+	Tuning.LoadFromConfig();
+	const FT66SmartLootBuildProfile Profile = BuildSmartLootProfile(this, Tuning);
+	if (!Tuning.bEnableSmartLoot || !Profile.bHasSignal)
+	{
+		return CandidateItemIDs[Stream.RandRange(0, CandidateItemIDs.Num() - 1)];
+	}
+
+	TArray<float> Weights;
+	Weights.SetNumZeroed(CandidateItemIDs.Num());
+	float TotalWeight = 0.f;
+	for (int32 Index = 0; Index < CandidateItemIDs.Num(); ++Index)
+	{
+		FItemData ItemData;
+		const float Weight = GetItemData(CandidateItemIDs[Index], ItemData)
+			? GetSmartLootWeightForItemData(ItemData, Profile, Tuning)
+			: FMath::Max(0.01f, Tuning.BaseCandidateWeight);
+		Weights[Index] = Weight;
+		TotalWeight += Weight;
+	}
+
+	if (TotalWeight <= KINDA_SMALL_NUMBER)
+	{
+		return CandidateItemIDs[Stream.RandRange(0, CandidateItemIDs.Num() - 1)];
+	}
+
+	float Roll = Stream.FRandRange(0.f, TotalWeight);
+	for (int32 Index = 0; Index < CandidateItemIDs.Num(); ++Index)
+	{
+		Roll -= Weights[Index];
+		if (Roll <= 0.f)
+		{
+			return CandidateItemIDs[Index];
+		}
+	}
+
+	return CandidateItemIDs.Last();
 }
 
 FName UT66GameInstance::GetRandomItemIDForLootRarity(ET66Rarity LootRarity)
@@ -918,14 +1206,14 @@ bool UT66GameInstance::GetItemData(FName ItemID, FItemData& OutItemData)
 		if (FItemData* FoundRow = DataTable->FindRow<FItemData>(NormalizedItemID, TEXT("GetItemData")))
 		{
 			OutItemData = *FoundRow;
-			OutItemData.PrimaryStatType = T66ResolveEffectivePrimaryStatType(OutItemData.PrimaryStatType, OutItemData.SecondaryStatType);
+			OutItemData.BaseStatType = T66ResolveEffectiveBaseStatType(OutItemData.BaseStatType, OutItemData.StatType);
 			return true;
 		}
 	}
 
 	if (BuildSyntheticSpecialItemData(NormalizedItemID, OutItemData))
 	{
-		OutItemData.PrimaryStatType = T66ResolveEffectivePrimaryStatType(OutItemData.PrimaryStatType, OutItemData.SecondaryStatType);
+		OutItemData.BaseStatType = T66ResolveEffectiveBaseStatType(OutItemData.BaseStatType, OutItemData.StatType);
 		return true;
 	}
 
@@ -1518,7 +1806,7 @@ void UT66GameInstance::PersistRememberedSelectionDefaults()
 	if (UT66AchievementsSubsystem* Achievements = GetSubsystem<UT66AchievementsSubsystem>())
 	{
 		Achievements->RememberLastSelectedLoadout(SelectedHeroID, SelectedCompanionID);
-		Achievements->SetActivePetID(SelectedPetID);
+		Achievements->SetActivePetID(FT66ShelvedFeatureGate::IsPetsEnabled() ? SelectedPetID : NAME_None);
 	}
 }
 
@@ -1549,7 +1837,9 @@ void UT66GameInstance::RestoreRememberedSelectionDefaults()
 				: NAME_None;
 		}
 
-		const FName RememberedPetID = Achievements->GetActivePetID();
+		const FName RememberedPetID = FT66ShelvedFeatureGate::IsPetsEnabled()
+			? Achievements->GetActivePetID()
+			: NAME_None;
 		if (!RememberedPetID.IsNone() && Achievements->IsPetCaptured(RememberedPetID))
 		{
 			FPetData PetData;
@@ -1584,14 +1874,14 @@ bool UT66GameInstance::GetHeroStatTuning(FName HeroID, FT66HeroStatBlock& OutBas
 	OutBaseStats.Speed = 2;
 
 	OutPerLevelGains = FT66HeroPerLevelStatGains{};
-	OutPerLevelGains.Damage = Range(0.5f, 1.0f);
-	OutPerLevelGains.AttackSpeed = Range(0.2f, 0.4f);
-	OutPerLevelGains.AttackScale = Range(0.2f, 0.4f);
-	OutPerLevelGains.Accuracy = Range(0.2f, 0.4f);
-	OutPerLevelGains.Armor = Range(0.2f, 0.4f);
-	OutPerLevelGains.Evasion = Range(0.2f, 0.4f);
-	OutPerLevelGains.Luck = Range(0.2f, 0.4f);
-	OutPerLevelGains.Speed = Range(0.2f, 0.4f);
+	OutPerLevelGains.Damage = Range(2.0f, 2.0f);
+	OutPerLevelGains.AttackSpeed = Range(2.0f, 2.0f);
+	OutPerLevelGains.AttackScale = Range(2.0f, 2.0f);
+	OutPerLevelGains.Accuracy = Range(2.0f, 2.0f);
+	OutPerLevelGains.Armor = Range(2.0f, 2.0f);
+	OutPerLevelGains.Evasion = Range(2.0f, 2.0f);
+	OutPerLevelGains.Luck = Range(2.0f, 2.0f);
+	OutPerLevelGains.Speed = Range(2.0f, 2.0f);
 
 	if (HeroID.IsNone()) return false;
 
@@ -1749,6 +2039,7 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerForest/T_TowerForestRoof.T_TowerForestRoof")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof")));
 		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof")));
+		AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/Baffles/SM_BaffleTube.SM_BaffleTube")));
 		AddCoherentThemeKitAssets();
 	};
 
@@ -1802,9 +2093,10 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	// Main gameplay uses a dedicated terrain asset set. Preload the full terrain contract
 	// before opening the gameplay level so the first entry does not depend on cold material state.
 	AddPath(CharacterVisualsDataTable.ToSoftObjectPath());
-	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_Environment_Lit.M_Environment_Lit")));
+	AddPath(FSoftObjectPath(TEXT("/Game/Materials/M_FriendSlop_FallGuys.M_FriendSlop_FallGuys")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/MI_TowerDungeonRoof.MI_TowerDungeonRoof")));
 	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/T_TowerDungeonRoof.T_TowerDungeonRoof")));
+	AddPath(FSoftObjectPath(TEXT("/Game/World/Terrain/TowerDungeon/Baffles/SM_BaffleTube.SM_BaffleTube")));
 	AddCoherentThemeKitAssets();
 	AddPath(FSoftObjectPath(TEXT("/Engine/BasicShapes/Plane.Plane")));
 	AddAllTowerThemeAssets();
@@ -2058,6 +2350,13 @@ FName UT66GameInstance::GetGameplayLevelName()
 FName UT66GameInstance::GetTribulationEntryLevelName()
 {
 	return GetGameplayLevelName();
+}
+
+void UT66GameInstance::TransitionToFrontendLevel(const UObject* WorldContextObject)
+{
+	const FName LevelToOpen = GetFrontendLevelName();
+	UE_LOG(LogT66GameInstance, Log, TEXT("[LOAD] TransitionToFrontendLevel opening %s."), *LevelToOpen.ToString());
+	UGameplayStatics::OpenLevel(WorldContextObject, LevelToOpen);
 }
 
 void UT66GameInstance::TransitionToGameplayLevel()

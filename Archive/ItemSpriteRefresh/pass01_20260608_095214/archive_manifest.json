@@ -1,0 +1,52 @@
+{
+  "pass": "pass01",
+  "archive_root": "C:\\UE\\T66\\Archive\\ItemSpriteRefresh\\pass01_20260608_095214",
+  "reason": "Full item/idol/relic/drug sprite refresh; previous roots archived before generated assets were wired.",
+  "archived_roots": [
+    "Content/Items/Sprites",
+    "Content/Idols/Sprites",
+    "SourceAssets/ItemSprites",
+    "SourceAssets/IdolSprites",
+    "RuntimeDependencies/T66/UI/PowerUp/SecondaryBuffs",
+    "RuntimeDependencies/T66/UI/PowerUp/Diplomas/Generated"
+  ],
+  "restored_live_compatibility_pngs": [
+    {
+      "name": "accuracy.png",
+      "live_path": "C:\\UE\\T66\\RuntimeDependencies\\T66\\UI\\PowerUp\\SecondaryBuffs\\accuracy.png",
+      "archived_copy": "C:\\UE\\T66\\Archive\\ItemSpriteRefresh\\pass01_20260608_095214\\moved_unused_runtime_secondarybuffs\\accuracy.png",
+      "reason": "Retained live because staged packaging still expects this NonUFS runtime file."
+    },
+    {
+      "name": "cheating.png",
+      "live_path": "C:\\UE\\T66\\RuntimeDependencies\\T66\\UI\\PowerUp\\SecondaryBuffs\\cheating.png",
+      "archived_copy": "C:\\UE\\T66\\Archive\\ItemSpriteRefresh\\pass01_20260608_095214\\moved_unused_runtime_secondarybuffs\\cheating.png",
+      "reason": "Retained live because staged packaging still expects this NonUFS runtime file."
+    },
+    {
+      "name": "crit-damage.png",
+      "live_path": "C:\\UE\\T66\\RuntimeDependencies\\T66\\UI\\PowerUp\\SecondaryBuffs\\crit-damage.png",
+      "archived_copy": "C:\\UE\\T66\\Archive\\ItemSpriteRefresh\\pass01_20260608_095214\\moved_unused_runtime_secondarybuffs\\crit-damage.png",
+      "reason": "Retained live because staged packaging still expects this NonUFS runtime file."
+    },
+    {
+      "name": "loot-crate.png",
+      "live_path": "C:\\UE\\T66\\RuntimeDependencies\\T66\\UI\\PowerUp\\SecondaryBuffs\\loot-crate.png",
+      "archived_copy": "C:\\UE\\T66\\Archive\\ItemSpriteRefresh\\pass01_20260608_095214\\moved_unused_runtime_secondarybuffs\\loot-crate.png",
+      "reason": "Retained live because staged packaging still expects this NonUFS runtime file."
+    },
+    {
+      "name": "stealing.png",
+      "live_path": "C:\\UE\\T66\\RuntimeDependencies\\T66\\UI\\PowerUp\\SecondaryBuffs\\stealing.png",
+      "archived_copy": "C:\\UE\\T66\\Archive\\ItemSpriteRefresh\\pass01_20260608_095214\\moved_unused_runtime_secondarybuffs\\stealing.png",
+      "reason": "Retained live because staged packaging still expects this NonUFS runtime file."
+    },
+    {
+      "name": "treasure-chest.png",
+      "live_path": "C:\\UE\\T66\\RuntimeDependencies\\T66\\UI\\PowerUp\\SecondaryBuffs\\treasure-chest.png",
+      "archived_copy": "C:\\UE\\T66\\Archive\\ItemSpriteRefresh\\pass01_20260608_095214\\moved_unused_runtime_secondarybuffs\\treasure-chest.png",
+      "reason": "Retained live because staged packaging still expects this NonUFS runtime file."
+    }
+  ],
+  "archive_file_count": 313
+}

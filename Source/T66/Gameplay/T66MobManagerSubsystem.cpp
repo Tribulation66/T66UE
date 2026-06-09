@@ -36,7 +36,7 @@ FString GetMobIDForLog(const AT66MobBase* Mob)
 }
 
 constexpr float T66MobArrivalThreshold = 100.f;
-constexpr float T66MobMeleeChaseSpeed = 350.f;
+constexpr float T66MobMeleeChaseSpeed = 175.f;
 constexpr float T66MobTouchDamageCooldown = 0.5f;
 constexpr float T66MobTouchDamageContactTolerance = 12.f;
 constexpr float T66MobSafeZoneRepelStopDistance = 1450.f;
@@ -322,11 +322,11 @@ float GetFamilyChaseSpeed(const AT66MobBase* Mob)
 	switch (Mob->GetEnemyFamily())
 	{
 	case ET66EnemyFamily::Flying:
-		return 430.f;
+		return 215.f;
 	case ET66EnemyFamily::Ranged:
-		return 320.f;
+		return 160.f;
 	case ET66EnemyFamily::Rush:
-		return 330.f;
+		return 165.f;
 	case ET66EnemyFamily::Melee:
 	default:
 		return T66MobMeleeChaseSpeed;
@@ -432,6 +432,59 @@ void ApplyMobKnockback(AT66MobBase* Mob, const float DeltaTime)
 	{
 		Mob->SetActorRotation(Facing.GetSafeNormal2D().Rotation());
 	}
+}
+
+// Ballistic integration for the physical-knockback test path. Mobs are AActor (not
+// ACharacter) so we run our own constant-gravity integration: subtract gravity from Z
+// velocity, integrate position, land when Z <= rest Z and Z velocity is non-positive.
+// On landing we drop the physical flag and seed the existing brief planar-knockback
+// stagger so the mob can't immediately resume chase.
+// Returns true if the launch consumed this tick (caller should skip other movement).
+bool ApplyMobPhysicalLaunch(AT66MobBase* Mob, const float DeltaTime)
+{
+	if (!Mob || !Mob->bPhysicalLaunchActive)
+	{
+		return false;
+	}
+
+	constexpr float Gravity = 980.f; // cm/s^2; matches UE default
+	Mob->PhysicalLaunchSecondsRemaining = FMath::Max(0.f, Mob->PhysicalLaunchSecondsRemaining - DeltaTime);
+	Mob->PhysicalLaunchVelocity.Z -= Gravity * DeltaTime;
+
+	const FVector MobLocation = Mob->GetActorLocation();
+	FVector NewLocation = MobLocation + Mob->PhysicalLaunchVelocity * DeltaTime;
+
+	bool bLanded = false;
+	if (NewLocation.Z <= Mob->PhysicalLaunchRestZ && Mob->PhysicalLaunchVelocity.Z <= 0.f)
+	{
+		NewLocation.Z = Mob->PhysicalLaunchRestZ;
+		bLanded = true;
+	}
+
+	Mob->StoredVelocity = Mob->PhysicalLaunchVelocity;
+	Mob->SetActorLocation(NewLocation, false);
+
+	FVector Facing = Mob->PhysicalLaunchVelocity;
+	Facing.Z = 0.f;
+	if (!Facing.IsNearlyZero())
+	{
+		Mob->SetActorRotation(Facing.GetSafeNormal2D().Rotation());
+	}
+
+	if (bLanded || Mob->PhysicalLaunchSecondsRemaining <= 0.f)
+	{
+		Mob->bPhysicalLaunchActive = false;
+		Mob->PhysicalLaunchVelocity = FVector::ZeroVector;
+		Mob->PhysicalLaunchSecondsRemaining = 0.f;
+		// Seed a short settle stagger via the existing planar knockback timers so chase
+		// resumes a moment after landing (matches the legacy ApplyAutoAttackKnockback feel).
+		constexpr float SettleStaggerSeconds = 0.15f;
+		Mob->KnockbackSecondsRemaining = FMath::Max(Mob->KnockbackSecondsRemaining, SettleStaggerSeconds);
+		Mob->KnockbackDurationSeconds = FMath::Max(Mob->KnockbackDurationSeconds, SettleStaggerSeconds);
+		Mob->KnockbackVelocity = FVector::ZeroVector;
+	}
+
+	return true;
 }
 
 void ApplyMobPlanarMovement(
@@ -1349,6 +1402,61 @@ void UT66MobManagerSubsystem::Deinitialize()
 	ActiveMobVertexAnimationStates.Reset();
 	Super::Deinitialize();
 }
+
+#if !UE_BUILD_SHIPPING
+FT66WorldRuntimeDebugSnapshot UT66MobManagerSubsystem::GetWorldRuntimeDebugSnapshot() const
+{
+	FT66WorldRuntimeDebugSnapshot Snapshot;
+	Snapshot.SystemName = TEXT("UT66MobManagerSubsystem");
+
+	int32 ValidActiveMobs = 0;
+	for (const TWeakObjectPtr<AT66MobBase>& Mob : ActiveMobs)
+	{
+		if (Mob.IsValid())
+		{
+			++ValidActiveMobs;
+		}
+	}
+
+	int32 ValidInactiveMobs = 0;
+	for (const TWeakObjectPtr<AT66MobBase>& Mob : InactiveMobs)
+	{
+		if (Mob.IsValid())
+		{
+			++ValidInactiveMobs;
+		}
+	}
+
+	int32 ValidVatStates = 0;
+	for (const FT66MobVertexAnimationRuntimeState& State : ActiveMobVertexAnimationStates)
+	{
+		if (State.Mob.IsValid())
+		{
+			++ValidVatStates;
+		}
+	}
+
+	Snapshot.AddCounter(TEXT("active_mob_slots"), ActiveMobs.Num());
+	Snapshot.AddCounter(TEXT("active_mobs_valid"), ValidActiveMobs);
+	Snapshot.AddCounter(TEXT("inactive_mob_slots"), InactiveMobs.Num());
+	Snapshot.AddCounter(TEXT("inactive_mobs_valid"), ValidInactiveMobs);
+	Snapshot.AddCounter(TEXT("vat_runtime_state_slots"), ActiveMobVertexAnimationStates.Num());
+	Snapshot.AddCounter(TEXT("vat_runtime_states_valid"), ValidVatStates);
+	Snapshot.AddCounter(TEXT("pool_fresh_spawn_count"), PoolFreshSpawnCount);
+	Snapshot.AddCounter(TEXT("pool_reuse_acquire_count"), PoolReuseAcquireCount);
+	Snapshot.AddCounter(TEXT("pool_release_count"), PoolReleaseCount);
+	Snapshot.AddCounter(TEXT("pool_overflow_destroy_count"), PoolOverflowDestroyCount);
+	Snapshot.AddCounter(TEXT("peak_inactive_mob_count"), PeakInactiveMobCount);
+	Snapshot.AddCounter(TEXT("known_timer_handles"), 0);
+	Snapshot.AddCounter(TEXT("known_external_delegate_handles"), 0);
+	Snapshot.AddFlag(TEXT("backrooms_gameplay_paused"), bBackroomsGameplayPaused);
+	Snapshot.AddEvidence(TEXT("timers"), TEXT("No stored FTimerHandle; NotifyMobDying uses a weak next-tick delegate that is not safely enumerable from the subsystem."));
+	Snapshot.AddEvidence(TEXT("delegates"), TEXT("No external delegate handle is stored by this subsystem."));
+	Snapshot.AddEvidence(TEXT("async_loads"), TEXT("No async load handle is owned by this subsystem."));
+	Snapshot.AddMeasurementGap(TEXT("pending_next_tick_release_delegate_count"));
+	return Snapshot;
+}
+#endif
 
 bool UT66MobManagerSubsystem::IsRangedDiagnosticLoggingEnabled()
 {
@@ -2567,6 +2675,17 @@ void UT66MobManagerSubsystem::Tick(float DeltaTime)
 		}
 
 		ApplyMobTouchDamageIfNeeded(Mob, Hero, DeltaTime);
+
+		// Physical-launch test path: 3D ballistic. Runs BEFORE the planar knockback path
+		// because the legacy ApplyMobKnockback strips Z and would interfere with a live
+		// launch. While the launch is active no other movement runs this frame.
+		if (Mob->bPhysicalLaunchActive)
+		{
+			ApplyMobPhysicalLaunch(Mob, DeltaTime);
+			TickMobVertexAnimationState(Mob, DeltaTime);
+			AccumulateMobTickProfile(bProfileEnabled, ProfileStartCycles, ProfileFamily);
+			continue;
+		}
 
 		if (Mob->KnockbackSecondsRemaining > 0.f)
 		{

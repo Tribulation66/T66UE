@@ -34,6 +34,18 @@ struct T66_API FT66TrapFloorSpawnTuning
 };
 
 USTRUCT(BlueprintType)
+struct T66_API FT66TrapTowerFloorSpawnTuning
+{
+	GENERATED_BODY()
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Floor")
+	int32 FloorNumber = 0;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Floor")
+	FT66TrapFloorSpawnTuning Tuning;
+};
+
+USTRUCT(BlueprintType)
 struct T66_API FT66TrapVisualAssetConfig
 {
 	GENERATED_BODY()
@@ -177,6 +189,48 @@ struct T66_API FT66AreaControlTrapTuning
 	int32 DamageHP = 11;
 };
 
+USTRUCT(BlueprintType)
+struct T66_API FT66ObstacleTrapTuning
+{
+	GENERATED_BODY()
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Spawn")
+	FT66TrapSpawnWindow Spawn;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Spawn", meta = (ClampMin = "0.0"))
+	float EdgePadding = 1900.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Spawn", meta = (ClampMin = "0.0"))
+	float HolePadding = 2100.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Spawn", meta = (ClampMin = "0.0"))
+	float FootprintRadius = 650.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Obstacle", meta = (ClampMin = "0.0"))
+	float LaunchXY = 9500.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Obstacle", meta = (ClampMin = "0.0"))
+	float LaunchZ = 850.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Obstacle", meta = (ClampMin = "0.0"))
+	float CooldownSeconds = 0.70f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Obstacle", meta = (ClampMin = "0.0"))
+	float PrimarySize = 900.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Obstacle", meta = (ClampMin = "0.0"))
+	float SecondarySize = 260.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Obstacle", meta = (ClampMin = "0.0"))
+	float Height = 180.f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Obstacle")
+	float SpeedOrPeriod = 1.0f;
+
+	UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Trap|Obstacle")
+	FT66FloatRange InitialPhaseSeconds = { 0.0f, 1.0f };
+};
+
 class T66_API UT66TrapTuningConfig
 {
 public:
@@ -188,6 +242,7 @@ public:
 	const FT66WallProjectileTrapTuning* FindWallProjectileTuning(FName RegistryKey) const;
 	const FT66FloorBurstTrapTuning* FindFloorBurstTuning(FName RegistryKey) const;
 	const FT66AreaControlTrapTuning* FindAreaControlTuning(FName RegistryKey) const;
+	const FT66ObstacleTrapTuning* FindObstacleTuning(FName RegistryKey) const;
 
 	static const FT66TrapVisualAssetConfig& GetRuntimeTrapAssets();
 	static UStaticMesh* LoadConfiguredTrapStaticMesh(const FString& ObjectPathString, const TCHAR* ConfigKey);
@@ -196,12 +251,17 @@ public:
 	FT66TrapFloorSpawnTuning TowerFloor2;
 	FT66TrapFloorSpawnTuning TowerFloor3;
 	FT66TrapFloorSpawnTuning TowerFloor4;
+	TArray<FT66TrapTowerFloorSpawnTuning> TowerFloorSpawnTunings;
 
 	FT66TrapVisualAssetConfig TrapAssets;
 
 	FT66WallProjectileTrapTuning DungeonWallArrow;
 	FT66FloorBurstTrapTuning DungeonFloorFlame;
 	FT66AreaControlTrapTuning DungeonFloorSpikePatch;
+	FT66ObstacleTrapTuning ObstacleSweeperArm;
+	FT66ObstacleTrapTuning ObstacleFloorBumper;
+	FT66ObstacleTrapTuning ObstacleWallBumper;
+	FT66ObstacleTrapTuning ObstacleCeilingHammer;
 
 	FT66WallProjectileTrapTuning ForestThornVolley;
 	FT66FloorBurstTrapTuning ForestSporeBurst;

@@ -11,6 +11,7 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.CurrentStage = CurrentStage;
 	OutSnapshot.CurrentHP = CurrentHP;
 	OutSnapshot.MaxHP = MaxHP;
+	OutSnapshot.HeroDamagePercent = HeroDamagePercent;
 	OutSnapshot.HeartSlotTiers.Reset();
 	for (int32 SlotIndex = 0; SlotIndex < DefaultMaxHearts; ++SlotIndex)
 	{
@@ -54,15 +55,15 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.XPToNextLevel = (XPToNextLevel > 0) ? XPToNextLevel : GetDataDrivenLevelUpXPThreshold();
 	OutSnapshot.HeroPreciseStats = HeroPreciseStats;
 	OutSnapshot.HeroStatRngCurrentSeed = HeroStatRng.GetCurrentSeed();
-	OutSnapshot.PersistentSecondaryStatBonusEntries.Reset();
-	for (const TPair<ET66SecondaryStatType, int32>& Pair : PersistentSecondaryStatBonusTenths)
+	OutSnapshot.PersistentStatBonusEntries.Reset();
+	for (const TPair<ET66StatType, int32>& Pair : PersistentStatBonusTenths)
 	{
-		if (Pair.Key == ET66SecondaryStatType::None || Pair.Value <= 0)
+		if (Pair.Key == ET66StatType::None || Pair.Value <= 0)
 		{
 			continue;
 		}
 
-		FT66SavedSecondaryStatBonusEntry& Entry = OutSnapshot.PersistentSecondaryStatBonusEntries.AddDefaulted_GetRef();
+		FT66SavedStatBonusEntry& Entry = OutSnapshot.PersistentStatBonusEntries.AddDefaulted_GetRef();
 		Entry.StatType = Pair.Key;
 		Entry.BonusTenths = Pair.Value;
 	}
@@ -79,16 +80,16 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.BossCurrentHP = BossCurrentHP;
 	OutSnapshot.BossParts = BossPartSnapshots;
 	OutSnapshot.bSaintBlessingActive = bSaintBlessingActive;
-	OutSnapshot.SaintBlessingPrimaryStatBonuses = SaintBlessingPrimaryStatBonusesPrecise;
-	OutSnapshot.SaintBlessingSecondaryStatBonusEntries.Reset();
-	for (const TPair<ET66SecondaryStatType, int32>& Pair : SaintBlessingSecondaryStatBonusTenths)
+	OutSnapshot.SaintBlessingBaseStatBonuses = SaintBlessingBaseStatBonusesPrecise;
+	OutSnapshot.SaintBlessingStatBonusEntries.Reset();
+	for (const TPair<ET66StatType, int32>& Pair : SaintBlessingStatBonusTenths)
 	{
-		if (Pair.Key == ET66SecondaryStatType::None || Pair.Value <= 0)
+		if (Pair.Key == ET66StatType::None || Pair.Value <= 0)
 		{
 			continue;
 		}
 
-		FT66SavedSecondaryStatBonusEntry& Entry = OutSnapshot.SaintBlessingSecondaryStatBonusEntries.AddDefaulted_GetRef();
+		FT66SavedStatBonusEntry& Entry = OutSnapshot.SaintBlessingStatBonusEntries.AddDefaulted_GetRef();
 		Entry.StatType = Pair.Key;
 		Entry.BonusTenths = Pair.Value;
 	}
@@ -110,7 +111,7 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 	OutSnapshot.AntiCheatCurrentPressureDamageApplied = AntiCheatCurrentPressureDamageApplied;
 	OutSnapshot.AntiCheatCurrentPressureExpectedDodges = AntiCheatCurrentPressureExpectedDodges;
 	OutSnapshot.NoIdolSelectionStacks = NoIdolSelectionStacks;
-	OutSnapshot.NoIdolPrimaryStatBonuses = NoIdolPrimaryStatBonusesPrecise;
+	OutSnapshot.NoIdolBaseStatBonuses = NoIdolBaseStatBonusesPrecise;
 	OutSnapshot.UltimateCharge = UltimateCharge;
 
 	if (const UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
@@ -153,14 +154,28 @@ void UT66RunStateSubsystem::ExportSavedRunSnapshot(FT66SavedRunSnapshot& OutSnap
 
 void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& Snapshot)
 {
+	BeginLoadedRun(Snapshot);
+}
+
+
+void UT66RunStateSubsystem::BeginLoadedRun(const FT66SavedRunSnapshot& Snapshot)
+{
 	if (!Snapshot.bValid)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[RunLifecycle] BeginLoadedRun skipped because snapshot is invalid."));
 		return;
 	}
 
+	if (bRunLifecycleBoundaryInProgress)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[RunLifecycle] BeginLoadedRun requested while another boundary is active."));
+	}
+
+	bRunLifecycleBoundaryInProgress = true;
+	BroadcastRunLifecycleBoundary(ET66RunLifecycleBoundary::LoadedRun, FName(TEXT("LoadedRun")), false);
+
 	RefreshActiveRunModifiersFromGameInstance();
 	CurrentStage = FMath::Clamp(Snapshot.CurrentStage, 1, 20);
-	CurrentHP = FMath::Max(0.f, Snapshot.CurrentHP);
 	MaxHP = FMath::Max(1.f, Snapshot.MaxHP);
 	if (Snapshot.HeartSlotTiers.Num() >= DefaultMaxHearts)
 	{
@@ -171,12 +186,12 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 			TierValue = static_cast<uint8>(FMath::Clamp(static_cast<int32>(TierValue), 0, MaxHeartTier));
 		}
 		SyncMaxHPToHeartTiers();
-		CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
 	}
 	else
 	{
 		RebuildHeartSlotTiersFromMaxHP();
 	}
+	SetHeroDamagePercent(Snapshot.HeroDamagePercent, false);
 	CurrentGold = FMath::Max(0, Snapshot.CurrentGold);
 	CollectedMobLootStack = FMath::Clamp(Snapshot.CollectedMobLootStack, 0, MaxCollectedMobLootStack);
 	MobLootDropsCollectedThisRun = FMath::Max(0, Snapshot.MobLootDropsCollectedThisRun);
@@ -225,13 +240,13 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	bRunEnded = Snapshot.bRunEnded;
 	bRunEndedAsVictory = Snapshot.bRunEndedAsVictory;
 	bSaintBlessingActive = Snapshot.bSaintBlessingActive;
-	SaintBlessingPrimaryStatBonusesPrecise = Snapshot.SaintBlessingPrimaryStatBonuses;
-	SaintBlessingSecondaryStatBonusTenths.Reset();
-	for (const FT66SavedSecondaryStatBonusEntry& Entry : Snapshot.SaintBlessingSecondaryStatBonusEntries)
+	SaintBlessingBaseStatBonusesPrecise = Snapshot.SaintBlessingBaseStatBonuses;
+	SaintBlessingStatBonusTenths.Reset();
+	for (const FT66SavedStatBonusEntry& Entry : Snapshot.SaintBlessingStatBonusEntries)
 	{
-		if (Entry.StatType != ET66SecondaryStatType::None && Entry.BonusTenths > 0)
+		if (Entry.StatType != ET66StatType::None && Entry.BonusTenths > 0)
 		{
-			SaintBlessingSecondaryStatBonusTenths.FindOrAdd(Entry.StatType) += Entry.BonusTenths;
+			SaintBlessingStatBonusTenths.FindOrAdd(Entry.StatType) += Entry.BonusTenths;
 		}
 	}
 	FinalSurvivalEnemyScalar = FMath::Clamp(Snapshot.FinalSurvivalEnemyScalar, 1.f, 99.f);
@@ -279,12 +294,12 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 		HeroPreciseStats.SpeedTenths = ClampHeroStatTenths(HeroPreciseStats.SpeedTenths);
 	}
 	HeroStatRng.Initialize(Snapshot.HeroStatRngCurrentSeed != 0 ? Snapshot.HeroStatRngCurrentSeed : static_cast<int32>(FPlatformTime::Cycles()));
-	ClearPersistentSecondaryStatBonuses();
-	for (const FT66SavedSecondaryStatBonusEntry& Entry : Snapshot.PersistentSecondaryStatBonusEntries)
+	ClearPersistentStatBonuses();
+	for (const FT66SavedStatBonusEntry& Entry : Snapshot.PersistentStatBonusEntries)
 	{
-		AddPersistentSecondaryStatBonusTenths(Entry.StatType, Entry.BonusTenths);
+		AddPersistentStatBonusTenths(Entry.StatType, Entry.BonusTenths);
 	}
-	RestoreNoIdolState(Snapshot.NoIdolSelectionStacks, Snapshot.NoIdolPrimaryStatBonuses);
+	RestoreNoIdolState(Snapshot.NoIdolSelectionStacks, Snapshot.NoIdolBaseStatBonuses);
 	UltimateCharge = FMath::Clamp(Snapshot.UltimateCharge, 0.f, UltimateChargeRequired);
 	UltimateCooldownRemainingSeconds = 0.f;
 	LastBroadcastUltimateSecond = 0;
@@ -370,4 +385,7 @@ void UT66RunStateSubsystem::ImportSavedRunSnapshot(const FT66SavedRunSnapshot& S
 	HeroProgressChanged.Broadcast();
 	ShopChanged.Broadcast();
 	StatusEffectsChanged.Broadcast();
+
+	BroadcastRunLifecycleBoundary(ET66RunLifecycleBoundary::LoadedRun, FName(TEXT("LoadedRun")), true);
+	bRunLifecycleBoundaryInProgress = false;
 }

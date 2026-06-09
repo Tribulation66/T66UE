@@ -1,0 +1,130 @@
+{
+  "source": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Outputs\\Hero_1_Chad_Male.glb",
+  "weights": {
+    "total_vertices": 163496,
+    "unweighted_vertices": 0,
+    "max_influences_per_vertex": 1,
+    "influence_model": "single nearest required deform bone; physics-first MVP weights",
+    "bone_vertex_assignments": {
+      "pelvis": 5009,
+      "spine_01": 10837,
+      "spine_02": 6248,
+      "spine_03": 4410,
+      "neck_01": 2061,
+      "head": 4306,
+      "clavicle_l": 18114,
+      "upperarm_l": 19297,
+      "lowerarm_l": 6631,
+      "hand_l": 1782,
+      "clavicle_r": 19458,
+      "upperarm_r": 19043,
+      "lowerarm_r": 7017,
+      "hand_r": 3424,
+      "thigh_l": 10334,
+      "calf_l": 4341,
+      "foot_l": 3495,
+      "ball_l": 301,
+      "thigh_r": 9615,
+      "calf_r": 4247,
+      "foot_r": 3229,
+      "ball_r": 297
+    },
+    "zero_vertex_deform_bones": []
+  },
+  "exports": {
+    "required_bone_count": 23,
+    "required_bones": [
+      "root",
+      "pelvis",
+      "spine_01",
+      "spine_02",
+      "spine_03",
+      "neck_01",
+      "head",
+      "clavicle_l",
+      "upperarm_l",
+      "lowerarm_l",
+      "hand_l",
+      "clavicle_r",
+      "upperarm_r",
+      "lowerarm_r",
+      "hand_r",
+      "thigh_l",
+      "calf_l",
+      "foot_l",
+      "ball_l",
+      "thigh_r",
+      "calf_r",
+      "foot_r",
+      "ball_r"
+    ],
+    "mesh_object_count": 1,
+    "source_glb_size_bytes": 10806328,
+    "skeletal_fbx_size_bytes": 8240476,
+    "animation_files": {
+      "Idle": {
+        "path": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Idle.fbx",
+        "size_bytes": 149468,
+        "frame_range": [
+          1,
+          60
+        ]
+      },
+      "Walk": {
+        "path": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Walk.fbx",
+        "size_bytes": 149244,
+        "frame_range": [
+          1,
+          30
+        ]
+      },
+      "Jump": {
+        "path": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Jump.fbx",
+        "size_bytes": 147996,
+        "frame_range": [
+          1,
+          34
+        ]
+      },
+      "Leap": {
+        "path": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_Leap.fbx",
+        "size_bytes": 148988,
+        "frame_range": [
+          1,
+          42
+        ]
+      },
+      "RecoverStand": {
+        "path": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_RecoverStand.fbx",
+        "size_bytes": 151500,
+        "frame_range": [
+          1,
+          45
+        ]
+      },
+      "GetUp_Back": {
+        "path": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_GetUp_Back.fbx",
+        "size_bytes": 152316,
+        "frame_range": [
+          1,
+          50
+        ]
+      },
+      "GetUp_Front": {
+        "path": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\AnimationSources\\AM_Hero_1_Chad_PhysicsFirst_GetUp_Front.fbx",
+        "size_bytes": 152108,
+        "frame_range": [
+          1,
+          50
+        ]
+      }
+    },
+    "missing_or_zero_files": []
+  },
+  "proof_renders": {
+    "front_blender_minus_y": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\ProofRenders\\Hero_1_Chad_PhysicsFirst_front_blender_minus_y.png",
+    "side_plus_x": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\ProofRenders\\Hero_1_Chad_PhysicsFirst_side_plus_x.png",
+    "iso": "Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\PhysicsFirstHero\\ProofRenders\\Hero_1_Chad_PhysicsFirst_iso.png"
+  },
+  "result": "PASS"
+}

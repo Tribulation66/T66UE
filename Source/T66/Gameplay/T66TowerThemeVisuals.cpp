@@ -10,7 +10,7 @@
 
 namespace
 {
-	static const TCHAR* T66EnvironmentLitMaterialPath = TEXT("/Game/Materials/M_Environment_Lit.M_Environment_Lit");
+	static const TCHAR* T66EnvironmentLitMaterialPath = TEXT("/Game/Materials/M_FriendSlop_FallGuys.M_FriendSlop_FallGuys");
 	static const TCHAR* T66CoherentThemeKitRoot = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01");
 
 	struct FT66TowerThemeSurfacePaths

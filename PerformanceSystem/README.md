@@ -7,6 +7,8 @@
 - Root docs and schemas live in `PerformanceSystem/`.
 - Runtime implementation lives in `Source/T66/PerformanceSystem/`.
 - Runtime output is written locally to `Saved/PerformanceSystem/`.
+- The reusable runtime health gate is documented in `PerformanceSystem/RUNTIME_HEALTH_GATE.md` and implemented by `Scripts/RunRuntimeHealthGate.ps1`.
+- Runtime ownership and health-gate coverage are mapped in `PerformanceSystem/RUNTIME_OWNERSHIP_INVENTORY.md`.
 - The first build is in-engine only. Hardware telemetry sidecars are future optional enrichment.
 
 ## Architecture
@@ -47,6 +49,8 @@ Default retention budgets:
 - Development: 256 MB total, 25 MB per session target.
 - Shipping: 64 MB total, 10 MB per session target.
 
+The runtime health gate writes wrapper evidence under `Saved/RuntimeHealthGate/<timestamp>/`. That folder contains the gate summary, a child staged-readiness summary, runtime launch logs, and a fresh Unreal screenshot used to hold the packaged process open long enough for PerformanceSystem final-report proof.
+
 ## Privacy
 
 Reports never intentionally include Steam IDs, usernames, hostnames, user home paths, IPs, MACs, hardware serials, save contents, backend URLs, API keys, or auth tokens. User-profile paths in captured log lines are redacted before persistence.
@@ -57,4 +61,4 @@ Hardware model strings are config-gated and default off in Shipping builds.
 
 Versioned schemas live in `PerformanceSystem/schema/`. Every persisted event/report carries a monotonic integer `SchemaVersion`.
 
-Current runtime schema version is `4`. Version 4 adds rich-actor versus lightweight-mob board-saturation split counts for the Lightweight Actor migration captures.
+Current runtime schema version is `8`. Version 8 adds `LiveLightweightRangedMobs` to `board_saturation_samples.jsonl` for Ranged-family parity captures and keeps the event/session report schema constants aligned at v8. See `PerformanceSystem/schema/SCHEMA_CHANGELOG.md` before adding fields or bumping the runtime constant.

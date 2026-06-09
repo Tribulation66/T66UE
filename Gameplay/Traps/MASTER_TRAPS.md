@@ -1,7 +1,7 @@
 # T66 Master Traps
 
-**Last updated:** 2026-05-27
-**Scope:** Single-source handoff for environmental trap runtime, ownership, procedural spawning, damage routing, trap-family identity, and shipped trap VFX/mesh rules.
+**Last updated:** 2026-06-07
+**Scope:** Single-source handoff for environmental trap runtime, ownership, procedural spawning, obstacle reactions, damage routing, trap-family identity, and shipped trap VFX/mesh rules.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md`, `Gameplay/World/T66_Tower_Multi_Agent_Implementation_Plan.md`
 **Maintenance rule:** Update this file after every material trap, trap-subsystem, trap-spawn, trap-damage, trap-VFX, or trap-map-integration change.
 
@@ -9,16 +9,25 @@
 
 - Runtime trap ownership lives in `UT66TrapSubsystem`, a world subsystem.
 - Trap actors derive from `AT66TrapBase` and auto-register with the subsystem on `BeginPlay`.
-- The currently shipped tower trap families are:
+- The currently shipped tower trap family for normal tower floors is now:
+  - `Obstacle`
+- The older damage trap families remain in source as legacy/support classes:
   - `WallProjectile`
   - `FloorBurst`
   - `AreaControl`
-- The current concrete tower trap actors are:
+- The current concrete tower obstacle trap actors are:
+  - `AT66SweeperArmTrap`
+  - `AT66BumperTrap`
+  - `AT66WallBumperTrap`
+  - `AT66CeilingHammerTrap`
+- The legacy concrete damage trap actors are:
   - `AT66WallArrowTrap`
   - `AT66FloorFlameTrap`
   - `AT66FloorSpikePatchTrap`
-- Tower gameplay floors now use floor-driven trap pools instead of the original one-arrow/one-flame-only pass.
+- Tower gameplay floors now use floor-driven obstacle trap pools instead of the original one-arrow/one-flame-only pass. Floor-to-pool eligibility lives in `Config/DefaultT66TowerTuning.ini`; trap counts and mechanics remain in `Config/DefaultT66TrapTuning.ini`.
 - Trap damage still routes through `UT66RunStateSubsystem::ApplyDamage()`, so safe-zone checks, invulnerability, floating feedback, and player-death flow stay on the normal runtime path.
+- New obstacle traps do not deal HP damage directly by default. They call `UT66HeroPhysicsComponent::ApplyPhysicsReaction()` so the hero enters the hit-triggered ragdoll/disabled state, where enemy damage can still land through the query-only ragdoll capsule hurtbox.
+- The wipeout-arm active-ragdoll obstacle remains as TestRoom proof scaffolding in `T66GameMode_TestRoom.cpp`, but the production tower sweeper is now `AT66SweeperArmTrap` and is registered with `UT66TrapSubsystem`.
 
 ## 2. Runtime Ownership
 
@@ -59,6 +68,31 @@ Shared base guarantees:
 All new gameplay traps should derive from `AT66TrapBase` instead of re-implementing floor or safe-zone checks ad hoc.
 
 ## 4. Trap Families
+
+### 4.0 Obstacle
+
+- `Source/T66/Gameplay/Traps/T66ObstacleTrap.h`
+- `Source/T66/Gameplay/Traps/T66ObstacleTrap.cpp`
+
+Behavior:
+
+- obstacle traps overlap the hero and request a physics reaction through `UT66HeroPhysicsComponent::ApplyPhysicsReaction()`
+- obstacle traps default to `bDamagesHeroes=false` and `bDamagesEnemies=false`
+- the current tower obstacle set is:
+  - `ObstacleSweeperArm`
+  - `ObstacleFloorBumper`
+  - `ObstacleWallBumper`
+  - `ObstacleCeilingHammer`
+- obstacle launch strength, spawn counts, spacing, footprint, and size live in `Config/DefaultT66TrapTuning.ini`
+- tower spawning uses `T66TowerMapTerrain::TryGetObstacleTrapSpawnLocation(...)` so obstacle footprint adds edge, wall, and hole clearance before placement
+- wall-mounted obstacle traps use `T66TowerMapTerrain::TryGetMazeWallSpawnLocation(...)` so they face out from valid trap-eligible maze walls
+
+Visual/runtime rules:
+
+- current visuals use cooked engine/basic shape meshes through `FT66VisualUtil`
+- every concrete obstacle trap now has authored motion: sweeper rotates, floor bumper rises/falls, wall bumper extends/retracts, and ceiling hammer swings
+- the primary gameplay effect is the ragdoll/disabled state, not direct trap HP damage
+- floors `2` and `3` are the only normal tower floors that spawn these traps in the current parity tuning
 
 ### 4.1 Wall Projectile
 
@@ -132,46 +166,60 @@ Visual/runtime rules:
 
 ## 5. Procedural Tower Spawn Rules
 
-Current procedural trap spawning is implemented only for tower gameplay floors.
+Current procedural obstacle spawning is implemented only for tower gameplay floors.
 
 Rules:
 
 - start floor does not get traps
 - boss floor does not get traps
-- normal tower gameplay floors `Floor 2` through `Floor 4` each use their own floor trap pool
+- normal tower gameplay floors `Floor 2` and `Floor 3` use the obstacle trap pool
+- `Floor 4` is explicitly excluded for this obstacle pass
 - placement avoids:
   - other subsystem-managed trap locations
   - NPC safe zones
   - circus safe zones
-- wall projectile traps use tower maze-wall spawn queries
-- floor burst and area-control traps use tile-center spawn queries
-- area-control traps can auto-spawn linked pressure plates
+- obstacle traps use tower obstacle spawn queries with footprint-derived edge, wall, and hole clearance
 
-Current normal tower floor trap pools:
+Current normal tower floor trap pool:
 
 - Floor 2:
-  - `DungeonWallArrow`
-  - `DungeonFloorFlame`
-  - `DungeonFloorSpikePatch`
+  - `ObstacleSweeperArm`
+  - `ObstacleFloorBumper`
+  - `ObstacleWallBumper`
+  - `ObstacleCeilingHammer`
 - Floor 3:
-  - `ForestThornVolley`
-  - `ForestSporeBurst`
-  - `ForestBramblePatch`
-- Floor 4:
-  - `OceanHarpoonVolley`
-  - `OceanSteamBurst`
-  - `OceanUrchinPatch`
+  - `ObstacleSweeperArm`
+  - `ObstacleFloorBumper`
+  - `ObstacleWallBumper`
+  - `ObstacleCeilingHammer`
 
-Numeric spawn counts and cadence live in `Config/DefaultT66TrapTuning.ini`.
+Floor trap pools live in `Config/DefaultT66TowerTuning.ini`. Numeric spawn counts and cadence live in `Config/DefaultT66TrapTuning.ini`.
 
 ## 6. Extension Rules
 
 - New traps should derive from `AT66TrapBase`.
 - Procedural trap spawning should go through `UT66TrapSubsystem`, not inline `AT66GameMode` logic.
-- Trap damage should continue to route through `UT66RunStateSubsystem::ApplyDamage()` unless there is a very strong reason to bypass it.
+- Legacy trap damage should continue to route through `UT66RunStateSubsystem::ApplyDamage()` unless there is a very strong reason to bypass it.
+- Obstacle traps should route hero impact through `UT66HeroPhysicsComponent::ApplyPhysicsReaction()` and leave direct HP damage off unless a future product pass explicitly opts a specific obstacle into damage.
 - Floor-local tower traps should set `TowerFloorNumber`.
 - New trap visuals must use already cooked assets or land their cook or staging contract in the same change.
 - If a higher-quality imported mesh exists, do not downgrade the trap back to primitive-only visuals.
+
+### 6.1 TestRoom wipeout-arm prototype
+
+- `Source/T66/Gameplay/GameMode/T66GameMode_TestRoom.cpp` owns the current center-pivot wipeout-arm active-ragdoll obstacle.
+- It is spawned after TestRoom room cleanup so it survives `SpawnRoom()` actor teardown.
+- Runtime CVars:
+  - `t66.TestRoom.EnableWipeoutArmTrap`
+  - `t66.TestRoom.WipeoutArmUseHeroActiveRagdoll`
+  - `t66.TestRoom.WipeoutArmLaunchXY`
+  - `t66.TestRoom.WipeoutArmLaunchZ`
+  - `t66.TestRoom.WipeoutArmIncapSeconds`
+- The active-ragdoll proof uses the current selected Hero 1 physics-first visual path. Do not reintroduce the retired AnimatedToonStyle TestRoom override as the Stage 3 proof target.
+- Current Stage 3 Hero 1 proof routing prefers `UT66HeroPhysicsComponent`: the arm is a moving `WorldDynamic` physics-body blocker, the geometric hit trigger calls the active-ragdoll reaction profile, and the response is simulated-body impulse plus bounded capsule shove.
+- The accepted proof capture mode is `Scripts/CaptureT66GameplayVideo.ps1 -CaptureMode heroactiveragdollproof`; the helper adds `-T66AutomationTestRoom` so this route proves the TestRoom obstacle instead of the regular tower layout.
+- Legacy `UT66KnockbackComponent` launch/ragdoll remains fallback only when active ragdoll is unavailable. This path is not the target Hero 1 feel.
+- This path still does not route through `AT66TrapBase`, progression tuning, `UT66TrapSubsystem`, or production trap damage rules.
 
 ## 7. Current Open Next Steps
 

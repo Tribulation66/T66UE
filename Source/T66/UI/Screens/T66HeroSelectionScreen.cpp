@@ -5,6 +5,8 @@
 #include "UI/Screens/T66ChallengesScreen.h"
 #include "UI/T66UIManager.h"
 #include "Core/T66LeaderboardSubsystem.h"
+#include "Core/T66PlayerSettingsSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 
 using namespace T66HeroSelectionPrivate;
 
@@ -12,6 +14,83 @@ DEFINE_LOG_CATEGORY(LogT66HeroSelection);
 
 namespace
 {
+	FString T66FormatTeamRunWillNotCountReason(const FString& RestrictedDisplayName)
+	{
+		const FString DisplayName = RestrictedDisplayName.IsEmpty() ? TEXT("a party member") : RestrictedDisplayName;
+		return FString::Printf(
+			TEXT("One of the party members, %s, is suspended. This run will not count for the leaderboard."),
+			*DisplayName);
+	}
+
+	FString T66FormatLocalRestrictionRunWillNotCountReason(const ET66AccountRestrictionKind Restriction)
+	{
+		return Restriction == ET66AccountRestrictionKind::CheatingCertainty
+			? FString(TEXT("Your account is restricted. This run will not count for the leaderboard."))
+			: FString(TEXT("Your account is suspended. This run will not count for the leaderboard."));
+	}
+
+	bool T66IsRunWillNotCountPopupSuppressed(UT66GameInstance* GI)
+	{
+		const UT66PlayerSettingsSubsystem* PlayerSettings = GI ? GI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr;
+		return PlayerSettings && PlayerSettings->IsPopupSuppressed(UT66PlayerSettingsSubsystem::PopupIdRunWillNotCount);
+	}
+
+	FString T66BuildRunWillNotCountReason(
+		UT66GameInstance* GI,
+		UT66SessionSubsystem* SessionSubsystem,
+		FString* OutPartyRestrictedDisplayName = nullptr)
+	{
+		if (!GI)
+		{
+			return FString();
+		}
+
+		if (SessionSubsystem && SessionSubsystem->IsPartyLobbyContextActive())
+		{
+			FString RestrictedDisplayName;
+			if (SessionSubsystem->FindLeaderboardRestrictedLobbyMember(RestrictedDisplayName))
+			{
+				if (OutPartyRestrictedDisplayName)
+				{
+					*OutPartyRestrictedDisplayName = RestrictedDisplayName;
+				}
+				return T66FormatTeamRunWillNotCountReason(RestrictedDisplayName);
+			}
+		}
+
+		if (const UT66LeaderboardSubsystem* Leaderboard = GI->GetSubsystem<UT66LeaderboardSubsystem>())
+		{
+			const FT66AccountRestrictionRecord Restriction = Leaderboard->GetAccountRestrictionRecord();
+			if (Restriction.Restriction != ET66AccountRestrictionKind::None)
+			{
+				return T66FormatLocalRestrictionRunWillNotCountReason(Restriction.Restriction);
+			}
+		}
+
+		const UT66BackendSubsystem* Backend = GI->GetSubsystem<UT66BackendSubsystem>();
+		if (!Backend || !Backend->IsBackendConfigured())
+		{
+			return FString(TEXT("Backend services are unavailable. This run will not count for the leaderboard."));
+		}
+
+		if (!Backend->HasSteamTicket())
+		{
+			return FString(TEXT("Steam authentication is unavailable. This run will not count for the leaderboard."));
+		}
+
+		if (GI->IsOfflineRun())
+		{
+			return FString(TEXT("You are starting an offline run. This run will not count for the leaderboard."));
+		}
+
+		if (GI->bRunIneligibleForLeaderboard)
+		{
+			return FString(TEXT("This run is marked unranked by the current run rules. It will not count for the leaderboard."));
+		}
+
+		return FString();
+	}
+
 	ET66RunMode T66ResolveHeroSelectionRunMode(UT66GameInstance* GI)
 	{
 		if (!GI)
@@ -125,9 +204,9 @@ FReply UT66HeroSelectionScreen::HandleTemporaryBuffPickerCloseClicked()
 	return FReply::Handled();
 }
 
-FReply UT66HeroSelectionScreen::HandleTemporaryBuffBuyClicked(ET66SecondaryStatType StatType)
+FReply UT66HeroSelectionScreen::HandleTemporaryBuffBuyClicked(ET66StatType StatType)
 {
-	if (!T66IsLiveSecondaryStatType(StatType))
+	if (!T66IsLiveStatType(StatType))
 	{
 		return FReply::Handled();
 	}
@@ -146,9 +225,9 @@ FReply UT66HeroSelectionScreen::HandleTemporaryBuffBuyClicked(ET66SecondaryStatT
 	return FReply::Handled();
 }
 
-FReply UT66HeroSelectionScreen::HandleTemporaryBuffEquipClicked(ET66SecondaryStatType StatType)
+FReply UT66HeroSelectionScreen::HandleTemporaryBuffEquipClicked(ET66StatType StatType)
 {
-	if (!T66IsLiveSecondaryStatType(StatType))
+	if (!T66IsLiveStatType(StatType))
 	{
 		return FReply::Handled();
 	}
@@ -158,8 +237,8 @@ FReply UT66HeroSelectionScreen::HandleTemporaryBuffEquipClicked(ET66SecondarySta
 		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
 			const int32 SlotIndex = FMath::Clamp(TemporaryBuffPickerSlotIndex, 0, UT66BuffSubsystem::MaxSelectedSingleUseBuffs - 1);
-			const TArray<ET66SecondaryStatType> Slots = Buffs->GetSelectedSingleUseBuffSlots();
-			const ET66SecondaryStatType FocusedSlotStat = Slots.IsValidIndex(SlotIndex) ? Slots[SlotIndex] : ET66SecondaryStatType::None;
+			const TArray<ET66StatType> Slots = Buffs->GetSelectedSingleUseBuffSlots();
+			const ET66StatType FocusedSlotStat = Slots.IsValidIndex(SlotIndex) ? Slots[SlotIndex] : ET66StatType::None;
 			const int32 OwnedCount = Buffs->GetOwnedSingleUseBuffCount(StatType);
 			const int32 AssignedCount = Buffs->GetSelectedSingleUseBuffSlotAssignedCountForStat(StatType);
 			const int32 AssignedOutsideFocused = AssignedCount - (FocusedSlotStat == StatType ? 1 : 0);
@@ -297,26 +376,25 @@ FReply UT66HeroSelectionScreen::HandleChallengesClicked() { OnChallengesClicked(
 
 FReply UT66HeroSelectionScreen::HandleModsClicked() { OnModsClicked(); return FReply::Handled(); }
 
-FReply UT66HeroSelectionScreen::HandleRetroFXSettingsClicked()
+FReply UT66HeroSelectionScreen::HandleRunWillNotCountOkayClicked()
 {
-	if (bShowingInlineRetroFXPanel)
+	bShowRunWillNotCountWarning = false;
+	bRunWillNotCountAcknowledgedThisSession = true;
+	RunWillNotCountAcknowledgedReasonText = RunWillNotCountReasonText;
+
+	if (bRunWillNotCountDontShowAgainChecked)
 	{
-		CommitPendingInlineRetroFXOnClose();
-		bShowingInlineRetroFXPanel = false;
-		RefreshPanelSwitchers();
-		return FReply::Handled();
+		if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
+		{
+			if (UT66PlayerSettingsSubsystem* PlayerSettings = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
+			{
+				PlayerSettings->SetPopupSuppressed(UT66PlayerSettingsSubsystem::PopupIdRunWillNotCount, true);
+			}
+		}
 	}
 
-	bShowingInlineRetroFXPanel = true;
-	if (bShowingInlineRetroFXPanel)
-	{
-		bShowingStatsPanel = false;
-		bShowingTemporaryBuffPicker = false;
-		bInlineRetroFXInitialized = false;
-		InitializeInlineRetroFXFromUserSettingsIfNeeded();
-	}
-
-	RefreshPanelSwitchers();
+	bRunWillNotCountDontShowAgainChecked = false;
+	ForceRebuildSlate();
 	return FReply::Handled();
 }
 
@@ -375,11 +453,6 @@ void UT66HeroSelectionScreen::RefreshPanelSwitchers()
 
 int32 UT66HeroSelectionScreen::GetLeftPanelWidgetIndex() const
 {
-	if (bShowingInlineRetroFXPanel)
-	{
-		return 2;
-	}
-
 	return bShowingStatsPanel ? 1 : 0;
 }
 
@@ -721,6 +794,11 @@ void UT66HeroSelectionScreen::OnChooseCompanionClicked()
 
 void UT66HeroSelectionScreen::OnChoosePetClicked()
 {
+	if (!FT66ShelvedFeatureGate::IsPetsEnabled())
+	{
+		return;
+	}
+
 	if (UIManager)
 	{
 		UIManager->ShowScreen(ET66ScreenType::PetSelection);
@@ -734,9 +812,8 @@ void UT66HeroSelectionScreen::OnHeroLoreClicked() { ShowModal(ET66ScreenType::He
 
 void UT66HeroSelectionScreen::OpenCommunityContent(const bool bOpenMods)
 {
-	const ET66CommunityContentKind ContentKind = bOpenMods
-		? ET66CommunityContentKind::Mod
-		: ET66CommunityContentKind::Challenge;
+	(void)bOpenMods;
+	const ET66CommunityContentKind ContentKind = ET66CommunityContentKind::Challenge;
 
 	ShowModal(ET66ScreenType::Challenges);
 
@@ -756,7 +833,29 @@ void UT66HeroSelectionScreen::OpenCommunityContent(const bool bOpenMods)
 
 void UT66HeroSelectionScreen::OnChallengesClicked() { OpenCommunityContent(false); }
 
-void UT66HeroSelectionScreen::OnModsClicked() { OpenCommunityContent(true); }
+void UT66HeroSelectionScreen::OnModsClicked() { OpenCommunityContent(false); }
+
+void UT66HeroSelectionScreen::ShowPartyLeaderboardRestrictionWarning(const FString& RestrictedDisplayName)
+{
+	ShowRunWillNotCountWarning(T66FormatTeamRunWillNotCountReason(RestrictedDisplayName));
+}
+
+bool UT66HeroSelectionScreen::ShowRunWillNotCountWarning(const FString& ReasonText)
+{
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	if (T66IsRunWillNotCountPopupSuppressed(GI))
+	{
+		return false;
+	}
+
+	RunWillNotCountReasonText = ReasonText.IsEmpty()
+		? TEXT("This run will not count for the leaderboard.")
+		: ReasonText;
+	bRunWillNotCountDontShowAgainChecked = false;
+	bShowRunWillNotCountWarning = true;
+	ForceRebuildSlate();
+	return true;
+}
 
 void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 {
@@ -807,38 +906,62 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 			return;
 		}
 
+		const FString RunWillNotCountReason = T66BuildRunWillNotCountReason(GI, SessionSubsystem);
+		if (!RunWillNotCountReason.IsEmpty())
+		{
+			GI->bRunIneligibleForLeaderboard = true;
+			if (!bRunWillNotCountAcknowledgedThisSession || RunWillNotCountAcknowledgedReasonText != RunWillNotCountReason)
+			{
+				SessionSubsystem->BroadcastRunWillNotCountWarning(RunWillNotCountReason);
+				if (T66IsRunWillNotCountPopupSuppressed(GI))
+				{
+					bRunWillNotCountAcknowledgedThisSession = true;
+					RunWillNotCountAcknowledgedReasonText = RunWillNotCountReason;
+				}
+				ForceRebuildSlate();
+				return;
+			}
+		}
+
 		if (UIManager) UIManager->HideAllUI();
 		SessionSubsystem->StartGameplayTravel();
 		return;
 	}
 
-	if (UIManager) UIManager->HideAllUI();
 	if (GI)
 	{
+		const FString RunWillNotCountReason = T66BuildRunWillNotCountReason(GI, SessionSubsystem);
+		if (!RunWillNotCountReason.IsEmpty())
+		{
+			GI->bRunIneligibleForLeaderboard = true;
+			const bool bReasonAcknowledged = bRunWillNotCountAcknowledgedThisSession
+				&& RunWillNotCountAcknowledgedReasonText == RunWillNotCountReason;
+			if (!bReasonAcknowledged && ShowRunWillNotCountWarning(RunWillNotCountReason))
+			{
+				return;
+			}
+		}
+
+		if (UIManager) UIManager->HideAllUI();
 		GI->TransitionToGameplayLevel();
 	}
 	else
 	{
+		if (UIManager) UIManager->HideAllUI();
 		UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());
 	}
 }
 
 void UT66HeroSelectionScreen::OnBackClicked()
 {
-	CommitPendingInlineRetroFXOnClose();
-
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
 		{
 			if (SessionSubsystem->IsPartySessionActive())
 			{
-				SessionSubsystem->SetLocalLobbyReady(false);
-				if (SessionSubsystem->IsLocalPlayerPartyHost())
-				{
-					SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MainMenu, true);
-					NavigateTo(ET66ScreenType::MainMenu);
-				}
+				SessionSubsystem->SetLocalFrontendScreen(ET66ScreenType::MainMenu, true);
+				NavigateTo(ET66ScreenType::MainMenu);
 				return;
 			}
 		}
@@ -861,7 +984,6 @@ bool UT66HeroSelectionScreen::HandleBackAction()
 
 void UT66HeroSelectionScreen::NativeDestruct()
 {
-	CommitPendingInlineRetroFXOnClose();
 	Super::NativeDestruct();
 }
 

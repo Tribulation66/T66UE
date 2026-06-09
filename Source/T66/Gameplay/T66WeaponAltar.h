@@ -56,6 +56,8 @@ public:
 	ET66WeaponRarity WeaponOfferRarity = ET66WeaponRarity::Black;
 
 	void ApplyVisuals();
+	void LinkToTowerGateFloor(int32 FromFloorNumber);
+	void NotifySelectionCommitted();
 
 protected:
 	virtual void BeginPlay() override;
@@ -63,4 +65,6 @@ protected:
 private:
 	void UpdateInteractionBounds();
 	void ConfigureVisualCollision(UPrimitiveComponent* Primitive, bool bEnableCollision) const;
+
+	int32 LinkedTowerGateFloorNumber = INDEX_NONE;
 };

@@ -1,0 +1,42 @@
+﻿Result: OK
+
+## Independent Answer
+
+The user's message resolves the prior blocker, not the scope: the "too many requests" error was a transient rate-limit, not a real lockout. The correct operator action is to recycle the Codex CLI session and retry **account-backed built-in imagegen** — never switch to API fallback (explicit repo rule, restated in the task contract). With imagegen working, the pass13 component contract (`UI/FriendslopStyle/Elements/main_menu_pass13_component_contract.md`) is already written and sound, so pass14 is execution against that contract plus capturing real proof — not a re-plan.
+
+**Systematic fixes Codex should implement next (in priority order):**
+1. **Text-fit / auto-shrink + min-width rule applied to *every* label, including the screen title.** The user calls out the title being cut off — that is the same fit failure as the achievements tab, not a separate bug. The fix must be a reusable measured-fit rule (clamp font by measured text width, define min width, compact fallback), not a per-label nudge.
+2. **Plate-vs-live-content ownership separation** (blank plate + live glyph/text/data on top; nothing baked underneath). This is the root cause of icon-on-icon and the "smudged/masked center" CTA look. Applies to topbar icons, CTA, friend rows.
+3. **Containment for every child rect** inside its parent content area using `contained_in=<Parent> inset=...` (the verifier already supports this). The title crop and any row overflow are both containment/fit symptoms.
+4. **Outline-vs-fill as a descriptor convention** (leaderboard local row = red outline + dark interior, not red fill; checkbox = uniform rounded square states).
+5. **Friends section live state** (green online dot + green invite plate vs dark offline).
+
+**Which fixes become proven reusable process-doc rules:** items 1–4 generalize to *every* future screen and should be recorded as the user asked — incrementally, as each is proven on a real capture, in a "Proven Solutions / Reusable Rules" section. Natural homes: the text-fit and ownership rules in `FRIENDSLOP_STYLE_IMPLEMENTATION_INSTRUCTIONS.md`; containment/min-size in `UI_LAYOUT_AND_SIZING_INSTRUCTIONS.md`; the blocking visual-scorecard gate in `UI_FIDELITY_LOOP_INSTRUCTIONS.md`. Per the user, do not mark the process doc *complete* until the screen perfectly matches the reference — but accrete the proven rules along the way.
+
+**Artifacts/proofs pass14 must produce before acceptance:**
+- Fresh capture PNG via the Unreal-owned capture path (`CaptureT66UIScreen.ps1`), not a desktop screenshot, plus matching dump JSON from the same run.
+- Verifier report + side-by-side contact sheet.
+- A **visual scorecard with `Result:` line** and one row per component family (reference crop, current crop, verdict, reason) — and it must now include a **title text-fit/containment row** and the existing rows from the contract (`achievements_text_fit`, `cta_clean_plate`, `leaderboard_local_row_style`, `metric_checkbox_shape`, `online_header_dot`, `invite_green_state`, `row_containment`).
+- Pass log entry for the iteration.
+- Any regenerated plates: account-backed imagegen output + local contact sheet + slice spec under the contract's declared paths.
+- A structural PASS count alone is explicitly **not** acceptance.
+
+**Likely blockers / method mistakes to avoid:**
+- Re-introducing inpaint/crop/mask to "fix" the title or CTA — the title crop is a fit problem to solve, not to paint over. This is the single highest-risk regression.
+- Treating a recurring rate-limit as license to use API fallback or to skip imagegen — recycle the CLI session instead.
+- Declaring PASS on the verifier count while the visual scorecard is missing or FAIL.
+- Editing shared `ET66FriendslopChrome` descriptors in a way that regresses other screens reusing the enum — confirm blast radius before changing tokens.
+
+## Evidence Checked
+- `main_menu_pass13_component_contract.md`: ownership table, size/fit contract, and 8 verification rows already exist and are well-formed; pass14 executes against it.
+- `UI_FIDELITY_LOOP_INSTRUCTIONS.md`: confirms structural PASS ≠ fidelity, blocking visual-scorecard gate, `contained_in`/inset containment support, and ESCALATE-at-5 / stuck-FAIL-set rules.
+- pass13 codex draft + pass14 cross-review: confirm the freeze-inpaint / imagegen-for-blank-plates framing the user is reaffirming.
+- Task contract: account-backed imagegen default, no API fallback, no structural-PASS-without-visual acceptance.
+
+## Questions Or Blockers
+None require the user. The user already chose direction (retry imagegen, systematic-not-one-off, update process doc, finish on real match) and resolved the tooling blocker (recycle the CLI). Codex/Operator can proceed.
+
+## Caveats
+- The current contract's scorecard rows do **not** include the title crop the user explicitly flagged — Codex must add a title text-fit/containment row, or the proof will miss the user's named defect.
+- The user says the screen is "nowhere near completion," so iterating across multiple families this pass is acceptable — but each fix must still be the systematic rule, not a local patch, and the slice-first safety valve (stop and fix method if the same failure recurs) still applies.
+- I inferred function/descriptor targets from the contract and prior reviews; I did not open the function bodies this pass. Codex should confirm exact signatures before editing.

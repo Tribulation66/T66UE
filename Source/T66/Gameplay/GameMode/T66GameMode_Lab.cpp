@@ -250,6 +250,8 @@ AActor* AT66GameMode::SpawnLabInteractable(FName InteractableID)
 		ClassToSpawn = AT66IdolAltar::StaticClass();
 	else if (InteractableID == FName(TEXT("Crate")))
 		ClassToSpawn = AT66CrateInteractable::StaticClass();
+	else if (InteractableID == FName(TEXT("TNT")))
+		ClassToSpawn = AT66TNTInteractable::StaticClass();
 	if (!ClassToSpawn) return nullptr;
 
 	FActorSpawnParameters SpawnParams;

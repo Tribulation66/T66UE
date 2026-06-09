@@ -51,7 +51,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "DamageLog")
 	float GetRollingDPS();
 
-	/** Clear log for a new run. Call wherever RunState->ResetForNewRun() is called. */
+	/** Clear log for a new run. Canonical run-start clearing is owned by UT66RunStateSubsystem::BeginNewRun. */
 	UFUNCTION(BlueprintCallable, Category = "DamageLog")
 	void ResetForNewRun();
 

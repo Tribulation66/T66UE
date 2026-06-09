@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66WebImageCache.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Async/Async.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
@@ -23,7 +24,48 @@ bool UT66WebImageCache::HasCachedImage(const FString& Url) const
 	return CachedTextures.Contains(Url);
 }
 
+void UT66WebImageCache::Initialize(FSubsystemCollectionBase& Collection)
+{
+	Collection.InitializeDependency(UT66ShutdownSubsystem::StaticClass());
+	Super::Initialize(Collection);
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			ShutdownParticipantHandle = Shutdown->RegisterParticipant(
+				this,
+				FName(TEXT("WebImageCache.AsyncDownloads")),
+				ET66ShutdownPhase::AsyncWork,
+				30,
+				1.0,
+				false,
+				FT66ShutdownParticipantDelegate::CreateUObject(this, &UT66WebImageCache::HandleShutdown));
+		}
+	}
+}
+
 void UT66WebImageCache::Deinitialize()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			Shutdown->UnregisterParticipant(ShutdownParticipantHandle);
+		}
+	}
+	ShutdownParticipantHandle.Reset();
+	ShutdownRuntimeResources(TEXT("Deinitialize"));
+	Super::Deinitialize();
+}
+
+bool UT66WebImageCache::HandleShutdown(const FT66ShutdownContext& /*Context*/)
+{
+	ShutdownRuntimeResources(TEXT("ShutdownSystem"));
+	return true;
+}
+
+void UT66WebImageCache::ShutdownRuntimeResources(const TCHAR* /*Reason*/)
 {
 	bIsDeinitializing = true;
 	PendingDownloads.Reset();
@@ -41,8 +83,6 @@ void UT66WebImageCache::Deinitialize()
 		}
 	}
 	CachedTextures.Reset();
-
-	Super::Deinitialize();
 }
 
 void UT66WebImageCache::RequestImage(const FString& Url, TFunction<void(UTexture2D*)> OnReady)

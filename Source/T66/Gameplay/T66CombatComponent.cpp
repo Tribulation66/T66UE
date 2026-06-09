@@ -42,6 +42,18 @@
 
 DEFINE_LOG_CATEGORY(LogT66Combat);
 
+// Behavior-only physical knockback test gate (no visual/mesh/inflation changes).
+// When 1 (default), Hero_1 SLASH and the Idol_Fire_Pierce idol launch enemies with a
+// 3D velocity (XY shove + Z arc) so they leave the ground, travel, and land — the
+// bouncy floor/walls react on landing. When 0, behaves exactly as today (velocity-only
+// horizontal stagger for slash; no knockback on idol pierce). Per-attack launch knobs
+// live inline at the call sites (see PerformSlash / idol Pierce dispatch).
+static TAutoConsoleVariable<int32> CVarT66PhysicalKnockbackTest(
+	TEXT("t66.Combat.PhysicalKnockbackTest"),
+	1,
+	TEXT("Physical knockback test: 1 = launch enemies with arc on Hero_1 Slash + Idol_Fire_Pierce, 0 = legacy."),
+	ECVF_Default);
+
 // Capture/proof-only override for the readable Bounce link travel window. Default 0
 // (off) means gameplay uses the normal ReadableBounceLinkTravelSeconds floor so the
 // bounce keeps its production feel. When the Bounce VFX proof staging sets this > 0,
@@ -77,6 +89,7 @@ namespace
 		case ET66AttackCategory::AOE:    return TEXT("AOE");
 		case ET66AttackCategory::Bounce: return TEXT("Bounce");
 		case ET66AttackCategory::DOT:    return TEXT("DOT");
+		case ET66AttackCategory::SingleTarget: return TEXT("SingleTarget");
 		default:                         return TEXT("Unknown");
 		}
 	}
@@ -109,33 +122,53 @@ namespace
 		case ET66AttackCategory::AOE:    return FName(TEXT("Hero.Attack.AOE"));
 		case ET66AttackCategory::Bounce: return FName(TEXT("Hero.Attack.Bounce"));
 		case ET66AttackCategory::DOT:    return FName(TEXT("Hero.Attack.DOT"));
+		case ET66AttackCategory::SingleTarget: return FName(TEXT("Hero.Attack.Generic"));
 		default:                         return FName(TEXT("Hero.Attack.Generic"));
 		}
 	}
 
-	FName GetT66TravelerVisualProfileID(const ET66IdolElement Element, const ET66AttackCategory Category)
+	const TCHAR* GetT66IdolElementNameForVisuals(const FName IdolID, const ET66IdolElement Element)
 	{
-		const TCHAR* ElementName = TEXT("Fire");
+		const FString ID = IdolID.ToString();
+		if (ID.StartsWith(TEXT("Idol_Fire_"))) return TEXT("Fire");
+		if (ID.StartsWith(TEXT("Idol_Ice_"))) return TEXT("Ice");
+		if (ID.StartsWith(TEXT("Idol_Electricity_"))) return TEXT("Electricity");
+		if (ID.StartsWith(TEXT("Idol_Nature_"))) return TEXT("Nature");
+		if (ID.StartsWith(TEXT("Idol_Wind_"))) return TEXT("Wind");
+
 		switch (Element)
 		{
-		case ET66IdolElement::Fire:        ElementName = TEXT("Fire"); break;
-		case ET66IdolElement::Ice:         ElementName = TEXT("Ice"); break;
-		case ET66IdolElement::Electricity: ElementName = TEXT("Electricity"); break;
-		case ET66IdolElement::Nature:      ElementName = TEXT("Nature"); break;
-		default:                           ElementName = TEXT("Fire"); break;
+		case ET66IdolElement::Fire:        return TEXT("Fire");
+		case ET66IdolElement::Ice:         return TEXT("Ice");
+		case ET66IdolElement::Electricity: return TEXT("Electricity");
+		case ET66IdolElement::Nature:      return TEXT("Nature");
+		case ET66IdolElement::Wind:        return TEXT("Wind");
+		default:                           return TEXT("Fire");
 		}
+	}
 
+	FName GetT66TravelerVisualProfileID(const FName IdolID, const ET66IdolElement Element, const ET66AttackCategory Category)
+	{
+		const TCHAR* ElementName = GetT66IdolElementNameForVisuals(IdolID, Element);
 		return FName(*FString::Printf(TEXT("TravelerVisual.%s.%s"), ElementName, GetT66AttackCategoryName(Category)));
 	}
 
-	FLinearColor GetT66IdolElementTravelerColor(const ET66IdolElement Element)
+	FLinearColor GetT66IdolElementTravelerColor(const FName IdolID, const ET66IdolElement Element)
 	{
+		const FString ElementName = GetT66IdolElementNameForVisuals(IdolID, Element);
+		if (ElementName == TEXT("Fire")) return FLinearColor(1.0f, 0.22f, 0.05f, 1.0f);
+		if (ElementName == TEXT("Ice")) return FLinearColor(0.35f, 0.85f, 1.0f, 0.78f);
+		if (ElementName == TEXT("Electricity")) return FLinearColor(0.62f, 0.20f, 1.0f, 1.0f);
+		if (ElementName == TEXT("Nature")) return FLinearColor(0.25f, 0.9f, 0.32f, 0.78f);
+		if (ElementName == TEXT("Wind")) return FLinearColor(0.62f, 0.65f, 0.68f, 0.86f);
+
 		switch (Element)
 		{
 		case ET66IdolElement::Fire:        return FLinearColor(1.0f, 0.22f, 0.05f, 1.0f);
 		case ET66IdolElement::Ice:         return FLinearColor(0.35f, 0.85f, 1.0f, 0.78f);
-		case ET66IdolElement::Electricity: return FLinearColor(0.95f, 0.98f, 0.18f, 1.0f);
+		case ET66IdolElement::Electricity: return FLinearColor(0.62f, 0.20f, 1.0f, 1.0f);
 		case ET66IdolElement::Nature:      return FLinearColor(0.25f, 0.9f, 0.32f, 0.78f);
+		case ET66IdolElement::Wind:        return FLinearColor(0.62f, 0.65f, 0.68f, 0.86f);
 		default:                           return FT66TemporaryProjectileSystem::HeroProjectileColor();
 		}
 	}
@@ -2447,7 +2480,7 @@ void UT66CombatComponent::TryFire()
 	TArray<AActor*> WeaponHitActors;
 	WeaponHitActors.Reserve(12);
 	TArray<FT66CombatImpactContext> WeaponImpactContexts;
-	WeaponImpactContexts.Reserve(2);
+	WeaponImpactContexts.Reserve(12);
 	FT66CombatImpactContext PrimaryWeaponImpactContext;
 	bool bHasPrimaryWeaponImpactContext = false;
 
@@ -2862,9 +2895,10 @@ void UT66CombatComponent::TryFire()
 		// Lane start for the PathAnchored Pierce VFX: the hero attack origin, with the
 		// vertical slash carrier extending forward along LineLength / TubeRadius.
 		PierceImpactContext.AttackOrigin = AttackOrigin;
-		const int32 BasePierceTargets = bHaveHeroData ? FMath::Max(0, HeroDataForPrimary.BasePierceCount) + 1 : 1;
-		const int32 WeaponPierceTargets = bHasCachedWeaponData ? FMath::Max(0, CachedWeaponData.BonusPierceCount) : 0;
-		const int32 MaxPierceTargets = FMath::Max(1, BasePierceTargets + WeaponPierceTargets);
+		const bool bSingleTargetAttack = AttackCategory == ET66AttackCategory::SingleTarget;
+		const int32 BasePierceTargets = bSingleTargetAttack ? 1 : (bHaveHeroData ? FMath::Max(0, HeroDataForPrimary.BasePierceCount) + 1 : 1);
+		const int32 WeaponPierceTargets = bSingleTargetAttack ? 0 : (bHasCachedWeaponData ? FMath::Max(0, CachedWeaponData.BonusPierceCount) : 0);
+		const int32 MaxPierceTargets = bSingleTargetAttack ? 1 : FMath::Max(1, BasePierceTargets + WeaponPierceTargets);
 		if (CVarT66CombatImpactSourceVerbose.GetValueOnGameThread() != 0)
 		{
 			UE_LOG(
@@ -2934,9 +2968,6 @@ void UT66CombatComponent::TryFire()
 		const float AoeInnerRadiusRatio = bHasCachedWeaponData
 			? FMath::Clamp(CachedWeaponData.AoeInnerRadiusRatio, 0.f, 0.95f)
 			: 0.f;
-		const float EffectiveSlashInnerRadius = bUseHeroOneFrontalSector
-			? EffectiveSlashRadius * AoeInnerRadiusRatio
-			: 0.f;
 
 		const int32 AuthoredProjectileCount = bHasCachedWeaponData ? CachedWeaponData.ProjectileCount : 0;
 		const int32 LegacyAoeCount = bHasCachedWeaponData ? FMath::Max(0, CachedWeaponData.BonusAoeCount) : 0;
@@ -2946,9 +2977,74 @@ void UT66CombatComponent::TryFire()
 		const FName PatternID = (bHasCachedWeaponData && !CachedWeaponData.AttackPatternID.IsNone())
 			? CachedWeaponData.AttackPatternID
 			: FName(TEXT("Default"));
+		static const FName HeroOneID(TEXT("Hero_1"));
+		static const FName HeroOneCrescentSinglePattern(TEXT("Hero1CrescentSingle"));
+		static const FName HeroOneCrescentTriplePattern(TEXT("Hero1CrescentTriple"));
+		static const FName HeroOneCrescentFivePattern(TEXT("Hero1CrescentFive"));
+		static const FName HeroOneCrescentFullContactPattern(TEXT("Hero1CrescentFullContact"));
+		const bool bHeroOneAoeWeapon = CurrentHeroID == HeroOneID && AttackCategory == ET66AttackCategory::AOE;
+		const bool bHeroOneConnectedCrescentLobes =
+			bHeroOneAoeWeapon
+			&& (PatternID == HeroOneCrescentTriplePattern || PatternID == HeroOneCrescentFivePattern);
+		const bool bHeroOneFullContactCrescent =
+			bHeroOneAoeWeapon && PatternID == HeroOneCrescentFullContactPattern;
+		const bool bHeroOnePlaceholderCrescent =
+			bHeroOneAoeWeapon
+			&& (PatternID == HeroOneCrescentSinglePattern
+				|| PatternID == HeroOneCrescentTriplePattern
+				|| PatternID == HeroOneCrescentFivePattern
+				|| PatternID == HeroOneCrescentFullContactPattern);
 		const float PatternTravelDistance = FMath::Max(1.f, FVector::Dist2D(AttackOrigin, PrimarySlashCenter));
-		const bool bUseFanPattern = EffectiveProjectileCount > 1 && EffectiveSpreadAngleDegrees > KINDA_SMALL_NUMBER;
+		const bool bUseFanPattern = !bHeroOneConnectedCrescentLobes && EffectiveProjectileCount > 1 && EffectiveSpreadAngleDegrees > KINDA_SMALL_NUMBER;
+		const FVector BaseSlashRight = T66ResolvePlanarDirection(FVector::CrossProduct(FVector::UpVector, BaseSlashForward), OwnerActor);
+		const float MaxCenteredProjectileIndex = static_cast<float>(FMath::Max(0, EffectiveProjectileCount - 1)) * 0.5f;
+		constexpr float HeroOneConnectedLobeSpacingRatio = 0.78f;
+		const float ConnectedLobeRadius = bHeroOneConnectedCrescentLobes
+			? FMath::Max(1.f, EffectiveSlashRadius / (1.f + MaxCenteredProjectileIndex * HeroOneConnectedLobeSpacingRatio))
+			: EffectiveSlashRadius;
+		const float ConnectedLobeSpacing = ConnectedLobeRadius * HeroOneConnectedLobeSpacingRatio;
+		const bool bPatternProofVerbose = FParse::Param(FCommandLine::Get(), TEXT("T66Hero1WeaponPatternProof"));
 		bool bAnySlashPayload = false;
+		struct FSlashDamageEntry
+		{
+			AActor* Target = nullptr;
+			FT66CombatTargetHandle TargetHandle;
+			bool bPrimary = false;
+		};
+		TArray<FSlashDamageEntry> SlashDamageEntries;
+		SlashDamageEntries.Reserve(16);
+		TSet<FString> PublishedSlashPrimaryKeys;
+		auto UpsertSlashDamageEntry = [&](AActor* Target, const FT66CombatTargetHandle& TargetHandle, const bool bPrimary)
+		{
+			if (!Target || !TargetHandle.IsValid())
+			{
+				return;
+			}
+
+			const FString TargetKey = MakeTargetHandleKey(TargetHandle);
+			for (FSlashDamageEntry& ExistingEntry : SlashDamageEntries)
+			{
+				if (MakeTargetHandleKey(ExistingEntry.TargetHandle) == TargetKey)
+				{
+					ExistingEntry.bPrimary = ExistingEntry.bPrimary || bPrimary;
+					if ((bHeroOneAoeWeapon && ExistingEntry.bPrimary) || !bHeroOneAoeWeapon)
+					{
+						WeaponHitActors.AddUnique(Target);
+					}
+					return;
+				}
+			}
+
+			FSlashDamageEntry NewEntry;
+			NewEntry.Target = Target;
+			NewEntry.TargetHandle = TargetHandle;
+			NewEntry.bPrimary = bPrimary;
+			SlashDamageEntries.Add(NewEntry);
+			if ((bHeroOneAoeWeapon && bPrimary) || !bHeroOneAoeWeapon)
+			{
+				WeaponHitActors.AddUnique(Target);
+			}
+		};
 
 		for (int32 ProjectileIndex = 0; ProjectileIndex < EffectiveProjectileCount; ++ProjectileIndex)
 		{
@@ -2960,30 +3056,73 @@ void UT66CombatComponent::TryFire()
 				: BaseSlashForward;
 			const FVector SlashCenter = bUseFanPattern
 				? (AttackOrigin + ProjectileForward * PatternTravelDistance)
-				: PrimarySlashCenter;
-			const bool bForcePrimaryIntoQuery = true;
+				: (bHeroOneConnectedCrescentLobes
+					? PrimarySlashCenter + BaseSlashRight * (CenteredIndex * ConnectedLobeSpacing)
+					: PrimarySlashCenter);
+			const float SlashOuterRadius = bHeroOneConnectedCrescentLobes ? ConnectedLobeRadius : EffectiveSlashRadius;
+			const float SlashInnerRadius = bUseHeroOneFrontalSector
+				? SlashOuterRadius * AoeInnerRadiusRatio
+				: 0.f;
+			const bool bForcePrimaryIntoQuery = !bHeroOneConnectedCrescentLobes || FMath::IsNearlyZero(CenteredIndex);
 
 			TArray<AActor*> SlashTargets;
 			BuildSlashTargets(
 				bForcePrimaryIntoQuery ? PrimaryTarget : nullptr,
-				EffectiveSlashRadius,
+				SlashOuterRadius,
 				SlashTargets,
 				bUseHeroOneFrontalSector,
 				ProjectileForward,
 				HeroOneAoeHalfAngleDegrees,
-				EffectiveSlashInnerRadius,
+				SlashInnerRadius,
 				&SlashCenter,
 				FString::Printf(TEXT("Weapon %s AOE Pattern %s %d/%d"), *ResolveWeaponImpactSourceID().ToString(), *PatternID.ToString(), ProjectileIndex + 1, EffectiveProjectileCount));
+			AActor* LobePrimaryOverride = nullptr;
+			if (bHeroOneConnectedCrescentLobes && !bForcePrimaryIntoQuery)
+			{
+				const float PrimaryPointRadius = FMath::Max(80.f, SlashOuterRadius * 0.16f);
+				const TArray<AActor*> PrimaryPointCandidates = T66GatherAttackTargetsInSphere(World, OwnerActor, SlashCenter, PrimaryPointRadius);
+				float BestPrimaryPointDistSq = TNumericLimits<float>::Max();
+				for (AActor* Candidate : PrimaryPointCandidates)
+				{
+					if (!IsValidAutoTarget(Candidate))
+					{
+						continue;
+					}
+					const FT66CombatTargetHandle CandidateHandle = MakeActorTargetHandle(Candidate);
+					if (!HasUnblockedAutoAttackPath(AttackOrigin, CandidateHandle))
+					{
+						continue;
+					}
+					const float CandidateDistSq = FVector::DistSquared2D(GetTargetAimPoint(CandidateHandle), SlashCenter);
+					if (CandidateDistSq < BestPrimaryPointDistSq)
+					{
+						BestPrimaryPointDistSq = CandidateDistSq;
+						LobePrimaryOverride = Candidate;
+					}
+				}
+				if (LobePrimaryOverride)
+				{
+					SlashTargets.Remove(LobePrimaryOverride);
+					SlashTargets.Insert(LobePrimaryOverride, 0);
+				}
+			}
+			if (bHeroOneConnectedCrescentLobes && SlashTargets.Num() > 1 && !LobePrimaryOverride)
+			{
+				SlashTargets.Sort([&SlashCenter](const AActor& A, const AActor& B)
+				{
+					return FVector::DistSquared2D(A.GetActorLocation(), SlashCenter) < FVector::DistSquared2D(B.GetActorLocation(), SlashCenter);
+				});
+			}
 
 			FVector SlashContextImpactPoint = SlashCenter;
 			const bool bUseCrescentBandImpactPoint =
 				bUseHeroOneFrontalSector
-				&& EffectiveSlashInnerRadius > KINDA_SMALL_NUMBER
-				&& EffectiveSlashRadius > EffectiveSlashInnerRadius;
+				&& SlashInnerRadius > KINDA_SMALL_NUMBER
+				&& SlashOuterRadius > SlashInnerRadius;
 			if (bUseCrescentBandImpactPoint)
 			{
 				// Idol overlays should trigger from the visible crescent band, not the hollow damage-query center.
-				const float BandMidpointRadius = (EffectiveSlashInnerRadius + EffectiveSlashRadius) * 0.5f;
+				const float BandMidpointRadius = (SlashInnerRadius + SlashOuterRadius) * 0.5f;
 				SlashContextImpactPoint = SlashCenter + ProjectileForward * BandMidpointRadius;
 			}
 
@@ -2992,8 +3131,8 @@ void UT66CombatComponent::TryFire()
 			SlashImpactContext.DamageCenter = SlashCenter;
 			SlashImpactContext.ImpactPoint = SlashContextImpactPoint;
 			SlashImpactContext.Forward = ProjectileForward;
-			SlashImpactContext.Radius = EffectiveSlashRadius;
-			SlashImpactContext.InnerRadius = EffectiveSlashInnerRadius;
+			SlashImpactContext.Radius = SlashOuterRadius;
+			SlashImpactContext.InnerRadius = SlashInnerRadius;
 			SlashImpactContext.HalfAngleDegrees = bUseHeroOneFrontalSector ? HeroOneAoeHalfAngleDegrees : 0.f;
 			SlashImpactContext.EffectiveDamage = EffectiveDamagePerShot;
 			SlashImpactContext.bUsesFrontalSector = bUseHeroOneFrontalSector;
@@ -3010,6 +3149,24 @@ void UT66CombatComponent::TryFire()
 					: MakeActorTargetHandle(SlashTarget);
 				SlashTargetHandles.Add(SlashTargetHandle);
 				AddImpactTargetHandleUnique(SlashImpactContext, SlashTargetHandle);
+				const bool bTargetIsPrimary = bHeroOneFullContactCrescent || TargetIndex == 0;
+				UpsertSlashDamageEntry(SlashTarget, SlashTargetHandle, bTargetIsPrimary);
+				if (bHeroOnePlaceholderCrescent && (bPatternProofVerbose || CVarT66CombatImpactSourceVerbose.GetValueOnGameThread() != 0))
+				{
+					UE_LOG(
+						LogT66Combat,
+						Display,
+						TEXT("Hero1WeaponPatternTargetRole WeaponID=%s PatternID=%s ProjectileIndex=%d Target=%s Role=%s DamageFraction=%.2f Center=%s Radius=%.2f InnerRadius=%.2f"),
+						*ResolveWeaponImpactSourceID().ToString(),
+						*PatternID.ToString(),
+						ProjectileIndex,
+						*GetNameSafe(SlashTarget),
+						bTargetIsPrimary ? TEXT("Primary") : TEXT("Body"),
+						bTargetIsPrimary ? 1.f : 0.5f,
+						*SlashCenter.ToCompactString(),
+						SlashOuterRadius,
+						SlashInnerRadius);
+				}
 			}
 			if (SlashTargetHandles.Num() > 0)
 			{
@@ -3017,7 +3174,44 @@ void UT66CombatComponent::TryFire()
 			}
 			if (SlashImpactContext.HitTargetHandles.Num() > 0)
 			{
-				PublishWeaponImpactContext(SlashImpactContext, !bHasPrimaryWeaponImpactContext);
+				if (bHeroOneFullContactCrescent)
+				{
+					for (const FT66CombatTargetHandle& FullContactHandle : SlashTargetHandles)
+					{
+						if (!FullContactHandle.IsValid())
+						{
+							continue;
+						}
+						const FString PrimaryKey = MakeTargetHandleKey(FullContactHandle);
+						if (PublishedSlashPrimaryKeys.Contains(PrimaryKey))
+						{
+							continue;
+						}
+						PublishedSlashPrimaryKeys.Add(PrimaryKey);
+						FT66CombatImpactContext FullContactContext = SlashImpactContext;
+						FullContactContext.PrimaryTargetHandle = FullContactHandle;
+						FullContactContext.HitTargetHandles.Reset();
+						FullContactContext.HitTargetHandles.Add(FullContactHandle);
+						FullContactContext.ImpactPoint = GetTargetAimPoint(FullContactHandle);
+						FullContactContext.DamageCenter = FullContactContext.ImpactPoint;
+						FullContactContext.bDamageCenterValid = true;
+						FullContactContext.bImpactPointValid = true;
+						PublishWeaponImpactContext(FullContactContext, true);
+					}
+				}
+				else if (bHeroOnePlaceholderCrescent)
+				{
+					const FString PrimaryKey = MakeTargetHandleKey(SlashImpactContext.PrimaryTargetHandle);
+					if (!PublishedSlashPrimaryKeys.Contains(PrimaryKey))
+					{
+						PublishedSlashPrimaryKeys.Add(PrimaryKey);
+						PublishWeaponImpactContext(SlashImpactContext, true);
+					}
+				}
+				else
+				{
+					PublishWeaponImpactContext(SlashImpactContext, !bHasPrimaryWeaponImpactContext);
+				}
 			}
 
 			if (EffectiveProjectileCount > 1 || CVarT66CombatImpactSourceVerbose.GetValueOnGameThread() != 0)
@@ -3039,14 +3233,12 @@ void UT66CombatComponent::TryFire()
 
 			TrySpawnBoundWeaponBaseSlashVFX(SlashImpactContext, EffectiveDamagePerShot, CurrentHeroID, AttackCategory);
 
-			const int32 HitCount = SlashTargets.Num();
-			for (AActor* Hit : SlashTargets)
-			{
-				if (Hit)
-				{
-					WeaponHitActors.AddUnique(Hit);
-				}
-			}
+			bAnySlashPayload = true;
+		}
+
+		if (SlashDamageEntries.Num() > 0)
+		{
+			const int32 HitCount = SlashDamageEntries.Num();
 			float ArcaneMult = 1.f;
 			if (CachedRunState && CachedRunState->GetPassiveType() == ET66PassiveType::ArcaneAmplification)
 			{
@@ -3055,7 +3247,9 @@ void UT66CombatComponent::TryFire()
 			}
 
 			const int32 PrimaryDmg = FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * PrimaryDamageMult * ArcaneMult));
-			const int32 SplashDmg = FMath::Max(1, FMath::RoundToInt(static_cast<float>(EffectiveDamagePerShot) * ArcaneMult));
+			const int32 SplashDmg = bHeroOneAoeWeapon
+				? FMath::Max(1, FMath::RoundToInt(EffectiveDamagePerShot * PrimaryDamageMult * 0.5f * ArcaneMult))
+				: FMath::Max(1, FMath::RoundToInt(static_cast<float>(EffectiveDamagePerShot) * ArcaneMult));
 			const float AoeAttackSpeedScale = (BaseFireIntervalSeconds > KINDA_SMALL_NUMBER && EffectiveFireIntervalSeconds > KINDA_SMALL_NUMBER)
 				? FMath::Clamp(BaseFireIntervalSeconds / EffectiveFireIntervalSeconds, 0.1f, 20.f)
 				: 1.f;
@@ -3063,33 +3257,83 @@ void UT66CombatComponent::TryFire()
 				? HeroDataForPrimary.AoeDelay / AoeAttackSpeedScale
 				: 0.f;
 			TWeakObjectPtr<UT66CombatComponent> WeakThis(this);
-			auto ApplySlashDamage = [WeakThis, SlashTargets, SlashTargetHandles, PrimaryDmg, SplashDmg, ResolveCrit, GetRangeMultipliedDamage, ApplyResolvedAutoAttackDamage, RngSub]() mutable
+			// Capture CurrentHeroID so the deferred (AoeDelay) timer variant still gates on Hero_1.
+			const FName SlashHeroID = CurrentHeroID;
+			auto ApplySlashDamage = [WeakThis, SlashDamageEntries, PrimaryDmg, SplashDmg, ResolveCrit, GetRangeMultipliedDamage, ApplyResolvedAutoAttackDamage, SlashHeroID]() mutable
 			{
 				UT66CombatComponent* Self = WeakThis.Get();
-				if (!Self || SlashTargets.Num() <= 0 || SlashTargetHandles.Num() <= 0)
+				if (!Self || SlashDamageEntries.Num() <= 0)
 				{
 					return;
 				}
 
-				AActor* FirstHit = SlashTargets[0];
-				if (FirstHit && SlashTargetHandles[0].IsValid())
+				// Physical-knockback test path: Hero_1 SLASH (AOE) only. While the suppression
+				// flag is true the legacy ApplyAutoAttackKnockback gate in ApplyDamageToTargetHandle
+				// is skipped so we apply our 3D launch here instead. The flag is always reset
+				// before the lambda returns so non-test paths and other attacks are untouched.
+				// (TryFire already declares its own static `HeroOneID` higher up; we redeclare with
+				// a distinct local-static name here so the lambda survives independently of the
+				// outer's scope without shadowing it.)
+				static const FName PhysKbHeroOneID(TEXT("Hero_1"));
+				AActor* HeroActor = Self->GetOwner();
+				const bool bPhysicalKnockback =
+					HeroActor
+					&& SlashHeroID == PhysKbHeroOneID
+					&& CVarT66PhysicalKnockbackTest.GetValueOnGameThread() != 0;
+				const FVector HeroLoc = HeroActor ? HeroActor->GetActorLocation() : FVector::ZeroVector;
+				if (bPhysicalKnockback)
 				{
-					FName RangeEvent;
-					const int32 RangeDmg = GetRangeMultipliedDamage(PrimaryDmg, FirstHit, &RangeEvent);
-					const FResolvedAutoAttackHit Resolved = ResolveCrit(RangeDmg);
-					ApplyResolvedAutoAttackDamage(SlashTargetHandles[0], Resolved, RangeEvent);
+					Self->bSuppressLegacyAutoAttackKnockback = true;
 				}
 
-				for (int32 TargetIndex = 1; TargetIndex < SlashTargets.Num() && TargetIndex < SlashTargetHandles.Num(); ++TargetIndex)
+				for (const FSlashDamageEntry& DamageEntry : SlashDamageEntries)
 				{
-					AActor* Hit = SlashTargets[TargetIndex];
-					if (Hit && SlashTargetHandles[TargetIndex].IsValid())
+					AActor* Hit = DamageEntry.Target;
+					if (!Hit || !DamageEntry.TargetHandle.IsValid())
 					{
-						FName SplashRangeEvent;
-						const int32 SplashRangeDmg = GetRangeMultipliedDamage(SplashDmg, Hit, &SplashRangeEvent);
-						const FResolvedAutoAttackHit SplashResolved = ResolveCrit(SplashRangeDmg);
-						ApplyResolvedAutoAttackDamage(SlashTargetHandles[TargetIndex], SplashResolved, SplashRangeEvent);
+						continue;
 					}
+
+					FName RangeEvent;
+					const int32 BaseDamage = DamageEntry.bPrimary ? PrimaryDmg : SplashDmg;
+					const int32 RangeDmg = GetRangeMultipliedDamage(BaseDamage, Hit, &RangeEvent);
+					const FResolvedAutoAttackHit Resolved = ResolveCrit(RangeDmg);
+					ApplyResolvedAutoAttackDamage(DamageEntry.TargetHandle, Resolved, RangeEvent);
+
+					if (!bPhysicalKnockback)
+					{
+						continue;
+					}
+
+					// Radial-from-hero launch with a moderate upward Z. Knobs match the mission
+					// spec (~1200 horizontal, ~400 Z); clamp inside ApplyPhysicalKnockback covers
+					// the off-screen rocket case. Targets that died this hit are skipped via
+					// the alive checks inside ApplyPhysicalKnockback / mob IsAliveAndActive.
+					FVector AwayDir = Hit->GetActorLocation() - HeroLoc;
+					AwayDir.Z = 0.f;
+					if (!AwayDir.Normalize())
+					{
+						AwayDir = HeroActor ? HeroActor->GetActorForwardVector() : FVector::ForwardVector;
+						AwayDir.Z = 0.f;
+						if (!AwayDir.Normalize())
+						{
+							continue;
+						}
+					}
+					const FVector Launch = AwayDir * 1200.f + FVector(0.f, 0.f, 400.f);
+					if (AT66EnemyBase* HitEnemy = Cast<AT66EnemyBase>(Hit))
+					{
+						HitEnemy->ApplyPhysicalKnockback(Launch);
+					}
+					else if (AT66MobBase* HitMob = Cast<AT66MobBase>(Hit))
+					{
+						HitMob->ApplyPhysicalKnockback(Launch);
+					}
+				}
+
+				if (bPhysicalKnockback)
+				{
+					Self->bSuppressLegacyAutoAttackKnockback = false;
 				}
 			};
 
@@ -3102,8 +3346,6 @@ void UT66CombatComponent::TryFire()
 			{
 				ApplySlashDamage();
 			}
-
-			bAnySlashPayload = true;
 		}
 
 		if (bAnySlashPayload)
@@ -3585,7 +3827,7 @@ void UT66CombatComponent::TryFire()
 		CachedRunState->NotifyAttackFired();
 	}
 
-	// Hero primary attack (Pierce / Bounce / AOE / DOT). Readable projectile presentation is spawned before damage resolution.
+	// Hero primary attack. Readable projectile presentation is spawned before damage resolution.
 	if (PrimaryTarget)
 	{
 		switch (AttackCategory)
@@ -3594,6 +3836,7 @@ void UT66CombatComponent::TryFire()
 		case ET66AttackCategory::Bounce: (void)PerformBounce(PrimaryTarget, PrimaryDamageMultiplier); break;
 		case ET66AttackCategory::AOE:   (void)PerformSlash(PrimaryTarget, PrimaryDamageMultiplier); break;
 		case ET66AttackCategory::DOT:   (void)PerformDOT(PrimaryTarget, PrimaryDamageMultiplier); break;
+		case ET66AttackCategory::SingleTarget: (void)PerformPierce(PrimaryTarget, PrimaryDamageMultiplier); break;
 		default: (void)PerformSlash(PrimaryTarget, PrimaryDamageMultiplier); break;
 		}
 
@@ -3606,6 +3849,7 @@ void UT66CombatComponent::TryFire()
 			case ET66AttackCategory::Bounce: (void)PerformBounce(PrimaryTarget, 1.f); break;
 			case ET66AttackCategory::AOE:   (void)PerformSlash(PrimaryTarget, 1.f); break;
 			case ET66AttackCategory::DOT:   (void)PerformDOT(PrimaryTarget, 1.f); break;
+			case ET66AttackCategory::SingleTarget: (void)PerformPierce(PrimaryTarget, 1.f); break;
 			default: break;
 			}
 		}
@@ -3752,8 +3996,8 @@ void UT66CombatComponent::TryFire()
 						continue;
 					}
 
-					const FName VisualProfileID = GetT66TravelerVisualProfileID(IdolData.Element, IdolData.Category);
-					const FLinearColor TravelerColor = GetT66IdolElementTravelerColor(IdolData.Element);
+					const FName VisualProfileID = GetT66TravelerVisualProfileID(IdolID, IdolData.Element, IdolData.Category);
+					const FLinearColor TravelerColor = GetT66IdolElementTravelerColor(IdolID, IdolData.Element);
 					const float TravelerSpeedBase = IdolData.ProjectileSpeed > 0.f ? IdolData.ProjectileSpeed : 2400.f;
 					const float TravelerSpeed = FMath::Max(1.f, TravelerSpeedBase * IdolSpeedScale);
 					const FName TravelerProfile = FT66TemporaryProjectileSystem::GetHeroAttackProfile(IdolData.Category);
@@ -3803,6 +4047,123 @@ void UT66CombatComponent::TryFire()
 					{
 					case ET66AttackCategory::Pierce:
 					{
+						// --- Physical knockback test (Idol_Fire_Pierce only) -------------------
+						// Replaces the per-target homing-traveler path with a single STRAIGHT,
+						// LOW, FORWARD sweep from the hero's aim. Disables homing (each enemy
+						// is hit by the same straight line), lowers spawn Z so it catches enemies
+						// low, applies damage synchronously, and launches each hit enemy UP and
+						// SIDEWAYS (perpendicular to the streak, away from its centerline) so
+						// they get tossed to the sides of the path — "hit from below".
+						// Gated by t66.Combat.PhysicalKnockbackTest (default 1). When 0 or when
+						// the equipped idol isn't Idol_Fire_Pierce, the production path below
+						// runs unchanged.
+						static const FName IdolFirePierceID(TEXT("Idol_Fire_Pierce"));
+						const bool bPhysicalSweepTest =
+							CVarT66PhysicalKnockbackTest.GetValueOnGameThread() != 0
+							&& IdolID == IdolFirePierceID;
+						if (bPhysicalSweepTest)
+						{
+							const float SweepLineLength = FMath::Max(1.f, AttackRange);
+							const float SweepRadius = FMath::Max(1.f, 80.f * IdolGlobalScale);
+
+							// Forward direction: hero aim flattened to ground. Test mode wants
+							// a straight low streak, so we override the helper's per-primary-target
+							// rewrite by re-asserting ForwardDir after BuildPierceTargets returns.
+							FVector ForwardDir = T66ResolvePlanarDirection(PrimaryAimPoint - AttackOrigin, OwnerActor);
+							ForwardDir.Z = 0.f;
+							if (!ForwardDir.Normalize())
+							{
+								ForwardDir = OwnerActor ? OwnerActor->GetActorForwardVector() : FVector::ForwardVector;
+								ForwardDir.Z = 0.f;
+								if (!ForwardDir.Normalize())
+								{
+									ForwardDir = FVector::ForwardVector;
+								}
+							}
+
+							// Low spawn: at hero ground Z + small lift, not the 64u-elevated AttackOrigin.
+							const FVector LowOrigin = FVector(
+								AttackOrigin.X,
+								AttackOrigin.Y,
+								(OwnerActor ? OwnerActor->GetActorLocation().Z : AttackOrigin.Z) + 20.f);
+							const FVector SweepEnd = LowOrigin + ForwardDir * SweepLineLength;
+
+							// Sideways axis (right-perpendicular of forward, in the ground plane).
+							FVector SidewaysAxis = FVector::CrossProduct(FVector::UpVector, ForwardDir);
+							if (!SidewaysAxis.Normalize())
+							{
+								SidewaysAxis = OwnerActor ? OwnerActor->GetActorRightVector() : FVector::RightVector;
+								SidewaysAxis.Z = 0.f;
+								if (!SidewaysAxis.Normalize())
+								{
+									SidewaysAxis = FVector::RightVector;
+								}
+							}
+
+							// Build the in-line target list. The helper rewrites the direction
+							// in-place — we keep ForwardDir straight afterwards so visual + side
+							// computation stay consistent with the hero's aim.
+							FVector ScratchDir = ForwardDir;
+							TArray<AActor*> InLine;
+							BuildPierceTargets(PrimaryTarget, SweepLineLength, SweepRadius, InLine, ScratchDir, &PrimaryAimPoint);
+							const int32 MaxSweepTargets = FMath::Max(1, FMath::RoundToInt(IdolData.GetPropertyAtRarity(IdolRarity) * IdolBehaviorScale) + 1);
+							if (InLine.Num() > MaxSweepTargets)
+							{
+								InLine.SetNum(MaxSweepTargets, EAllowShrinking::No);
+							}
+							const float SweepFalloffPerHit = FMath::Clamp((IdolData.FalloffPerHit > 0.f) ? IdolData.FalloffPerHit : 0.15f, 0.f, 0.95f);
+
+							for (int32 SweepIndex = 0; SweepIndex < InLine.Num(); ++SweepIndex)
+							{
+								AActor* Hit = InLine[SweepIndex];
+								if (!IsValidAutoTarget(Hit))
+								{
+									continue;
+								}
+								const FT66CombatTargetHandle HitHandle = (Hit == PrimaryTarget)
+									? PrimaryTargetHandle
+									: ResolveAutoAttackTargetHandle(Hit, false, RngSub);
+								const float FalloffMult = FMath::Max(0.1f, 1.f - SweepFalloffPerHit * static_cast<float>(SweepIndex));
+								const int32 ShapedDamage = FMath::Max(1, FMath::RoundToInt(static_cast<float>(IdolDamage) * FalloffMult));
+								FName RangeEvent;
+								const int32 RangeDmg = ResolveRangeDamageForComponent(this, MyLoc, ShapedDamage, Hit, &RangeEvent);
+								const FResolvedAutoAttackHit Resolved = ResolveCritForComponent(this, RngSub, RangeDmg);
+
+								// Damage applies synchronously with the idol SourceID — same channel
+								// as the legacy fallback at the bottom of the production case below.
+								ApplyDamageToTargetHandle(HitHandle, Resolved.Damage, Resolved.EventType, IdolID, RangeEvent);
+
+								// Sideways launch: pick the side of the streak the enemy is on,
+								// then push them further to that side — "tossed to the sides of
+								// the path" per the mission spec. Strong Z so they go up first.
+								const FVector EnemyLoc = Hit->GetActorLocation();
+								const FVector ToEnemy = EnemyLoc - LowOrigin;
+								const float SideOffset = FVector::DotProduct(ToEnemy, SidewaysAxis);
+								const FVector SideDir = (SideOffset >= 0.f) ? SidewaysAxis : -SidewaysAxis;
+
+								const FVector Launch = SideDir * 600.f + FVector(0.f, 0.f, 900.f);
+								if (AT66EnemyBase* HitEnemy = Cast<AT66EnemyBase>(Hit))
+								{
+									HitEnemy->ApplyPhysicalKnockback(Launch);
+								}
+								else if (AT66MobBase* HitMob = Cast<AT66MobBase>(Hit))
+								{
+									HitMob->ApplyPhysicalKnockback(Launch);
+								}
+							}
+
+							// Visual streak: one straight low streak from hero forward. Same
+							// SpawnIdolPierceVFX signature as the legacy fallback (visual only).
+							SpawnIdolPierceVFX(IdolID, IdolRarity, LowOrigin, SweepEnd, SweepEnd, 0.f);
+
+							UE_LOG(LogT66Combat, Display,
+								TEXT("T66PhysicalKnockbackTest_FirePierce SourceID=%s Targets=%d MaxTargets=%d Forward=%s LowOrigin=%s SweepEnd=%s"),
+								*IdolID.ToString(), InLine.Num(), MaxSweepTargets,
+								*ForwardDir.ToCompactString(), *LowOrigin.ToCompactString(), *SweepEnd.ToCompactString());
+							break;
+						}
+
+						// --- Production path (CVar off, or other element pierce idols) ---------
 						const float LineLength = FMath::Max(1.f, AttackRange);
 						const float PierceRadius = FMath::Max(1.f, 80.f * IdolGlobalScale);
 						FVector PierceDir = T66ResolvePlanarDirection(PrimaryAimPoint - AttackOrigin, OwnerActor);
@@ -3830,12 +4191,19 @@ void UT66CombatComponent::TryFire()
 							const int32 RangeDmg = ResolveRangeDamageForComponent(this, MyLoc, ShapedDamage, Hit, &RangeEvent);
 							const FResolvedAutoAttackHit Resolved = ResolveCritForComponent(this, RngSub, RangeDmg);
 							FT66OutgoingTravelerArrivalCallback OnArrived;
-							OnArrived.BindLambda([ApplyIdolArrivalDamage, Resolved, RangeEvent](const FT66OutgoingTravelerArrivalEvent& Event) mutable
+							const FVector PierceVisualStart = AttackOrigin;
+							const FVector PierceVisualEnd = AttackOrigin + PierceDir.GetSafeNormal() * LineLength;
+							OnArrived.BindLambda([ApplyIdolArrivalDamage, WeakSelf, IdolID, IdolRarity, PierceVisualStart, PierceVisualEnd, Resolved, RangeEvent](const FT66OutgoingTravelerArrivalEvent& Event) mutable
 							{
+								if (UT66CombatComponent* Self = WeakSelf.Get())
+								{
+									Self->SpawnIdolPierceVFX(IdolID, IdolRarity, PierceVisualStart, PierceVisualEnd, Event.ArrivalPosition, 0.f);
+								}
 								ApplyIdolArrivalDamage(Event, Resolved, RangeEvent);
 							});
 							if (!FireSingleIdolTraveler(HitHandle, AttackOrigin, Resolved.Damage, FMath::Max(0.01f, IdolGlobalScale), TravelerSpeed, 30.f, Resolved.EventType, OnArrived))
 							{
+								SpawnIdolPierceVFX(IdolID, IdolRarity, PierceVisualStart, PierceVisualEnd, GetTargetAimPoint(HitHandle), 0.f);
 								ApplyDamageToTargetHandle(HitHandle, Resolved.Damage, Resolved.EventType, IdolID, RangeEvent);
 							}
 						}
@@ -3850,7 +4218,7 @@ void UT66CombatComponent::TryFire()
 						TSharedRef<TSet<FString>> BounceHitKeys = MakeShared<TSet<FString>>();
 						TSharedRef<TFunction<void(const FT66CombatTargetHandle&, const FVector&, int32, float)>> FireNextIdolBounce =
 							MakeShared<TFunction<void(const FT66CombatTargetHandle&, const FVector&, int32, float)>>();
-						*FireNextIdolBounce = [WeakSelf, World, OwnerActor, MyLoc, AttackOrigin, IdolID, VisualProfileID, TravelerColor, TravelerProfile, IdolData, IdolDamage, BounceCount, Falloff, BounceRangeSq, TravelerSpeed, IdolGlobalScale, RngSub, ResolveRangeDamageForComponent, ResolveCritForComponent, ApplyResolvedDamageWithExecute, BounceHitKeys, FireNextIdolBounce](const FT66CombatTargetHandle& LinkHandle, const FVector& LinkStart, const int32 LinkIndex, const float DamageMult) mutable
+						*FireNextIdolBounce = [WeakSelf, World, OwnerActor, MyLoc, AttackOrigin, IdolID, IdolRarity, VisualProfileID, TravelerColor, TravelerProfile, IdolData, IdolDamage, BounceCount, Falloff, BounceRangeSq, TravelerSpeed, IdolGlobalScale, RngSub, ResolveRangeDamageForComponent, ResolveCritForComponent, ApplyResolvedDamageWithExecute, BounceHitKeys, FireNextIdolBounce](const FT66CombatTargetHandle& LinkHandle, const FVector& LinkStart, const int32 LinkIndex, const float DamageMult) mutable
 						{
 							UT66CombatComponent* Self = WeakSelf.Get();
 							AActor* Target = LinkHandle.Actor.Get();
@@ -3882,7 +4250,7 @@ void UT66CombatComponent::TryFire()
 							Request.DebugSourceID = IdolID;
 
 							FT66OutgoingTravelerArrivalCallback OnArrived;
-							OnArrived.BindLambda([WeakSelf, IdolID, LinkIndex, BounceCount, Falloff, DamageMult, BounceRangeSq, Resolved, RangeEvent, ApplyResolvedDamageWithExecute, BounceHitKeys, FireNextIdolBounce](const FT66OutgoingTravelerArrivalEvent& Event) mutable
+							OnArrived.BindLambda([WeakSelf, IdolID, IdolRarity, LinkStart, LinkIndex, BounceCount, Falloff, DamageMult, BounceRangeSq, Resolved, RangeEvent, ApplyResolvedDamageWithExecute, BounceHitKeys, FireNextIdolBounce](const FT66OutgoingTravelerArrivalEvent& Event) mutable
 							{
 								UT66CombatComponent* CallbackSelf = WeakSelf.Get();
 								if (!CallbackSelf || !Event.bHitLiveTarget || !Event.ResolvedTargetHandle.IsValid())
@@ -3891,6 +4259,10 @@ void UT66CombatComponent::TryFire()
 									FireNextIdolBounce->Reset();
 									return;
 								}
+								TArray<FVector> BounceVisualChain;
+								BounceVisualChain.Add(LinkStart);
+								BounceVisualChain.Add(Event.ArrivalPosition);
+								CallbackSelf->SpawnIdolBounceVFX(IdolID, IdolRarity, BounceVisualChain, 0.f);
 								ApplyResolvedDamageWithExecute(CallbackSelf, Event.ResolvedTargetHandle, Resolved, IdolID, RangeEvent, false, false);
 								BounceHitKeys->Add(UT66CombatComponent::MakeTargetHandleKey(Event.ResolvedTargetHandle));
 								UE_LOG(LogT66Combat, Display, TEXT("T66IdolBounceTravelerArrived SourceID=%s LinkIndex=%d Target=%s"), *IdolID.ToString(), LinkIndex, *GetNameSafe(Event.ResolvedTargetHandle.Actor.Get()));
@@ -3911,6 +4283,10 @@ void UT66CombatComponent::TryFire()
 
 							if (!FireT66CombatOutgoingTraveler(World, Request, OnArrived))
 							{
+								TArray<FVector> BounceVisualChain;
+								BounceVisualChain.Add(LinkStart);
+								BounceVisualChain.Add(TargetPosition);
+								Self->SpawnIdolBounceVFX(IdolID, IdolRarity, BounceVisualChain, 0.f);
 								Self->ApplyDamageToTargetHandle(LinkHandle, Resolved.Damage, Resolved.EventType, IdolID, RangeEvent);
 								FireNextIdolBounce->Reset();
 							}
@@ -3939,7 +4315,7 @@ void UT66CombatComponent::TryFire()
 						Request.DebugSourceID = IdolID;
 
 						FT66OutgoingTravelerArrivalCallback OnArrived;
-						OnArrived.BindLambda([WeakSelf, FireTravelerDotTicks, PrimaryTargetHandle, Ticks, TickInterval, Duration, IdolDamage, IdolID, VisualProfileID, TravelerColor, IdolGlobalScale](const FT66OutgoingTravelerArrivalEvent& Event) mutable
+						OnArrived.BindLambda([WeakSelf, FireTravelerDotTicks, PrimaryTargetHandle, Ticks, TickInterval, Duration, IdolDamage, IdolID, IdolRarity, VisualProfileID, TravelerColor, IdolGlobalScale](const FT66OutgoingTravelerArrivalEvent& Event) mutable
 						{
 							UT66CombatComponent* Self = WeakSelf.Get();
 							if (!Self || !Event.bHitLiveTarget || !Event.ResolvedTargetHandle.IsValid())
@@ -3947,11 +4323,13 @@ void UT66CombatComponent::TryFire()
 								UE_LOG(LogT66Combat, Display, TEXT("T66IdolDOTTravelerFizzled SourceID=%s"), *IdolID.ToString());
 								return;
 							}
+							Self->SpawnIdolDOTVFX(IdolID, IdolRarity, Event.ResolvedTargetHandle.Actor.Get(), Event.ArrivalPosition, Duration, 30.f, 0.f);
 							FireTravelerDotTicks(WeakSelf, Event.ResolvedTargetHandle, Ticks, TickInterval, static_cast<float>(IdolDamage), IdolID, VisualProfileID, TravelerColor, IdolGlobalScale, 30.f, IdolID);
 							UE_LOG(LogT66Combat, Display, TEXT("T66IdolTravelerDispatched SourceID=%s Category=DOT VisualProfile=%s Duration=%.2f TickInterval=%.2f TickCount=%d"), *IdolID.ToString(), *VisualProfileID.ToString(), Duration, TickInterval, Ticks);
 						});
 						if (!FireT66CombatOutgoingTraveler(World, Request, OnArrived))
 						{
+							SpawnIdolDOTVFX(IdolID, IdolRarity, PrimaryTarget, PrimaryAimPoint, Duration, 30.f, 0.f);
 							FireTravelerDotTicks(WeakSelf, PrimaryTargetHandle, Ticks, TickInterval, static_cast<float>(IdolDamage), IdolID, VisualProfileID, TravelerColor, IdolGlobalScale, 30.f, IdolID);
 						}
 						break;
@@ -3976,7 +4354,7 @@ void UT66CombatComponent::TryFire()
 						Request.DebugSourceID = IdolID;
 
 						FT66OutgoingTravelerArrivalCallback OnArrived;
-						OnArrived.BindLambda([WeakSelf, World, OwnerActor, MyLoc, IdolID, IdolRadius, IdolDamage, ResolveRangeDamageForComponent, ResolveCritForComponent, ApplyResolvedDamageWithExecute](const FT66OutgoingTravelerArrivalEvent& Event) mutable
+						OnArrived.BindLambda([WeakSelf, World, OwnerActor, MyLoc, IdolID, IdolRarity, IdolRadius, IdolDamage, ResolveRangeDamageForComponent, ResolveCritForComponent, ApplyResolvedDamageWithExecute](const FT66OutgoingTravelerArrivalEvent& Event) mutable
 						{
 							UT66CombatComponent* Self = WeakSelf.Get();
 							if (!Self || !World || !Event.bHitLiveTarget || !Event.ResolvedTargetHandle.IsValid())
@@ -3985,6 +4363,7 @@ void UT66CombatComponent::TryFire()
 								return;
 							}
 
+							Self->SpawnIdolAOEVFX(IdolID, IdolRarity, Event.ArrivalPosition, IdolRadius, 0.f);
 							const TArray<AActor*> Targets = T66GatherAttackTargetsInSphere(World, OwnerActor, Event.ArrivalPosition, IdolRadius);
 							for (AActor* Hit : Targets)
 							{
@@ -4007,6 +4386,7 @@ void UT66CombatComponent::TryFire()
 							FName RangeEvent;
 							const int32 RangeDmg = ResolveRangeDamageForComponent(this, MyLoc, IdolDamage, PrimaryTarget, &RangeEvent);
 							const FResolvedAutoAttackHit Resolved = ResolveCritForComponent(this, RngSub, RangeDmg);
+							SpawnIdolAOEVFX(IdolID, IdolRarity, PrimaryAimPoint, IdolRadius, 0.f);
 							ApplyDamageToTargetHandle(PrimaryTargetHandle, Resolved.Damage, Resolved.EventType, IdolID, RangeEvent);
 						}
 						UE_LOG(LogT66Combat, Display, TEXT("T66IdolTravelerDispatched SourceID=%s Category=AOE VisualProfile=%s Radius=%.2f TravelSeconds=%.3f"), *IdolID.ToString(), *VisualProfileID.ToString(), IdolRadius, DesiredTravelSeconds);
@@ -4131,7 +4511,7 @@ void UT66CombatComponent::TryFire()
 							bool bBindingResolved = false;
 							if (!TrySpawnBoundIdolImpactVFX(IdolImpactContext, IdolID, IdolRarity, PierceRadius, bBindingResolved))
 							{
-								SpawnIdolImpactPlaceholderVFX(IdolImpactContext, IdolID, IdolData.Category, 1.0f);
+								SpawnIdolImpactPlaceholderVFX(IdolImpactContext, IdolID, IdolRarity, IdolData.Category, 1.0f);
 							}
 							break;
 						}
@@ -4201,7 +4581,7 @@ void UT66CombatComponent::TryFire()
 							bool bBindingResolved = false;
 							if (!TrySpawnBoundIdolImpactVFX(IdolImpactContext, IdolID, IdolRarity, FMath::Max(1.f, AttackRange), bBindingResolved))
 							{
-								SpawnIdolImpactPlaceholderVFX(IdolImpactContext, IdolID, IdolData.Category, 1.0f);
+								SpawnIdolImpactPlaceholderVFX(IdolImpactContext, IdolID, IdolRarity, IdolData.Category, 1.0f);
 							}
 							break;
 						}
@@ -4244,7 +4624,7 @@ void UT66CombatComponent::TryFire()
 							bool bBindingResolved = false;
 							if (!TrySpawnBoundIdolImpactVFX(IdolImpactContext, IdolID, IdolRarity, FMath::Max(40.f, Duration * 60.f), bBindingResolved))
 							{
-								SpawnIdolImpactPlaceholderVFX(IdolImpactContext, IdolID, IdolData.Category, Duration);
+								SpawnIdolImpactPlaceholderVFX(IdolImpactContext, IdolID, IdolRarity, IdolData.Category, Duration);
 							}
 							break;
 						}
@@ -4303,7 +4683,7 @@ void UT66CombatComponent::TryFire()
 							bool bBindingResolved = false;
 							if (!TrySpawnBoundIdolImpactVFX(IdolImpactContext, IdolID, IdolRarity, IdolRadius, bBindingResolved))
 							{
-								SpawnWaterIdolImpactPlaceholderVFX(IdolImpactContext, IdolRadius);
+								SpawnIdolImpactPlaceholderVFX(IdolImpactContext, IdolID, IdolRarity, IdolData.Category, 1.0f);
 							}
 
 							const TArray<FT66CombatTargetHandle> AoeTargetHandles = IdolImpactContext.HitTargetHandles;
@@ -4467,7 +4847,7 @@ void UT66CombatComponent::ApplyDamageToTargetHandle(const FT66CombatTargetHandle
 			{
 				ClearLockedTarget();
 			}
-			if (!bEnemyDied && ResolvedSource == UT66DamageLogSubsystem::SourceID_AutoAttack && Hero)
+			if (!bEnemyDied && ResolvedSource == UT66DamageLogSubsystem::SourceID_AutoAttack && Hero && !bSuppressLegacyAutoAttackKnockback)
 			{
 				E->ApplyAutoAttackKnockback(Hero->GetActorLocation());
 			}
@@ -4483,7 +4863,7 @@ void UT66CombatComponent::ApplyDamageToTargetHandle(const FT66CombatTargetHandle
 			{
 				ClearLockedTarget();
 			}
-			if (!bMobDied && ResolvedSource == UT66DamageLogSubsystem::SourceID_AutoAttack && Hero)
+			if (!bMobDied && ResolvedSource == UT66DamageLogSubsystem::SourceID_AutoAttack && Hero && !bSuppressLegacyAutoAttackKnockback)
 			{
 				M->ApplyAutoAttackKnockback(Hero->GetActorLocation());
 			}

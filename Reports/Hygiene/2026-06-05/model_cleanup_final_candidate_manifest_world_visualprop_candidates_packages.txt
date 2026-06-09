@@ -1,0 +1,5 @@
+/Game/World/VisualProps/Easy/Material_0
+/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline
+/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_0
+/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_InnerLines
+/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_Tint

@@ -2,8 +2,6 @@
 
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66PlayerSettingsSaveGame.h"
-#include "Core/T66PixelationSubsystem.h"
-#include "Core/T66RetroFXSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "UI/Style/T66Style.h"
 
@@ -11,60 +9,29 @@
 #include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameUserSettings.h"
-#include "HAL/IConsoleManager.h"
 #include "Misc/App.h"
-#include "Misc/CommandLine.h"
-#include "Misc/Parse.h"
 #include "Sound/SoundClass.h"
 #include "Core/T66MediaViewerSubsystem.h"
 #include "UObject/SoftObjectPath.h"
 
 const FString UT66PlayerSettingsSubsystem::SlotName(TEXT("T66_PlayerSettings"));
+const FName UT66PlayerSettingsSubsystem::PopupIdRunSummaryChadCoupons(TEXT("RunSummary.ChadCoupons"));
+const FName UT66PlayerSettingsSubsystem::PopupIdRunWillNotCount(TEXT("RunWillNotCount"));
 
 namespace
 {
 	constexpr float T66LockedChaseTurnSensitivityDefaultPercent = 65.0f;
 	constexpr float T66LockedChaseTurnRateMinDegreesPerSecond = 55.0f;
 	constexpr float T66LockedChaseTurnRateMaxDegreesPerSecond = 165.0f;
-	constexpr int32 T66RetroFXForcedOffSchemaVersion = 24;
+	constexpr int32 T66PartySuspendedPopupSchemaVersion = 25;
+	constexpr int32 T66PopupSuppressionSchemaVersion = 26;
+	constexpr int32 T66LeaderboardSubmissionModesSchemaVersion = 27;
 	const TCHAR* T66MusicSoundClassPath = TEXT("/Game/Audio/SC_Music.SC_Music");
 	const TCHAR* T66SfxSoundClassPath = TEXT("/Game/Audio/SC_SFX.SC_SFX");
-	const TCHAR* T66RetroFXSealTempSlotName = TEXT("T66_RetroFXSeal_PreviouslyOn");
 
-	FT66RetroFXSettings MakeRetroFXDisabledDefaults()
+	bool IsValidPopupSuppressionId(const FName PopupId)
 	{
-		FT66RetroFXSettings Settings;
-		Settings.bEnableRetroFXMaster = false;
-		Settings.bUseRealLowResolution = false;
-		Settings.TargetResolutionHeightPercent = 100.0f;
-		Settings.UIFullScreenCRTEnabled = false;
-		return Settings;
-	}
-
-	void ForceRetroFXDisabled(UT66PlayerSettingsSaveGame& Settings)
-	{
-		Settings.RetroFXSettings = MakeRetroFXDisabledDefaults();
-	}
-
-	void ApplyRetroFXForcedOffMigration(UT66PlayerSettingsSaveGame& Settings, bool& bNeedsSave)
-	{
-		if (Settings.SchemaVersion >= T66RetroFXForcedOffSchemaVersion)
-		{
-			return;
-		}
-
-		ForceRetroFXDisabled(Settings);
-		Settings.SchemaVersion = T66RetroFXForcedOffSchemaVersion;
-		bNeedsSave = true;
-	}
-
-	float ReadPlayerSettingsCVarFloat(const TCHAR* Name, const float FallbackValue)
-	{
-		if (IConsoleVariable* CVar = IConsoleManager::Get().FindConsoleVariable(Name))
-		{
-			return CVar->GetFloat();
-		}
-		return FallbackValue;
+		return !PopupId.IsNone();
 	}
 
 	ET66MediaViewerSource SanitizeMediaViewerSourceIndex(int32 RawValue)
@@ -138,23 +105,6 @@ namespace
 		}
 
 		return INDEX_NONE;
-	}
-
-	void LogRetroFXSealSummary(
-		const TCHAR* Path,
-		const FT66RetroFXSettings& Settings,
-		const UT66PixelationSubsystem* Pixelation)
-	{
-		const float ScreenPercentage = ReadPlayerSettingsCVarFloat(TEXT("r.ScreenPercentage"), -1.0f);
-		UE_LOG(LogTemp, Display,
-			TEXT("RetroFXSealSummary Path=%s EnabledAfter=%d RealLowResAfter=%d UIFullScreenCRTAfter=%d ScreenPercentage=%.2f WorldPixelationLevel=%d CharacterPixelationLevel=%d"),
-			Path,
-			Settings.bEnableRetroFXMaster ? 1 : 0,
-			Settings.bUseRealLowResolution ? 1 : 0,
-			Settings.UIFullScreenCRTEnabled ? 1 : 0,
-			ScreenPercentage,
-			Pixelation ? Pixelation->GetWorldPixelationLevel() : -1,
-			Pixelation ? Pixelation->GetCharacterPixelationLevel() : -1);
 	}
 }
 
@@ -297,18 +247,42 @@ void UT66PlayerSettingsSubsystem::LoadOrCreate()
 	if (SettingsObj->SchemaVersion < 22)
 	{
 		SettingsObj->SchemaVersion = 22;
-		SettingsObj->RetroFXSettings = FT66RetroFXSettings();
 		bNeedsSave = true;
 	}
 
 	if (SettingsObj->SchemaVersion < 23)
 	{
 		SettingsObj->SchemaVersion = 23;
-		SettingsObj->RetroFXSettings = FT66RetroFXSettings();
 		bNeedsSave = true;
 	}
 
-	ApplyRetroFXForcedOffMigration(*SettingsObj, bNeedsSave);
+	if (SettingsObj->SchemaVersion < T66PartySuspendedPopupSchemaVersion)
+	{
+		SettingsObj->SchemaVersion = T66PartySuspendedPopupSchemaVersion;
+		SettingsObj->bShowPartySuspendedLeaderboardPopup = true;
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < T66PopupSuppressionSchemaVersion)
+	{
+		if (!SettingsObj->bShowRunSummaryChadCouponsPopup)
+		{
+			SettingsObj->SuppressedPopupIds.Add(PopupIdRunSummaryChadCoupons);
+		}
+		if (!SettingsObj->bShowPartySuspendedLeaderboardPopup)
+		{
+			SettingsObj->SuppressedPopupIds.Add(PopupIdRunWillNotCount);
+		}
+		SettingsObj->SchemaVersion = T66PopupSuppressionSchemaVersion;
+		bNeedsSave = true;
+	}
+
+	if (SettingsObj->SchemaVersion < T66LeaderboardSubmissionModesSchemaVersion)
+	{
+		SettingsObj->bHighScoreMode = true;
+		SettingsObj->SchemaVersion = T66LeaderboardSubmissionModesSchemaVersion;
+		bNeedsSave = true;
+	}
 
 	const float SanitizedLockedChaseTurnSensitivityPercent = FMath::Clamp(SettingsObj->LockedChaseTurnSensitivityPercent, 0.0f, 100.0f);
 	if (!FMath::IsNearlyEqual(SettingsObj->LockedChaseTurnSensitivityPercent, SanitizedLockedChaseTurnSensitivityPercent, 0.01f))
@@ -383,7 +357,7 @@ int32 UT66PlayerSettingsSubsystem::GetLastSettingsTabIndex() const
 void UT66PlayerSettingsSubsystem::SetLastSettingsTabIndex(int32 TabIndex)
 {
 	if (!SettingsObj) return;
-	SettingsObj->LastSettingsTabIndex = FMath::Clamp(TabIndex, 0, 7);
+	SettingsObj->LastSettingsTabIndex = FMath::Clamp(TabIndex, 0, 6);
 	Save();
 }
 
@@ -519,6 +493,18 @@ void UT66PlayerSettingsSubsystem::SetSubmitLeaderboardAnonymous(bool bEnabled)
 	Save();
 }
 
+bool UT66PlayerSettingsSubsystem::GetHighScoreMode() const
+{
+	return SettingsObj ? SettingsObj->bHighScoreMode : true;
+}
+
+void UT66PlayerSettingsSubsystem::SetHighScoreMode(bool bEnabled)
+{
+	if (!SettingsObj) return;
+	SettingsObj->bHighScoreMode = bEnabled;
+	Save();
+}
+
 bool UT66PlayerSettingsSubsystem::GetSpeedRunMode() const
 {
 	return SettingsObj ? SettingsObj->bSpeedRunMode : true;
@@ -605,18 +591,107 @@ void UT66PlayerSettingsSubsystem::SetShowDamageNumbers(bool bEnabled)
 
 bool UT66PlayerSettingsSubsystem::GetShowRunSummaryChadCouponsPopup() const
 {
-	return SettingsObj ? SettingsObj->bShowRunSummaryChadCouponsPopup : true;
+	return !IsPopupSuppressed(PopupIdRunSummaryChadCoupons);
 }
 
 void UT66PlayerSettingsSubsystem::SetShowRunSummaryChadCouponsPopup(bool bEnabled)
 {
-	if (!SettingsObj || SettingsObj->bShowRunSummaryChadCouponsPopup == bEnabled)
+	if (!SettingsObj)
 	{
 		return;
 	}
 
-	SettingsObj->bShowRunSummaryChadCouponsPopup = bEnabled;
+	SetPopupSuppressed(PopupIdRunSummaryChadCoupons, !bEnabled);
+	if (SettingsObj->bShowRunSummaryChadCouponsPopup != bEnabled)
+	{
+		SettingsObj->bShowRunSummaryChadCouponsPopup = bEnabled;
+		Save();
+	}
+}
+
+bool UT66PlayerSettingsSubsystem::GetShowPartySuspendedLeaderboardPopup() const
+{
+	return !IsPopupSuppressed(PopupIdRunWillNotCount);
+}
+
+void UT66PlayerSettingsSubsystem::SetShowPartySuspendedLeaderboardPopup(bool bEnabled)
+{
+	if (!SettingsObj)
+	{
+		return;
+	}
+
+	SetPopupSuppressed(PopupIdRunWillNotCount, !bEnabled);
+	if (SettingsObj->bShowPartySuspendedLeaderboardPopup != bEnabled)
+	{
+		SettingsObj->bShowPartySuspendedLeaderboardPopup = bEnabled;
+		Save();
+	}
+}
+
+bool UT66PlayerSettingsSubsystem::IsPopupSuppressed(const FName PopupId) const
+{
+	return SettingsObj && IsValidPopupSuppressionId(PopupId) && SettingsObj->SuppressedPopupIds.Contains(PopupId);
+}
+
+void UT66PlayerSettingsSubsystem::SetPopupSuppressed(const FName PopupId, const bool bSuppressed)
+{
+	if (!SettingsObj || !IsValidPopupSuppressionId(PopupId))
+	{
+		return;
+	}
+
+	const bool bAlreadySuppressed = SettingsObj->SuppressedPopupIds.Contains(PopupId);
+	if (bAlreadySuppressed == bSuppressed)
+	{
+		return;
+	}
+
+	if (bSuppressed)
+	{
+		SettingsObj->SuppressedPopupIds.Add(PopupId);
+	}
+	else
+	{
+		SettingsObj->SuppressedPopupIds.Remove(PopupId);
+	}
+
+	if (PopupId == PopupIdRunSummaryChadCoupons)
+	{
+		SettingsObj->bShowRunSummaryChadCouponsPopup = !bSuppressed;
+	}
+	else if (PopupId == PopupIdRunWillNotCount)
+	{
+		SettingsObj->bShowPartySuspendedLeaderboardPopup = !bSuppressed;
+	}
+
 	Save();
+}
+
+void UT66PlayerSettingsSubsystem::ResetAllPopupSuppressions()
+{
+	if (!SettingsObj)
+	{
+		return;
+	}
+
+	const bool bHadSuppressedState = SettingsObj->SuppressedPopupIds.Num() > 0
+		|| !SettingsObj->bShowRunSummaryChadCouponsPopup
+		|| !SettingsObj->bShowPartySuspendedLeaderboardPopup;
+	if (!bHadSuppressedState)
+	{
+		return;
+	}
+
+	SettingsObj->SuppressedPopupIds.Reset();
+	SettingsObj->bShowRunSummaryChadCouponsPopup = true;
+	SettingsObj->bShowPartySuspendedLeaderboardPopup = true;
+	Save();
+}
+
+int32 UT66PlayerSettingsSubsystem::GetSuppressedPopupCount() const
+{
+	return SettingsObj ? SettingsObj->SuppressedPopupIds.Num() : 0;
 }
 
 void UT66PlayerSettingsSubsystem::SetLockedChaseTurnSensitivityPercent(float NewValue)
@@ -1012,115 +1087,6 @@ float UT66PlayerSettingsSubsystem::GetFogIntensityPercent() const
 	return SettingsObj ? FMath::Clamp(SettingsObj->FogIntensityPercent, 0.0f, 100.0f) : 55.0f;
 }
 
-void UT66PlayerSettingsSubsystem::SetRetroFXSettings(const FT66RetroFXSettings& NewSettings)
-{
-	if (!SettingsObj) return;
-	SettingsObj->RetroFXSettings = NewSettings;
-	Save();
-}
-
-FT66RetroFXSettings UT66PlayerSettingsSubsystem::GetRetroFXSettings() const
-{
-	static const FT66RetroFXSettings DefaultSettings;
-	if (!SettingsObj)
-	{
-		return DefaultSettings;
-	}
-
-	return SettingsObj->RetroFXSettings;
-}
-
-void UT66PlayerSettingsSubsystem::ResetRetroFXSettingsToDefaults()
-{
-	if (!SettingsObj) return;
-	ForceRetroFXDisabled(*SettingsObj);
-	Save();
-}
-
-void UT66PlayerSettingsSubsystem::RunRetroFXSealVerificationIfRequested(UWorld* World)
-{
-#if UE_BUILD_SHIPPING
-	(void)World;
-	return;
-#else
-	static bool bRanRetroFXSealVerification = false;
-	if (bRanRetroFXSealVerification || !FParse::Param(FCommandLine::Get(), TEXT("T66RetroFXSealVerify")))
-	{
-		return;
-	}
-	bRanRetroFXSealVerification = true;
-
-	UGameInstance* GI = GetGameInstance();
-	UT66RetroFXSubsystem* RetroFX = GI ? GI->GetSubsystem<UT66RetroFXSubsystem>() : nullptr;
-	UT66PixelationSubsystem* Pixelation = GI ? GI->GetSubsystem<UT66PixelationSubsystem>() : nullptr;
-	if (!SettingsObj || !RetroFX)
-	{
-		UE_LOG(LogTemp, Warning,
-			TEXT("RetroFXSealSummary Path=Unavailable EnabledAfter=-1 RealLowResAfter=-1 UIFullScreenCRTAfter=-1 ScreenPercentage=%.2f Reason=%s"),
-			ReadPlayerSettingsCVarFloat(TEXT("r.ScreenPercentage"), -1.0f),
-			!SettingsObj ? TEXT("MissingPlayerSettings") : TEXT("MissingRetroFXSubsystem"));
-		return;
-	}
-
-	auto ApplyAndSummarize = [World, RetroFX, Pixelation](const TCHAR* Path, const FT66RetroFXSettings& Settings)
-	{
-		RetroFX->ApplySettings(Settings, World);
-		LogRetroFXSealSummary(Path, Settings, Pixelation);
-	};
-
-	ApplyAndSummarize(TEXT("FreshLaunch"), GetRetroFXSettings());
-
-	ResetRetroFXSettingsToDefaults();
-	ApplyAndSummarize(TEXT("SettingsReset"), GetRetroFXSettings());
-
-	ApplySafeModeSettings();
-	ApplyAndSummarize(TEXT("SafeMode"), GetRetroFXSettings());
-
-	SetRetroFXSettings(MakeRetroFXDisabledDefaults());
-	ApplyAndSummarize(TEXT("UIReset"), GetRetroFXSettings());
-
-	bool bLegacyLoadMigrated = false;
-	if (UT66PlayerSettingsSaveGame* LegacySettings = Cast<UT66PlayerSettingsSaveGame>(
-		UGameplayStatics::CreateSaveGameObject(UT66PlayerSettingsSaveGame::StaticClass())))
-	{
-		LegacySettings->SchemaVersion = 23;
-		LegacySettings->RetroFXSettings = MakeRetroFXDisabledDefaults();
-		LegacySettings->RetroFXSettings.bEnableRetroFXMaster = true;
-		LegacySettings->RetroFXSettings.bUseRealLowResolution = true;
-		LegacySettings->RetroFXSettings.TargetResolutionHeightPercent = 40.0f;
-		LegacySettings->RetroFXSettings.UIFullScreenCRTEnabled = true;
-
-		if (UGameplayStatics::SaveGameToSlot(LegacySettings, T66RetroFXSealTempSlotName, 0))
-		{
-			if (UT66PlayerSettingsSaveGame* LoadedLegacy = Cast<UT66PlayerSettingsSaveGame>(
-				UGameplayStatics::LoadGameFromSlot(T66RetroFXSealTempSlotName, 0)))
-			{
-				bool bTempNeedsSave = false;
-				ApplyRetroFXForcedOffMigration(*LoadedLegacy, bTempNeedsSave);
-				ApplyAndSummarize(TEXT("LegacySaveLoadMigration"), LoadedLegacy->RetroFXSettings);
-				bLegacyLoadMigrated = LoadedLegacy->SchemaVersion == T66RetroFXForcedOffSchemaVersion
-					&& !LoadedLegacy->RetroFXSettings.bEnableRetroFXMaster
-					&& !LoadedLegacy->RetroFXSettings.bUseRealLowResolution
-					&& !LoadedLegacy->RetroFXSettings.UIFullScreenCRTEnabled;
-			}
-			UGameplayStatics::DeleteGameInSlot(T66RetroFXSealTempSlotName, 0);
-		}
-	}
-	if (!bLegacyLoadMigrated)
-	{
-		UE_LOG(LogTemp, Warning,
-			TEXT("RetroFXSealSummary Path=LegacySaveLoadMigration EnabledAfter=-1 RealLowResAfter=-1 UIFullScreenCRTAfter=-1 ScreenPercentage=%.2f Reason=LegacyLoadMigrationFailed"),
-			ReadPlayerSettingsCVarFloat(TEXT("r.ScreenPercentage"), -1.0f));
-	}
-
-	SetRetroFXSettings(MakeRetroFXDisabledDefaults());
-	ApplyAndSummarize(TEXT("GameplaySettingsApply"), GetRetroFXSettings());
-
-	RetroFX->ApplyCurrentSettings(World);
-	LogRetroFXSealSummary(TEXT("MapWorldLoad"), GetRetroFXSettings(), Pixelation);
-#endif
-}
-
 void UT66PlayerSettingsSubsystem::ApplyUIScale()
 {
 	RebuildThemeAwareUI();
@@ -1182,7 +1148,6 @@ void UT66PlayerSettingsSubsystem::ApplySafeModeSettings()
 
 	// Gameplay-side stability toggles.
 	SettingsObj->bIntenseVisuals = false;
-	ForceRetroFXDisabled(*SettingsObj);
 
 	// Audio: keep user master, but enforce mute-unfocused off for stability/debug.
 	SettingsObj->bMuteWhenUnfocused = false;

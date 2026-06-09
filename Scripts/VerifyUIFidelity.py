@@ -158,6 +158,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checklist", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--contact-sheet", required=True)
+    parser.add_argument(
+        "--visual-scorecard",
+        help=(
+            "Optional markdown scorecard used by checklist items with "
+            "`visual_gate=PASS`. The file must include a line such as "
+            "`Result: PASS` or `Overall: FAIL`."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -251,6 +259,113 @@ def to_float(value: Any) -> float | None:
     return None
 
 
+def absolute_rect(widget: dict[str, Any]) -> tuple[float, float, float, float] | None:
+    geometry = widget.get("geometry")
+    if not isinstance(geometry, dict):
+        return None
+    x = to_float(geometry.get("absolute_x"))
+    y = to_float(geometry.get("absolute_y"))
+    width = to_float(geometry.get("width"))
+    height = to_float(geometry.get("height"))
+    if x is None or y is None or width is None or height is None:
+        return None
+    return x, y, width, height
+
+
+def compare_containment(
+    child_widget: dict[str, Any],
+    parent_widget: dict[str, Any],
+    parent_tag: str,
+    tolerance: float | None,
+    inset: tuple[float, float, float, float] | None = None,
+) -> tuple[str, str, str]:
+    child_rect = absolute_rect(child_widget)
+    parent_rect = absolute_rect(parent_widget)
+    if child_rect is None:
+        return "FAIL", "child geometry missing absolute rect", ""
+    if parent_rect is None:
+        return "FAIL", f"parent '{parent_tag}' geometry missing absolute rect", ""
+
+    tol = 0.0 if tolerance is None else tolerance
+    child_x, child_y, child_w, child_h = child_rect
+    parent_x, parent_y, parent_w, parent_h = parent_rect
+    inset_left, inset_top, inset_right, inset_bottom = inset or (0.0, 0.0, 0.0, 0.0)
+    parent_x += inset_left
+    parent_y += inset_top
+    parent_w = max(0.0, parent_w - inset_left - inset_right)
+    parent_h = max(0.0, parent_h - inset_top - inset_bottom)
+    child_right = child_x + child_w
+    child_bottom = child_y + child_h
+    parent_right = parent_x + parent_w
+    parent_bottom = parent_y + parent_h
+    failures: list[str] = []
+    if child_x < parent_x - tol:
+        failures.append(f"left {child_x:g} < parent left {parent_x:g}")
+    if child_y < parent_y - tol:
+        failures.append(f"top {child_y:g} < parent top {parent_y:g}")
+    if child_right > parent_right + tol:
+        failures.append(f"right {child_right:g} > parent right {parent_right:g}")
+    if child_bottom > parent_bottom + tol:
+        failures.append(f"bottom {child_bottom:g} > parent bottom {parent_bottom:g}")
+
+    actual = (
+        f"child=({child_x:g},{child_y:g},{child_w:g},{child_h:g}); "
+        f"parent=({parent_x:g},{parent_y:g},{parent_w:g},{parent_h:g})"
+    )
+    if failures:
+        return "FAIL", f"outside '{parent_tag}': {', '.join(failures)}", actual
+    inset_message = (
+        f" and inset ({inset_left:g},{inset_top:g},{inset_right:g},{inset_bottom:g})"
+        if inset
+        else ""
+    )
+    return "PASS", f"contained in '{parent_tag}'{inset_message} with tolerance {tol:g}px", actual
+
+
+def parse_containment_expected(expected_raw: str) -> tuple[str, tuple[float, float, float, float] | None]:
+    expected = normalize_expected(expected_raw)
+    inset_match = re.search(
+        r"\s+inset\s*=\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*$",
+        expected,
+        re.I,
+    )
+    if not inset_match:
+        return expected, None
+    parent_tag = expected[: inset_match.start()].strip()
+    inset = (
+        float(inset_match.group(1)),
+        float(inset_match.group(2)),
+        float(inset_match.group(3)),
+        float(inset_match.group(4)),
+    )
+    return parent_tag, inset
+
+
+def load_visual_scorecard_result(path: str | None) -> tuple[str | None, str]:
+    if not path:
+        return None, "missing --visual-scorecard"
+
+    scorecard_path = Path(path)
+    if not scorecard_path.exists():
+        return None, f"visual scorecard not found: {scorecard_path}"
+
+    text = scorecard_path.read_text(encoding="utf-8")
+    result_pattern = re.compile(
+        r"^\s*(?:Result|Overall|Visual Fidelity|Visual Gate)\s*:\s*"
+        r"(PASS|FAIL|NEEDS_WORK|USER_ACCEPTED_DELTA)\s*$",
+        re.I | re.M,
+    )
+    match = result_pattern.search(text)
+    if match:
+        return match.group(1).upper(), str(scorecard_path)
+
+    category_fail_pattern = re.compile(r"\|\s*FAIL\s*\|", re.I)
+    if category_fail_pattern.search(text):
+        return "FAIL", str(scorecard_path)
+
+    return None, f"visual scorecard has no Result/Overall verdict: {scorecard_path}"
+
+
 def compare_value(actual: Any, expected_raw: str, tolerance: float | None, palette: dict[str, str] | None = None) -> tuple[str, str]:
     expected = resolve_palette_expected(normalize_expected(expected_raw), palette)
     lowered = expected.lower()
@@ -311,7 +426,13 @@ def compare_value(actual: Any, expected_raw: str, tolerance: float | None, palet
     return ("PASS", "matched") if ok else ("FAIL", f"expected '{expected}', got '{actual_text}'")
 
 
-def evaluate(items: list[ChecklistItem], dump: dict[str, Any], palette: dict[str, str] | None = None) -> list[Result]:
+def evaluate(
+    items: list[ChecklistItem],
+    dump: dict[str, Any],
+    palette: dict[str, str] | None = None,
+    visual_scorecard_result: str | None = None,
+    visual_scorecard_message: str = "",
+) -> list[Result]:
     widgets = list(dump.get("widgets", []))
     top_bar = dump.get("top_bar")
     if isinstance(top_bar, dict):
@@ -324,6 +445,21 @@ def evaluate(items: list[ChecklistItem], dump: dict[str, Any], palette: dict[str
 
     results: list[Result] = []
     for item in items:
+        if item.prop == "visual_gate":
+            expected = normalize_expected(item.expected).upper()
+            if visual_scorecard_result is None:
+                results.append(Result("FAIL", item, None, visual_scorecard_message, None))
+                continue
+            actual = visual_scorecard_result.upper()
+            verdict = "PASS" if actual == expected else "FAIL"
+            message = (
+                f"visual scorecard {visual_scorecard_message}"
+                if verdict == "PASS"
+                else f"expected visual scorecard {expected}, got {actual}; {visual_scorecard_message}"
+            )
+            results.append(Result(verdict, item, actual, message, None))
+            continue
+
         if item.prop == "tag_prefix_count":
             count = sum(1 for tag in by_tag if tag.startswith(item.tag))
             verdict, message = compare_value(count, item.expected, item.tolerance, palette)
@@ -333,6 +469,16 @@ def evaluate(items: list[ChecklistItem], dump: dict[str, Any], palette: dict[str
         widget = by_tag.get(item.tag)
         if widget is None:
             results.append(Result("FAIL", item, None, "tag not found", None))
+            continue
+
+        if item.prop == "contained_in":
+            parent_tag, inset = parse_containment_expected(item.expected)
+            parent_widget = by_tag.get(parent_tag)
+            if parent_widget is None:
+                results.append(Result("FAIL", item, None, f"parent tag not found: {parent_tag}", widget))
+                continue
+            verdict, message, actual = compare_containment(widget, parent_widget, parent_tag, item.tolerance, inset)
+            results.append(Result(verdict, item, actual, message, widget))
             continue
 
         if item.prop == "exists" or ALIASES.get(item.prop) == "exists":
@@ -412,6 +558,7 @@ def write_report(results: list[Result], args: argparse.Namespace) -> None:
         f"- Capture: `{args.capture}`",
         f"- Dump: `{args.dump}`",
         f"- Checklist: `{args.checklist}`",
+        f"- Visual Scorecard: `{args.visual_scorecard or ''}`",
         f"- Verdicts: PASS={counts['PASS']} FAIL={counts['FAIL']} UNSURE={counts['UNSURE']}",
         "",
         "## Results",
@@ -456,7 +603,14 @@ def main() -> int:
     with Path(args.dump).open("r", encoding="utf-8") as handle:
         dump = json.load(handle)
 
-    results = evaluate(checklist, dump, load_flat_style_palette())
+    visual_scorecard_result, visual_scorecard_message = load_visual_scorecard_result(args.visual_scorecard)
+    results = evaluate(
+        checklist,
+        dump,
+        load_flat_style_palette(),
+        visual_scorecard_result,
+        visual_scorecard_message,
+    )
     write_report(results, args)
     draw_contact_sheet(Path(args.reference), Path(args.capture), results, Path(args.contact_sheet))
 

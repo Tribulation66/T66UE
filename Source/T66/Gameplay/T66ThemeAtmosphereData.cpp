@@ -1,6 +1,17 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66ThemeAtmosphereData.h"
+#include "HAL/IConsoleManager.h"
+
+// Single shared bright-soft lighting rig (reversible). 1 (default) = ALL themes resolve to one neutral
+// bright rig (strong neutral ambient + soft directional key, no fog, neutral grade, torches/carry off),
+// bypassing the per-theme atmosphere/cel/torch/carry/per-actor systems. 0 = restore per-theme look.
+// Hard deletion of the old systems is a later pass; this only disables/redirects them.
+static TAutoConsoleVariable<int32> CVarT66LightSingleRig(
+	TEXT("t66.Light.SingleRig"),
+	1,
+	TEXT("1 = force one shared bright soft lighting rig for all themes/levels; 0 = restore per-theme atmospheres."),
+	ECVF_Default);
 
 namespace
 {
@@ -141,10 +152,45 @@ namespace
 		Spec.CelAtmosphere.EnvLitColor = FLinearColor(0.70f, 0.82f, 0.58f, 1.0f);
 		return Spec;
 	}
+	static FT66ThemeAtmosphereSpec T66MakeSingleRigAtmosphereSpec()
+	{
+		FT66ThemeAtmosphereSpec Spec;
+		// Strong NEUTRAL ambient keeps the world clearly visible (the rig carries the lighting).
+		Spec.SkyLightColor = FLinearColor::White;
+		Spec.SkyLightIntensity = 0.0f;
+		// NO ambient cubemap (matches the proven Pass-1 Neutral baseline). The omnidirectional cubemap
+		// ambient was scattered by the MSM_SUBSURFACE character into a blown cyan-white glow that the
+		// pinned exposure couldn't recover. AmbientCubemap left null; the key + fill directionals carry
+		// the lighting. (If the environment proves under-filled, add a MODEST plain skylight, not a cubemap.)
+		Spec.AmbientCubemapIntensity = 0.0f;
+		Spec.FogDensity = 0.0f;                          // no fog
+		Spec.ColorGradeShadowsTint = FVector4(1.f, 1.f, 1.f, 1.f);
+		Spec.ColorGradeMidtonesTint = FVector4(1.f, 1.f, 1.f, 1.f);
+		Spec.ColorGradeHighlightsTint = FVector4(1.f, 1.f, 1.f, 1.f);
+		Spec.ColorGradeSaturation = FVector4(1.f, 1.f, 1.f, 1.f);
+		Spec.ColorGradeContrast = FVector4(1.f, 1.f, 1.f, 1.f);
+		Spec.ColorGradeGain = FVector4(1.f, 1.f, 1.f, 1.f);
+		Spec.TorchIntensity = 0.0f;        // torches off (spec-driven)
+		Spec.TorchMaxPerFloor = 0;         // torches off (placement cap 0)
+		Spec.CarryLightIntensity = 0.0f;   // carry lights off
+		return Spec;
+	}
+}
+
+bool T66ThemeAtmosphereData::IsSingleLightingRigEnabled()
+{
+	return CVarT66LightSingleRig.GetValueOnGameThread() != 0;
 }
 
 const FT66ThemeAtmosphereSpec& T66ThemeAtmosphereData::GetSpecForTheme(const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme)
 {
+	// Single shared bright-soft rig: every theme resolves to one neutral bright spec (reversible).
+	static const FT66ThemeAtmosphereSpec SingleRigSpec = T66MakeSingleRigAtmosphereSpec();
+	if (CVarT66LightSingleRig.GetValueOnGameThread() != 0)
+	{
+		return SingleRigSpec;
+	}
+
 	static const FT66ThemeAtmosphereSpec DungeonSpec = T66MakeDungeonAtmosphereSpec();
 	static const FT66ThemeAtmosphereSpec NeutralSpec = T66MakeNeutralAtmosphereSpec();
 	static const FT66ThemeAtmosphereSpec HellSpec = T66MakeHellAtmosphereSpec();

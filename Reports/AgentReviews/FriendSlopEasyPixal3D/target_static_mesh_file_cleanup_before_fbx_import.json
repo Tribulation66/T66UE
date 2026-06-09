@@ -1,0 +1,38 @@
+{
+  "missing_count": 29,
+  "missing_sample": [
+    "C:\\UE\\T66\\Content\\Characters\\Companions\\Companion_01\\Default\\Pixal3D\\SM_Companion_01.uasset",
+    "C:\\UE\\T66\\Content\\Characters\\Companions\\Companion_02\\Default\\Pixal3D\\SM_Companion_02.uasset",
+    "C:\\UE\\T66\\Content\\Characters\\Companions\\Companion_03\\Default\\Pixal3D\\SM_Companion_03.uasset",
+    "C:\\UE\\T66\\Content\\Characters\\Pets\\Pet_Dungeon_SewerSlimeKing\\Pixal3D\\SM_Pet_Dungeon_SewerSlimeKing.uasset",
+    "C:\\UE\\T66\\Content\\Characters\\Pets\\Pet_Dungeon_WebMatriarch\\Pixal3D\\SM_Pet_Dungeon_WebMatriarch.uasset",
+    "C:\\UE\\T66\\Content\\Characters\\Pets\\Pet_Dungeon_BoneJailer\\Pixal3D\\SM_Pet_Dungeon_BoneJailer.uasset",
+    "C:\\UE\\T66\\Content\\Characters\\Mobs\\Slime\\Pixal3D\\SM_Slime.uasset",
+    "C:\\UE\\T66\\Content\\Characters\\Mobs\\BoneWalker\\Pixal3D\\SM_BoneWalker.uasset",
+    "C:\\UE\\T66\\Content\\Characters\\Mobs\\CaveBat\\Pixal3D\\SM_CaveBat.uasset",
+    "C:\\UE\\T66\\Content\\Characters\\Mobs\\CryptWraith\\Pixal3D\\SM_CryptWraith.uasset"
+  ],
+  "removed": [
+    "C:\\UE\\T66\\Content\\Characters\\NPCs\\LoanShark\\Pixal3D\\SM_LoanShark.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Boosts\\SM_ArmorBoost_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Boosts\\SM_AttackScaleBoost_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Boosts\\SM_AttackSpeedBoost_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Boosts\\SM_DamageBoost_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Boosts\\SM_EvasionBoost_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Boosts\\SM_LuckBoost_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Boosts\\SM_SpeedBoost_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Chests\\ChestModel\\SM_Chest_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Gates\\SM_CowardiceGate_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Crate\\SM_LootCrate.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\DifficultyTotem\\SM_DifficultyTotem_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Gates\\SM_TutorialGate_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Fountain\\SM_Fountain_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\IdolAltar\\SM_IdolAltar_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\LootBags\\Shared\\SM_LootBag_Shared_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\LootWheel\\SM_LootWheel_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\Vehicles\\SM_Vehicle_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\Interactables\\WeaponAltar\\SM_WeaponAltar_Pixal3D.uasset",
+    "C:\\UE\\T66\\Content\\World\\VisualProps\\Easy\\SM_SkullRemains_Easy_Pixal3D.uasset"
+  ],
+  "removed_count": 20
+}

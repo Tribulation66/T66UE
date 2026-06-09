@@ -1,5 +1,12 @@
 # Pending Issues - Core
 
+## Staged Readiness Durable Save Integrity Uses Stale Loaded Map
+
+- Severity tag: [Major]
+- What's wrong: The 2026-06-08 staged readiness run at `Saved/StagedBuildReadiness/20260608_140504` passed staging, shortcut verification, and frontend smoke, then failed in `RunDurableSaveIntegritySmokeGate.ps1` before lifecycle ran. The queue phase logged `[SaveIntegrity] FAIL` for slot 8 because `MetaMap=T66_SaveIntegrity_DurableGate_20260608_140901` matched the new marker but `LoadedMap=T66_SessionLoadedTravel_SessionLoadedTravel_20260608_031616` remained stale.
+- Why it's out of scope now: The active pass changed tower room-size tuning and did not alter durable save queue/load semantics. The gate restored the backed-up slot 8 files after failure.
+- What fixing it would entail: Reproduce the durable gate on a clean save slot/root, determine whether the queue shutdown path is failing to persist the loaded map or the verification path is reading a stale root, then update the save integrity harness/runtime path and rerun staged readiness.
+
 ## Resolved 2026-05-29 - RetroFX Default-On Recurrence And Low-Resolution Pixelation
 
 - Former severity tag: [Major]
@@ -33,3 +40,17 @@
 - What's wrong: The map-transition staged gameplay smoke logged `LogT66CharacterVisuals` warnings from `Source/T66/Core/T66CharacterVisualSubsystem.cpp` for QuadRetro static mob visuals such as `Slime`, `BoneWalker`, `RatPack`, `CaveBat`, `HexSlinger`, `TombSpider`, `StoneSentinel`, `MimicLure`, `BoneConjurer`, and `CryptWraith` because their expected `/Game/Characters/Mobs/.../Textures/T_<Mob>` pixelated textures are missing in the packaged build.
 - Why it's out of scope now: The map-transition pass only replaced tower wall/floor/ceiling visuals and did not alter mob visual rows, mob texture assets, or the QuadRetro fallback path.
 - What fixing it would entail: Audit the mob visual data rows and packaged texture assets, either restore/import the referenced pixel textures or update the rows to the current production ToonStyle/VAT assets, then add a staged smoke check that `LogT66CharacterVisuals` no longer emits these missing-pixel-texture warnings.
+
+## Headless Packaged Quit Returned Nonzero After Clean Log Exit
+
+- Severity tag: [Major]
+- What's wrong: During the 2026-06-07 world-transition consolidation pass, staged packaged `-nullrhi -nosound -unattended -NoSplash -ExecCmds=quit` smokes reached `Closing by request`, `FPlatformMisc::RequestExitWithStatus(0, 0, UGameEngine::HandleExitCommand)`, `LogExit: Exiting`, and `Log file closed`, but the Windows process returned `-1073740791` (`0xC0000409`) after the log closed in the observed failing runs. No new crash directory was produced under `Saved/Crashes`, and no matching Windows Application event was found during the Pass 3.5 follow-up.
+- Pass 3.5 evidence: A focused 2026-06-07 reproduction matrix could not reproduce the nonzero return. Current staged packaged runs returned exit code `0` for 11 `-nullrhi` quits, 3 normal D3D quits, one `-nullrhi -nosteam` quit, and one D3D `-nosteam` quit. All current runs logged clean close markers. The current `-nullrhi` logs contain `NullRHI` markers and no D3D RHI teardown, while normal D3D logs contain D3D12 RHI initialization/teardown.
+- Why it's still tracked: The historical `0xC0000409` return happened after clean log closure, so it cannot be classified from log evidence alone. The failing command line included `-nullrhi`, but the failing log's window title still reported `PCD3D_SM6`, so the historical failure cannot be cleanly attributed to NullRHI teardown. Without a reproduced faulting module/call stack, a T66 runtime shutdown bug is unproven. Keep this open as a watch/investigation trigger, not a resolved issue.
+- What fixing it would entail: If the return code reappears, reproduce it under a debugger or Windows Error Reporting with dump capture and identify the faulting module/call stack. Only make runtime teardown changes if the stack names a T66-owned destructor, shutdown participant, or late callback. For normal staged quit proof, prefer the D3D packaged quit path for authoritative exit-code evidence; treat a one-off `-nullrhi` `0xC0000409` after clean log close as an investigation trigger, not as proof of a gameplay shutdown regression.
+
+## Resolved 2026-06-08 - Session Subsystem Party Restriction Compile Errors Blocked Staged Standalone
+
+- Former severity tag: [Blocker]
+- What was wrong: During the 2026-06-07 floor landing-bounce pass, `Scripts\StageStandaloneBuild.ps1` reached the build phase and failed in `Source/T66/Core/T66SessionSubsystem.cpp`. The logged errors included `AT66PlayerController::ClientShowPartyLeaderboardRestrictionWarning` being inaccessible from `UT66SessionSubsystem` because the client RPC was protected, and `LobbyInfo.AccountRestrictionLabel = LexToString(Restriction.Restriction)` lacking a matching `LexToString` overload for `ET66AccountRestrictionKind`.
+- Resolution: The 2026-06-08 floor landing-bounce verification rerun explicitly cleaned the `T66Editor Win64 Development` and `T66 Win64 Development` targets, then completed `Scripts\StageStandaloneBuild.ps1` successfully with a fresh 100-action compile/link, cook, stage, and package. It refreshed `C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe` and verified a packaged quit smoke with exit code `0`. The final staged smoke log is `Saved/AgentReviews/FloorLandingBounce_20260608/staged_quit_smoke_after_clean_rebuild.log`.

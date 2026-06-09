@@ -367,7 +367,6 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatMediaViewerSettingsUI()
 	AddN(0.503f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatMediaViewer", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
 	AddN(0.628f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatMediaViewer", "AUDIO"), 0.118f * CanvasW));
 	AddN(0.754f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatMediaViewer", "CRASHING"), 0.118f * CanvasW, 20));
-	AddN(0.879f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsMediaViewer.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatMediaViewer", "RETRO FX"), 0.118f * CanvasW, 20));
 
 	AddN(0.002f, 0.231f, 0.978f, 0.062f,
 		MakeLabel(

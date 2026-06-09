@@ -316,6 +316,11 @@ struct FT66WebView2Host::FImpl
 
 	~FImpl()
 	{
+		Shutdown();
+	}
+
+	void Shutdown()
+	{
 		if (View && NavToken.value) { View->remove_NavigationStarting(NavToken); }
 		if (View && PopupToken.value) { View->remove_NewWindowRequested(PopupToken); }
 		if (View && NavCompletedToken.value) { View->remove_NavigationCompleted(NavCompletedToken); }
@@ -323,12 +328,31 @@ struct FT66WebView2Host::FImpl
 		PopupToken.value = 0;
 		NavCompletedToken.value = 0;
 
+		if (View)
+		{
+			SetWebViewMuted(true);
+		}
+		if (Ctrl)
+		{
+			Ctrl->put_IsVisible(0);
+		}
+		if (Host)
+		{
+			ShowWindow(Host, SW_HIDE);
+		}
+
 		Ctrl.Reset();
 		View.Reset();
 		Env.Reset();
 
 		if (Host) { DestroyWindow(Host); Host = nullptr; }
 		if (LoaderModule) { FreeLibrary(LoaderModule); LoaderModule = nullptr; }
+		CreateEnv = nullptr;
+		Parent = nullptr;
+		bHasPendingRect = false;
+		PendingUrl.Reset();
+		bWantVisible = false;
+		bIsShowing = false;
 	}
 
 	bool LoadLoader()
@@ -1294,6 +1318,14 @@ void FT66WebView2Host::Hide()
 			ShowWindow(Impl->Host, SW_HIDE);
 		}
 		Impl->bIsShowing = false;
+	}
+}
+
+void FT66WebView2Host::Shutdown()
+{
+	if (Impl)
+	{
+		Impl->Shutdown();
 	}
 }
 

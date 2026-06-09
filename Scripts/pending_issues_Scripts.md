@@ -1,5 +1,29 @@
 # Pending Issues - Scripts
 
+## Durable Save Integrity Gate Reloads A Stale Protected Slot [Major]
+
+- Severity tag: [Major]
+- What's wrong: After adding a local SHA-256 fallback for hosts where `Get-FileHash` is unavailable, `Scripts/RunDurableSaveIntegritySmokeGate.ps1` reaches the staged executable and passes the queue/shutdown phase, but the reload verification phase can load preexisting protected-slot metadata instead of the just-seeded integrity marker. The failing rerun reported `LoadedOk=0` and a loaded map from an older `T66_SessionLoadedTravel_*` marker while expecting the new `T66_SaveIntegrity_*` marker.
+- Why it is out of scope now: The current pass is the Game Over ranking-pyramid/backend-mode wiring. Fixing the durable save harness or packaged save-root selection would be a separate save automation task, and the gate restored the protected save hashes after the failed run.
+- What fixing it would entail: Trace the packaged Development save roots used by `T66.Save.QueueIntegrityShutdown` and `T66.Save.VerifyIntegrityReload`, isolate or clear only the intended harness slot for the current run, preserve protected-slot restore behavior, then rerun the full staged readiness gate without skipping durable validation.
+
+## Resolved: SaveSlots Load-Click Smoke Has A Protected Solo Slot Fixture [Major]
+
+- Resolution: `Scripts/RunSaveSlotsLoadClickSmoke.ps1` now creates a deterministic local solo SaveSlots proof by snapshotting protected save roots, seeding a first-page slot through the development-only `T66.Save.QueueIntegrityShutdown` harness, opening `SaveSlots`, writing a pre-click dump, clicking `SaveSlots.SlotN.LoadButton` through non-shipping Slate tag automation, asserting the enabled-click log plus `TransitionToGameplayLevel` preload/open markers, and restoring the protected slot/index files afterward.
+- Remaining note: This fixture intentionally proves the local solo loaded-save resume path only. Multiplayer-shaped loaded-save travel-plan proof now lives in `Scripts/RunSessionLoadedTravelSmoke.ps1`.
+
+## Resolved: Session Loaded-Travel Smoke Has A Protected Duo Slot Fixture [Major]
+
+- Resolution: `Scripts/RunSessionLoadedTravelSmoke.ps1` now creates a deterministic session-owned loaded-save travel-plan proof by snapshotting protected save roots, seeding a Duo host/guest save through the development-only `T66.Session.QueueLoadedTravelSeed` harness, reloading it in a fresh process through `T66.Session.VerifyLoadedTravelPlan`, asserting loaded-save metadata, owner/party shape, snapshot import, `UT66SessionSubsystem` apply-plan state, and computed gameplay `?listen` travel URL, then restoring the protected slot/index files afterward.
+- Remaining note: This is intentionally plan-level standalone proof with `LiveTravelSkipped=1`. A real two-process host/client travel and remote-client join proof remains a future multiplayer automation layer, not a prerequisite for this owner-local harness.
+
+## Pre-Release Frontend Smoke Can Fail On Top-Bar Navigation Dump Anchors [Major]
+
+- Severity tag: [Major]
+- What's wrong: `Scripts/RunPreReleaseSmokeSuite.ps1` launched `RunFrontendTagClickSmokeMatrix.ps1` during staged standalone readiness checks and the frontend matrix intermittently failed on top-bar navigation dump assertions. One run failed on `05_TopBarPowerUpNavigation` because the case log missed `Frontend automation: widget dump wrote`; a later rerun failed on `04_TopBarSettingsNavigation` because the dump missed `SettingsRetroFX.Root`. A final `-SkipStage` readiness rerun then passed the full frontend/durable/lifecycle suite, so this is not an active blocker but should be treated as a possible frontend smoke flake.
+- Why it is out of scope now: The current pass is the SaveSlots loaded-save load-click fixture, not the full top-bar navigation smoke matrix. The SaveSlots fixture has a separate passing proof against the latest staged executable at `Saved/AgentReviews/SaveSlotsLoadClickSmokeFixture/save_slots_load_click_smoke_after_latest_stage/summary.json`, and the latest broader readiness rerun passed at `Saved/StagedBuildReadiness/20260607_164614/summary.json`.
+- What fixing it would entail: Reproduce the failing top-bar matrix cases in isolation, inspect whether screen transition naming, root tags, dump delay, or dump command timing is racing, then adjust the matrix anchors/timing and rerun the full pre-release smoke suite.
+
 ## Static Mesh Import Core Still Owns Shared GLB Helpers
 
 - Severity tag: [Minor]
@@ -35,12 +59,10 @@
 - Why it's out of scope now: The current fix is limited to restoring gameplay input/HUD after the atmosphere pass; changing the automation selector contract could affect other UI capture workflows.
 - What fixing it would entail: Update the script to use a valid selector for the gameplay HUD, likely `Class=<UT66GameplayHUDWidget class path>` or a dedicated runtime tag, then add a smoke check that confirms both screenshot and JSON dump are created.
 
-## Frontend Capture Has No Tag-Click Step
+## Resolved: Frontend Capture Has Tag-Click Step [Minor]
 
-- Severity tag: [Minor]
-- What's wrong: `Scripts/CaptureT66UIScreen.ps1` can open a frontend screen, capture it, and dump its widget tree, but it cannot perform a deterministic Unreal-owned click on a tagged Slate widget before capture. Ad hoc OS mouse injection is unreliable with off-screen/DPI-scaled automation windows, which makes tab/dropdown/button interaction regressions harder to prove without manual input.
-- Why it's out of scope now: The current pass fixes Run Summary tab/button wiring and only needs a normal Run Summary capture/log smoke; adding reusable click automation would touch the frontend automation contract.
-- What fixing it would entail: Add a command-line automation path such as `-T66AutoClickTag=<Tag>` with an optional delay, resolve the tag through the widget tree/geometry, inject the click through Unreal/Slate, then capture/dump after the interaction and update `CaptureT66UIScreen.ps1` to expose it.
+- Resolution: `Scripts/CaptureT66UIScreen.ps1` now exposes `-ClickTag` / `-ClickDelaySeconds` / `-WaitForExit`, backed by the non-shipping runtime flag `-T66AutoClickTag=<Tag>`. The runtime resolves tags through the same active Slate/FlatStyle metadata path as `T66.UI.DumpWidget`, validates visible/enabled button geometry, and simulates tagged `SButton` clicks through Slate.
+- Remaining note: This resolves deterministic FlatStyle button proof, including Quit confirmation. If a future control is not backed by `SButton`, add that control type deliberately instead of falling back to OS mouse injection.
 
 ## Resolved: Gameplay VFX Capture Timeout After Writing Nearly All Frames
 

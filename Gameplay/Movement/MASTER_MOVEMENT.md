@@ -1,18 +1,20 @@
 # T66 Master Movement
 
-**Last updated:** 2026-05-27
-**Scope:** Single-source handoff for player-hero movement runtime: input, locomotion, jump, one-button forward roll, speed multipliers, velocity-affecting stage effects, and current movement blockers and overrides.  
+**Last updated:** 2026-06-08
+**Scope:** Single-source handoff for player-hero movement runtime: input, locomotion, jump, one-button forward leap, speed multipliers, velocity-affecting stage effects, and current movement blockers and overrides.
 **Companion docs:** `Release/PROJECT_GUIDELINES_INSTRUCTIONS.md`, `Gameplay/Combat/MASTER_COMBAT.md`
-**Maintenance rule:** Update this file after every material change to hero movement input, locomotion tuning, jump or roll rules, stage-effect movement, movement-state gating, or run-state speed modifiers.
+**Maintenance rule:** Update this file after every material change to hero movement input, locomotion tuning, jump or leap rules, stage-effect movement, movement-state gating, or run-state speed modifiers.
 
 ## 1. Executive Summary
 
 - `AT66PlayerController` currently owns raw movement input capture and still applies normal walking via `AddMovementInput`.
-- `UT66HeroMovementComponent` owns movement configuration, cached move intent, jump routing, one-button forward roll routing, and final `MaxWalkSpeed` refreshes, but it is not yet the sole owner of locomotion.
+- `UT66HeroMovementComponent` owns movement configuration, cached move intent, jump routing, one-button forward leap routing, and final `MaxWalkSpeed` refreshes, but it is not yet the sole owner of locomotion.
 - `UCharacterMovementComponent` on `AT66HeroBase` remains the live movement authority for walking, falling, friction, rotation-to-movement, and impulse response.
-- Base walk speed starts at `1800`, then is seeded from the hero foundational `Speed` stat on the successful non-preview hero-initialize path. Live walking speed is `Speed * 840 UU/s`, with explicit item, stage, and status movement modifiers layered on top.
+- `UT66HeroPhysicsComponent` can add a bounded capsule shove during active-ragdoll obstacle reactions, but the simulated pelvis/mesh reaction remains owned by Gameplay Physics.
+- `UT66HeroMovementComponent` now owns non-damaging bouncy wall contact and landing-only bouncy floor contact by issuing bounded `LaunchCharacter()` impulses from CharacterMovement state; these impulses do not route through damage, knockback, or ragdoll.
+- Base walk speed starts at `600`, then is seeded from the hero foundational `Speed` stat on the successful non-preview hero-initialize path. Live walking speed is `Speed * 300 UU/s`, with explicit item, stage, and status movement modifiers layered on top.
 - Jump is currently single-jump only and uses standard forward carry from the live movement state; it is not currently suppressing forward movement on takeoff.
-- Roll is a one-button forward burst bound to `Roll`; it uses the hero actor's facing direction and does not require a movement-input chord.
+- Leap is a one-button forward burst bound to `Leap`; it uses the hero actor's facing direction and does not require a movement-input chord.
 - Movement state is split:
   - actual movement comes from `AddMovementInput`, `CharacterMovement`, and `LaunchCharacter`
   - the Hero Speed subsystem only tracks binary move intent for visuals and companion state
@@ -45,7 +47,7 @@
   - move forward and back: `W` / `S` and `Gamepad_LeftY`
   - move right and left: `D` / `A` and `Gamepad_LeftX`
   - jump: `SpaceBar` and `Gamepad_FaceButton_Bottom`
-  - roll: `LeftShift` and `Gamepad_FaceButton_Right`
+  - leap: `LeftShift` and `Gamepad_FaceButton_Right`
 - `AT66PlayerController` binds those actions and axes in `T66PlayerController_Input.cpp`.
 - Forward and right axis handlers in `T66PlayerController_Movement.cpp` currently do three separate jobs:
   - cache raw axis values in `RawMoveForwardValue` and `RawMoveRightValue`
@@ -104,16 +106,16 @@
 ### 3.5 Walk-speed ownership
 
 - The live base walk-speed variable is `UT66HeroMovementComponent::BaseWalkSpeed`.
-- `BaseWalkSpeed` starts at `1800`.
+- `BaseWalkSpeed` starts at `600`.
 - During `AT66HeroBase::InitializeHero()`, current runtime seeds fallback hero walk speed with:
   - `HeroMovementComponent->SetHeroBaseSpeedStat(InHeroData.BaseSpeed)`
   - this currently happens only when character visual application succeeds and the hero is not in preview mode
 - `RefreshWalkSpeedFromRunState()` then computes live `MaxWalkSpeed` as:
-  - `RunState->GetSpeedStat() * 840 UU/s` when RunState exists, otherwise fallback `BaseWalkSpeed`
+  - `RunState->GetSpeedStat() * 300 UU/s` when RunState exists, otherwise fallback `BaseWalkSpeed`
   - multiplied by `GetItemMoveSpeedMultiplier()`
   - multiplied by `GetStageMoveSpeedMultiplier()`
   - multiplied by `GetStatusMoveSpeedMultiplier()`
-- The final result is clamped to `[200, 10000]`.
+- The final result is clamped to `[100, 10000]`.
 
 ### 3.6 RunState hooks that currently affect movement speed
 
@@ -154,25 +156,26 @@
   - vehicle-mounted state
 - World dialogue does not currently add a separate jump block in the movement component.
 
-## 5. Roll
+## 5. Leap
 
-### 5.1 Current player-facing roll behavior
+### 5.1 Current player-facing leap behavior
 
-- Roll is a press-and-fire action, not a held modifier.
-- `Config/DefaultInput.ini` binds `Roll` to `LeftShift` and `Gamepad_FaceButton_Right`.
-- `AT66PlayerController::HandleRollPressed()` calls `AT66HeroBase::RollForward()` on the possessed hero.
+- Leap is a press-and-fire action, not a held modifier.
+- `Config/DefaultInput.ini` binds `Leap` to `LeftShift` and `Gamepad_FaceButton_Right`.
+- `AT66PlayerController::HandleLeapPressed()` calls `AT66HeroBase::Leap()` on the possessed hero.
+- `Roll` input and `RollForward()` remain deprecated compatibility aliases during migration.
 - There is no release handler and no two-button/chord consumption state.
 
-### 5.2 Roll direction rules
+### 5.2 Leap direction rules
 
-- Player roll ignores cached move-input axes.
-- `AT66HeroBase::RollForward()` delegates to `UT66HeroMovementComponent::TryRollForward()`.
-- `TryRollForward()` supplies `Hero->GetActorForwardVector()` as the desired roll direction.
-- Result: a neutral roll and a moving roll both travel in the direction the hero is facing.
+- Player leap ignores cached move-input axes.
+- `AT66HeroBase::Leap()` delegates to `UT66HeroMovementComponent::TryLeap()`.
+- `TryLeap()` supplies `Hero->GetActorForwardVector()` as the desired leap direction.
+- Result: a neutral leap and a moving leap both travel in the direction the hero is facing.
 
-### 5.3 Roll execution rules
+### 5.3 Leap execution rules
 
-- Roll execution currently reuses the movement component's existing launch/cooldown helper:
+- Leap execution currently reuses the movement component's existing launch/cooldown helper:
   - valid hero
   - valid world
   - `CanUseMovementAbilities()`
@@ -181,13 +184,18 @@
   - base `0.7s`
   - multiplied by `UT66RunStateSubsystem::GetDashCooldownMultiplier()` until the stat layer is renamed
   - clamped to `[0.05, 10.0]`
-- Successful roll execution uses:
-  - `Hero->LaunchCharacter(RollDirection * RollStrength, true, true)`
-- Current roll strength is resolved as the greater of:
+- Successful leap execution builds a forward-up launch velocity:
+  - horizontal: `LeapDirection * LeapHorizontalStrength`
+  - vertical: `LeapUpwardStrength`
+  - call: `Hero->LaunchCharacter(LeapVelocity, true, true)`
+- Current horizontal leap strength is resolved as the greater of:
   - tuning floor `3200`
   - `CurrentMaxWalkSpeed * 1.6`
-- Because `LaunchCharacter()` is called with both override flags set to `true`, roll currently replaces existing XY and Z launch components rather than layering gently onto prior velocity.
-- If the current visual has `RollAnimation`, `AT66HeroBase` plays it once and holds the movement animation state until the clip's play length elapses.
+- Current upward leap strength is resolved as the greater of:
+  - tuning floor `880`
+  - `JumpZVelocity * 0.5`
+- Because `LaunchCharacter()` is called with both override flags set to `true`, leap currently replaces existing XY and Z launch components rather than layering gently onto prior velocity.
+- If the current visual has `LeapAnimation`, `AT66HeroBase` plays it once and holds the movement animation state until the clip's play length elapses.
 
 ## 6. Velocity and Other Non-Input Movement Changes
 
@@ -199,16 +207,25 @@
 ### 6.2 LaunchCharacter paths
 
 - Current hero velocity can also be changed by direct launch impulses from:
-  - hero roll
+  - hero leap
+  - hero surface bounce while moving
   - hero enemy-touch bounce
   - shroom top bounce
   - shroom side knockback
+- TestRoom wipeout-arm active-ragdoll reaction
+- Hero surface bounce in `UT66HeroMovementComponent` is intentionally movement-owned:
+  - ground bounce applies only on landing after an airborne jump or drop, not while simply walking
+  - ground bounce scales launch height from the stronger of captured downward landing speed and fall-height-derived impact speed, then applies restitution so repeated landing bounces decay
+  - forward wall contact sweeps ahead of the capsule and reflects the hero away from blocking world geometry
+  - tower floor-gate covers, ceiling/underpass geometry, and actors/components tagged `T66_NoSurfaceBounce` are excluded from wall bounce so arrival spaces below gates stay walkable
+  - neither path calls `UT66HeroPhysicsComponent::ApplyPhysicsReaction()` or `UT66KnockbackComponent`, so bouncy walls/floors cannot cause ragdoll by themselves
 - Enemy-touch bounce in `AT66HeroBase::Tick()` currently launches the hero away from a nearby enemy with:
   - horizontal strength `420`
   - vertical strength `120`
 - `AT66Shroom` stage effects currently launch the hero with:
   - top trigger bounce: `LaunchForwardVelocity = 1800`, `LaunchZVelocity = 2400`
   - side trigger knockback: `KnockbackForce = 2800` with `35%` of that value applied upward
+- The TestRoom wipeout-arm prototype lives in `Source/T66/Gameplay/GameMode/T66GameMode_TestRoom.cpp` and is intentionally local to TestRoom. When `UT66HeroPhysicsComponent` is initialized, impact routes through the Stage 3 active-ragdoll profile: simulated-body impulse plus pose/anchor loosen, with only a bounded capsule shove for playable displacement. If active ragdoll is unavailable, the legacy `UT66KnockbackComponent` path remains a fallback.
 
 ### 6.3 Stage slide
 
@@ -249,7 +266,7 @@
 
 - Hero animation state is not driven solely by cached move input.
 - In `AT66HeroBase::Tick()` the current hero visual state is chosen as:
-  - `Roll` while a one-shot roll animation is active
+  - `Leap` while a one-shot leap animation is active
   - `Jump` if `CharacterMovement->IsFalling()`
   - else `Walk` if any of these are true:
     - movement component says there is move input
@@ -276,15 +293,15 @@
 - World dialogue:
   - normal move intent is zeroed
   - normal walking input path early-returns
-  - roll still shares the movement-ability gate, but its direction does not depend on live move input
+  - leap still shares the movement-ability gate, but its direction does not depend on live move input
   - jump is not separately gated here
 
 ## 9. Current Live Numbers
 
-- Base walk speed fallback: `1800` before hero data is applied
-- Speed conversion: `1 Speed` = `840 UU/s`
-- Hero initialize walk speed assignment on successful non-preview visual setup: `HeroData.BaseSpeed * 840`
-- Walk speed clamp after multiplier stack: `200` to `10000`
+- Base walk speed fallback: `600` before hero data is applied
+- Speed conversion: `1 Speed` = `300 UU/s`
+- Hero initialize walk speed assignment on successful non-preview visual setup: `HeroData.BaseSpeed * 300`
+- Walk speed clamp after multiplier stack: `100` to `10000`
 - Max acceleration: `9000`
 - Walking braking deceleration: `12000`
 - Ground friction: `8.0`
@@ -298,11 +315,24 @@
 - Gravity scale: `4.5`
 - Falling lateral friction: `0.35`
 - Falling braking deceleration: `4096`
-- Roll cooldown base: `0.7`
-- Roll cooldown clamp: `0.05` to `10.0`
-- Roll strength floor: `3200`
-- Roll speed multiplier over current walk speed: `1.6`
+- Leap cooldown base: `0.7`
+- Leap cooldown clamp: `0.05` to `10.0`
+- Leap strength floor: `3200`
+- Leap upward strength floor: `880`
+- Leap speed multiplier over current walk speed: `1.6`
 - Rotation rate yaw: `1440`
+- Surface bounce enabled CVar: `t66.HeroMovement.SurfaceBounceEnabled = 1`
+- Surface ground bounce restitution: `0.55`
+- Surface ground bounce minimum impact speed: `520`
+- Surface ground bounce minimum fall height: `70`
+- Surface ground bounce minimum launch Z: `260`
+- Surface ground bounce maximum launch Z: `1650`
+- Surface ground bounce duplicate-fire cooldown: `0.12`
+- Surface wall bounce horizontal floor: `2200`
+- Surface wall bounce Z: `420`
+- Surface wall bounce cooldown: `0.24`
+- Surface wall trace distance: `220`
+- Surface bounce moving-speed floor: `160`
 - Stage slide friction override: `0.15`
 - Stage slide braking friction factor: `0.05`
 - Stage slide braking deceleration: `128`
@@ -314,13 +344,13 @@
   - this is the biggest architectural simplification target if movement is refactored
 - Status-effect move-speed plumbing exists structurally, but current public status application functions are stubs
 - Hero Speed subsystem comments imply movement-speed ownership, but current live behavior is cosmetic or animation-facing only
-- Roll currently reuses dash-named tuning/stat internals (`DashCooldownSeconds`, `DashStrength`, `GetDashCooldownMultiplier()`).
+- Leap currently reuses the legacy dash-named stat multiplier (`GetDashCooldownMultiplier()`) until item/stat data contracts are ready for a broader rename.
   - these names should be migrated when item/stat data contracts are ready for a broader rename
-- Jump and roll share the same movement-ability gate helper, but ordinary walking is blocked by separate controller and state-management logic rather than one central movement-state policy
+- Jump and leap share the same movement-ability gate helper, but ordinary walking is blocked by separate controller and state-management logic rather than one central movement-state policy
 
 ## 11. Source-of-Truth Rules
 
 - If movement authority changes, update this file in the same change.
 - If walking is moved fully into `UT66HeroMovementComponent`, record the old split-controller model here as historical context and rewrite Sections 3, 5, and 10.
-- If roll, jump, or stage-effect velocity behavior changes, update both the runtime path description and the numeric tuning section.
+- If leap, jump, or stage-effect velocity behavior changes, update both the runtime path description and the numeric tuning section.
 - If movement-related RunState multipliers become live, remove the stale-hook notes and document the exact multiplier stack order here.

@@ -3,6 +3,7 @@
 #include "Core/T66MediaViewerSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66RuntimePlatformSubsystem.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Misc/Paths.h"
 #include "HAL/FileManager.h"
 #include "HAL/PlatformProcess.h"
@@ -60,6 +61,7 @@ const TCHAR* UT66MediaViewerSubsystem::GetUrlForSource(ET66MediaViewerSource Sou
 
 void UT66MediaViewerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
+	Collection.InitializeDependency(UT66ShutdownSubsystem::StaticClass());
 	Super::Initialize(Collection);
 
 	if (UGameInstance* GI = GetGameInstance())
@@ -68,7 +70,32 @@ void UT66MediaViewerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		{
 			ActiveSource = PS->GetMediaViewerSource();
 		}
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			ShutdownParticipantHandle = Shutdown->RegisterParticipant(
+				this,
+				FName(TEXT("MediaViewer.WebView2")),
+				ET66ShutdownPhase::NativeExternal,
+				10,
+				1.0,
+				true,
+				FT66ShutdownParticipantDelegate::CreateUObject(this, &UT66MediaViewerSubsystem::HandleShutdown));
+		}
 	}
+}
+
+void UT66MediaViewerSubsystem::Deinitialize()
+{
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			Shutdown->UnregisterParticipant(ShutdownParticipantHandle);
+		}
+	}
+	ShutdownParticipantHandle.Reset();
+	ShutdownRuntimeResources(TEXT("Deinitialize"));
+	Super::Deinitialize();
 }
 
 bool UT66MediaViewerSubsystem::IsMediaViewerAvailable() const
@@ -120,11 +147,9 @@ void UT66MediaViewerSubsystem::PrewarmTikTok()
 		TikTokWebView2 = MakeUnique<FT66WebView2Host>();
 	}
 
-	// Ensure COM is initialized for WebView2 (best effort).
-	const HRESULT HrCo = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-	if (FAILED(HrCo) && HrCo != RPC_E_CHANGED_MODE)
+	if (!EnsureWebView2ComInitialized(TEXT("PrewarmTikTok")))
 	{
-		UE_LOG(LogT66MediaViewer, Warning, TEXT("[TIKTOK][WEBVIEW2] CoInitializeEx failed (0x%08x)."), static_cast<uint32>(HrCo));
+		return;
 	}
 
 	void* ParentHandle = nullptr;
@@ -206,55 +231,56 @@ void UT66MediaViewerSubsystem::SetMediaViewerOpen(bool bOpen)
 			TikTokWebView2 = MakeUnique<FT66WebView2Host>();
 		}
 
-		// Ensure COM is initialized for WebView2 (best effort).
-		const HRESULT HrCo = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-		if (FAILED(HrCo) && HrCo != RPC_E_CHANGED_MODE)
+		if (!EnsureWebView2ComInitialized(TEXT("SetMediaViewerOpen")))
 		{
-			UE_LOG(LogT66MediaViewer, Warning, TEXT("[TIKTOK][WEBVIEW2] CoInitializeEx failed (0x%08x)."), static_cast<uint32>(HrCo));
+			bIsOpen = false;
+			RestoreAudio();
 		}
-
-		void* ParentHandle = nullptr;
-		if (FSlateApplication::IsInitialized())
+		else
 		{
-			// Best-effort: prefer "best parent for dialogs" (covers packaged + editor),
-			// then fall back to active top-level if needed.
-			ParentHandle = const_cast<void*>(FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr));
-
-			TSharedPtr<SWindow> Active = FSlateApplication::Get().GetActiveTopLevelWindow();
-			if (Active.IsValid() && Active->GetNativeWindow().IsValid())
+			void* ParentHandle = nullptr;
+			if (FSlateApplication::IsInitialized())
 			{
-				ParentHandle = Active->GetNativeWindow()->GetOSWindowHandle();
-			}
-		}
-		UE_LOG(LogT66MediaViewer, Log, TEXT("[TIKTOK][WEBVIEW2] EnsureCreated parent hwnd=0x%p"), ParentHandle);
+				// Best-effort: prefer "best parent for dialogs" (covers packaged + editor),
+				// then fall back to active top-level if needed.
+				ParentHandle = const_cast<void*>(FSlateApplication::Get().FindBestParentWindowHandleForDialogs(nullptr));
 
-		// Persistent web profile so the user stays logged in.
-		// HARD RULE: keep WebView2 data inside the game folder (not user profile/AppData).
-		// Editor: ProjectDir; Packaged: <GameRoot>/Saved/...
-		const FString RootDir = GIsEditor
-			? FPaths::ProjectDir()
-			: FPaths::ConvertRelativePathToFull(FPaths::Combine(FPlatformProcess::BaseDir(), TEXT(".."), TEXT("..")));
-		const FString UserData = FPaths::ConvertRelativePathToFull(
-			FPaths::Combine(RootDir, TEXT("Saved"), TEXT("TikTokWebView2"), TEXT("UserData")));
-		IFileManager::Get().MakeDirectory(*UserData, /*CreateParents*/true);
-
-		if (TikTokWebView2->EnsureCreated(ParentHandle, UserData))
-		{
-			// If HUD has already provided an anchored rect, use it. Otherwise keep hidden until it does.
-			if (bHasTikTokWebView2Rect)
-			{
-				TikTokWebView2->ShowAtScreenRect(TikTokWebView2Rect);
-			}
-
-			const double NowSeconds = FPlatformTime::Seconds();
-			const bool bShouldRefreshTikTokQr = ActiveSource == ET66MediaViewerSource::TikTok
-				&& (NowSeconds - LastTikTokQrNavigationRealtimeSeconds) > TikTokQrRefreshSeconds;
-			if (!TikTokWebView2->HasEverNavigated() || bShouldRefreshTikTokQr)
-			{
-				TikTokWebView2->Navigate(GetUrlForSource(ActiveSource));
-				if (ActiveSource == ET66MediaViewerSource::TikTok)
+				TSharedPtr<SWindow> Active = FSlateApplication::Get().GetActiveTopLevelWindow();
+				if (Active.IsValid() && Active->GetNativeWindow().IsValid())
 				{
-					LastTikTokQrNavigationRealtimeSeconds = NowSeconds;
+					ParentHandle = Active->GetNativeWindow()->GetOSWindowHandle();
+				}
+			}
+			UE_LOG(LogT66MediaViewer, Log, TEXT("[TIKTOK][WEBVIEW2] EnsureCreated parent hwnd=0x%p"), ParentHandle);
+
+			// Persistent web profile so the user stays logged in.
+			// HARD RULE: keep WebView2 data inside the game folder (not user profile/AppData).
+			// Editor: ProjectDir; Packaged: <GameRoot>/Saved/...
+			const FString RootDir = GIsEditor
+				? FPaths::ProjectDir()
+				: FPaths::ConvertRelativePathToFull(FPaths::Combine(FPlatformProcess::BaseDir(), TEXT(".."), TEXT("..")));
+			const FString UserData = FPaths::ConvertRelativePathToFull(
+				FPaths::Combine(RootDir, TEXT("Saved"), TEXT("TikTokWebView2"), TEXT("UserData")));
+			IFileManager::Get().MakeDirectory(*UserData, /*CreateParents*/true);
+
+			if (TikTokWebView2->EnsureCreated(ParentHandle, UserData))
+			{
+				// If HUD has already provided an anchored rect, use it. Otherwise keep hidden until it does.
+				if (bHasTikTokWebView2Rect)
+				{
+					TikTokWebView2->ShowAtScreenRect(TikTokWebView2Rect);
+				}
+
+				const double NowSeconds = FPlatformTime::Seconds();
+				const bool bShouldRefreshTikTokQr = ActiveSource == ET66MediaViewerSource::TikTok
+					&& (NowSeconds - LastTikTokQrNavigationRealtimeSeconds) > TikTokQrRefreshSeconds;
+				if (!TikTokWebView2->HasEverNavigated() || bShouldRefreshTikTokQr)
+				{
+					TikTokWebView2->Navigate(GetUrlForSource(ActiveSource));
+					if (ActiveSource == ET66MediaViewerSource::TikTok)
+					{
+						LastTikTokQrNavigationRealtimeSeconds = NowSeconds;
+					}
 				}
 			}
 		}
@@ -360,4 +386,65 @@ void UT66MediaViewerSubsystem::RestoreAudio()
 		}
 	}
 }
+
+bool UT66MediaViewerSubsystem::HandleShutdown(const FT66ShutdownContext& /*Context*/)
+{
+	ShutdownRuntimeResources(TEXT("ShutdownSystem"));
+	return true;
+}
+
+void UT66MediaViewerSubsystem::ShutdownRuntimeResources(const TCHAR* Reason)
+{
+	if (bIsOpen)
+	{
+		bIsOpen = false;
+		OnMediaViewerOpenChanged.Broadcast(false);
+	}
+
+	RestoreAudio();
+
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+	if (TikTokWebView2)
+	{
+		UE_LOG(LogT66MediaViewer, Log, TEXT("[TIKTOK][WEBVIEW2] Shutdown runtime resources Reason=%s"), Reason ? Reason : TEXT("Unknown"));
+		TikTokWebView2->Shutdown();
+		TikTokWebView2.Reset();
+	}
+	bHasTikTokWebView2Rect = false;
+	TikTokWebView2Rect = FIntRect();
+	bHasPrewarmedTikTok = false;
+	ReleaseWebView2ComInitializations(Reason ? Reason : TEXT("Unknown"));
+#endif
+}
+
+#if PLATFORM_WINDOWS && T66_WITH_WEBVIEW2
+bool UT66MediaViewerSubsystem::EnsureWebView2ComInitialized(const TCHAR* Context)
+{
+	const HRESULT HrCo = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+	if (SUCCEEDED(HrCo))
+	{
+		++WebView2ComInitBalance;
+		return true;
+	}
+
+	if (HrCo == RPC_E_CHANGED_MODE)
+	{
+		UE_LOG(LogT66MediaViewer, Warning, TEXT("[TIKTOK][WEBVIEW2] CoInitializeEx changed mode Context=%s; continuing with existing COM apartment."), Context ? Context : TEXT("Unknown"));
+		return true;
+	}
+
+	UE_LOG(LogT66MediaViewer, Warning, TEXT("[TIKTOK][WEBVIEW2] CoInitializeEx failed Context=%s (0x%08x)."), Context ? Context : TEXT("Unknown"), static_cast<uint32>(HrCo));
+	return false;
+}
+
+void UT66MediaViewerSubsystem::ReleaseWebView2ComInitializations(const TCHAR* Context)
+{
+	while (WebView2ComInitBalance > 0)
+	{
+		CoUninitialize();
+		--WebView2ComInitBalance;
+	}
+	UE_LOG(LogT66MediaViewer, Verbose, TEXT("[TIKTOK][WEBVIEW2] Released COM initializations Context=%s"), Context ? Context : TEXT("Unknown"));
+}
+#endif
 

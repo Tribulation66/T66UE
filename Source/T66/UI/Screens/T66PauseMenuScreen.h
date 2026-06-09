@@ -25,6 +25,9 @@ public:
 	void OnSaveAndQuitClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Pause Menu")
+	void OnQuitClicked();
+
+	UFUNCTION(BlueprintCallable, Category = "Pause Menu")
 	void OnRestartClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Pause Menu")
@@ -44,6 +47,7 @@ protected:
 private:
 	FReply HandleResumeClicked();
 	FReply HandleSaveAndQuitClicked();
+	FReply HandleQuitClicked();
 	FReply HandleRestartClicked();
 	FReply HandleSettingsClicked();
 	FReply HandleAchievementsClicked();

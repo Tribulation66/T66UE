@@ -270,61 +270,62 @@ FText UT66LocalizationSubsystem::GetText_Stat_Speed() const
 	return NSLOCTEXT("T66.Stats", "Speed", "Speed");
 }
 
-FText UT66LocalizationSubsystem::GetText_SecondaryStatName(ET66SecondaryStatType StatType) const
+FText UT66LocalizationSubsystem::GetText_StatName(ET66StatType StatType) const
 {
 	switch (StatType)
 	{
-	case ET66SecondaryStatType::AoeDamage:        return NSLOCTEXT("T66.SecondaryStats", "AoeDamage", "AOE Damage");
-	case ET66SecondaryStatType::BounceDamage:      return NSLOCTEXT("T66.SecondaryStats", "BounceDamage", "Bounce Damage");
-	case ET66SecondaryStatType::PierceDamage:      return NSLOCTEXT("T66.SecondaryStats", "PierceDamage", "Pierce Damage");
-	case ET66SecondaryStatType::DotDamage:         return NSLOCTEXT("T66.SecondaryStats", "DotDamage", "DOT Damage");
-	case ET66SecondaryStatType::AoeSpeed:          return NSLOCTEXT("T66.SecondaryStats", "AoeSpeed", "AOE Speed");
-	case ET66SecondaryStatType::BounceSpeed:       return NSLOCTEXT("T66.SecondaryStats", "BounceSpeed", "Bounce Speed");
-	case ET66SecondaryStatType::PierceSpeed:       return NSLOCTEXT("T66.SecondaryStats", "PierceSpeed", "Pierce Speed");
-	case ET66SecondaryStatType::DotSpeed:          return NSLOCTEXT("T66.SecondaryStats", "DotSpeed", "DOT Speed");
-	case ET66SecondaryStatType::AoeScale:          return NSLOCTEXT("T66.SecondaryStats", "AoeScale", "AOE Scale");
-	case ET66SecondaryStatType::BounceScale:       return NSLOCTEXT("T66.SecondaryStats", "BounceScale", "Bounce Scale");
-	case ET66SecondaryStatType::PierceScale:       return NSLOCTEXT("T66.SecondaryStats", "PierceScale", "Pierce Scale");
-	case ET66SecondaryStatType::DotScale:          return NSLOCTEXT("T66.SecondaryStats", "DotScale", "DOT Scale");
-	case ET66SecondaryStatType::CritDamage:        return NSLOCTEXT("T66.SecondaryStats", "CritDamage", "Headshot Chance");
-	case ET66SecondaryStatType::CritChance:        return NSLOCTEXT("T66.SecondaryStats", "CritChance", "Crit Chance");
-	case ET66SecondaryStatType::HeadshotChance:    return NSLOCTEXT("T66.SecondaryStats", "HeadshotChance", "Headshot Chance");
-	case ET66SecondaryStatType::CloseRangeDamage:  return NSLOCTEXT("T66.SecondaryStats", "CloseRangeDmg", "Close Range Damage");
-	case ET66SecondaryStatType::LongRangeDamage:   return NSLOCTEXT("T66.SecondaryStats", "LongRangeDmg", "Long Range Damage");
-	case ET66SecondaryStatType::AttackRange:       return NSLOCTEXT("T66.SecondaryStats", "AttackRange", "Range");
-	case ET66SecondaryStatType::Taunt:             return NSLOCTEXT("T66.SecondaryStats", "Taunt", "Taunt Chance");
-	case ET66SecondaryStatType::ReflectDamage:     return NSLOCTEXT("T66.SecondaryStats", "ReflectDamage", "Reflect Chance");
-	case ET66SecondaryStatType::HpRegen:           return NSLOCTEXT("T66.SecondaryStats", "HpRegen", "HP Regen");
-	case ET66SecondaryStatType::Crush:             return NSLOCTEXT("T66.SecondaryStats", "Crush", "Crush Chance");
-	case ET66SecondaryStatType::Invisibility:      return NSLOCTEXT("T66.SecondaryStats", "Invisibility", "Invisibility Chance");
-	case ET66SecondaryStatType::CounterAttack:     return NSLOCTEXT("T66.SecondaryStats", "CounterAttack", "Counter Chance");
-	case ET66SecondaryStatType::LifeSteal:         return NSLOCTEXT("T66.SecondaryStats", "LifeSteal", "Life Steal");
-	case ET66SecondaryStatType::Assassinate:       return NSLOCTEXT("T66.SecondaryStats", "Assassinate", "Assassinate Chance");
-	case ET66SecondaryStatType::SpinWheel:         return NSLOCTEXT("T66.SecondaryStats", "SpinWheel", "Spin Wheel");
-	case ET66SecondaryStatType::Goblin:            return NSLOCTEXT("T66.SecondaryStats", "Goblin", "Goblin");
-	case ET66SecondaryStatType::Leprechaun:        return NSLOCTEXT("T66.SecondaryStats", "Leprechaun", "Leprechaun");
-	case ET66SecondaryStatType::TreasureChest:     return NSLOCTEXT("T66.SecondaryStats", "TreasureChest", "Loot Chest");
-	case ET66SecondaryStatType::Fountain:          return NSLOCTEXT("T66.SecondaryStats", "Fountain", "Fountain");
-	case ET66SecondaryStatType::Cheating:          return NSLOCTEXT("T66.SecondaryStats", "Cheating", "Cheating");
-	case ET66SecondaryStatType::Stealing:          return NSLOCTEXT("T66.SecondaryStats", "Stealing", "Stealing");
-	case ET66SecondaryStatType::MovementSpeed:     return NSLOCTEXT("T66.SecondaryStats", "MovementSpeed", "Movement Speed");
-	case ET66SecondaryStatType::LootCrate:         return NSLOCTEXT("T66.SecondaryStats", "LootCrate", "Loot Crate");
-	case ET66SecondaryStatType::DamageReduction:   return NSLOCTEXT("T66.SecondaryStats", "DamageReduction", "Damage Reduction");
-	case ET66SecondaryStatType::EvasionChance:     return NSLOCTEXT("T66.SecondaryStats", "EvasionChance", "Dodge Chance");
-	case ET66SecondaryStatType::Alchemy:           return NSLOCTEXT("T66.SecondaryStats", "Alchemy", "Alchemy");
-	case ET66SecondaryStatType::Accuracy:          return NSLOCTEXT("T66.SecondaryStats", "Accuracy", "Accuracy");
-	case ET66SecondaryStatType::Execute:           return NSLOCTEXT("T66.SecondaryStats", "Execute", "Execute Chance");
-	case ET66SecondaryStatType::LootBag:           return NSLOCTEXT("T66.SecondaryStats", "LootBag", "Loot Bag");
-	case ET66SecondaryStatType::LootWheel:         return NSLOCTEXT("T66.SecondaryStats", "LootWheel", "Loot Wheel");
-	case ET66SecondaryStatType::VendorToken:       return NSLOCTEXT("T66.SecondaryStats", "VendorToken", "Vendor Token");
-	case ET66SecondaryStatType::FirePower:         return NSLOCTEXT("T66.SecondaryStats", "FirePower", "Fire Power");
-	case ET66SecondaryStatType::IcePower:          return NSLOCTEXT("T66.SecondaryStats", "IcePower", "Ice Power");
-	case ET66SecondaryStatType::ElectricityPower:  return NSLOCTEXT("T66.SecondaryStats", "ElectricityPower", "Electricity Power");
-	case ET66SecondaryStatType::NaturePower:       return NSLOCTEXT("T66.SecondaryStats", "NaturePower", "Nature Power");
-	case ET66SecondaryStatType::InteractableLuck:  return NSLOCTEXT("T66.SecondaryStats", "InteractableLuck", "Interactable Luck");
-	case ET66SecondaryStatType::StealingLuck:      return NSLOCTEXT("T66.SecondaryStats", "StealingLuck", "Stealing Luck");
-	case ET66SecondaryStatType::GamblingLuck:      return NSLOCTEXT("T66.SecondaryStats", "GamblingLuck", "Gambling Luck");
-	case ET66SecondaryStatType::ProcLuck:          return NSLOCTEXT("T66.SecondaryStats", "ProcLuck", "Proc Luck");
+	case ET66StatType::AoeDamage:        return NSLOCTEXT("T66.Stats", "AoeDamage", "AOE Damage");
+	case ET66StatType::BounceDamage:      return NSLOCTEXT("T66.Stats", "BounceDamage", "Bounce Damage");
+	case ET66StatType::PierceDamage:      return NSLOCTEXT("T66.Stats", "PierceDamage", "Pierce Damage");
+	case ET66StatType::DotDamage:         return NSLOCTEXT("T66.Stats", "DotDamage", "DOT Damage");
+	case ET66StatType::AoeSpeed:          return NSLOCTEXT("T66.Stats", "AoeSpeed", "AOE Speed");
+	case ET66StatType::BounceSpeed:       return NSLOCTEXT("T66.Stats", "BounceSpeed", "Bounce Speed");
+	case ET66StatType::PierceSpeed:       return NSLOCTEXT("T66.Stats", "PierceSpeed", "Pierce Speed");
+	case ET66StatType::DotSpeed:          return NSLOCTEXT("T66.Stats", "DotSpeed", "DOT Speed");
+	case ET66StatType::AoeScale:          return NSLOCTEXT("T66.Stats", "AoeScale", "AOE Scale");
+	case ET66StatType::BounceScale:       return NSLOCTEXT("T66.Stats", "BounceScale", "Bounce Scale");
+	case ET66StatType::PierceScale:       return NSLOCTEXT("T66.Stats", "PierceScale", "Pierce Scale");
+	case ET66StatType::DotScale:          return NSLOCTEXT("T66.Stats", "DotScale", "DOT Scale");
+	case ET66StatType::CritDamage:        return NSLOCTEXT("T66.Stats", "CritDamage", "Headshot Chance");
+	case ET66StatType::CritChance:        return NSLOCTEXT("T66.Stats", "CritChance", "Crit Chance");
+	case ET66StatType::HeadshotChance:    return NSLOCTEXT("T66.Stats", "HeadshotChance", "Headshot Chance");
+	case ET66StatType::CloseRangeDamage:  return NSLOCTEXT("T66.Stats", "CloseRangeDmg", "Close Range Damage");
+	case ET66StatType::LongRangeDamage:   return NSLOCTEXT("T66.Stats", "LongRangeDmg", "Long Range Damage");
+	case ET66StatType::AttackRange:       return NSLOCTEXT("T66.Stats", "AttackRange", "Range");
+	case ET66StatType::Taunt:             return NSLOCTEXT("T66.Stats", "Taunt", "Taunt Chance");
+	case ET66StatType::ReflectDamage:     return NSLOCTEXT("T66.Stats", "ReflectDamage", "Reflect Chance");
+	case ET66StatType::HpRegen:           return NSLOCTEXT("T66.Stats", "HpRegen", "HP Regen");
+	case ET66StatType::Crush:             return NSLOCTEXT("T66.Stats", "Crush", "Crush Chance");
+	case ET66StatType::Invisibility:      return NSLOCTEXT("T66.Stats", "Invisibility", "Invisibility Chance");
+	case ET66StatType::CounterAttack:     return NSLOCTEXT("T66.Stats", "CounterAttack", "Counter Chance");
+	case ET66StatType::LifeSteal:         return NSLOCTEXT("T66.Stats", "LifeSteal", "Life Steal");
+	case ET66StatType::Assassinate:       return NSLOCTEXT("T66.Stats", "Assassinate", "Assassinate Chance");
+	case ET66StatType::SpinWheel:         return NSLOCTEXT("T66.Stats", "SpinWheel", "Spin Wheel");
+	case ET66StatType::Goblin:            return NSLOCTEXT("T66.Stats", "Goblin", "Goblin");
+	case ET66StatType::Leprechaun:        return NSLOCTEXT("T66.Stats", "Leprechaun", "Leprechaun");
+	case ET66StatType::TreasureChest:     return NSLOCTEXT("T66.Stats", "TreasureChest", "Loot Chest");
+	case ET66StatType::Fountain:          return NSLOCTEXT("T66.Stats", "Fountain", "Fountain");
+	case ET66StatType::Cheating:          return NSLOCTEXT("T66.Stats", "Cheating", "Cheating");
+	case ET66StatType::Stealing:          return NSLOCTEXT("T66.Stats", "Stealing", "Stealing");
+	case ET66StatType::MovementSpeed:     return NSLOCTEXT("T66.Stats", "MovementSpeed", "Movement Speed");
+	case ET66StatType::LootCrate:         return NSLOCTEXT("T66.Stats", "LootCrate", "Loot Crate");
+	case ET66StatType::DamageReduction:   return NSLOCTEXT("T66.Stats", "DamageReduction", "Damage Reduction");
+	case ET66StatType::EvasionChance:     return NSLOCTEXT("T66.Stats", "EvasionChance", "Dodge Chance");
+	case ET66StatType::Alchemy:           return NSLOCTEXT("T66.Stats", "Alchemy", "Alchemy");
+	case ET66StatType::Accuracy:          return NSLOCTEXT("T66.Stats", "Accuracy", "Accuracy");
+	case ET66StatType::Execute:           return NSLOCTEXT("T66.Stats", "Execute", "Execute Chance");
+	case ET66StatType::LootBag:           return NSLOCTEXT("T66.Stats", "LootBag", "Loot Bag");
+	case ET66StatType::LootWheel:         return NSLOCTEXT("T66.Stats", "LootWheel", "Loot Wheel");
+	case ET66StatType::VendorToken:       return NSLOCTEXT("T66.Stats", "VendorToken", "Vendor Token");
+	case ET66StatType::FirePower:         return NSLOCTEXT("T66.Stats", "FirePower", "Fire Power");
+	case ET66StatType::IcePower:          return NSLOCTEXT("T66.Stats", "IcePower", "Ice Power");
+	case ET66StatType::ElectricityPower:  return NSLOCTEXT("T66.Stats", "ElectricityPower", "Electricity Power");
+	case ET66StatType::NaturePower:       return NSLOCTEXT("T66.Stats", "NaturePower", "Nature Power");
+	case ET66StatType::WindPower:         return NSLOCTEXT("T66.Stats", "WindPower", "Wind Power");
+	case ET66StatType::InteractableLuck:  return NSLOCTEXT("T66.Stats", "InteractableLuck", "Interactable Luck");
+	case ET66StatType::StealingLuck:      return NSLOCTEXT("T66.Stats", "StealingLuck", "Stealing Luck");
+	case ET66StatType::GamblingLuck:      return NSLOCTEXT("T66.Stats", "GamblingLuck", "Gambling Luck");
+	case ET66StatType::ProcLuck:          return NSLOCTEXT("T66.Stats", "ProcLuck", "Proc Luck");
 	default:                                       return FText::GetEmpty();
 	}
 }
@@ -334,7 +335,7 @@ FText UT66LocalizationSubsystem::GetText_StatLineFormat() const
 	return NSLOCTEXT("T66.Stats", "StatLineFormat", "{0}: {1}");
 }
 
-FText UT66LocalizationSubsystem::GetText_PrimaryStatDescription(int32 StatIndex) const
+FText UT66LocalizationSubsystem::GetText_BaseStatDescription(int32 StatIndex) const
 {
 	switch (StatIndex)
 	{
@@ -351,61 +352,62 @@ FText UT66LocalizationSubsystem::GetText_PrimaryStatDescription(int32 StatIndex)
 	}
 }
 
-FText UT66LocalizationSubsystem::GetText_SecondaryStatDescription(ET66SecondaryStatType StatType) const
+FText UT66LocalizationSubsystem::GetText_StatDescription(ET66StatType StatType) const
 {
 	switch (StatType)
 	{
-	case ET66SecondaryStatType::AoeDamage:        return NSLOCTEXT("T66.StatTooltips", "AoeDamage", "Bonus damage for area-of-effect attacks.");
-	case ET66SecondaryStatType::BounceDamage:     return NSLOCTEXT("T66.StatTooltips", "BounceDamage", "Bonus damage for bouncing projectile attacks.");
-	case ET66SecondaryStatType::PierceDamage:     return NSLOCTEXT("T66.StatTooltips", "PierceDamage", "Bonus damage for piercing attacks that pass through enemies.");
-	case ET66SecondaryStatType::DotDamage:        return NSLOCTEXT("T66.StatTooltips", "DotDamage", "Bonus damage for damage-over-time effects.");
-	case ET66SecondaryStatType::AoeSpeed:         return NSLOCTEXT("T66.StatTooltips", "AoeSpeed", "Attack speed bonus for area-of-effect attacks.");
-	case ET66SecondaryStatType::BounceSpeed:     return NSLOCTEXT("T66.StatTooltips", "BounceSpeed", "Attack speed bonus for bouncing projectile attacks.");
-	case ET66SecondaryStatType::PierceSpeed:     return NSLOCTEXT("T66.StatTooltips", "PierceSpeed", "Attack speed bonus for piercing attacks.");
-	case ET66SecondaryStatType::DotSpeed:         return NSLOCTEXT("T66.StatTooltips", "DotSpeed", "Attack speed bonus for damage-over-time effects.");
-	case ET66SecondaryStatType::AoeScale:         return NSLOCTEXT("T66.StatTooltips", "AoeScale", "Hitbox size bonus for area-of-effect attacks.");
-	case ET66SecondaryStatType::BounceScale:     return NSLOCTEXT("T66.StatTooltips", "BounceScale", "Hitbox size bonus for bouncing projectile attacks.");
-	case ET66SecondaryStatType::PierceScale:     return NSLOCTEXT("T66.StatTooltips", "PierceScale", "Hitbox size bonus for piercing attacks.");
-	case ET66SecondaryStatType::DotScale:         return NSLOCTEXT("T66.StatTooltips", "DotScale", "Hitbox size bonus for damage-over-time effects.");
-	case ET66SecondaryStatType::CritDamage:      return NSLOCTEXT("T66.StatTooltips", "CritDamage", "Chance for each attack to stun the hit enemy with a headshot proc.");
-	case ET66SecondaryStatType::CritChance:       return NSLOCTEXT("T66.StatTooltips", "CritChance", "Chance for each attack to land a critical hit.");
-	case ET66SecondaryStatType::HeadshotChance:   return NSLOCTEXT("T66.StatTooltips", "HeadshotChance", "Chance for each attack to stun the hit enemy with a headshot proc.");
-	case ET66SecondaryStatType::CloseRangeDamage: return NSLOCTEXT("T66.StatTooltips", "CloseRangeDmg", "Damage multiplier when attacking enemies at close range.");
-	case ET66SecondaryStatType::LongRangeDamage: return NSLOCTEXT("T66.StatTooltips", "LongRangeDmg", "Damage multiplier when attacking enemies at long range.");
-	case ET66SecondaryStatType::AttackRange:     return NSLOCTEXT("T66.StatTooltips", "AttackRange", "Maximum distance your attacks can reach.");
-	case ET66SecondaryStatType::Taunt:            return NSLOCTEXT("T66.StatTooltips", "Taunt", "Aggro generation multiplier. Higher values draw more enemy attention.");
-	case ET66SecondaryStatType::ReflectDamage:   return NSLOCTEXT("T66.StatTooltips", "ReflectDamage", "Chance to reflect incoming damage back at the attacker.");
-	case ET66SecondaryStatType::HpRegen:         return NSLOCTEXT("T66.StatTooltips", "HpRegen", "Health points regenerated per second.");
-	case ET66SecondaryStatType::Crush:           return NSLOCTEXT("T66.StatTooltips", "Crush", "Chance to instantly kill an enemy when reflecting damage.");
-	case ET66SecondaryStatType::Invisibility:    return NSLOCTEXT("T66.StatTooltips", "Invisibility", "Chance to confuse enemies on hit, making them lose track of you.");
-	case ET66SecondaryStatType::CounterAttack:   return NSLOCTEXT("T66.StatTooltips", "CounterAttack", "Chance to counter-attack when dodging an enemy's attack.");
-	case ET66SecondaryStatType::LifeSteal:       return NSLOCTEXT("T66.StatTooltips", "LifeSteal", "Chance to heal when dealing damage to enemies.");
-	case ET66SecondaryStatType::Assassinate:     return NSLOCTEXT("T66.StatTooltips", "Assassinate", "Chance to instantly kill an enemy when you dodge their attack.");
-	case ET66SecondaryStatType::SpinWheel:       return NSLOCTEXT("T66.StatTooltips", "SpinWheel", "Chance to find a bonus spin wheel on the map.");
-	case ET66SecondaryStatType::Goblin:          return NSLOCTEXT("T66.StatTooltips", "Goblin", "Chance to encounter a gold-dropping goblin.");
-	case ET66SecondaryStatType::Leprechaun:      return NSLOCTEXT("T66.StatTooltips", "Leprechaun", "Chance to encounter a leprechaun with bonus rewards.");
-	case ET66SecondaryStatType::TreasureChest:   return NSLOCTEXT("T66.StatTooltips", "TreasureChest", "Improves gold rewards when opening a loot chest.");
-	case ET66SecondaryStatType::Fountain:        return NSLOCTEXT("T66.StatTooltips", "Fountain", "Chance to find a Fountain that fully heals you and grants +1 max heart.");
-	case ET66SecondaryStatType::Cheating:        return NSLOCTEXT("T66.StatTooltips", "Cheating", "Success chance when attempting to cheat at the Gambler.");
-	case ET66SecondaryStatType::Stealing:        return NSLOCTEXT("T66.StatTooltips", "Stealing", "Success chance when attempting to steal from the shop.");
-	case ET66SecondaryStatType::MovementSpeed:   return NSLOCTEXT("T66.StatTooltips", "MovementSpeed", "Bonus movement speed multiplier from secondary stat sources.");
-	case ET66SecondaryStatType::LootCrate:       return NSLOCTEXT("T66.StatTooltips", "LootCrate", "Improves the odds of higher-rarity rewards when opening a crate.");
-	case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.StatTooltips", "DamageReduction", "Bonus damage reduction generated from your current Armor stat.");
-	case ET66SecondaryStatType::EvasionChance:   return NSLOCTEXT("T66.StatTooltips", "EvasionChance", "Bonus dodge chance generated from your current Evasion stat.");
-	case ET66SecondaryStatType::Alchemy:         return NSLOCTEXT("T66.StatTooltips", "Alchemy", "Chance for alchemy upgrades to jump an extra rarity tier.");
-	case ET66SecondaryStatType::Accuracy:        return NSLOCTEXT("T66.StatTooltips", "Accuracy", "Chance for untargeted auto-attacks to prefer enemy head hit zones.");
-	case ET66SecondaryStatType::Execute:         return NSLOCTEXT("T66.StatTooltips", "Execute", "Chance for a critical hit to instantly kill a non-boss enemy. Minibosses can be executed; bosses cannot.");
-	case ET66SecondaryStatType::LootBag:         return NSLOCTEXT("T66.StatTooltips", "LootBag", "Improves item rarity when consuming loot bags at deterministic reward thresholds.");
-	case ET66SecondaryStatType::LootWheel:       return NSLOCTEXT("T66.StatTooltips", "LootWheel", "Improves locked loot wheel rewards.");
-	case ET66SecondaryStatType::VendorToken:     return NSLOCTEXT("T66.StatTooltips", "VendorToken", "A unique vendor token stack that improves item sell prices and discounts shop purchases.");
-	case ET66SecondaryStatType::FirePower:       return NSLOCTEXT("T66.StatTooltips", "FirePower", "Increases damage and behavior scale for Fire idols by 5% per point.");
-	case ET66SecondaryStatType::IcePower:        return NSLOCTEXT("T66.StatTooltips", "IcePower", "Increases damage and behavior scale for Ice idols by 5% per point.");
-	case ET66SecondaryStatType::ElectricityPower:return NSLOCTEXT("T66.StatTooltips", "ElectricityPower", "Increases damage and behavior scale for Electricity idols by 5% per point.");
-	case ET66SecondaryStatType::NaturePower:     return NSLOCTEXT("T66.StatTooltips", "NaturePower", "Increases damage and behavior scale for Nature idols by 5% per point.");
-	case ET66SecondaryStatType::InteractableLuck:return NSLOCTEXT("T66.StatTooltips", "InteractableLuck", "Improves reward quality from crates, chests, loot bags, and loot wheels.");
-	case ET66SecondaryStatType::StealingLuck:    return NSLOCTEXT("T66.StatTooltips", "StealingLuck", "Adds steal success chance after the base shop-steal odds.");
-	case ET66SecondaryStatType::GamblingLuck:    return NSLOCTEXT("T66.StatTooltips", "GamblingLuck", "Adds a losing-result rescue reroll chance in casino games.");
-	case ET66SecondaryStatType::ProcLuck:        return NSLOCTEXT("T66.StatTooltips", "ProcLuck", "Adds chance to existing proc effects such as crit, execute, taunt, and defensive procs.");
+	case ET66StatType::AoeDamage:        return NSLOCTEXT("T66.StatTooltips", "AoeDamage", "Bonus damage for area-of-effect attacks.");
+	case ET66StatType::BounceDamage:     return NSLOCTEXT("T66.StatTooltips", "BounceDamage", "Bonus damage for bouncing projectile attacks.");
+	case ET66StatType::PierceDamage:     return NSLOCTEXT("T66.StatTooltips", "PierceDamage", "Bonus damage for piercing attacks that pass through enemies.");
+	case ET66StatType::DotDamage:        return NSLOCTEXT("T66.StatTooltips", "DotDamage", "Bonus damage for damage-over-time effects.");
+	case ET66StatType::AoeSpeed:         return NSLOCTEXT("T66.StatTooltips", "AoeSpeed", "Attack speed bonus for area-of-effect attacks.");
+	case ET66StatType::BounceSpeed:     return NSLOCTEXT("T66.StatTooltips", "BounceSpeed", "Attack speed bonus for bouncing projectile attacks.");
+	case ET66StatType::PierceSpeed:     return NSLOCTEXT("T66.StatTooltips", "PierceSpeed", "Attack speed bonus for piercing attacks.");
+	case ET66StatType::DotSpeed:         return NSLOCTEXT("T66.StatTooltips", "DotSpeed", "Attack speed bonus for damage-over-time effects.");
+	case ET66StatType::AoeScale:         return NSLOCTEXT("T66.StatTooltips", "AoeScale", "Hitbox size bonus for area-of-effect attacks.");
+	case ET66StatType::BounceScale:     return NSLOCTEXT("T66.StatTooltips", "BounceScale", "Hitbox size bonus for bouncing projectile attacks.");
+	case ET66StatType::PierceScale:     return NSLOCTEXT("T66.StatTooltips", "PierceScale", "Hitbox size bonus for piercing attacks.");
+	case ET66StatType::DotScale:         return NSLOCTEXT("T66.StatTooltips", "DotScale", "Hitbox size bonus for damage-over-time effects.");
+	case ET66StatType::CritDamage:      return NSLOCTEXT("T66.StatTooltips", "CritDamage", "Chance for each attack to stun the hit enemy with a headshot proc.");
+	case ET66StatType::CritChance:       return NSLOCTEXT("T66.StatTooltips", "CritChance", "Chance for each attack to land a critical hit.");
+	case ET66StatType::HeadshotChance:   return NSLOCTEXT("T66.StatTooltips", "HeadshotChance", "Chance for each attack to stun the hit enemy with a headshot proc.");
+	case ET66StatType::CloseRangeDamage: return NSLOCTEXT("T66.StatTooltips", "CloseRangeDmg", "Damage multiplier when attacking enemies at close range.");
+	case ET66StatType::LongRangeDamage: return NSLOCTEXT("T66.StatTooltips", "LongRangeDmg", "Damage multiplier when attacking enemies at long range.");
+	case ET66StatType::AttackRange:     return NSLOCTEXT("T66.StatTooltips", "AttackRange", "Maximum distance your attacks can reach.");
+	case ET66StatType::Taunt:            return NSLOCTEXT("T66.StatTooltips", "Taunt", "Aggro generation multiplier. Higher values draw more enemy attention.");
+	case ET66StatType::ReflectDamage:   return NSLOCTEXT("T66.StatTooltips", "ReflectDamage", "Chance to reflect incoming damage back at the attacker.");
+	case ET66StatType::HpRegen:         return NSLOCTEXT("T66.StatTooltips", "HpRegen", "Health points regenerated per second.");
+	case ET66StatType::Crush:           return NSLOCTEXT("T66.StatTooltips", "Crush", "Chance to instantly kill an enemy when reflecting damage.");
+	case ET66StatType::Invisibility:    return NSLOCTEXT("T66.StatTooltips", "Invisibility", "Chance to confuse enemies on hit, making them lose track of you.");
+	case ET66StatType::CounterAttack:   return NSLOCTEXT("T66.StatTooltips", "CounterAttack", "Chance to counter-attack when dodging an enemy's attack.");
+	case ET66StatType::LifeSteal:       return NSLOCTEXT("T66.StatTooltips", "LifeSteal", "Chance to heal when dealing damage to enemies.");
+	case ET66StatType::Assassinate:     return NSLOCTEXT("T66.StatTooltips", "Assassinate", "Chance to instantly kill an enemy when you dodge their attack.");
+	case ET66StatType::SpinWheel:       return NSLOCTEXT("T66.StatTooltips", "SpinWheel", "Chance to find a bonus spin wheel on the map.");
+	case ET66StatType::Goblin:          return NSLOCTEXT("T66.StatTooltips", "Goblin", "Chance to encounter a gold-dropping goblin.");
+	case ET66StatType::Leprechaun:      return NSLOCTEXT("T66.StatTooltips", "Leprechaun", "Chance to encounter a leprechaun with bonus rewards.");
+	case ET66StatType::TreasureChest:   return NSLOCTEXT("T66.StatTooltips", "TreasureChest", "Improves gold rewards when opening a loot chest.");
+	case ET66StatType::Fountain:        return NSLOCTEXT("T66.StatTooltips", "Fountain", "Chance to find a Fountain that fully heals you and grants +1 max heart.");
+	case ET66StatType::Cheating:        return NSLOCTEXT("T66.StatTooltips", "Cheating", "Success chance when attempting to cheat at the Gambler.");
+	case ET66StatType::Stealing:        return NSLOCTEXT("T66.StatTooltips", "Stealing", "Success chance when attempting to steal from the shop.");
+	case ET66StatType::MovementSpeed:   return NSLOCTEXT("T66.StatTooltips", "MovementSpeed", "Bonus movement speed multiplier from secondary stat sources.");
+	case ET66StatType::LootCrate:       return NSLOCTEXT("T66.StatTooltips", "LootCrate", "Improves the odds of higher-rarity rewards when opening a crate.");
+	case ET66StatType::DamageReduction: return NSLOCTEXT("T66.StatTooltips", "DamageReduction", "Bonus damage reduction generated from your current Armor stat.");
+	case ET66StatType::EvasionChance:   return NSLOCTEXT("T66.StatTooltips", "EvasionChance", "Bonus dodge chance generated from your current Evasion stat.");
+	case ET66StatType::Alchemy:         return NSLOCTEXT("T66.StatTooltips", "Alchemy", "Chance for alchemy upgrades to jump an extra rarity tier.");
+	case ET66StatType::Accuracy:        return NSLOCTEXT("T66.StatTooltips", "Accuracy", "Chance for untargeted auto-attacks to prefer enemy head hit zones.");
+	case ET66StatType::Execute:         return NSLOCTEXT("T66.StatTooltips", "Execute", "Chance for a critical hit to instantly kill a non-boss enemy. Minibosses can be executed; bosses cannot.");
+	case ET66StatType::LootBag:         return NSLOCTEXT("T66.StatTooltips", "LootBag", "Improves item rarity when consuming loot bags at deterministic reward thresholds.");
+	case ET66StatType::LootWheel:       return NSLOCTEXT("T66.StatTooltips", "LootWheel", "Improves locked loot wheel rewards.");
+	case ET66StatType::VendorToken:     return NSLOCTEXT("T66.StatTooltips", "VendorToken", "A unique vendor token stack that improves item sell prices and discounts shop purchases.");
+	case ET66StatType::FirePower:       return NSLOCTEXT("T66.StatTooltips", "FirePower", "Increases damage and behavior scale for Fire idols by 5% per point.");
+	case ET66StatType::IcePower:        return NSLOCTEXT("T66.StatTooltips", "IcePower", "Increases damage and behavior scale for Ice idols by 5% per point.");
+	case ET66StatType::ElectricityPower:return NSLOCTEXT("T66.StatTooltips", "ElectricityPower", "Increases damage and behavior scale for Electricity idols by 5% per point.");
+	case ET66StatType::NaturePower:     return NSLOCTEXT("T66.StatTooltips", "NaturePower", "Increases damage and behavior scale for Nature idols by 5% per point.");
+	case ET66StatType::WindPower:       return NSLOCTEXT("T66.StatTooltips", "WindPower", "Increases damage and behavior scale for Wind idols by 5% per point.");
+	case ET66StatType::InteractableLuck:return NSLOCTEXT("T66.StatTooltips", "InteractableLuck", "Improves reward quality from crates, chests, loot bags, and loot wheels.");
+	case ET66StatType::StealingLuck:    return NSLOCTEXT("T66.StatTooltips", "StealingLuck", "Adds steal success chance after the base shop-steal odds.");
+	case ET66StatType::GamblingLuck:    return NSLOCTEXT("T66.StatTooltips", "GamblingLuck", "Adds a losing-result rescue reroll chance in casino games.");
+	case ET66StatType::ProcLuck:        return NSLOCTEXT("T66.StatTooltips", "ProcLuck", "Adds chance to existing proc effects such as crit, execute, taunt, and defensive procs.");
 	default: return FText::GetEmpty();
 	}
 }
@@ -466,10 +468,10 @@ FText UT66LocalizationSubsystem::GetText_UltimateDescription(ET66UltimateType Ty
 
 namespace
 {
-FText T66GetReimaginedItemVariantName(ET66SecondaryStatType SecondaryStatType, ET66ItemRarity Rarity)
+FText T66GetReimaginedItemVariantName(ET66StatType StatType, ET66ItemRarity Rarity)
 {
 #define T66_ITEM_VARIANTS(Stat, BlackText, RedText, YellowText, WhiteText) \
-	case ET66SecondaryStatType::Stat: \
+	case ET66StatType::Stat: \
 		switch (Rarity) \
 		{ \
 			case ET66ItemRarity::Black:  return NSLOCTEXT("T66.Items", "ItemVariant_" #Stat "_Black", BlackText); \
@@ -480,7 +482,7 @@ FText T66GetReimaginedItemVariantName(ET66SecondaryStatType SecondaryStatType, E
 		} \
 		break
 
-	switch (SecondaryStatType)
+	switch (StatType)
 	{
 		T66_ITEM_VARIANTS(AoeDamage, "Halo of Ruin", "Thunder Moon", "Cathedral Boomer", "Sainted Shockring");
 		T66_ITEM_VARIANTS(BounceDamage, "Ricochet Crown", "Moon-Hop Pearl", "Imp Orbit", "Rebound Relic");
@@ -577,50 +579,50 @@ FText UT66LocalizationSubsystem::GetText_ItemBaseName(FName ItemID) const
 		FItemData ItemData;
 		if (T66GI->GetItemData(ItemID, ItemData))
 		{
-			switch (ItemData.SecondaryStatType)
+			switch (ItemData.StatType)
 			{
-			case ET66SecondaryStatType::AoeDamage:       return NSLOCTEXT("T66.Items", "BaseName_AoeDamage", "Hammer");
-			case ET66SecondaryStatType::BounceDamage:    return NSLOCTEXT("T66.Items", "BaseName_BounceDamage", "Shuriken");
-			case ET66SecondaryStatType::PierceDamage:    return NSLOCTEXT("T66.Items", "BaseName_PierceDamage", "Falchion");
-			case ET66SecondaryStatType::DotDamage:       return NSLOCTEXT("T66.Items", "BaseName_DotDamage", "Wand");
-			case ET66SecondaryStatType::HeadshotChance:  return NSLOCTEXT("T66.Items", "BaseName_HeadshotChance", "Daze Scope");
-			case ET66SecondaryStatType::AoeSpeed:        return NSLOCTEXT("T66.Items", "BaseName_AoeSpeed", "Drum");
-			case ET66SecondaryStatType::BounceSpeed:     return NSLOCTEXT("T66.Items", "BaseName_BounceSpeed", "Bracer");
-			case ET66SecondaryStatType::PierceSpeed:     return NSLOCTEXT("T66.Items", "BaseName_PierceSpeed", "Crossbow");
-			case ET66SecondaryStatType::DotSpeed:        return NSLOCTEXT("T66.Items", "BaseName_DotSpeed", "Censer");
-			case ET66SecondaryStatType::AoeScale:        return NSLOCTEXT("T66.Items", "BaseName_AoeScale", "Totem");
-			case ET66SecondaryStatType::BounceScale:     return NSLOCTEXT("T66.Items", "BaseName_BounceScale", "Ring");
-			case ET66SecondaryStatType::PierceScale:     return NSLOCTEXT("T66.Items", "BaseName_PierceScale", "Lance");
-			case ET66SecondaryStatType::DotScale:        return NSLOCTEXT("T66.Items", "BaseName_DotScale", "Orb");
-			case ET66SecondaryStatType::CritChance:      return NSLOCTEXT("T66.Items", "BaseName_CritChance", "Duelist Gloves");
-			case ET66SecondaryStatType::CloseRangeDamage:return NSLOCTEXT("T66.Items", "BaseName_CloseRangeDamage", "Boxing Gloves");
-			case ET66SecondaryStatType::LongRangeDamage: return NSLOCTEXT("T66.Items", "BaseName_LongRangeDamage", "Sniper");
-			case ET66SecondaryStatType::AttackRange:     return NSLOCTEXT("T66.Items", "BaseName_AttackRange", "Scope");
-			case ET66SecondaryStatType::Execute:         return NSLOCTEXT("T66.Items", "BaseName_Execute", "Execution Lens");
-			case ET66SecondaryStatType::Taunt:           return NSLOCTEXT("T66.Items", "BaseName_Taunt", "Cape");
-			case ET66SecondaryStatType::ReflectDamage:   return NSLOCTEXT("T66.Items", "BaseName_ReflectDamage", "Mirror Shield");
-			case ET66SecondaryStatType::HpRegen:         return NSLOCTEXT("T66.Items", "BaseName_HpRegen", "Cuirass");
-			case ET66SecondaryStatType::Crush:           return NSLOCTEXT("T66.Items", "BaseName_Crush", "Tower Shield");
-			case ET66SecondaryStatType::Invisibility:    return NSLOCTEXT("T66.Items", "BaseName_Invisibility", "Cloak");
-			case ET66SecondaryStatType::CounterAttack:   return NSLOCTEXT("T66.Items", "BaseName_CounterAttack", "Parrying Dagger");
-			case ET66SecondaryStatType::LifeSteal:       return NSLOCTEXT("T66.Items", "BaseName_LifeSteal", "Mask");
-			case ET66SecondaryStatType::Assassinate:     return NSLOCTEXT("T66.Items", "BaseName_Assassinate", "Assassin Dagger");
-			case ET66SecondaryStatType::SpinWheel:       return NSLOCTEXT("T66.Items", "BaseName_SpinWheel", "Wheel");
-			case ET66SecondaryStatType::Goblin:          return NSLOCTEXT("T66.Items", "BaseName_Goblin", "Goblin");
-			case ET66SecondaryStatType::Leprechaun:      return NSLOCTEXT("T66.Items", "BaseName_Leprechaun", "Leprechaun");
-			case ET66SecondaryStatType::TreasureChest:   return NSLOCTEXT("T66.Items", "BaseName_TreasureChest", "Compass");
-			case ET66SecondaryStatType::LootBag:         return NSLOCTEXT("T66.Items", "BaseName_LootBag", "Lucky Stitch");
-			case ET66SecondaryStatType::LootWheel:       return NSLOCTEXT("T66.Items", "BaseName_LootWheel", "Prize Spoke");
-			case ET66SecondaryStatType::Fountain:        return NSLOCTEXT("T66.Items", "BaseName_Fountain", "Fountain");
-			case ET66SecondaryStatType::Cheating:        return NSLOCTEXT("T66.Items", "BaseName_Cheating", "Dice");
-			case ET66SecondaryStatType::Stealing:        return NSLOCTEXT("T66.Items", "BaseName_Stealing", "Wallet");
-			case ET66SecondaryStatType::MovementSpeed:   return NSLOCTEXT("T66.Items", "BaseName_MovementSpeed", "Sandals");
-			case ET66SecondaryStatType::LootCrate:       return NSLOCTEXT("T66.Items", "BaseName_LootCrate", "Crate");
-			case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.Items", "BaseName_DamageReduction", "Plate");
-			case ET66SecondaryStatType::EvasionChance:   return NSLOCTEXT("T66.Items", "BaseName_EvasionChance", "Mantle");
-			case ET66SecondaryStatType::Alchemy:         return NSLOCTEXT("T66.Items", "BaseName_Alchemy", "Alembic");
-			case ET66SecondaryStatType::Accuracy:        return NSLOCTEXT("T66.Items", "BaseName_Accuracy", "Laser Sight");
-			case ET66SecondaryStatType::VendorToken:     return NSLOCTEXT("T66.Items", "BaseName_VendorToken", "Vendor Token");
+			case ET66StatType::AoeDamage:       return NSLOCTEXT("T66.Items", "BaseName_AoeDamage", "Hammer");
+			case ET66StatType::BounceDamage:    return NSLOCTEXT("T66.Items", "BaseName_BounceDamage", "Shuriken");
+			case ET66StatType::PierceDamage:    return NSLOCTEXT("T66.Items", "BaseName_PierceDamage", "Falchion");
+			case ET66StatType::DotDamage:       return NSLOCTEXT("T66.Items", "BaseName_DotDamage", "Wand");
+			case ET66StatType::HeadshotChance:  return NSLOCTEXT("T66.Items", "BaseName_HeadshotChance", "Daze Scope");
+			case ET66StatType::AoeSpeed:        return NSLOCTEXT("T66.Items", "BaseName_AoeSpeed", "Drum");
+			case ET66StatType::BounceSpeed:     return NSLOCTEXT("T66.Items", "BaseName_BounceSpeed", "Bracer");
+			case ET66StatType::PierceSpeed:     return NSLOCTEXT("T66.Items", "BaseName_PierceSpeed", "Crossbow");
+			case ET66StatType::DotSpeed:        return NSLOCTEXT("T66.Items", "BaseName_DotSpeed", "Censer");
+			case ET66StatType::AoeScale:        return NSLOCTEXT("T66.Items", "BaseName_AoeScale", "Totem");
+			case ET66StatType::BounceScale:     return NSLOCTEXT("T66.Items", "BaseName_BounceScale", "Ring");
+			case ET66StatType::PierceScale:     return NSLOCTEXT("T66.Items", "BaseName_PierceScale", "Lance");
+			case ET66StatType::DotScale:        return NSLOCTEXT("T66.Items", "BaseName_DotScale", "Orb");
+			case ET66StatType::CritChance:      return NSLOCTEXT("T66.Items", "BaseName_CritChance", "Duelist Gloves");
+			case ET66StatType::CloseRangeDamage:return NSLOCTEXT("T66.Items", "BaseName_CloseRangeDamage", "Boxing Gloves");
+			case ET66StatType::LongRangeDamage: return NSLOCTEXT("T66.Items", "BaseName_LongRangeDamage", "Sniper");
+			case ET66StatType::AttackRange:     return NSLOCTEXT("T66.Items", "BaseName_AttackRange", "Scope");
+			case ET66StatType::Execute:         return NSLOCTEXT("T66.Items", "BaseName_Execute", "Execution Lens");
+			case ET66StatType::Taunt:           return NSLOCTEXT("T66.Items", "BaseName_Taunt", "Cape");
+			case ET66StatType::ReflectDamage:   return NSLOCTEXT("T66.Items", "BaseName_ReflectDamage", "Mirror Shield");
+			case ET66StatType::HpRegen:         return NSLOCTEXT("T66.Items", "BaseName_HpRegen", "Cuirass");
+			case ET66StatType::Crush:           return NSLOCTEXT("T66.Items", "BaseName_Crush", "Tower Shield");
+			case ET66StatType::Invisibility:    return NSLOCTEXT("T66.Items", "BaseName_Invisibility", "Cloak");
+			case ET66StatType::CounterAttack:   return NSLOCTEXT("T66.Items", "BaseName_CounterAttack", "Parrying Dagger");
+			case ET66StatType::LifeSteal:       return NSLOCTEXT("T66.Items", "BaseName_LifeSteal", "Mask");
+			case ET66StatType::Assassinate:     return NSLOCTEXT("T66.Items", "BaseName_Assassinate", "Assassin Dagger");
+			case ET66StatType::SpinWheel:       return NSLOCTEXT("T66.Items", "BaseName_SpinWheel", "Wheel");
+			case ET66StatType::Goblin:          return NSLOCTEXT("T66.Items", "BaseName_Goblin", "Goblin");
+			case ET66StatType::Leprechaun:      return NSLOCTEXT("T66.Items", "BaseName_Leprechaun", "Leprechaun");
+			case ET66StatType::TreasureChest:   return NSLOCTEXT("T66.Items", "BaseName_TreasureChest", "Compass");
+			case ET66StatType::LootBag:         return NSLOCTEXT("T66.Items", "BaseName_LootBag", "Lucky Stitch");
+			case ET66StatType::LootWheel:       return NSLOCTEXT("T66.Items", "BaseName_LootWheel", "Prize Spoke");
+			case ET66StatType::Fountain:        return NSLOCTEXT("T66.Items", "BaseName_Fountain", "Fountain");
+			case ET66StatType::Cheating:        return NSLOCTEXT("T66.Items", "BaseName_Cheating", "Dice");
+			case ET66StatType::Stealing:        return NSLOCTEXT("T66.Items", "BaseName_Stealing", "Wallet");
+			case ET66StatType::MovementSpeed:   return NSLOCTEXT("T66.Items", "BaseName_MovementSpeed", "Sandals");
+			case ET66StatType::LootCrate:       return NSLOCTEXT("T66.Items", "BaseName_LootCrate", "Crate");
+			case ET66StatType::DamageReduction: return NSLOCTEXT("T66.Items", "BaseName_DamageReduction", "Plate");
+			case ET66StatType::EvasionChance:   return NSLOCTEXT("T66.Items", "BaseName_EvasionChance", "Mantle");
+			case ET66StatType::Alchemy:         return NSLOCTEXT("T66.Items", "BaseName_Alchemy", "Alembic");
+			case ET66StatType::Accuracy:        return NSLOCTEXT("T66.Items", "BaseName_Accuracy", "Laser Sight");
+			case ET66StatType::VendorToken:     return NSLOCTEXT("T66.Items", "BaseName_VendorToken", "Vendor Token");
 			default:                                     break;
 			}
 		}
@@ -648,7 +650,7 @@ FText UT66LocalizationSubsystem::GetText_ItemDisplayNameForRarity(FName ItemID, 
 		FItemData ItemData;
 		if (T66GI->GetItemData(ItemID, ItemData))
 		{
-			const FText VariantName = T66GetReimaginedItemVariantName(ItemData.SecondaryStatType, Rarity);
+			const FText VariantName = T66GetReimaginedItemVariantName(ItemData.StatType, Rarity);
 			if (!VariantName.IsEmpty())
 			{
 				return VariantName;
@@ -1082,9 +1084,14 @@ FText UT66LocalizationSubsystem::GetText_ControlToggleTikTok() const
 	return NSLOCTEXT("T66.Settings.Fallback", "Toggle TikTok", "Toggle TikTok");
 }
 
+FText UT66LocalizationSubsystem::GetText_ControlLeap() const
+{
+	return NSLOCTEXT("T66.Settings.Fallback", "Leap", "Leap");
+}
+
 FText UT66LocalizationSubsystem::GetText_ControlDash() const
 {
-	return NSLOCTEXT("T66.Settings.Fallback", "Roll", "Roll");
+	return GetText_ControlLeap();
 }
 
 FText UT66LocalizationSubsystem::GetText_ControlUltimate() const
@@ -1761,6 +1768,7 @@ FText UT66LocalizationSubsystem::GetText_IdolCategoryName(ET66AttackCategory Cat
 		case ET66AttackCategory::Bounce: return NSLOCTEXT("T66.IdolAltar", "Category_Bounce", "Bounce");
 		case ET66AttackCategory::AOE:    return NSLOCTEXT("T66.IdolAltar", "Category_AOE", "AOE");
 		case ET66AttackCategory::DOT:    return NSLOCTEXT("T66.IdolAltar", "Category_DOT", "DOT");
+		case ET66AttackCategory::SingleTarget: return NSLOCTEXT("T66.IdolAltar", "Category_SingleTarget", "Single Target");
 		default: return FText::GetEmpty();
 	}
 }

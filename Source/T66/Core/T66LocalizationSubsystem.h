@@ -274,6 +274,9 @@ public:
 	FText GetText_ControlToggleTikTok() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
+	FText GetText_ControlLeap() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls", meta = (DeprecatedFunction, DeprecationMessage = "Use GetText_ControlLeap."))
 	FText GetText_ControlDash() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Settings|Controls")
@@ -572,7 +575,7 @@ public:
 
 	/** Get the display name for a secondary stat type (for item Line 2 tooltips). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
-	FText GetText_SecondaryStatName(ET66SecondaryStatType StatType) const;
+	FText GetText_StatName(ET66StatType StatType) const;
 
 	/** Format string: "{0}: {1}" */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
@@ -580,11 +583,11 @@ public:
 
 	/** Tooltip description for a primary stat (index 0=Level, 1=Damage, 2=AtkSpd, 3=AtkScale, 4=Accuracy, 5=Armor, 6=Evasion, 7=Luck, 8=Speed). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
-	FText GetText_PrimaryStatDescription(int32 StatIndex) const;
+	FText GetText_BaseStatDescription(int32 StatIndex) const;
 
 	/** Tooltip description for a secondary stat. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Stats")
-	FText GetText_SecondaryStatDescription(ET66SecondaryStatType StatType) const;
+	FText GetText_StatDescription(ET66StatType StatType) const;
 
 	/** Display name for a passive ability type. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Abilities")

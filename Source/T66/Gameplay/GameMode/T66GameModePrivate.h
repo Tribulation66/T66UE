@@ -8,21 +8,20 @@
 #include "Gameplay/T66PetActor.h"
 #include "Gameplay/T66PetCaptureInteractable.h"
 #include "Gameplay/T66EnemyDirector.h"
-#include "Gameplay/T66StartGate.h"
 #include "Gameplay/T66StageGate.h"
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66MiasmaManager.h"
 #include "Gameplay/T66MiasmaBoundary.h"
-#include "Gameplay/T66CasinoInteractable.h"
+#include "Gameplay/T66CasinoNPC.h"
 #include "Gameplay/T66SaintNPC.h"
 #include "Gameplay/T66OuroborosNPC.h"
+#include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66LoanShark.h"
 #include "Gameplay/T66NPCBase.h"
 #include "Gameplay/T66CowardiceGate.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Gameplay/T66GalleryDisplayActor.h"
 #include "Gameplay/T66DifficultyTotem.h"
-#include "Gameplay/T66BossGate.h"
 #include "Gameplay/T66TowerDescentHole.h"
 #include "Core/T66RunIntegritySubsystem.h"
 #include "Gameplay/T66EnemyBase.h"
@@ -35,17 +34,17 @@
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66LootBagPickup.h"
 #include "Gameplay/T66CrateInteractable.h"
+#include "Gameplay/T66TNTInteractable.h"
 #include "Gameplay/T66LootWheelInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66VehicleInteractable.h"
-#include "Gameplay/T66VendorInteractable.h"
 #include "Gameplay/T66StageEffects.h"
 #include "Gameplay/T66SpawnPlateau.h"
 #include "Gameplay/T66LabCollector.h"
 #include "Gameplay/T66TutorialManager.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66AchievementsSubsystem.h"
-#include "Core/T66RetroFXSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66CompanionUnlockSubsystem.h"
 #include "Core/T66Rarity.h"
@@ -157,7 +156,7 @@ namespace T66GameModePrivate
 	AActor* T66FindTaggedActor(UWorld* World, FName Tag);
 	void T66RememberTaggedActor(AActor* Actor, FName Tag);
 	void T66ForgetTaggedActor(UWorld* World, FName Tag);
-	bool T66HasRegisteredCasinoInteractable(UWorld* World);
+	bool T66HasRegisteredCasinoNPC(UWorld* World);
 	bool T66ShouldIgnoreTowerCeilingHit(const FHitResult& Hit);
 	FName T66MakeTowerFloorTag(int32 FloorNumber);
 	int32 T66ReadTowerFloorTag(const AActor* Actor);

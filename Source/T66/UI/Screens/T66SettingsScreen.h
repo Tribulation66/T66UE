@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "InputCoreTypes.h"
-#include "Core/T66RetroFXSettings.h"
 #include "UI/T66ScreenBase.h"
 #include "Widgets/Layout/SWidgetSwitcher.h"
 #include "T66SettingsScreen.generated.h"
@@ -24,8 +23,7 @@ enum class ET66SettingsTab : uint8
 	HUD,
 	MediaViewer,
 	Audio,
-	Crashing,
-	RetroFX
+	Crashing
 };
 
 UENUM()
@@ -55,9 +53,7 @@ public:
 	UT66SettingsScreen(const FObjectInitializer& ObjectInitializer);
 
 	UPROPERTY(BlueprintReadWrite, Category = "Settings")
-	ET66SettingsTab CurrentTab = ET66SettingsTab::RetroFX;
-
-	void ConfigureAsRetroFXPreviewPopup(UT66UIManager* InUIManager);
+	ET66SettingsTab CurrentTab = ET66SettingsTab::Gameplay;
 
 	UFUNCTION(BlueprintCallable, Category = "Settings")
 	void SwitchToTab(ET66SettingsTab Tab);
@@ -106,19 +102,14 @@ private:
 	TSharedRef<SWidget> BuildMediaViewerTab();
 	TSharedRef<SWidget> BuildAudioTab();
 	TSharedRef<SWidget> BuildCrashingTab();
-	TSharedRef<SWidget> BuildRetroFXTab();
 
 	// Click handlers
 	FReply HandleCloseClicked();
 	FReply HandleTabClicked(ET66SettingsTab Tab);
 	FReply HandleApplyGraphicsClicked();
 	FReply HandleRestoreDefaultsClicked();
-	FReply HandleReportBugClicked();
 	FReply HandleSafeModeClicked();
-	FReply HandleApplyRetroFXClicked();
-	FReply HandleResetRetroFXClicked();
-	FReply HandleRetroFXPreviewModeClicked(bool bEnabled);
-	FReply HandleCloseRetroFXPreviewPopupClicked();
+	FReply HandleResetPopupSuppressionsClicked();
 
 	// ===== Keybinding capture =====
 	struct FPendingRebind
@@ -218,19 +209,4 @@ private:
 	float PendingUIScale = 1.0f;
 	bool bUIScaleInitialized = false;
 	void InitializeUIScaleFromPlayerSettingsIfNeeded();
-
-	// ===== Retro FX staging =====
-	FT66RetroFXSettings PendingRetroFXSettings;
-	bool bRetroFXInitialized = false;
-	bool bRetroFXDirty = false;
-	bool bRetroFXPreviewMode = false;
-	bool bRetroFXPreviewPopup = false;
-
-	void InitializeRetroFXFromUserSettingsIfNeeded();
-	void ApplyPendingRetroFX();
-	void CommitPendingRetroFXOnClose();
-	void ResetPendingRetroFXToDefaults();
-	void MarkRetroFXEdited();
-	bool ShouldLiveApplyRetroFX() const;
-	TSharedRef<SWidget> BuildRetroFXPreviewPopupUI();
 };

@@ -254,7 +254,6 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatAudioSettingsUI()
 	AddN(0.503f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatAudio", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
 	AddN(0.628f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Selected, NSLOCTEXT("T66.Settings", "TabAudioFlatAudio", "AUDIO"), 0.118f * CanvasW));
 	AddN(0.754f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatAudio", "CRASHING"), 0.118f * CanvasW, 20));
-	AddN(0.879f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsAudio.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatAudio", "RETRO FX"), 0.118f * CanvasW, 20));
 
 	AddN(0.002f, 0.223f, 0.978f, 0.108f,
 		MakeSliderRow(DTag(TEXT("SettingsAudio.Rows.MasterVolume")), Loc ? Loc->GetText_MasterVolume() : NSLOCTEXT("T66.Settings.Fallback", "Master Volume Flat", "Master Volume"), [PS]() { return PS ? PS->GetMasterVolume() : 0.8f; }, [PS](float Value) { if (PS) PS->SetMasterVolume(Value); }));

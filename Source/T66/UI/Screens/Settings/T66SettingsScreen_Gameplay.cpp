@@ -276,6 +276,41 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatGameplaySettingsUI()
 		return FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(28.f, 18.f, 22.f, 18.f), Row, nullptr, RowTag);
 	};
 
+	auto MakeActionRow = [&MakeLabel, &ChildTag](
+		const FName RowTag,
+		const FText& Label,
+		const FText& ButtonLabel,
+		const FOnClicked& OnClicked) -> TSharedRef<SWidget>
+	{
+		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.FillWidth(1.f)
+			.VAlign(VAlign_Center)
+			[
+				MakeLabel(ChildTag(RowTag, TEXT("Label")), Label, 26, FT66FlatStyle::PrimaryText(), false, ETextJustify::Left, false)
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(18.f, 0.f, 0.f, 0.f)
+			[
+				FT66FlatStyle::MakeFlatButton(
+					ET66FlatState::Selected,
+					ButtonLabel,
+					OnClicked,
+					nullptr,
+					nullptr,
+					FMargin(18.f, 8.f),
+					300.f,
+					58.f,
+					true,
+					20,
+					ChildTag(RowTag, TEXT("Button")))
+			];
+
+		return FT66FlatStyle::MakeFlatSubPanel(ET66FlatState::Default, FMargin(28.f, 18.f, 22.f, 18.f), Row, nullptr, RowTag);
+	};
+
 	auto MakeDropdownOption = [this](const FName Tag, const FText& Label, TFunction<void()> Action, const bool bSelected) -> TSharedRef<SWidget>
 	{
 		return FT66FlatStyle::MakeFlatButton(
@@ -491,6 +526,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatGameplaySettingsUI()
 		102.f);
 
 	AddRow(MakeToggleRow(
+		DTag(TEXT("SettingsGameplay.Rows.HighScoreMode")),
+		NSLOCTEXT("T66.Settings", "HighScoreModeLabelFlat", "High Score Mode"),
+		[PS]() { return PS ? PS->GetHighScoreMode() : true; },
+		[PS](const bool bValue) { if (PS) PS->SetHighScoreMode(bValue); }),
+		102.f);
+
+	AddRow(MakeToggleRow(
 		DTag(TEXT("SettingsGameplay.Rows.SpeedRunMode")),
 		Loc ? Loc->GetText_SpeedRunMode() : NSLOCTEXT("T66.Settings.Fallback", "Speed Run Mode", "Speed Run Mode"),
 		[PS]() { return PS ? PS->GetSpeedRunMode() : false; },
@@ -546,6 +588,13 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatGameplaySettingsUI()
 		[PS](const bool bValue) { if (PS) PS->SetGoonerMode(bValue); }),
 		102.f);
 
+	AddRow(MakeActionRow(
+		DTag(TEXT("SettingsGameplay.Rows.ResetPopupSuppressions")),
+		NSLOCTEXT("T66.Settings", "ResetPopupSuppressionsLabelFlat", "Do Not Show Popups"),
+		NSLOCTEXT("T66.Settings", "ResetPopupSuppressionsButtonFlat", "RESET ALL"),
+		FOnClicked::CreateUObject(this, &UT66SettingsScreen::HandleResetPopupSuppressionsClicked)),
+		102.f);
+
 	AddRow(MakeSliderRow(DTag(TEXT("SettingsGameplay.Rows.NativeFogIntensity"))), 130.f, 0.f);
 
 	AddN(0.000f, 0.000f, 1.000f, 1.000f,
@@ -567,7 +616,6 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatGameplaySettingsUI()
 	AddN(0.503f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.MediaViewerButton")), ET66SettingsTab::MediaViewer, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabMediaViewerFlatGameplay", "MEDIA VIEWER"), 0.118f * CanvasW, 18));
 	AddN(0.628f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.AudioButton")), ET66SettingsTab::Audio, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabAudioFlatGameplay", "AUDIO"), 0.118f * CanvasW));
 	AddN(0.754f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.CrashingButton")), ET66SettingsTab::Crashing, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabCrashingFlatGameplay", "CRASHING"), 0.118f * CanvasW, 20));
-	AddN(0.879f, 0.123f, 0.118f, 0.079f, MakeFlatTab(DTag(TEXT("SettingsGameplay.SettingsTabs.RetroFXButton")), ET66SettingsTab::RetroFX, ET66FlatState::Default, NSLOCTEXT("T66.Settings", "TabRetroFXFlatGameplay", "RETRO FX"), 0.118f * CanvasW, 20));
 
 	AddN(0.002f, 0.223f, 0.978f, 0.724f,
 		FT66FlatStyle::AttachMetadata(
@@ -592,6 +640,16 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatGameplaySettingsUI()
 				Canvas
 			]
 		];
+}
+
+FReply UT66SettingsScreen::HandleResetPopupSuppressionsClicked()
+{
+	if (UT66PlayerSettingsSubsystem* PS = GetPlayerSettings())
+	{
+		PS->ResetAllPopupSuppressions();
+	}
+	ForceRebuildSlate();
+	return FReply::Handled();
 }
 
 TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
@@ -690,6 +748,15 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildGameplayTab()
 					Loc ? Loc->GetText_SubmitLeaderboardAnonymous() : NSLOCTEXT("T66.Settings.Fallback", "Submit Leaderboard as Anonymous", "Submit Leaderboard as Anonymous"),
 					[PS]() { return PS ? PS->GetSubmitLeaderboardAnonymous() : false; },
 					[PS](bool b) { if (PS) PS->SetSubmitLeaderboardAnonymous(b); }
+				)
+			]
+			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)
+			[
+				MakeSettingsToggleRow(
+					Loc,
+					NSLOCTEXT("T66.Settings", "HighScoreModeLabel", "High Score Mode"),
+					[PS]() { return PS ? PS->GetHighScoreMode() : true; },
+					[PS](bool b) { if (PS) PS->SetHighScoreMode(b); }
 				)
 			]
 			+ SVerticalBox::Slot().AutoHeight().Padding(0.0f, 0.0f, 0.0f, 8.0f)

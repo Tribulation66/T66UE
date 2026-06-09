@@ -72,6 +72,11 @@ namespace
 		0,
 		TEXT("Emit detailed logs for idol DOT VFX requests."));
 
+	static TAutoConsoleVariable<int32> CVarT66VFXForcePrimitiveIdolPlaceholders(
+		TEXT("T66.VFX.ForcePrimitiveIdolPlaceholders"),
+		1,
+		TEXT("Temporary content pass: non-zero routes idol activation VFX through basic-shape primitive placeholders instead of imported Niagara."));
+
 	static TAutoConsoleVariable<int32> CVarT66CombatImportedVFXMaxPerFrame(
 		TEXT("T66.VFX.CombatImportedMaxPerFrame"),
 		24,
@@ -452,6 +457,534 @@ namespace
 			return TEXT("/Game/Stylized_VFX_StPack/Blueprints/BP_Storm.BP_Storm_C");
 		}
 		return nullptr;
+	}
+
+	enum class ET66PrimitiveIdolElement : uint8
+	{
+		Fire,
+		Ice,
+		Electricity,
+		Nature,
+		Wind,
+		Unknown,
+	};
+
+	enum class ET66PrimitiveShape : uint8
+	{
+		Sphere,
+		Cone,
+		Cylinder,
+		Cube,
+	};
+
+	ET66PrimitiveIdolElement T66ResolvePrimitiveIdolElement(const FName& IdolID)
+	{
+		const FString ID = UT66IdolManagerSubsystem::NormalizeLegacyIdolID(IdolID).ToString();
+		if (ID.Contains(TEXT("_Fire_"))) return ET66PrimitiveIdolElement::Fire;
+		if (ID.Contains(TEXT("_Ice_"))) return ET66PrimitiveIdolElement::Ice;
+		if (ID.Contains(TEXT("_Electricity_"))) return ET66PrimitiveIdolElement::Electricity;
+		if (ID.Contains(TEXT("_Nature_"))) return ET66PrimitiveIdolElement::Nature;
+		if (ID.Contains(TEXT("_Wind_"))) return ET66PrimitiveIdolElement::Wind;
+		return ET66PrimitiveIdolElement::Unknown;
+	}
+
+	const TCHAR* T66PrimitiveElementName(const ET66PrimitiveIdolElement Element)
+	{
+		switch (Element)
+		{
+		case ET66PrimitiveIdolElement::Fire: return TEXT("Fire");
+		case ET66PrimitiveIdolElement::Ice: return TEXT("Ice");
+		case ET66PrimitiveIdolElement::Electricity: return TEXT("Electricity");
+		case ET66PrimitiveIdolElement::Nature: return TEXT("Nature");
+		case ET66PrimitiveIdolElement::Wind: return TEXT("Wind");
+		default: return TEXT("Unknown");
+		}
+	}
+
+	FLinearColor T66PrimitiveIdolColor(const FName& IdolID)
+	{
+		switch (T66ResolvePrimitiveIdolElement(IdolID))
+		{
+		case ET66PrimitiveIdolElement::Fire:
+			return FLinearColor(1.0f, 0.035f, 0.0f, 1.0f);
+		case ET66PrimitiveIdolElement::Ice:
+			return FLinearColor(0.52f, 0.92f, 1.0f, 1.0f);
+		case ET66PrimitiveIdolElement::Electricity:
+			return FLinearColor(0.55f, 0.10f, 1.0f, 1.0f);
+		case ET66PrimitiveIdolElement::Nature:
+			return FLinearColor(0.08f, 0.78f, 0.22f, 1.0f);
+		case ET66PrimitiveIdolElement::Wind:
+			return FLinearColor(0.62f, 0.66f, 0.70f, 1.0f);
+		default:
+			return UT66IdolManagerSubsystem::GetIdolColor(IdolID);
+		}
+	}
+
+	int32 T66RarityIndex(const ET66ItemRarity Rarity)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black: return 0;
+		case ET66ItemRarity::Red: return 1;
+		case ET66ItemRarity::Yellow: return 2;
+		case ET66ItemRarity::White: return 3;
+		default: return 0;
+		}
+	}
+
+	int32 T66TieredCount(const ET66ItemRarity Rarity, const int32 Black, const int32 Red, const int32 Yellow, const int32 White)
+	{
+		switch (Rarity)
+		{
+		case ET66ItemRarity::Black: return Black;
+		case ET66ItemRarity::Red: return Red;
+		case ET66ItemRarity::Yellow: return Yellow;
+		case ET66ItemRarity::White: return White;
+		default: return Black;
+		}
+	}
+
+	UStaticMesh* T66PrimitiveShapeMesh(const ET66PrimitiveShape Shape)
+	{
+		switch (Shape)
+		{
+		case ET66PrimitiveShape::Cone: return FT66VisualUtil::GetBasicShapeCone();
+		case ET66PrimitiveShape::Cylinder: return FT66VisualUtil::GetBasicShapeCylinder();
+		case ET66PrimitiveShape::Cube: return FT66VisualUtil::GetBasicShapeCube();
+		case ET66PrimitiveShape::Sphere:
+		default: return FT66VisualUtil::GetBasicShapeSphere();
+		}
+	}
+
+	FRotator T66RotationFromUpToDirection(const FVector& Direction)
+	{
+		const FVector SafeDirection = Direction.IsNearlyZero() ? FVector::UpVector : Direction.GetSafeNormal();
+		return FQuat::FindBetweenNormals(FVector::UpVector, SafeDirection).Rotator();
+	}
+
+	AActor* T66SpawnPrimitiveShapeActor(
+		UWorld* World,
+		AActor* Owner,
+		const FName Tag,
+		const ET66PrimitiveShape Shape,
+		const FVector& Location,
+		const FRotator& Rotation,
+		const FVector& Scale,
+		const FLinearColor& Color,
+		const float LifeSpan,
+		AActor* AttachTarget = nullptr)
+	{
+		if (!World)
+		{
+			return nullptr;
+		}
+
+		UStaticMesh* Mesh = T66PrimitiveShapeMesh(Shape);
+		if (!Mesh)
+		{
+			return nullptr;
+		}
+
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = Owner;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		AActor* PlaceholderActor = World->SpawnActor<AActor>(
+			AActor::StaticClass(),
+			Location,
+			Rotation,
+			SpawnParams);
+		if (!PlaceholderActor)
+		{
+			return nullptr;
+		}
+
+		UStaticMeshComponent* MeshComponent = NewObject<UStaticMeshComponent>(PlaceholderActor, TEXT("T66PrimitiveIdolPlaceholderMesh"));
+		if (!MeshComponent)
+		{
+			PlaceholderActor->Destroy();
+			return nullptr;
+		}
+
+		PlaceholderActor->Tags.AddUnique(Tag);
+		PlaceholderActor->SetRootComponent(MeshComponent);
+		MeshComponent->SetStaticMesh(Mesh);
+		MeshComponent->SetMobility(EComponentMobility::Movable);
+		MeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		MeshComponent->SetGenerateOverlapEvents(false);
+		MeshComponent->SetCastShadow(false);
+		MeshComponent->RegisterComponent();
+		PlaceholderActor->SetActorLocationAndRotation(Location, Rotation);
+		MeshComponent->SetWorldScale3D(Scale);
+		FT66VisualUtil::ApplyT66Color(MeshComponent, PlaceholderActor, Color);
+
+		if (AttachTarget)
+		{
+			if (USceneComponent* AttachRoot = AttachTarget->GetRootComponent())
+			{
+				PlaceholderActor->AttachToComponent(AttachRoot, FAttachmentTransformRules::KeepWorldTransform);
+			}
+		}
+
+		PlaceholderActor->SetLifeSpan(FMath::Max(0.1f, LifeSpan));
+		return PlaceholderActor;
+	}
+
+	void T66SpawnPrimitiveDisc(UWorld* World, AActor* Owner, const FName Tag, const FVector& Center, const float Radius, const float Height, const FLinearColor& Color, const float LifeSpan)
+	{
+		const float SafeRadius = FMath::Max(6.f, Radius);
+		T66SpawnPrimitiveShapeActor(
+			World,
+			Owner,
+			Tag,
+			ET66PrimitiveShape::Cylinder,
+			Center,
+			FRotator::ZeroRotator,
+			FVector(SafeRadius / 50.f, SafeRadius / 50.f, FMath::Max(2.f, Height) / 100.f),
+			Color,
+			LifeSpan);
+	}
+
+	void T66SpawnPrimitiveLine(
+		UWorld* World,
+		AActor* Owner,
+		const FName Tag,
+		const ET66PrimitiveShape Shape,
+		const FVector& Start,
+		const FVector& End,
+		const float Radius,
+		const FLinearColor& Color,
+		const float LifeSpan)
+	{
+		const FVector Delta = End - Start;
+		const float Length = Delta.Size();
+		if (Length <= KINDA_SMALL_NUMBER)
+		{
+			return;
+		}
+
+		const FVector Mid = (Start + End) * 0.5f;
+		const float SafeRadius = FMath::Max(3.f, Radius);
+		T66SpawnPrimitiveShapeActor(
+			World,
+			Owner,
+			Tag,
+			Shape,
+			Mid,
+			T66RotationFromUpToDirection(Delta),
+			FVector(SafeRadius / 50.f, SafeRadius / 50.f, Length / 100.f),
+			Color,
+			LifeSpan);
+	}
+
+	void T66SpawnPrimitiveRingPoints(
+		UWorld* World,
+		AActor* Owner,
+		const FName Tag,
+		const ET66PrimitiveShape Shape,
+		const FVector& Center,
+		const float Radius,
+		const int32 Count,
+		const float ShapeRadius,
+		const FLinearColor& Color,
+		const float LifeSpan,
+		const float ZOffset = 20.f)
+	{
+		const int32 SafeCount = FMath::Max(1, Count);
+		for (int32 Index = 0; Index < SafeCount; ++Index)
+		{
+			const float Angle = (static_cast<float>(Index) / static_cast<float>(SafeCount)) * 2.f * PI;
+			const FVector Dir(FMath::Cos(Angle), FMath::Sin(Angle), 0.f);
+			const FVector Location = Center + Dir * Radius + FVector(0.f, 0.f, ZOffset);
+			const FRotator Rot = Shape == ET66PrimitiveShape::Cone ? T66RotationFromUpToDirection(Dir + FVector(0.f, 0.f, 0.35f)) : FRotator::ZeroRotator;
+			T66SpawnPrimitiveShapeActor(
+				World,
+				Owner,
+				Tag,
+				Shape,
+				Location,
+				Rot,
+				FVector(ShapeRadius / 50.f),
+				Color,
+				LifeSpan);
+		}
+	}
+
+	void T66SpawnPrimitiveTornadoStack(
+		UWorld* World,
+		AActor* Owner,
+		const FName Tag,
+		const FVector& Base,
+		const float Radius,
+		const float Height,
+		const FLinearColor& Color,
+		const float LifeSpan,
+		AActor* AttachTarget = nullptr)
+	{
+		const int32 Layers = 4;
+		for (int32 Index = 0; Index < Layers; ++Index)
+		{
+			const float T = static_cast<float>(Index) / static_cast<float>(Layers - 1);
+			const float LayerRadius = FMath::Lerp(Radius, Radius * 0.35f, T);
+			const float LayerHeight = FMath::Max(6.f, Height / static_cast<float>(Layers));
+			const FVector Loc = Base + FVector(0.f, 0.f, LayerHeight * (0.5f + Index));
+			T66SpawnPrimitiveShapeActor(
+				World,
+				Owner,
+				Tag,
+				Index % 2 == 0 ? ET66PrimitiveShape::Cone : ET66PrimitiveShape::Cylinder,
+				Loc,
+				FRotator(0.f, static_cast<float>(Index) * 38.f, 0.f),
+				FVector(LayerRadius / 50.f, LayerRadius / 50.f, LayerHeight / 100.f),
+				Color,
+				LifeSpan,
+				AttachTarget);
+		}
+	}
+
+	bool T66SpawnPrimitiveIdolAOEPlaceholder(UWorld* World, AActor* Owner, const FName IdolID, const ET66ItemRarity Rarity, const FVector& Location, const float Radius)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		const ET66PrimitiveIdolElement Element = T66ResolvePrimitiveIdolElement(IdolID);
+		const FLinearColor Color = T66PrimitiveIdolColor(IdolID);
+		const FName Tag(TEXT("T66PrimitiveIdolAOEPlaceholder"));
+		const float RarityScale = T66CombatShared::GetIdolRarityVisualScale(Rarity);
+		const float VisualRadius = FMath::Max(48.f, Radius) * FMath::Clamp(RarityScale, 0.8f, 1.75f);
+		const float LifeSpan = 1.2f;
+
+		switch (Element)
+		{
+		case ET66PrimitiveIdolElement::Fire:
+		{
+			T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Sphere, Location + FVector(0.f, 0.f, 42.f), FRotator::ZeroRotator, FVector(VisualRadius / 95.f), Color, LifeSpan);
+			T66SpawnPrimitiveRingPoints(World, Owner, Tag, ET66PrimitiveShape::Cone, Location, VisualRadius * 0.42f, T66TieredCount(Rarity, 6, 8, 10, 14), VisualRadius * 0.18f, Color, LifeSpan, 28.f);
+			break;
+		}
+		case ET66PrimitiveIdolElement::Ice:
+		{
+			T66SpawnPrimitiveDisc(World, Owner, Tag, Location + FVector(0.f, 0.f, 4.f), VisualRadius, 8.f, Color, LifeSpan);
+			T66SpawnPrimitiveRingPoints(World, Owner, Tag, ET66PrimitiveShape::Cone, Location, VisualRadius * 0.78f, T66TieredCount(Rarity, 8, 10, 12, 16), VisualRadius * 0.10f, Color, LifeSpan, 18.f);
+			break;
+		}
+		case ET66PrimitiveIdolElement::Electricity:
+		{
+			const int32 Strikes = T66TieredCount(Rarity, 3, 4, 6, 8);
+			for (int32 Index = 0; Index < Strikes; ++Index)
+			{
+				const float Angle = (static_cast<float>(Index) / static_cast<float>(Strikes)) * 2.f * PI + 0.25f;
+				const float Dist = (Index == 0) ? 0.f : VisualRadius * (0.28f + 0.42f * FMath::Fmod(static_cast<float>(Index), 3.f) / 2.f);
+				const FVector StrikeBase = Location + FVector(FMath::Cos(Angle) * Dist, FMath::Sin(Angle) * Dist, 18.f);
+				T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, StrikeBase + FVector(0.f, 0.f, 280.f), StrikeBase + FVector(0.f, 0.f, 28.f), 9.f * RarityScale, Color, LifeSpan);
+				T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Sphere, StrikeBase + FVector(0.f, 0.f, 24.f), FRotator::ZeroRotator, FVector(0.32f * RarityScale), Color, LifeSpan);
+			}
+			break;
+		}
+		case ET66PrimitiveIdolElement::Nature:
+		{
+			T66SpawnPrimitiveDisc(World, Owner, Tag, Location + FVector(0.f, 0.f, 5.f), VisualRadius * 0.72f, 6.f, Color, LifeSpan);
+			const int32 Branches = T66TieredCount(Rarity, 5, 7, 9, 12);
+			for (int32 Index = 0; Index < Branches; ++Index)
+			{
+				const float Angle = (static_cast<float>(Index) / static_cast<float>(Branches)) * 2.f * PI;
+				const FVector Dir(FMath::Cos(Angle), FMath::Sin(Angle), 0.f);
+				T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, Location + FVector(0.f, 0.f, 16.f), Location + Dir * VisualRadius + FVector(0.f, 0.f, 36.f), 10.f * RarityScale, Color, LifeSpan);
+				T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Sphere, Location + Dir * (VisualRadius * 0.82f) + FVector(0.f, 0.f, 52.f), FRotator::ZeroRotator, FVector(0.18f * RarityScale), Color, LifeSpan);
+			}
+			break;
+		}
+		case ET66PrimitiveIdolElement::Wind:
+		{
+			const int32 Tornadoes = T66TieredCount(Rarity, 3, 4, 5, 7);
+			T66SpawnPrimitiveDisc(World, Owner, Tag, Location + FVector(0.f, 0.f, 3.f), VisualRadius * 0.92f, 5.f, Color, LifeSpan);
+			for (int32 Index = 0; Index < Tornadoes; ++Index)
+			{
+				const float Angle = (static_cast<float>(Index) / static_cast<float>(Tornadoes)) * 2.f * PI;
+				const FVector OrbitLoc = Location + FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0.f) * (VisualRadius * 0.58f);
+				T66SpawnPrimitiveTornadoStack(World, Owner, Tag, OrbitLoc, VisualRadius * 0.12f, 150.f * RarityScale, Color, LifeSpan);
+			}
+			break;
+		}
+		default:
+			T66SpawnPrimitiveDisc(World, Owner, Tag, Location + FVector(0.f, 0.f, 5.f), VisualRadius, 8.f, Color, LifeSpan);
+			break;
+		}
+		return true;
+	}
+
+	bool T66SpawnPrimitiveIdolPiercePlaceholder(UWorld* World, AActor* Owner, const FName IdolID, const ET66ItemRarity Rarity, const FVector& Start, const FVector& End)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		const ET66PrimitiveIdolElement Element = T66ResolvePrimitiveIdolElement(IdolID);
+		const FLinearColor Color = T66PrimitiveIdolColor(IdolID);
+		const FName Tag(TEXT("T66PrimitiveIdolPiercePlaceholder"));
+		const float RarityScale = T66CombatShared::GetIdolRarityVisualScale(Rarity);
+		const FVector Dir = (End - Start).GetSafeNormal();
+		const FVector SafeDir = Dir.IsNearlyZero() ? FVector::ForwardVector : Dir;
+		const float Length = FMath::Max(60.f, (End - Start).Size());
+		const FVector ElevatedStart = Start + FVector(0.f, 0.f, Element == ET66PrimitiveIdolElement::Nature ? 10.f : 34.f);
+		const FVector ElevatedEnd = Start + SafeDir * Length + FVector(0.f, 0.f, Element == ET66PrimitiveIdolElement::Nature ? 10.f : 34.f);
+		const float LifeSpan = 1.0f;
+
+		switch (Element)
+		{
+		case ET66PrimitiveIdolElement::Fire:
+			T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cone, ElevatedStart, ElevatedEnd, 24.f * RarityScale, Color, LifeSpan);
+			T66SpawnPrimitiveRingPoints(World, Owner, Tag, ET66PrimitiveShape::Sphere, (ElevatedStart + ElevatedEnd) * 0.5f, Length * 0.12f, T66TieredCount(Rarity, 3, 5, 7, 9), 18.f * RarityScale, Color, LifeSpan, 0.f);
+			break;
+		case ET66PrimitiveIdolElement::Ice:
+			T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, ElevatedStart, ElevatedEnd, 12.f * RarityScale, Color, LifeSpan);
+			T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Cone, ElevatedEnd, T66RotationFromUpToDirection(SafeDir), FVector(0.34f * RarityScale, 0.34f * RarityScale, 0.78f * RarityScale), Color, LifeSpan);
+			break;
+		case ET66PrimitiveIdolElement::Electricity:
+		{
+			const int32 Segments = T66TieredCount(Rarity, 4, 6, 8, 11);
+			FVector Prev = ElevatedStart;
+			for (int32 Index = 1; Index <= Segments; ++Index)
+			{
+				const float T = static_cast<float>(Index) / static_cast<float>(Segments);
+				const FVector Side = FVector::CrossProduct(SafeDir, FVector::UpVector).GetSafeNormal();
+				const FVector Next = FMath::Lerp(ElevatedStart, ElevatedEnd, T) + Side * ((Index % 2 == 0) ? 28.f : -28.f) * RarityScale;
+				T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, Prev, Next, 7.f * RarityScale, Color, LifeSpan);
+				T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Cube, Next, FRotator(0.f, 45.f, 45.f), FVector(0.18f * RarityScale), Color, LifeSpan);
+				Prev = Next;
+			}
+			break;
+		}
+		case ET66PrimitiveIdolElement::Nature:
+			T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, ElevatedStart, ElevatedEnd, 18.f * RarityScale, Color, LifeSpan);
+			for (int32 Index = 0; Index < T66TieredCount(Rarity, 3, 4, 6, 8); ++Index)
+			{
+				const float T = (static_cast<float>(Index) + 0.5f) / static_cast<float>(T66TieredCount(Rarity, 3, 4, 6, 8));
+				T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Sphere, FMath::Lerp(ElevatedStart, ElevatedEnd, T) + FVector(0.f, 0.f, 16.f), FRotator::ZeroRotator, FVector(0.18f * RarityScale), Color, LifeSpan);
+			}
+			break;
+		case ET66PrimitiveIdolElement::Wind:
+		{
+			const int32 Tornadoes = T66TieredCount(Rarity, 3, 4, 6, 8);
+			for (int32 Index = 0; Index < Tornadoes; ++Index)
+			{
+				const float T = (static_cast<float>(Index) + 0.5f) / static_cast<float>(Tornadoes);
+				T66SpawnPrimitiveTornadoStack(World, Owner, Tag, FMath::Lerp(ElevatedStart, ElevatedEnd, T) - FVector(0.f, 0.f, 28.f), 18.f * RarityScale, 115.f * RarityScale, Color, LifeSpan);
+			}
+			break;
+		}
+		default:
+			T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, ElevatedStart, ElevatedEnd, 12.f * RarityScale, Color, LifeSpan);
+			break;
+		}
+		return true;
+	}
+
+	bool T66SpawnPrimitiveIdolBouncePlaceholder(UWorld* World, AActor* Owner, const FName IdolID, const ET66ItemRarity Rarity, const TArray<FVector>& ChainPositions)
+	{
+		if (!World || ChainPositions.Num() < 2)
+		{
+			return false;
+		}
+
+		const ET66PrimitiveIdolElement Element = T66ResolvePrimitiveIdolElement(IdolID);
+		const FLinearColor Color = T66PrimitiveIdolColor(IdolID);
+		const FName Tag(TEXT("T66PrimitiveIdolBouncePlaceholder"));
+		const float RarityScale = T66CombatShared::GetIdolRarityVisualScale(Rarity);
+		const float LifeSpan = 1.0f;
+
+		for (int32 Index = 0; Index < ChainPositions.Num() - 1; ++Index)
+		{
+			const FVector Start = ChainPositions[Index] + FVector(0.f, 0.f, 34.f);
+			const FVector End = ChainPositions[Index + 1] + FVector(0.f, 0.f, 34.f);
+			switch (Element)
+			{
+			case ET66PrimitiveIdolElement::Fire:
+				T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, Start, End, 6.f * RarityScale, Color, LifeSpan);
+				T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Sphere, End, FRotator::ZeroRotator, FVector(0.24f * RarityScale), Color, LifeSpan);
+				T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Cube, (Start + End) * 0.5f, FRotator(0.f, 45.f, 45.f), FVector(0.16f * RarityScale), Color, LifeSpan);
+				break;
+			case ET66PrimitiveIdolElement::Ice:
+				T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cone, Start, End, 11.f * RarityScale, Color, LifeSpan);
+				T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Cone, End, T66RotationFromUpToDirection((End - Start).GetSafeNormal()), FVector(0.22f * RarityScale, 0.22f * RarityScale, 0.58f * RarityScale), Color, LifeSpan);
+				break;
+			case ET66PrimitiveIdolElement::Electricity:
+				T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, Start, End, 7.f * RarityScale, Color, LifeSpan);
+				T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Sphere, End, FRotator::ZeroRotator, FVector(0.22f * RarityScale), Color, LifeSpan);
+				break;
+			case ET66PrimitiveIdolElement::Nature:
+				T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, Start, End, 7.f * RarityScale, Color, LifeSpan);
+				T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Sphere, End, FRotator::ZeroRotator, FVector(0.26f * RarityScale), Color, LifeSpan);
+				break;
+			case ET66PrimitiveIdolElement::Wind:
+				T66SpawnPrimitiveTornadoStack(World, Owner, Tag, End - FVector(0.f, 0.f, 28.f), 16.f * RarityScale, 95.f * RarityScale, Color, LifeSpan);
+				break;
+			default:
+				T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, Start, End, 8.f * RarityScale, Color, LifeSpan);
+				break;
+			}
+		}
+		return true;
+	}
+
+	bool T66SpawnPrimitiveIdolDOTPlaceholder(UWorld* World, AActor* Owner, const FName IdolID, const ET66ItemRarity Rarity, AActor* FollowTarget, const FVector& Location, const float Duration)
+	{
+		if (!World)
+		{
+			return false;
+		}
+
+		const ET66PrimitiveIdolElement Element = T66ResolvePrimitiveIdolElement(IdolID);
+		const FLinearColor Color = T66PrimitiveIdolColor(IdolID);
+		const FName Tag(TEXT("T66PrimitiveIdolDOTPlaceholder"));
+		const float RarityScale = T66CombatShared::GetIdolRarityVisualScale(Rarity);
+		const float LifeSpan = FMath::Clamp(Duration, 0.8f, 4.0f);
+		const FVector Base = FollowTarget ? FollowTarget->GetActorLocation() : Location;
+		const FVector BodyCenter = Base + FVector(0.f, 0.f, 52.f);
+		AActor* AttachTarget = FollowTarget;
+
+		switch (Element)
+		{
+		case ET66PrimitiveIdolElement::Fire:
+		{
+			const int32 Sparks = T66TieredCount(Rarity, 5, 7, 10, 14);
+			for (int32 Index = 0; Index < Sparks; ++Index)
+			{
+				const float Angle = (static_cast<float>(Index) / static_cast<float>(Sparks)) * 2.f * PI;
+				const FVector Offset(FMath::Cos(Angle) * 28.f, FMath::Sin(Angle) * 28.f, 16.f * (Index % 3));
+				T66SpawnPrimitiveShapeActor(World, Owner, Tag, Index % 2 == 0 ? ET66PrimitiveShape::Cone : ET66PrimitiveShape::Sphere, BodyCenter + Offset, FRotator(0.f, Angle * 57.29578f, 0.f), FVector(0.20f * RarityScale), Color, LifeSpan, AttachTarget);
+			}
+			break;
+		}
+		case ET66PrimitiveIdolElement::Ice:
+			T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Sphere, BodyCenter, FRotator::ZeroRotator, FVector(0.82f * RarityScale), Color, LifeSpan, AttachTarget);
+			T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Cube, BodyCenter + FVector(0.f, 0.f, 18.f), FRotator(0.f, 45.f, 45.f), FVector(0.42f * RarityScale), Color, LifeSpan, AttachTarget);
+			break;
+		case ET66PrimitiveIdolElement::Electricity:
+		{
+			const int32 Arcs = T66TieredCount(Rarity, 4, 6, 8, 11);
+			for (int32 Index = 0; Index < Arcs; ++Index)
+			{
+				const float Angle = (static_cast<float>(Index) / static_cast<float>(Arcs)) * 2.f * PI;
+				const FVector Side(FMath::Cos(Angle) * 32.f, FMath::Sin(Angle) * 32.f, 0.f);
+				T66SpawnPrimitiveLine(World, Owner, Tag, ET66PrimitiveShape::Cylinder, BodyCenter + Side + FVector(0.f, 0.f, -34.f), BodyCenter - Side * 0.35f + FVector(0.f, 0.f, 42.f), 6.f * RarityScale, Color, LifeSpan);
+			}
+			break;
+		}
+		case ET66PrimitiveIdolElement::Nature:
+			T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Sphere, BodyCenter, FRotator::ZeroRotator, FVector(0.46f * RarityScale), Color, LifeSpan, AttachTarget);
+			T66SpawnPrimitiveRingPoints(World, Owner, Tag, ET66PrimitiveShape::Sphere, BodyCenter, 34.f * RarityScale, T66TieredCount(Rarity, 5, 7, 9, 12), 12.f * RarityScale, Color, LifeSpan, 0.f);
+			break;
+		case ET66PrimitiveIdolElement::Wind:
+			T66SpawnPrimitiveTornadoStack(World, Owner, Tag, Base + FVector(0.f, 0.f, 4.f), 26.f * RarityScale, 145.f * RarityScale, Color, LifeSpan, AttachTarget);
+			break;
+		default:
+			T66SpawnPrimitiveShapeActor(World, Owner, Tag, ET66PrimitiveShape::Sphere, BodyCenter, FRotator::ZeroRotator, FVector(0.44f * RarityScale), Color, LifeSpan, AttachTarget);
+			break;
+		}
+		return true;
 	}
 
 	void PreloadImportedCombatVFXAssetsAsync()
@@ -1310,7 +1843,7 @@ void UT66CombatComponent::SpawnWaterIdolImpactPlaceholderVFX(const FT66CombatImp
 	}
 }
 
-void UT66CombatComponent::SpawnIdolImpactPlaceholderVFX(const FT66CombatImpactContext& IdolImpactContext, const FName IdolID, const ET66AttackCategory Category, const float LingerSeconds)
+void UT66CombatComponent::SpawnIdolImpactPlaceholderVFX(const FT66CombatImpactContext& IdolImpactContext, const FName IdolID, const ET66ItemRarity Rarity, const ET66AttackCategory Category, const float LingerSeconds)
 {
 	UWorld* World = GetWorld();
 	if (!World)
@@ -1318,7 +1851,7 @@ void UT66CombatComponent::SpawnIdolImpactPlaceholderVFX(const FT66CombatImpactCo
 		return;
 	}
 
-	const FLinearColor IdolColor = UT66IdolManagerSubsystem::GetIdolColor(IdolID);
+	const FLinearColor IdolColor = T66PrimitiveIdolColor(IdolID);
 	const FVector Anchor = IdolImpactContext.bDamageCenterValid
 		? IdolImpactContext.DamageCenter
 		: IdolImpactContext.ImpactPoint;
@@ -1339,7 +1872,7 @@ void UT66CombatComponent::SpawnIdolImpactPlaceholderVFX(const FT66CombatImpactCo
 		Dir = Dir.GetSafeNormal();
 		const FVector Start = ElevatedAnchor;
 		const FVector End = ElevatedAnchor + Dir * LineLength;
-		SpawnPierceVFX(Start, End, IdolColor);
+		T66SpawnPrimitiveIdolPiercePlaceholder(World, GetOwner(), IdolID, Rarity, Start, End);
 		CategoryShape = TEXT("PierceLine");
 		break;
 	}
@@ -1359,23 +1892,20 @@ void UT66CombatComponent::SpawnIdolImpactPlaceholderVFX(const FT66CombatImpactCo
 		{
 			ChainPositions.Add(ElevatedAnchor + IdolImpactContext.Forward.GetSafeNormal() * 64.f);
 		}
-		SpawnBounceVFX(ChainPositions, IdolColor);
+		T66SpawnPrimitiveIdolBouncePlaceholder(World, GetOwner(), IdolID, Rarity, ChainPositions);
 		CategoryShape = TEXT("BounceChain");
 		break;
 	}
 	case ET66AttackCategory::DOT:
 	{
-		// Lingering area read held for the DOT duration reusing the base DOT primitive.
-		const float Radius = FMath::Max(32.f, IdolImpactContext.Radius);
-		SpawnDOTVFX(ElevatedAnchor, FMath::Max(0.1f, LingerSeconds), Radius, IdolColor);
-		CategoryShape = TEXT("DotLingeringArea");
+		T66SpawnPrimitiveIdolDOTPlaceholder(World, GetOwner(), IdolID, Rarity, nullptr, ElevatedAnchor, FMath::Max(0.1f, LingerSeconds));
+		CategoryShape = TEXT("DotBodyRead");
 		break;
 	}
 	default:
 	{
-		// Fallback area read for any other category routed through this placeholder.
 		const float Radius = FMath::Max(32.f, IdolImpactContext.Radius);
-		SpawnDOTVFX(ElevatedAnchor, FMath::Max(0.1f, LingerSeconds), Radius, IdolColor);
+		T66SpawnPrimitiveIdolAOEPlaceholder(World, GetOwner(), IdolID, Rarity, ElevatedAnchor, Radius);
 		CategoryShape = TEXT("AreaRead");
 		break;
 	}
@@ -1412,7 +1942,7 @@ void UT66CombatComponent::SpawnIdolPierceVFX(const FName& IdolID, const ET66Item
 	{
 		return;
 	}
-	const FLinearColor IdolColor = UT66IdolManagerSubsystem::GetIdolColor(IdolID);
+	const FLinearColor IdolColor = T66PrimitiveIdolColor(IdolID);
 	const int32 RequestId = ++GIdolPierceStage3RequestSerial;
 	if (CVarT66VFXIdolPierceVerbose.GetValueOnGameThread() != 0)
 	{
@@ -1435,6 +1965,17 @@ void UT66CombatComponent::SpawnIdolPierceVFX(const FName& IdolID, const ET66Item
 		0.35f,
 		8.0f);
 	const float Quantity = T66CombatShared::GetIdolRarityVisualQuantity(Rarity) * T66CombatShared::GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::Pierce);
+	if (CVarT66VFXForcePrimitiveIdolPlaceholders.GetValueOnGameThread() != 0)
+	{
+		if (T66SpawnPrimitiveIdolPiercePlaceholder(World, GetOwner(), IdolID, Rarity, Start, End))
+		{
+			UE_LOG(LogT66Combat, Display, TEXT("CombatVFXPrimitiveIdolPlaceholderSpawned SourceID=%s Category=Pierce Element=%s Rarity=%s"),
+				*IdolID.ToString(),
+				T66PrimitiveElementName(T66ResolvePrimitiveIdolElement(IdolID)),
+				T66CombatShared::GetItemRarityName(Rarity));
+			return;
+		}
+	}
 	if (const TCHAR* AssetPath = GetIdolNiagaraEffectPath(IdolID))
 	{
 		if (SpawnImportedEffectAlongLine(World, AssetPath, Start + FVector(0.f, 0.f, 18.f), End + FVector(0.f, 0.f, 18.f), VisualScale, Quantity))
@@ -1453,7 +1994,7 @@ void UT66CombatComponent::SpawnIdolAOEVFX(const FName& IdolID, const ET66ItemRar
 	{
 		return;
 	}
-	const FLinearColor IdolColor = UT66IdolManagerSubsystem::GetIdolColor(IdolID);
+	const FLinearColor IdolColor = T66PrimitiveIdolColor(IdolID);
 	const int32 RequestId = ++GIdolAOEStage7RequestSerial;
 	const bool bVerbose = CVarT66VFXIdolAOEVerbose.GetValueOnGameThread() != 0;
 
@@ -1479,6 +2020,18 @@ void UT66CombatComponent::SpawnIdolAOEVFX(const FName& IdolID, const ET66ItemRar
 		T66CombatShared::GetIdolRarityVisualScale(Rarity) * RadiusVisualFactor * FMath::Max(0.1f, ProjectileScaleMultiplier) * T66CombatShared::GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::AOE),
 		0.35f,
 		10.0f);
+	if (CVarT66VFXForcePrimitiveIdolPlaceholders.GetValueOnGameThread() != 0)
+	{
+		if (T66SpawnPrimitiveIdolAOEPlaceholder(World, GetOwner(), IdolID, Rarity, Location, Radius))
+		{
+			UE_LOG(LogT66Combat, Display, TEXT("CombatVFXPrimitiveIdolPlaceholderSpawned SourceID=%s Category=AOE Element=%s Rarity=%s Radius=%.2f"),
+				*IdolID.ToString(),
+				T66PrimitiveElementName(T66ResolvePrimitiveIdolElement(IdolID)),
+				T66CombatShared::GetItemRarityName(Rarity),
+				Radius);
+			return;
+		}
+	}
 	if (const TCHAR* BlueprintClassPath = GetIdolBlueprintEffectClassPath(IdolID))
 	{
 		if (SpawnImportedEffectBlueprint(World, BlueprintClassPath, Location + FVector(0.f, 0.f, 6.f), FRotator::ZeroRotator, FVector(VisualScale), FMath::Max(2.0f, 2.5f * VisualScale)))
@@ -1504,7 +2057,7 @@ void UT66CombatComponent::SpawnIdolBounceVFX(const FName& IdolID, const ET66Item
 	{
 		return;
 	}
-	const FLinearColor IdolColor = UT66IdolManagerSubsystem::GetIdolColor(IdolID);
+	const FLinearColor IdolColor = T66PrimitiveIdolColor(IdolID);
 	const int32 RequestId = ++GIdolBounceStage8RequestSerial;
 	const bool bVerbose = CVarT66VFXIdolBounceVerbose.GetValueOnGameThread() != 0;
 
@@ -1531,6 +2084,18 @@ void UT66CombatComponent::SpawnIdolBounceVFX(const FName& IdolID, const ET66Item
 		0.35f,
 		6.0f);
 	const float Quantity = T66CombatShared::GetIdolRarityVisualQuantity(Rarity) * T66CombatShared::GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::Bounce);
+	if (CVarT66VFXForcePrimitiveIdolPlaceholders.GetValueOnGameThread() != 0)
+	{
+		if (T66SpawnPrimitiveIdolBouncePlaceholder(World, GetOwner(), IdolID, Rarity, ChainPositions))
+		{
+			UE_LOG(LogT66Combat, Display, TEXT("CombatVFXPrimitiveIdolPlaceholderSpawned SourceID=%s Category=Bounce Element=%s Rarity=%s Links=%d"),
+				*IdolID.ToString(),
+				T66PrimitiveElementName(T66ResolvePrimitiveIdolElement(IdolID)),
+				T66CombatShared::GetItemRarityName(Rarity),
+				ChainPositions.Num() - 1);
+			return;
+		}
+	}
 	if (const TCHAR* AssetPath = GetIdolNiagaraEffectPath(IdolID))
 	{
 		TArray<FVector> ElevatedPositions;
@@ -1561,7 +2126,7 @@ void UT66CombatComponent::SpawnIdolDOTVFX(const FName& IdolID, const ET66ItemRar
 	{
 		return;
 	}
-	const FLinearColor IdolColor = UT66IdolManagerSubsystem::GetIdolColor(IdolID);
+	const FLinearColor IdolColor = T66PrimitiveIdolColor(IdolID);
 	const int32 RequestId = ++GIdolDOTStage9RequestSerial;
 	const bool bVerbose = CVarT66VFXIdolDOTVerbose.GetValueOnGameThread() != 0;
 
@@ -1589,6 +2154,19 @@ void UT66CombatComponent::SpawnIdolDOTVFX(const FName& IdolID, const ET66ItemRar
 		T66CombatShared::GetIdolRarityVisualScale(Rarity) * DurationVisualFactor * FMath::Max(0.1f, ProjectileScaleMultiplier) * T66CombatShared::GetCategorySubScaleMultiplier(CachedRunState, ET66AttackCategory::DOT),
 		0.25f,
 		5.0f);
+	if (CVarT66VFXForcePrimitiveIdolPlaceholders.GetValueOnGameThread() != 0)
+	{
+		if (T66SpawnPrimitiveIdolDOTPlaceholder(World, GetOwner(), IdolID, Rarity, FollowTarget, Location, Duration))
+		{
+			UE_LOG(LogT66Combat, Display, TEXT("CombatVFXPrimitiveIdolPlaceholderSpawned SourceID=%s Category=DOT Element=%s Rarity=%s Follow=%d Duration=%.2f"),
+				*IdolID.ToString(),
+				T66PrimitiveElementName(T66ResolvePrimitiveIdolElement(IdolID)),
+				T66CombatShared::GetItemRarityName(Rarity),
+				FollowTarget ? 1 : 0,
+				Duration);
+			return;
+		}
+	}
 	if (const TCHAR* AssetPath = GetIdolNiagaraEffectPath(IdolID))
 	{
 		if (FollowTarget)

@@ -12,7 +12,7 @@
 - `HeroLevel`, `HeroXP`, `XPToNextLevel`, saved precise hero stats, and persistent secondary gain entries are live saved-run state.
 - New runs start at level `1`, XP `0`, and the data-driven flat XP threshold from `PlayerExperience` (`100` by current data).
 - Enemy XP is data-driven through `Enemies.csv` / `FT66EnemyData::XPValue`; both rich enemies and lightweight mobs grant XP when killed by the hero.
-- A level-up heals HP to full, rolls hero per-level primary gains from `Heroes.csv`, propagates those gains into secondary stats, and fires a non-boss OHKO wave at the data-driven radius (`900` UU by current data).
+- A level-up heals HP to full, applies fixed hero per-level primary gains from `Heroes.csv`, propagates those gains into secondary stats, and fires a non-boss OHKO wave at the data-driven radius (`900` UU by current data).
 - Level-up wave kills do not award XP, so wave kills cannot recursively chain into another level-up.
 - Permanent diploma bonuses apply as primary stat bonuses and then propagate into secondary stats.
 - Selected single-use drug bonuses apply as secondary multipliers at run start, but drug purchases remain disabled/unpurchasable.
@@ -98,7 +98,7 @@
   - `BaseAccuracy` for the secondary head-targeting baseline
 - `Heroes.csv` also authors:
   - the other foundational primaries
-  - decimal per-level gain ranges for all 8 primaries, including `LvlSpeedMin` / `LvlSpeedMax`
+  - fixed per-level gains for all 8 primaries; the `Lvl*Min` / `Lvl*Max` schema is retained but live rows set Min and Max equal
   - category-specific base stats for `Pierce`, `Bounce`, `AOE`, and `DOT`
   - secondary baselines such as `BaseHeadshotChance`, `BaseCritChance`, `BaseAttackRange`, `BaseTaunt`, `BaseReflectDmg`, `BaseCrushChance`, `BaseInvisChance`, `BaseCounterAttack`, `BaseAssassinateChance`, `BaseCheatChance`, and `BaseStealChance`
 - The selected hero row is loaded through `UT66GameInstance::GetHeroStatTuning()` and `UT66GameInstance::GetHeroData()`.
@@ -167,11 +167,11 @@
 
 ### 5.2 Primary-derived multipliers
 
-- `GetHeroDamageMultiplier() = 1.0 + (Damage - 1) * 0.015`
-- `GetHeroAttackSpeedMultiplier() = 1.0 + (AttackSpeed - 1) * 0.012`
-- `GetHeroScaleMultiplier() = 1.0 + (AttackScale - 1) * 0.008`
-- `GetHeroAccuracyMultiplier() = 1.0 + (Accuracy - 1) * 0.010`
-- Live walking speed uses raw `GetSpeedStat() * 840 UU/s`; see `Gameplay/Movement/MASTER_MOVEMENT.md`
+- `GetHeroDamageMultiplier() = 1.0 + (Damage - 1) * 0.0015`
+- `GetHeroAttackSpeedMultiplier() = 1.0 + (AttackSpeed - 1) * 0.0012`
+- `GetHeroScaleMultiplier() = 1.0 + (AttackScale - 1) * 0.0008`
+- `GetHeroAccuracyMultiplier() = 1.0 + (Accuracy - 1) * 0.0010`
+- Live walking speed uses raw `GetSpeedStat() * 300 UU/s`; see `Gameplay/Movement/MASTER_MOVEMENT.md`
 
 ### 5.3 Defensive totals
 
@@ -180,14 +180,14 @@
   - bonus reduction from secondary `DamageReduction`
   - `ItemArmorBonus01`, which currently stays at `0`
 - Formula:
-  - `BaseArmorReduction = clamp((Armor - 1) * 0.008, 0.0, 0.80)`
+  - `BaseArmorReduction = clamp((Armor - 1) * 0.0008, 0.0, 0.80)`
   - `ArmorReduction01 = clamp(BaseArmorReduction + DamageReductionBonus + ItemArmorBonus01, 0.0, 0.80)`
 - `GetEvasionChance01()` uses:
   - base dodge chance from primary `Evasion`
   - bonus dodge from secondary `EvasionChance`
   - `ItemEvasionBonus01`, which currently stays at `0`
 - Formula:
-  - `BaseEvasionChance = clamp((Evasion - 1) * 0.006, 0.0, 0.60)`
+  - `BaseEvasionChance = clamp((Evasion - 1) * 0.0006, 0.0, 0.60)`
   - `EvasionChance01 = clamp(BaseEvasionChance + EvasionChanceBonus + ItemEvasionBonus01, 0.0, 0.60)`
 
 ### 5.4 Accuracy head-targeting chance
@@ -210,14 +210,14 @@
 - Each level-up:
   - increments `HeroLevel`
   - heals `CurrentHP` to `MaxHP`
-  - rolls primary stat gains from the selected hero's `Lvl*Min` / `Lvl*Max` ranges
+  - applies fixed primary stat gains from the selected hero's `Lvl*Min` / `Lvl*Max` values; live rows set Min and Max equal
   - adds those primary gains to `HeroPreciseStats`
   - distributes proxy secondary gains through `ApplyPrimaryGainToSecondaryBonuses(...)`
   - runs a non-boss OHKO wave in `LevelUpWaveRadiusUU`
 - Level-up wave XP is suppressed while the wave is resolving.
 - Safe defaults still exist if hero data fails to load:
   - all base primaries default to `2`
-  - primary gain ranges default to low decimal bands
+  - fixed primary gains default to `2` for each primary
 
 ## 7. Secondary Stat Model
 
@@ -255,33 +255,33 @@
 
 ### 7.5 Accuracy family
 
-- `CritChance = clamp((HeroBaseCritChance + BonusPoints * 0.01) * M * HeroAccuracyMultiplier, 0.0, 1.0)`
-- `HeadshotChance = clamp((HeroBaseHeadshotChance + BonusPoints * HeadshotChancePerBonusPoint) * M * HeroAccuracyMultiplier, 0.0, 1.0)`
-- `AttackRange = max(100.0, (HeroBaseAttackRange + BonusPoints * 25.0) * M * HeroAccuracyMultiplier)`
-- `Execute = clamp(BonusPoints * 0.005 * M, 0.0, 1.0)`
+- `CritChance = clamp((HeroBaseCritChance + BonusPoints * 0.001) * M * HeroAccuracyMultiplier, 0.0, 1.0)`
+- `HeadshotChance = clamp((HeroBaseHeadshotChance + BonusPoints * HeadshotChancePerBonusPoint) * M * HeroAccuracyMultiplier, 0.0, 1.0)`; current data sets `HeadshotChancePerBonusPoint=0.0005`
+- `AttackRange = max(100.0, (HeroBaseAttackRange + BonusPoints * 2.5) * M * HeroAccuracyMultiplier)`
+- `Execute = clamp(BonusPoints * 0.0005 * M, 0.0, 1.0)`
 - `CritDamage` is fixed at `2.0` through `GetCritDamageMultiplier()` and is no longer item-facing.
 - Backend compatibility parses in-range legacy `CritDamage` values as `HeadshotChance`, including the intentional `1.0` boundary, but ignores legacy multiplier-shaped values above `1.0` so old crit-damage multipliers like `1.5` or `2.0` cannot become 150%-200% Headshot Chance.
 
 ### 7.6 Armor family
 
-- `Taunt = HeroBaseTaunt * M`
-- `ReflectDamage = HeroBaseReflectDmg * M`
-- `Crush = clamp(HeroBaseCrushChance * M, 0.0, 1.0)`
-- `DamageReduction = BaseArmorReduction * max(0.0, M - 1.0)`
+- `Taunt = clamp(BonusPoints * 0.001 * M, 0.0, 1.0)`
+- `ReflectDamage = clamp((HeroBaseReflectDmg + BonusPoints * 0.001) * M, 0.0, 1.0)`
+- `Crush = clamp((HeroBaseCrushChance + BonusPoints * 0.0005) * M, 0.0, 1.0)`
+- `DamageReduction = clamp(BaseArmorReduction + BonusPoints * 0.0005, 0.0, 0.80)`
 
 ### 7.7 Evasion family
 
-- `EvasionChance = BaseEvasionChance * max(0.0, M - 1.0)`
-- `CounterAttack = HeroBaseCounterAttack * M`
-- `Invisibility = clamp(HeroBaseInvisChance * M, 0.0, 1.0)`
-- `Assassinate = clamp(HeroBaseAssassinateChance * M, 0.0, 1.0)`
+- `EvasionChance = clamp(BaseEvasionChance + BonusPoints * 0.0005, 0.0, 0.60)`
+- `CounterAttack = clamp((HeroBaseCounterAttack + BonusPoints * 0.001) * M, 0.0, 1.0)`
+- `Invisibility = clamp((HeroBaseInvisChance + BonusPoints * 0.0005) * M, 0.0, 1.0)`
+- `Assassinate = clamp((HeroBaseAssassinateChance + BonusPoints * 0.0005) * M, 0.0, 1.0)`
 
 ### 7.8 Luck family
 
-- `TreasureChest = 1.0 * M`
-- `Cheating = clamp(HeroBaseCheatChance * M, 0.0, 1.0)`
-- `Stealing = clamp(HeroBaseStealChance * M, 0.0, 1.0)`
-- `LootCrate = 1.0 * M`
+- `TreasureChest = max(1.0, (1.0 + BonusPoints * 0.005) * M)`
+- `Cheating = clamp(BonusPoints * 0.001 * M, 0.0, 0.25)`
+- `Stealing = clamp(BonusPoints * 0.001 * M, 0.0, 0.95)`
+- `LootCrate` / `LootBag` / `LootWheel = max(1.0, (1.0 + BonusPoints * 0.005) * M)`
 
 ## 8. Item Stat Rules
 
@@ -473,7 +473,7 @@
 ### 12.3 Movement
 
 - `UT66HeroMovementComponent` multiplies:
-  - raw primary `Speed` converted at `840 UU/s` per Speed point
+  - raw primary `Speed` converted at `300 UU/s` per Speed point
   - `GetItemMoveSpeedMultiplier()`
   - `GetStageMoveSpeedMultiplier()`
   - `GetStatusMoveSpeedMultiplier()`

@@ -1,0 +1,13 @@
+/Game/World/LootBags/Black/BlackBag/Textures/Image_0
+/Game/World/LootBags/Black/BlackBag/Textures/Image_1
+/Game/World/LootBags/Black/Textures/T_SM_LootBag_Black_QuadRetro_Pixelated_512
+/Game/World/LootBags/Red/RedBag/Textures/Image_0_005
+/Game/World/LootBags/Red/RedBag/Textures/Image_1
+/Game/World/LootBags/Red/Textures/T_SM_LootBag_Red_QuadRetro_Pixelated_512
+/Game/World/LootBags/Shared/Material_0
+/Game/World/LootBags/White/Textures/T_SM_LootBag_White_QuadRetro_Pixelated_512
+/Game/World/LootBags/White/WhiteBag/Textures/Image_0_007
+/Game/World/LootBags/White/WhiteBag/Textures/Image_1
+/Game/World/LootBags/Yellow/Textures/T_SM_LootBag_Yellow_QuadRetro_Pixelated_512
+/Game/World/LootBags/Yellow/YellowBag/Textures/Image_0_008
+/Game/World/LootBags/Yellow/YellowBag/Textures/Image_1

@@ -168,4 +168,9 @@ struct T66_API FT66ThemeAtmosphereSpec
 namespace T66ThemeAtmosphereData
 {
 	T66_API const FT66ThemeAtmosphereSpec& GetSpecForTheme(T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme);
+
+	// True when the single shared bright-soft lighting rig (t66.Light.SingleRig) is active. When true,
+	// all themes resolve to one neutral bright rig and the per-theme atmosphere/cel/torch/carry/per-actor
+	// systems are bypassed (reversible — flip the CVar to restore per-theme behavior).
+	T66_API bool IsSingleLightingRigEnabled();
 }

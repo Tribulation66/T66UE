@@ -23,7 +23,11 @@ public:
 		const bool bInHasClickHandler = false,
 		const FName InToggleGroup = NAME_None,
 		const bool bInIsLabel = false,
-		const bool bInHoverCapable = false)
+		const bool bInHoverCapable = false,
+		const FName InTooltipId = NAME_None,
+		FString InTooltipKind = FString(),
+		const bool bInHasTooltip = false,
+		const bool bInTooltipRequired = false)
 		: Tag(InTag)
 		, IntendedRole(MoveTemp(InIntendedRole))
 		, IntendedState(InIntendedState)
@@ -32,6 +36,10 @@ public:
 		, ToggleGroup(InToggleGroup)
 		, bIsLabel(bInIsLabel)
 		, bHoverCapable(bInHoverCapable)
+		, TooltipId(InTooltipId)
+		, TooltipKind(MoveTemp(InTooltipKind))
+		, bHasTooltip(bInHasTooltip)
+		, bTooltipRequired(bInTooltipRequired)
 	{
 	}
 
@@ -43,4 +51,8 @@ public:
 	FName ToggleGroup = NAME_None;
 	bool bIsLabel = false;
 	bool bHoverCapable = false;
+	FName TooltipId = NAME_None;
+	FString TooltipKind;
+	bool bHasTooltip = false;
+	bool bTooltipRequired = false;
 };

@@ -1,0 +1,258 @@
+{
+  "asset": {
+    "asset_id": "Hero_1_Chad_Male",
+    "source_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Outputs\\Hero_1_Chad_Male.glb",
+    "source_image": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Sources\\Hero_1_Chad_Male.png",
+    "lookdev_blend": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\LookDev\\Hero_1_Chad_Male_Rubber_20260605\\Hero_1_Chad_Male_RubberLookDev.blend"
+  },
+  "lighting_rig": {
+    "world_color": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "render_engine": "BLENDER_EEVEE_NEXT fallback BLENDER_EEVEE",
+    "view_transform": "Standard",
+    "look": "Medium High Contrast",
+    "lights": [
+      {
+        "name": "Key_Softbox_L",
+        "type": "AREA",
+        "location": [
+          -5.5,
+          -5.2,
+          5.0
+        ],
+        "energy": 470.0,
+        "size": 6.5,
+        "shadows": false
+      },
+      {
+        "name": "Key_Softbox_R",
+        "type": "AREA",
+        "location": [
+          5.5,
+          -5.2,
+          4.6
+        ],
+        "energy": 360.0,
+        "size": 7.0,
+        "shadows": false
+      },
+      {
+        "name": "Top_Soft_Fill",
+        "type": "AREA",
+        "location": [
+          0.0,
+          -1.5,
+          7.2
+        ],
+        "energy": 230.0,
+        "size": 8.0,
+        "shadows": false
+      },
+      {
+        "name": "Front_Fill",
+        "type": "AREA",
+        "location": [
+          0.0,
+          -7.5,
+          2.1
+        ],
+        "energy": 150.0,
+        "size": 9.0,
+        "shadows": false
+      }
+    ]
+  },
+  "variations": [
+    {
+      "id": "V01_soft_satin",
+      "label": "V01 Soft Satin",
+      "roughness": 0.46,
+      "specular_ior_level": 0.66,
+      "coat_weight": 0.16,
+      "coat_roughness": 0.3,
+      "subsurface_weight": 0.06,
+      "subsurface_radius": [
+        1.0,
+        0.72,
+        0.5
+      ],
+      "saturation": 1.12,
+      "value": 1.02,
+      "contrast": -0.08,
+      "bevel_width": 0.012,
+      "bevel_segments": 2,
+      "bump_strength": 0.006,
+      "bump_distance": 0.02,
+      "top_candidate": false,
+      "notes": "Control rubber pass with a mild satin sheen."
+    },
+    {
+      "id": "V02_rubber_pop",
+      "label": "V02 Rubber Pop",
+      "roughness": 0.34,
+      "specular_ior_level": 0.78,
+      "coat_weight": 0.3,
+      "coat_roughness": 0.2,
+      "subsurface_weight": 0.1,
+      "subsurface_radius": [
+        1.0,
+        0.62,
+        0.42
+      ],
+      "saturation": 1.24,
+      "value": 1.07,
+      "contrast": -0.16,
+      "bevel_width": 0.024,
+      "bevel_segments": 3,
+      "bump_strength": 0.004,
+      "bump_distance": 0.016,
+      "top_candidate": true,
+      "notes": "Balanced first candidate: saturated, soft, and broad highlight."
+    },
+    {
+      "id": "V03_vinyl_bounce",
+      "label": "V03 Vinyl Bounce",
+      "roughness": 0.25,
+      "specular_ior_level": 0.88,
+      "coat_weight": 0.46,
+      "coat_roughness": 0.12,
+      "subsurface_weight": 0.07,
+      "subsurface_radius": [
+        1.0,
+        0.55,
+        0.34
+      ],
+      "saturation": 1.34,
+      "value": 1.08,
+      "contrast": -0.24,
+      "bevel_width": 0.034,
+      "bevel_segments": 4,
+      "bump_strength": 0.003,
+      "bump_distance": 0.012,
+      "top_candidate": true,
+      "notes": "Glossier vinyl direction, likely close if the critique is 'not rubbery enough'."
+    },
+    {
+      "id": "V04_candy_rubber",
+      "label": "V04 Candy Rubber",
+      "roughness": 0.29,
+      "specular_ior_level": 0.82,
+      "coat_weight": 0.34,
+      "coat_roughness": 0.16,
+      "subsurface_weight": 0.18,
+      "subsurface_radius": [
+        1.0,
+        0.68,
+        0.48
+      ],
+      "saturation": 1.3,
+      "value": 1.12,
+      "contrast": -0.3,
+      "bevel_width": 0.044,
+      "bevel_segments": 4,
+      "bump_strength": 0.002,
+      "bump_distance": 0.01,
+      "top_candidate": true,
+      "notes": "Softest bouncy candidate; more subsurface and edge rounding."
+    },
+    {
+      "id": "V05_matte_gum",
+      "label": "V05 Matte Gum",
+      "roughness": 0.56,
+      "specular_ior_level": 0.62,
+      "coat_weight": 0.1,
+      "coat_roughness": 0.36,
+      "subsurface_weight": 0.16,
+      "subsurface_radius": [
+        1.0,
+        0.74,
+        0.55
+      ],
+      "saturation": 1.18,
+      "value": 1.06,
+      "contrast": -0.22,
+      "bevel_width": 0.03,
+      "bevel_segments": 3,
+      "bump_strength": 0.004,
+      "bump_distance": 0.014,
+      "top_candidate": false,
+      "notes": "Softer gum rubber, useful lower-gloss boundary."
+    },
+    {
+      "id": "V06_toy_vinyl_gloss",
+      "label": "V06 Toy Vinyl Gloss",
+      "roughness": 0.18,
+      "specular_ior_level": 0.96,
+      "coat_weight": 0.62,
+      "coat_roughness": 0.08,
+      "subsurface_weight": 0.04,
+      "subsurface_radius": [
+        1.0,
+        0.5,
+        0.3
+      ],
+      "saturation": 1.4,
+      "value": 1.1,
+      "contrast": -0.34,
+      "bevel_width": 0.04,
+      "bevel_segments": 4,
+      "bump_strength": 0.001,
+      "bump_distance": 0.008,
+      "top_candidate": true,
+      "notes": "Upper gloss boundary; may read more toy vinyl than rubber."
+    }
+  ],
+  "top_candidates": [
+    "V02_rubber_pop",
+    "V03_vinyl_bounce",
+    "V04_candy_rubber",
+    "V06_toy_vinyl_gloss"
+  ],
+  "blender_principled_inputs_seen": {
+    "Material_0": [
+      "Base Color",
+      "Metallic",
+      "Roughness",
+      "IOR",
+      "Alpha",
+      "Normal",
+      "Weight",
+      "Diffuse Roughness",
+      "Subsurface Weight",
+      "Subsurface Radius",
+      "Subsurface Scale",
+      "Subsurface IOR",
+      "Subsurface Anisotropy",
+      "Specular IOR Level",
+      "Specular Tint",
+      "Anisotropic",
+      "Anisotropic Rotation",
+      "Tangent",
+      "Transmission Weight",
+      "Coat Weight",
+      "Coat Roughness",
+      "Coat IOR",
+      "Coat Tint",
+      "Coat Normal",
+      "Sheen Weight",
+      "Sheen Roughness",
+      "Sheen Tint",
+      "Emission Color",
+      "Emission Strength",
+      "Thin Film Thickness",
+      "Thin Film IOR"
+    ]
+  },
+  "ue5_mapping": {
+    "base_color": "Use generated texture, then HSV/saturation/value and contrast flattening before Base Color.",
+    "roughness": "Set material Roughness to the chosen variation value.",
+    "specular": "Approximate Blender Specular IOR Level with UE Specular in 0-1 range; keep metallic 0.",
+    "clearcoat": "Map Coat Weight to UE Clear Coat and Coat Roughness to Clear Coat Roughness.",
+    "subsurface": "Use Subsurface Profile or Subsurface shading model for skin/body-like colored pieces; use low opacity/tint and keep radius as recipe note.",
+    "edge_softness": "Use bevel modifier result or mesh bevels; in UE use bevelled geometry or weighted normals, not a post-process trick.",
+    "bump": "Use a very low-amplitude noise normal only if the surface reads too CG-smooth; this is secondary."
+  }
+}

@@ -1,0 +1,3100 @@
+{
+  "project_root": "C:\\UE\\T66",
+  "packages": [
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A0696F7C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A069DD7C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A069805C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A069D05C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A069CB5C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+      "asset_path": "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A05A873C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A069BB1C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+      "asset_path": "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x0000020830D85BBC) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A069341C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x000002089141C03C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A0568D7C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+      "asset_path": "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x0000020830EA8CDC) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x0000020830DD297C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+      "asset_path": "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8E027C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x000002089C6AA21C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x000002089C6A8CDC) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+      "asset_path": "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8E477C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x000002089148D05C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+      "asset_path": "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x000002089148DB9C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+      "asset_path": "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A05E7B5C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+      "asset_path": "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A05E819C) {package_name: \"/Script/Engine\", asset_name: \"SkeletalMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Gates/Material_0",
+      "asset_path": "/Game/World/Gates/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Gates/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8E957C) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+      "asset_path": "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8EA5FC) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+      "asset_path": "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8EACBC) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Gates/TutorialGate_Pixal3D",
+      "asset_path": "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A05EBF7C) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Boosts/Material_0",
+      "asset_path": "/Game/World/Interactables/Boosts/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A062DEBC) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Chests/ChestModel/Material_0",
+      "asset_path": "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A062F2BC) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+      "asset_path": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208A062F3FC) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/CompanionCage/Material_0",
+      "asset_path": "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8EBC7C) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Crate/Material_0",
+      "asset_path": "/Game/World/Interactables/Crate/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x000002089CC6C83C) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+      "asset_path": "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8EABFC) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/DifficultyTotem/Material_0",
+      "asset_path": "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x000002083022945C) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+      "asset_path": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x000002083022F53C) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Fountain/Material_0",
+      "asset_path": "/Game/World/Interactables/Fountain/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8EC3FC) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+      "asset_path": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8EC3FC) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/IdolAltar/Material_0",
+      "asset_path": "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x000002089148D2DC) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+      "asset_path": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8ECDBC) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/LootWheel/Material_0",
+      "asset_path": "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8EDB3C) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+      "asset_path": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8ED17C) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Totem",
+      "asset_path": "/Game/World/Interactables/Totem.Totem",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/Totem.Totem",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8ED8FC) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vehicles/Material_0",
+      "asset_path": "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8EEAFC) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/Vending/Vending",
+      "asset_path": "/Game/World/Interactables/Vending/Vending.Vending",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/Vending/Vending.Vending",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208DCF020BC) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/Interactables/WeaponAltar/Material_0",
+      "asset_path": "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208DCF02E7C) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/LootBags/Shared/Material_0",
+      "asset_path": "/Game/World/LootBags/Shared/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208DCF034BC) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Material_0",
+      "asset_path": "/Game/World/VisualProps/Easy/Material_0.Material_0",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208AD8EEF7C) {package_name: \"/Script/Engine\", asset_name: \"MaterialInstanceConstant\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+      "asset_path": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline",
+      "exists": true,
+      "registry_assets": [
+        {
+          "asset": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline",
+          "asset_class": "<Struct 'TopLevelAssetPath' (0x00000208DCF0431C) {package_name: \"/Script/Engine\", asset_name: \"StaticMesh\"}>"
+        }
+      ],
+      "referencers": [],
+      "referencer_count": 0
+    }
+  ],
+  "tokens": [
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+    "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+    "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+    "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+    "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+    "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+    "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+    "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+    "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+    "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+    "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+    "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+    "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+    "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+    "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+    "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+    "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+    "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+    "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+    "/Game/World/Gates/Material_0",
+    "/Game/World/Gates/Material_0.Material_0",
+    "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+    "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+    "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+    "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+    "/Game/World/Gates/TutorialGate_Pixal3D",
+    "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+    "/Game/World/Interactables/Boosts/Material_0",
+    "/Game/World/Interactables/Boosts/Material_0.Material_0",
+    "/Game/World/Interactables/Chests/ChestModel/Material_0",
+    "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+    "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+    "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+    "/Game/World/Interactables/CompanionCage/Material_0",
+    "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+    "/Game/World/Interactables/Crate/Material_0",
+    "/Game/World/Interactables/Crate/Material_0.Material_0",
+    "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+    "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+    "/Game/World/Interactables/DifficultyTotem/Material_0",
+    "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+    "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+    "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+    "/Game/World/Interactables/Fountain/Material_0",
+    "/Game/World/Interactables/Fountain/Material_0.Material_0",
+    "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+    "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+    "/Game/World/Interactables/IdolAltar/Material_0",
+    "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+    "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+    "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+    "/Game/World/Interactables/LootWheel/Material_0",
+    "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+    "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+    "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+    "/Game/World/Interactables/Totem",
+    "/Game/World/Interactables/Totem.Totem",
+    "/Game/World/Interactables/Vehicles/Material_0",
+    "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+    "/Game/World/Interactables/Vending/Vending",
+    "/Game/World/Interactables/Vending/Vending.Vending",
+    "/Game/World/Interactables/WeaponAltar/Material_0",
+    "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+    "/Game/World/LootBags/Shared/Material_0",
+    "/Game/World/LootBags/Shared/Material_0.Material_0",
+    "/Game/World/VisualProps/Easy/Material_0",
+    "/Game/World/VisualProps/Easy/Material_0.Material_0",
+    "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+    "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+  ],
+  "metadata": {
+    "forced_asset_registry_scan": true,
+    "scan_roots": [
+      "/Game/Characters",
+      "/Game/World"
+    ],
+    "generated_utc": "2026-06-05T08:38:59.503594+00:00"
+  },
+  "token_mode": "package_paths",
+  "binary_content": {
+    "scanned": 3540,
+    "matches": [
+      {
+        "path": "Content\\Archive\\FriendSlopEasyPixal3D_20260604\\World\\Gates\\SM_CowardiceGate_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\Archive\\FriendSlopEasyPixal3D_20260604\\World\\Gates\\SM_StageGate_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\Archive\\FriendSlopEasyPixal3D_20260604\\World\\Gates\\TutorialGate_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Gates/TutorialGate_Pixal3D"
+        ]
+      },
+      {
+        "path": "Content\\Archive\\FriendSlopEasyPixal3D_20260604\\World\\Interactables\\Chests\\ChestModel\\SM_Chest_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\Archive\\FriendSlopEasyPixal3D_20260604\\World\\Interactables\\Crate\\SM_LootCrate_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline"
+        ]
+      },
+      {
+        "path": "Content\\Archive\\FriendSlopEasyPixal3D_20260604\\World\\Interactables\\DifficultyTotem\\SM_DifficultyTotem_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\Archive\\FriendSlopEasyPixal3D_20260604\\World\\Interactables\\Fountain\\SM_Fountain_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\Archive\\FriendSlopEasyPixal3D_20260604\\World\\Interactables\\IdolAltar\\SM_IdolAltar_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\Archive\\FriendSlopEasyPixal3D_20260604\\World\\Interactables\\LootWheel\\SM_LootWheel_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\Archive\\FriendSlopEasyPixal3D_20260604\\World\\VisualProps\\Easy\\SM_SkullRemains_Easy_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_1\\Chad\\AnimatedToonStyle\\SK_Hero_1_Chad.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_1\\Chad\\AnimatedToonStyle\\SK_Hero_1_Chad_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_1\\Chad\\Beachgoer\\SK_Hero_1_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_1\\Chad\\Beachgoer\\SK_Hero_1_Chad_Beachgoer_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_1\\Chad\\DemoSkin\\AnimatedToonStyle\\SK_Hero_1_Chad_DemoSkin.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_1\\Chad\\DemoSkin\\AnimatedToonStyle\\SK_Hero_1_Chad_DemoSkin_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_1\\Chad\\QuadRetroUALQA\\SK_Hero_1_Chad_QuadRetroUALQA.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_1\\Chad\\QuadRetroUALQA\\SK_Hero_1_Chad_QuadRetroUALQA_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_11\\Chad\\SK_Hero_11_Chad.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_11\\Chad\\SK_Hero_11_Chad_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_11\\Chad\\Beachgoer\\SK_Hero_11_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_11\\Chad\\Beachgoer\\SK_Hero_11_Chad_Beachgoer_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_12\\Chad\\SK_Hero_12_Chad.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_12\\Chad\\SK_Hero_12_Chad_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_12\\Chad\\Beachgoer\\SK_Hero_12_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_12\\Chad\\Beachgoer\\SK_Hero_12_Chad_Beachgoer_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_2\\Chad\\Beachgoer\\SK_Hero_2_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_3\\Chad\\Beachgoer\\SK_Hero_3_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_3\\Chad\\Beachgoer\\SK_Hero_3_Chad_Beachgoer_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_4\\Chad\\SK_Hero_4_Chad.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_4\\Chad\\SK_Hero_4_Chad_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_4\\Chad\\Beachgoer\\SK_Hero_4_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_4\\Chad\\Beachgoer\\SK_Hero_4_Chad_Beachgoer_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_5\\Chad\\SK_Hero_5_Chad.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_5\\Chad\\SK_Hero_5_Chad_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_5\\Chad\\Beachgoer\\SK_Hero_5_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_5\\Chad\\Beachgoer\\SK_Hero_5_Chad_Beachgoer_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_6\\Chad\\Beachgoer\\SK_Hero_6_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_7\\Chad\\SK_Hero_7_Chad.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_7\\Chad\\SK_Hero_7_Chad_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_7\\Chad\\Beachgoer\\SK_Hero_7_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_7\\Chad\\Beachgoer\\SK_Hero_7_Chad_Beachgoer_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_8\\Chad\\SK_Hero_8_Chad.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_8\\Chad\\SK_Hero_8_Chad_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_8\\Chad\\Beachgoer\\SK_Hero_8_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_8\\Chad\\Beachgoer\\SK_Hero_8_Chad_Beachgoer_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_9\\Chad\\SK_Hero_9_Chad.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_9\\Chad\\SK_Hero_9_Chad_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_9\\Chad\\Beachgoer\\SK_Hero_9_Chad_Beachgoer.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\Characters\\Heroes\\Hero_9\\Chad\\Beachgoer\\SK_Hero_9_Chad_Beachgoer_Skeleton.uasset",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Content\\World\\Gates\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Gates/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Gates\\SM_CowardiceGate_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Gates/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Gates\\SM_CowardiceGate_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\World\\Gates\\SM_StageGate_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Gates/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Gates\\SM_StageGate_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\World\\Gates\\SM_TutorialGate_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Gates/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Gates\\TutorialGate_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Gates/TutorialGate_Pixal3D"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Totem.uasset",
+        "hits": [
+          "/Game/World/Interactables/Totem"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Boosts\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Boosts\\SM_AccuracyBoost_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Boosts\\SM_ArmorBoost_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Boosts\\SM_AttackScaleBoost_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Boosts\\SM_AttackSpeedBoost_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Boosts\\SM_DamageBoost_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Boosts\\SM_EvasionBoost_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Boosts\\SM_LuckBoost_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Boosts\\SM_SpeedBoost_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Chests\\ChestModel\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Interactables/Chests/ChestModel/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Chests\\ChestModel\\SM_Chest_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Chests/ChestModel/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Chests\\ChestModel\\SM_Chest_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\CompanionCage\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Interactables/CompanionCage/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\CompanionCage\\SM_CompanionCage_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/CompanionCage/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Crate\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Interactables/Crate/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Crate\\SM_LootCrate.uasset",
+        "hits": [
+          "/Game/World/Interactables/Crate/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Crate\\SM_LootCrate_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\DifficultyTotem\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Interactables/DifficultyTotem/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\DifficultyTotem\\SM_DifficultyTotem_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/DifficultyTotem/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\DifficultyTotem\\SM_DifficultyTotem_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Fountain\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Interactables/Fountain/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Fountain\\SM_Fountain_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Fountain/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Fountain\\SM_Fountain_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\IdolAltar\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Interactables/IdolAltar/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\IdolAltar\\SM_IdolAltar_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/IdolAltar/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\IdolAltar\\SM_IdolAltar_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\LootWheel\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Interactables/LootWheel/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\LootWheel\\SM_LootWheel_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/LootWheel/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\LootWheel\\SM_LootWheel_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Totem\\Materials\\Material_0_017.uasset",
+        "hits": [
+          "/Game/World/Interactables/Totem"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Totem\\Textures\\Image_0_017.uasset",
+        "hits": [
+          "/Game/World/Interactables/Totem"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Totem\\Textures\\Image_1.uasset",
+        "hits": [
+          "/Game/World/Interactables/Totem"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Vehicles\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Interactables/Vehicles/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Vehicles\\SM_Vehicle_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/Vehicles/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Vending\\Vending.uasset",
+        "hits": [
+          "/Game/World/Interactables/Vending/Vending"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Vending\\Vending\\Materials\\Material_0_010.uasset",
+        "hits": [
+          "/Game/World/Interactables/Vending/Vending"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Vending\\Vending\\Textures\\Image_0_010.uasset",
+        "hits": [
+          "/Game/World/Interactables/Vending/Vending"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\Vending\\Vending\\Textures\\Image_1.uasset",
+        "hits": [
+          "/Game/World/Interactables/Vending/Vending"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\WeaponAltar\\Material_0.uasset",
+        "hits": [
+          "/Game/World/Interactables/WeaponAltar/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\Interactables\\WeaponAltar\\SM_WeaponAltar_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/Interactables/WeaponAltar/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\LootBags\\Shared\\Material_0.uasset",
+        "hits": [
+          "/Game/World/LootBags/Shared/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\LootBags\\Shared\\SM_LootBag_Shared_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/LootBags/Shared/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\VisualProps\\Easy\\Material_0.uasset",
+        "hits": [
+          "/Game/World/VisualProps/Easy/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\VisualProps\\Easy\\SM_SkullRemains_Easy_Pixal3D.uasset",
+        "hits": [
+          "/Game/World/VisualProps/Easy/Material_0"
+        ]
+      },
+      {
+        "path": "Content\\World\\VisualProps\\Easy\\SM_SkullRemains_Easy_Pixal3D_Outline.uasset",
+        "hits": [
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      }
+    ],
+    "read_failures": []
+  },
+  "text": {
+    "scanned": 4124,
+    "matches": [
+      {
+        "path": "Scripts\\VerifyWorldNpcInteractablesRetroBatch01AndExit.py",
+        "hits": [
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending"
+        ]
+      },
+      {
+        "path": "Reports\\AgentReviews\\FriendSlopEasyPixal3D\\unreal_archive_report.json",
+        "hits": [
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\world_asset_audit.json",
+        "hits": [
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\world_asset_audit_gatea_post.json",
+        "hits": [
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\world_asset_audit_gateb_post.json",
+        "hits": [
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\world_asset_load_integrity.json",
+        "hits": [
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-05-27\\world_asset_load_integrity_gatea_post.json",
+        "hits": [
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\delete_report_all_runtime_candidates.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\exact_audit_all_runtime_candidates.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/Material_0.Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\exact_audit_final_all_runtime_candidates.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/Material_0.Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\exact_audit_hero1_processed_variant_candidates.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\exact_audit_post_delete_all_runtime_candidates.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/Material_0.Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\gate_all_runtime_candidates.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/Material_0.Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\gate_final_all_runtime_candidates.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/Material_0.Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\gate_hero1_processed_variant_candidates.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\gate_post_delete_all_runtime_candidates.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/Material_0.Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_candidate_manifest.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/Material_0.Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_candidate_manifest_all_runtime_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_candidate_manifest_hero1_processed_variant_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_candidate_manifest_other_hero_zero_ref_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_candidate_manifest_world_gate_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_candidate_manifest_world_interactable_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_candidate_manifest_world_lootbag_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/LootBags/Shared/Material_0"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_candidate_manifest_world_visualprop_candidates_packages.txt",
+        "hits": [
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_closing_candidate_manifest.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/Material_0.Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_closing_candidate_manifest_all_runtime_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_closing_candidate_manifest_hero1_processed_variant_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_closing_candidate_manifest_other_hero_zero_ref_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_closing_candidate_manifest_world_gate_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_closing_candidate_manifest_world_interactable_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_closing_candidate_manifest_world_lootbag_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/LootBags/Shared/Material_0"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_closing_candidate_manifest_world_visualprop_candidates_packages.txt",
+        "hits": [
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_final_candidate_manifest.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/Material_0.Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_final_candidate_manifest_all_runtime_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_final_candidate_manifest_hero1_processed_variant_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_final_candidate_manifest_other_hero_zero_ref_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_final_candidate_manifest_world_gate_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_final_candidate_manifest_world_interactable_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_final_candidate_manifest_world_lootbag_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/LootBags/Shared/Material_0"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_final_candidate_manifest_world_visualprop_candidates_packages.txt",
+        "hits": [
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/Material_0.Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Totem.Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/Vending/Vending.Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_all_runtime_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0",
+          "/Game/World/LootBags/Shared/Material_0",
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_hero1_processed_variant_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_other_hero_zero_ref_candidates_packages.txt",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_world_gate_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/Gates/Material_0",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/TutorialGate_Pixal3D"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_world_interactable_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/Interactables/Boosts/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/CompanionCage/Material_0",
+          "/Game/World/Interactables/Crate/Material_0",
+          "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/Material_0",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/Material_0",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/Material_0",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/Totem",
+          "/Game/World/Interactables/Vehicles/Material_0",
+          "/Game/World/Interactables/Vending/Vending",
+          "/Game/World/Interactables/WeaponAltar/Material_0"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_world_lootbag_visual_candidates_packages.txt",
+        "hits": [
+          "/Game/World/LootBags/Shared/Material_0"
+        ]
+      },
+      {
+        "path": "Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_world_visualprop_candidates_packages.txt",
+        "hits": [
+          "/Game/World/VisualProps/Easy/Material_0",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Model Generation\\Pixal3D\\production_asset_replacement_manifest.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Model Generation\\Pixal3D\\production_testroom_character_no_face_mask_manifest_20260520.json",
+        "hits": [
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer"
+        ]
+      },
+      {
+        "path": "Model Generation\\Runs\\Pixal3D\\Archive\\InteractablesPlaceholderPass01\\Reports\\UnrealImport_Report.json",
+        "hits": [
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D"
+        ]
+      },
+      {
+        "path": "Model Generation\\Runs\\Pixal3D\\Archive\\InteractablesPlaceholderPass01\\Reports\\UnrealValidation_Report.json",
+        "hits": [
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D"
+        ]
+      },
+      {
+        "path": "Model Generation\\Runs\\Pixal3D\\Archive\\ProductionReplacement\\Agent1_StaticWorldAssets_20260519\\Reports\\Agent1_StaticWorldAssets_Import_Report.json",
+        "hits": [
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline"
+        ]
+      },
+      {
+        "path": "Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\FriendSlopEasyBatch_20260604_1532_manifest.json",
+        "hits": [
+          "/Game/World/Gates/TutorialGate_Pixal3D",
+          "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D"
+        ]
+      }
+    ],
+    "read_failures": []
+  }
+}

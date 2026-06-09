@@ -111,10 +111,67 @@ void UT66CrateOverlayWidget::SetSourceCrateRarity(const ET66Rarity InSourceCrate
 	SourceCrateRarity = InSourceCrateRarity;
 }
 
+bool UT66CrateOverlayWidget::CommitImmediateCrateReward(UWorld* World, const ET66Rarity SourceCrateRarity)
+{
+	if (!World)
+	{
+		return false;
+	}
+
+	UGameInstance* GI = World->GetGameInstance();
+	UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI);
+	UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	UT66PlayerExperienceSubSystem* PlayerExperience = GI ? GI->GetSubsystem<UT66PlayerExperienceSubSystem>() : nullptr;
+	if (!T66GI || !RunState)
+	{
+		return false;
+	}
+
+	if (RngSub)
+	{
+		RngSub->UpdateLuckStat(RunState->GetEffectiveLuckBiasStat());
+	}
+
+	FRandomStream LocalRng(static_cast<int32>(FPlatformTime::Cycles()));
+	FRandomStream& Rng = RngSub ? RngSub->GetRunStream() : LocalRng;
+	const ET66Difficulty Difficulty = T66GI->SelectedDifficulty;
+	FT66RarityWeights CrateWeights = PlayerExperience
+		? PlayerExperience->GetDifficultyCrateRarityWeights(Difficulty)
+		: FT66RarityWeights{};
+	CrateWeights = ApplyInteractableTierBias(CrateWeights, SourceCrateRarity);
+	CrateWeights = ApplyLootCrateBias(CrateWeights, RunState->GetLootCrateRewardMultiplier());
+
+	const ET66Rarity WinRarity = RngSub ? RngSub->RollRarityWeighted(CrateWeights, Rng) : ET66Rarity::Black;
+	const int32 RarityDrawIndex = RngSub ? RngSub->GetLastRunDrawIndex() : INDEX_NONE;
+	const int32 RarityPreDrawSeed = RngSub ? RngSub->GetLastRunPreDrawSeed() : 0;
+	const FName ItemID = T66GI->GetRandomItemIDForLootRarityFromStream(WinRarity, Rng);
+	if (ItemID.IsNone())
+	{
+		return false;
+	}
+
+	const int32 InventoryCountBefore = RunState->GetInventorySlots().Num();
+	RunState->RecordLuckQualityRarity(
+		FName(TEXT("CrateRewardRarity")),
+		WinRarity,
+		RarityDrawIndex,
+		RarityPreDrawSeed,
+		&CrateWeights);
+	RunState->AddItemWithRarity(ItemID, LootRarityToItemRarity(WinRarity));
+	return RunState->GetInventorySlots().Num() > InventoryCountBefore;
+}
+
 void UT66CrateOverlayWidget::RequestSkip()
 {
 	if (bCompletionSignaled || !RewardResult.bLocked)
 	{
+		return;
+	}
+
+	if (bSkipSequenceActive)
+	{
+		SignalAnimationComplete();
 		return;
 	}
 
@@ -130,7 +187,7 @@ void UT66CrateOverlayWidget::RequestSkip()
 		BuildSettleRevealSequence(SkipSettleDuration);
 		break;
 	case ECrateAnimationPhase::Dismiss:
-		AnimationSequence.RequestSkip();
+		SignalAnimationComplete();
 		break;
 	case ECrateAnimationPhase::Complete:
 		break;

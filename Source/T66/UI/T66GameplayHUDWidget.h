@@ -190,6 +190,7 @@ protected:
 	TSharedRef<SWidget> BuildPauseAchievementsPanel() const;
 	void UpdateTikTokVisibility(bool bForce = false);
 	bool IsMediaViewerOpen() const;
+	void UpdateRagdollRecoveryPrompt(float InDeltaTime);
 
 	void RequestTikTokWebView2OverlaySync();
 	void SyncTikTokWebView2OverlayToPlaceholder();
@@ -302,6 +303,9 @@ protected:
 	TSharedPtr<SBorder> ScopedSniperOverlayBorder;
 	TSharedPtr<STextBlock> ScopedUltTimerText;
 	TSharedPtr<STextBlock> ScopedShotCooldownText;
+	TSharedPtr<SBox> RagdollRecoveryPromptBox;
+	TSharedPtr<SBox> RagdollRecoveryFillBox;
+	TSharedPtr<STextBlock> RagdollRecoveryProgressText;
 	TArray<TSharedPtr<SBorder>> IdolLevelDotBorders; // legacy; rarity is now shown via sprite + border color
 	TSharedPtr<ST66RingWidget> LevelRingWidget;
 	TSharedPtr<STextBlock> LevelText;
@@ -322,6 +326,8 @@ protected:
 	TArray<TSharedPtr<SBorder>> HeartBorders;
 	TArray<TSharedPtr<SBox>> HeartFillBoxes;
 	TArray<TSharedPtr<SImage>> HeartImages;
+	TSharedPtr<STextBlock> HeroDamagePercentText;
+	TSharedPtr<SBox> HeroDamagePercentFillBox;
 	TSharedPtr<FSlateBrush> HeartBrush;
 	TSharedPtr<FSlateBrush> HeartBlessingBrush;
 	TArray<TSharedPtr<FSlateBrush>> HeartTierBrushes;
@@ -408,6 +414,9 @@ protected:
 	ET66PassiveType LastPassiveType = ET66PassiveType::None;
 	bool bLastCrosshairLocked = false;
 	bool bLastScopedHudVisible = false;
+	bool bLastRagdollRecoveryPromptVisible = false;
+	int32 LastRagdollRecoveryAcceptedPresses = INDEX_NONE;
+	int32 LastRagdollRecoveryProgressBucket = INDEX_NONE;
 	bool bCenterCrosshairPivotInitialized = false;
 	bool bLastCrosshairOffsetSet = false;
 	FVector2D LastCrosshairRenderOffset = FVector2D::ZeroVector;
@@ -425,6 +434,7 @@ protected:
 		Gate,
 		Enemy,
 		Miasma,
+		Trap,
 		POI,
 	};
 
@@ -452,6 +462,8 @@ protected:
 	int32 LastTowerRevealFloorNumber = INDEX_NONE;
 	float TowerRevealAccumSeconds = 0.f;
 	static constexpr float TowerRevealIntervalSeconds = 0.10f;
+	static constexpr float RagdollRecoveryPromptWidth = 520.f;
+	static constexpr float RagdollRecoveryBarWidth = 420.f;
 
 	FTimerHandle MapRefreshTimerHandle;
 	FTimerHandle FPSTimerHandle;

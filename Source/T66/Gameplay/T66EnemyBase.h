@@ -137,6 +137,25 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat", meta = (ClampMin = "0"))
 	float AutoAttackKnockbackStutterSeconds = 0.12f;
 
+	/**
+	 * Physical launch knockback (3D vector, ACharacter::LaunchCharacter under the hood).
+	 * The legacy ApplyAutoAttackKnockback zeroes Z and only sets planar velocity for ~0.12s;
+	 * this path puts the enemy into the falling movement-mode for a full ballistic arc so
+	 * they leave the ground, travel, and land. After landing the existing brief stagger
+	 * timer keeps AI passive for a moment; chase resumes normally.
+	 * Gated by t66.Combat.PhysicalKnockbackTest at the callsites (currently Hero_1 Slash
+	 * and Idol_Fire_Pierce only). Behavior-only — no visuals/inflation here.
+	 */
+	void ApplyPhysicalKnockback(const FVector& LaunchVelocity);
+
+	/** Hard ceiling on the launch magnitude clamp inside ApplyPhysicalKnockback. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat", meta = (ClampMin = "0"))
+	float PhysicalKnockbackMaxLaunchSpeed = 2500.f;
+
+	/** Post-landing AI stagger window applied alongside ApplyPhysicalKnockback. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat", meta = (ClampMin = "0"))
+	float PhysicalKnockbackStaggerSeconds = 0.35f;
+
 	float GetEffectiveArmor() const;
 
 	/** If true, this enemy prefers to flee from the hero instead of closing distance. */
@@ -293,7 +312,7 @@ private:
 	// Move slow tracking (Frostbite passive)
 	float MoveSlowMultiplier = 1.f;
 	float MoveSlowSecondsRemaining = 0.f;
-	float BaseMaxWalkSpeed = 350.f;
+	float BaseMaxWalkSpeed = 175.f;
 	float ForcedRunAwaySecondsRemaining = 0.f;
 	float StunSecondsRemaining = 0.f;
 	float RootSecondsRemaining = 0.f;

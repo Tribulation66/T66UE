@@ -3,6 +3,8 @@
 **Last updated:** 2026-04-20
 **Purpose:** Define a practical first implementation for `Official` / `Community` tabs, creator-facing submission flows, and the backend/admin approval loop for community challenges and mods.
 
+**Deprecation note (2026-06-07):** Mods are no longer an active player-facing feature. Treat all Mod-specific sections in this document as archived history. Challenge-specific planning remains available as reference.
+
 ## 1. Current Reality In Source
 
 - The current screen is a modal with only two top-level tabs: `Challenges` and `Mods`.

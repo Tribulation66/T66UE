@@ -28,10 +28,7 @@ def make_streak_mask(path):
     img = Image.new("L", (WIDTH, HEIGHT), 0)
     pixels = img.load()
     bands = [
-        (0.23, 0.060, 0.50, 0.12),
-        (0.40, 0.090, 0.78, 0.47),
-        (0.58, 0.105, 0.62, 0.73),
-        (0.77, 0.072, 0.46, 0.31),
+        (0.52, 0.235, 0.92, 0.17),
     ]
 
     for y in range(HEIGHT):
@@ -49,10 +46,9 @@ def make_streak_mask(path):
                 band = math.exp(-(((v - center - wiggle) / width) ** 2.0))
                 value += band * weight
 
-            outer_edge = math.exp(-(((v - 0.82) / 0.052) ** 2.0)) * 0.30
-            inner_edge = math.exp(-(((v - 0.21) / 0.070) ** 2.0)) * 0.18
-            satin_fiber = 0.95 + 0.05 * math.sin((u * 5.0) * math.tau)
-            satin_fiber += 0.025 * math.sin((u * 9.0 + 0.17) * math.tau)
+            outer_edge = math.exp(-(((v - 0.80) / 0.080) ** 2.0)) * 0.04
+            inner_edge = math.exp(-(((v - 0.20) / 0.090) ** 2.0)) * 0.03
+            satin_fiber = 1.0
             value = (0.16 * body_gate + value + outer_edge + inner_edge) * satin_fiber
             value = clamp01(value * length_taper * end_fade)
             pixels[x, y] = int(value * 255)

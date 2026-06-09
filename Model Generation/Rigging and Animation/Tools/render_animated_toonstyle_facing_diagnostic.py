@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
-Render all demo-scope Animated ToonStyle humanoid source meshes across yaw
+Legacy bridge: render demo-scope Animated ToonStyle humanoid source meshes across yaw
 candidates so front/back corrections are evidence-driven before export.
+
+Do not use this as the current FriendSlop raw model path. Current FriendSlop
+model work starts from the raw FriendSlop Pixal3D runs documented in
+Model Generation/README.md.
 
 Run with Blender:
 
@@ -31,6 +35,8 @@ TEMPLATE_BLEND = Path(
         / "Model Generation"
         / "Runs"
         / "Pixal3D"
+        / "Archive"
+        / "DeprecatedHeroLineups"
         / "HeroDemoLineup_20260522_AccuRig"
         / "RigifyWalkProbe_20260522"
         / "Hero_1_Chad_Rigify_AnimatedToonStyle_Template.blend",
@@ -39,13 +45,24 @@ TEMPLATE_BLEND = Path(
 DEFAULT_SOURCE_ROOT = Path(
     os.environ.get(
         "T66_ANIMATED_TOONSTYLE_DEFAULT_SOURCE_ROOT",
-        PROJECT_ROOT / "Model Generation" / "Runs" / "Pixal3D" / "HeroDemoLineup_20260522_AccuRig" / "Outputs",
+        PROJECT_ROOT
+        / "Model Generation"
+        / "Runs"
+        / "Pixal3D"
+        / "Archive"
+        / "DeprecatedHeroLineups"
+        / "HeroDemoLineup_20260522_AccuRig"
+        / "Outputs",
     )
 )
 HUMANOID_SOURCE_ROOT = Path(
     os.environ.get(
         "T66_ANIMATED_TOONSTYLE_HUMANOID_SOURCE_ROOT",
-        PROJECT_ROOT / "Model Generation" / "Runs" / "Pixal3D" / "HumanoidGuidelineTest_20260522_100k" / "Outputs",
+        PROJECT_ROOT
+        / "Model Generation"
+        / "Runs"
+        / "Pixal3D"
+        / "_legacy_humanoid_sources_not_present_set_T66_ANIMATED_TOONSTYLE_HUMANOID_SOURCE_ROOT",
     )
 )
 OUTPUT_ROOT = Path(

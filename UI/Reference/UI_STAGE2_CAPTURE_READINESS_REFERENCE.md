@@ -2,6 +2,8 @@
 
 Date: 2026-05-11
 
+Art-direction boundary: `SettingsRetroFX` is archived as of 2026-06-07. Its historical presence here is not an active RetroFX/PS1 3D art-direction endorsement; see root `ART_DIRECTION.md` and `Archive/RetroFX/SETTINGS_TAB_DEPRECATION_2026-06-07.md`.
+
 Sources:
 - `C:\UE\T66\UI\Reference\UI_FLAT_REDESIGN_REFERENCE.md`, section 5.3
 - `C:\UE\T66\Source\T66\Gameplay\T66PlayerController_Frontend.cpp`
@@ -17,7 +19,7 @@ Stage 2 convention:
 
 - Use the Stage 2 human/canonical screen name directly in `-Screen <Name>`.
 - If that screen is a tab/category inside a parent screen, the resolver maps the name to the parent `ET66ScreenType`, and the parent screen reads `T66FrontendScreen` to activate the requested tab/category.
-- Existing explicit tab flags remain supported for debugging: `-T66AccountTab=Overview|History`, `-T66PowerUpTab=Diplomas|Drugs`, `-T66AchievementsTab=Steam`, and `-T66SettingsTab=RetroFX`.
+- Existing explicit tab flags remain supported for debugging: `-T66AccountTab=Overview|History`, `-T66PowerUpTab=Diplomas|Drugs`, and `-T66AchievementsTab=Steam|Secret`. `-T66SettingsTab=RetroFX` is a legacy alias that now redirects to Gameplay.
 
 ## Stage 2 Screen List
 
@@ -28,7 +30,8 @@ Stage 2 convention:
 | 4 | Diplomas | `Diplomas` | `PowerUp` | Power Up screen activates permanent/diploma tab from `T66FrontendScreen=Diplomas` | Ready |
 | 5 | Drugs | `Drugs` | `PowerUp` | Power Up screen activates single-use/drugs tab from `T66FrontendScreen=Drugs` | Ready |
 | 6 | Steam Achievements | `SteamAchievements` | `Achievements` | Achievements screen activates Steam/Achievements tab from `T66FrontendScreen=SteamAchievements` | Ready |
-| 8 | Settings Retro FX | `SettingsRetroFX` | `Settings` | Settings screen activates Retro FX from `T66FrontendScreen=SettingsRetroFX`; `Settings` also defaults to Retro FX currently | Ready |
+| 7 | Secret Achievements | `SecretAchievements` | `Achievements` | Achievements screen activates Secret tab from `T66FrontendScreen=SecretAchievements` | Ready |
+| 8 | Settings Retro FX | `SettingsRetroFX` | `Settings` | Archived; legacy requests resolve to Settings and redirect to Gameplay | Archived |
 | 9 | Daily Descent | `DailyDescent` | `DailyDescent` | Direct screen | Ready |
 | 10 | Challenges | `Challenges` | `Challenges` | Direct screen/modal | Ready |
 | 11 | Load Game | `LoadGame` | `SaveSlots` | Direct Save Slots screen through human-readable alias | Ready |
@@ -42,16 +45,16 @@ Added to `T66PlayerController_Frontend.cpp`:
 - `History` -> `ET66ScreenType::AccountStatus`
 - `Diplomas` -> `ET66ScreenType::PowerUp`
 - `Drugs` -> `ET66ScreenType::PowerUp`
-- `SteamAchievements` / `Steam` -> `ET66ScreenType::Achievements`
-- `SettingsRetroFX` / `RetroFX` -> `ET66ScreenType::Settings`
+- `SteamAchievements` / `Steam` / `SecretAchievements` / `Secret` -> `ET66ScreenType::Achievements`
+- `SettingsRetroFX` / `RetroFX` -> `ET66ScreenType::Settings` legacy alias; Settings redirects RetroFX tab requests to Gameplay.
 - `LoadGame` -> `ET66ScreenType::SaveSlots`
 
 Parent tab/category activation implemented in:
 
 - `T66AccountStatusScreen.cpp`: falls back from `T66AccountTab` to `T66FrontendScreen=Overview|History`.
 - `T66PowerUpScreen.cpp`: falls back from `T66PowerUpTab` to `T66FrontendScreen=Diplomas|Drugs`.
-- `T66AchievementsScreen.cpp`: falls back from `T66AchievementsTab` to `T66FrontendScreen=SteamAchievements|Steam`.
-- `T66SettingsScreen.cpp`: supports `T66SettingsTab` and falls back from `T66FrontendScreen=SettingsRetroFX|RetroFX`.
+- `T66AchievementsScreen.cpp`: falls back from `T66AchievementsTab` to `T66FrontendScreen=SteamAchievements|Steam|SecretAchievements|Secret`.
+- `T66SettingsScreen.cpp`: supports `T66SettingsTab`; legacy `SettingsRetroFX|RetroFX` requests now redirect to Gameplay.
 
 ## Audit Verdict
 
@@ -64,4 +67,5 @@ Fresh-agent capture examples:
 .\Scripts\CaptureT66UIScreen.ps1 -Screen History -Output C:\UE\T66\Saved\Codex\UI\History\pass_01_capture.png -ExtraArgs @("-T66AutoDumpScreen=C:\UE\T66\Saved\Codex\UI\History\pass_01_dump.json")
 .\Scripts\CaptureT66UIScreen.ps1 -Screen Diplomas -Output C:\UE\T66\Saved\Codex\UI\Diplomas\pass_01_capture.png -ExtraArgs @("-T66AutoDumpScreen=C:\UE\T66\Saved\Codex\UI\Diplomas\pass_01_dump.json")
 .\Scripts\CaptureT66UIScreen.ps1 -Screen SteamAchievements -Output C:\UE\T66\Saved\Codex\UI\SteamAchievements\pass_01_capture.png -ExtraArgs @("-T66AutoDumpScreen=C:\UE\T66\Saved\Codex\UI\SteamAchievements\pass_01_dump.json")
+.\Scripts\CaptureT66UIScreen.ps1 -Screen SecretAchievements -Output C:\UE\T66\Saved\Codex\UI\SecretAchievements\pass_01_capture.png -ExtraArgs @("-T66AutoDumpScreen=C:\UE\T66\Saved\Codex\UI\SecretAchievements\pass_01_dump.json")
 ```

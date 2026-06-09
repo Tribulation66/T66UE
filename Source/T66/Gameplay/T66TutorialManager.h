@@ -73,7 +73,7 @@ private:
 	void SpawnFinalArenaWave();
 	void TryFinishFinalArenaStep();
 
-	FName PickTutorialPrimaryStatItemID() const;
+	FName PickTutorialBaseStatItemID() const;
 	FName PickStage1MobID() const;
 	FVector GetGroundPoint(const FVector& InLocation) const;
 	FVector SnapEnemySpawnToGround(const FVector& InLocation) const;

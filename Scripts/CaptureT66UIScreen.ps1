@@ -1,16 +1,20 @@
 param(
     [string]$Screen = "MainMenu",
+    [string]$Modal,
     [string]$Output,
     [string]$Exe = "C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe",
     [int]$ResX = 1920,
     [int]$ResY = 1080,
     [double]$DelaySeconds = 3.5,
+    [string]$ClickTag,
+    [double]$ClickDelaySeconds = 0,
     [int]$TimeoutSeconds = 45,
     [int]$DisplayNumber = 1,
     [int]$WindowOffsetX = 0,
     [int]$WindowOffsetY = 0,
     [switch]$NoPrepareWindowedSettings,
     [switch]$NoAutoClose,
+    [switch]$WaitForExit,
     [switch]$PrintOnly,
     [string[]]$ExtraArgs = @()
 )
@@ -212,6 +216,10 @@ try {
         $argsList += "-T66FrontendScreen=$Screen"
     }
 
+    if ($Modal) {
+        $argsList += "-T66FrontendModal=$Modal"
+    }
+
     if ($Output) {
         $outputPath = [System.IO.Path]::GetFullPath($Output)
         $outputDir = Split-Path -Parent $outputPath
@@ -226,6 +234,14 @@ try {
         $argsList += "-T66AutoScreenshotDelay=$DelaySeconds"
     } else {
         $outputPath = $null
+    }
+
+    if ($ClickTag) {
+        $escapedClickTag = $ClickTag.Replace('"', '\"')
+        $argsList += "-T66AutoClickTag=`"$escapedClickTag`""
+        if ($ClickDelaySeconds -gt 0) {
+            $argsList += "-T66AutoClickDelay=$ClickDelaySeconds"
+        }
     }
 
     $argsList += $ExtraArgs
@@ -243,6 +259,33 @@ try {
 
     if ($NoAutoClose) {
         Write-Host "Started PID $($process.Id). NoAutoClose was set."
+        return
+    }
+
+    if ($WaitForExit) {
+        $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+        while ((Get-Date) -lt $deadline -and -not $process.HasExited) {
+            Start-Sleep -Milliseconds 500
+        }
+
+        $latestLog = Get-LatestStagedLog -LogDirectory $logDirectory -Since $launchTime
+        Assert-NoFrontendScreenOverrideFailure -LogFile $latestLog -RequestedScreen $Screen
+
+        if (-not $process.HasExited) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            $logPath = if ($latestLog) { $latestLog.FullName } else { "<no recent staged log>" }
+            throw "Game did not exit before timeout. PID=$($process.Id). Log: $logPath"
+        }
+
+        if ($process.ExitCode -ne 0) {
+            $logPath = if ($latestLog) { $latestLog.FullName } else { "<no recent staged log>" }
+            throw "Game exited with non-zero code $($process.ExitCode). Log: $logPath"
+        }
+
+        Write-Host "Process exited cleanly. ExitCode=$($process.ExitCode)."
+        if ($latestLog) {
+            Write-Host "Latest staged log: $($latestLog.FullName)"
+        }
         return
     }
 

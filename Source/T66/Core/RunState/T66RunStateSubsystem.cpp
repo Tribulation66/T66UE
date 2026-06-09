@@ -2,12 +2,32 @@
 
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/RunState/T66RunStateSubsystem_Private.h"
+#include "Core/T66AudioSubsystem.h"
 
 using namespace T66RunStatePrivate;
+
+DEFINE_LOG_CATEGORY_STATIC(LogT66RunLifecycle, Log, All);
 
 namespace
 {
 	constexpr int32 T66SaintBlessingBoostStatPoints = 8;
+
+	const TCHAR* T66RunLifecycleBoundaryName(const ET66RunLifecycleBoundary Boundary)
+	{
+		switch (Boundary)
+		{
+		case ET66RunLifecycleBoundary::NewRun:
+			return TEXT("NewRun");
+		case ET66RunLifecycleBoundary::LoadedRun:
+			return TEXT("LoadedRun");
+		case ET66RunLifecycleBoundary::RunEnded:
+			return TEXT("RunEnded");
+		case ET66RunLifecycleBoundary::ReturnToFrontend:
+			return TEXT("ReturnToFrontend");
+		default:
+			return TEXT("Unknown");
+		}
+	}
 }
 
 void UT66RunStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -16,7 +36,7 @@ void UT66RunStateSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	ResetHeartSlotTiers();
 	SyncMaxHPToHeartTiers();
-	CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
+	SetHeroDamagePercent(0.f, false);
 
 	Collection.InitializeDependency<UT66IdolManagerSubsystem>();
 	Collection.InitializeDependency<UT66WeaponManagerSubsystem>();
@@ -55,6 +75,30 @@ UT66WeaponManagerSubsystem* UT66RunStateSubsystem::GetWeaponManager() const
 {
 	UGameInstance* GI = GetGameInstance();
 	return GI ? GI->GetSubsystem<UT66WeaponManagerSubsystem>() : nullptr;
+}
+
+
+void UT66RunStateSubsystem::BroadcastRunLifecycleBoundary(const ET66RunLifecycleBoundary Boundary, const FName Reason, const bool bCompleted)
+{
+	UE_LOG(
+		LogT66RunLifecycle,
+		Log,
+		TEXT("[RunLifecycle] %s Boundary=%s Reason=%s Stage=%d RunEnded=%d Victory=%d"),
+		bCompleted ? TEXT("Complete") : TEXT("Start"),
+		T66RunLifecycleBoundaryName(Boundary),
+		*Reason.ToString(),
+		CurrentStage,
+		bRunEnded ? 1 : 0,
+		bRunEndedAsVictory ? 1 : 0);
+
+	if (bCompleted)
+	{
+		RunLifecycleBoundaryCompleted.Broadcast(Boundary, Reason);
+	}
+	else
+	{
+		RunLifecycleBoundaryStarted.Broadcast(Boundary, Reason);
+	}
 }
 
 
@@ -110,13 +154,13 @@ bool UT66RunStateSubsystem::ShouldSuppressPendingPowerCrystalsForWallet()
 
 void UT66RunStateSubsystem::ActivatePendingSingleUseBuffsForRunStart()
 {
-	SingleUseSecondaryMultipliers.Reset();
+	SingleUseStatMultipliers.Reset();
 
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
-			SingleUseSecondaryMultipliers = Buffs->ConsumePendingSingleUseBuffMultipliers();
+			SingleUseStatMultipliers = Buffs->ConsumePendingSingleUseBuffMultipliers();
 		}
 
 		if (UT66RngSubsystem* Rng = GI->GetSubsystem<UT66RngSubsystem>())
@@ -129,13 +173,13 @@ void UT66RunStateSubsystem::ActivatePendingSingleUseBuffsForRunStart()
 #if !UE_BUILD_SHIPPING
 void UT66RunStateSubsystem::DebugActivatePendingSingleUseBuffsForRunStartWithoutConsuming()
 {
-	SingleUseSecondaryMultipliers.Reset();
+	SingleUseStatMultipliers.Reset();
 
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (const UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
-			SingleUseSecondaryMultipliers = Buffs->GetPendingSingleUseBuffMultipliers();
+			SingleUseStatMultipliers = Buffs->GetPendingSingleUseBuffMultipliers();
 		}
 
 		if (UT66RngSubsystem* Rng = GI->GetSubsystem<UT66RngSubsystem>())
@@ -168,6 +212,7 @@ void UT66RunStateSubsystem::BeginSaintBlessingEmpowerment()
 	}
 
 	bSaintBlessingLoadoutSnapshotValid = true;
+	UT66AudioSubsystem::PlayEventFromWorldContext(GetGameInstance(), FName(TEXT("Saint.Blessing")));
 	SaintBlessingInventorySnapshot = InventorySlots;
 
 	if (UGameInstance* GI = GetGameInstance())
@@ -203,7 +248,7 @@ void UT66RunStateSubsystem::BeginSaintBlessingEmpowerment()
 		}
 
 		Slot.Line1RolledValue = T66_MapBlessingRollToWhiteRange(Slot);
-		Slot.SecondaryStatBonusOverride = FItemData::GetFlatSecondaryStatBonus(ET66ItemRarity::White);
+		Slot.StatBonusOverride = FItemData::GetFlatStatBonus(ET66ItemRarity::White);
 		Slot.Line2MultiplierOverride = FMath::Max(Slot.GetLine2Multiplier(), FItemData::GetLine2RarityMultiplier(ET66ItemRarity::White));
 		Slot.Rarity = ET66ItemRarity::White;
 		bInventoryChanged = true;
@@ -254,32 +299,33 @@ void UT66RunStateSubsystem::EndSaintBlessingEmpowerment()
 void UT66RunStateSubsystem::ApplySaintBlessingStatBoosts()
 {
 	const int32 BonusTenths = WholeStatToTenths(T66SaintBlessingBoostStatPoints);
-	SaintBlessingPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
-	SaintBlessingPrimaryStatBonusesPrecise.DamageTenths = BonusTenths;
-	SaintBlessingPrimaryStatBonusesPrecise.AttackSpeedTenths = BonusTenths;
-	SaintBlessingPrimaryStatBonusesPrecise.AttackScaleTenths = BonusTenths;
-	SaintBlessingPrimaryStatBonusesPrecise.AccuracyTenths = BonusTenths;
-	SaintBlessingPrimaryStatBonusesPrecise.ArmorTenths = BonusTenths;
-	SaintBlessingPrimaryStatBonusesPrecise.EvasionTenths = BonusTenths;
-	SaintBlessingPrimaryStatBonusesPrecise.LuckTenths = BonusTenths;
-	SaintBlessingPrimaryStatBonusesPrecise.SpeedTenths = BonusTenths;
+	SaintBlessingBaseStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	SaintBlessingBaseStatBonusesPrecise.DamageTenths = BonusTenths;
+	SaintBlessingBaseStatBonusesPrecise.AttackSpeedTenths = BonusTenths;
+	SaintBlessingBaseStatBonusesPrecise.AttackScaleTenths = BonusTenths;
+	SaintBlessingBaseStatBonusesPrecise.AccuracyTenths = BonusTenths;
+	SaintBlessingBaseStatBonusesPrecise.ArmorTenths = BonusTenths;
+	SaintBlessingBaseStatBonusesPrecise.EvasionTenths = BonusTenths;
+	SaintBlessingBaseStatBonusesPrecise.LuckTenths = BonusTenths;
+	SaintBlessingBaseStatBonusesPrecise.SpeedTenths = BonusTenths;
 
-	SaintBlessingSecondaryStatBonusTenths.Reset();
-	SaintBlessingSecondaryStatBonusTenths.Add(ET66SecondaryStatType::FirePower, BonusTenths);
-	SaintBlessingSecondaryStatBonusTenths.Add(ET66SecondaryStatType::IcePower, BonusTenths);
-	SaintBlessingSecondaryStatBonusTenths.Add(ET66SecondaryStatType::ElectricityPower, BonusTenths);
-	SaintBlessingSecondaryStatBonusTenths.Add(ET66SecondaryStatType::NaturePower, BonusTenths);
+	SaintBlessingStatBonusTenths.Reset();
+	SaintBlessingStatBonusTenths.Add(ET66StatType::FirePower, BonusTenths);
+	SaintBlessingStatBonusTenths.Add(ET66StatType::IcePower, BonusTenths);
+	SaintBlessingStatBonusTenths.Add(ET66StatType::ElectricityPower, BonusTenths);
+	SaintBlessingStatBonusTenths.Add(ET66StatType::NaturePower, BonusTenths);
+	SaintBlessingStatBonusTenths.Add(ET66StatType::WindPower, BonusTenths);
 
 	SetSaintBlessingActive(true);
 	HeroProgressChanged.Broadcast();
-	AddStructuredEvent(ET66RunEventType::ItemAcquired, TEXT("Source=SaintBlessing,PrimaryBoosts=8,ElementBoosts=4"));
+	AddStructuredEvent(ET66RunEventType::ItemAcquired, TEXT("Source=SaintBlessing,PrimaryBoosts=8,ElementBoosts=5"));
 	LogAdded.Broadcast();
 }
 
 void UT66RunStateSubsystem::ClearSaintBlessingStatBoosts()
 {
-	SaintBlessingPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
-	SaintBlessingSecondaryStatBonusTenths.Reset();
+	SaintBlessingBaseStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	SaintBlessingStatBonusTenths.Reset();
 	SetSaintBlessingActive(false);
 	HeroProgressChanged.Broadcast();
 }
@@ -438,11 +484,25 @@ void UT66RunStateSubsystem::RefreshActiveRunModifiersFromGameInstance()
 
 void UT66RunStateSubsystem::ResetForNewRun()
 {
+	BeginNewRun();
+}
+
+
+void UT66RunStateSubsystem::BeginNewRun()
+{
+	if (bRunLifecycleBoundaryInProgress)
+	{
+		UE_LOG(LogT66RunLifecycle, Warning, TEXT("[RunLifecycle] BeginNewRun requested while another boundary is active."));
+	}
+
+	bRunLifecycleBoundaryInProgress = true;
+	BroadcastRunLifecycleBoundary(ET66RunLifecycleBoundary::NewRun, FName(TEXT("NewRun")), false);
+
 	RefreshActiveRunModifiersFromGameInstance();
 
 	ResetHeartSlotTiers();
 	SyncMaxHPToHeartTiers();
-	CurrentHP = MaxHP;
+	SetHeroDamagePercent(0.f, false);
 	DeferredRunStartItemId = NAME_None;
 	CurrentGold = 0;
 	CollectedMobLootStack = 0;
@@ -513,8 +573,8 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	SaintBlessingEquippedIdolsSnapshot.Reset();
 	SaintBlessingEquippedIdolTiersSnapshot.Reset();
 	bSaintBlessingLoadoutSnapshotValid = false;
-	SaintBlessingPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
-	SaintBlessingSecondaryStatBonusTenths.Reset();
+	SaintBlessingBaseStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	SaintBlessingStatBonusTenths.Reset();
 	FinalSurvivalEnemyScalar = 1.f;
 	CurrentScore = 0;
 	ResetScoreBudgetContext();
@@ -523,12 +583,16 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	PowerCrystalsGrantedToWalletThisRun = 0;
 	SeedLuck0To100 = -1;
 	CompanionHealingDoneThisRun = 0.f;
-	SingleUseSecondaryMultipliers.Reset();
+	SingleUseStatMultipliers.Reset();
 	if (UGameInstance* GI = GetGameInstance())
 	{
 		if (UT66AchievementsSubsystem* Achievements = GI->GetSubsystem<UT66AchievementsSubsystem>())
 		{
 			Achievements->ResetCurrentRunAchievementUnlockSummary();
+		}
+		if (UT66DamageLogSubsystem* DamageLog = GI->GetSubsystem<UT66DamageLogSubsystem>())
+		{
+			DamageLog->ResetForNewRun();
 		}
 	}
 
@@ -549,8 +613,8 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	// Clear transient stage/status effects at run start.
 	StageMoveSpeedMultiplier = 1.f;
 	StageMoveSpeedSecondsRemaining = 0.f;
-	TemporaryPrimaryStatAmplifiers.Reset();
-	TemporarySecondaryStatAmplifiers.Reset();
+	TemporaryBaseStatAmplifiers.Reset();
+	TemporaryStatAmplifiers.Reset();
 	StatusBurnSecondsRemaining = 0.f;
 	StatusBurnDamagePerSecond = 0.f;
 	StatusBurnAccumDamage = 0.f;
@@ -559,12 +623,12 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	StatusCurseSecondsRemaining = 0.f;
 	HeroLevel = DefaultHeroLevel;
 	HeroPreciseStats = FT66HeroPreciseStatBlock{};
-	ItemPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
-	NoIdolPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	ItemBaseStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	NoIdolBaseStatBonusesPrecise = FT66HeroPreciseStatBlock{};
 	NoIdolSelectionStacks = 0;
-	ClearPersistentSecondaryStatBonuses();
-	PermanentSecondaryStatBonusTenths.Reset();
-	ItemSecondaryStatBonusTenths.Reset();
+	ClearPersistentStatBonuses();
+	PermanentStatBonusTenths.Reset();
+	ItemStatBonusTenths.Reset();
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
 		if (UT66IdolManagerSubsystem* IdolManager = GetIdolManager())
@@ -651,6 +715,23 @@ void UT66RunStateSubsystem::ResetForNewRun()
 	UltimateChanged.Broadcast();
 	QuickReviveChanged.Broadcast();
 	StatusEffectsChanged.Broadcast();
+
+	BroadcastRunLifecycleBoundary(ET66RunLifecycleBoundary::NewRun, FName(TEXT("NewRun")), true);
+	bRunLifecycleBoundaryInProgress = false;
+}
+
+
+void UT66RunStateSubsystem::ReturnRunToFrontend()
+{
+	if (bRunLifecycleBoundaryInProgress)
+	{
+		UE_LOG(LogT66RunLifecycle, Warning, TEXT("[RunLifecycle] ReturnRunToFrontend requested while another boundary is active."));
+	}
+
+	bRunLifecycleBoundaryInProgress = true;
+	BroadcastRunLifecycleBoundary(ET66RunLifecycleBoundary::ReturnToFrontend, FName(TEXT("ReturnToFrontend")), false);
+	BroadcastRunLifecycleBoundary(ET66RunLifecycleBoundary::ReturnToFrontend, FName(TEXT("ReturnToFrontend")), true);
+	bRunLifecycleBoundaryInProgress = false;
 }
 
 

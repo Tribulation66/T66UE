@@ -6,6 +6,7 @@
 #include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "UObject/SoftObjectPath.h"
@@ -90,6 +91,24 @@ void AT66WeaponAltar::ApplyVisuals()
 	if (UMaterialInstanceDynamic* Material = TopRect ? TopRect->CreateAndSetMaterialInstanceDynamic(0) : nullptr)
 	{
 		Material->SetVectorParameterValue(TEXT("BaseColor"), FLinearColor(0.46f, 0.05f, 0.10f, 1.f));
+	}
+}
+
+void AT66WeaponAltar::LinkToTowerGateFloor(const int32 FromFloorNumber)
+{
+	LinkedTowerGateFloorNumber = FromFloorNumber;
+}
+
+void AT66WeaponAltar::NotifySelectionCommitted()
+{
+	if (LinkedTowerGateFloorNumber == INDEX_NONE || RemainingSelections > 0)
+	{
+		return;
+	}
+
+	if (AT66GameMode* GameMode = GetWorld() ? Cast<AT66GameMode>(GetWorld()->GetAuthGameMode()) : nullptr)
+	{
+		GameMode->NotifyTowerWeaponSelectionForGate(LinkedTowerGateFloorNumber);
 	}
 }
 

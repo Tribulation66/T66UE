@@ -1,0 +1,28 @@
+{
+  "asset_count": 1,
+  "errors": [],
+  "fbx_count": 1,
+  "manifest": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\FriendSlopProbe_Hero1Male_20260604_1415_manifest.json",
+  "obj_count": 1,
+  "output_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX",
+  "rows": [
+    {
+      "asset_id": "Hero_1_Chad_Male",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX\\Hero_1_Chad_Male\\Hero_1_Chad_Male_Textured.fbx",
+      "fbx_bytes": 10570588,
+      "mtl": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX\\Hero_1_Chad_Male\\Hero_1_Chad_Male_Textured.mtl",
+      "mtl_bytes": 268,
+      "mtl_has_map_kd": true,
+      "obj": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX\\Hero_1_Chad_Male\\Hero_1_Chad_Male_Textured.obj",
+      "obj_bytes": 23193019,
+      "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX\\Hero_1_Chad_Male",
+      "per_asset_report": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\RawTexturedFBX\\Hero_1_Chad_Male\\Hero_1_Chad_Male_accurig_textured_export.json",
+      "per_asset_report_exists": true,
+      "texture_bytes": 31737712,
+      "texture_count": 2
+    }
+  ],
+  "run_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415",
+  "schema_version": 1,
+  "texture_bundle_count": 1
+}

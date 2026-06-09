@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "T66WebImageCache.generated.h"
 
@@ -18,6 +19,7 @@ class T66_API UT66WebImageCache : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
 	/** Returns a cached texture for the URL, or nullptr if not yet downloaded. */
@@ -37,6 +39,9 @@ public:
 	FOnWebImageReady OnWebImageReady;
 
 private:
+	bool HandleShutdown(const FT66ShutdownContext& Context);
+	void ShutdownRuntimeResources(const TCHAR* Reason);
+
 	bool bIsDeinitializing = false;
 
 	UPROPERTY(Transient)
@@ -48,4 +53,5 @@ private:
 
 	void OnDownloadComplete(const FString& Url, const TArray<uint8>& Data, bool bSuccess);
 	UTexture2D* CreateTextureFromData(const TArray<uint8>& Data, const FString& Url);
+	FT66ShutdownParticipantHandle ShutdownParticipantHandle;
 };

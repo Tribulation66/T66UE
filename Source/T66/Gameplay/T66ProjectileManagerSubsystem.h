@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/T66WorldRuntimeProofTypes.h"
 #include "Gameplay/T66BossAttackTypes.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "Tickable.h"
@@ -185,6 +186,7 @@ public:
 	bool RunBossProjectileKillMidFlightProof();
 	bool RunManagedProjectileVisualProfileProof();
 	bool RunBossProjectileVisualProfileProof();
+	FT66WorldRuntimeDebugSnapshot GetWorldRuntimeDebugSnapshot() const;
 #endif
 
 	virtual void Tick(float DeltaTime) override;

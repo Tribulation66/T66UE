@@ -301,9 +301,8 @@ namespace
 
 	ET66CommunityContentKind TabIndexToKind(const int32 TabIndex)
 	{
-		return TabIndex == static_cast<int32>(ETabIndex::Mods)
-			? ET66CommunityContentKind::Mod
-			: ET66CommunityContentKind::Challenge;
+		(void)TabIndex;
+		return ET66CommunityContentKind::Challenge;
 	}
 }
 
@@ -358,10 +357,9 @@ ET66CommunityContentKind UT66ChallengesScreen::GetActiveKind() const
 
 void UT66ChallengesScreen::OpenContentKind(const ET66CommunityContentKind ContentKind)
 {
+	(void)ContentKind;
 	InitializeSelectionState();
-	ActiveTabIndex = ContentKind == ET66CommunityContentKind::Mod
-		? static_cast<int32>(ETabIndex::Mods)
-		: static_cast<int32>(ETabIndex::Challenges);
+	ActiveTabIndex = static_cast<int32>(ETabIndex::Challenges);
 	EndDraftEditor();
 	RequestDeferredSlateRebuild();
 }
@@ -384,23 +382,22 @@ void UT66ChallengesScreen::ApplyCommandLineStartupMode()
 
 	if (RequestedMode.Equals(TEXT("Mods"), ESearchCase::IgnoreCase))
 	{
-		OpenContentKind(ET66CommunityContentKind::Mod);
+		OpenContentKind(ET66CommunityContentKind::Challenge);
 		return;
 	}
 
-	const bool bCreateMod = RequestedMode.Equals(TEXT("CreateMod"), ESearchCase::IgnoreCase)
+	const bool bDeprecatedCreateMod = RequestedMode.Equals(TEXT("CreateMod"), ESearchCase::IgnoreCase)
 		|| RequestedMode.Equals(TEXT("ModEditor"), ESearchCase::IgnoreCase);
 	const bool bCreateChallenge = RequestedMode.Equals(TEXT("CreateChallenge"), ESearchCase::IgnoreCase)
-		|| RequestedMode.Equals(TEXT("ChallengeEditor"), ESearchCase::IgnoreCase);
-	if (!bCreateMod && !bCreateChallenge)
+		|| RequestedMode.Equals(TEXT("ChallengeEditor"), ESearchCase::IgnoreCase)
+		|| bDeprecatedCreateMod;
+	if (!bCreateChallenge)
 	{
 		return;
 	}
 
-	const ET66CommunityContentKind DraftKind = bCreateMod ? ET66CommunityContentKind::Mod : ET66CommunityContentKind::Challenge;
-	ActiveTabIndex = DraftKind == ET66CommunityContentKind::Mod
-		? static_cast<int32>(ETabIndex::Mods)
-		: static_cast<int32>(ETabIndex::Challenges);
+	const ET66CommunityContentKind DraftKind = ET66CommunityContentKind::Challenge;
+	ActiveTabIndex = static_cast<int32>(ETabIndex::Challenges);
 	ActiveSourceTabIndex[ActiveTabIndex] = static_cast<int32>(ESourceTabIndex::Community);
 
 	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
@@ -633,27 +630,33 @@ void UT66ChallengesScreen::InitializeSelectionState()
 		}
 	}
 
-	if (const UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
+	if (UT66CommunityContentSubsystem* Community = GetCommunitySubsystem())
 	{
 		FT66CommunityContentEntry ActiveEntry;
 		if (Community->GetActiveEntry(ActiveEntry))
 		{
-			ActiveTabIndex = ActiveEntry.Kind == ET66CommunityContentKind::Mod
-				? static_cast<int32>(ETabIndex::Mods)
-				: static_cast<int32>(ETabIndex::Challenges);
-			ActiveSourceTabIndex[ActiveTabIndex] = ActiveEntry.Origin == ET66CommunityContentOrigin::Official
-				? static_cast<int32>(ESourceTabIndex::Official)
-				: static_cast<int32>(ESourceTabIndex::Community);
-			PendingSelections[ActiveTabIndex][ActiveSourceTabIndex[ActiveTabIndex]] = ActiveEntry.LocalId;
-			return;
+			if (ActiveEntry.Kind == ET66CommunityContentKind::Mod)
+			{
+				Community->ClearActiveEntry();
+			}
+			else
+			{
+				ActiveTabIndex = static_cast<int32>(ETabIndex::Challenges);
+				ActiveSourceTabIndex[ActiveTabIndex] = ActiveEntry.Origin == ET66CommunityContentOrigin::Official
+					? static_cast<int32>(ESourceTabIndex::Official)
+					: static_cast<int32>(ESourceTabIndex::Community);
+				PendingSelections[ActiveTabIndex][ActiveSourceTabIndex[ActiveTabIndex]] = ActiveEntry.LocalId;
+				return;
+			}
 		}
 	}
 
-	if (const UT66GameInstance* T66GI = GetT66GameInstance(this))
+	if (UT66GameInstance* T66GI = GetT66GameInstance(this))
 	{
 		if (T66GI->SelectedRunModifierKind == ET66RunModifierKind::Mod)
 		{
-			ActiveTabIndex = static_cast<int32>(ETabIndex::Mods);
+			T66GI->SelectedRunModifierKind = ET66RunModifierKind::None;
+			T66GI->SelectedRunModifierID = NAME_None;
 		}
 	}
 }
@@ -662,9 +665,8 @@ void UT66ChallengesScreen::BeginDraftEditor(const FT66CommunityContentEntry& Dra
 {
 	bDraftEditorActive = true;
 	DraftEditorEntry = DraftEntry;
-	ActiveTabIndex = DraftEntry.Kind == ET66CommunityContentKind::Mod
-		? static_cast<int32>(ETabIndex::Mods)
-		: static_cast<int32>(ETabIndex::Challenges);
+	DraftEditorEntry.Kind = ET66CommunityContentKind::Challenge;
+	ActiveTabIndex = static_cast<int32>(ETabIndex::Challenges);
 	ActiveSourceTabIndex[ActiveTabIndex] = static_cast<int32>(ESourceTabIndex::Community);
 	PendingSelections[ActiveTabIndex][ActiveSourceTabIndex[ActiveTabIndex]] = DraftEntry.LocalId;
 }

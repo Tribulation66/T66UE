@@ -883,13 +883,14 @@ void AT66GameMode::RunBackroomsAutomationFinish(
 
 	T66_LOG_BACKROOMS_QA_RESULT(
 		bConsumePass,
-		TEXT("[BackroomsQA] Phase=Consume Mode=%s DamageApplied=%d Consumed=%d Alive=%d HPBefore=%.1f HPAfter=%.1f"),
+		TEXT("[BackroomsQA] Phase=Consume Mode=%s DamageApplied=%d Consumed=%d Alive=%d HPBefore=%.1f HPAfter=%.1f DamagePercentAfter=%.2f"),
 		*Mode,
 		bDamageApplied ? 1 : 0,
 		bConsumed ? 1 : 0,
 		bAlive ? 1 : 0,
 		HPBeforeConsume,
-		RunState->GetCurrentHP());
+		RunState->GetCurrentHP(),
+		RunState->GetHeroDamagePercent());
 	T66RequestBackroomsQAExitIfNeeded(bConsumePass, bConsumePass ? TEXT("T66BackroomsQAConsumePass") : TEXT("T66BackroomsQAConsumeFail"));
 }
 #undef T66_LOG_BACKROOMS_QA_RESULT

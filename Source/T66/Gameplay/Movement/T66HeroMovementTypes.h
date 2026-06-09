@@ -61,13 +61,16 @@ struct T66_API FT66HeroMovementTuning
 	float BrakingDecelerationFalling = 4096.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.05"))
-	float DashCooldownSeconds = 0.7f;
+	float LeapCooldownSeconds = 0.7f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "100.0"))
-	float DashStrength = 3200.f;
+	float LeapStrength = 3200.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
+	float LeapUpwardStrength = 880.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "1.0"))
-	float DashSpeedMultiplierOverWalkSpeed = 1.6f;
+	float LeapSpeedMultiplierOverWalkSpeed = 1.6f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement", meta = (ClampMin = "0.0"))
 	float RotationRateYaw = 1440.f;

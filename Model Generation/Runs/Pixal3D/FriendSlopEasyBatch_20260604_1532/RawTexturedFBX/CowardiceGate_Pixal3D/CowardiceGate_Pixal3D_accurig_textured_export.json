@@ -1,0 +1,114 @@
+{
+  "asset_name": "CowardiceGate_Pixal3D",
+  "bounds": {
+    "dimensions": [
+      186.70741271972656,
+      55.247596740722656,
+      210.0
+    ],
+    "max": [
+      93.35370635986328,
+      27.623798370361328,
+      210.0
+    ],
+    "min": [
+      -93.35370635986328,
+      -27.623798370361328,
+      0.0
+    ]
+  },
+  "fbx_bytes": 5370636,
+  "fbx_export_options": {
+    "add_leaf_bones": false,
+    "apply_scale_options": "FBX_SCALE_ALL",
+    "apply_unit_scale": true,
+    "bake_space_transform": false,
+    "embed_textures": true,
+    "global_scale": 0.01,
+    "mesh_smooth_type": "FACE",
+    "object_types": [
+      "MESH"
+    ],
+    "path_mode": "COPY",
+    "use_mesh_modifiers": true,
+    "use_selection": true
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CowardiceGate_Pixal3D\\CowardiceGate_Pixal3D_Textured.fbx",
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Outputs\\CowardiceGate_Pixal3D.glb",
+  "material_count": 1,
+  "mtl_bytes": 273,
+  "mtl_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CowardiceGate_Pixal3D\\CowardiceGate_Pixal3D_Textured.mtl",
+  "normalization": {
+    "bounds_max": [
+      93.35370635986328,
+      27.623798370361328,
+      210.0
+    ],
+    "bounds_min": [
+      -93.35370635986328,
+      -27.623798370361328,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      186.70741271972656,
+      55.247596740722656,
+      210.0
+    ],
+    "height": 210.0,
+    "scale_factor": 229.9047509917666
+  },
+  "obj_bytes": 7878018,
+  "obj_export_options": {
+    "apply_modifiers": true,
+    "apply_transform": false,
+    "export_materials": true,
+    "export_normals": true,
+    "export_pbr_extensions": false,
+    "export_selected_objects": true,
+    "export_uv": true,
+    "global_scale": 1.0,
+    "path_mode": "RELATIVE"
+  },
+  "obj_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CowardiceGate_Pixal3D\\CowardiceGate_Pixal3D_Textured.obj",
+  "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CowardiceGate_Pixal3D",
+  "texture_usage": [
+    {
+      "image": "Image_0",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture"
+    },
+    {
+      "image": "Image_1",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture.001"
+    }
+  ],
+  "textures": [
+    {
+      "image": "Image_0",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CowardiceGate_Pixal3D\\Textures\\CowardiceGate_Pixal3D_00_Image_0.png",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "image": "Image_1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\CowardiceGate_Pixal3D\\Textures\\CowardiceGate_Pixal3D_01_Image_1.png",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "vertex_count": 50188
+}

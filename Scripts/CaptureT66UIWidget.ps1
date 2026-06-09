@@ -1,5 +1,4 @@
 param(
-    [Parameter(Mandatory = $true)]
     [string]$Target,
     [string]$Output,
     [string]$Dump,
@@ -15,6 +14,7 @@ param(
     [int]$WindowOffsetX = 0,
     [int]$WindowOffsetY = 0,
     [switch]$NoPrepareWindowedSettings,
+    [switch]$NoDump,
     [switch]$NoAutoClose,
     [switch]$PrintOnly,
     [string[]]$ExtraArgs = @()
@@ -182,12 +182,20 @@ try {
     }
 
     $outputPath = if ($Output) { [System.IO.Path]::GetFullPath($Output) } else { $null }
-    $dumpPath = if ($Dump) { [System.IO.Path]::GetFullPath($Dump) } else { $null }
+    $dumpPath = if ($NoDump) { $null } elseif ($Dump) { [System.IO.Path]::GetFullPath($Dump) } else { $null }
     if (-not $outputPath -and -not $dumpPath) {
         throw "Provide -Output, -Dump, or both."
     }
+    if ($dumpPath -and [string]::IsNullOrWhiteSpace($Target)) {
+        throw "Provide -Target when writing a widget dump, or pass -NoDump for screenshot-only captures."
+    }
     if (-not $dumpPath) {
-        $dumpPath = [System.IO.Path]::ChangeExtension($outputPath, ".json")
+        if (-not $NoDump -and $outputPath) {
+            $dumpPath = [System.IO.Path]::ChangeExtension($outputPath, ".json")
+        }
+    }
+    if ($dumpPath -and [string]::IsNullOrWhiteSpace($Target)) {
+        throw "Provide -Target when writing a widget dump, or pass -NoDump for screenshot-only captures."
     }
 
     Ensure-ParentDirectory -Path $outputPath
@@ -302,8 +310,12 @@ try {
         }
     }
 
-    Write-Host "Captured $outputPath"
-    Write-Host "Dumped $dumpPath"
+    if ($outputPath) {
+        Write-Host "Captured $outputPath"
+    }
+    if ($dumpPath) {
+        Write-Host "Dumped $dumpPath"
+    }
 } finally {
     Restore-GameUserSettings
 }

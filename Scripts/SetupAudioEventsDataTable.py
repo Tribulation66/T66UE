@@ -329,6 +329,32 @@ def build_event_specs():
         event("Hero.Movement.Jump", "Hero jump.", ["retro jump"], **two_d),
         event("Hero.Movement.Dash", "Hero dash.", ["phase sweeps"], **two_d),
         event("Hero.Damage", "Hero takes damage.", ["denied"], VolumeBus="SFX", bPlay2D=True, VolumeMultiplier=0.9, PitchRandomRange=0.035, MinReplayIntervalSeconds=0.12),
+
+        # Idols and Saint.
+        event("Idol.Equip", "Idol equipped or selected from altar/stock.", ["magic sparkles"], **two_d),
+        event("Idol.LevelUp", "Equipped idol upgraded to a higher tier.", ["stats up"], **two_d),
+        event("Saint.Blessing", "Saint blessing empowerment granted.", ["healing gusts"], **two_d),
+
+        # Vendor shop economy.
+        event("Shop.Buy", "Shop or buyback purchase committed.", ["coin spend"], **two_d),
+        event("Shop.Sell", "Inventory item sold to the shop.", ["whimsy coin"], **two_d),
+        event("Shop.Deny", "Shop purchase rejected (not enough gold).", ["failed item"], **two_d),
+
+        # Casino gambling.
+        event("Casino.Bet", "Casino wager locked in.", ["coin whoosh"], **two_d),
+        event("Casino.Win", "Casino round won.", ["effect success", "star sparkle"], per_pattern=2, bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.95, PitchRandomRange=0.02, MinReplayIntervalSeconds=0.10),
+        event("Casino.Lose", "Casino round lost.", ["failed buff"], bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.9, PitchRandomRange=0.02, MinReplayIntervalSeconds=0.10),
+
+        # Run flow. These fire around pause transitions, so they must be UI sounds to keep playing.
+        event("Hero.Death", "Local hero dies.", ["dramatic finish", "toon fall"], per_pattern=2, bPlay2D=True, bIsUISound=True, VolumeMultiplier=1.0, PitchRandomRange=0.02, MinReplayIntervalSeconds=0.5),
+        event("Run.Victory", "Run completed in victory.", ["high powering up", "effect success"], per_pattern=1, bPlay2D=True, bIsUISound=True, VolumeMultiplier=1.0, PitchRandomRange=0.0, MinReplayIntervalSeconds=0.5),
+        event("Run.StageAdvance", "Arrived at the next stage.", ["tube riser"], **two_d),
+
+        # Frontend / overlay chrome.
+        event("UI.Pause.Open", "Pause menu opened.", ["phasey swipe"], **ui),
+        event("UI.PowerUp.Open", "PowerUp screen opened.", ["aura rise"], **ui),
+        event("UI.PowerUp.Confirm", "PowerUp unlock/purchase confirmed.", ["mecha upgrade equip"], **ui),
+        event("UI.Hover", "UI button hover tick.", ["tonal click"], VolumeBus="UI", bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.3, PitchMultiplier=1.12, PitchRandomRange=0.02, MinReplayIntervalSeconds=0.06),
     ]
     return specs
 
@@ -351,11 +377,34 @@ def write_json(rows, json_path):
     log(f"Wrote {len(rows)} audio event rows to {json_path}")
 
 
+# Commandlets run without an audio device, so the audio decoder modules never load and
+# the first imported SoundWave trips "Decoder for AudioFormat 'BINKA' not found"
+# (SoundWave.cpp ensure), failing the commandlet exit code despite a successful import.
+AUDIO_DECODER_MODULES = (
+    "BinkAudioDecoder",
+    "AdpcmAudioDecoder",
+    "VorbisAudioDecoder",
+    "OpusAudioDecoder",
+    "RadAudioDecoder",
+)
+
+
+def ensure_audio_decoder_modules_loaded():
+    if not unreal:
+        return
+    for module_name in AUDIO_DECODER_MODULES:
+        try:
+            unreal.load_module(module_name)
+        except Exception as err:
+            unreal.log_warning(f"Could not load audio decoder module {module_name}: {err}")
+
+
 def import_selected_assets(selector):
     if not unreal:
         log("Unreal Python is unavailable; skipping SoundWave import/DataTable reload.")
         return
 
+    ensure_audio_decoder_modules_loaded()
     unreal.EditorAssetLibrary.make_directory(DESTINATION_PATH)
     tasks = []
     for selected in selector.selected.values():

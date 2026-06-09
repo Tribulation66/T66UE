@@ -85,7 +85,7 @@ public:
 	int32 XPValue = 20;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
-	float ChaseSpeed = 350.f;
+	float ChaseSpeed = 175.f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	FVector StoredVelocity = FVector::ZeroVector;
@@ -192,6 +192,25 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	FVector KnockbackVelocity = FVector::ZeroVector;
 
+	// --- Physical knockback (ballistic 3D launch) ---
+	// Mobs are AActor (not ACharacter) and the existing ApplyMobKnockback in
+	// T66MobManagerSubsystem strips Z, so the legacy knockback can't lift them off the
+	// ground. The physical-launch test (Hero_1 Slash, Idol_Fire_Pierce) writes a full
+	// 3D velocity here; the mob manager ticks it as a simple ballistic (constant
+	// gravity) until the mob lands back at PhysicalLaunchRestZ. While bPhysicalLaunchActive
+	// is true the legacy KnockbackVelocity path is skipped so the two never fight.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	bool bPhysicalLaunchActive = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	FVector PhysicalLaunchVelocity = FVector::ZeroVector;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	float PhysicalLaunchSecondsRemaining = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
+	float PhysicalLaunchRestZ = 0.f;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "LockOn")
 	bool bIsLockedOn = false;
 
@@ -244,6 +263,23 @@ public:
 	void ApplySlow(float SpeedMultiplier, float DurationSeconds);
 	void ApplyMoveSlow(float SpeedMultiplier, float DurationSeconds);
 	void ApplyAutoAttackKnockback(const FVector& HitOrigin, float StrengthScale = 1.f);
+
+	/**
+	 * Physical launch knockback (3D vector with Z, ballistic). Used by the physical-knockback
+	 * test (Hero_1 Slash, Idol_Fire_Pierce). The mob manager integrates the velocity with
+	 * constant gravity and lands the mob back at its current Z. While the launch is active,
+	 * the legacy planar KnockbackVelocity path is skipped. Magnitude is clamped to
+	 * PhysicalKnockbackMaxLaunchSpeed.
+	 */
+	void ApplyPhysicalKnockback(const FVector& LaunchVelocity);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat", meta = (ClampMin = "0"))
+	float PhysicalKnockbackMaxLaunchSpeed = 2500.f;
+
+	/** Hard cap on airborne time so a launched mob can't hang indefinitely if it overshoots ground. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat", meta = (ClampMin = "0.1"))
+	float PhysicalKnockbackMaxAirborneSeconds = 1.5f;
+
 	void ApplyPullTowards(const FVector& PullOrigin, float Distance);
 	void ApplyPushAwayFrom(const FVector& PushOrigin, float Distance);
 

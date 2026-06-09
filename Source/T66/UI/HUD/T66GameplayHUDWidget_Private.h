@@ -35,11 +35,14 @@
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66GameMode.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/Physics/T66HeroPhysicsComponent.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "Gameplay/T66MiasmaBoundary.h"
 #include "UI/T66SlateTextureHelpers.h"
 #include "UI/T66ItemCardTextUtils.h"
 #include "UI/T66StatsPanelSlate.h"
+#include "UI/T66TooltipResolvers.h"
+#include "UI/T66TooltipSlate.h"
 #include "UI/T66UIManager.h"
 #include "UI/Style/T66AnimatedStyle.h"
 #include "UI/Style/T66FlatStyle.h"
@@ -73,7 +76,6 @@
 #include "Engine/DataTable.h"
 // [GOLD] EngineUtils.h removed - TActorIterator replaced by ActorRegistry.
 #include "Framework/Application/SlateApplication.h"
-#include "Widgets/SToolTip.h"
 
 DECLARE_LOG_CATEGORY_EXTERN(LogT66HUD, Log, All);
 
@@ -165,6 +167,33 @@ namespace
 		return (UltimateType == ET66UltimateType::SpearStorm)
 			? NSLOCTEXT("T66.GameplayHUD", "UltKeybindRmb", "RMB")
 			: NSLOCTEXT("T66.GameplayHUD", "UltKeybindDefault", "R");
+	}
+
+	static FText ResolveGameplayJumpKeycapText()
+	{
+		const UInputSettings* InputSettings = GetDefault<UInputSettings>();
+		if (InputSettings)
+		{
+			TArray<FInputActionKeyMapping> JumpMappings;
+			InputSettings->GetActionMappingByName(TEXT("Jump"), JumpMappings);
+			for (const FInputActionKeyMapping& Mapping : JumpMappings)
+			{
+				if (!Mapping.Key.IsValid() || Mapping.Key.IsGamepadKey())
+				{
+					continue;
+				}
+
+				FString DisplayName = Mapping.Key.GetDisplayName().ToString().ToUpper();
+				DisplayName.ReplaceInline(TEXT(" "), TEXT(""));
+				if (DisplayName == TEXT("SPACEBAR"))
+				{
+					DisplayName = TEXT("SPACE");
+				}
+				return FText::FromString(DisplayName);
+			}
+		}
+
+		return NSLOCTEXT("T66.GameplayHUD", "RagdollRecoveryJumpFallbackKey", "JUMP");
 	}
 
 	static int32 ResolveDisplayedStageNumber(
@@ -686,6 +715,29 @@ namespace
 		return Brush->GetResourceObject() ? Brush.Get() : nullptr;
 	}
 
+	static const FSlateBrush* GetMinimapInflatableFrameBrush()
+	{
+		static TSharedPtr<FSlateBrush> FrameBrush;
+		static bool bTriedFrameBrushLoad = false;
+		if (!bTriedFrameBrushLoad)
+		{
+			bTriedFrameBrushLoad = true;
+			TSharedPtr<FSlateBrush> NewBrush = MakeShared<FSlateBrush>();
+			NewBrush->DrawAs = ESlateBrushDrawType::Image;
+			NewBrush->Tiling = ESlateBrushTileType::NoTile;
+			NewBrush->ImageSize = FVector2D(1024.0f, 1024.0f);
+			NewBrush->TintColor = FSlateColor(FLinearColor::White);
+			NewBrush->SetResourceObject(LoadRuntimeHudFileTexture(
+				TEXT("RuntimeDependencies/T66/UI/Minimap/minimap_frame_inflatable.png"),
+				TextureFilter::TF_Trilinear));
+			if (NewBrush->GetResourceObject())
+			{
+				FrameBrush = NewBrush;
+			}
+		}
+		return FrameBrush.IsValid() ? FrameBrush.Get() : nullptr;
+	}
+
 	static float GetSquaredDistanceToBox2D(const FVector2D& Point, const FBox2D& Box)
 	{
 		const float Dx = (Point.X < Box.Min.X)
@@ -706,7 +758,7 @@ namespace
 	static constexpr float GT66BottomLeftLevelBadgeSize = 42.f;
 	static constexpr float GT66BottomLeftAbilityColumnHeight = GT66BottomLeftPortraitPanelSize;
 	static constexpr float GT66BottomLeftAbilityBoxSize = (GT66BottomLeftAbilityColumnHeight - GT66BottomLeftAbilityGap) * 0.5f;
-	static constexpr float GT66BottomLeftPrimaryStatsWidth = GT66BottomLeftPortraitPanelSize;
+	static constexpr float GT66BottomLeftBaseStatsWidth = GT66BottomLeftPortraitPanelSize;
 	static constexpr float GT66BottomLeftSectionOuterPadding = 2.f;
 	static constexpr float GT66DisplayedHeartColumnGap = 0.f;
 	static constexpr float GT66DisplayedHeartRowGap = 0.f;
@@ -716,7 +768,7 @@ namespace
 	static constexpr float GT66DisplayedHeartHeight = (GT66DisplayedHeartAreaHeight - GT66DisplayedHeartRowGap) * 0.5f;
 	static constexpr int32 GT66DisplayedHeartCount = UT66RunStateSubsystem::DefaultMaxHearts * 2;
 	static constexpr float GT66BottomLeftBlackPanelChrome = 10.f;
-	static constexpr float GT66BottomLeftMainPlateWidth = GT66BottomLeftPortraitPanelSize + GT66BottomLeftAbilityBoxSize + GT66BottomLeftSidePanelWidth + GT66BottomLeftPrimaryStatsWidth + GT66BottomLeftBlackPanelChrome;
+	static constexpr float GT66BottomLeftMainPlateWidth = GT66BottomLeftPortraitPanelSize + GT66BottomLeftAbilityBoxSize + GT66BottomLeftSidePanelWidth + GT66BottomLeftBaseStatsWidth + GT66BottomLeftBlackPanelChrome;
 	static constexpr float GT66BottomLeftMainPlateHeight = GT66BottomLeftPortraitPanelSize + GT66BottomLeftBlackPanelChrome;
 	static constexpr float GT66BottomLeftIdolPlateWidth = 0.f;
 	static constexpr float GT66BottomLeftCombinedPlateWidth = GT66BottomLeftIdolPlateWidth + GT66BottomLeftMainPlateWidth;
@@ -910,55 +962,13 @@ namespace
 	/** Creates a custom tooltip widget (background + text) for HUD item/idol hover. Returns null if InText is empty. */
 	static TSharedPtr<IToolTip> CreateCustomTooltip(const FText& InText)
 	{
-		if (InText.IsEmpty()) return nullptr;
-		const FTextBlockStyle& TextBody = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body"));
-		return SNew(SToolTip)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
-				.BorderBackgroundColor(FT66FlatStyle::Tokens::Bg)
-				.Padding(FMargin(8.f, 6.f))
-				[
-					SNew(STextBlock)
-					.Text(InText)
-					.TextStyle(&TextBody)
-					.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-					.AutoWrapText(true)
-					.WrapTextAt(280.f)
-				]
-			];
+		return T66TooltipSlate::MakeTextTooltip(InText);
 	}
 
 	/** Creates a rich tooltip (title + description) for stat/ability hover. */
 	static TSharedPtr<IToolTip> CreateRichTooltip(const FText& Title, const FText& Description)
 	{
-		if (Title.IsEmpty() && Description.IsEmpty()) return nullptr;
-		return SNew(SToolTip)
-			[
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("ToolPanel.DarkGroupBorder"))
-				.BorderBackgroundColor(FT66FlatStyle::Tokens::Bg)
-				.Padding(FMargin(10.f, 8.f))
-				[
-					SNew(SVerticalBox)
-					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
-					[
-						SNew(STextBlock)
-						.Text(Title)
-						.Font(FT66FlatStyle::Tokens::FontBold(14))
-						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-					]
-					+ SVerticalBox::Slot().AutoHeight()
-					[
-						SNew(STextBlock)
-						.Text(Description)
-						.TextStyle(&FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body")))
-						.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
-						.AutoWrapText(true)
-						.WrapTextAt(280.f)
-					]
-				]
-			];
+		return T66TooltipSlate::MakeRichTooltip(Title, Description);
 	}
 }
 
@@ -1470,6 +1480,15 @@ public:
 			const float NX = (W.X - WorldMin.X) / WorldSpan.X;
 			const float NY = (W.Y - WorldMin.Y) / WorldSpan.Y;
 			// Y up in world -> map up on screen (invert Y because Slate Y grows down).
+			if (bMinimap)
+			{
+				// Fit map content inside the circular porthole of the inflatable frame so the player
+				// and nearby markers are never hidden behind the opaque frame body.
+				constexpr float MinimapContentScale = 0.98f;
+				const float WindowSpan = FMath::Min(Size.X, Size.Y) * MinimapContentScale;
+				const FVector2D WindowOrigin((Size.X - WindowSpan) * 0.5f, (Size.Y - WindowSpan) * 0.5f);
+				return WindowOrigin + FVector2D(NX * WindowSpan, (1.f - NY) * WindowSpan);
+			}
 			return FVector2D(NX * Size.X, (1.f - NY) * Size.Y);
 		};
 
@@ -1486,12 +1505,38 @@ public:
 			: (bMinimap ? FT66FlatStyle::MinimapBackground() : FT66FlatStyle::Background());
 		const FLinearColor MapTerrainColor = bUseRevealMask
 			? WithAlpha(FT66FlatStyle::MinimapTerrain(), bMinimap ? 0.08f : 0.06f)
-			: WithAlpha(FT66FlatStyle::MinimapTerrain(), bMinimap ? 0.42f : 0.22f);
+			: WithAlpha(FT66FlatStyle::MinimapTerrain(), bMinimap ? 0.90f : 0.22f);
 		const FLinearColor RevealedTerrainColor = WithAlpha(FT66FlatStyle::MinimapTerrain() * FLinearColor(1.10f, 1.02f, 0.98f, 1.0f), bMinimap ? 0.72f : 0.42f);
 		const FLinearColor GridColor = bUseRevealMask
 			? WithAlpha(FT66FlatStyle::MinimapGrid(), bMinimap ? 0.18f : 0.12f)
 			: FT66FlatStyle::MinimapGrid();
 		const FLinearColor OutlineColor = WithAlpha(FT66FlatStyle::DefaultBorder(), 0.88f);
+
+		// Clip all minimap content to a circle so the map reads as a clean floating disc (transparent
+		// corners, no square backing). Approximated with rotated rect clip zones (~16-gon).
+		int32 MinimapClipZonesPushed = 0;
+		if (bMinimap)
+		{
+			const FVector2D ClipCenter(Size.X * 0.5f, Size.Y * 0.5f);
+			const float ClipRadius = FMath::Min(Size.X, Size.Y) * 0.5f * 0.95f;
+			constexpr int32 ClipZoneCount = 4;
+			for (int32 ZoneIndex = 0; ZoneIndex < ClipZoneCount; ++ZoneIndex)
+			{
+				const float ZoneAngle = (PI * 0.5f) * (static_cast<float>(ZoneIndex) / static_cast<float>(ClipZoneCount));
+				const float CosA = FMath::Cos(ZoneAngle);
+				const float SinA = FMath::Sin(ZoneAngle);
+				auto RotLocal = [&](float X, float Y) -> FVector2D
+				{
+					return ClipCenter + FVector2D((X * CosA) - (Y * SinA), (X * SinA) + (Y * CosA));
+				};
+				OutDrawElements.PushClip(FSlateClippingZone(
+					AllottedGeometry.LocalToAbsolute(RotLocal(-ClipRadius, -ClipRadius)),
+					AllottedGeometry.LocalToAbsolute(RotLocal(ClipRadius, -ClipRadius)),
+					AllottedGeometry.LocalToAbsolute(RotLocal(-ClipRadius, ClipRadius)),
+					AllottedGeometry.LocalToAbsolute(RotLocal(ClipRadius, ClipRadius))));
+				++MinimapClipZonesPushed;
+			}
+		}
 
 		// Solid dark background fill.
 		FSlateDrawElement::MakeBox(
@@ -1901,7 +1946,7 @@ public:
 					);
 				}
 
-				if (!bUseRevealMask && !bHasTowerPolygon)
+				if (!bUseRevealMask && !bHasTowerPolygon && !bMinimap)
 				{
 					const FLinearColor LaneColor = WithAlpha(FT66FlatStyle::MinimapTerrain() * FLinearColor(0.7f, 0.7f, 0.7f, 1.f), 0.75f);
 					const TArray<FVector2D> LaneA = {
@@ -1984,8 +2029,8 @@ public:
 
 		DrawTowerMazeWalls(LayerId + 3);
 
-		// Background grid (subtle).
-		if (!bUsingMapArt && !bUseRevealMask)
+		// Background grid (subtle) - skipped on the minimap, which shows real floor geometry.
+		if (!bUsingMapArt && !bUseRevealMask && !bMinimap)
 		{
 			static constexpr int32 GridLines = 6;
 			for (int32 i = 1; i < GridLines; ++i)
@@ -2119,40 +2164,42 @@ public:
 			const FVector2D ScreenPerp(-ScreenDirection.Y, ScreenDirection.X);
 			if (bMinimap)
 			{
-				const float ArrowTipLength = 10.0f;
-				const float ArrowBackLength = 5.0f;
-				const float ArrowHalfWidth = 4.0f;
+				const float ArrowTipLength = 13.0f;
+				const float ArrowBackLength = 7.0f;
+				const float ArrowHalfWidth = 9.0f;
 				const FVector2D Tip = P + (ScreenDirection * ArrowTipLength);
 				const FVector2D Left = P - (ScreenDirection * ArrowBackLength) + (ScreenPerp * ArrowHalfWidth);
 				const FVector2D Right = P - (ScreenDirection * ArrowBackLength) - (ScreenPerp * ArrowHalfWidth);
-				const FVector2D Tail = P - (ScreenDirection * (ArrowBackLength + 4.0f));
-				const TArray<FVector2D> ArrowOutline = {
-					Tip,
-					Left,
-					Tail,
-					Right,
-					Tip
+
+				// Properly filled arrowhead (GPU triangle), not a thick-line approximation.
+				const FSlateBrush* PlayerWhiteBrush = FCoreStyle::Get().GetBrush("WhiteBrush");
+				const FSlateResourceHandle PlayerVertHandle = FSlateApplication::Get().GetRenderer()->GetResourceHandle(*PlayerWhiteBrush);
+				const FSlateRenderTransform PlayerRenderTransform = AllottedGeometry.GetAccumulatedRenderTransform();
+				auto MakeFilledTriangle = [&](const FVector2D& A, const FVector2D& B, const FVector2D& C, const FLinearColor& FillColor, int32 FillLayer)
+				{
+					const FColor VertexColor = FillColor.ToFColor(false);
+					TArray<FSlateVertex> TriangleVerts;
+					TriangleVerts.Add(FSlateVertex::Make<ESlateVertexRounding::Disabled>(PlayerRenderTransform, FVector2f(static_cast<float>(A.X), static_cast<float>(A.Y)), FVector2f(0.5f, 0.5f), VertexColor));
+					TriangleVerts.Add(FSlateVertex::Make<ESlateVertexRounding::Disabled>(PlayerRenderTransform, FVector2f(static_cast<float>(B.X), static_cast<float>(B.Y)), FVector2f(0.5f, 0.5f), VertexColor));
+					TriangleVerts.Add(FSlateVertex::Make<ESlateVertexRounding::Disabled>(PlayerRenderTransform, FVector2f(static_cast<float>(C.X), static_cast<float>(C.Y)), FVector2f(0.5f, 0.5f), VertexColor));
+					TArray<SlateIndex> TriangleIndices = { 0, 1, 2 };
+					FSlateDrawElement::MakeCustomVerts(OutDrawElements, FillLayer, PlayerVertHandle, TriangleVerts, TriangleIndices, nullptr, 0, 0);
 				};
 
-				FSlateDrawElement::MakeLines(
-					OutDrawElements,
-					LayerId + 6,
-					AllottedGeometry.ToPaintGeometry(),
-					ArrowOutline,
-					ESlateDrawEffect::None,
-					FT66FlatStyle::DefaultBorder(),
-					true,
-					4.0f);
+				// Soft drop shadow, bright candy-green fill, then a crisp white edge.
+				MakeFilledTriangle(Tip + FVector2D(1.5f, 2.0f), Left + FVector2D(1.5f, 2.0f), Right + FVector2D(1.5f, 2.0f), FLinearColor(0.f, 0.f, 0.f, 0.45f), LayerId + 6);
+				MakeFilledTriangle(Tip, Left, Right, FT66FlatStyle::MinimapFriendly(), LayerId + 7);
 
+				const TArray<FVector2D> ArrowEdge = { Tip, Left, Right, Tip };
 				FSlateDrawElement::MakeLines(
 					OutDrawElements,
-					LayerId + 7,
+					LayerId + 8,
 					AllottedGeometry.ToPaintGeometry(),
-					ArrowOutline,
+					ArrowEdge,
 					ESlateDrawEffect::None,
-					FT66FlatStyle::MinimapFriendly(),
+					FLinearColor::White,
 					true,
-					2.6f);
+					2.0f);
 			}
 			else if (PlayerBrush && PlayerBrush->GetResourceObject())
 			{
@@ -2302,23 +2349,43 @@ public:
 			}
 			else
 			{
-				const float R = bMinimap ? 3.0f : 4.0f;
-				FSlateDrawElement::MakeBox(
+				const FVector2D DotSize = bMinimap ? M.DrawSize : (M.DrawSize + FVector2D(2.f, 2.f));
+				const float R = FMath::Max(2.5f, FMath::Min(DotSize.X, DotSize.Y) * 0.5f);
+				auto MakeDiskPoints = [&P](const float DiskRadius)
+				{
+					TArray<FVector2D> Points;
+					constexpr int32 SegmentCount = 16;
+					const float PathRadius = DiskRadius * 0.5f;
+					Points.Reserve(SegmentCount + 1);
+					for (int32 SegmentIndex = 0; SegmentIndex <= SegmentCount; ++SegmentIndex)
+					{
+						const float T = static_cast<float>(SegmentIndex) / static_cast<float>(SegmentCount);
+						const float Angle = 2.f * PI * T;
+						Points.Add(P + FVector2D(FMath::Cos(Angle) * PathRadius, FMath::Sin(Angle) * PathRadius));
+					}
+					return Points;
+				};
+
+				FSlateDrawElement::MakeLines(
 					OutDrawElements,
 					LayerId + 8,
-					ToPaintGeo(P - FVector2D(R + 1.f, R + 1.f), FVector2D((R + 1.f) * 2.f, (R + 1.f) * 2.f)),
-					FCoreStyle::Get().GetBrush("WhiteBrush"),
+					AllottedGeometry.ToPaintGeometry(),
+					MakeDiskPoints(R + 1.f),
 					ESlateDrawEffect::None,
-					FT66FlatStyle::DefaultBorder()
+					FT66FlatStyle::DefaultBorder(),
+					true,
+					R + 1.f
 				);
 
-				FSlateDrawElement::MakeBox(
+				FSlateDrawElement::MakeLines(
 					OutDrawElements,
 					LayerId + 9,
-					ToPaintGeo(P - FVector2D(R, R), FVector2D(R * 2.f, R * 2.f)),
-					FCoreStyle::Get().GetBrush("WhiteBrush"),
+					AllottedGeometry.ToPaintGeometry(),
+					MakeDiskPoints(R),
 					ESlateDrawEffect::None,
-					FLinearColor(M.Color.R, M.Color.G, M.Color.B, bMinimap ? 0.96f : 0.98f)
+					FLinearColor(M.Color.R, M.Color.G, M.Color.B, bMinimap ? 0.96f : 0.98f),
+					true,
+					R
 				);
 			}
 
@@ -2336,7 +2403,27 @@ public:
 			}
 		}
 
-		return LayerId + 10;
+		while (MinimapClipZonesPushed > 0)
+		{
+			OutDrawElements.PopClip();
+			--MinimapClipZonesPushed;
+		}
+
+		if (bMinimap)
+		{
+			if (const FSlateBrush* MinimapFrameBrush = GetMinimapInflatableFrameBrush())
+			{
+				FSlateDrawElement::MakeBox(
+					OutDrawElements,
+					LayerId + 11,
+					AllottedGeometry.ToPaintGeometry(),
+					MinimapFrameBrush,
+					ESlateDrawEffect::None,
+					FLinearColor::White);
+			}
+		}
+
+		return LayerId + 12;
 	}
 
 private:

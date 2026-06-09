@@ -7,6 +7,7 @@
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66MusicSubsystem.h"
 #include "Data/T66DataTypes.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -270,6 +271,19 @@ void AT66NPCBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	HideInteractionPrompt();
 
+	// If the hero is still inside the bubble when this NPC goes away, release the area music request.
+	if (HeroOverlapCount > 0 && !NPCID.IsNone())
+	{
+		HeroOverlapCount = 0;
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66MusicSubsystem* Music = GI->GetSubsystem<UT66MusicSubsystem>())
+			{
+				Music->PopAreaMusic(NPCID);
+			}
+		}
+	}
+
 	// [GOLD] Unregister from the actor registry.
 	if (UWorld* W = GetWorld())
 	{
@@ -390,6 +404,17 @@ void AT66NPCBase::OnSafeZoneBeginOverlap(UPrimitiveComponent* OverlappedComponen
 
 	HeroOverlapCount++;
 	Hero->AddSafeZoneOverlap(+1);
+
+	if (HeroOverlapCount == 1 && !NPCID.IsNone())
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66MusicSubsystem* Music = GI->GetSubsystem<UT66MusicSubsystem>())
+			{
+				Music->PushAreaMusic(NPCID);
+			}
+		}
+	}
 }
 
 void AT66NPCBase::OnSafeZoneEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -400,6 +425,17 @@ void AT66NPCBase::OnSafeZoneEndOverlap(UPrimitiveComponent* OverlappedComponent,
 
 	HeroOverlapCount = FMath::Max(0, HeroOverlapCount - 1);
 	Hero->AddSafeZoneOverlap(-1);
+
+	if (HeroOverlapCount == 0 && !NPCID.IsNone())
+	{
+		if (UGameInstance* GI = GetGameInstance())
+		{
+			if (UT66MusicSubsystem* Music = GI->GetSubsystem<UT66MusicSubsystem>())
+			{
+				Music->PopAreaMusic(NPCID);
+			}
+		}
+	}
 }
 
 void AT66NPCBase::OnInteractionBeginOverlap(

@@ -1,5 +1,54 @@
 # Pending Issues - Gameplay
 
+## Staged Readiness Lifecycle Stress Expects Mob Loot While Mob Loot Is Shelved
+
+- Severity tag: [Major]
+- What's wrong: The 2026-06-08 staged readiness run at `Saved/StagedBuildReadiness/20260608_122548` passed staging, frontend smoke, durable-save smoke, and repeated tower room proof markers, but the lifecycle gate reported `BUILD_CONFIG_UNSUPPORTED`/FAIL because `stress_population.mob_loot_spawned` was `0` instead of `6`. The child manifest shows `T66.WorldRuntime.ProofTravel` completed all 6 travels and spawned mobs/projectiles/hazards/travelers/pixel VFX, while the current dirty `UT66MobLootSubsystem` has `T66.MobLoot.Enabled` defaulted to `0` and is additionally gated by `FT66ShelvedFeatureGate::IsMobLootEnabled()`, so the lifecycle stress harness cannot satisfy its mob-loot expectation.
+- Why it's out of scope now: The current pass is scoped to tower floor 2/3 room count, tile size, room sizes, room traps, room content, and per-floor vendor rules. Unshelving or changing the mob-loot lifecycle stress contract would touch separate loot-system/product-readiness policy.
+- What fixing it would entail: Decide whether mob loot should be unshelved for Development readiness, whether `RunLifecycleTransitionSmokeGate.ps1` should skip `mob_loot_spawned` while the feature is shelved, or whether `T66PopulateWorldRuntimeStress` should use a non-shelved resource for that assertion; then rerun `Scripts/RunStagedBuildReadinessGate.ps1` until the full suite passes.
+
+## TestRoom Default Hero 2 Active-Ragdoll Init Lacks Physics Asset
+
+- Severity tag: [Major]
+- What's wrong: A staged standalone TestRoom smoke on 2026-06-07 logged `LogT66HeroPhysics: Warning: Init Failed Hero=BP_HeroBase_C_2147482135 Reason=MissingPhysicsAsset Mesh=SK_Hero_2_Chad`. The side-room trap placement proof still verified trap spawning and the stationary center arm, but default TestRoom Hero 2 cannot prove active-ragdoll trap reactions until its mesh has the expected PhysicsAsset or TestRoom forces a hero with one.
+- Why it's out of scope now: The current pass only places the four obstacle trap actors into TestRoom side rooms and freezes the existing center wipeout arm. Changing hero selection, skeletal mesh assets, or PhysicsAsset assignment would broaden this into hero-physics content ownership.
+- What fixing it would entail: Decide whether TestRoom should force Hero 1 for trap/active-ragdoll proof or give `SK_Hero_2_Chad` a valid PhysicsAsset, then rerun a staged TestRoom obstacle-contact proof that shows `UT66HeroPhysicsComponent` initializes and receives trap reactions.
+
+## Hero Active-Ragdoll Proof Cameras Need Better Framing
+
+- Severity tag: [Minor]
+- What's wrong: The current `heroactiveragdollproof` and `heromovementqa` capture routes provide useful engine logs for the Stage 3 authority model, but their camera framing is not yet strong subjective-feel evidence. The TestRoom wipeout-arm proof camera can be occluded by the arm or let the shoved hero exit the best view, while MovementQA can show the hero late or partially out of frame.
+- Why it's out of scope now: The Stage 3 authority rebuild needed to establish runtime ownership, active reaction routing, and no runtime body-teleport/resync loop. Rebuilding the capture camera into a following/observer rig is a proof-harness pass, not the core runtime authority fix.
+- What fixing it would entail: Add a dedicated active-ragdoll proof camera that tracks both the wipeout arm and the hero capsule/mesh through contact and recovery, add a movement-only active-ragdoll framing path that applies any requested automation HP override before enemies can kill the test pawn, then rerun Unreal-owned MP4 captures until the frames clearly show wobble, impact, displacement, and recovery.
+
+## Leap Migration Still Has Compatibility Aliases And Dash Audio
+
+- Severity tag: [Minor]
+- What's wrong: Stage 2 replaced the primary player movement ability with Leap and the active input/data row now uses `Leap`, but C++ compatibility wrappers still keep `RollForward`, `TryRollForward`, and `TryDashInWorldDirection` routed to Leap. Leap also still plays the existing `Hero.Movement.Dash` audio event because `Content/Data/AudioEvents.json` has no `Hero.Movement.Leap` event yet.
+- Why it's out of scope now: The current pass intentionally preserved legacy wrappers while moving Hero 1 Chad to the new physics-first rig/animation foundation and forward-up Leap movement. Removing wrappers or renaming audio/data assets would broaden this Stage 2 implementation into a compatibility cleanup and audio authoring pass.
+- What fixing it would entail: Add/author a `Hero.Movement.Leap` audio event, update the movement component to call it, audit Blueprint/input/UI/data references for any remaining primary Roll/Dash ability naming, remove the deprecated wrappers once no callers remain, compile, reload affected DataTables if needed, and rerun HeroMovementQA plus staged standalone verification.
+
+## Superseded: TestRoom Skeletal Chad Pure Chaos Ragdoll Was The Previous Hero Direction
+
+- Severity tag: [Superseded - Major]
+- Resolution: The 2026-06-06 pure-Chaos/PAC-off policy superseded the earlier PAC-stabilization experiment for the legacy `UT66KnockbackComponent` path. As of the 2026-06-07 Stage 3 authority rebuild, Hero 1 active ragdoll is no longer defined by that legacy path: `UT66HeroPhysicsComponent` is the current Hero 1 target, with capsule gameplay authority, simulated pelvis/body chain, hip-anchor constraint, child-body PAC muscle drive, and bounded capsule shove. The old pure-Chaos result remains fallback/historical evidence only.
+- Evidence: Focused `T66Editor Win64 Development` build passed after the hero PAC disable policy edit. The earlier PAC proof at `Saved/AgentReviews/FriendSlopPACStabilization/testragdoll_friendslop_pac_hero1_observer_delay05.mp4` remains historical evidence only, not the active hero direction.
+- Follow-up: Subjective feel remains intentionally untuned. The live knobs to tune with design review are active-ragdoll drive strengths, hip-anchor stiffness/limits, capsule shove fraction/cap, launch XY/Z, knockdown/recovery timing, wipeout-arm speed/height/length, and proof/gameplay camera framing. Do not tune the old `UT66KnockbackComponent` PAC experiment as the final Hero 1 feel unless the active-ragdoll direction is explicitly reverted.
+- 2026-06-06 supersede note: The user explicitly reopened hero physics architecture and approved moving toward a broad `Gameplay/Physics` ownership layer with Hero 1 Chad as the always-on active-ragdoll MVP. The pure-Chaos/PAC-off setup remains historical/prototype scaffolding and fallback evidence only; it is no longer the standing hero feel direction. Do not tune this old path as the final target unless a future task explicitly reverts the active-ragdoll direction.
+
+## Resolved: TestRoom Wipeout-Arm Ragdoll Capture Does Not Visually Frame The Actor Action
+
+- Severity tag: [Resolved - Minor]
+- Resolution: The `testragdoll`/`testragdollproof` automation mode now spawns an inside-the-room proof camera below the TestRoom ceiling, hides the gameplay HUD, and frames the wipeout-arm lane from the live pawn location. The 2026-06-06 proof capture at `Saved/AgentReviews/FriendSlopUnrealRagdollImport/testragdoll_friendslop_passive_final.mp4` visibly shows the FriendSlop skeletal Chad before impact, the yellow wipeout arm contact, the ragdoll pose on the floor, and later recovery/control restoration.
+- Follow-up: None for capture framing. Future PAC proof still needs its own accepted capture after PAC tuning is stable.
+
+## Content Corrections Smoke Safe Zone Bubble Visual Check Fails
+
+- Severity tag: [Major]
+- What's wrong: A staged standalone `-T66GameplayAutoCapture=contentcorrectionssmoke` run on 2026-06-05 exited after logging `[ContentCorrectionsSmokeSummary] Terminal=1 Pass=0 Failures=1 FailedChecks=SafeZoneVisualBubblePresent`. The specific failing check was `SafeZoneVisualBubblePresent` with `Components=0 Visuals=0`; the rest of the content-corrections smoke checks logged PASS. The run also emitted the existing deliberate missing-visual fallback errors for `Smoke_MissingVisualBoss` / `Boss`, but the summary failure was only the Safe Zone bubble check.
+- Why it's out of scope now: The current pass is scoped to FriendSlop raw Pixal3D model imports, texture preservation, and runtime visual references. Fixing Safe Zone bubble authoring or smoke expectations would touch unrelated gameplay visual code.
+- What fixing it would entail: Inspect the Safe Zone actor/component setup used by `RunContentCorrectionsSmoke`, decide whether the bubble component should be spawned or the smoke expectation updated, then rerun the staged content-corrections smoke until `SafeZoneVisualBubblePresent` passes.
+
 ## Vendor Boss Has No CharacterVisuals Row
 
 - Severity tag: [Minor]

@@ -370,7 +370,7 @@
   "mainMenu": {
     "background": {
       "movie": "Frontend/MainMenu/MainMenuBackground.mp4",
-      "poster": "RuntimeDependencies/T66/UI/Reference/Screens/MainMenu/ScreenArt/mainmenu_screen_art_mainmenu_newmm_main_menu_newmm_base_clean_bloodyretro_1920.png"
+      "poster": "RuntimeDependencies/T66/UI/FriendslopStyle/MainMenu/mainmenu_screen_art_mainmenu_newmm_rubbery_friendslop_pass25_1920.png"
     }
   },
   "schemaVersion": 2

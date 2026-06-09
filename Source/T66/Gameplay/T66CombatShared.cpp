@@ -16,60 +16,63 @@
 
 namespace
 {
-	ET66SecondaryStatType GetDamageSecondaryForCategory(const ET66AttackCategory Category)
+	ET66StatType GetDamageStatForCategory(const ET66AttackCategory Category)
 	{
 		switch (Category)
 		{
-		case ET66AttackCategory::AOE:    return ET66SecondaryStatType::AoeDamage;
-		case ET66AttackCategory::Bounce: return ET66SecondaryStatType::BounceDamage;
-		case ET66AttackCategory::Pierce: return ET66SecondaryStatType::PierceDamage;
-		case ET66AttackCategory::DOT:    return ET66SecondaryStatType::DotDamage;
-		default:                         return ET66SecondaryStatType::PierceDamage;
+		case ET66AttackCategory::AOE:    return ET66StatType::AoeDamage;
+		case ET66AttackCategory::Bounce: return ET66StatType::BounceDamage;
+		case ET66AttackCategory::Pierce: return ET66StatType::PierceDamage;
+		case ET66AttackCategory::DOT:    return ET66StatType::DotDamage;
+		case ET66AttackCategory::SingleTarget:
+		default:                         return ET66StatType::None;
 		}
 	}
 
-	ET66SecondaryStatType GetAttackSpeedSecondaryForCategory(const ET66AttackCategory Category)
+	ET66StatType GetAttackSpeedStatForCategory(const ET66AttackCategory Category)
 	{
 		switch (Category)
 		{
-		case ET66AttackCategory::AOE:    return ET66SecondaryStatType::AoeSpeed;
-		case ET66AttackCategory::Bounce: return ET66SecondaryStatType::BounceSpeed;
-		case ET66AttackCategory::Pierce: return ET66SecondaryStatType::PierceSpeed;
-		case ET66AttackCategory::DOT:    return ET66SecondaryStatType::DotSpeed;
-		default:                         return ET66SecondaryStatType::PierceSpeed;
+		case ET66AttackCategory::AOE:    return ET66StatType::AoeSpeed;
+		case ET66AttackCategory::Bounce: return ET66StatType::BounceSpeed;
+		case ET66AttackCategory::Pierce: return ET66StatType::PierceSpeed;
+		case ET66AttackCategory::DOT:    return ET66StatType::DotSpeed;
+		case ET66AttackCategory::SingleTarget:
+		default:                         return ET66StatType::None;
 		}
 	}
 
-	ET66SecondaryStatType GetScaleSecondaryForCategory(const ET66AttackCategory Category)
+	ET66StatType GetScaleStatForCategory(const ET66AttackCategory Category)
 	{
 		switch (Category)
 		{
-		case ET66AttackCategory::AOE:    return ET66SecondaryStatType::AoeScale;
-		case ET66AttackCategory::Bounce: return ET66SecondaryStatType::BounceScale;
-		case ET66AttackCategory::Pierce: return ET66SecondaryStatType::PierceScale;
-		case ET66AttackCategory::DOT:    return ET66SecondaryStatType::DotScale;
-		default:                         return ET66SecondaryStatType::AttackRange;
+		case ET66AttackCategory::AOE:    return ET66StatType::AoeScale;
+		case ET66AttackCategory::Bounce: return ET66StatType::BounceScale;
+		case ET66AttackCategory::Pierce: return ET66StatType::PierceScale;
+		case ET66AttackCategory::DOT:    return ET66StatType::DotScale;
+		case ET66AttackCategory::SingleTarget:
+		default:                         return ET66StatType::None;
 		}
 	}
 
 	float GetCategorySubMultiplier(
 		const UT66RunStateSubsystem* RunState,
-		const ET66SecondaryStatType StatType,
+		const ET66StatType StatType,
 		const float HeroMultiplier,
 		const float MaxMultiplier)
 	{
-		if (!RunState)
+		if (!RunState || StatType == ET66StatType::None)
 		{
 			return 1.f;
 		}
 
-		const float Baseline = RunState->GetSecondaryStatBaselineValue(StatType);
+		const float Baseline = RunState->GetStatBaselineValue(StatType);
 		if (Baseline <= KINDA_SMALL_NUMBER)
 		{
 			return 1.f;
 		}
 
-		const float Value = RunState->GetSecondaryStatValue(StatType);
+		const float Value = RunState->GetStatValue(StatType);
 		return FMath::Clamp(Value / (Baseline * FMath::Max(0.01f, HeroMultiplier)), 0.25f, MaxMultiplier);
 	}
 
@@ -108,7 +111,7 @@ namespace T66CombatShared
 
 	const TSet<FName>& GetSupportedProofIdols()
 	{
-		// Impact-presentation proof idols plus the full 4x4 Stream B traveler grid.
+		// Impact-presentation proof idols plus the full 5x4 traveler grid.
 		static const TSet<FName> SupportedProofIdols = []()
 		{
 			TSet<FName> Set = GetImpactPresentationProofIdols();
@@ -128,6 +131,10 @@ namespace T66CombatShared
 			Set.Add(FName(TEXT("Idol_Nature_Pierce")));
 			Set.Add(FName(TEXT("Idol_Nature_Bounce")));
 			Set.Add(FName(TEXT("Idol_Nature_DOT")));
+			Set.Add(FName(TEXT("Idol_Wind_AOE")));
+			Set.Add(FName(TEXT("Idol_Wind_Pierce")));
+			Set.Add(FName(TEXT("Idol_Wind_Bounce")));
+			Set.Add(FName(TEXT("Idol_Wind_DOT")));
 			return Set;
 		}();
 		return SupportedProofIdols;
@@ -137,7 +144,7 @@ namespace T66CombatShared
 	{
 		return GetCategorySubMultiplier(
 			RunState,
-			GetDamageSecondaryForCategory(Category),
+			GetDamageStatForCategory(Category),
 			RunState ? RunState->GetHeroDamageMultiplier() : 1.f,
 			5.f);
 	}
@@ -146,7 +153,7 @@ namespace T66CombatShared
 	{
 		return GetCategorySubMultiplier(
 			RunState,
-			GetAttackSpeedSecondaryForCategory(Category),
+			GetAttackSpeedStatForCategory(Category),
 			RunState ? RunState->GetHeroAttackSpeedMultiplier() : 1.f,
 			5.f);
 	}
@@ -155,12 +162,12 @@ namespace T66CombatShared
 	{
 		return GetCategorySubMultiplier(
 			RunState,
-			GetScaleSecondaryForCategory(Category),
+			GetScaleStatForCategory(Category),
 			RunState ? RunState->GetHeroScaleMultiplier() : 1.f,
 			5.f);
 	}
 
-	ET66SecondaryStatType GetElementPowerSecondaryForIdolElement(const ET66IdolElement Element)
+	ET66StatType GetElementPowerStatForIdolElement(const ET66IdolElement Element)
 	{
 		return T66GetElementPowerStatType(Element);
 	}
@@ -168,7 +175,7 @@ namespace T66CombatShared
 	float GetIdolElementPowerMultiplier(const UT66RunStateSubsystem* RunState, const ET66IdolElement Element)
 	{
 		return RunState
-			? FMath::Max(0.1f, RunState->GetSecondaryStatValue(GetElementPowerSecondaryForIdolElement(Element)))
+			? FMath::Max(0.1f, RunState->GetStatValue(GetElementPowerStatForIdolElement(Element)))
 			: 1.f;
 	}
 

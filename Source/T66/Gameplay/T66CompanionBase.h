@@ -117,10 +117,10 @@ protected:
 	TObjectPtr<UAnimationAsset> CachedJumpAnim = nullptr;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimationAsset> CachedRollAnim = nullptr;
+	TObjectPtr<UAnimationAsset> CachedLeapAnim = nullptr;
 
 	/** Last animation state so we only call PlayAnimation on change. */
-	uint8 LastMovementAnimState = 255; // 0=Idle, 1=Walk, 2=Jump, 3=Roll, 255=ForceRefresh
+	uint8 LastMovementAnimState = 255; // 0=Idle, 1=Walk, 2=Jump, 3=Leap, 255=ForceRefresh
 
 	/** Run ground LineTrace only every Nth tick to reduce per-frame cost. */
 	int32 GroundTraceTickCounter = 0;

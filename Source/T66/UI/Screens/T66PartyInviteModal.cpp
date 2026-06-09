@@ -5,6 +5,7 @@
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
 #include "Engine/GameInstance.h"
+#include "UI/Screens/T66ScreenSlateHelpers.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "Kismet/GameplayStatics.h"
 #include "Logging/LogMacros.h"
@@ -29,22 +30,6 @@ namespace
 	FName PartyInviteTag(const TCHAR* Name)
 	{
 		return FName(Name);
-	}
-
-	TSharedRef<SWidget> MakePartyInviteCenteredText(const FText& Text, const int32 FontSize, const FSlateColor& Color)
-	{
-		return SNew(SScaleBox)
-			.Stretch(EStretch::ScaleToFit)
-			.StretchDirection(EStretchDirection::DownOnly)
-			[
-				SNew(STextBlock)
-				.Text(Text)
-				.Font(FT66FlatStyle::MakeFont(FontSize))
-				.ColorAndOpacity(Color)
-				.Justification(ETextJustify::Center)
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				.Clipping(EWidgetClipping::ClipToBounds)
-			];
 	}
 
 	void T66RefreshInviteJoinContext(
@@ -161,150 +146,36 @@ TSharedRef<SWidget> UT66PartyInviteModal::BuildSlateUI()
 		: FText::FromString(ActionStatusText);
 	const bool bCanActOnInvite = Invite != nullptr && !bActionInFlight;
 
-	constexpr float T66InviteButtonMinWidth = 280.f;
-	constexpr float T66InviteButtonHeight = 52.f;
-	constexpr float ModalX = 462.f;
-	constexpr float ModalY = 349.f;
-	constexpr float ModalW = 996.f;
-	constexpr float ModalH = 382.f;
-	constexpr float ButtonYWhenIdle = 264.f;
-	constexpr float ButtonYWithStatus = 310.f;
-	const float ButtonY = StatusText.IsEmpty() ? ButtonYWhenIdle : ButtonYWithStatus;
-	const ET66FlatState AcceptState = bCanActOnInvite ? ET66FlatState::Selected : ET66FlatState::Disabled;
-	const ET66FlatState RejectState = bCanActOnInvite ? ET66FlatState::Default : ET66FlatState::Disabled;
+	T66ScreenSlateHelpers::FFriendslopStandardModalParams Params;
+	Params.TitleText = TitleText;
+	Params.BodyText = InviteBodyText;
+	Params.StatusText = StatusText;
+	Params.RootTag = PartyInviteTag(TEXT("PartyInviteModal.Root"));
+	Params.ScrimTag = PartyInviteTag(TEXT("PartyInviteModal.Scrim"));
+	Params.PanelTag = PartyInviteTag(TEXT("PartyInviteModal.ModalPanel"));
+	Params.TitleTag = PartyInviteTag(TEXT("PartyInviteModal.Title"));
+	Params.BodyTag = PartyInviteTag(TEXT("PartyInviteModal.BodyRow"));
+	Params.StatusTag = PartyInviteTag(TEXT("PartyInviteModal.StatusRow"));
+	Params.LeftButton.Label = AcceptText;
+	Params.LeftButton.OnClicked = FOnClicked::CreateUObject(this, &UT66PartyInviteModal::HandleAcceptClicked);
+	Params.LeftButton.State = bCanActOnInvite
+		? T66ScreenSlateHelpers::EFriendslopStandardModalButtonState::Selected
+		: T66ScreenSlateHelpers::EFriendslopStandardModalButtonState::Disabled;
+	Params.LeftButton.Chrome = T66ScreenSlateHelpers::EFriendslopStandardModalButtonChrome::Green;
+	Params.LeftButton.IsEnabled = bCanActOnInvite;
+	Params.LeftButton.Tag = PartyInviteTag(TEXT("PartyInviteModal.AcceptButton"));
+	Params.LeftButton.FontSize = 21;
+	Params.RightButton.Label = RejectText;
+	Params.RightButton.OnClicked = FOnClicked::CreateUObject(this, &UT66PartyInviteModal::HandleRejectClicked);
+	Params.RightButton.State = bCanActOnInvite
+		? T66ScreenSlateHelpers::EFriendslopStandardModalButtonState::Default
+		: T66ScreenSlateHelpers::EFriendslopStandardModalButtonState::Disabled;
+	Params.RightButton.Chrome = T66ScreenSlateHelpers::EFriendslopStandardModalButtonChrome::Red;
+	Params.RightButton.IsEnabled = bCanActOnInvite;
+	Params.RightButton.Tag = PartyInviteTag(TEXT("PartyInviteModal.RejectButton"));
+	Params.RightButton.FontSize = 21;
 
-	const TSharedRef<SWidget> ModalContent =
-		SNew(SConstraintCanvas)
-		+ SConstraintCanvas::Slot()
-		.Anchors(FAnchors(0.f, 0.f))
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(358.f, 43.f, 280.f, 70.f))
-		[
-			FT66FlatStyle::MakeFlatLabel(
-				TitleText,
-				ET66FlatLabelRole::Title,
-				ETextJustify::Center,
-				PartyInviteTag(TEXT("PartyInviteModal.Title")))
-		]
-		+ SConstraintCanvas::Slot()
-		.Anchors(FAnchors(0.f, 0.f))
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(60.f, 139.f, 876.f, 90.f))
-		[
-			FT66FlatStyle::MakeFlatPanel(
-				ET66FlatState::Default,
-				FMargin(24.f, 18.f),
-				MakePartyInviteCenteredText(
-					InviteBodyText,
-					18,
-					FSlateColor(FT66FlatStyle::SecondaryText())),
-				nullptr,
-				PartyInviteTag(TEXT("PartyInviteModal.BodyRow")))
-		]
-		+ SConstraintCanvas::Slot()
-		.Anchors(FAnchors(0.f, 0.f))
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(60.f, 236.f, 876.f, 48.f))
-		[
-			SNew(SBox)
-			.Visibility(StatusText.IsEmpty() ? EVisibility::Collapsed : EVisibility::Visible)
-			[
-				FT66FlatStyle::MakeFlatPanel(
-					ET66FlatState::Ready,
-					FMargin(18.f, 10.f),
-					MakePartyInviteCenteredText(
-						StatusText,
-						14,
-						FSlateColor(FT66FlatStyle::DataAccent())),
-					nullptr,
-					PartyInviteTag(TEXT("PartyInviteModal.StatusRow")))
-			]
-		]
-		+ SConstraintCanvas::Slot()
-		.Anchors(FAnchors(0.f, 0.f))
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(80.f, ButtonY, 403.f, 75.f))
-		[
-			FT66FlatStyle::MakeFlatButton(
-				AcceptState,
-				AcceptText,
-				FOnClicked::CreateUObject(this, &UT66PartyInviteModal::HandleAcceptClicked),
-				nullptr,
-				nullptr,
-				FMargin(24.f, 12.f),
-				T66InviteButtonMinWidth,
-				T66InviteButtonHeight,
-				bCanActOnInvite,
-				19,
-				PartyInviteTag(TEXT("PartyInviteModal.AcceptButton")))
-		]
-		+ SConstraintCanvas::Slot()
-		.Anchors(FAnchors(0.f, 0.f))
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(512.f, ButtonY, 403.f, 75.f))
-		[
-			FT66FlatStyle::MakeFlatButton(
-				RejectState,
-				RejectText,
-				FOnClicked::CreateUObject(this, &UT66PartyInviteModal::HandleRejectClicked),
-				nullptr,
-				nullptr,
-				FMargin(24.f, 12.f),
-				T66InviteButtonMinWidth,
-				T66InviteButtonHeight,
-				bCanActOnInvite,
-				19,
-				PartyInviteTag(TEXT("PartyInviteModal.RejectButton")))
-		];
-
-	const TSharedRef<SWidget> Root =
-		SNew(SOverlay)
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
-			FT66FlatStyle::AttachMetadata(
-				SNew(SBorder)
-				.BorderImage(FCoreStyle::Get().GetBrush("WhiteBrush"))
-				.BorderBackgroundColor(FLinearColor(0.007f, 0.011f, 0.015f, 0.58f)),
-				PartyInviteTag(TEXT("PartyInviteModal.Scrim")),
-				TEXT("Scrim"),
-				ET66FlatState::Default)
-		]
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		[
-			SNew(SScaleBox)
-			.Stretch(EStretch::ScaleToFit)
-			.StretchDirection(EStretchDirection::Both)
-			[
-				SNew(SBox)
-				.WidthOverride(1920.f)
-				.HeightOverride(1080.f)
-				[
-					SNew(SConstraintCanvas)
-					+ SConstraintCanvas::Slot()
-					.Anchors(FAnchors(0.f, 0.f))
-					.Alignment(FVector2D(0.f, 0.f))
-					.Offset(FMargin(ModalX, ModalY, ModalW, ModalH))
-					[
-						FT66FlatStyle::MakeFlatPanel(
-							ET66FlatState::Default,
-							FMargin(0.f),
-							ModalContent,
-							nullptr,
-							PartyInviteTag(TEXT("PartyInviteModal.ModalPanel")))
-					]
-				]
-			]
-		];
-
-	return FT66FlatStyle::AttachMetadata(
-		Root,
-		PartyInviteTag(TEXT("PartyInviteModal.Root")),
-		TEXT("Root"),
-		ET66FlatState::Default);
+	return T66ScreenSlateHelpers::MakeFriendslopStandardModal(Params);
 }
 
 FReply UT66PartyInviteModal::HandleAcceptClicked()

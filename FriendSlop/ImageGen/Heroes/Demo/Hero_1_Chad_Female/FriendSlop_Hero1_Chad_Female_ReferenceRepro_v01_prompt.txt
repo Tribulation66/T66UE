@@ -1,0 +1,41 @@
+Use case: stylized-concept
+Asset type: FriendSlop female hero source candidate
+
+Primary request:
+Use the first provided hero reference image, the female founding-father-styled
+character, as the direct visual reference. Reproduce the same character image as
+closely as possible: same front-facing full-body pose, same black background,
+same white high ponytail hair, same simplified emoji-like face expression, same
+navy blue long coat with beige trim and cuffs, same beige bodice/shorts, same
+white stockings, same black buckle shoes, same proportions and curvy silhouette.
+
+Make exactly two design changes:
+
+1. Change all visible yellow character skin to a warmer pinkish nude human skin
+   tone. This applies to the face, neck, hands, and exposed thighs. Keep the
+   tone soft and stylized, not realistic gritty skin.
+2. Change both hands into simple oven-mitt hands: each hand has only two large
+   readable areas, a rounded thumb and one merged mitten area for the rest of the
+   fingers. No individual fingers. The hands should look like simple
+   game-character mitts.
+
+Preserve everything else from the reference: female adult fully clothed body,
+white hair, outfit colors, coat shape, collar, cravat, buttons, stockings,
+shoes, front-facing model-sheet framing, black background, clean polished 3D
+stylized render.
+
+Avoid:
+
+- yellow skin
+- visible individual fingers
+- claw hands
+- extra fingers
+- realism
+- changing the outfit
+- changing the hair
+- changing the pose
+- changing the facial expression
+- changing the body proportions
+- adding props
+- adding text
+- adding environment

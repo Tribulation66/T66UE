@@ -9,7 +9,7 @@
 class UStaticMeshComponent;
 class UStaticMesh;
 
-/** Fountain: fully heals, grants +1 max heart, and consumes itself. */
+/** Fountain: resets hero damage percent to 0% and consumes itself. */
 UCLASS(Blueprintable)
 class T66_API AT66FountainInteractable : public AT66WorldInteractableBase
 {

@@ -18,7 +18,7 @@ namespace T66CombatShared
 	float GetCategorySubDamageMultiplier(const UT66RunStateSubsystem* RunState, ET66AttackCategory Category);
 	float GetCategorySubAttackSpeedMultiplier(const UT66RunStateSubsystem* RunState, ET66AttackCategory Category);
 	float GetCategorySubScaleMultiplier(const UT66RunStateSubsystem* RunState, ET66AttackCategory Category);
-	ET66SecondaryStatType GetElementPowerSecondaryForIdolElement(ET66IdolElement Element);
+	ET66StatType GetElementPowerStatForIdolElement(ET66IdolElement Element);
 	float GetIdolElementPowerMultiplier(const UT66RunStateSubsystem* RunState, ET66IdolElement Element);
 	float GetIdolRarityVisualScale(ET66ItemRarity Rarity);
 	float GetIdolRarityVisualQuantity(ET66ItemRarity Rarity);

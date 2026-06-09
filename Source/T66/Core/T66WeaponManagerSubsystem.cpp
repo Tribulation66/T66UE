@@ -6,7 +6,7 @@
 void UT66WeaponManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	WeaponOfferIDs.Reserve(4);
+	WeaponOfferIDs.Reserve(5);
 }
 
 void UT66WeaponManagerSubsystem::BroadcastWeaponStateChanged()
@@ -71,6 +71,7 @@ void UT66WeaponManagerSubsystem::BuildWeaponOffers(FName HeroID, ET66WeaponRarit
 	}
 
 	WeaponOfferIDs.Add(MakeWeaponID(HeroID, Rarity, HeroLockedBranch));
+	WeaponOfferIDs.Add(NoWeaponID());
 
 	BroadcastWeaponStateChanged();
 }
@@ -97,6 +98,12 @@ bool UT66WeaponManagerSubsystem::SelectWeapon(FName WeaponID)
 	EquippedWeaponID = WeaponID;
 	BroadcastWeaponStateChanged();
 	return true;
+}
+
+FName UT66WeaponManagerSubsystem::NoWeaponID()
+{
+	static const FName ID(TEXT("Weapon_NoWeapon"));
+	return ID;
 }
 
 FName UT66WeaponManagerSubsystem::MakeWeaponID(FName HeroID, ET66WeaponRarity Rarity, ET66AttackCategory Branch)
@@ -139,6 +146,8 @@ FString UT66WeaponManagerSubsystem::AttackBranchToString(ET66AttackCategory Bran
 		return TEXT("bounce");
 	case ET66AttackCategory::AOE:
 		return TEXT("aoe");
+	case ET66AttackCategory::SingleTarget:
+		return TEXT("single_target");
 	case ET66AttackCategory::DOT:
 	default:
 		return TEXT("dot");

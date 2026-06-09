@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Styling/SlateBrush.h"
 #include "UI/Style/T66Style.h"
+#include "Widgets/Input/SButton.h"
 
 class SGridPanel;
 class SWidget;
@@ -47,6 +48,64 @@ namespace T66ScreenSlateHelpers
 		float TopBarReservedHeight = 0.0f;
 		bool bCompact = false;
 		bool bStacked = false;
+	};
+
+	enum class EFriendslopStandardModalButtonChrome : uint8
+	{
+		Dark,
+		Red,
+		Green,
+	};
+
+	enum class EFriendslopStandardModalButtonState : uint8
+	{
+		Default,
+		Selected,
+		Ready,
+		Disabled,
+	};
+
+	struct FFriendslopStandardModalButton
+	{
+		FText Label;
+		FOnClicked OnClicked;
+		EFriendslopStandardModalButtonState State = EFriendslopStandardModalButtonState::Default;
+		EFriendslopStandardModalButtonChrome Chrome = EFriendslopStandardModalButtonChrome::Red;
+		TAttribute<bool> IsEnabled = true;
+		FName Tag = NAME_None;
+		int32 FontSize = 16;
+		float MinWidth = 300.0f;
+		float Height = 58.0f;
+	};
+
+	struct FFriendslopStandardModalCheckboxRow
+	{
+		FText Label;
+		FOnClicked OnClicked;
+		TAttribute<bool> IsChecked = false;
+		TAttribute<bool> IsEnabled = true;
+		FName RowTag = NAME_None;
+		FName CheckboxTag = NAME_None;
+		FName LabelTag = NAME_None;
+		int32 FontSize = 16;
+		float CheckboxSize = 44.0f;
+	};
+
+	struct FFriendslopStandardModalParams
+	{
+		FText TitleText;
+		FText BodyText;
+		FText StatusText;
+		FFriendslopStandardModalButton LeftButton;
+		FFriendslopStandardModalButton RightButton;
+		FFriendslopStandardModalCheckboxRow CheckboxRow;
+		FName RootTag = NAME_None;
+		FName ScrimTag = NAME_None;
+		FName PanelTag = NAME_None;
+		FName TitleTag = NAME_None;
+		FName BodyTag = NAME_None;
+		FName StatusTag = NAME_None;
+		bool bShowCheckboxRow = false;
 	};
 
 	const FFrontendChromeMetrics& GetFrontendChromeMetrics();
@@ -131,5 +190,6 @@ namespace T66ScreenSlateHelpers
 	TSharedRef<SWidget> MakeResponsiveGridTile(const FT66ButtonParams& ButtonParams, const FLinearColor& BackgroundColor, const TSharedRef<SWidget>& Content, const FResponsiveGridModalMetrics& Metrics);
 	TSharedRef<SWidget> MakeResponsiveGridModal(const FText& TitleText, const TSharedRef<SWidget>& GridContent, const TSharedRef<SWidget>& FooterContent, const FResponsiveGridModalMetrics& Metrics);
 	TSharedRef<SWidget> MakeCenteredScrimModal(const TSharedRef<SWidget>& Content, const FMargin& OuterPadding = FMargin(0.0f), float WidthOverride = 0.0f, float HeightOverride = 0.0f, bool bUseWhiteBrush = false);
+	T66_API TSharedRef<SWidget> MakeFriendslopStandardModal(const FFriendslopStandardModalParams& Params);
 	TSharedRef<SWidget> MakeTwoButtonRow(const TSharedRef<SWidget>& LeftButton, const TSharedRef<SWidget>& RightButton, const FMargin& LeftPadding = FMargin(10.0f, 0.0f), const FMargin& RightPadding = FMargin(10.0f, 0.0f), EVisibility Visibility = EVisibility::Visible);
 }

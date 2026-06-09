@@ -522,12 +522,16 @@ bool FT66WidgetDumpTargets::ParseAutomationSpec(
 	return true;
 }
 
-bool FT66WidgetDumpTargets::DumpTargetToJson(
+bool FT66WidgetDumpTargets::ResolveTargetWidget(
 	UWorld* World,
 	const FString& TargetSpec,
-	const FString& OutputPath,
+	TSharedPtr<SWidget>& OutWidget,
+	FString& OutResolvedName,
 	FString& OutError)
 {
+	OutWidget.Reset();
+	OutResolvedName.Reset();
+
 	if (!World)
 	{
 		OutError = TEXT("World is null.");
@@ -582,13 +586,37 @@ bool FT66WidgetDumpTargets::DumpTargetToJson(
 		return false;
 	}
 
-	EnsureDumpRootHasTag(ResolvedTarget.RootWidget.ToSharedRef(), ResolvedTarget.DumpName);
+	OutWidget = ResolvedTarget.RootWidget;
+	OutResolvedName = ResolvedTarget.DumpName;
+	return true;
+}
+
+bool FT66WidgetDumpTargets::DumpTargetToJson(
+	UWorld* World,
+	const FString& TargetSpec,
+	const FString& OutputPath,
+	FString& OutError)
+{
+	TSharedPtr<SWidget> ResolvedWidget;
+	FString ResolvedName;
+	if (!ResolveTargetWidget(World, TargetSpec, ResolvedWidget, ResolvedName, OutError))
+	{
+		return false;
+	}
+
+	if (!ResolvedWidget.IsValid())
+	{
+		OutError = FString::Printf(TEXT("Resolved target '%s' has no valid Slate root."), *TargetSpec);
+		return false;
+	}
+
+	EnsureDumpRootHasTag(ResolvedWidget.ToSharedRef(), ResolvedName);
 
 	FString WalkerError;
 	const FString ResolvedOutputPath = FPaths::ConvertRelativePathToFull(OutputPath);
 	const bool bDumped = FT66WidgetTreeWalker::DumpWidgetTreeToJson(
-		ResolvedTarget.RootWidget.ToSharedRef(),
-		ResolvedTarget.DumpName,
+		ResolvedWidget.ToSharedRef(),
+		ResolvedName,
 		GetViewportSize(World),
 		ResolvedOutputPath,
 		WalkerError);

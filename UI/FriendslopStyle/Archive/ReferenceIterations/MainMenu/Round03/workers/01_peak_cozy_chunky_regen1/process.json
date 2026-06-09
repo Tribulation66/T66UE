@@ -1,0 +1,10 @@
+{
+  "Id": "01_peak_cozy_chunky_regen1",
+  "PID": 28308,
+  "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\main_menu_reference_01_peak_cozy_chunky_cli.png",
+  "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\01_peak_cozy_chunky_regen1\\request.md",
+  "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\01_peak_cozy_chunky_regen1.stdout.log",
+  "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\01_peak_cozy_chunky_regen1.stderr.log",
+  "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\01_peak_cozy_chunky_regen1\\last_message.txt",
+  "Started": "2026-06-05T10:12:44.0281854Z"
+}

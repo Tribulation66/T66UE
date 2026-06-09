@@ -1,0 +1,859 @@
+{
+  "generated_utc": "2026-06-05T08:30:36.718470+00:00",
+  "project_root": "C:\\UE\\T66",
+  "inputs": {
+    "character_audit": "C:\\UE\\T66\\Saved\\Audits\\CharacterModelDataAudit.json",
+    "world_audit": "C:\\UE\\T66\\Saved\\Audits\\WorldAssetAudit.json",
+    "runs_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D"
+  },
+  "all_runtime_package_list_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_all_runtime_candidates_packages.txt",
+  "runtime_groups": {
+    "hero1_processed_variant_candidates": {
+      "description": "Old Hero 1 processed/animated/toon/QuadRetro assets superseded by raw FriendSlop Hero 1 rows.",
+      "status": "candidate_exact_audit_required",
+      "note": "Start here because Hero_1_Chad and Hero_1_Chad_DemoSkin now point at FriendSlopRaw.",
+      "package_count": 8,
+      "packages": [
+        "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Beachgoer_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Materials/MI_Hero_1_Chad",
+        "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Outline",
+        "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA"
+      ],
+      "assets": [
+        {
+          "package": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad",
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/AnimatedToonStyle/SK_Hero_1_Chad.SK_Hero_1_Chad",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_1_Chad"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Beachgoer.MI_Hero_1_Chad_Beachgoer",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Hero_1_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Beachgoer_Outline",
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Beachgoer_Outline.MI_Hero_1_Chad_Beachgoer_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Hero_1_Chad_Beachgoer_Outline"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/SK_Hero_1_Chad_Beachgoer.SK_Hero_1_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_1_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin",
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/DemoSkin/AnimatedToonStyle/SK_Hero_1_Chad_DemoSkin.SK_Hero_1_Chad_DemoSkin",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_1_Chad_DemoSkin"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Materials/MI_Hero_1_Chad",
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Materials/MI_Hero_1_Chad.MI_Hero_1_Chad",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Hero_1_Chad"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Outline",
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Materials/MI_Hero_1_Chad_Outline.MI_Hero_1_Chad_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Hero_1_Chad_Outline"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA",
+          "asset": "/Game/Characters/Heroes/Hero_1/Chad/QuadRetroUALQA/SK_Hero_1_Chad_QuadRetroUALQA.SK_Hero_1_Chad_QuadRetroUALQA",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_1_Chad_QuadRetroUALQA"
+        }
+      ],
+      "package_list_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_hero1_processed_variant_candidates_packages.txt"
+    },
+    "other_hero_zero_ref_candidates": {
+      "description": "Other hero assets with zero package refs, zero text refs, and no CharacterVisuals/Heroes data reference.",
+      "status": "candidate_exact_audit_required",
+      "note": "Second-wave cleanup after exact proof; do not delete whole hero folders.",
+      "package_count": 29,
+      "packages": [
+        "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Material_0",
+        "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Material_0_001",
+        "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_11/Chad/Image_0_001",
+        "/Game/Characters/Heroes/Hero_11/Chad/Retro_geometry_0",
+        "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+        "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_12/Chad/Retro_geometry_0",
+        "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+        "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_3/Chad/Retro_geometry_0",
+        "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_4/Chad/Retro_geometry_0",
+        "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+        "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_5/Chad/Retro_geometry_0",
+        "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+        "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_7/Chad/Retro_geometry_0",
+        "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+        "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/Image_0_001",
+        "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_8/Chad/Retro_geometry_0",
+        "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+        "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+        "/Game/Characters/Heroes/Hero_9/Chad/Retro_geometry_0",
+        "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad"
+      ],
+      "assets": [
+        {
+          "package": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Material_0",
+          "asset": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Material_0_001",
+          "asset": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Material_0_001.Material_0_001",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0_001"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_11/Chad/Beachgoer/SK_Hero_11_Chad_Beachgoer.SK_Hero_11_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_11_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_11/Chad/Image_0_001",
+          "asset": "/Game/Characters/Heroes/Hero_11/Chad/Image_0_001.Image_0_001",
+          "class": "Texture2D",
+          "name": "Image_0_001"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_11/Chad/Retro_geometry_0",
+          "asset": "/Game/Characters/Heroes/Hero_11/Chad/Retro_geometry_0.Retro_geometry_0",
+          "class": "Texture2D",
+          "name": "Retro_geometry_0"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad",
+          "asset": "/Game/Characters/Heroes/Hero_11/Chad/SK_Hero_11_Chad.SK_Hero_11_Chad",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_11_Chad"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_12/Chad/Beachgoer/SK_Hero_12_Chad_Beachgoer.SK_Hero_12_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_12_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_12/Chad/Retro_geometry_0",
+          "asset": "/Game/Characters/Heroes/Hero_12/Chad/Retro_geometry_0.Retro_geometry_0",
+          "class": "Texture2D",
+          "name": "Retro_geometry_0"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad",
+          "asset": "/Game/Characters/Heroes/Hero_12/Chad/SK_Hero_12_Chad.SK_Hero_12_Chad",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_12_Chad"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_2/Chad/Beachgoer/SK_Hero_2_Chad_Beachgoer.SK_Hero_2_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_2_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_3/Chad/Beachgoer/SK_Hero_3_Chad_Beachgoer.SK_Hero_3_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_3_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_3/Chad/Retro_geometry_0",
+          "asset": "/Game/Characters/Heroes/Hero_3/Chad/Retro_geometry_0.Retro_geometry_0",
+          "class": "Texture2D",
+          "name": "Retro_geometry_0"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_4/Chad/Beachgoer/SK_Hero_4_Chad_Beachgoer.SK_Hero_4_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_4_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_4/Chad/Retro_geometry_0",
+          "asset": "/Game/Characters/Heroes/Hero_4/Chad/Retro_geometry_0.Retro_geometry_0",
+          "class": "Texture2D",
+          "name": "Retro_geometry_0"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad",
+          "asset": "/Game/Characters/Heroes/Hero_4/Chad/SK_Hero_4_Chad.SK_Hero_4_Chad",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_4_Chad"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_5/Chad/Beachgoer/SK_Hero_5_Chad_Beachgoer.SK_Hero_5_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_5_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_5/Chad/Retro_geometry_0",
+          "asset": "/Game/Characters/Heroes/Hero_5/Chad/Retro_geometry_0.Retro_geometry_0",
+          "class": "Texture2D",
+          "name": "Retro_geometry_0"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad",
+          "asset": "/Game/Characters/Heroes/Hero_5/Chad/SK_Hero_5_Chad.SK_Hero_5_Chad",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_5_Chad"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_6/Chad/Beachgoer/SK_Hero_6_Chad_Beachgoer.SK_Hero_6_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_6_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_7/Chad/Beachgoer/SK_Hero_7_Chad_Beachgoer.SK_Hero_7_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_7_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_7/Chad/Retro_geometry_0",
+          "asset": "/Game/Characters/Heroes/Hero_7/Chad/Retro_geometry_0.Retro_geometry_0",
+          "class": "Texture2D",
+          "name": "Retro_geometry_0"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad",
+          "asset": "/Game/Characters/Heroes/Hero_7/Chad/SK_Hero_7_Chad.SK_Hero_7_Chad",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_7_Chad"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/Image_0_001",
+          "asset": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/Image_0_001.Image_0_001",
+          "class": "Texture2D",
+          "name": "Image_0_001"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_8/Chad/Beachgoer/SK_Hero_8_Chad_Beachgoer.SK_Hero_8_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_8_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_8/Chad/Retro_geometry_0",
+          "asset": "/Game/Characters/Heroes/Hero_8/Chad/Retro_geometry_0.Retro_geometry_0",
+          "class": "Texture2D",
+          "name": "Retro_geometry_0"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad",
+          "asset": "/Game/Characters/Heroes/Hero_8/Chad/SK_Hero_8_Chad.SK_Hero_8_Chad",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_8_Chad"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer",
+          "asset": "/Game/Characters/Heroes/Hero_9/Chad/Beachgoer/SK_Hero_9_Chad_Beachgoer.SK_Hero_9_Chad_Beachgoer",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_9_Chad_Beachgoer"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_9/Chad/Retro_geometry_0",
+          "asset": "/Game/Characters/Heroes/Hero_9/Chad/Retro_geometry_0.Retro_geometry_0",
+          "class": "Texture2D",
+          "name": "Retro_geometry_0"
+        },
+        {
+          "package": "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad",
+          "asset": "/Game/Characters/Heroes/Hero_9/Chad/SK_Hero_9_Chad.SK_Hero_9_Chad",
+          "class": "SkeletalMesh",
+          "name": "SK_Hero_9_Chad"
+        }
+      ],
+      "package_list_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_other_hero_zero_ref_candidates_packages.txt"
+    },
+    "world_boost_visual_candidates": {
+      "description": "First-pass zero-reference world assets in boost_visual.",
+      "status": "candidate_exact_audit_required",
+      "note": "World audit is discovery only; run exact wide text and binary package proof before deletion.",
+      "package_count": 16,
+      "packages": [
+        "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D",
+        "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D_Outline",
+        "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D",
+        "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D_Outline",
+        "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D",
+        "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D_Outline",
+        "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D",
+        "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D_Outline",
+        "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D",
+        "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D_Outline",
+        "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D",
+        "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D_Outline",
+        "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D",
+        "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D_Outline",
+        "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D",
+        "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D_Outline"
+      ],
+      "assets": [
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D.MI_Boost_Accuracy_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_Accuracy_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D_Outline",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_Accuracy_Pixal3D_Outline.MI_Boost_Accuracy_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_Accuracy_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D.MI_Boost_Armor_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_Armor_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D_Outline",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_Armor_Pixal3D_Outline.MI_Boost_Armor_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_Armor_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D.MI_Boost_AttackScale_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_AttackScale_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D_Outline",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_AttackScale_Pixal3D_Outline.MI_Boost_AttackScale_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_AttackScale_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D.MI_Boost_AttackSpeed_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_AttackSpeed_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D_Outline",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_AttackSpeed_Pixal3D_Outline.MI_Boost_AttackSpeed_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_AttackSpeed_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D.MI_Boost_DamageStrength_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_DamageStrength_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D_Outline",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_DamageStrength_Pixal3D_Outline.MI_Boost_DamageStrength_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_DamageStrength_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D.MI_Boost_Evasion_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_Evasion_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D_Outline",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_Evasion_Pixal3D_Outline.MI_Boost_Evasion_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_Evasion_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D.MI_Boost_Luck_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_Luck_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D_Outline",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_Luck_Pixal3D_Outline.MI_Boost_Luck_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_Luck_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D.MI_Boost_Speed_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_Speed_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D_Outline",
+          "asset": "/Game/World/Boosts/Materials/MI_Boost_Speed_Pixal3D_Outline.MI_Boost_Speed_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_Boost_Speed_Pixal3D_Outline"
+        }
+      ],
+      "package_list_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_world_boost_visual_candidates_packages.txt"
+    },
+    "world_gate_visual_candidates": {
+      "description": "First-pass zero-reference world assets in gate_visual.",
+      "status": "candidate_exact_audit_required",
+      "note": "World audit is discovery only; run exact wide text and binary package proof before deletion.",
+      "package_count": 7,
+      "packages": [
+        "/Game/World/Gates/Material_0",
+        "/Game/World/Gates/Materials/M_StageGate_Pixal3D",
+        "/Game/World/Gates/Materials/M_StartGate_Pixal3D",
+        "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+        "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+        "/Game/World/Gates/Textures/T_BossGate_Pixal3D_BaseColor",
+        "/Game/World/Gates/TutorialGate_Pixal3D"
+      ],
+      "assets": [
+        {
+          "package": "/Game/World/Gates/Material_0",
+          "asset": "/Game/World/Gates/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/Gates/Materials/M_StageGate_Pixal3D",
+          "asset": "/Game/World/Gates/Materials/M_StageGate_Pixal3D.M_StageGate_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "M_StageGate_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Gates/Materials/M_StartGate_Pixal3D",
+          "asset": "/Game/World/Gates/Materials/M_StartGate_Pixal3D.M_StartGate_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "M_StartGate_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline",
+          "asset": "/Game/World/Gates/SM_CowardiceGate_Pixal3D_Outline.SM_CowardiceGate_Pixal3D_Outline",
+          "class": "StaticMesh",
+          "name": "SM_CowardiceGate_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Gates/SM_StageGate_Pixal3D_Outline",
+          "asset": "/Game/World/Gates/SM_StageGate_Pixal3D_Outline.SM_StageGate_Pixal3D_Outline",
+          "class": "StaticMesh",
+          "name": "SM_StageGate_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Gates/Textures/T_BossGate_Pixal3D_BaseColor",
+          "asset": "/Game/World/Gates/Textures/T_BossGate_Pixal3D_BaseColor.T_BossGate_Pixal3D_BaseColor",
+          "class": "Texture2D",
+          "name": "T_BossGate_Pixal3D_BaseColor"
+        },
+        {
+          "package": "/Game/World/Gates/TutorialGate_Pixal3D",
+          "asset": "/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D",
+          "class": "StaticMesh",
+          "name": "TutorialGate_Pixal3D"
+        }
+      ],
+      "package_list_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_world_gate_visual_candidates_packages.txt"
+    },
+    "world_interactable_visual_candidates": {
+      "description": "First-pass zero-reference world assets in interactable_visual.",
+      "status": "candidate_exact_audit_required",
+      "note": "World audit is discovery only; run exact wide text and binary package proof before deletion.",
+      "package_count": 30,
+      "packages": [
+        "/Game/World/Interactables/Altar/Materials/Material_0_006",
+        "/Game/World/Interactables/Boosts/Material_0",
+        "/Game/World/Interactables/Boosts/Materials/MI_SpeedBoost_Pixal3D",
+        "/Game/World/Interactables/Chests/ChestModel/Material_0",
+        "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest",
+        "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest_QuadRetro",
+        "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+        "/Game/World/Interactables/CompanionCage/Material_0",
+        "/Game/World/Interactables/Crate/Material_0",
+        "/Game/World/Interactables/Crate/Materials/M_Crate_QuadRetro",
+        "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+        "/Game/World/Interactables/DifficultyTotem/Material_0",
+        "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+        "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_QuadRetro_Pixelated_512",
+        "/Game/World/Interactables/Fountain/Fountain",
+        "/Game/World/Interactables/Fountain/Fountain/Textures/Image_0_003",
+        "/Game/World/Interactables/Fountain/Fountain/Textures/Image_1",
+        "/Game/World/Interactables/Fountain/Material_0",
+        "/Game/World/Interactables/Fountain/Materials/M_Fountain_QuadRetro",
+        "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+        "/Game/World/Interactables/IdolAltar/Material_0",
+        "/Game/World/Interactables/IdolAltar/Materials/M_IdolAltar_QuadRetro",
+        "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+        "/Game/World/Interactables/LootWheel/Material_0",
+        "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+        "/Game/World/Interactables/Totem",
+        "/Game/World/Interactables/Vehicles/Material_0",
+        "/Game/World/Interactables/Vehicles/Materials/M_Tractor_Pixal3D",
+        "/Game/World/Interactables/Vending/Vending",
+        "/Game/World/Interactables/WeaponAltar/Material_0"
+      ],
+      "assets": [
+        {
+          "package": "/Game/World/Interactables/Altar/Materials/Material_0_006",
+          "asset": "/Game/World/Interactables/Altar/Materials/Material_0_006.Material_0_006",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0_006"
+        },
+        {
+          "package": "/Game/World/Interactables/Boosts/Material_0",
+          "asset": "/Game/World/Interactables/Boosts/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/Interactables/Boosts/Materials/MI_SpeedBoost_Pixal3D",
+          "asset": "/Game/World/Interactables/Boosts/Materials/MI_SpeedBoost_Pixal3D.MI_SpeedBoost_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_SpeedBoost_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Interactables/Chests/ChestModel/Material_0",
+          "asset": "/Game/World/Interactables/Chests/ChestModel/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest",
+          "asset": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest.M_Chest",
+          "class": "MaterialInstanceConstant",
+          "name": "M_Chest"
+        },
+        {
+          "package": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest_QuadRetro",
+          "asset": "/Game/World/Interactables/Chests/ChestModel/Materials/M_Chest_QuadRetro.M_Chest_QuadRetro",
+          "class": "MaterialInstanceConstant",
+          "name": "M_Chest_QuadRetro"
+        },
+        {
+          "package": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline",
+          "asset": "/Game/World/Interactables/Chests/ChestModel/SM_Chest_Pixal3D_Outline.SM_Chest_Pixal3D_Outline",
+          "class": "StaticMesh",
+          "name": "SM_Chest_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Interactables/CompanionCage/Material_0",
+          "asset": "/Game/World/Interactables/CompanionCage/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/Interactables/Crate/Material_0",
+          "asset": "/Game/World/Interactables/Crate/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/Interactables/Crate/Materials/M_Crate_QuadRetro",
+          "asset": "/Game/World/Interactables/Crate/Materials/M_Crate_QuadRetro.M_Crate_QuadRetro",
+          "class": "MaterialInstanceConstant",
+          "name": "M_Crate_QuadRetro"
+        },
+        {
+          "package": "/Game/World/Interactables/Crate/SM_LootCrate_Outline",
+          "asset": "/Game/World/Interactables/Crate/SM_LootCrate_Outline.SM_LootCrate_Outline",
+          "class": "StaticMesh",
+          "name": "SM_LootCrate_Outline"
+        },
+        {
+          "package": "/Game/World/Interactables/DifficultyTotem/Material_0",
+          "asset": "/Game/World/Interactables/DifficultyTotem/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline",
+          "asset": "/Game/World/Interactables/DifficultyTotem/SM_DifficultyTotem_Pixal3D_Outline.SM_DifficultyTotem_Pixal3D_Outline",
+          "class": "StaticMesh",
+          "name": "SM_DifficultyTotem_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_QuadRetro_Pixelated_512",
+          "asset": "/Game/World/Interactables/DifficultyTotem/Textures/T_DifficultyTotem_QuadRetro_Pixelated_512.T_DifficultyTotem_QuadRetro_Pixelated_512",
+          "class": "Texture2D",
+          "name": "T_DifficultyTotem_QuadRetro_Pixelated_512"
+        },
+        {
+          "package": "/Game/World/Interactables/Fountain/Fountain",
+          "asset": "/Game/World/Interactables/Fountain/Fountain.Fountain",
+          "class": "StaticMesh",
+          "name": "Fountain"
+        },
+        {
+          "package": "/Game/World/Interactables/Fountain/Fountain/Textures/Image_0_003",
+          "asset": "/Game/World/Interactables/Fountain/Fountain/Textures/Image_0_003.Image_0_003",
+          "class": "Texture2D",
+          "name": "Image_0_003"
+        },
+        {
+          "package": "/Game/World/Interactables/Fountain/Fountain/Textures/Image_1",
+          "asset": "/Game/World/Interactables/Fountain/Fountain/Textures/Image_1.Image_1",
+          "class": "Texture2D",
+          "name": "Image_1"
+        },
+        {
+          "package": "/Game/World/Interactables/Fountain/Material_0",
+          "asset": "/Game/World/Interactables/Fountain/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/Interactables/Fountain/Materials/M_Fountain_QuadRetro",
+          "asset": "/Game/World/Interactables/Fountain/Materials/M_Fountain_QuadRetro.M_Fountain_QuadRetro",
+          "class": "MaterialInstanceConstant",
+          "name": "M_Fountain_QuadRetro"
+        },
+        {
+          "package": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline",
+          "asset": "/Game/World/Interactables/Fountain/SM_Fountain_Pixal3D_Outline.SM_Fountain_Pixal3D_Outline",
+          "class": "StaticMesh",
+          "name": "SM_Fountain_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Interactables/IdolAltar/Material_0",
+          "asset": "/Game/World/Interactables/IdolAltar/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/Interactables/IdolAltar/Materials/M_IdolAltar_QuadRetro",
+          "asset": "/Game/World/Interactables/IdolAltar/Materials/M_IdolAltar_QuadRetro.M_IdolAltar_QuadRetro",
+          "class": "MaterialInstanceConstant",
+          "name": "M_IdolAltar_QuadRetro"
+        },
+        {
+          "package": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline",
+          "asset": "/Game/World/Interactables/IdolAltar/SM_IdolAltar_Pixal3D_Outline.SM_IdolAltar_Pixal3D_Outline",
+          "class": "StaticMesh",
+          "name": "SM_IdolAltar_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Interactables/LootWheel/Material_0",
+          "asset": "/Game/World/Interactables/LootWheel/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline",
+          "asset": "/Game/World/Interactables/LootWheel/SM_LootWheel_Pixal3D_Outline.SM_LootWheel_Pixal3D_Outline",
+          "class": "StaticMesh",
+          "name": "SM_LootWheel_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/Interactables/Totem",
+          "asset": "/Game/World/Interactables/Totem.Totem",
+          "class": "StaticMesh",
+          "name": "Totem"
+        },
+        {
+          "package": "/Game/World/Interactables/Vehicles/Material_0",
+          "asset": "/Game/World/Interactables/Vehicles/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/Interactables/Vehicles/Materials/M_Tractor_Pixal3D",
+          "asset": "/Game/World/Interactables/Vehicles/Materials/M_Tractor_Pixal3D.M_Tractor_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "M_Tractor_Pixal3D"
+        },
+        {
+          "package": "/Game/World/Interactables/Vending/Vending",
+          "asset": "/Game/World/Interactables/Vending/Vending.Vending",
+          "class": "StaticMesh",
+          "name": "Vending"
+        },
+        {
+          "package": "/Game/World/Interactables/WeaponAltar/Material_0",
+          "asset": "/Game/World/Interactables/WeaponAltar/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        }
+      ],
+      "package_list_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_world_interactable_visual_candidates_packages.txt"
+    },
+    "world_lootbag_visual_candidates": {
+      "description": "First-pass zero-reference world assets in lootbag_visual.",
+      "status": "candidate_exact_audit_required",
+      "note": "World audit is discovery only; run exact wide text and binary package proof before deletion.",
+      "package_count": 9,
+      "packages": [
+        "/Game/World/LootBags/Black/BlackBag/Materials/Material_0",
+        "/Game/World/LootBags/Black/Materials/M_SM_LootBag_Black_QuadRetro",
+        "/Game/World/LootBags/Red/Materials/M_SM_LootBag_Red_QuadRetro",
+        "/Game/World/LootBags/Red/RedBag/Materials/Material_0_005",
+        "/Game/World/LootBags/Shared/Material_0",
+        "/Game/World/LootBags/White/Materials/M_SM_LootBag_White_QuadRetro",
+        "/Game/World/LootBags/White/WhiteBag/Materials/Material_0_007",
+        "/Game/World/LootBags/Yellow/Materials/M_SM_LootBag_Yellow_QuadRetro",
+        "/Game/World/LootBags/Yellow/YellowBag/Materials/Material_0_008"
+      ],
+      "assets": [
+        {
+          "package": "/Game/World/LootBags/Black/BlackBag/Materials/Material_0",
+          "asset": "/Game/World/LootBags/Black/BlackBag/Materials/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/LootBags/Black/Materials/M_SM_LootBag_Black_QuadRetro",
+          "asset": "/Game/World/LootBags/Black/Materials/M_SM_LootBag_Black_QuadRetro.M_SM_LootBag_Black_QuadRetro",
+          "class": "MaterialInstanceConstant",
+          "name": "M_SM_LootBag_Black_QuadRetro"
+        },
+        {
+          "package": "/Game/World/LootBags/Red/Materials/M_SM_LootBag_Red_QuadRetro",
+          "asset": "/Game/World/LootBags/Red/Materials/M_SM_LootBag_Red_QuadRetro.M_SM_LootBag_Red_QuadRetro",
+          "class": "MaterialInstanceConstant",
+          "name": "M_SM_LootBag_Red_QuadRetro"
+        },
+        {
+          "package": "/Game/World/LootBags/Red/RedBag/Materials/Material_0_005",
+          "asset": "/Game/World/LootBags/Red/RedBag/Materials/Material_0_005.Material_0_005",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0_005"
+        },
+        {
+          "package": "/Game/World/LootBags/Shared/Material_0",
+          "asset": "/Game/World/LootBags/Shared/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/LootBags/White/Materials/M_SM_LootBag_White_QuadRetro",
+          "asset": "/Game/World/LootBags/White/Materials/M_SM_LootBag_White_QuadRetro.M_SM_LootBag_White_QuadRetro",
+          "class": "MaterialInstanceConstant",
+          "name": "M_SM_LootBag_White_QuadRetro"
+        },
+        {
+          "package": "/Game/World/LootBags/White/WhiteBag/Materials/Material_0_007",
+          "asset": "/Game/World/LootBags/White/WhiteBag/Materials/Material_0_007.Material_0_007",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0_007"
+        },
+        {
+          "package": "/Game/World/LootBags/Yellow/Materials/M_SM_LootBag_Yellow_QuadRetro",
+          "asset": "/Game/World/LootBags/Yellow/Materials/M_SM_LootBag_Yellow_QuadRetro.M_SM_LootBag_Yellow_QuadRetro",
+          "class": "MaterialInstanceConstant",
+          "name": "M_SM_LootBag_Yellow_QuadRetro"
+        },
+        {
+          "package": "/Game/World/LootBags/Yellow/YellowBag/Materials/Material_0_008",
+          "asset": "/Game/World/LootBags/Yellow/YellowBag/Materials/Material_0_008.Material_0_008",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0_008"
+        }
+      ],
+      "package_list_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_world_lootbag_visual_candidates_packages.txt"
+    },
+    "world_visualprop_candidates": {
+      "description": "First-pass zero-reference world assets in visualprop.",
+      "status": "candidate_exact_audit_required",
+      "note": "World audit is discovery only; run exact wide text and binary package proof before deletion.",
+      "package_count": 6,
+      "packages": [
+        "/Game/World/VisualProps/Easy/Material_0",
+        "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D",
+        "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D_Outline",
+        "/Game/World/VisualProps/Easy/Materials/MI_WallLamp_Easy_Pixal3D_Outline",
+        "/Game/World/VisualProps/Easy/Materials/MI_WallTorch_Easy_Pixal3D_Outline",
+        "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline"
+      ],
+      "assets": [
+        {
+          "package": "/Game/World/VisualProps/Easy/Material_0",
+          "asset": "/Game/World/VisualProps/Easy/Material_0.Material_0",
+          "class": "MaterialInstanceConstant",
+          "name": "Material_0"
+        },
+        {
+          "package": "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D",
+          "asset": "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D.MI_BrokenVase_Easy_Pixal3D",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_BrokenVase_Easy_Pixal3D"
+        },
+        {
+          "package": "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D_Outline",
+          "asset": "/Game/World/VisualProps/Easy/Materials/MI_BrokenVase_Easy_Pixal3D_Outline.MI_BrokenVase_Easy_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_BrokenVase_Easy_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/VisualProps/Easy/Materials/MI_WallLamp_Easy_Pixal3D_Outline",
+          "asset": "/Game/World/VisualProps/Easy/Materials/MI_WallLamp_Easy_Pixal3D_Outline.MI_WallLamp_Easy_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_WallLamp_Easy_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/VisualProps/Easy/Materials/MI_WallTorch_Easy_Pixal3D_Outline",
+          "asset": "/Game/World/VisualProps/Easy/Materials/MI_WallTorch_Easy_Pixal3D_Outline.MI_WallTorch_Easy_Pixal3D_Outline",
+          "class": "MaterialInstanceConstant",
+          "name": "MI_WallTorch_Easy_Pixal3D_Outline"
+        },
+        {
+          "package": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline",
+          "asset": "/Game/World/VisualProps/Easy/SM_SkullRemains_Easy_Pixal3D_Outline.SM_SkullRemains_Easy_Pixal3D_Outline",
+          "class": "StaticMesh",
+          "name": "SM_SkullRemains_Easy_Pixal3D_Outline"
+        }
+      ],
+      "package_list_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\model_cleanup_post_delete_candidate_manifest_world_visualprop_candidates_packages.txt"
+    }
+  },
+  "generated_run_candidates": [
+    {
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\Archive",
+      "name": "Archive",
+      "last_write_utc": "2026-05-22T10:17:38.641402+00:00",
+      "recommended_action": "keep_review",
+      "reason": "Current or archived provenance; delete only after import provenance is settled."
+    },
+    {
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532",
+      "name": "FriendSlopEasyBatch_20260604_1532",
+      "last_write_utc": "2026-06-05T05:37:46.363339+00:00",
+      "recommended_action": "keep_review",
+      "reason": "Current or archived provenance; delete only after import provenance is settled."
+    },
+    {
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415",
+      "name": "FriendSlopProbe_Hero1Male_20260604_1415",
+      "last_write_utc": "2026-06-05T06:16:03.102671+00:00",
+      "recommended_action": "keep_review",
+      "reason": "Current or archived provenance; delete only after import provenance is settled."
+    },
+    {
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\HeroDemoLineup_20260522_AccuRig",
+      "name": "HeroDemoLineup_20260522_AccuRig",
+      "last_write_utc": "2026-05-22T10:33:58.855274+00:00",
+      "recommended_action": "keep_review",
+      "reason": "Current or archived provenance; delete only after import provenance is settled."
+    }
+  ],
+  "rules": [
+    "Runtime Content packages require exact external package, text, and binary proof before deletion.",
+    "Generated run folders are not runtime dependencies; preserve durable summary/provenance before deleting raw outputs.",
+    "Do not delete whole hero folders unless the current audit marks them as whole-folder candidates."
+  ]
+}

@@ -1,0 +1,403 @@
+{
+  "generated_utc": "2026-06-05T08:36:55.922351+00:00",
+  "gate_path": "C:\\UE\\T66\\Reports\\Hygiene\\2026-06-05\\gate_final_all_runtime_candidates.json",
+  "group": "final_all_runtime_candidates",
+  "approved_count": 56,
+  "deleted_count": 56,
+  "skipped_count": 0,
+  "deleted": [
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_0.T_Hero_1_Chad_Beachgoer_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_InnerLines",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_InnerLines.T_Hero_1_Chad_Beachgoer_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_Tint",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Beachgoer/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Beachgoer_Tint.T_Hero_1_Chad_Beachgoer_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_0.T_Hero_1_Chad_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_InnerLines",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_InnerLines.T_Hero_1_Chad_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Tint",
+      "asset_path": "/Game/Characters/Heroes/Hero_1/Chad/Pixal3DToonStyle/Textures/T_Hero_1_Chad_Tint.T_Hero_1_Chad_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Image_0",
+      "asset_path": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Image_0.Image_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Image_0_001",
+      "asset_path": "/Game/Characters/Heroes/Hero_10/Chad/Beachgoer/Image_0_001.Image_0_001",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_0",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_0.T_Boost_Accuracy_Pixal3D_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_InnerLines",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_InnerLines.T_Boost_Accuracy_Pixal3D_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_Tint",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Accuracy_Pixal3D_Tint.T_Boost_Accuracy_Pixal3D_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_0",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_0.T_Boost_Armor_Pixal3D_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_InnerLines",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_InnerLines.T_Boost_Armor_Pixal3D_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_Tint",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Armor_Pixal3D_Tint.T_Boost_Armor_Pixal3D_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_0",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_0.T_Boost_AttackScale_Pixal3D_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_InnerLines",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_InnerLines.T_Boost_AttackScale_Pixal3D_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_Tint",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_AttackScale_Pixal3D_Tint.T_Boost_AttackScale_Pixal3D_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_0",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_0.T_Boost_AttackSpeed_Pixal3D_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_InnerLines",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_InnerLines.T_Boost_AttackSpeed_Pixal3D_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_Tint",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_AttackSpeed_Pixal3D_Tint.T_Boost_AttackSpeed_Pixal3D_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_0",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_0.T_Boost_DamageStrength_Pixal3D_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_InnerLines",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_InnerLines.T_Boost_DamageStrength_Pixal3D_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_Tint",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_DamageStrength_Pixal3D_Tint.T_Boost_DamageStrength_Pixal3D_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_0",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_0.T_Boost_Evasion_Pixal3D_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_InnerLines",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_InnerLines.T_Boost_Evasion_Pixal3D_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_Tint",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Evasion_Pixal3D_Tint.T_Boost_Evasion_Pixal3D_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_0",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_0.T_Boost_Luck_Pixal3D_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_InnerLines",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_InnerLines.T_Boost_Luck_Pixal3D_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_Tint",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Luck_Pixal3D_Tint.T_Boost_Luck_Pixal3D_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_0",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_0.T_Boost_Speed_Pixal3D_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_InnerLines",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_InnerLines.T_Boost_Speed_Pixal3D_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_Tint",
+      "asset_path": "/Game/World/Boosts/Textures/T_Boost_Speed_Pixal3D_Tint.T_Boost_Speed_Pixal3D_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Gates/Textures/T_StartGate_Pixal3D_BaseColor",
+      "asset_path": "/Game/World/Gates/Textures/T_StartGate_Pixal3D_BaseColor.T_StartGate_Pixal3D_BaseColor",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Altar/Textures/Image_0_006",
+      "asset_path": "/Game/World/Interactables/Altar/Textures/Image_0_006.Image_0_006",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Altar/Textures/Image_1",
+      "asset_path": "/Game/World/Interactables/Altar/Textures/Image_1.Image_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Chests/ChestModel/Textures/Chest_BaseColor_00",
+      "asset_path": "/Game/World/Interactables/Chests/ChestModel/Textures/Chest_BaseColor_00.Chest_BaseColor_00",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/World/Interactables/Chests/ChestModel/Textures/T_Chest_QuadRetro_Pixelated_512.T_Chest_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Crate/Textures/T_Crate_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/World/Interactables/Crate/Textures/T_Crate_QuadRetro_Pixelated_512.T_Crate_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Fountain/Textures/T_Fountain_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/World/Interactables/Fountain/Textures/T_Fountain_QuadRetro_Pixelated_512.T_Fountain_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/World/Interactables/IdolAltar/Textures/T_IdolAltar_QuadRetro_Pixelated_512.T_IdolAltar_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/Interactables/Vehicles/Textures/T_Tractor_Pixal3D_BaseColor",
+      "asset_path": "/Game/World/Interactables/Vehicles/Textures/T_Tractor_Pixal3D_BaseColor.T_Tractor_Pixal3D_BaseColor",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/Black/BlackBag/Textures/Image_0",
+      "asset_path": "/Game/World/LootBags/Black/BlackBag/Textures/Image_0.Image_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/Black/BlackBag/Textures/Image_1",
+      "asset_path": "/Game/World/LootBags/Black/BlackBag/Textures/Image_1.Image_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/Black/Textures/T_SM_LootBag_Black_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/World/LootBags/Black/Textures/T_SM_LootBag_Black_QuadRetro_Pixelated_512.T_SM_LootBag_Black_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/Red/RedBag/Textures/Image_0_005",
+      "asset_path": "/Game/World/LootBags/Red/RedBag/Textures/Image_0_005.Image_0_005",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/Red/RedBag/Textures/Image_1",
+      "asset_path": "/Game/World/LootBags/Red/RedBag/Textures/Image_1.Image_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/Red/Textures/T_SM_LootBag_Red_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/World/LootBags/Red/Textures/T_SM_LootBag_Red_QuadRetro_Pixelated_512.T_SM_LootBag_Red_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/White/Textures/T_SM_LootBag_White_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/World/LootBags/White/Textures/T_SM_LootBag_White_QuadRetro_Pixelated_512.T_SM_LootBag_White_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/White/WhiteBag/Textures/Image_0_007",
+      "asset_path": "/Game/World/LootBags/White/WhiteBag/Textures/Image_0_007.Image_0_007",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/White/WhiteBag/Textures/Image_1",
+      "asset_path": "/Game/World/LootBags/White/WhiteBag/Textures/Image_1.Image_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/Yellow/Textures/T_SM_LootBag_Yellow_QuadRetro_Pixelated_512",
+      "asset_path": "/Game/World/LootBags/Yellow/Textures/T_SM_LootBag_Yellow_QuadRetro_Pixelated_512.T_SM_LootBag_Yellow_QuadRetro_Pixelated_512",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/Yellow/YellowBag/Textures/Image_0_008",
+      "asset_path": "/Game/World/LootBags/Yellow/YellowBag/Textures/Image_0_008.Image_0_008",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/LootBags/Yellow/YellowBag/Textures/Image_1",
+      "asset_path": "/Game/World/LootBags/Yellow/YellowBag/Textures/Image_1.Image_1",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_0",
+      "asset_path": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_0.T_BrokenVase_Easy_Pixal3D_0",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_InnerLines",
+      "asset_path": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_InnerLines.T_BrokenVase_Easy_Pixal3D_InnerLines",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    },
+    {
+      "package": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_Tint",
+      "asset_path": "/Game/World/VisualProps/Easy/Textures/T_BrokenVase_Easy_Pixal3D_Tint.T_BrokenVase_Easy_Pixal3D_Tint",
+      "class": "Texture2D",
+      "exists": true,
+      "delete_order": 70
+    }
+  ],
+  "skipped": []
+}

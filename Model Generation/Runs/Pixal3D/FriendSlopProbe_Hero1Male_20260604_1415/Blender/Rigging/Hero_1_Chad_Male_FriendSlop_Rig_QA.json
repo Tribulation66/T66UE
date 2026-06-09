@@ -1,0 +1,754 @@
+{
+  "source_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Outputs\\Hero_1_Chad_Male.glb",
+  "blend_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Hero_1_Chad_Male_FriendSlop_Rig.blend",
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Hero_1_Chad_Male_FriendSlop_Skeletal.fbx",
+  "reimport_blend_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Hero_1_Chad_Male_FriendSlop_Skeletal_reimport_validation.blend",
+  "source_true_front": "+Y",
+  "final_visual_front": "+X",
+  "source_to_final_rotation_degrees_z": -90.0,
+  "source_facing_contact_sheet": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Proofs\\Hero_1_Chad_Male_facing_contact_sheet.png",
+  "height_m": 1.8000000715255737,
+  "bounds_min": [
+    -0.26218053698539734,
+    -0.4510159492492676,
+    0.0
+  ],
+  "bounds_max": [
+    0.2621805667877197,
+    0.4510159194469452,
+    1.8000000715255737
+  ],
+  "material_slots": [
+    "Material_0"
+  ],
+  "hierarchy_qa": {
+    "bone_count": 23,
+    "hierarchy": {
+      "root": {
+        "parent": null,
+        "length": 0.14000000059604645,
+        "head": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "tail": [
+          0.0,
+          0.0,
+          0.14000000059604645
+        ]
+      },
+      "pelvis": {
+        "parent": "root",
+        "length": 0.18000000715255737,
+        "head": [
+          0.0,
+          0.0,
+          0.8199999928474426
+        ],
+        "tail": [
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "spine_01": {
+        "parent": "pelvis",
+        "length": 0.16999995708465576,
+        "head": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "tail": [
+          0.0,
+          0.0,
+          1.1699999570846558
+        ]
+      },
+      "spine_02": {
+        "parent": "spine_01",
+        "length": 0.1700000762939453,
+        "head": [
+          0.0,
+          0.0,
+          1.1699999570846558
+        ],
+        "tail": [
+          0.0,
+          0.0,
+          1.340000033378601
+        ]
+      },
+      "spine_03": {
+        "parent": "spine_02",
+        "length": 0.13999998569488525,
+        "head": [
+          0.0,
+          0.0,
+          1.340000033378601
+        ],
+        "tail": [
+          0.0,
+          0.0,
+          1.4800000190734863
+        ]
+      },
+      "neck_01": {
+        "parent": "spine_03",
+        "length": 0.10049878060817719,
+        "head": [
+          0.0,
+          0.0,
+          1.4800000190734863
+        ],
+        "tail": [
+          0.009999999776482582,
+          0.0,
+          1.5800000429153442
+        ]
+      },
+      "head": {
+        "parent": "neck_01",
+        "length": 0.19104968011379242,
+        "head": [
+          0.009999999776482582,
+          0.0,
+          1.5800000429153442
+        ],
+        "tail": [
+          0.029999999329447746,
+          0.0,
+          1.7699999809265137
+        ]
+      },
+      "clavicle_l": {
+        "parent": "spine_03",
+        "length": 0.21840327978134155,
+        "head": [
+          0.0,
+          0.07999999821186066,
+          1.4199999570846558
+        ],
+        "tail": [
+          0.0,
+          0.28999999165534973,
+          1.3600000143051147
+        ]
+      },
+      "upperarm_l": {
+        "parent": "clavicle_l",
+        "length": 0.4604346454143524,
+        "head": [
+          0.0,
+          0.28999999165534973,
+          1.3600000143051147
+        ],
+        "tail": [
+          0.0,
+          0.550000011920929,
+          0.9800000190734863
+        ]
+      },
+      "lowerarm_l": {
+        "parent": "upperarm_l",
+        "length": 0.3534119725227356,
+        "head": [
+          0.0,
+          0.550000011920929,
+          0.9800000190734863
+        ],
+        "tail": [
+          0.0,
+          0.699999988079071,
+          0.6600000262260437
+        ]
+      },
+      "hand_l": {
+        "parent": "lowerarm_l",
+        "length": 0.17378151416778564,
+        "head": [
+          0.0,
+          0.699999988079071,
+          0.6600000262260437
+        ],
+        "tail": [
+          0.019999999552965164,
+          0.7300000190734863,
+          0.49000000953674316
+        ]
+      },
+      "clavicle_r": {
+        "parent": "spine_03",
+        "length": 0.21840327978134155,
+        "head": [
+          0.0,
+          -0.07999999821186066,
+          1.4199999570846558
+        ],
+        "tail": [
+          0.0,
+          -0.28999999165534973,
+          1.3600000143051147
+        ]
+      },
+      "upperarm_r": {
+        "parent": "clavicle_r",
+        "length": 0.4604346454143524,
+        "head": [
+          0.0,
+          -0.28999999165534973,
+          1.3600000143051147
+        ],
+        "tail": [
+          0.0,
+          -0.550000011920929,
+          0.9800000190734863
+        ]
+      },
+      "lowerarm_r": {
+        "parent": "upperarm_r",
+        "length": 0.3534119725227356,
+        "head": [
+          0.0,
+          -0.550000011920929,
+          0.9800000190734863
+        ],
+        "tail": [
+          0.0,
+          -0.699999988079071,
+          0.6600000262260437
+        ]
+      },
+      "hand_r": {
+        "parent": "lowerarm_r",
+        "length": 0.17378151416778564,
+        "head": [
+          0.0,
+          -0.699999988079071,
+          0.6600000262260437
+        ],
+        "tail": [
+          0.019999999552965164,
+          -0.7300000190734863,
+          0.49000000953674316
+        ]
+      },
+      "thigh_l": {
+        "parent": "pelvis",
+        "length": 0.3801315724849701,
+        "head": [
+          0.0,
+          0.10999999940395355,
+          0.8199999928474426
+        ],
+        "tail": [
+          0.0,
+          0.11999999731779099,
+          0.4399999976158142
+        ]
+      },
+      "calf_l": {
+        "parent": "thigh_l",
+        "length": 0.3100000023841858,
+        "head": [
+          0.0,
+          0.11999999731779099,
+          0.4399999976158142
+        ],
+        "tail": [
+          0.0,
+          0.11999999731779099,
+          0.12999999523162842
+        ]
+      },
+      "foot_l": {
+        "parent": "calf_l",
+        "length": 0.19906029105186462,
+        "head": [
+          0.0,
+          0.11999999731779099,
+          0.12999999523162842
+        ],
+        "tail": [
+          0.18000000715255737,
+          0.11999999731779099,
+          0.04500000178813934
+        ]
+      },
+      "ball_l": {
+        "parent": "foot_l",
+        "length": 0.12999999523162842,
+        "head": [
+          0.18000000715255737,
+          0.11999999731779099,
+          0.04500000178813934
+        ],
+        "tail": [
+          0.3100000023841858,
+          0.11999999731779099,
+          0.04500000178813934
+        ]
+      },
+      "thigh_r": {
+        "parent": "pelvis",
+        "length": 0.3801315724849701,
+        "head": [
+          0.0,
+          -0.10999999940395355,
+          0.8199999928474426
+        ],
+        "tail": [
+          0.0,
+          -0.11999999731779099,
+          0.4399999976158142
+        ]
+      },
+      "calf_r": {
+        "parent": "thigh_r",
+        "length": 0.3100000023841858,
+        "head": [
+          0.0,
+          -0.11999999731779099,
+          0.4399999976158142
+        ],
+        "tail": [
+          0.0,
+          -0.11999999731779099,
+          0.12999999523162842
+        ]
+      },
+      "foot_r": {
+        "parent": "calf_r",
+        "length": 0.19906029105186462,
+        "head": [
+          0.0,
+          -0.11999999731779099,
+          0.12999999523162842
+        ],
+        "tail": [
+          0.18000000715255737,
+          -0.11999999731779099,
+          0.04500000178813934
+        ]
+      },
+      "ball_r": {
+        "parent": "foot_r",
+        "length": 0.12999999523162842,
+        "head": [
+          0.18000000715255737,
+          -0.11999999731779099,
+          0.04500000178813934
+        ],
+        "tail": [
+          0.3100000023841858,
+          -0.11999999731779099,
+          0.04500000178813934
+        ]
+      }
+    },
+    "missing_required_bones": [],
+    "wrong_required_parents": [],
+    "short_required_bones": [],
+    "root_bone_count": 1
+  },
+  "weight_qa": {
+    "vertex_count": 163496,
+    "unweighted_vertices": 0,
+    "vertices_over_4_influences": 0,
+    "max_influences": 3,
+    "max_normalization_error": 4.470348358154297e-08,
+    "root_only_vertices": 0,
+    "pelvis_only_vertices": 0,
+    "sole_influence_counts": {
+      "head": 7816,
+      "spine_01": 1,
+      "spine_02": 5,
+      "spine_03": 4
+    }
+  },
+  "proof_paths": {
+    "final_facing_plus_x_camera_front": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Proofs\\Hero_1_Chad_Male_final_facing_plus_x_camera_front.png",
+    "final_facing_minus_x_camera_back": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Proofs\\Hero_1_Chad_Male_final_facing_minus_x_camera_back.png",
+    "final_facing_plus_y_camera_side": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Proofs\\Hero_1_Chad_Male_final_facing_plus_y_camera_side.png",
+    "final_facing_minus_y_camera_side": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Proofs\\Hero_1_Chad_Male_final_facing_minus_y_camera_side.png",
+    "rest_front": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Proofs\\Hero_1_Chad_Male_rest_front.png",
+    "rest_side": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Proofs\\Hero_1_Chad_Male_rest_side.png",
+    "bend_front": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Proofs\\Hero_1_Chad_Male_bend_front.png",
+    "bend_side": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Proofs\\Hero_1_Chad_Male_bend_side.png"
+  },
+  "reimport_validation": {
+    "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProbe_Hero1Male_20260604_1415\\Blender\\Rigging\\Hero_1_Chad_Male_FriendSlop_Skeletal.fbx",
+    "armature_count": 1,
+    "mesh_count": 1,
+    "armature_name": "Hero_1_Chad_Male_FriendSlop_Armature",
+    "mesh_name": "Hero_1_Chad_Male_FriendSlop_Mesh",
+    "material_slots": [
+      "Material_0"
+    ],
+    "hierarchy_qa": {
+      "bone_count": 23,
+      "hierarchy": {
+        "root": {
+          "parent": null,
+          "length": 0.8199999928474426,
+          "head": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "tail": [
+            0.0,
+            0.0,
+            0.8199999928474426
+          ]
+        },
+        "pelvis": {
+          "parent": "root",
+          "length": 0.13333332538604736,
+          "head": [
+            0.0,
+            0.0,
+            0.8199999928474426
+          ],
+          "tail": [
+            0.0,
+            0.0,
+            0.95333331823349
+          ]
+        },
+        "spine_01": {
+          "parent": "pelvis",
+          "length": 0.16999995708465576,
+          "head": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "tail": [
+            0.0,
+            0.0,
+            1.1699999570846558
+          ]
+        },
+        "spine_02": {
+          "parent": "spine_01",
+          "length": 0.1700000762939453,
+          "head": [
+            0.0,
+            0.0,
+            1.1699999570846558
+          ],
+          "tail": [
+            0.0,
+            0.0,
+            1.340000033378601
+          ]
+        },
+        "spine_03": {
+          "parent": "spine_02",
+          "length": 0.12209129333496094,
+          "head": [
+            0.0,
+            0.0,
+            1.340000033378601
+          ],
+          "tail": [
+            0.0,
+            0.0,
+            1.462091326713562
+          ]
+        },
+        "neck_01": {
+          "parent": "spine_03",
+          "length": 0.10049879550933838,
+          "head": [
+            0.0,
+            0.0,
+            1.4800000190734863
+          ],
+          "tail": [
+            0.010000001639127731,
+            0.0,
+            1.5800000429153442
+          ]
+        },
+        "head": {
+          "parent": "neck_01",
+          "length": 0.10049883276224136,
+          "head": [
+            0.010000009089708328,
+            3.7068048630573003e-10,
+            1.5800000429153442
+          ],
+          "tail": [
+            0.020520709455013275,
+            3.940796855506079e-10,
+            1.6799466609954834
+          ]
+        },
+        "clavicle_l": {
+          "parent": "spine_03",
+          "length": 0.21840327978134155,
+          "head": [
+            0.0,
+            0.07999999821186066,
+            1.4199999570846558
+          ],
+          "tail": [
+            0.0,
+            0.28999999165534973,
+            1.3600000143051147
+          ]
+        },
+        "upperarm_l": {
+          "parent": "clavicle_l",
+          "length": 0.4604349732398987,
+          "head": [
+            0.0,
+            0.28999999165534973,
+            1.3600000143051147
+          ],
+          "tail": [
+            0.0,
+            0.5500003099441528,
+            0.9799997806549072
+          ]
+        },
+        "lowerarm_l": {
+          "parent": "upperarm_l",
+          "length": 0.35341185331344604,
+          "head": [
+            0.0,
+            0.5500003099441528,
+            0.9799997806549072
+          ],
+          "tail": [
+            0.0,
+            0.6999999284744263,
+            0.6599997282028198
+          ]
+        },
+        "hand_l": {
+          "parent": "lowerarm_l",
+          "length": 0.35341182351112366,
+          "head": [
+            0.0,
+            0.6999999284744263,
+            0.6599997282028198
+          ],
+          "tail": [
+            0.04067311808466911,
+            0.761009931564331,
+            0.3142782151699066
+          ]
+        },
+        "clavicle_r": {
+          "parent": "spine_03",
+          "length": 0.21840330958366394,
+          "head": [
+            0.0,
+            -0.07999999821186066,
+            1.4199999570846558
+          ],
+          "tail": [
+            0.0,
+            -0.2900000214576721,
+            1.3600000143051147
+          ]
+        },
+        "upperarm_r": {
+          "parent": "clavicle_r",
+          "length": 0.4604349732398987,
+          "head": [
+            0.0,
+            -0.2900000214576721,
+            1.3600000143051147
+          ],
+          "tail": [
+            0.0,
+            -0.5500003099441528,
+            0.9799997806549072
+          ]
+        },
+        "lowerarm_r": {
+          "parent": "upperarm_r",
+          "length": 0.35341188311576843,
+          "head": [
+            0.0,
+            -0.5500003099441528,
+            0.9799997806549072
+          ],
+          "tail": [
+            0.0,
+            -0.6999999284744263,
+            0.6599997282028198
+          ]
+        },
+        "hand_r": {
+          "parent": "lowerarm_r",
+          "length": 0.35341185331344604,
+          "head": [
+            0.0,
+            -0.6999999284744263,
+            0.6599997282028198
+          ],
+          "tail": [
+            0.04067312180995941,
+            -0.761009931564331,
+            0.314278244972229
+          ]
+        },
+        "thigh_l": {
+          "parent": "pelvis",
+          "length": 0.3801315724849701,
+          "head": [
+            0.0,
+            0.10999999940395355,
+            0.8199999928474426
+          ],
+          "tail": [
+            0.0,
+            0.11999999731779099,
+            0.4400000274181366
+          ]
+        },
+        "calf_l": {
+          "parent": "thigh_l",
+          "length": 0.31000012159347534,
+          "head": [
+            0.0,
+            0.11999999731779099,
+            0.4400000274181366
+          ],
+          "tail": [
+            0.0,
+            0.11999998986721039,
+            0.12999990582466125
+          ]
+        },
+        "foot_l": {
+          "parent": "calf_l",
+          "length": 0.19906027615070343,
+          "head": [
+            0.0,
+            0.11999998986721039,
+            0.12999990582466125
+          ],
+          "tail": [
+            0.17999999225139618,
+            0.12000000476837158,
+            0.04499991238117218
+          ]
+        },
+        "ball_l": {
+          "parent": "foot_l",
+          "length": 0.19906027615070343,
+          "head": [
+            0.17999999225139618,
+            0.12000000476837158,
+            0.04499991238117218
+          ],
+          "tail": [
+            0.3790602684020996,
+            0.12000001966953278,
+            0.044999927282333374
+          ]
+        },
+        "thigh_r": {
+          "parent": "pelvis",
+          "length": 0.3801315724849701,
+          "head": [
+            0.0,
+            -0.10999999940395355,
+            0.8199999928474426
+          ],
+          "tail": [
+            0.0,
+            -0.11999999731779099,
+            0.4399999678134918
+          ]
+        },
+        "calf_r": {
+          "parent": "thigh_r",
+          "length": 0.31000006198883057,
+          "head": [
+            0.0,
+            -0.11999999731779099,
+            0.4399999678134918
+          ],
+          "tail": [
+            0.0,
+            -0.11999998986721039,
+            0.12999990582466125
+          ]
+        },
+        "foot_r": {
+          "parent": "calf_r",
+          "length": 0.19906027615070343,
+          "head": [
+            0.0,
+            -0.11999998986721039,
+            0.12999990582466125
+          ],
+          "tail": [
+            0.17999999225139618,
+            -0.12000000476837158,
+            0.04499990493059158
+          ]
+        },
+        "ball_r": {
+          "parent": "foot_r",
+          "length": 0.19906029105186462,
+          "head": [
+            0.17999999225139618,
+            -0.12000000476837158,
+            0.04499990493059158
+          ],
+          "tail": [
+            0.379060298204422,
+            -0.12000001966953278,
+            0.044999923557043076
+          ]
+        }
+      },
+      "missing_required_bones": [],
+      "wrong_required_parents": [],
+      "short_required_bones": [],
+      "root_bone_count": 1
+    },
+    "weight_qa": {
+      "vertex_count": 163496,
+      "unweighted_vertices": 0,
+      "vertices_over_4_influences": 0,
+      "max_influences": 3,
+      "max_normalization_error": 4.470348358154297e-08,
+      "root_only_vertices": 0,
+      "pelvis_only_vertices": 0,
+      "sole_influence_counts": {
+        "head": 7816,
+        "spine_01": 1,
+        "spine_02": 5,
+        "spine_03": 4
+      }
+    },
+    "bounds_min": [
+      -0.26218053698539734,
+      -0.4510159492492676,
+      -1.9586523514192322e-09
+    ],
+    "bounds_max": [
+      0.2621805667877197,
+      0.4510159194469452,
+      1.8000000715255737
+    ],
+    "height_m": 1.800000073484226,
+    "passed": true
+  },
+  "known_compromises": [
+    "Procedural coordinate-region weighting, not hand-painted production weights.",
+    "Dense Pixal3D mesh kept; no Decimate or retopo.",
+    "Rest pose keeps the source relaxed low-arm stance; a true authored A-pose requires segmentation or retopo to avoid coat distortion.",
+    "Black outline look-dev is not exported in the skeletal FBX."
+  ]
+}

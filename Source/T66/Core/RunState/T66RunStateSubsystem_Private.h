@@ -46,7 +46,7 @@ namespace T66RunStatePrivate
 		uint32 Seed = static_cast<uint32>(Slot.RollSeed != 0 ? Slot.RollSeed : GetTypeHash(Slot.ItemTemplateID));
 		Seed = HashCombine(Seed, GetTypeHash(static_cast<uint8>(Slot.Rarity)));
 		Seed = HashCombine(Seed, GetTypeHash(Slot.Line1RolledValue));
-		Seed = HashCombine(Seed, GetTypeHash(Slot.GetSecondaryStatBonusValue()));
+		Seed = HashCombine(Seed, GetTypeHash(Slot.GetStatBonusValue()));
 		Seed = HashCombine(Seed, GetTypeHash(SeedSalt));
 		return static_cast<int32>(Seed & 0x7fffffff);
 	}
@@ -64,144 +64,6 @@ namespace T66RunStatePrivate
 		return FMath::Max(1, FMath::CeilToInt(static_cast<float>(BaseGainTenths) * Factor));
 	}
 
-	static const TArray<ET66SecondaryStatType>& T66_GetDamageSecondaryTypes()
-	{
-		static const TArray<ET66SecondaryStatType> Types =
-		{
-			ET66SecondaryStatType::AoeDamage,
-			ET66SecondaryStatType::BounceDamage,
-			ET66SecondaryStatType::PierceDamage,
-			ET66SecondaryStatType::DotDamage
-		};
-		return Types;
-	}
-
-	static const TArray<ET66SecondaryStatType>& T66_GetAttackSpeedSecondaryTypes()
-	{
-		static const TArray<ET66SecondaryStatType> Types =
-		{
-			ET66SecondaryStatType::AoeSpeed,
-			ET66SecondaryStatType::BounceSpeed,
-			ET66SecondaryStatType::PierceSpeed,
-			ET66SecondaryStatType::DotSpeed
-		};
-		return Types;
-	}
-
-	static const TArray<ET66SecondaryStatType>& T66_GetAttackScaleSecondaryTypes()
-	{
-		static const TArray<ET66SecondaryStatType> Types =
-		{
-			ET66SecondaryStatType::AoeScale,
-			ET66SecondaryStatType::BounceScale,
-			ET66SecondaryStatType::PierceScale,
-			ET66SecondaryStatType::DotScale
-		};
-		return Types;
-	}
-
-	static const TArray<ET66SecondaryStatType>& T66_GetAccuracySecondaryTypes()
-	{
-		static const TArray<ET66SecondaryStatType> Types =
-		{
-			ET66SecondaryStatType::CritChance,
-			ET66SecondaryStatType::HeadshotChance,
-			ET66SecondaryStatType::AttackRange,
-			ET66SecondaryStatType::Execute
-		};
-		return Types;
-	}
-
-	static const TArray<ET66SecondaryStatType>& T66_GetArmorSecondaryTypes()
-	{
-		static const TArray<ET66SecondaryStatType> Types =
-		{
-			ET66SecondaryStatType::DamageReduction,
-			ET66SecondaryStatType::ReflectDamage,
-			ET66SecondaryStatType::Taunt,
-			ET66SecondaryStatType::Crush
-		};
-		return Types;
-	}
-
-	static const TArray<ET66SecondaryStatType>& T66_GetEvasionSecondaryTypes()
-	{
-		static const TArray<ET66SecondaryStatType> Types =
-		{
-			ET66SecondaryStatType::EvasionChance,
-			ET66SecondaryStatType::CounterAttack,
-			ET66SecondaryStatType::Invisibility,
-			ET66SecondaryStatType::Assassinate
-		};
-		return Types;
-	}
-
-	static const TArray<ET66SecondaryStatType>& T66_GetLuckSecondaryTypes()
-	{
-		static const TArray<ET66SecondaryStatType> Types =
-		{
-			ET66SecondaryStatType::InteractableLuck,
-			ET66SecondaryStatType::StealingLuck,
-			ET66SecondaryStatType::GamblingLuck,
-			ET66SecondaryStatType::ProcLuck
-		};
-		return Types;
-	}
-
-	static const TArray<ET66SecondaryStatType>& T66_GetSecondaryTypesForPrimary(const ET66HeroStatType PrimaryStatType)
-	{
-		switch (PrimaryStatType)
-		{
-		case ET66HeroStatType::Damage:      return T66_GetDamageSecondaryTypes();
-		case ET66HeroStatType::AttackSpeed: return T66_GetAttackSpeedSecondaryTypes();
-		case ET66HeroStatType::AttackScale: return T66_GetAttackScaleSecondaryTypes();
-		case ET66HeroStatType::Accuracy:    return T66_GetAccuracySecondaryTypes();
-		case ET66HeroStatType::Armor:       return T66_GetArmorSecondaryTypes();
-		case ET66HeroStatType::Evasion:     return T66_GetEvasionSecondaryTypes();
-		case ET66HeroStatType::Luck:        return T66_GetLuckSecondaryTypes();
-		default:
-		{
-			static const TArray<ET66SecondaryStatType> EmptyTypes;
-			return EmptyTypes;
-		}
-		}
-	}
-
-	static ET66SecondaryStatType T66_GetHeroMainAttackSecondaryType(const ET66HeroStatType PrimaryStatType, const ET66AttackCategory AttackCategory)
-	{
-		switch (PrimaryStatType)
-		{
-		case ET66HeroStatType::Damage:
-			switch (AttackCategory)
-			{
-			case ET66AttackCategory::Pierce: return ET66SecondaryStatType::PierceDamage;
-			case ET66AttackCategory::Bounce: return ET66SecondaryStatType::BounceDamage;
-			case ET66AttackCategory::AOE:    return ET66SecondaryStatType::AoeDamage;
-			case ET66AttackCategory::DOT:    return ET66SecondaryStatType::DotDamage;
-			default:                         return ET66SecondaryStatType::PierceDamage;
-			}
-		case ET66HeroStatType::AttackSpeed:
-			switch (AttackCategory)
-			{
-			case ET66AttackCategory::Pierce: return ET66SecondaryStatType::PierceSpeed;
-			case ET66AttackCategory::Bounce: return ET66SecondaryStatType::BounceSpeed;
-			case ET66AttackCategory::AOE:    return ET66SecondaryStatType::AoeSpeed;
-			case ET66AttackCategory::DOT:    return ET66SecondaryStatType::DotSpeed;
-			default:                         return ET66SecondaryStatType::PierceSpeed;
-			}
-		case ET66HeroStatType::AttackScale:
-			switch (AttackCategory)
-			{
-			case ET66AttackCategory::Pierce: return ET66SecondaryStatType::PierceScale;
-			case ET66AttackCategory::Bounce: return ET66SecondaryStatType::BounceScale;
-			case ET66AttackCategory::AOE:    return ET66SecondaryStatType::AoeScale;
-			case ET66AttackCategory::DOT:    return ET66SecondaryStatType::DotScale;
-			default:                         return ET66SecondaryStatType::PierceScale;
-			}
-		default:
-			return ET66SecondaryStatType::None;
-		}
-	}
 
 	static void T66_AccumulatePressureWindowSummary(
 		FT66AntiCheatPressureWindowSummary& Summary,
@@ -306,7 +168,7 @@ namespace T66RunStatePrivate
 
 		FItemData ItemData;
 		return const_cast<UT66GameInstance*>(GI)->GetItemData(Slot.ItemTemplateID, ItemData)
-			&& ItemData.SecondaryStatType != ET66SecondaryStatType::VendorToken;
+			&& ItemData.StatType != ET66StatType::VendorToken;
 	}
 
 	static bool T66_IsAlchemyMatch(const FT66InventorySlot& A, const FT66InventorySlot& B)
@@ -317,7 +179,7 @@ namespace T66RunStatePrivate
 	static int32 T66_MapBlessingRollToWhiteRange(const FT66InventorySlot& Slot)
 	{
 		(void)Slot;
-		return FItemData::GetFlatSecondaryStatBonus(ET66ItemRarity::White);
+		return FItemData::GetFlatStatBonus(ET66ItemRarity::White);
 	}
 
 	static TArray<int32> T66_GatherAlchemySourceIndices(const TArray<FT66InventorySlot>& InventorySlots, const int32 TargetIndex)
@@ -391,7 +253,7 @@ namespace T66RunStatePrivate
 		}
 
 		UpgradedSlot.Line1RolledValue = FItemData::GetAlchemyFlatStatBonus(UpgradedSlot.Rarity);
-		UpgradedSlot.SecondaryStatBonusOverride = FItemData::GetAlchemyFlatStatBonus(UpgradedSlot.Rarity);
+		UpgradedSlot.StatBonusOverride = FItemData::GetAlchemyFlatStatBonus(UpgradedSlot.Rarity);
 		UpgradedSlot.Line2MultiplierOverride = FItemData::GetLine2RarityMultiplier(UpgradedSlot.Rarity);
 		UpgradedSlot.RollSeed = SourceSeed;
 		return UpgradedSlot;
@@ -431,8 +293,8 @@ namespace T66RunStatePrivate
 		Slot.Line1RolledValue = FMath::Max(
 			Slot.Line1RolledValue,
 			FItemData::GetAlchemyFlatStatBonus(Slot.Rarity));
-		Slot.SecondaryStatBonusOverride = FMath::Max(
-			Slot.SecondaryStatBonusOverride,
+		Slot.StatBonusOverride = FMath::Max(
+			Slot.StatBonusOverride,
 			FItemData::GetAlchemyFlatStatBonus(Slot.Rarity));
 		Slot.Line2MultiplierOverride = FItemData::GetLine2RarityMultiplier(Slot.Rarity);
 		Slot.RollSeed = HashCombine(GetTypeHash(PreviousRarity), GetTypeHash(Slot.RollSeed != 0 ? Slot.RollSeed : T66_GetDefaultInventoryRollSeed()));

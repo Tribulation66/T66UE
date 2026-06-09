@@ -20,6 +20,8 @@ class UT66RunStateSubsystem;
 class UT66HeroSpeedSubsystem;
 class UT66MobLootSubsystem;
 class UAnimationAsset;
+class UT66HeroPhysicsComponent;
+class UT66KnockbackComponent;
 class AT66PilotableTractor;
 class UT66HeroMovementComponent;
 class AT66SessionPlayerState;
@@ -80,6 +82,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	TObjectPtr<UT66HeroMovementComponent> HeroMovementComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Physics")
+	TObjectPtr<UT66KnockbackComponent> KnockbackComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Physics")
+	TObjectPtr<UT66HeroPhysicsComponent> HeroPhysicsComponent;
+
 	/** Safe-zone overlap count (NPC safe bubbles). */
 	void AddSafeZoneOverlap(int32 Delta);
 
@@ -98,6 +106,21 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Movement")
 	UT66HeroMovementComponent* GetHeroMovementComponent() const { return HeroMovementComponent; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Physics")
+	UT66KnockbackComponent* GetKnockbackComponent() const { return KnockbackComponent; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Physics")
+	UT66HeroPhysicsComponent* GetHeroPhysicsComponent() const { return HeroPhysicsComponent; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Physics")
+	bool IsKnockbackActive() const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Physics")
+	bool IsKnockbackIncapacitated() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Physics")
+	bool ApplyKnockbackLaunch(FVector LaunchVelocity);
 
 	// ========== Placeholder Visuals (for prototyping) ==========
 	
@@ -166,12 +189,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Hero")
 	void SetPreviewMode(bool bPreview);
 
-	/** Roll forward in the direction the hero is facing. */
+	/** Leap forward in the direction the hero is facing. */
 	UFUNCTION(BlueprintCallable, Category = "Movement")
+	bool Leap();
+
+	/** Deprecated compatibility wrapper; use Leap. */
+	UFUNCTION(BlueprintCallable, Category = "Movement", meta = (DeprecatedFunction, DeprecationMessage = "Use Leap."))
 	bool RollForward();
 
-	/** Deprecated compatibility wrapper; use RollForward. */
-	UFUNCTION(BlueprintCallable, Category = "Movement", meta = (DeprecatedFunction, DeprecationMessage = "Use RollForward."))
+	/** Deprecated compatibility wrapper; use Leap. */
+	UFUNCTION(BlueprintCallable, Category = "Movement", meta = (DeprecatedFunction, DeprecationMessage = "Use Leap."))
 	void DashForward();
 
 	/** Stage effect helper: reduce friction so the hero slides for a short time. */
@@ -235,7 +262,7 @@ private:
 	UPROPERTY()
 	TObjectPtr<UT66HeroSpeedSubsystem> CachedHeroSpeedSubsystem;
 
-	/** Cached idle/walk/jump/roll anims for the current hero visual. */
+	/** Cached idle/walk/jump/leap anims for the current hero visual. */
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimationAsset> CachedIdleAnim = nullptr;
 
@@ -246,17 +273,17 @@ private:
 	TObjectPtr<UAnimationAsset> CachedJumpAnim = nullptr;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimationAsset> CachedRollAnim = nullptr;
+	TObjectPtr<UAnimationAsset> CachedLeapAnim = nullptr;
 
 	/** Last animation state so we only call PlayAnimation on change. */
-	enum class EMovementAnimState : uint8 { Idle, Walk, Jump, Roll };
+	enum class EMovementAnimState : uint8 { Idle, Walk, Jump, Leap };
 	EMovementAnimState LastMovementAnimState = EMovementAnimState::Idle;
-	float RollAnimLockEndTimeSeconds = -1.f;
+	float LeapAnimLockEndTimeSeconds = -1.f;
 	FVector LastAnimSampleLocation = FVector::ZeroVector;
 	bool bHasLastAnimSampleLocation = false;
 	bool bLobbyDrivenVisualsApplied = false;
 
-	void PlayRollAnimation();
+	void PlayLeapAnimation();
 
 	bool bVehicleMounted = false;
 	bool bVehicleDefaultVisualTransformsCached = false;

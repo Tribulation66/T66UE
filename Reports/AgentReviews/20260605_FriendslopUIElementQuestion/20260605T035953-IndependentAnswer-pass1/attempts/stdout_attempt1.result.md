@@ -1,0 +1,43 @@
+﻿Result: OK
+
+## Independent Answer
+
+**What "the something" under the Play text is.** In almost every commercial game (Megabonk included), a button is a *composited widget*, not a single baked picture. The text label is a separate text element drawn on top of one or more background layers. That background is a **bitmap image** — a texture/sprite — authored in Photoshop/Aseprite/Krita/Substance and exported as **PNG** (with alpha) for static art, or packed into a sprite atlas. In engine terms (UE/UMG, Unity/UGUI, Slate) it's a `Brush` pointing at a `Texture2D`. So: an image, yes — but consumed by the UI system as a brush, with the label composited live, never burned into the image.
+
+**The key technique you're missing: 9-slice (nine-patch) scaling.** This is the answer to your distortion problem and your "are they resized or different elements" question. A 9-slice brush divides the source image into a 3×3 grid using 4 margins. When the widget is stretched:
+- The **4 corners** stay fixed size (so bevels/rounded edges never distort).
+- The **4 edges** stretch in one axis only (top/bottom horizontally, left/right vertically).
+- The **center** stretches in both axes (or tiles).
+
+This is exactly how a button with bevels and small corner details can be one ~256×128 PNG that renders crisply at any width/height. UE supports this directly: `FSlateBrush` with `DrawAs = Box` (9-slice) or `Border`, plus a `Margin`. So your intuition ("resizing bevels isn't easy") is right for *naive* full-image stretching, but 9-slice is the standard production solution that makes one source asset scale cleanly.
+
+**Are Megabonk's 4 differently-sized buttons different elements or one resized?** Almost certainly **one shared 9-slice brush reused at different widths**, not 4 separate hand-authored images. That's the whole point of 9-slice — author once, reuse everywhere, stay consistent. They differ in size, not in art. (Exception: a hero/primary button sometimes gets a distinct treatment, but the bulk share a brush.)
+
+**Fixed vs adjustable.** Adjustable, by design. The asset is resolution-independent art; the *widget* gets its size from layout. You do not author a button "for one location at one size." You author a tileable/9-sliceable source and let the layout system size it.
+
+**Why your prior imagegen chrome distorted.** Two compounding causes:
+1. You generated **full-screen-resolution, full-panel chrome as a single flat image**, then used that whole image as a stretched background. A single bitmap stretched by arbitrary X/Y factors (your menu resolution ≠ generation resolution) smears every pixel uniformly — bevels, corners, and detail all distort. That matches exactly what you saw.
+2. No 9-slice margins, so there were no "protected" corners — the entire image scaled, including the parts that must stay fixed.
+
+The fix isn't "generate at the right resolution." It's **change the asset model**: author small, modular, 9-sliceable pieces (a button background, a panel frame, a divider) at a generous base size with transparent padding, define slice margins, and let the brush handle scaling. Resolution-independence comes from the slicing + DPI scaling, not from matching a target resolution.
+
+**Practical FriendslopUI pipeline guidance.**
+- **Format:** PNG with straight alpha for static art; consider an atlas later for many small elements. Author at 2×–4× intended display size for DPI headroom (UE's DPI curve will downscale cleanly; upscaling is what looks bad).
+- **Authoring rule:** Every stretchable element gets defined 9-slice margins; keep corner detail inside the corner regions, keep the center simple/tileable.
+- **Composition:** Text stays a live `TextBlock`/Slate text widget on top — never bake labels into the image (localization, hover states, and crispness all depend on this).
+- **States:** Author normal/hover/pressed/disabled as separate brushes or atlas frames; the widget swaps brushes, doesn't regenerate art.
+- **Engine wiring:** A FriendslopUI style set mirroring how `FT66FlatStyle` provides brushes today, but pointing `FSlateBrush` entries at authored `Texture2D` assets with `DrawAs=Box` + margins instead of solid-color brushes.
+- **If using imagegen at all:** generate *small modular pieces* (one button face, one panel corner/frame) on transparent backgrounds, not whole screens — then slice. Gen tools are fine as a texture source; the distortion came from how the output was used, not from gen itself.
+
+## Evidence Checked
+- Original prompt and task contract (conceptual-answer scope, no edits).
+- Repo context provided: active flat Slate frontend via `FT66FlatStyle`; deleted imagegen-chrome pipeline; planned `UI/FriendslopUI` folder as a flatstyle alternative.
+- General Slate/UMG brush model (`FSlateBrush`, `DrawAs=Box/Border`, `Margin`) as the engine-level mechanism for the above — standard UE behavior, not repo-specific.
+
+## Questions Or Blockers
+None requiring the user — this is a conceptual question the models can answer fully. Codex can deliver directly.
+
+## Caveats
+- I did not open `FT66FlatStyle` source to confirm exactly how brushes are currently declared; the wiring suggestion is the standard Slate pattern and should be checked against the actual style file before implementation.
+- "Megabonk uses one 9-slice brush" is a high-confidence inference from standard practice, not from that game's source — present it as how such UIs are *typically* built, not a verified fact about that specific title.
+- Atlas vs individual PNGs is a later optimization; not required for an initial FriendslopUI pass.

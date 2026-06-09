@@ -34,6 +34,7 @@ public class T66Editor : ModuleRules
 			"Landscape",
 			"LandscapeEditor",
 			"MeshDescription",
+			"PhysicsUtilities",
 			"Foliage",
 			"Json",
 			"JsonUtilities",

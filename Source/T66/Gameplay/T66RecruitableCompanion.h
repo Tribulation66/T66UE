@@ -11,6 +11,7 @@ class USphereComponent;
 class UStaticMeshComponent;
 class USkeletalMeshComponent;
 class UMaterialInstanceDynamic;
+class UStaticMesh;
 class APlayerController;
 class UPrimitiveComponent;
 
@@ -31,6 +32,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals|Cage")
+	TObjectPtr<UStaticMeshComponent> CageVisualMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals|Cage")
 	TObjectPtr<UStaticMeshComponent> CageBarFrontLeft;
@@ -113,6 +117,12 @@ private:
 
 	UPROPERTY(Transient)
 	bool bInteractionPromptVisible = false;
+
+	UPROPERTY(Transient)
+	bool bImportedCageVisualReady = false;
+
+	UPROPERTY()
+	TSoftObjectPtr<UStaticMesh> CageMeshOverride;
 
 	void ApplyPlaceholderColor(const FLinearColor& Color);
 	void ApplyCageColor(const FLinearColor& Color);

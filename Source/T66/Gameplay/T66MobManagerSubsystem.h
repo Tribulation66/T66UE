@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/T66WorldRuntimeProofTypes.h"
 #include "Data/T66DataTypes.h"
 #include "Gameplay/Enemies/T66EnemyFamilyTypes.h"
 #include "Subsystems/WorldSubsystem.h"
@@ -255,6 +256,7 @@ public:
 #if !UE_BUILD_SHIPPING
 	bool RunMobTickVatRuntimeProof();
 	bool AutomationApplyMobTouchDamageForTest(AT66MobBase* Mob, AT66HeroBase* Hero, float DeltaTime);
+	FT66WorldRuntimeDebugSnapshot GetWorldRuntimeDebugSnapshot() const;
 #endif
 
 private:

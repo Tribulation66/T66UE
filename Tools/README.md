@@ -18,5 +18,6 @@ Generated logs, temp folders, Python caches, and one-off outputs should stay out
 
 - `Release/Steam/UploadToSteam.ps1`
 - `ArtPipeline/Items/T66ProcessReimaginedItemSheets.py`
+- `ArtPipeline/Items/ITEM_SPRITE_RETRO_PROCESS.md`
 - `ArtPipeline/UI/PowerUp/powerup_auto_mask.py`
 - `ArtPipeline/UI/PowerUp/powerup_statue_masks.py`

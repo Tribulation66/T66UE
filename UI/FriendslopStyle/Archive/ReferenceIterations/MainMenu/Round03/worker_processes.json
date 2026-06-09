@@ -1,0 +1,52 @@
+[
+  {
+    "Id": "01_peak_cozy_chunky",
+    "PID": 41472,
+    "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\main_menu_reference_01_peak_cozy_chunky_cli.png",
+    "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\01_peak_cozy_chunky\\request.md",
+    "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\01_peak_cozy_chunky.stdout.log",
+    "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\01_peak_cozy_chunky.stderr.log",
+    "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\01_peak_cozy_chunky\\last_message.txt",
+    "Started": "2026-06-05T07:00:51.9967180-03:00"
+  },
+  {
+    "Id": "02_schedule_scrappy_utility",
+    "PID": 3376,
+    "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\main_menu_reference_02_schedule_scrappy_utility_cli.png",
+    "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\02_schedule_scrappy_utility\\request.md",
+    "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\02_schedule_scrappy_utility.stdout.log",
+    "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\02_schedule_scrappy_utility.stderr.log",
+    "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\02_schedule_scrappy_utility\\last_message.txt",
+    "Started": "2026-06-05T07:00:52.0947373-03:00"
+  },
+  {
+    "Id": "03_fallguys_bouncy_party",
+    "PID": 7332,
+    "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\main_menu_reference_03_fallguys_bouncy_party_cli.png",
+    "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\03_fallguys_bouncy_party\\request.md",
+    "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\03_fallguys_bouncy_party.stdout.log",
+    "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\03_fallguys_bouncy_party.stderr.log",
+    "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\03_fallguys_bouncy_party\\last_message.txt",
+    "Started": "2026-06-05T07:00:52.2004737-03:00"
+  },
+  {
+    "Id": "04_gamble_friends_tabletop",
+    "PID": 12180,
+    "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\main_menu_reference_04_gamble_friends_tabletop_cli.png",
+    "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\04_gamble_friends_tabletop\\request.md",
+    "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\04_gamble_friends_tabletop.stdout.log",
+    "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\04_gamble_friends_tabletop.stderr.log",
+    "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\04_gamble_friends_tabletop\\last_message.txt",
+    "Started": "2026-06-05T07:00:52.2773143-03:00"
+  },
+  {
+    "Id": "05_repo_scrap_utility",
+    "PID": 40912,
+    "Output": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\main_menu_reference_05_repo_scrap_utility_cli.png",
+    "Request": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\05_repo_scrap_utility\\request.md",
+    "Stdout": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\05_repo_scrap_utility.stdout.log",
+    "Stderr": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\logs\\05_repo_scrap_utility.stderr.log",
+    "LastMessage": "C:\\UE\\T66\\UI\\FriendslopStyle\\Reference\\MainMenu\\Round03\\workers\\05_repo_scrap_utility\\last_message.txt",
+    "Started": "2026-06-05T07:00:52.3066943-03:00"
+  }
+]

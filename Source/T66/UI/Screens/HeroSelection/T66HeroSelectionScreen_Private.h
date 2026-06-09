@@ -345,50 +345,50 @@ namespace T66HeroSelectionPrivate
 			FPaths::ProjectDir() / TEXT("RuntimeDependencies/T66/UI/HeroSelection/Medals/rank_badge_imagegen_20260427_v1.png"));
 	}
 
-	inline FText GetHeroSelectionDrugName(const ET66SecondaryStatType StatType)
+	inline FText GetHeroSelectionDrugName(const ET66StatType StatType)
 	{
 		switch (StatType)
 		{
-		case ET66SecondaryStatType::AoeDamage: return NSLOCTEXT("T66.HeroSelection", "DrugAoeDamage", "OXYMETHOLONE");
-		case ET66SecondaryStatType::BounceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugBounceDamage", "METHANDROSTENOLONE");
-		case ET66SecondaryStatType::PierceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugPierceDamage", "FLUOXYMESTERONE");
-		case ET66SecondaryStatType::DotDamage: return NSLOCTEXT("T66.HeroSelection", "DrugDotDamage", "NANDROLONE DECANOATE");
-		case ET66SecondaryStatType::HeadshotChance: return NSLOCTEXT("T66.HeroSelection", "DrugHeadshotChance", "TRENBOLONE ACETATE");
-		case ET66SecondaryStatType::AoeSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugAoeSpeed", "CAFFEINE CITRATE");
-		case ET66SecondaryStatType::BounceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugBounceSpeed", "MODAFINIL");
-		case ET66SecondaryStatType::PierceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugPierceSpeed", "EPHEDRINE HCL");
-		case ET66SecondaryStatType::DotSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugDotSpeed", "SALBUTAMOL SULFATE");
-		case ET66SecondaryStatType::CritChance: return NSLOCTEXT("T66.HeroSelection", "DrugCritChance", "STANOZOLOL");
-		case ET66SecondaryStatType::AoeScale: return NSLOCTEXT("T66.HeroSelection", "DrugAoeScale", "TESTOSTERONE ENANTHATE");
-		case ET66SecondaryStatType::BounceScale: return NSLOCTEXT("T66.HeroSelection", "DrugBounceScale", "BOLDENONE UNDECYLENATE");
-		case ET66SecondaryStatType::PierceScale: return NSLOCTEXT("T66.HeroSelection", "DrugPierceScale", "DROSTANOLONE PROPIONATE");
-		case ET66SecondaryStatType::DotScale: return NSLOCTEXT("T66.HeroSelection", "DrugDotScale", "METHENOLONE ENANTHATE");
-		case ET66SecondaryStatType::AttackRange: return NSLOCTEXT("T66.HeroSelection", "DrugAttackRange", "CLENBUTEROL HCL");
-		case ET66SecondaryStatType::Execute: return NSLOCTEXT("T66.HeroSelection", "DrugExecute", "ATOMOXETINE HCL");
-		case ET66SecondaryStatType::Taunt: return NSLOCTEXT("T66.HeroSelection", "DrugTaunt", "HYDROCORTISONE");
-		case ET66SecondaryStatType::DamageReduction: return NSLOCTEXT("T66.HeroSelection", "DrugDamageReduction", "PREDNISONE");
-		case ET66SecondaryStatType::ReflectDamage: return NSLOCTEXT("T66.HeroSelection", "DrugReflectDamage", "DEXAMETHASONE");
-		case ET66SecondaryStatType::Crush: return NSLOCTEXT("T66.HeroSelection", "DrugCrush", "BETAMETHASONE");
-		case ET66SecondaryStatType::EvasionChance: return NSLOCTEXT("T66.HeroSelection", "DrugEvasionChance", "SCOPOLAMINE HBR");
-		case ET66SecondaryStatType::CounterAttack: return NSLOCTEXT("T66.HeroSelection", "DrugCounterAttack", "LIDOCAINE HCL");
-		case ET66SecondaryStatType::Invisibility: return NSLOCTEXT("T66.HeroSelection", "DrugInvisibility", "DIPHENHYDRAMINE HCL");
-		case ET66SecondaryStatType::Assassinate: return NSLOCTEXT("T66.HeroSelection", "DrugAssassinate", "ATROPINE SULFATE");
-		case ET66SecondaryStatType::TreasureChest: return NSLOCTEXT("T66.HeroSelection", "DrugTreasureChest", "NICOTINAMIDE RIBOSIDE");
-		case ET66SecondaryStatType::Cheating: return NSLOCTEXT("T66.HeroSelection", "DrugCheating", "SILDENAFIL CITRATE");
-		case ET66SecondaryStatType::Stealing: return NSLOCTEXT("T66.HeroSelection", "DrugStealing", "LOPERAMIDE HCL");
-		case ET66SecondaryStatType::LootCrate: return NSLOCTEXT("T66.HeroSelection", "DrugLootCrate", "METFORMIN HCL");
-		case ET66SecondaryStatType::LootBag: return NSLOCTEXT("T66.HeroSelection", "DrugLootBag", "UBIQUINOL");
-		case ET66SecondaryStatType::LootWheel: return NSLOCTEXT("T66.HeroSelection", "DrugLootWheel", "THEOBROMINE");
-		case ET66SecondaryStatType::Accuracy: return NSLOCTEXT("T66.HeroSelection", "DrugAccuracy", "ATOMOXETINE HCL");
-		case ET66SecondaryStatType::VendorToken: return NSLOCTEXT("T66.HeroSelection", "DrugVendorToken", "VENDOR TOKEN");
+		case ET66StatType::AoeDamage: return NSLOCTEXT("T66.HeroSelection", "DrugAoeDamage", "OXYMETHOLONE");
+		case ET66StatType::BounceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugBounceDamage", "METHANDROSTENOLONE");
+		case ET66StatType::PierceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugPierceDamage", "FLUOXYMESTERONE");
+		case ET66StatType::DotDamage: return NSLOCTEXT("T66.HeroSelection", "DrugDotDamage", "NANDROLONE DECANOATE");
+		case ET66StatType::HeadshotChance: return NSLOCTEXT("T66.HeroSelection", "DrugHeadshotChance", "TRENBOLONE ACETATE");
+		case ET66StatType::AoeSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugAoeSpeed", "CAFFEINE CITRATE");
+		case ET66StatType::BounceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugBounceSpeed", "MODAFINIL");
+		case ET66StatType::PierceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugPierceSpeed", "EPHEDRINE HCL");
+		case ET66StatType::DotSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugDotSpeed", "SALBUTAMOL SULFATE");
+		case ET66StatType::CritChance: return NSLOCTEXT("T66.HeroSelection", "DrugCritChance", "STANOZOLOL");
+		case ET66StatType::AoeScale: return NSLOCTEXT("T66.HeroSelection", "DrugAoeScale", "TESTOSTERONE ENANTHATE");
+		case ET66StatType::BounceScale: return NSLOCTEXT("T66.HeroSelection", "DrugBounceScale", "BOLDENONE UNDECYLENATE");
+		case ET66StatType::PierceScale: return NSLOCTEXT("T66.HeroSelection", "DrugPierceScale", "DROSTANOLONE PROPIONATE");
+		case ET66StatType::DotScale: return NSLOCTEXT("T66.HeroSelection", "DrugDotScale", "METHENOLONE ENANTHATE");
+		case ET66StatType::AttackRange: return NSLOCTEXT("T66.HeroSelection", "DrugAttackRange", "CLENBUTEROL HCL");
+		case ET66StatType::Execute: return NSLOCTEXT("T66.HeroSelection", "DrugExecute", "ATOMOXETINE HCL");
+		case ET66StatType::Taunt: return NSLOCTEXT("T66.HeroSelection", "DrugTaunt", "HYDROCORTISONE");
+		case ET66StatType::DamageReduction: return NSLOCTEXT("T66.HeroSelection", "DrugDamageReduction", "PREDNISONE");
+		case ET66StatType::ReflectDamage: return NSLOCTEXT("T66.HeroSelection", "DrugReflectDamage", "DEXAMETHASONE");
+		case ET66StatType::Crush: return NSLOCTEXT("T66.HeroSelection", "DrugCrush", "BETAMETHASONE");
+		case ET66StatType::EvasionChance: return NSLOCTEXT("T66.HeroSelection", "DrugEvasionChance", "SCOPOLAMINE HBR");
+		case ET66StatType::CounterAttack: return NSLOCTEXT("T66.HeroSelection", "DrugCounterAttack", "LIDOCAINE HCL");
+		case ET66StatType::Invisibility: return NSLOCTEXT("T66.HeroSelection", "DrugInvisibility", "DIPHENHYDRAMINE HCL");
+		case ET66StatType::Assassinate: return NSLOCTEXT("T66.HeroSelection", "DrugAssassinate", "ATROPINE SULFATE");
+		case ET66StatType::TreasureChest: return NSLOCTEXT("T66.HeroSelection", "DrugTreasureChest", "NICOTINAMIDE RIBOSIDE");
+		case ET66StatType::Cheating: return NSLOCTEXT("T66.HeroSelection", "DrugCheating", "SILDENAFIL CITRATE");
+		case ET66StatType::Stealing: return NSLOCTEXT("T66.HeroSelection", "DrugStealing", "LOPERAMIDE HCL");
+		case ET66StatType::LootCrate: return NSLOCTEXT("T66.HeroSelection", "DrugLootCrate", "METFORMIN HCL");
+		case ET66StatType::LootBag: return NSLOCTEXT("T66.HeroSelection", "DrugLootBag", "UBIQUINOL");
+		case ET66StatType::LootWheel: return NSLOCTEXT("T66.HeroSelection", "DrugLootWheel", "THEOBROMINE");
+		case ET66StatType::Accuracy: return NSLOCTEXT("T66.HeroSelection", "DrugAccuracy", "ATOMOXETINE HCL");
+		case ET66StatType::VendorToken: return NSLOCTEXT("T66.HeroSelection", "DrugVendorToken", "VENDOR TOKEN");
 		default: return NSLOCTEXT("T66.HeroSelection", "DrugFallback", "COMPOUND");
 		}
 	}
 
-	inline FText GetHeroSelectionDrugEffectText(const ET66SecondaryStatType StatType, const UT66LocalizationSubsystem* Loc)
+	inline FText GetHeroSelectionDrugEffectText(const ET66StatType StatType, const UT66LocalizationSubsystem* Loc)
 	{
-		const FText StatName = Loc ? Loc->GetText_SecondaryStatName(StatType) : FText::FromString(TEXT("?"));
-		const int32 Percent = FMath::RoundToInt((UT66BuffSubsystem::SingleUseSecondaryBuffMultiplier - 1.f) * 100.f);
+		const FText StatName = Loc ? Loc->GetText_StatName(StatType) : FText::FromString(TEXT("?"));
+		const int32 Percent = FMath::RoundToInt((UT66BuffSubsystem::SingleUseStatBuffMultiplier - 1.f) * 100.f);
 		return FText::Format(
 			NSLOCTEXT("T66.HeroSelection", "DrugEffectFormat", "+{0}% {1}"),
 			FText::AsNumber(Percent),

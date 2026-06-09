@@ -6,13 +6,43 @@ using namespace T66RunStatePrivate;
 
 namespace
 {
-	constexpr float T66InteractableLuckQualityTiltPerPoint = 0.05f;
-	constexpr float T66StealingLuckChancePerPoint = 0.01f;
+	constexpr float T66BaseDamageMultiplierPerPoint = 0.0015f;
+	constexpr float T66BaseAttackSpeedMultiplierPerPoint = 0.0012f;
+	constexpr float T66BaseScaleMultiplierPerPoint = 0.0008f;
+	constexpr float T66BaseAccuracyMultiplierPerPoint = 0.0010f;
+	constexpr float T66BaseArmorReductionPerPoint = 0.0008f;
+	constexpr float T66BaseEvasionChancePerPoint = 0.0006f;
+	constexpr float T66StatChancePerBonusPoint = 0.001f;
+	constexpr float T66StatSmallChancePerBonusPoint = 0.0005f;
+	constexpr float T66StatRangePerBonusPoint = 2.5f;
+	constexpr float T66StatMovementMultiplierPerBonusPoint = 0.002f;
+	constexpr float T66StatElementalPowerPerBonusPoint = 0.005f;
+	constexpr float T66InteractableLuckQualityTiltPerPoint = 0.005f;
+	constexpr float T66StealingLuckChancePerPoint = 0.001f;
 	constexpr float T66StealingLuckChanceCap = 0.95f;
-	constexpr float T66GamblingLuckRescueRerollPerPoint = 0.01f;
+	constexpr float T66GamblingLuckRescueRerollPerPoint = 0.001f;
 	constexpr float T66GamblingLuckRescueRerollCap = 0.25f;
-	constexpr float T66ProcLuckChancePerPoint = 0.005f;
+	constexpr float T66ProcLuckChancePerPoint = 0.0005f;
 	constexpr float T66ProcLuckChanceCap = 0.95f;
+
+	// Stats Rework: maps a legacy primary stat onto its unified replacement so all upgrade
+	// sources (level-up, relics) bump the named stat directly. All eight are migrated; the old
+	// primary fields now serve only as each stat's hidden innate base.
+	ET66StatType T66MapBaseStatToUnifiedStat(const ET66HeroStatType BaseStatType)
+	{
+		switch (BaseStatType)
+		{
+		case ET66HeroStatType::Damage:      return ET66StatType::AllDamage;
+		case ET66HeroStatType::AttackSpeed: return ET66StatType::AllAttackSpeed;
+		case ET66HeroStatType::AttackScale: return ET66StatType::AllScale;
+		case ET66HeroStatType::Armor:       return ET66StatType::DamageReduction;
+		case ET66HeroStatType::Evasion:     return ET66StatType::EvasionChance;
+		case ET66HeroStatType::Luck:        return ET66StatType::Luck;
+		case ET66HeroStatType::Speed:       return ET66StatType::MovementSpeed;
+		case ET66HeroStatType::Accuracy:    return ET66StatType::Accuracy;
+		default:                            return ET66StatType::None;
+		}
+	}
 }
 
 int32 UT66RunStateSubsystem::WholeStatToTenths(const int32 WholeValue)
@@ -33,24 +63,24 @@ float UT66RunStateSubsystem::TenthsToFloatStat(const int32 ValueTenths)
 }
 
 
-int32 UT66RunStateSubsystem::GetItemPrimaryStatTenths(const ET66HeroStatType StatType) const
+int32 UT66RunStateSubsystem::GetItemBaseStatTenths(const ET66HeroStatType StatType) const
 {
 	switch (StatType)
 	{
-	case ET66HeroStatType::Damage:      return FMath::Max(0, ItemPrimaryStatBonusesPrecise.DamageTenths);
-	case ET66HeroStatType::AttackSpeed: return FMath::Max(0, ItemPrimaryStatBonusesPrecise.AttackSpeedTenths);
-	case ET66HeroStatType::AttackScale: return FMath::Max(0, ItemPrimaryStatBonusesPrecise.AttackScaleTenths);
-	case ET66HeroStatType::Accuracy:    return FMath::Max(0, ItemPrimaryStatBonusesPrecise.AccuracyTenths);
-	case ET66HeroStatType::Armor:       return FMath::Max(0, ItemPrimaryStatBonusesPrecise.ArmorTenths);
-	case ET66HeroStatType::Evasion:     return FMath::Max(0, ItemPrimaryStatBonusesPrecise.EvasionTenths);
-	case ET66HeroStatType::Luck:        return FMath::Max(0, ItemPrimaryStatBonusesPrecise.LuckTenths);
-	case ET66HeroStatType::Speed:       return FMath::Max(0, ItemPrimaryStatBonusesPrecise.SpeedTenths);
+	case ET66HeroStatType::Damage:      return FMath::Max(0, ItemBaseStatBonusesPrecise.DamageTenths);
+	case ET66HeroStatType::AttackSpeed: return FMath::Max(0, ItemBaseStatBonusesPrecise.AttackSpeedTenths);
+	case ET66HeroStatType::AttackScale: return FMath::Max(0, ItemBaseStatBonusesPrecise.AttackScaleTenths);
+	case ET66HeroStatType::Accuracy:    return FMath::Max(0, ItemBaseStatBonusesPrecise.AccuracyTenths);
+	case ET66HeroStatType::Armor:       return FMath::Max(0, ItemBaseStatBonusesPrecise.ArmorTenths);
+	case ET66HeroStatType::Evasion:     return FMath::Max(0, ItemBaseStatBonusesPrecise.EvasionTenths);
+	case ET66HeroStatType::Luck:        return FMath::Max(0, ItemBaseStatBonusesPrecise.LuckTenths);
+	case ET66HeroStatType::Speed:       return FMath::Max(0, ItemBaseStatBonusesPrecise.SpeedTenths);
 	default:                            return 0;
 	}
 }
 
 
-int32 UT66RunStateSubsystem::GetPermanentPrimaryBuffTenths(const ET66HeroStatType StatType) const
+int32 UT66RunStateSubsystem::GetPermanentBaseBuffTenths(const ET66HeroStatType StatType) const
 {
 	switch (StatType)
 	{
@@ -67,10 +97,10 @@ int32 UT66RunStateSubsystem::GetPermanentPrimaryBuffTenths(const ET66HeroStatTyp
 }
 
 
-int32 UT66RunStateSubsystem::GetTemporaryPrimaryStatAmplifierTenths(const ET66HeroStatType StatType) const
+int32 UT66RunStateSubsystem::GetTemporaryBaseStatAmplifierTenths(const ET66HeroStatType StatType) const
 {
 	int32 TotalTenths = 0;
-	for (const FT66TemporaryPrimaryStatAmplifier& Amplifier : TemporaryPrimaryStatAmplifiers)
+	for (const FT66TemporaryBaseStatAmplifier& Amplifier : TemporaryBaseStatAmplifiers)
 	{
 		if (Amplifier.StatType == StatType && Amplifier.SecondsRemaining > 0.f)
 		{
@@ -80,10 +110,10 @@ int32 UT66RunStateSubsystem::GetTemporaryPrimaryStatAmplifierTenths(const ET66He
 	return TotalTenths;
 }
 
-int32 UT66RunStateSubsystem::GetTemporarySecondaryStatAmplifierTenths(const ET66SecondaryStatType StatType) const
+int32 UT66RunStateSubsystem::GetTemporaryStatAmplifierTenths(const ET66StatType StatType) const
 {
 	int32 TotalTenths = 0;
-	for (const FT66TemporarySecondaryStatAmplifier& Amplifier : TemporarySecondaryStatAmplifiers)
+	for (const FT66TemporaryStatAmplifier& Amplifier : TemporaryStatAmplifiers)
 	{
 		if (Amplifier.StatType == StatType && Amplifier.SecondsRemaining > 0.f)
 		{
@@ -93,24 +123,24 @@ int32 UT66RunStateSubsystem::GetTemporarySecondaryStatAmplifierTenths(const ET66
 	return TotalTenths;
 }
 
-int32 UT66RunStateSubsystem::GetSaintBlessingPrimaryStatTenths(const ET66HeroStatType StatType) const
+int32 UT66RunStateSubsystem::GetSaintBlessingBaseStatTenths(const ET66HeroStatType StatType) const
 {
 	switch (StatType)
 	{
-	case ET66HeroStatType::Damage:      return FMath::Max(0, SaintBlessingPrimaryStatBonusesPrecise.DamageTenths);
-	case ET66HeroStatType::AttackSpeed: return FMath::Max(0, SaintBlessingPrimaryStatBonusesPrecise.AttackSpeedTenths);
-	case ET66HeroStatType::AttackScale: return FMath::Max(0, SaintBlessingPrimaryStatBonusesPrecise.AttackScaleTenths);
-	case ET66HeroStatType::Accuracy:    return FMath::Max(0, SaintBlessingPrimaryStatBonusesPrecise.AccuracyTenths);
-	case ET66HeroStatType::Armor:       return FMath::Max(0, SaintBlessingPrimaryStatBonusesPrecise.ArmorTenths);
-	case ET66HeroStatType::Evasion:     return FMath::Max(0, SaintBlessingPrimaryStatBonusesPrecise.EvasionTenths);
-	case ET66HeroStatType::Luck:        return FMath::Max(0, SaintBlessingPrimaryStatBonusesPrecise.LuckTenths);
-	case ET66HeroStatType::Speed:       return FMath::Max(0, SaintBlessingPrimaryStatBonusesPrecise.SpeedTenths);
+	case ET66HeroStatType::Damage:      return FMath::Max(0, SaintBlessingBaseStatBonusesPrecise.DamageTenths);
+	case ET66HeroStatType::AttackSpeed: return FMath::Max(0, SaintBlessingBaseStatBonusesPrecise.AttackSpeedTenths);
+	case ET66HeroStatType::AttackScale: return FMath::Max(0, SaintBlessingBaseStatBonusesPrecise.AttackScaleTenths);
+	case ET66HeroStatType::Accuracy:    return FMath::Max(0, SaintBlessingBaseStatBonusesPrecise.AccuracyTenths);
+	case ET66HeroStatType::Armor:       return FMath::Max(0, SaintBlessingBaseStatBonusesPrecise.ArmorTenths);
+	case ET66HeroStatType::Evasion:     return FMath::Max(0, SaintBlessingBaseStatBonusesPrecise.EvasionTenths);
+	case ET66HeroStatType::Luck:        return FMath::Max(0, SaintBlessingBaseStatBonusesPrecise.LuckTenths);
+	case ET66HeroStatType::Speed:       return FMath::Max(0, SaintBlessingBaseStatBonusesPrecise.SpeedTenths);
 	default:                            return 0;
 	}
 }
 
 
-int32 UT66RunStateSubsystem::GetPrecisePrimaryStatTenths(const ET66HeroStatType StatType) const
+int32 UT66RunStateSubsystem::GetPreciseBaseStatTenths(const ET66HeroStatType StatType) const
 {
 	int32 TotalTenths = 0;
 	switch (StatType)
@@ -128,44 +158,44 @@ int32 UT66RunStateSubsystem::GetPrecisePrimaryStatTenths(const ET66HeroStatType 
 
 	switch (StatType)
 	{
-	case ET66HeroStatType::Damage:      TotalTenths += FMath::Max(0, NoIdolPrimaryStatBonusesPrecise.DamageTenths); break;
-	case ET66HeroStatType::AttackSpeed: TotalTenths += FMath::Max(0, NoIdolPrimaryStatBonusesPrecise.AttackSpeedTenths); break;
-	case ET66HeroStatType::AttackScale: TotalTenths += FMath::Max(0, NoIdolPrimaryStatBonusesPrecise.AttackScaleTenths); break;
+	case ET66HeroStatType::Damage:      TotalTenths += FMath::Max(0, NoIdolBaseStatBonusesPrecise.DamageTenths); break;
+	case ET66HeroStatType::AttackSpeed: TotalTenths += FMath::Max(0, NoIdolBaseStatBonusesPrecise.AttackSpeedTenths); break;
+	case ET66HeroStatType::AttackScale: TotalTenths += FMath::Max(0, NoIdolBaseStatBonusesPrecise.AttackScaleTenths); break;
 	default: break;
 	}
 
-	TotalTenths += GetPermanentPrimaryBuffTenths(StatType);
-	TotalTenths += GetSaintBlessingPrimaryStatTenths(StatType);
-	TotalTenths += GetTemporaryPrimaryStatAmplifierTenths(StatType);
+	TotalTenths += GetPermanentBaseBuffTenths(StatType);
+	TotalTenths += GetSaintBlessingBaseStatTenths(StatType);
+	TotalTenths += GetTemporaryBaseStatAmplifierTenths(StatType);
 	return ClampHeroStatTenths(TotalTenths);
 }
 
 
-int32 UT66RunStateSubsystem::GetSecondaryStatBonusTenths(const ET66SecondaryStatType StatType) const
+int32 UT66RunStateSubsystem::GetStatBonusTenths(const ET66StatType StatType) const
 {
-	const int32 ItemTenths = ItemSecondaryStatBonusTenths.Contains(StatType)
-		? FMath::Max(0, ItemSecondaryStatBonusTenths.FindRef(StatType))
+	const int32 ItemTenths = ItemStatBonusTenths.Contains(StatType)
+		? FMath::Max(0, ItemStatBonusTenths.FindRef(StatType))
 		: 0;
-	const int32 PersistentTenths = PersistentSecondaryStatBonusTenths.Contains(StatType)
-		? FMath::Max(0, PersistentSecondaryStatBonusTenths.FindRef(StatType))
+	const int32 PersistentTenths = PersistentStatBonusTenths.Contains(StatType)
+		? FMath::Max(0, PersistentStatBonusTenths.FindRef(StatType))
 		: 0;
-	const int32 PermanentTenths = PermanentSecondaryStatBonusTenths.Contains(StatType)
-		? FMath::Max(0, PermanentSecondaryStatBonusTenths.FindRef(StatType))
+	const int32 PermanentTenths = PermanentStatBonusTenths.Contains(StatType)
+		? FMath::Max(0, PermanentStatBonusTenths.FindRef(StatType))
 		: 0;
-	const int32 SaintTenths = SaintBlessingSecondaryStatBonusTenths.Contains(StatType)
-		? FMath::Max(0, SaintBlessingSecondaryStatBonusTenths.FindRef(StatType))
+	const int32 SaintTenths = SaintBlessingStatBonusTenths.Contains(StatType)
+		? FMath::Max(0, SaintBlessingStatBonusTenths.FindRef(StatType))
 		: 0;
-	const int32 TemporaryTenths = GetTemporarySecondaryStatAmplifierTenths(StatType);
+	const int32 TemporaryTenths = GetTemporaryStatAmplifierTenths(StatType);
 	return FMath::Max(0, ItemTenths + PersistentTenths + PermanentTenths + SaintTenths + TemporaryTenths);
 }
 
 
-float UT66RunStateSubsystem::GetSecondaryStatBonusValue(const ET66SecondaryStatType StatType) const
+float UT66RunStateSubsystem::GetStatBonusValue(const ET66StatType StatType) const
 {
-	return TenthsToFloatStat(GetSecondaryStatBonusTenths(StatType));
+	return TenthsToFloatStat(GetStatBonusTenths(StatType));
 }
 
-int32 UT66RunStateSubsystem::GetNoIdolPrimaryBonusTenthsForRarity(const ET66ItemRarity Rarity)
+int32 UT66RunStateSubsystem::GetNoIdolBaseBonusTenthsForRarity(const ET66ItemRarity Rarity)
 {
 	switch (Rarity)
 	{
@@ -179,11 +209,11 @@ int32 UT66RunStateSubsystem::GetNoIdolPrimaryBonusTenthsForRarity(const ET66Item
 
 void UT66RunStateSubsystem::ApplyNoIdolSelection(const ET66ItemRarity Rarity)
 {
-	const int32 BonusTenths = GetNoIdolPrimaryBonusTenthsForRarity(Rarity);
+	const int32 BonusTenths = GetNoIdolBaseBonusTenthsForRarity(Rarity);
 	const int32 MaxBonusTenths = MaxHeroStatValue * HeroStatTenthsScale;
-	NoIdolPrimaryStatBonusesPrecise.DamageTenths = FMath::Clamp(NoIdolPrimaryStatBonusesPrecise.DamageTenths + BonusTenths, 0, MaxBonusTenths);
-	NoIdolPrimaryStatBonusesPrecise.AttackSpeedTenths = FMath::Clamp(NoIdolPrimaryStatBonusesPrecise.AttackSpeedTenths + BonusTenths, 0, MaxBonusTenths);
-	NoIdolPrimaryStatBonusesPrecise.AttackScaleTenths = FMath::Clamp(NoIdolPrimaryStatBonusesPrecise.AttackScaleTenths + BonusTenths, 0, MaxBonusTenths);
+	NoIdolBaseStatBonusesPrecise.DamageTenths = FMath::Clamp(NoIdolBaseStatBonusesPrecise.DamageTenths + BonusTenths, 0, MaxBonusTenths);
+	NoIdolBaseStatBonusesPrecise.AttackSpeedTenths = FMath::Clamp(NoIdolBaseStatBonusesPrecise.AttackSpeedTenths + BonusTenths, 0, MaxBonusTenths);
+	NoIdolBaseStatBonusesPrecise.AttackScaleTenths = FMath::Clamp(NoIdolBaseStatBonusesPrecise.AttackScaleTenths + BonusTenths, 0, MaxBonusTenths);
 	NoIdolSelectionStacks = FMath::Max(0, NoIdolSelectionStacks + 1);
 	SyncLegacyHeroStatsFromPrecise();
 	HeroProgressChanged.Broadcast();
@@ -192,39 +222,39 @@ void UT66RunStateSubsystem::ApplyNoIdolSelection(const ET66ItemRarity Rarity)
 void UT66RunStateSubsystem::RestoreNoIdolState(const int32 Stacks, const FT66HeroPreciseStatBlock& Bonuses)
 {
 	NoIdolSelectionStacks = FMath::Max(0, Stacks);
-	NoIdolPrimaryStatBonusesPrecise = FT66HeroPreciseStatBlock{};
+	NoIdolBaseStatBonusesPrecise = FT66HeroPreciseStatBlock{};
 	const int32 MaxBonusTenths = MaxHeroStatValue * HeroStatTenthsScale;
-	NoIdolPrimaryStatBonusesPrecise.DamageTenths = FMath::Clamp(Bonuses.DamageTenths, 0, MaxBonusTenths);
-	NoIdolPrimaryStatBonusesPrecise.AttackSpeedTenths = FMath::Clamp(Bonuses.AttackSpeedTenths, 0, MaxBonusTenths);
-	NoIdolPrimaryStatBonusesPrecise.AttackScaleTenths = FMath::Clamp(Bonuses.AttackScaleTenths, 0, MaxBonusTenths);
+	NoIdolBaseStatBonusesPrecise.DamageTenths = FMath::Clamp(Bonuses.DamageTenths, 0, MaxBonusTenths);
+	NoIdolBaseStatBonusesPrecise.AttackSpeedTenths = FMath::Clamp(Bonuses.AttackSpeedTenths, 0, MaxBonusTenths);
+	NoIdolBaseStatBonusesPrecise.AttackScaleTenths = FMath::Clamp(Bonuses.AttackScaleTenths, 0, MaxBonusTenths);
 	SyncLegacyHeroStatsFromPrecise();
 }
 
 
-int32 UT66RunStateSubsystem::GetCategoryBaseStatTenths(const ET66SecondaryStatType StatType) const
+int32 UT66RunStateSubsystem::GetCategoryBaseStatTenths(const ET66StatType StatType) const
 {
 	switch (StatType)
 	{
-	case ET66SecondaryStatType::AoeDamage:   return WholeStatToTenths(BaseAoeDmg);
-	case ET66SecondaryStatType::BounceDamage:return WholeStatToTenths(BaseBounceDmg);
-	case ET66SecondaryStatType::PierceDamage:return WholeStatToTenths(BasePierceDmg);
-	case ET66SecondaryStatType::DotDamage:   return WholeStatToTenths(BaseDotDmg);
-	case ET66SecondaryStatType::AoeSpeed:    return WholeStatToTenths(BaseAoeAtkSpd);
-	case ET66SecondaryStatType::BounceSpeed: return WholeStatToTenths(BaseBounceAtkSpd);
-	case ET66SecondaryStatType::PierceSpeed: return WholeStatToTenths(BasePierceAtkSpd);
-	case ET66SecondaryStatType::DotSpeed:    return WholeStatToTenths(BaseDotAtkSpd);
-	case ET66SecondaryStatType::AoeScale:    return WholeStatToTenths(BaseAoeAtkScale);
-	case ET66SecondaryStatType::BounceScale: return WholeStatToTenths(BaseBounceAtkScale);
-	case ET66SecondaryStatType::PierceScale: return WholeStatToTenths(BasePierceAtkScale);
-	case ET66SecondaryStatType::DotScale:    return WholeStatToTenths(BaseDotAtkScale);
+	case ET66StatType::AoeDamage:   return WholeStatToTenths(BaseAoeDmg);
+	case ET66StatType::BounceDamage:return WholeStatToTenths(BaseBounceDmg);
+	case ET66StatType::PierceDamage:return WholeStatToTenths(BasePierceDmg);
+	case ET66StatType::DotDamage:   return WholeStatToTenths(BaseDotDmg);
+	case ET66StatType::AoeSpeed:    return WholeStatToTenths(BaseAoeAtkSpd);
+	case ET66StatType::BounceSpeed: return WholeStatToTenths(BaseBounceAtkSpd);
+	case ET66StatType::PierceSpeed: return WholeStatToTenths(BasePierceAtkSpd);
+	case ET66StatType::DotSpeed:    return WholeStatToTenths(BaseDotAtkSpd);
+	case ET66StatType::AoeScale:    return WholeStatToTenths(BaseAoeAtkScale);
+	case ET66StatType::BounceScale: return WholeStatToTenths(BaseBounceAtkScale);
+	case ET66StatType::PierceScale: return WholeStatToTenths(BasePierceAtkScale);
+	case ET66StatType::DotScale:    return WholeStatToTenths(BaseDotAtkScale);
 	default:                                 return 0;
 	}
 }
 
 
-int32 UT66RunStateSubsystem::GetCategoryTotalStatTenths(const ET66SecondaryStatType StatType) const
+int32 UT66RunStateSubsystem::GetCategoryTotalStatTenths(const ET66StatType StatType) const
 {
-	return ClampHeroStatTenths(GetCategoryBaseStatTenths(StatType) + GetSecondaryStatBonusTenths(StatType));
+	return ClampHeroStatTenths(GetCategoryBaseStatTenths(StatType) + GetStatBonusTenths(StatType));
 }
 
 
@@ -242,46 +272,46 @@ void UT66RunStateSubsystem::SyncLegacyHeroStatsFromPrecise()
 }
 
 
-void UT66RunStateSubsystem::ClearPersistentSecondaryStatBonuses()
+void UT66RunStateSubsystem::ClearPersistentStatBonuses()
 {
-	PersistentSecondaryStatBonusTenths.Reset();
+	PersistentStatBonusTenths.Reset();
 }
 
 
-void UT66RunStateSubsystem::AddPersistentSecondaryStatBonusTenths(const ET66SecondaryStatType StatType, const int32 DeltaTenths)
+void UT66RunStateSubsystem::AddPersistentStatBonusTenths(const ET66StatType StatType, const int32 DeltaTenths)
 {
-	if (StatType == ET66SecondaryStatType::None || DeltaTenths <= 0)
+	if (StatType == ET66StatType::None || DeltaTenths <= 0)
 	{
 		return;
 	}
 
-	int32& Accum = PersistentSecondaryStatBonusTenths.FindOrAdd(StatType);
+	int32& Accum = PersistentStatBonusTenths.FindOrAdd(StatType);
 	Accum = FMath::Clamp(Accum + DeltaTenths, 0, MaxHeroStatValue * HeroStatTenthsScale);
 }
 
 
 #if !UE_BUILD_SHIPPING
-void UT66RunStateSubsystem::DebugAddPersistentSecondaryStatBonusTenths(const ET66SecondaryStatType StatType, const int32 DeltaTenths)
+void UT66RunStateSubsystem::DebugAddPersistentStatBonusTenths(const ET66StatType StatType, const int32 DeltaTenths)
 {
-	AddPersistentSecondaryStatBonusTenths(StatType, DeltaTenths);
+	AddPersistentStatBonusTenths(StatType, DeltaTenths);
 	HeroProgressChanged.Broadcast();
 }
 #endif
 
 
-void UT66RunStateSubsystem::AddItemSecondaryStatBonusTenths(const ET66SecondaryStatType StatType, const int32 DeltaTenths)
+void UT66RunStateSubsystem::AddItemStatBonusTenths(const ET66StatType StatType, const int32 DeltaTenths)
 {
-	if (StatType == ET66SecondaryStatType::None || DeltaTenths <= 0)
+	if (StatType == ET66StatType::None || DeltaTenths <= 0)
 	{
 		return;
 	}
 
-	int32& Accum = ItemSecondaryStatBonusTenths.FindOrAdd(StatType);
+	int32& Accum = ItemStatBonusTenths.FindOrAdd(StatType);
 	Accum = FMath::Clamp(Accum + DeltaTenths, 0, MaxHeroStatValue * HeroStatTenthsScale);
 }
 
 
-int32 UT66RunStateSubsystem::RollHeroPrimaryGainTenthsBiased(const FT66HeroStatGainRange& Range, const FName Category)
+int32 UT66RunStateSubsystem::RollHeroBaseGainTenthsBiased(const FT66HeroStatGainRange& Range, const FName Category)
 {
 	UT66RngSubsystem* RngSub = nullptr;
 	if (UGameInstance* GI = GetGameInstance())
@@ -323,52 +353,8 @@ int32 UT66RunStateSubsystem::RollHeroPrimaryGainTenthsBiased(const FT66HeroStatG
 }
 
 
-void UT66RunStateSubsystem::ApplyPrimaryGainToSecondaryBonuses(
-	const ET66HeroStatType PrimaryStatType,
-	const int32 PrimaryGainTenths,
-	TMap<ET66SecondaryStatType, int32>& TargetBonuses,
-	const int32 SeedSalt) const
-{
-	if (PrimaryGainTenths <= 0)
-	{
-		return;
-	}
-
-	const TArray<ET66SecondaryStatType>& SecondaryTypes = T66_GetSecondaryTypesForPrimary(PrimaryStatType);
-	if (SecondaryTypes.Num() == 0)
-	{
-		return;
-	}
-
-	const ET66SecondaryStatType MainAttackSecondaryType = T66_GetHeroMainAttackSecondaryType(PrimaryStatType, HeroPrimaryAttackCategory);
-	for (int32 Index = 0; Index < SecondaryTypes.Num(); ++Index)
-	{
-		const ET66SecondaryStatType SecondaryType = SecondaryTypes[Index];
-		float MinFactor = 0.5f;
-		float MaxFactor = 1.0f;
-		if (PrimaryStatType == ET66HeroStatType::Damage
-			|| PrimaryStatType == ET66HeroStatType::AttackSpeed
-			|| PrimaryStatType == ET66HeroStatType::AttackScale)
-		{
-			const bool bIsMainAttackType = (SecondaryType == MainAttackSecondaryType);
-			MinFactor = bIsMainAttackType ? 0.70f : 0.10f;
-			MaxFactor = bIsMainAttackType ? 1.00f : 0.50f;
-		}
-
-		const int32 SecondaryGainTenths = T66_RollScaledTenthsDeterministic(
-			PrimaryGainTenths,
-			MinFactor,
-			MaxFactor,
-			HashCombine(GetTypeHash(SecondaryType), GetTypeHash(SeedSalt + Index + 1)));
-		if (SecondaryGainTenths <= 0)
-		{
-			continue;
-		}
-
-		int32& Accum = TargetBonuses.FindOrAdd(SecondaryType);
-		Accum = FMath::Clamp(Accum + SecondaryGainTenths, 0, MaxHeroStatValue * HeroStatTenthsScale);
-	}
-}
+// Stats Rework: ApplyPrimaryGainToSecondaryBonuses removed. The primary->secondary fan-out is gone;
+// relics and level-ups now bump unified stats directly (see ApplyPermanentBaseStat / ApplyOneHeroLevelUp).
 
 
 void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
@@ -377,14 +363,14 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 	HeroStats = FT66HeroStatBlock{};
 	HeroPreciseStats = FT66HeroPreciseStatBlock{};
 	HeroPerLevelGains = FT66HeroPerLevelStatGains{};
-	HeroPerLevelGains.Damage.Min = 0.5f;      HeroPerLevelGains.Damage.Max = 1.0f;
-	HeroPerLevelGains.AttackSpeed.Min = 0.1f; HeroPerLevelGains.AttackSpeed.Max = 1.0f;
-	HeroPerLevelGains.AttackScale.Min = 0.1f; HeroPerLevelGains.AttackScale.Max = 1.0f;
-	HeroPerLevelGains.Accuracy.Min = 0.1f;    HeroPerLevelGains.Accuracy.Max = 1.0f;
-	HeroPerLevelGains.Armor.Min = 0.1f;       HeroPerLevelGains.Armor.Max = 1.0f;
-	HeroPerLevelGains.Evasion.Min = 0.1f;     HeroPerLevelGains.Evasion.Max = 1.0f;
-	HeroPerLevelGains.Luck.Min = 0.1f;        HeroPerLevelGains.Luck.Max = 1.0f;
-	HeroPerLevelGains.Speed.Min = 0.1f;       HeroPerLevelGains.Speed.Max = 1.0f;
+	HeroPerLevelGains.Damage.Min = 2.0f;      HeroPerLevelGains.Damage.Max = 2.0f;
+	HeroPerLevelGains.AttackSpeed.Min = 2.0f; HeroPerLevelGains.AttackSpeed.Max = 2.0f;
+	HeroPerLevelGains.AttackScale.Min = 2.0f; HeroPerLevelGains.AttackScale.Max = 2.0f;
+	HeroPerLevelGains.Accuracy.Min = 2.0f;    HeroPerLevelGains.Accuracy.Max = 2.0f;
+	HeroPerLevelGains.Armor.Min = 2.0f;       HeroPerLevelGains.Armor.Max = 2.0f;
+	HeroPerLevelGains.Evasion.Min = 2.0f;     HeroPerLevelGains.Evasion.Max = 2.0f;
+	HeroPerLevelGains.Luck.Min = 2.0f;        HeroPerLevelGains.Luck.Max = 2.0f;
+	HeroPerLevelGains.Speed.Min = 2.0f;       HeroPerLevelGains.Speed.Max = 2.0f;
 
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
@@ -459,52 +445,54 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 void UT66RunStateSubsystem::RefreshPermanentBuffBonusesFromProfile()
 {
 	PermanentBuffStatBonuses = FT66HeroStatBonuses{};
-	PermanentSecondaryStatBonusTenths.Reset();
+	PermanentStatBonusTenths.Reset();
 
 	if (const UGameInstance* GI = GetGameInstance())
 	{
 		if (const UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
 			PermanentBuffStatBonuses = Buffs->GetPermanentBuffStatBonuses();
-			const auto ApplyElementRelic = [this, Buffs](const ET66SecondaryStatType StatType)
+			const auto ApplyElementRelic = [this, Buffs](const ET66StatType StatType)
 			{
-				const int32 Bonus = Buffs->GetRelicSecondaryStatBonus(StatType);
+				const int32 Bonus = Buffs->GetRelicStatBonus(StatType);
 				if (Bonus > 0)
 				{
-					PermanentSecondaryStatBonusTenths.FindOrAdd(StatType) += WholeStatToTenths(Bonus);
+					PermanentStatBonusTenths.FindOrAdd(StatType) += WholeStatToTenths(Bonus);
 				}
 			};
-			ApplyElementRelic(ET66SecondaryStatType::FirePower);
-			ApplyElementRelic(ET66SecondaryStatType::IcePower);
-			ApplyElementRelic(ET66SecondaryStatType::ElectricityPower);
-			ApplyElementRelic(ET66SecondaryStatType::NaturePower);
+			ApplyElementRelic(ET66StatType::FirePower);
+			ApplyElementRelic(ET66StatType::IcePower);
+			ApplyElementRelic(ET66StatType::ElectricityPower);
+			ApplyElementRelic(ET66StatType::NaturePower);
+			ApplyElementRelic(ET66StatType::WindPower);
 		}
 	}
 
-	constexpr int32 RelicSeedSalt = 0x5D1F0A7D;
-	auto ApplyPermanentPrimary = [&](const ET66HeroStatType StatType)
+	auto ApplyPermanentBaseStat = [&](const ET66HeroStatType StatType)
 	{
-		const int32 GainTenths = GetPermanentPrimaryBuffTenths(StatType);
+		const int32 GainTenths = GetPermanentBaseBuffTenths(StatType);
 		if (GainTenths <= 0)
 		{
 			return;
 		}
 
-		ApplyPrimaryGainToSecondaryBonuses(
-			StatType,
-			GainTenths,
-			PermanentSecondaryStatBonusTenths,
-			HashCombine(static_cast<uint32>(RelicSeedSalt), GetTypeHash(static_cast<uint8>(StatType))));
+		// Stats Rework: a relic/permanent buff bumps its named unified stat directly as additive
+		// percent instead of fanning a primary out across categories.
+		const ET66StatType UnifiedType = T66MapBaseStatToUnifiedStat(StatType);
+		if (UnifiedType != ET66StatType::None)
+		{
+			PermanentStatBonusTenths.FindOrAdd(UnifiedType) += GainTenths;
+		}
 	};
 
-	ApplyPermanentPrimary(ET66HeroStatType::Damage);
-	ApplyPermanentPrimary(ET66HeroStatType::AttackSpeed);
-	ApplyPermanentPrimary(ET66HeroStatType::AttackScale);
-	ApplyPermanentPrimary(ET66HeroStatType::Accuracy);
-	ApplyPermanentPrimary(ET66HeroStatType::Armor);
-	ApplyPermanentPrimary(ET66HeroStatType::Evasion);
-	ApplyPermanentPrimary(ET66HeroStatType::Luck);
-	ApplyPermanentPrimary(ET66HeroStatType::Speed);
+	ApplyPermanentBaseStat(ET66HeroStatType::Damage);
+	ApplyPermanentBaseStat(ET66HeroStatType::AttackSpeed);
+	ApplyPermanentBaseStat(ET66HeroStatType::AttackScale);
+	ApplyPermanentBaseStat(ET66HeroStatType::Accuracy);
+	ApplyPermanentBaseStat(ET66HeroStatType::Armor);
+	ApplyPermanentBaseStat(ET66HeroStatType::Evasion);
+	ApplyPermanentBaseStat(ET66HeroStatType::Luck);
+	ApplyPermanentBaseStat(ET66HeroStatType::Speed);
 }
 
 
@@ -517,7 +505,7 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 
 	HeroLevel = FMath::Clamp(HeroLevel + 1, DefaultHeroLevel, MaxHeroLevel);
 
-	auto GetPrimaryCategoryName = [](const ET66HeroStatType StatType) -> FName
+	auto GetBaseStatCategoryName = [](const ET66HeroStatType StatType) -> FName
 	{
 		switch (StatType)
 		{
@@ -535,18 +523,15 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 
 	auto ApplyGain = [&](const ET66HeroStatType StatType, const FT66HeroStatGainRange& Range)
 	{
-		const int32 GainTenths = RollHeroPrimaryGainTenthsBiased(Range, GetPrimaryCategoryName(StatType));
+		const int32 GainTenths = RollHeroBaseGainTenthsBiased(Range, GetBaseStatCategoryName(StatType));
 		if (GainTenths <= 0)
 		{
 			return;
 		}
 
-		ApplyLevelUpPrimaryGainTenths(StatType, GainTenths);
-		ApplyPrimaryGainToSecondaryBonuses(
-			StatType,
-			GainTenths,
-			PersistentSecondaryStatBonusTenths,
-			HashCombine(static_cast<uint32>(HeroLevel), GetTypeHash(static_cast<uint8>(StatType))));
+		// Stats Rework: leveling grants the gain as additive percent into the unified stat
+		// (each tenth = 0.1%).
+		AddPersistentStatBonusTenths(T66MapBaseStatToUnifiedStat(StatType), GainTenths);
 	};
 
 	ApplyGain(ET66HeroStatType::Damage, HeroPerLevelGains.Damage);
@@ -559,7 +544,7 @@ void UT66RunStateSubsystem::ApplyOneHeroLevelUp()
 	ApplyGain(ET66HeroStatType::Speed, HeroPerLevelGains.Speed);
 
 	SyncLegacyHeroStatsFromPrecise();
-	CurrentHP = MaxHP;
+	ResetHeroDamagePercent();
 	const int32 WaveKills = ApplyLevelUpWave(GetDataDrivenLevelUpWaveRadiusUU());
 	AddStructuredEvent(
 		ET66RunEventType::DamageDealt,
@@ -582,7 +567,7 @@ void UT66RunStateSubsystem::InitializeHeroStatsForNewRun()
 	HeroStatRng.Initialize(Seed);
 
 	InitializeHeroStatTuningForSelectedHero();
-	ClearPersistentSecondaryStatBonuses();
+	ClearPersistentStatBonuses();
 
 	HeroLevel = DefaultHeroLevel;
 	HeroXP = 0;
@@ -647,7 +632,7 @@ float UT66RunStateSubsystem::GetDataDrivenHeadshotChancePerBonusPoint() const
 		}
 	}
 
-	return 0.005f;
+	return T66StatSmallChancePerBonusPoint;
 }
 
 
@@ -671,27 +656,8 @@ float UT66RunStateSubsystem::GetDataDrivenHeadshotStunDurationSeconds() const
 }
 
 
-void UT66RunStateSubsystem::ApplyLevelUpPrimaryGainTenths(const ET66HeroStatType StatType, const int32 GainTenths)
-{
-	const int32 ClampedGain = FMath::Max(0, GainTenths);
-	if (ClampedGain <= 0)
-	{
-		return;
-	}
-
-	switch (StatType)
-	{
-	case ET66HeroStatType::Damage:      HeroPreciseStats.DamageTenths = ClampHeroStatTenths(HeroPreciseStats.DamageTenths + ClampedGain); break;
-	case ET66HeroStatType::AttackSpeed: HeroPreciseStats.AttackSpeedTenths = ClampHeroStatTenths(HeroPreciseStats.AttackSpeedTenths + ClampedGain); break;
-	case ET66HeroStatType::AttackScale: HeroPreciseStats.AttackScaleTenths = ClampHeroStatTenths(HeroPreciseStats.AttackScaleTenths + ClampedGain); break;
-	case ET66HeroStatType::Accuracy:    HeroPreciseStats.AccuracyTenths = ClampHeroStatTenths(HeroPreciseStats.AccuracyTenths + ClampedGain); break;
-	case ET66HeroStatType::Armor:       HeroPreciseStats.ArmorTenths = ClampHeroStatTenths(HeroPreciseStats.ArmorTenths + ClampedGain); break;
-	case ET66HeroStatType::Evasion:     HeroPreciseStats.EvasionTenths = ClampHeroStatTenths(HeroPreciseStats.EvasionTenths + ClampedGain); break;
-	case ET66HeroStatType::Luck:        HeroPreciseStats.LuckTenths = ClampHeroStatTenths(HeroPreciseStats.LuckTenths + ClampedGain); break;
-	case ET66HeroStatType::Speed:       HeroPreciseStats.SpeedTenths = ClampHeroStatTenths(HeroPreciseStats.SpeedTenths + ClampedGain); break;
-	default:                            break;
-	}
-}
+// Stats Rework: ApplyLevelUpPrimaryGainTenths removed. Leveling no longer raises primary stat points;
+// gains route into unified stats via T66MapBaseStatToUnifiedStat in ApplyOneHeroLevelUp.
 
 
 int32 UT66RunStateSubsystem::ApplyLevelUpWave(const float RadiusUU)
@@ -763,49 +729,53 @@ int32 UT66RunStateSubsystem::ApplyLevelUpWave(const float RadiusUU)
 
 int32 UT66RunStateSubsystem::GetSpeedStat() const
 {
-	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Speed));
+	// Stats Rework: Move Speed = innate Speed base (excl. relic) + Movement Speed stat upgrades.
+	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Speed) - GetPermanentBaseBuffTenths(ET66HeroStatType::Speed));
+	const int32 InnateDisplay = TenthsToDisplayStat(BaseTenths);
+	const int32 UpgradePoints = FMath::RoundToInt(GetStatBonusValue(ET66StatType::MovementSpeed));
+	return ClampHeroStatValue(InnateDisplay + UpgradePoints);
 }
 
 
 int32 UT66RunStateSubsystem::GetDamageStat() const
 {
-	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Damage));
+	return TenthsToDisplayStat(GetPreciseBaseStatTenths(ET66HeroStatType::Damage));
 }
 
 
 int32 UT66RunStateSubsystem::GetAttackSpeedStat() const
 {
-	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::AttackSpeed));
+	return TenthsToDisplayStat(GetPreciseBaseStatTenths(ET66HeroStatType::AttackSpeed));
 }
 
 
 int32 UT66RunStateSubsystem::GetScaleStat() const
 {
-	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::AttackScale));
+	return TenthsToDisplayStat(GetPreciseBaseStatTenths(ET66HeroStatType::AttackScale));
 }
 
 
 int32 UT66RunStateSubsystem::GetAccuracyStat() const
 {
-	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Accuracy));
+	return TenthsToDisplayStat(GetPreciseBaseStatTenths(ET66HeroStatType::Accuracy));
 }
 
 
 int32 UT66RunStateSubsystem::GetArmorStat() const
 {
-	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Armor));
+	return TenthsToDisplayStat(GetPreciseBaseStatTenths(ET66HeroStatType::Armor));
 }
 
 
 int32 UT66RunStateSubsystem::GetEvasionStat() const
 {
-	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Evasion));
+	return TenthsToDisplayStat(GetPreciseBaseStatTenths(ET66HeroStatType::Evasion));
 }
 
 
 int32 UT66RunStateSubsystem::GetLuckStat() const
 {
-	return TenthsToDisplayStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Luck));
+	return TenthsToDisplayStat(GetPreciseBaseStatTenths(ET66HeroStatType::Luck));
 }
 
 
@@ -817,8 +787,12 @@ float UT66RunStateSubsystem::GetSingleUseLuckModifierPercent() const
 
 float UT66RunStateSubsystem::GetTotalLuckModifierPercent() const
 {
-	const float PrimaryLuckModifierPercent = static_cast<float>(FMath::Max(0, GetLuckStat() - 1));
-	return FMath::Max(0.f, PrimaryLuckModifierPercent + GetSingleUseLuckModifierPercent());
+	// Stats Rework: relic power flows through the unified Luck stat, so the innate luck base
+	// excludes permanent-buff contribution; upgrades add as percent points.
+	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Luck) - GetPermanentBaseBuffTenths(ET66HeroStatType::Luck));
+	const int32 InnateLuckDisplay = TenthsToDisplayStat(BaseTenths);
+	const float BaseLuckModifierPercent = static_cast<float>(FMath::Max(0, InnateLuckDisplay - 1)) + GetStatBonusValue(ET66StatType::Luck);
+	return FMath::Max(0.f, BaseLuckModifierPercent + GetSingleUseLuckModifierPercent());
 }
 
 
@@ -847,50 +821,50 @@ FText UT66RunStateSubsystem::GetSeedLuckAdjectiveText(const int32 InSeedLuck0To1
 }
 
 
-int32 UT66RunStateSubsystem::GetPierceDmgStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::PierceDamage)); }
+int32 UT66RunStateSubsystem::GetPierceDmgStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::PierceDamage)); }
 
 
-int32 UT66RunStateSubsystem::GetPierceAtkSpdStat() const   { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::PierceSpeed)); }
+int32 UT66RunStateSubsystem::GetPierceAtkSpdStat() const   { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::PierceSpeed)); }
 
 
-int32 UT66RunStateSubsystem::GetPierceAtkScaleStat() const { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::PierceScale)); }
+int32 UT66RunStateSubsystem::GetPierceAtkScaleStat() const { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::PierceScale)); }
 
 
-int32 UT66RunStateSubsystem::GetBounceDmgStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::BounceDamage)); }
+int32 UT66RunStateSubsystem::GetBounceDmgStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::BounceDamage)); }
 
 
-int32 UT66RunStateSubsystem::GetBounceAtkSpdStat() const   { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::BounceSpeed)); }
+int32 UT66RunStateSubsystem::GetBounceAtkSpdStat() const   { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::BounceSpeed)); }
 
 
-int32 UT66RunStateSubsystem::GetBounceAtkScaleStat() const { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::BounceScale)); }
+int32 UT66RunStateSubsystem::GetBounceAtkScaleStat() const { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::BounceScale)); }
 
 
-int32 UT66RunStateSubsystem::GetAoeDmgStat() const         { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::AoeDamage)); }
+int32 UT66RunStateSubsystem::GetAoeDmgStat() const         { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::AoeDamage)); }
 
 
-int32 UT66RunStateSubsystem::GetAoeAtkSpdStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::AoeSpeed)); }
+int32 UT66RunStateSubsystem::GetAoeAtkSpdStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::AoeSpeed)); }
 
 
-int32 UT66RunStateSubsystem::GetAoeAtkScaleStat() const    { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::AoeScale)); }
+int32 UT66RunStateSubsystem::GetAoeAtkScaleStat() const    { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::AoeScale)); }
 
 
-int32 UT66RunStateSubsystem::GetDotDmgStat() const         { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::DotDamage)); }
+int32 UT66RunStateSubsystem::GetDotDmgStat() const         { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::DotDamage)); }
 
 
-int32 UT66RunStateSubsystem::GetDotAtkSpdStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::DotSpeed)); }
+int32 UT66RunStateSubsystem::GetDotAtkSpdStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::DotSpeed)); }
 
 
-int32 UT66RunStateSubsystem::GetDotAtkScaleStat() const    { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::DotScale)); }
+int32 UT66RunStateSubsystem::GetDotAtkScaleStat() const    { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::DotScale)); }
 
 
-float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatType) const
+float UT66RunStateSubsystem::GetStatValue(ET66StatType StatType) const
 {
 	float M = 1.f;
-	if (const float* Mult = SecondaryMultipliers.Find(StatType); Mult && *Mult > 0.f)
+	if (const float* Mult = StatMultipliers.Find(StatType); Mult && *Mult > 0.f)
 	{
 		M *= *Mult;
 	}
-	if (const float* SingleUseMult = SingleUseSecondaryMultipliers.Find(StatType); SingleUseMult && *SingleUseMult > 0.f)
+	if (const float* SingleUseMult = SingleUseStatMultipliers.Find(StatType); SingleUseMult && *SingleUseMult > 0.f)
 	{
 		M *= *SingleUseMult;
 	}
@@ -898,123 +872,132 @@ float UT66RunStateSubsystem::GetSecondaryStatValue(ET66SecondaryStatType StatTyp
 	const float AttackSpeedMult = GetHeroAttackSpeedMultiplier();
 	const float ScaleMult = GetHeroScaleMultiplier();
 	const float AccuracyMult = GetHeroAccuracyMultiplier();
-	const float BonusPoints = GetSecondaryStatBonusValue(StatType);
-	const float BaseArmorReduction = FMath::Clamp(static_cast<float>(GetArmorStat() - 1) * 0.008f, 0.f, 0.80f);
-	const float BaseEvasionChance = FMath::Clamp(static_cast<float>(GetEvasionStat() - 1) * 0.006f, 0.f, 0.60f);
+	const float BonusPoints = GetStatBonusValue(StatType);
+	const float BaseArmorReduction = FMath::Clamp(static_cast<float>(GetArmorStat() - 1) * T66BaseArmorReductionPerPoint, 0.f, 0.80f);
+	const float BaseEvasionChance = FMath::Clamp(static_cast<float>(GetEvasionStat() - 1) * T66BaseEvasionChancePerPoint, 0.f, 0.60f);
+
+	// Stats Rework: magnitude stats resolve as hidden base x (1 + accumulated percent) x global
+	// category multiplier. Each accumulated stat point is read as one percent.
+	auto MagnitudeValue = [this, M](const ET66StatType MagnitudeType, const float CategoryMultiplier) -> float
+	{
+		return TenthsToFloatStat(GetCategoryBaseStatTenths(MagnitudeType)) * (1.f + GetStatBonusValue(MagnitudeType) * 0.01f) * M * CategoryMultiplier;
+	};
 
 	switch (StatType)
 	{
-	case ET66SecondaryStatType::AoeDamage:        return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::AoeDamage)) * M * DamageMult;
-	case ET66SecondaryStatType::BounceDamage:     return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::BounceDamage)) * M * DamageMult;
-	case ET66SecondaryStatType::PierceDamage:     return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::PierceDamage)) * M * DamageMult;
-	case ET66SecondaryStatType::DotDamage:        return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::DotDamage)) * M * DamageMult;
-	case ET66SecondaryStatType::CritDamage:       return 2.0f;
-	case ET66SecondaryStatType::CloseRangeDamage: return 1.f;
-	case ET66SecondaryStatType::LongRangeDamage:  return 1.f;
-	case ET66SecondaryStatType::AoeSpeed:         return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::AoeSpeed)) * M * AttackSpeedMult;
-	case ET66SecondaryStatType::BounceSpeed:      return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::BounceSpeed)) * M * AttackSpeedMult;
-	case ET66SecondaryStatType::PierceSpeed:      return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::PierceSpeed)) * M * AttackSpeedMult;
-	case ET66SecondaryStatType::DotSpeed:         return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::DotSpeed)) * M * AttackSpeedMult;
-	case ET66SecondaryStatType::CritChance:       return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseCritChance + (BonusPoints * 0.01f)) * M * AccuracyMult, 0.f, 1.f));
-	case ET66SecondaryStatType::AoeScale:         return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::AoeScale)) * M * ScaleMult;
-	case ET66SecondaryStatType::BounceScale:      return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::BounceScale)) * M * ScaleMult;
-	case ET66SecondaryStatType::PierceScale:      return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::PierceScale)) * M * ScaleMult;
-	case ET66SecondaryStatType::DotScale:         return TenthsToFloatStat(GetCategoryTotalStatTenths(ET66SecondaryStatType::DotScale)) * M * ScaleMult;
-	case ET66SecondaryStatType::AttackRange:      return FMath::Max(100.f, (HeroBaseAttackRange + (BonusPoints * 25.f)) * M * AccuracyMult);
-	case ET66SecondaryStatType::Accuracy:         return FMath::Clamp((HeroBaseAccuracy + (BonusPoints * 0.01f)) * M * AccuracyMult, 0.f, 1.f);
-	case ET66SecondaryStatType::Execute:          return ApplyProcLuckToChance01(FMath::Clamp((BonusPoints * 0.005f) * M, 0.f, 1.f));
-	case ET66SecondaryStatType::Taunt:            return ApplyProcLuckToChance01(FMath::Clamp((BonusPoints * 0.01f) * M, 0.f, 1.f));
-	case ET66SecondaryStatType::ReflectDamage:    return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseReflectDmg + (BonusPoints * 0.01f)) * M, 0.f, 1.f));
-	case ET66SecondaryStatType::HpRegen:          return FMath::Max(0.f, (HeroBaseHpRegen + (BonusPoints * 0.10f)) * M);
-	case ET66SecondaryStatType::Crush:            return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseCrushChance + (BonusPoints * 0.005f)) * M, 0.f, 1.f));
-	case ET66SecondaryStatType::Invisibility:     return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseInvisChance + (BonusPoints * 0.005f)) * M, 0.f, 1.f));
-	case ET66SecondaryStatType::CounterAttack:    return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseCounterAttack + (BonusPoints * 0.01f)) * M, 0.f, 1.f));
-	case ET66SecondaryStatType::LifeSteal:        return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseLifeSteal + (BonusPoints * 0.005f)) * M, 0.f, 1.f));
-	case ET66SecondaryStatType::Assassinate:      return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseAssassinateChance + (BonusPoints * 0.005f)) * M, 0.f, 1.f));
-	case ET66SecondaryStatType::SpinWheel:        return 1.f;
-	case ET66SecondaryStatType::Goblin:           return 1.f * M;
-	case ET66SecondaryStatType::Leprechaun:       return 1.f * M;
-	case ET66SecondaryStatType::TreasureChest:    return FMath::Max(1.f, (1.f + (BonusPoints * T66InteractableLuckQualityTiltPerPoint)) * M);
-	case ET66SecondaryStatType::Fountain:         return 1.f * M;
-	case ET66SecondaryStatType::Cheating:         return FMath::Clamp((BonusPoints * T66GamblingLuckRescueRerollPerPoint) * M, 0.f, T66GamblingLuckRescueRerollCap);
-	case ET66SecondaryStatType::Stealing:         return FMath::Clamp((BonusPoints * T66StealingLuckChancePerPoint) * M, 0.f, T66StealingLuckChanceCap);
-	case ET66SecondaryStatType::MovementSpeed:    return FMath::Max(1.f, (1.f + (BonusPoints * 0.02f)) * M);
-	case ET66SecondaryStatType::LootCrate:        return FMath::Max(1.f, (1.f + (BonusPoints * T66InteractableLuckQualityTiltPerPoint)) * M);
-	case ET66SecondaryStatType::LootBag:          return FMath::Max(1.f, (1.f + (BonusPoints * T66InteractableLuckQualityTiltPerPoint)) * M);
-	case ET66SecondaryStatType::LootWheel:        return FMath::Max(1.f, (1.f + (BonusPoints * T66InteractableLuckQualityTiltPerPoint)) * M);
-	case ET66SecondaryStatType::DamageReduction:  return FMath::Clamp(BaseArmorReduction + (BonusPoints * 0.005f), 0.f, 0.80f);
-	case ET66SecondaryStatType::EvasionChance:    return FMath::Clamp(BaseEvasionChance + (BonusPoints * 0.005f), 0.f, 0.60f);
-	case ET66SecondaryStatType::Alchemy:          return FMath::Clamp(BonusPoints * 0.01f * M, 0.f, 1.f);
-	case ET66SecondaryStatType::VendorToken:      return 0.f;
-	case ET66SecondaryStatType::HeadshotChance:   return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseHeadshotChance + (BonusPoints * GetDataDrivenHeadshotChancePerBonusPoint())) * M * AccuracyMult, 0.f, 1.f));
-	case ET66SecondaryStatType::FirePower:        return FMath::Max(1.f, (1.f + (BonusPoints * 0.05f)) * M);
-	case ET66SecondaryStatType::IcePower:         return FMath::Max(1.f, (1.f + (BonusPoints * 0.05f)) * M);
-	case ET66SecondaryStatType::ElectricityPower: return FMath::Max(1.f, (1.f + (BonusPoints * 0.05f)) * M);
-	case ET66SecondaryStatType::NaturePower:      return FMath::Max(1.f, (1.f + (BonusPoints * 0.05f)) * M);
-	case ET66SecondaryStatType::InteractableLuck: return FMath::Max(1.f, (1.f + (BonusPoints * T66InteractableLuckQualityTiltPerPoint)) * M);
-	case ET66SecondaryStatType::StealingLuck:     return FMath::Clamp((BonusPoints * T66StealingLuckChancePerPoint) * M, 0.f, T66StealingLuckChanceCap);
-	case ET66SecondaryStatType::GamblingLuck:     return FMath::Clamp((BonusPoints * T66GamblingLuckRescueRerollPerPoint) * M, 0.f, T66GamblingLuckRescueRerollCap);
-	case ET66SecondaryStatType::ProcLuck:         return FMath::Clamp((BonusPoints * T66ProcLuckChancePerPoint) * M, 0.f, T66ProcLuckChanceCap);
+	case ET66StatType::AoeDamage:        return MagnitudeValue(ET66StatType::AoeDamage, DamageMult);
+	case ET66StatType::BounceDamage:     return MagnitudeValue(ET66StatType::BounceDamage, DamageMult);
+	case ET66StatType::PierceDamage:     return MagnitudeValue(ET66StatType::PierceDamage, DamageMult);
+	case ET66StatType::DotDamage:        return MagnitudeValue(ET66StatType::DotDamage, DamageMult);
+	case ET66StatType::CritDamage:       return 2.0f;
+	case ET66StatType::CloseRangeDamage: return 1.f;
+	case ET66StatType::LongRangeDamage:  return 1.f;
+	case ET66StatType::AoeSpeed:         return MagnitudeValue(ET66StatType::AoeSpeed, AttackSpeedMult);
+	case ET66StatType::BounceSpeed:      return MagnitudeValue(ET66StatType::BounceSpeed, AttackSpeedMult);
+	case ET66StatType::PierceSpeed:      return MagnitudeValue(ET66StatType::PierceSpeed, AttackSpeedMult);
+	case ET66StatType::DotSpeed:         return MagnitudeValue(ET66StatType::DotSpeed, AttackSpeedMult);
+	case ET66StatType::CritChance:       return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseCritChance + (BonusPoints * T66StatChancePerBonusPoint)) * M * AccuracyMult, 0.f, 1.f));
+	case ET66StatType::AoeScale:         return MagnitudeValue(ET66StatType::AoeScale, ScaleMult);
+	case ET66StatType::BounceScale:      return MagnitudeValue(ET66StatType::BounceScale, ScaleMult);
+	case ET66StatType::PierceScale:      return MagnitudeValue(ET66StatType::PierceScale, ScaleMult);
+	case ET66StatType::DotScale:         return MagnitudeValue(ET66StatType::DotScale, ScaleMult);
+	case ET66StatType::AttackRange:      return FMath::Max(100.f, (HeroBaseAttackRange + (BonusPoints * T66StatRangePerBonusPoint)) * M * AccuracyMult);
+	case ET66StatType::Accuracy:         return FMath::Clamp((HeroBaseAccuracy + (BonusPoints * T66StatChancePerBonusPoint)) * M * AccuracyMult, 0.f, 1.f);
+	case ET66StatType::Execute:          return ApplyProcLuckToChance01(FMath::Clamp((BonusPoints * T66StatSmallChancePerBonusPoint) * M, 0.f, 1.f));
+	case ET66StatType::Taunt:            return ApplyProcLuckToChance01(FMath::Clamp((BonusPoints * T66StatChancePerBonusPoint) * M, 0.f, 1.f));
+	case ET66StatType::ReflectDamage:    return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseReflectDmg + (BonusPoints * T66StatChancePerBonusPoint)) * M, 0.f, 1.f));
+	case ET66StatType::HpRegen:          return FMath::Max(0.f, (HeroBaseHpRegen + (BonusPoints * 0.10f)) * M);
+	case ET66StatType::Crush:            return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseCrushChance + (BonusPoints * T66StatSmallChancePerBonusPoint)) * M, 0.f, 1.f));
+	case ET66StatType::Invisibility:     return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseInvisChance + (BonusPoints * T66StatSmallChancePerBonusPoint)) * M, 0.f, 1.f));
+	case ET66StatType::CounterAttack:    return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseCounterAttack + (BonusPoints * T66StatChancePerBonusPoint)) * M, 0.f, 1.f));
+	case ET66StatType::LifeSteal:        return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseLifeSteal + (BonusPoints * T66StatSmallChancePerBonusPoint)) * M, 0.f, 1.f));
+	case ET66StatType::Assassinate:      return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseAssassinateChance + (BonusPoints * T66StatSmallChancePerBonusPoint)) * M, 0.f, 1.f));
+	case ET66StatType::SpinWheel:        return 1.f;
+	case ET66StatType::Goblin:           return 1.f * M;
+	case ET66StatType::Leprechaun:       return 1.f * M;
+	case ET66StatType::TreasureChest:    return FMath::Max(1.f, (1.f + (BonusPoints * T66InteractableLuckQualityTiltPerPoint)) * M);
+	case ET66StatType::Fountain:         return 1.f * M;
+	case ET66StatType::Cheating:         return FMath::Clamp((BonusPoints * T66GamblingLuckRescueRerollPerPoint) * M, 0.f, T66GamblingLuckRescueRerollCap);
+	case ET66StatType::Stealing:         return FMath::Clamp((BonusPoints * T66StealingLuckChancePerPoint) * M, 0.f, T66StealingLuckChanceCap);
+	case ET66StatType::MovementSpeed:    return FMath::Max(1.f, (1.f + (BonusPoints * T66StatMovementMultiplierPerBonusPoint)) * M);
+	case ET66StatType::LootCrate:        return FMath::Max(1.f, (1.f + (BonusPoints * T66InteractableLuckQualityTiltPerPoint)) * M);
+	case ET66StatType::LootBag:          return FMath::Max(1.f, (1.f + (BonusPoints * T66InteractableLuckQualityTiltPerPoint)) * M);
+	case ET66StatType::LootWheel:        return FMath::Max(1.f, (1.f + (BonusPoints * T66InteractableLuckQualityTiltPerPoint)) * M);
+	case ET66StatType::DamageReduction:  return FMath::Clamp(BaseArmorReduction + (BonusPoints * T66StatSmallChancePerBonusPoint), 0.f, 0.80f);
+	case ET66StatType::EvasionChance:    return FMath::Clamp(BaseEvasionChance + (BonusPoints * T66StatSmallChancePerBonusPoint), 0.f, 0.60f);
+	case ET66StatType::Alchemy:          return FMath::Clamp(BonusPoints * T66StatChancePerBonusPoint * M, 0.f, 1.f);
+	case ET66StatType::VendorToken:      return 0.f;
+	case ET66StatType::HeadshotChance:   return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseHeadshotChance + (BonusPoints * GetDataDrivenHeadshotChancePerBonusPoint())) * M * AccuracyMult, 0.f, 1.f));
+	case ET66StatType::FirePower:        return FMath::Max(1.f, (1.f + (BonusPoints * T66StatElementalPowerPerBonusPoint)) * M);
+	case ET66StatType::IcePower:         return FMath::Max(1.f, (1.f + (BonusPoints * T66StatElementalPowerPerBonusPoint)) * M);
+	case ET66StatType::ElectricityPower: return FMath::Max(1.f, (1.f + (BonusPoints * T66StatElementalPowerPerBonusPoint)) * M);
+	case ET66StatType::NaturePower:      return FMath::Max(1.f, (1.f + (BonusPoints * T66StatElementalPowerPerBonusPoint)) * M);
+	case ET66StatType::WindPower:        return FMath::Max(1.f, (1.f + (BonusPoints * T66StatElementalPowerPerBonusPoint)) * M);
+	case ET66StatType::InteractableLuck: return FMath::Max(1.f, (1.f + (BonusPoints * T66InteractableLuckQualityTiltPerPoint)) * M);
+	case ET66StatType::StealingLuck:     return FMath::Clamp((BonusPoints * T66StealingLuckChancePerPoint) * M, 0.f, T66StealingLuckChanceCap);
+	case ET66StatType::GamblingLuck:     return FMath::Clamp((BonusPoints * T66GamblingLuckRescueRerollPerPoint) * M, 0.f, T66GamblingLuckRescueRerollCap);
+	case ET66StatType::ProcLuck:         return FMath::Clamp((BonusPoints * T66ProcLuckChancePerPoint) * M, 0.f, T66ProcLuckChanceCap);
 	default: return 1.f;
 	}
 }
 
 
-float UT66RunStateSubsystem::GetSecondaryStatBaselineValue(ET66SecondaryStatType StatType) const
+float UT66RunStateSubsystem::GetStatBaselineValue(ET66StatType StatType) const
 {
 	switch (StatType)
 	{
-	case ET66SecondaryStatType::AoeDamage:       return static_cast<float>(BaseAoeDmg);
-	case ET66SecondaryStatType::BounceDamage:    return static_cast<float>(BaseBounceDmg);
-	case ET66SecondaryStatType::PierceDamage:    return static_cast<float>(BasePierceDmg);
-	case ET66SecondaryStatType::DotDamage:       return static_cast<float>(BaseDotDmg);
-	case ET66SecondaryStatType::CritDamage:      return 2.0f;
-	case ET66SecondaryStatType::CloseRangeDamage:return 1.f;
-	case ET66SecondaryStatType::LongRangeDamage: return 1.f;
-	case ET66SecondaryStatType::AoeSpeed:        return static_cast<float>(BaseAoeAtkSpd);
-	case ET66SecondaryStatType::BounceSpeed:     return static_cast<float>(BaseBounceAtkSpd);
-	case ET66SecondaryStatType::PierceSpeed:     return static_cast<float>(BasePierceAtkSpd);
-	case ET66SecondaryStatType::DotSpeed:        return static_cast<float>(BaseDotAtkSpd);
-	case ET66SecondaryStatType::CritChance:      return FMath::Clamp(HeroBaseCritChance, 0.f, 1.f);
-	case ET66SecondaryStatType::AoeScale:        return static_cast<float>(BaseAoeAtkScale);
-	case ET66SecondaryStatType::BounceScale:     return static_cast<float>(BaseBounceAtkScale);
-	case ET66SecondaryStatType::PierceScale:     return static_cast<float>(BasePierceAtkScale);
-	case ET66SecondaryStatType::DotScale:        return static_cast<float>(BaseDotAtkScale);
-	case ET66SecondaryStatType::AttackRange:     return HeroBaseAttackRange;
-	case ET66SecondaryStatType::Accuracy:        return FMath::Clamp(HeroBaseAccuracy, 0.f, 1.f);
-	case ET66SecondaryStatType::Execute:         return 0.f;
-	case ET66SecondaryStatType::Taunt:           return HeroBaseTaunt;
-	case ET66SecondaryStatType::ReflectDamage:   return FMath::Clamp(HeroBaseReflectDmg, 0.f, 1.f);
-	case ET66SecondaryStatType::HpRegen:         return 0.f;
-	case ET66SecondaryStatType::Crush:           return FMath::Clamp(HeroBaseCrushChance, 0.f, 1.f);
-	case ET66SecondaryStatType::Invisibility:    return FMath::Clamp(HeroBaseInvisChance, 0.f, 1.f);
-	case ET66SecondaryStatType::CounterAttack:   return FMath::Clamp(HeroBaseCounterAttack, 0.f, 1.f);
-	case ET66SecondaryStatType::LifeSteal:       return 0.f;
-	case ET66SecondaryStatType::Assassinate:     return FMath::Clamp(HeroBaseAssassinateChance, 0.f, 1.f);
-	case ET66SecondaryStatType::SpinWheel:       return 1.f;
-	case ET66SecondaryStatType::Goblin:          return 1.f;
-	case ET66SecondaryStatType::Leprechaun:      return 1.f;
-	case ET66SecondaryStatType::TreasureChest:   return 1.f;
-	case ET66SecondaryStatType::Fountain:        return 1.f;
-	case ET66SecondaryStatType::Cheating:        return FMath::Clamp(HeroBaseCheatChance, 0.f, 1.f);
-	case ET66SecondaryStatType::Stealing:        return FMath::Clamp(HeroBaseStealChance, 0.f, 1.f);
-	case ET66SecondaryStatType::MovementSpeed:   return 1.f;
-	case ET66SecondaryStatType::LootCrate:       return 1.f;
-	case ET66SecondaryStatType::LootBag:         return 1.f;
-	case ET66SecondaryStatType::LootWheel:       return 1.f;
-	case ET66SecondaryStatType::DamageReduction: return 0.f;
-	case ET66SecondaryStatType::EvasionChance:   return 0.f;
-	case ET66SecondaryStatType::Alchemy:         return 0.f;
-	case ET66SecondaryStatType::VendorToken:     return 0.f;
-	case ET66SecondaryStatType::HeadshotChance:  return FMath::Clamp(HeroBaseHeadshotChance, 0.f, 1.f);
-	case ET66SecondaryStatType::FirePower:       return 1.f;
-	case ET66SecondaryStatType::IcePower:        return 1.f;
-	case ET66SecondaryStatType::ElectricityPower:return 1.f;
-	case ET66SecondaryStatType::NaturePower:     return 1.f;
-	case ET66SecondaryStatType::InteractableLuck:return 1.f;
-	case ET66SecondaryStatType::StealingLuck:    return 0.f;
-	case ET66SecondaryStatType::GamblingLuck:    return 0.f;
-	case ET66SecondaryStatType::ProcLuck:        return 0.f;
+	case ET66StatType::AoeDamage:       return static_cast<float>(BaseAoeDmg);
+	case ET66StatType::BounceDamage:    return static_cast<float>(BaseBounceDmg);
+	case ET66StatType::PierceDamage:    return static_cast<float>(BasePierceDmg);
+	case ET66StatType::DotDamage:       return static_cast<float>(BaseDotDmg);
+	case ET66StatType::CritDamage:      return 2.0f;
+	case ET66StatType::CloseRangeDamage:return 1.f;
+	case ET66StatType::LongRangeDamage: return 1.f;
+	case ET66StatType::AoeSpeed:        return static_cast<float>(BaseAoeAtkSpd);
+	case ET66StatType::BounceSpeed:     return static_cast<float>(BaseBounceAtkSpd);
+	case ET66StatType::PierceSpeed:     return static_cast<float>(BasePierceAtkSpd);
+	case ET66StatType::DotSpeed:        return static_cast<float>(BaseDotAtkSpd);
+	case ET66StatType::CritChance:      return FMath::Clamp(HeroBaseCritChance, 0.f, 1.f);
+	case ET66StatType::AoeScale:        return static_cast<float>(BaseAoeAtkScale);
+	case ET66StatType::BounceScale:     return static_cast<float>(BaseBounceAtkScale);
+	case ET66StatType::PierceScale:     return static_cast<float>(BasePierceAtkScale);
+	case ET66StatType::DotScale:        return static_cast<float>(BaseDotAtkScale);
+	case ET66StatType::AttackRange:     return HeroBaseAttackRange;
+	case ET66StatType::Accuracy:        return FMath::Clamp(HeroBaseAccuracy, 0.f, 1.f);
+	case ET66StatType::Execute:         return 0.f;
+	case ET66StatType::Taunt:           return HeroBaseTaunt;
+	case ET66StatType::ReflectDamage:   return FMath::Clamp(HeroBaseReflectDmg, 0.f, 1.f);
+	case ET66StatType::HpRegen:         return 0.f;
+	case ET66StatType::Crush:           return FMath::Clamp(HeroBaseCrushChance, 0.f, 1.f);
+	case ET66StatType::Invisibility:    return FMath::Clamp(HeroBaseInvisChance, 0.f, 1.f);
+	case ET66StatType::CounterAttack:   return FMath::Clamp(HeroBaseCounterAttack, 0.f, 1.f);
+	case ET66StatType::LifeSteal:       return 0.f;
+	case ET66StatType::Assassinate:     return FMath::Clamp(HeroBaseAssassinateChance, 0.f, 1.f);
+	case ET66StatType::SpinWheel:       return 1.f;
+	case ET66StatType::Goblin:          return 1.f;
+	case ET66StatType::Leprechaun:      return 1.f;
+	case ET66StatType::TreasureChest:   return 1.f;
+	case ET66StatType::Fountain:        return 1.f;
+	case ET66StatType::Cheating:        return FMath::Clamp(HeroBaseCheatChance, 0.f, 1.f);
+	case ET66StatType::Stealing:        return FMath::Clamp(HeroBaseStealChance, 0.f, 1.f);
+	case ET66StatType::MovementSpeed:   return 1.f;
+	case ET66StatType::LootCrate:       return 1.f;
+	case ET66StatType::LootBag:         return 1.f;
+	case ET66StatType::LootWheel:       return 1.f;
+	case ET66StatType::DamageReduction: return 0.f;
+	case ET66StatType::EvasionChance:   return 0.f;
+	case ET66StatType::Alchemy:         return 0.f;
+	case ET66StatType::VendorToken:     return 0.f;
+	case ET66StatType::HeadshotChance:  return FMath::Clamp(HeroBaseHeadshotChance, 0.f, 1.f);
+	case ET66StatType::FirePower:       return 1.f;
+	case ET66StatType::IcePower:        return 1.f;
+	case ET66StatType::ElectricityPower:return 1.f;
+	case ET66StatType::NaturePower:     return 1.f;
+	case ET66StatType::WindPower:       return 1.f;
+	case ET66StatType::InteractableLuck:return 1.f;
+	case ET66StatType::StealingLuck:    return 0.f;
+	case ET66StatType::GamblingLuck:    return 0.f;
+	case ET66StatType::ProcLuck:        return 0.f;
 	default:                                     return 1.f;
 	}
 }
@@ -1022,13 +1005,13 @@ float UT66RunStateSubsystem::GetSecondaryStatBaselineValue(ET66SecondaryStatType
 
 float UT66RunStateSubsystem::GetAggroMultiplier() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::Taunt);
+	return GetStatValue(ET66StatType::Taunt);
 }
 
 
 float UT66RunStateSubsystem::GetHpRegenPerSecond() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::HpRegen);
+	return GetStatValue(ET66StatType::HpRegen);
 }
 
 
@@ -1058,18 +1041,18 @@ float UT66RunStateSubsystem::GetLootWheelRewardMultiplier() const
 float UT66RunStateSubsystem::GetInteractableLuckRewardMultiplier() const
 {
 	return FMath::Max(
-		GetSecondaryStatValue(ET66SecondaryStatType::InteractableLuck),
+		GetStatValue(ET66StatType::InteractableLuck),
 		FMath::Max(
-			GetSecondaryStatValue(ET66SecondaryStatType::LootCrate),
+			GetStatValue(ET66StatType::LootCrate),
 			FMath::Max(
-				GetSecondaryStatValue(ET66SecondaryStatType::TreasureChest),
-				FMath::Max(GetSecondaryStatValue(ET66SecondaryStatType::LootBag), GetSecondaryStatValue(ET66SecondaryStatType::LootWheel)))));
+				GetStatValue(ET66StatType::TreasureChest),
+				FMath::Max(GetStatValue(ET66StatType::LootBag), GetStatValue(ET66StatType::LootWheel)))));
 }
 
 float UT66RunStateSubsystem::GetStealingLuckChanceBonus01() const
 {
 	return FMath::Clamp(
-		FMath::Max(GetSecondaryStatValue(ET66SecondaryStatType::StealingLuck), GetSecondaryStatValue(ET66SecondaryStatType::Stealing)),
+		FMath::Max(GetStatValue(ET66StatType::StealingLuck), GetStatValue(ET66StatType::Stealing)),
 		0.f,
 		T66StealingLuckChanceCap);
 }
@@ -1077,14 +1060,14 @@ float UT66RunStateSubsystem::GetStealingLuckChanceBonus01() const
 float UT66RunStateSubsystem::GetGamblingLuckRescueRerollChance01() const
 {
 	return FMath::Clamp(
-		FMath::Max(GetSecondaryStatValue(ET66SecondaryStatType::GamblingLuck), GetSecondaryStatValue(ET66SecondaryStatType::Cheating)),
+		FMath::Max(GetStatValue(ET66StatType::GamblingLuck), GetStatValue(ET66StatType::Cheating)),
 		0.f,
 		T66GamblingLuckRescueRerollCap);
 }
 
 float UT66RunStateSubsystem::GetProcLuckChanceBonus01() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::ProcLuck);
+	return GetStatValue(ET66StatType::ProcLuck);
 }
 
 float UT66RunStateSubsystem::ApplyProcLuckToChance01(const float BaseChance01) const
@@ -1100,19 +1083,19 @@ float UT66RunStateSubsystem::ApplyProcLuckToChance01(const float BaseChance01) c
 
 float UT66RunStateSubsystem::GetExecuteChance01() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::Execute);
+	return GetStatValue(ET66StatType::Execute);
 }
 
 
 float UT66RunStateSubsystem::GetAlchemyLuckyUpgradeChance01() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::Alchemy);
+	return GetStatValue(ET66StatType::Alchemy);
 }
 
 
 float UT66RunStateSubsystem::GetCritChance01() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::CritChance);
+	return GetStatValue(ET66StatType::CritChance);
 }
 
 
@@ -1124,7 +1107,7 @@ float UT66RunStateSubsystem::GetCritDamageMultiplier() const
 
 float UT66RunStateSubsystem::GetHeadshotChance01() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::HeadshotChance);
+	return GetStatValue(ET66StatType::HeadshotChance);
 }
 
 
@@ -1136,49 +1119,49 @@ float UT66RunStateSubsystem::GetHeadshotStunDurationSeconds() const
 
 float UT66RunStateSubsystem::GetLifeStealFraction() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::LifeSteal);
+	return GetStatValue(ET66StatType::LifeSteal);
 }
 
 
 float UT66RunStateSubsystem::GetReflectDamageFraction() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::ReflectDamage);
+	return GetStatValue(ET66StatType::ReflectDamage);
 }
 
 
 float UT66RunStateSubsystem::GetCrushChance01() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::Crush);
+	return GetStatValue(ET66StatType::Crush);
 }
 
 
 float UT66RunStateSubsystem::GetAssassinateChance01() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::Assassinate);
+	return GetStatValue(ET66StatType::Assassinate);
 }
 
 
 float UT66RunStateSubsystem::GetInvisibilityChance01() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::Invisibility);
+	return GetStatValue(ET66StatType::Invisibility);
 }
 
 
 float UT66RunStateSubsystem::GetCounterAttackFraction() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::CounterAttack);
+	return GetStatValue(ET66StatType::CounterAttack);
 }
 
 
 float UT66RunStateSubsystem::GetCloseRangeThreshold() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::AttackRange) * 0.10f;
+	return GetStatValue(ET66StatType::AttackRange) * 0.10f;
 }
 
 
 float UT66RunStateSubsystem::GetLongRangeThreshold() const
 {
-	return GetSecondaryStatValue(ET66SecondaryStatType::AttackRange) * 0.90f;
+	return GetStatValue(ET66StatType::AttackRange) * 0.90f;
 }
 
 
@@ -1196,54 +1179,75 @@ float UT66RunStateSubsystem::GetLongRangeDamageMultiplier() const
 
 float UT66RunStateSubsystem::GetHeroDamageMultiplier() const
 {
-	const float D = TenthsToFloatStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Damage));
-	return 1.f + FMath::Max(0.f, D - 1.f) * 0.015f;
+	// Stats Rework: relic power now flows through the unified "All Damage" stat, so the innate
+	// base excludes permanent-buff contribution; upgrades apply as additive percent (point = 1%).
+	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Damage) - GetPermanentBaseBuffTenths(ET66HeroStatType::Damage));
+	const float D = TenthsToFloatStat(BaseTenths);
+	const float BaseMult = 1.f + FMath::Max(0.f, D - 1.f) * T66BaseDamageMultiplierPerPoint;
+	return BaseMult * (1.f + GetStatBonusValue(ET66StatType::AllDamage) * 0.01f);
 }
 
 
 float UT66RunStateSubsystem::GetHeroAttackSpeedMultiplier() const
 {
-	const float AttackSpeedStat = TenthsToFloatStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::AttackSpeed));
-	return 1.f + FMath::Max(0.f, AttackSpeedStat - 1.f) * 0.012f;
+	// Stats Rework: upgrades flow through the unified "All Attack Speed" stat; innate base
+	// excludes permanent-buff contribution to avoid double counting.
+	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::AttackSpeed) - GetPermanentBaseBuffTenths(ET66HeroStatType::AttackSpeed));
+	const float AttackSpeedStat = TenthsToFloatStat(BaseTenths);
+	const float BaseMult = 1.f + FMath::Max(0.f, AttackSpeedStat - 1.f) * T66BaseAttackSpeedMultiplierPerPoint;
+	return BaseMult * (1.f + GetStatBonusValue(ET66StatType::AllAttackSpeed) * 0.01f);
 }
 
 
 float UT66RunStateSubsystem::GetHeroScaleMultiplier() const
 {
-	const float ScaleStat = TenthsToFloatStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::AttackScale));
-	return 1.f + FMath::Max(0.f, ScaleStat - 1.f) * 0.008f;
+	// Stats Rework: upgrades flow through the unified "All Scale" stat; innate base excludes
+	// permanent-buff contribution to avoid double counting.
+	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::AttackScale) - GetPermanentBaseBuffTenths(ET66HeroStatType::AttackScale));
+	const float ScaleStat = TenthsToFloatStat(BaseTenths);
+	const float BaseMult = 1.f + FMath::Max(0.f, ScaleStat - 1.f) * T66BaseScaleMultiplierPerPoint;
+	return BaseMult * (1.f + GetStatBonusValue(ET66StatType::AllScale) * 0.01f);
 }
 
 
 float UT66RunStateSubsystem::GetHeroAccuracyMultiplier() const
 {
-	const float AccuracyStat = TenthsToFloatStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Accuracy));
-	return 1.f + FMath::Max(0.f, AccuracyStat - 1.f) * 0.010f;
+	// Stats Rework: relic Accuracy now flows through the unified Accuracy (to-hit) stat, so the
+	// innate accuracy multiplier excludes permanent-buff contribution to avoid double counting.
+	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Accuracy) - GetPermanentBaseBuffTenths(ET66HeroStatType::Accuracy));
+	const float AccuracyStat = TenthsToFloatStat(BaseTenths);
+	return 1.f + FMath::Max(0.f, AccuracyStat - 1.f) * T66BaseAccuracyMultiplierPerPoint;
 }
 
 
 float UT66RunStateSubsystem::GetArmorReduction01() const
 {
-	const float ArmorStat = TenthsToFloatStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Armor));
-	const float Base = FMath::Max(0.f, ArmorStat - 1.f) * 0.008f;
-	const float Bonus = GetSecondaryStatValue(ET66SecondaryStatType::DamageReduction);
-	return FMath::Clamp(Base + Bonus + ItemArmorBonus01, 0.f, 0.80f);
+	// Stats Rework: relic power flows through the unified Damage Reduction stat, so the innate
+	// armor base excludes permanent-buff contribution; upgrades add as percent points.
+	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Armor) - GetPermanentBaseBuffTenths(ET66HeroStatType::Armor));
+	const float ArmorStat = TenthsToFloatStat(BaseTenths);
+	const float Base = FMath::Max(0.f, ArmorStat - 1.f) * T66BaseArmorReductionPerPoint;
+	const float Upgrades = GetStatBonusValue(ET66StatType::DamageReduction) * T66StatSmallChancePerBonusPoint;
+	return FMath::Clamp(Base + Upgrades + ItemArmorBonus01, 0.f, 0.80f);
 }
 
 
 float UT66RunStateSubsystem::GetEvasionChance01() const
 {
-	const float EvasionStat = TenthsToFloatStat(GetPrecisePrimaryStatTenths(ET66HeroStatType::Evasion));
-	const float Base = FMath::Max(0.f, EvasionStat - 1.f) * 0.006f;
-	const float Bonus = GetSecondaryStatValue(ET66SecondaryStatType::EvasionChance);
-	return FMath::Clamp(Base + Bonus + ItemEvasionBonus01, 0.f, 0.60f);
+	// Stats Rework: relic power flows through the unified Dodge (EvasionChance) stat, so the
+	// innate evasion base excludes permanent-buff contribution; upgrades add as percent points.
+	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Evasion) - GetPermanentBaseBuffTenths(ET66HeroStatType::Evasion));
+	const float EvasionStat = TenthsToFloatStat(BaseTenths);
+	const float Base = FMath::Max(0.f, EvasionStat - 1.f) * T66BaseEvasionChancePerPoint;
+	const float Upgrades = GetStatBonusValue(ET66StatType::EvasionChance) * T66StatSmallChancePerBonusPoint;
+	return FMath::Clamp(Base + Upgrades + ItemEvasionBonus01, 0.f, 0.60f);
 }
 
 
 float UT66RunStateSubsystem::GetAccuracyChance01() const
 {
 	const float PassiveBonus = (PassiveType == ET66PassiveType::Headshot) ? 0.20f : 0.f;
-	return FMath::Clamp(GetSecondaryStatValue(ET66SecondaryStatType::Accuracy) + PassiveBonus, 0.f, 0.95f);
+	return FMath::Clamp(GetStatValue(ET66StatType::Accuracy) + PassiveBonus, 0.f, 0.95f);
 }
 
 

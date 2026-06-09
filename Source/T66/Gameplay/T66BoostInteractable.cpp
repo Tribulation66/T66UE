@@ -15,40 +15,42 @@ namespace
 		switch (StatType)
 		{
 		case ET66HeroStatType::Damage:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/DamageBoost_Pixal3D.DamageBoost_Pixal3D"));
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_DamageBoost_Pixal3D.SM_DamageBoost_Pixal3D"));
 		case ET66HeroStatType::AttackSpeed:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/AttackSpeedBoost_Pixal3D.AttackSpeedBoost_Pixal3D"));
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_AttackSpeedBoost_Pixal3D.SM_AttackSpeedBoost_Pixal3D"));
 		case ET66HeroStatType::AttackScale:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/AttackScaleBoost_Pixal3D.AttackScaleBoost_Pixal3D"));
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_AttackScaleBoost_Pixal3D.SM_AttackScaleBoost_Pixal3D"));
 		case ET66HeroStatType::Armor:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/ArmorBoost_Pixal3D.ArmorBoost_Pixal3D"));
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_ArmorBoost_Pixal3D.SM_ArmorBoost_Pixal3D"));
 		case ET66HeroStatType::Evasion:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/EvasionBoost_Pixal3D.EvasionBoost_Pixal3D"));
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_EvasionBoost_Pixal3D.SM_EvasionBoost_Pixal3D"));
 		case ET66HeroStatType::Luck:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/LuckBoost_Pixal3D.LuckBoost_Pixal3D"));
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_LuckBoost_Pixal3D.SM_LuckBoost_Pixal3D"));
 		case ET66HeroStatType::Speed:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SpeedBoost_Pixal3D.SpeedBoost_Pixal3D"));
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_SpeedBoost_Pixal3D.SM_SpeedBoost_Pixal3D"));
 		case ET66HeroStatType::Accuracy:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/AccuracyBoost_Pixal3D.AccuracyBoost_Pixal3D"));
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_AccuracyBoost_Pixal3D.SM_AccuracyBoost_Pixal3D"));
 		default:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/DamageBoost_Pixal3D.DamageBoost_Pixal3D"));
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_DamageBoost_Pixal3D.SM_DamageBoost_Pixal3D"));
 		}
 	}
 
-	static FSoftObjectPath T66ResolveSecondaryBoostMeshPath(const ET66SecondaryStatType StatType)
+	static FSoftObjectPath T66ResolveStatBoostMeshPath(const ET66StatType StatType)
 	{
 		switch (StatType)
 		{
-		case ET66SecondaryStatType::FirePower:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/DamageBoost_Pixal3D.DamageBoost_Pixal3D"));
-		case ET66SecondaryStatType::IcePower:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/ArmorBoost_Pixal3D.ArmorBoost_Pixal3D"));
-		case ET66SecondaryStatType::ElectricityPower:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/AttackSpeedBoost_Pixal3D.AttackSpeedBoost_Pixal3D"));
-		case ET66SecondaryStatType::NaturePower:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/LuckBoost_Pixal3D.LuckBoost_Pixal3D"));
+		case ET66StatType::FirePower:
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_DamageBoost_Pixal3D.SM_DamageBoost_Pixal3D"));
+		case ET66StatType::IcePower:
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_ArmorBoost_Pixal3D.SM_ArmorBoost_Pixal3D"));
+		case ET66StatType::ElectricityPower:
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_AttackSpeedBoost_Pixal3D.SM_AttackSpeedBoost_Pixal3D"));
+		case ET66StatType::NaturePower:
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_LuckBoost_Pixal3D.SM_LuckBoost_Pixal3D"));
+		case ET66StatType::WindPower:
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_SpeedBoost_Pixal3D.SM_SpeedBoost_Pixal3D"));
 		default:
-			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/DamageBoost_Pixal3D.DamageBoost_Pixal3D"));
+			return FSoftObjectPath(TEXT("/Game/World/Interactables/Boosts/SM_DamageBoost_Pixal3D.SM_DamageBoost_Pixal3D"));
 		}
 	}
 }
@@ -83,9 +85,9 @@ void AT66BoostInteractable::ConfigureBoost(
 	const int32 InBonusStatPoints,
 	const float InDurationSeconds)
 {
-	bUseSecondaryStat = false;
-	StatType = InStatType;
-	SecondaryStatType = ET66SecondaryStatType::None;
+	bUseStat = false;
+	BaseStatType = InStatType;
+	StatType = ET66StatType::None;
 	BonusStatPoints = FMath::Max(1, InBonusStatPoints);
 	DurationSeconds = FMath::Max(1.f, InDurationSeconds);
 	RefreshMeshForStatType();
@@ -93,13 +95,13 @@ void AT66BoostInteractable::ConfigureBoost(
 	RefreshInteractionPrompt();
 }
 
-void AT66BoostInteractable::ConfigureSecondaryBoost(
-	const ET66SecondaryStatType InStatType,
+void AT66BoostInteractable::ConfigureStatBoost(
+	const ET66StatType InStatType,
 	const int32 InBonusStatPoints,
 	const float InDurationSeconds)
 {
-	bUseSecondaryStat = true;
-	SecondaryStatType = InStatType;
+	bUseStat = true;
+	StatType = InStatType;
 	BonusStatPoints = FMath::Max(1, InBonusStatPoints);
 	DurationSeconds = FMath::Max(1.f, InDurationSeconds);
 	RefreshMeshForStatType();
@@ -121,13 +123,13 @@ bool AT66BoostInteractable::Interact(APlayerController* PC)
 		return false;
 	}
 
-	if (bUseSecondaryStat)
+	if (bUseStat)
 	{
-		RunState->ApplyTemporarySecondaryStatAmplifier(SecondaryStatType, BonusStatPoints, DurationSeconds);
+		RunState->ApplyTemporaryStatAmplifier(StatType, BonusStatPoints, DurationSeconds);
 	}
 	else
 	{
-		RunState->ApplyTemporaryPrimaryStatAmplifier(StatType, BonusStatPoints, DurationSeconds);
+		RunState->ApplyTemporaryBaseStatAmplifier(BaseStatType, BonusStatPoints, DurationSeconds);
 	}
 	UT66AudioSubsystem::PlayEventFromWorldContext(this, FName(TEXT("Boost.Interact")), GetActorLocation(), this);
 
@@ -161,9 +163,9 @@ void AT66BoostInteractable::ApplyRarityVisuals()
 
 void AT66BoostInteractable::RefreshMeshForStatType()
 {
-	SingleMesh = TSoftObjectPtr<UStaticMesh>(bUseSecondaryStat
-		? T66ResolveSecondaryBoostMeshPath(SecondaryStatType)
-		: T66ResolveBoostMeshPath(StatType));
+	SingleMesh = TSoftObjectPtr<UStaticMesh>(bUseStat
+		? T66ResolveStatBoostMeshPath(StatType)
+		: T66ResolveBoostMeshPath(BaseStatType));
 }
 
 FText AT66BoostInteractable::BuildInteractionPromptText() const
@@ -183,24 +185,26 @@ FText AT66BoostInteractable::BuildInteractionPromptTargetName() const
 
 FText AT66BoostInteractable::ResolveStatDisplayName() const
 {
-	if (bUseSecondaryStat)
+	if (bUseStat)
 	{
-		switch (SecondaryStatType)
+		switch (StatType)
 		{
-		case ET66SecondaryStatType::FirePower:
+		case ET66StatType::FirePower:
 			return NSLOCTEXT("T66.BoostInteractable", "FirePowerStat", "Fire Power");
-		case ET66SecondaryStatType::IcePower:
+		case ET66StatType::IcePower:
 			return NSLOCTEXT("T66.BoostInteractable", "IcePowerStat", "Ice Power");
-		case ET66SecondaryStatType::ElectricityPower:
+		case ET66StatType::ElectricityPower:
 			return NSLOCTEXT("T66.BoostInteractable", "ElectricityPowerStat", "Electricity Power");
-		case ET66SecondaryStatType::NaturePower:
+		case ET66StatType::NaturePower:
 			return NSLOCTEXT("T66.BoostInteractable", "NaturePowerStat", "Nature Power");
+		case ET66StatType::WindPower:
+			return NSLOCTEXT("T66.BoostInteractable", "WindPowerStat", "Wind Power");
 		default:
-			return NSLOCTEXT("T66.BoostInteractable", "SecondaryStat", "Stat");
+			return NSLOCTEXT("T66.BoostInteractable", "Stat", "Stat");
 		}
 	}
 
-	switch (StatType)
+	switch (BaseStatType)
 	{
 	case ET66HeroStatType::Damage:
 		return NSLOCTEXT("T66.BoostInteractable", "DamageStat", "Damage");

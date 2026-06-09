@@ -31,7 +31,7 @@ namespace T66StatsPanelSlate
 	{
 		TArray<TSharedPtr<class STextBlock>> PrimaryLines;
 		TArray<TSharedPtr<class STextBlock>> CategoryHeaderLines;
-		TMap<ET66SecondaryStatType, TSharedPtr<class STextBlock>> SecondaryLines;
+		TMap<ET66StatType, TSharedPtr<class STextBlock>> SecondaryLines;
 		TSharedPtr<class STextBlock> ArmorReductionLine;
 		TSharedPtr<class STextBlock> EvasionChanceLine;
 
@@ -58,7 +58,7 @@ namespace T66StatsPanelSlate
 		bool bExtended = false,
 		int32 FontSizeAdjustment = 0);
 
-	/** Build the same stats panel from a saved/fake run snapshot (primary + secondary if SecondaryStatValues is populated). Used by Run Summary when viewing leaderboard/saved run. */
+	/** Build the same stats panel from a saved/fake run snapshot (primary + secondary if StatValues is populated). Used by Run Summary when viewing leaderboard/saved run. */
 	TSharedRef<class SWidget> MakeEssentialStatsPanelFromSnapshot(
 		UT66LeaderboardRunSummarySaveGame* Snapshot,
 		UT66LocalizationSubsystem* Loc,

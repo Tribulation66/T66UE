@@ -74,7 +74,7 @@ $rows = New-Object System.Collections.Generic.List[object]
 
 $cases = @(
     [pscustomobject]@{ Name = "single_shape"; MixedProfiles = 0; ExpectedVisualProfiles = 0 },
-    [pscustomobject]@{ Name = "mixed_16_profiles"; MixedProfiles = 1; ExpectedVisualProfiles = 16 }
+    [pscustomobject]@{ Name = "mixed_20_profiles"; MixedProfiles = 1; ExpectedVisualProfiles = 20 }
 )
 
 foreach ($case in $cases) {
@@ -181,9 +181,11 @@ foreach ($case in $cases) {
         $json = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
         $pool = $json.pool_diagnostics
         $visualProfilesUsedCount = [int]$json.visual_profiles_used_count
+        $visualRecipeSignaturesUsedCount = [int]$json.visual_recipe_signatures_used_count
         $failedSpawnCount = [int]$json.failed_spawn_count
         $droppedTotal = [int]$pool.dropped_total
         $peakLive = [int]$pool.peak_live_count
+        $peakVisualRows = [int]$pool.peak_uploaded_visual_row_count
         if ($failedSpawnCount -ne 0) {
             throw "Visual profile gate '$($case.Name)' run $runIndex had failed spawns: $failedSpawnCount"
         }
@@ -195,6 +197,12 @@ foreach ($case in $cases) {
         }
         if ($case.ExpectedVisualProfiles -gt 0 -and $visualProfilesUsedCount -ne $case.ExpectedVisualProfiles) {
             throw "Visual profile gate '$($case.Name)' run $runIndex used $visualProfilesUsedCount profiles, expected $($case.ExpectedVisualProfiles)"
+        }
+        if ($case.ExpectedVisualProfiles -gt 0 -and $visualRecipeSignaturesUsedCount -ne $case.ExpectedVisualProfiles) {
+            throw "Visual profile gate '$($case.Name)' run $runIndex used $visualRecipeSignaturesUsedCount carrier recipes, expected $($case.ExpectedVisualProfiles)"
+        }
+        if ($case.ExpectedVisualProfiles -gt 0 -and $peakVisualRows -le $peakLive) {
+            throw "Visual profile gate '$($case.Name)' run $runIndex did not expand compound visual rows. LogicalPeak=$peakLive VisualRows=$peakVisualRows"
         }
 
         $rows.Add([pscustomobject]@{
@@ -215,8 +223,10 @@ foreach ($case in $cases) {
             PoolNiagaraArrayUploadMsAvg = Get-MetricAverage $json "pool_last_niagara_array_upload_ms_sampled"
             PoolSimulationMsAvg = Get-MetricAverage $json "pool_last_simulation_ms_sampled"
             VisualProfilesUsedCount = $visualProfilesUsedCount
+            VisualRecipeSignaturesUsedCount = $visualRecipeSignaturesUsedCount
             UsesSingleNiagaraSystemVisualSelector = [bool]$json.uses_single_niagara_system_visual_selector
             PoolPeakLiveCount = $peakLive
+            PoolPeakVisualRowCount = $peakVisualRows
             DroppedTotal = $droppedTotal
         }) | Out-Null
     }
@@ -238,7 +248,9 @@ $medianRows = foreach ($caseName in ($rows | Select-Object -ExpandProperty Case 
         PoolNiagaraArrayUploadMsMedian = Get-Median @($caseRows | ForEach-Object { $_.PoolNiagaraArrayUploadMsAvg })
         PoolSimulationMsMedian = Get-Median @($caseRows | ForEach-Object { $_.PoolSimulationMsAvg })
         PoolPeakLiveCountMax = ($caseRows | Measure-Object -Property PoolPeakLiveCount -Maximum).Maximum
+        PoolPeakVisualRowCountMax = ($caseRows | Measure-Object -Property PoolPeakVisualRowCount -Maximum).Maximum
         VisualProfilesUsedCountMax = ($caseRows | Measure-Object -Property VisualProfilesUsedCount -Maximum).Maximum
+        VisualRecipeSignaturesUsedCountMax = ($caseRows | Measure-Object -Property VisualRecipeSignaturesUsedCount -Maximum).Maximum
         DroppedTotalMax = ($caseRows | Measure-Object -Property DroppedTotal -Maximum).Maximum
     }
 }
@@ -277,5 +289,5 @@ $summary | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $summaryPath -Enco
 Write-Host "Outgoing traveler visual profile gate root: $outputRootPath"
 Write-Host "Summary: $summaryPath"
 if ($medianRows) {
-    $medianRows | Format-Table Case, Runs, Count, FpsMedian, GameThreadMsMedian, GpuFrameMsMedian, DrawCallsMedian, PoolUploadMsMedian, PoolNiagaraArrayUploadMsMedian, PoolSimulationMsMedian, PoolPeakLiveCountMax, VisualProfilesUsedCountMax
+    $medianRows | Format-Table Case, Runs, Count, FpsMedian, GameThreadMsMedian, GpuFrameMsMedian, DrawCallsMedian, PoolUploadMsMedian, PoolNiagaraArrayUploadMsMedian, PoolSimulationMsMedian, PoolPeakLiveCountMax, PoolPeakVisualRowCountMax, VisualProfilesUsedCountMax, VisualRecipeSignaturesUsedCountMax
 }

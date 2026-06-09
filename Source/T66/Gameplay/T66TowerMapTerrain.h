@@ -86,6 +86,23 @@ namespace T66TowerMapTerrain
 		TArray<FVector> CachedSpawnSlots;
 	};
 
+	struct FRoom
+	{
+		int32 RoomId = INDEX_NONE;
+		int32 FloorNumber = 0;
+		FName RoomRuleID = NAME_None;
+		FName RoomRoleID = NAME_None;
+		FIntPoint MinCell = FIntPoint(INDEX_NONE, INDEX_NONE);
+		FIntPoint MaxCellExclusive = FIntPoint(INDEX_NONE, INDEX_NONE);
+		FIntPoint CenterCell = FIntPoint(INDEX_NONE, INDEX_NONE);
+		FVector WorldCenter = FVector::ZeroVector;
+		FBox2D Bounds;
+		int32 WidthTiles = 0;
+		int32 HeightTiles = 0;
+		bool bContainsArrival = false;
+		bool bContainsExit = false;
+	};
+
 	struct FFloor
 	{
 		int32 FloorNumber = 0;
@@ -117,6 +134,7 @@ namespace T66TowerMapTerrain
 		TArray<FVector> CachedMainPathSpawnSlots;
 		TArray<FVector> CachedOptionalSpawnSlots;
 		TArray<FVector> CachedContentSpawnSlots;
+		TArray<FRoom> Rooms;
 		FName FloorTag = NAME_None;
 	};
 
@@ -152,8 +170,22 @@ namespace T66TowerMapTerrain
 		float TraceEndZ = -32000.0f;
 		int32 StartFloorNumber = 1;
 		int32 FirstMobFloorNumber = 2;
-		int32 LastMobFloorNumber = 4;
-		int32 BossFloorNumber = 5;
+		int32 LastMobFloorNumber = 3;
+		int32 BossFloorNumber = 4;
+		int32 DungeonMinRooms = 15;
+		int32 DungeonMaxRooms = 20;
+		int32 DungeonMinRoomTiles = 2;
+		int32 DungeonMaxRoomTiles = 5;
+		int32 StartRoomMinTiles = 3;
+		int32 StartRoomMaxTiles = 4;
+		float GridBranchChance = 0.35f;
+		int32 GridMaxBranchCells = 3;
+		float RoofSkinThickness = 12.0f;
+		float StartFloorHeadroom = 2000.0f;
+		int32 GeneratedDungeonKitCullDistance = 30000;
+		FName DefaultRoomRuleID = FName(TEXT("DefaultCombat"));
+		FName StartRoomRuleID = FName(TEXT("Start"));
+		FName BossRoomRuleID = FName(TEXT("Boss"));
 		FVector SpawnSurfaceLocation = FVector::ZeroVector;
 		FVector StartAnchorSurfaceLocation = FVector::ZeroVector;
 		FVector StartPathSurfaceLocation = FVector::ZeroVector;
@@ -182,6 +214,8 @@ namespace T66TowerMapTerrain
 	bool TryGetRandomSurfaceLocationOnFloor(UWorld* World, const FLayout& Layout, int32 FloorNumber, FRandomStream& Rng, FVector& OutLocation, float EdgePadding = 900.0f, float HolePadding = 1000.0f);
 	bool TryGetRandomGameplaySurfaceLocation(UWorld* World, const FLayout& Layout, FRandomStream& Rng, FVector& OutLocation);
 	bool TryGetFloorTileCenterSpawnLocation(UWorld* World, const FLayout& Layout, int32 FloorNumber, FRandomStream& Rng, FVector& OutLocation, float EdgePadding = 900.0f, float HolePadding = 1000.0f, float WallPadding = 700.0f);
+	bool TryGetRoomSurfaceLocation(UWorld* World, const FLayout& Layout, const FFloor& Floor, const FRoom& Room, FRandomStream& Rng, FVector& OutLocation, float EdgePadding = 700.0f, float HolePadding = 900.0f, float WallPadding = 500.0f);
+	bool TryGetObstacleTrapSpawnLocation(UWorld* World, const FLayout& Layout, int32 FloorNumber, FRandomStream& Rng, FVector& OutLocation, float FootprintRadius = 650.0f, float EdgePadding = 1400.0f, float HolePadding = 1600.0f);
 	bool TryGetMazeWallSpawnLocation(UWorld* World, const FLayout& Layout, int32 FloorNumber, FRandomStream& Rng, FVector& OutLocation, FVector& OutWallNormal, float EndPadding = 500.0f);
 	bool TryGetWallSpawnLocation(UWorld* World, const FLayout& Layout, const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation);
 	bool TryGetWallSpawnLocation(UWorld* World, const FLayout& Layout, const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation, FVector& OutWallNormal);

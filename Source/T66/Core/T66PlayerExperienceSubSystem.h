@@ -133,7 +133,7 @@ struct T66_API FT66PlayerExperienceDifficultyTuning : public FTableRowBase
 	float LevelUpWaveRadiusUU = 900.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Headshot", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float HeadshotChancePerBonusPoint = 0.005f;
+	float HeadshotChancePerBonusPoint = 0.0005f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerExperience|Headshot", meta = (ClampMin = "0.0"))
 	float HeadshotStunDurationSeconds = 0.75f;

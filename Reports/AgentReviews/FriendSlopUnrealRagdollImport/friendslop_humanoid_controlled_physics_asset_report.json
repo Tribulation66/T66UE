@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "mesh": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/SK_Hero_1_Chad_Male_FriendSlop.SK_Hero_1_Chad_Male_FriendSlop",
+  "physics_asset": "/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Skeletal/PA_Hero_1_Chad_Male_FriendSlop_TestRoom",
+  "body_count": 18,
+  "constraint_count": 17,
+  "min_bone_size": 4.000,
+  "body_for_all": true,
+  "body_bones": ["pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "head", "upperarm_l", "lowerarm_l", "hand_l", "upperarm_r", "lowerarm_r", "hand_r", "thigh_l", "calf_l", "foot_l", "thigh_r", "calf_r", "foot_r"],
+  "constraint_pairs": ["spine_01:pelvis", "spine_02:spine_01", "spine_03:spine_02", "neck_01:spine_03", "head:neck_01", "lowerarm_l:upperarm_l", "hand_l:lowerarm_l", "lowerarm_r:upperarm_r", "hand_r:lowerarm_r", "thigh_l:pelvis", "calf_l:thigh_l", "foot_l:calf_l", "thigh_r:pelvis", "calf_r:thigh_r", "foot_r:calf_r", "upperarm_l:spine_03", "upperarm_r:spine_03"]
+}

@@ -1,0 +1,114 @@
+{
+  "asset_name": "FamishedGhoul",
+  "bounds": {
+    "dimensions": [
+      66.9579086303711,
+      52.19243621826172,
+      150.0
+    ],
+    "max": [
+      33.47895431518555,
+      26.09621810913086,
+      150.0
+    ],
+    "min": [
+      -33.47895431518555,
+      -26.09621810913086,
+      0.0
+    ]
+  },
+  "fbx_bytes": 4656124,
+  "fbx_export_options": {
+    "add_leaf_bones": false,
+    "apply_scale_options": "FBX_SCALE_ALL",
+    "apply_unit_scale": true,
+    "bake_space_transform": false,
+    "embed_textures": true,
+    "global_scale": 0.01,
+    "mesh_smooth_type": "FACE",
+    "object_types": [
+      "MESH"
+    ],
+    "path_mode": "COPY",
+    "use_mesh_modifiers": true,
+    "use_selection": true
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\FamishedGhoul\\FamishedGhoul_Textured.fbx",
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\Outputs\\FamishedGhoul.glb",
+  "material_count": 1,
+  "mtl_bytes": 265,
+  "mtl_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\FamishedGhoul\\FamishedGhoul_Textured.mtl",
+  "normalization": {
+    "bounds_max": [
+      33.47895431518555,
+      26.09621810913086,
+      150.0
+    ],
+    "bounds_min": [
+      -33.47895431518555,
+      -26.09621810913086,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      66.9579086303711,
+      52.19243621826172,
+      150.0
+    ],
+    "height": 150.0,
+    "scale_factor": 164.99733383791425
+  },
+  "obj_bytes": 8742618,
+  "obj_export_options": {
+    "apply_modifiers": true,
+    "apply_transform": false,
+    "export_materials": true,
+    "export_normals": true,
+    "export_pbr_extensions": false,
+    "export_selected_objects": true,
+    "export_uv": true,
+    "global_scale": 1.0,
+    "path_mode": "RELATIVE"
+  },
+  "obj_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\FamishedGhoul\\FamishedGhoul_Textured.obj",
+  "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\FamishedGhoul",
+  "texture_usage": [
+    {
+      "image": "Image_0",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture"
+    },
+    {
+      "image": "Image_1",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture.001"
+    }
+  ],
+  "textures": [
+    {
+      "image": "Image_0",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\FamishedGhoul\\Textures\\FamishedGhoul_00_Image_0.png",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "image": "Image_1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopEasyBatch_20260604_1532\\RawTexturedFBX\\FamishedGhoul\\Textures\\FamishedGhoul_01_Image_1.png",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "vertex_count": 59002
+}

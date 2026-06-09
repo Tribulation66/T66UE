@@ -1,0 +1,80 @@
+{
+  "schema": "t66.vfx.video_evidence_bundle.v1",
+  "label": "FriendSlopHero1ChadRawStatic",
+  "capture_mode": "heromovementqa",
+  "video": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\Hero1ChadRawStatic.mp4",
+  "frame_dir": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\frames",
+  "frame_prefix": "frame",
+  "frame_count": 4,
+  "frame_rate": 4.0,
+  "resolution": {
+    "x": 1280,
+    "y": 720
+  },
+  "selection": {
+    "selection_method": "default_fixed_indices"
+  },
+  "artifacts": {
+    "contact_sheet": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\contact_sheet.png",
+    "selected_frames": [
+      "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\selected_frames\\00_start_frame_0000.png",
+      "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\selected_frames\\01_mid_frame_0001.png",
+      "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\selected_frames\\02_impact_frame_0002.png",
+      "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\selected_frames\\03_dissipate_frame_0003.png"
+    ],
+    "selected_notes": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\selected_frames.md",
+    "visibility_checklist": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\visibility_checklist.md",
+    "ffprobe_json": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\ffprobe.json"
+  },
+  "selected": [
+    {
+      "label": "start",
+      "sequence_index": 0,
+      "timestamp_seconds": 0.0,
+      "source": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\frames\\frame_0000.png",
+      "copied": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\selected_frames\\00_start_frame_0000.png"
+    },
+    {
+      "label": "mid",
+      "sequence_index": 1,
+      "timestamp_seconds": 0.25,
+      "source": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\frames\\frame_0001.png",
+      "copied": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\selected_frames\\01_mid_frame_0001.png"
+    },
+    {
+      "label": "impact",
+      "sequence_index": 2,
+      "timestamp_seconds": 0.5,
+      "source": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\frames\\frame_0002.png",
+      "copied": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\selected_frames\\02_impact_frame_0002.png"
+    },
+    {
+      "label": "dissipate",
+      "sequence_index": 3,
+      "timestamp_seconds": 0.75,
+      "source": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\frames\\frame_0003.png",
+      "copied": "C:\\UE\\T66\\Reports\\AgentReviews\\FriendSlopEasyPixal3D\\VisualProof_Hero1ChadRawStatic\\evidence\\selected_frames\\03_dissipate_frame_0003.png"
+    }
+  ],
+  "ffprobe": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1280,
+        "height": 720,
+        "pix_fmt": "yuv420p",
+        "r_frame_rate": "4/1",
+        "avg_frame_rate": "4/1",
+        "duration": "1.000000",
+        "nb_frames": "4"
+      }
+    ],
+    "format": {
+      "duration": "1.000000",
+      "size": "273964",
+      "bit_rate": "2191712"
+    }
+  }
+}

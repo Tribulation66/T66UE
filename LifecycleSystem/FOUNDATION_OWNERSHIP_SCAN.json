@@ -1,0 +1,3011 @@
+﻿{
+    "GeneratedAtUtc":  "2026-06-07T18:13:10Z",
+    "Root":  "C:\\UE\\T66",
+    "SourceRoot":  "C:\\UE\\T66\\Source\\T66",
+    "SourceFileCount":  634,
+    "Summary":  [
+                    {
+                        "Surface":  "DurableState.AsyncSaveGameToSlot",
+                        "Kind":  "DirectAsyncSaveCall",
+                        "Count":  4
+                    },
+                    {
+                        "Surface":  "DurableState.SyncSaveGameToSlot",
+                        "Kind":  "DirectSaveCall",
+                        "Count":  13
+                    },
+                    {
+                        "Surface":  "Exit.DirectRequestExitWithStatus",
+                        "Kind":  "DirectStatusExit",
+                        "Count":  16
+                    },
+                    {
+                        "Surface":  "Exit.DirectRequestExitWithStatus",
+                        "Kind":  "ProofOrAutomationExit",
+                        "Count":  34
+                    },
+                    {
+                        "Surface":  "Exit.DirectRequestExitWithStatus",
+                        "Kind":  "ShutdownFinalExit",
+                        "Count":  2
+                    },
+                    {
+                        "Surface":  "Quit.DirectQuitGameFallback",
+                        "Kind":  "DirectQuitFallback",
+                        "Count":  1
+                    },
+                    {
+                        "Surface":  "Quit.RequestQuitGame",
+                        "Kind":  "PlayerQuitCall",
+                        "Count":  1
+                    },
+                    {
+                        "Surface":  "Quit.RequestQuitGame",
+                        "Kind":  "ShutdownApi",
+                        "Count":  3
+                    },
+                    {
+                        "Surface":  "RunBoundary.ResetForNewRun",
+                        "Kind":  "CallSite",
+                        "Count":  7
+                    },
+                    {
+                        "Surface":  "RunBoundary.ResetForNewRun",
+                        "Kind":  "Definition",
+                        "Count":  10
+                    },
+                    {
+                        "Surface":  "Shutdown.RegisterParticipant",
+                        "Kind":  "ParticipantRegistration",
+                        "Count":  11
+                    },
+                    {
+                        "Surface":  "Shutdown.RegisterParticipant",
+                        "Kind":  "ShutdownApi",
+                        "Count":  2
+                    },
+                    {
+                        "Surface":  "WorldRuntime.CleanupHooks",
+                        "Kind":  "CleanupReference",
+                        "Count":  60
+                    },
+                    {
+                        "Surface":  "WorldRuntime.CleanupHooks",
+                        "Kind":  "DeinitializeDefinition",
+                        "Count":  30
+                    },
+                    {
+                        "Surface":  "WorldRuntime.CleanupHooks",
+                        "Kind":  "EndPlayReference",
+                        "Count":  108
+                    },
+                    {
+                        "Surface":  "WorldRuntime.CleanupHooks",
+                        "Kind":  "OwnerCleanupHelper",
+                        "Count":  5
+                    },
+                    {
+                        "Surface":  "WorldTransition.RawOpenLevel",
+                        "Kind":  "CallSite",
+                        "Count":  17
+                    }
+                ],
+    "Rows":  [
+                 {
+                     "Surface":  "DurableState.AsyncSaveGameToSlot",
+                     "Kind":  "DirectAsyncSaveCall",
+                     "Path":  "Source/T66/Core/T66AchievementsSubsystem.cpp",
+                     "Line":  1222,
+                     "Text":  "UGameplayStatics::AsyncSaveGameToSlot(Profile, ProfileSaveSlotName, ProfileSaveUserIndex);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.AsyncSaveGameToSlot",
+                     "Kind":  "DirectAsyncSaveCall",
+                     "Path":  "Source/T66/Core/T66BuffSubsystem.cpp",
+                     "Line":  604,
+                     "Text":  "UGameplayStatics::AsyncSaveGameToSlot(SaveData, BuffSaveSlotName, BuffSaveUserIndex,",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.AsyncSaveGameToSlot",
+                     "Kind":  "DirectAsyncSaveCall",
+                     "Path":  "Source/T66/Core/T66SaveSubsystem.cpp",
+                     "Line":  268,
+                     "Text":  "UGameplayStatics::AsyncSaveGameToSlot(SaveGameObject, SlotName, 0,",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.AsyncSaveGameToSlot",
+                     "Kind":  "DirectAsyncSaveCall",
+                     "Path":  "Source/T66/Core/T66SaveSubsystem.cpp",
+                     "Line":  489,
+                     "Text":  "UGameplayStatics::AsyncSaveGameToSlot(Index, SaveIndexSlotName, 0,",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66AchievementsSubsystem.cpp",
+                     "Line":  1205,
+                     "Text":  "const bool bSaved = UGameplayStatics::SaveGameToSlot(Profile, ProfileSaveSlotName, ProfileSaveUserIndex);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66BuffSubsystem.cpp",
+                     "Line":  635,
+                     "Text":  "const bool bSaved = SaveData \u0026\u0026 UGameplayStatics::SaveGameToSlot(SaveData, BuffSaveSlotName, BuffSaveUserIndex);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66CommunityContentSubsystem.cpp",
+                     "Line":  885,
+                     "Text":  "UGameplayStatics::SaveGameToSlot(SaveData, CommunityContentSaveSlotName, CommunityContentSaveUserIndex);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66CompanionUnlockSubsystem.cpp",
+                     "Line":  37,
+                     "Text":  "UGameplayStatics::SaveGameToSlot(SaveObj, SlotName, 0);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66LeaderboardSubsystem.cpp",
+                     "Line":  534,
+                     "Text":  "UGameplayStatics::SaveGameToSlot(LocalSave, SlotName, 0);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66LeaderboardSubsystem.cpp",
+                     "Line":  1056,
+                     "Text":  "return Snapshot \u0026\u0026 !SlotName.IsEmpty() \u0026\u0026 UGameplayStatics::SaveGameToSlot(Snapshot, SlotName, 0);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66LeaderboardSubsystem.cpp",
+                     "Line":  1087,
+                     "Text":  "return UGameplayStatics::SaveGameToSlot(Snapshot, SlotName, 0);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66PlayerSettingsSubsystem.cpp",
+                     "Line":  370,
+                     "Text":  "const bool bSaved = UGameplayStatics::SaveGameToSlot(SettingsObj, SlotName, 0);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66PlayerSettingsSubsystem.cpp",
+                     "Line":  1093,
+                     "Text":  "if (UGameplayStatics::SaveGameToSlot(LegacySettings, T66RetroFXSealTempSlotName, 0))",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66SaveSubsystem.cpp",
+                     "Line":  562,
+                     "Text":  "const bool bSaved = UGameplayStatics::SaveGameToSlot(PendingRunSaveObject, PendingRunSaveSlotName, 0);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Core/T66SaveSubsystem.cpp",
+                     "Line":  578,
+                     "Text":  "const bool bSaved = Index \u0026\u0026 UGameplayStatics::SaveGameToSlot(Index, SaveIndexSlotName, 0);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  5282,
+                     "Text":  "const bool bSaved = SourceSummary \u0026\u0026 UGameplayStatics::SaveGameToSlot(SourceSummary, SlotName, 0);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "DurableState.SyncSaveGameToSlot",
+                     "Kind":  "DirectSaveCall",
+                     "Path":  "Source/T66/UI/Screens/T66RunSummaryScreen.cpp",
+                     "Line":  4240,
+                     "Text":  "UGameplayStatics::SaveGameToSlot(LoadedSavedSummary, LoadedSavedSummarySlotName, 0);",
+                     "IntendedOwner":  "Durable-state owner plus future flush coordinator",
+                     "MigrationPass":  "Pass 4"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Core/T66GameInstance.cpp",
+                     "Line":  216,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 68, TEXT(\"T66DirectEntryInvalid\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Frontend.cpp",
+                     "Line":  875,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 66, TEXT(\"T66FrontendScreenUnknown\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Frontend.cpp",
+                     "Line":  941,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 68, TEXT(\"T66AutoClickTagInvalid\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Frontend.cpp",
+                     "Line":  1182,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 68, TEXT(\"T66AutoClickTagShipping\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Frontend.cpp",
+                     "Line":  1196,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 68, TEXT(\"T66AutoClickTagResolveFailed\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Frontend.cpp",
+                     "Line":  1209,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 68, TEXT(\"T66AutoClickTagNoButton\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Frontend.cpp",
+                     "Line":  1220,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 68, TEXT(\"T66AutoClickTagNotClickable\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Frontend.cpp",
+                     "Line":  1235,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 68, TEXT(\"T66AutoClickTagInvalidGeometry\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  5898,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 71, TEXT(\"BossPartOwnershipA1MissingWorld\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  5974,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 72, TEXT(\"BossPartOwnershipA1SpawnFailed\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6070,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 81, TEXT(\"BossPartOwnershipA2MissingWorld\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6117,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 82, TEXT(\"BossPartOwnershipA2SpawnFailed\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6351,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 91, TEXT(\"BossMovementB1MissingWorld\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6422,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 92, TEXT(\"BossMovementB1SpawnFailed\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6619,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 94, TEXT(\"BossMovementB2MissingWorld\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "DirectStatusExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6677,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 95, TEXT(\"BossMovementB2SpawnFailed\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Core/pending_issues_Core.md",
+                     "Line":  40,
+                     "Text":  "- What\u0027s wrong: During the 2026-06-07 world-transition consolidation pass, staged packaged `-nullrhi -nosound -unattended -NoSplash -ExecCmds=quit` smokes reached `Closing by request`, `FPlatformMisc::RequestExitWithStatus(0, 0, UGameEngine::HandleExitCommand)`, `LogExit: Exiting`, and `Log file closed`, but the Windows process returned `-1073740791` (`0xC0000409`) after the log closed in the observed failing runs. No new crash directory was produced under `Saved/Crashes`, and no matching Windows Application event was found during the Pass 3.5 follow-up.",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Core/T66WorldRuntimeProofCommands.cpp",
+                     "Line":  729,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bWrote ? ExitCode : 74, TEXT(\"T66WorldRuntimeSnapshotComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Core/T66WorldRuntimeProofCommands.cpp",
+                     "Line":  787,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, ExitCode, TEXT(\"T66WorldRuntimeTravelProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_Backrooms.cpp",
+                     "Line":  308,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bSuccess ? 0 : 70, Reason ? Reason : TEXT(\"T66BackroomsQAComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_Tower.cpp",
+                     "Line":  1876,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"BossProjectileKillMidFlightProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_Tower.cpp",
+                     "Line":  1883,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"T66ContentCorrectionsSmokeComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_Tower.cpp",
+                     "Line":  1902,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"ManagedProjectileVisualProfileProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_Tower.cpp",
+                     "Line":  1921,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"BossProjectileVisualProfileProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_Tower.cpp",
+                     "Line":  1940,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"BossHazardDefinitionProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_Tower.cpp",
+                     "Line":  1958,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 1, TEXT(\"BossHazardDamageProofStartFailed\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_Tower.cpp",
+                     "Line":  2169,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"VendorShopCorrectionsProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_Tower.cpp",
+                     "Line":  2263,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"LoanSharkDebtProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_Tower.cpp",
+                     "Line":  2346,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"MinibossTraversalProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66BossHazardSubsystem.cpp",
+                     "Line":  943,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"BossHazardDamageProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66MobManagerSubsystem.cpp",
+                     "Line":  2709,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"MobTickVatRuntimeProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Frontend.cpp",
+                     "Line":  930,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 67, TEXT(\"T66AutoDumpWidgetInvalid\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  432,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, (bAllPassed \u0026\u0026 bSaved) ? 0 : 70, TEXT(\"T66ItemTaxonomySmokeComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  864,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, (bFinalAllPassed \u0026\u0026 bSaved) ? 0 : 71, TEXT(\"T66StatPipelineSmokeComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  1273,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 72, TEXT(\"T66EndgameSaintSmokeComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  1338,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 67, TEXT(\"T66AutoDumpWidgetInvalid\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  2648,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 0, TEXT(\"T66RushSmokeComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  2861,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 0, TEXT(\"T66FlyingSmokeComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  3182,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 0, TEXT(\"T66RangedSmokeComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  5389,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, (bAllPassed \u0026\u0026 bManifestSaved) ? 0 : 104, TEXT(\"T66RunSummaryRoundTripComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  5883,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 0, TEXT(\"T66BossProjectileManagerSmokeComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6056,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, TotalFailures == 0 ? 0 : 73, TEXT(\"BossPartOwnershipA1Complete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6192,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, FailureCount == 0 ? 0 : 83, TEXT(\"BossPartOwnershipA2Complete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6212,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 101, TEXT(\"BossAttackDefinitionProofMissingWorld\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6262,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, 102, TEXT(\"BossAttackDefinitionProofSpawnFailed\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6337,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, FailureCount == 0 ? 0 : 103, TEXT(\"BossAttackDefinitionProofComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6575,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, FailureCount == 0 ? 0 : 93, TEXT(\"BossMovementB1Complete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  6733,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, FailureCount == 0 ? 0 : 96, TEXT(\"BossMovementB2Complete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  8438,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, -1, TEXT(\"T66EnemyWavePerfHeroDied\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ProofOrAutomationExit",
+                     "Path":  "Source/T66/PerformanceSystem/T66MobLootStressHarnessActor.cpp",
+                     "Line":  255,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, bPass ? 0 : 1, TEXT(\"T66MobLootStressComplete\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ShutdownFinalExit",
+                     "Path":  "Source/T66/Core/Shutdown/T66ShutdownSubsystem.cpp",
+                     "Line":  194,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, ExitCode, ExitTag ? ExitTag : TEXT(\"T66ShutdownSystem\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Exit.DirectRequestExitWithStatus",
+                     "Kind":  "ShutdownFinalExit",
+                     "Path":  "Source/T66/Core/Shutdown/T66ShutdownSubsystem.cpp",
+                     "Line":  318,
+                     "Text":  "FPlatformMisc::RequestExitWithStatus(false, ExitCode, ExitTag ? ExitTag : TEXT(\"T66ShutdownSystem\"));",
+                     "IntendedOwner":  "Shutdown final exit or proof/fatal owner by classification",
+                     "MigrationPass":  "Pass 6 / proof exception"
+                 },
+                 {
+                     "Surface":  "Quit.DirectQuitGameFallback",
+                     "Kind":  "DirectQuitFallback",
+                     "Path":  "Source/T66/UI/Screens/T66QuitConfirmationModal.cpp",
+                     "Line":  168,
+                     "Text":  "UKismetSystemLibrary::QuitGame(this, nullptr, EQuitPreference::Quit, false);",
+                     "IntendedOwner":  "ShutdownSystem, unless documented emergency fallback",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Quit.RequestQuitGame",
+                     "Kind":  "PlayerQuitCall",
+                     "Path":  "Source/T66/UI/Screens/T66QuitConfirmationModal.cpp",
+                     "Line":  162,
+                     "Text":  "Shutdown-\u003eRequestQuitGame(ET66ShutdownReason::UserQuit, 0);",
+                     "IntendedOwner":  "ShutdownSystem / UT66ShutdownSubsystem",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Quit.RequestQuitGame",
+                     "Kind":  "ShutdownApi",
+                     "Path":  "Source/T66/Core/Shutdown/T66ShutdownSubsystem.cpp",
+                     "Line":  38,
+                     "Text":  "Shutdown-\u003eRequestQuitGame(ET66ShutdownReason::UserQuit, ExitCode);",
+                     "IntendedOwner":  "ShutdownSystem / UT66ShutdownSubsystem",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Quit.RequestQuitGame",
+                     "Kind":  "ShutdownApi",
+                     "Path":  "Source/T66/Core/Shutdown/T66ShutdownSubsystem.cpp",
+                     "Line":  168,
+                     "Text":  "void UT66ShutdownSubsystem::RequestQuitGame(const ET66ShutdownReason Reason, const int32 ExitCode)",
+                     "IntendedOwner":  "ShutdownSystem / UT66ShutdownSubsystem",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Quit.RequestQuitGame",
+                     "Kind":  "ShutdownApi",
+                     "Path":  "Source/T66/Core/Shutdown/T66ShutdownSubsystem.h",
+                     "Line":  71,
+                     "Text":  "void RequestQuitGame(ET66ShutdownReason Reason = ET66ShutdownReason::UserQuit, int32 ExitCode = 0);",
+                     "IntendedOwner":  "ShutdownSystem / UT66ShutdownSubsystem",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/RunState/T66RunStateSubsystem.cpp",
+                     "Line":  593,
+                     "Text":  "DamageLog-\u003eResetForNewRun();",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/RunState/T66RunStateSubsystem.cpp",
+                     "Line":  602,
+                     "Text":  "Skill-\u003eResetForNewRun();",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/RunState/T66RunStateSubsystem.cpp",
+                     "Line":  634,
+                     "Text":  "IdolManager-\u003eResetForNewRun(T66GI-\u003eSelectedDifficulty);",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/RunState/T66RunStateSubsystem.cpp",
+                     "Line":  638,
+                     "Text":  "WeaponManager-\u003eResetForNewRun(T66GI-\u003eSelectedHeroID);",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/RunState/T66RunStateSubsystem.cpp",
+                     "Line":  643,
+                     "Text":  "IdolManager-\u003eResetForNewRun(ET66Difficulty::Easy);",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/RunState/T66RunStateSubsystem_Snapshot.cpp",
+                     "Line":  367,
+                     "Text":  "WeaponManager-\u003eResetForNewRun(T66GI-\u003eSelectedHeroID);",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Overlays.cpp",
+                     "Line":  4063,
+                     "Text":  "DamageLog-\u003eResetForNewRun();",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "Definition",
+                     "Path":  "Source/T66/Core/RunState/T66RunStateSubsystem.cpp",
+                     "Line":  483,
+                     "Text":  "void UT66RunStateSubsystem::ResetForNewRun()",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "Definition",
+                     "Path":  "Source/T66/Core/T66DamageLogSubsystem.cpp",
+                     "Line":  90,
+                     "Text":  "void UT66DamageLogSubsystem::ResetForNewRun()",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "Definition",
+                     "Path":  "Source/T66/Core/T66DamageLogSubsystem.h",
+                     "Line":  56,
+                     "Text":  "void ResetForNewRun();",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "Definition",
+                     "Path":  "Source/T66/Core/T66IdolManagerSubsystem.cpp",
+                     "Line":  502,
+                     "Text":  "void UT66IdolManagerSubsystem::ResetForNewRun(const ET66Difficulty Difficulty)",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "Definition",
+                     "Path":  "Source/T66/Core/T66IdolManagerSubsystem.h",
+                     "Line":  57,
+                     "Text":  "void ResetForNewRun(ET66Difficulty Difficulty);",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "Definition",
+                     "Path":  "Source/T66/Core/T66RunStateSubsystem.h",
+                     "Line":  1559,
+                     "Text":  "void ResetForNewRun();",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "Definition",
+                     "Path":  "Source/T66/Core/T66SkillRatingSubsystem.cpp",
+                     "Line":  65,
+                     "Text":  "void UT66SkillRatingSubsystem::ResetForNewRun()",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "Definition",
+                     "Path":  "Source/T66/Core/T66SkillRatingSubsystem.h",
+                     "Line":  36,
+                     "Text":  "void ResetForNewRun();",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "Definition",
+                     "Path":  "Source/T66/Core/T66WeaponManagerSubsystem.cpp",
+                     "Line":  17,
+                     "Text":  "void UT66WeaponManagerSubsystem::ResetForNewRun(FName /*HeroID*/)",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "RunBoundary.ResetForNewRun",
+                     "Kind":  "Definition",
+                     "Path":  "Source/T66/Core/T66WeaponManagerSubsystem.h",
+                     "Line":  25,
+                     "Text":  "void ResetForNewRun(FName HeroID);",
+                     "IntendedOwner":  "UT66RunStateSubsystem run boundary",
+                     "MigrationPass":  "Pass 2"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/Core/Backend/T66BackendSubsystem.cpp",
+                     "Line":  302,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/Core/T66AudioSubsystem.cpp",
+                     "Line":  34,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/Core/T66BuffSubsystem.cpp",
+                     "Line":  129,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/Core/T66MediaViewerSubsystem.cpp",
+                     "Line":  75,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/Core/T66MusicSubsystem.cpp",
+                     "Line":  114,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/Core/T66SaveSubsystem.cpp",
+                     "Line":  151,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/Core/T66SessionSubsystem.cpp",
+                     "Line":  145,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/Core/T66SteamHelper.cpp",
+                     "Line":  261,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/Core/T66UITexturePoolSubsystem.cpp",
+                     "Line":  39,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/Core/T66WebImageCache.cpp",
+                     "Line":  36,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ParticipantRegistration",
+                     "Path":  "Source/T66/PerformanceSystem/T66PerformanceSubsystem.cpp",
+                     "Line":  795,
+                     "Text":  "ShutdownParticipantHandle = Shutdown-\u003eRegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ShutdownApi",
+                     "Path":  "Source/T66/Core/Shutdown/T66ShutdownSubsystem.cpp",
+                     "Line":  102,
+                     "Text":  "FT66ShutdownParticipantHandle UT66ShutdownSubsystem::RegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "Shutdown.RegisterParticipant",
+                     "Kind":  "ShutdownApi",
+                     "Path":  "Source/T66/Core/Shutdown/T66ShutdownSubsystem.h",
+                     "Line":  59,
+                     "Text":  "FT66ShutdownParticipantHandle RegisterParticipant(",
+                     "IntendedOwner":  "ShutdownSystem participant registry",
+                     "MigrationPass":  "Pass 6"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/Backend/T66BackendSubsystem.cpp",
+                     "Line":  325,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/RunState/T66RunStateSubsystem.cpp",
+                     "Line":  57,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/Shutdown/T66ShutdownSubsystem.cpp",
+                     "Line":  99,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/Shutdown/T66ShutdownSubsystem.h",
+                     "Line":  57,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66AchievementsSubsystem.cpp",
+                     "Line":  279,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66AchievementsSubsystem.h",
+                     "Line":  59,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66AudioSubsystem.cpp",
+                     "Line":  58,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66AudioSubsystem.h",
+                     "Line":  29,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66BackendSubsystem.h",
+                     "Line":  157,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66BuffSubsystem.cpp",
+                     "Line":  153,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66BuffSubsystem.h",
+                     "Line":  74,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66CompanionUnlockSubsystem.cpp",
+                     "Line":  20,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66CompanionUnlockSubsystem.h",
+                     "Line":  25,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66EnemyPoolSubsystem.cpp",
+                     "Line":  82,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66EnemyPoolSubsystem.h",
+                     "Line":  51,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66FloatingCombatTextPoolSubsystem.cpp",
+                     "Line":  144,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66FloatingCombatTextPoolSubsystem.h",
+                     "Line":  33,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66LagTrackerSubsystem.cpp",
+                     "Line":  151,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66LagTrackerSubsystem.h",
+                     "Line":  47,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66LocalizationSubsystem.cpp",
+                     "Line":  79,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66LocalizationSubsystem.h",
+                     "Line":  59,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66MediaViewerSubsystem.cpp",
+                     "Line":  98,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66MediaViewerSubsystem.h",
+                     "Line":  37,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66MusicSubsystem.cpp",
+                     "Line":  162,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66MusicSubsystem.h",
+                     "Line":  30,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66PartySubsystem.cpp",
+                     "Line":  125,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66PartySubsystem.h",
+                     "Line":  66,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66PixelVFXSubsystem.cpp",
+                     "Line":  113,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66PixelVFXSubsystem.h",
+                     "Line":  32,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66PlayerSettingsSubsystem.cpp",
+                     "Line":  184,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66PlayerSettingsSubsystem.h",
+                     "Line":  33,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66RetroFXSubsystem.cpp",
+                     "Line":  583,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66RetroFXSubsystem.h",
+                     "Line":  78,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66RngSubsystem.cpp",
+                     "Line":  29,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66RngSubsystem.h",
+                     "Line":  27,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66RunStateSubsystem.h",
+                     "Line":  137,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66SaveSubsystem.cpp",
+                     "Line":  174,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66SaveSubsystem.h",
+                     "Line":  24,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66SessionSubsystem.cpp",
+                     "Line":  168,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66SessionSubsystem.h",
+                     "Line":  28,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66StageProgressionSubsystem.cpp",
+                     "Line":  70,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66StageProgressionSubsystem.h",
+                     "Line":  84,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66SteamHelper.cpp",
+                     "Line":  359,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66SteamHelper.h",
+                     "Line":  64,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66UITexturePoolSubsystem.cpp",
+                     "Line":  62,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66UITexturePoolSubsystem.h",
+                     "Line":  35,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66WebImageCache.cpp",
+                     "Line":  59,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Core/T66WebImageCache.h",
+                     "Line":  23,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Gameplay/T66BossHazardSubsystem.cpp",
+                     "Line":  147,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Gameplay/T66BossHazardSubsystem.h",
+                     "Line":  61,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Gameplay/T66MobLootSubsystem.cpp",
+                     "Line":  136,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Gameplay/T66MobLootSubsystem.h",
+                     "Line":  121,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Gameplay/T66MobManagerSubsystem.cpp",
+                     "Line":  1350,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Gameplay/T66MobManagerSubsystem.h",
+                     "Line":  198,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Gameplay/T66OutgoingTravelerPoolSubsystem.cpp",
+                     "Line":  305,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Gameplay/T66OutgoingTravelerPoolSubsystem.h",
+                     "Line":  279,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Gameplay/T66ProjectileManagerSubsystem.cpp",
+                     "Line":  633,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/Gameplay/T66ProjectileManagerSubsystem.h",
+                     "Line":  166,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/PerformanceSystem/T66PerformanceSubsystem.cpp",
+                     "Line":  818,
+                     "Text":  "Super::Deinitialize();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "CleanupReference",
+                     "Path":  "Source/T66/PerformanceSystem/T66PerformanceSubsystem.h",
+                     "Line":  23,
+                     "Text":  "virtual void Deinitialize() override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/Backend/T66BackendSubsystem.cpp",
+                     "Line":  314,
+                     "Text":  "void UT66BackendSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/RunState/T66RunStateSubsystem.cpp",
+                     "Line":  50,
+                     "Text":  "void UT66RunStateSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/Shutdown/T66ShutdownSubsystem.cpp",
+                     "Line":  96,
+                     "Text":  "void UT66ShutdownSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66AchievementsSubsystem.cpp",
+                     "Line":  270,
+                     "Text":  "void UT66AchievementsSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66AudioSubsystem.cpp",
+                     "Line":  47,
+                     "Text":  "void UT66AudioSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66BuffSubsystem.cpp",
+                     "Line":  142,
+                     "Text":  "void UT66BuffSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66CompanionUnlockSubsystem.cpp",
+                     "Line":  18,
+                     "Text":  "void UT66CompanionUnlockSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66EnemyPoolSubsystem.cpp",
+                     "Line":  76,
+                     "Text":  "void UT66EnemyPoolSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66FloatingCombatTextPoolSubsystem.cpp",
+                     "Line":  113,
+                     "Text":  "void UT66FloatingCombatTextPoolSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66LagTrackerSubsystem.cpp",
+                     "Line":  135,
+                     "Text":  "void UT66LagTrackerSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66LocalizationSubsystem.cpp",
+                     "Line":  77,
+                     "Text":  "void UT66LocalizationSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66MediaViewerSubsystem.cpp",
+                     "Line":  87,
+                     "Text":  "void UT66MediaViewerSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66MusicSubsystem.cpp",
+                     "Line":  151,
+                     "Text":  "void UT66MusicSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66PartySubsystem.cpp",
+                     "Line":  114,
+                     "Text":  "void UT66PartySubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66PixelVFXSubsystem.cpp",
+                     "Line":  108,
+                     "Text":  "void UT66PixelVFXSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66PlayerSettingsSubsystem.cpp",
+                     "Line":  172,
+                     "Text":  "void UT66PlayerSettingsSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66RetroFXSubsystem.cpp",
+                     "Line":  552,
+                     "Text":  "void UT66RetroFXSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66RngSubsystem.cpp",
+                     "Line":  27,
+                     "Text":  "void UT66RngSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66SaveSubsystem.cpp",
+                     "Line":  163,
+                     "Text":  "void UT66SaveSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66SessionSubsystem.cpp",
+                     "Line":  157,
+                     "Text":  "void UT66SessionSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66StageProgressionSubsystem.cpp",
+                     "Line":  62,
+                     "Text":  "void UT66StageProgressionSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66SteamHelper.cpp",
+                     "Line":  348,
+                     "Text":  "void UT66SteamHelper::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66UITexturePoolSubsystem.cpp",
+                     "Line":  51,
+                     "Text":  "void UT66UITexturePoolSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Core/T66WebImageCache.cpp",
+                     "Line":  48,
+                     "Text":  "void UT66WebImageCache::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Gameplay/T66BossHazardSubsystem.cpp",
+                     "Line":  125,
+                     "Text":  "void UT66BossHazardSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Gameplay/T66MobLootSubsystem.cpp",
+                     "Line":  107,
+                     "Text":  "void UT66MobLootSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Gameplay/T66MobManagerSubsystem.cpp",
+                     "Line":  1341,
+                     "Text":  "void UT66MobManagerSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Gameplay/T66OutgoingTravelerPoolSubsystem.cpp",
+                     "Line":  276,
+                     "Text":  "void UT66OutgoingTravelerPoolSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/Gameplay/T66ProjectileManagerSubsystem.cpp",
+                     "Line":  602,
+                     "Text":  "void UT66ProjectileManagerSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "DeinitializeDefinition",
+                     "Path":  "Source/T66/PerformanceSystem/T66PerformanceSubsystem.cpp",
+                     "Line":  807,
+                     "Text":  "void UT66PerformanceSubsystem::Deinitialize()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Enemies/Projectiles/T66EnemyProjectileBase.cpp",
+                     "Line":  84,
+                     "Text":  "void AT66EnemyProjectileBase::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Enemies/Projectiles/T66EnemyProjectileBase.cpp",
+                     "Line":  91,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Enemies/Projectiles/T66EnemyProjectileBase.h",
+                     "Line":  50,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Physics/T66HeroPhysicsComponent.cpp",
+                     "Line":  167,
+                     "Text":  "void UT66HeroPhysicsComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Physics/T66HeroPhysicsComponent.cpp",
+                     "Line":  170,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Physics/T66HeroPhysicsComponent.h",
+                     "Line":  127,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66BossBase.cpp",
+                     "Line":  2284,
+                     "Text":  "void AT66BossBase::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66BossBase.cpp",
+                     "Line":  2296,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66BossBase.h",
+                     "Line":  181,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66ChestInteractable.cpp",
+                     "Line":  24,
+                     "Text":  "void AT66ChestInteractable::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66ChestInteractable.cpp",
+                     "Line":  27,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66ChestInteractable.h",
+                     "Line":  29,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66CombatComponent.cpp",
+                     "Line":  638,
+                     "Text":  "void UT66CombatComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66CombatComponent.cpp",
+                     "Line":  669,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66CombatComponent.h",
+                     "Line":  88,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66CompanionBase.cpp",
+                     "Line":  198,
+                     "Text":  "void AT66CompanionBase::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66CompanionBase.cpp",
+                     "Line":  205,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66CompanionBase.h",
+                     "Line":  87,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66EnemyBase.cpp",
+                     "Line":  851,
+                     "Text":  "void AT66EnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66EnemyBase.cpp",
+                     "Line":  861,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66EnemyBase.h",
+                     "Line":  221,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66EnemyDirector.cpp",
+                     "Line":  300,
+                     "Text":  "void AT66EnemyDirector::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66EnemyDirector.cpp",
+                     "Line":  321,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66EnemyDirector.h",
+                     "Line":  129,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66FrontendGameMode.cpp",
+                     "Line":  61,
+                     "Text":  "void AT66FrontendGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66FrontendGameMode.cpp",
+                     "Line":  71,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66FrontendGameMode.h",
+                     "Line":  23,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66GalleryDisplayActor.cpp",
+                     "Line":  103,
+                     "Text":  "void AT66GalleryDisplayActor::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66GalleryDisplayActor.cpp",
+                     "Line":  113,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66GalleryDisplayActor.h",
+                     "Line":  33,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66GameMode.cpp",
+                     "Line":  1124,
+                     "Text":  "void AT66GameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66GameMode.cpp",
+                     "Line":  1160,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66GameMode.h",
+                     "Line":  190,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66HeroBase.cpp",
+                     "Line":  889,
+                     "Text":  "void AT66HeroBase::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66HeroBase.cpp",
+                     "Line":  898,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66HeroBase.h",
+                     "Line":  214,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66HeroPlagueCloud.cpp",
+                     "Line":  146,
+                     "Text":  "void AT66HeroPlagueCloud::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66HeroPlagueCloud.cpp",
+                     "Line":  154,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66HeroPlagueCloud.h",
+                     "Line":  42,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66KnockbackComponent.cpp",
+                     "Line":  90,
+                     "Text":  "void UT66KnockbackComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66KnockbackComponent.cpp",
+                     "Line":  103,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66KnockbackComponent.h",
+                     "Line":  209,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LavaPatch.cpp",
+                     "Line":  159,
+                     "Text":  "void AT66LavaPatch::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LavaPatch.cpp",
+                     "Line":  167,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LavaPatch.h",
+                     "Line":  113,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LethalZoneComponent.cpp",
+                     "Line":  30,
+                     "Text":  "void UT66LethalZoneComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LethalZoneComponent.cpp",
+                     "Line":  33,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LethalZoneComponent.h",
+                     "Line":  25,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LootBagPickup.cpp",
+                     "Line":  127,
+                     "Text":  "void AT66LootBagPickup::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LootBagPickup.cpp",
+                     "Line":  143,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LootBagPickup.h",
+                     "Line":  100,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LootWheelInteractable.cpp",
+                     "Line":  133,
+                     "Text":  "void AT66LootWheelInteractable::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LootWheelInteractable.cpp",
+                     "Line":  136,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66LootWheelInteractable.h",
+                     "Line":  21,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66MiasmaBoundary.cpp",
+                     "Line":  176,
+                     "Text":  "void AT66MiasmaBoundary::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66MiasmaBoundary.cpp",
+                     "Line":  188,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66MiasmaBoundary.h",
+                     "Line":  47,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66MobBase.cpp",
+                     "Line":  361,
+                     "Text":  "void AT66MobBase::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66MobBase.cpp",
+                     "Line":  393,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66MobBase.h",
+                     "Line":  46,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66NPCBase.cpp",
+                     "Line":  269,
+                     "Text":  "void AT66NPCBase::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66NPCBase.cpp",
+                     "Line":  293,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66NPCBase.h",
+                     "Line":  85,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66PetActor.cpp",
+                     "Line":  407,
+                     "Text":  "void AT66PetActor::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66PetActor.cpp",
+                     "Line":  414,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66PetActor.h",
+                     "Line":  85,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66PilotableTractor.cpp",
+                     "Line":  137,
+                     "Text":  "void AT66PilotableTractor::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66PilotableTractor.cpp",
+                     "Line":  156,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66PilotableTractor.h",
+                     "Line":  30,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController.cpp",
+                     "Line":  632,
+                     "Text":  "void AT66PlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController.cpp",
+                     "Line":  671,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController.h",
+                     "Line":  224,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66RecruitableCompanion.cpp",
+                     "Line":  135,
+                     "Text":  "void AT66RecruitableCompanion::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66RecruitableCompanion.cpp",
+                     "Line":  144,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66RecruitableCompanion.h",
+                     "Line":  94,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66SafeZoneComponent.cpp",
+                     "Line":  48,
+                     "Text":  "void UT66SafeZoneComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66SafeZoneComponent.cpp",
+                     "Line":  73,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66SafeZoneComponent.h",
+                     "Line":  33,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66StageGate.cpp",
+                     "Line":  102,
+                     "Text":  "void AT66StageGate::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66StageGate.cpp",
+                     "Line":  112,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66StageGate.h",
+                     "Line":  41,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66TutorialManager.cpp",
+                     "Line":  116,
+                     "Text":  "void AT66TutorialManager::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66TutorialManager.cpp",
+                     "Line":  129,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66TutorialManager.h",
+                     "Line":  33,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66WorldInteractableBase.cpp",
+                     "Line":  137,
+                     "Text":  "void AT66WorldInteractableBase::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66WorldInteractableBase.cpp",
+                     "Line":  155,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/T66WorldInteractableBase.h",
+                     "Line":  66,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66FloorFlameTrap.cpp",
+                     "Line":  138,
+                     "Text":  "void AT66FloorFlameTrap::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66FloorFlameTrap.cpp",
+                     "Line":  149,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66FloorFlameTrap.h",
+                     "Line":  60,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66FloorSpikePatchTrap.cpp",
+                     "Line":  98,
+                     "Text":  "void AT66FloorSpikePatchTrap::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66FloorSpikePatchTrap.cpp",
+                     "Line":  108,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66FloorSpikePatchTrap.h",
+                     "Line":  70,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66TrapArrowProjectile.cpp",
+                     "Line":  151,
+                     "Text":  "void AT66TrapArrowProjectile::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66TrapArrowProjectile.cpp",
+                     "Line":  159,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66TrapArrowProjectile.h",
+                     "Line":  34,
+                     "Text":  "virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66TrapBase.cpp",
+                     "Line":  30,
+                     "Text":  "void AT66TrapBase::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66TrapBase.cpp",
+                     "Line":  37,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66TrapBase.h",
+                     "Line":  76,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66WallArrowTrap.cpp",
+                     "Line":  142,
+                     "Text":  "void AT66WallArrowTrap::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66WallArrowTrap.cpp",
+                     "Line":  150,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/Gameplay/Traps/T66WallArrowTrap.h",
+                     "Line":  56,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/PerformanceSystem/T66MobLootStressHarnessActor.cpp",
+                     "Line":  259,
+                     "Text":  "void AT66MobLootStressHarnessActor::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/PerformanceSystem/T66MobLootStressHarnessActor.cpp",
+                     "Line":  266,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/PerformanceSystem/T66MobLootStressHarnessActor.h",
+                     "Line":  36,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/PerformanceSystem/T66OutgoingTravelerStressHarnessActor.cpp",
+                     "Line":  249,
+                     "Text":  "void AT66OutgoingTravelerStressHarnessActor::EndPlay(const EEndPlayReason::Type EndPlayReason)",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/PerformanceSystem/T66OutgoingTravelerStressHarnessActor.cpp",
+                     "Line":  269,
+                     "Text":  "Super::EndPlay(EndPlayReason);",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "EndPlayReference",
+                     "Path":  "Source/T66/PerformanceSystem/T66OutgoingTravelerStressHarnessActor.h",
+                     "Line":  38,
+                     "Text":  "virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "OwnerCleanupHelper",
+                     "Path":  "Source/T66/Core/T66TrapSubsystem.cpp",
+                     "Line":  556,
+                     "Text":  "void UT66TrapSubsystem::ClearManagedTrapActors()",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "OwnerCleanupHelper",
+                     "Path":  "Source/T66/Core/T66TrapSubsystem.cpp",
+                     "Line":  641,
+                     "Text":  "ClearManagedTrapActors();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "OwnerCleanupHelper",
+                     "Path":  "Source/T66/Core/T66TrapSubsystem.cpp",
+                     "Line":  651,
+                     "Text":  "ClearManagedTrapActors();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "OwnerCleanupHelper",
+                     "Path":  "Source/T66/Core/T66TrapSubsystem.h",
+                     "Line":  36,
+                     "Text":  "void ClearManagedTrapActors();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldRuntime.CleanupHooks",
+                     "Kind":  "OwnerCleanupHelper",
+                     "Path":  "Source/T66/Gameplay/GameMode/T66GameMode_MainMap.cpp",
+                     "Line":  974,
+                     "Text":  "TrapSubsystem-\u003eClearManagedTrapActors();",
+                     "IntendedOwner":  "World subsystem or actor owner-local cleanup",
+                     "MigrationPass":  "Pass 5"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/T66GameInstance.cpp",
+                     "Line":  2068,
+                     "Text":  "UGameplayStatics::OpenLevel(WorldContextObject, LevelToOpen);",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/T66GameInstance.cpp",
+                     "Line":  2095,
+                     "Text":  "UGameplayStatics::OpenLevel(this, LevelToOpen);",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/T66SessionSubsystem.cpp",
+                     "Line":  286,
+                     "Text":  "UGameplayStatics::OpenLevel(this, FName(*MapName), true, TEXT(\"listen\"));",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/T66SessionSubsystem.cpp",
+                     "Line":  321,
+                     "Text":  "UGameplayStatics::OpenLevel(this, FName(*MapName), true, TEXT(\"listen\"));",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/T66SessionSubsystem.cpp",
+                     "Line":  1928,
+                     "Text":  "UGameplayStatics::OpenLevel(this, FName(*MapName));",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/T66WorldRuntimeProofCommands.cpp",
+                     "Line":  813,
+                     "Text":  "UGameplayStatics::OpenLevel(World, UT66GameInstance::GetGameplayLevelName());",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Core/T66WorldRuntimeProofCommands.cpp",
+                     "Line":  844,
+                     "Text":  "UGameplayStatics::OpenLevel(World, UT66GameInstance::GetGameplayLevelName());",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Gameplay/T66CowardiceGate.cpp",
+                     "Line":  116,
+                     "Text":  "UGameplayStatics::OpenLevel(this, FName(*LevelName));",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Gameplay/T66PlayerController_Input.cpp",
+                     "Line":  521,
+                     "Text":  "UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Gameplay/T66StageGate.cpp",
+                     "Line":  146,
+                     "Text":  "UGameplayStatics::OpenLevel(this, FName(*LevelName));",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/Gameplay/T66StageGate.cpp",
+                     "Line":  179,
+                     "Text":  "UGameplayStatics::OpenLevel(this, FName(*LevelName));",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/UI/Screens/T66CompanionSelectionScreen.cpp",
+                     "Line":  1654,
+                     "Text":  "UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/UI/Screens/T66HeroSelectionScreen.cpp",
+                     "Line":  822,
+                     "Text":  "UGameplayStatics::OpenLevel(this, UT66GameInstance::GetTribulationEntryLevelName());",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/UI/Screens/T66PauseMenuScreen.cpp",
+                     "Line":  291,
+                     "Text":  "UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/UI/Screens/T66RunSummaryScreen.cpp",
+                     "Line":  4480,
+                     "Text":  "UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/UI/Screens/T66SaveSlotsScreen.cpp",
+                     "Line":  1127,
+                     "Text":  "UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 },
+                 {
+                     "Surface":  "WorldTransition.RawOpenLevel",
+                     "Kind":  "CallSite",
+                     "Path":  "Source/T66/UI/Screens/T66SaveSlotsScreen.cpp",
+                     "Line":  1167,
+                     "Text":  "UGameplayStatics::OpenLevel(this, UT66GameInstance::GetGameplayLevelName());",
+                     "IntendedOwner":  "LifecycleSystem / future world-transition coordinator",
+                     "MigrationPass":  "Pass 3"
+                 }
+             ]
+}

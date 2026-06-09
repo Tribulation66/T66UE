@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Data/T66DataTypes.h"
 #include "GameFramework/GameModeBase.h"
-#include "Gameplay/T66StartGate.h"
 #include "Gameplay/T66TowerMapTerrain.h"
 #include "T66GameMode.generated.h"
 
@@ -15,13 +14,11 @@ class AT66CompanionBase;
 class AT66PetActor;
 class AT66EnemyBase;
 class AT66EnemyDirector;
-class AT66StartGate;
 class AT66StageGate;
 class AT66BossBase;
 class AT66MiasmaManager;
 class AT66LoanShark;
 class AT66CowardiceGate;
-class AT66BossGate;
 class AT66IdolAltar;
 class AT66WeaponAltar;
 class AT66TowerDescentHole;
@@ -84,7 +81,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tutorial")
 	bool bForceSpawnInTutorialArea = false;
 
-	/** Offset from world origin for Stage Gate (far side of map). Start Gate is spawned near player. */
+	/** Offset from world origin for the post-boss Stage Gate. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gates")
 	FVector StageGateSpawnOffset = FVector(10000.f, 0.f, 200.f);
 
@@ -173,11 +170,13 @@ public:
 	void HandleTowerDescentHoleTriggered(APawn* Pawn, int32 FromFloorNumber, int32 ToFloorNumber);
 	int32 DespawnTowerEnemiesAboveFloor(int32 CurrentFloorNumber);
 	void HandleTowerGateGuardianDefeated(AT66EnemyBase* Guardian);
+	void NotifyTowerIdolSelectionForGate(int32 FromFloorNumber);
+	void NotifyTowerWeaponSelectionForGate(int32 FromFloorNumber);
 	void SetEnemyDirectorSpawningPaused(bool bPaused);
 	AT66EnemyDirector* GetEnemyDirectorForDiagnostics();
 #if !UE_BUILD_SHIPPING
 	void RunBossProjectileManagerSmokeSpawnBossForCurrentStage() { SpawnBossForCurrentStage(); }
-	void RunBossProjectileManagerSmokeSpawnBossGateIfNeeded() { SpawnBossGateIfNeeded(); }
+	void RunBossProjectileManagerSmokeEnsureBossPathReady() { SpawnCowardiceGateIfNeeded(); }
 	bool RunEndgameSaintSmoke(UWorld* ProofWorld, const FString& OutputPath);
 #endif
 	bool IsBackroomsChallengeActive() const { return bBackroomsChallengeActive; }
@@ -234,16 +233,14 @@ protected:
 	int32 FreeCagedCompanionsForBossClear(const FVector& FallbackLocation);
 	void ClearCagedStageCompanions(bool bDestroyActors);
 
-	/** Spawn Start Gate (walk-through, starts timer) near the hero spawn. */
-	void SpawnStartGateForPlayer(AController* Player);
 	/** Spawn the stage-entry idol altar near the start area. */
 	void SpawnIdolAltarForPlayer(AController* Player);
 	void SpawnWeaponAltarForPlayer(AController* Player);
 	AT66IdolAltar* SpawnIdolAltarAtLocation(const FVector& Location, bool bAllowMultiple = false);
 	void SpawnPixalTestDisplayModelsNearIdolAltar(AT66IdolAltar* AnchorAltar, bool bTrackAsLabSpawned = false);
 
-	/** Spawn Boss Gate (walk-through, awakens boss) between main and boss areas. */
-	void SpawnBossGateIfNeeded();
+	/** Spawn the optional Cowardice Gate skip choice before the boss area. */
+	void SpawnCowardiceGateIfNeeded();
 	void SpawnWorldInteractablesForStage();
 	void SpawnStartGalleryShowcase();
 	void SpawnStageEffectsForStage();
@@ -267,7 +264,7 @@ protected:
 	FVector ResolveTowerBossWaitingLocation() const;
 	bool EnsureTowerBossEntryBossReady();
 
-	void SpawnCasinoInteractableIfNeeded();
+	void SpawnCasinoNPCIfNeeded();
 
 	/** Called one frame after BeginPlay so the landscape/collision is ready. Spawns all ground-dependent content (NPCs, interactables, tiles, boss, etc.). */
 	void SpawnLevelContentAfterLandscapeReady();
@@ -390,12 +387,6 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<AT66CowardiceGate> CowardiceGate;
-
-	UPROPERTY()
-	TObjectPtr<AT66StartGate> StartGate;
-
-	UPROPERTY()
-	TObjectPtr<AT66BossGate> BossGate;
 
 	UPROPERTY()
 	TObjectPtr<AT66IdolAltar> IdolAltar;

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "UObject/SoftObjectPath.h"
 
@@ -30,6 +31,7 @@ class T66_API UT66UITexturePoolSubsystem : public UGameInstanceSubsystem
 	GENERATED_BODY()
 
 public:
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	virtual void Deinitialize() override;
 
 	/** Returns a loaded texture if currently resident; never triggers a load. */
@@ -63,6 +65,9 @@ public:
 	void EnsureTexturesLoadedSync(const TArray<FSoftObjectPath>& Paths);
 
 private:
+	bool HandleShutdown(const FT66ShutdownContext& Context);
+	void ShutdownRuntimeResources(const TCHAR* Reason);
+
 	bool bIsDeinitializing = false;
 
 	struct FWaiter
@@ -89,5 +94,6 @@ private:
 
 	UTexture2D* CacheLoadedTexture(const FSoftObjectPath& Path, UTexture2D* Texture) const;
 	void HandleLoaded(const FSoftObjectPath& Path);
+	FT66ShutdownParticipantHandle ShutdownParticipantHandle;
 };
 

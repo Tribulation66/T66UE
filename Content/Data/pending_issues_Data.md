@@ -11,6 +11,7 @@
 
 - Severity tag: [Minor]
 - What's wrong: The Phase 1C FinalFoundationPass stage/smoke logs reported missing `/Game/Data/DT_HouseNPCs`, missing world visual prop references from `/Game/Data/DT_WorldVisualProps` to `/Game/World/VisualProps/Easy/WallLamp_Pixal3D`, `WallTorch_Pixal3D`, `BrokenVase_Pixal3D`, and `SkullRemains_Pixal3D`, plus item rows such as `Item_GamblersToken` and `Item_Alchemy` missing from `/Game/Data/DT_Items`.
+- Latest evidence: The 2026-06-08 tooltip infrastructure staged readiness gate failed during cook with the same missing `/Game/Data/DT_HouseNPCs` package and a missing `/Game/World/VisualProps/Easy/SM_BrokenVase_Easy_Pixal3D` reference from `DT_WorldVisualProps`.
 - Why it's out of scope now: The FinalFoundationPass only activated ToonStyle close-the-gap and inner-line infrastructure. It did not change house NPC, world visual prop, community content, or item data tables.
 - What fixing it would entail: Audit the referenced data tables and cooked package references, either restore/create the missing assets and item rows or remove/redirect stale references, then cook/stage and confirm the warnings are gone.
 
@@ -27,3 +28,10 @@
 - What's wrong: `Content/Data/Items.csv` now uses live row `Item_Headshot`, but its icon paths still point at `Content/Items/Sprites/Item_CritDamage_*.uasset` because no `Item_Headshot_*` sprite assets currently exist.
 - Why it's out of scope now: This pass is a stat/data/combat rename and behavior change. Raw-copying or renaming Unreal `.uasset` files without an editor asset-rename pass would risk broken internal object names and stale redirectors.
 - What fixing it would entail: Create or properly rename/import `Item_Headshot_*` sprite assets through the Unreal asset pipeline, update `Items.csv` paths, refresh `/Game/Data/DT_Items`, then run the item/UI smoke path to confirm the icons resolve.
+
+## StatusEffects CSV Import Emits Missing Name And Cell Count Warnings
+
+- Severity tag: [Minor]
+- What's wrong: The FriendSlop raw Pixal3D reload logged `DT_StatusEffects` import warnings: row `1` is missing a name, and several rows such as `Webbed`, `Poisoned`, `Rooted`, `Thorned`, `Bleeding`, `ArmorCracked`, `Cursed`, `Shocked`, `Chilled`, `Burning`, and `Dazed` have too few cells.
+- Why it's out of scope now: The current task only corrected raw FriendSlop hero orientation. The warning is outside the `CharacterVisuals.csv` yaw fix and did not block the raw FriendSlop validator.
+- What fixing it would entail: Audit `Content/Data/StatusEffects.csv` against its DataTable struct, repair row names and cell counts, rerun the owning DataTable reload path, and verify the import warnings disappear.

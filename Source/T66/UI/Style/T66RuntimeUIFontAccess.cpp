@@ -109,6 +109,19 @@ namespace T66RuntimeUIFontAccess
 	FString ResolveLockedUIFontPath()
 	{
 		return ResolveFirstExistingProjectPath({
+			TEXT("RuntimeDependencies/T66/Fonts/LilitaOne-Regular.ttf"),
+			TEXT("RuntimeDependencies/T66/Fonts/LuckiestGuy-Regular.ttf"),
+			TEXT("RuntimeDependencies/T66/Fonts/Fredoka-wdth-wght.ttf"),
+			TEXT("RuntimeDependencies/T66/Fonts/Jersey10-Regular.ttf")
+		});
+	}
+
+	FString ResolveFriendslopUIFontPath()
+	{
+		return ResolveFirstExistingProjectPath({
+			TEXT("RuntimeDependencies/T66/Fonts/LilitaOne-Regular.ttf"),
+			TEXT("RuntimeDependencies/T66/Fonts/LuckiestGuy-Regular.ttf"),
+			TEXT("RuntimeDependencies/T66/Fonts/Fredoka-wdth-wght.ttf"),
 			TEXT("RuntimeDependencies/T66/Fonts/Jersey10-Regular.ttf")
 		});
 	}
@@ -136,6 +149,17 @@ namespace T66RuntimeUIFontAccess
 		return FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), Size);
 	}
 
+	FSlateFontInfo MakeFriendslopFont(const int32 Size, const bool bBold)
+	{
+		const FString FriendslopPath = ResolveFriendslopUIFontPath();
+		if (!FriendslopPath.IsEmpty())
+		{
+			return MakeFontFromAbsoluteFile(FriendslopPath, Size);
+		}
+
+		return MakeLocalizedEngineFont(Size, bBold);
+	}
+
 	FSlateFontInfo MakeLocalizedEngineFont(int32 Size, bool bBold)
 	{
 		const FString DefaultPath = ResolveEngineSlateFontPath(bBold ? TEXT("Roboto-Bold.ttf") : TEXT("Roboto-Regular.ttf"));
@@ -145,5 +169,16 @@ namespace T66RuntimeUIFontAccess
 		}
 
 		return FCoreStyle::GetDefaultFontStyle(bBold ? TEXT("Bold") : TEXT("Regular"), Size);
+	}
+
+	FSlateFontInfo MakeLocalizedEngineSlateFont(const TCHAR* RelativeFontFile, int32 Size)
+	{
+		const FString DefaultPath = ResolveEngineSlateFontPath(RelativeFontFile);
+		if (const TSharedPtr<const FCompositeFont> CompositeFont = MakeLocalizedCompositeFont(DefaultPath))
+		{
+			return FSlateFontInfo(CompositeFont, static_cast<float>(Size));
+		}
+
+		return MakeLocalizedEngineFont(Size, true);
 	}
 }

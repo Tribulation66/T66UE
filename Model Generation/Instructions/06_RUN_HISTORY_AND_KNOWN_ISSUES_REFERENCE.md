@@ -12,7 +12,7 @@ This file keeps durable lessons only. Full run folders, logs, renders, and local
 - CRLF shell scripts copied from Windows can fail on Linux pods.
 - Blender MCP can start disconnected; relaunch the helper before falling back to headless-only work.
 - Source PNG existence is not art approval.
-- TypeA/Mike legacy scripts are historical. Current work should prefer manifest-driven TRELLIS, Quad Retro, Blender QA, and Unreal import scripts.
+- TypeA/Mike and QuadRetro legacy scripts are historical. Current work should prefer manifest-driven TRELLIS/Pixal3D, FriendSlop raw import, Blender QA, and Unreal import scripts.
 
 ## Completed Or Superseded Evidence
 

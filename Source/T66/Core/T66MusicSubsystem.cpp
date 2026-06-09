@@ -6,11 +6,13 @@
 #include "Core/T66PlayerSettingsSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Components/AudioComponent.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "TimerManager.h"
 #include "UObject/SoftObjectPath.h"
 #include "UObject/UObjectGlobals.h"
 
@@ -26,6 +28,15 @@ static bool IsT66MusicSoundAssetData(const FAssetData& AssetData)
 		|| AssetClassName == TEXT("MetaSoundSource");
 }
 
+// ResolveObject can return an object that is still ASYNC-LOADING (RF_NeedLoad/RF_NeedPostLoad):
+// handing it to SpawnSound2D crashes FAudioDevice::CreateComponent on uninitialized audio data.
+// Only treat a sound as resident once it is fully loaded and not mid-async-load.
+static bool T66IsSoundReadyToPlay(const USoundBase* Sound)
+{
+	return IsValid(Sound)
+		&& !Sound->HasAnyFlags(RF_NeedLoad | RF_NeedPostLoad | RF_NeedPostLoadSubobjects);
+}
+
 static USoundBase* ResolveFirstResidentSoundAsset(const TArray<FSoftObjectPath>& Candidates, TSoftObjectPtr<USoundBase>& InOutSoftPtr)
 {
 	for (const FSoftObjectPath& Path : Candidates)
@@ -35,7 +46,8 @@ static USoundBase* ResolveFirstResidentSoundAsset(const TArray<FSoftObjectPath>&
 			continue;
 		}
 
-		if (USoundBase* Sound = Cast<USoundBase>(Path.ResolveObject()))
+		USoundBase* Sound = Cast<USoundBase>(Path.ResolveObject());
+		if (T66IsSoundReadyToPlay(Sound))
 		{
 			InOutSoftPtr = TSoftObjectPtr<USoundBase>(Path);
 			return Sound;
@@ -81,6 +93,7 @@ static TArray<FSoftObjectPath> CollectSoundAssetPathsInFolder(const FString& Fol
 void UT66MusicSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	// Ensure dependent subsystems exist so delegates/volume reads work reliably.
+	Collection.InitializeDependency(UT66ShutdownSubsystem::StaticClass());
 	Collection.InitializeDependency<UT66PlayerSettingsSubsystem>();
 	Collection.InitializeDependency<UT66RunStateSubsystem>();
 
@@ -99,6 +112,7 @@ void UT66MusicSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		FSoftObjectPath(TEXT("/Game/Audio/Theme.Theme")),
 	};
 	QueueBaseMusicPreloads();
+	QueueStingerPreloads();
 
 	// Listen for world creation so we can start Theme even on FrontendLevel.
 	PostWorldInitHandle = FWorldDelegates::OnPostWorldInitialization.AddUObject(this, &UT66MusicSubsystem::HandlePostWorldInit);
@@ -107,9 +121,21 @@ void UT66MusicSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	if (UGameInstance* GI = GetGameInstance())
 	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			ShutdownParticipantHandle = Shutdown->RegisterParticipant(
+				this,
+				FName(TEXT("Music.MediaAudio")),
+				ET66ShutdownPhase::MediaAudio,
+				20,
+				1.0,
+				false,
+				FT66ShutdownParticipantDelegate::CreateUObject(this, &UT66MusicSubsystem::HandleShutdown));
+		}
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
 			RunState->BossChanged.AddDynamic(this, &UT66MusicSubsystem::HandleBossChanged);
+			RunState->StageChanged.AddDynamic(this, &UT66MusicSubsystem::HandleStageChanged);
 		}
 		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 		{
@@ -137,6 +163,26 @@ void UT66MusicSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UT66MusicSubsystem::Deinitialize()
 {
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
+		{
+			Shutdown->UnregisterParticipant(ShutdownParticipantHandle);
+		}
+	}
+	ShutdownParticipantHandle.Reset();
+	ShutdownRuntimeResources(TEXT("Deinitialize"));
+	Super::Deinitialize();
+}
+
+bool UT66MusicSubsystem::HandleShutdown(const FT66ShutdownContext& /*Context*/)
+{
+	ShutdownRuntimeResources(TEXT("ShutdownSystem"));
+	return true;
+}
+
+void UT66MusicSubsystem::ShutdownRuntimeResources(const TCHAR* /*Reason*/)
+{
 	if (PostWorldInitHandle.IsValid())
 	{
 		FWorldDelegates::OnPostWorldInitialization.Remove(PostWorldInitHandle);
@@ -153,11 +199,51 @@ void UT66MusicSubsystem::Deinitialize()
 		if (UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>())
 		{
 			RunState->BossChanged.RemoveDynamic(this, &UT66MusicSubsystem::HandleBossChanged);
+			RunState->StageChanged.RemoveDynamic(this, &UT66MusicSubsystem::HandleStageChanged);
 		}
 		if (UT66PlayerSettingsSubsystem* PS = GI->GetSubsystem<UT66PlayerSettingsSubsystem>())
 		{
 			PS->OnSettingsChanged.RemoveDynamic(this, &UT66MusicSubsystem::HandleSettingsChanged);
 		}
+	}
+
+	StopMainTheme(0.0f);
+	StopTheme(0.0f);
+	StopBoss(0.0f);
+	StopArea(0.0f);
+	AreaMusicStack.Reset();
+	ActiveAreaID = NAME_None;
+	bStingerActive = false;
+
+	if (MainThemeComp)
+	{
+		MainThemeComp->OnAudioFinished.RemoveDynamic(this, &UT66MusicSubsystem::HandleMainThemeFinished);
+		MainThemeComp->Stop();
+		MainThemeComp = nullptr;
+	}
+	if (ThemeComp)
+	{
+		ThemeComp->OnAudioFinished.RemoveDynamic(this, &UT66MusicSubsystem::HandleThemeFinished);
+		ThemeComp->Stop();
+		ThemeComp = nullptr;
+	}
+	if (BossComp)
+	{
+		BossComp->OnAudioFinished.RemoveDynamic(this, &UT66MusicSubsystem::HandleBossFinished);
+		BossComp->Stop();
+		BossComp = nullptr;
+	}
+	if (AreaComp)
+	{
+		AreaComp->OnAudioFinished.RemoveDynamic(this, &UT66MusicSubsystem::HandleAreaFinished);
+		AreaComp->Stop();
+		AreaComp = nullptr;
+	}
+	if (StingerComp)
+	{
+		StingerComp->OnAudioFinished.RemoveDynamic(this, &UT66MusicSubsystem::HandleStingerFinished);
+		StingerComp->Stop();
+		StingerComp = nullptr;
 	}
 
 	if (MainThemeLoadHandle.IsValid())
@@ -181,8 +267,6 @@ void UT66MusicSubsystem::Deinitialize()
 	FolderSoundCandidatePaths.Reset();
 	CachedFolderSounds.Reset();
 	WarnedMissingFolderSounds.Reset();
-
-	Super::Deinitialize();
 }
 
 void UT66MusicSubsystem::HandlePostWorldInit(UWorld* World, const UWorld::InitializationValues)
@@ -216,14 +300,115 @@ void UT66MusicSubsystem::HandlePostLoadMap(UWorld* World)
 		return;
 	}
 
+	// Area requests belong to actors of the previous world; they re-push on overlap in the new one.
+	AreaMusicStack.Reset();
+	ActiveAreaID = NAME_None;
+
+	// Components spawned in the previous world are dead with it — drop them BEFORE any
+	// Play/Stop/IsPlaying call so the Ensure* paths respawn fresh ones in this world.
+	ResetAudioComponentsForWorldChange(World);
+
 	// Switch base music depending on where we are (mutually exclusive).
 	DesiredBaseTrack = IsFrontendWorld(World) ? ET66BaseTrack::MainTheme : ET66BaseTrack::Theme;
-	UpdateMusicState();
+
+	// DEFER to the new world's first tick: starting audio inside the LoadMap broadcast spawned
+	// sound components against a mid-transition audio device (GI->GetWorld() can still name the
+	// dying world here) — both Enter-the-Tribulation fatals. One frame later, the world and its
+	// audio device are fully live.
+	World->GetTimerManager().SetTimerForNextTick(
+		FTimerDelegate::CreateUObject(this, &UT66MusicSubsystem::UpdateMusicState));
+}
+
+void UT66MusicSubsystem::ResetAudioComponentsForWorldChange(UWorld* NewWorld)
+{
+	auto DropIfForeign = [NewWorld](TObjectPtr<UAudioComponent>& Comp)
+	{
+		if (Comp && (!IsValid(Comp) || Comp->GetWorld() != NewWorld))
+		{
+			// Do NOT Stop()/FadeOut() — the old world's audio device is already gone; the engine
+			// tore the playback down with the world. Just forget the component.
+			Comp = nullptr;
+		}
+	};
+	DropIfForeign(MainThemeComp);
+	DropIfForeign(ThemeComp);
+	DropIfForeign(BossComp);
+	DropIfForeign(AreaComp);
+	DropIfForeign(StingerComp);
+	if (!ThemeComp) { bThemeStarted = false; }
+	if (!MainThemeComp) { bMainThemeStarted = false; }
+	bBossMusicActive = BossComp != nullptr && bBossMusicActive;
+	bAreaMusicActive = AreaComp != nullptr && bAreaMusicActive;
+	bStingerActive = StingerComp != nullptr && bStingerActive;
 }
 
 void UT66MusicSubsystem::HandleBossChanged()
 {
 	UpdateMusicState();
+}
+
+void UT66MusicSubsystem::HandleStageChanged()
+{
+	UpdateMusicState();
+}
+
+void UT66MusicSubsystem::PushAreaMusic(FName AreaID)
+{
+	if (AreaID.IsNone()) return;
+	AreaMusicStack.Remove(AreaID);
+	AreaMusicStack.Add(AreaID);
+	UpdateMusicState();
+}
+
+void UT66MusicSubsystem::PopAreaMusic(FName AreaID)
+{
+	if (AreaID.IsNone()) return;
+	if (AreaMusicStack.Remove(AreaID) > 0)
+	{
+		UpdateMusicState();
+	}
+}
+
+void UT66MusicSubsystem::PlayStinger(FName StingerID)
+{
+	UGameInstance* GI = GetGameInstance();
+	UWorld* World = GI ? GI->GetWorld() : nullptr;
+	if (!World || StingerID.IsNone()) return;
+
+	const FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Stingers/%s"), *StingerID.ToString());
+	USoundBase* Sound = ResolveFirstResidentSoundInFolder(Folder);
+	if (!Sound)
+	{
+		// Not imported/resident yet (resolve queues an async preload for next time). Fire-and-forget cue.
+		return;
+	}
+
+	bAllowMainThemeLoop = false;
+	bAllowThemeLoop = false;
+	bAllowBossLoop = false;
+	bAllowAreaLoop = false;
+	StopMainTheme(0.2f);
+	StopTheme(0.2f);
+	StopBoss(0.2f);
+	StopArea(0.2f);
+
+	if (!StingerComp)
+	{
+		StingerComp = UGameplayStatics::SpawnSound2D(World, Sound, 1.0f, 1.0f, 0.0f, nullptr, true, false);
+		if (StingerComp)
+		{
+			StingerComp->bIsUISound = true;
+			StingerComp->OnAudioFinished.AddDynamic(this, &UT66MusicSubsystem::HandleStingerFinished);
+			bStingerActive = true;
+			ApplyMusicVolumes();
+		}
+		return;
+	}
+
+	StingerComp->SetSound(Sound);
+	bStingerActive = true;
+	ApplyMusicVolumes();
+	StingerComp->Play(0.0f);
 }
 
 void UT66MusicSubsystem::UpdateMusicState()
@@ -234,6 +419,19 @@ void UT66MusicSubsystem::UpdateMusicState()
 	UT66RunStateSubsystem* RunState = GI->GetSubsystem<UT66RunStateSubsystem>();
 	UWorld* World = GI->GetWorld();
 	if (!RunState || !World) return;
+	// Never start/stop audio on a world that is going away (map transition window).
+	if (World->bIsTearingDown)
+	{
+		return;
+	}
+	// Components from a previous world are dead with it; drop them so Ensure* respawns here.
+	ResetAudioComponentsForWorldChange(World);
+
+	// A one-shot stinger owns the music channel until it finishes.
+	if (bStingerActive)
+	{
+		return;
+	}
 
 	// Boss music (for Espadas / Difficulty bosses / Special bosses).
 	const bool bBossActive = RunState->GetBossActive();
@@ -249,8 +447,11 @@ void UT66MusicSubsystem::UpdateMusicState()
 			bAllowBossLoop = true;
 			bAllowMainThemeLoop = false;
 			bAllowThemeLoop = false;
+			bAllowAreaLoop = false;
 			StopMainTheme(0.25f);
 			StopTheme(0.25f);
+			StopArea(0.25f);
+			bAreaMusicActive = false;
 			EnsureBossPlaying(World);
 			ApplyMusicVolumes();
 			return;
@@ -262,6 +463,31 @@ void UT66MusicSubsystem::UpdateMusicState()
 		bBossMusicActive = false;
 		bAllowBossLoop = false;
 		StopBoss(0.25f);
+	}
+
+	// Area override (NPC safe-zone bubbles etc.) outranks the base tracks.
+	if (AreaMusicStack.Num() > 0)
+	{
+		USoundBase* AreaTrack = ResolveAndLoadAreaThemeSound();
+		if (AreaTrack)
+		{
+			bAreaMusicActive = true;
+			bAllowAreaLoop = true;
+			bAllowMainThemeLoop = false;
+			bAllowThemeLoop = false;
+			StopMainTheme(0.25f);
+			StopTheme(0.25f);
+			EnsureAreaPlaying(World);
+			ApplyMusicVolumes();
+			return;
+		}
+	}
+
+	if (bAreaMusicActive)
+	{
+		bAreaMusicActive = false;
+		bAllowAreaLoop = false;
+		StopArea(0.25f);
 	}
 
 	switch (DesiredBaseTrack)
@@ -300,6 +526,8 @@ void UT66MusicSubsystem::ApplyMusicVolumes()
 	if (MainThemeComp) MainThemeComp->SetVolumeMultiplier(EffectiveMusic);
 	if (ThemeComp) ThemeComp->SetVolumeMultiplier(EffectiveMusic);
 	if (BossComp) BossComp->SetVolumeMultiplier(EffectiveMusic);
+	if (AreaComp) AreaComp->SetVolumeMultiplier(EffectiveMusic);
+	if (StingerComp) StingerComp->SetVolumeMultiplier(EffectiveMusic);
 }
 
 bool UT66MusicSubsystem::IsFrontendWorld(UWorld* World) const
@@ -428,6 +656,39 @@ void UT66MusicSubsystem::EnsureBossPlaying(UWorld* World)
 	}
 }
 
+void UT66MusicSubsystem::EnsureAreaPlaying(UWorld* World)
+{
+	if (!World) return;
+	USoundBase* Sound = ResolveAndLoadAreaThemeSound();
+	if (!Sound)
+	{
+		return;
+	}
+
+	if (!AreaComp)
+	{
+		AreaComp = UGameplayStatics::SpawnSound2D(World, Sound, 1.0f, 1.0f, 0.0f, nullptr, true, false);
+		if (AreaComp)
+		{
+			AreaComp->bIsUISound = true;
+			AreaComp->OnAudioFinished.AddDynamic(this, &UT66MusicSubsystem::HandleAreaFinished);
+		}
+	}
+
+	if (AreaComp)
+	{
+		// If the sound changed (different area), restart with the new track.
+		if (AreaComp->Sound != Sound)
+		{
+			AreaComp->SetSound(Sound);
+		}
+		if (!AreaComp->IsPlaying())
+		{
+			AreaComp->FadeIn(0.25f, 1.0f, 0.0f);
+		}
+	}
+}
+
 void UT66MusicSubsystem::StopTheme(float FadeSeconds)
 {
 	if (!ThemeComp) return;
@@ -456,6 +717,34 @@ void UT66MusicSubsystem::StopBoss(float FadeSeconds)
 	{
 		BossComp->FadeOut(FMath::Max(0.f, FadeSeconds), 0.0f);
 	}
+}
+
+void UT66MusicSubsystem::StopArea(float FadeSeconds)
+{
+	if (!AreaComp) return;
+	bAllowAreaLoop = false;
+	if (AreaComp->IsPlaying())
+	{
+		AreaComp->FadeOut(FMath::Max(0.f, FadeSeconds), 0.0f);
+	}
+}
+
+void UT66MusicSubsystem::HandleAreaFinished()
+{
+	if (AreaComp && bAreaMusicActive && bAllowAreaLoop && AreaMusicStack.Num() > 0)
+	{
+		AreaComp->Play(0.0f);
+	}
+}
+
+void UT66MusicSubsystem::HandleStingerFinished()
+{
+	if (!bStingerActive)
+	{
+		return;
+	}
+	bStingerActive = false;
+	UpdateMusicState();
 }
 
 void UT66MusicSubsystem::HandleThemeFinished()
@@ -532,6 +821,20 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadGameplayThemeSound(UWorld* World)
 		}
 	}
 
+	// Stage-specific theme folder (optional) overrides the default Theme.
+	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
+	{
+		const int32 Stage = RunState->GetCurrentStage();
+		if (Stage > 0)
+		{
+			const FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Stages/Stage_%02d"), Stage);
+			if (USoundBase* StageTheme = ResolveFirstResidentSoundInFolder(Folder))
+			{
+				return StageTheme;
+			}
+		}
+	}
+
 	// Fallback: project-wide Theme.
 	return ResolveAndLoadThemeSound();
 }
@@ -546,22 +849,17 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadBossThemeSound(UWorld* World)
 	if (BossID.IsNone()) return nullptr;
 
 	const FString BossIdStr = BossID.ToString();
-	// Only special bosses (Vendor/Ouroboros) get automatic folder-based music here.
-	// All other boss music is assigned individually per boss.
-	const bool bSpecial =
-		BossID == FName(TEXT("VendorBoss")) ||
-		BossID == FName(TEXT("OuroborosBoss")) ||
-		BossIdStr.Contains(TEXT("Vendor"), ESearchCase::IgnoreCase) ||
-		BossIdStr.Contains(TEXT("Ouroboros"), ESearchCase::IgnoreCase);
 
-	if (!bSpecial)
+	// Every boss resolves its own folder; drop a track in to give a boss unique music.
+	const FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/%s"), *BossIdStr);
+	if (USoundBase* BossTheme = ResolveFirstResidentSoundInFolder(Folder))
 	{
-		return nullptr;
+		return BossTheme;
 	}
 
-	FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/Special/%s"), *BossID.ToString());
-
-	if (USoundBase* BossTheme = ResolveFirstResidentSoundInFolder(Folder))
+	// Legacy layout: special bosses (Vendor/Ouroboros) under Bosses/Special/.
+	const FString SpecialFolder = FString::Printf(TEXT("/Game/Audio/OSTS/Bosses/Special/%s"), *BossIdStr);
+	if (USoundBase* BossTheme = ResolveFirstResidentSoundInFolder(SpecialFolder))
 	{
 		return BossTheme;
 	}
@@ -570,10 +868,34 @@ USoundBase* UT66MusicSubsystem::ResolveAndLoadBossThemeSound(UWorld* World)
 	return nullptr;
 }
 
+USoundBase* UT66MusicSubsystem::ResolveAndLoadAreaThemeSound()
+{
+	for (int32 Index = AreaMusicStack.Num() - 1; Index >= 0; --Index)
+	{
+		const FName AreaID = AreaMusicStack[Index];
+		const FString Folder = FString::Printf(TEXT("/Game/Audio/OSTS/Areas/%s"), *AreaID.ToString());
+		if (USoundBase* AreaTheme = ResolveFirstResidentSoundInFolder(Folder))
+		{
+			ActiveAreaID = AreaID;
+			return AreaTheme;
+		}
+	}
+	ActiveAreaID = NAME_None;
+	return nullptr;
+}
+
 void UT66MusicSubsystem::QueueBaseMusicPreloads()
 {
 	QueueMainThemePreload();
 	QueueThemePreload();
+}
+
+void UT66MusicSubsystem::QueueStingerPreloads()
+{
+	// Stingers fire at moments that cannot wait for an async load (death/victory),
+	// so warm them as soon as the subsystem exists.
+	ResolveFirstResidentSoundInFolder(TEXT("/Game/Audio/OSTS/Stingers/Victory"));
+	ResolveFirstResidentSoundInFolder(TEXT("/Game/Audio/OSTS/Stingers/Defeat"));
 }
 
 void UT66MusicSubsystem::QueueMainThemePreload()
@@ -629,13 +951,19 @@ USoundBase* UT66MusicSubsystem::ResolveFirstResidentSoundInFolder(const FString&
 
 	if (TObjectPtr<USoundBase>* CachedSound = CachedFolderSounds.Find(FolderPath))
 	{
-		return CachedSound->Get();
+		if (T66IsSoundReadyToPlay(CachedSound->Get()))
+		{
+			return CachedSound->Get();
+		}
+		// GC nulled it (map transition) or it never finished loading — drop and re-resolve.
+		CachedFolderSounds.Remove(FolderPath);
 	}
 
 	TArray<FSoftObjectPath> CandidatePaths = CollectSoundAssetPathsInFolder(FolderPath);
 	for (const FSoftObjectPath& CandidatePath : CandidatePaths)
 	{
-		if (USoundBase* Sound = Cast<USoundBase>(CandidatePath.ResolveObject()))
+		USoundBase* Sound = Cast<USoundBase>(CandidatePath.ResolveObject());
+		if (T66IsSoundReadyToPlay(Sound))
 		{
 			CachedFolderSounds.Add(FolderPath, Sound);
 			return Sound;
@@ -686,4 +1014,3 @@ void UT66MusicSubsystem::HandleFolderSoundPreloaded(FString FolderPath)
 	}
 	UpdateMusicState();
 }
-

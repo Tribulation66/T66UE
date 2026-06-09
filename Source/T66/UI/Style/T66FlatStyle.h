@@ -239,7 +239,7 @@ struct FT66FlatTransparentRegionParams
  * - MakeFlatPortraitSlot / MakeFlatRankingRow / MakeFlatTopBar / MakeFlatSlimTopBar
  *
  * These helpers draw axis-aligned Slate rectangles with solid fills and clean 2 px borders.
- * They intentionally do not call the PNG chrome path, M_UI_Glow, or ST66RetroUIRetainedSurface.
+ * They intentionally do not call the PNG chrome path or M_UI_Glow.
  */
 class T66_API FT66FlatStyle
 {

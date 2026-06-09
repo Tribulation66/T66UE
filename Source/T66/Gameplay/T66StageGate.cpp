@@ -4,6 +4,7 @@
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66GameInstance.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Components/BoxComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -159,7 +160,7 @@ bool AT66StageGate::AdvanceToNextStage()
 		{
 			Ach->AddCompanionUnionStagesCleared(T66GI->SelectedCompanionID, 1);
 		}
-		if (!T66GI->SelectedPetID.IsNone())
+		if (FT66ShelvedFeatureGate::IsPetsEnabled() && !T66GI->SelectedPetID.IsNone())
 		{
 			Ach->AddPetBondStagesCleared(T66GI->SelectedPetID, 1);
 		}

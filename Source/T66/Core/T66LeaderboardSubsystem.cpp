@@ -15,6 +15,8 @@
 #include "Core/T66RunIntegritySubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66SaveMigration.h"
+#include "Core/T66SessionSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "Core/T66SkillRatingSubsystem.h"
 #include "Core/T66SteamHelper.h"
 
@@ -854,6 +856,8 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	Snapshot->RunDurationSeconds = RunState->GetFinalRunElapsedSeconds();
 	Snapshot->bWasFullClear = RunState->DidRunEndInVictory();
 	Snapshot->bWasSpeedRunMode = PS ? PS->GetSpeedRunMode() : false;
+	Snapshot->bSubmitHighScoreLeaderboard = PS ? PS->GetHighScoreMode() : true;
+	Snapshot->bSubmitSpeedRunLeaderboard = PS ? PS->GetSpeedRunMode() : true;
 	Snapshot->OwnerSteamId = GetCurrentLocalSteamId();
 	Snapshot->OwnerDisplayName = GetCurrentLocalDisplayName();
 	Snapshot->DisplayName = Snapshot->OwnerDisplayName;
@@ -861,15 +865,15 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 20);
 	Snapshot->Score = FMath::Max(0, Score);
 
-	Snapshot->SecondaryStatValues.Reset();
-	for (int32 i = 1; i <= static_cast<int32>(ET66SecondaryStatType::NaturePower); ++i)
+	Snapshot->StatValues.Reset();
+	for (int32 i = 1; i <= static_cast<int32>(ET66StatType::WindPower); ++i)
 	{
-		const ET66SecondaryStatType SecType = static_cast<ET66SecondaryStatType>(i);
-		if (!T66IsLiveSecondaryStatType(SecType))
+		const ET66StatType SecType = static_cast<ET66StatType>(i);
+		if (!T66IsLiveStatType(SecType))
 		{
 			continue;
 		}
-		Snapshot->SecondaryStatValues.Add(SecType, RunState->GetSecondaryStatValue(SecType));
+		Snapshot->StatValues.Add(SecType, RunState->GetStatValue(SecType));
 	}
 
 	Snapshot->HeroID = T66GI->SelectedHeroID;
@@ -964,7 +968,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	Snapshot->Inventory = RunState->GetInventory();
 	Snapshot->InventorySlots = RunState->GetInventorySlots();
 	Snapshot->NoIdolSelectionStacks = RunState->GetNoIdolSelectionStacks();
-	Snapshot->NoIdolPrimaryStatBonuses = RunState->GetNoIdolPrimaryStatBonuses();
+	Snapshot->NoIdolBaseStatBonuses = RunState->GetNoIdolBaseStatBonuses();
 	Snapshot->MobLootDropsCollectedThisRun = RunState->GetMobLootDropsCollectedThisRun();
 	Snapshot->MobLootQuantityCollectedThisRun = RunState->GetMobLootQuantityCollectedThisRun();
 	Snapshot->MobLootGoldValueCollectedThisRun = RunState->GetMobLootGoldValueCollectedThisRun();
@@ -997,18 +1001,24 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 		}
 	}
 
-	if (const UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
+	if (FT66ShelvedFeatureGate::IsPetsEnabled())
 	{
-		Snapshot->ActivePetID = !T66GI->SelectedPetID.IsNone() ? T66GI->SelectedPetID : Achievements->GetActivePetID();
-		if (!Snapshot->ActivePetID.IsNone())
+		if (const UT66AchievementsSubsystem* Achievements = GI ? GI->GetSubsystem<UT66AchievementsSubsystem>() : nullptr)
 		{
-			Snapshot->ActivePetSkinID = Achievements->GetEquippedPetSkinID(Snapshot->ActivePetID);
-			Snapshot->ActivePetBondStagesCleared = Achievements->GetPetBondStagesCleared(Snapshot->ActivePetID);
-			Snapshot->ActivePetBondMovementSpeedMultiplier = Achievements->GetPetBondMovementSpeedMultiplier(Snapshot->ActivePetID);
+			Snapshot->ActivePetID = !T66GI->SelectedPetID.IsNone() ? T66GI->SelectedPetID : Achievements->GetActivePetID();
+			if (!Snapshot->ActivePetID.IsNone())
+			{
+				Snapshot->ActivePetSkinID = Achievements->GetEquippedPetSkinID(Snapshot->ActivePetID);
+				Snapshot->ActivePetBondStagesCleared = Achievements->GetPetBondStagesCleared(Snapshot->ActivePetID);
+				Snapshot->ActivePetBondMovementSpeedMultiplier = Achievements->GetPetBondMovementSpeedMultiplier(Snapshot->ActivePetID);
+			}
 		}
 	}
-	Snapshot->PetMobLootQuantityCollectedThisRun = RunState->GetMobLootQuantityCollectedByPetThisRun();
-	Snapshot->PetMobLootDropsCollectedThisRun = RunState->GetMobLootDropsCollectedByPetThisRun();
+	if (FT66ShelvedFeatureGate::IsPetsEnabled() && FT66ShelvedFeatureGate::IsMobLootEnabled())
+	{
+		Snapshot->PetMobLootQuantityCollectedThisRun = RunState->GetMobLootQuantityCollectedByPetThisRun();
+		Snapshot->PetMobLootDropsCollectedThisRun = RunState->GetMobLootDropsCollectedByPetThisRun();
+	}
 	Snapshot->bBossActiveAtSummary = RunState->GetBossActive();
 	Snapshot->ActiveBossID = RunState->GetActiveBossID();
 	Snapshot->BossMaxHP = RunState->GetBossMaxHP();
@@ -1902,7 +1912,9 @@ bool UT66LeaderboardSubsystem::SaveFinishedRunSummarySnapshot(FString& OutSlotNa
 
 	const FGuid RunId = FGuid::NewGuid();
 	const FString SlotName = MakeRecentRunSummarySlotName(RunId);
-	const ET66LeaderboardType LeaderboardType = (PS && PS->GetSpeedRunMode()) ? ET66LeaderboardType::SpeedRun : ET66LeaderboardType::Score;
+	const bool bSubmitHighScore = PS ? PS->GetHighScoreMode() : true;
+	const bool bSubmitSpeedRun = PS ? PS->GetSpeedRunMode() : true;
+	const ET66LeaderboardType LeaderboardType = (bSubmitSpeedRun && !bSubmitHighScore) ? ET66LeaderboardType::SpeedRun : ET66LeaderboardType::Score;
 	UT66LeaderboardRunSummarySaveGame* Snapshot = CreateCurrentRunSummarySnapshot(
 		LeaderboardType,
 		T66GI->SelectedDifficulty,
@@ -2315,6 +2327,14 @@ void UT66LeaderboardSubsystem::HandleBackendAccountStatusComplete(bool bSuccess,
 
 	LocalSave->AccountRestriction = NewRecord;
 	SaveLocalSave();
+
+	if (UGameInstance* GI = GetGameInstance())
+	{
+		if (UT66SessionSubsystem* SessionSubsystem = GI->GetSubsystem<UT66SessionSubsystem>())
+		{
+			SessionSubsystem->SyncLocalLobbyProfile();
+		}
+	}
 }
 
 bool UT66LeaderboardSubsystem::RequestOpenAccountRestrictionRunSummary()

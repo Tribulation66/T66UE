@@ -315,12 +315,12 @@ struct T66_API FT66AntiCheatGamblerEvent
 };
 
 USTRUCT(BlueprintType)
-struct T66_API FT66SavedSecondaryStatBonusEntry
+struct T66_API FT66SavedStatBonusEntry
 {
 	GENERATED_BODY()
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	ET66SecondaryStatType StatType = ET66SecondaryStatType::None;
+	ET66StatType StatType = ET66StatType::None;
 
 	/** Fixed-point tenths of accumulated secondary stat points. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
@@ -343,6 +343,9 @@ struct T66_API FT66SavedRunSnapshot
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	float MaxHP = 100.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
+	float HeroDamagePercent = 0.f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	TArray<uint8> HeartSlotTiers;
@@ -438,7 +441,7 @@ struct T66_API FT66SavedRunSnapshot
 
 	/** Persistent secondary gains created by in-run level-ups. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	TArray<FT66SavedSecondaryStatBonusEntry> PersistentSecondaryStatBonusEntries;
+	TArray<FT66SavedStatBonusEntry> PersistentStatBonusEntries;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	int32 PowerCrystalsEarnedThisRun = 0;
@@ -489,10 +492,10 @@ struct T66_API FT66SavedRunSnapshot
 	bool bSaintBlessingActive = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	FT66HeroPreciseStatBlock SaintBlessingPrimaryStatBonuses;
+	FT66HeroPreciseStatBlock SaintBlessingBaseStatBonuses;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	TArray<FT66SavedSecondaryStatBonusEntry> SaintBlessingSecondaryStatBonusEntries;
+	TArray<FT66SavedStatBonusEntry> SaintBlessingStatBonusEntries;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	float FinalSurvivalEnemyScalar = 1.f;
@@ -567,7 +570,7 @@ struct T66_API FT66SavedRunSnapshot
 	int32 NoIdolSelectionStacks = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
-	FT66HeroPreciseStatBlock NoIdolPrimaryStatBonuses;
+	FT66HeroPreciseStatBlock NoIdolBaseStatBonuses;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Save")
 	float UltimateCharge = 0.f;

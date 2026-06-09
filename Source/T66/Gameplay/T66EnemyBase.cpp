@@ -29,6 +29,7 @@
 #include "Core/T66PlayerExperienceSubSystem.h"
 #include "Core/T66Rarity.h"
 #include "Core/T66RngSubsystem.h"
+#include "Core/T66ShelvedFeatureGate.h"
 #include "UI/T66EnemyLockWidget.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Components/CapsuleComponent.h"
@@ -59,26 +60,27 @@ namespace
 
 	struct FT66MobKillBoostDropTarget
 	{
-		bool bUsesSecondaryStat = false;
-		ET66HeroStatType PrimaryStatType = ET66HeroStatType::Damage;
-		ET66SecondaryStatType SecondaryStatType = ET66SecondaryStatType::None;
+		bool bUsesStat = false;
+		ET66HeroStatType BaseStatType = ET66HeroStatType::Damage;
+		ET66StatType StatType = ET66StatType::None;
 	};
 
 	const TArray<FT66MobKillBoostDropTarget>& T66GetMobKillBoostDropTargets()
 	{
 		static const TArray<FT66MobKillBoostDropTarget> Targets = {
-			{ false, ET66HeroStatType::Damage, ET66SecondaryStatType::None },
-			{ false, ET66HeroStatType::AttackSpeed, ET66SecondaryStatType::None },
-			{ false, ET66HeroStatType::AttackScale, ET66SecondaryStatType::None },
-			{ false, ET66HeroStatType::Accuracy, ET66SecondaryStatType::None },
-			{ false, ET66HeroStatType::Armor, ET66SecondaryStatType::None },
-			{ false, ET66HeroStatType::Evasion, ET66SecondaryStatType::None },
-			{ false, ET66HeroStatType::Luck, ET66SecondaryStatType::None },
-			{ false, ET66HeroStatType::Speed, ET66SecondaryStatType::None },
-			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::FirePower },
-			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::IcePower },
-			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::ElectricityPower },
-			{ true, ET66HeroStatType::Special, ET66SecondaryStatType::NaturePower },
+			{ false, ET66HeroStatType::Damage, ET66StatType::None },
+			{ false, ET66HeroStatType::AttackSpeed, ET66StatType::None },
+			{ false, ET66HeroStatType::AttackScale, ET66StatType::None },
+			{ false, ET66HeroStatType::Accuracy, ET66StatType::None },
+			{ false, ET66HeroStatType::Armor, ET66StatType::None },
+			{ false, ET66HeroStatType::Evasion, ET66StatType::None },
+			{ false, ET66HeroStatType::Luck, ET66StatType::None },
+			{ false, ET66HeroStatType::Speed, ET66StatType::None },
+			{ true, ET66HeroStatType::Special, ET66StatType::FirePower },
+			{ true, ET66HeroStatType::Special, ET66StatType::IcePower },
+			{ true, ET66HeroStatType::Special, ET66StatType::ElectricityPower },
+			{ true, ET66HeroStatType::Special, ET66StatType::NaturePower },
+			{ true, ET66HeroStatType::Special, ET66StatType::WindPower },
 		};
 		return Targets;
 	}
@@ -108,20 +110,20 @@ namespace
 			FRotator::ZeroRotator,
 			SpawnParams))
 		{
-			if (Target.bUsesSecondaryStat)
+			if (Target.bUsesStat)
 			{
-				Boost->ConfigureSecondaryBoost(Target.SecondaryStatType, 8, 10.f);
+				Boost->ConfigureStatBoost(Target.StatType, 8, 10.f);
 			}
 			else
 			{
-				Boost->ConfigureBoost(Target.PrimaryStatType, 8, 10.f);
+				Boost->ConfigureBoost(Target.BaseStatType, 8, 10.f);
 			}
 			UE_LOG(LogT66Enemy, Display, TEXT("[T66Proof][StatBoostDrop] Source=RichEnemy MiniBoss=%d Chance=%.3f Primary=%d Secondary=%d UsesSecondary=%d"),
 				bIsMiniBoss ? 1 : 0,
 				DropChance,
-				static_cast<int32>(Target.PrimaryStatType),
-				static_cast<int32>(Target.SecondaryStatType),
-				Target.bUsesSecondaryStat ? 1 : 0);
+				static_cast<int32>(Target.BaseStatType),
+				static_cast<int32>(Target.StatType),
+				Target.bUsesStat ? 1 : 0);
 		}
 	}
 
@@ -305,7 +307,7 @@ AT66EnemyBase::AT66EnemyBase()
 
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		Move->MaxWalkSpeed = 350.f;
+		Move->MaxWalkSpeed = 175.f;
 		Move->bOrientRotationToMovement = true;
 		Move->RotationRate = FRotator(0.f, 720.f, 0.f);
 	}
@@ -1654,6 +1656,35 @@ void AT66EnemyBase::ApplyAutoAttackKnockback(const FVector& HitOrigin, float Str
 	AutoAttackKnockbackSecondsRemaining = FMath::Max(AutoAttackKnockbackSecondsRemaining, AutoAttackKnockbackStutterSeconds);
 }
 
+void AT66EnemyBase::ApplyPhysicalKnockback(const FVector& LaunchVelocity)
+{
+	// Same lifecycle guards as the legacy planar knockback — dead / mid-emerge enemies
+	// don't get launched.
+	if (CurrentHP <= 0 || bRisingFromGround || bEmergingFromWall)
+	{
+		return;
+	}
+	if (LaunchVelocity.IsNearlyZero())
+	{
+		return;
+	}
+
+	FVector Clamped = LaunchVelocity;
+	const float MaxSpeed = FMath::Max(0.f, PhysicalKnockbackMaxLaunchSpeed);
+	if (MaxSpeed > 0.f && Clamped.SizeSquared() > FMath::Square(MaxSpeed))
+	{
+		Clamped = Clamped.GetSafeNormal() * MaxSpeed;
+	}
+
+	// LaunchCharacter overrides both XY and Z, dropping the character into MOVE_Falling
+	// until they land. CharacterMovementComponent handles gravity + ground re-acquire.
+	LaunchCharacter(Clamped, /*bXYOverride*/ true, /*bZOverride*/ true);
+
+	// Reuse the existing brief AI-stagger window so chase resumes a beat after landing.
+	const float StaggerWindow = FMath::Max(PhysicalKnockbackStaggerSeconds, AutoAttackKnockbackStutterSeconds);
+	AutoAttackKnockbackSecondsRemaining = FMath::Max(AutoAttackKnockbackSecondsRemaining, StaggerWindow);
+}
+
 float AT66EnemyBase::GetEffectiveArmor() const
 {
 	return FMath::Clamp(Armor - ArmorDebuffAmount, -0.5f, 0.95f);
@@ -1829,7 +1860,7 @@ void AT66EnemyBase::OnDeath()
 
 	if (!World) return;
 	UT66GameInstance* T66GI = Cast<UT66GameInstance>(World->GetGameInstance());
-	if (bDropsLoot && T66GI)
+	if (bDropsLoot && T66GI && FT66ShelvedFeatureGate::IsMobLootEnabled())
 	{
 		// Loot bag drop chance + rarity are driven by player-experience tuning and luck bias.
 		UT66RngSubsystem* RngSub = GI ? GI->GetSubsystem<UT66RngSubsystem>() : nullptr;

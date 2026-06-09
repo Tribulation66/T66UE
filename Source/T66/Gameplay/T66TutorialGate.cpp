@@ -37,7 +37,7 @@ AT66TutorialGate::AT66TutorialGate()
 		GateMesh->SetRelativeLocation(FVector(0.f, 0.f, 125.f));
 	}
 
-	GateMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Gates/TutorialGate_Pixal3D.TutorialGate_Pixal3D")));
+	GateMeshOverride = TSoftObjectPtr<UStaticMesh>(FSoftObjectPath(TEXT("/Game/World/Gates/SM_TutorialGate_Pixal3D.SM_TutorialGate_Pixal3D")));
 }
 
 void AT66TutorialGate::BeginPlay()
@@ -107,6 +107,6 @@ bool AT66TutorialGate::Interact(AT66PlayerController* PC)
 		}
 	}
 
-	UGameplayStatics::OpenLevel(this, UT66GameInstance::GetFrontendLevelName());
+	UT66GameInstance::TransitionToFrontendLevel(this);
 	return true;
 }

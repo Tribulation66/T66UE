@@ -12,8 +12,8 @@ Primary UI code lives under:
 - `Source/T66/Systems/` for UI-facing subsystems
 - `Source/T66/Localization/` for localized display text
 - `Content/Data/` for data-authored UI/gameplay content where applicable
-- `SourceAssets/UI/Reference/` for source UI reference art and generated chrome assets
-- `UI/` for UI generation prompts and process docs
+- `SourceAssets/UI/Reference/` for source UI reference art and historical reference material
+- `UI/` for flat UI process docs, reference screenshots, icon manifests, and content-stub ledgers
 - `Audit/Reference/T66_UI_AUDIT.md` for older but still useful UI audit notes
 
 The main technical files to understand first are:
@@ -391,23 +391,17 @@ Important parameter structs:
 
 These map to consistent colors, hover behavior, and visual treatments. New screen code should use existing button types unless it is intentionally adding a new reusable style.
 
-## Reference-Art Buttons
+## Flat Button Sizing
 
-Many newer screens use generated reference UI chrome instead of pure-color Slate boxes.
+The active flat pipeline does not generate raster button plates. Buttons are Slate-native controls built through `FT66FlatStyle` or equivalent flat helpers.
 
-Common helper:
+For non-square buttons and controls:
 
-```cpp
-T66ScreenSlateHelpers::MakeReferenceSlicedPlateButton(...)
-```
-
-This is important for non-square reference buttons. The intended pattern is:
-
-- Use a text-free PNG plate or button state.
-- Use sliced rendering so the center stretches without distorting ornate ends.
-- Render live Slate text above the plate.
-- Keep texture filtering nearest or otherwise pixel-faithful where required.
-- Clamp minimum width through `NormalizeReferenceSlicedButtonMinWidth()` when needed.
+- Render the fill, border, hover, selected, and disabled states through flat Slate style data.
+- Render live Slate text inside the control; never bake labels into images.
+- Set stable minimum widths and heights so labels cannot collapse or resize the button body.
+- Clamp or wrap long localized labels before they overflow the button.
+- Keep hover and selection states from changing layout geometry.
 
 Do not bake labels into button images. Labels are live text for localization, state updates, accessibility, and resolution independence.
 
@@ -811,7 +805,7 @@ Important principles:
 - Design against the intended viewport/reference layout.
 - Use stable dimensions for fixed-format controls.
 - Clamp button widths where text could overflow.
-- Use sliced or tiled art for resizable chrome.
+- Use stable min-width, aspect, and fill rules for resizable controls; flat chrome must not depend on raster slice-stretch contracts.
 - Keep live text inside its container.
 - Do not let hover states resize the layout.
 - Do not nest decorative cards inside decorative cards.
@@ -819,10 +813,10 @@ Important principles:
 
 Relevant process docs:
 
-- `UI/Processes/LAYOUT_AND_SIZING.md`
-- `UI/Processes/SCREEN_MODAL_TASK.md`
-- `UI/Processes/UI_GENERATION.md`
-- `UI/SCREEN_WORKFLOW.md`
+- `UI/Reference/UI_FLAT_REDESIGN_REFERENCE.md`
+- `UI/Instructions/UI_FIDELITY_LOOP_INSTRUCTIONS.md`
+- `UI/Instructions/UI_LAYOUT_AND_SIZING_INSTRUCTIONS.md`
+- `UI/Reference/UI_STAGE2_CAPTURE_READINESS_REFERENCE.md`
 
 ## Verification Workflow
 
@@ -869,7 +863,7 @@ Do not:
 - renumber `ET66ScreenType`
 - add ad hoc image-loading code when runtime texture helpers already exist
 - add one-off style systems for a single screen when `FT66Style` or helper code can handle it
-- stretch ornate PNGs instead of using slice/tile/fixed-size contracts
+- stretch content PNGs instead of using fixed-size, aspect-preserving, or intentional tile contracts
 - hardcode UI data in C++ when the repo has data-authored or subsystem-backed sources
 - bypass `UT66UIManager` for normal screen navigation
 - rebuild a cached screen's full tree when updating one text value would work
