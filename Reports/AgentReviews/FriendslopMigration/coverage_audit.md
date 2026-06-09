@@ -44,6 +44,14 @@ properly routed.
 ## Suggested follow-up passes (future, not blocking)
 
 1. Gambler tab content fix (pre-existing bug).
-2. Plumbing cleanup: rename/retire Reference-named loaders + retro retainer wrapper, fold
-   sliced-plate delivery into FT66FriendslopStyle proper.
+2. Plumbing cleanup: rename/retire Reference-named loaders, fold sliced-plate delivery into
+   FT66FriendslopStyle proper. STATUS 2026-06-10: DEFERRED — an active uncommitted UI pass
+   (Friendslop standard modals + RetroFX retainer removal) is mid-flight in the same files
+   (ScreenSlateHelpers +529, the 4 screens +1790). Execute after it commits. Scoped cut:
+   Friendslop-named entry points (MakeSlicedPlateButton/MakeSlicedProgressBar/
+   MakeHorizontalSlicedImage), update 6 call sites (AccountStatus:864,970; Achievements:969,
+   1036; PowerUp:1151; RunSummary:958), delete the 4 FlatStyle BuildFlat* wrappers.
 3. Scrollbar + loading-screen + accent-fill polish (one small pass).
+4. **Retro eradication** — full spec with verified classifications and phased plan:
+   `retro_removal_spec.md` (same folder). Execute together with pass 2 (same files,
+   same precondition).
