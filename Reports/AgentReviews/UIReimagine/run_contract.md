@@ -86,9 +86,12 @@ A Claude 5-hour usage wall mid-run must NOT end the night. Mechanism (no user ac
    steps, revert+defer on repeated failure.
 
 PRECONDITIONS DISCOVERED 2026-06-10 from the tray:
-- Tray's Claude OAuth is EXPIRED ("Claude auth expired", data stale since 12:36) — user
-  should re-auth the tray before the night so wall prediction works (sentinel works
-  regardless).
+- Tray's Claude OAuth: RESOLVED 2026-06-09 19:32. Root cause: the tray reads Claude
+  Code's own `~/.claude/.credentials.json` accessToken (~8h lifetime); the file goes
+  stale unless a fresh Claude session re-persists it. Fix = any new session (e.g.
+  `claude -p "ok"`). CONVENIENT SIDE EFFECT: every sentinel tick IS a fresh session,
+  so the watchdog keeps the token (and tray prediction data) fresh all night
+  automatically. No manual re-auth needed before the run.
 - **Codex weekly is at 93% used; resets 2026-06-11 00:24 local.** The night is
   imagegen-heavy (dozens of Codex workers). Start the run AFTER that reset (or accept
   early imagegen starvation: the run would degrade to deferring asset-needing screens).
