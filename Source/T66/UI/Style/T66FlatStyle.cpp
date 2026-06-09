@@ -3,8 +3,14 @@
 #include "UI/Style/T66FlatStyle.h"
 
 #include "Brushes/SlateColorBrush.h"
+#include "HAL/IConsoleManager.h"
+#include "Misc/CommandLine.h"
+#include "Misc/Parse.h"
 #include "Styling/CoreStyle.h"
+#include "UI/T66TooltipResolvers.h"
+#include "UI/T66TooltipSlate.h"
 #include "UI/Style/T66FlatWidgetMetadata.h"
+#include "UI/Style/T66FriendslopStyle.h"
 #include "UI/Style/T66RuntimeUIFontAccess.h"
 #include "UI/Style/T66Style.h"
 #include "Widgets/Images/SImage.h"
@@ -18,7 +24,6 @@
 #include "Widgets/Notifications/SProgressBar.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/SBoxPanel.h"
-#include "Widgets/SToolTip.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace
@@ -46,6 +51,18 @@ namespace
 			bInitialized = true;
 		}
 		return Style;
+	}
+
+	TAutoConsoleVariable<int32> CVarT66FriendslopGlobalChrome(
+		TEXT("T66.UI.FriendslopGlobal"),
+		1,
+		TEXT("When 1 (default), FlatStyle chrome entry points render FriendslopStyle plates; FlatStyle becomes a legacy-compat adapter. 0 restores flat rendering. Command line -T66FlatLegacy forces 0."),
+		ECVF_Default);
+
+	bool UseFriendslopGlobalChrome()
+	{
+		static const bool bForcedLegacy = FParse::Param(FCommandLine::Get(), TEXT("T66FlatLegacy"));
+		return !bForcedLegacy && CVarT66FriendslopGlobalChrome.GetValueOnGameThread() > 0;
 	}
 
 	ET66FlatState FlatStateForOverlayBrush(const ET66FlatOverlayChromeBrush Brush)
@@ -308,6 +325,53 @@ namespace
 		const TAttribute<bool>& IsEnabled = TAttribute<bool>(true),
 		const TSharedPtr<TWeakPtr<SWidget>>& HoverProbe = nullptr)
 	{
+		if (UseFriendslopGlobalChrome())
+		{
+			// Friendslop global chrome: interactive surfaces (hover-probed) use the state-mapped
+			// button plate, static surfaces use the large panel plate. Hover/disabled feedback is
+			// a translucent film on the inner border so caller-driven dynamic recolors keep working.
+			const ET66FriendslopChrome Chrome = HoverProbe.IsValid()
+				? FT66FriendslopStyle::ButtonChromeForState(State)
+				: ET66FriendslopChrome::PanelLargeDark;
+			TSharedPtr<SBorder> FriendslopFillBorder;
+			TSharedRef<SBorder> FriendslopBorder = SNew(SBorder)
+				.BorderImage(FT66FriendslopStyle::GetChromeBrush(Chrome))
+				.BorderBackgroundColor(FSlateColor(FLinearColor::White))
+				.Padding(FMargin(FT66FlatStyle::FlatStroke))
+				[
+					SAssignNew(FriendslopFillBorder, SBorder)
+					.BorderImage(FlatWhiteBrush())
+					.BorderBackgroundColor(TAttribute<FSlateColor>::CreateLambda([State, IsEnabled, HoverProbe]() -> FSlateColor
+					{
+						if (State == ET66FlatState::Disabled || !IsEnabled.Get(true))
+						{
+							return FSlateColor(FLinearColor(0.f, 0.f, 0.f, 0.42f));
+						}
+						if (IsHoverVisualActive(State, IsEnabled, HoverProbe))
+						{
+							return FSlateColor(FLinearColor(1.f, 1.f, 1.f, 0.10f));
+						}
+						return FSlateColor(FLinearColor::Transparent);
+					}))
+					.Padding(Padding)
+					.Clipping(EWidgetClipping::ClipToBounds)
+					[
+						Content
+					]
+				];
+
+			if (OutBorder)
+			{
+				*OutBorder = FriendslopBorder;
+			}
+			if (OutFillBorder)
+			{
+				*OutFillBorder = FriendslopFillBorder;
+			}
+
+			return FT66FlatStyle::WrapWithoutRetainer(FriendslopBorder);
+		}
+
 		TSharedPtr<SBorder> FillBorder;
 		TSharedRef<SBorder> Border = SNew(SBorder)
 			.BorderImage(FlatWhiteBrush())
@@ -703,6 +767,53 @@ void FT66FlatStyle::DeferRebuild(UUserWidget* Widget, const int32 ZOrder)
 
 TSharedRef<SWidget> FT66FlatStyle::MakeButton(const FT66ButtonParams& Params)
 {
+	if (UseFriendslopGlobalChrome())
+	{
+		// Legacy in-run button path: translate to a Friendslop plate button. Plates carry color,
+		// so legacy color overrides are intentionally ignored.
+		ET66FlatState State = ET66FlatState::Default;
+		switch (Params.Type)
+		{
+		case ET66ButtonType::Primary:
+		case ET66ButtonType::Danger:
+		case ET66ButtonType::ToggleActive:
+			State = ET66FlatState::Selected;
+			break;
+		case ET66ButtonType::Success:
+			State = ET66FlatState::Ready;
+			break;
+		case ET66ButtonType::Neutral:
+		case ET66ButtonType::Row:
+		default:
+			State = ET66FlatState::Default;
+			break;
+		}
+
+		const TAttribute<FText> LabelAttribute = Params.DynamicLabel.IsBound()
+			? Params.DynamicLabel
+			: TAttribute<FText>(Params.Label);
+		const FMargin ContentPadding = (Params.Padding.Left < 0.f)
+			? FMargin(14.f, 8.f)
+			: Params.Padding;
+
+		const TSharedRef<SWidget> Button = MakeFlatButton(
+			State,
+			LabelAttribute,
+			Params.OnClicked,
+			nullptr,
+			nullptr,
+			ContentPadding,
+			Params.MinWidth,
+			Params.Height,
+			Params.IsEnabled,
+			Params.FontSize > 0 ? Params.FontSize : 16);
+
+		return SNew(SBox)
+			.Visibility(Params.Visibility)
+			[
+				Button
+			];
+	}
 	return FT66Style::MakeButton(Params);
 }
 
@@ -770,6 +881,26 @@ TSharedRef<SWidget> FT66FlatStyle::MakeHudPanel(
 	const FText& Title,
 	const FMargin& Padding)
 {
+	if (UseFriendslopGlobalChrome())
+	{
+		const TSharedRef<SWidget> PanelContent = Title.IsEmpty()
+			? Content
+			: StaticCastSharedRef<SWidget>(
+				SNew(SVerticalBox)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 4.f)
+				[
+					SNew(STextBlock)
+					.Text(Title)
+					.Font(MakeBoldFont(14))
+					.ColorAndOpacity(FLinearColor(0.86f, 0.68f, 0.34f, 1.f))
+					.Justification(ETextJustify::Center)
+				]
+				+ SVerticalBox::Slot().AutoHeight()
+				[
+					Content
+				]);
+		return FT66FriendslopStyle::MakePanel(ET66FlatState::Default, Padding, PanelContent);
+	}
 	return FT66Style::MakeHudPanel(Content, Title, Padding);
 }
 
@@ -777,6 +908,10 @@ TSharedRef<SWidget> FT66FlatStyle::MakeHudPanel(
 	const TSharedRef<SWidget>& Content,
 	const FMargin& Padding)
 {
+	if (UseFriendslopGlobalChrome())
+	{
+		return MakeHudPanel(Content, FText::GetEmpty(), Padding);
+	}
 	return FT66Style::MakeHudPanel(Content, Padding);
 }
 
@@ -1797,13 +1932,14 @@ TSharedRef<SWidget> FT66FlatStyle::MakeFlatTooltipIcon(
 		SizeHint,
 		Tag);
 
-	IconButton->SetToolTip(SNew(SToolTip)
-	[
-		MakeFlatTooltipContent(
-			TooltipText,
-			360.f,
-			Tag.IsNone() ? NAME_None : FName(*(Tag.ToString() + TEXT(".Tooltip"))))
-	]);
+	const FName TooltipId = Tag.IsNone() ? FName(TEXT("Flat.TooltipIcon.Tooltip")) : FName(*(Tag.ToString() + TEXT(".Tooltip")));
+	FT66TooltipPayload TooltipPayload = T66TooltipResolvers::MakeRichTooltip(
+		TooltipId,
+		ET66TooltipKind::Action,
+		FText::GetEmpty(),
+		TooltipText,
+		Tag);
+	T66TooltipSlate::SetTooltip(IconButton, TooltipPayload, true);
 
 	return IconButton;
 }
