@@ -62,6 +62,37 @@ process, leveling up the entire UI/HUD in one overnight run (+ follow-up night f
 One night = bible + full kit + top ~8-12 surfaces done properly; the tail inherits the
 new kit immediately (nothing looks old, just not yet bespoke). Follow-up night finishes.
 
+## Usage-limit continuity (agreed 2026-06-10)
+
+A Claude 5-hour usage wall mid-run must NOT end the night. Mechanism (no user action):
+
+1. **Disk-state continuity is the foundation**: contract + style bible + manifest +
+   heartbeat log + per-screen commits mean ANY fresh agent can resume exactly where the
+   run stopped. Nothing essential lives only in conversation context.
+2. **Resume sentinel (watchdog)**: at run start, create a recurring scheduled task
+   (every 30 min): read `overnight_log.md`; if heartbeat fresh (<35 min) -> exit
+   immediately (runner alive, near-zero cost); if stale -> runner died (usage wall or
+   crash) -> resume the run from contract + log + commits and take over the heartbeat.
+   While Claude usage is blocked the sentinel ticks fail too — the FIRST tick after the
+   window resets succeeds and auto-resumes. Worst-case dead time = reset + 30 min.
+   Delete the sentinel at run end (morning packet step).
+3. **Wall prediction**: the user's usage tray exposes live state at
+   `C:\Users\DoPra\AppData\Local\T66UsageTray\usage-cache.json` (FiveHourRemainingPercent,
+   FiveHourResetAtLocal). The runner checks it between screens; when low, checkpoint
+   cleanly (commit + log 'pausing at wall, sentinel resumes ~HH:MM') and kick the longest
+   EXTERNAL work (stage build / codex batch) right before the wall — OS processes keep
+   running through the block, results land on disk for the resume.
+4. **Mid-step death** is covered by existing guardrails: per-screen commits, idempotent
+   steps, revert+defer on repeated failure.
+
+PRECONDITIONS DISCOVERED 2026-06-10 from the tray:
+- Tray's Claude OAuth is EXPIRED ("Claude auth expired", data stale since 12:36) — user
+  should re-auth the tray before the night so wall prediction works (sentinel works
+  regardless).
+- **Codex weekly is at 93% used; resets 2026-06-11 00:24 local.** The night is
+  imagegen-heavy (dozens of Codex workers). Start the run AFTER that reset (or accept
+  early imagegen starvation: the run would degrade to deferring asset-needing screens).
+
 ## Standing constraints
 
 - Codex CLI account-backed imagegen only (no API keys, no browser).
