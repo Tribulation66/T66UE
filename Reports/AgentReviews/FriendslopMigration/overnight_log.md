@@ -69,4 +69,25 @@ SteamAchievements, SecretAchievements, TopBar, Tooltips, minimap (today).
     plate buttons (Primary/Danger/ToggleActive->red, Success->green, Neutral/Row->dark).
   - Deliberately NOT changed: `GetFlatOverlayBrush` (callers tint it with own dark colors —
     a textured plate would multiply to near-black; left white-brush; triage will catch spots).
-- Next: compile check, then stage + capture sweep.
+- [1b] Compile PASSED (direct UBT, exit 0). Flip committed: d4123783a.
+- [discovery] Shared modals + tooltips already Friendslop (SharedPrimitives plates wired in
+  T66ScreenSlateHelpers: modal panel @1628, modal buttons red/green/dark @1348-1353,
+  checkboxes @1360, tooltip @T66TooltipSlate:159). QuitConfirmation/PartyInvite/SavePreview
+  expected good without work.
+- [2] Staging flipped build; sweep script + triage-sheet tooling ready
+  (Saved/Codex/UI/FriendslopMigration/run_capture_sweep.ps1, make_triage_sheet.py).
+- [2] SWEEP ROUND 1 DONE: 25/27 captures (DailyDescent + PetSelection automation names
+  did not resolve - logged, not styled-blocked). Triage sheet:
+  Saved/Codex/UI/FriendslopMigration/round1/triage_sheet.png
+- [2] TRIAGE VERDICT: flip PASSES everywhere reviewed. Full-size reviewed: hud, casinoshop
+  (vendor - good), casinogambling, pause (excellent), idol (good), settings (good), crate,
+  lab, loadgame (good). Zero flip-caused big issues.
+  - casinogambling void+magenta frame: PRE-EXISTING (identical with -T66FlatLegacy;
+    evidence round1/casinogambling_LEGACY.png). Out of scope tonight.
+  - lab + crate capture modes did not open their overlays this run (world shows, no UI).
+    Capture-route quirk, not style; overlay chrome flips via same choke point as idol
+    (which passed). Logged for morning.
+  - Cosmetic nits (morning list): pause RESUME label rides high on red pill + bottom
+    button clips panel edge; settings wide dropdown bar stretches slice; loading screen
+    is plain text (no plate, low priority).
+- [3] Phase 3 start: targeted HUD custom chrome (score block, XP box) + then docs + smoke.
