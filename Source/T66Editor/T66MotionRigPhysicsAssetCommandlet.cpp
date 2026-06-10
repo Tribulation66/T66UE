@@ -121,6 +121,21 @@ int32 UT66MotionRigPhysicsAssetCommandlet::Main(const FString& Params)
 		PhysicsAsset->UpdateBoundsBodiesArray();
 	}
 
+	// Free every angular limit: the generated cone limits (~swing 30-45 deg)
+	// clamp the walk clip's thigh swing, so the legs could never articulate —
+	// feet dragged at bean speed (foot-slide ratio ~1.0 across captures).
+	// MotionRig stability comes from the SLERP drives, not limits; floppy
+	// over-rotation on impacts is part of the look.
+	for (UPhysicsConstraintTemplate* Constraint : PhysicsAsset->ConstraintSetup)
+	{
+		if (Constraint)
+		{
+			Constraint->DefaultInstance.SetAngularSwing1Limit(ACM_Free, 0.f);
+			Constraint->DefaultInstance.SetAngularSwing2Limit(ACM_Free, 0.f);
+			Constraint->DefaultInstance.SetAngularTwistLimit(ACM_Free, 0.f);
+		}
+	}
+
 	UE_LOG(LogT66MotionRigPA, Display, TEXT("MotionRig physics asset: %d bodies, %d constraints"),
 		PhysicsAsset->SkeletalBodySetups.Num(), PhysicsAsset->ConstraintSetup.Num());
 	for (USkeletalBodySetup* Setup : PhysicsAsset->SkeletalBodySetups)

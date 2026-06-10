@@ -80,6 +80,11 @@ public:
 	int32 DiagPelvisApplyCount = 0;
 	float DiagLastPelvisAccel = 0.f;
 
+	// Per-joint truth for one sample joint (thigh_l): how big the demanded
+	// swing is vs how far the simulated joint actually is from it.
+	float DiagThighDemandDeg = 0.f;
+	float DiagThighErrorDeg = 0.f;
+
 private:
 
 	// Ramp state

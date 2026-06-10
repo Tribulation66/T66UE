@@ -116,14 +116,29 @@ measurement, each now documented in the pipeline instructions:
 
 ## Punch list (next session)
 
-- **Tuning to taste** (the actual Fall Guys feel pass): the #1 knob is the
-  foot-skate (leg spring/damping sweep + walk-clip cadence vs ground speed);
-  then posture (spine/head springs — he stands slightly hunched), pelvis PD
-  kp, responsiveness. All CVars, no rebuilds, use `-ExtraExecCmds` on the
-  capture script.
-- Bean pitch/roll are LOCKED by design now (friction torque beats any sane
+- **Gait quality is the one open feel problem**, and it is now precisely
+  characterized: joint drives track perfectly at rest (thigh error 0.0° at
+  1° demand) but lag walk-cycle targets ~1:1 (error 35–48° at 30–38° demand)
+  regardless of stiffness ×7, free joint limits, slower cadence, or per-tick
+  drive-param flushes — all tested tonight with per-joint telemetry
+  ([MR_DIAG2] thighDemand/thighError in the log). Two live hypotheses:
+  (a) Chaos clamps/under-iterates angular drives at game tick rate — try
+  raising physics substeps and per-body solver iteration counts;
+  (b) the error/target frame convention is subtly off for non-identity
+  constraint reference frames — verify with the new CLOSE cameras (the
+  `closecam_*` captures finally make limbs readable) before trusting any
+  number. Use `closecam_impact_slomo` to study what the joints really do.
+- **Posture**: he walks pitched ~50° forward — the body is "towed" behind the
+  moving bean by the pelvis linear PD and tips. Couple the fix with gait:
+  pelvis angular authority (tested to Kp 1100 — insufficient alone), possibly
+  hold spine_01 in world space too, or add a small anticipatory lead to the
+  pelvis target. Charming as-is, but not the spec.
+- Bean pitch/roll are LOCKED by design (friction torque beats any sane
   upright spring ~8:1, measured). "Acceleration lean" should be re-sourced
   from pelvis orientation in the analyzer; the bean-lean axis reads 0 forever.
+- Foot-slide metric reads BODY capsule velocities — capsule offsets make it
+  pessimistic; consider reading foot BONE transforms from the Visual copy or
+  recalibrating the threshold once gait is visually right.
 - Head capsule placement from the auto-PA sits low — regenerate with
   per-bone orient/size overrides in the commandlet.
 - Fixed review cameras (side/front) lose the view-target tug-of-war with the

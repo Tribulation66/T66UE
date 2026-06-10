@@ -360,14 +360,16 @@ void UT66MotionRigScenario::SetFixedCamera(const FString& CameraName)
 	}
 
 	const FVector Origin = Pawn->GetActorLocation();
-	FVector Offset = FVector(0.f, -650.f, 110.f); // side (looking +Y)
+	// Close enough to read limbs (a 180cm character at ~3.5m fills ~40% of
+	// the frame height) — gait is unjudgeable from the original 6.5m offsets.
+	FVector Offset = FVector(0.f, -340.f, 95.f); // side (looking +Y)
 	if (Name == TEXT("front"))
 	{
-		Offset = FVector(650.f, 0.f, 110.f);
+		Offset = FVector(340.f, 0.f, 95.f);
 	}
 	else if (Name == TEXT("threequarter"))
 	{
-		Offset = FVector(480.f, -480.f, 220.f);
+		Offset = FVector(260.f, -260.f, 150.f);
 	}
 
 	if (!FixedCamera)

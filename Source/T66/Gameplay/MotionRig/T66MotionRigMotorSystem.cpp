@@ -16,7 +16,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66MotionRig, Log, All);
 // rubric axis 3 (MOTION_RIG.md §4). All live; the scenario harness re-applies
 // via RefreshBaseGains().
 static TAutoConsoleVariable<float> CVarMRMotorLegSpring(
-	TEXT("t66.MotionRig.Motor.LegSpring"), 2000000.f,
+	TEXT("t66.MotionRig.Motor.LegSpring"), 5000000.f,
 	TEXT("MotionRig leg joint drive spring."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorSpineSpring(
 	TEXT("t66.MotionRig.Motor.SpineSpring"), 2600000.f,
@@ -28,7 +28,7 @@ static TAutoConsoleVariable<float> CVarMRMotorHeadSpring(
 	TEXT("t66.MotionRig.Motor.HeadSpring"), 700000.f,
 	TEXT("MotionRig head joint drive spring."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorDampingRatio(
-	TEXT("t66.MotionRig.Motor.DampingFraction"), 0.07f,
+	TEXT("t66.MotionRig.Motor.DampingFraction"), 0.04f,
 	TEXT("Joint drive damping as a fraction of spring (lower = wobblier)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorGlobalScale(
 	TEXT("t66.MotionRig.Motor.GlobalScale"), 1.f,
@@ -335,6 +335,32 @@ void UT66MotionRigMotorSystem::TickDriveTargets()
 		const FQuat AnimLocal = LocalPose[Joint.ChildBoneIndex].GetRotation();
 		const FQuat TargetDelta = Joint.RefLocalRotationInverse * AnimLocal;
 		Constraint->SetAngularOrientationTarget(TargetDelta);
+		// Chaos does not flush a target-only write to the live joint (drives
+		// held the bind pose while targets swung — error tracked demand 1:1
+		// at every cadence). Re-pushing the drive params each tick flushes
+		// the whole angular drive block, target included.
+		const float Strength = Joint.BaseStrength
+			* CurrentAllScale
+			* (Joint.SetStrengthScaleArm > 0.f ? CurrentArmScale : 1.f)
+			* FMath::Max(0.f, CVarMRMotorGlobalScale.GetValueOnGameThread());
+		Constraint->SetAngularDriveParams(
+			Strength, Strength * FMath::Max(0.f, CVarMRMotorDampingRatio.GetValueOnGameThread()), 0.f);
+
+		if (Constraint->ConstraintBone1 == TEXT("thigh_l"))
+		{
+			DiagThighDemandDeg = FMath::RadiansToDegrees(2.f * FMath::Acos(FMath::Abs(TargetDelta.W)));
+			// Actual joint rotation: child body relative to parent body, as a
+			// delta from the same bind-pose reference.
+			const FBodyInstance* Child = Mesh->GetBodyInstance(TEXT("thigh_l"));
+			const FBodyInstance* Parent = Mesh->GetBodyInstance(TEXT("pelvis"));
+			if (Child && Parent)
+			{
+				const FQuat ActualLocal = Parent->GetUnrealWorldTransform().GetRotation().Inverse()
+					* Child->GetUnrealWorldTransform().GetRotation();
+				const FQuat Error = TargetDelta.Inverse() * (Joint.RefLocalRotationInverse * ActualLocal);
+				DiagThighErrorDeg = FMath::RadiansToDegrees(2.f * FMath::Acos(FMath::Abs(Error.W)));
+			}
+		}
 	}
 
 	TickPelvisFollow();

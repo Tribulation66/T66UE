@@ -26,7 +26,7 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66MotionRigPawn, Log, All);
 // rebuild. Naming mirrors MOTION_RIG.md section 5.
 // ---------------------------------------------------------------------------
 static TAutoConsoleVariable<float> CVarMRBeanMaxSpeed(
-	TEXT("t66.MotionRig.Bean.MaxSpeed"), 520.f,
+	TEXT("t66.MotionRig.Bean.MaxSpeed"), 430.f,
 	TEXT("MotionRig bean target ground speed (cm/s)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRBeanDriveGain(
 	TEXT("t66.MotionRig.Bean.DriveGain"), 8.0f,
@@ -68,7 +68,7 @@ static TAutoConsoleVariable<float> CVarMRBeanRestitution(
 	TEXT("t66.MotionRig.Bean.Restitution"), 0.32f,
 	TEXT("Bean physics-material restitution (bounciness knob — the T66 replacement for slipperiness)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRWalkReferenceSpeed(
-	TEXT("t66.MotionRig.Walk.ReferenceSpeed"), 520.f,
+	TEXT("t66.MotionRig.Walk.ReferenceSpeed"), 240.f,
 	TEXT("Ground speed (cm/s) the Walk clip was authored against; play rate scales with speed so feet match the floor."), ECVF_Default);
 
 // Isolation switches for physics debugging — read once at BeginPlay.
@@ -279,7 +279,7 @@ void AT66MotionRigPawn::BeginPlay()
 		TEXT("MotionRig pawn ready (physics bring-up deferred). MeshLoaded=%d"),
 		RigMesh->GetSkeletalMeshAsset() ? 1 : 0);
 
-	// One-shot diagnostic snapshot after the world settles.
+	// Repeating diagnostic snapshot (every 3s — captures per-state readings).
 	FTimerHandle DiagTimer;
 	GetWorldTimerManager().SetTimer(DiagTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
@@ -312,11 +312,10 @@ void AT66MotionRigPawn::BeginPlay()
 			PelvisAwake = PelvisBody->IsInstanceAwake() ? 1 : 0;
 		}
 		UE_LOG(LogT66MotionRigPawn, Display,
-			TEXT("[MR_DIAG2] pelvisBODYz=%.1f awake=%d motorTicks=%d pdApplies=%d lastPdAccel=%.0f blendPhysics=%d blendWeight=%.2f"),
+			TEXT("[MR_DIAG2] pelvisBODYz=%.1f awake=%d motorTicks=%d pdApplies=%d lastPdAccel=%.0f thighDemand=%.1fdeg thighError=%.1fdeg"),
 			PelvisBodyZ, PelvisAwake,
 			MotorSystem->DiagTickCount, MotorSystem->DiagPelvisApplyCount, MotorSystem->DiagLastPelvisAccel,
-			RigMesh->bBlendPhysics ? 1 : 0,
-			RigMesh->Bodies.Num() > 0 && RigMesh->Bodies[0] ? RigMesh->Bodies[0]->PhysicsBlendWeight : -1.f);
+			MotorSystem->DiagThighDemandDeg, MotorSystem->DiagThighErrorDeg);
 		UE_LOG(LogT66MotionRigPawn, Display,
 			TEXT("[MR_DIAG] beanSim=%d beanZ=%.1f meshBodies=%d/%d meshMass=%.1f constraints=%d slerpStiffness=%.0f pelvisZ=%.1f poseBones=%d posePelvisZ=%.1f poseAnim=%s grounded=%d state=%s"),
 			Bean->IsSimulatingPhysics() ? 1 : 0,
@@ -331,7 +330,7 @@ void AT66MotionRigPawn::BeginPlay()
 				? *GetNameSafe(PoseSource->GetSingleNodeInstance()->GetCurrentAsset()) : TEXT("none"),
 			bGrounded ? 1 : 0,
 			T66MotionRigStateName(MotionState));
-	}), 3.0f, false);
+	}), 3.0f, true);
 }
 
 void AT66MotionRigPawn::EnsureMeshSimulation()
