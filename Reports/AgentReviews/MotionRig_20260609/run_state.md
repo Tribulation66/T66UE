@@ -93,8 +93,21 @@ Interval + frame_%04d.png, auto-quits 1.5s after last frame) + direct entry
 CHECKPOINT COMMIT: "MotionRig: new physics-first hero motion foundation
 (side lane, Phase 0-2)" — 29 files, lane + 4 hooks only.
 
-Usage 21:57: 5h 61% (resets 23:40 — park briefly at 90% if needed),
-weekly 13% (stop at 77%). Burn ~17%/h of 5h pool.
+Usage 22:30: 5h 77% (resets 23:40 — at ~17%/h burn the 90% park threshold
+lands ~23:15-23:25; plan a clean checkpoint commit before then, park the
+few minutes to reset if needed). Weekly 16% (stop at 77% weekly).
+
+- walkcircle_v3: new DLL confirmed loaded (MR_DIAG strings in binary) but
+  pawn timers never fired + no telemetry + black world on chase cam too.
+  ROOT CAUSE FOUND: game mode logs "Spawning at PlayerStart: (0,0,0)" — pawns
+  spawn at MAP ORIGIN (inside the wipeout-arm hub cube) and the test-room flow
+  teleports them AFTERWARDS. v1's tiny body tolerated the interpenetration;
+  the full-size v2/v3 body detonates on depenetration before the teleport
+  (pawn destroyed → dead view target = black world, controller UI survives).
+  FIX: physics bring-up (mesh sim + pelvis constraint + motors) DEFERRED 0.75s
+  behind bPhysicsLive gate; bean velocities zeroed at bring-up. Also fixed
+  capture script copying STALE telemetry from older runs (freshness check).
+- walkcircle_v4: running (deferred bring-up build).
 
 Known environment facts: ANOTHER AGENT is actively running the cleanup
 program (Archive deletions in tree, occasional UnrealEditor DLL locks —

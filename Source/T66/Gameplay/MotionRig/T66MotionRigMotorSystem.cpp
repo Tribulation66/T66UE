@@ -13,35 +13,37 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66MotionRig, Log, All);
 // Base motor gains. DampingRatio < 1 is the wobble knob: the body overshoots
 // its pose target and settles — tune against rubric axis 3 (MOTION_RIG.md §4).
 // All live-tunable; the scenario harness re-applies via RefreshBaseGains().
+// Strength baselines re-tuned x8 after walkcircle_v5: the original values left
+// the body a heap on the floor (motors could not even hold the idle pose).
 static TAutoConsoleVariable<float> CVarMRMotorLegAngular(
-	TEXT("t66.MotionRig.Motor.LegAngularStrength"), 2200.f,
+	TEXT("t66.MotionRig.Motor.LegAngularStrength"), 18000.f,
 	TEXT("MotionRig parent-space angular strength for leg motors."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorLegDamping(
 	TEXT("t66.MotionRig.Motor.LegAngularDamping"), 0.8f,
 	TEXT("MotionRig leg motor damping ratio (1 = critical, <1 = wobbly)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorSpineAngular(
-	TEXT("t66.MotionRig.Motor.SpineAngularStrength"), 2600.f,
+	TEXT("t66.MotionRig.Motor.SpineAngularStrength"), 21000.f,
 	TEXT("MotionRig parent-space angular strength for spine motors."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorSpineDamping(
 	TEXT("t66.MotionRig.Motor.SpineAngularDamping"), 0.7f,
 	TEXT("MotionRig spine motor damping ratio."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorArmAngular(
-	TEXT("t66.MotionRig.Motor.ArmAngularStrength"), 900.f,
+	TEXT("t66.MotionRig.Motor.ArmAngularStrength"), 7000.f,
 	TEXT("MotionRig parent-space angular strength for arm motors (loose on purpose)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorArmDamping(
 	TEXT("t66.MotionRig.Motor.ArmAngularDamping"), 0.45f,
 	TEXT("MotionRig arm motor damping ratio (low = floppy secondary motion)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorHeadAngular(
-	TEXT("t66.MotionRig.Motor.HeadAngularStrength"), 700.f,
+	TEXT("t66.MotionRig.Motor.HeadAngularStrength"), 5500.f,
 	TEXT("MotionRig parent-space angular strength for the head motor."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorHeadDamping(
 	TEXT("t66.MotionRig.Motor.HeadAngularDamping"), 0.55f,
 	TEXT("MotionRig head motor damping ratio."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorPelvisLinear(
-	TEXT("t66.MotionRig.Motor.PelvisWorldLinearStrength"), 1200.f,
+	TEXT("t66.MotionRig.Motor.PelvisWorldLinearStrength"), 10000.f,
 	TEXT("MotionRig world-space linear strength holding the pelvis to the animated pose."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorPelvisAngular(
-	TEXT("t66.MotionRig.Motor.PelvisWorldAngularStrength"), 2400.f,
+	TEXT("t66.MotionRig.Motor.PelvisWorldAngularStrength"), 19000.f,
 	TEXT("MotionRig world-space angular strength orienting the pelvis to the animated pose."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorPelvisDamping(
 	TEXT("t66.MotionRig.Motor.PelvisWorldDamping"), 0.9f,

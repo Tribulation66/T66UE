@@ -49,6 +49,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "MotionRig")
 	void TriggerKnockdown(const FVector& LaunchVelocity);
 
+	// Scenario input override: the player controller's axis bindings fire every
+	// frame (usually zero) and would stomp scripted input. While active, the
+	// bridge's MotionRigSetMoveAxes calls are ignored.
+	void SetScenarioInputOverride(bool bActive);
+	void ScenarioSetMoveAxes(float ForwardValue, float RightValue);
+
 	// Telemetry surface for the scenario component.
 	ET66MotionRigState GetMotionState() const { return MotionState; }
 	bool IsBeanGrounded() const { return bGrounded; }
@@ -132,4 +138,9 @@ private:
 	bool bGetUpFromFront = true;
 	FVector PendingKnockdownLaunch = FVector::ZeroVector;
 	bool bAssetsLoaded = false;
+	// False until the deferred bring-up: the game mode spawns pawns at the map
+	// origin and teleports them later; simulating full-size bodies before the
+	// teleport detonates on depenetration.
+	bool bPhysicsLive = false;
+	bool bScenarioInputOverride = false;
 };

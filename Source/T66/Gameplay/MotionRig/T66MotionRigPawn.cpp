@@ -165,33 +165,54 @@ void AT66MotionRigPawn::BeginPlay()
 	Bean->SetPhysMaterialOverride(nullptr); // material params applied through body instance below
 	Bean->BodyInstance.SetMassOverride(BeanMassKg, true);
 
-	// Order is load-bearing: PlayAnimation/SetAnimationMode re-initializes the
-	// articulation and CLOBBERS an earlier SetSimulatePhysics(true) — the mesh
-	// silently goes kinematic and the bean ends up dangling from its own
-	// constraint. So: animation mode first, simulation re-asserted after every
-	// clip change (EnsureMeshSimulation), constraint and motors last.
+	// Order is load-bearing twice over:
+	// 1. PlayAnimation/SetAnimationMode re-initializes the articulation and
+	//    CLOBBERS an earlier SetSimulatePhysics(true) — simulation is
+	//    re-asserted after every clip change (EnsureMeshSimulation).
+	// 2. The game mode spawns pawns at the map origin and the test-room flow
+	//    teleports them to the real start AFTERWARDS. Full-size simulated
+	//    bodies brought up at the origin interpenetrate the room geometry and
+	//    the depenetration impulse destroys the pawn. So the physics bring-up
+	//    (mesh simulation + pelvis constraint) is DEFERRED past the spawn/
+	//    teleport window; until then the pawn is a bean with a kinematic,
+	//    clip-animated mesh.
 	if (RigMesh->GetSkeletalMeshAsset())
 	{
 		RigMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 	}
 
-	if (CVarMRDebugEnableMotors.GetValueOnGameThread() != 0)
-	{
-		MotorSystem->InitializeMotors(RigMesh, PhysicsControl);
-	}
-
 	SetMotionState(ET66MotionRigState::Idle);
-	EnsureMeshSimulation();
 
-	if (RigMesh->GetSkeletalMeshAsset() && CVarMRDebugEnableConstraint.GetValueOnGameThread() != 0)
+	FTimerHandle BringUpTimer;
+	GetWorldTimerManager().SetTimer(BringUpTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
 	{
-		ReattachPelvisConstraint();
-	}
+		bPhysicsLive = true;
+		Bean->SetPhysicsLinearVelocity(FVector::ZeroVector);
+		Bean->SetPhysicsAngularVelocityInRadians(FVector::ZeroVector);
+
+		EnsureMeshSimulation();
+
+		if (CVarMRDebugEnableMotors.GetValueOnGameThread() != 0)
+		{
+			MotorSystem->InitializeMotors(RigMesh, PhysicsControl);
+			MotorSystem->ApplyStateProfile(MotionState);
+		}
+
+		if (RigMesh->GetSkeletalMeshAsset() && CVarMRDebugEnableConstraint.GetValueOnGameThread() != 0)
+		{
+			ReattachPelvisConstraint();
+		}
+
+		UE_LOG(LogT66MotionRigPawn, Display,
+			TEXT("[MR_BRINGUP] physics live at %s (meshSim=%d motors=%d)"),
+			*Bean->GetComponentLocation().ToCompactString(),
+			RigMesh->GetSkeletalMeshAsset() && RigMesh->IsSimulatingPhysics(TEXT("pelvis")) ? 1 : 0,
+			MotorSystem->AreMotorsInitialized() ? 1 : 0);
+	}), 0.75f, false);
 
 	UE_LOG(LogT66MotionRigPawn, Display,
-		TEXT("MotionRig pawn ready. MeshLoaded=%d MotorsInitialized=%d"),
-		RigMesh->GetSkeletalMeshAsset() ? 1 : 0,
-		MotorSystem->AreMotorsInitialized() ? 1 : 0);
+		TEXT("MotionRig pawn ready (physics bring-up deferred). MeshLoaded=%d"),
+		RigMesh->GetSkeletalMeshAsset() ? 1 : 0);
 
 	// One-shot diagnostic snapshot after the world settles.
 	FTimerHandle DiagTimer;
@@ -227,7 +248,7 @@ void AT66MotionRigPawn::BeginPlay()
 
 void AT66MotionRigPawn::EnsureMeshSimulation()
 {
-	if (!RigMesh->GetSkeletalMeshAsset() || CVarMRDebugEnableMeshSim.GetValueOnGameThread() == 0)
+	if (!bPhysicsLive || !RigMesh->GetSkeletalMeshAsset() || CVarMRDebugEnableMeshSim.GetValueOnGameThread() == 0)
 	{
 		return;
 	}
@@ -297,6 +318,26 @@ FVector AT66MotionRigPawn::GetBeanVelocity() const
 // ---------------------------------------------------------------------------
 
 void AT66MotionRigPawn::MotionRigSetMoveAxes(const float ForwardValue, const float RightValue)
+{
+	if (bScenarioInputOverride)
+	{
+		return; // scripted scenario owns the stick
+	}
+	MoveForwardValue = FMath::Clamp(ForwardValue, -1.f, 1.f);
+	MoveRightValue = FMath::Clamp(RightValue, -1.f, 1.f);
+}
+
+void AT66MotionRigPawn::SetScenarioInputOverride(const bool bActive)
+{
+	bScenarioInputOverride = bActive;
+	if (!bActive)
+	{
+		MoveForwardValue = 0.f;
+		MoveRightValue = 0.f;
+	}
+}
+
+void AT66MotionRigPawn::ScenarioSetMoveAxes(const float ForwardValue, const float RightValue)
 {
 	MoveForwardValue = FMath::Clamp(ForwardValue, -1.f, 1.f);
 	MoveRightValue = FMath::Clamp(RightValue, -1.f, 1.f);

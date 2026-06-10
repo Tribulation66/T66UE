@@ -538,18 +538,10 @@ FBX_COMMON = dict(
 )
 
 
-def scale_for_unreal(mesh, arm_obj):
-    """Blender works in meters; UE in centimeters. Bake a x100 scale into the
-    mesh and armature so the FBX imports 1:1 at 180cm with no importer unit
-    magic. Pose-bone rotation keyframes are scale-invariant, so clips made
-    before this remain valid."""
-    bpy.ops.object.select_all(action="DESELECT")
-    mesh.select_set(True)
-    arm_obj.select_set(True)
-    bpy.context.view_layer.objects.active = arm_obj
-    for obj in (mesh, arm_obj):
-        obj.scale = (100.0, 100.0, 100.0)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+# NOTE on units (measured, not assumed): the FBX exporter already converts
+# Blender meters to FBX centimeters (x100 in the data). A 1.80m scene exports
+# as 180-unit geometry, which UE imports as 180cm. Baking an additional x100
+# produced an 18,000-unit kaiju (walkcircle_v4 evidence). Do NOT scale.
 
 
 def export_skeletal_fbx(mesh, arm_obj, out_path):
@@ -698,16 +690,14 @@ def main():
     skin_mesh(mesh, arm_obj, bone_layout)
     qa_weights = weights_qa(mesh)
 
-    # Author clips and shoot proofs at meter scale (camera offsets are meters),
-    # THEN bake the x100 UE scale and export everything.
+    # Author clips and shoot proofs at meter scale, then export (the FBX
+    # exporter handles the m->cm unit conversion — see units NOTE above).
     clip_actions = {}
     for clip_name, frames, keyer in CLIPS:
         clip_actions[clip_name] = (make_action(arm_obj, clip_name, frames, keyer), frames)
 
     if not args.no_render:
         render_proofs(mesh, arm_obj, bone_layout, proof_dir)
-
-    scale_for_unreal(mesh, arm_obj)
 
     skeletal_fbx = os.path.join(out_dir, "SK_MotionRig_Hero1.fbx")
     export_skeletal_fbx(mesh, arm_obj, skeletal_fbx)

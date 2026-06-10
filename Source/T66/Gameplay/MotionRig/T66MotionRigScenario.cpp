@@ -139,7 +139,7 @@ void UT66MotionRigScenario::BuildScenario(const FString& ScenarioName)
 	};
 	auto Axes = [](const float F, const float R)
 	{
-		return [F, R](AT66MotionRigPawn& Pawn) { Pawn.MotionRigSetMoveAxes(F, R); };
+		return [F, R](AT66MotionRigPawn& Pawn) { Pawn.ScenarioSetMoveAxes(F, R); };
 	};
 
 	float T = 0.f;
@@ -198,6 +198,7 @@ void UT66MotionRigScenario::StartScenario(const FString& ScenarioName)
 	NextStepIndex = 0;
 	ScenarioClock = 0.f;
 	bRunning = true;
+	Pawn->SetScenarioInputOverride(true);
 
 	TelemetryRows.Reset();
 	TelemetryRows.Add(TEXT("t,state,grounded,bean_x,bean_y,bean_z,bean_vx,bean_vy,bean_vz,bean_pitch,bean_roll,pelvis_x,pelvis_y,pelvis_z,pelvis_speed,foot_l_speed,foot_r_speed,hand_r_z,head_z"));
@@ -225,6 +226,19 @@ void UT66MotionRigScenario::TickComponent(
 	}
 
 	ScenarioClock += DeltaTime;
+
+	// The T66 controller restores its own view target opportunistically —
+	// re-assert the review camera while a scenario runs.
+	if (FixedCamera)
+	{
+		if (APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr)
+		{
+			if (PC->GetViewTarget() != FixedCamera)
+			{
+				PC->SetViewTargetWithBlend(FixedCamera, 0.f);
+			}
+		}
+	}
 
 	while (NextStepIndex < Steps.Num() && Steps[NextStepIndex].Time <= ScenarioClock)
 	{
@@ -282,6 +296,10 @@ void UT66MotionRigScenario::RecordTelemetryRow(AT66MotionRigPawn& Pawn, const fl
 void UT66MotionRigScenario::FinishScenario()
 {
 	bRunning = false;
+	if (AT66MotionRigPawn* Pawn = GetRigPawn())
+	{
+		Pawn->SetScenarioInputOverride(false);
+	}
 
 	const FString Directory = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("MotionRig"));
 	IFileManager::Get().MakeDirectory(*Directory, true);

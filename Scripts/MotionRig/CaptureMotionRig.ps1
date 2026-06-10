@@ -81,6 +81,7 @@ $args = @(
 Write-Host "[MotionRig] Capturing scenario '$Scenario' camera '$Camera' -> $outDir"
 Write-Host "[MotionRig] Frames: $FrameCount @ ${FrameInterval}s (scenario ${lengthSeconds}s)"
 
+$captureStart = Get-Date
 $process = Start-Process -FilePath $EditorExe -ArgumentList $args -PassThru
 if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
     Write-Warning "[MotionRig] Timeout after ${TimeoutSeconds}s — terminating capture process."
@@ -135,16 +136,17 @@ elseif (-not $ffmpeg) {
     $KeepFrames = $true
 }
 
-# --- collect the newest telemetry CSV for this scenario ---
+# --- collect the telemetry CSV written by THIS run (never an older one) ---
 $telemetryDir = "C:\UE\T66\Saved\MotionRig"
 $telemetry = Get-ChildItem -LiteralPath $telemetryDir -Filter "telemetry_${Scenario}_*.csv" -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -gt $captureStart } |
     Sort-Object LastWriteTime -Descending | Select-Object -First 1
 if ($telemetry) {
     Copy-Item $telemetry.FullName (Join-Path $outDir "telemetry.csv") -Force
     Write-Host "[MotionRig] Telemetry: $(Join-Path $outDir 'telemetry.csv')"
 }
 else {
-    Write-Warning "[MotionRig] No telemetry CSV found for scenario '$Scenario' under $telemetryDir."
+    Write-Warning "[MotionRig] NO TELEMETRY from this run (scenario never finished?) — nothing copied."
 }
 
 if (-not $KeepFrames) {
