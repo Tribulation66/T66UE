@@ -13,7 +13,6 @@
 #include "Core/T66RunStateSubsystem.h"
 #include "Core/T66SessionSubsystem.h"
 #include "Core/T66SaveSubsystem.h"
-#include "Core/Shutdown/T66ShutdownSubsystem.h"
 #include "Core/T66UITexturePoolSubsystem.h"
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66SessionPlayerState.h"
@@ -25,7 +24,6 @@
 
 #include "Data/T66DataTypes.h"
 #include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerState.h"
 #include "Engine/DataTable.h"
@@ -282,23 +280,26 @@ void UT66PauseMenuScreen::OnSaveAndQuitClicked()
 
 void UT66PauseMenuScreen::OnQuitClicked()
 {
-	AT66PlayerController* PC = GetT66PlayerController();
-	if (PC)
+	// QUIT abandons the run (no save) and returns to the MAIN MENU — it does
+	// not close the application. Same recipe as the run summary's main-menu
+	// button; desktop exit lives on the main menu's own quit flow.
+	UGameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+	if (UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr)
+	{
+		RunState->BeginNewRun();
+	}
+
+	if (AT66PlayerController* PC = GetT66PlayerController())
 	{
 		PC->SetPause(false);
 	}
 
-	if (UGameInstance* GI = UGameplayStatics::GetGameInstance(this))
+	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
 	{
-		if (UT66ShutdownSubsystem* Shutdown = GI->GetSubsystem<UT66ShutdownSubsystem>())
-		{
-			Shutdown->RequestQuitGame(ET66ShutdownReason::UserQuit, 0);
-			return;
-		}
+		T66GI->PendingFrontendScreen = ET66ScreenType::MainMenu;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[Shutdown] Pause menu quit fallback to UKismetSystemLibrary::QuitGame because UT66ShutdownSubsystem is unavailable."));
-	UKismetSystemLibrary::QuitGame(this, PC, EQuitPreference::Quit, false);
+	UT66GameInstance::TransitionToFrontendLevel(this);
 }
 
 void UT66PauseMenuScreen::OnRestartClicked()
