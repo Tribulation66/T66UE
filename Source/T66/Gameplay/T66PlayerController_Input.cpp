@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/MotionRig/T66MotionRigInputReceiver.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -33,7 +34,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerInput, Log, All);
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66GameInstance.h"
@@ -671,7 +671,13 @@ void AT66PlayerController::HandleZoom(float Value)
 	// Adjust camera boom length on the possessed hero (third-person zoom)
 	APawn* MyPawn = GetPawn();
 	if (!MyPawn) return;
-	
+
+	if (IT66MotionRigInputReceiver* MotionRig = Cast<IT66MotionRigInputReceiver>(MyPawn))
+	{
+		MotionRig->MotionRigZoomCamera(Value);
+		return;
+	}
+
 	AT66HeroBase* Hero = Cast<AT66HeroBase>(MyPawn);
 	if (Hero && Hero->CameraBoom)
 	{

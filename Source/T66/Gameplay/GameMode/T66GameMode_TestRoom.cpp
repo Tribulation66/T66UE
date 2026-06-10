@@ -298,6 +298,10 @@ namespace T66TestRoom
 		// motion analysis in the Test Room compares 1:1 against the real game.
 		constexpr float TestRoomInteriorHeight = 1200.f;
 		constexpr float TestRoomWallThickness = 120.f;
+		// Maze ceilings are NOT at wall top: they're the underside of the floor
+		// above (FloorSpacing 2600 - FloorThickness 320). A wall-top ceiling
+		// swallowed the gameplay camera in ceiling tubes.
+		constexpr float TestRoomCeilingClearance = 2280.f;
 		constexpr float TestRoomCubeSize = 100.f;
 		constexpr float TestRoomSideRoomOffset = TestRoomCenterHalfExtent + TestRoomCorridorLength + TestRoomSideRoomHalfExtent;
 		constexpr float TestRoomCorridorCenterOffset = TestRoomCenterHalfExtent + (TestRoomCorridorLength * 0.5f);
@@ -1843,7 +1847,7 @@ namespace T66TestRoom
 			FVector2D(TestRoomCorridorLength * 0.5f, TestRoomCorridorHalfWidth));
 
 		const float FloorZ = -TestRoomWallThickness * 0.5f;
-		const float CeilingZ = TestRoomInteriorHeight + (TestRoomWallThickness * 0.5f);
+		const float CeilingZ = TestRoomCeilingClearance + (TestRoomWallThickness * 0.5f);
 		const float WallOffset = TestRoomWallThickness * 0.5f;
 		const float DoorHalfWidth = TestRoomCorridorHalfWidth;
 
@@ -1858,7 +1862,7 @@ namespace T66TestRoom
 		auto SpawnCeilingWithTheme = [&](const TCHAR* Label, const FBox2D& Box)
 		{
 			const bool bThemed = CVarT66TestRoomShowCeiling.GetValueOnGameThread() != 0
-				&& T66TowerMapTerrain::SpawnThemedCeilingVisual(World, Box, TestRoomInteriorHeight, ThemedSurfaceTags());
+				&& T66TowerMapTerrain::SpawnThemedCeilingVisual(World, Box, TestRoomCeilingClearance, ThemedSurfaceTags());
 			SpawnRectSurface(World, CubeMesh, CeilingMaterial, Label, Box, CeilingZ, TestRoomWallThickness, bThemed);
 		};
 

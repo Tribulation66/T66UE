@@ -495,6 +495,17 @@ void AT66MotionRigPawn::MotionRigDivePressed()
 	SetMotionState(ET66MotionRigState::Dive);
 }
 
+void AT66MotionRigPawn::MotionRigZoomCamera(const float AxisValue)
+{
+	// Same zoom feel and range as the regular hero camera (HandleZoom in
+	// T66PlayerController_Input.cpp).
+	constexpr float ZoomSpeed = 120.f;
+	constexpr float MinLength = 350.f;
+	constexpr float MaxLength = 2800.f;
+	CameraBoom->TargetArmLength = FMath::Clamp(
+		CameraBoom->TargetArmLength - (AxisValue * ZoomSpeed), MinLength, MaxLength);
+}
+
 void AT66MotionRigPawn::TriggerKnockdown(const FVector& LaunchVelocity)
 {
 	if (MotionState == ET66MotionRigState::Knockdown)

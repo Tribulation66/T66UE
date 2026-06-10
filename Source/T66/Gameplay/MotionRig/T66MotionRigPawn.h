@@ -43,6 +43,7 @@ public:
 	virtual void MotionRigJumpPressed() override;
 	virtual void MotionRigJumpReleased() override;
 	virtual void MotionRigDivePressed() override;
+	virtual void MotionRigZoomCamera(float AxisValue) override;
 
 	// Standardized impact entry (scenario harness + future gameplay routing).
 	// LaunchVelocity is a velocity change applied coherently to the whole body.
