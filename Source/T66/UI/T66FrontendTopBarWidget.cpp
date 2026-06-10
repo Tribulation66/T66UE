@@ -1000,17 +1000,19 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			}
 		};
 
-		const FNormalizedTopBarRect OuterRect{ 0.000f, 0.000f, 1.000f, 0.117f };
-		const float TopBarControlY = 0.026f;
-		const float TopBarControlH = 0.070f;
-		const FNormalizedTopBarRect SettingsRect{ 0.018f, TopBarControlY, 0.052f, TopBarControlH };
-		const FNormalizedTopBarRect LanguageRect{ 0.079f, TopBarControlY, 0.052f, TopBarControlH };
-		const FNormalizedTopBarRect AccountRect{ 0.142f, TopBarControlY, 0.155f, TopBarControlH };
-		const FNormalizedTopBarRect ProfileRect{ 0.313f, TopBarControlY, 0.171f, TopBarControlH };
-		const FNormalizedTopBarRect PowerUpRect{ 0.497f, TopBarControlY, 0.157f, TopBarControlH };
-		const FNormalizedTopBarRect AchievementsRect{ 0.667f, TopBarControlY, 0.165f, TopBarControlH };
-		const FNormalizedTopBarRect TicketRect{ 0.830f, TopBarControlY, 0.095f, TopBarControlH };
-		const FNormalizedTopBarRect QuitRect{ 0.934f, TopBarControlY, 0.052f, TopBarControlH };
+		// UI Reimagine pass 2: geometry measured from the approved v7 reference
+		// (1536x1024 basis, normalized). See approvals/MainMenu/geometry.md.
+		const FNormalizedTopBarRect OuterRect{ 0.000f, 0.000f, 1.000f, 0.074f };
+		const float TopBarControlY = 0.012f;
+		const float TopBarControlH = 0.050f;
+		const FNormalizedTopBarRect SettingsRect{ 0.014f, TopBarControlY, 0.030f, TopBarControlH };
+		const FNormalizedTopBarRect LanguageRect{ 0.050f, TopBarControlY, 0.030f, TopBarControlH };
+		const FNormalizedTopBarRect AccountRect{ 0.088f, 0.003f, 0.046f, 0.068f };
+		const FNormalizedTopBarRect ProfileRect{ 0.146f, TopBarControlY, 0.136f, TopBarControlH };
+		const FNormalizedTopBarRect PowerUpRect{ 0.294f, TopBarControlY, 0.120f, TopBarControlH };
+		const FNormalizedTopBarRect AchievementsRect{ 0.426f, TopBarControlY, 0.130f, TopBarControlH };
+		const FNormalizedTopBarRect TicketRect{ 0.568f, TopBarControlY, 0.062f, TopBarControlH };
+		const FNormalizedTopBarRect QuitRect{ 0.948f, TopBarControlY, 0.034f, TopBarControlH };
 
 		const float IconSize = 42.f;
 		auto MakeTaggedIconWidget = [](const TSharedRef<SWidget>& IconContent, const FVector2D& Size, const FName Tag) -> TSharedRef<SWidget>
@@ -1242,20 +1244,24 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		{
 			const bool bSelected = Item.bIsSelected.Get(false);
 			const ET66FlatState RenderState = bSelected ? ET66FlatState::Selected : Item.State;
-			CategoryButtons.Add(FT66FriendslopStyle::MakeButton(
+			CategoryButtons.Add(FT66FriendslopStyle::MakeCustomToggleGroupButton(
+				FString(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/")) + (RenderState == ET66FlatState::Selected ? TEXT("tab_selected.png") : TEXT("tab_idle.png")),
+				FMargin(0.14f, 0.26f),
+				FVector2D(380.f, 100.f),
 				RenderState,
-				Item.Label,
+				SNew(STextBlock)
+				.Text(Item.Label)
+				.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(Item.FontSize, true))
+				.ColorAndOpacity(FT66FriendslopStyle::TextColorForState(RenderState))
+				.Justification(ETextJustify::Center)
+				.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
 				Item.OnClicked,
-				Item.OptionalLeftIcon,
-				Item.OptionalRightIcon,
 				Item.Padding,
 				Item.MinWidth,
 				Item.Height,
 				Item.IsEnabled,
-				Item.FontSize,
 				Item.Tag,
-				CategoryGroup.GroupName,
-				RenderState == ET66FlatState::Selected ? ET66FriendslopChrome::TopbarTabRedRound06 : ET66FriendslopChrome::TopbarTabDarkRound06));
+				CategoryGroup.GroupName));
 		}
 
 		const TSharedRef<SWidget> SettingsButtonWidget = MakeIconActionButton(
@@ -1359,13 +1365,15 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			.Alignment(FVector2D(0.f, 0.f))
 			.Offset(OuterRect.ToReferenceOffset())
 			[
-				FT66FriendslopStyle::MakePanel(
+				FT66FriendslopStyle::MakeCustomPanel(
+					TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/bar_strip.png"),
+					FMargin(0.030f, 0.24f),
+					FVector2D(1536.f, 76.f),
 					ET66FlatState::Default,
 					FMargin(0.f),
 					SNew(SBox),
 					nullptr,
-					TEXT("FrontendTopBar.OuterContainer"),
-					ET66FriendslopChrome::TopbarStripRound06)
+					TEXT("FrontendTopBar.OuterContainer"))
 			];
 
 		auto AddControl = [&TopBarCanvas](const FNormalizedTopBarRect& Rect, const TSharedRef<SWidget>& Widget)

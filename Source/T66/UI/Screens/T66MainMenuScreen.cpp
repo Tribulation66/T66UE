@@ -641,9 +641,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		{
 			const int32 SubtitleFontSize = FitMainMenuLabelFontSize(
 				Text,
-				36,
-				28,
-				620.f,
+				30,
+				22,
+				500.f,
 				[](const int32 FontSize)
 				{
 					return T66RuntimeUIFontAccess::MakeFriendslopFont(FontSize, true);
@@ -816,14 +816,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 
 	auto IsDailyDescentAvailable = [this]() -> bool
 	{
-		if (!FT66ShelvedFeatureGate::IsDailyDescentEnabled())
-		{
-			return false;
-		}
-
-		const UGameInstance* GI = UGameplayStatics::GetGameInstance(this);
-		const UT66ReleaseVariantSubsystem* ReleaseVariant = GI ? GI->GetSubsystem<UT66ReleaseVariantSubsystem>() : nullptr;
-		return !ReleaseVariant || !ReleaseVariant->IsDemoModeActive();
+		// UI Reimagine pass 2: Daily Dungeon is part of the approved menu design and now
+		// shows in demo builds too (the screen itself still enforces its own gating).
+		return FT66ShelvedFeatureGate::IsDailyDescentEnabled();
 	};
 
 	auto MakeCtaButton = [&](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const ET66FlatState State, const float Width, const float Height, const FName InTag, const FSlateBrush* LeftIcon = nullptr, const FSlateBrush* RightIcon = nullptr, const bool bEnabled = true) -> TSharedRef<SWidget>
