@@ -3,6 +3,7 @@
 #include "UI/Style/T66FriendslopStyle.h"
 
 #include "Engine/Texture2D.h"
+#include "HAL/IConsoleManager.h"
 #include "Misc/Paths.h"
 #include "Styling/CoreStyle.h"
 #include "UI/Style/T66RuntimeUIFontAccess.h"
@@ -17,6 +18,12 @@
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66FriendslopStyle, Log, All);
 
+static TAutoConsoleVariable<int32> CVarT66UICandyKit(
+	TEXT("T66.UI.CandyKit"),
+	1,
+	TEXT("When 1 (default), Friendslop chrome prefers the bright candy plate kit under FriendslopStyle/Candy/ (falls back per-asset to the classic plates when a candy asset is missing). 0 restores the classic Friendslop look instantly."),
+	ECVF_Default);
+
 namespace
 {
 	struct FFriendslopChromeDescriptor
@@ -26,6 +33,21 @@ namespace
 		ESlateBrushDrawType::Type DrawAs;
 		FVector2D FallbackSize;
 		FLinearColor FallbackTint;
+	};
+
+	bool UseCandyKit()
+	{
+		return CVarT66UICandyKit.GetValueOnGameThread() > 0;
+	}
+
+	// Candy kit twin of the classic descriptor table. Same enum order. A null FileName
+	// means the candy kit has no dedicated plate for that chrome yet — classic is used.
+	// Margins are tuned per generated plate; FallbackSize mirrors the source PNG.
+	struct FCandyChromeDescriptor
+	{
+		const TCHAR* FileName;
+		FMargin Margin;
+		ESlateBrushDrawType::Type DrawAs;
 	};
 
 	struct FFriendslopBrushEntry
@@ -95,7 +117,43 @@ namespace
 		return Descriptors[0];
 	}
 
+	// Candy filenames for the core shared chrome. Tail enum entries (screen-specific
+	// Round06 plates) intentionally have no candy twin yet; they fall back to classic.
+	const FCandyChromeDescriptor* GetCandyDescriptor(const ET66FriendslopChrome Chrome)
+	{
+		static const TMap<uint8, FCandyChromeDescriptor> CandyDescriptors = {
+			{ static_cast<uint8>(ET66FriendslopChrome::PanelLargeDark),      { TEXT("panel_large.png"),      FMargin(0.16f, 0.18f, 0.16f, 0.18f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::ButtonLongDark),      { TEXT("button_secondary.png"), FMargin(0.18f, 0.26f, 0.18f, 0.26f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::ButtonPrimaryRed),    { TEXT("button_primary.png"),   FMargin(0.18f, 0.26f, 0.18f, 0.26f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::ButtonActionGreen),   { TEXT("button_action.png"),    FMargin(0.18f, 0.26f, 0.18f, 0.26f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::IconButtonDark),      { TEXT("icon_button.png"),      FMargin(0.f), ESlateBrushDrawType::Image } },
+			{ static_cast<uint8>(ET66FriendslopChrome::PillDark),            { TEXT("pill.png"),             FMargin(0.28f, 0.32f, 0.28f, 0.32f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::RowDark),             { TEXT("row.png"),              FMargin(0.12f, 0.30f, 0.12f, 0.30f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::RowSelectedRed),      { TEXT("row_selected.png"),     FMargin(0.12f, 0.30f, 0.12f, 0.30f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::PartySlotDark),       { TEXT("slot.png"),             FMargin(0.24f, 0.24f, 0.24f, 0.24f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::SmallSquareDark),     { TEXT("small_square.png"),     FMargin(0.f), ESlateBrushDrawType::Image } },
+			{ static_cast<uint8>(ET66FriendslopChrome::CheckboxCheckedRed),  { TEXT("checkbox_checked.png"), FMargin(0.f), ESlateBrushDrawType::Image } },
+			{ static_cast<uint8>(ET66FriendslopChrome::CheckboxEmptyDark),   { TEXT("checkbox_empty.png"),   FMargin(0.f), ESlateBrushDrawType::Image } },
+			{ static_cast<uint8>(ET66FriendslopChrome::DropdownDarkRound06), { TEXT("dropdown.png"),         FMargin(0.14f, 0.26f, 0.14f, 0.26f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::CheckboxCheckedRound06), { TEXT("checkbox_checked.png"), FMargin(0.f), ESlateBrushDrawType::Image } },
+			{ static_cast<uint8>(ET66FriendslopChrome::CheckboxEmptyRound06),   { TEXT("checkbox_empty.png"),   FMargin(0.f), ESlateBrushDrawType::Image } },
+			{ static_cast<uint8>(ET66FriendslopChrome::TableHeaderBandRound06), { TEXT("header_band.png"),    FMargin(0.08f, 0.24f, 0.08f, 0.24f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::RankingRowRedRound06),   { TEXT("row_selected.png"),   FMargin(0.10f, 0.24f, 0.10f, 0.24f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::TopbarTabDarkRound06),   { TEXT("tab_idle.png"),       FMargin(0.14f, 0.24f, 0.14f, 0.24f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::TopbarTabRedRound06),    { TEXT("tab_selected.png"),   FMargin(0.14f, 0.24f, 0.14f, 0.24f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::LeaderboardTabDarkRound06), { TEXT("tab_idle.png"),     FMargin(0.14f, 0.26f, 0.14f, 0.26f), ESlateBrushDrawType::Box } },
+			{ static_cast<uint8>(ET66FriendslopChrome::LeaderboardTabRedRound06),  { TEXT("tab_selected.png"), FMargin(0.14f, 0.26f, 0.14f, 0.26f), ESlateBrushDrawType::Box } },
+		};
+		return CandyDescriptors.Find(static_cast<uint8>(Chrome));
+	}
+
 	FFriendslopBrushEntry& GetBrushEntry(const ET66FriendslopChrome Chrome)
+	{
+		static TMap<uint8, FFriendslopBrushEntry> Entries;
+		return Entries.FindOrAdd(static_cast<uint8>(Chrome));
+	}
+
+	FFriendslopBrushEntry& GetCandyBrushEntry(const ET66FriendslopChrome Chrome)
 	{
 		static TMap<uint8, FFriendslopBrushEntry> Entries;
 		return Entries.FindOrAdd(static_cast<uint8>(Chrome));
@@ -135,6 +193,55 @@ namespace
 
 const FSlateBrush* FT66FriendslopStyle::GetChromeBrush(const ET66FriendslopChrome Chrome)
 {
+	// Candy kit first: per-asset override with graceful per-asset fallback to classic.
+	if (UseCandyKit())
+	{
+		if (const FCandyChromeDescriptor* Candy = GetCandyDescriptor(Chrome))
+		{
+			FFriendslopBrushEntry& CandyEntry = GetCandyBrushEntry(Chrome);
+			if (!CandyEntry.Brush.IsValid())
+			{
+				CandyEntry.Brush = MakeShared<FSlateBrush>();
+				CandyEntry.Brush->DrawAs = Candy->DrawAs;
+				CandyEntry.Brush->Margin = Candy->Margin;
+				CandyEntry.Brush->Tiling = ESlateBrushTileType::NoTile;
+			}
+			if (!CandyEntry.bAttemptedLoad)
+			{
+				CandyEntry.bAttemptedLoad = true;
+				const FString CandyRelativePath = FString::Printf(
+					TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Candy/%s"),
+					Candy->FileName);
+				for (const FString& CandidatePath : T66RuntimeUITextureAccess::BuildLooseTextureCandidatePaths(CandyRelativePath))
+				{
+					if (!FPaths::FileExists(CandidatePath))
+					{
+						continue;
+					}
+					if (UTexture2D* Texture = T66RuntimeUITextureAccess::ImportFileTexture(
+						CandidatePath,
+						TextureFilter::TF_Trilinear,
+						true,
+						TEXT("FriendslopCandy")))
+					{
+						CandyEntry.Texture.Reset(Texture);
+						break;
+					}
+				}
+			}
+			if (CandyEntry.Texture.IsValid())
+			{
+				CandyEntry.Brush->SetResourceObject(CandyEntry.Texture.Get());
+				CandyEntry.Brush->ImageSize = FVector2D(
+					FMath::Max(1.f, static_cast<float>(CandyEntry.Texture->GetSizeX())),
+					FMath::Max(1.f, static_cast<float>(CandyEntry.Texture->GetSizeY())));
+				CandyEntry.Brush->TintColor = FSlateColor(FLinearColor::White);
+				return CandyEntry.Brush.Get();
+			}
+			// fall through to classic when the candy asset is absent/unloadable
+		}
+	}
+
 	const FFriendslopChromeDescriptor& Descriptor = GetDescriptor(Chrome);
 	FFriendslopBrushEntry& Entry = GetBrushEntry(Chrome);
 
