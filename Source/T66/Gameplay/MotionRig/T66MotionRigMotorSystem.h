@@ -65,6 +65,8 @@ private:
 		int32 ConstraintIndex = INDEX_NONE;
 		int32 ChildBoneIndex = INDEX_NONE;
 		FQuat RefLocalRotationInverse = FQuat::Identity;
+		FQuat RefFrame1Rotation = FQuat::Identity; // constraint frame on the child body
+		FQuat RefFrame2Rotation = FQuat::Identity; // constraint frame on the parent body
 		float SetStrengthScaleArm = 0.f; // 1 if this joint belongs to the arm set
 		float BaseStrength = 0.f;        // resolved from set CVars at gain apply
 	};

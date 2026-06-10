@@ -170,6 +170,9 @@ AT66MotionRigPawn::AT66MotionRigPawn()
 	PoseSource->SetHiddenInGame(true);
 	PoseSource->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 	PoseSource->bPauseAnims = false;
+	// Never let update-rate optimizations throttle the hidden clip player —
+	// every drive target derives from its per-tick evaluation.
+	PoseSource->bEnableUpdateRateOptimizations = false;
 
 	Visual = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("Visual"));
 	Visual->SetupAttachment(Bean);

@@ -5,6 +5,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "HAL/IConsoleManager.h"
+#include "PhysicalMaterials/PhysicalMaterial.h"
 #include "PhysicsEngine/ConstraintInstance.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "ReferenceSkeleton.h"
@@ -52,6 +53,9 @@ static TAutoConsoleVariable<float> CVarMRPelvisAngularKp(
 static TAutoConsoleVariable<float> CVarMRPelvisAngularKd(
 	TEXT("t66.MotionRig.Motor.PelvisAngularKd"), 100.f,
 	TEXT("Pelvis orientation damping gain (1/s)."), ECVF_Default);
+static TAutoConsoleVariable<int32> CVarMRMotorTargetFrameMode(
+	TEXT("t66.MotionRig.Motor.TargetFrameMode"), 0,
+	TEXT("Drive target frame convention: 0 bone-local delta, 1 conjugated by constraint Frame2, 2 by Frame1, 3 inverted delta, 4 inverted+Frame2."), ECVF_Default);
 
 namespace
 {
@@ -118,6 +122,25 @@ void UT66MotionRigMotorSystem::InitializeMotors(USkeletalMeshComponent* InMesh, 
 		return;
 	}
 
+	// The cosmetic skeleton must never grip the world: foot/calf contact
+	// friction anchors the whole leg chain to the floor and no drive strength
+	// can swing a friction-pinned chain (the measured error≈demand wall, the
+	// scrunch, the foot-drag). Ground traction belongs to the BEAN alone.
+	{
+		UPhysicalMaterial* SlickBodyMaterial = NewObject<UPhysicalMaterial>(this, TEXT("MotionRigSlickBodyMaterial"));
+		SlickBodyMaterial->Friction = 0.05f;
+		SlickBodyMaterial->StaticFriction = 0.05f;
+		SlickBodyMaterial->FrictionCombineMode = EFrictionCombineMode::Min;
+		SlickBodyMaterial->Restitution = 0.f;
+		for (int32 BodyIndex = 0; BodyIndex < Mesh->Bodies.Num(); ++BodyIndex)
+		{
+			if (FBodyInstance* Body = Mesh->Bodies[BodyIndex])
+			{
+				Body->SetPhysMaterialOverride(SlickBodyMaterial);
+			}
+		}
+	}
+
 	// Mass distribution per MOTION_RIG.md §3 (70 kg total, pelvis-heavy).
 	// Auto-generated capsules default to volume-derived masses — measured
 	// 485 kg on Hero 1 — which out-muscles every motor and drags the bean
@@ -138,6 +161,11 @@ void UT66MotionRigMotorSystem::InitializeMotors(USkeletalMeshComponent* InMesh, 
 			{
 				Body->SetMassOverride(BoneMass.Value, true);
 				Body->UpdateMassProperties();
+				// Motor-driven chains need far more solver budget than the
+				// default ragdoll settings: under-iterated joints track their
+				// drive targets ~1:1 behind (the measured scrunch/foot-slide).
+				Body->PositionSolverIterationCount = 32;
+				Body->VelocitySolverIterationCount = 8;
 				TotalMass += BoneMass.Value;
 			}
 		}
@@ -175,6 +203,8 @@ void UT66MotionRigMotorSystem::InitializeMotors(USkeletalMeshComponent* InMesh, 
 		Joint.ConstraintIndex = ConstraintIndex;
 		Joint.ChildBoneIndex = ChildBoneIndex;
 		Joint.RefLocalRotationInverse = RefPose[ChildBoneIndex].GetRotation().Inverse();
+		Joint.RefFrame1Rotation = Constraint->GetRefFrame(EConstraintFrame::Frame1).GetRotation();
+		Joint.RefFrame2Rotation = Constraint->GetRefFrame(EConstraintFrame::Frame2).GetRotation();
 		Joint.SetStrengthScaleArm = IsArmBone(ChildBone) ? 1.f : 0.f;
 		Joint.BaseStrength = SpringForBone(ChildBone);
 		DriveJoints.Add(Joint);
@@ -331,9 +361,30 @@ void UT66MotionRigMotorSystem::TickDriveTargets()
 		}
 
 		// Target = animated local rotation expressed as a delta from the bind
-		// pose (constraint reference frames are generated at the bind pose).
+		// pose. Chaos drives act in the CONSTRAINT's reference frames, not the
+		// bone-local frame — the frame mode conjugates the delta accordingly
+		// (mode CVar so one build can A/B all conventions; identical at rest,
+		// which is why every convention idles perfectly).
 		const FQuat AnimLocal = LocalPose[Joint.ChildBoneIndex].GetRotation();
-		const FQuat TargetDelta = Joint.RefLocalRotationInverse * AnimLocal;
+		const FQuat BoneLocalDelta = Joint.RefLocalRotationInverse * AnimLocal;
+		FQuat TargetDelta = BoneLocalDelta;
+		switch (CVarMRMotorTargetFrameMode.GetValueOnGameThread())
+		{
+		case 1:
+			TargetDelta = Joint.RefFrame2Rotation.Inverse() * BoneLocalDelta * Joint.RefFrame2Rotation;
+			break;
+		case 2:
+			TargetDelta = Joint.RefFrame1Rotation.Inverse() * BoneLocalDelta * Joint.RefFrame1Rotation;
+			break;
+		case 3:
+			TargetDelta = BoneLocalDelta.Inverse();
+			break;
+		case 4:
+			TargetDelta = Joint.RefFrame2Rotation.Inverse() * BoneLocalDelta.Inverse() * Joint.RefFrame2Rotation;
+			break;
+		default:
+			break;
+		}
 		Constraint->SetAngularOrientationTarget(TargetDelta);
 		// Chaos does not flush a target-only write to the live joint (drives
 		// held the bind pose while targets swung — error tracked demand 1:1
