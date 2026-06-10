@@ -84,6 +84,8 @@ private:
 	void TickVisualFromBodies();
 	void ReseatBodyOnBean();
 
+	FVector LastBeanTickLocation = FVector::ZeroVector;
+
 	// --- visuals / clips ---
 	void LoadAssets();
 	void PlayStateClip(ET66MotionRigState State);

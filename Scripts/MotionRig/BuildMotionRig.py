@@ -372,6 +372,12 @@ def make_action(arm_obj, name, length_frames, keyer):
     arm_obj.animation_data_create()
     arm_obj.animation_data.action = action
     keyer(arm_obj)
+    # Every bone gets a LOCATION key: keyed channels are unit-converted to cm
+    # by the exporter (proven by the pelvis), un-keyed bones fall back to the
+    # meter-scale rest pose in UE and collapse onto their parents. One key at
+    # frame 1 makes the baked export carry full cm translations per bone.
+    for pose_bone in arm_obj.pose.bones:
+        pose_bone.keyframe_insert("location", frame=1)
     action.use_fake_user = True
     bpy.context.scene.frame_start = 1
     bpy.context.scene.frame_end = length_frames
@@ -743,7 +749,14 @@ def main():
     if not args.no_render:
         render_proofs(mesh, arm_obj, bone_layout, proof_dir)
 
-    convert_scene_to_centimeters(mesh, arm_obj)
+    # UNITS (final, measured doctrine): author + export at METER scale.
+    # The exporter/importer pair converts MESH data and KEYED ANIM CHANNELS
+    # m->cm correctly, but NOT armature rest bones (meter ref skeleton in UE)
+    # and cm-scene exports poison the mesh instead (x100 kaiju). Therefore:
+    # every pose bone gets LOCATION KEYS in every clip (keyed channels arrive
+    # in cm — proven by the pelvis), so the RUNTIME pose is fully centimeter
+    # and the meter ref pose only matters to PA generation, which
+    # T66MotionRigPhysicsAssetCommandlet handles with an in-memory rescale.
 
     skeletal_fbx = os.path.join(out_dir, "SK_MotionRig_Hero1.fbx")
     export_skeletal_fbx(mesh, arm_obj, skeletal_fbx)

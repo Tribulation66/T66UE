@@ -267,13 +267,17 @@ void AT66MotionRigPawn::BeginPlay()
 		}
 
 		// DETACH the simulated mesh (old-lane proven: bDetachMeshDuringRagdoll)
-		// — the engine's bodies→bones blend only behaves on detached or
-		// root-simulated meshes; attached fully-simulated meshes render frozen
-		// (v14..v22). The pose source stays attached to the bean, so drive
-		// targets still follow it; the pelvis PD keeps the body near the bean.
+		// so simulation behaves; but RENDER through the poseable copy, whose
+		// bone transforms we write from body instances in plain code every
+		// tick. The engine's physics→bone blend on the detached mesh broke in
+		// a new way after every asset change (frozen heap v14..v22, then a
+		// stale component transform putting bones 9.6km under the world after
+		// the skeleton-unit surgery) — the explicit copy has no such modes.
+		// No detach: the "attached meshes never blend" rule was measured on
+		// unit-collapsed assets; with a consistent skeleton the standard
+		// attached blend is the simplest correct path.
 		if (RigMesh->GetSkeletalMeshAsset())
 		{
-			RigMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 			RigMesh->SetVisibility(true);
 			Visual->SetVisibility(false);
 		}
@@ -436,6 +440,7 @@ void AT66MotionRigPawn::LoadAssets()
 						MID->SetTextureParameterValue(TEXT("BaseColorTexture"), Albedo);
 					}
 					RigMesh->SetMaterial(SlotIndex, MID);
+					Visual->SetMaterial(SlotIndex, MID);
 				}
 			}
 		}
@@ -916,18 +921,31 @@ void AT66MotionRigPawn::Tick(const float DeltaSeconds)
 	TickWalkCadence();
 	TickVisualFromBodies();
 
-	// Runaway rescue: teleports (and any future detonation) leave the
-	// detached body stranded far from the bean — snap it back onto the pose.
+	// Runaway rescue. Three triggers: the bean teleported (game-mode spawn
+	// flow moves the pawn after physics bring-up), the pelvis strayed, or any
+	// LIMB strayed (the spawn-at-origin detonation flings limbs kilometers
+	// while the pelvis PD keeps the pelvis pinned — pelvis distance alone
+	// never fires).
 	if (bPhysicsLive && MotionState != ET66MotionRigState::Knockdown && RigMesh->GetSkeletalMeshAsset())
 	{
-		if (const FBodyInstance* PelvisBody = RigMesh->GetBodyInstance(TEXT("pelvis")))
+		const FVector BeanLocation = Bean->GetComponentLocation();
+		const bool bBeanTeleported = FVector::DistSquared(BeanLocation, LastBeanTickLocation) > FMath::Square(300.f);
+		LastBeanTickLocation = BeanLocation;
+
+		bool bBodyStrayed = false;
+		for (FBodyInstance* Body : RigMesh->Bodies)
 		{
-			const float DistSq = FVector::DistSquared(
-				PelvisBody->GetUnrealWorldTransform().GetLocation(), Bean->GetComponentLocation());
-			if (DistSq > FMath::Square(600.f))
+			if (Body && Body->IsValidBodyInstance()
+				&& FVector::DistSquared(Body->GetUnrealWorldTransform().GetLocation(), BeanLocation) > FMath::Square(700.f))
 			{
-				ReseatBodyOnBean();
+				bBodyStrayed = true;
+				break;
 			}
+		}
+
+		if (bBeanTeleported || bBodyStrayed)
+		{
+			ReseatBodyOnBean();
 		}
 	}
 }
@@ -992,15 +1010,15 @@ void AT66MotionRigPawn::TickVisualFromBodies()
 		TEXT("thigh_l"), TEXT("calf_l"), TEXT("foot_l"),
 		TEXT("thigh_r"), TEXT("calf_r"), TEXT("foot_r") };
 
-	// Component-space writes with explicit math — the WorldSpace path of the
-	// poseable setter put the body off-screen (apparent double transform).
-	const FTransform WorldToComponent = Visual->GetComponentTransform().Inverse();
+	// World-space writes. (Historical note: this path was wrongly blamed for a
+	// "misplaced slab" — that slab was the collapsed point-cloud skeleton
+	// rendering faithfully. The ComponentSpace variant of the setter produces
+	// nothing at all on 5.7.)
 	for (const FName& Bone : CanonicalBones)
 	{
 		if (const FBodyInstance* Body = RigMesh->GetBodyInstance(Bone))
 		{
-			const FTransform ComponentSpace = Body->GetUnrealWorldTransform() * WorldToComponent;
-			Visual->SetBoneTransformByName(Bone, ComponentSpace, EBoneSpaces::ComponentSpace);
+			Visual->SetBoneTransformByName(Bone, Body->GetUnrealWorldTransform(), EBoneSpaces::WorldSpace);
 		}
 	}
 }
