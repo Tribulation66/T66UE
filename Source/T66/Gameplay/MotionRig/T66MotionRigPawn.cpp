@@ -14,6 +14,7 @@
 #include "Gameplay/MotionRig/T66MotionRigMotorSystem.h"
 #include "Gameplay/MotionRig/T66MotionRigScenario.h"
 #include "HAL/IConsoleManager.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "PhysicsEngine/ConstraintInstance.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "UObject/SoftObjectPath.h"
@@ -84,6 +85,8 @@ static TAutoConsoleVariable<int32> CVarMRDebugEnableMotors(
 namespace T66MotionRigPaths
 {
 	static const TCHAR* SkeletalMesh = TEXT("/Game/Characters/MotionRig/Hero_1/SK_MotionRig_Hero1.SK_MotionRig_Hero1");
+	static const TCHAR* FallGuysMaster = TEXT("/Game/Materials/M_FriendSlop_FallGuys.M_FriendSlop_FallGuys");
+	static const TCHAR* BaseColorTexture = TEXT("/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Textures/T_Hero_1_Chad_Male_BaseColor.T_Hero_1_Chad_Male_BaseColor");
 	static const TCHAR* ClipIdle = TEXT("/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Idle.AM_MotionRig_Hero1_Idle");
 	static const TCHAR* ClipWalk = TEXT("/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Walk.AM_MotionRig_Hero1_Walk");
 	static const TCHAR* ClipJump = TEXT("/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Jump.AM_MotionRig_Hero1_Jump");
@@ -349,8 +352,27 @@ void AT66MotionRigPawn::LoadAssets()
 		RigMesh->SetSkeletalMesh(MeshAsset);
 		PoseSource->SetSkeletalMesh(MeshAsset);
 		Visual->SetSkinnedAssetAndUpdate(MeshAsset);
-		// The simulated mesh carries physics only; the poseable copy renders.
-		RigMesh->SetVisibility(false);
+		// The simulated mesh renders (detached at bring-up); the poseable copy
+		// is a dormant fallback.
+		Visual->SetVisibility(false);
+
+		// FriendSlop look: instance of the one lit master, raw albedo.
+		UMaterialInterface* Master = LoadObject<UMaterialInterface>(nullptr, T66MotionRigPaths::FallGuysMaster);
+		UTexture* Albedo = LoadObject<UTexture>(nullptr, T66MotionRigPaths::BaseColorTexture);
+		if (Master)
+		{
+			for (int32 SlotIndex = 0; SlotIndex < RigMesh->GetNumMaterials(); ++SlotIndex)
+			{
+				if (UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Master, RigMesh))
+				{
+					if (Albedo)
+					{
+						MID->SetTextureParameterValue(TEXT("BaseColorTexture"), Albedo);
+					}
+					RigMesh->SetMaterial(SlotIndex, MID);
+				}
+			}
+		}
 	}
 	else
 	{

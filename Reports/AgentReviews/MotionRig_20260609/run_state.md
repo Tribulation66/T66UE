@@ -42,6 +42,18 @@ blocker (document + clean handoff).
 - Use neutral technical wording in all messages (impact reaction, knockdown,
   recovery) to avoid automated-filter false positives.
 
+## STATUS ~02:45: FOUNDATION WORKING — parked-or-tuning depending on usage
+
+Walk/jump/dive/impact all function and render (textured, FriendSlop master).
+Full evidence suite + rubric scores under captures/final_*. morning_review.md
+is COMPLETE. Staged standalone build cooking in background (bsh89cwi6) —
+smoke-test it on wake if parked. Remaining work is pure CVar tuning vs the
+rubric (axes 1-4) + punch list in morning_review.md. v15-v23 chronicle:
+detach-the-mesh fixed rendering (old lane's bDetachMeshDuringRagdoll); direct
+SLERP drives + one-way pelvis PD are the working motor stack; PhysicsControl
+AND PhysicalAnimationComponent both produced zero force on 5.7 (do not retry
+without the RigidBodyWithControl node path).
+
 ## Phase checklist
 
 - [x] Phase 0a: Recon (usage OK weekly 7%, Blender 5.1 found, PhysicsControl

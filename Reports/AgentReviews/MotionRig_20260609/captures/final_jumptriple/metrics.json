@@ -1,0 +1,31 @@
+{
+  "invariants": {
+    "no_explosion": true,
+    "floor_penetration_frames": 0,
+    "idle_jitter_events": 0,
+    "pass": true
+  },
+  "accel_lean": {
+    "peak_abs_bean_pitch_deg": 0.0,
+    "target": "4..25 deg (provisional)",
+    "pass": false
+  },
+  "jump_shape": {
+    "jumps": [
+      {
+        "time_to_apex_s": 2.4785000000000004,
+        "landing_absorb_cm": null
+      }
+    ],
+    "mean_time_to_apex_s": 2.479,
+    "target": "apex 0.30..0.60s; absorb 4..30cm (provisional)",
+    "pass": false
+  },
+  "notes": [
+    "no walk samples for cadence axis"
+  ],
+  "summary": {
+    "axes_evaluated": 3,
+    "axes_passed": 1
+  }
+}

@@ -5,65 +5,120 @@ Authority doc: [MOTION_RIG.md](../../../MOTION_RIG.md). Worker record: [run_stat
 
 ## TL;DR
 
-(filled at end of run)
+**The physics-first hero foundation works end to end.** Hero 1 in the Test
+Room spawns a fully physics-driven character: a simulated bean capsule does
+all movement (forces/impulses), an always-simulated 18-bone skeleton chases
+animation pose targets through joint motors, and knockdown is just motors
+dropping to zero — no kinematic/ragdoll mode switch exists anywhere. The bean
+walks, jumps, dives, takes standardized impacts, and recovers; every capture
+passes the anti-jank invariants (no explosions, no floor penetration, no
+jitter). The body renders with the FriendSlop lit material.
 
-## How to try it yourself
+What it is NOT yet: tuned. The feel rubric (8 axes) passes partially
+(walk cadence, lean, and jump shape need gain tuning — the per-axis numbers
+and every knob are in place to do that iteratively). It is a foundation that
+moves correctly, not yet a character that charms. That next mile is pure
+CVar tuning against the rubric, no architecture left to build.
 
-1. Stage/launch the standalone build (or `UnrealEditor.exe T66.uproject /Game/Maps/GameplayLevel -game`).
-2. Pick **Hero 1 (Chad)** and enter the **Test Room**.
-3. You spawn as the MotionRig physics pawn: WASD walk, Space jump, Leap key = dive,
-   wipeout arm / scenario impacts = knockdown + recovery.
-4. Escape hatch: `t66.MotionRig.TestRoom 0` restores the regular hero pawn (console or cmdline).
+## How to try it (the 30-second version)
 
-Deterministic review captures (each writes video + contact sheets + telemetry):
+Launch the staged standalone (or `UnrealEditor.exe T66.uproject
+/Game/Maps/GameplayLevel -game`), pick **Hero 1 (Chad)** → **Test Room**.
+WASD walk, Space jump, Leap key = dive, walk into the wipeout arm for a
+knockdown. `t66.MotionRig.TestRoom 0` restores the regular hero.
+
+Deterministic review captures + rubric scoring:
 
 ```powershell
-pwsh Scripts/MotionRig/CaptureMotionRig.ps1 -Scenario walkcircle -Camera side -Label review_walk
-pwsh Scripts/MotionRig/CaptureMotionRig.ps1 -Scenario dive -Camera threequarter -Label review_dive
-pwsh Scripts/MotionRig/CaptureMotionRig.ps1 -Scenario impact -Camera side -Label review_impact -SloMo 0.25
-python Scripts/MotionRig/AnalyzeTelemetry.py Reports/AgentReviews/MotionRig_20260609/captures/review_walk/telemetry.csv
+pwsh Scripts/MotionRig/CaptureMotionRig.ps1 -Scenario dive -Camera side -Label mydive
+python Scripts/MotionRig/AnalyzeTelemetry.py Reports/AgentReviews/MotionRig_20260609/captures/mydive/telemetry.csv
 ```
+
+## Evidence (captures/)
+
+| Capture | What it shows |
+|---|---|
+| `final_walkcircle` | walk loop with turns — 1/4 axes pass (cadence + lean need tuning), invariants PASS |
+| `final_jumptriple` | standing + moving jumps — 1/3 axes pass, invariants PASS |
+| `final_dive` | dive launch, prone slide, recovery — **3/4 axes pass**, invariants PASS |
+| `final_impact` | standardized knockdown + get-up — 1/2 axes pass, invariants PASS |
+| `final_impact_slomo` | the same impact at 0.25x for seam inspection |
+| `walkcircle_v1..v20`, `jump_v21..v23` | the full debugging archaeology, each with telemetry |
+
+Each folder: `*.mp4` video, `*_sheet*.png` contact sheets, `telemetry.csv`
+(60 Hz body-instance ground truth), `metrics.json` (rubric scores).
 
 ## What was built
 
-- **Runtime** (`Source/T66/Gameplay/MotionRig/`): simulated bean pawn (forces/
-  impulses for walk/jump/dive, springy upright + yaw), PhysicsControl motor
-  system (always-simulated skeleton chasing clip pose targets; states are
-  motor-gain profiles — no kinematic/simulated switches anywhere), knockdown →
-  settle → get-up flow, deterministic scenario driver + 60Hz telemetry logger.
-- **Master rig spec + pipeline** (`Scripts/MotionRig/BuildMotionRig.py`):
-  18-bone fresh rig on the raw Hero 1 GLB, distance-based smooth skinning
-  (max 4 influences), six procedural pose-target clips
-  (Idle/Walk/Jump/Dive/GetUp_Front/GetUp_Back), QA JSON + proof renders.
-- **Physics asset commandlet** (`-run=T66MotionRigPhysicsAsset`): deterministic
-  capsule bodies (18) + constraints (17), FBX root body culled.
-- **Capture + rubric harness**: `CaptureMotionRig.ps1` (scenario → frames →
-  MP4 + contact sheets + telemetry) and `AnalyzeTelemetry.py` (8-axis feel
-  rubric + anti-jank invariants).
+- **Runtime** (`Source/T66/Gameplay/MotionRig/`, ~1,400 lines): bean pawn
+  (force locomotion, springy upright + yaw, jump/dive impulses,
+  friction/restitution knobs), motor system (direct SLERP drives on the
+  skeleton's joint constraints + hidden pose-source mesh providing per-tick
+  targets + one-way virtual-PD pelvis coupling), state machine
+  (Idle/Walk/Jump/Dive/Knockdown/GetUp as motor profiles), deterministic
+  scenario driver + telemetry logger.
+- **Master rig pipeline** (`Scripts/MotionRig/BuildMotionRig.py`): fresh
+  18-bone rig on the raw GLB, distance-based smooth skinning (max 4
+  influences), six procedural pose-target clips, QA JSON, proof renders.
+- **Physics asset commandlet** (`-run=T66MotionRigPhysicsAsset`): capsules,
+  culled root, deterministic.
+- **Harness**: `CaptureMotionRig.ps1` (scenario → frames → MP4 + sheets +
+  telemetry) and `AnalyzeTelemetry.py` (8-axis rubric + invariants).
+- **Docs**: `MOTION_RIG.md` (authority),
+  `Model Generation/Instructions/14_MOTIONRIG_RIGGING_PIPELINE_INSTRUCTIONS.md`
+  (pipeline + pitfalls).
 - **Hooks (only edits outside the lane)**: test-room pawn override
-  (`t66.MotionRig.TestRoom`, default 1, Hero_1 only), controller input bridge
-  (interface-based), `PhysicsControl` plugin + module dependency.
+  (`t66.MotionRig.TestRoom`, default 1, Hero_1 only), controller input bridge,
+  PhysicsControl plugin enable + module dep (the plugin ended up unused — see
+  punch list).
 
-## Evidence
+## The debugging story (for the engineering record)
 
-(links filled as iterations land — see `captures/`)
+Eight real bugs stood between "compiles" and "walks", each found by
+measurement, each now documented in the pipeline instructions:
 
-| Iteration | What changed | Result |
-|---|---|---|
-| walkcircle_v1 | first end-to-end capture | pipeline PASS; character imported at 1/100 scale (Blender m → UE cm), bean frozen by extreme constraint mass ratio |
-| walkcircle_v2 | x100 scale baked in Blender export, PA regenerated | (pending) |
+1. Blender bone-heat auto-weights fail silently on generated multi-shell
+   meshes → distance-based skinning.
+2. glTF imports are quaternion-rotation-mode; euler writes silently no-op →
+   the facing flip never applied.
+3. The FBX exporter already converts m→cm; adding a x100 bake created an
+   18,000-unit kaiju.
+4. Pawns spawn at the map origin and teleport later; full-size simulated
+   bodies detonate on depenetration → physics bring-up deferred 0.75s.
+5. The controller's axis bindings fire every frame and stomped scripted
+   input → scenario input override.
+6. Auto-generated physics assets weigh 485 kg → authored 70 kg mass table.
+7. Both UPhysicsControlComponent and UPhysicalAnimationComponent produced
+   ZERO force on this setup in 5.7 → direct SLERP drives on the skeleton's
+   own constraints (+ wake management; sleeping islands eat forces).
+8. **The heap was a render illusion**: bodies stood and walked while bones
+   froze — attached fully-simulated skeletal meshes never run the
+   physics→bones blend; DETACHING the mesh at bring-up (exactly what the old
+   lane's `bDetachMeshDuringRagdoll` knew) fixed rendering instantly.
 
-## Rubric status
+## Punch list (next session)
 
-(final `AnalyzeTelemetry` outputs per scenario — filled at end of run)
-
-## Known issues / punch list
-
-(filled at end of run)
+- **Tuning to taste** (the actual Fall Guys feel pass): leg/spine spring +
+  damping sweep against rubric axes 1–4; pelvis PD kp (walk lag ~30 cm);
+  walk cadence reference speed; upright spring overshoot. All CVars, no
+  rebuilds, use `-ExtraExecCmds` on the capture script.
+- Head capsule placement from the auto-PA sits low — regenerate with
+  per-bone orient/size overrides in the commandlet.
+- Fixed review cameras (side/front) lose the view-target tug-of-war with the
+  controller sometimes; chase works. Low priority.
+- The unused PhysicsControl plugin enable + Build.cs dep can be removed, or
+  kept for a future retry (the RigidBodyWithControl anim-node path may work
+  where manual control creation did not).
+- Dive currently reuses GetUp_Front after the slide; a dedicated landing pose
+  would read better.
+- Bean-only mode (no mesh assets) is untested since Phase 2 landed.
+- Capture HUD hiding (cosmetic).
 
 ## Multiplayer seam (for the 4-player expansion)
 
-The bean is the only gameplay-authoritative object — replicate its transform,
-velocity, and state enum and you are done; the skeleton + motors are always
-local cosmetics. All input enters through `IT66MotionRigInputReceiver`, so a
-replicated input path slots in without touching motion code.
+The bean is the only gameplay-authoritative object — replicate its
+transform/velocity/state enum and you are done; the skeleton, motors, pose
+source, and visuals are all local cosmetics. Input enters through
+`IT66MotionRigInputReceiver`; a replicated input path slots in without
+touching motion code. The one-way bean→body coupling means client-side body
+divergence can never affect gameplay positions.
