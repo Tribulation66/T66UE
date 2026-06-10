@@ -5,6 +5,7 @@
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/Movement/T66HeroMovementComponent.h"
+#include "Gameplay/MotionRig/T66MotionRigInputReceiver.h"
 #include "Gameplay/Physics/T66HeroPhysicsComponent.h"
 #include "Core/T66PixelVFXSubsystem.h"
 #include "Core/T66PlayerSettingsSubsystem.h"
@@ -31,6 +32,17 @@ namespace
 
 void AT66PlayerController::UpdateHeroMovementIntent()
 {
+	// MotionRig side-lane pawns take raw axes through their input interface
+	// and handle everything else themselves (MOTION_RIG.md section 2).
+	if (IT66MotionRigInputReceiver* MotionRig = Cast<IT66MotionRigInputReceiver>(GetPawn()))
+	{
+		const bool bBlocked = bWorldDialogueOpen;
+		MotionRig->MotionRigSetMoveAxes(
+			bBlocked ? 0.f : RawMoveForwardValue,
+			bBlocked ? 0.f : RawMoveRightValue);
+		return;
+	}
+
 	UT66HeroMovementComponent* HeroMovement = T66ResolveHeroMovementComponent(GetPawn());
 	if (!HeroMovement)
 	{
@@ -70,6 +82,13 @@ void AT66PlayerController::HandleLeapPressed()
 {
 	if (!IsGameplayLevel())
 	{
+		return;
+	}
+
+	// MotionRig lane: the leap key is the dive.
+	if (IT66MotionRigInputReceiver* MotionRig = Cast<IT66MotionRigInputReceiver>(GetPawn()))
+	{
+		MotionRig->MotionRigDivePressed();
 		return;
 	}
 
@@ -258,6 +277,12 @@ void AT66PlayerController::HandleJumpPressed()
 		return;
 	}
 
+	if (IT66MotionRigInputReceiver* MotionRig = Cast<IT66MotionRigInputReceiver>(GetPawn()))
+	{
+		MotionRig->MotionRigJumpPressed();
+		return;
+	}
+
 	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn()))
 	{
 		if (UT66HeroPhysicsComponent* HeroPhysics = Hero->GetHeroPhysicsComponent())
@@ -331,6 +356,12 @@ void AT66PlayerController::HandleJumpReleased()
 {
 	if (!IsGameplayLevel())
 	{
+		return;
+	}
+
+	if (IT66MotionRigInputReceiver* MotionRig = Cast<IT66MotionRigInputReceiver>(GetPawn()))
+	{
+		MotionRig->MotionRigJumpReleased();
 		return;
 	}
 

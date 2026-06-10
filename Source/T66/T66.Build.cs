@@ -47,7 +47,8 @@ public class T66 : ModuleRules
 			"RenderCore",
 			"RHI",
 			"MeshDescription",
-			"StaticMeshDescription"
+			"StaticMeshDescription",
+			"PhysicsControl"
 		});
 
 		if (Target.bBuildEditor)

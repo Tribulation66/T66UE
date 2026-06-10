@@ -2,8 +2,18 @@
 
 #include "Gameplay/GameMode/T66GameModePrivate.h"
 #include "Gameplay/GameMode/T66GameMode_TestRoom.h"
+#include "Gameplay/MotionRig/T66MotionRigPawn.h"
 
 using namespace T66GameModePrivate;
+
+// MotionRig side lane (MOTION_RIG.md): when enabled, Hero 1 in the Test Room
+// spawns the physics-first MotionRig pawn instead of the regular hero. This is
+// the lane's only spawn-path hook; every other run category is untouched.
+static TAutoConsoleVariable<int32> CVarT66MotionRigTestRoomPawn(
+	TEXT("t66.MotionRig.TestRoom"),
+	1,
+	TEXT("Spawns the MotionRig physics-first pawn for Hero 1 in the Test Room. 0 restores the regular hero pawn."),
+	ECVF_Default);
 
 void AT66GameMode::RestartPlayer(AController* NewPlayer)
 {
@@ -458,6 +468,17 @@ void AT66GameMode::RestartPlayersMissingPawns()
 
 UClass* AT66GameMode::GetDefaultPawnClassForController_Implementation(AController* InController)
 {
+	// MotionRig side lane: Hero 1 + Test Room uses the physics-first pawn.
+	if (CVarT66MotionRigTestRoomPawn.GetValueOnGameThread() != 0)
+	{
+		if (UT66GameInstance* MotionRigGI = GetT66GameInstance();
+			MotionRigGI && MotionRigGI->IsTestRoomRun()
+			&& T66GetSelectedHeroID(MotionRigGI, InController) == FName(TEXT("Hero_1")))
+		{
+			return AT66MotionRigPawn::StaticClass();
+		}
+	}
+
 	// Check if we have a specific hero class from the DataTable
 	if (UT66GameInstance* GI = GetT66GameInstance())
 	{
