@@ -1783,7 +1783,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			TEXT("BackgroundRegion"),
 			ET66FlatState::Default));
 	AddCanvasSlot(0.f, 130.f, LeftPanelWidth, 950.f, MakeLeftPanel());
-	AddCanvasSlot(610.f, 70.f, 700.f, 250.f, MakeTitleRegion());
+	AddCanvasSlot(610.f, 94.f, 700.f, 250.f, MakeTitleRegion());
 	AddCanvasSlot(620.f, 620.f, 680.f, 390.f, MakeCtaStack());
 	constexpr float RightLeaderboardPanelWidth = ST66FlatLeaderboardPanel::GetPanelWidth();
 	constexpr float RightLeaderboardPanelHeight = ST66FlatLeaderboardPanel::GetPanelHeight();
