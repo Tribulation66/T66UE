@@ -1002,7 +1002,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 
 		// UI Reimagine pass 5: rects from the color-mask instrument readings of the
 		// approved v7 reference at 1920x1080 (measure_geometry2.py / pass5_plan.md).
-		const FNormalizedTopBarRect OuterRect{ 0.000f, 0.000f, 1.000f, 0.089f };
+		const FNormalizedTopBarRect OuterRect{ 0.004f, 0.000f, 0.992f, 0.089f };
 		const float TopBarControlY = 0.009f;
 		const float TopBarControlH = 0.070f;
 		const FNormalizedTopBarRect SettingsRect{ 0.014f, 0.012f, 0.033f, 0.065f };
@@ -1270,7 +1270,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 					.Text(Item.Label)
 					.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(Item.FontSize, true))
 					.ColorAndOpacity(Item.Tag == FName(TEXT("FrontendTopBar.MiniGamesButton"))
-						? FSlateColor(FLinearColor(0.52f, 0.46f, 0.38f, 1.f))
+						? FSlateColor(FLinearColor(0.72f, 0.66f, 0.56f, 1.f))
 						: FSlateColor(FT66FriendslopStyle::TextColorForState(RenderState)))
 					.Justification(ETextJustify::Center)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
@@ -1309,9 +1309,23 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				FLinearColor(0.10f, 0.085f, 0.12f, 1.f),
 				ESlateBrushDrawType::Image);
 		};
+		// The old chrome plates baked the glyphs in; hellfire wells take real icon images.
+		auto MakeHellfireIconImage = [&MakeTaggedIconWidget](const TCHAR* IconFile, const float Size, const FName IconTag) -> TSharedRef<SWidget>
+		{
+			return MakeTaggedIconWidget(
+				SNew(SImage)
+				.Image(FT66FriendslopStyle::GetCustomBrush(
+					FString(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/")) + IconFile,
+					FMargin(0.f),
+					ESlateBrushDrawType::Image,
+					FVector2D(Size, Size)))
+				.ColorAndOpacity(FLinearColor::White),
+				FVector2D(Size, Size),
+				IconTag);
+		};
 		const TSharedRef<SWidget> SettingsButtonWidget = MakeHellfireWellButton(
 			ActiveSection == ETopBarSection::Settings ? ET66FlatState::Selected : ET66FlatState::Default,
-			MakePairedIconButtonContent(TEXT("FrontendTopBar.SettingsButton.Icon")),
+			MakeHellfireIconImage(TEXT("ic_gear.png"), 44.f, TEXT("FrontendTopBar.SettingsButton.Icon")),
 			&UT66FrontendTopBarWidget::HandleSettingsClicked,
 			TEXT("FrontendTopBar.SettingsButton"),
 			SettingsRect);
@@ -1352,7 +1366,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				MakePairedIconButtonContent(TEXT("FrontendTopBar.PowerButton.Icon"))
+				MakeHellfireIconImage(TEXT("ic_power.png"), 46.f, TEXT("FrontendTopBar.PowerButton.Icon"))
 			],
 			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleQuitClicked),
 			FMargin(8.f, 6.f),
@@ -1368,7 +1382,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		const TSharedRef<SWidget> TicketValue = FT66FlatStyle::AttachMetadata(
 			SNew(STextBlock)
 			.Text(TAttribute<FText>::Create(TAttribute<FText>::FGetter::CreateUObject(this, &UT66FrontendTopBarWidget::GetChadCouponsValueText)))
-			.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(28, true))
+			.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(34, true))
 			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 			.Justification(ETextJustify::Center),
 			TEXT("FrontendTopBar.TicketBadge.Value"),
@@ -1398,8 +1412,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			.Padding(0.f, 0.f, 10.f, 0.f)
 			[
 				SNew(SBox)
-				.WidthOverride(48.f)
-				.HeightOverride(48.f)
+				.WidthOverride(60.f)
+				.HeightOverride(60.f)
 				[
 					SNew(SImage)
 					.Image(FT66FriendslopStyle::GetCustomBrush(

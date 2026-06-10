@@ -73,6 +73,12 @@ state treatments), every region verdict requires a paired image: reference crop 
 capture crop at the SAME pixel scale, adjacent in one image, large enough to judge
 (no downscaled full-frame sheets, no solo crops). Grade against the REFERENCE pair,
 never against the previous pass.
+   AMENDMENT (pass-7 lesson): "large enough" is a HARD RULE — pair crops must be
+   <= ~700px wide so the chat/vision render is near-native. A 1920-wide pair compresses
+   fat rims into hairlines and produces FALSE FAILs (pass-7 tabs were correct; the wide
+   strip said otherwise). Segment the region (bar-left / bar-right, not full bar).
+   Corollary: glyphs baked into old chrome plates do NOT carry over — empty tag-anchor
+   contents (1x1 boxes) reveal themselves as missing icons; give wells real icon images.
 
 LAW 10 — GRIDDED REFERENCE MEASUREMENT. The reference geometry table is read off a
 grid-overlaid copy of the reference (labeled lines every 32/64px), not estimated from
