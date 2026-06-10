@@ -79,6 +79,9 @@ static TAutoConsoleVariable<float> CVarMRWalkReferenceSpeed(
 static TAutoConsoleVariable<int32> CVarMRDebugShowPoseSource(
 	TEXT("t66.MotionRig.Debug.ShowPoseSource"), 0,
 	TEXT("1 = render the hidden pose-source clip player offset beside the simulated body (target-vs-sim comparison)."), ECVF_Default);
+static TAutoConsoleVariable<int32> CVarMRDebugRenderer(
+	TEXT("t66.MotionRig.Debug.Renderer"), 1,
+	TEXT("Body renderer: 0 = simulated mesh via engine physics->bone blend, 1 = poseable copy written from body instances."), ECVF_Default);
 static TAutoConsoleVariable<int32> CVarMRDebugEnableMeshSim(
 	TEXT("t66.MotionRig.Debug.EnableMeshSim"), 1,
 	TEXT("0 = skeletal mesh stays kinematic (visual only). Isolation switch."), ECVF_Default);
@@ -273,13 +276,11 @@ void AT66MotionRigPawn::BeginPlay()
 		// a new way after every asset change (frozen heap v14..v22, then a
 		// stale component transform putting bones 9.6km under the world after
 		// the skeleton-unit surgery) — the explicit copy has no such modes.
-		// No detach: the "attached meshes never blend" rule was measured on
-		// unit-collapsed assets; with a consistent skeleton the standard
-		// attached blend is the simplest correct path.
 		if (RigMesh->GetSkeletalMeshAsset())
 		{
-			RigMesh->SetVisibility(true);
-			Visual->SetVisibility(false);
+			const bool bPoseableRenderer = CVarMRDebugRenderer.GetValueOnGameThread() != 0;
+			RigMesh->SetVisibility(!bPoseableRenderer);
+			Visual->SetVisibility(bPoseableRenderer);
 		}
 
 		EnsureMeshSimulation();
