@@ -271,12 +271,29 @@ void UT66MotionRigScenario::RecordTelemetryRow(AT66MotionRigPawn& Pawn, const fl
 
 	if (USkeletalMeshComponent* Mesh = Pawn.GetRigMesh(); Mesh && Mesh->GetSkeletalMeshAsset())
 	{
-		PelvisLocation = Mesh->GetBoneLocation(TEXT("pelvis"));
-		PelvisSpeed = Mesh->GetPhysicsLinearVelocity(TEXT("pelvis")).Size();
-		FootLSpeed = Mesh->GetPhysicsLinearVelocity(TEXT("foot_l")).Size();
-		FootRSpeed = Mesh->GetPhysicsLinearVelocity(TEXT("foot_r")).Size();
-		HandRZ = Mesh->GetBoneLocation(TEXT("hand_r")).Z;
-		HeadZ = Mesh->GetBoneLocation(TEXT("head")).Z;
+		// Read BODY INSTANCES, not bones: bone transforms depend on the
+		// physics→bone blend path, which has its own failure modes; bodies
+		// are the simulation ground truth.
+		auto BodyZ = [Mesh](const FName Bone) -> float
+		{
+			const FBodyInstance* Body = Mesh->GetBodyInstance(Bone);
+			return Body ? Body->GetUnrealWorldTransform().GetLocation().Z : 0.f;
+		};
+		if (const FBodyInstance* PelvisBody = Mesh->GetBodyInstance(TEXT("pelvis")))
+		{
+			PelvisLocation = PelvisBody->GetUnrealWorldTransform().GetLocation();
+			PelvisSpeed = PelvisBody->GetUnrealWorldVelocity().Size();
+		}
+		if (const FBodyInstance* FootL = Mesh->GetBodyInstance(TEXT("foot_l")))
+		{
+			FootLSpeed = FootL->GetUnrealWorldVelocity().Size();
+		}
+		if (const FBodyInstance* FootR = Mesh->GetBodyInstance(TEXT("foot_r")))
+		{
+			FootRSpeed = FootR->GetUnrealWorldVelocity().Size();
+		}
+		HandRZ = BodyZ(TEXT("hand_r"));
+		HeadZ = BodyZ(TEXT("head"));
 	}
 
 	TelemetryRows.Add(FString::Printf(

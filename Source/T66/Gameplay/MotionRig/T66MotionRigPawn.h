@@ -12,7 +12,7 @@ class UAnimSequence;
 class UCameraComponent;
 class UCapsuleComponent;
 class UPhysicsConstraintComponent;
-class UPhysicsControlComponent;
+class UPoseableMeshComponent;
 class USkeletalMeshComponent;
 class USpringArmComponent;
 class UT66MotionRigMotorSystem;
@@ -77,6 +77,7 @@ private:
 	void SetBeanPhysicsEnabled(bool bEnabled);
 	void ReattachPelvisConstraint();
 	void EnsureMeshSimulation();
+	void TickVisualFromBodies();
 
 	// --- visuals / clips ---
 	void LoadAssets();
@@ -93,11 +94,22 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "MotionRig")
 	TObjectPtr<USkeletalMeshComponent> RigMesh;
 
+	// Hidden kinematic clip player: the motor system reads per-tick bone
+	// targets from here. The simulated RigMesh NEVER plays animation (playing
+	// on it re-inits articulation and silently kills simulation).
+	UPROPERTY(VisibleAnywhere, Category = "MotionRig")
+	TObjectPtr<USkeletalMeshComponent> PoseSource;
+
+	// The actual rendered character: bone transforms copied straight from the
+	// simulated bodies every tick. The engine's physics→bone blend path never
+	// produced bone updates on this setup (v14..v17: bodies standing/walking,
+	// render frozen) — this copy CANNOT fail silently. RigMesh is invisible.
+	UPROPERTY(VisibleAnywhere, Category = "MotionRig")
+	TObjectPtr<UPoseableMeshComponent> Visual;
+
 	UPROPERTY(VisibleAnywhere, Category = "MotionRig")
 	TObjectPtr<UPhysicsConstraintComponent> PelvisConstraint;
 
-	UPROPERTY(VisibleAnywhere, Category = "MotionRig")
-	TObjectPtr<UPhysicsControlComponent> PhysicsControl;
 
 	UPROPERTY(VisibleAnywhere, Category = "MotionRig")
 	TObjectPtr<UT66MotionRigMotorSystem> MotorSystem;

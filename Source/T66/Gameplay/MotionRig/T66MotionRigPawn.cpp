@@ -3,8 +3,10 @@
 #include "Gameplay/MotionRig/T66MotionRigPawn.h"
 
 #include "Animation/AnimSequence.h"
+#include "Animation/AnimSingleNodeInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/PoseableMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
@@ -12,7 +14,7 @@
 #include "Gameplay/MotionRig/T66MotionRigMotorSystem.h"
 #include "Gameplay/MotionRig/T66MotionRigScenario.h"
 #include "HAL/IConsoleManager.h"
-#include "PhysicsControlComponent.h"
+#include "PhysicsEngine/ConstraintInstance.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "UObject/SoftObjectPath.h"
 
@@ -135,11 +137,37 @@ AT66MotionRigPawn::AT66MotionRigPawn()
 	RigMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	RigMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	RigMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	// Must be set BEFORE physics state creation: the end-physics tick that
+	// blends simulated bodies into the rendered bones is registered at state
+	// creation time. Enabling it later renders a frozen skeleton while the
+	// simulation moves underneath (the v14/v15 heap illusion).
+	RigMesh->bBlendPhysics = true;
+
+	PoseSource = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("PoseSource"));
+	PoseSource->SetupAttachment(Bean);
+	PoseSource->SetRelativeLocation(FVector(0.f, 0.f, -BeanCapsuleHalfHeight));
+	PoseSource->SetRelativeRotation(FRotator::ZeroRotator);
+	PoseSource->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// HiddenInGame (not bVisible=false) so the pose keeps evaluating: a
+	// non-visible component can skip pose/space-transform updates entirely,
+	// which silently starves every drive target downstream.
+	PoseSource->SetVisibility(true);
+	PoseSource->SetHiddenInGame(true);
+	PoseSource->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	PoseSource->bPauseAnims = false;
+
+	Visual = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("Visual"));
+	Visual->SetupAttachment(Bean);
+	Visual->SetRelativeLocation(FVector(0.f, 0.f, -BeanCapsuleHalfHeight));
+	Visual->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// World-space bone writes leave the component's own bounds stale, which
+	// gets the poseable frustum-culled into invisibility. Ride the bean's
+	// bounds instead — the camera always frames the bean.
+	Visual->bUseAttachParentBound = true;
 
 	PelvisConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(TEXT("PelvisConstraint"));
 	PelvisConstraint->SetupAttachment(Bean);
 
-	PhysicsControl = CreateDefaultSubobject<UPhysicsControlComponent>(TEXT("PhysicsControl"));
 	MotorSystem = CreateDefaultSubobject<UT66MotionRigMotorSystem>(TEXT("MotorSystem"));
 	Scenario = CreateDefaultSubobject<UT66MotionRigScenario>(TEXT("Scenario"));
 
@@ -176,9 +204,11 @@ void AT66MotionRigPawn::BeginPlay()
 	//    (mesh simulation + pelvis constraint) is DEFERRED past the spawn/
 	//    teleport window; until then the pawn is a bean with a kinematic,
 	//    clip-animated mesh.
-	if (RigMesh->GetSkeletalMeshAsset())
+	// Mode BEFORE the first PlayStateClip — re-setting the mode after a play
+	// clears the queued asset.
+	if (PoseSource->GetSkeletalMeshAsset())
 	{
-		RigMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+		PoseSource->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 	}
 
 	SetMotionState(ET66MotionRigState::Idle);
@@ -190,18 +220,41 @@ void AT66MotionRigPawn::BeginPlay()
 		Bean->SetPhysicsLinearVelocity(FVector::ZeroVector);
 		Bean->SetPhysicsAngularVelocityInRadians(FVector::ZeroVector);
 
+		// The simulated mesh needs a LIVE anim instance or the physics→bone
+		// blend path (PerformBlendPhysicsBones) never runs and the RENDERED
+		// skeleton freezes while the simulation moves underneath (the v14
+		// discovery: bodies standing at target, bones reporting a heap).
+		// One play, once, here — then RigMesh animation is never touched
+		// again; the articulation re-init this causes is immediately followed
+		// by the simulation re-assert and motor init below.
+		if (RigMesh->GetSkeletalMeshAsset() && ClipIdle)
+		{
+			RigMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			RigMesh->PlayAnimation(ClipIdle, true);
+		}
+
+		// DETACH the simulated mesh (old-lane proven: bDetachMeshDuringRagdoll)
+		// — the engine's bodies→bones blend only behaves on detached or
+		// root-simulated meshes; attached fully-simulated meshes render frozen
+		// (v14..v22). The pose source stays attached to the bean, so drive
+		// targets still follow it; the pelvis PD keeps the body near the bean.
+		if (RigMesh->GetSkeletalMeshAsset())
+		{
+			RigMesh->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+			RigMesh->SetVisibility(true);
+			Visual->SetVisibility(false);
+		}
+
 		EnsureMeshSimulation();
 
 		if (CVarMRDebugEnableMotors.GetValueOnGameThread() != 0)
 		{
-			MotorSystem->InitializeMotors(RigMesh, PhysicsControl);
+			MotorSystem->InitializeMotors(RigMesh, PoseSource);
 			MotorSystem->ApplyStateProfile(MotionState);
 		}
-
-		if (RigMesh->GetSkeletalMeshAsset() && CVarMRDebugEnableConstraint.GetValueOnGameThread() != 0)
-		{
-			ReattachPelvisConstraint();
-		}
+		// No pelvis constraint: the bean↔body coupling is one-way by design —
+		// the motor system applies virtual PD forces on the pelvis instead
+		// (a real tether let the body bury the bean into the floor).
 
 		UE_LOG(LogT66MotionRigPawn, Display,
 			TEXT("[MR_BRINGUP] physics live at %s (meshSim=%d motors=%d)"),
@@ -234,13 +287,36 @@ void AT66MotionRigPawn::BeginPlay()
 				}
 			}
 		}
+		float SampleStiffness = -1.f;
+		if (RigMesh->Constraints.Num() > 0 && RigMesh->Constraints[0])
+		{
+			SampleStiffness = RigMesh->Constraints[0]->ProfileInstance.AngularDrive.SlerpDrive.Stiffness;
+		}
+		float PelvisBodyZ = -999.f;
+		int32 PelvisAwake = -1;
+		if (FBodyInstance* PelvisBody = RigMesh->GetSkeletalMeshAsset() ? RigMesh->GetBodyInstance(TEXT("pelvis")) : nullptr)
+		{
+			PelvisBodyZ = PelvisBody->GetUnrealWorldTransform().GetLocation().Z;
+			PelvisAwake = PelvisBody->IsInstanceAwake() ? 1 : 0;
+		}
 		UE_LOG(LogT66MotionRigPawn, Display,
-			TEXT("[MR_DIAG] beanSim=%d beanMass=%.1f beanZ=%.1f meshBodies=%d/%d simulating meshMass=%.1f pelvisZ=%.1f grounded=%d state=%s"),
+			TEXT("[MR_DIAG2] pelvisBODYz=%.1f awake=%d motorTicks=%d pdApplies=%d lastPdAccel=%.0f blendPhysics=%d blendWeight=%.2f"),
+			PelvisBodyZ, PelvisAwake,
+			MotorSystem->DiagTickCount, MotorSystem->DiagPelvisApplyCount, MotorSystem->DiagLastPelvisAccel,
+			RigMesh->bBlendPhysics ? 1 : 0,
+			RigMesh->Bodies.Num() > 0 && RigMesh->Bodies[0] ? RigMesh->Bodies[0]->PhysicsBlendWeight : -1.f);
+		UE_LOG(LogT66MotionRigPawn, Display,
+			TEXT("[MR_DIAG] beanSim=%d beanZ=%.1f meshBodies=%d/%d meshMass=%.1f constraints=%d slerpStiffness=%.0f pelvisZ=%.1f poseBones=%d posePelvisZ=%.1f poseAnim=%s grounded=%d state=%s"),
 			Bean->IsSimulatingPhysics() ? 1 : 0,
-			Bean->IsSimulatingPhysics() ? Bean->GetMass() : -1.f,
 			Bean->GetComponentLocation().Z,
 			SimBodies, TotalBodies, MeshMass,
+			RigMesh->Constraints.Num(),
+			SampleStiffness,
 			RigMesh->GetSkeletalMeshAsset() ? RigMesh->GetBoneLocation(TEXT("pelvis")).Z : -1.f,
+			PoseSource->GetBoneSpaceTransforms().Num(),
+			PoseSource->GetSkeletalMeshAsset() ? PoseSource->GetBoneTransform(TEXT("pelvis")).GetLocation().Z : -1.f,
+			PoseSource->GetSingleNodeInstance() && PoseSource->GetSingleNodeInstance()->GetCurrentAsset()
+				? *GetNameSafe(PoseSource->GetSingleNodeInstance()->GetCurrentAsset()) : TEXT("none"),
 			bGrounded ? 1 : 0,
 			T66MotionRigStateName(MotionState));
 	}), 3.0f, false);
@@ -271,6 +347,10 @@ void AT66MotionRigPawn::LoadAssets()
 	if (USkeletalMesh* MeshAsset = LoadObject<USkeletalMesh>(nullptr, T66MotionRigPaths::SkeletalMesh))
 	{
 		RigMesh->SetSkeletalMesh(MeshAsset);
+		PoseSource->SetSkeletalMesh(MeshAsset);
+		Visual->SetSkinnedAssetAndUpdate(MeshAsset);
+		// The simulated mesh carries physics only; the poseable copy renders.
+		RigMesh->SetVisibility(false);
 	}
 	else
 	{
@@ -289,23 +369,10 @@ void AT66MotionRigPawn::LoadAssets()
 
 void AT66MotionRigPawn::ReattachPelvisConstraint()
 {
-	if (!RigMesh->GetSkeletalMeshAsset())
-	{
-		return;
-	}
-
-	// Soft tether: pelvis rides the bean with a little linear slack so
-	// landings and impacts read through the body; orientation is fully free —
-	// motors own pose, the bean's upright spring owns balance.
-	PelvisConstraint->SetWorldLocation(Bean->GetComponentLocation());
-	PelvisConstraint->SetLinearXLimit(LCM_Limited, 14.f);
-	PelvisConstraint->SetLinearYLimit(LCM_Limited, 14.f);
-	PelvisConstraint->SetLinearZLimit(LCM_Limited, 18.f);
-	PelvisConstraint->SetAngularSwing1Limit(ACM_Free, 0.f);
-	PelvisConstraint->SetAngularSwing2Limit(ACM_Free, 0.f);
-	PelvisConstraint->SetAngularTwistLimit(ACM_Free, 0.f);
-	PelvisConstraint->SetDisableCollision(true);
-	PelvisConstraint->SetConstrainedComponents(Bean, NAME_None, RigMesh, TEXT("pelvis"));
+	// Intentionally unused: the bean↔body coupling is one-way (virtual PD on
+	// the pelvis in the motor system). A physical tether lets the body's
+	// reaction forces shove the bean — walkcircle_v10 buried it in the floor.
+	// Kept as a stub in case a future state wants a real tether temporarily.
 }
 
 FVector AT66MotionRigPawn::GetBeanVelocity() const
@@ -451,9 +518,8 @@ void AT66MotionRigPawn::FinishKnockdownEnter()
 	// Motors limp first so the body is compliant when the launch arrives.
 	MotorSystem->GoLimp();
 
-	// Free the skeleton from the bean; the bean stops being a physical
-	// presence and becomes a follower until recovery.
-	PelvisConstraint->BreakConstraint();
+	// The bean stops being a physical presence and becomes a follower until
+	// recovery (no tether exists; the pelvis PD is already zero while limp).
 	SetBeanPhysicsEnabled(false);
 
 	if (RigMesh->GetSkeletalMeshAsset() && RigMesh->IsSimulatingPhysics())
@@ -518,10 +584,6 @@ void AT66MotionRigPawn::StartGetUp()
 	SetBeanPhysicsEnabled(true);
 	Bean->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	Bean->SetPhysicsAngularVelocityInRadians(FVector::ZeroVector);
-	if (CVarMRDebugEnableConstraint.GetValueOnGameThread() != 0)
-	{
-		ReattachPelvisConstraint();
-	}
 
 	SetMotionState(ET66MotionRigState::GetUp);
 }
@@ -757,6 +819,46 @@ void AT66MotionRigPawn::Tick(const float DeltaSeconds)
 	TickKnockdownFollow();
 	TickStateMachine(DeltaSeconds);
 	TickWalkCadence();
+	TickVisualFromBodies();
+}
+
+void AT66MotionRigPawn::TickVisualFromBodies()
+{
+	static bool bLoggedOnce = false;
+	if (!bLoggedOnce && bPhysicsLive)
+	{
+		bLoggedOnce = true;
+		UE_LOG(LogT66MotionRigPawn, Display,
+			TEXT("[MR_VISUAL] physicsLive=%d rigAsset=%d visualAsset=%d visualVisible=%d visualBones=%d"),
+			bPhysicsLive ? 1 : 0,
+			RigMesh->GetSkeletalMeshAsset() ? 1 : 0,
+			Visual->GetSkinnedAsset() ? 1 : 0,
+			Visual->IsVisible() ? 1 : 0,
+			Visual->GetNumBones());
+	}
+	if (!bPhysicsLive || !RigMesh->GetSkeletalMeshAsset() || !Visual->GetSkinnedAsset())
+	{
+		return;
+	}
+
+	static const FName CanonicalBones[] = {
+		TEXT("pelvis"), TEXT("spine_01"), TEXT("spine_02"), TEXT("head"),
+		TEXT("clavicle_l"), TEXT("upperarm_l"), TEXT("lowerarm_l"), TEXT("hand_l"),
+		TEXT("clavicle_r"), TEXT("upperarm_r"), TEXT("lowerarm_r"), TEXT("hand_r"),
+		TEXT("thigh_l"), TEXT("calf_l"), TEXT("foot_l"),
+		TEXT("thigh_r"), TEXT("calf_r"), TEXT("foot_r") };
+
+	// Component-space writes with explicit math — the WorldSpace path of the
+	// poseable setter put the body off-screen (apparent double transform).
+	const FTransform WorldToComponent = Visual->GetComponentTransform().Inverse();
+	for (const FName& Bone : CanonicalBones)
+	{
+		if (const FBodyInstance* Body = RigMesh->GetBodyInstance(Bone))
+		{
+			const FTransform ComponentSpace = Body->GetUnrealWorldTransform() * WorldToComponent;
+			Visual->SetBoneTransformByName(Bone, ComponentSpace, EBoneSpaces::ComponentSpace);
+		}
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -779,7 +881,9 @@ UAnimSequence* AT66MotionRigPawn::ClipForState(const ET66MotionRigState State) c
 
 void AT66MotionRigPawn::PlayStateClip(const ET66MotionRigState State)
 {
-	if (!RigMesh->GetSkeletalMeshAsset())
+	// Clips play ONLY on the hidden pose source; the simulated mesh is never
+	// touched by animation calls (articulation re-init kills simulation).
+	if (!PoseSource->GetSkeletalMeshAsset())
 	{
 		return;
 	}
@@ -793,13 +897,13 @@ void AT66MotionRigPawn::PlayStateClip(const ET66MotionRigState State)
 	const bool bLoop =
 		State == ET66MotionRigState::Idle ||
 		State == ET66MotionRigState::Walk;
-	RigMesh->PlayAnimation(Clip, bLoop);
-	RigMesh->SetPlayRate(1.f);
+	PoseSource->PlayAnimation(Clip, bLoop);
+	PoseSource->SetPlayRate(1.f);
 }
 
 void AT66MotionRigPawn::TickWalkCadence()
 {
-	if (MotionState != ET66MotionRigState::Walk || !RigMesh->GetSkeletalMeshAsset())
+	if (MotionState != ET66MotionRigState::Walk || !PoseSource->GetSkeletalMeshAsset())
 	{
 		return;
 	}
@@ -807,7 +911,7 @@ void AT66MotionRigPawn::TickWalkCadence()
 	// Feet match the floor: clip play rate scales with actual bean speed.
 	const float ReferenceSpeed = FMath::Max(50.f, CVarMRWalkReferenceSpeed.GetValueOnGameThread());
 	const float Rate = FMath::Clamp(GetBeanVelocity().Size2D() / ReferenceSpeed, 0.25f, 1.6f);
-	RigMesh->SetPlayRate(Rate);
+	PoseSource->SetPlayRate(Rate);
 }
 
 FVector AT66MotionRigPawn::GetCameraRelativeInputDirection() const

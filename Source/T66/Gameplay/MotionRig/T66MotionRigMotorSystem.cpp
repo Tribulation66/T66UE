@@ -3,79 +3,89 @@
 #include "Gameplay/MotionRig/T66MotionRigMotorSystem.h"
 
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
 #include "HAL/IConsoleManager.h"
-#include "PhysicsControlComponent.h"
-#include "PhysicsControlData.h"
+#include "PhysicsEngine/ConstraintInstance.h"
 #include "PhysicsEngine/PhysicsAsset.h"
+#include "ReferenceSkeleton.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66MotionRig, Log, All);
 
-// Base motor gains. DampingRatio < 1 is the wobble knob: the body overshoots
-// its pose target and settles — tune against rubric axis 3 (MOTION_RIG.md §4).
-// All live-tunable; the scenario harness re-applies via RefreshBaseGains().
-// Strength baselines re-tuned x8 after walkcircle_v5: the original values left
-// the body a heap on the floor (motors could not even hold the idle pose).
-static TAutoConsoleVariable<float> CVarMRMotorLegAngular(
-	TEXT("t66.MotionRig.Motor.LegAngularStrength"), 18000.f,
-	TEXT("MotionRig parent-space angular strength for leg motors."), ECVF_Default);
-static TAutoConsoleVariable<float> CVarMRMotorLegDamping(
-	TEXT("t66.MotionRig.Motor.LegAngularDamping"), 0.8f,
-	TEXT("MotionRig leg motor damping ratio (1 = critical, <1 = wobbly)."), ECVF_Default);
-static TAutoConsoleVariable<float> CVarMRMotorSpineAngular(
-	TEXT("t66.MotionRig.Motor.SpineAngularStrength"), 21000.f,
-	TEXT("MotionRig parent-space angular strength for spine motors."), ECVF_Default);
-static TAutoConsoleVariable<float> CVarMRMotorSpineDamping(
-	TEXT("t66.MotionRig.Motor.SpineAngularDamping"), 0.7f,
-	TEXT("MotionRig spine motor damping ratio."), ECVF_Default);
-static TAutoConsoleVariable<float> CVarMRMotorArmAngular(
-	TEXT("t66.MotionRig.Motor.ArmAngularStrength"), 7000.f,
-	TEXT("MotionRig parent-space angular strength for arm motors (loose on purpose)."), ECVF_Default);
-static TAutoConsoleVariable<float> CVarMRMotorArmDamping(
-	TEXT("t66.MotionRig.Motor.ArmAngularDamping"), 0.45f,
-	TEXT("MotionRig arm motor damping ratio (low = floppy secondary motion)."), ECVF_Default);
-static TAutoConsoleVariable<float> CVarMRMotorHeadAngular(
-	TEXT("t66.MotionRig.Motor.HeadAngularStrength"), 5500.f,
-	TEXT("MotionRig parent-space angular strength for the head motor."), ECVF_Default);
-static TAutoConsoleVariable<float> CVarMRMotorHeadDamping(
-	TEXT("t66.MotionRig.Motor.HeadAngularDamping"), 0.55f,
-	TEXT("MotionRig head motor damping ratio."), ECVF_Default);
-static TAutoConsoleVariable<float> CVarMRMotorPelvisLinear(
-	TEXT("t66.MotionRig.Motor.PelvisWorldLinearStrength"), 10000.f,
-	TEXT("MotionRig world-space linear strength holding the pelvis to the animated pose."), ECVF_Default);
-static TAutoConsoleVariable<float> CVarMRMotorPelvisAngular(
-	TEXT("t66.MotionRig.Motor.PelvisWorldAngularStrength"), 19000.f,
-	TEXT("MotionRig world-space angular strength orienting the pelvis to the animated pose."), ECVF_Default);
-static TAutoConsoleVariable<float> CVarMRMotorPelvisDamping(
-	TEXT("t66.MotionRig.Motor.PelvisWorldDamping"), 0.9f,
-	TEXT("MotionRig pelvis world-space damping ratio (linear and angular)."), ECVF_Default);
+// Joint drive gains. Spring/damping are Chaos angular-drive units applied via
+// SetAngularDriveParams. Damping low relative to spring is the wobble knob —
+// rubric axis 3 (MOTION_RIG.md §4). All live; the scenario harness re-applies
+// via RefreshBaseGains().
+static TAutoConsoleVariable<float> CVarMRMotorLegSpring(
+	TEXT("t66.MotionRig.Motor.LegSpring"), 1200000.f,
+	TEXT("MotionRig leg joint drive spring."), ECVF_Default);
+static TAutoConsoleVariable<float> CVarMRMotorSpineSpring(
+	TEXT("t66.MotionRig.Motor.SpineSpring"), 1600000.f,
+	TEXT("MotionRig spine joint drive spring."), ECVF_Default);
+static TAutoConsoleVariable<float> CVarMRMotorArmSpring(
+	TEXT("t66.MotionRig.Motor.ArmSpring"), 360000.f,
+	TEXT("MotionRig arm joint drive spring (loose on purpose — secondary motion)."), ECVF_Default);
+static TAutoConsoleVariable<float> CVarMRMotorHeadSpring(
+	TEXT("t66.MotionRig.Motor.HeadSpring"), 320000.f,
+	TEXT("MotionRig head joint drive spring."), ECVF_Default);
+static TAutoConsoleVariable<float> CVarMRMotorDampingRatio(
+	TEXT("t66.MotionRig.Motor.DampingFraction"), 0.05f,
+	TEXT("Joint drive damping as a fraction of spring (lower = wobblier)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorGlobalScale(
 	TEXT("t66.MotionRig.Motor.GlobalScale"), 1.f,
 	TEXT("Master multiplier over every MotionRig motor strength."), ECVF_Default);
-
-namespace T66MotionRigSets
-{
-	static const FName ParentLegs(TEXT("MR_Parent_Legs"));
-	static const FName ParentSpine(TEXT("MR_Parent_Spine"));
-	static const FName ParentArms(TEXT("MR_Parent_Arms"));
-	static const FName ParentHead(TEXT("MR_Parent_Head"));
-	static const FName WorldPelvis(TEXT("MR_World_Pelvis"));
-	static const FName Bodies(TEXT("MR_Bodies"));
-}
+// One-way pelvis coupling: virtual PD forces on the pelvis body toward the
+// pose-source pelvis (which rides the bean). No constraint = no reaction on
+// the bean = the body can NEVER push the bean around (a real tether buried
+// the bean half a meter into the floor — walkcircle_v10).
+static TAutoConsoleVariable<float> CVarMRPelvisLinearKp(
+	TEXT("t66.MotionRig.Motor.PelvisLinearKp"), 320.f,
+	TEXT("Pelvis follow proportional gain (accel per cm error, 1/s^2)."), ECVF_Default);
+static TAutoConsoleVariable<float> CVarMRPelvisLinearKd(
+	TEXT("t66.MotionRig.Motor.PelvisLinearKd"), 28.f,
+	TEXT("Pelvis follow damping gain (1/s)."), ECVF_Default);
+static TAutoConsoleVariable<float> CVarMRPelvisMaxAccel(
+	TEXT("t66.MotionRig.Motor.PelvisMaxAccel"), 9000.f,
+	TEXT("Clamp on pelvis follow acceleration (cm/s^2)."), ECVF_Default);
+static TAutoConsoleVariable<float> CVarMRPelvisAngularKp(
+	TEXT("t66.MotionRig.Motor.PelvisAngularKp"), 280.f,
+	TEXT("Pelvis orientation proportional gain (rad/s^2 per rad)."), ECVF_Default);
+static TAutoConsoleVariable<float> CVarMRPelvisAngularKd(
+	TEXT("t66.MotionRig.Motor.PelvisAngularKd"), 22.f,
+	TEXT("Pelvis orientation damping gain (1/s)."), ECVF_Default);
 
 namespace
 {
-	FPhysicsControlData MakeAngularControlData(const float AngularStrength, const float AngularDamping)
+	bool IsArmBone(const FName Bone)
 	{
-		FPhysicsControlData Data;
-		Data.bEnabled = true;
-		Data.LinearStrength = 0.f;
-		Data.LinearDampingRatio = 1.f;
-		Data.AngularStrength = AngularStrength;
-		Data.AngularDampingRatio = AngularDamping;
-		Data.bUseSkeletalAnimation = true;
-		Data.bDisableCollision = false;
-		Data.bOnlyControlChildObject = false;
-		return Data;
+		static const TSet<FName> Bones = {
+			TEXT("clavicle_l"), TEXT("upperarm_l"), TEXT("lowerarm_l"), TEXT("hand_l"),
+			TEXT("clavicle_r"), TEXT("upperarm_r"), TEXT("lowerarm_r"), TEXT("hand_r") };
+		return Bones.Contains(Bone);
+	}
+
+	float SpringForBone(const FName Bone)
+	{
+		static const TSet<FName> Legs = {
+			TEXT("thigh_l"), TEXT("calf_l"), TEXT("foot_l"),
+			TEXT("thigh_r"), TEXT("calf_r"), TEXT("foot_r") };
+		static const TSet<FName> Spine = { TEXT("spine_01"), TEXT("spine_02"), TEXT("pelvis") };
+		if (Legs.Contains(Bone))
+		{
+			return CVarMRMotorLegSpring.GetValueOnGameThread();
+		}
+		if (Spine.Contains(Bone))
+		{
+			return CVarMRMotorSpineSpring.GetValueOnGameThread();
+		}
+		if (IsArmBone(Bone))
+		{
+			return CVarMRMotorArmSpring.GetValueOnGameThread();
+		}
+		if (Bone == TEXT("head"))
+		{
+			return CVarMRMotorHeadSpring.GetValueOnGameThread();
+		}
+		return CVarMRMotorArmSpring.GetValueOnGameThread();
 	}
 }
 
@@ -85,13 +95,14 @@ UT66MotionRigMotorSystem::UT66MotionRigMotorSystem()
 	PrimaryComponentTick.TickGroup = TG_PrePhysics;
 }
 
-void UT66MotionRigMotorSystem::InitializeMotors(USkeletalMeshComponent* InMesh, UPhysicsControlComponent* InControl)
+void UT66MotionRigMotorSystem::InitializeMotors(USkeletalMeshComponent* InMesh, USkeletalMeshComponent* InPoseSource)
 {
 	Mesh = InMesh;
-	Control = InControl;
+	PoseSource = InPoseSource;
 	bMotorsInitialized = false;
+	DriveJoints.Reset();
 
-	if (!Mesh || !Control)
+	if (!Mesh || !PoseSource)
 	{
 		return;
 	}
@@ -107,60 +118,71 @@ void UT66MotionRigMotorSystem::InitializeMotors(USkeletalMeshComponent* InMesh, 
 		return;
 	}
 
-	// Everything simulates, full blend, normal gravity. There is deliberately
-	// no kinematic fallback anywhere in this lane.
+	// Mass distribution per MOTION_RIG.md §3 (70 kg total, pelvis-heavy).
+	// Auto-generated capsules default to volume-derived masses — measured
+	// 485 kg on Hero 1 — which out-muscles every motor and drags the bean
+	// down through the pelvis tether. Authored masses are part of the spec.
 	{
-		FPhysicsControlModifierData BodyData;
-		BodyData.MovementType = EPhysicsMovementType::Simulated;
-		BodyData.CollisionType = ECollisionEnabled::QueryAndPhysics;
-		BodyData.GravityMultiplier = 1.f;
-		BodyData.PhysicsBlendWeight = 1.f;
-		Control->CreateBodyModifiersFromSkeletalMeshBelow(
-			Mesh, TEXT("pelvis"), /*bIncludeSelf*/ true, T66MotionRigSets::Bodies, BodyData);
+		static const TPair<FName, float> BodyMassesKg[] = {
+			{ TEXT("pelvis"), 14.0f }, { TEXT("spine_01"), 8.0f }, { TEXT("spine_02"), 8.5f },
+			{ TEXT("head"), 5.6f },
+			{ TEXT("clavicle_l"), 0.5f }, { TEXT("clavicle_r"), 0.5f },
+			{ TEXT("upperarm_l"), 1.6f }, { TEXT("lowerarm_l"), 1.4f }, { TEXT("hand_l"), 1.2f },
+			{ TEXT("upperarm_r"), 1.6f }, { TEXT("lowerarm_r"), 1.4f }, { TEXT("hand_r"), 1.2f },
+			{ TEXT("thigh_l"), 5.5f }, { TEXT("calf_l"), 4.5f }, { TEXT("foot_l"), 2.25f },
+			{ TEXT("thigh_r"), 5.5f }, { TEXT("calf_r"), 4.5f }, { TEXT("foot_r"), 2.25f } };
+		float TotalMass = 0.f;
+		for (const TPair<FName, float>& BoneMass : BodyMassesKg)
+		{
+			if (FBodyInstance* Body = Mesh->GetBodyInstance(BoneMass.Key))
+			{
+				Body->SetMassOverride(BoneMass.Value, true);
+				Body->UpdateMassProperties();
+				TotalMass += BoneMass.Value;
+			}
+		}
+		UE_LOG(LogT66MotionRig, Display, TEXT("MotionRig body masses authored: %.1f kg total"), TotalMass);
 	}
 
-	// Parent-space joint motors, grouped so states can treat limbs differently.
-	const TArray<FName> LegBones = {
-		TEXT("thigh_l"), TEXT("calf_l"), TEXT("foot_l"),
-		TEXT("thigh_r"), TEXT("calf_r"), TEXT("foot_r") };
-	const TArray<FName> SpineBones = { TEXT("spine_01"), TEXT("spine_02") };
-	const TArray<FName> ArmBones = {
-		TEXT("upperarm_l"), TEXT("lowerarm_l"), TEXT("hand_l"),
-		TEXT("upperarm_r"), TEXT("lowerarm_r"), TEXT("hand_r") };
-	const TArray<FName> HeadBones = { TEXT("head") };
-	const TArray<FName> PelvisBones = { TEXT("pelvis") };
+	// Configure SLERP angular drives on every runtime joint constraint and
+	// cache what the per-tick target write needs. Reference-pose local
+	// rotations let targets be expressed as deltas from the bind pose, which
+	// matches how constraint reference frames are generated.
+	const FReferenceSkeleton& RefSkeleton = Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
+	const TArray<FTransform>& RefPose = RefSkeleton.GetRefBonePose();
 
-	const int32 NumLegs = Control->CreateControlsFromSkeletalMesh(
-		Mesh, LegBones, EPhysicsControlType::ParentSpace,
-		MakeAngularControlData(CVarMRMotorLegAngular.GetValueOnGameThread(), CVarMRMotorLegDamping.GetValueOnGameThread()),
-		T66MotionRigSets::ParentLegs).Num();
-	const int32 NumSpine = Control->CreateControlsFromSkeletalMesh(
-		Mesh, SpineBones, EPhysicsControlType::ParentSpace,
-		MakeAngularControlData(CVarMRMotorSpineAngular.GetValueOnGameThread(), CVarMRMotorSpineDamping.GetValueOnGameThread()),
-		T66MotionRigSets::ParentSpine).Num();
-	const int32 NumArms = Control->CreateControlsFromSkeletalMesh(
-		Mesh, ArmBones, EPhysicsControlType::ParentSpace,
-		MakeAngularControlData(CVarMRMotorArmAngular.GetValueOnGameThread(), CVarMRMotorArmDamping.GetValueOnGameThread()),
-		T66MotionRigSets::ParentArms).Num();
-	const int32 NumHead = Control->CreateControlsFromSkeletalMesh(
-		Mesh, HeadBones, EPhysicsControlType::ParentSpace,
-		MakeAngularControlData(CVarMRMotorHeadAngular.GetValueOnGameThread(), CVarMRMotorHeadDamping.GetValueOnGameThread()),
-		T66MotionRigSets::ParentHead).Num();
+	for (int32 ConstraintIndex = 0; ConstraintIndex < Mesh->Constraints.Num(); ++ConstraintIndex)
+	{
+		FConstraintInstance* Constraint = Mesh->Constraints[ConstraintIndex];
+		if (!Constraint)
+		{
+			continue;
+		}
 
-	// World-space pelvis assist: holds the torso onto the animated pose (which
-	// lives in component space and therefore follows the bean). This is what
-	// keeps the body assembled while parent-space motors do the limbs.
-	FPhysicsControlData PelvisData = MakeAngularControlData(
-		CVarMRMotorPelvisAngular.GetValueOnGameThread(), CVarMRMotorPelvisDamping.GetValueOnGameThread());
-	PelvisData.LinearStrength = CVarMRMotorPelvisLinear.GetValueOnGameThread();
-	PelvisData.LinearDampingRatio = CVarMRMotorPelvisDamping.GetValueOnGameThread();
-	const int32 NumPelvis = Control->CreateControlsFromSkeletalMesh(
-		Mesh, PelvisBones, EPhysicsControlType::WorldSpace, PelvisData, T66MotionRigSets::WorldPelvis).Num();
+		// ConstraintBone1 is the child body in generated assets.
+		const FName ChildBone = Constraint->ConstraintBone1;
+		const int32 ChildBoneIndex = RefSkeleton.FindBoneIndex(ChildBone);
+		if (ChildBoneIndex == INDEX_NONE)
+		{
+			continue;
+		}
 
-	bMotorsInitialized = (NumLegs + NumSpine + NumArms + NumHead + NumPelvis) > 0;
+		Constraint->SetAngularDriveMode(EAngularDriveMode::SLERP);
+		Constraint->SetOrientationDriveSLERP(true);
+		Constraint->SetAngularVelocityDriveSLERP(true);
+
+		FDriveJoint Joint;
+		Joint.ConstraintIndex = ConstraintIndex;
+		Joint.ChildBoneIndex = ChildBoneIndex;
+		Joint.RefLocalRotationInverse = RefPose[ChildBoneIndex].GetRotation().Inverse();
+		Joint.SetStrengthScaleArm = IsArmBone(ChildBone) ? 1.f : 0.f;
+		Joint.BaseStrength = SpringForBone(ChildBone);
+		DriveJoints.Add(Joint);
+	}
+
+	bMotorsInitialized = DriveJoints.Num() > 0;
 	UE_LOG(LogT66MotionRig, Display,
-		TEXT("MotionRig motors initialized: legs=%d spine=%d arms=%d head=%d pelvisWorld=%d"),
-		NumLegs, NumSpine, NumArms, NumHead, NumPelvis);
+		TEXT("MotionRig motors initialized: %d joint drives (direct SLERP)."), DriveJoints.Num());
 
 	ApplyStateProfile(ET66MotionRigState::Idle);
 }
@@ -177,16 +199,13 @@ FT66MotionRigStateMotorScale UT66MotionRigMotorSystem::ProfileForState(const ET6
 		Scale.AllScale = 1.f; Scale.ArmScale = 1.f; Scale.PelvisWorldScale = 1.f; Scale.RampSeconds = 0.15f;
 		break;
 	case ET66MotionRigState::Jump:
-		// Slightly stiffer in the air so the tuck pose reads.
 		Scale.AllScale = 1.15f; Scale.ArmScale = 1.1f; Scale.PelvisWorldScale = 1.f; Scale.RampSeconds = 0.05f;
 		break;
 	case ET66MotionRigState::Dive:
-		// Strong pose hold for the airborne superman; pelvis world assist
-		// eases so the bean's pitch-over decides body orientation.
 		Scale.AllScale = 1.3f; Scale.ArmScale = 1.4f; Scale.PelvisWorldScale = 0.55f; Scale.RampSeconds = 0.05f;
 		break;
 	case ET66MotionRigState::Knockdown:
-		Scale.AllScale = 0.04f; Scale.ArmScale = 0.02f; Scale.PelvisWorldScale = 0.f; Scale.RampSeconds = 0.f;
+		Scale.AllScale = 0.03f; Scale.ArmScale = 0.02f; Scale.PelvisWorldScale = 0.f; Scale.RampSeconds = 0.f;
 		break;
 	case ET66MotionRigState::GetUp:
 		Scale.AllScale = 1.f; Scale.ArmScale = 1.f; Scale.PelvisWorldScale = 0.8f; Scale.RampSeconds = 0.6f;
@@ -223,7 +242,7 @@ void UT66MotionRigMotorSystem::GoLimp()
 	{
 		return;
 	}
-	TargetAllScale = CurrentAllScale = 0.04f;
+	TargetAllScale = CurrentAllScale = 0.03f;
 	TargetArmScale = CurrentArmScale = 0.02f;
 	TargetPelvisWorldScale = CurrentPelvisWorldScale = 0.f;
 	RampRatePerSecond = 0.f;
@@ -234,6 +253,13 @@ void UT66MotionRigMotorSystem::RefreshBaseGains()
 {
 	if (bMotorsInitialized)
 	{
+		for (FDriveJoint& Joint : DriveJoints)
+		{
+			if (FConstraintInstance* Constraint = Mesh->Constraints.IsValidIndex(Joint.ConstraintIndex) ? Mesh->Constraints[Joint.ConstraintIndex] : nullptr)
+			{
+				Joint.BaseStrength = SpringForBone(Constraint->ConstraintBone1);
+			}
+		}
 		ApplyGainsAtScale(CurrentAllScale, CurrentArmScale, CurrentPelvisWorldScale);
 	}
 }
@@ -263,46 +289,131 @@ void UT66MotionRigMotorSystem::TickComponent(
 	{
 		ApplyGainsAtScale(CurrentAllScale, CurrentArmScale, CurrentPelvisWorldScale);
 	}
+
+	TickDriveTargets();
+}
+
+void UT66MotionRigMotorSystem::TickDriveTargets()
+{
+	if (!Mesh || !PoseSource || !PoseSource->GetSkeletalMeshAsset())
+	{
+		return;
+	}
+
+	// Chaos puts settled islands to sleep, and a sleeping body ignores drive
+	// target updates AND AddForce — the silent killer behind every "motors do
+	// nothing" iteration (v5..v12). While motors are meaningfully on, the
+	// skeleton must stay awake; during knockdown (scale ~0) it may sleep.
+	if (CurrentAllScale > 0.15f)
+	{
+		Mesh->WakeAllRigidBodies();
+	}
+	++DiagTickCount;
+
+	// Local-space animated pose straight from the hidden kinematic source.
+	const TArray<FTransform>& LocalPose = PoseSource->GetBoneSpaceTransforms();
+	if (LocalPose.Num() == 0)
+	{
+		return;
+	}
+
+	for (const FDriveJoint& Joint : DriveJoints)
+	{
+		if (!Mesh->Constraints.IsValidIndex(Joint.ConstraintIndex) || !LocalPose.IsValidIndex(Joint.ChildBoneIndex))
+		{
+			continue;
+		}
+		FConstraintInstance* Constraint = Mesh->Constraints[Joint.ConstraintIndex];
+		if (!Constraint)
+		{
+			continue;
+		}
+
+		// Target = animated local rotation expressed as a delta from the bind
+		// pose (constraint reference frames are generated at the bind pose).
+		const FQuat AnimLocal = LocalPose[Joint.ChildBoneIndex].GetRotation();
+		const FQuat TargetDelta = Joint.RefLocalRotationInverse * AnimLocal;
+		Constraint->SetAngularOrientationTarget(TargetDelta);
+	}
+
+	TickPelvisFollow();
+}
+
+void UT66MotionRigMotorSystem::TickPelvisFollow()
+{
+	// Virtual PD on the pelvis body toward the pose-source pelvis world
+	// transform. One-way by construction: forces act on the body only, so the
+	// bean never feels the skeleton. Scaled by the state profile's pelvis
+	// factor (0 while limp).
+	FBodyInstance* Pelvis = Mesh ? Mesh->GetBodyInstance(TEXT("pelvis")) : nullptr;
+	if (!Pelvis || !Pelvis->IsInstanceSimulatingPhysics() || CurrentPelvisWorldScale <= KINDA_SMALL_NUMBER)
+	{
+		return;
+	}
+
+	const FTransform TargetTransform = PoseSource->GetBoneTransform(TEXT("pelvis"));
+	const FTransform PelvisTransform = Pelvis->GetUnrealWorldTransform();
+
+	// Linear PD in acceleration space (bAccelChange — mass-independent).
+	const FVector PositionError = TargetTransform.GetLocation() - PelvisTransform.GetLocation();
+	const FVector Velocity = Pelvis->GetUnrealWorldVelocity();
+	FVector Accel = PositionError * CVarMRPelvisLinearKp.GetValueOnGameThread()
+		- Velocity * CVarMRPelvisLinearKd.GetValueOnGameThread();
+	const float MaxAccel = CVarMRPelvisMaxAccel.GetValueOnGameThread();
+	if (Accel.SizeSquared() > MaxAccel * MaxAccel)
+	{
+		Accel = Accel.GetSafeNormal() * MaxAccel;
+	}
+	Pelvis->AddForce(Accel * CurrentPelvisWorldScale, false, /*bAccelChange*/ true);
+	++DiagPelvisApplyCount;
+	DiagLastPelvisAccel = Accel.Size() * CurrentPelvisWorldScale;
+
+	// Angular PD toward the animated pelvis orientation (acceleration space).
+	const FQuat DeltaQuat = TargetTransform.GetRotation() * PelvisTransform.GetRotation().Inverse();
+	FVector Axis;
+	float Angle;
+	DeltaQuat.ToAxisAndAngle(Axis, Angle);
+	if (Angle > PI)
+	{
+		Angle -= 2.f * PI;
+	}
+	const FVector AngularVelocity = Pelvis->GetUnrealWorldAngularVelocityInRadians();
+	const FVector AngularAccel = Axis * Angle * CVarMRPelvisAngularKp.GetValueOnGameThread()
+		- AngularVelocity * CVarMRPelvisAngularKd.GetValueOnGameThread();
+	Pelvis->AddTorqueInRadians(AngularAccel * CurrentPelvisWorldScale, false, /*bAccelChange*/ true);
 }
 
 void UT66MotionRigMotorSystem::ApplyGainsAtScale(
 	const float InAllScale, const float InArmScale, const float InPelvisWorldScale)
 {
-	if (!Control)
+	if (!Mesh)
 	{
 		return;
 	}
 
 	const float Global = FMath::Max(0.f, CVarMRMotorGlobalScale.GetValueOnGameThread());
 	const float All = InAllScale * Global;
+	const float DampingFraction = FMath::Max(0.f, CVarMRMotorDampingRatio.GetValueOnGameThread());
 
-	Control->SetControlDatasInSet(
-		T66MotionRigSets::ParentLegs,
-		MakeAngularControlData(
-			CVarMRMotorLegAngular.GetValueOnGameThread() * All,
-			CVarMRMotorLegDamping.GetValueOnGameThread()));
-	Control->SetControlDatasInSet(
-		T66MotionRigSets::ParentSpine,
-		MakeAngularControlData(
-			CVarMRMotorSpineAngular.GetValueOnGameThread() * All,
-			CVarMRMotorSpineDamping.GetValueOnGameThread()));
-	Control->SetControlDatasInSet(
-		T66MotionRigSets::ParentHead,
-		MakeAngularControlData(
-			CVarMRMotorHeadAngular.GetValueOnGameThread() * All,
-			CVarMRMotorHeadDamping.GetValueOnGameThread()));
-	Control->SetControlDatasInSet(
-		T66MotionRigSets::ParentArms,
-		MakeAngularControlData(
-			CVarMRMotorArmAngular.GetValueOnGameThread() * All * InArmScale,
-			CVarMRMotorArmDamping.GetValueOnGameThread()));
+	for (const FDriveJoint& Joint : DriveJoints)
+	{
+		if (!Mesh->Constraints.IsValidIndex(Joint.ConstraintIndex))
+		{
+			continue;
+		}
+		FConstraintInstance* Constraint = Mesh->Constraints[Joint.ConstraintIndex];
+		if (!Constraint)
+		{
+			continue;
+		}
 
-	FPhysicsControlData PelvisData = MakeAngularControlData(
-		CVarMRMotorPelvisAngular.GetValueOnGameThread() * All * InPelvisWorldScale,
-		CVarMRMotorPelvisDamping.GetValueOnGameThread());
-	PelvisData.LinearStrength = CVarMRMotorPelvisLinear.GetValueOnGameThread() * All * InPelvisWorldScale;
-	PelvisData.LinearDampingRatio = CVarMRMotorPelvisDamping.GetValueOnGameThread();
-	Control->SetControlDatasInSet(T66MotionRigSets::WorldPelvis, PelvisData);
+		float Strength = Joint.BaseStrength * All;
+		if (Joint.SetStrengthScaleArm > 0.f)
+		{
+			Strength *= InArmScale;
+		}
+		Constraint->SetAngularDriveParams(Strength, Strength * DampingFraction, 0.f);
+	}
 
 	LastAppliedAllScale = InAllScale;
 	LastAppliedArmScale = InArmScale;

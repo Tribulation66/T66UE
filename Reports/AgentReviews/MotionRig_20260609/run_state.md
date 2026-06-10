@@ -107,7 +107,32 @@ few minutes to reset if needed). Weekly 16% (stop at 77% weekly).
   FIX: physics bring-up (mesh sim + pelvis constraint + motors) DEFERRED 0.75s
   behind bPhysicsLive gate; bean velocities zeroed at bring-up. Also fixed
   capture script copying STALE telemetry from older runs (freshness check).
-- walkcircle_v4: running (deferred bring-up build).
+- walkcircle_v4: deferred bring-up SURVIVED spawn ([MR_BRINGUP] at test-room
+  start, meshSim=1 motors=1) but pawn died between 0.75s and 3s; world black.
+  Measured the exported FBX: 18,000 units tall — the x100 bake had stacked on
+  the FBX exporter's own m→cm conversion (KAIJU). Reverted the bake; the v1
+  "tiny character" read was wrong (camera distance + crumple misled).
+- walkcircle_v5: world renders again, scenario ran to completion, telemetry
+  real. Character = heap (pelvis==head z≈60), bean hanging at 131, never
+  grounded, no walk. TWO causes found: (a) controller axis bindings fire every
+  frame with zero and STOMP scripted input → SetScenarioInputOverride; (b)
+  motors hold nothing.
+- walkcircle_v6: input override works (Idle→Walk→Jump, vx to 62) but body
+  still a heap. [MR_DIAG]: meshBodies 18/18 simulating, meshMass=485.3 kg (!)
+  — auto-PA capsule masses are ~7x human; motors and the 70kg bean are
+  out-muscled. FIX: authored per-bone mass table (70 kg total) applied at
+  motor init + motor strengths x8.
+- walkcircle_v7: BEAN FIXED — grounded=1, resting z=90, meshMass=70.0
+  (authored masses applied). Skeleton still drapes (pelvis 3.2) — PhysicsControl
+  controls created but produce NO force despite x8 strengths.
+- walkcircle_v8: PIVOTED drive plumbing to UPhysicalAnimationComponent (the
+  pre-flight fallback; same architecture, sets + state profiles preserved).
+  Pelvis STILL 1.7 — heap is a compact rubble pile, not a body-shaped drape.
+  NEW HYPOTHESIS: bodies are DISCONNECTED at runtime (no joint constraints) —
+  that would null BOTH drive systems (PAC drives live on the joint
+  constraints) and explain the rock-pile heap shape.
+- walkcircle_v9: running — MR_DIAG extended with runtime constraint count +
+  current anim asset name to confirm.
 
 Known environment facts: ANOTHER AGENT is actively running the cleanup
 program (Archive deletions in tree, occasional UnrealEditor DLL locks —
