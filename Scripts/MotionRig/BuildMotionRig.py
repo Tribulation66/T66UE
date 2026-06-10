@@ -580,14 +580,21 @@ def convert_scene_to_centimeters(mesh, arm_obj):
     # Scene units stay METRIC 1.0; FBX_COMMON's global_scale=0.01 cancels
     # the exporter's invariant m->cm x100, so the file carries these cm
     # numbers raw and UE reads them as cm (bConvertSceneUnit=false).
+    # The bake also rotates the rig +90 deg about Z: authoring faces -Y
+    # (Blender front), but the legacy UE importer's axis conversion maps
+    # Blender -Y to UE +Y (measured in-game: character faced 90 deg right
+    # of travel), and the game wants forward = UE +X. The effective
+    # Blender->UE mapping is Y-negation, so facing Blender +X lands facing
+    # UE +X. Clips are bone-LOCAL rotations/locations — a global rig
+    # rotation leaves them valid.
     from mathutils import Matrix
     bpy.context.view_layer.objects.active = arm_obj
     if arm_obj.mode != "OBJECT":
         bpy.ops.object.mode_set(mode="OBJECT")
-    scale_matrix = Matrix.Scale(100.0, 4)
-    mesh.data.transform(scale_matrix)
+    bake_matrix = Matrix.Rotation(math.pi / 2.0, 4, "Z") @ Matrix.Scale(100.0, 4)
+    mesh.data.transform(bake_matrix)
     mesh.data.update()
-    arm_obj.data.transform(scale_matrix)
+    arm_obj.data.transform(bake_matrix)
 
     # Pose-bone location keys are armature-space numbers; they do not scale
     # with transform_apply and must be multiplied explicitly.
