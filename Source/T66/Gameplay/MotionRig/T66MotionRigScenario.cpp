@@ -201,7 +201,7 @@ void UT66MotionRigScenario::StartScenario(const FString& ScenarioName)
 	Pawn->SetScenarioInputOverride(true);
 
 	TelemetryRows.Reset();
-	TelemetryRows.Add(TEXT("t,state,grounded,bean_x,bean_y,bean_z,bean_vx,bean_vy,bean_vz,bean_pitch,bean_roll,pelvis_x,pelvis_y,pelvis_z,pelvis_speed,foot_l_speed,foot_r_speed,hand_r_z,head_z"));
+	TelemetryRows.Add(TEXT("t,state,grounded,bean_x,bean_y,bean_z,bean_vx,bean_vy,bean_vz,bean_pitch,bean_roll,pelvis_x,pelvis_y,pelvis_z,pelvis_speed,foot_l_speed,foot_r_speed,hand_r_z,head_z,bean_yaw,pelvis_yaw,pelvis_pitch"));
 
 	UE_LOG(LogT66MotionRigScenario, Display,
 		TEXT("MotionRig scenario '%s' started: %d steps over %.1fs"),
@@ -263,6 +263,7 @@ void UT66MotionRigScenario::RecordTelemetryRow(AT66MotionRigPawn& Pawn, const fl
 	const FRotator BeanRotation = Pawn.GetBean() ? Pawn.GetBean()->GetComponentRotation() : FRotator::ZeroRotator;
 
 	FVector PelvisLocation = BeanLocation;
+	FRotator PelvisRotation = FRotator::ZeroRotator;
 	float PelvisSpeed = BeanVelocity.Size();
 	float FootLSpeed = 0.f;
 	float FootRSpeed = 0.f;
@@ -283,6 +284,7 @@ void UT66MotionRigScenario::RecordTelemetryRow(AT66MotionRigPawn& Pawn, const fl
 		{
 			PelvisLocation = PelvisBody->GetUnrealWorldTransform().GetLocation();
 			PelvisSpeed = PelvisBody->GetUnrealWorldVelocity().Size();
+			PelvisRotation = PelvisBody->GetUnrealWorldTransform().GetRotation().Rotator();
 		}
 		if (const FBodyInstance* FootL = Mesh->GetBodyInstance(TEXT("foot_l")))
 		{
@@ -297,7 +299,7 @@ void UT66MotionRigScenario::RecordTelemetryRow(AT66MotionRigPawn& Pawn, const fl
 	}
 
 	TelemetryRows.Add(FString::Printf(
-		TEXT("%.4f,%s,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f"),
+		TEXT("%.4f,%s,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f"),
 		ScenarioClock,
 		T66MotionRigStateName(Pawn.GetMotionState()),
 		Pawn.IsBeanGrounded() ? 1 : 0,
@@ -307,7 +309,8 @@ void UT66MotionRigScenario::RecordTelemetryRow(AT66MotionRigPawn& Pawn, const fl
 		PelvisLocation.X, PelvisLocation.Y, PelvisLocation.Z,
 		PelvisSpeed,
 		FootLSpeed, FootRSpeed,
-		HandRZ, HeadZ));
+		HandRZ, HeadZ,
+		BeanRotation.Yaw, PelvisRotation.Yaw, PelvisRotation.Pitch));
 }
 
 void UT66MotionRigScenario::FinishScenario()

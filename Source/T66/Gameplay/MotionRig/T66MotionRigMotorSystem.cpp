@@ -47,10 +47,10 @@ static TAutoConsoleVariable<float> CVarMRPelvisMaxAccel(
 	TEXT("t66.MotionRig.Motor.PelvisMaxAccel"), 9000.f,
 	TEXT("Clamp on pelvis follow acceleration (cm/s^2)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRPelvisAngularKp(
-	TEXT("t66.MotionRig.Motor.PelvisAngularKp"), 400.f,
+	TEXT("t66.MotionRig.Motor.PelvisAngularKp"), 1800.f,
 	TEXT("Pelvis orientation proportional gain (rad/s^2 per rad)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRPelvisAngularKd(
-	TEXT("t66.MotionRig.Motor.PelvisAngularKd"), 22.f,
+	TEXT("t66.MotionRig.Motor.PelvisAngularKd"), 100.f,
 	TEXT("Pelvis orientation damping gain (1/s)."), ECVF_Default);
 
 namespace

@@ -45,7 +45,10 @@ static TAutoConsoleVariable<float> CVarMRBeanUprightDamping(
 	TEXT("Angular damping for the upright spring (mass-scaled)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRBeanYawStrength(
 	TEXT("t66.MotionRig.Bean.YawStrength"), 330.f,
-	TEXT("Yaw spring toward movement heading (per-rad, mass-scaled)."), ECVF_Default);
+	TEXT("Yaw spring toward movement heading (per-rad, mass-scaled). Unused since yaw went rate-driven; kept for experiments."), ECVF_Default);
+static TAutoConsoleVariable<float> CVarMRBeanTurnRateDeg(
+	TEXT("t66.MotionRig.Bean.TurnRate"), 540.f,
+	TEXT("Max bean turn rate toward movement heading (deg/s)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRBeanJumpSpeed(
 	TEXT("t66.MotionRig.Bean.JumpSpeed"), 470.f,
 	TEXT("Vertical velocity change applied on jump (cm/s)."), ECVF_Default);
@@ -811,14 +814,21 @@ void AT66MotionRigPawn::TickBeanForces(const float DeltaSeconds)
 	}
 
 	// --- yaw toward heading ---
+	// Rate-driven, not torque-driven: spring torque loses the fight against
+	// capsule inertia + ground-contact friction + angular damping (measured:
+	// bean_yaw pinned at spawn heading through every turn — the "always faces
+	// one way" bug). Direct Z angular velocity with a turn-rate cap gives the
+	// deterministic snappy heading Fall Guys has; translation stays physical.
 	if (bDriveAllowed && !InputDir.IsNearlyZero())
 	{
 		const float CurrentYaw = FMath::DegreesToRadians(Bean->GetComponentRotation().Yaw);
 		const float TargetYaw = FMath::Atan2(InputDir.Y, InputDir.X);
 		const float YawError = FMath::FindDeltaAngleRadians(CurrentYaw, TargetYaw);
-		const float YawVelocity = Bean->GetPhysicsAngularVelocityInRadians().Z;
-		const float YawTorque = YawError * CVarMRBeanYawStrength.GetValueOnGameThread() - YawVelocity * 28.f;
-		Bean->AddTorqueInRadians(FVector(0.f, 0.f, YawTorque) * Mass);
+		const float MaxTurnRate = FMath::DegreesToRadians(FMath::Max(30.f, CVarMRBeanTurnRateDeg.GetValueOnGameThread()));
+		const float DesiredYawVelocity = FMath::Clamp(YawError * 8.f, -MaxTurnRate, MaxTurnRate);
+		FVector AngularVelocity = Bean->GetPhysicsAngularVelocityInRadians();
+		AngularVelocity.Z = DesiredYawVelocity;
+		Bean->SetPhysicsAngularVelocityInRadians(AngularVelocity);
 	}
 
 	// --- live friction/restitution knobs ---
