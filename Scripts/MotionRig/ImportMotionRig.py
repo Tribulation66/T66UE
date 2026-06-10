@@ -31,13 +31,22 @@ def make_skeletal_mesh_options():
     options.import_materials = True
     options.import_animations = False
     options.import_as_skeletal = True
-    options.create_physics_asset = True
+    # The T66MotionRigPhysicsAsset commandlet owns PA generation (authored
+    # params + body culling). The legacy importer DOES honor this flag (the
+    # old "never runs automated" note was an Interchange behavior), so keep
+    # it off or a stray auto-PA asset appears next to the mesh.
+    options.create_physics_asset = False
     options.mesh_type_to_import = unreal.FBXImportType.FBXIT_SKELETAL_MESH
     options.automated_import_should_detect_type = False
 
     smd = options.skeletal_mesh_import_data
     smd.set_editor_property("import_morph_targets", False)
-    smd.set_editor_property("use_t0_as_ref_pose", False)
+    # The skeletal FBX carries a baked 1-frame bind-pose animation in cm
+    # (the exporter unit-converts keyed channels but NOT armature rest bones).
+    # T0-as-ref-pose rebuilds the reference skeleton AND the render bind from
+    # that cm data at import — the only point where the bind-dependent LOD
+    # render caches are built. Post-import ref surgery cannot fix rendering.
+    smd.set_editor_property("use_t0_as_ref_pose", True)
     smd.set_editor_property("preserve_smoothing_groups", True)
     smd.set_editor_property("import_meshes_in_bone_hierarchy", True)
     smd.set_editor_property("normal_import_method", unreal.FBXNormalImportMethod.FBXNIM_COMPUTE_NORMALS)
@@ -81,6 +90,12 @@ def run_task(filename, destination_name, options):
 
 
 def main():
+    # UE 5.7 routes FBX through Interchange by default, which IGNORES the
+    # legacy FbxImportUI options on the task — measured: use_t0_as_ref_pose
+    # had no effect (ref pose stayed meter-scale) until Interchange was
+    # disabled for FBX. The legacy importer honors every option above.
+    unreal.SystemLibrary.execute_console_command(None, "Interchange.FeatureFlags.Import.FBX 0")
+
     sk_fbx = os.path.join(SOURCE_ROOT, f"{SK_NAME}.fbx")
     if not os.path.exists(sk_fbx):
         REPORT["errors"].append(f"missing skeletal FBX: {sk_fbx}")

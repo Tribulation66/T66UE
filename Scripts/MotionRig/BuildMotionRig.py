@@ -533,6 +533,16 @@ CLIPS = [
 
 FBX_COMMON = dict(
     use_selection=True,
+    # Exporter unit semantics (measured, 3 permutations): the m->cm x100 is
+    # ALWAYS applied (apply_unit_scale only adds scene scale_length on top)
+    # and with FBX_SCALE_NONE the total factor lands as scale on the TOP
+    # OBJECT NODES only — geometry, bones and curves pass through raw. A
+    # cm scale_length scene instead x100s GEOMETRY ONLY (kaiju bug). So:
+    # data is pre-baked to real cm (convert_scene_to_centimeters) and
+    # global_scale=0.01 cancels the invariant x100 -> total factor 1.0,
+    # node scales 1, every number in the file is centimeters.
+    global_scale=0.01,
+    apply_unit_scale=True,
     apply_scale_options="FBX_SCALE_NONE",
     object_types={"ARMATURE", "MESH"},
     use_mesh_modifiers=True,
@@ -544,34 +554,40 @@ FBX_COMMON = dict(
 )
 
 
-# NOTE on units (measured across three failure modes — do not "simplify"):
-# - Authoring happens at METER scale (1.80m figure). Exporting that directly
-#   relies on the exporter's unit conversion, which scales MESH data x100 but
-#   NOT armature rest bones -> UE ref skeleton collapsed to 1/100, the auto
-#   physics asset generated zero-length constraint anchors, and the simulated
-#   skeleton stacked into a single point (the "tiny body", [MR_SURVEY]).
+# NOTE on units (raw binary FBX probe, 2026-06-10 — do not "simplify"):
+# - The exporter performs NO m->cm value conversion. A meter-scene export
+#   writes meter numbers for EVERYTHING (rest bones, anim curves, verts) and
+#   compensates with scale=100 on the armature/mesh OBJECT nodes
+#   (UnitScaleFactor stays 1.0 = cm). UE turns that armature node into a
+#   scale-100 root bone: component-space looks right, but the physics-asset
+#   generator and world-space bone writes use unscaled bone locals -> bodies
+#   collapse to a point, zero-length anchors, centimeter-sized render.
 # - FBX_SCALE_ALL did not fix the bone transforms either (measured: UE ref
 #   pose still pelvisZ=0.98 post-reimport).
-# - A vertex-only x100 bake on top of the implicit conversion made an
-#   18,000-unit kaiju (walkcircle_v4).
+# - A x100 data bake exported from a METER-declared scene double-converts
+#   into an 18,000-unit kaiju (walkcircle_v4).
 # The deterministic fix: convert_scene_to_centimeters() right before export —
 # scale mesh+armature objects x100 (applied), scale action LOCATION curves
-# x100 (rotations are scale-free), set scene units to cm. Every number is
-# then already centimeters and the exporter has nothing left to convert.
+# x100 (rotations are scale-free), set scene units to cm. The exporter's
+# unit factor is then exactly 1.0: real cm numbers, scale 1 everywhere.
 
 
 def convert_scene_to_centimeters(mesh, arm_obj):
-    scene = bpy.context.scene
-    scene.unit_settings.system = "METRIC"
-    scene.unit_settings.scale_length = 0.01
-
-    bpy.ops.object.mode_set(mode="OBJECT")
-    bpy.ops.object.select_all(action="DESELECT")
-    for obj in (mesh, arm_obj):
-        obj.select_set(True)
-        obj.scale = (100.0, 100.0, 100.0)
+    # DATA-level x100 (Mesh.transform / Armature.transform): object scales
+    # stay 1 and the parent/child matrix_parent_inverse plumbing is never
+    # involved. Object-level scale+apply on the parented mesh+armature pair
+    # double-scales the child mesh data (measured: 18,000-unit verts).
+    # Scene units stay METRIC 1.0; FBX_COMMON's global_scale=0.01 cancels
+    # the exporter's invariant m->cm x100, so the file carries these cm
+    # numbers raw and UE reads them as cm (bConvertSceneUnit=false).
+    from mathutils import Matrix
     bpy.context.view_layer.objects.active = arm_obj
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    if arm_obj.mode != "OBJECT":
+        bpy.ops.object.mode_set(mode="OBJECT")
+    scale_matrix = Matrix.Scale(100.0, 4)
+    mesh.data.transform(scale_matrix)
+    mesh.data.update()
+    arm_obj.data.transform(scale_matrix)
 
     # Pose-bone location keys are armature-space numbers; they do not scale
     # with transform_apply and must be multiplied explicitly.
@@ -594,15 +610,51 @@ def convert_scene_to_centimeters(mesh, arm_obj):
                 fcurve.update()
 
 
-def export_skeletal_fbx(mesh, arm_obj, out_path):
+def make_bind_pose_action(arm_obj):
+    """Constant rest-pose action baked INTO the skeletal FBX.
+
+    The exporter converts KEYED channels m->cm but NOT armature rest bones,
+    so a plain skeletal export gives UE a meter-scale reference skeleton.
+    Importing with use_t0_as_ref_pose=True rebuilds the reference pose AND
+    the render bind from this baked cm animation instead — the only path
+    that fixes skinning: post-import ref surgery cannot reach the
+    bind-dependent LOD render caches built at import time.
+
+    Keys at frames 0 AND 1 with identical values so the T0 sample is exact
+    regardless of how the exporter maps frame numbers to FBX time."""
     clear_pose(arm_obj)
-    if arm_obj.animation_data:
-        arm_obj.animation_data.action = None
+    action = bpy.data.actions.new("BindPose")
+    arm_obj.animation_data_create()
+    arm_obj.animation_data.action = action
+    for frame in (0, 1):
+        key_all_neutral(arm_obj, frame)
+        for pose_bone in arm_obj.pose.bones:
+            pose_bone.keyframe_insert("location", frame=frame)
+    action.use_fake_user = True
+    return action
+
+
+def export_skeletal_fbx(mesh, arm_obj, bind_action, out_path):
+    clear_pose(arm_obj)
+    arm_obj.animation_data_create()
+    arm_obj.animation_data.action = bind_action
+    bpy.context.scene.frame_start = 0
+    bpy.context.scene.frame_end = 1
     bpy.ops.object.select_all(action="DESELECT")
     mesh.select_set(True)
     arm_obj.select_set(True)
     bpy.context.view_layer.objects.active = arm_obj
-    bpy.ops.export_scene.fbx(filepath=out_path, **FBX_COMMON)
+    opts = dict(FBX_COMMON)
+    opts.update(dict(
+        bake_anim=True,
+        bake_anim_use_all_bones=True,
+        bake_anim_use_nla_strips=False,
+        bake_anim_use_all_actions=False,
+        bake_anim_force_startend_keying=True,
+        bake_anim_step=1.0,
+        bake_anim_simplify_factor=0.0,
+    ))
+    bpy.ops.export_scene.fbx(filepath=out_path, **opts)
 
 
 def export_clip_fbx(arm_obj, action, length_frames, out_path):
@@ -749,17 +801,26 @@ def main():
     if not args.no_render:
         render_proofs(mesh, arm_obj, bone_layout, proof_dir)
 
-    # UNITS (final, measured doctrine): author + export at METER scale.
-    # The exporter/importer pair converts MESH data and KEYED ANIM CHANNELS
-    # m->cm correctly, but NOT armature rest bones (meter ref skeleton in UE)
-    # and cm-scene exports poison the mesh instead (x100 kaiju). Therefore:
-    # every pose bone gets LOCATION KEYS in every clip (keyed channels arrive
-    # in cm — proven by the pelvis), so the RUNTIME pose is fully centimeter
-    # and the meter ref pose only matters to PA generation, which
-    # T66MotionRigPhysicsAssetCommandlet handles with an in-memory rescale.
+    # UNITS (final doctrine v2 — raw-FBX-probe ground truth, 2026-06-10):
+    # the exporter converts NOTHING m->cm. A meter-scene export writes meter
+    # numbers everywhere (rest bones, anim curves, verts) and compensates
+    # with scale=100 on the armature/mesh OBJECT nodes. UE then builds a
+    # skeleton whose root bone carries scale 100 — which the physics-asset
+    # generator and world-space bone writes ignore (bodies collapse to one
+    # point, zero-length constraint anchors, centimeter-sized render).
+    # The earlier doctrine's "keyed channels arrive cm" was a misread of
+    # that node-scale compensation. The only consistent form is REAL cm
+    # numbers with scale 1 everywhere: convert_scene_to_centimeters() bakes
+    # x100 into mesh+armature (applied) + location fcurves and declares the
+    # scene cm, so the exporter's unit factor is exactly 1.0 and no node
+    # scale compensation is emitted. (The historical "x100 kaiju" failure
+    # was the v4 DOUBLE bake: x100 data exported from a meter-declared
+    # scene — not this recipe.)
+    convert_scene_to_centimeters(mesh, arm_obj)
 
+    bind_action = make_bind_pose_action(arm_obj)
     skeletal_fbx = os.path.join(out_dir, "SK_MotionRig_Hero1.fbx")
-    export_skeletal_fbx(mesh, arm_obj, skeletal_fbx)
+    export_skeletal_fbx(mesh, arm_obj, bind_action, skeletal_fbx)
 
     clip_files = {}
     for clip_name, (action, frames) in clip_actions.items():

@@ -48,42 +48,49 @@ int32 UT66MotionRigPhysicsAssetCommandlet::Main(const FString& Params)
 		return 1;
 	}
 
-	// Unit handling. The Blender FBX exporter converts mesh data and anim
-	// curves m->cm but NOT armature rest bones, so the imported reference
-	// skeleton is 1/100 size — which collapses generated bodies and
-	// constraint anchors. The RUNTIME pose is centimeter-correct (clips carry
-	// cm translations), so the asset must NOT be mutated on disk (saved ref
-	// surgery breaks render skinning — measured spaghetti). Instead: rescale
-	// the reference IN MEMORY, generate the physics asset from it (real
-	// anchors), then rescale back before anything is saved.
-	auto ScaleRefSkeletonTranslations = [SkeletalMesh](const double Factor)
-	{
-		{
-			FReferenceSkeletonModifier Modifier(SkeletalMesh->GetRefSkeleton(), SkeletalMesh->GetSkeleton());
-			const TArray<FTransform>& Pose = SkeletalMesh->GetRefSkeleton().GetRefBonePose();
-			for (int32 BoneIndex = 0; BoneIndex < SkeletalMesh->GetRefSkeleton().GetRawBoneNum(); ++BoneIndex)
-			{
-				FTransform Scaled = Pose[BoneIndex];
-				Scaled.SetTranslation(Scaled.GetTranslation() * Factor);
-				Modifier.UpdateRefPoseTransform(BoneIndex, Scaled);
-			}
-		}
-		SkeletalMesh->GetRefBasesInvMatrix().Reset();
-		SkeletalMesh->CalculateInvRefMatrices();
-	};
-
+	// Unit guard. The import itself must deliver a centimeter reference pose:
+	// the skeletal FBX bakes a 1-frame cm bind-pose animation and
+	// ImportMotionRig.py imports with use_t0_as_ref_pose=True, so reference
+	// AND render bind are built from cm data at import time. Post-import ref
+	// surgery is banned here — the LOD render data carries bind-dependent
+	// caches from import that CalculateInvRefMatrices does not refresh, so a
+	// rescaled ref pose still renders crumpled skin.
 	{
 		const FReferenceSkeleton& RefSkeleton = SkeletalMesh->GetRefSkeleton();
-		const int32 PelvisIndex = RefSkeleton.FindBoneIndex(TEXT("pelvis"));
-		if (PelvisIndex != INDEX_NONE && RefSkeleton.GetRefBonePose()[PelvisIndex].GetTranslation().Z < 5.0f)
+		const TArray<FTransform>& RefPose = RefSkeleton.GetRefBonePose();
+
+		// Component-space pose: the unit truth. A local-only read of pelvis
+		// can show 0.98 both for a collapsed meter skeleton AND for a correct
+		// cm skeleton whose root bone carries the Blender armature-node
+		// scale of 100 — only the accumulated transform separates the two.
+		TArray<FTransform> ComponentPose;
+		ComponentPose.SetNum(RefSkeleton.GetRawBoneNum());
+		for (int32 BoneIndex = 0; BoneIndex < RefSkeleton.GetRawBoneNum(); ++BoneIndex)
 		{
-			// PERSISTENT surgery: the saved reference/bind must be cm to match
-			// the cm runtime pose (clips key location on every bone) — both
-			// the engine blend and the poseable copy skin against the saved
-			// reference. The earlier "streak" blamed on this surgery was in
-			// fact the collapsed runtime pose of rotation-only clips.
-			ScaleRefSkeletonTranslations(100.0);
-			UE_LOG(LogT66MotionRigPA, Display, TEXT("MotionRig reference rescaled x100 (persistent)."));
+			const int32 ParentIndex = RefSkeleton.GetParentIndex(BoneIndex);
+			ComponentPose[BoneIndex] = ParentIndex != INDEX_NONE
+				? RefPose[BoneIndex] * ComponentPose[ParentIndex]
+				: RefPose[BoneIndex];
+		}
+
+		const int32 PelvisIndex = RefSkeleton.FindBoneIndex(TEXT("pelvis"));
+		const int32 CalfIndex = RefSkeleton.FindBoneIndex(TEXT("calf_l"));
+		const int32 HeadIndex = RefSkeleton.FindBoneIndex(TEXT("head"));
+		const float PelvisLocalZ = PelvisIndex != INDEX_NONE ? RefPose[PelvisIndex].GetTranslation().Z : -1.f;
+		const float PelvisCompZ = PelvisIndex != INDEX_NONE ? ComponentPose[PelvisIndex].GetTranslation().Z : -1.f;
+		const float HeadCompZ = HeadIndex != INDEX_NONE ? ComponentPose[HeadIndex].GetTranslation().Z : -1.f;
+		const float CalfLocal = CalfIndex != INDEX_NONE ? RefPose[CalfIndex].GetTranslation().Size() : -1.f;
+		const FVector RootScale = RefPose.Num() > 0 ? RefPose[0].GetScale3D() : FVector::ZeroVector;
+		UE_LOG(LogT66MotionRigPA, Display,
+			TEXT("MOTIONRIG_PA_REFPOSE pelvisLocalZ=%.2f pelvisCompZ=%.2f headCompZ=%.2f calfLocal=%.2f rootScale=%s"),
+			PelvisLocalZ, PelvisCompZ, HeadCompZ, CalfLocal, *RootScale.ToCompactString());
+		if (PelvisCompZ < 50.0f)
+		{
+			UE_LOG(LogT66MotionRigPA, Error,
+				TEXT("Reference pose is collapsed (component-space pelvisZ=%.2f, expected ~98.1). ")
+				TEXT("Reimport via ImportMotionRig.py (use_t0_as_ref_pose + baked bind pose); ")
+				TEXT("refusing to generate a physics asset from a collapsed skeleton."), PelvisCompZ);
+			return 1;
 		}
 
 		// Keep the USkeleton asset's copy of the reference pose in lockstep
@@ -93,12 +100,6 @@ int32 UT66MotionRigPhysicsAssetCommandlet::Main(const FString& Params)
 			Skeleton->UpdateReferencePoseFromMesh(SkeletalMesh);
 			SaveAssetPackage(Skeleton);
 		}
-
-		const TArray<FTransform>& RefPose = SkeletalMesh->GetRefSkeleton().GetRefBonePose();
-		const int32 CalfIndex = SkeletalMesh->GetRefSkeleton().FindBoneIndex(TEXT("calf_l"));
-		UE_LOG(LogT66MotionRigPA, Display, TEXT("MOTIONRIG_PA_REFPOSE pelvisZ=%.2f calfLocal=%.2f"),
-			PelvisIndex != INDEX_NONE ? RefPose[PelvisIndex].GetTranslation().Z : -1.f,
-			CalfIndex != INDEX_NONE ? RefPose[CalfIndex].GetTranslation().Size() : -1.f);
 	}
 
 	UPackage* Package = CreatePackage(MotionRigPhysicsAssetPackage);

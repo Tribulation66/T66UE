@@ -34,10 +34,12 @@ should be simple, big, readable. The physics softens and sells them.
     -ExecutePythonScript="C:/UE/T66/Scripts/MotionRig/ImportMotionRig.py" -unattended -nop4 -nosplash -stdout
 # expect: MOTIONRIG_IMPORT_RESULT=PASS (report JSON next to the Blender outputs)
 
-# 3. Physics asset (FBX auto-create does not run in automated imports)
+# 3. Physics asset (the commandlet owns PA generation)
 & "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" `
     -run=T66MotionRigPhysicsAsset -unattended -nop4 -nosplash -stdout
-# expect: MOTIONRIG_PA_RESULT=PASS, 18 bodies / 17 constraints
+# expect: MOTIONRIG_PA_RESULT=PASS, 18 bodies / 17 constraints, and the unit
+# guard line MOTIONRIG_PA_REFPOSE pelvisLocalZ=98.10 ... calfLocal=45.90
+# rootScale=V(X=1.00, Y=1.00, Z=1.00) — anything else means a broken export
 # NOTE: commandlets may exit 1 on a benign startup LogPhysics error — judge by
 # the RESULT line and on-disk assets, same policy as the audio importers.
 ```
@@ -70,13 +72,30 @@ should be simple, big, readable. The physics softens and sells them.
    height reads the coat flare (legs land outside the body). Measure leg
    columns at the KNEE band; find hands by walking DOWN the x-extreme column
    (cuffs flare wider than fists).
-5. **Scale: bake x100 into mesh+armature before FBX export** (Blender meters →
-   UE centimeters). Importer unit magic produced a 1.8 cm character. Clips
-   keyframe rotations only, so they survive the scale bake.
+5. **Units (doctrine v2 — raw binary FBX probe, 2026-06-10): the Blender FBX
+   exporter converts NOTHING m→cm.** A meter-scene export writes meter
+   numbers for rest bones, anim curves AND verts, then compensates with
+   scale=100 on the armature/mesh OBJECT nodes. UE turns that into a
+   scale-100 root bone: component-space looks right but the physics-asset
+   generator and world-space bone writes use unscaled bone locals → bodies
+   collapse to a point, zero-length anchors, centimeter-sized render. The
+   only consistent form is REAL cm numbers with scale 1 everywhere:
+   `convert_scene_to_centimeters()` bakes x100 at the DATA level
+   (`Mesh.transform`/`Armature.transform` — object-level scale+apply on the
+   parented pair double-scales the child mesh) plus x100 on location
+   fcurves, and `global_scale=0.01` in FBX_COMMON cancels the exporter's
+   invariant x100. Verify with `ProbeFbxRaw.py`/`ProbeFbxRaw2.py`: pelvis
+   LclTranslation z=98.1, verts 0..180, all node scalings 1.0.
 6. **UE import path**: `-run=pythonscript` asserts in AssetTools
    (`CurrentApplication.IsValid()` — no Slate). Use `-ExecutePythonScript=`.
-7. **`create_physics_asset` on FbxImportUI does not run** in automated
-   imports. The `T66MotionRigPhysicsAsset` commandlet owns PA generation.
+   Also: UE 5.7 routes FBX through **Interchange by default, which IGNORES
+   legacy FbxImportUI options** (measured: `use_t0_as_ref_pose` no-op).
+   `ImportMotionRig.py` disables it via
+   `Interchange.FeatureFlags.Import.FBX 0` to force the legacy importer.
+7. **`create_physics_asset` on FbxImportUI does not run under Interchange**
+   — but the LEGACY importer honors it, so the import script sets it False
+   explicitly. The `T66MotionRigPhysicsAsset` commandlet owns PA generation
+   and refuses collapsed (sub-50cm component-space pelvis) skeletons.
 8. **Runtime: `PlayAnimation`/`SetAnimationMode` re-initializes articulation
    and clobbers `SetSimulatePhysics(true)`** — the mesh silently goes
    kinematic and the bean hangs from its own pelvis constraint (the

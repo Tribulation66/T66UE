@@ -42,7 +42,34 @@ blocker (document + clean handoff).
 - Use neutral technical wording in all messages (impact reaction, knockdown,
   recovery) to avoid automated-filter false positives.
 
-## STATUS ~00:15 (June 10): ACCEPTANCE MET — staged standalone smoke PASS
+## STATUS 2026-06-10 ~17:30: RENDER BIND FIXED — skin intact (cmbake_v1)
+
+The last open issue (rendered skin stretching/crumpling) is closed. Root
+cause chain, proven by raw binary FBX probes (ProbeFbxRaw.py/ProbeFbxRaw2.py):
+the Blender FBX exporter converts NOTHING m→cm — a meter-scene export writes
+meter numbers everywhere and compensates with scale=100 on the armature/mesh
+OBJECT nodes ("keyed channels arrive cm" was a misread of that compensation).
+UE imports that as a scale-100 root bone; physics generation and world-space
+bone writes ignore root scale → collapsed bodies/anchors and a cm-sized
+render. Post-import ref surgery couldn't fix rendering because LOD render
+data keeps bind-dependent caches from import.
+
+FIX (deterministic, in-pipeline): (1) BuildMotionRig.py converts ALL data to
+real cm at the DATA level (Mesh.transform/Armature.transform x100 + location
+fcurves x100 — object-level scale+apply double-scales the parented mesh) and
+exports with global_scale=0.01 to cancel the exporter's invariant x100 →
+file numbers are cm with node scales 1.0; (2) skeletal FBX carries a baked
+2-key bind-pose animation; (3) ImportMotionRig.py forces the LEGACY FBX
+importer (Interchange.FeatureFlags.Import.FBX 0 — Interchange IGNORES
+FbxImportUI options incl. use_t0_as_ref_pose) and imports with
+use_t0_as_ref_pose=True; (4) the commandlet's persistent ref-pose surgery is
+DELETED, replaced by a component-space unit guard (refuses pelvisCompZ<50).
+Verified: MOTIONRIG_PA_REFPOSE pelvisLocalZ=98.10 calfLocal=45.90
+rootScale=1; [MR_SURVEY] bodyZ feet 13 / calves 55 / pelvis 101 / head 150,
+real anchor lengths; cmbake_v1 walkcircle frames show a full-size intact
+textured character. Dive/impact captures + restage + commit follow.
+
+## (superseded) STATUS ~00:15 (June 10): ACCEPTANCE MET — staged standalone smoke PASS
 
 T66.exe (staged tonight, post cook-fix) boots → Test Room → MotionRig pawn
 from cooked assets → motors live → scenario runs → telemetry written. Bean
