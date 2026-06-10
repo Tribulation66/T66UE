@@ -54,8 +54,8 @@ static TAutoConsoleVariable<int32> CVarT66TestRoomShowRepresentativeLineupOnly(
 
 static TAutoConsoleVariable<int32> CVarT66TestRoomShowCeiling(
 	TEXT("t66.TestRoom.ShowCeiling"),
-	0,
-	TEXT("Shows the TestRoom ceiling render mesh. Default 0 keeps the collision ceiling but hides it so ragdoll launches remain readable from the gameplay camera."),
+	1,
+	TEXT("Shows the TestRoom ceiling (themed main-game visual). Default 1 replicates the live maze environment; set 0 for an open-top room when overhead review cameras need the view."),
 	ECVF_Default);
 
 static TAutoConsoleVariable<int32> CVarT66TestRoomEnableCombatZones(
