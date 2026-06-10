@@ -1089,9 +1089,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 				RequestDeferredSlateRebuild();
 				return FReply::Handled();
 			}),
-			FMargin(12.f, 4.f),
-			LeftContentWidth,
-			36.f,
+			FMargin(12.f, 3.f),
+			210.f,
+			30.f,
 			true,
 			ToggleTag,
 			NAME_None,
