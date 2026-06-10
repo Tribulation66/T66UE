@@ -230,49 +230,13 @@ UT66WebImageCache* ST66FlatLeaderboardPanel::GetWebImageCache() const
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPanel()
 {
+	// Transplant pass: the three filter squares live INSIDE the panel (approved
+	// reference) — they are now the first content row in BuildContentPanel.
 	TSharedRef<SConstraintCanvas> Canvas = SNew(SConstraintCanvas);
 
 	Canvas->AddSlot()
 		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(0.f, 0.f, FilterPanelWidth, FilterPanelHeight))
-		[
-			FT66FriendslopStyle::MakeCustomSurface(
-				TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/panel_cap.png"),
-				FMargin(0.18f, 0.24f),
-				ESlateBrushDrawType::Box,
-				FVector2D(360.f, 120.f),
-				ET66FlatState::Default,
-				FMargin(0.f),
-				SNew(SBox),
-				nullptr,
-				Tag(TEXT("FilterPanel")),
-				TEXT("FilterPanel"))
-		];
-
-	Canvas->AddSlot()
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(FilterButtonX, FilterButtonY, FilterButtonWidth, FilterButtonHeight))
-		[
-			BuildFilterButton(ET66LeaderboardFilter::Global, NSLOCTEXT("T66.FlatLeaderboard", "World", "WORLD"), TEXT("FilterWorldButton"))
-		];
-
-	Canvas->AddSlot()
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(FilterButtonX + FilterButtonWidth + FilterButtonGap, FilterButtonY, FilterButtonWidth, FilterButtonHeight))
-		[
-			BuildFilterButton(ET66LeaderboardFilter::Friends, NSLOCTEXT("T66.FlatLeaderboard", "Friends", "FRIENDS"), TEXT("FilterFriendsButton"))
-		];
-
-	Canvas->AddSlot()
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(FilterButtonX + ((FilterButtonWidth + FilterButtonGap) * 2.f), FilterButtonY, FilterButtonWidth, FilterButtonHeight))
-		[
-			BuildFilterButton(ET66LeaderboardFilter::Streamers, NSLOCTEXT("T66.FlatLeaderboard", "Stream", "STREAM"), TEXT("FilterStreamersButton"))
-		];
-
-	Canvas->AddSlot()
-		.Alignment(FVector2D(0.f, 0.f))
-		.Offset(FMargin(0.f, FilterPanelHeight + FilterPanelGap, PanelWidth, ContentHeight))
+		.Offset(FMargin(0.f, 0.f, PanelWidth, GetPanelHeight()))
 		[
 			BuildContentPanel()
 		];
@@ -282,6 +246,36 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPanel()
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 {
+	// Filter squares row (reference: squares at panel top, ~104x66, centered).
+	TSharedRef<SHorizontalBox> FilterRow = SNew(SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.f)
+		[
+			SNullWidget::NullWidget
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		[
+			BuildFilterButton(ET66LeaderboardFilter::Global, NSLOCTEXT("T66.FlatLeaderboard", "World", "WORLD"), TEXT("FilterWorldButton"))
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.Padding(48.f, 0.f, 0.f, 0.f)
+		[
+			BuildFilterButton(ET66LeaderboardFilter::Friends, NSLOCTEXT("T66.FlatLeaderboard", "Friends", "FRIENDS"), TEXT("FilterFriendsButton"))
+		]
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.Padding(48.f, 0.f, 0.f, 0.f)
+		[
+			BuildFilterButton(ET66LeaderboardFilter::Streamers, NSLOCTEXT("T66.FlatLeaderboard", "Stream", "STREAM"), TEXT("FilterStreamersButton"))
+		]
+		+ SHorizontalBox::Slot()
+		.FillWidth(1.f)
+		[
+			SNullWidget::NullWidget
+		];
+
 	TSharedRef<SHorizontalBox> HeaderRow = SNew(SHorizontalBox)
 		+ SHorizontalBox::Slot()
 		.FillWidth(1.f)
@@ -366,37 +360,47 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 	TSharedRef<SVerticalBox> Column = SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 28.f)
+		.Padding(0.f, 0.f, 0.f, 14.f)
 		[
 			SNew(SBox)
-			.HeightOverride(32.f)
+			.HeightOverride(70.f)
+			[
+				FilterRow
+			]
+		]
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.Padding(0.f, 0.f, 0.f, 6.f)
+		[
+			SNew(SBox)
+			.HeightOverride(30.f)
 			[
 				HeaderRow
 			]
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 8.f)
+		.Padding(0.f, 0.f, 0.f, 4.f)
 		[
 			SNew(SBox)
-			.HeightOverride(50.f)
+			.HeightOverride(58.f)
 			[
 				TimeRow
 			]
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 12.f)
+		.Padding(0.f, 0.f, 0.f, 3.f)
 		[
 			SNew(SBox)
-			.HeightOverride(50.f)
+			.HeightOverride(55.f)
 			[
 				DropdownRow
 			]
 		]
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 40.f)
+		.Padding(0.f, 0.f, 0.f, 8.f)
 		[
 			SNew(SBox)
 			.HeightOverride(50.f)
@@ -495,40 +499,33 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRowsPanel()
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildFilterButton(const ET66LeaderboardFilter Filter, const FText& Label, const FString& Name)
 {
-	// UI Reimagine 2026-06-10: square icon-only hellfire filter toggles (approved v7).
+	// Transplant pass: each square is extracted 1:1 from the reference with its icon
+	// baked in (sq_globe is the reference's lava/selected look).
 	const ET66FlatState State = CurrentFilter == Filter ? ET66FlatState::Selected : ET66FlatState::Default;
-	const TCHAR* IconFile =
-		Filter == ET66LeaderboardFilter::Friends ? TEXT("ic_friends.png") :
-		Filter == ET66LeaderboardFilter::Streamers ? TEXT("ic_play.png") :
-		TEXT("ic_globe.png");
+	const TCHAR* PlateFile =
+		Filter == ET66LeaderboardFilter::Friends ? TEXT("sq_friends.png") :
+		Filter == ET66LeaderboardFilter::Streamers ? TEXT("sq_play.png") :
+		TEXT("sq_globe.png");
 	const FString HellfireDir = TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/");
-	const TSharedRef<SWidget> Content = FT66FlatStyle::AttachMetadata(
-		SNew(SBox)
-		.WidthOverride(40.f)
-		.HeightOverride(40.f)
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
-		[
-			SNew(SImage)
-			.Image(FT66FriendslopStyle::GetCustomBrush(HellfireDir + IconFile, FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(40.f, 40.f)))
-			.ColorAndOpacity(FLinearColor::White)
-		],
-		Tag(Name + TEXT(".Icon")),
-		TEXT("Icon"),
-		State);
 	TSharedRef<SWidget> Button = FT66FriendslopStyle::MakeCustomToggleGroupButton(
-		HellfireDir + (State == ET66FlatState::Selected ? TEXT("sq_filter_selected.png") : TEXT("sq_filter_idle.png")),
-		FMargin(0.22f),
-		FVector2D(150.f, 150.f),
+		HellfireDir + PlateFile,
+		FMargin(0.f),
+		FVector2D(110.f, 68.f),
 		State,
-		Content,
+		FT66FlatStyle::AttachMetadata(
+			SNew(SBox).WidthOverride(88.f).HeightOverride(50.f),
+			Tag(Name + TEXT(".Icon")),
+			TEXT("Icon"),
+			State),
 		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetFilter, Filter),
-		FMargin(10.f, 7.f),
-		FilterButtonWidth,
-		FilterButtonHeight,
+		FMargin(8.f),
+		104.f,
+		66.f,
 		true,
 		Tag(Name),
-		FName(TEXT("MainMenuLeaderboardFilter")));
+		FName(TEXT("MainMenuLeaderboardFilter")),
+		FLinearColor(0.08f, 0.085f, 0.11f, 1.f),
+		ESlateBrushDrawType::Image);
 	Button->SetToolTipText(Label);
 	return Button;
 }

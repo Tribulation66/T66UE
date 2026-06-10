@@ -839,13 +839,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 	constexpr float LeftContentWidth = 500.f;
 	constexpr float LeftPanelContentInset = 33.f;
 	constexpr float LeftPanelWidth = LeftContentWidth + (LeftPanelContentInset * 2.f);
-	constexpr float PartySlotSize = 80.f;
+	constexpr float PartySlotSize = 88.f;
 	constexpr float PartySlotGap = 12.f;
 	constexpr float PartySlotGroupWidth = PartySlotSize * 4.f + PartySlotGap * 3.f;
 	constexpr float PartySidePad = (LeftContentWidth - PartySlotGroupWidth) * 0.5f;
 	constexpr float ProfileRowHeight = 112.f;
 	constexpr float ProfileAvatarSize = 72.f;
-	constexpr float FriendRowHeight = 72.f;
+	constexpr float FriendRowHeight = 62.f;
 	constexpr float FriendAvatarSize = 42.f;
 	constexpr float FriendActionButtonWidth = 96.f;
 	constexpr float FriendOnlineActionHeight = 44.f;
@@ -1071,9 +1071,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			];
 
 		TSharedRef<SWidget> ToggleButton = FT66FriendslopStyle::MakeCustomToggleGroupButton(
-			HellfireDir + (bOnlineGroup ? TEXT("row_you.png") : TEXT("row_idle.png")),
+			HellfireDir + (bOnlineGroup ? TEXT("band_online.png") : TEXT("band_offline.png")),
 			FMargin(0.f),
-			FVector2D(920.f, 132.f),
+			FVector2D(232.f, 42.f),
 			ET66FlatState::Default,
 			Content,
 			FOnClicked::CreateLambda([this, bOnlineGroup]()
@@ -1418,13 +1418,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			];
 		LeftCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(0.f, 128.f, LeftContentWidth, 58.f))
+			.Offset(FMargin(0.f, 148.f, LeftContentWidth, 64.f))
 			[
 				MakeSearchField()
 			];
 		LeftCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(0.f, 204.f, LeftContentWidth, 560.f))
+			.Offset(FMargin(0.f, 216.f, LeftContentWidth, 560.f))
 			[
 				FT66FlatStyle::AttachMetadata(
 					MakeSized(LeftContentWidth, 504.f, MakeFriendsList()),
@@ -1434,7 +1434,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			];
 		LeftCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(0.f, 784.f, LeftContentWidth, 150.f))
+			.Offset(FMargin(0.f, 712.f, LeftContentWidth, 178.f))
 			[
 				FT66FlatStyle::AttachMetadata(
 					MakeSized(LeftContentWidth, 142.f,

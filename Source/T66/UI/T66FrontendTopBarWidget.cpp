@@ -1000,19 +1000,19 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			}
 		};
 
-		// UI Reimagine pass 5: rects from the color-mask instrument readings of the
-		// approved v7 reference at 1920x1080 (measure_geometry2.py / pass5_plan.md).
-		const FNormalizedTopBarRect OuterRect{ 0.004f, 0.000f, 0.992f, 0.089f };
-		const float TopBarControlY = 0.009f;
+		// Transplant pass: TRUE layout read off gridded reference strips
+		// (transplant/MainMenu/code_edits.md). Prior instrument windows were circular.
+		const FNormalizedTopBarRect OuterRect{ 0.000f, 0.007f, 1.000f, 0.091f };
+		const float TopBarControlY = 0.028f;
 		const float TopBarControlH = 0.070f;
-		const FNormalizedTopBarRect SettingsRect{ 0.014f, 0.012f, 0.033f, 0.065f };
-		const FNormalizedTopBarRect LanguageRect{ 0.053f, 0.012f, 0.033f, 0.065f };
-		const FNormalizedTopBarRect AccountRect{ 0.085f, 0.000f, 0.086f, 0.118f };
-		const FNormalizedTopBarRect ProfileRect{ 0.163f, TopBarControlY, 0.150f, TopBarControlH };
-		const FNormalizedTopBarRect PowerUpRect{ 0.319f, TopBarControlY, 0.102f, TopBarControlH };
-		const FNormalizedTopBarRect AchievementsRect{ 0.441f, TopBarControlY, 0.117f, TopBarControlH };
-		const FNormalizedTopBarRect TicketRect{ 0.586f, 0.018f, 0.067f, 0.069f };
-		const FNormalizedTopBarRect QuitRect{ 0.922f, TopBarControlY, 0.068f, TopBarControlH };
+		const FNormalizedTopBarRect SettingsRect{ 0.009f, TopBarControlY, 0.041f, TopBarControlH };
+		const FNormalizedTopBarRect LanguageRect{ 0.053f, TopBarControlY, 0.043f, TopBarControlH };
+		const FNormalizedTopBarRect AccountRect{ 0.154f, 0.000f, 0.099f, 0.117f };
+		const FNormalizedTopBarRect ProfileRect{ 0.259f, TopBarControlY, 0.231f, TopBarControlH };
+		const FNormalizedTopBarRect PowerUpRect{ 0.492f, TopBarControlY, 0.129f, TopBarControlH };
+		const FNormalizedTopBarRect AchievementsRect{ 0.623f, TopBarControlY, 0.126f, TopBarControlH };
+		const FNormalizedTopBarRect TicketRect{ 0.749f, 0.024f, 0.100f, 0.072f };
+		const FNormalizedTopBarRect QuitRect{ 0.898f, 0.022f, 0.079f, 0.074f };
 
 		const float IconSize = 42.f;
 		auto MakeTaggedIconWidget = [](const TSharedRef<SWidget>& IconContent, const FVector2D& Size, const FName Tag) -> TSharedRef<SWidget>
@@ -1193,11 +1193,11 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		CategoryGroup.GroupName = TEXT("FrontendCategorySelection");
 		CategoryGroup.bMutuallyExclusive = true;
 
-		// Pass 5: reference tab labels measure ~50-60px cap height — fonts scale to match.
+		// Transplant pass: fonts from strip-measured label sizes.
 		const FVector2D TopBarViewportSize = GetEffectiveFrontendViewportSize();
 		const int32 CategoryTabFontSize = TopBarViewportSize.X <= 1366.f
-			? 38
-			: (TopBarViewportSize.X <= 1600.f ? 42 : 46);
+			? 42
+			: (TopBarViewportSize.X <= 1600.f ? 46 : 50);
 		const int32 ProfileTabFontSize = TopBarViewportSize.X <= 1366.f
 			? 19
 			: (TopBarViewportSize.X <= 1600.f ? 21 : 23);
@@ -1213,7 +1213,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			Item.MinWidth = Rect.ReferenceWidth();
 			Item.Height = Rect.ReferenceHeight();
 			Item.IsEnabled = bEnabled;
-			Item.FontSize = FitTopBarLabelFontSize(Label, CategoryTabFontSize, 30, Rect.ReferenceWidth() - 24.f);
+			Item.FontSize = FitTopBarLabelFontSize(Label, CategoryTabFontSize, 30, Rect.ReferenceWidth() - 40.f);
 			Item.Tag = Tag;
 			return Item;
 		};
@@ -1243,20 +1243,20 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			true));
 		TArray<TSharedRef<SWidget>> CategoryButtons;
 		CategoryButtons.Reserve(CategoryGroup.Items.Num());
-		// Per-width plates (Law 1: image-drawn plates must match the slot aspect).
-		static const TCHAR* TabPlateWidths[] = { TEXT("288"), TEXT("196"), TEXT("224") };
+		// Per-tab plates extracted 1:1 from the reference (transplant process); aspect
+		// matches each slot by construction. Selected-state variants deferred (the
+		// MainMenu reference shows none).
+		static const TCHAR* TabPlateFiles[] = { TEXT("tab_ach"), TEXT("tab_pwr"), TEXT("tab_mini") };
 		for (int32 ItemIndex = 0; ItemIndex < CategoryGroup.Items.Num(); ++ItemIndex)
 		{
 			const FT66FlatToggleGroupItem& Item = CategoryGroup.Items[ItemIndex];
-			const TCHAR* PlateWidth = TabPlateWidths[FMath::Min<int32>(ItemIndex, 2)];
+			const TCHAR* PlateFile = TabPlateFiles[FMath::Min<int32>(ItemIndex, 2)];
 			const bool bSelected = Item.bIsSelected.Get(false);
 			const ET66FlatState RenderState = bSelected ? ET66FlatState::Selected : Item.State;
 			CategoryButtons.Add(FT66FriendslopStyle::MakeCustomToggleGroupButton(
-				FString::Printf(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/tab_%s_%s.png"),
-					RenderState == ET66FlatState::Selected ? TEXT("selected") : TEXT("idle"),
-					PlateWidth),
+				FString::Printf(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/%s.png"), PlateFile),
 				FMargin(0.f),
-				FVector2D(560.f, 152.f),
+				FVector2D(444.f, 76.f),
 				RenderState,
 				// Sized box forces the plate border to fill the slot (a bare text block
 				// makes the border hug the label).
