@@ -70,6 +70,7 @@ private:
 	void TickKnockdownFollow();
 	void SetBeanPhysicsEnabled(bool bEnabled);
 	void ReattachPelvisConstraint();
+	void EnsureMeshSimulation();
 
 	// --- visuals / clips ---
 	void LoadAssets();

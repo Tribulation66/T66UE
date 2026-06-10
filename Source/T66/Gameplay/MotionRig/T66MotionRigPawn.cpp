@@ -68,6 +68,17 @@ static TAutoConsoleVariable<float> CVarMRWalkReferenceSpeed(
 	TEXT("t66.MotionRig.Walk.ReferenceSpeed"), 520.f,
 	TEXT("Ground speed (cm/s) the Walk clip was authored against; play rate scales with speed so feet match the floor."), ECVF_Default);
 
+// Isolation switches for physics debugging — read once at BeginPlay.
+static TAutoConsoleVariable<int32> CVarMRDebugEnableMeshSim(
+	TEXT("t66.MotionRig.Debug.EnableMeshSim"), 1,
+	TEXT("0 = skeletal mesh stays kinematic (visual only). Isolation switch."), ECVF_Default);
+static TAutoConsoleVariable<int32> CVarMRDebugEnableConstraint(
+	TEXT("t66.MotionRig.Debug.EnableConstraint"), 1,
+	TEXT("0 = no pelvis-to-bean constraint. Isolation switch."), ECVF_Default);
+static TAutoConsoleVariable<int32> CVarMRDebugEnableMotors(
+	TEXT("t66.MotionRig.Debug.EnableMotors"), 1,
+	TEXT("0 = no PhysicsControl motors. Isolation switch."), ECVF_Default);
+
 namespace T66MotionRigPaths
 {
 	static const TCHAR* SkeletalMesh = TEXT("/Game/Characters/MotionRig/Hero_1/SK_MotionRig_Hero1.SK_MotionRig_Hero1");
@@ -154,21 +165,78 @@ void AT66MotionRigPawn::BeginPlay()
 	Bean->SetPhysMaterialOverride(nullptr); // material params applied through body instance below
 	Bean->BodyInstance.SetMassOverride(BeanMassKg, true);
 
+	// Order is load-bearing: PlayAnimation/SetAnimationMode re-initializes the
+	// articulation and CLOBBERS an earlier SetSimulatePhysics(true) — the mesh
+	// silently goes kinematic and the bean ends up dangling from its own
+	// constraint. So: animation mode first, simulation re-asserted after every
+	// clip change (EnsureMeshSimulation), constraint and motors last.
 	if (RigMesh->GetSkeletalMeshAsset())
 	{
-		// Skeleton simulates from frame one; clips only feed motor targets.
 		RigMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-		RigMesh->SetSimulatePhysics(true);
-		ReattachPelvisConstraint();
 	}
 
-	MotorSystem->InitializeMotors(RigMesh, PhysicsControl);
+	if (CVarMRDebugEnableMotors.GetValueOnGameThread() != 0)
+	{
+		MotorSystem->InitializeMotors(RigMesh, PhysicsControl);
+	}
+
 	SetMotionState(ET66MotionRigState::Idle);
+	EnsureMeshSimulation();
+
+	if (RigMesh->GetSkeletalMeshAsset() && CVarMRDebugEnableConstraint.GetValueOnGameThread() != 0)
+	{
+		ReattachPelvisConstraint();
+	}
 
 	UE_LOG(LogT66MotionRigPawn, Display,
 		TEXT("MotionRig pawn ready. MeshLoaded=%d MotorsInitialized=%d"),
 		RigMesh->GetSkeletalMeshAsset() ? 1 : 0,
 		MotorSystem->AreMotorsInitialized() ? 1 : 0);
+
+	// One-shot diagnostic snapshot after the world settles.
+	FTimerHandle DiagTimer;
+	GetWorldTimerManager().SetTimer(DiagTimer, FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		float MeshMass = 0.f;
+		int32 SimBodies = 0;
+		int32 TotalBodies = 0;
+		if (RigMesh->GetSkeletalMeshAsset())
+		{
+			for (FBodyInstance* Body : RigMesh->Bodies)
+			{
+				if (!Body) { continue; }
+				++TotalBodies;
+				if (Body->IsInstanceSimulatingPhysics())
+				{
+					++SimBodies;
+					MeshMass += Body->GetBodyMass();
+				}
+			}
+		}
+		UE_LOG(LogT66MotionRigPawn, Display,
+			TEXT("[MR_DIAG] beanSim=%d beanMass=%.1f beanZ=%.1f meshBodies=%d/%d simulating meshMass=%.1f pelvisZ=%.1f grounded=%d state=%s"),
+			Bean->IsSimulatingPhysics() ? 1 : 0,
+			Bean->IsSimulatingPhysics() ? Bean->GetMass() : -1.f,
+			Bean->GetComponentLocation().Z,
+			SimBodies, TotalBodies, MeshMass,
+			RigMesh->GetSkeletalMeshAsset() ? RigMesh->GetBoneLocation(TEXT("pelvis")).Z : -1.f,
+			bGrounded ? 1 : 0,
+			T66MotionRigStateName(MotionState));
+	}), 3.0f, false);
+}
+
+void AT66MotionRigPawn::EnsureMeshSimulation()
+{
+	if (!RigMesh->GetSkeletalMeshAsset() || CVarMRDebugEnableMeshSim.GetValueOnGameThread() == 0)
+	{
+		return;
+	}
+	if (!RigMesh->IsSimulatingPhysics(TEXT("pelvis")))
+	{
+		RigMesh->SetAllBodiesSimulatePhysics(true);
+		RigMesh->SetAllBodiesPhysicsBlendWeight(1.f);
+		RigMesh->bBlendPhysics = true;
+	}
 }
 
 void AT66MotionRigPawn::LoadAssets()
@@ -328,6 +396,8 @@ void AT66MotionRigPawn::SetMotionState(const ET66MotionRigState NewState)
 
 	MotorSystem->ApplyStateProfile(NewState);
 	PlayStateClip(NewState);
+	// PlayAnimation can re-init articulation and silently kill simulation.
+	EnsureMeshSimulation();
 
 	UE_LOG(LogT66MotionRigPawn, Verbose, TEXT("MotionRig state %s -> %s"),
 		T66MotionRigStateName(OldState), T66MotionRigStateName(NewState));
@@ -407,7 +477,10 @@ void AT66MotionRigPawn::StartGetUp()
 	SetBeanPhysicsEnabled(true);
 	Bean->SetPhysicsLinearVelocity(FVector::ZeroVector);
 	Bean->SetPhysicsAngularVelocityInRadians(FVector::ZeroVector);
-	ReattachPelvisConstraint();
+	if (CVarMRDebugEnableConstraint.GetValueOnGameThread() != 0)
+	{
+		ReattachPelvisConstraint();
+	}
 
 	SetMotionState(ET66MotionRigState::GetUp);
 }

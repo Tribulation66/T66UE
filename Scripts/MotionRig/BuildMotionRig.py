@@ -538,6 +538,20 @@ FBX_COMMON = dict(
 )
 
 
+def scale_for_unreal(mesh, arm_obj):
+    """Blender works in meters; UE in centimeters. Bake a x100 scale into the
+    mesh and armature so the FBX imports 1:1 at 180cm with no importer unit
+    magic. Pose-bone rotation keyframes are scale-invariant, so clips made
+    before this remain valid."""
+    bpy.ops.object.select_all(action="DESELECT")
+    mesh.select_set(True)
+    arm_obj.select_set(True)
+    bpy.context.view_layer.objects.active = arm_obj
+    for obj in (mesh, arm_obj):
+        obj.scale = (100.0, 100.0, 100.0)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
+
 def export_skeletal_fbx(mesh, arm_obj, out_path):
     clear_pose(arm_obj)
     if arm_obj.animation_data:
@@ -684,18 +698,25 @@ def main():
     skin_mesh(mesh, arm_obj, bone_layout)
     qa_weights = weights_qa(mesh)
 
+    # Author clips and shoot proofs at meter scale (camera offsets are meters),
+    # THEN bake the x100 UE scale and export everything.
+    clip_actions = {}
+    for clip_name, frames, keyer in CLIPS:
+        clip_actions[clip_name] = (make_action(arm_obj, clip_name, frames, keyer), frames)
+
+    if not args.no_render:
+        render_proofs(mesh, arm_obj, bone_layout, proof_dir)
+
+    scale_for_unreal(mesh, arm_obj)
+
     skeletal_fbx = os.path.join(out_dir, "SK_MotionRig_Hero1.fbx")
     export_skeletal_fbx(mesh, arm_obj, skeletal_fbx)
 
     clip_files = {}
-    for clip_name, frames, keyer in CLIPS:
-        action = make_action(arm_obj, clip_name, frames, keyer)
+    for clip_name, (action, frames) in clip_actions.items():
         clip_path = os.path.join(anim_dir, f"AM_MotionRig_Hero1_{clip_name}.fbx")
         export_clip_fbx(arm_obj, action, frames, clip_path)
         clip_files[clip_name] = {"path": clip_path, "frames": frames}
-
-    if not args.no_render:
-        render_proofs(mesh, arm_obj, bone_layout, proof_dir)
 
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, "MotionRig_Hero1.blend"))
 

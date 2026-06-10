@@ -54,7 +54,7 @@ if ($FrameCount -le 0) {
     $FrameCount = [Math]::Min(240, [int][Math]::Ceiling(($lengthSeconds + 1.5) / $FrameInterval))
 }
 
-$execCmds = "t66.MotionRig.TestRoom 1"
+$execCmds = "t66.MotionRig.TestRoom 1,DisableAllScreenMessages"
 if ($SloMo -ne 1.0) { $execCmds += ",slomo $SloMo" }
 if ($ExtraExecCmds) { $execCmds += ",$ExtraExecCmds" }
 

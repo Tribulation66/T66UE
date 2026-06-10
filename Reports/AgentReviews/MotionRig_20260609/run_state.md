@@ -77,17 +77,51 @@ blocker (document + clean handoff).
 
 ## Current step
 
-Phase 2/3 interleaved (~22:00): C++ runtime COMPILED CLEAN into editor DLL
-(pawn + motor system + scenario + 3 hooks). Blender pipeline v3 running
-(v1 failed: bone-heat produced zero weights on the multi-shell mesh →
-replaced with numpy distance-based skinning; v2 failed: glTF quaternion
-rotation mode made the facing flip a silent no-op + coat flare poisoned hip
-width + cuffs faked hand tips → v3 fixes all three). Next: inspect v3 proofs,
-UE import, test-room smoke capture.
+Phase 4 smoke (~22:00): FIRST IN-GAME CAPTURE RUNNING (walkcircle, side cam).
+Done since last checkpoint: Blender v3 PASS (facing flip fixed — glTF imports
+are QUATERNION rotation mode, set rotation_mode=XYZ before euler assignment;
+legs measured at knee band below coat flare; arm tips walk down cuff column);
+UE import PASS via -ExecutePythonScript (-run=pythonscript crashes in
+AssetTools: Slate assertion; FBX auto-PA does not run automated) → PA built
+by new editor commandlet -run=T66MotionRigPhysicsAsset (18 bodies capsules,
+17 constraints, FBX armature-root body culled). Capture harness: reuses
+generic screenshot sequencer (-T66GameplayAutoScreenshotSequenceDir/Count/
+Interval + frame_%04d.png, auto-quits 1.5s after last frame) + direct entry
+(-T66Entry=Run:TestRoom -T66Hero=Hero_1) + scenario self-start
+(-T66MotionRigScenario=<name> -T66MotionRigCamera=<cam>).
 
-Version 1.2 landed mid-run (tree now clean; commit c8da91343) — additive
-lane commits are safe. Repo git config HIDES untracked files: use
-`git status -uall` and explicit `git add <paths>`.
+CHECKPOINT COMMIT: "MotionRig: new physics-first hero motion foundation
+(side lane, Phase 0-2)" — 29 files, lane + 4 hooks only.
+
+Usage 21:57: 5h 61% (resets 23:40 — park briefly at 90% if needed),
+weekly 13% (stop at 77%). Burn ~17%/h of 5h pool.
+
+Known environment facts: ANOTHER AGENT is actively running the cleanup
+program (Archive deletions in tree, occasional UnrealEditor DLL locks —
+build retries with -WaitMutex + 90s backoff handle it; NEVER chain
+commandlet runs off a piped build via && (tail eats the exit code), check
+"Result: Succeeded" explicitly).
+
+Version 1.2 landed mid-run (tree clean; c8da91343) — additive lane commits
+safe. Repo git config HIDES untracked files: `git status -uall` + explicit
+`git add <paths>`.
+
+## Iteration log (Phase 4/5)
+
+- walkcircle_v1: pipeline end-to-end PASS. Character 1/100 scale (Blender
+  meters → UE cm; FIX: bake x100 into mesh+armature before FBX export, clips
+  are rotation-only so unaffected). Bean frozen (see v2).
+- walkcircle_v2: scale fixed, bean STILL frozen at spawn z≈196, never grounded,
+  velocity says falling but position barely moves = constraint suspension.
+  DIAGNOSIS: PlayAnimation/SetAnimationMode re-initializes articulation and
+  clobbers SetSimulatePhysics(true) → mesh bodies kinematic → bean dangles
+  from pelvis constraint anchored to kinematic (infinite-mass) bodies.
+  FIX: EnsureMeshSimulation() re-asserts SetAllBodiesSimulatePhysics after
+  every PlayAnimation + BeginPlay order rework + isolation CVars
+  (t66.MotionRig.Debug.EnableMeshSim/EnableConstraint/EnableMotors) +
+  [MR_DIAG] one-shot snapshot log at +3s.
+- v2 fixed camera showed BLACK world (UI fine) — camera issue parked; next
+  captures use -Camera chase until physics is proven, then debug fixed cams.
 
 ## Decision log
 

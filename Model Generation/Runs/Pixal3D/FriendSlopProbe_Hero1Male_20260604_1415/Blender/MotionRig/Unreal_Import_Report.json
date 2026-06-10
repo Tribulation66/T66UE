@@ -1,0 +1,28 @@
+{
+  "skeletal_mesh": [
+    "/Game/Characters/MotionRig/Hero_1/SK_MotionRig_Hero1.SK_MotionRig_Hero1"
+  ],
+  "physics_asset": "/Game/Characters/MotionRig/Hero_1/PA_MotionRig_Hero1.PA_MotionRig_Hero1",
+  "skeleton": "/Game/Characters/MotionRig/Hero_1/SK_MotionRig_Hero1_Skeleton.SK_MotionRig_Hero1_Skeleton",
+  "clips": {
+    "Idle": [
+      "/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Idle.AM_MotionRig_Hero1_Idle"
+    ],
+    "Walk": [
+      "/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Walk.AM_MotionRig_Hero1_Walk"
+    ],
+    "Jump": [
+      "/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Jump.AM_MotionRig_Hero1_Jump"
+    ],
+    "Dive": [
+      "/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Dive.AM_MotionRig_Hero1_Dive"
+    ],
+    "GetUp_Front": [
+      "/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_GetUp_Front.AM_MotionRig_Hero1_GetUp_Front"
+    ],
+    "GetUp_Back": [
+      "/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_GetUp_Back.AM_MotionRig_Hero1_GetUp_Back"
+    ]
+  },
+  "errors": []
+}
