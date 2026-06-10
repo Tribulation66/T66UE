@@ -771,10 +771,10 @@ void FT66HUDPresentationController::TickChestRewardPresentation(const float InDe
 		const float Spread = 110.f + (CoinIndex % 5) * 22.f + WaveIndex * 36.f;
 		const float LateralDrift = Direction * Spread * EaseOut + FMath::Sin(Progress * PI * 2.f + CoinIndex) * 18.f * ArcAlpha;
 		const float VerticalDrift = -42.f - (165.f + (CoinIndex % 7) * 22.f) * EaseOut + FMath::Sin(Progress * PI) * -64.f;
-		const float CoinSize = 22.f + ArcAlpha * 18.f + (CoinIndex % 3) * 2.f;
+		const float CoinDrawSize = 22.f + ArcAlpha * 18.f + (CoinIndex % 3) * 2.f;
 
-		CoinBox->SetWidthOverride(CoinSize);
-		CoinBox->SetHeightOverride(FMath::Max(8.f, CoinSize * (0.62f + 0.38f * FMath::Abs(FMath::Sin(Progress * PI * 4.f + CoinIndex)))));
+		CoinBox->SetWidthOverride(CoinDrawSize);
+		CoinBox->SetHeightOverride(FMath::Max(8.f, CoinDrawSize * (0.62f + 0.38f * FMath::Abs(FMath::Sin(Progress * PI * 4.f + CoinIndex)))));
 		CoinBox->SetRenderTransform(FSlateRenderTransform(FVector2D(LateralDrift, VerticalDrift)));
 		CoinBox->SetRenderOpacity(ArcAlpha * OpenAlpha * FadeAlpha);
 	}

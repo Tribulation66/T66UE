@@ -63,6 +63,7 @@ private:
 	FReply HandlePowerUpClicked();
 	FReply HandleAchievementsClicked();
 	FReply HandleAccountStatusClicked();
+	FReply HandleMiniGamesPlaceholderClicked();
 	FReply HandleQuitClicked();
 
 	TSharedPtr<FSlateBrush> HomeIconBrush;

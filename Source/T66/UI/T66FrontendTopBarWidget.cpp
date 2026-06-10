@@ -1232,13 +1232,15 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			TEXT("FrontendTopBar.PowerUpButton"),
 			PowerUpRect,
 			ActiveSection == ETopBarSection::PowerUp));
+		// MINI GAMES renders as a normal pill with dimmed text (the disabled film hides
+		// the plate entirely); click is a no-op until the hub ships.
 		CategoryGroup.Items.Add(MakeCategoryItem(
 			NSLOCTEXT("T66.MainMenu", "TopBarMiniGames", "MINI GAMES"),
-			&UT66FrontendTopBarWidget::HandlePowerUpClicked,
+			&UT66FrontendTopBarWidget::HandleMiniGamesPlaceholderClicked,
 			TEXT("FrontendTopBar.MiniGamesButton"),
 			AchievementsRect,
 			false,
-			false));
+			true));
 		TArray<TSharedRef<SWidget>> CategoryButtons;
 		CategoryButtons.Reserve(CategoryGroup.Items.Num());
 		// Per-width plates (Law 1: image-drawn plates must match the slot aspect).
@@ -1267,7 +1269,9 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 					SNew(STextBlock)
 					.Text(Item.Label)
 					.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(Item.FontSize, true))
-					.ColorAndOpacity(FT66FriendslopStyle::TextColorForState(RenderState))
+					.ColorAndOpacity(Item.Tag == FName(TEXT("FrontendTopBar.MiniGamesButton"))
+						? FSlateColor(FLinearColor(0.52f, 0.46f, 0.38f, 1.f))
+						: FSlateColor(FT66FriendslopStyle::TextColorForState(RenderState)))
 					.Justification(ETextJustify::Center)
 					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
 				],
@@ -1585,6 +1589,13 @@ FReply UT66FrontendTopBarWidget::HandleAchievementsClicked()
 {
 	FLagScopedScope LagScope(GetWorld(), TEXT("FE-03 FrontendTopBar::Achievements"));
 	NavigateWithTopBar(ET66ScreenType::Achievements);
+	return FReply::Handled();
+}
+
+FReply UT66FrontendTopBarWidget::HandleMiniGamesPlaceholderClicked()
+{
+	// Mini games hub not built yet (UI Reimagine punch list) — pill is visible per the
+	// approved reference but clicking does nothing.
 	return FReply::Handled();
 }
 
