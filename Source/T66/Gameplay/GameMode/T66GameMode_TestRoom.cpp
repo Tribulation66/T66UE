@@ -3,17 +3,11 @@
 #include "Gameplay/GameMode/T66GameMode_TestRoom.h"
 
 #include "Components/CapsuleComponent.h"
-#include "Components/LightComponent.h"
-#include "Components/SkyLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66RunStateSubsystem.h"
 #include "Data/T66DataTypes.h"
-#include "Engine/DirectionalLight.h"
-#include "Engine/PostProcessVolume.h"
-#include "Engine/Scene.h"
-#include "Engine/SkyLight.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/StaticMeshActor.h"
@@ -24,7 +18,6 @@
 #include "Gameplay/T66BossBase.h"
 #include "Gameplay/T66ChestInteractable.h"
 #include "Gameplay/T66CrateInteractable.h"
-#include "Gameplay/T66ThemeAtmosphereData.h"
 #include "Gameplay/T66EnemyBase.h"
 #include "Gameplay/T66HeroBase.h"
 #include "Gameplay/T66KnockbackComponent.h"
@@ -32,10 +25,8 @@
 #include "Gameplay/T66LootWheelInteractable.h"
 #include "Gameplay/T66MobManagerSubsystem.h"
 #include "Gameplay/T66TowerMapTerrain.h"
-#include "Gameplay/T66PerActorLightDirection.h"
 #include "Gameplay/Traps/T66ObstacleTrap.h"
 #include "Gameplay/T66VisualUtil.h"
-#include "Gameplay/T66WorldVisualSetup.h"
 #include "HAL/IConsoleManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -59,18 +50,6 @@ static TAutoConsoleVariable<int32> CVarT66TestRoomShowRepresentativeLineupOnly(
 	TEXT("t66.TestRoom.ShowRepresentativeLineupOnly"),
 	0,
 	TEXT("Limits the ToonStyle TestRoom lineup to the five representative review assets when set to 1. Default 0 shows the full fixed lineup."),
-	ECVF_Default);
-
-static TAutoConsoleVariable<int32> CVarT66TestRoomUseManualExposure(
-	TEXT("t66.TestRoom.UseManualExposure"),
-	1,
-	TEXT("Use the Phase 1C manual exposure path in TestRoom. Set 0 to use the Phase 1B fixed exposure clamp rollback."),
-	ECVF_Default);
-
-static TAutoConsoleVariable<int32> CVarT66TestRoomTestPerActorLightOverride(
-	TEXT("t66.TestRoom.TestPerActorLightOverride"),
-	0,
-	TEXT("Temporarily attaches UT66PerActorLightDirection to Lu Bu in TestRoom for ToonStyle smoke verification."),
 	ECVF_Default);
 
 static TAutoConsoleVariable<int32> CVarT66TestRoomShowCeiling(
@@ -314,8 +293,11 @@ namespace T66TestRoom
 		constexpr float TestRoomSideRoomHalfExtent = 3600.f;
 		constexpr float TestRoomCorridorLength = 2600.f;
 		constexpr float TestRoomCorridorHalfWidth = 1500.f;
-		constexpr float TestRoomInteriorHeight = 600.f;
-		constexpr float TestRoomWallThickness = 40.f;
+		// Matches the live maze dimensions (FT66TowerTuningConfig defaults:
+		// GeneratedDungeonKitWallHeight 1200 / DungeonKitWallDepth 120) so
+		// motion analysis in the Test Room compares 1:1 against the real game.
+		constexpr float TestRoomInteriorHeight = 1200.f;
+		constexpr float TestRoomWallThickness = 120.f;
 		constexpr float TestRoomCubeSize = 100.f;
 		constexpr float TestRoomSideRoomOffset = TestRoomCenterHalfExtent + TestRoomCorridorLength + TestRoomSideRoomHalfExtent;
 		constexpr float TestRoomCorridorCenterOffset = TestRoomCenterHalfExtent + (TestRoomCorridorLength * 0.5f);
@@ -816,7 +798,6 @@ namespace T66TestRoom
 				MeshComponent->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Block);
 				MeshComponent->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 				MeshComponent->SetGenerateOverlapEvents(false);
-				FT66WorldVisualSetup::RegisterToonMaterial(MeshComponent, ET66ToonMaterialKind::Environment);
 				if (UMaterialInterface* ColorMaterial = FT66VisualUtil::GetFlatColorMaterial())
 				{
 					if (UMaterialInstanceDynamic* DynamicMaterial = UMaterialInstanceDynamic::Create(ColorMaterial, MeshComponent))
@@ -851,7 +832,6 @@ namespace T66TestRoom
 						HubMesh->SetCollisionObjectType(ECC_WorldDynamic);
 						HubMesh->SetCollisionResponseToAllChannels(ECR_Ignore);
 						HubMesh->SetGenerateOverlapEvents(false);
-						FT66WorldVisualSetup::RegisterToonMaterial(HubMesh, ET66ToonMaterialKind::Environment);
 						if (UMaterialInterface* ColorMaterial = FT66VisualUtil::GetFlatColorMaterial())
 						{
 							if (UMaterialInstanceDynamic* HubMaterial = UMaterialInstanceDynamic::Create(ColorMaterial, HubMesh))
@@ -943,7 +923,16 @@ namespace T66TestRoom
 		}
 
 
-		void SpawnCubeSurface(UWorld* World, UStaticMesh* CubeMesh, UMaterialInterface* Material, const TCHAR* Label, const FVector& Location, const FVector& Scale)
+		TArray<FName> ThemedSurfaceTags()
+		{
+			TArray<FName> Tags;
+			Tags.Add(RoomActorTag());
+			Tags.Add(RoomSurfaceTag());
+			Tags.Add(AtmosphereSparedTag());
+			return Tags;
+		}
+
+		void SpawnCubeSurface(UWorld* World, UStaticMesh* CubeMesh, UMaterialInterface* Material, const TCHAR* Label, const FVector& Location, const FVector& Scale, const bool bHiddenVisual = false)
 		{
 			if (!World || !CubeMesh)
 			{
@@ -973,9 +962,11 @@ namespace T66TestRoom
 				MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 				MeshComponent->SetCollisionResponseToAllChannels(ECR_Block);
 				Surface->SetActorScale3D(Scale);
-				FT66WorldVisualSetup::RegisterToonMaterial(MeshComponent, ET66ToonMaterialKind::Environment);
 				const bool bCeilingSurface = Label && FCString::Stristr(Label, TEXT("Ceiling")) != nullptr;
-				if (bCeilingSurface && CVarT66TestRoomShowCeiling.GetValueOnGameThread() == 0)
+				const bool bHideCeiling = bCeilingSurface && CVarT66TestRoomShowCeiling.GetValueOnGameThread() == 0;
+				// bHiddenVisual = a themed main-game visual (baffle tubes)
+				// renders this surface; the cube stays as collision only.
+				if (bHiddenVisual || bHideCeiling)
 				{
 					MeshComponent->SetHiddenInGame(true);
 					MeshComponent->SetVisibility(false, true);
@@ -991,7 +982,8 @@ namespace T66TestRoom
 			const FString& Label,
 			const FBox2D& Rect,
 			const float Z,
-			const float Thickness)
+			const float Thickness,
+			const bool bHiddenVisual = false)
 		{
 			const FVector Location(
 				(Rect.Min.X + Rect.Max.X) * 0.5f,
@@ -1001,7 +993,7 @@ namespace T66TestRoom
 				(Rect.Max.X - Rect.Min.X) / TestRoomCubeSize,
 				(Rect.Max.Y - Rect.Min.Y) / TestRoomCubeSize,
 				Thickness / TestRoomCubeSize);
-			SpawnCubeSurface(World, CubeMesh, Material, *Label, Location, Scale);
+			SpawnCubeSurface(World, CubeMesh, Material, *Label, Location, Scale, bHiddenVisual);
 		}
 
 		void SpawnHorizontalWallSegment(
@@ -1018,12 +1010,21 @@ namespace T66TestRoom
 				return;
 			}
 
+			// Main-game wall visual (baffle tubes / themed fallback) over the
+			// same footprint; the cube below becomes collision-only when the
+			// themed visual spawns.
+			const FBox2D WallBox(
+				FVector2D(XMin, Y - (TestRoomWallThickness * 0.5f)),
+				FVector2D(XMax, Y + (TestRoomWallThickness * 0.5f)));
+			const bool bThemed = T66TowerMapTerrain::SpawnThemedWallVisual(
+				World, WallBox, 0.f, TestRoomInteriorHeight, ThemedSurfaceTags());
+
 			const FVector Location((XMin + XMax) * 0.5f, Y, TestRoomInteriorHeight * 0.5f);
 			const FVector Scale(
 				(XMax - XMin) / TestRoomCubeSize,
 				TestRoomWallThickness / TestRoomCubeSize,
 				TestRoomInteriorHeight / TestRoomCubeSize);
-			SpawnCubeSurface(World, CubeMesh, WallMaterial, *Label, Location, Scale);
+			SpawnCubeSurface(World, CubeMesh, WallMaterial, *Label, Location, Scale, bThemed);
 		}
 
 		void SpawnVerticalWallSegment(
@@ -1040,12 +1041,18 @@ namespace T66TestRoom
 				return;
 			}
 
+			const FBox2D WallBox(
+				FVector2D(X - (TestRoomWallThickness * 0.5f), YMin),
+				FVector2D(X + (TestRoomWallThickness * 0.5f), YMax));
+			const bool bThemed = T66TowerMapTerrain::SpawnThemedWallVisual(
+				World, WallBox, 0.f, TestRoomInteriorHeight, ThemedSurfaceTags());
+
 			const FVector Location(X, (YMin + YMax) * 0.5f, TestRoomInteriorHeight * 0.5f);
 			const FVector Scale(
 				TestRoomWallThickness / TestRoomCubeSize,
 				(YMax - YMin) / TestRoomCubeSize,
 				TestRoomInteriorHeight / TestRoomCubeSize);
-			SpawnCubeSurface(World, CubeMesh, WallMaterial, *Label, Location, Scale);
+			SpawnCubeSurface(World, CubeMesh, WallMaterial, *Label, Location, Scale, bThemed);
 		}
 
 		void SpawnHorizontalWallWithGap(
@@ -1288,21 +1295,6 @@ namespace T66TestRoom
 				}
 				MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 				MeshComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
-				const bool bTestPerActorOverride = CVarT66TestRoomTestPerActorLightOverride.GetValueOnGameThread() != 0
-					|| FParse::Param(FCommandLine::Get(), TEXT("T66TestRoomTestPerActorLightOverride"));
-				if (!bOutline
-					&& FCString::Stricmp(Entry.Label, TEXT("Lu Bu")) == 0
-					&& bTestPerActorOverride)
-				{
-					if (UT66PerActorLightDirection* Override = NewObject<UT66PerActorLightDirection>(Actor, TEXT("R1_ToonLightDirectionOverride")))
-					{
-						Override->RegisterComponent();
-						Override->SetLightDirectionOverride(FVector(0.65f, -0.25f, -0.72f));
-						Actor->AddInstanceComponent(Override);
-						UE_LOG(LogTemp, Display, TEXT("ToonStyle TestRoom attached temporary per-actor light override to Lu Bu for R1 smoke verification."));
-					}
-				}
-				FT66WorldVisualSetup::RegisterToonMaterial(MeshComponent, bOutline ? ET66ToonMaterialKind::Outline : ET66ToonMaterialKind::Character);
 				MeshComponent->SetMobility(EComponentMobility::Static);
 			}
 
@@ -1491,57 +1483,6 @@ namespace T66TestRoom
 				Chest ? 1 : 0);
 		}
 
-		void SpawnPostProcessVolume(UWorld* World)
-		{
-			if (!World)
-			{
-				return;
-			}
-
-			FActorSpawnParameters SpawnParams;
-			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			APostProcessVolume* Volume = World->SpawnActor<APostProcessVolume>(
-				APostProcessVolume::StaticClass(),
-				FVector::ZeroVector,
-				FRotator::ZeroRotator,
-				SpawnParams);
-			if (!Volume)
-			{
-				return;
-			}
-
-			TagTestRoomActor(Volume, false, true);
-			Volume->bUnbound = true;
-			Volume->Priority = 2000.f;
-#if WITH_EDITOR
-			Volume->SetActorLabel(TEXT("DEV_TestRoom_PostProcess"));
-#endif
-			FPostProcessSettings& PPS = Volume->Settings;
-			PPS.bOverride_AutoExposureMethod = true;
-			PPS.AutoExposureMethod = AEM_Manual;
-			PPS.bOverride_AutoExposureApplyPhysicalCameraExposure = true;
-			PPS.AutoExposureApplyPhysicalCameraExposure = false;
-			PPS.bOverride_AutoExposureBias = true;
-			PPS.bOverride_AmbientOcclusionIntensity = true;
-			PPS.AmbientOcclusionIntensity = 0.0f;
-
-			if (CVarT66TestRoomUseManualExposure.GetValueOnGameThread() != 0)
-			{
-				PPS.AutoExposureBias = 0.7f;
-				PPS.bOverride_AutoExposureMinBrightness = false;
-				PPS.bOverride_AutoExposureMaxBrightness = false;
-				UE_LOG(LogTemp, Display, TEXT("ToonStyle TestRoom using Phase 1C manual exposure path: AEM_Manual, Bias=+0.7."));
-			}
-			else
-			{
-				PPS.AutoExposureBias = 0.0f;
-				PPS.bOverride_AutoExposureMinBrightness = true;
-				PPS.AutoExposureMinBrightness = 1.0f;
-				PPS.bOverride_AutoExposureMaxBrightness = true;
-				PPS.AutoExposureMaxBrightness = 1.0f;
-				UE_LOG(LogTemp, Display, TEXT("ToonStyle TestRoom using Phase 1B fixed exposure clamp rollback."));
-			}
-		}
 	}
 
 	void ScheduleCombatZones(UWorld* World)
@@ -1906,25 +1847,40 @@ namespace T66TestRoom
 		const float WallOffset = TestRoomWallThickness * 0.5f;
 		const float DoorHalfWidth = TestRoomCorridorHalfWidth;
 
-		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_CenterFloor"), CenterBox, FloorZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_MobRoomFloor"), NorthRoomBox, FloorZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_BossRoomFloor"), EastRoomBox, FloorZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_SouthEmptyRoomFloor"), SouthRoomBox, FloorZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_WestEmptyRoomFloor"), WestRoomBox, FloorZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_NorthCorridorFloor"), NorthCorridorBox, FloorZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_SouthCorridorFloor"), SouthCorridorBox, FloorZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_EastCorridorFloor"), EastCorridorBox, FloorZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, FloorMaterial, TEXT("DEV_TestRoom_WestCorridorFloor"), WestCorridorBox, FloorZ, TestRoomWallThickness);
+		// Main-game surface visuals (Dungeon-theme baffle tubes, same spawners
+		// as the live maze) over every box; the cubes stay as collision-only
+		// proxies when a themed visual lands — exactly the maze arrangement.
+		auto SpawnFloorWithTheme = [&](const TCHAR* Label, const FBox2D& Box)
+		{
+			const bool bThemed = T66TowerMapTerrain::SpawnThemedFloorVisual(World, Box, 0.f, ThemedSurfaceTags());
+			SpawnRectSurface(World, CubeMesh, FloorMaterial, Label, Box, FloorZ, TestRoomWallThickness, bThemed);
+		};
+		auto SpawnCeilingWithTheme = [&](const TCHAR* Label, const FBox2D& Box)
+		{
+			const bool bThemed = CVarT66TestRoomShowCeiling.GetValueOnGameThread() != 0
+				&& T66TowerMapTerrain::SpawnThemedCeilingVisual(World, Box, TestRoomInteriorHeight, ThemedSurfaceTags());
+			SpawnRectSurface(World, CubeMesh, CeilingMaterial, Label, Box, CeilingZ, TestRoomWallThickness, bThemed);
+		};
 
-		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_CenterCeiling"), CenterBox, CeilingZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_MobRoomCeiling"), NorthRoomBox, CeilingZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_BossRoomCeiling"), EastRoomBox, CeilingZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_SouthEmptyRoomCeiling"), SouthRoomBox, CeilingZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_WestEmptyRoomCeiling"), WestRoomBox, CeilingZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_NorthCorridorCeiling"), NorthCorridorBox, CeilingZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_SouthCorridorCeiling"), SouthCorridorBox, CeilingZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_EastCorridorCeiling"), EastCorridorBox, CeilingZ, TestRoomWallThickness);
-		SpawnRectSurface(World, CubeMesh, CeilingMaterial, TEXT("DEV_TestRoom_WestCorridorCeiling"), WestCorridorBox, CeilingZ, TestRoomWallThickness);
+		SpawnFloorWithTheme(TEXT("DEV_TestRoom_CenterFloor"), CenterBox);
+		SpawnFloorWithTheme(TEXT("DEV_TestRoom_MobRoomFloor"), NorthRoomBox);
+		SpawnFloorWithTheme(TEXT("DEV_TestRoom_BossRoomFloor"), EastRoomBox);
+		SpawnFloorWithTheme(TEXT("DEV_TestRoom_SouthEmptyRoomFloor"), SouthRoomBox);
+		SpawnFloorWithTheme(TEXT("DEV_TestRoom_WestEmptyRoomFloor"), WestRoomBox);
+		SpawnFloorWithTheme(TEXT("DEV_TestRoom_NorthCorridorFloor"), NorthCorridorBox);
+		SpawnFloorWithTheme(TEXT("DEV_TestRoom_SouthCorridorFloor"), SouthCorridorBox);
+		SpawnFloorWithTheme(TEXT("DEV_TestRoom_EastCorridorFloor"), EastCorridorBox);
+		SpawnFloorWithTheme(TEXT("DEV_TestRoom_WestCorridorFloor"), WestCorridorBox);
+
+		SpawnCeilingWithTheme(TEXT("DEV_TestRoom_CenterCeiling"), CenterBox);
+		SpawnCeilingWithTheme(TEXT("DEV_TestRoom_MobRoomCeiling"), NorthRoomBox);
+		SpawnCeilingWithTheme(TEXT("DEV_TestRoom_BossRoomCeiling"), EastRoomBox);
+		SpawnCeilingWithTheme(TEXT("DEV_TestRoom_SouthEmptyRoomCeiling"), SouthRoomBox);
+		SpawnCeilingWithTheme(TEXT("DEV_TestRoom_WestEmptyRoomCeiling"), WestRoomBox);
+		SpawnCeilingWithTheme(TEXT("DEV_TestRoom_NorthCorridorCeiling"), NorthCorridorBox);
+		SpawnCeilingWithTheme(TEXT("DEV_TestRoom_SouthCorridorCeiling"), SouthCorridorBox);
+		SpawnCeilingWithTheme(TEXT("DEV_TestRoom_EastCorridorCeiling"), EastCorridorBox);
+		SpawnCeilingWithTheme(TEXT("DEV_TestRoom_WestCorridorCeiling"), WestCorridorBox);
 
 		SpawnHorizontalWallWithGap(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_CenterNorthWall"), CenterBox.Min.X, CenterBox.Max.X, CenterBox.Max.Y + WallOffset, 0.f, DoorHalfWidth);
 		SpawnHorizontalWallWithGap(World, CubeMesh, WallMaterial, TEXT("DEV_TestRoom_CenterSouthWall"), CenterBox.Min.X, CenterBox.Max.X, CenterBox.Min.Y - WallOffset, 0.f, DoorHalfWidth);
@@ -1965,11 +1921,6 @@ namespace T66TestRoom
 		SpawnTextLabel(World, TEXT("DEV_TestRoom_RoomLabel"), TEXT("WALL BUMPER"), FVector(0.f, -TestRoomSideRoomOffset, 540.f), RoomActorTag());
 		SpawnTextLabel(World, TEXT("DEV_TestRoom_RoomLabel"), TEXT("HAMMER"), FVector(-TestRoomSideRoomOffset, 0.f, 540.f), RoomActorTag());
 
-		const int32 DungeonInitialCount = FT66WorldVisualSetup::ApplyToonCelAtmosphereToRegisteredMaterials(T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon);
-		const int32 HellProbeCount = FT66WorldVisualSetup::ApplyToonCelAtmosphereToRegisteredMaterials(T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Hell);
-		const int32 DungeonFinalCount = FT66WorldVisualSetup::ApplyToonCelAtmosphereToRegisteredMaterials(T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon);
-		UE_LOG(LogTemp, Display, TEXT("ToonStyle TestRoom G6 parameter probe applied Dungeon=%d Hell=%d RestoredDungeon=%d."), DungeonInitialCount, HellProbeCount, DungeonFinalCount);
-
 		SpawnTestRoomSideRoomTraps(World);
 		ScheduleWipeoutArmTrap(World);
 	}
@@ -1981,59 +1932,9 @@ namespace T66TestRoom
 			return;
 		}
 
+		// The single shared rig is the only lighting path: TestRoom never spawns its own
+		// directional/skylight or post-process volume. Just clear any leftover tagged
+		// lighting actors from earlier runs; the single rig lights TestRoom.
 		DestroyTestRoomActorsWithTag(World, LightingActorTag());
-
-		// Under the single shared lighting rig, TestRoom must NOT spawn its own directional + skylight
-		// (they stacked as the extra "4th directional" + ambient and stopped the map honestly showing the
-		// one-light state). Let the single rig light TestRoom. Reversible: when t66.Light.SingleRig is
-		// off, TestRoom restores its own lighting below.
-		if (!T66ThemeAtmosphereData::IsSingleLightingRigEnabled())
-		{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-		ADirectionalLight* DirectionalLight = World->SpawnActor<ADirectionalLight>(
-			ADirectionalLight::StaticClass(),
-			FVector(0.f, 0.f, 500.f),
-			FRotator(-60.f, -35.f, 0.f),
-			SpawnParams);
-		if (DirectionalLight)
-		{
-			TagTestRoomActor(DirectionalLight, false, true);
-#if WITH_EDITOR
-			DirectionalLight->SetActorLabel(TEXT("DEV_TestRoom_DirectionalLight"));
-#endif
-			if (ULightComponent* LightComponent = DirectionalLight->GetLightComponent())
-			{
-				LightComponent->SetIntensity(2.0f);
-				LightComponent->SetLightColor(FLinearColor::White);
-			}
-		}
-
-		ASkyLight* SkyLight = World->SpawnActor<ASkyLight>(
-			ASkyLight::StaticClass(),
-			FVector(0.f, 0.f, 450.f),
-			FRotator::ZeroRotator,
-			SpawnParams);
-		if (SkyLight)
-		{
-			TagTestRoomActor(SkyLight, false, true);
-#if WITH_EDITOR
-			SkyLight->SetActorLabel(TEXT("DEV_TestRoom_SkyLight"));
-#endif
-			if (USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent())
-			{
-				SkyLightComponent->SetIntensity(0.3f);
-			}
-		}
-		} // end if (!IsSingleLightingRigEnabled) — single rig lights TestRoom instead
-
-		// TestRoom's own PostProcess (Priority 2000, AEM_Manual exposure) outranked the single-rig theme
-		// PPV (1000) and imposed its exposure on the scene. Under the single rig, skip it so the single-rig
-		// theme PPV (Priority 3000) is the sole winning volume. Reversible.
-		if (!T66ThemeAtmosphereData::IsSingleLightingRigEnabled())
-		{
-			SpawnPostProcessVolume(World);
-		}
 	}
 }

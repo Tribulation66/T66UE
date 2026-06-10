@@ -5,7 +5,6 @@
 #include "Core/T66GameplayLayout.h"
 #include "Core/T66TowerTuningConfig.h"
 #include "Data/T66DataTypes.h"
-#include "Gameplay/T66TowerLighting.h"
 #include "Gameplay/T66TowerThemeVisuals.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/CollisionProfile.h"
@@ -6275,7 +6274,6 @@ namespace T66TowerMapTerrain
 				T66SpawnPolygonFloor(World, CubeMesh, Theme.FloorMaterial, Layout, Floor, SpawnParams, FloorTags);
 			}
 			T66SpawnMazeWalls(World, CubeMesh, Theme, Layout, Floor, ModuleWallHeight, SpawnParams);
-			T66TowerLighting::SpawnFloorTorchLights(World, Floor, Layout, StageTheme, nullptr);
 
 			if (bUsingGeneratedDungeonKitForTheme)
 			{
@@ -6354,5 +6352,153 @@ namespace T66TowerMapTerrain
 
 		bOutCollisionReady = true;
 		return true;
+	}
+
+	// -----------------------------------------------------------------------
+	// Themed-surface parity (Test Room): the same Dungeon-theme visuals the
+	// live maze renders, honoring the t66.Tower.*Baffles CVars, with the same
+	// themed-cube fallback the maze uses when baffle assets are unavailable.
+	// -----------------------------------------------------------------------
+
+	static bool T66ResolveParityTheme(UWorld* World, T66TowerThemeVisuals::FResolvedTheme& OutTheme)
+	{
+		return T66TowerThemeVisuals::ResolveTheme(
+			World,
+			ET66TowerGameplayLevelTheme::Dungeon,
+			/*bBossFloor*/ false,
+			OutTheme);
+	}
+
+	static FActorSpawnParameters T66ParitySpawnParams()
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		return SpawnParams;
+	}
+
+	bool SpawnThemedFloorVisual(UWorld* World, const FBox2D& Box, const float SurfaceZ, const TArray<FName>& Tags)
+	{
+		T66TowerThemeVisuals::FResolvedTheme Theme;
+		if (!World || !T66ResolveParityTheme(World, Theme) || !Theme.FloorMaterial)
+		{
+			return false;
+		}
+
+		const FActorSpawnParameters SpawnParams = T66ParitySpawnParams();
+		FFloor ParityFloor;
+		ParityFloor.FloorNumber = 0;
+		ParityFloor.SurfaceZ = SurfaceZ;
+		ParityFloor.Center = FVector((Box.Min.X + Box.Max.X) * 0.5f, (Box.Min.Y + Box.Max.Y) * 0.5f, SurfaceZ);
+
+		if (T66ShouldUseFloorBaffles()
+			&& T66SpawnFloorBaffleTubeVisualsForBox(World, Box, ParityFloor, Theme.FloorMaterial, SpawnParams, Tags))
+		{
+			return true;
+		}
+
+		UStaticMesh* CubeMesh = FT66VisualUtil::GetBasicShapeCube();
+		if (!CubeMesh)
+		{
+			return false;
+		}
+		// Same slab the maze falls back to (GeneratedDungeonKitFloorThickness).
+		const float SlabThickness = 24.0f;
+		const FVector2D Center = (Box.Min + Box.Max) * 0.5f;
+		const FVector2D HalfExtents = (Box.Max - Box.Min) * 0.5f;
+		return T66SpawnEnvironmentRectangle(
+			World,
+			CubeMesh,
+			Theme.FloorMaterial,
+			FVector(Center.X, Center.Y, SurfaceZ - (SlabThickness * 0.5f)),
+			FVector(HalfExtents.X, HalfExtents.Y, SlabThickness * 0.5f),
+			SpawnParams,
+			Tags,
+			/*bIgnoreCameraChannel*/ true) != nullptr;
+	}
+
+	bool SpawnThemedCeilingVisual(UWorld* World, const FBox2D& Box, const float CeilingBottomZ, const TArray<FName>& Tags)
+	{
+		T66TowerThemeVisuals::FResolvedTheme Theme;
+		if (!World || !T66ResolveParityTheme(World, Theme))
+		{
+			return false;
+		}
+		UMaterialInterface* CeilingMaterial = Theme.CeilingMaterial ? Theme.CeilingMaterial : Theme.RoofMaterial;
+		if (!CeilingMaterial)
+		{
+			return false;
+		}
+
+		const FActorSpawnParameters SpawnParams = T66ParitySpawnParams();
+		FFloor ParityFloor;
+		ParityFloor.FloorNumber = 0;
+		ParityFloor.SurfaceZ = 0.0f;
+		ParityFloor.Center = FVector((Box.Min.X + Box.Max.X) * 0.5f, (Box.Min.Y + Box.Max.Y) * 0.5f, 0.0f);
+
+		if (T66ShouldUseCeilingBaffles()
+			&& T66SpawnCeilingBaffleTubeVisualsForBox(World, Box, ParityFloor, CeilingBottomZ, CeilingMaterial, SpawnParams, Tags))
+		{
+			return true;
+		}
+
+		UStaticMesh* CubeMesh = FT66VisualUtil::GetBasicShapeCube();
+		if (!CubeMesh)
+		{
+			return false;
+		}
+		const float SlabThickness = 24.0f;
+		const FVector2D Center = (Box.Min + Box.Max) * 0.5f;
+		const FVector2D HalfExtents = (Box.Max - Box.Min) * 0.5f;
+		return T66SpawnEnvironmentRectangle(
+			World,
+			CubeMesh,
+			CeilingMaterial,
+			FVector(Center.X, Center.Y, CeilingBottomZ + (SlabThickness * 0.5f)),
+			FVector(HalfExtents.X, HalfExtents.Y, SlabThickness * 0.5f),
+			SpawnParams,
+			Tags,
+			/*bIgnoreCameraChannel*/ true) != nullptr;
+	}
+
+	bool SpawnThemedWallVisual(UWorld* World, const FBox2D& WallBox, const float BaseZ, const float Height, const TArray<FName>& Tags)
+	{
+		T66TowerThemeVisuals::FResolvedTheme Theme;
+		if (!World || Height <= 10.0f || !T66ResolveParityTheme(World, Theme))
+		{
+			return false;
+		}
+		UMaterialInterface* WallMaterial = T66ResolveEnvironmentWallMaterialForBox(Theme, WallBox);
+		if (!WallMaterial)
+		{
+			WallMaterial = Theme.WallMaterial;
+		}
+		if (!WallMaterial)
+		{
+			return false;
+		}
+
+		const FActorSpawnParameters SpawnParams = T66ParitySpawnParams();
+		if (T66ShouldUseWallBaffles()
+			&& T66SpawnWallBaffleTubeVisualsForBox(World, WallBox, BaseZ, Height, WallMaterial, SpawnParams, Tags, /*bIgnoreCameraChannel*/ true))
+		{
+			return true;
+		}
+
+		UStaticMesh* CubeMesh = FT66VisualUtil::GetBasicShapeCube();
+		if (!CubeMesh)
+		{
+			return false;
+		}
+		const FVector2D Center = (WallBox.Min + WallBox.Max) * 0.5f;
+		const FVector2D HalfExtents = (WallBox.Max - WallBox.Min) * 0.5f;
+		return T66SpawnEnvironmentRectangle(
+			World,
+			CubeMesh,
+			WallMaterial,
+			FVector(Center.X, Center.Y, BaseZ + (Height * 0.5f)),
+			FVector(HalfExtents.X, HalfExtents.Y, Height * 0.5f),
+			SpawnParams,
+			Tags,
+			/*bIgnoreCameraChannel*/ true) != nullptr;
 	}
 }

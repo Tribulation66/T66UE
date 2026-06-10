@@ -220,4 +220,13 @@ namespace T66TowerMapTerrain
 	bool TryGetWallSpawnLocation(UWorld* World, const FLayout& Layout, const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation);
 	bool TryGetWallSpawnLocation(UWorld* World, const FLayout& Layout, const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation, FVector& OutWallNormal);
 	bool Spawn(UWorld* World, const FLayout& Layout, ET66Difficulty Difficulty, const FActorSpawnParameters& SpawnParams, bool& bOutCollisionReady);
+
+	// Themed-surface parity for the Test Room: spawn the SAME visuals the live
+	// maze renders (Dungeon-theme baffle tubes, themed-cube fallback, honoring
+	// the t66.Tower.*Baffles CVars) over arbitrary boxes. Collision is the
+	// caller's responsibility — the maze itself pairs these with hidden box
+	// proxies. Returns false only when no visual could be spawned at all.
+	bool SpawnThemedFloorVisual(UWorld* World, const FBox2D& Box, float SurfaceZ, const TArray<FName>& Tags);
+	bool SpawnThemedCeilingVisual(UWorld* World, const FBox2D& Box, float CeilingBottomZ, const TArray<FName>& Tags);
+	bool SpawnThemedWallVisual(UWorld* World, const FBox2D& WallBox, float BaseZ, float Height, const TArray<FName>& Tags);
 }
