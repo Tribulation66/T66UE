@@ -1,7 +1,16 @@
 # UI Reimagine — Overnight Run Contract
 
-Date agreed: 2026-06-10. Status: QUEUED (waiting on: in-flight UI pass commit, then
-cleanup pass execution, then user's "go" + north-star approval).
+Date agreed: 2026-06-10. Status: RUNNING (started 2026-06-10 03:43; user gave full "go"
+2026-06-09 night and WAIVED the pre-sleep north-star approval — Claude self-approves
+against the candy minimap anchors). Start HEAD: 8b6c08aea. Cleanup program NOT run by
+this session (owned elsewhere); reimagine only. Amendments at run start:
+- Work on MAIN (no branch: shared checkout with other agents). Revert layers instead:
+  new-folder assets only (RuntimeDependencies/T66/UI/FriendslopStyle/Candy/), single
+  switch CVar `T66.UI.CandyKit` (default 1; 0 = instant current look), per-screen
+  commits prefixed "UI Reimagine:".
+- Foreign-dirty defer rule active (630-file uncommitted material pass in tree; 5 UI
+  files deferred — see overnight_log.md).
+- Codex budget: stop launching imagegen at >=98% weekly used; resume after 00:24 reset.
 
 ## Mission
 
