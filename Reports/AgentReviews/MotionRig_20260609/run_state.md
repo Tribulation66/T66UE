@@ -42,7 +42,15 @@ blocker (document + clean handoff).
 - Use neutral technical wording in all messages (impact reaction, knockdown,
   recovery) to avoid automated-filter false positives.
 
-## STATUS ~02:45: FOUNDATION WORKING — parked-or-tuning depending on usage
+## STATUS ~00:15 (June 10): ACCEPTANCE MET — staged standalone smoke PASS
+
+T66.exe (staged tonight, post cook-fix) boots → Test Room → MotionRig pawn
+from cooked assets → motors live → scenario runs → telemetry written. Bean
+pitch/roll locked (lean 89°→0°); dive prone via pelvis PD target. Remaining:
+feel tuning (foot-skate is the #1 axis), posture polish, punch list in
+morning_review.md.
+
+## (superseded) STATUS ~02:45: FOUNDATION WORKING — parked-or-tuning depending on usage
 
 Walk/jump/dive/impact all function and render (textured, FriendSlop master).
 Full evidence suite + rubric scores under captures/final_*. morning_review.md

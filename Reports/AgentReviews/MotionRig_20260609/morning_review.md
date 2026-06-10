@@ -20,6 +20,17 @@ and every knob are in place to do that iteratively). It is a foundation that
 moves correctly, not yet a character that charms. That next mile is pure
 CVar tuning against the rubric, no architecture left to build.
 
+## Standalone acceptance: PASS
+
+The staged build at `Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe`
+(shortcut `T66 Standalone.lnk`, rebuilt tonight) was smoke-tested headlessly:
+direct entry to the Test Room as Hero_1 spawned the MotionRig pawn from cooked
+assets, motors initialized (17 drives, 70 kg), the bean grounded, the scripted
+walk scenario executed all steps, and telemetry was written from the packaged
+game. Evidence: `captures/standalone_smoke/` + the log lines quoted in
+run_state.md. One earlier cook failure was mine (CDO-time mass override
+logging an Error) — fixed.
+
 ## How to try it (the 30-second version)
 
 Launch the staged standalone (or `UnrealEditor.exe T66.uproject
