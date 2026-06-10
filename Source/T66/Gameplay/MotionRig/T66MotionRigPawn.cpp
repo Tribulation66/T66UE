@@ -186,17 +186,22 @@ AT66MotionRigPawn::AT66MotionRigPawn()
 	MotorSystem = CreateDefaultSubobject<UT66MotionRigMotorSystem>(TEXT("MotorSystem"));
 	Scenario = CreateDefaultSubobject<UT66MotionRigScenario>(TEXT("Scenario"));
 
+	// Camera rig mirrors AT66HeroBase exactly so the Test Room camera behaves
+	// like the main game: orbit mouse-look (control-rotation boom), scroll
+	// zoom, Ctrl+scroll pitch, and the locked-chase preset — all driven by the
+	// SAME controller code paths the regular hero uses.
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(Bean);
-	CameraBoom->SetUsingAbsoluteRotation(true); // never inherit bean wobble
-	CameraBoom->SetRelativeRotation(FRotator(-48.f, 0.f, 0.f));
-	CameraBoom->TargetArmLength = 1450.f;
+	CameraBoom->TargetArmLength = 1440.f; // T66HeroDefaultCameraArmLengthUU
+	CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 60.f));
+	CameraBoom->bUsePawnControlRotation = true;
 	CameraBoom->bDoCollisionTest = false;
-	CameraBoom->bEnableCameraLag = true;
-	CameraBoom->CameraLagSpeed = 8.f;
+	CameraBoom->ProbeSize = 12.f;
+	CameraBoom->ProbeChannel = ECC_Camera;
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom);
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	FollowCamera->bUsePawnControlRotation = false;
 }
 
 void AT66MotionRigPawn::BeginPlay()
@@ -496,17 +501,6 @@ void AT66MotionRigPawn::MotionRigDivePressed()
 		Bean->GetPhysicsAngularVelocityInRadians() + PitchAxis * -CVarMRBeanDivePitchImpulse.GetValueOnGameThread());
 
 	SetMotionState(ET66MotionRigState::Dive);
-}
-
-void AT66MotionRigPawn::MotionRigZoomCamera(const float AxisValue)
-{
-	// Same zoom feel and range as the regular hero camera (HandleZoom in
-	// T66PlayerController_Input.cpp).
-	constexpr float ZoomSpeed = 120.f;
-	constexpr float MinLength = 350.f;
-	constexpr float MaxLength = 2800.f;
-	CameraBoom->TargetArmLength = FMath::Clamp(
-		CameraBoom->TargetArmLength - (AxisValue * ZoomSpeed), MinLength, MaxLength);
 }
 
 void AT66MotionRigPawn::TriggerKnockdown(const FVector& LaunchVelocity)
@@ -972,7 +966,8 @@ FVector AT66MotionRigPawn::GetCameraRelativeInputDirection() const
 		return FVector::ZeroVector;
 	}
 
-	// Camera boom uses absolute rotation; its yaw defines the input frame.
+	// The boom follows control rotation (main-game camera); its world yaw is
+	// the camera frame for WASD, exactly like the regular hero.
 	const FRotator YawRotation(0.f, CameraBoom->GetComponentRotation().Yaw, 0.f);
 	const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	const FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);

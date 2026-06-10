@@ -314,6 +314,9 @@ private:
 	void ClampGameplayCameraPitch();
 	void AdjustGameplayCameraPitchFromScroll(float ScrollValue);
 	void UpdateLockedChaseGameplayCamera(float DeltaTime);
+	// The gameplay camera boom for whichever pawn type is possessed (regular
+	// hero or the MotionRig test pawn) — one camera system for both.
+	class USpringArmComponent* GetGameplayCameraBoomForPawn(APawn* InPawn) const;
 	void UpdateGameplayCameraSideWallSpring(float DeltaTime);
 	void UpdateGameplayCameraWallOcclusion(float DeltaTime);
 	void ClearGameplayCameraWallOcclusion();
@@ -508,7 +511,7 @@ private:
 	float LockedChaseGameplayCameraPitchOffset = 0.0f;
 	float SavedPreLockedChaseCameraArmLength = 0.0f;
 	FVector SavedPreLockedChaseCameraBoomRelativeLocation = FVector::ZeroVector;
-	TWeakObjectPtr<AT66HeroBase> LockedChaseCameraInitializedHero;
+	TWeakObjectPtr<APawn> LockedChaseCameraInitializedPawn;
 	bool bGameplayAutomationCameraZoomLocked = false;
 
 	UPROPERTY(Transient)

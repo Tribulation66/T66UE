@@ -25,5 +25,4 @@ public:
 	virtual void MotionRigJumpPressed() = 0;
 	virtual void MotionRigJumpReleased() = 0;
 	virtual void MotionRigDivePressed() = 0;
-	virtual void MotionRigZoomCamera(float AxisValue) = 0;
 };

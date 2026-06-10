@@ -2,7 +2,7 @@
 
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroBase.h"
-#include "Gameplay/MotionRig/T66MotionRigInputReceiver.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -668,27 +668,21 @@ void AT66PlayerController::HandleZoom(float Value)
 		return;
 	}
 	
-	// Adjust camera boom length on the possessed hero (third-person zoom)
+	// Adjust the gameplay camera boom length (third-person zoom) — same path
+	// for the regular hero and the MotionRig test pawn.
 	APawn* MyPawn = GetPawn();
 	if (!MyPawn) return;
 
-	if (IT66MotionRigInputReceiver* MotionRig = Cast<IT66MotionRigInputReceiver>(MyPawn))
-	{
-		MotionRig->MotionRigZoomCamera(Value);
-		return;
-	}
-
-	AT66HeroBase* Hero = Cast<AT66HeroBase>(MyPawn);
-	if (Hero && Hero->CameraBoom)
+	if (USpringArmComponent* Boom = GetGameplayCameraBoomForPawn(MyPawn))
 	{
 		const float ZoomSpeed = 120.f;
 		const float MinLength = 350.f;
 		const float MaxLength = 2800.f;
 		const float CurrentDesiredLength = DesiredGameplayCameraArmLength > KINDA_SMALL_NUMBER
 			? DesiredGameplayCameraArmLength
-			: Hero->CameraBoom->TargetArmLength;
+			: Boom->TargetArmLength;
 		DesiredGameplayCameraArmLength = FMath::Clamp(CurrentDesiredLength - (Value * ZoomSpeed), MinLength, MaxLength);
-		Hero->CameraBoom->TargetArmLength = DesiredGameplayCameraArmLength;
+		Boom->TargetArmLength = DesiredGameplayCameraArmLength;
 	}
 }
 

@@ -2,6 +2,7 @@
 
 #include "Gameplay/T66PlayerController.h"
 #include "Gameplay/T66HeroBase.h"
+#include "Gameplay/MotionRig/T66MotionRigPawn.h"
 #include "Gameplay/T66CombatComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -36,7 +37,6 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerController, Log, All);
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66BackendSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -253,6 +253,19 @@ bool AT66PlayerController::IsLockedChaseGameplayCameraMode() const
 	return CVarT66GameplayCameraPreset.GetValueOnGameThread() == 1;
 }
 
+USpringArmComponent* AT66PlayerController::GetGameplayCameraBoomForPawn(APawn* InPawn) const
+{
+	if (AT66HeroBase* Hero = Cast<AT66HeroBase>(InPawn))
+	{
+		return Hero->CameraBoom;
+	}
+	if (AT66MotionRigPawn* MotionRig = Cast<AT66MotionRigPawn>(InPawn))
+	{
+		return MotionRig->GetCameraBoom();
+	}
+	return nullptr;
+}
+
 void AT66PlayerController::PrimeGameplayPresentationAssetsAsync()
 {
 	if (!CachedJumpVFXNiagara) { CachedJumpVFXNiagara = JumpVFXNiagara.Get(); }
@@ -357,8 +370,10 @@ void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime
 		return;
 	}
 
-	AT66HeroBase* Hero = Cast<AT66HeroBase>(GetPawn());
-	if (!Hero || !Hero->CameraBoom)
+	APawn* ViewPawn = GetPawn();
+	USpringArmComponent* Boom = GetGameplayCameraBoomForPawn(ViewPawn);
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(ViewPawn);
+	if (!ViewPawn || !Boom)
 	{
 		return;
 	}
@@ -370,7 +385,7 @@ void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime
 
 	if (!IsLockedChaseGameplayCameraMode())
 	{
-		if (LockedChaseCameraInitializedHero.Get() != Hero)
+		if (LockedChaseCameraInitializedPawn.Get() != ViewPawn)
 		{
 			return;
 		}
@@ -378,13 +393,13 @@ void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime
 		if (SavedPreLockedChaseCameraArmLength > KINDA_SMALL_NUMBER && !bHeroOneScopedUltActive)
 		{
 			DesiredGameplayCameraArmLength = SavedPreLockedChaseCameraArmLength;
-			Hero->CameraBoom->TargetArmLength = SavedPreLockedChaseCameraArmLength;
-			Hero->CameraBoom->SetRelativeLocation(SavedPreLockedChaseCameraBoomRelativeLocation);
+			Boom->TargetArmLength = SavedPreLockedChaseCameraArmLength;
+			Boom->SetRelativeLocation(SavedPreLockedChaseCameraBoomRelativeLocation);
 		}
-		LockedChaseCameraInitializedHero.Reset();
+		LockedChaseCameraInitializedPawn.Reset();
 		SavedPreLockedChaseCameraArmLength = 0.0f;
 		SavedPreLockedChaseCameraBoomRelativeLocation = FVector::ZeroVector;
-		if (!bHeroOneScopedUltActive)
+		if (!bHeroOneScopedUltActive && Hero)
 		{
 			if (UCharacterMovementComponent* Movement = Hero->GetCharacterMovement())
 			{
@@ -394,9 +409,12 @@ void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime
 		return;
 	}
 
-	if (UCharacterMovementComponent* Movement = Hero->GetCharacterMovement())
+	if (Hero)
 	{
-		Movement->bOrientRotationToMovement = false;
+		if (UCharacterMovementComponent* Movement = Hero->GetCharacterMovement())
+		{
+			Movement->bOrientRotationToMovement = false;
+		}
 	}
 
 	const float PitchMin = FMath::Min(
@@ -410,7 +428,7 @@ void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime
 		PitchMin,
 		PitchMax);
 
-	FRotator DesiredRotation(ChasePitch, Hero->GetActorRotation().Yaw, 0.0f);
+	FRotator DesiredRotation(ChasePitch, ViewPawn->GetActorRotation().Yaw, 0.0f);
 	SetControlRotation(DesiredRotation);
 
 	if (PlayerCameraManager)
@@ -419,22 +437,22 @@ void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime
 		PlayerCameraManager->ViewPitchMax = PitchMax;
 	}
 
-	const bool bNewLockedChaseHero = LockedChaseCameraInitializedHero.Get() != Hero;
-	if (bNewLockedChaseHero)
+	const bool bNewLockedChasePawn = LockedChaseCameraInitializedPawn.Get() != ViewPawn;
+	if (bNewLockedChasePawn)
 	{
-		if (AT66HeroBase* PreviousHero = LockedChaseCameraInitializedHero.Get())
+		if (APawn* PreviousPawn = LockedChaseCameraInitializedPawn.Get())
 		{
-			if (PreviousHero->CameraBoom)
+			if (USpringArmComponent* PreviousBoom = GetGameplayCameraBoomForPawn(PreviousPawn))
 			{
-				PreviousHero->CameraBoom->SetRelativeLocation(SavedPreLockedChaseCameraBoomRelativeLocation);
+				PreviousBoom->SetRelativeLocation(SavedPreLockedChaseCameraBoomRelativeLocation);
 			}
 		}
 
 		SavedPreLockedChaseCameraArmLength = DesiredGameplayCameraArmLength > KINDA_SMALL_NUMBER
 			? DesiredGameplayCameraArmLength
-			: Hero->CameraBoom->TargetArmLength;
-		SavedPreLockedChaseCameraBoomRelativeLocation = Hero->CameraBoom->GetRelativeLocation();
-		LockedChaseCameraInitializedHero = Hero;
+			: Boom->TargetArmLength;
+		SavedPreLockedChaseCameraBoomRelativeLocation = Boom->GetRelativeLocation();
+		LockedChaseCameraInitializedPawn = ViewPawn;
 	}
 
 	const float LockedChasePivotHeight = FMath::Max(0.0f, CVarT66LockedChaseCameraPivotHeight.GetValueOnGameThread());
@@ -442,20 +460,20 @@ void AT66PlayerController::UpdateLockedChaseGameplayCamera(const float DeltaTime
 	FVector LockedChaseBoomLocation = SavedPreLockedChaseCameraBoomRelativeLocation;
 	LockedChaseBoomLocation.X += LockedChasePivotForwardOffset;
 	LockedChaseBoomLocation.Z = LockedChasePivotHeight;
-	Hero->CameraBoom->SetRelativeLocation(LockedChaseBoomLocation);
+	Boom->SetRelativeLocation(LockedChaseBoomLocation);
 
 	const float LockedChaseArmLength = FMath::Max(100.0f, CVarT66LockedChaseCameraArmLength.GetValueOnGameThread());
-	if (bNewLockedChaseHero || DesiredGameplayCameraArmLength <= KINDA_SMALL_NUMBER)
+	if (bNewLockedChasePawn || DesiredGameplayCameraArmLength <= KINDA_SMALL_NUMBER)
 	{
 		DesiredGameplayCameraArmLength = LockedChaseArmLength;
-		if (bNewLockedChaseHero || Hero->CameraBoom->TargetArmLength > DesiredGameplayCameraArmLength)
+		if (bNewLockedChasePawn || Boom->TargetArmLength > DesiredGameplayCameraArmLength)
 		{
-			Hero->CameraBoom->TargetArmLength = DesiredGameplayCameraArmLength;
+			Boom->TargetArmLength = DesiredGameplayCameraArmLength;
 		}
 	}
-	if (Hero->CameraBoom->TargetArmLength <= KINDA_SMALL_NUMBER)
+	if (Boom->TargetArmLength <= KINDA_SMALL_NUMBER)
 	{
-		Hero->CameraBoom->TargetArmLength = DesiredGameplayCameraArmLength;
+		Boom->TargetArmLength = DesiredGameplayCameraArmLength;
 	}
 }
 

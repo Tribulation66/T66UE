@@ -43,7 +43,10 @@ public:
 	virtual void MotionRigJumpPressed() override;
 	virtual void MotionRigJumpReleased() override;
 	virtual void MotionRigDivePressed() override;
-	virtual void MotionRigZoomCamera(float AxisValue) override;
+
+	// The controller's shared gameplay-camera code (zoom, locked chase) drives
+	// this boom exactly as it drives the regular hero's.
+	USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
 	// Standardized impact entry (scenario harness + future gameplay routing).
 	// LaunchVelocity is a velocity change applied coherently to the whole body.
