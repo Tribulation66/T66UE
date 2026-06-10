@@ -1084,9 +1084,26 @@ FVector AT66MotionRigPawn::GetCameraRelativeInputDirection() const
 		return FVector::ZeroVector;
 	}
 
-	// The boom follows control rotation (main-game camera); its world yaw is
-	// the camera frame for WASD, exactly like the regular hero.
-	const FRotator YawRotation(0.f, CameraBoom->GetComponentRotation().Yaw, 0.f);
+	// Player input is CAMERA-relative via the CONTROL rotation, exactly like
+	// the regular hero (UT66HeroMovementComponent). The spring arm applies
+	// bUsePawnControlRotation only to its SOCKET — the boom's own component
+	// yaw stays slaved to the bean, so framing input with it steered the
+	// bean like a car and "forward" drifted with every turn.
+	// Scripted scenarios keep the bean frame: their turn steps are authored
+	// as constant-rate arcs (Axes(1,1)) and must stay deterministic.
+	float FrameYaw = CameraBoom->GetComponentRotation().Yaw;
+	if (!bScenarioInputOverride)
+	{
+		if (const AController* PawnController = GetController())
+		{
+			FrameYaw = PawnController->GetControlRotation().Yaw;
+		}
+		else
+		{
+			FrameYaw = CameraBoom->GetTargetRotation().Yaw;
+		}
+	}
+	const FRotator YawRotation(0.f, FrameYaw, 0.f);
 	const FVector Forward = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	const FVector Right = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 	FVector Direction = Forward * MoveForwardValue + Right * MoveRightValue;
