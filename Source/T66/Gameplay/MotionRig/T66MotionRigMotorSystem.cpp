@@ -178,6 +178,15 @@ void UT66MotionRigMotorSystem::InitializeMotors(USkeletalMeshComponent* InMesh, 
 	// matches how constraint reference frames are generated.
 	const FReferenceSkeleton& RefSkeleton = Mesh->GetSkeletalMeshAsset()->GetRefSkeleton();
 	const TArray<FTransform>& RefPose = RefSkeleton.GetRefBonePose();
+	{
+		auto RefT = [&](const TCHAR* Bone) -> FString
+		{
+			const int32 Index = RefSkeleton.FindBoneIndex(FName(Bone));
+			return Index != INDEX_NONE ? RefPose[Index].GetTranslation().ToCompactString() : TEXT("missing");
+		};
+		UE_LOG(LogT66MotionRig, Display, TEXT("[MR_SURVEY] refpose locals: pelvis=%s spine_01=%s head=%s thigh_l=%s calf_l=%s"),
+			*RefT(TEXT("pelvis")), *RefT(TEXT("spine_01")), *RefT(TEXT("head")), *RefT(TEXT("thigh_l")), *RefT(TEXT("calf_l")));
+	}
 
 	for (int32 ConstraintIndex = 0; ConstraintIndex < Mesh->Constraints.Num(); ++ConstraintIndex)
 	{
@@ -430,6 +439,17 @@ void UT66MotionRigMotorSystem::TickPelvisFollow()
 	}
 
 	FTransform TargetTransform = PoseSource->GetBoneTransform(TEXT("pelvis"));
+	// Express the target relative to the pose component, re-anchored at the
+	// canonical attach point (bean bottom): identical normally, and immune to
+	// the Debug.ShowPoseSource preview offset.
+	if (USceneComponent* BeanRoot = GetOwner() ? GetOwner()->GetRootComponent() : nullptr)
+	{
+		const FTransform PelvisInPose = TargetTransform.GetRelativeTransform(PoseSource->GetComponentTransform());
+		const FTransform CanonicalPose(
+			BeanRoot->GetComponentQuat(),
+			BeanRoot->GetComponentLocation() + BeanRoot->GetComponentQuat().RotateVector(FVector(0.f, 0.f, -90.f)));
+		TargetTransform = PelvisInPose * CanonicalPose;
+	}
 	const FTransform PelvisTransform = Pelvis->GetUnrealWorldTransform();
 
 	// Dive: the bean cannot pitch (locked axes), so the prone orientation is

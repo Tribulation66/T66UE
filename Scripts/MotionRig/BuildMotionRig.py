@@ -538,10 +538,54 @@ FBX_COMMON = dict(
 )
 
 
-# NOTE on units (measured, not assumed): the FBX exporter already converts
-# Blender meters to FBX centimeters (x100 in the data). A 1.80m scene exports
-# as 180-unit geometry, which UE imports as 180cm. Baking an additional x100
-# produced an 18,000-unit kaiju (walkcircle_v4 evidence). Do NOT scale.
+# NOTE on units (measured across three failure modes — do not "simplify"):
+# - Authoring happens at METER scale (1.80m figure). Exporting that directly
+#   relies on the exporter's unit conversion, which scales MESH data x100 but
+#   NOT armature rest bones -> UE ref skeleton collapsed to 1/100, the auto
+#   physics asset generated zero-length constraint anchors, and the simulated
+#   skeleton stacked into a single point (the "tiny body", [MR_SURVEY]).
+# - FBX_SCALE_ALL did not fix the bone transforms either (measured: UE ref
+#   pose still pelvisZ=0.98 post-reimport).
+# - A vertex-only x100 bake on top of the implicit conversion made an
+#   18,000-unit kaiju (walkcircle_v4).
+# The deterministic fix: convert_scene_to_centimeters() right before export —
+# scale mesh+armature objects x100 (applied), scale action LOCATION curves
+# x100 (rotations are scale-free), set scene units to cm. Every number is
+# then already centimeters and the exporter has nothing left to convert.
+
+
+def convert_scene_to_centimeters(mesh, arm_obj):
+    scene = bpy.context.scene
+    scene.unit_settings.system = "METRIC"
+    scene.unit_settings.scale_length = 0.01
+
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in (mesh, arm_obj):
+        obj.select_set(True)
+        obj.scale = (100.0, 100.0, 100.0)
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
+    # Pose-bone location keys are armature-space numbers; they do not scale
+    # with transform_apply and must be multiplied explicitly.
+    def iter_action_fcurves(action):
+        if hasattr(action, "fcurves"):  # pre-5.x flat API
+            yield from action.fcurves
+            return
+        for layer in action.layers:  # Blender 5.x slotted actions
+            for strip in layer.strips:
+                for channelbag in strip.channelbags:
+                    yield from channelbag.fcurves
+
+    for action in bpy.data.actions:
+        for fcurve in iter_action_fcurves(action):
+            if fcurve.data_path.endswith("location"):
+                for key in fcurve.keyframe_points:
+                    key.co.y *= 100.0
+                    key.handle_left.y *= 100.0
+                    key.handle_right.y *= 100.0
+                fcurve.update()
 
 
 def export_skeletal_fbx(mesh, arm_obj, out_path):
@@ -698,6 +742,8 @@ def main():
 
     if not args.no_render:
         render_proofs(mesh, arm_obj, bone_layout, proof_dir)
+
+    convert_scene_to_centimeters(mesh, arm_obj)
 
     skeletal_fbx = os.path.join(out_dir, "SK_MotionRig_Hero1.fbx")
     export_skeletal_fbx(mesh, arm_obj, skeletal_fbx)

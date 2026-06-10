@@ -47,6 +47,19 @@ int32 UT66MotionRigPhysicsAssetCommandlet::Main(const FString& Params)
 		return 1;
 	}
 
+	// Unit sanity: a healthy 1.8m rig has the pelvis ~98cm up and a ~46cm
+	// thigh. Meter-scale numbers here mean the FBX bone transforms missed the
+	// unit conversion and every generated body/constraint will collapse.
+	{
+		const FReferenceSkeleton& RefSkeleton = SkeletalMesh->GetRefSkeleton();
+		const TArray<FTransform>& RefPose = RefSkeleton.GetRefBonePose();
+		const int32 PelvisIndex = RefSkeleton.FindBoneIndex(TEXT("pelvis"));
+		const int32 CalfIndex = RefSkeleton.FindBoneIndex(TEXT("calf_l"));
+		UE_LOG(LogT66MotionRigPA, Display, TEXT("MOTIONRIG_PA_REFPOSE pelvisZ=%.2f calfLocal=%.2f"),
+			PelvisIndex != INDEX_NONE ? RefPose[PelvisIndex].GetTranslation().Z : -1.f,
+			CalfIndex != INDEX_NONE ? RefPose[CalfIndex].GetTranslation().Size() : -1.f);
+	}
+
 	UPackage* Package = CreatePackage(MotionRigPhysicsAssetPackage);
 	if (!Package)
 	{

@@ -15,6 +15,7 @@
 #include "Gameplay/MotionRig/T66MotionRigScenario.h"
 #include "HAL/IConsoleManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "PhysicsEngine/ConstraintInstance.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 #include "UObject/SoftObjectPath.h"
@@ -75,6 +76,9 @@ static TAutoConsoleVariable<float> CVarMRWalkReferenceSpeed(
 	TEXT("Ground speed (cm/s) the Walk clip was authored against; play rate scales with speed so feet match the floor."), ECVF_Default);
 
 // Isolation switches for physics debugging — read once at BeginPlay.
+static TAutoConsoleVariable<int32> CVarMRDebugShowPoseSource(
+	TEXT("t66.MotionRig.Debug.ShowPoseSource"), 0,
+	TEXT("1 = render the hidden pose-source clip player offset beside the simulated body (target-vs-sim comparison)."), ECVF_Default);
 static TAutoConsoleVariable<int32> CVarMRDebugEnableMeshSim(
 	TEXT("t66.MotionRig.Debug.EnableMeshSim"), 1,
 	TEXT("0 = skeletal mesh stays kinematic (visual only). Isolation switch."), ECVF_Default);
@@ -173,6 +177,12 @@ AT66MotionRigPawn::AT66MotionRigPawn()
 	// Never let update-rate optimizations throttle the hidden clip player —
 	// every drive target derives from its per-tick evaluation.
 	PoseSource->bEnableUpdateRateOptimizations = false;
+	if (CVarMRDebugShowPoseSource.GetValueOnGameThread() != 0)
+	{
+		// Target-vs-sim review: show the clip player beside the body.
+		PoseSource->SetHiddenInGame(false);
+		PoseSource->SetRelativeLocation(FVector(0.f, 250.f, -BeanCapsuleHalfHeight));
+	}
 
 	Visual = CreateDefaultSubobject<UPoseableMeshComponent>(TEXT("Visual"));
 	Visual->SetupAttachment(Bean);
@@ -275,6 +285,11 @@ void AT66MotionRigPawn::BeginPlay()
 			MotorSystem->InitializeMotors(RigMesh, PoseSource);
 			MotorSystem->ApplyStateProfile(MotionState);
 		}
+
+		// Seat the body exactly on the pose at the bean — the spawn happens
+		// at the map origin inside hub geometry and real-size bodies get
+		// blasted out before the teleport lands.
+		ReseatBodyOnBean();
 		// No pelvis constraint: the bean↔body coupling is one-way by design —
 		// the motor system applies virtual PD forces on the pelvis instead
 		// (a real tether let the body bury the bean into the floor).
@@ -327,6 +342,38 @@ void AT66MotionRigPawn::BeginPlay()
 			PelvisBodyZ, PelvisAwake,
 			MotorSystem->DiagTickCount, MotorSystem->DiagPelvisApplyCount, MotorSystem->DiagLastPelvisAccel,
 			MotorSystem->DiagThighDemandDeg, MotorSystem->DiagThighErrorDeg);
+
+		// One-shot skeleton survey: where every body is (cluster vs fold) and
+		// each constraint's anchor offsets (zeroed anchors collapse the chain).
+		static bool bSurveyLogged = false;
+		if (!bSurveyLogged && RigMesh->Bodies.Num() > 0)
+		{
+			bSurveyLogged = true;
+			FString BodyZs;
+			for (FBodyInstance* Body : RigMesh->Bodies)
+			{
+				if (Body && Body->IsValidBodyInstance() && Body->BodySetup.IsValid())
+				{
+					BodyZs += FString::Printf(TEXT("%s=%.0f "),
+						*Body->BodySetup->BoneName.ToString(),
+						Body->GetUnrealWorldTransform().GetLocation().Z);
+				}
+			}
+			UE_LOG(LogT66MotionRigPawn, Display, TEXT("[MR_SURVEY] bodyZ: %s"), *BodyZs);
+
+			FString Anchors;
+			for (FConstraintInstance* Constraint : RigMesh->Constraints)
+			{
+				if (Constraint)
+				{
+					const FVector P1 = Constraint->Pos1;
+					const FVector P2 = Constraint->Pos2;
+					Anchors += FString::Printf(TEXT("%s(p1=%.0f,%.0f,%.0f p2=%.0f,%.0f,%.0f) "),
+						*Constraint->ConstraintBone1.ToString(), P1.X, P1.Y, P1.Z, P2.X, P2.Y, P2.Z);
+				}
+			}
+			UE_LOG(LogT66MotionRigPawn, Display, TEXT("[MR_SURVEY] anchors: %s"), *Anchors);
+		}
 		UE_LOG(LogT66MotionRigPawn, Display,
 			TEXT("[MR_DIAG] beanSim=%d beanZ=%.1f meshBodies=%d/%d meshMass=%.1f constraints=%d slerpStiffness=%.0f pelvisZ=%.1f poseBones=%d posePelvisZ=%.1f poseAnim=%s grounded=%d state=%s"),
 			Bean->IsSimulatingPhysics() ? 1 : 0,
@@ -868,6 +915,55 @@ void AT66MotionRigPawn::Tick(const float DeltaSeconds)
 	TickStateMachine(DeltaSeconds);
 	TickWalkCadence();
 	TickVisualFromBodies();
+
+	// Runaway rescue: teleports (and any future detonation) leave the
+	// detached body stranded far from the bean — snap it back onto the pose.
+	if (bPhysicsLive && MotionState != ET66MotionRigState::Knockdown && RigMesh->GetSkeletalMeshAsset())
+	{
+		if (const FBodyInstance* PelvisBody = RigMesh->GetBodyInstance(TEXT("pelvis")))
+		{
+			const float DistSq = FVector::DistSquared(
+				PelvisBody->GetUnrealWorldTransform().GetLocation(), Bean->GetComponentLocation());
+			if (DistSq > FMath::Square(600.f))
+			{
+				ReseatBodyOnBean();
+			}
+		}
+	}
+}
+
+void AT66MotionRigPawn::ReseatBodyOnBean()
+{
+	if (!RigMesh->GetSkeletalMeshAsset() || !PoseSource->GetSkeletalMeshAsset())
+	{
+		return;
+	}
+
+	// Snap every simulated body onto its pose-source bone, anchored at the
+	// bean. Used at bring-up (the pawn spawns at the map origin inside hub
+	// geometry and full-size bodies detonate out of it before the teleport)
+	// and as a runaway rescue.
+	const FTransform PoseComp = PoseSource->GetComponentTransform();
+	const FTransform CanonicalComp(
+		Bean->GetComponentQuat(),
+		Bean->GetComponentLocation() + Bean->GetComponentQuat().RotateVector(FVector(0.f, 0.f, -BeanCapsuleHalfHeight)));
+
+	for (FBodyInstance* Body : RigMesh->Bodies)
+	{
+		if (!Body || !Body->IsValidBodyInstance() || !Body->BodySetup.IsValid())
+		{
+			continue;
+		}
+		const int32 BoneIndex = PoseSource->GetBoneIndex(Body->BodySetup->BoneName);
+		if (BoneIndex == INDEX_NONE)
+		{
+			continue;
+		}
+		const FTransform BoneInPose = PoseSource->GetBoneTransform(BoneIndex).GetRelativeTransform(PoseComp);
+		Body->SetBodyTransform(BoneInPose * CanonicalComp, ETeleportType::TeleportPhysics);
+		Body->SetLinearVelocity(FVector::ZeroVector, false);
+		Body->SetAngularVelocityInRadians(FVector::ZeroVector, false);
+	}
 }
 
 void AT66MotionRigPawn::TickVisualFromBodies()

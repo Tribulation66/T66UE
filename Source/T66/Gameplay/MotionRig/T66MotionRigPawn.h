@@ -82,6 +82,7 @@ private:
 	void ReattachPelvisConstraint();
 	void EnsureMeshSimulation();
 	void TickVisualFromBodies();
+	void ReseatBodyOnBean();
 
 	// --- visuals / clips ---
 	void LoadAssets();
