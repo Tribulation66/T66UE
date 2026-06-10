@@ -72,6 +72,7 @@ private:
 
 	bool bMotorsInitialized = false;
 	bool bLoggedMissingPhysicsAsset = false;
+	ET66MotionRigState CurrentState = ET66MotionRigState::Idle;
 
 public:
 	// Diagnostic counters (read by the pawn's MR_DIAG snapshot).

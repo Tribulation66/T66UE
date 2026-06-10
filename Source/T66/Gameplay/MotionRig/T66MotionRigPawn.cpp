@@ -29,22 +29,22 @@ static TAutoConsoleVariable<float> CVarMRBeanMaxSpeed(
 	TEXT("t66.MotionRig.Bean.MaxSpeed"), 520.f,
 	TEXT("MotionRig bean target ground speed (cm/s)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRBeanDriveGain(
-	TEXT("t66.MotionRig.Bean.DriveGain"), 5.5f,
+	TEXT("t66.MotionRig.Bean.DriveGain"), 8.0f,
 	TEXT("Proportional gain from velocity error to drive force (1/s)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRBeanMaxAccel(
-	TEXT("t66.MotionRig.Bean.MaxAccel"), 2600.f,
+	TEXT("t66.MotionRig.Bean.MaxAccel"), 3600.f,
 	TEXT("Clamp on bean drive acceleration (cm/s^2)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRBeanAirControl(
 	TEXT("t66.MotionRig.Bean.AirControl"), 0.28f,
 	TEXT("Multiplier on drive force while airborne."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRBeanUprightStrength(
-	TEXT("t66.MotionRig.Bean.UprightStrength"), 420.f,
+	TEXT("t66.MotionRig.Bean.UprightStrength"), 1500.f,
 	TEXT("Angular spring toward vertical (per-rad, mass-scaled). Deliberately imperfect."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRBeanUprightDamping(
-	TEXT("t66.MotionRig.Bean.UprightDamping"), 55.f,
+	TEXT("t66.MotionRig.Bean.UprightDamping"), 130.f,
 	TEXT("Angular damping for the upright spring (mass-scaled)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRBeanYawStrength(
-	TEXT("t66.MotionRig.Bean.YawStrength"), 210.f,
+	TEXT("t66.MotionRig.Bean.YawStrength"), 330.f,
 	TEXT("Yaw spring toward movement heading (per-rad, mass-scaled)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRBeanJumpSpeed(
 	TEXT("t66.MotionRig.Bean.JumpSpeed"), 470.f,
@@ -127,7 +127,16 @@ AT66MotionRigPawn::AT66MotionRigPawn()
 	Bean->SetSimulatePhysics(true);
 	Bean->SetEnableGravity(true);
 	Bean->BodyInstance.bUseCCD = true;
-	Bean->SetMassOverrideInKg(NAME_None, BeanMassKg, true);
+	// Pitch/roll are LOCKED: ground-friction torque while driving exceeds any
+	// reasonable upright spring by ~8x (measured: the bean walked lying at
+	// ~89 deg). The Fall Guys feel lives in the BODY's wobble; the bean stays
+	// vertical and only yaws. The dive's prone pitch is expressed through the
+	// pelvis PD target, not bean rotation.
+	Bean->BodyInstance.bLockXRotation = true;
+	Bean->BodyInstance.bLockYRotation = true;
+	// Mass override lives in BeginPlay: calling SetMassOverrideInKg here runs
+	// during CDO construction, hits GetSimplePhysicalMaterial with no GEngine,
+	// and logs an Error that fails cooks.
 	SetRootComponent(Bean);
 
 	RigMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("RigMesh"));

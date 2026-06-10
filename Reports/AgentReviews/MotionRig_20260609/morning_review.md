@@ -38,12 +38,19 @@ python Scripts/MotionRig/AnalyzeTelemetry.py Reports/AgentReviews/MotionRig_2026
 
 | Capture | What it shows |
 |---|---|
-| `final_walkcircle` | walk loop with turns — 1/4 axes pass (cadence + lean need tuning), invariants PASS |
-| `final_jumptriple` | standing + moving jumps — 1/3 axes pass, invariants PASS |
-| `final_dive` | dive launch, prone slide, recovery — **3/4 axes pass**, invariants PASS |
-| `final_impact` | standardized knockdown + get-up — 1/2 axes pass, invariants PASS |
-| `final_impact_slomo` | the same impact at 0.25x for seam inspection |
+| `locked_walkcircle` | LATEST walk state: bean pitch/roll locked (lean 89°→0°, the character no longer walks lying down), invariants PASS |
+| `locked_dive` | LATEST dive: prone pitch now authored through the pelvis PD target (bean stays vertical), 3/5 axes |
+| `locked_impact` | LATEST knockdown + recovery, invariants PASS |
+| `final_*` / `tuned_*` | earlier same-night iterations for comparison |
+| `final_impact_slomo` | impact at 0.25x for seam inspection |
 | `walkcircle_v1..v20`, `jump_v21..v23` | the full debugging archaeology, each with telemetry |
+
+Headline rubric numbers (locked_walkcircle): bean lean 0.0° (locked by design —
+the lean metric should be re-sourced from pelvis orientation next session),
+foot-slide ratio ~0.99 (the main feel gap: legs track pose targets but stance
+feet skate — leg spring/cadence tuning is the first morning knob),
+responsiveness 0.40s (investigate drive bite vs the analyzer's input-time
+assumption). All anti-jank invariants pass on every capture.
 
 Each folder: `*.mp4` video, `*_sheet*.png` contact sheets, `telemetry.csv`
 (60 Hz body-instance ground truth), `metrics.json` (rubric scores).
@@ -98,10 +105,14 @@ measurement, each now documented in the pipeline instructions:
 
 ## Punch list (next session)
 
-- **Tuning to taste** (the actual Fall Guys feel pass): leg/spine spring +
-  damping sweep against rubric axes 1–4; pelvis PD kp (walk lag ~30 cm);
-  walk cadence reference speed; upright spring overshoot. All CVars, no
-  rebuilds, use `-ExtraExecCmds` on the capture script.
+- **Tuning to taste** (the actual Fall Guys feel pass): the #1 knob is the
+  foot-skate (leg spring/damping sweep + walk-clip cadence vs ground speed);
+  then posture (spine/head springs — he stands slightly hunched), pelvis PD
+  kp, responsiveness. All CVars, no rebuilds, use `-ExtraExecCmds` on the
+  capture script.
+- Bean pitch/roll are LOCKED by design now (friction torque beats any sane
+  upright spring ~8:1, measured). "Acceleration lean" should be re-sourced
+  from pelvis orientation in the analyzer; the bean-lean axis reads 0 forever.
 - Head capsule placement from the auto-PA sits low — regenerate with
   per-bone orient/size overrides in the commandlet.
 - Fixed review cameras (side/front) lose the view-target tug-of-war with the

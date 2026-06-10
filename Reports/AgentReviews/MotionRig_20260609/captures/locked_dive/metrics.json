@@ -1,0 +1,36 @@
+{
+  "invariants": {
+    "no_explosion": true,
+    "floor_penetration_frames": 0,
+    "idle_jitter_events": 0,
+    "pass": true
+  },
+  "cadence_foot_slide": {
+    "stance_foot_speed_ratio": 0.199,
+    "target": "< 0.45 (provisional; 0 = perfect plant, 1 = full skate)",
+    "pass": true,
+    "samples": 1
+  },
+  "accel_lean": {
+    "peak_abs_bean_pitch_deg": 0.0,
+    "target": "4..25 deg (provisional)",
+    "pass": false
+  },
+  "dive_signature": {
+    "launch_angle_deg": 16.6,
+    "prone_slide_cm": 28.9,
+    "time_to_feet_s": 2.29,
+    "target": "angle 15..45; slide 60..260cm; to-feet < 4.5s (provisional)",
+    "pass": true
+  },
+  "responsiveness": {
+    "input_to_motion_s": 0.408,
+    "target": "< 0.25s (provisional)",
+    "pass": false
+  },
+  "notes": [],
+  "summary": {
+    "axes_evaluated": 5,
+    "axes_passed": 3
+  }
+}

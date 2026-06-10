@@ -16,19 +16,19 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66MotionRig, Log, All);
 // rubric axis 3 (MOTION_RIG.md §4). All live; the scenario harness re-applies
 // via RefreshBaseGains().
 static TAutoConsoleVariable<float> CVarMRMotorLegSpring(
-	TEXT("t66.MotionRig.Motor.LegSpring"), 1200000.f,
+	TEXT("t66.MotionRig.Motor.LegSpring"), 2000000.f,
 	TEXT("MotionRig leg joint drive spring."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorSpineSpring(
-	TEXT("t66.MotionRig.Motor.SpineSpring"), 1600000.f,
+	TEXT("t66.MotionRig.Motor.SpineSpring"), 2600000.f,
 	TEXT("MotionRig spine joint drive spring."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorArmSpring(
-	TEXT("t66.MotionRig.Motor.ArmSpring"), 360000.f,
+	TEXT("t66.MotionRig.Motor.ArmSpring"), 500000.f,
 	TEXT("MotionRig arm joint drive spring (loose on purpose — secondary motion)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorHeadSpring(
-	TEXT("t66.MotionRig.Motor.HeadSpring"), 320000.f,
+	TEXT("t66.MotionRig.Motor.HeadSpring"), 700000.f,
 	TEXT("MotionRig head joint drive spring."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorDampingRatio(
-	TEXT("t66.MotionRig.Motor.DampingFraction"), 0.05f,
+	TEXT("t66.MotionRig.Motor.DampingFraction"), 0.07f,
 	TEXT("Joint drive damping as a fraction of spring (lower = wobblier)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorGlobalScale(
 	TEXT("t66.MotionRig.Motor.GlobalScale"), 1.f,
@@ -38,7 +38,7 @@ static TAutoConsoleVariable<float> CVarMRMotorGlobalScale(
 // the bean = the body can NEVER push the bean around (a real tether buried
 // the bean half a meter into the floor — walkcircle_v10).
 static TAutoConsoleVariable<float> CVarMRPelvisLinearKp(
-	TEXT("t66.MotionRig.Motor.PelvisLinearKp"), 320.f,
+	TEXT("t66.MotionRig.Motor.PelvisLinearKp"), 480.f,
 	TEXT("Pelvis follow proportional gain (accel per cm error, 1/s^2)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRPelvisLinearKd(
 	TEXT("t66.MotionRig.Motor.PelvisLinearKd"), 28.f,
@@ -47,7 +47,7 @@ static TAutoConsoleVariable<float> CVarMRPelvisMaxAccel(
 	TEXT("t66.MotionRig.Motor.PelvisMaxAccel"), 9000.f,
 	TEXT("Clamp on pelvis follow acceleration (cm/s^2)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRPelvisAngularKp(
-	TEXT("t66.MotionRig.Motor.PelvisAngularKp"), 280.f,
+	TEXT("t66.MotionRig.Motor.PelvisAngularKp"), 400.f,
 	TEXT("Pelvis orientation proportional gain (rad/s^2 per rad)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRPelvisAngularKd(
 	TEXT("t66.MotionRig.Motor.PelvisAngularKd"), 22.f,
@@ -221,6 +221,7 @@ void UT66MotionRigMotorSystem::ApplyStateProfile(const ET66MotionRigState State)
 		return;
 	}
 
+	CurrentState = State;
 	const FT66MotionRigStateMotorScale Scale = ProfileForState(State);
 	TargetAllScale = Scale.AllScale;
 	TargetArmScale = Scale.ArmScale;
@@ -351,8 +352,18 @@ void UT66MotionRigMotorSystem::TickPelvisFollow()
 		return;
 	}
 
-	const FTransform TargetTransform = PoseSource->GetBoneTransform(TEXT("pelvis"));
+	FTransform TargetTransform = PoseSource->GetBoneTransform(TEXT("pelvis"));
 	const FTransform PelvisTransform = Pelvis->GetUnrealWorldTransform();
+
+	// Dive: the bean cannot pitch (locked axes), so the prone orientation is
+	// authored here — pitch the pelvis target forward over the body's right
+	// axis and drop it toward the ground for the belly-slide silhouette.
+	if (CurrentState == ET66MotionRigState::Dive)
+	{
+		const FVector RightAxis = TargetTransform.GetRotation().GetRightVector();
+		TargetTransform.SetRotation(FQuat(RightAxis, FMath::DegreesToRadians(-72.f)) * TargetTransform.GetRotation());
+		TargetTransform.AddToTranslation(FVector(0.f, 0.f, -42.f));
+	}
 
 	// Linear PD in acceleration space (bAccelChange — mass-independent).
 	const FVector PositionError = TargetTransform.GetLocation() - PelvisTransform.GetLocation();

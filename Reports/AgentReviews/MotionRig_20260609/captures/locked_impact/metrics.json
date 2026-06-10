@@ -1,0 +1,23 @@
+{
+  "invariants": {
+    "no_explosion": true,
+    "floor_penetration_frames": 0,
+    "idle_jitter_events": 0,
+    "pass": true
+  },
+  "knockdown": {
+    "settle_s": null,
+    "knockdown_total_s": 2.67,
+    "getup_s": 1.85,
+    "target": "settle < 2.5s; getup 1.0..2.5s (provisional)",
+    "pass": false
+  },
+  "notes": [
+    "no walk samples for cadence axis",
+    "no walk span for lean axis"
+  ],
+  "summary": {
+    "axes_evaluated": 2,
+    "axes_passed": 1
+  }
+}
