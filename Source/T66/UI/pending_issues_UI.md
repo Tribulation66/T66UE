@@ -1,5 +1,12 @@
 # Pending Issues - UI
 
+## Casino Overlay Tab Switch Destroys Gambler Round State
+
+- Severity tag: [Major]
+- What's wrong: `UT66CasinoOverlayWidget::OpenGamblerTab` schedules `FT66FlatStyle::DeferRebuild`, whose RemoveFromParent path runs the overlay's `NativeDestruct`, which calls `SharedOverlay::RemoveFromParentAndReset(CasinoGamblerTabWidget)` and nulls the tab. The next rebuild creates a fresh gambler tab, wiping `RoundState`, `LockedGamePage`, `bCasinoSessionShouldConsumeOnClose`, and any locked/lost wager. In Full casino mode a player who loses a round can switch Vendor -> Gambler to get a fresh tab and keep gambling, dodging the lost-round close-only lock and the consume-on-close report. Discovered while building the 2026-06-10 casino capture automation (the automation had to late-arm on the post-rebuild tab instance; see `[CasinoCapture] late-arm` in `T66PlayerController_Overlays.cpp`).
+- Why it's out of scope now: The 2026-06-10 pass was scoped to the four gambler game visuals/animations plus capture automation. Moving casino session state out of the tab widget (or making the tab survive overlay rebuilds) is a separate ownership/lifecycle change with anti-cheat reporting implications.
+- What fixing it would entail: Either persist the gambler session state outside the widget (e.g., a small struct on the player controller or RunState passed back in on tab creation), or stop resetting the tab in `NativeDestruct`/`DeferRebuild`, then re-verify the double-down automation proof, consume-on-close reporting, and the tab-switch flow in Full casino mode.
+
 ## Resolved: FriendslopStyle Standard Modal Button Slice Integrity At 300x58 [Major]
 
 - Resolution: Pass 04 regenerated the red, green, and dark standard modal button plates as exact 300 x 58 textless PNGs through the account-backed imagegen worker process, then switched the shared modal button helper to Slate `Image` rendering with `FMargin(0)`. This removes the seam-prone 9-slice cap budget at the accepted 300 x 58 runtime size.

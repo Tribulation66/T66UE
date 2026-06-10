@@ -641,9 +641,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		{
 			const int32 SubtitleFontSize = FitMainMenuLabelFontSize(
 				Text,
-				26,
-				20,
-				430.f,
+				56,
+				40,
+				590.f,
 				[](const int32 FontSize)
 				{
 					return T66RuntimeUIFontAccess::MakeFriendslopFont(FontSize, true);
@@ -690,13 +690,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			];
 		TitleCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(110.f, 96.f, 480.f, 64.f))
+			.Offset(FMargin(35.f, 84.f, 650.f, 92.f))
 			[
 				FT66FriendslopStyle::MakeCustomSurface(
 					HellfireDir + TEXT("subtitle_banner.png"),
 					FMargin(0.f),
 					ESlateBrushDrawType::Image,
-					FVector2D(1120.f, 140.f),
+					FVector2D(1300.f, 180.f),
 					ET66FlatState::Default,
 					FMargin(20.f, 6.f),
 					SNew(SBox)
@@ -713,7 +713,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			];
 
 		return FT66FlatStyle::AttachMetadata(
-			MakeSized(700.f, 238.f, TitleCanvas),
+			MakeSized(700.f, 260.f, TitleCanvas),
 			Tag(TEXT("MainMenu.Center.TitleRegion")),
 			TEXT("TitleRegion"),
 			ET66FlatState::Default);
@@ -742,13 +742,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 	auto MakeCtaContent = [&](const FText& Text, const ET66FlatState State, const float Width, const float Height, const FName InTag, const FSlateBrush* LeftIcon, const FSlateBrush* RightIcon) -> TSharedRef<SWidget>
 	{
 		TSharedRef<SHorizontalBox> Row = SNew(SHorizontalBox);
-		const float IconSize = Height >= 100.f ? 54.f : 42.f;
+		const float IconSize = Height >= 110.f ? 64.f : 48.f;
 		const float IconWidthBudget = (LeftIcon ? IconSize + 16.f : 0.f) + (RightIcon ? IconSize + 16.f : 0.f);
 		const float LabelWidth = FMath::Max(160.f, Width - IconWidthBudget - 128.f);
 		const int32 LabelFontSize = FitMainMenuLabelFontSize(
 			Text,
-			Height >= 100.f ? 44 : 36,
-			24,
+			Height >= 110.f ? 56 : 44,
+			28,
 			LabelWidth,
 			[](const int32 FontSize)
 			{
@@ -836,8 +836,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			ESlateBrushDrawType::Image);
 	};
 
-	constexpr float LeftContentWidth = 460.f;
-	constexpr float LeftPanelContentInset = 30.f;
+	constexpr float LeftContentWidth = 500.f;
+	constexpr float LeftPanelContentInset = 33.f;
 	constexpr float LeftPanelWidth = LeftContentWidth + (LeftPanelContentInset * 2.f);
 	constexpr float PartySlotSize = 80.f;
 	constexpr float PartySlotGap = 12.f;
@@ -1251,6 +1251,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			RowContent,
 			nullptr,
 			Tag(*RowTagPrefix));
+		// Reference offline rows read dimmed, not filmed — fade the whole row.
+		RowSurface->SetRenderOpacity(Friend.bOnline ? 1.f : 0.55f);
 
 		TSharedRef<SBox> RootBox = SAssignNew(RowRefs.RootBox, SBox)
 			.HeightOverride(FriendRowHeight)
@@ -1478,28 +1480,28 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		TSharedRef<SConstraintCanvas> CtaCanvas = SNew(SConstraintCanvas);
 		CtaCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(0.f, 0.f, 680.f, 104.f))
+			.Offset(FMargin(0.f, 0.f, 680.f, 120.f))
 			[
 				MakeCtaButton(
 					NSLOCTEXT("T66.MainMenu", "EnterTribulation", "ENTER TRIBULATION"),
 					&UT66MainMenuScreen::HandleNewGameClicked,
 					ET66FlatState::Selected,
 					680.f,
-					104.f,
+					120.f,
 					Tag(TEXT("MainMenu.Center.EnterTribulationButton")),
 					HellfireBrush(TEXT("ic_skull.png"), FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(54.f, 54.f)),
 					HellfireBrush(TEXT("ic_skull.png"), FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(54.f, 54.f)))
 			];
 		CtaCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(10.f, 150.f, 660.f, 94.f))
+			.Offset(FMargin(10.f, 146.f, 660.f, 104.f))
 			[
 				MakeCtaButton(
 					NSLOCTEXT("T66.MainMenu", "Continue", "LOAD GAME"),
 					&UT66MainMenuScreen::HandleLoadGameClicked,
 					ET66FlatState::Default,
 					660.f,
-					94.f,
+					104.f,
 					Tag(TEXT("MainMenu.Center.LoadGameButton")),
 					HellfireBrush(TEXT("ic_load.png"), FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(54.f, 54.f)))
 			];
@@ -1507,14 +1509,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		{
 			CtaCanvas->AddSlot()
 				.Alignment(FVector2D(0.f, 0.f))
-				.Offset(FMargin(10.f, 296.f, 660.f, 94.f))
+				.Offset(FMargin(10.f, 268.f, 660.f, 104.f))
 				[
 					MakeCtaButton(
 						NSLOCTEXT("T66.MainMenu", "DailyDungeon", "DAILY DUNGEON"),
 						&UT66MainMenuScreen::HandleDailyDescentClicked,
 						ET66FlatState::Default,
 						660.f,
-						94.f,
+						104.f,
 						Tag(TEXT("MainMenu.Center.DailyDescentButton")),
 						HellfireBrush(TEXT("ic_calendar.png"), FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(54.f, 54.f)),
 						nullptr,
@@ -1523,7 +1525,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		}
 
 		return FT66FlatStyle::AttachMetadata(
-			MakeSized(680.f, 390.f, CtaCanvas),
+			MakeSized(680.f, 372.f, CtaCanvas),
 			Tag(TEXT("MainMenu.Center.CtaStack")),
 			TEXT("CtaStack"),
 			ET66FlatState::Default);
@@ -1743,13 +1745,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			Tag(TEXT("MainMenu.BackgroundRegion")),
 			TEXT("BackgroundRegion"),
 			ET66FlatState::Default));
-	AddCanvasSlot(0.f, 130.f, LeftPanelWidth, 950.f, MakeLeftPanel());
-	AddCanvasSlot(610.f, 94.f, 700.f, 250.f, MakeTitleRegion());
-	AddCanvasSlot(620.f, 620.f, 680.f, 390.f, MakeCtaStack());
+	AddCanvasSlot(12.f, 130.f, LeftPanelWidth, 915.f, MakeLeftPanel());
+	AddCanvasSlot(610.f, 115.f, 700.f, 260.f, MakeTitleRegion());
+	AddCanvasSlot(620.f, 620.f, 680.f, 372.f, MakeCtaStack());
 	constexpr float RightLeaderboardPanelWidth = ST66FlatLeaderboardPanel::GetPanelWidth();
 	constexpr float RightLeaderboardPanelHeight = ST66FlatLeaderboardPanel::GetPanelHeight();
 	AddCanvasSlot(
-		1920.f - RightLeaderboardPanelWidth,
+		1920.f - RightLeaderboardPanelWidth - 12.f,
 		130.f,
 		RightLeaderboardPanelWidth,
 		RightLeaderboardPanelHeight,

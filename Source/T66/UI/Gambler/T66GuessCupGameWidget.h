@@ -79,6 +79,7 @@ private:
 	TSharedPtr<SBox> TokenBox;
 	TSharedPtr<SBox> GlowBox;
 	FCupVisual Cups[CupCount];
+	TSharedPtr<SWidget> HitZones[CupCount];
 
 	TSharedPtr<FActiveTimerHandle> StageTimerHandle;
 

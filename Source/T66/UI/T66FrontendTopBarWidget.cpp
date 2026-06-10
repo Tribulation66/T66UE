@@ -1000,19 +1000,19 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			}
 		};
 
-		// UI Reimagine pass 2: geometry measured from the approved v7 reference
-		// (1536x1024 basis, normalized). See approvals/MainMenu/geometry.md.
-		const FNormalizedTopBarRect OuterRect{ 0.000f, 0.000f, 1.000f, 0.074f };
-		const float TopBarControlY = 0.012f;
-		const float TopBarControlH = 0.050f;
-		const FNormalizedTopBarRect SettingsRect{ 0.014f, TopBarControlY, 0.030f, TopBarControlH };
-		const FNormalizedTopBarRect LanguageRect{ 0.050f, TopBarControlY, 0.030f, TopBarControlH };
-		const FNormalizedTopBarRect AccountRect{ 0.086f, 0.000f, 0.050f, 0.080f };
-		const FNormalizedTopBarRect ProfileRect{ 0.146f, TopBarControlY, 0.136f, TopBarControlH };
-		const FNormalizedTopBarRect PowerUpRect{ 0.294f, TopBarControlY, 0.120f, TopBarControlH };
-		const FNormalizedTopBarRect AchievementsRect{ 0.426f, TopBarControlY, 0.130f, TopBarControlH };
-		const FNormalizedTopBarRect TicketRect{ 0.568f, TopBarControlY, 0.062f, TopBarControlH };
-		const FNormalizedTopBarRect QuitRect{ 0.948f, TopBarControlY, 0.034f, TopBarControlH };
+		// UI Reimagine pass 5: rects from the color-mask instrument readings of the
+		// approved v7 reference at 1920x1080 (measure_geometry2.py / pass5_plan.md).
+		const FNormalizedTopBarRect OuterRect{ 0.000f, 0.000f, 1.000f, 0.089f };
+		const float TopBarControlY = 0.009f;
+		const float TopBarControlH = 0.070f;
+		const FNormalizedTopBarRect SettingsRect{ 0.014f, 0.012f, 0.033f, 0.065f };
+		const FNormalizedTopBarRect LanguageRect{ 0.053f, 0.012f, 0.033f, 0.065f };
+		const FNormalizedTopBarRect AccountRect{ 0.085f, 0.000f, 0.086f, 0.118f };
+		const FNormalizedTopBarRect ProfileRect{ 0.163f, TopBarControlY, 0.150f, TopBarControlH };
+		const FNormalizedTopBarRect PowerUpRect{ 0.319f, TopBarControlY, 0.102f, TopBarControlH };
+		const FNormalizedTopBarRect AchievementsRect{ 0.441f, TopBarControlY, 0.117f, TopBarControlH };
+		const FNormalizedTopBarRect TicketRect{ 0.586f, 0.018f, 0.067f, 0.069f };
+		const FNormalizedTopBarRect QuitRect{ 0.922f, TopBarControlY, 0.068f, TopBarControlH };
 
 		const float IconSize = 42.f;
 		auto MakeTaggedIconWidget = [](const TSharedRef<SWidget>& IconContent, const FVector2D& Size, const FName Tag) -> TSharedRef<SWidget>
@@ -1193,10 +1193,11 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		CategoryGroup.GroupName = TEXT("FrontendCategorySelection");
 		CategoryGroup.bMutuallyExclusive = true;
 
+		// Pass 5: reference tab labels measure ~50-60px cap height — fonts scale to match.
 		const FVector2D TopBarViewportSize = GetEffectiveFrontendViewportSize();
 		const int32 CategoryTabFontSize = TopBarViewportSize.X <= 1366.f
-			? 20
-			: (TopBarViewportSize.X <= 1600.f ? 22 : 24);
+			? 38
+			: (TopBarViewportSize.X <= 1600.f ? 42 : 46);
 		const int32 ProfileTabFontSize = TopBarViewportSize.X <= 1366.f
 			? 19
 			: (TopBarViewportSize.X <= 1600.f ? 21 : 23);
@@ -1212,7 +1213,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			Item.MinWidth = Rect.ReferenceWidth();
 			Item.Height = Rect.ReferenceHeight();
 			Item.IsEnabled = bEnabled;
-			Item.FontSize = FitTopBarLabelFontSize(Label, CategoryTabFontSize, 18, Rect.ReferenceWidth() - 28.f);
+			Item.FontSize = FitTopBarLabelFontSize(Label, CategoryTabFontSize, 30, Rect.ReferenceWidth() - 24.f);
 			Item.Tag = Tag;
 			return Item;
 		};
@@ -1240,14 +1241,20 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			false));
 		TArray<TSharedRef<SWidget>> CategoryButtons;
 		CategoryButtons.Reserve(CategoryGroup.Items.Num());
-		for (const FT66FlatToggleGroupItem& Item : CategoryGroup.Items)
+		// Per-width plates (Law 1: image-drawn plates must match the slot aspect).
+		static const TCHAR* TabPlateWidths[] = { TEXT("288"), TEXT("196"), TEXT("224") };
+		for (int32 ItemIndex = 0; ItemIndex < CategoryGroup.Items.Num(); ++ItemIndex)
 		{
+			const FT66FlatToggleGroupItem& Item = CategoryGroup.Items[ItemIndex];
+			const TCHAR* PlateWidth = TabPlateWidths[FMath::Min<int32>(ItemIndex, 2)];
 			const bool bSelected = Item.bIsSelected.Get(false);
 			const ET66FlatState RenderState = bSelected ? ET66FlatState::Selected : Item.State;
 			CategoryButtons.Add(FT66FriendslopStyle::MakeCustomToggleGroupButton(
-				FString(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/")) + (RenderState == ET66FlatState::Selected ? TEXT("tab_selected.png") : TEXT("tab_idle.png")),
-				FMargin(0.16f, 0.f),
-				FVector2D(560.f, 108.f),
+				FString::Printf(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/tab_%s_%s.png"),
+					RenderState == ET66FlatState::Selected ? TEXT("selected") : TEXT("idle"),
+					PlateWidth),
+				FMargin(0.f),
+				FVector2D(560.f, 152.f),
 				RenderState,
 				SNew(STextBlock)
 				.Text(Item.Label)
@@ -1296,19 +1303,27 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			NAME_None,
 			FLinearColor(0.62f, 0.04f, 0.075f, 1.f),
 			ESlateBrushDrawType::Image);
-		const TSharedRef<SWidget> PowerButtonWidget = MakeIconActionButton(
+		const TSharedRef<SWidget> PowerButtonWidget = FT66FriendslopStyle::MakeCustomToggleGroupButton(
+			TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/power_well.png"),
+			FMargin(0.f),
+			FVector2D(340.f, 140.f),
 			ET66FlatState::Selected,
 			MakePairedIconButtonContent(TEXT("FrontendTopBar.PowerButton.Icon")),
-			&UT66FrontendTopBarWidget::HandleQuitClicked,
+			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleQuitClicked),
+			FMargin(8.f, 6.f),
+			QuitRect.ReferenceWidth(),
+			QuitRect.ReferenceHeight(),
+			true,
 			TEXT("FrontendTopBar.PowerButton"),
-			QuitRect,
-			ET66FriendslopChrome::TopbarPowerIconButtonRound06);
+			NAME_None,
+			FLinearColor(0.62f, 0.04f, 0.075f, 1.f),
+			ESlateBrushDrawType::Image);
 		PowerButtonWidget->SetToolTipText(QuitTooltipText);
 
 		const TSharedRef<SWidget> TicketValue = FT66FlatStyle::AttachMetadata(
 			SNew(STextBlock)
 			.Text(TAttribute<FText>::Create(TAttribute<FText>::FGetter::CreateUObject(this, &UT66FrontendTopBarWidget::GetChadCouponsValueText)))
-			.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(18, true))
+			.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(28, true))
 			.ColorAndOpacity(FT66FlatStyle::PrimaryText())
 			.Justification(ETextJustify::Center),
 			TEXT("FrontendTopBar.TicketBadge.Value"),
@@ -1338,8 +1353,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			.Padding(0.f, 0.f, 10.f, 0.f)
 			[
 				SNew(SBox)
-				.WidthOverride(40.f)
-				.HeightOverride(40.f)
+				.WidthOverride(48.f)
+				.HeightOverride(48.f)
 				[
 					SNew(SImage)
 					.Image(FT66FriendslopStyle::GetCustomBrush(

@@ -47,6 +47,9 @@ namespace
 
 TSharedRef<SWidget> UT66CoinFlipGameWidget::RebuildWidget()
 {
+	// A host rebuild discards the previous stage; the active timer dies with it.
+	ClearStageTimer();
+
 	UT66LocalizationSubsystem* Loc = ResolveCoinFlipLocalization(this);
 	const FTextBlockStyle& TextBody = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body"));
 

@@ -46,6 +46,10 @@ public:
 	void SetCasinoGamblerWinGoldAmount(int32 InAmount);
 	void SetShopAllowsSteal(bool bInAllowsSteal);
 
+#if !UE_BUILD_SHIPPING
+	UT66CasinoGamblerTabWidget* GetGamblerTabWidgetForAutomation() const { return CasinoGamblerTabWidget; }
+#endif
+
 private:
 	enum class ECasinoTab : uint8
 	{

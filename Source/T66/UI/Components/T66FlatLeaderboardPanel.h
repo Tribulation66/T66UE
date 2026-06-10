@@ -41,10 +41,10 @@ public:
 
 	void SetUIManager(UT66UIManager* InUIManager);
 
-	static constexpr float GetContentWidth() { return 460.0f; }
-	static constexpr float GetPanelContentInset() { return 30.0f; }
+	static constexpr float GetContentWidth() { return 500.0f; }
+	static constexpr float GetPanelContentInset() { return 33.0f; }
 	static constexpr float GetPanelWidth() { return GetContentWidth() + (GetPanelContentInset() * 2.0f); }
-	static constexpr float GetPanelHeight() { return 950.0f; }
+	static constexpr float GetPanelHeight() { return 915.0f; }
 
 private:
 	UT66BackendSubsystem* GetBackendSubsystem() const;

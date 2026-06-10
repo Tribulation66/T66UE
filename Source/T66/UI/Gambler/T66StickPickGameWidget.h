@@ -81,6 +81,7 @@ private:
 	TSharedPtr<SBox> GlowBox;
 	TSharedPtr<SWidget> CauldronWidget;
 	FStickVisual Sticks[StickCount];
+	TSharedPtr<SWidget> HitZones[StickCount];
 
 	TSharedPtr<FActiveTimerHandle> StageTimerHandle;
 

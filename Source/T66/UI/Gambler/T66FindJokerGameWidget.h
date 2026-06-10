@@ -52,7 +52,7 @@ private:
 
 	struct FCardVisual
 	{
-		TSharedPtr<SBox> Box;
+		TSharedPtr<SWidget> Root;
 		TSharedPtr<SImage> Image;
 		FVector2D Translation = FVector2D::ZeroVector;
 		FVector2D Scale = FVector2D(1.f, 1.f);

@@ -168,21 +168,25 @@ TSharedRef<SWidget> UT66CasinoGamblerTabWidget::RebuildWidget()
 	{
 		CoinFlipGameWidget->SetReturnCallback([this]() { ReturnToGameSelection(); });
 		CoinFlipGameWidget->SetChoiceCallback([this](const bool bHeads) { ResolveCoinFlip(bHeads); });
+		CoinFlipGameWidget->SetRevealCompleteCallback([this]() { HandleGameRevealComplete(); });
 	}
 	if (GuessCupGameWidget)
 	{
 		GuessCupGameWidget->SetReturnCallback([this]() { ReturnToGameSelection(); });
 		GuessCupGameWidget->SetChoiceCallback([this](const int32 CupIndex) { ResolveGuessCup(CupIndex); });
+		GuessCupGameWidget->SetRevealCompleteCallback([this]() { HandleGameRevealComplete(); });
 	}
 	if (StickPickGameWidget)
 	{
 		StickPickGameWidget->SetReturnCallback([this]() { ReturnToGameSelection(); });
 		StickPickGameWidget->SetChoiceCallback([this](const int32 StickIndex) { ResolveStickPick(StickIndex); });
+		StickPickGameWidget->SetRevealCompleteCallback([this]() { HandleGameRevealComplete(); });
 	}
 	if (FindJokerGameWidget)
 	{
 		FindJokerGameWidget->SetReturnCallback([this]() { ReturnToGameSelection(); });
 		FindJokerGameWidget->SetChoiceCallback([this](const int32 CardIndex) { ResolveFindJoker(CardIndex); });
+		FindJokerGameWidget->SetRevealCompleteCallback([this]() { HandleGameRevealComplete(); });
 	}
 
 	TSharedRef<SWidget> CoinFlipView = CoinFlipGameWidget
@@ -381,6 +385,7 @@ TSharedRef<SWidget> UT66CasinoGamblerTabWidget::RebuildWidget()
 
 void UT66CasinoGamblerTabWidget::NativeDestruct()
 {
+	CancelPendingRoundOutcome();
 	if (CoinFlipGameWidget)
 	{
 		CoinFlipGameWidget->DeactivateWidgetGame();
@@ -442,6 +447,12 @@ FReply UT66CasinoGamblerTabWidget::OnDialogueGamble()
 
 FReply UT66CasinoGamblerTabWidget::OnBetClicked()
 {
+	if (bHasPendingOutcome)
+	{
+		// A reveal animation is in flight; the round outcome lands in a moment.
+		return FReply::Handled();
+	}
+
 	if (RoundState == ECasinoRoundState::LostCloseOnly)
 	{
 		FinalizeCasinoSessionIfResolved();
@@ -453,13 +464,14 @@ FReply UT66CasinoGamblerTabWidget::OnBetClicked()
 	{
 		if (BeginCasinoRound(FMath::Max(1, InitialBetAmount * 2), true))
 		{
-			ResolveLockedCasinoGameAutomatically();
+			NotifyActiveGameRoundArmed();
 		}
 		return FReply::Handled();
 	}
 
 	if (RoundState == ECasinoRoundState::WaitingForChoice)
 	{
+		// "Let fate pick" fallback: keeps every armed round resolvable from the bet bar.
 		ResolveLockedCasinoGameAutomatically();
 		return FReply::Handled();
 	}
@@ -472,7 +484,8 @@ FReply UT66CasinoGamblerTabWidget::OnBetClicked()
 
 	if (BeginCasinoRound(FMath::Max(1, GambleAmount), false))
 	{
-		ResolveLockedCasinoGameAutomatically();
+		// The player makes the actual pick in the game area; the game arms its intro now.
+		NotifyActiveGameRoundArmed();
 	}
 	return FReply::Handled();
 }
@@ -594,6 +607,14 @@ void UT66CasinoGamblerTabWidget::SetPage(const EGamblerPage Page)
 	{
 		CasinoSwitcher->SetActiveWidgetIndex(CasinoIndex);
 	}
+#if !UE_BUILD_SHIPPING
+	UE_LOG(LogTemp, Display, TEXT("[CasinoCapture] SetPage page=%d pageIdx=%d casinoIdx=%d activeP=%d activeC=%d"),
+		static_cast<int32>(Page),
+		PageIndex,
+		CasinoIndex,
+		PageSwitcher->GetActiveWidgetIndex(),
+		CasinoSwitcher.IsValid() ? CasinoSwitcher->GetActiveWidgetIndex() : -1);
+#endif
 	if (RoundState != ECasinoRoundState::WaitingForChoice)
 	{
 		bInputLocked = false;
@@ -726,7 +747,7 @@ FText UT66CasinoGamblerTabWidget::GetMainActionLabel() const
 	case ECasinoRoundState::ReadyForBet:
 		return NSLOCTEXT("T66.Gambler", "Bet", "BET");
 	case ECasinoRoundState::WaitingForChoice:
-		return NSLOCTEXT("T66.Gambler", "Resolving", "RESOLVING");
+		return NSLOCTEXT("T66.Gambler", "RandomPick", "RANDOM PICK");
 	case ECasinoRoundState::WonCanDoubleDown:
 		return NSLOCTEXT("T66.Gambler", "DoubleDown", "DOUBLE DOWN");
 	case ECasinoRoundState::LostCloseOnly:
@@ -821,8 +842,8 @@ bool UT66CasinoGamblerTabWidget::BeginCasinoRound(const int32 BetAmount, const b
 
 	SetStatus(FText::Format(
 		bDoubleDown
-			? NSLOCTEXT("T66.Gambler", "DoubleDownLockedFmt", "Double down wager: {0}. Resolving.")
-			: NSLOCTEXT("T66.Gambler", "BetLockedFmt", "Wager: {0}. Resolving."),
+			? NSLOCTEXT("T66.Gambler", "DoubleDownLockedFmt", "Double down wager: {0}. Make your pick!")
+			: NSLOCTEXT("T66.Gambler", "BetLockedFmt", "Wager: {0}. Make your pick!"),
 		FText::AsNumber(ClampedBet)),
 		FT66FlatStyle::Tokens::Accent2);
 	RefreshTopBar();
@@ -875,16 +896,100 @@ void UT66CasinoGamblerTabWidget::HandleCasinoRoundCompleted(const FName GameID, 
 	bInputLocked = false;
 	bCasinoSessionShouldConsumeOnClose = true;
 
-	UT66AudioSubsystem::PlayUIEventFromAnyWorld(FName(bSuccessful ? TEXT("Casino.Win") : TEXT("Casino.Lose")));
+	bPendingOutcomeWin = bSuccessful;
+	PendingOutcomeStatus = bSuccessful
+		? FText::Format(
+			NSLOCTEXT("T66.Gambler", "WinDoubleDownPrompt", "Win. Double down for {0} or close."),
+			FText::AsNumber(FMath::Max(1, InitialBetAmount * 2)))
+		: NSLOCTEXT("T66.Gambler", "LoseClosePrompt", "Lose. Close the gambler.");
+	PendingOutcomeColor = bSuccessful ? FT66FlatStyle::Tokens::Accent2 : FLinearColor::Red;
+	bHasPendingOutcome = true;
 
-	SetStatus(
-		bSuccessful
-			? FText::Format(
-				NSLOCTEXT("T66.Gambler", "WinDoubleDownPrompt", "Win. Double down for {0} or close."),
-				FText::AsNumber(FMath::Max(1, InitialBetAmount * 2)))
-			: NSLOCTEXT("T66.Gambler", "LoseClosePrompt", "Lose. Close the gambler."),
-		bSuccessful ? FT66FlatStyle::Tokens::Accent2 : FLinearColor::Red);
+	// While the game widget's reveal animation runs, hold back the stinger, the status
+	// line, and the double-down controls so the animation announces the result first.
+	if (bDeferOutcomePresentation)
+	{
+		bDeferOutcomePresentation = false;
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(PendingOutcomeFallbackTimer);
+			World->GetTimerManager().SetTimer(
+				PendingOutcomeFallbackTimer,
+				this,
+				&UT66CasinoGamblerTabWidget::PresentPendingRoundOutcome,
+				6.0f,
+				false);
+			return;
+		}
+	}
+
+	PresentPendingRoundOutcome();
+}
+
+void UT66CasinoGamblerTabWidget::NotifyActiveGameRoundArmed()
+{
+	switch (LockedGamePage)
+	{
+	case EGamblerPage::CoinFlip:
+		if (CoinFlipGameWidget)
+		{
+			CoinFlipGameWidget->NotifyRoundArmed();
+		}
+		break;
+	case EGamblerPage::GuessCup:
+		if (GuessCupGameWidget)
+		{
+			GuessCupGameWidget->NotifyRoundArmed();
+		}
+		break;
+	case EGamblerPage::StickPick:
+		if (StickPickGameWidget)
+		{
+			StickPickGameWidget->NotifyRoundArmed();
+		}
+		break;
+	case EGamblerPage::FindJoker:
+		if (FindJokerGameWidget)
+		{
+			FindJokerGameWidget->NotifyRoundArmed();
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void UT66CasinoGamblerTabWidget::HandleGameRevealComplete()
+{
+	PresentPendingRoundOutcome();
+}
+
+void UT66CasinoGamblerTabWidget::PresentPendingRoundOutcome()
+{
+	if (!bHasPendingOutcome)
+	{
+		return;
+	}
+
+	bHasPendingOutcome = false;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(PendingOutcomeFallbackTimer);
+	}
+
+	UT66AudioSubsystem::PlayUIEventFromAnyWorld(FName(bPendingOutcomeWin ? TEXT("Casino.Win") : TEXT("Casino.Lose")));
+	SetStatus(PendingOutcomeStatus, PendingOutcomeColor);
 	RefreshTopBar();
+}
+
+void UT66CasinoGamblerTabWidget::CancelPendingRoundOutcome()
+{
+	bHasPendingOutcome = false;
+	bDeferOutcomePresentation = false;
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(PendingOutcomeFallbackTimer);
+	}
 }
 
 void UT66CasinoGamblerTabWidget::ResetActiveGameForNextRound()
@@ -922,6 +1027,7 @@ void UT66CasinoGamblerTabWidget::ResetActiveGameForNextRound()
 
 void UT66CasinoGamblerTabWidget::ResetCasinoSessionState(const bool bClearLockedGame)
 {
+	CancelPendingRoundOutcome();
 	bInputLocked = false;
 	LockedBetAmount = 0;
 	CurrentRoundBetAmount = 0;
@@ -980,7 +1086,10 @@ void UT66CasinoGamblerTabWidget::AwardPayoutGoldAmount(const int32 PayoutGold)
 {
 	if (PayoutGold <= 0)
 	{
-		RefreshTopBar();
+		if (!bDeferOutcomePresentation)
+		{
+			RefreshTopBar();
+		}
 		return;
 	}
 
@@ -988,7 +1097,12 @@ void UT66CasinoGamblerTabWidget::AwardPayoutGoldAmount(const int32 PayoutGold)
 	{
 		RunState->AddGold(PayoutGold, ET66GoldTransactionSource::Gambler);
 	}
-	RefreshTopBar();
+	// During a deferred reveal the gold counter updates when the outcome is presented,
+	// so the top bar doesn't spoil the result mid-animation.
+	if (!bDeferOutcomePresentation)
+	{
+		RefreshTopBar();
+	}
 }
 
 void UT66CasinoGamblerTabWidget::SetStatus(const FText& Msg, const FLinearColor& Color)
@@ -1192,13 +1306,8 @@ void UT66CasinoGamblerTabWidget::ResolveCoinFlip(const bool bChoseHeads)
 
 	if (CoinFlipGameWidget)
 	{
-		CoinFlipGameWidget->StartSpin(bResultHeads, 1.2f);
-		CoinFlipGameWidget->SetResultText(FText::Format(
-			bWin
-				? NSLOCTEXT("T66.Gambler", "CoinFlipWinFmt", "{0}. WIN (+{1})")
-				: NSLOCTEXT("T66.Gambler", "CoinFlipLoseFmt", "{0}. LOSE"),
-			bResultHeads ? NSLOCTEXT("T66.Gambler", "Heads", "Heads") : NSLOCTEXT("T66.Gambler", "Tails", "Tails"),
-			FText::AsNumber(PayoutGold)));
+		bDeferOutcomePresentation = true;
+		CoinFlipGameWidget->StartSpin(bResultHeads, bWin, PayoutGold);
 	}
 
 	AwardPayoutGoldAmount(PayoutGold);
@@ -1245,6 +1354,7 @@ void UT66CasinoGamblerTabWidget::ResolveGuessCup(const int32 CupIndex)
 
 	if (GuessCupGameWidget)
 	{
+		bDeferOutcomePresentation = true;
 		GuessCupGameWidget->RevealResult(CupIndex, WinningCup, PayoutGold);
 	}
 	AwardPayoutGoldAmount(PayoutGold);
@@ -1291,6 +1401,7 @@ void UT66CasinoGamblerTabWidget::ResolveStickPick(const int32 StickIndex)
 
 	if (StickPickGameWidget)
 	{
+		bDeferOutcomePresentation = true;
 		StickPickGameWidget->RevealResult(StickIndex, TargetStick, bPendingStickTargetShortest, PayoutGold);
 	}
 	AwardPayoutGoldAmount(PayoutGold);
@@ -1337,6 +1448,7 @@ void UT66CasinoGamblerTabWidget::ResolveFindJoker(const int32 CardIndex)
 
 	if (FindJokerGameWidget)
 	{
+		bDeferOutcomePresentation = true;
 		FindJokerGameWidget->RevealResult(CardIndex, JokerCard, PayoutGold);
 	}
 	AwardPayoutGoldAmount(PayoutGold);
@@ -1540,5 +1652,100 @@ bool UT66CasinoGamblerTabWidget::RunCasinoDoubleDownAutomationProof(FString& Out
 		&& bLossState
 		&& bRejectAfterLoss
 		&& GoldDelta == ExpectedGoldDelta;
+}
+
+bool UT66CasinoGamblerTabWidget::RunCasinoCaptureAutomation(const FName CasinoGameID, const int32 WagerAmount, const float PickDelaySeconds)
+{
+	UT66RunStateSubsystem* RunState = ResolveCasinoRunState(this);
+	UWorld* World = GetWorld();
+	if (!RunState || !World)
+	{
+		return false;
+	}
+
+	RunState->AddGold(FMath::Max(1000, WagerAmount * 4), ET66GoldTransactionSource::Gambler);
+	ResetCasinoSessionState(true);
+	GambleAmount = FMath::Max(1, WagerAmount);
+
+	EGamblerPage Page = EGamblerPage::Casino;
+	if (CasinoGameID == FName(TEXT("Casino_CoinFlip"))) { Page = EGamblerPage::CoinFlip; }
+	else if (CasinoGameID == FName(TEXT("Casino_GuessTheCup"))) { Page = EGamblerPage::GuessCup; }
+	else if (CasinoGameID == FName(TEXT("Casino_PickLongestShortestStick"))) { Page = EGamblerPage::StickPick; }
+	else if (CasinoGameID == FName(TEXT("Casino_FindJoker"))) { Page = EGamblerPage::FindJoker; }
+	else
+	{
+		return false;
+	}
+
+	TWeakObjectPtr<UT66CasinoGamblerTabWidget> WeakThis(this);
+
+	// OpenGamblerTab schedules a deferred overlay rebuild; open the game page after it lands.
+	FTimerHandle OpenTimerHandle;
+	World->GetTimerManager().SetTimer(
+		OpenTimerHandle,
+		FTimerDelegate::CreateLambda([WeakThis, Page]()
+		{
+			UT66CasinoGamblerTabWidget* This = WeakThis.Get();
+			const bool bLocked = This && This->LockCasinoGame(Page);
+			UE_LOG(LogTemp, Display, TEXT("[CasinoCapture] open fired page=%d this=%d locked=%d inViewport=%d"),
+				static_cast<int32>(Page),
+				This ? 1 : 0,
+				bLocked ? 1 : 0,
+				(This && This->IsInViewport()) ? 1 : 0);
+			if (!bLocked)
+			{
+				return;
+			}
+			This->SetPage(Page);
+			switch (Page)
+			{
+			case EGamblerPage::CoinFlip: This->ActivateCoinFlipPage(); break;
+			case EGamblerPage::GuessCup: This->ActivateGuessCupPage(); break;
+			case EGamblerPage::StickPick: This->ActivateStickPickPage(); break;
+			case EGamblerPage::FindJoker: This->ActivateFindJokerPage(); break;
+			default: break;
+			}
+		}),
+		0.8f,
+		false);
+
+	FTimerHandle BetTimerHandle;
+	World->GetTimerManager().SetTimer(
+		BetTimerHandle,
+		FTimerDelegate::CreateLambda([WeakThis]()
+		{
+			if (UT66CasinoGamblerTabWidget* This = WeakThis.Get())
+			{
+				if (This->BeginCasinoRound(FMath::Max(1, This->GambleAmount), false))
+				{
+					This->NotifyActiveGameRoundArmed();
+				}
+			}
+		}),
+		1.4f,
+		false);
+
+	FTimerHandle PickTimerHandle;
+	World->GetTimerManager().SetTimer(
+		PickTimerHandle,
+		FTimerDelegate::CreateLambda([WeakThis, Page]()
+		{
+			if (UT66CasinoGamblerTabWidget* This = WeakThis.Get())
+			{
+				switch (Page)
+				{
+				case EGamblerPage::CoinFlip: This->ResolveCoinFlip(true); break;
+				case EGamblerPage::GuessCup: This->ResolveGuessCup(1); break;
+				case EGamblerPage::StickPick: This->ResolveStickPick(2); break;
+				case EGamblerPage::FindJoker: This->ResolveFindJoker(4); break;
+				default: break;
+				}
+			}
+		}),
+		FMath::Max(1.8f, PickDelaySeconds),
+		false);
+
+	UE_LOG(LogTemp, Display, TEXT("[CasinoCapture] automation armed game=%s wager=%d pickDelay=%.2f"), *CasinoGameID.ToString(), WagerAmount, PickDelaySeconds);
+	return true;
 }
 #endif

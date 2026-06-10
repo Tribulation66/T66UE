@@ -61,6 +61,23 @@ marking any matrix row DONE (and before showing the user anything), crop+zoom ea
 region from the capture and compare against the same crop of the reference. Judge
 regions, not frames. Plates with baked glyphs/marks = regenerate, never ship.
 
+LAW 8 — MEASURE-BACK (geometry never judged by eye). Every verification capture runs
+with -T66AutoDumpScreen. A diff script compares each tagged widget's ACTUAL rect from
+the dump against the reference geometry table and emits numeric per-element deltas.
+An element passes geometry only when |dx|,|dy|,|dw|,|dh| <= 12px at 1920x1080. Claude's
+eyes are forbidden from grading position/size.
+
+LAW 9 — SAME-SCALE A/B PAIRS (material judged only in juxtaposition). For
+material/color/proportion qualities (rim weight, fills, fusion of connected panels,
+state treatments), every region verdict requires a paired image: reference crop and
+capture crop at the SAME pixel scale, adjacent in one image, large enough to judge
+(no downscaled full-frame sheets, no solo crops). Grade against the REFERENCE pair,
+never against the previous pass.
+
+LAW 10 — GRIDDED REFERENCE MEASUREMENT. The reference geometry table is read off a
+grid-overlaid copy of the reference (labeled lines every 32/64px), not estimated from
+memory of the image.
+
 ## Asset conventions
 - Runtime: RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/<Screen>/ (new files only;
   never overwrite another era's assets — revert stays one CVar/commit away).

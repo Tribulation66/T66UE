@@ -32,7 +32,7 @@ namespace T66GamblerStage
 	{
 		return FT66FriendslopStyle::GetCustomBrush(
 			FString(CasinoGamesDir) + TEXT("table_stage.png"),
-			FMargin(0.10f),
+			FMargin(0.06f),
 			ESlateBrushDrawType::Box,
 			FVector2D(StageWidth, StageHeight),
 			FLinearColor(0.05f, 0.045f, 0.055f, 1.f));

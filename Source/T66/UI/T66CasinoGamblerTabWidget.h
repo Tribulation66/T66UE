@@ -38,6 +38,10 @@ public:
 
 #if !UE_BUILD_SHIPPING
 	bool RunCasinoDoubleDownAutomationProof(FString& OutDetail);
+
+	/** Capture automation: opens a casino game page, bets, and picks on timers so the
+	 *  full intro + reveal animation plays unattended (used by -T66GameplayAutoCapture). */
+	bool RunCasinoCaptureAutomation(FName CasinoGameID, int32 WagerAmount, float PickDelaySeconds);
 #endif
 
 private:
@@ -79,6 +83,15 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<UT66FindJokerGameWidget> FindJokerGameWidget;
+
+	// Round outcome presentation is deferred until the game widget's reveal animation
+	// lands, so status text, win/lose audio, and double-down controls don't spoil it.
+	bool bDeferOutcomePresentation = false;
+	bool bHasPendingOutcome = false;
+	bool bPendingOutcomeWin = false;
+	FText PendingOutcomeStatus;
+	FLinearColor PendingOutcomeColor = FLinearColor::White;
+	FTimerHandle PendingOutcomeFallbackTimer;
 
 	int32 GambleAmount = 10;
 	int32 LockedBetAmount = 0;
@@ -147,6 +160,11 @@ private:
 	void ActivateGuessCupPage();
 	void ActivateStickPickPage();
 	void ActivateFindJokerPage();
+
+	void NotifyActiveGameRoundArmed();
+	void HandleGameRevealComplete();
+	void PresentPendingRoundOutcome();
+	void CancelPendingRoundOutcome();
 
 	void ResolveCoinFlip(bool bChoseHeads);
 	void ResolveGuessCup(int32 CupIndex);
