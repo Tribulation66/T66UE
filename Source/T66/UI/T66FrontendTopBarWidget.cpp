@@ -1256,12 +1256,21 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				FMargin(0.f),
 				FVector2D(560.f, 152.f),
 				RenderState,
-				SNew(STextBlock)
-				.Text(Item.Label)
-				.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(Item.FontSize, true))
-				.ColorAndOpacity(FT66FriendslopStyle::TextColorForState(RenderState))
-				.Justification(ETextJustify::Center)
-				.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
+				// Sized box forces the plate border to fill the slot (a bare text block
+				// makes the border hug the label).
+				SNew(SBox)
+				.WidthOverride(Item.MinWidth - 20.f)
+				.HeightOverride(Item.Height - 14.f)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					SNew(STextBlock)
+					.Text(Item.Label)
+					.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(Item.FontSize, true))
+					.ColorAndOpacity(FT66FriendslopStyle::TextColorForState(RenderState))
+					.Justification(ETextJustify::Center)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
+				],
 				Item.OnClicked,
 				Item.Padding,
 				Item.MinWidth,
@@ -1271,29 +1280,54 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 				CategoryGroup.GroupName));
 		}
 
-		const TSharedRef<SWidget> SettingsButtonWidget = MakeIconActionButton(
+		auto MakeHellfireWellButton = [&](const ET66FlatState WellState, const TSharedRef<SWidget>& IconContent, FReply (UT66FrontendTopBarWidget::*ClickFunc)(), const FName WellTag, const FNormalizedTopBarRect& Rect) -> TSharedRef<SWidget>
+		{
+			return FT66FriendslopStyle::MakeCustomToggleGroupButton(
+				TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/well_icon_round.png"),
+				FMargin(0.f),
+				FVector2D(120.f, 115.f),
+				WellState,
+				SNew(SBox)
+				.WidthOverride(Rect.ReferenceWidth() - 12.f)
+				.HeightOverride(Rect.ReferenceHeight() - 10.f)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					IconContent
+				],
+				FOnClicked::CreateUObject(this, ClickFunc),
+				FMargin(6.f),
+				Rect.ReferenceWidth(),
+				Rect.ReferenceHeight(),
+				true,
+				WellTag,
+				NAME_None,
+				FLinearColor(0.10f, 0.085f, 0.12f, 1.f),
+				ESlateBrushDrawType::Image);
+		};
+		const TSharedRef<SWidget> SettingsButtonWidget = MakeHellfireWellButton(
 			ActiveSection == ETopBarSection::Settings ? ET66FlatState::Selected : ET66FlatState::Default,
 			MakePairedIconButtonContent(TEXT("FrontendTopBar.SettingsButton.Icon")),
 			&UT66FrontendTopBarWidget::HandleSettingsClicked,
 			TEXT("FrontendTopBar.SettingsButton"),
-			SettingsRect,
-			ET66FriendslopChrome::TopbarSettingsIconButtonRound06);
-		const TSharedRef<SWidget> LanguageButtonWidget = MakeIconActionButton(
+			SettingsRect);
+		const TSharedRef<SWidget> LanguageButtonWidget = MakeHellfireWellButton(
 			ActiveSection == ETopBarSection::Language ? ET66FlatState::Selected : ET66FlatState::Default,
 			MakeTaggedIconWidget(SNew(ST66TopBarGlobeGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.GlobeButton.Icon")),
 			&UT66FrontendTopBarWidget::HandleLanguageClicked,
 			TEXT("FrontendTopBar.GlobeButton"),
-			LanguageRect,
-			ActiveSection == ETopBarSection::Language ? ET66FriendslopChrome::TopbarPowerRedRound06 : ET66FriendslopChrome::TopbarIconDarkRound06);
+			LanguageRect);
 		const ET66FlatState ProfileState = ActiveSection == ETopBarSection::Home ? ET66FlatState::Selected : ET66FlatState::Default;
-		// Logo-as-home badge (square, fills the slot height; replaces the "HOME" text tab).
+		// Logo-as-home badge (overflows the strip like the reference).
 		const float LogoBadgeSize = AccountRect.ReferenceHeight();
 		const TSharedRef<SWidget> ProfileButtonWidget = FT66FriendslopStyle::MakeCustomToggleGroupButton(
 			TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/badge_logo_home.png"),
 			FMargin(0.f),
-			FVector2D(180.f, 180.f),
+			FVector2D(166.f, 144.f),
 			ProfileState,
-			SNew(SBox).WidthOverride(LogoBadgeSize).HeightOverride(LogoBadgeSize),
+			SNew(SBox)
+			.WidthOverride(AccountRect.ReferenceWidth() - 14.f)
+			.HeightOverride(AccountRect.ReferenceHeight() - 10.f),
 			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleHomeClicked),
 			FMargin(0.f),
 			LogoBadgeSize,
@@ -1308,7 +1342,14 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			FMargin(0.f),
 			FVector2D(340.f, 140.f),
 			ET66FlatState::Selected,
-			MakePairedIconButtonContent(TEXT("FrontendTopBar.PowerButton.Icon")),
+			SNew(SBox)
+			.WidthOverride(QuitRect.ReferenceWidth() - 16.f)
+			.HeightOverride(QuitRect.ReferenceHeight() - 12.f)
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			[
+				MakePairedIconButtonContent(TEXT("FrontendTopBar.PowerButton.Icon"))
+			],
 			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleQuitClicked),
 			FMargin(8.f, 6.f),
 			QuitRect.ReferenceWidth(),

@@ -641,9 +641,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		{
 			const int32 SubtitleFontSize = FitMainMenuLabelFontSize(
 				Text,
-				56,
-				40,
-				590.f,
+				44,
+				32,
+				560.f,
 				[](const int32 FontSize)
 				{
 					return T66RuntimeUIFontAccess::MakeFriendslopFont(FontSize, true);
