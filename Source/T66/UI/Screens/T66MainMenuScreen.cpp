@@ -641,9 +641,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		{
 			const int32 SubtitleFontSize = FitMainMenuLabelFontSize(
 				Text,
-				30,
-				22,
-				500.f,
+				26,
+				20,
+				430.f,
 				[](const int32 FontSize)
 				{
 					return T66RuntimeUIFontAccess::MakeFriendslopFont(FontSize, true);
@@ -674,21 +674,23 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		};
 
 		TSharedRef<SConstraintCanvas> TitleCanvas = SNew(SConstraintCanvas);
+		// Title art is 1203x163 after alpha-trim (7.4:1) — the box MUST match that aspect
+		// (Law 4) or the lettering distorts.
 		TitleCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(0.f, 4.f, 700.f, 152.f))
+			.Offset(FMargin(20.f, 0.f, 660.f, 90.f))
 			[
 				FT66FriendslopStyle::MakeCustomFixedImage(
 					HellfireDir + TEXT("title_chadpocalypse.png"),
 					FMargin(0.f),
 					ESlateBrushDrawType::Image,
-					FVector2D(700.f, 152.f),
+					FVector2D(660.f, 90.f),
 					Tag(TEXT("MainMenu.Center.Title")),
 					TEXT("TitleLogo"))
 			];
 		TitleCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(70.f, 168.f, 560.f, 70.f))
+			.Offset(FMargin(110.f, 96.f, 480.f, 64.f))
 			[
 				FT66FriendslopStyle::MakeCustomSurface(
 					HellfireDir + TEXT("subtitle_banner.png"),
@@ -745,8 +747,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		const float LabelWidth = FMath::Max(160.f, Width - IconWidthBudget - 128.f);
 		const int32 LabelFontSize = FitMainMenuLabelFontSize(
 			Text,
-			Height >= 100.f ? 36 : 30,
-			22,
+			Height >= 100.f ? 44 : 36,
+			24,
 			LabelWidth,
 			[](const int32 FontSize)
 			{
@@ -764,29 +766,23 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		}
 
 		Row->AddSlot()
-			.FillWidth(1.f)
+			.AutoWidth()
 			.VAlign(VAlign_Center)
 			[
-				SNew(SBox)
-				.WidthOverride(LabelWidth)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					FT66FlatStyle::AttachMetadata(
-						SNew(STextBlock)
-						.Text(Text)
-						.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(LabelFontSize, true))
-						.ColorAndOpacity(FT66FriendslopStyle::TextColorForState(State))
-						.Justification(ETextJustify::Center)
-						.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
-						FName(*(InTag.ToString() + TEXT(".Label"))),
-						TEXT("Label.Button"),
-						State,
-						TOptional<FLinearColor>(),
-						false,
-						NAME_None,
-						true)
-				]
+				FT66FlatStyle::AttachMetadata(
+					SNew(STextBlock)
+					.Text(Text)
+					.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(LabelFontSize, true))
+					.ColorAndOpacity(FT66FriendslopStyle::TextColorForState(State))
+					.Justification(ETextJustify::Center)
+					.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
+					FName(*(InTag.ToString() + TEXT(".Label"))),
+					TEXT("Label.Button"),
+					State,
+					TOptional<FLinearColor>(),
+					false,
+					NAME_None,
+					true)
 			];
 
 		if (RightIcon)
@@ -800,17 +796,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 				];
 		}
 
+		// Icons hug the label (AutoWidth row centered), matching the reference's tight
+		// skull-text-skull composition.
 		return SNew(SBox)
 			.HAlign(HAlign_Center)
 			.VAlign(VAlign_Center)
 			[
-				SNew(SBox)
-				.WidthOverride(FMath::Max(1.f, Width - 36.f))
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					Row
-				]
+				Row
 			];
 	};
 
@@ -853,7 +845,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 	constexpr float PartySidePad = (LeftContentWidth - PartySlotGroupWidth) * 0.5f;
 	constexpr float ProfileRowHeight = 112.f;
 	constexpr float ProfileAvatarSize = 72.f;
-	constexpr float FriendRowHeight = 66.f;
+	constexpr float FriendRowHeight = 72.f;
 	constexpr float FriendAvatarSize = 42.f;
 	constexpr float FriendActionButtonWidth = 96.f;
 	constexpr float FriendOnlineActionHeight = 44.f;
@@ -889,10 +881,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 				.FillWidth(1.f)
 				.VAlign(VAlign_Center)
 				[
-					FT66FlatStyle::MakeFlatProgressBar(
-						TAttribute<float>(FMath::Clamp(ProfileLevelProgress, 0.f, 1.f)),
-						TOptional<FLinearColor>(),
-						Tag(TEXT("MainMenu.Left.ProfileProgress")))
+					SNew(SBox)
+					.HeightOverride(18.f)
+					[
+						FT66FlatStyle::MakeFlatProgressBar(
+							TAttribute<float>(FMath::Clamp(ProfileLevelProgress, 0.f, 1.f)),
+							TOptional<FLinearColor>(),
+							Tag(TEXT("MainMenu.Left.ProfileProgress")))
+					]
 				]
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
@@ -1024,7 +1020,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			[
 				FT66FlatStyle::AttachMetadata(
 					SAssignNew(GroupRefs.ExpandArrowText, STextBlock)
-					.Text(FText::FromString(bOnlineGroup ? TEXT("v") : TEXT(">")))
+					.Text(FText::GetEmpty())
 					.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(16, true))
 					.ColorAndOpacity(FT66FlatStyle::TextColorForState(ET66FlatState::Default))
 					.Justification(ETextJustify::Center),
@@ -1074,7 +1070,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 					CountTag)
 			];
 
-		TSharedRef<SWidget> ToggleButton = FT66FriendslopStyle::MakeToggleGroupButton(
+		TSharedRef<SWidget> ToggleButton = FT66FriendslopStyle::MakeCustomToggleGroupButton(
+			HellfireDir + (bOnlineGroup ? TEXT("row_you.png") : TEXT("row_idle.png")),
+			FMargin(0.f),
+			FVector2D(920.f, 132.f),
 			ET66FlatState::Default,
 			Content,
 			FOnClicked::CreateLambda([this, bOnlineGroup]()
@@ -1090,13 +1089,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 				RequestDeferredSlateRebuild();
 				return FReply::Handled();
 			}),
-			FMargin(12.f, 6.f),
+			FMargin(12.f, 4.f),
 			LeftContentWidth,
-			40.f,
+			36.f,
 			true,
 			ToggleTag,
 			NAME_None,
-			ET66FriendslopChrome::SectionHeaderRound06);
+			FLinearColor(0.08f, 0.085f, 0.11f, 1.f),
+			ESlateBrushDrawType::Image);
 
 		TSharedRef<SBox> RootBox = SAssignNew(GroupRefs.RootBox, SBox)
 			[
@@ -1170,46 +1170,6 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
-			.Padding(0.f, 0.f, 6.f, 0.f)
-			.VAlign(VAlign_Center)
-			[
-				FT66FlatStyle::AttachMetadata(
-					SAssignNew(RowRefs.FavoriteButton, SButton)
-					.ButtonStyle(&NoBorderButtonStyle)
-					.ContentPadding(FMargin(0.f))
-					.OnClicked_Lambda([this, FriendId]()
-					{
-						UGameInstance* ClickGI = UGameplayStatics::GetGameInstance(this);
-						if (UT66PlayerSettingsSubsystem* ClickSettings = ClickGI ? ClickGI->GetSubsystem<UT66PlayerSettingsSubsystem>() : nullptr)
-						{
-							ClickSettings->SetFavoriteFriend(FriendId, !ClickSettings->IsFavoriteFriend(FriendId));
-							RefreshFriendListVisualState();
-						}
-						return FReply::Handled();
-					})
-					[
-						SNew(SBox)
-						.WidthOverride(30.f)
-						.HeightOverride(30.f)
-						.HAlign(HAlign_Center)
-						.VAlign(VAlign_Center)
-						[
-							SAssignNew(RowRefs.FavoriteGlyphImage, SImage)
-							.Image(FriendFavoriteStarBrush.Get())
-							.ColorAndOpacity(FLinearColor::White)
-						]
-					],
-					Tag(*(RowTagPrefix + TEXT(".FavoriteButton"))),
-					TEXT("Button"),
-					ET66FlatState::Default,
-					TOptional<FLinearColor>(),
-					true,
-					NAME_None,
-					false,
-					true)
-			]
-			+ SHorizontalBox::Slot()
-			.AutoWidth()
 			.VAlign(VAlign_Center)
 			[
 				FT66FlatStyle::AttachMetadata(
@@ -1255,6 +1215,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 						SNew(SBox)
 						.WidthOverride(FriendActionButtonWidth)
 						.HeightOverride(Friend.bOnline ? FriendOnlineActionHeight : FriendOfflineActionHeight)
+						.Visibility(Friend.bOnline ? EVisibility::Visible : EVisibility::Collapsed)
 						[
 							FT66FriendslopStyle::MakeSurface(
 								Friend.bOnline ? ET66FriendslopChrome::InviteButtonGreenRound06 : ET66FriendslopChrome::OfflineButtonDarkRound06,
@@ -1455,13 +1416,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			];
 		LeftCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(0.f, 148.f, LeftContentWidth, 60.f))
+			.Offset(FMargin(0.f, 128.f, LeftContentWidth, 58.f))
 			[
 				MakeSearchField()
 			];
 		LeftCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(0.f, 220.f, LeftContentWidth, 504.f))
+			.Offset(FMargin(0.f, 204.f, LeftContentWidth, 560.f))
 			[
 				FT66FlatStyle::AttachMetadata(
 					MakeSized(LeftContentWidth, 504.f, MakeFriendsList()),
@@ -1471,7 +1432,7 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			];
 		LeftCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(0.f, 736.f, LeftContentWidth, 142.f))
+			.Offset(FMargin(0.f, 784.f, LeftContentWidth, 150.f))
 			[
 				FT66FlatStyle::AttachMetadata(
 					MakeSized(LeftContentWidth, 142.f,

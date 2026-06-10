@@ -4,20 +4,21 @@
 
 #include "Core/T66GameInstance.h"
 #include "Core/T66LocalizationSubsystem.h"
-#include "Core/T66UITexturePoolSubsystem.h"
-#include "Engine/Texture2D.h"
-#include "TimerManager.h"
-#include "UI/T66SlateTextureHelpers.h"
+#include "Core/Animation/T66AnimationCurves.h"
+#include "UI/Gambler/T66GamblerGameStage.h"
 #include "UI/Style/T66FlatStyle.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
-#include "Widgets/Layout/SBorder.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 
 namespace
 {
+	constexpr float CoinSize = 190.f;
+	constexpr float CoinFlightHeight = 185.f;
+	constexpr float CoinRestBottomPadding = 44.f;
+
 	static FText BuildCoinFlipWagerText(const int32 WagerAmount)
 	{
 		return WagerAmount > 0
@@ -47,38 +48,48 @@ namespace
 TSharedRef<SWidget> UT66CoinFlipGameWidget::RebuildWidget()
 {
 	UT66LocalizationSubsystem* Loc = ResolveCoinFlipLocalization(this);
-	UT66UITexturePoolSubsystem* TexPool = nullptr;
-	if (UWorld* World = GetWorld())
-	{
-		if (UGameInstance* GI = World->GetGameInstance())
-		{
-			TexPool = GI->GetSubsystem<UT66UITexturePoolSubsystem>();
-		}
-	}
-
-	const FTextBlockStyle& TextHeading = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Heading"));
 	const FTextBlockStyle& TextBody = FT66FlatStyle::GetTextBlockStyle(TEXT("T66.Text.Body"));
-	static constexpr float CoinSpriteSize = 180.f;
 
-	auto InitCoinBrush = [](FSlateBrush& Brush, const float Size)
-	{
-		Brush = FSlateBrush();
-		Brush.ImageSize = FVector2D(Size, Size);
-		Brush.DrawAs = ESlateBrushDrawType::Image;
-	};
+	TSharedRef<SWidget> Stage = T66GamblerStage::MakeStage(
+		SNew(SOverlay)
+		// Win glow behind the coin rest position.
+		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom)
+		[
+			SAssignNew(GlowBox, SBox).WidthOverride(320.f).HeightOverride(320.f)
+			[
+				SNew(SImage).Image(T66GamblerStage::SpriteBrush(TEXT("win_glow.png"), FVector2D(320.f, 320.f)))
+			]
+		]
+		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0.f, 0.f, 0.f, 30.f)
+		[
+			SAssignNew(ShadowBox, SBox).WidthOverride(200.f).HeightOverride(48.f)
+			[
+				SNew(SImage).Image(T66GamblerStage::SpriteBrush(TEXT("shadow_soft.png"), FVector2D(200.f, 48.f)))
+			]
+		]
+		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0.f, 0.f, 0.f, CoinRestBottomPadding)
+		[
+			SAssignNew(CoinBox, SBox).WidthOverride(CoinSize).HeightOverride(CoinSize)
+			[
+				SAssignNew(CoinImage, SImage)
+				.Image(T66GamblerStage::SpriteBrush(TEXT("coin_heads.png"), FVector2D(CoinSize, CoinSize)))
+			]
+		]
+		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0.f, 0.f, 0.f, 30.f)
+		[
+			SAssignNew(BurstBox, SBox).WidthOverride(220.f).HeightOverride(220.f)
+			[
+				SNew(SImage).Image(T66GamblerStage::SpriteBrush(TEXT("ember_burst.png"), FVector2D(220.f, 220.f)))
+			]
+		]
+		+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0.f, 18.f, 0.f, 0.f)
+		[
+			T66GamblerStage::MakeResultBanner(BannerText)
+		]);
 
-	InitCoinBrush(CoinBrushHeads, CoinSpriteSize);
-	InitCoinBrush(CoinBrushTails, CoinSpriteSize);
-	InitCoinBrush(CoinBrushSide, CoinSpriteSize);
+	StageRoot = Stage;
 
-	if (TexPool)
-	{
-		T66SlateTexture::BindBrushAsync(TexPool, TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Games/Coin/Heads.Heads"))), this, CoinBrushHeads, FName(TEXT("CoinFlipGameHeads")), true);
-		T66SlateTexture::BindBrushAsync(TexPool, TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Games/Coin/TAILS.TAILS"))), this, CoinBrushTails, FName(TEXT("CoinFlipGameTails")), true);
-		T66SlateTexture::BindBrushAsync(TexPool, TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Sprites/Games/Coin/SIDE.SIDE"))), this, CoinBrushSide, FName(TEXT("CoinFlipGameSide")), true);
-	}
-
-	return SNew(SVerticalBox)
+	TSharedRef<SWidget> Root = SNew(SVerticalBox)
 		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 8.f)
 		[
 			SNew(SHorizontalBox)
@@ -104,44 +115,9 @@ TSharedRef<SWidget> UT66CoinFlipGameWidget::RebuildWidget()
 				.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
 			]
 		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 10.f, 0.f, 10.f)
+		+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 12.f)
 		[
-			SNew(STextBlock)
-			.Text(Loc ? Loc->GetText_CoinFlip() : FText::GetEmpty())
-			.TextStyle(&TextHeading)
-			.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0.f, 0.f, 0.f, 12.f)
-		[
-			SNew(STextBlock)
-			.Text(Loc ? Loc->GetText_ChooseHeadsOrTails() : FText::GetEmpty())
-			.TextStyle(&TextBody)
-			.ColorAndOpacity(FT66FlatStyle::Tokens::TextMuted)
-		]
-		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Fill).Padding(0.f, 0.f, 0.f, 16.f)
-		[
-			SNew(SBox)
-			.HeightOverride(220.f)
-			[
-				FT66FlatStyle::MakePanel(
-					SNew(SOverlay)
-					+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
-					[
-						SNew(SBox).WidthOverride(CoinSpriteSize).HeightOverride(CoinSpriteSize)
-						[
-							SAssignNew(CoinImage, SImage)
-							.Image(&CoinBrushHeads)
-						]
-					]
-					+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(0.f, 0.f, 0.f, 6.f)
-					[
-						SAssignNew(ResultText, STextBlock)
-						.Text(Loc ? Loc->GetText_ResultDash() : FText::GetEmpty())
-						.TextStyle(&TextHeading)
-						.ColorAndOpacity(FT66FlatStyle::Tokens::Text)
-					],
-					FT66PanelParams(ET66PanelType::Panel2).SetPadding(FT66FlatStyle::Tokens::Space6))
-			]
+			Stage
 		]
 		+ SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center)
 		[
@@ -149,31 +125,31 @@ TSharedRef<SWidget> UT66CoinFlipGameWidget::RebuildWidget()
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
-					Loc ? Loc->GetText_Heads() : FText::GetEmpty(),
+					Loc ? Loc->GetText_Heads() : NSLOCTEXT("T66.Gambler", "Heads", "HEADS"),
 					FOnClicked::CreateUObject(this, &UT66CoinFlipGameWidget::OnHeadsClicked),
 					ET66ButtonType::Primary)
-					.SetMinWidth(0.f)
+					.SetMinWidth(150.f)
 					.SetPadding(FMargin(18.f, 10.f)))
 			]
 			+ SHorizontalBox::Slot().AutoWidth().Padding(10.f, 0.f)
 			[
 				FT66FlatStyle::MakeButton(FT66FlatStyle::MakeInRunButtonParams(
-					Loc ? Loc->GetText_Tails() : FText::GetEmpty(),
+					Loc ? Loc->GetText_Tails() : NSLOCTEXT("T66.Gambler", "Tails", "TAILS"),
 					FOnClicked::CreateUObject(this, &UT66CoinFlipGameWidget::OnTailsClicked),
 					ET66ButtonType::Primary)
-					.SetMinWidth(0.f)
+					.SetMinWidth(150.f)
 					.SetPadding(FMargin(18.f, 10.f)))
 			]
 		];
+
+	return Root;
 }
 
 void UT66CoinFlipGameWidget::NativeDestruct()
 {
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(CoinSpinTimerHandle);
-	}
-
+	SpinSequence.Cancel();
+	bSequenceActive = false;
+	ClearStageTimer();
 	Super::NativeDestruct();
 }
 
@@ -181,17 +157,16 @@ void UT66CoinFlipGameWidget::ActivateWidgetGame(const FT66WidgetGameHostContext&
 {
 	WidgetGameHostContext = HostContext;
 	ResetForOpen();
+	EnsureStageTimer();
 }
 
 void UT66CoinFlipGameWidget::DeactivateWidgetGame()
 {
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(CoinSpinTimerHandle);
-	}
+	SpinSequence.Cancel();
+	bSequenceActive = false;
+	bRoundArmed = false;
+	ClearStageTimer();
 	WidgetGameHostContext = FT66WidgetGameHostContext();
-	bCoinSpinActive = false;
-	CoinSpinLastTickTimeSeconds = 0.f;
 }
 
 void UT66CoinFlipGameWidget::RequestWidgetGameExit()
@@ -216,12 +191,50 @@ void UT66CoinFlipGameWidget::SetReturnCallback(TFunction<void()> InReturnCallbac
 	ReturnCallback = MoveTemp(InReturnCallback);
 }
 
+void UT66CoinFlipGameWidget::SetRevealCompleteCallback(TFunction<void()> InRevealCompleteCallback)
+{
+	RevealCompleteCallback = MoveTemp(InRevealCompleteCallback);
+}
+
 void UT66CoinFlipGameWidget::ResetForOpen()
 {
-	UT66LocalizationSubsystem* Loc = ResolveCoinFlipLocalization(this);
+	SpinSequence.Cancel();
+	bSequenceActive = false;
+	bRoundArmed = false;
+	IdleTimeSeconds = 0.f;
+
+	CoinTranslateY = 0.f;
+	CoinScaleX = 1.f;
+	CoinScaleY = 1.f;
+	CoinAngleDeg = 0.f;
+	ShadowScale = 1.f;
+	ShadowOpacity = 0.85f;
+	GlowOpacity = 0.f;
+	GlowScale = 1.f;
+	BurstOpacity = 0.f;
+	BurstScale = 1.f;
+	BannerOpacity = 0.f;
+	BannerScale = 1.f;
+
 	SetCoinFace(ECoinFace::Heads);
+	if (CoinImage.IsValid())
+	{
+		CoinImage->SetColorAndOpacity(FLinearColor::White);
+	}
+	if (BannerText.IsValid())
+	{
+		BannerText->SetText(FText::GetEmpty());
+	}
 	SetStatus(FText::GetEmpty(), FT66FlatStyle::Tokens::Text);
-	SetResultText(Loc ? Loc->GetText_ResultDash() : NSLOCTEXT("T66.Gambler", "ResultDash", "Result: -"));
+	ApplyStageTransforms();
+	EnsureStageTimer();
+}
+
+void UT66CoinFlipGameWidget::NotifyRoundArmed()
+{
+	bRoundArmed = true;
+	IdleTimeSeconds = 0.f;
+	EnsureStageTimer();
 }
 
 void UT66CoinFlipGameWidget::SetStatus(const FText& Message, const FLinearColor& Color)
@@ -241,27 +254,197 @@ void UT66CoinFlipGameWidget::SetWagerAmount(const int32 WagerAmount)
 	}
 }
 
-void UT66CoinFlipGameWidget::SetResultText(const FText& InResultText)
+void UT66CoinFlipGameWidget::StartSpin(const bool bResultHeads, const bool bWin, const int32 PayoutGold)
 {
-	if (ResultText.IsValid())
+	bSpinResultHeads = bResultHeads;
+	bSpinWin = bWin;
+	SpinPayoutGold = PayoutGold;
+	bRoundArmed = false;
+
+	if (BannerText.IsValid())
 	{
-		ResultText->SetText(InResultText);
+		const FText FaceText = bResultHeads
+			? NSLOCTEXT("T66.Gambler", "Heads", "Heads")
+			: NSLOCTEXT("T66.Gambler", "Tails", "Tails");
+		BannerText->SetText(FText::Format(
+			bWin
+				? NSLOCTEXT("T66.Gambler", "CoinFlipWinFmt", "{0}. WIN (+{1})")
+				: NSLOCTEXT("T66.Gambler", "CoinFlipLoseFmt", "{0}. LOSE"),
+			FaceText,
+			FText::AsNumber(PayoutGold)));
+		BannerText->SetColorAndOpacity(bWin ? T66GamblerStage::WinGold() : T66GamblerStage::LoseRed());
 	}
+
+	BuildSpinSequence();
+	EnsureStageTimer();
 }
 
-void UT66CoinFlipGameWidget::StartSpin(const bool bResultHeads, const float DurationSeconds)
+void UT66CoinFlipGameWidget::BuildSpinSequence()
 {
-	bCoinSpinResultHeads = bResultHeads;
-	bCoinSpinActive = true;
-	CoinSpinElapsed = 0.f;
-	CoinSpinDuration = FMath::Max(0.01f, DurationSeconds);
-	CoinSpinLastTickTimeSeconds = 0.f;
+	SpinSequence.Cancel();
+	SpinSequence = FT66AnimationSequence();
 
-	if (UWorld* World = GetWorld())
+	TWeakObjectPtr<UT66CoinFlipGameWidget> WeakThis(this);
+	const bool bWin = bSpinWin;
+	const bool bResultHeads = bSpinResultHeads;
+	// Even half-flip count lands back on heads, odd lands on tails (spin starts heads-up).
+	const float TotalHalfFlips = bResultHeads ? 10.f : 11.f;
+
+	FT66AnimationTimeline Anticipation(FName(TEXT("CoinFlip.Anticipation")));
+	Anticipation.SetDuration(0.22f);
+	Anticipation.SetCurve(FT66AnimationCurveSpec(ET66AnimationCurve::Linear));
+	Anticipation.SetProgressCallback([WeakThis](const float Value)
 	{
-		CoinSpinLastTickTimeSeconds = static_cast<float>(World->GetTimeSeconds());
-		World->GetTimerManager().ClearTimer(CoinSpinTimerHandle);
-		World->GetTimerManager().SetTimer(CoinSpinTimerHandle, this, &UT66CoinFlipGameWidget::TickCoinSpin, 1.f / 15.f, true);
+		if (UT66CoinFlipGameWidget* Self = WeakThis.Get())
+		{
+			const float Squash = FMath::Sin(FMath::Clamp(Value, 0.f, 1.f) * PI);
+			Self->CoinScaleY = 1.f - 0.16f * Squash;
+			Self->CoinScaleX = 1.f + 0.08f * Squash;
+			Self->CoinTranslateY = 9.f * Squash;
+		}
+	});
+	Anticipation.AddMarker({ FName(TEXT("CoinToss")), ET66AnimationMarkerType::ProgressBased, 0.85f, 0.f, ET66AnimationMarkerFirePolicy::Once, NAME_None });
+	SpinSequence.AddTimeline(MoveTemp(Anticipation));
+
+	FT66AnimationTimeline Flight(FName(TEXT("CoinFlip.Flight")));
+	Flight.SetDuration(1.45f);
+	Flight.SetCurve(FT66AnimationCurveSpec(ET66AnimationCurve::Linear));
+	Flight.SetProgressCallback([WeakThis, TotalHalfFlips](const float Value)
+	{
+		if (UT66CoinFlipGameWidget* Self = WeakThis.Get())
+		{
+			const float P = FMath::Clamp(Value, 0.f, 1.f);
+			const float Height = CoinFlightHeight * 4.f * P * (1.f - P);
+			Self->CoinTranslateY = -Height;
+
+			// Spin decelerates over the flight so the final settle is readable.
+			const float Flips = TotalHalfFlips * (1.f - FMath::Square(1.f - P));
+			const float Cos = FMath::Cos(PI * Flips);
+			const float AbsCos = FMath::Abs(Cos);
+			if (AbsCos < 0.20f)
+			{
+				Self->SetCoinFace(ECoinFace::Side);
+				Self->CoinScaleY = 1.f;
+				Self->CoinScaleX = 1.f;
+			}
+			else
+			{
+				Self->SetCoinFace(FMath::FloorToInt(Flips) % 2 == 0 ? ECoinFace::Heads : ECoinFace::Tails);
+				Self->CoinScaleY = FMath::Max(AbsCos, 0.08f);
+				Self->CoinScaleX = 1.f + 0.05f * (1.f - AbsCos);
+			}
+			Self->CoinAngleDeg = 7.f * FMath::Sin(P * PI);
+
+			const float HeightAlpha = Height / CoinFlightHeight;
+			Self->ShadowScale = 1.f - 0.45f * HeightAlpha;
+			Self->ShadowOpacity = 0.85f - 0.5f * HeightAlpha;
+		}
+	});
+	SpinSequence.AddTimeline(MoveTemp(Flight));
+
+	FT66AnimationTimeline Bounce(FName(TEXT("CoinFlip.Bounce")));
+	Bounce.SetDuration(0.55f);
+	Bounce.SetCurve(FT66AnimationCurveSpec(ET66AnimationCurve::Linear));
+	Bounce.SetProgressCallback([WeakThis, bResultHeads](const float Value)
+	{
+		if (UT66CoinFlipGameWidget* Self = WeakThis.Get())
+		{
+			const float P = FMath::Clamp(Value, 0.f, 1.f);
+			float Height = 0.f;
+			if (P < 0.45f)
+			{
+				Height = 36.f * FMath::Sin(PI * (P / 0.45f));
+			}
+			else if (P < 0.80f)
+			{
+				Height = 13.f * FMath::Sin(PI * ((P - 0.45f) / 0.35f));
+			}
+			Self->SetCoinFace(bResultHeads ? ECoinFace::Heads : ECoinFace::Tails);
+			Self->CoinTranslateY = -Height;
+			Self->CoinAngleDeg = 0.f;
+			const bool bGroundContact = Height < 5.f;
+			Self->CoinScaleY = bGroundContact ? 0.88f : 1.f;
+			Self->CoinScaleX = bGroundContact ? 1.08f : 1.f;
+			if (P > 0.92f)
+			{
+				Self->CoinScaleY = 1.f;
+				Self->CoinScaleX = 1.f;
+			}
+			Self->ShadowScale = 1.f - 0.30f * (Height / 36.f);
+			Self->ShadowOpacity = 0.85f - 0.30f * (Height / 36.f);
+			Self->BurstOpacity = FMath::Max(0.f, 1.f - P * 1.7f);
+			Self->BurstScale = 0.7f + P * 0.9f;
+		}
+	});
+	Bounce.AddMarker({ FName(TEXT("CoinLand")), ET66AnimationMarkerType::ProgressBased, 0.01f, 0.f, ET66AnimationMarkerFirePolicy::Once, NAME_None });
+	SpinSequence.AddTimeline(MoveTemp(Bounce));
+
+	FT66AnimationTimeline Reveal(FName(TEXT("CoinFlip.Reveal")));
+	Reveal.SetDuration(0.40f);
+	Reveal.SetCurve(FT66AnimationCurveSpec(ET66AnimationCurve::Overshoot, 0.85f));
+	Reveal.SetProgressCallback([WeakThis, bWin](const float Value)
+	{
+		if (UT66CoinFlipGameWidget* Self = WeakThis.Get())
+		{
+			Self->BannerOpacity = FMath::Clamp(Value, 0.f, 1.f);
+			Self->BannerScale = 0.6f + 0.4f * Value;
+			if (bWin)
+			{
+				Self->GlowOpacity = 0.85f * FMath::Clamp(Value, 0.f, 1.f);
+				Self->GlowScale = 0.85f + 0.25f * Value;
+			}
+			Self->BurstOpacity = 0.f;
+		}
+	});
+	Reveal.AddMarker({ FName(TEXT("RevealStart")), ET66AnimationMarkerType::ProgressBased, 0.01f, 0.f, ET66AnimationMarkerFirePolicy::Once, NAME_None });
+	Reveal.AddMarker({ FName(TEXT("RevealComplete")), ET66AnimationMarkerType::ProgressBased, 0.65f, 0.f, ET66AnimationMarkerFirePolicy::Once, NAME_None });
+	SpinSequence.AddTimeline(MoveTemp(Reveal));
+
+	FT66AnimationTimeline Hold(FName(TEXT("CoinFlip.Hold")));
+	Hold.SetDuration(0.5f);
+	Hold.SetCurve(FT66AnimationCurveSpec(ET66AnimationCurve::Linear));
+	Hold.SetProgressCallback([WeakThis, bWin](const float Value)
+	{
+		if (UT66CoinFlipGameWidget* Self = WeakThis.Get())
+		{
+			if (bWin)
+			{
+				Self->GlowScale = 1.10f + 0.05f * FMath::Sin(Value * 2.f * PI);
+			}
+		}
+	});
+	SpinSequence.AddTimeline(MoveTemp(Hold));
+
+	bSequenceActive = true;
+	SpinSequence.Play();
+}
+
+void UT66CoinFlipGameWidget::HandleSequenceMarkers(const TArray<FT66AnimationMarkerEvent>& MarkerEvents)
+{
+	for (const FT66AnimationMarkerEvent& Event : MarkerEvents)
+	{
+		if (Event.MarkerID == FName(TEXT("CoinToss")))
+		{
+			T66GamblerStage::PlayUISound(TEXT("Casino.CoinToss"));
+		}
+		else if (Event.MarkerID == FName(TEXT("CoinLand")))
+		{
+			T66GamblerStage::PlayUISound(TEXT("Casino.CoinLand"));
+		}
+		else if (Event.MarkerID == FName(TEXT("RevealStart")))
+		{
+			if (!bSpinWin && CoinImage.IsValid())
+			{
+				CoinImage->SetColorAndOpacity(T66GamblerStage::DimTint());
+			}
+		}
+		else if (Event.MarkerID == FName(TEXT("RevealComplete")))
+		{
+			if (RevealCompleteCallback)
+			{
+				RevealCompleteCallback();
+			}
+		}
 	}
 }
 
@@ -273,7 +456,7 @@ FReply UT66CoinFlipGameWidget::OnBackClicked()
 
 FReply UT66CoinFlipGameWidget::OnHeadsClicked()
 {
-	if (ChoiceCallback)
+	if (!bSequenceActive && ChoiceCallback)
 	{
 		ChoiceCallback(true);
 	}
@@ -282,84 +465,107 @@ FReply UT66CoinFlipGameWidget::OnHeadsClicked()
 
 FReply UT66CoinFlipGameWidget::OnTailsClicked()
 {
-	if (ChoiceCallback)
+	if (!bSequenceActive && ChoiceCallback)
 	{
 		ChoiceCallback(false);
 	}
 	return FReply::Handled();
 }
 
-void UT66CoinFlipGameWidget::TickCoinSpin()
-{
-	if (!bCoinSpinActive)
-	{
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	const float Now = static_cast<float>(World->GetTimeSeconds());
-	float Delta = CoinSpinLastTickTimeSeconds > 0.f ? Now - CoinSpinLastTickTimeSeconds : 1.f / 15.f;
-	CoinSpinLastTickTimeSeconds = Now;
-	Delta = FMath::Clamp(Delta, 0.f, 0.10f);
-	CoinSpinElapsed += Delta;
-	const float Alpha = FMath::Clamp(CoinSpinElapsed / CoinSpinDuration, 0.f, 1.f);
-
-	if (Alpha >= 1.f)
-	{
-		FinishCoinSpin();
-		return;
-	}
-
-	const float Ease = FMath::InterpEaseOut(0.f, 1.f, Alpha, 3.f);
-	const float TotalHalfFlips = 12.f;
-	const float CurrentHalfFlip = TotalHalfFlips * Ease;
-	const int32 Phase = FMath::FloorToInt(CurrentHalfFlip * 2.f);
-	const int32 Step = Phase % 4;
-	switch (Step)
-	{
-	case 0: SetCoinFace(ECoinFace::Heads); break;
-	case 1: SetCoinFace(ECoinFace::Side); break;
-	case 2: SetCoinFace(ECoinFace::Tails); break;
-	case 3: SetCoinFace(ECoinFace::Side); break;
-	default: break;
-	}
-}
-
-void UT66CoinFlipGameWidget::FinishCoinSpin()
-{
-	bCoinSpinActive = false;
-	CoinSpinLastTickTimeSeconds = 0.f;
-	if (UWorld* World = GetWorld())
-	{
-		World->GetTimerManager().ClearTimer(CoinSpinTimerHandle);
-	}
-	SetCoinFace(bCoinSpinResultHeads ? ECoinFace::Heads : ECoinFace::Tails);
-}
-
 void UT66CoinFlipGameWidget::SetCoinFace(const ECoinFace Face)
 {
-	if (!CoinImage.IsValid())
+	if (!CoinImage.IsValid() || Face == CurrentFace)
 	{
 		return;
 	}
 
+	CurrentFace = Face;
 	switch (Face)
 	{
 	case ECoinFace::Heads:
-		CoinImage->SetImage(&CoinBrushHeads);
+		CoinImage->SetImage(T66GamblerStage::SpriteBrush(TEXT("coin_heads.png"), FVector2D(CoinSize, CoinSize)));
 		break;
 	case ECoinFace::Tails:
-		CoinImage->SetImage(&CoinBrushTails);
+		CoinImage->SetImage(T66GamblerStage::SpriteBrush(TEXT("coin_tails.png"), FVector2D(CoinSize, CoinSize)));
 		break;
 	case ECoinFace::Side:
-		CoinImage->SetImage(&CoinBrushSide);
+		CoinImage->SetImage(T66GamblerStage::SpriteBrush(TEXT("coin_edge.png"), FVector2D(CoinSize, CoinSize)));
 		break;
 	default:
 		break;
 	}
+}
+
+void UT66CoinFlipGameWidget::ApplyStageTransforms()
+{
+	T66GamblerStage::ApplySpriteTransform(CoinBox, FVector2D(0.f, CoinTranslateY), FVector2D(CoinScaleX, CoinScaleY), CoinAngleDeg);
+	T66GamblerStage::ApplySpriteTransform(ShadowBox, FVector2D::ZeroVector, FVector2D(ShadowScale, ShadowScale));
+	T66GamblerStage::ApplySpriteTransform(GlowBox, FVector2D::ZeroVector, FVector2D(GlowScale, GlowScale));
+	T66GamblerStage::ApplySpriteTransform(BurstBox, FVector2D::ZeroVector, FVector2D(BurstScale, BurstScale));
+
+	if (ShadowBox.IsValid())
+	{
+		ShadowBox->SetRenderOpacity(ShadowOpacity);
+	}
+	if (GlowBox.IsValid())
+	{
+		GlowBox->SetRenderOpacity(GlowOpacity);
+	}
+	if (BurstBox.IsValid())
+	{
+		BurstBox->SetRenderOpacity(BurstOpacity);
+	}
+	if (BannerText.IsValid())
+	{
+		BannerText->SetRenderOpacity(BannerOpacity);
+		T66GamblerStage::ApplySpriteTransform(BannerText, FVector2D::ZeroVector, FVector2D(BannerScale, BannerScale));
+	}
+}
+
+void UT66CoinFlipGameWidget::EnsureStageTimer()
+{
+	if (!StageRoot.IsValid() || StageTimerHandle.IsValid())
+	{
+		return;
+	}
+
+	StageTimerHandle = StageRoot->RegisterActiveTimer(
+		1.f / 60.f,
+		FWidgetActiveTimerDelegate::CreateUObject(this, &UT66CoinFlipGameWidget::HandleStageTick));
+}
+
+void UT66CoinFlipGameWidget::ClearStageTimer()
+{
+	if (StageRoot.IsValid() && StageTimerHandle.IsValid())
+	{
+		StageRoot->UnRegisterActiveTimer(StageTimerHandle.ToSharedRef());
+	}
+	StageTimerHandle.Reset();
+}
+
+EActiveTimerReturnType UT66CoinFlipGameWidget::HandleStageTick(double, const float DeltaTime)
+{
+	if (bSequenceActive)
+	{
+		TArray<FT66AnimationMarkerEvent> MarkerEvents;
+		SpinSequence.Tick(FMath::Max(0.f, DeltaTime), MarkerEvents);
+		if (MarkerEvents.Num() > 0)
+		{
+			HandleSequenceMarkers(MarkerEvents);
+		}
+		if (T66Animation::IsTerminalState(SpinSequence.GetState()))
+		{
+			bSequenceActive = false;
+		}
+	}
+	else if (bRoundArmed)
+	{
+		// Gentle idle bob inviting the pick.
+		IdleTimeSeconds += DeltaTime;
+		CoinTranslateY = -4.f * FMath::Abs(FMath::Sin(IdleTimeSeconds * 2.2f));
+		CoinAngleDeg = 2.5f * FMath::Sin(IdleTimeSeconds * 1.6f);
+	}
+
+	ApplyStageTransforms();
+	return EActiveTimerReturnType::Continue;
 }

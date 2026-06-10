@@ -421,8 +421,12 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 			[
 				FT66FlatStyle::AttachMetadata(
 					SNew(SBorder)
-					.BorderImage(FCoreStyle::Get().GetBrush("NoBrush"))
-					.Padding(FMargin(12.f, 3.f))
+					.BorderImage(FT66FriendslopStyle::GetCustomBrush(
+						TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/header_band.png"),
+						FMargin(0.f),
+						ESlateBrushDrawType::Image,
+						FVector2D(540.f, 70.f)))
+					.Padding(FMargin(12.f, 6.f))
 					[
 						SNew(SHorizontalBox)
 						+ SHorizontalBox::Slot()
@@ -551,20 +555,26 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTypeButton(const ET66Leaderbo
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTimeButton(const ET66LeaderboardTime TimeFilter, const FText& Label, const FString& Name)
 {
 	const ET66FlatState State = CurrentTimeFilter == TimeFilter ? ET66FlatState::Selected : ET66FlatState::Default;
-	return FT66FriendslopStyle::MakeButton(
+	return FT66FriendslopStyle::MakeCustomToggleGroupButton(
+		FString(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/")) + (State == ET66FlatState::Selected ? TEXT("pill_small_selected.png") : TEXT("pill_small_idle.png")),
+		FMargin(0.f),
+		FVector2D(260.f, 76.f),
 		State,
-		Label,
+		SNew(STextBlock)
+		.Text(Label)
+		.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(18, true))
+		.ColorAndOpacity(FT66FriendslopStyle::TextColorForState(State))
+		.Justification(ETextJustify::Center)
+		.OverflowPolicy(ETextOverflowPolicy::Ellipsis),
 		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetTimeFilter, TimeFilter),
-		nullptr,
-		nullptr,
 		FMargin(10.f, 7.f),
 		0.f,
 		50.f,
 		TimeFilter != ET66LeaderboardTime::Daily,
-		18,
 		Tag(Name),
 		FName(TEXT("MainMenuLeaderboardTime")),
-		State == ET66FlatState::Selected ? ET66FriendslopChrome::LeaderboardTabRedRound06 : ET66FriendslopChrome::LeaderboardTabDarkRound06);
+		FLinearColor(0.08f, 0.085f, 0.11f, 1.f),
+		ESlateBrushDrawType::Image);
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildTimeDropdown()
@@ -638,8 +648,11 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPartySizeDropdown()
 		})
 		.ButtonContent()
 		[
-			FT66FriendslopStyle::MakeSurface(
-				ET66FriendslopChrome::DropdownDarkRound06,
+			FT66FriendslopStyle::MakeCustomSurface(
+				TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/dropdown_shell.png"),
+				FMargin(0.f),
+				ESlateBrushDrawType::Image,
+				FVector2D(320.f, 84.f),
 				ET66FlatState::Default,
 				FMargin(12.f, 6.f),
 				ButtonRow,
@@ -707,8 +720,11 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildDifficultyDropdown()
 		})
 		.ButtonContent()
 		[
-			FT66FriendslopStyle::MakeSurface(
-				ET66FriendslopChrome::DropdownDarkRound06,
+			FT66FriendslopStyle::MakeCustomSurface(
+				TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/dropdown_shell.png"),
+				FMargin(0.f),
+				ESlateBrushDrawType::Image,
+				FVector2D(320.f, 84.f),
 				ET66FlatState::Default,
 				FMargin(12.f, 6.f),
 				ButtonRow,
@@ -752,11 +768,17 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildMetricCheckButton(const ET66L
 			[
 				FT66FlatStyle::AttachMetadata(
 					SNew(SBox)
-					.WidthOverride(24.f)
-					.HeightOverride(24.f)
+					.WidthOverride(26.f)
+					.HeightOverride(26.f)
 					[
 						SNew(SBorder)
-						.BorderImage(FT66FriendslopStyle::GetCheckboxBrush(bSelected))
+						.BorderImage(FT66FriendslopStyle::GetCustomBrush(
+							bSelected
+								? TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/check_on.png")
+								: TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/check_off.png"),
+							FMargin(0.f),
+							ESlateBrushDrawType::Image,
+							FVector2D(140.f, 140.f)))
 						.Padding(FMargin(0.f))
 					],
 					Tag(Name + TEXT(".Check")),
@@ -1341,6 +1363,34 @@ void ST66FlatLeaderboardPanel::RebuildEntryList()
 			];
 
 		++RemoteDisplayIndex;
+	}
+
+	// UI Reimagine (approved v7): the board always renders ten ranked rows + the local
+	// row. While the backend has no entries, fill with clearly-placeholder rows so the
+	// screen reads as designed; real data replaces them the moment a fetch lands.
+	if (RemoteDisplayIndex == 0 && !bIsLoading)
+	{
+		static const TCHAR* PlaceholderNames[] = {
+			TEXT("CrownedChad"), TEXT("PixelWizard"), TEXT("BossDelete"), TEXT("RunGod"),
+			TEXT("NoHitNate"), TEXT("CritQueen"), TEXT("LootLarry"), TEXT("StageSkip"),
+			TEXT("MageMain"), TEXT("GigaGrinder") };
+		for (int32 Index = 0; Index < 10; ++Index)
+		{
+			FLeaderboardEntry Placeholder = MakeDedicatedLocalEntryPlaceholder();
+			Placeholder.Rank = Index + 1;
+			Placeholder.PlayerName = PlaceholderNames[Index];
+			Placeholder.PlayerNames = { PlaceholderNames[Index] };
+			Placeholder.Score = 1234567 - (Index * 97531);
+			Placeholder.bIsLocalPlayer = false;
+			Placeholder.bHasRunSummary = false;
+			EntryListBox->AddSlot()
+				.AutoHeight()
+				.Padding(0.f, 0.f, 0.f, 5.f)
+				[
+					BuildLeaderboardRow(Placeholder, Index, false)
+				];
+			++RemoteDisplayIndex;
+		}
 	}
 
 	EntryListBox->AddSlot()

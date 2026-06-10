@@ -1007,7 +1007,7 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		const float TopBarControlH = 0.050f;
 		const FNormalizedTopBarRect SettingsRect{ 0.014f, TopBarControlY, 0.030f, TopBarControlH };
 		const FNormalizedTopBarRect LanguageRect{ 0.050f, TopBarControlY, 0.030f, TopBarControlH };
-		const FNormalizedTopBarRect AccountRect{ 0.088f, 0.003f, 0.046f, 0.068f };
+		const FNormalizedTopBarRect AccountRect{ 0.086f, 0.000f, 0.050f, 0.080f };
 		const FNormalizedTopBarRect ProfileRect{ 0.146f, TopBarControlY, 0.136f, TopBarControlH };
 		const FNormalizedTopBarRect PowerUpRect{ 0.294f, TopBarControlY, 0.120f, TopBarControlH };
 		const FNormalizedTopBarRect AchievementsRect{ 0.426f, TopBarControlY, 0.130f, TopBarControlH };
