@@ -1780,17 +1780,19 @@ TSharedRef<SWidget> UT66PowerUpScreen::BuildSlateUI()
 		{
 			return NSLOCTEXT("T66.PowerUp", "SolomonsRingEffect", "Enables boss-pet capture");
 		}
+		// Stats Rework: relics apply their points directly as +% on the named stat, so the
+		// displayed number is the percent (DisplayBonus stays the points value).
 		const int32 RelicTier = Buffs ? FMath::Max(1, Buffs->GetRelicTierValue(RelicDef.RelicID)) : 1;
 		const int32 DisplayBonus = FMath::Max(0, RelicDef.BonusStatPoints) * RelicTier;
 		if (RelicDef.bUsesStat)
 		{
 			return FText::Format(
-				NSLOCTEXT("T66.PowerUp", "RelicSecondaryEffectFormat", "+{0} {1}"),
+				NSLOCTEXT("T66.PowerUp", "RelicSecondaryEffectFormat", "+{0}% {1}"),
 				FText::AsNumber(DisplayBonus),
 				GetSecondaryLabel(RelicDef.StatType));
 		}
 		return FText::Format(
-			NSLOCTEXT("T66.PowerUp", "RelicPrimaryEffectFormat", "+{0} {1}"),
+			NSLOCTEXT("T66.PowerUp", "RelicPrimaryEffectFormat", "+{0}% {1}"),
 			FText::AsNumber(DisplayBonus),
 			GetStatLabel(RelicDef.BaseStatType));
 	};

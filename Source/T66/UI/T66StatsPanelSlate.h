@@ -10,7 +10,8 @@ class UT66LocalizationSubsystem;
 class UT66LeaderboardRunSummarySaveGame;
 
 /**
- * Shared Slate builder for the essential stats panel (8 item-scaled primary stats).
+ * Shared Slate builder for the stats panel: unified stat bonuses ("+X%") grouped by category,
+ * plus the derived Damage Reduction / Dodge Chance percent rows.
  * Used by Pause menu, Shop, Gambler casino, and gameplay HUD.
  */
 namespace T66StatsPanelSlate
@@ -29,7 +30,6 @@ namespace T66StatsPanelSlate
 
 	struct FT66LiveStatsPanel
 	{
-		TArray<TSharedPtr<class STextBlock>> PrimaryLines;
 		TArray<TSharedPtr<class STextBlock>> CategoryHeaderLines;
 		TMap<ET66StatType, TSharedPtr<class STextBlock>> SecondaryLines;
 		TSharedPtr<class STextBlock> ArmorReductionLine;
@@ -39,7 +39,7 @@ namespace T66StatsPanelSlate
 		void Update(UT66RunStateSubsystem* RunState, UT66LocalizationSubsystem* Loc) const;
 	};
 
-	/** Build the standard stats panel: header + 8 displayed stats; if bExtended, also all secondary stats in a scrollable list. Returns a fixed-width panel; if RunState is null, returns an empty placeholder. */
+	/** Build the standard stats panel: header; if bExtended, all stat bonuses by category in a scrollable list. Returns a fixed-width panel; if RunState is null, returns an empty placeholder. */
 	TSharedRef<class SWidget> MakeEssentialStatsPanel(
 		UT66RunStateSubsystem* RunState,
 		UT66LocalizationSubsystem* Loc,
@@ -58,7 +58,7 @@ namespace T66StatsPanelSlate
 		bool bExtended = false,
 		int32 FontSizeAdjustment = 0);
 
-	/** Build the same stats panel from a saved/fake run snapshot (primary + secondary if StatValues is populated). Used by Run Summary when viewing leaderboard/saved run. */
+	/** Build the same stats panel from a saved/fake run snapshot (stat bonus rows if StatValues is populated). Used by Run Summary when viewing leaderboard/saved run. */
 	TSharedRef<class SWidget> MakeEssentialStatsPanelFromSnapshot(
 		UT66LeaderboardRunSummarySaveGame* Snapshot,
 		UT66LocalizationSubsystem* Loc,

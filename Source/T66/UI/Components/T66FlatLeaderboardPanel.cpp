@@ -454,15 +454,17 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 			];
 	}
 
-	return FT66FriendslopStyle::MakeCustomPanel(
+	return FT66FriendslopStyle::MakeCustomSurface(
 		TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/panel_side.png"),
-		FMargin(0.10f, 0.08f),
-		FVector2D(680.f, 920.f),
+		FMargin(0.f),
+		ESlateBrushDrawType::Image,
+		FVector2D(1040.f, 1900.f),
 		ET66FlatState::Default,
 		FMargin(PanelContentInset, 20.f, PanelContentInset, 20.f),
 		Column,
 		nullptr,
-		Tag(TEXT("LeaderboardPanel")));
+		Tag(TEXT("LeaderboardPanel")),
+		TEXT("Panel"));
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRowsPanel()

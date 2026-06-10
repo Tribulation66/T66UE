@@ -3212,6 +3212,19 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				const FText Label = Loc ? Loc->GetText_StatName(StatType) : StaticEnum<ET66StatType>()->GetDisplayNameTextByValue(static_cast<int64>(StatType));
 				AddStatLineText(Label, FormatFloat(Value, 1));
 			};
+			// Stats Rework: saved snapshot StatValues store accumulated bonus points — render with the
+			// unified "+X%" language (same rounding as the shared stats panel).
+			auto AddStatBonusValue = [&](ET66StatType StatType, float BonusPoints)
+			{
+				if (!T66IsLiveStatType(StatType))
+				{
+					return;
+				}
+				const FText Label = Loc ? Loc->GetText_StatName(StatType) : StaticEnum<ET66StatType>()->GetDisplayNameTextByValue(static_cast<int64>(StatType));
+				AddStatLineText(Label, FText::Format(
+					NSLOCTEXT("T66.RunSummary", "StatBonusPercent", "+{0}%"),
+					FText::AsNumber(FMath::Max(0, FMath::RoundToInt(BonusPoints)))));
+			};
 			auto AddSavedEnrichedLines = [&]()
 			{
 				if (!LoadedSavedSummary)
@@ -3220,11 +3233,11 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				}
 
 				AddStatLine(NSLOCTEXT("T66.RunSummary", "NoIdolStacks", "No Idol Stacks"), LoadedSavedSummary->NoIdolSelectionStacks);
-				AddStatValue(ET66StatType::FirePower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::FirePower));
-				AddStatValue(ET66StatType::IcePower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::IcePower));
-				AddStatValue(ET66StatType::ElectricityPower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::ElectricityPower));
-				AddStatValue(ET66StatType::NaturePower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::NaturePower));
-				AddStatValue(ET66StatType::WindPower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::WindPower));
+				AddStatBonusValue(ET66StatType::FirePower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::FirePower));
+				AddStatBonusValue(ET66StatType::IcePower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::IcePower));
+				AddStatBonusValue(ET66StatType::ElectricityPower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::ElectricityPower));
+				AddStatBonusValue(ET66StatType::NaturePower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::NaturePower));
+				AddStatBonusValue(ET66StatType::WindPower, LoadedSavedSummary->StatValues.FindRef(ET66StatType::WindPower));
 				AddStatLineText(
 					NSLOCTEXT("T66.RunSummary", "MobLoot", "Mob Loot"),
 					FText::Format(
@@ -3387,7 +3400,7 @@ TSharedRef<SWidget> UT66RunSummaryScreen::BuildSlateUI()
 				});
 				for (const TPair<ET66StatType, float>& Pair : SavedStats)
 				{
-					AddStatValue(Pair.Key, Pair.Value);
+					AddStatBonusValue(Pair.Key, Pair.Value);
 				}
 				AddSavedEnrichedLines();
 			}

@@ -691,10 +691,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			.Offset(FMargin(70.f, 168.f, 560.f, 70.f))
 			[
 				FT66FriendslopStyle::MakeCustomSurface(
-					HellfireDir + TEXT("subtitle_banner_plate.png"),
-					FMargin(0.18f, 0.30f),
-					ESlateBrushDrawType::Box,
-					FVector2D(900.f, 140.f),
+					HellfireDir + TEXT("subtitle_banner.png"),
+					FMargin(0.f),
+					ESlateBrushDrawType::Image,
+					FVector2D(1120.f, 140.f),
 					ET66FlatState::Default,
 					FMargin(20.f, 6.f),
 					SNew(SBox)
@@ -829,8 +829,8 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			: TEXT("cta_secondary.png");
 		return FT66FriendslopStyle::MakeCustomToggleGroupButton(
 			HellfireDir + CtaPlateFile,
-			FMargin(0.18f, 0.30f),
-			FVector2D(780.f, 150.f),
+			FMargin(0.f),
+			FVector2D(1360.f, 208.f),
 			RenderState,
 			MakeCtaContent(Text, RenderState, Width, Height, InTag, LeftIcon, RightIcon),
 			bEnabled ? FOnClicked::CreateUObject(this, ClickFunc) : FOnClicked(),
@@ -839,7 +839,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			Height,
 			bEnabled,
 			InTag,
-			NAME_None);
+			NAME_None,
+			FLinearColor(0.08f, 0.085f, 0.11f, 1.f),
+			ESlateBrushDrawType::Image);
 	};
 
 	constexpr float LeftContentWidth = 460.f;
@@ -994,9 +996,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 
 		return FT66FriendslopStyle::MakeCustomSurface(
 			HellfireDir + TEXT("field_search.png"),
-			FMargin(0.14f, 0.30f),
-			ESlateBrushDrawType::Box,
-			FVector2D(540.f, 78.f),
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			FVector2D(920.f, 140.f),
 			ET66FlatState::Default,
 			FMargin(18.f, 10.f),
 			SearchContent,
@@ -1280,9 +1282,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 
 		TSharedRef<SWidget> RowSurface = FT66FriendslopStyle::MakeCustomSurface(
 			HellfireDir + TEXT("row_idle.png"),
-			FMargin(0.12f, 0.30f),
-			ESlateBrushDrawType::Box,
-			FVector2D(540.f, 84.f),
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			FVector2D(920.f, 132.f),
 			Friend.bOnline ? ET66FlatState::Default : ET66FlatState::Disabled,
 			FMargin(12.f, 7.f),
 			RowContent,
@@ -1417,9 +1419,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 				[
 					FT66FriendslopStyle::MakeCustomSurface(
 						HellfireDir + TEXT("slot_party.png"),
-						FMargin(0.24f),
-						ESlateBrushDrawType::Box,
-						FVector2D(150.f, 150.f),
+						FMargin(0.f),
+						ESlateBrushDrawType::Image,
+						FVector2D(160.f, 160.f),
 						SlotIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default,
 						FMargin(8.f),
 						SNew(SBox)
@@ -1496,15 +1498,17 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 					ET66FlatState::Default)
 			];
 
-		return FT66FriendslopStyle::MakeCustomPanel(
+		return FT66FriendslopStyle::MakeCustomSurface(
 			HellfireDir + TEXT("panel_side.png"),
-			FMargin(0.10f, 0.08f),
-			FVector2D(680.f, 920.f),
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			FVector2D(1040.f, 1900.f),
 			ET66FlatState::Default,
 			FMargin(LeftPanelContentInset, 26.f, LeftPanelContentInset, 26.f),
 			LeftCanvas,
 			nullptr,
-			Tag(TEXT("MainMenu.Left.Panel")));
+			Tag(TEXT("MainMenu.Left.Panel")),
+			TEXT("Panel"));
 	};
 
 	auto MakeCtaStack = [&]() -> TSharedRef<SWidget>

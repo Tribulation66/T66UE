@@ -44,6 +44,23 @@ deviated everywhere). The loop below makes both impossible.
    Update the matrix statuses, commit code+assets separately, log decisions. Promote
    reusable plates into the shared kit folder when a second screen needs them.
 
+## THE THREE LAWS (from MainMenu pass-1/2 failure analysis — non-negotiable)
+
+LAW 1 — SIZE-EXACT PLATES. Every fixed-size element gets a plate generated at its exact
+runtime pixel size (2x for sharpness) and rendered DrawAs=Image with FMargin(0).
+Box-slicing is ONLY for genuinely variable-size elements, and the protected caps must be
+<= 40% of the MINIMUM runtime dimension — verify numerically (plate_px * margin vs
+target_px) BEFORE coding. Cap-budget violations are the #1 source of "cut off /
+stretched" UI (pass-2 CTAs: 45px+45px caps in a 94px button = 4px center band).
+
+LAW 2 — VERIFY THE BASIS. Before writing any normalized rect, read the actual canvas
+basis constants (e.g. T66MainMenuReferenceLayout::CanvasWidth/Height). Never assume.
+
+LAW 3 — ZOOM-CROP VERIFICATION. Full-frame screenshots hide region defects. Before
+marking any matrix row DONE (and before showing the user anything), crop+zoom each
+region from the capture and compare against the same crop of the reference. Judge
+regions, not frames. Plates with baked glyphs/marks = regenerate, never ship.
+
 ## Asset conventions
 - Runtime: RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/<Screen>/ (new files only;
   never overwrite another era's assets — revert stays one CVar/commit away).

@@ -1246,8 +1246,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			const ET66FlatState RenderState = bSelected ? ET66FlatState::Selected : Item.State;
 			CategoryButtons.Add(FT66FriendslopStyle::MakeCustomToggleGroupButton(
 				FString(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/")) + (RenderState == ET66FlatState::Selected ? TEXT("tab_selected.png") : TEXT("tab_idle.png")),
-				FMargin(0.14f, 0.26f),
-				FVector2D(380.f, 100.f),
+				FMargin(0.16f, 0.f),
+				FVector2D(560.f, 108.f),
 				RenderState,
 				SNew(STextBlock)
 				.Text(Item.Label)
@@ -1365,15 +1365,17 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			.Alignment(FVector2D(0.f, 0.f))
 			.Offset(OuterRect.ToReferenceOffset())
 			[
-				FT66FriendslopStyle::MakeCustomPanel(
+				FT66FriendslopStyle::MakeCustomSurface(
 					TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/bar_strip.png"),
-					FMargin(0.030f, 0.24f),
-					FVector2D(1536.f, 76.f),
+					FMargin(0.f),
+					ESlateBrushDrawType::Image,
+					FVector2D(1920.f, 76.f),
 					ET66FlatState::Default,
 					FMargin(0.f),
 					SNew(SBox),
 					nullptr,
-					TEXT("FrontendTopBar.OuterContainer"))
+					TEXT("FrontendTopBar.OuterContainer"),
+					TEXT("Panel"))
 			];
 
 		auto AddControl = [&TopBarCanvas](const FNormalizedTopBarRect& Rect, const TSharedRef<SWidget>& Widget)

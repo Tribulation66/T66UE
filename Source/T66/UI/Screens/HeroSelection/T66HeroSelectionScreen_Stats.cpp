@@ -231,44 +231,11 @@ void UT66HeroSelectionScreen::PopulateHeroStatsSnapshot(const FHeroData& HeroDat
 	Snapshot->EvasionStat = BaseStats.Evasion;
 	Snapshot->LuckStat = BaseStats.Luck;
 	Snapshot->SpeedStat = BaseStats.Speed;
+	// Stats Rework: StatValues stores accumulated bonus points (unified "+X%" rows), not hero base values.
+	// A not-yet-started run has no accumulated bonuses, so leave the map empty — the snapshot panel renders
+	// missing entries as "+0%" (hero-select passes bExtended=true explicitly) and derives Armor Reduction /
+	// Dodge Chance from the base stats above.
 	Snapshot->StatValues.Reset();
-
-	auto SetSecondaryValue = [Snapshot](const ET66StatType Type, const float Value)
-	{
-		Snapshot->StatValues.Add(Type, Value);
-	};
-
-	SetSecondaryValue(ET66StatType::AoeDamage, static_cast<float>(HeroData.BaseAoeDmg));
-	SetSecondaryValue(ET66StatType::BounceDamage, static_cast<float>(HeroData.BaseBounceDmg));
-	SetSecondaryValue(ET66StatType::PierceDamage, static_cast<float>(HeroData.BasePierceDmg));
-	SetSecondaryValue(ET66StatType::DotDamage, static_cast<float>(HeroData.BaseDotDmg));
-	SetSecondaryValue(ET66StatType::AoeSpeed, static_cast<float>(HeroData.BaseAoeAtkSpd));
-	SetSecondaryValue(ET66StatType::BounceSpeed, static_cast<float>(HeroData.BaseBounceAtkSpd));
-	SetSecondaryValue(ET66StatType::PierceSpeed, static_cast<float>(HeroData.BasePierceAtkSpd));
-	SetSecondaryValue(ET66StatType::DotSpeed, static_cast<float>(HeroData.BaseDotAtkSpd));
-	SetSecondaryValue(ET66StatType::AoeScale, static_cast<float>(HeroData.BaseAoeAtkScale));
-	SetSecondaryValue(ET66StatType::BounceScale, static_cast<float>(HeroData.BaseBounceAtkScale));
-	SetSecondaryValue(ET66StatType::PierceScale, static_cast<float>(HeroData.BasePierceAtkScale));
-	SetSecondaryValue(ET66StatType::DotScale, static_cast<float>(HeroData.BaseDotAtkScale));
-	SetSecondaryValue(ET66StatType::HeadshotChance, HeroData.BaseHeadshotChance);
-	SetSecondaryValue(ET66StatType::CritChance, HeroData.BaseCritChance);
-	SetSecondaryValue(ET66StatType::AttackRange, HeroData.BaseAttackRange);
-	SetSecondaryValue(ET66StatType::Accuracy, HeroData.BaseAccuracy);
-	SetSecondaryValue(ET66StatType::Execute, 0.f);
-	SetSecondaryValue(ET66StatType::Taunt, HeroData.BaseTaunt);
-	SetSecondaryValue(ET66StatType::DamageReduction, 0.f);
-	SetSecondaryValue(ET66StatType::ReflectDamage, HeroData.BaseReflectDmg);
-	SetSecondaryValue(ET66StatType::Crush, HeroData.BaseCrushChance);
-	SetSecondaryValue(ET66StatType::EvasionChance, 0.f);
-	SetSecondaryValue(ET66StatType::CounterAttack, HeroData.BaseCounterAttack);
-	SetSecondaryValue(ET66StatType::Invisibility, HeroData.BaseInvisChance);
-	SetSecondaryValue(ET66StatType::Assassinate, HeroData.BaseAssassinateChance);
-	SetSecondaryValue(ET66StatType::TreasureChest, 0.f);
-	SetSecondaryValue(ET66StatType::Cheating, HeroData.BaseCheatChance);
-	SetSecondaryValue(ET66StatType::Stealing, HeroData.BaseStealChance);
-	SetSecondaryValue(ET66StatType::LootCrate, 0.f);
-	SetSecondaryValue(ET66StatType::LootBag, 0.f);
-	SetSecondaryValue(ET66StatType::LootWheel, 0.f);
 
 	ResolveHeroBestStats(HeroData, CurrentHeroBestStats);
 }
