@@ -4,7 +4,9 @@
 
 namespace
 {
-	constexpr bool bT66DailyDescentEnabled = false;
+	// UI Reimagine 2026-06-10: Daily Descent unshelved (user decision — "Daily Dungeon"
+	// CTA on the reimagined main menu routes here).
+	constexpr bool bT66DailyDescentEnabled = true;
 	constexpr bool bT66VehicleInteractablesEnabled = false;
 	constexpr bool bT66PetsEnabled = false;
 	constexpr bool bT66MobLootEnabled = false;

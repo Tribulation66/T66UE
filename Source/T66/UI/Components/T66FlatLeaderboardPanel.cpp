@@ -236,8 +236,11 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildPanel()
 		.Alignment(FVector2D(0.f, 0.f))
 		.Offset(FMargin(0.f, 0.f, FilterPanelWidth, FilterPanelHeight))
 		[
-			FT66FriendslopStyle::MakeSurface(
-				ET66FriendslopChrome::FilterPanelRound09,
+			FT66FriendslopStyle::MakeCustomSurface(
+				TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/panel_cap.png"),
+				FMargin(0.18f, 0.24f),
+				ESlateBrushDrawType::Box,
+				FVector2D(360.f, 120.f),
 				ET66FlatState::Default,
 				FMargin(0.f),
 				SNew(SBox),
@@ -451,13 +454,15 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 			];
 	}
 
-	return FT66FriendslopStyle::MakePanel(
+	return FT66FriendslopStyle::MakeCustomPanel(
+		TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/panel_side.png"),
+		FMargin(0.10f, 0.08f),
+		FVector2D(680.f, 920.f),
 		ET66FlatState::Default,
 		FMargin(PanelContentInset, 20.f, PanelContentInset, 20.f),
 		Column,
 		nullptr,
-		Tag(TEXT("LeaderboardPanel")),
-		ET66FriendslopChrome::LeaderboardPanelRound06);
+		Tag(TEXT("LeaderboardPanel")));
 }
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRowsPanel()
@@ -484,15 +489,31 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildRowsPanel()
 
 TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildFilterButton(const ET66LeaderboardFilter Filter, const FText& Label, const FString& Name)
 {
+	// UI Reimagine 2026-06-10: square icon-only hellfire filter toggles (approved v7).
 	const ET66FlatState State = CurrentFilter == Filter ? ET66FlatState::Selected : ET66FlatState::Default;
+	const TCHAR* IconFile =
+		Filter == ET66LeaderboardFilter::Friends ? TEXT("ic_friends.png") :
+		Filter == ET66LeaderboardFilter::Streamers ? TEXT("ic_play.png") :
+		TEXT("ic_globe.png");
+	const FString HellfireDir = TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/");
 	const TSharedRef<SWidget> Content = FT66FlatStyle::AttachMetadata(
 		SNew(SBox)
-		.WidthOverride(1.f)
-		.HeightOverride(1.f),
+		.WidthOverride(40.f)
+		.HeightOverride(40.f)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SNew(SImage)
+			.Image(FT66FriendslopStyle::GetCustomBrush(HellfireDir + IconFile, FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(40.f, 40.f)))
+			.ColorAndOpacity(FLinearColor::White)
+		],
 		Tag(Name + TEXT(".Icon")),
 		TEXT("Icon"),
 		State);
-	TSharedRef<SWidget> Button = FT66FriendslopStyle::MakeToggleGroupButton(
+	TSharedRef<SWidget> Button = FT66FriendslopStyle::MakeCustomToggleGroupButton(
+		HellfireDir + (State == ET66FlatState::Selected ? TEXT("sq_filter_selected.png") : TEXT("sq_filter_idle.png")),
+		FMargin(0.22f),
+		FVector2D(150.f, 150.f),
 		State,
 		Content,
 		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetFilter, Filter),
@@ -501,8 +522,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildFilterButton(const ET66Leader
 		FilterButtonHeight,
 		true,
 		Tag(Name),
-		FName(TEXT("MainMenuLeaderboardFilter")),
-		GetFriendslopFilterButtonChrome(Filter));
+		FName(TEXT("MainMenuLeaderboardFilter")));
 	Button->SetToolTipText(Label);
 	return Button;
 }

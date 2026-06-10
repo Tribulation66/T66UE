@@ -617,6 +617,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			true);
 	};
 
+	// UI Reimagine 2026-06-10: hellfire identity assets (approved reference v7).
+	const FString HellfireDir = TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/");
+	auto HellfireBrush = [HellfireDir](const TCHAR* File, const FMargin& Margin, const ESlateBrushDrawType::Type DrawAs, const FVector2D& FallbackSize) -> const FSlateBrush*
+	{
+		return FT66FriendslopStyle::GetCustomBrush(HellfireDir + File, Margin, DrawAs, FallbackSize);
+	};
+
 	auto MakeTitleRegion = [&]() -> TSharedRef<SWidget>
 	{
 		auto MakeSubtitleTextLayer = [](const FText& Text, const int32 FontSize, const FLinearColor& Color, const FVector2D& Offset) -> TSharedRef<STextBlock>
@@ -669,28 +676,38 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		TSharedRef<SConstraintCanvas> TitleCanvas = SNew(SConstraintCanvas);
 		TitleCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(10.f, 36.f, 680.f, 93.f))
+			.Offset(FMargin(0.f, 4.f, 700.f, 152.f))
 			[
-				FT66FriendslopStyle::MakeFixedImage(
-					ET66FriendslopChrome::TitleLogoRound06,
-					FVector2D(680.f, 93.f),
+				FT66FriendslopStyle::MakeCustomFixedImage(
+					HellfireDir + TEXT("title_chadpocalypse.png"),
+					FMargin(0.f),
+					ESlateBrushDrawType::Image,
+					FVector2D(700.f, 152.f),
 					Tag(TEXT("MainMenu.Center.Title")),
 					TEXT("TitleLogo"))
 			];
 		TitleCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(40.f, 158.f, 620.f, 58.f))
+			.Offset(FMargin(70.f, 168.f, 560.f, 70.f))
 			[
-				SNew(SBox)
-				.WidthOverride(620.f)
-				.HeightOverride(58.f)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					MakeLayeredSubtitleText(
-						NSLOCTEXT("T66.MainMenu", "BloodyRetroSubtitle", "If you're not Chad it's over"),
-						Tag(TEXT("MainMenu.Center.Subtitle")))
-				]
+				FT66FriendslopStyle::MakeCustomSurface(
+					HellfireDir + TEXT("subtitle_banner_plate.png"),
+					FMargin(0.18f, 0.30f),
+					ESlateBrushDrawType::Box,
+					FVector2D(900.f, 140.f),
+					ET66FlatState::Default,
+					FMargin(20.f, 6.f),
+					SNew(SBox)
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						MakeLayeredSubtitleText(
+							NSLOCTEXT("T66.MainMenu", "BloodyRetroSubtitle", "If you're not Chad it's over"),
+							Tag(TEXT("MainMenu.Center.Subtitle")))
+					],
+					nullptr,
+					Tag(TEXT("MainMenu.Center.SubtitleBanner")),
+					TEXT("SubtitleBanner"))
 			];
 
 		return FT66FlatStyle::AttachMetadata(
@@ -812,10 +829,13 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 	auto MakeCtaButton = [&](const FText& Text, FReply (UT66MainMenuScreen::*ClickFunc)(), const ET66FlatState State, const float Width, const float Height, const FName InTag, const FSlateBrush* LeftIcon = nullptr, const FSlateBrush* RightIcon = nullptr, const bool bEnabled = true) -> TSharedRef<SWidget>
 	{
 		const ET66FlatState RenderState = bEnabled ? State : ET66FlatState::Disabled;
-		const ET66FriendslopChrome ButtonChrome = State == ET66FlatState::Selected
-			? ET66FriendslopChrome::CtaPrimaryRound06
-			: ET66FriendslopChrome::CtaSecondaryRound06;
-		return FT66FriendslopStyle::MakeToggleGroupButton(
+		const TCHAR* CtaPlateFile = State == ET66FlatState::Selected
+			? TEXT("cta_hero.png")
+			: TEXT("cta_secondary.png");
+		return FT66FriendslopStyle::MakeCustomToggleGroupButton(
+			HellfireDir + CtaPlateFile,
+			FMargin(0.18f, 0.30f),
+			FVector2D(780.f, 150.f),
 			RenderState,
 			MakeCtaContent(Text, RenderState, Width, Height, InTag, LeftIcon, RightIcon),
 			bEnabled ? FOnClicked::CreateUObject(this, ClickFunc) : FOnClicked(),
@@ -824,11 +844,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			Height,
 			bEnabled,
 			InTag,
-			NAME_None,
-			ButtonChrome);
+			NAME_None);
 	};
 
-	constexpr float LeftContentWidth = 520.f;
+	constexpr float LeftContentWidth = 460.f;
 	constexpr float LeftPanelContentInset = 30.f;
 	constexpr float LeftPanelWidth = LeftContentWidth + (LeftPanelContentInset * 2.f);
 	constexpr float PartySlotSize = 80.f;
@@ -978,8 +997,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 				.BackgroundColor(FLinearColor::Transparent)
 			];
 
-		return FT66FriendslopStyle::MakeSurface(
-			ET66FriendslopChrome::SearchFieldRound06,
+		return FT66FriendslopStyle::MakeCustomSurface(
+			HellfireDir + TEXT("field_search.png"),
+			FMargin(0.14f, 0.30f),
+			ESlateBrushDrawType::Box,
+			FVector2D(540.f, 78.f),
 			ET66FlatState::Default,
 			FMargin(18.f, 10.f),
 			SearchContent,
@@ -1109,6 +1131,24 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		const FString FriendId = Friend.PlayerId;
 		const FString FriendName = RowRefs.FriendName;
 		TSharedRef<SWidget> RowContent = SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(0.f, 0.f, 10.f, 0.f)
+			[
+				FT66FlatStyle::AttachMetadata(
+					SNew(SBox)
+					.WidthOverride(16.f)
+					.HeightOverride(16.f)
+					[
+						SNew(SImage)
+						.Image(HellfireBrush(Friend.bOnline ? TEXT("ball_online.png") : TEXT("ball_offline.png"), FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(16.f, 16.f)))
+						.ColorAndOpacity(FLinearColor::White)
+					],
+					Tag(*(RowTagPrefix + TEXT(".StatusBall"))),
+					TEXT("Icon.Status"),
+					Friend.bOnline ? ET66FlatState::Ready : ET66FlatState::Disabled)
+			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
 			.VAlign(VAlign_Center)
@@ -1243,8 +1283,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 					true)
 			];
 
-		TSharedRef<SWidget> RowSurface = FT66FriendslopStyle::MakeSurface(
-			ET66FriendslopChrome::FriendRowRound06,
+		TSharedRef<SWidget> RowSurface = FT66FriendslopStyle::MakeCustomSurface(
+			HellfireDir + TEXT("row_idle.png"),
+			FMargin(0.12f, 0.30f),
+			ESlateBrushDrawType::Box,
+			FVector2D(540.f, 84.f),
 			Friend.bOnline ? ET66FlatState::Default : ET66FlatState::Disabled,
 			FMargin(12.f, 7.f),
 			RowContent,
@@ -1377,8 +1420,11 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 				.AutoWidth()
 				.Padding(SlotIndex == 0 ? FMargin(0.f) : FMargin(PartySlotGap, 0.f, 0.f, 0.f))
 				[
-					FT66FriendslopStyle::MakeSurface(
-						ET66FriendslopChrome::PartySlotRound06,
+					FT66FriendslopStyle::MakeCustomSurface(
+						HellfireDir + TEXT("slot_party.png"),
+						FMargin(0.24f),
+						ESlateBrushDrawType::Box,
+						FVector2D(150.f, 150.f),
 						SlotIndex == 0 ? ET66FlatState::Selected : ET66FlatState::Default,
 						FMargin(8.f),
 						SNew(SBox)
@@ -1455,13 +1501,15 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 					ET66FlatState::Default)
 			];
 
-		return FT66FriendslopStyle::MakePanel(
+		return FT66FriendslopStyle::MakeCustomPanel(
+			HellfireDir + TEXT("panel_side.png"),
+			FMargin(0.10f, 0.08f),
+			FVector2D(680.f, 920.f),
 			ET66FlatState::Default,
 			FMargin(LeftPanelContentInset, 26.f, LeftPanelContentInset, 26.f),
 			LeftCanvas,
 			nullptr,
-			Tag(TEXT("MainMenu.Left.Panel")),
-			ET66FriendslopChrome::LeftPanelRound06);
+			Tag(TEXT("MainMenu.Left.Panel")));
 	};
 
 	auto MakeCtaStack = [&]() -> TSharedRef<SWidget>
@@ -1479,12 +1527,12 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 					680.f,
 					104.f,
 					Tag(TEXT("MainMenu.Center.EnterTribulationButton")),
-					CtaSkullIconBrush.Get(),
-					CtaSkullIconBrush.Get())
+					HellfireBrush(TEXT("ic_skull.png"), FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(54.f, 54.f)),
+					HellfireBrush(TEXT("ic_skull.png"), FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(54.f, 54.f)))
 			];
 		CtaCanvas->AddSlot()
 			.Alignment(FVector2D(0.f, 0.f))
-			.Offset(FMargin(10.f, 136.f, 660.f, 94.f))
+			.Offset(FMargin(10.f, 150.f, 660.f, 94.f))
 			[
 				MakeCtaButton(
 					NSLOCTEXT("T66.MainMenu", "Continue", "LOAD GAME"),
@@ -1492,29 +1540,30 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 					ET66FlatState::Default,
 					660.f,
 					94.f,
-					Tag(TEXT("MainMenu.Center.LoadGameButton")))
+					Tag(TEXT("MainMenu.Center.LoadGameButton")),
+					HellfireBrush(TEXT("ic_load.png"), FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(54.f, 54.f)))
 			];
 		if (bDailyDescentAvailable)
 		{
 			CtaCanvas->AddSlot()
 				.Alignment(FVector2D(0.f, 0.f))
-				.Offset(FMargin(10.f, 244.f, 660.f, 94.f))
+				.Offset(FMargin(10.f, 296.f, 660.f, 94.f))
 				[
 					MakeCtaButton(
-						NSLOCTEXT("T66.MainMenu", "DailyDescent", "DAILY DESCENT"),
+						NSLOCTEXT("T66.MainMenu", "DailyDungeon", "DAILY DUNGEON"),
 						&UT66MainMenuScreen::HandleDailyDescentClicked,
 						ET66FlatState::Default,
 						660.f,
 						94.f,
 						Tag(TEXT("MainMenu.Center.DailyDescentButton")),
-						DailyDescentIconBrush.Get(),
+						HellfireBrush(TEXT("ic_calendar.png"), FMargin(0.f), ESlateBrushDrawType::Image, FVector2D(54.f, 54.f)),
 						nullptr,
 						true)
 				];
 		}
 
 		return FT66FlatStyle::AttachMetadata(
-			MakeSized(680.f, 238.f, CtaCanvas),
+			MakeSized(680.f, 390.f, CtaCanvas),
 			Tag(TEXT("MainMenu.Center.CtaStack")),
 			TEXT("CtaStack"),
 			ET66FlatState::Default);
@@ -1734,9 +1783,9 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			Tag(TEXT("MainMenu.BackgroundRegion")),
 			TEXT("BackgroundRegion"),
 			ET66FlatState::Default));
-	AddCanvasSlot(0.f, 145.f, LeftPanelWidth, 935.f, MakeLeftPanel());
-	AddCanvasSlot(570.f, 88.f, 700.f, 260.f, MakeTitleRegion());
-	AddCanvasSlot(640.f, 748.f, 680.f, 238.f, MakeCtaStack());
+	AddCanvasSlot(0.f, 130.f, LeftPanelWidth, 950.f, MakeLeftPanel());
+	AddCanvasSlot(610.f, 70.f, 700.f, 250.f, MakeTitleRegion());
+	AddCanvasSlot(620.f, 620.f, 680.f, 390.f, MakeCtaStack());
 	constexpr float RightLeaderboardPanelWidth = ST66FlatLeaderboardPanel::GetPanelWidth();
 	constexpr float RightLeaderboardPanelHeight = ST66FlatLeaderboardPanel::GetPanelHeight();
 	AddCanvasSlot(
@@ -2144,6 +2193,17 @@ void UT66MainMenuScreen::SyncToSharedPartyScreen()
 
 TSharedRef<SWidget> UT66MainMenuScreen::BuildMainMenuBackgroundWidget() const
 {
+	// UI Reimagine 2026-06-10: hellfire backdrop replaces video/sky when present.
+	if (const FSlateBrush* HellfireBackground = FT66FriendslopStyle::GetCustomBrush(
+			TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/bg_hellfire_altar.png"),
+			FMargin(0.f),
+			ESlateBrushDrawType::Image,
+			FVector2D(1536.f, 1024.f));
+		HellfireBackground && HellfireBackground->GetResourceObject())
+	{
+		return SNew(SImage).Image(HellfireBackground);
+	}
+
 	const FSlateBrush* VideoBrush = MainMenuBackgroundVideoPlayer
 		? MainMenuBackgroundVideoPlayer->GetVideoBrush()
 		: nullptr;

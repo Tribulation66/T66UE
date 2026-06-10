@@ -1215,12 +1215,14 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			return Item;
 		};
 
+		// UI Reimagine 2026-06-10 (approved v7): ACCOUNT tab removed (account opens via the
+		// main menu profile row). Bar order: logo-home, ACHIEVEMENTS, POWER UP, MINI GAMES.
 		CategoryGroup.Items.Add(MakeCategoryItem(
-			AccountText,
-			&UT66FrontendTopBarWidget::HandleAccountStatusClicked,
-			TEXT("FrontendTopBar.AccountButton"),
-			AccountRect,
-			ActiveSection == ETopBarSection::AccountStatus));
+			AchievementsText,
+			&UT66FrontendTopBarWidget::HandleAchievementsClicked,
+			TEXT("FrontendTopBar.AchievementsButton"),
+			ProfileRect,
+			ActiveSection == ETopBarSection::Achievements));
 		CategoryGroup.Items.Add(MakeCategoryItem(
 			PowerUpText,
 			&UT66FrontendTopBarWidget::HandlePowerUpClicked,
@@ -1228,11 +1230,12 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			PowerUpRect,
 			ActiveSection == ETopBarSection::PowerUp));
 		CategoryGroup.Items.Add(MakeCategoryItem(
-			AchievementsText,
-			&UT66FrontendTopBarWidget::HandleAchievementsClicked,
-			TEXT("FrontendTopBar.AchievementsButton"),
+			NSLOCTEXT("T66.MainMenu", "TopBarMiniGames", "MINI GAMES"),
+			&UT66FrontendTopBarWidget::HandlePowerUpClicked,
+			TEXT("FrontendTopBar.MiniGamesButton"),
 			AchievementsRect,
-			ActiveSection == ETopBarSection::Achievements));
+			false,
+			false));
 		TArray<TSharedRef<SWidget>> CategoryButtons;
 		CategoryButtons.Reserve(CategoryGroup.Items.Num());
 		for (const FT66FlatToggleGroupItem& Item : CategoryGroup.Items)
@@ -1270,20 +1273,23 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			LanguageRect,
 			ActiveSection == ETopBarSection::Language ? ET66FriendslopChrome::TopbarPowerRedRound06 : ET66FriendslopChrome::TopbarIconDarkRound06);
 		const ET66FlatState ProfileState = ActiveSection == ETopBarSection::Home ? ET66FlatState::Selected : ET66FlatState::Default;
-		const TSharedRef<SWidget> ProfileButtonWidget = FT66FriendslopStyle::MakeButton(
+		// Logo-as-home badge (square, fills the slot height; replaces the "HOME" text tab).
+		const float LogoBadgeSize = AccountRect.ReferenceHeight();
+		const TSharedRef<SWidget> ProfileButtonWidget = FT66FriendslopStyle::MakeCustomToggleGroupButton(
+			TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/badge_logo_home.png"),
+			FMargin(0.f),
+			FVector2D(180.f, 180.f),
 			ProfileState,
-			HomeText,
+			SNew(SBox).WidthOverride(LogoBadgeSize).HeightOverride(LogoBadgeSize),
 			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleHomeClicked),
-			nullptr,
-			nullptr,
-			FMargin(8.f, 6.f),
-			ProfileRect.ReferenceWidth(),
-			ProfileRect.ReferenceHeight(),
+			FMargin(0.f),
+			LogoBadgeSize,
+			LogoBadgeSize,
 			true,
-			ProfileTabFontSize,
 			TEXT("FrontendTopBar.ProfileButton"),
 			NAME_None,
-			ProfileState == ET66FlatState::Selected ? ET66FriendslopChrome::TopbarTabRedRound06 : ET66FriendslopChrome::TopbarTabDarkRound06);
+			FLinearColor(0.62f, 0.04f, 0.075f, 1.f),
+			ESlateBrushDrawType::Image);
 		const TSharedRef<SWidget> PowerButtonWidget = MakeIconActionButton(
 			ET66FlatState::Selected,
 			MakePairedIconButtonContent(TEXT("FrontendTopBar.PowerButton.Icon")),
@@ -1316,17 +1322,37 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			[
 				TicketValue
 			];
-		const TSharedRef<SWidget> TicketBadgeWidget = FT66FriendslopStyle::MakeToggleGroupButton(
-			ET66FlatState::Default,
-			TicketContent,
-			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandlePowerUpClicked),
-			FMargin(8.f, 5.f),
-			TicketRect.ReferenceWidth(),
-			TicketRect.ReferenceHeight(),
-			true,
+		// Naked coupon indicator (approved v7): gold ticket icon + value on the bar's black,
+		// no plate, not a button.
+		const TSharedRef<SWidget> TicketBadgeWidget = FT66FlatStyle::AttachMetadata(
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(0.f, 0.f, 10.f, 0.f)
+			[
+				SNew(SBox)
+				.WidthOverride(40.f)
+				.HeightOverride(40.f)
+				[
+					SNew(SImage)
+					.Image(FT66FriendslopStyle::GetCustomBrush(
+						TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/ic_ticket.png"),
+						FMargin(0.f),
+						ESlateBrushDrawType::Image,
+						FVector2D(40.f, 40.f)))
+					.ColorAndOpacity(FLinearColor::White)
+				]
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			[
+				TicketValue
+			],
 			TEXT("FrontendTopBar.TicketBadge"),
-			NAME_None,
-			ET66FriendslopChrome::TopbarCouponIconButtonRound06);
+			TEXT("CouponIndicator"),
+			ET66FlatState::Default);
 
 		const TSharedRef<SConstraintCanvas> TopBarCanvas = SNew(SConstraintCanvas);
 		TopBarCanvas->AddSlot()
@@ -1354,8 +1380,8 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 
 		AddControl(SettingsRect, SettingsButtonWidget);
 		AddControl(LanguageRect, LanguageButtonWidget);
-		AddControl(AccountRect, CategoryButtons[0]);
-		AddControl(ProfileRect, ProfileButtonWidget);
+		AddControl(AccountRect, ProfileButtonWidget);
+		AddControl(ProfileRect, CategoryButtons[0]);
 		AddControl(PowerUpRect, CategoryButtons[1]);
 		AddControl(AchievementsRect, CategoryButtons[2]);
 		AddControl(TicketRect, TicketBadgeWidget);
