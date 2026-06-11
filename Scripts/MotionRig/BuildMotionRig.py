@@ -50,12 +50,13 @@ def parse_args():
     # chunky boots can fool (measured: Hero2Chad's boot heels out-protrude
     # the toes and the flip silently skipped). Pixal3D GLBs ship facing +y.
     parser.add_argument("--front", choices=["auto", "+y", "-y"], default="auto")
-    # Source rest pose. "tpose" = arms straight out horizontally (the best
-    # case for the distance-based skinning: hands/forearms far from torso
-    # and thighs). The rig is skinned in T, then the arms are rotated down
-    # and applied as the NEW rest pose, so clips/export/UE keep the proven
-    # hanging-arm conventions.
-    parser.add_argument("--pose", choices=["hanging", "tpose"], default="hanging")
+    # Source rest pose. "tpose" = arms straight out horizontally: skinned in
+    # T, then the arms are rotated down 50 deg and applied as the NEW rest
+    # pose. "apose" = arms already angled ~45 deg down (the preferred source
+    # form): skinning happens with arms clear of the body AND no re-rest bake
+    # is needed at all — the source pose IS the rest pose, so zero
+    # deformation is baked into the mesh.
+    parser.add_argument("--pose", choices=["hanging", "tpose", "apose"], default="hanging")
     parser.add_argument("--no-render", action="store_true")
     return parser.parse_args(argv)
 
@@ -214,10 +215,13 @@ def measure_landmarks(mesh, height, pose="hanging"):
         leg_center_y = 0.0
 
     def hand_tip(sign):
-        if pose == "tpose":
-            # Arms straight out horizontally: the hand/mitt tip is simply the
-            # x-extreme in the shoulder-height band.
-            band = v[(v[:, 2] > 0.62 * h) & (v[:, 2] < 0.95 * h)]
+        if pose in ("tpose", "apose"):
+            # Arms held away from the body: the hand/mitt tip is simply the
+            # x-extreme in the arm band (shoulder height for T, mid-torso
+            # for A — the union band covers both).
+            z_lo = 0.62 * h if pose == "tpose" else 0.30 * h
+            z_hi = 0.95 * h if pose == "tpose" else 0.75 * h
+            band = v[(v[:, 2] > z_lo) & (v[:, 2] < z_hi)]
             side = band[np.sign(band[:, 0]) == sign] if band.size else band
             if side.size:
                 tip = side[np.abs(side[:, 0]).argmax()]
@@ -939,7 +943,8 @@ def main():
     skin_mesh(mesh, arm_obj, bone_layout)
     if args.pose == "tpose":
         # Skinned in T (clean weights); rest pose becomes relaxed hanging arms
-        # so everything downstream keeps the proven conventions.
+        # so everything downstream keeps the proven conventions. ("apose"
+        # sources need no re-rest at all — the source pose IS the rest pose.)
         apply_tpose_relaxation(mesh, arm_obj)
     qa_weights = weights_qa(mesh)
 

@@ -213,6 +213,53 @@ int32 UT66MotionRigPhysicsAssetCommandlet::BuildPhysicsAssetForCharacter(
 		}
 	}
 
+	// Floating-feet fix: the auto-generated foot capsules around the chunky
+	// boots reach BELOW the sole plane, so when those capsules rest on the
+	// floor the whole skeleton rides high and the boot meshes hover ~2-3cm.
+	// Clamp each foot capsule so its lowest point at the rest pose sits
+	// exactly on the sole plane (component z = 0).
+	{
+		const FReferenceSkeleton& RefSkeleton = SkeletalMesh->GetRefSkeleton();
+		TArray<FTransform> ComponentPose;
+		ComponentPose.SetNum(RefSkeleton.GetRawBoneNum());
+		for (int32 BoneIndex = 0; BoneIndex < RefSkeleton.GetRawBoneNum(); ++BoneIndex)
+		{
+			const int32 ParentIndex = RefSkeleton.GetParentIndex(BoneIndex);
+			ComponentPose[BoneIndex] = ParentIndex != INDEX_NONE
+				? RefSkeleton.GetRefBonePose()[BoneIndex] * ComponentPose[ParentIndex]
+				: RefSkeleton.GetRefBonePose()[BoneIndex];
+		}
+
+		for (const FName FootBone : { FName(TEXT("foot_l")), FName(TEXT("foot_r")) })
+		{
+			const int32 BodyIndex = PhysicsAsset->FindBodyIndex(FootBone);
+			const int32 BoneIndex = RefSkeleton.FindBoneIndex(FootBone);
+			if (BodyIndex == INDEX_NONE || BoneIndex == INDEX_NONE)
+			{
+				continue;
+			}
+			USkeletalBodySetup* Setup = PhysicsAsset->SkeletalBodySetups[BodyIndex];
+			const FTransform& BoneComp = ComponentPose[BoneIndex];
+			for (FKSphylElem& Sphyl : Setup->AggGeom.SphylElems)
+			{
+				const FTransform ElemComp = Sphyl.GetTransform() * BoneComp;
+				const FVector Axis = ElemComp.GetUnitAxis(EAxis::Z);
+				const float Lowest = ElemComp.GetLocation().Z
+					- FMath::Abs(Axis.Z) * Sphyl.Length * 0.5f - Sphyl.Radius;
+				if (Lowest < 0.f)
+				{
+					const FVector DeltaBone = BoneComp.InverseTransformVector(FVector(0.f, 0.f, -Lowest));
+					Sphyl.Center += DeltaBone;
+					UE_LOG(LogT66MotionRigPA, Display,
+						TEXT("  %s capsule raised %.1fcm to the sole plane"),
+						*FootBone.ToString(), -Lowest);
+				}
+			}
+			Setup->InvalidatePhysicsData();
+			Setup->CreatePhysicsMeshes();
+		}
+	}
+
 	UE_LOG(LogT66MotionRigPA, Display, TEXT("MotionRig physics asset: %d bodies, %d constraints"),
 		PhysicsAsset->SkeletalBodySetups.Num(), PhysicsAsset->ConstraintSetup.Num());
 	for (USkeletalBodySetup* Setup : PhysicsAsset->SkeletalBodySetups)
