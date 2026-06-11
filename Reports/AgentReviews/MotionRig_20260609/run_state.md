@@ -42,7 +42,25 @@ blocker (document + clean handoff).
 - Use neutral technical wording in all messages (impact reaction, knockdown,
   recovery) to avoid automated-filter false positives.
 
-## STATUS 2026-06-11 ~07:00: FEMALE = DESIGNED T-POSE MODEL (Variation 1)
+## STATUS 2026-06-11 ~11:00: FEMALE = A-POSE SPLIT-GENERATION MODEL — five issues closed
+
+User direction: A-pose beats T-pose (no re-rest bake at all — zero baked
+deformation), and head+body generate as SEPARATE Pixal3D models for face
+detail, joined by Scripts/MotionRig/AssembleHeadBody.py (neck-diameter
+anchor + 0.42-height fallback, flat-shard filter, sink 2.0). Pipeline
+gains: --pose apose; per-slot albedo chain (BuildMotionRig exports
+T_..._BaseColor_<slot> per material, import script globs them, pawn
+assigns per-slot MIDs with legacy un-suffixed fallback); PA commandlet
+clamps foot capsules to the rest sole plane (fired 4-5cm on both
+characters — the floating-feet root cause; standing foot bone now 9 vs
+13); posture auto-straighten shear (raw Pixal3D leans ~14cm forward from
+front-only refs); normal smoothing + extend-pixel 16 bake padding
+(stripe fix). Verified apose_v1 + apose_dive_v1: head renders its own
+atlas, feet grounded, upright, smooth balloon limbs. Source run:
+StacyAPoseSplit_20260611 (refs w6 body + w7 head in
+Saved/Codex/ModelGeneration/StacyPhysiqueRef_20260611).
+
+## (superseded) STATUS 2026-06-11 ~07:00: FEMALE = DESIGNED T-POSE MODEL (Variation 1)
 
 First full design→generate→rig loop: reference image designed via Codex
 imagegen workers (Saved/Codex/ModelGeneration/StacyPhysiqueRef_20260611,
