@@ -359,12 +359,17 @@ def rotate_pose_bone_world(pose_bone, axis, angle_deg):
     pose_bone.rotation_euler = local_rotation.to_euler("XYZ")
 
 
-def apply_tpose_relaxation(mesh, arm_obj, drop_deg=75.0):
+def apply_tpose_relaxation(mesh, arm_obj, drop_deg=50.0):
     """T-pose sources only: the rig was SKINNED in T-pose (clean distance
     weights — hands far from thighs, arms far from torso). Now rotate the
     arms down by drop_deg and make that the NEW rest pose for both armature
-    and mesh, so the clips/export/UE pipeline keeps the proven hanging-arm
-    conventions. Weights are untouched."""
+    and mesh. Weights are untouched.
+
+    drop_deg=50 leaves a Fall-Guys-style A-pose rest (arms ~40 deg out):
+    less linear-blend stress on the shoulders AND on-brand. The bake uses
+    PRESERVE VOLUME (dual-quaternion) skinning — a plain LBS bake at 75 deg
+    crushed the shoulders into permanent candy-wrapper lumps (measured on
+    StacyTPoseVar1; the raw Pixal3D mesh was clean)."""
     bpy.ops.object.select_all(action="DESELECT")
     arm_obj.select_set(True)
     bpy.context.view_layer.objects.active = arm_obj
@@ -377,9 +382,11 @@ def apply_tpose_relaxation(mesh, arm_obj, drop_deg=75.0):
     bpy.context.view_layer.update()
     bpy.ops.object.mode_set(mode="OBJECT")
 
-    # Bake the posed shape into the mesh data (vertex groups survive), then
-    # re-add the armature modifier and make the pose the rest pose.
+    # Bake the posed shape into the mesh data (vertex groups survive) using
+    # dual-quaternion deformation, then re-add the armature modifier (plain
+    # LBS, matching what UE runs at runtime) and make the pose the rest pose.
     bpy.context.view_layer.objects.active = mesh
+    mesh.modifiers["Armature"].use_deform_preserve_volume = True
     bpy.ops.object.modifier_apply(modifier="Armature")
     modifier = mesh.modifiers.new(name="Armature", type="ARMATURE")
     modifier.object = arm_obj
