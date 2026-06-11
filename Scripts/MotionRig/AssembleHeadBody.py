@@ -99,6 +99,74 @@ def verts(obj):
     return coords.reshape(count, 3)
 
 
+def band_mean_texture_color(obj, z_lo, z_hi):
+    """Mean RGB of the texels mapped by faces inside a z band. Used on the
+    neck stub/stump bands (pure skin on both parts) to anchor a color match."""
+    mesh = obj.data
+    if not mesh.uv_layers.active or not mesh.materials:
+        return None, None
+    image = None
+    for mat in mesh.materials:
+        if mat and mat.use_nodes:
+            for node in mat.node_tree.nodes:
+                if node.type == "TEX_IMAGE" and node.image:
+                    image = node.image
+                    break
+        if image:
+            break
+    if not image:
+        return None, None
+
+    width, height = image.size
+    pixels = np.array(image.pixels[:], dtype=np.float32).reshape(height, width, 4)
+    uv_data = mesh.uv_layers.active.data
+
+    samples = []
+    for poly in mesh.polygons:
+        zs = [mesh.vertices[mesh.loops[li].vertex_index].co.z for li in poly.loop_indices]
+        if min(zs) < z_lo or max(zs) > z_hi:
+            continue
+        for li in poly.loop_indices:
+            u, vv = uv_data[li].uv
+            x = min(width - 1, max(0, int(u * width)))
+            y = min(height - 1, max(0, int(vv * height)))
+            samples.append(pixels[y, x, :3])
+    if len(samples) < 20:
+        return None, image
+    return np.mean(np.array(samples), axis=0), image
+
+
+def match_head_color_to_body(body, head):
+    """The two parts are generated independently and their skin tones drift
+    (measured: head visibly more orange). Sample skin color on the body's
+    neck stump and the head's neck stub, then multiply the whole head
+    texture by the per-channel ratio."""
+    bv = verts(body)
+    hv = verts(head)
+    b_top = bv[:, 2].max()
+    b_h = b_top - bv[:, 2].min()
+    h_bot = hv[:, 2].min()
+    h_h = hv[:, 2].max() - h_bot
+
+    body_color, _ = band_mean_texture_color(body, b_top - 0.04 * b_h, b_top)
+    head_color, head_image = band_mean_texture_color(head, h_bot, h_bot + 0.05 * h_h)
+    if body_color is None or head_color is None or head_image is None:
+        print("COLOR_MATCH skipped (no samples)")
+        return
+    ratio = np.clip(body_color / np.maximum(head_color, 1e-4), 0.5, 2.0)
+
+    # SKIN-WEIGHTED correction: a blanket multiply re-tints everything (the
+    # white ponytail went blue from the B-channel boost). Weight each texel
+    # by its closeness to the head's skin tone so hair/eyes stay untouched.
+    px = np.array(head_image.pixels[:], dtype=np.float32).reshape(-1, 4)
+    dist = np.linalg.norm(px[:, :3] - head_color[None, :], axis=1)
+    weight = np.exp(-(dist / 0.22) ** 2)
+    px[:, :3] = np.clip(px[:, :3] * (1.0 + (ratio[None, :] - 1.0) * weight[:, None]), 0.0, 1.0)
+    head_image.pixels = px.reshape(-1).tolist()
+    head_image.pack()
+    print(f"COLOR_MATCH body={np.round(body_color,3)} head={np.round(head_color,3)} ratio={np.round(ratio,3)} skin_weighted=1")
+
+
 def band_stats(v, z_lo, z_hi):
     band = v[(v[:, 2] >= z_lo) & (v[:, 2] <= z_hi)]
     if not band.size:
@@ -115,6 +183,8 @@ def main():
 
     body = import_glb_as_single(args.body, "Body")
     head = import_glb_as_single(args.head, "Head")
+
+    match_head_color_to_body(body, head)
 
     bv = verts(body)
     hv = verts(head)

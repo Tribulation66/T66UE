@@ -199,6 +199,26 @@ continue while Codex works on other local tasks. A batch is complete only after
 `DONE.json` exists or every expected GLB has nonzero size and a matching HTTP
 200 row in the status JSONL.
 
+### Reliable completion notification (agents)
+
+Inline poll loops die inside agent tool windows and silently drop the chain
+(measured repeatedly). Use the detached watcher instead:
+
+```powershell
+# after `launch`: start the watcher DETACHED, output to a log
+Start-Process pwsh -WindowStyle Hidden -ArgumentList '-NoProfile','-File',
+  'Model Generation\Pixal3D\Scripts\PollPixal3DRun.ps1',
+  '-LocalRunRoot','<local run root>','-RemoteRunRoot','<remote run root>' `
+  -RedirectStandardOutput '<local run root>\poll.log'
+```
+
+Then arm a PERSISTENT file monitor on `<local run root>\poll.log` for the
+`POLL_RESULT` line (Claude: Monitor tool, persistent, tail -f + grep
+--line-buffered "POLL_RESULT"). The watcher polls DONE.json with per-call SSH
+timeouts (transient hangs never kill it), auto-downloads the GLBs on
+completion (with scp fallback), and prints exactly one final line:
+`POLL_RESULT=DONE files=N | FAILED | TIMEOUT`.
+
 ## Output And Retention
 
 Generated output belongs under:

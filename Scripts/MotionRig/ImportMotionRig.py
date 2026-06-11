@@ -26,7 +26,7 @@ CHARACTERS = [
     },
     {  # ET66BodyType::Stacy — A-pose split-generation model (refs w6 body + w7 head)
         "name": "Hero1Female",
-        "source": r"C:\UE\T66\Model Generation\Runs\Pixal3D\StacyAPoseSplit_20260611\Blender\MotionRig\Female",
+        "source": r"C:\UE\T66\Model Generation\Runs\Pixal3D\StacyAPoseSplit2_20260611\Blender\MotionRig\Female",
         "dest": "/Game/Characters/MotionRig/Hero_1_Female",
     },
 ]

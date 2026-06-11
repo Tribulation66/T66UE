@@ -20,14 +20,17 @@ static TAutoConsoleVariable<float> CVarMRMotorLegSpring(
 	TEXT("t66.MotionRig.Motor.LegSpring"), 5000000.f,
 	TEXT("MotionRig leg joint drive spring."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorSpineSpring(
-	TEXT("t66.MotionRig.Motor.SpineSpring"), 2600000.f,
-	TEXT("MotionRig spine joint drive spring."), ECVF_Default);
+	TEXT("t66.MotionRig.Motor.SpineSpring"), 7800000.f,
+	TEXT("MotionRig spine joint drive spring. 2.6M let the torso sag ~10 deg "
+	     "forward at idle under the chest mass (the 'forward tilt' bug — the "
+	     "mesh itself is straight); 7.8M stands upright, arms stay loose."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorArmSpring(
 	TEXT("t66.MotionRig.Motor.ArmSpring"), 500000.f,
 	TEXT("MotionRig arm joint drive spring (loose on purpose — secondary motion)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorHeadSpring(
-	TEXT("t66.MotionRig.Motor.HeadSpring"), 700000.f,
-	TEXT("MotionRig head joint drive spring."), ECVF_Default);
+	TEXT("t66.MotionRig.Motor.HeadSpring"), 1400000.f,
+	TEXT("MotionRig head joint drive spring (doubled with SpineSpring — the "
+	     "split-generation head is heavier)."), ECVF_Default);
 static TAutoConsoleVariable<float> CVarMRMotorDampingRatio(
 	TEXT("t66.MotionRig.Motor.DampingFraction"), 0.04f,
 	TEXT("Joint drive damping as a fraction of spring (lower = wobblier)."), ECVF_Default);
