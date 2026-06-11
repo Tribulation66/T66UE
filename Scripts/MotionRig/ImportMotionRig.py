@@ -62,7 +62,10 @@ def make_skeletal_mesh_options():
     smd.set_editor_property("use_t0_as_ref_pose", True)
     smd.set_editor_property("preserve_smoothing_groups", True)
     smd.set_editor_property("import_meshes_in_bone_hierarchy", True)
-    smd.set_editor_property("normal_import_method", unreal.FBXNormalImportMethod.FBXNIM_COMPUTE_NORMALS)
+    # IMPORT the Blender-authored normals (shade-smooth + weighted normals,
+    # the FallGuys look-dev recipe). Recomputing here from the decimated
+    # Pixal3D geometry bands the glossy sheen along the triangulation.
+    smd.set_editor_property("normal_import_method", unreal.FBXNormalImportMethod.FBXNIM_IMPORT_NORMALS)
     smd.set_editor_property("convert_scene", True)
     smd.set_editor_property("force_front_x_axis", False)
     return options

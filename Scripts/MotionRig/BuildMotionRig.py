@@ -87,6 +87,20 @@ def import_glb(path):
     mesh.parent = None
     mesh.modifiers.clear()
     mesh.vertex_groups.clear()
+
+    # Normal cleanup (the FallGuys look-dev recipe): Pixal3D decimation
+    # leaves normal noise that makes glossy sheen band/stripe along the
+    # triangulation. Shade-smooth everything + weighted normals (FACE_AREA)
+    # — shading-only, silhouette and UVs unchanged. The smoothed normals are
+    # exported and UE must IMPORT them (ImportMotionRig.py), not recompute.
+    for polygon in mesh.data.polygons:
+        polygon.use_smooth = True
+    bpy.context.view_layer.objects.active = mesh
+    wn = mesh.modifiers.new(name="WeightedNormal", type="WEIGHTED_NORMAL")
+    wn.mode = "FACE_AREA"
+    wn.keep_sharp = False
+    wn.weight = 50
+    bpy.ops.object.modifier_apply(modifier=wn.name)
     return mesh
 
 
@@ -132,6 +146,31 @@ def normalize_mesh(mesh, front="auto"):
         facing_plus_y = abs(foot[:, 1].max()) > abs(foot[:, 1].min())
     else:
         facing_plus_y = front == "+y"
+
+    # Posture straightening: Pixal3D guesses depth from a front-view-only
+    # reference and can bake a forward lean (measured 14cm head-vs-ankle
+    # drift on StacyTPoseVar1). SHEAR the mesh vertical (y -= k*z) instead
+    # of rotating — horizontal slices stay horizontal, so boot soles stay
+    # flat on the floor.
+    def straighten():
+        verts = vertex_array(mesh)
+        h_now = verts[:, 2].max() - verts[:, 2].min()
+        low = verts[(verts[:, 2] > 0.02 * h_now) & (verts[:, 2] < 0.12 * h_now)]
+        high = verts[verts[:, 2] > 0.80 * h_now]
+        if not low.size or not high.size:
+            return 0.0
+        slope = (float(np.median(high[:, 1])) - float(np.median(low[:, 1]))) / \
+                (float(np.median(high[:, 2])) - float(np.median(low[:, 2])))
+        if abs(slope) < 0.01:
+            return 0.0
+        from mathutils import Matrix
+        shear = Matrix.Identity(4)
+        shear[1][2] = -slope  # y -= slope * z
+        mesh.data.transform(shear)
+        mesh.data.update()
+        return slope
+
+    lean_slope = straighten()
     if facing_plus_y:
         # glTF imports arrive in QUATERNION rotation mode — switching the mode
         # first is load-bearing; assigning rotation_euler on a quaternion-mode
@@ -146,7 +185,7 @@ def normalize_mesh(mesh, front="auto"):
         mesh.location = (-center_x, -center_y, 0.0)
         bpy.ops.object.transform_apply(location=True, rotation=False, scale=False)
 
-    return TARGET_HEIGHT_M, bool(facing_plus_y)
+    return TARGET_HEIGHT_M, bool(facing_plus_y), float(lean_slope)
 
 
 def measure_landmarks(mesh, height, pose="hanging"):
@@ -894,7 +933,7 @@ def main():
 
     reset_scene()
     mesh = import_glb(glb_path)
-    height, flipped = normalize_mesh(mesh, args.front)
+    height, flipped, lean_slope = normalize_mesh(mesh, args.front)
     landmarks = measure_landmarks(mesh, height, args.pose)
     arm_obj, bone_layout = build_armature(landmarks)
     skin_mesh(mesh, arm_obj, bone_layout)
@@ -949,6 +988,7 @@ def main():
         "source_glb": glb_path,
         "character_name": args.name,
         "source_pose": args.pose,
+        "lean_slope_removed": lean_slope,
         "base_color_exported": albedo_exported,
         "normalized_height_m": height,
         "facing_flip_applied": flipped,
