@@ -42,7 +42,19 @@ blocker (document + clean handoff).
 - Use neutral technical wording in all messages (impact reaction, knockdown,
   recovery) to avoid automated-filter false positives.
 
-## STATUS 2026-06-11 ~11:00: FEMALE = A-POSE SPLIT-GENERATION MODEL — five issues closed
+## STATUS 2026-06-11 ~18:00: ROUND-2 FIXES — speckles/tilt/color closed (StacyAPoseSplit2)
+
+Causes: speckles = X-Extend-Pixel misreads (it is the texture-projection
+camera bound, NOT bake padding — regenerated at 0); forward tilt =
+runtime spine sag (mesh verified straight; SpineSpring 2.6M→7.8M +
+HeadSpring 2x defaults, A/B captured upright); head/body color =
+generation drift (AssembleHeadBody skin-weighted neck-anchor match —
+blanket multiply tinted the white hair blue, weighting fixed it).
+Also: PollPixal3DRun.ps1 detached pod watcher + persistent-monitor
+pattern (inline poll loops kept dying in tool windows; documented in
+07 doc). final_v1 capture + staged-exe fingerprint verified.
+
+## (superseded) STATUS 2026-06-11 ~11:00: FEMALE = A-POSE SPLIT-GENERATION MODEL — five issues closed
 
 User direction: A-pose beats T-pose (no re-rest bake at all — zero baked
 deformation), and head+body generate as SEPARATE Pixal3D models for face
