@@ -764,20 +764,28 @@ def make_bind_pose_action(arm_obj):
     return action
 
 
-def export_base_color_png(mesh, out_path):
-    """Save the GLB material's base-color image as a REAL png. GLB textures
-    can be WebP bytes in .png clothing (UE rejects those); Image.save with
-    file_format=PNG decodes to pixels and re-encodes properly."""
-    for mat in mesh.data.materials:
-        if not mat or not mat.use_nodes:
+def export_base_color_pngs(mesh, out_dir, name):
+    """Save each material slot's base-color image as a REAL png, suffixed by
+    slot index. Split-generation models (separate head + body) carry one
+    atlas per part, and UE keeps the FBX slot order, so the runtime can
+    match texture _<slot> to material slot. GLB textures can be WebP bytes
+    in .png clothing (UE rejects those); Image.save with file_format=PNG
+    decodes to pixels and re-encodes properly."""
+    exported = []
+    for slot_index, mat in enumerate(mesh.data.materials):
+        image = None
+        if mat and mat.use_nodes:
+            for node in mat.node_tree.nodes:
+                if node.type == "TEX_IMAGE" and node.image:
+                    image = node.image
+                    break
+        if not image:
             continue
-        for node in mat.node_tree.nodes:
-            if node.type == "TEX_IMAGE" and node.image:
-                image = node.image
-                image.file_format = "PNG"
-                image.save(filepath=out_path)
-                return True
-    return False
+        out_path = os.path.join(out_dir, f"T_MotionRig_{name}_BaseColor_{slot_index}.png")
+        image.file_format = "PNG"
+        image.save(filepath=out_path)
+        exported.append(os.path.basename(out_path))
+    return exported
 
 
 def export_skeletal_fbx(mesh, arm_obj, bind_action, out_path):
@@ -978,8 +986,7 @@ def main():
     skeletal_fbx = os.path.join(out_dir, f"SK_MotionRig_{args.name}.fbx")
     export_skeletal_fbx(mesh, arm_obj, bind_action, skeletal_fbx)
 
-    albedo_png = os.path.join(out_dir, f"T_MotionRig_{args.name}_BaseColor.png")
-    albedo_exported = export_base_color_png(mesh, albedo_png)
+    albedo_exported = export_base_color_pngs(mesh, out_dir, args.name)
 
     clip_files = {}
     for clip_name, (action, frames) in clip_actions.items():
@@ -1010,7 +1017,7 @@ def main():
             "left_hand_tip": list(landmarks["left_hand_tip"]),
             "right_hand_tip": list(landmarks["right_hand_tip"]),
         },
-        "pass": qa_weights["unweighted"] == 0 and qa_weights["max_influences"] <= MAX_INFLUENCES and len(bone_layout) == 18 and albedo_exported,
+        "pass": qa_weights["unweighted"] == 0 and qa_weights["max_influences"] <= MAX_INFLUENCES and len(bone_layout) == 18 and len(albedo_exported) > 0,
     }
     with open(os.path.join(out_dir, "MotionRig_QA.json"), "w") as f:
         json.dump(qa, f, indent=2)

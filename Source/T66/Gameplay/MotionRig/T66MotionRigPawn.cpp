@@ -116,6 +116,7 @@ namespace T66MotionRigPaths
 
 	static FString SkeletalMesh(const FVariant& V) { return AssetPath(V, FString::Printf(TEXT("SK_MotionRig_%s"), V.CharName)); }
 	static FString BaseColorTexture(const FVariant& V) { return AssetPath(V, FString::Printf(TEXT("T_MotionRig_%s_BaseColor"), V.CharName)); }
+	static FString BaseColorTextureSlot(const FVariant& V, const int32 SlotIndex) { return AssetPath(V, FString::Printf(TEXT("T_MotionRig_%s_BaseColor_%d"), V.CharName, SlotIndex)); }
 	static FString Clip(const FVariant& V, const TCHAR* ClipName) { return AssetPath(V, FString::Printf(TEXT("AM_MotionRig_%s_%s"), V.CharName, ClipName)); }
 }
 
@@ -450,13 +451,25 @@ void AT66MotionRigPawn::LoadAssets()
 		// is a dormant fallback.
 		Visual->SetVisibility(false);
 
-		// FriendSlop look: instance of the one lit master, raw albedo.
+		// FriendSlop look: instance of the one lit master, raw albedo. Split-
+		// generation models carry one atlas per material slot (body, head);
+		// match texture _<slot> to slot, falling back to slot 0 / the legacy
+		// un-suffixed single-texture name.
 		UMaterialInterface* Master = LoadObject<UMaterialInterface>(nullptr, T66MotionRigPaths::FallGuysMaster);
-		UTexture* Albedo = LoadObject<UTexture>(nullptr, *T66MotionRigPaths::BaseColorTexture(Variant));
+		UTexture* FallbackAlbedo = LoadObject<UTexture>(nullptr, *T66MotionRigPaths::BaseColorTextureSlot(Variant, 0));
+		if (!FallbackAlbedo)
+		{
+			FallbackAlbedo = LoadObject<UTexture>(nullptr, *T66MotionRigPaths::BaseColorTexture(Variant));
+		}
 		if (Master)
 		{
 			for (int32 SlotIndex = 0; SlotIndex < RigMesh->GetNumMaterials(); ++SlotIndex)
 			{
+				UTexture* Albedo = LoadObject<UTexture>(nullptr, *T66MotionRigPaths::BaseColorTextureSlot(Variant, SlotIndex));
+				if (!Albedo)
+				{
+					Albedo = FallbackAlbedo;
+				}
 				if (UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Master, RigMesh))
 				{
 					if (Albedo)

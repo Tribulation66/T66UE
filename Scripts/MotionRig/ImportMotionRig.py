@@ -118,12 +118,18 @@ def import_character(char):
         return result
     result["skeletal_mesh"] = run_task(sk_fbx, dest, sk_name, make_skeletal_mesh_options())
 
-    tex_png = os.path.join(source, f"T_MotionRig_{name}_BaseColor.png")
-    if os.path.exists(tex_png):
-        # Plain texture import: no options object needed, defaults are right.
-        result["texture"] = run_task(tex_png, dest, f"T_MotionRig_{name}_BaseColor", None)
+    # One albedo per material slot (split-generation models carry one atlas
+    # per part); legacy single-texture models use the un-suffixed name.
+    import glob as glob_module
+    tex_pngs = sorted(glob_module.glob(os.path.join(source, f"T_MotionRig_{name}_BaseColor*.png")))
+    if tex_pngs:
+        result["texture"] = []
+        for tex_png in tex_pngs:
+            tex_name = os.path.splitext(os.path.basename(tex_png))[0]
+            # Plain texture import: no options object needed, defaults are right.
+            result["texture"] += run_task(tex_png, dest, tex_name, None)
     else:
-        REPORT["errors"].append(f"{name}: missing base color png: {tex_png}")
+        REPORT["errors"].append(f"{name}: no base color pngs in {source}")
 
     sk_path = f"{dest}/{sk_name}.{sk_name}"
     skeletal_mesh = unreal.EditorAssetLibrary.load_asset(sk_path)
