@@ -24,9 +24,9 @@ CHARACTERS = [
         "source": r"C:\UE\T66\Model Generation\Runs\Pixal3D\HeroChadStacy_SourceAssets_20260609_0536\Blender\MotionRig\Male",
         "dest": "/Game/Characters/MotionRig/Hero_1_Male",
     },
-    {  # ET66BodyType::Stacy — T-pose inflatable Variation 1 (designed ref v5)
+    {  # ET66BodyType::Stacy — A-pose split-generation model (refs w6 body + w7 head)
         "name": "Hero1Female",
-        "source": r"C:\UE\T66\Model Generation\Runs\Pixal3D\StacyTPoseVar1_20260611\Blender\MotionRig\Female",
+        "source": r"C:\UE\T66\Model Generation\Runs\Pixal3D\StacyAPoseSplit_20260611\Blender\MotionRig\Female",
         "dest": "/Game/Characters/MotionRig/Hero_1_Female",
     },
 ]
