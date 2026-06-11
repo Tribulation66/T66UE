@@ -324,7 +324,10 @@ $UatArgs = @(
     "-pak",
     "-package",
     "-stagingdirectory=$StageRoot",
-    "-utf8output"
+    "-utf8output",
+    # Multiple agents stage in parallel; without this a concurrent UAT
+    # instance makes BuildCookRun fail instantly with "conflicting instance".
+    "-WaitForUATMutex"
 )
 
 if ($SkipBuild) {
