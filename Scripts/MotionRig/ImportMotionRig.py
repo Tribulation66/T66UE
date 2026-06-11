@@ -16,21 +16,23 @@ import os
 
 import unreal
 
-SOURCE_RUN = r"C:\UE\T66\Model Generation\Runs\Pixal3D\HeroChadStacy_SourceAssets_20260609_0536\Blender\MotionRig"
 CLIPS = ["Idle", "Walk", "Jump", "Dive", "GetUp_Front", "GetUp_Back"]
 
 CHARACTERS = [
-    {  # ET66BodyType::Chad
+    {  # ET66BodyType::Chad — simple-clothing physics model (hanging pose)
         "name": "Hero1Male",
-        "source": os.path.join(SOURCE_RUN, "Male"),
+        "source": r"C:\UE\T66\Model Generation\Runs\Pixal3D\HeroChadStacy_SourceAssets_20260609_0536\Blender\MotionRig\Male",
         "dest": "/Game/Characters/MotionRig/Hero_1_Male",
     },
-    {  # ET66BodyType::Stacy
+    {  # ET66BodyType::Stacy — T-pose inflatable Variation 1 (designed ref v5)
         "name": "Hero1Female",
-        "source": os.path.join(SOURCE_RUN, "Female"),
+        "source": r"C:\UE\T66\Model Generation\Runs\Pixal3D\StacyTPoseVar1_20260611\Blender\MotionRig\Female",
         "dest": "/Game/Characters/MotionRig/Hero_1_Female",
     },
 ]
+
+# The import report lands next to the FIRST character's sources.
+SOURCE_RUN = os.path.dirname(CHARACTERS[0]["source"])
 
 REPORT = {"characters": {}, "errors": []}
 

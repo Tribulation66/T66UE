@@ -42,7 +42,24 @@ blocker (document + clean handoff).
 - Use neutral technical wording in all messages (impact reaction, knockdown,
   recovery) to avoid automated-filter false positives.
 
-## STATUS 2026-06-11 ~00:30: MODEL SWAP — both body types on the new physics models
+## STATUS 2026-06-11 ~07:00: FEMALE = DESIGNED T-POSE MODEL (Variation 1)
+
+First full design→generate→rig loop: reference image designed via Codex
+imagegen workers (Saved/Codex/ModelGeneration/StacyPhysiqueRef_20260611,
+v5 approved = M3 bodybuilder silhouette + smooth inflatable surface + short
+ponytail + 3-segment arms with separated-thumb mitts, landscape T-pose),
+generated on the user's PIXAL3D RunPod (detached batch, 5 min,
+StacyTPoseVar1_20260611/Outputs/Hero1Stacy_TPose_Var1.glb), rigged with the
+NEW --pose tpose path: skinning computed in T-pose (hands far from thighs —
+the distance-weighting best case), then arms rotated down 75° via
+world-axis pose math and applied as the new rest pose
+(mesh modifier_apply + pose.armature_apply), so clips/export/UE keep the
+hanging-arm conventions unchanged. Verified: FBX rest probe (clavicle
+horizontal, arm chain z 143→79, pelvis 98.1), both PA guards exact,
+tpose_var1_v1 walkcircle capture intact + facing travel. Replaces the
+muscular Hero1Stacy as /Game/Characters/MotionRig/Hero_1_Female.
+
+## (superseded) STATUS 2026-06-11 ~00:30: MODEL SWAP — both body types on the new physics models
 
 Replaced the rig source with the simple-clothing physics pair from
 HeroChadStacy_SourceAssets_20260609_0536 (Hero2Chad.glb = male,

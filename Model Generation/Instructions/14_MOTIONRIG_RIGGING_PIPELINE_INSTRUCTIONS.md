@@ -21,23 +21,35 @@ should be simple, big, readable. The physics softens and sells them.
 
 ## Commands (Hero 1 male + female reference run)
 
-Source models: the simple-clothing physics pair in
-`Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Outputs/`
-(`Hero2Chad.glb` = male / ET66BodyType::Chad, `Hero1Stacy.glb` = female /
-ET66BodyType::Stacy). The runtime pawn picks the asset set from the
-hero-select body type; captures force it with `-T66BodyType=`.
+Source models (the runtime pawn picks the asset set from the hero-select body
+type; captures force it with `-T66BodyType=`):
+
+- Male / ET66BodyType::Chad: `HeroChadStacy_SourceAssets_20260609_0536/Outputs/Hero2Chad.glb`
+  (hanging arms — build with `--pose hanging`, the default).
+- Female / ET66BodyType::Stacy: `StacyTPoseVar1_20260611/Outputs/Hero1Stacy_TPose_Var1.glb`
+  (T-POSE inflatable Variation 1, designed reference v5 in
+  `Saved/Codex/ModelGeneration/StacyPhysiqueRef_20260611/` — build with
+  `--pose tpose`).
+
+PREFER T-POSE for new sources: the distance-based skinning is computed while
+the arms are far from the torso/thighs (its best case), then the build rotates
+the arms down 75° and applies that as the new rest pose, so clips/export/UE
+keep the hanging-arm conventions automatically.
 
 ```powershell
 # 1. Blender build (rig + weights + clips + albedo + QA + proofs), once per body
-$run = "C:\UE\T66\Model Generation\Runs\Pixal3D\HeroChadStacy_SourceAssets_20260609_0536"
 & "C:\Program Files\Blender Foundation\Blender 5.1\blender.exe" --background --factory-startup `
     --python "C:\UE\T66\Scripts\MotionRig\BuildMotionRig.py" -- `
-    --glb "$run\Outputs\Hero2Chad.glb" --out "$run\Blender\MotionRig\Male" --name Hero1Male --front +y
+    --glb "...\HeroChadStacy_SourceAssets_20260609_0536\Outputs\Hero2Chad.glb" `
+    --out "...\HeroChadStacy_SourceAssets_20260609_0536\Blender\MotionRig\Male" --name Hero1Male --front +y
 & "C:\Program Files\Blender Foundation\Blender 5.1\blender.exe" --background --factory-startup `
     --python "C:\UE\T66\Scripts\MotionRig\BuildMotionRig.py" -- `
-    --glb "$run\Outputs\Hero1Stacy.glb" --out "$run\Blender\MotionRig\Female" --name Hero1Female --front +y
+    --glb "...\StacyTPoseVar1_20260611\Outputs\Hero1Stacy_TPose_Var1.glb" `
+    --out "...\StacyTPoseVar1_20260611\Blender\MotionRig\Female" --name Hero1Female --front +y --pose tpose
 # expect: MOTIONRIG_BUILD_RESULT=PASS (each). --front +y is REQUIRED for
 # Pixal3D sources: chunky boots fool the toe-direction auto-detection.
+# Source paths live in ImportMotionRig.py CHARACTERS — update them when a new
+# run replaces a model.
 
 # 2. UE import — BOTH characters in one run (must be -ExecutePythonScript;
 #    -run=pythonscript crashes in AssetTools)

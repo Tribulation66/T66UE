@@ -50,6 +50,12 @@ def parse_args():
     # chunky boots can fool (measured: Hero2Chad's boot heels out-protrude
     # the toes and the flip silently skipped). Pixal3D GLBs ship facing +y.
     parser.add_argument("--front", choices=["auto", "+y", "-y"], default="auto")
+    # Source rest pose. "tpose" = arms straight out horizontally (the best
+    # case for the distance-based skinning: hands/forearms far from torso
+    # and thighs). The rig is skinned in T, then the arms are rotated down
+    # and applied as the NEW rest pose, so clips/export/UE keep the proven
+    # hanging-arm conventions.
+    parser.add_argument("--pose", choices=["hanging", "tpose"], default="hanging")
     parser.add_argument("--no-render", action="store_true")
     return parser.parse_args(argv)
 
@@ -143,7 +149,7 @@ def normalize_mesh(mesh, front="auto"):
     return TARGET_HEIGHT_M, bool(facing_plus_y)
 
 
-def measure_landmarks(mesh, height):
+def measure_landmarks(mesh, height, pose="hanging"):
     """Landmarks from vertex statistics. Front = -Y, left = +X (mirror naming
     follows the character's left, which is +X when it faces -Y)."""
     h = height
@@ -168,10 +174,20 @@ def measure_landmarks(mesh, height):
         leg_half_x = 0.10 * h
         leg_center_y = 0.0
 
-    # Arms hang at the sides: find the x-extreme in the cuff/forearm band,
-    # then walk DOWN that vertical column to the fist bottom so flared cuffs
-    # cannot fake the hand position.
     def hand_tip(sign):
+        if pose == "tpose":
+            # Arms straight out horizontally: the hand/mitt tip is simply the
+            # x-extreme in the shoulder-height band.
+            band = v[(v[:, 2] > 0.62 * h) & (v[:, 2] < 0.95 * h)]
+            side = band[np.sign(band[:, 0]) == sign] if band.size else band
+            if side.size:
+                tip = side[np.abs(side[:, 0]).argmax()]
+                return Vector((float(tip[0]) * 0.97, float(tip[1]), float(tip[2])))
+            # fall through to the hanging heuristic if the band is empty
+
+        # Arms hang at the sides: find the x-extreme in the cuff/forearm band,
+        # then walk DOWN that vertical column to the fist bottom so flared
+        # cuffs cannot fake the hand position.
         low = v[(v[:, 2] > 0.30 * h) & (v[:, 2] < 0.62 * h)]
         side_low = low[np.sign(low[:, 0]) == sign] if low.size else low
         if not side_low.size:
@@ -329,6 +345,50 @@ def skin_mesh(mesh, arm_obj, bone_layout):
     mod = mesh.modifiers.new(name="Armature", type="ARMATURE")
     mod.object = arm_obj
     mod.use_vertex_groups = True
+
+
+def rotate_pose_bone_world(pose_bone, axis, angle_deg):
+    """Set a pose-bone rotation specified about a WORLD axis (converted into
+    the bone's local frame — bone rolls make hand-authored local eulers
+    unreliable for this)."""
+    from mathutils import Matrix
+    world_rotation = Matrix.Rotation(math.radians(angle_deg), 3, axis)
+    bone_frame = pose_bone.bone.matrix_local.to_3x3()
+    local_rotation = bone_frame.inverted() @ world_rotation @ bone_frame
+    pose_bone.rotation_mode = "XYZ"
+    pose_bone.rotation_euler = local_rotation.to_euler("XYZ")
+
+
+def apply_tpose_relaxation(mesh, arm_obj, drop_deg=75.0):
+    """T-pose sources only: the rig was SKINNED in T-pose (clean distance
+    weights — hands far from thighs, arms far from torso). Now rotate the
+    arms down by drop_deg and make that the NEW rest pose for both armature
+    and mesh, so the clips/export/UE pipeline keeps the proven hanging-arm
+    conventions. Weights are untouched."""
+    bpy.ops.object.select_all(action="DESELECT")
+    arm_obj.select_set(True)
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    clear_pose(arm_obj)
+    # Arm along +X (left): dropping toward -Z is +rotation about world Y;
+    # mirrored for the right arm.
+    rotate_pose_bone_world(arm_obj.pose.bones["upperarm_l"], "Y", drop_deg)
+    rotate_pose_bone_world(arm_obj.pose.bones["upperarm_r"], "Y", -drop_deg)
+    bpy.context.view_layer.update()
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+    # Bake the posed shape into the mesh data (vertex groups survive), then
+    # re-add the armature modifier and make the pose the rest pose.
+    bpy.context.view_layer.objects.active = mesh
+    bpy.ops.object.modifier_apply(modifier="Armature")
+    modifier = mesh.modifiers.new(name="Armature", type="ARMATURE")
+    modifier.object = arm_obj
+    modifier.use_vertex_groups = True
+
+    bpy.context.view_layer.objects.active = arm_obj
+    bpy.ops.object.mode_set(mode="POSE")
+    bpy.ops.pose.armature_apply(selected=False)
+    bpy.ops.object.mode_set(mode="OBJECT")
 
 
 def weights_qa(mesh):
@@ -721,14 +781,19 @@ def export_clip_fbx(arm_obj, action, length_frames, out_path):
 
 def add_bone_proxies(arm_obj, bone_layout):
     """Visible skeleton: a thin emissive cylinder per bone so renders show
-    exactly where the rig landed inside (or outside!) the body."""
+    exactly where the rig landed inside (or outside!) the body. Reads the
+    LIVE armature data (the T-pose relaxation re-rests the arm bones after
+    bone_layout was captured)."""
     proxies = []
     mat = bpy.data.materials.new("BoneProxyMat")
     mat.use_nodes = False
     mat.diffuse_color = (1.0, 0.1, 0.05, 1.0)
-    for name, d in bone_layout.items():
-        head = Vector(d["head"])
-        tail = Vector(d["tail"])
+    for name in bone_layout.keys():
+        bone = arm_obj.data.bones.get(name)
+        if not bone:
+            continue
+        head = Vector(bone.head_local)
+        tail = Vector(bone.tail_local)
         mid = (head + tail) * 0.5
         length = max((tail - head).length, 1e-4)
         bpy.ops.mesh.primitive_cylinder_add(radius=0.012, depth=length, location=mid)
@@ -823,9 +888,13 @@ def main():
     reset_scene()
     mesh = import_glb(glb_path)
     height, flipped = normalize_mesh(mesh, args.front)
-    landmarks = measure_landmarks(mesh, height)
+    landmarks = measure_landmarks(mesh, height, args.pose)
     arm_obj, bone_layout = build_armature(landmarks)
     skin_mesh(mesh, arm_obj, bone_layout)
+    if args.pose == "tpose":
+        # Skinned in T (clean weights); rest pose becomes relaxed hanging arms
+        # so everything downstream keeps the proven conventions.
+        apply_tpose_relaxation(mesh, arm_obj)
     qa_weights = weights_qa(mesh)
 
     # Author clips and shoot proofs at meter scale, then export (the FBX
@@ -872,6 +941,7 @@ def main():
     qa = {
         "source_glb": glb_path,
         "character_name": args.name,
+        "source_pose": args.pose,
         "base_color_exported": albedo_exported,
         "normalized_height_m": height,
         "facing_flip_applied": flipped,
