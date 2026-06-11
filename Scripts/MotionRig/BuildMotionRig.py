@@ -42,6 +42,14 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--glb", required=True)
     parser.add_argument("--out", required=True)
+    # Character name token used in every exported asset name:
+    # SK_MotionRig_<name>.fbx, AM_MotionRig_<name>_<clip>.fbx,
+    # T_MotionRig_<name>_BaseColor.png, MotionRig_<name>.blend.
+    parser.add_argument("--name", default="Hero1")
+    # Source facing override. "auto" trusts toe-direction detection, which
+    # chunky boots can fool (measured: Hero2Chad's boot heels out-protrude
+    # the toes and the flip silently skipped). Pixal3D GLBs ship facing +y.
+    parser.add_argument("--front", choices=["auto", "+y", "-y"], default="auto")
     parser.add_argument("--no-render", action="store_true")
     return parser.parse_args(argv)
 
@@ -83,12 +91,14 @@ def vertex_array(mesh):
     return coords.reshape(count, 3)
 
 
-def normalize_mesh(mesh):
+def normalize_mesh(mesh, front="auto"):
     """Scale to TARGET_HEIGHT_M, feet at z=0, centered XY, FRONT = -Y.
 
     Facing is auto-detected from toe direction (feet protrude toward the
-    front); the raw Pixal3D GLBs have come in facing +Y, so trusting a fixed
-    convention is not safe."""
+    front) unless `front` overrides it ("+y"/"-y" = the direction the SOURCE
+    faces). The raw Pixal3D GLBs have come in facing +Y, so trusting a fixed
+    convention is not safe — but chunky boots can fool the toe heuristic
+    too, so explicit beats implicit when the source is known."""
     bpy.ops.object.select_all(action="DESELECT")
     mesh.select_set(True)
     bpy.context.view_layer.objects.active = mesh
@@ -109,10 +119,13 @@ def normalize_mesh(mesh):
     mesh.location = (-center_x, -center_y, -v[:, 2].min())
     bpy.ops.object.transform_apply(location=True, rotation=False, scale=False)
 
-    # Toe-direction facing check on the foot band.
+    # Toe-direction facing check on the foot band (unless overridden).
     v = vertex_array(mesh)
     foot = v[v[:, 2] < 0.07 * TARGET_HEIGHT_M]
-    facing_plus_y = abs(foot[:, 1].max()) > abs(foot[:, 1].min())
+    if front == "auto":
+        facing_plus_y = abs(foot[:, 1].max()) > abs(foot[:, 1].min())
+    else:
+        facing_plus_y = front == "+y"
     if facing_plus_y:
         # glTF imports arrive in QUATERNION rotation mode — switching the mode
         # first is load-bearing; assigning rotation_euler on a quaternion-mode
@@ -641,6 +654,22 @@ def make_bind_pose_action(arm_obj):
     return action
 
 
+def export_base_color_png(mesh, out_path):
+    """Save the GLB material's base-color image as a REAL png. GLB textures
+    can be WebP bytes in .png clothing (UE rejects those); Image.save with
+    file_format=PNG decodes to pixels and re-encodes properly."""
+    for mat in mesh.data.materials:
+        if not mat or not mat.use_nodes:
+            continue
+        for node in mat.node_tree.nodes:
+            if node.type == "TEX_IMAGE" and node.image:
+                image = node.image
+                image.file_format = "PNG"
+                image.save(filepath=out_path)
+                return True
+    return False
+
+
 def export_skeletal_fbx(mesh, arm_obj, bind_action, out_path):
     clear_pose(arm_obj)
     arm_obj.animation_data_create()
@@ -793,7 +822,7 @@ def main():
 
     reset_scene()
     mesh = import_glb(glb_path)
-    height, flipped = normalize_mesh(mesh)
+    height, flipped = normalize_mesh(mesh, args.front)
     landmarks = measure_landmarks(mesh, height)
     arm_obj, bone_layout = build_armature(landmarks)
     skin_mesh(mesh, arm_obj, bone_layout)
@@ -826,19 +855,24 @@ def main():
     convert_scene_to_centimeters(mesh, arm_obj)
 
     bind_action = make_bind_pose_action(arm_obj)
-    skeletal_fbx = os.path.join(out_dir, "SK_MotionRig_Hero1.fbx")
+    skeletal_fbx = os.path.join(out_dir, f"SK_MotionRig_{args.name}.fbx")
     export_skeletal_fbx(mesh, arm_obj, bind_action, skeletal_fbx)
+
+    albedo_png = os.path.join(out_dir, f"T_MotionRig_{args.name}_BaseColor.png")
+    albedo_exported = export_base_color_png(mesh, albedo_png)
 
     clip_files = {}
     for clip_name, (action, frames) in clip_actions.items():
-        clip_path = os.path.join(anim_dir, f"AM_MotionRig_Hero1_{clip_name}.fbx")
+        clip_path = os.path.join(anim_dir, f"AM_MotionRig_{args.name}_{clip_name}.fbx")
         export_clip_fbx(arm_obj, action, frames, clip_path)
         clip_files[clip_name] = {"path": clip_path, "frames": frames}
 
-    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, "MotionRig_Hero1.blend"))
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out_dir, f"MotionRig_{args.name}.blend"))
 
     qa = {
         "source_glb": glb_path,
+        "character_name": args.name,
+        "base_color_exported": albedo_exported,
         "normalized_height_m": height,
         "facing_flip_applied": flipped,
         "bone_count": len(bone_layout),
@@ -854,7 +888,7 @@ def main():
             "left_hand_tip": list(landmarks["left_hand_tip"]),
             "right_hand_tip": list(landmarks["right_hand_tip"]),
         },
-        "pass": qa_weights["unweighted"] == 0 and qa_weights["max_influences"] <= MAX_INFLUENCES and len(bone_layout) == 18,
+        "pass": qa_weights["unweighted"] == 0 and qa_weights["max_influences"] <= MAX_INFLUENCES and len(bone_layout) == 18 and albedo_exported,
     }
     with open(os.path.join(out_dir, "MotionRig_QA.json"), "w") as f:
         json.dump(qa, f, indent=2)

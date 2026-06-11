@@ -19,27 +19,45 @@ assets under `Content/Characters/MotionRig/<CharacterName>/`.
 Clips are POSE TARGETS for the PhysicsControl motors, not final motion. They
 should be simple, big, readable. The physics softens and sells them.
 
-## Commands (Hero 1 Chad reference run)
+## Commands (Hero 1 male + female reference run)
+
+Source models: the simple-clothing physics pair in
+`Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/Outputs/`
+(`Hero2Chad.glb` = male / ET66BodyType::Chad, `Hero1Stacy.glb` = female /
+ET66BodyType::Stacy). The runtime pawn picks the asset set from the
+hero-select body type; captures force it with `-T66BodyType=`.
 
 ```powershell
-# 1. Blender build (rig + weights + clips + QA + proofs)
+# 1. Blender build (rig + weights + clips + albedo + QA + proofs), once per body
+$run = "C:\UE\T66\Model Generation\Runs\Pixal3D\HeroChadStacy_SourceAssets_20260609_0536"
 & "C:\Program Files\Blender Foundation\Blender 5.1\blender.exe" --background --factory-startup `
     --python "C:\UE\T66\Scripts\MotionRig\BuildMotionRig.py" -- `
-    --glb "C:\UE\T66\Model Generation\Runs\Pixal3D\FriendSlopProbe_Hero1Male_20260604_1415\Outputs\Hero_1_Chad_Male.glb" `
-    --out "C:\UE\T66\Model Generation\Runs\Pixal3D\FriendSlopProbe_Hero1Male_20260604_1415\Blender\MotionRig"
-# expect: MOTIONRIG_BUILD_RESULT=PASS
+    --glb "$run\Outputs\Hero2Chad.glb" --out "$run\Blender\MotionRig\Male" --name Hero1Male --front +y
+& "C:\Program Files\Blender Foundation\Blender 5.1\blender.exe" --background --factory-startup `
+    --python "C:\UE\T66\Scripts\MotionRig\BuildMotionRig.py" -- `
+    --glb "$run\Outputs\Hero1Stacy.glb" --out "$run\Blender\MotionRig\Female" --name Hero1Female --front +y
+# expect: MOTIONRIG_BUILD_RESULT=PASS (each). --front +y is REQUIRED for
+# Pixal3D sources: chunky boots fool the toe-direction auto-detection.
 
-# 2. UE import (must be -ExecutePythonScript; -run=pythonscript crashes in AssetTools)
+# 2. UE import — BOTH characters in one run (must be -ExecutePythonScript;
+#    -run=pythonscript crashes in AssetTools)
 & "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" `
     -ExecutePythonScript="C:/UE/T66/Scripts/MotionRig/ImportMotionRig.py" -unattended -nop4 -nosplash -stdout
 # expect: MOTIONRIG_IMPORT_RESULT=PASS (report JSON next to the Blender outputs)
+# destinations: /Game/Characters/MotionRig/Hero_1_Male + Hero_1_Female
+# (SK_MotionRig_Hero1Male/-Female, T_MotionRig_*_BaseColor, 6 clips each)
 
-# 3. Physics asset (the commandlet owns PA generation)
+# 3. Physics assets — BOTH characters in one run (the commandlet owns PA generation)
 & "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "C:\UE\T66\T66.uproject" `
     -run=T66MotionRigPhysicsAsset -unattended -nop4 -nosplash -stdout
-# expect: MOTIONRIG_PA_RESULT=PASS, 18 bodies / 17 constraints, and the unit
-# guard line MOTIONRIG_PA_REFPOSE pelvisLocalZ=98.10 ... calfLocal=45.90
-# rootScale=V(X=1.00, Y=1.00, Z=1.00) — anything else means a broken export
+# expect per character: MOTIONRIG_PA_RESULT=PASS, 18 bodies / 17 constraints,
+# and the unit guard line MOTIONRIG_PA_REFPOSE pelvisLocalZ=98.10 ...
+# calfLocal=45.90 rootScale=V(X=1.00, Y=1.00, Z=1.00) — anything else means a
+# broken export
+
+# 4. Verify in-game (one capture per body type; -BodyType maps to -T66BodyType=)
+pwsh C:\UE\T66\Scripts\MotionRig\CaptureMotionRig.ps1 -Scenario walkcircle -Camera threequarter -BodyType chad -Label male_check
+pwsh C:\UE\T66\Scripts\MotionRig\CaptureMotionRig.ps1 -Scenario walkcircle -Camera threequarter -BodyType stacy -Label female_check
 # NOTE: commandlets may exit 1 on a benign startup LogPhysics error — judge by
 # the RESULT line and on-disk assets, same policy as the audio importers.
 ```

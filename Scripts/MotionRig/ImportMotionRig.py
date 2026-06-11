@@ -1,14 +1,14 @@
 # Copyright Tribulation 66. All Rights Reserved.
 #
 # MotionRig UE import (MOTION_RIG.md section 3).
-# Imports the Blender-built skeletal mesh (+auto physics asset) and the six
-# pose-target clips into /Game/Characters/MotionRig/Hero_1/.
+# Imports the Blender-built skeletal meshes, base-color textures, and the six
+# pose-target clips for BOTH Hero 1 body types (Chad = male, Stacy = female)
+# into /Game/Characters/MotionRig/Hero_1_Male and Hero_1_Female.
 #
-# Run (editor closed is safest; new assets usually import fine alongside an
-# open editor, retry on file-lock failures):
+# Run (must be -ExecutePythonScript; -run=pythonscript crashes in AssetTools):
 #   "C:\Program Files\Epic Games\UE_5.7\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" ^
-#       "C:\UE\T66\T66.uproject" -run=pythonscript ^
-#       -script="C:/UE/T66/Scripts/MotionRig/ImportMotionRig.py" ^
+#       "C:\UE\T66\T66.uproject" ^
+#       -ExecutePythonScript="C:/UE/T66/Scripts/MotionRig/ImportMotionRig.py" ^
 #       -unattended -nop4 -nosplash -stdout
 
 import json
@@ -16,19 +16,30 @@ import os
 
 import unreal
 
-SOURCE_ROOT = r"C:\UE\T66\Model Generation\Runs\Pixal3D\FriendSlopProbe_Hero1Male_20260604_1415\Blender\MotionRig"
-DEST_PATH = "/Game/Characters/MotionRig/Hero_1"
-SK_NAME = "SK_MotionRig_Hero1"
+SOURCE_RUN = r"C:\UE\T66\Model Generation\Runs\Pixal3D\HeroChadStacy_SourceAssets_20260609_0536\Blender\MotionRig"
 CLIPS = ["Idle", "Walk", "Jump", "Dive", "GetUp_Front", "GetUp_Back"]
 
-REPORT = {"skeletal_mesh": None, "physics_asset": None, "skeleton": None, "clips": {}, "errors": []}
+CHARACTERS = [
+    {  # ET66BodyType::Chad
+        "name": "Hero1Male",
+        "source": os.path.join(SOURCE_RUN, "Male"),
+        "dest": "/Game/Characters/MotionRig/Hero_1_Male",
+    },
+    {  # ET66BodyType::Stacy
+        "name": "Hero1Female",
+        "source": os.path.join(SOURCE_RUN, "Female"),
+        "dest": "/Game/Characters/MotionRig/Hero_1_Female",
+    },
+]
+
+REPORT = {"characters": {}, "errors": []}
 
 
 def make_skeletal_mesh_options():
     options = unreal.FbxImportUI()
     options.import_mesh = True
-    options.import_textures = True
-    options.import_materials = True
+    options.import_textures = False
+    options.import_materials = False
     options.import_animations = False
     options.import_as_skeletal = True
     # The T66MotionRigPhysicsAsset commandlet owns PA generation (authored
@@ -41,8 +52,8 @@ def make_skeletal_mesh_options():
 
     smd = options.skeletal_mesh_import_data
     smd.set_editor_property("import_morph_targets", False)
-    # The skeletal FBX carries a baked 1-frame bind-pose animation in cm
-    # (the exporter unit-converts keyed channels but NOT armature rest bones).
+    # The skeletal FBX carries a baked bind-pose animation in real cm (the
+    # data bake in BuildMotionRig.py — the exporter itself converts nothing).
     # T0-as-ref-pose rebuilds the reference skeleton AND the render bind from
     # that cm data at import — the only point where the bind-dependent LOD
     # render caches are built. Post-import ref surgery cannot fix rendering.
@@ -76,10 +87,10 @@ def make_anim_options(skeleton):
     return options
 
 
-def run_task(filename, destination_name, options):
+def run_task(filename, destination_path, destination_name, options):
     task = unreal.AssetImportTask()
     task.filename = filename
-    task.destination_path = DEST_PATH
+    task.destination_path = destination_path
     task.destination_name = destination_name
     task.automated = True
     task.replace_existing = True
@@ -89,6 +100,46 @@ def run_task(filename, destination_name, options):
     return list(task.imported_object_paths)
 
 
+def import_character(char):
+    name = char["name"]
+    source = char["source"]
+    dest = char["dest"]
+    sk_name = f"SK_MotionRig_{name}"
+    result = {"skeletal_mesh": None, "skeleton": None, "texture": None, "clips": {}}
+
+    sk_fbx = os.path.join(source, f"{sk_name}.fbx")
+    if not os.path.exists(sk_fbx):
+        REPORT["errors"].append(f"{name}: missing skeletal FBX: {sk_fbx}")
+        return result
+    result["skeletal_mesh"] = run_task(sk_fbx, dest, sk_name, make_skeletal_mesh_options())
+
+    tex_png = os.path.join(source, f"T_MotionRig_{name}_BaseColor.png")
+    if os.path.exists(tex_png):
+        # Plain texture import: no options object needed, defaults are right.
+        result["texture"] = run_task(tex_png, dest, f"T_MotionRig_{name}_BaseColor", None)
+    else:
+        REPORT["errors"].append(f"{name}: missing base color png: {tex_png}")
+
+    sk_path = f"{dest}/{sk_name}.{sk_name}"
+    skeletal_mesh = unreal.EditorAssetLibrary.load_asset(sk_path)
+    if not skeletal_mesh:
+        REPORT["errors"].append(f"{name}: skeletal mesh did not import: {sk_path}")
+        return result
+
+    skeleton = skeletal_mesh.get_editor_property("skeleton")
+    result["skeleton"] = skeleton.get_path_name() if skeleton else None
+
+    for clip in CLIPS:
+        clip_fbx = os.path.join(source, "AnimationSources", f"AM_MotionRig_{name}_{clip}.fbx")
+        if not os.path.exists(clip_fbx):
+            REPORT["errors"].append(f"{name}: missing clip FBX: {clip_fbx}")
+            continue
+        result["clips"][clip] = run_task(clip_fbx, dest, f"AM_MotionRig_{name}_{clip}", make_anim_options(skeleton))
+
+    unreal.EditorAssetLibrary.save_directory(dest, only_if_is_dirty=False, recursive=True)
+    return result
+
+
 def main():
     # UE 5.7 routes FBX through Interchange by default, which IGNORES the
     # legacy FbxImportUI options on the task — measured: use_t0_as_ref_pose
@@ -96,41 +147,16 @@ def main():
     # disabled for FBX. The legacy importer honors every option above.
     unreal.SystemLibrary.execute_console_command(None, "Interchange.FeatureFlags.Import.FBX 0")
 
-    sk_fbx = os.path.join(SOURCE_ROOT, f"{SK_NAME}.fbx")
-    if not os.path.exists(sk_fbx):
-        REPORT["errors"].append(f"missing skeletal FBX: {sk_fbx}")
-    else:
-        imported = run_task(sk_fbx, SK_NAME, make_skeletal_mesh_options())
-        REPORT["skeletal_mesh"] = imported
+    for char in CHARACTERS:
+        REPORT["characters"][char["name"]] = import_character(char)
 
-    sk_path = f"{DEST_PATH}/{SK_NAME}.{SK_NAME}"
-    skeletal_mesh = unreal.EditorAssetLibrary.load_asset(sk_path)
-    if not skeletal_mesh:
-        REPORT["errors"].append(f"skeletal mesh did not import: {sk_path}")
-    else:
-        skeleton = skeletal_mesh.get_editor_property("skeleton")
-        REPORT["skeleton"] = skeleton.get_path_name() if skeleton else None
-
-        physics_asset = skeletal_mesh.get_editor_property("physics_asset")
-        REPORT["physics_asset"] = physics_asset.get_path_name() if physics_asset else None
-        if not physics_asset:
-            REPORT["errors"].append("no physics asset was created on import")
-
-        for clip in CLIPS:
-            clip_fbx = os.path.join(SOURCE_ROOT, "AnimationSources", f"AM_MotionRig_Hero1_{clip}.fbx")
-            if not os.path.exists(clip_fbx):
-                REPORT["errors"].append(f"missing clip FBX: {clip_fbx}")
-                continue
-            imported = run_task(clip_fbx, f"AM_MotionRig_Hero1_{clip}", make_anim_options(skeleton))
-            REPORT["clips"][clip] = imported
-
-    unreal.EditorAssetLibrary.save_directory(DEST_PATH, only_if_is_dirty=False, recursive=True)
-
-    report_path = os.path.join(SOURCE_ROOT, "Unreal_Import_Report.json")
+    report_path = os.path.join(SOURCE_RUN, "Unreal_Import_Report.json")
     with open(report_path, "w") as f:
         json.dump(REPORT, f, indent=2)
 
-    ok = not REPORT["errors"] and REPORT["physics_asset"] is not None
+    ok = not REPORT["errors"] and all(
+        r["skeletal_mesh"] and r["texture"] and len(r["clips"]) == len(CLIPS)
+        for r in REPORT["characters"].values())
     print("MOTIONRIG_IMPORT_RESULT=" + ("PASS" if ok else "FAIL"))
     print(json.dumps(REPORT, indent=2))
 

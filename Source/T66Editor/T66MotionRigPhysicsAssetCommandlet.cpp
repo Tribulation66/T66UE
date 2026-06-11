@@ -17,10 +17,20 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66MotionRigPA, Log, All);
 
 namespace
 {
-	const TCHAR* MotionRigMeshPath =
-		TEXT("/Game/Characters/MotionRig/Hero_1/SK_MotionRig_Hero1.SK_MotionRig_Hero1");
-	const TCHAR* MotionRigPhysicsAssetPackage =
-		TEXT("/Game/Characters/MotionRig/Hero_1/PA_MotionRig_Hero1");
+	// Both Hero 1 body types (Chad = male, Stacy = female) get a physics
+	// asset, generated from the same authored params.
+	struct FT66MotionRigPACharacter
+	{
+		const TCHAR* MeshPath;
+		const TCHAR* PhysicsAssetPackage;
+	};
+	const FT66MotionRigPACharacter MotionRigPACharacters[] =
+	{
+		{ TEXT("/Game/Characters/MotionRig/Hero_1_Male/SK_MotionRig_Hero1Male.SK_MotionRig_Hero1Male"),
+		  TEXT("/Game/Characters/MotionRig/Hero_1_Male/PA_MotionRig_Hero1Male") },
+		{ TEXT("/Game/Characters/MotionRig/Hero_1_Female/SK_MotionRig_Hero1Female.SK_MotionRig_Hero1Female"),
+		  TEXT("/Game/Characters/MotionRig/Hero_1_Female/PA_MotionRig_Hero1Female") },
+	};
 
 	bool SaveAssetPackage(UObject* Asset)
 	{
@@ -40,6 +50,18 @@ namespace
 }
 
 int32 UT66MotionRigPhysicsAssetCommandlet::Main(const FString& Params)
+{
+	int32 Result = 0;
+	for (const FT66MotionRigPACharacter& Character : MotionRigPACharacters)
+	{
+		UE_LOG(LogT66MotionRigPA, Display, TEXT("=== MotionRig PA: %s ==="), Character.MeshPath);
+		Result |= BuildPhysicsAssetForCharacter(Character.MeshPath, Character.PhysicsAssetPackage);
+	}
+	return Result;
+}
+
+int32 UT66MotionRigPhysicsAssetCommandlet::BuildPhysicsAssetForCharacter(
+	const TCHAR* MotionRigMeshPath, const TCHAR* MotionRigPhysicsAssetPackage)
 {
 	USkeletalMesh* SkeletalMesh = LoadObject<USkeletalMesh>(nullptr, MotionRigMeshPath);
 	if (!SkeletalMesh)

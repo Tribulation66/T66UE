@@ -24,6 +24,7 @@ struct T66_API FT66DirectEntryRequest
 	ET66ScreenType Modal = ET66ScreenType::None;
 	ET66RunCategory RunCategory = ET66RunCategory::Tower;
 	FName HeroID = NAME_None;
+	ET66BodyType HeroBodyType = ET66BodyType::Chad;
 	FName CompanionID = NAME_None;
 	ET66Difficulty Difficulty = ET66Difficulty::Easy;
 	bool bLeaderboardIneligible = true;

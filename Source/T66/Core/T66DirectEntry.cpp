@@ -49,6 +49,16 @@ namespace
 			Request.HeroID = FName(*HeroName);
 		}
 
+		// Hero body type (Chad = male, Stacy = female). Used by automation to
+		// exercise both body variants (e.g. the MotionRig test-room captures).
+		FString BodyTypeName;
+		if (FParse::Value(FCommandLine::Get(), TEXT("T66BodyType="), BodyTypeName) && !BodyTypeName.IsEmpty())
+		{
+			const bool bStacy = BodyTypeName.Equals(TEXT("Stacy"), ESearchCase::IgnoreCase)
+				|| BodyTypeName.Equals(TEXT("Female"), ESearchCase::IgnoreCase);
+			Request.HeroBodyType = bStacy ? ET66BodyType::Stacy : ET66BodyType::Chad;
+		}
+
 		FString CompanionName;
 		if (FParse::Value(FCommandLine::Get(), TEXT("T66Companion="), CompanionName))
 		{
@@ -217,6 +227,7 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 	{
 		if (!FT66ShelvedFeatureGate::IsScreenAllowed(ET66ScreenType::PetSelection))
 		{
+			UE_LOG(LogT66DirectEntry, Warning, TEXT("Screen name '%s' resolves to PetSelection, which is shelved (FT66ShelvedFeatureGate). Direct entry denied by design."), *Key);
 			return false;
 		}
 		OutScreenType = ET66ScreenType::PetSelection;
@@ -301,6 +312,7 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 	{
 		if (!FT66ShelvedFeatureGate::IsScreenAllowed(ET66ScreenType::DailyDescent))
 		{
+			UE_LOG(LogT66DirectEntry, Warning, TEXT("Screen name '%s' resolves to DailyDescent, which is shelved (FT66ShelvedFeatureGate). Direct entry denied by design."), *Key);
 			return false;
 		}
 		OutScreenType = ET66ScreenType::DailyDescent;
@@ -487,7 +499,7 @@ void T66DirectEntry::ApplyRequestToGameInstance(UT66GameInstance& GameInstance, 
 	GameInstance.SelectedDifficulty = GameInstance.ResolvePlayableDifficulty(Request.Difficulty);
 	const ET66RunCategory RequestedRunCategory = Request.RunCategory;
 	const ET66RunCategory ResolvedRunCategory = GameInstance.ResolvePlayableRunCategory(RequestedRunCategory);
-	GameInstance.SelectedHeroBodyType = ET66BodyType::Chad;
+	GameInstance.SelectedHeroBodyType = Request.HeroBodyType;
 	GameInstance.SelectedCompanionBodyType = ET66BodyType::Chad;
 	GameInstance.ClearActiveDailyClimbRun();
 	GameInstance.SelectedRunMode = ET66RunMode::Regular;

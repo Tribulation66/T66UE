@@ -18,6 +18,8 @@ param(
     [string]$Scenario = "full",
     [ValidateSet("side", "front", "threequarter", "chase")]
     [string]$Camera = "side",
+    [ValidateSet("chad", "stacy")]
+    [string]$BodyType = "chad",   # chad = male, stacy = female
     [string]$Label = "",
     [string]$OutRoot = "C:\UE\T66\Reports\AgentReviews\MotionRig_20260609\captures",
     [int]$ResX = 1280,
@@ -68,6 +70,7 @@ $args = @(
     "-NoSplash",
     "-T66Entry=Run:TestRoom",
     "-T66Hero=Hero_1",
+    "-T66BodyType=$BodyType",
     "-T66MotionRigScenario=$Scenario",
     "-T66MotionRigCamera=$Camera",
     "-T66MotionRigScenarioDelay=$StartDelaySeconds",

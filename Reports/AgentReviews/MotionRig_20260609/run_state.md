@@ -42,7 +42,23 @@ blocker (document + clean handoff).
 - Use neutral technical wording in all messages (impact reaction, knockdown,
   recovery) to avoid automated-filter false positives.
 
-## STATUS 2026-06-10 ~17:30: RENDER BIND FIXED — skin intact (cmbake_v1)
+## STATUS 2026-06-11 ~00:30: MODEL SWAP — both body types on the new physics models
+
+Replaced the rig source with the simple-clothing physics pair from
+HeroChadStacy_SourceAssets_20260609_0536 (Hero2Chad.glb = male,
+Hero1Stacy.glb = female) and made the lane body-type aware: the pawn
+resolves /Game/Characters/MotionRig/Hero_1_Male or Hero_1_Female from the
+hero-select ET66BodyType (Chad/Stacy); old Hero_1 content folder deleted.
+Pipeline now parameterized (BuildMotionRig.py --name + --front override —
+the toe-direction facing auto-detect is fooled by chunky boots, Pixal3D
+sources need --front +y; albedo PNG exported from the GLB and imported as
+T_MotionRig_<name>_BaseColor). ImportMotionRig.py + the PA commandlet loop
+both characters. New flag -T66BodyType=chad|stacy (direct entry) +
+CaptureMotionRig.ps1 -BodyType. Verified: both PAs PASS with the exact unit
+guards (98.10/45.90/rootScale 1); male_v1 + female_v1 walkcircle captures
+show the correct intact textured model per body type, facing travel.
+
+## (superseded) STATUS 2026-06-10 ~17:30: RENDER BIND FIXED — skin intact (cmbake_v1)
 
 The last open issue (rendered skin stretching/crumpling) is closed. Root
 cause chain, proven by raw binary FBX probes (ProbeFbxRaw.py/ProbeFbxRaw2.py):

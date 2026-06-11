@@ -8,6 +8,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/PoseableMeshComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Core/T66GameInstance.h"
 #include "Engine/SkeletalMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -94,15 +95,28 @@ static TAutoConsoleVariable<int32> CVarMRDebugEnableMotors(
 
 namespace T66MotionRigPaths
 {
-	static const TCHAR* SkeletalMesh = TEXT("/Game/Characters/MotionRig/Hero_1/SK_MotionRig_Hero1.SK_MotionRig_Hero1");
 	static const TCHAR* FallGuysMaster = TEXT("/Game/Materials/M_FriendSlop_FallGuys.M_FriendSlop_FallGuys");
-	static const TCHAR* BaseColorTexture = TEXT("/Game/Characters/Heroes/Hero_1/Chad/FriendSlopRaw/Textures/T_Hero_1_Chad_Male_BaseColor.T_Hero_1_Chad_Male_BaseColor");
-	static const TCHAR* ClipIdle = TEXT("/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Idle.AM_MotionRig_Hero1_Idle");
-	static const TCHAR* ClipWalk = TEXT("/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Walk.AM_MotionRig_Hero1_Walk");
-	static const TCHAR* ClipJump = TEXT("/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Jump.AM_MotionRig_Hero1_Jump");
-	static const TCHAR* ClipDive = TEXT("/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_Dive.AM_MotionRig_Hero1_Dive");
-	static const TCHAR* ClipGetUpFront = TEXT("/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_GetUp_Front.AM_MotionRig_Hero1_GetUp_Front");
-	static const TCHAR* ClipGetUpBack = TEXT("/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_GetUp_Back.AM_MotionRig_Hero1_GetUp_Back");
+
+	// Per-body-type asset sets (Chad = male, Stacy = female), produced by the
+	// MotionRig pipeline (Scripts/MotionRig) from the simple-clothing physics
+	// models in HeroChadStacy_SourceAssets_20260609_0536.
+	struct FVariant
+	{
+		const TCHAR* Folder;    // /Game/Characters/MotionRig/<Folder>
+		const TCHAR* CharName;  // asset name token: SK_MotionRig_<CharName> etc.
+	};
+	static const FVariant MaleVariant = { TEXT("Hero_1_Male"), TEXT("Hero1Male") };
+	static const FVariant FemaleVariant = { TEXT("Hero_1_Female"), TEXT("Hero1Female") };
+
+	static FString AssetPath(const FVariant& Variant, const FString& AssetName)
+	{
+		return FString::Printf(TEXT("/Game/Characters/MotionRig/%s/%s.%s"),
+			Variant.Folder, *AssetName, *AssetName);
+	}
+
+	static FString SkeletalMesh(const FVariant& V) { return AssetPath(V, FString::Printf(TEXT("SK_MotionRig_%s"), V.CharName)); }
+	static FString BaseColorTexture(const FVariant& V) { return AssetPath(V, FString::Printf(TEXT("T_MotionRig_%s_BaseColor"), V.CharName)); }
+	static FString Clip(const FVariant& V, const TCHAR* ClipName) { return AssetPath(V, FString::Printf(TEXT("AM_MotionRig_%s_%s"), V.CharName, ClipName)); }
 }
 
 namespace
@@ -418,7 +432,16 @@ void AT66MotionRigPawn::LoadAssets()
 	}
 	bAssetsLoaded = true;
 
-	if (USkeletalMesh* MeshAsset = LoadObject<USkeletalMesh>(nullptr, T66MotionRigPaths::SkeletalMesh))
+	// Body type follows the hero-select choice (Chad = male, Stacy = female),
+	// same source of truth the regular hero visuals use.
+	const UT66GameInstance* GI = GetWorld() ? GetWorld()->GetGameInstance<UT66GameInstance>() : nullptr;
+	const bool bStacy = GI && GI->SelectedHeroBodyType == ET66BodyType::Stacy;
+	const T66MotionRigPaths::FVariant& Variant =
+		bStacy ? T66MotionRigPaths::FemaleVariant : T66MotionRigPaths::MaleVariant;
+	UE_LOG(LogT66MotionRigPawn, Display, TEXT("MotionRig variant: %s"), Variant.Folder);
+
+	const FString SkeletalMeshPath = T66MotionRigPaths::SkeletalMesh(Variant);
+	if (USkeletalMesh* MeshAsset = LoadObject<USkeletalMesh>(nullptr, *SkeletalMeshPath))
 	{
 		RigMesh->SetSkeletalMesh(MeshAsset);
 		PoseSource->SetSkeletalMesh(MeshAsset);
@@ -429,7 +452,7 @@ void AT66MotionRigPawn::LoadAssets()
 
 		// FriendSlop look: instance of the one lit master, raw albedo.
 		UMaterialInterface* Master = LoadObject<UMaterialInterface>(nullptr, T66MotionRigPaths::FallGuysMaster);
-		UTexture* Albedo = LoadObject<UTexture>(nullptr, T66MotionRigPaths::BaseColorTexture);
+		UTexture* Albedo = LoadObject<UTexture>(nullptr, *T66MotionRigPaths::BaseColorTexture(Variant));
 		if (Master)
 		{
 			for (int32 SlotIndex = 0; SlotIndex < RigMesh->GetNumMaterials(); ++SlotIndex)
@@ -450,15 +473,15 @@ void AT66MotionRigPawn::LoadAssets()
 	{
 		UE_LOG(LogT66MotionRigPawn, Warning,
 			TEXT("MotionRig skeletal mesh not found at %s — running in bean-only mode."),
-			T66MotionRigPaths::SkeletalMesh);
+			*SkeletalMeshPath);
 	}
 
-	ClipIdle = LoadObject<UAnimSequence>(nullptr, T66MotionRigPaths::ClipIdle);
-	ClipWalk = LoadObject<UAnimSequence>(nullptr, T66MotionRigPaths::ClipWalk);
-	ClipJump = LoadObject<UAnimSequence>(nullptr, T66MotionRigPaths::ClipJump);
-	ClipDive = LoadObject<UAnimSequence>(nullptr, T66MotionRigPaths::ClipDive);
-	ClipGetUpFront = LoadObject<UAnimSequence>(nullptr, T66MotionRigPaths::ClipGetUpFront);
-	ClipGetUpBack = LoadObject<UAnimSequence>(nullptr, T66MotionRigPaths::ClipGetUpBack);
+	ClipIdle = LoadObject<UAnimSequence>(nullptr, *T66MotionRigPaths::Clip(Variant, TEXT("Idle")));
+	ClipWalk = LoadObject<UAnimSequence>(nullptr, *T66MotionRigPaths::Clip(Variant, TEXT("Walk")));
+	ClipJump = LoadObject<UAnimSequence>(nullptr, *T66MotionRigPaths::Clip(Variant, TEXT("Jump")));
+	ClipDive = LoadObject<UAnimSequence>(nullptr, *T66MotionRigPaths::Clip(Variant, TEXT("Dive")));
+	ClipGetUpFront = LoadObject<UAnimSequence>(nullptr, *T66MotionRigPaths::Clip(Variant, TEXT("GetUp_Front")));
+	ClipGetUpBack = LoadObject<UAnimSequence>(nullptr, *T66MotionRigPaths::Clip(Variant, TEXT("GetUp_Back")));
 }
 
 void AT66MotionRigPawn::ReattachPelvisConstraint()

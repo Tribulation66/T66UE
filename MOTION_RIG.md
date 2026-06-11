@@ -61,7 +61,14 @@ local one without touching the motion code.
    `IT66MotionRigInputReceiver`, forward move axes/jump/dive (Leap key) and
    return early. No change for normal hero pawns.
 
-## 3. Rig spec (Content/Characters/MotionRig/Hero_1/ + Blender pipeline)
+## 3. Rig spec (Content/Characters/MotionRig/Hero_1_Male|Hero_1_Female/ + Blender pipeline)
+
+Hero 1 ships BOTH body types (ET66BodyType: Chad = male, Stacy = female),
+built from the simple-clothing physics models in
+`Model Generation/Runs/Pixal3D/HeroChadStacy_SourceAssets_20260609_0536/`
+(`Hero2Chad.glb` / `Hero1Stacy.glb` — complex clothing fights the rigging).
+The pawn resolves the asset set from the hero-select body type at spawn;
+captures force it with `-T66BodyType=` (CaptureMotionRig.ps1 `-BodyType`).
 
 Master spec for ALL future MotionRig characters (enemies, bosses):
 
