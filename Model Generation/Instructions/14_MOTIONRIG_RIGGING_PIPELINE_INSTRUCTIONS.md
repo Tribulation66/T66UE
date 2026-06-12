@@ -74,6 +74,29 @@ pwsh C:\UE\T66\Scripts\MotionRig\CaptureMotionRig.ps1 -Scenario walkcircle -Came
 # the RESULT line and on-disk assets, same policy as the audio importers.
 ```
 
+## Split-generation assembly (separate head + body models)
+
+`Scripts/MotionRig/AssembleHeadBody.py` joins a headless body GLB and a head
+GLB before rigging. The knobs that define the look:
+
+- **Head size**: `--head-frac` (default 0.42) = head+hair height as a
+  fraction of body height. This is an EXPLICIT, documented decision — the
+  neck-diameter auto-anchor was removed after hair strands repeatedly
+  contaminated the measurement and shrank the head. Bigger = more toy-like.
+- **Neck naturalness**: `--sink` (default 2.0) = how deep the head's neck
+  stub buries into the body's stump (units of 0.10×head-height). Too low
+  leaves a visible double-neck pole; the default seats the chin just above
+  the stump. Reference images must give the BODY a short capped neck stump
+  and the HEAD a cylindrical neck stub — the stub/stump pair is also the
+  positioning anchor (their centers align).
+- **Color match**: automatic, skin-weighted (head atlas corrected toward the
+  body's mid-thigh skin sample; hair/eyes untouched). Logged as COLOR_MATCH.
+- **Artifact cleanup**: flat-slab shards and far-from-body floating debris
+  are dropped; tiny ON-SURFACE fragments are KEPT — deleting them punches
+  visible holes (dark flecks in-game; verify with a BACKFACE-CULLED Blender
+  render, the default workbench render hides holes).
+- Verify every assembly with the culled front render before rigging.
+
 ## The rig spec (master contract)
 
 - 18 bones: pelvis; spine_01; spine_02; head; clavicle_l/r; upperarm_l/r;

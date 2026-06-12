@@ -32,6 +32,11 @@ def parse_args():
     # chin sits just above the body's stump (measured: 0.6 left a visible
     # double-neck pole).
     parser.add_argument("--sink", type=float, default=2.0)
+    # Head+hair height as a fraction of body height. The neck-diameter
+    # anchor proved unreliable (hair strands contaminate the stub band and
+    # shrink the head); an explicit documented knob beats a clever guess.
+    # 0.42 reproduces the approved look from the first assembled round.
+    parser.add_argument("--head-frac", type=float, default=0.42)
     return parser.parse_args(argv)
 
 
@@ -64,21 +69,55 @@ def import_glb_as_single(path, name):
 def drop_flat_shards(obj):
     """Pixal3D sometimes hallucinates floating flat slab artifacts (measured
     on the headless body generation: two gray side panels). Split loose
-    parts, drop any whose bounding box is nearly two-dimensional, rejoin.
-    Balloon body parts are fat closed shells and always survive."""
+    parts, drop ONLY pieces with the slab signature — nearly flat in one
+    dimension AND large in another. Decimated Pixal3D surfaces are a soup
+    of thousands of TINY loose fragments that are real surface patches: a
+    plain min-dimension cutoff deleted them and punched visible holes in
+    the body (the in-game dark-fleck bug — invisible in default Blender
+    renders because workbench draws backfaces)."""
     size = max(obj.dimensions)
     bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
     bpy.ops.mesh.separate(type="LOOSE")
     parts = [o for o in bpy.context.selected_objects if o.type == "MESH"]
-    kept, dropped = [], 0
+
+    # Rule 1: slab signature (thin in one dimension, large in another).
+    survivors, dropped = [], 0
     for part in parts:
-        if min(part.dimensions) < 0.015 * size:
+        dims = sorted(part.dimensions)
+        if dims[0] < 0.015 * size and dims[2] > 0.08 * size:
             bpy.data.objects.remove(part, do_unlink=True)
             dropped += 1
         else:
-            kept.append(part)
+            survivors.append(part)
+
+    # Rule 2: floating debris — small pieces far OUTSIDE the structural
+    # mass (sparse speck trails ship with the generations). Structural =
+    # anything with real extent; the union of their bounds plus a margin
+    # defines "on the model".
+    structural = [p for p in survivors if max(p.dimensions) > 0.05 * size]
+    if structural:
+        import mathutils
+        corners = [p.matrix_world @ mathutils.Vector(c) for p in structural for c in p.bound_box]
+        u_min = [min(c[i] for c in corners) for i in range(3)]
+        u_max = [max(c[i] for c in corners) for i in range(3)]
+        margin = 0.02 * size
+        kept = []
+        for part in survivors:
+            if part in structural:
+                kept.append(part)
+                continue
+            center = part.matrix_world @ mathutils.Vector(
+                [sum(c[i] for c in part.bound_box) / 8.0 for i in range(3)])
+            inside = all(u_min[i] - margin <= center[i] <= u_max[i] + margin for i in range(3))
+            if inside:
+                kept.append(part)
+            else:
+                bpy.data.objects.remove(part, do_unlink=True)
+                dropped += 1
+    else:
+        kept = survivors
     if not kept:
         raise RuntimeError("shard filter dropped everything")
     bpy.ops.object.select_all(action="DESELECT")
@@ -97,6 +136,13 @@ def verts(obj):
     coords = np.empty(count * 3, dtype=np.float64)
     obj.data.vertices.foreach_get("co", coords)
     return coords.reshape(count, 3)
+
+
+def robust_z_bounds(v):
+    """Percentile z-bounds: immune to any leftover floating specks that
+    survive the part filters (a handful of debris verts can stretch raw
+    min/max by half a body height and wreck head scaling/seating)."""
+    return float(np.percentile(v[:, 2], 0.3)), float(np.percentile(v[:, 2], 99.7))
 
 
 def band_mean_texture_color(obj, z_lo, z_hi):
@@ -133,7 +179,7 @@ def band_mean_texture_color(obj, z_lo, z_hi):
             samples.append(pixels[y, x, :3])
     if len(samples) < 20:
         return None, image
-    return np.mean(np.array(samples), axis=0), image
+    return np.median(np.array(samples), axis=0), image
 
 
 def match_head_color_to_body(body, head):
@@ -143,12 +189,15 @@ def match_head_color_to_body(body, head):
     texture by the per-channel ratio."""
     bv = verts(body)
     hv = verts(head)
-    b_top = bv[:, 2].max()
-    b_h = b_top - bv[:, 2].min()
-    h_bot = hv[:, 2].min()
-    h_h = hv[:, 2].max() - h_bot
+    b_bot, b_top = robust_z_bounds(bv)
+    b_h = b_top - b_bot
+    h_bot, h_top = robust_z_bounds(hv)
+    h_h = h_top - h_bot
 
-    body_color, _ = band_mean_texture_color(body, b_top - 0.04 * b_h, b_top)
+    # Body anchor = mid-thigh band: a large guaranteed-pure-skin region.
+    # The stump band kept sampling shadow/strap texels and over-darkened
+    # the head (measured drift across three assembly rounds).
+    body_color, _ = band_mean_texture_color(body, b_bot + 0.30 * b_h, b_bot + 0.44 * b_h)
     head_color, head_image = band_mean_texture_color(head, h_bot, h_bot + 0.05 * h_h)
     if body_color is None or head_color is None or head_image is None:
         print("COLOR_MATCH skipped (no samples)")
@@ -189,25 +238,20 @@ def main():
     bv = verts(body)
     hv = verts(head)
 
-    # Body neck stump: the topmost sliver of the body.
-    b_top = bv[:, 2].max()
-    b_h = b_top - bv[:, 2].min()
+    # Body neck stump: the topmost sliver of the body (robust bounds).
+    b_bot, b_top = robust_z_bounds(bv)
+    b_h = b_top - b_bot
     stump_cx, stump_cy, stump_w = band_stats(bv, b_top - 0.02 * b_h, b_top)
 
-    # Head neck stub: the bottommost sliver of the head.
-    h_bot = hv[:, 2].min()
-    h_h = hv[:, 2].max() - h_bot
+    # Head neck stub: the bottommost sliver of the head (robust bounds).
+    h_bot, h_top = robust_z_bounds(hv)
+    h_h = h_top - h_bot
     stub_cx, stub_cy, stub_w = band_stats(hv, h_bot, h_bot + 0.04 * h_h)
 
     print(f"ASSEMBLE_DEBUG stump_w={stump_w:.4f} stub_w={stub_w:.4f} body_h={b_h:.4f} head_h={h_h:.4f}")
-    scale = stump_w / stub_w
-    # Sanity clamp: the assembled head+hair should be roughly 28-40% of the
-    # final figure height for this toy style. If the neck-diameter anchor
-    # lands outside that, fall back to a height-ratio anchor.
-    head_frac = (h_h * scale) / (b_h + 0.75 * h_h * scale)
-    if not (0.22 <= head_frac <= 0.45):
-        scale = (0.42 * b_h) / h_h
-        print(f"ASSEMBLE_DEBUG neck anchor rejected (head_frac={head_frac:.3f}), height fallback scale={scale:.4f}")
+    # Head size = explicit fraction of body height (see --head-frac). The
+    # stub/stump widths above are kept for POSITIONING only.
+    scale = (args.head_frac * b_h) / h_h
     head.scale = (scale, scale, scale)
     bpy.ops.object.select_all(action="DESELECT")
     head.select_set(True)
@@ -215,8 +259,8 @@ def main():
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
     hv = verts(head)
-    h_bot = hv[:, 2].min()
-    h_h = hv[:, 2].max() - h_bot
+    h_bot, h_top = robust_z_bounds(hv)
+    h_h = h_top - h_bot
     stub_cx, stub_cy, _ = band_stats(hv, h_bot, h_bot + 0.04 * h_h)
     stub_height = 0.10 * h_h  # generous stub estimate for the sink depth
 
