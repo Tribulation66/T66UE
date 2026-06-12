@@ -18,10 +18,10 @@ The selector resolves to `Particles.MeshIndex`; no material or texture data is u
 
 Slots `0-3` are temporary projectile fallback profiles. Slots `4-19` are the element/delivery traveler profiles:
 
-- `4-7`: Fire AOE, Pierce, Bounce, DOT
-- `8-11`: Ice AOE, Pierce, Bounce, DOT
-- `12-15`: Electricity AOE, Pierce, Bounce, DOT
-- `16-19`: Nature AOE, Pierce, Bounce, DOT
+- `4-7`: Fire AOE, RetiredLine, Bounce, DOT
+- `8-11`: Ice AOE, RetiredLine, Bounce, DOT
+- `12-15`: Electricity AOE, RetiredLine, Bounce, DOT
+- `16-19`: Nature AOE, RetiredLine, Bounce, DOT
 
 Fire and Electricity use the additive parent family. Ice and Nature use the translucent parent family. Each slot owns its own mesh, material instance, and texture.
 

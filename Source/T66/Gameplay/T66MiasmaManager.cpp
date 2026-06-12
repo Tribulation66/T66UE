@@ -8,6 +8,7 @@
 #include "Core/T66GameplayLayout.h"
 #include "Core/T66LagTrackerSubsystem.h"
 #include "Core/T66RunStateSubsystem.h"
+#include "Core/T66TowerTuningConfig.h"
 #include "Data/T66DataTypes.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
@@ -20,6 +21,7 @@
 #include "Gameplay/T66MainMapTerrain.h"
 #include "Gameplay/T66TowerMapTerrain.h"
 #include "Algo/Sort.h"
+#include "Components/CapsuleComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -30,6 +32,13 @@ DEFINE_LOG_CATEGORY_STATIC(LogT66MiasmaManager, Log, All);
 namespace
 {
 	static constexpr bool T66EnableLegacyLavaPatches = false;
+
+	// Lava-rise tuning constants that are not gameplay-balancing knobs.
+	static constexpr float T66LavaStartDepth = 80.0f;        // sheets park this far below the floor surface before rising
+	static constexpr float T66LavaSubmergeGrace = 15.0f;     // feet must be this far under the surface before damage
+	static constexpr float T66LavaSheetMeshSize = 100.0f;    // engine Plane native footprint
+	static constexpr float T66LavaHeroFloorMinDelta = -250.0f;
+	static constexpr float T66LavaHeroFloorMaxDelta = 1100.0f;
 
 	static bool T66ShouldUseMainBoardCoverage(const UWorld* World)
 	{
@@ -77,6 +86,15 @@ void AT66MiasmaManager::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!bDefaultPaletteCaptured)
+	{
+		bDefaultPaletteCaptured = true;
+		DefaultCoreColor = CoreColor;
+		DefaultMidColor = MidColor;
+		DefaultGlowColor = GlowColor;
+		DefaultBrightness = Brightness;
+	}
+
 	GenerateAnimationFrames();
 	EnsureVisualMaterial();
 
@@ -97,6 +115,7 @@ void AT66MiasmaManager::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	UpdateFromRunState();
+	UpdateLavaRise(DeltaTime);
 	TickDamageOverActiveTiles(DeltaTime);
 
 	if (!LavaMID)
@@ -104,7 +123,9 @@ void AT66MiasmaManager::Tick(float DeltaTime)
 		return;
 	}
 
-	const bool bTowerBlood = ShouldUseTowerBloodLook();
+	// Lava-rise mode keeps the original lava palette; the blood tint stays for the
+	// legacy tower spread coverage.
+	const bool bTowerBlood = ShouldUseTowerBloodLook() && !bLavaRiseMode;
 	ApplyMaterialLookIfNeeded(
 		bTowerBlood ? FLinearColor(0.95f, 0.22f, 0.24f, 1.0f) : FLinearColor::White,
 		bTowerBlood ? 1.45f : Brightness);
@@ -270,9 +291,327 @@ void AT66MiasmaManager::BuildTowerFloorGrid()
 		TileSize);
 }
 
+bool AT66MiasmaManager::TryBuildTowerLavaSheets()
+{
+	ResetLavaRiseState();
+
+	const UT66TowerTuningConfig& TowerTuning = UT66TowerTuningConfig::GetRuntimeConfig();
+	if (TowerTuning.TowerLavaRise == 0)
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	T66TowerMapTerrain::FLayout Layout;
+	if (!World || !GameMode || !GameMode->GetTowerMainMapLayout(Layout))
+	{
+		return false;
+	}
+
+	// Lava rise is only fair when every gameplay floor proved a dry platform chain
+	// from arrival to exit; otherwise fall back to the legacy spreading coverage.
+	int32 MobFloorCount = 0;
+	for (const T66TowerMapTerrain::FFloor& Floor : Layout.Floors)
+	{
+		if (!Floor.bMobFloor)
+		{
+			continue;
+		}
+
+		++MobFloorCount;
+		if (Floor.SafeChainCells.Num() <= 0 || Floor.BouncePlatforms.Num() <= 0)
+		{
+			UE_LOG(
+				LogT66MiasmaManager,
+				Warning,
+				TEXT("[LAVA] Lava-rise disabled: floor %d has no validated platform chain (chainCells=%d platforms=%d)."),
+				Floor.FloorNumber,
+				Floor.SafeChainCells.Num(),
+				Floor.BouncePlatforms.Num());
+			ResetLavaRiseState();
+			return false;
+		}
+
+		LavaFloorSurfaceZ.Add(Floor.FloorNumber, Floor.SurfaceZ);
+		LavaFloorActiveSeconds.Add(Floor.FloorNumber, 0.0f);
+		LavaFloorCurrentZ.Add(Floor.FloorNumber, Floor.SurfaceZ - T66LavaStartDepth);
+
+		for (const FBox2D& WalkableBox : Floor.WalkableFloorBoxes)
+		{
+			if ((WalkableBox.Max.X - WalkableBox.Min.X) <= 10.0f || (WalkableBox.Max.Y - WalkableBox.Min.Y) <= 10.0f)
+			{
+				continue;
+			}
+
+			LavaSheetBoxes.Add(WalkableBox);
+			LavaSheetFloorNumbers.Add(Floor.FloorNumber);
+		}
+	}
+
+	if (MobFloorCount <= 0 || LavaSheetBoxes.Num() <= 0)
+	{
+		ResetLavaRiseState();
+		return false;
+	}
+
+	bLavaRiseMode = true;
+
+	// Mirror sheet centers into the tile arrays so shared bookkeeping (grid presence
+	// checks, rebuild-on-empty) keeps working; damage and visuals use the sheet state.
+	TileCenters.Reset();
+	TileFloorNumbers.Reset();
+	for (int32 SheetIndex = 0; SheetIndex < LavaSheetBoxes.Num(); ++SheetIndex)
+	{
+		const FBox2D& SheetBox = LavaSheetBoxes[SheetIndex];
+		const int32 FloorNumber = LavaSheetFloorNumbers[SheetIndex];
+		const float* CurrentZ = LavaFloorCurrentZ.Find(FloorNumber);
+		TileCenters.Add(FVector(
+			(SheetBox.Min.X + SheetBox.Max.X) * 0.5f,
+			(SheetBox.Min.Y + SheetBox.Max.Y) * 0.5f,
+			CurrentZ ? *CurrentZ : 0.0f));
+		TileFloorNumbers.Add(FloorNumber);
+	}
+
+	RespawnLavaSheetInstances();
+
+	UE_LOG(
+		LogT66MiasmaManager,
+		Log,
+		TEXT("[LAVA] Lava-rise mode active: %d sheets across %d gameplay floors (grace=%.0fs rise=%.0fs maxHeight=%.0f)."),
+		LavaSheetBoxes.Num(),
+		MobFloorCount,
+		TowerTuning.LavaGraceSeconds,
+		TowerTuning.LavaRiseSeconds,
+		TowerTuning.LavaMaxHeight);
+	return true;
+}
+
+void AT66MiasmaManager::ResetLavaRiseState()
+{
+	bLavaRiseMode = false;
+	LavaSheetBoxes.Reset();
+	LavaSheetFloorNumbers.Reset();
+	LavaFloorSurfaceZ.Reset();
+	LavaFloorActiveSeconds.Reset();
+	LavaFloorCurrentZ.Reset();
+}
+
+void AT66MiasmaManager::RespawnLavaSheetInstances()
+{
+	if (!TileInstances || !bLavaRiseMode)
+	{
+		return;
+	}
+
+	TileInstances->ClearInstances();
+	TArray<FTransform> InstanceTransforms;
+	InstanceTransforms.Reserve(LavaSheetBoxes.Num());
+	for (int32 SheetIndex = 0; SheetIndex < LavaSheetBoxes.Num(); ++SheetIndex)
+	{
+		const FBox2D& SheetBox = LavaSheetBoxes[SheetIndex];
+		const float* CurrentZ = LavaFloorCurrentZ.Find(LavaSheetFloorNumbers[SheetIndex]);
+		InstanceTransforms.Add(FTransform(
+			FRotator::ZeroRotator,
+			FVector(
+				(SheetBox.Min.X + SheetBox.Max.X) * 0.5f,
+				(SheetBox.Min.Y + SheetBox.Max.Y) * 0.5f,
+				CurrentZ ? *CurrentZ : 0.0f),
+			FVector(
+				FMath::Max((SheetBox.Max.X - SheetBox.Min.X) / T66LavaSheetMeshSize, 0.1f),
+				FMath::Max((SheetBox.Max.Y - SheetBox.Min.Y) / T66LavaSheetMeshSize, 0.1f),
+				1.0f)));
+	}
+
+	if (InstanceTransforms.Num() > 0)
+	{
+		TileInstances->AddInstances(InstanceTransforms, false, true, false);
+	}
+
+	SpawnedTileCount = InstanceTransforms.Num();
+}
+
+int32 AT66MiasmaManager::ResolveLavaFloorForZ(const float WorldZ) const
+{
+	// Prefer the GameMode's STATEFUL hero floor (only explicit transitions change
+	// it); jumps must never flip the lava clock to another floor. The Z banding
+	// below remains as a bootstrap fallback only.
+	const UWorld* World = GetWorld();
+	const AT66GameMode* GameMode = World ? Cast<AT66GameMode>(World->GetAuthGameMode()) : nullptr;
+	if (GameMode)
+	{
+		const int32 StatefulFloor = GameMode->GetCurrentTowerFloorIndex();
+		if (StatefulFloor != INDEX_NONE && LavaFloorSurfaceZ.Contains(StatefulFloor))
+		{
+			return StatefulFloor;
+		}
+	}
+
+	int32 BestFloor = INDEX_NONE;
+	float BestDelta = TNumericLimits<float>::Max();
+	for (const TPair<int32, float>& Pair : LavaFloorSurfaceZ)
+	{
+		const float Delta = WorldZ - Pair.Value;
+		if (Delta < T66LavaHeroFloorMinDelta || Delta > T66LavaHeroFloorMaxDelta)
+		{
+			continue;
+		}
+
+		const float AbsDelta = FMath::Abs(Delta);
+		if (AbsDelta < BestDelta)
+		{
+			BestDelta = AbsDelta;
+			BestFloor = Pair.Key;
+		}
+	}
+
+	return BestFloor;
+}
+
+void AT66MiasmaManager::UpdateLavaRise(const float DeltaTime)
+{
+	if (!bLavaRiseMode || bSpawningPaused || !TileInstances)
+	{
+		return;
+	}
+
+	float ExpansionElapsed = 0.0f;
+	if (!TryGetExpansionElapsedSeconds(ExpansionElapsed))
+	{
+		return;
+	}
+
+	const AT66HeroBase* Hero = Cast<AT66HeroBase>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (!Hero)
+	{
+		return;
+	}
+
+	// The rise clock only advances on the hero's current floor: pressure follows the
+	// player, abandoned floors freeze, and a freshly entered floor starts at zero.
+	const int32 HeroFloor = ResolveLavaFloorForZ(Hero->GetActorLocation().Z);
+	float* ActiveSeconds = (HeroFloor != INDEX_NONE) ? LavaFloorActiveSeconds.Find(HeroFloor) : nullptr;
+	if (!ActiveSeconds)
+	{
+		return;
+	}
+
+	*ActiveSeconds += DeltaTime;
+
+	const UT66TowerTuningConfig& TowerTuning = UT66TowerTuningConfig::GetRuntimeConfig();
+	const float* SurfaceZ = LavaFloorSurfaceZ.Find(HeroFloor);
+	float* CurrentZ = LavaFloorCurrentZ.Find(HeroFloor);
+	if (!SurfaceZ || !CurrentZ)
+	{
+		return;
+	}
+
+	const float RiseAlpha = FMath::Clamp(
+		(*ActiveSeconds - TowerTuning.LavaGraceSeconds) / FMath::Max(TowerTuning.LavaRiseSeconds, 1.0f),
+		0.0f,
+		1.0f);
+	const float TargetZ = *SurfaceZ - T66LavaStartDepth + (RiseAlpha * (T66LavaStartDepth + TowerTuning.LavaMaxHeight));
+	if (FMath::Abs(TargetZ - *CurrentZ) <= 0.5f)
+	{
+		return;
+	}
+
+	*CurrentZ = TargetZ;
+
+	int32 LastUpdatedIndex = INDEX_NONE;
+	for (int32 SheetIndex = 0; SheetIndex < LavaSheetBoxes.Num(); ++SheetIndex)
+	{
+		if (LavaSheetFloorNumbers[SheetIndex] == HeroFloor)
+		{
+			LastUpdatedIndex = SheetIndex;
+		}
+	}
+
+	for (int32 SheetIndex = 0; SheetIndex < LavaSheetBoxes.Num(); ++SheetIndex)
+	{
+		if (LavaSheetFloorNumbers[SheetIndex] != HeroFloor)
+		{
+			continue;
+		}
+
+		const FBox2D& SheetBox = LavaSheetBoxes[SheetIndex];
+		const FTransform SheetTransform(
+			FRotator::ZeroRotator,
+			FVector((SheetBox.Min.X + SheetBox.Max.X) * 0.5f, (SheetBox.Min.Y + SheetBox.Max.Y) * 0.5f, TargetZ),
+			FVector(
+				FMath::Max((SheetBox.Max.X - SheetBox.Min.X) / T66LavaSheetMeshSize, 0.1f),
+				FMath::Max((SheetBox.Max.Y - SheetBox.Min.Y) / T66LavaSheetMeshSize, 0.1f),
+				1.0f));
+		TileInstances->UpdateInstanceTransform(
+			SheetIndex,
+			SheetTransform,
+			true,
+			SheetIndex == LastUpdatedIndex,
+			true);
+		if (TileCenters.IsValidIndex(SheetIndex))
+		{
+			TileCenters[SheetIndex].Z = TargetZ;
+		}
+	}
+}
+
+void AT66MiasmaManager::TickLavaDamage()
+{
+	UWorld* World = GetWorld();
+	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	UT66RunStateSubsystem* RunState = GI ? GI->GetSubsystem<UT66RunStateSubsystem>() : nullptr;
+	AT66HeroBase* Hero = Cast<AT66HeroBase>(UGameplayStatics::GetPlayerPawn(this, 0));
+	if (!RunState || !Hero)
+	{
+		return;
+	}
+
+	float ExpansionElapsed = 0.0f;
+	if (!TryGetExpansionElapsedSeconds(ExpansionElapsed))
+	{
+		return;
+	}
+
+	const FVector HeroLocation = Hero->GetActorLocation();
+	const UCapsuleComponent* Capsule = Hero->GetCapsuleComponent();
+	const float HeroFeetZ = HeroLocation.Z - (Capsule ? Capsule->GetScaledCapsuleHalfHeight() : 90.0f);
+	const int32 HeroFloor = ResolveLavaFloorForZ(HeroLocation.Z);
+	const float* CurrentZ = (HeroFloor != INDEX_NONE) ? LavaFloorCurrentZ.Find(HeroFloor) : nullptr;
+	const float* SurfaceZ = (HeroFloor != INDEX_NONE) ? LavaFloorSurfaceZ.Find(HeroFloor) : nullptr;
+	if (!CurrentZ || !SurfaceZ)
+	{
+		return;
+	}
+
+	// Submersion check: feet under the lava surface (with an ankle grace) while the
+	// surface has actually risen above the floor. Platform tops keep feet above it.
+	if (*CurrentZ <= *SurfaceZ || HeroFeetZ > *CurrentZ - T66LavaSubmergeGrace)
+	{
+		return;
+	}
+
+	const FVector2D HeroPoint(HeroLocation.X, HeroLocation.Y);
+	for (int32 SheetIndex = 0; SheetIndex < LavaSheetBoxes.Num(); ++SheetIndex)
+	{
+		if (LavaSheetFloorNumbers[SheetIndex] != HeroFloor)
+		{
+			continue;
+		}
+
+		const FBox2D& SheetBox = LavaSheetBoxes[SheetIndex];
+		if (HeroPoint.X >= SheetBox.Min.X - 20.0f && HeroPoint.X <= SheetBox.Max.X + 20.0f
+			&& HeroPoint.Y >= SheetBox.Min.Y - 20.0f && HeroPoint.Y <= SheetBox.Max.Y + 20.0f)
+		{
+			const UT66TowerTuningConfig& TowerTuning = UT66TowerTuningConfig::GetRuntimeConfig();
+			RunState->ApplyDamage(TowerTuning.LavaDamagePerTick, this, FName(TEXT("MiasmaCoverage")), this);
+			return;
+		}
+	}
+}
+
 void AT66MiasmaManager::ApplyTowerCoverageOrdering()
 {
-	if (!ShouldUseTowerBloodLook() || TileCenters.Num() <= 0 || TileCenters.Num() != TileFloorNumbers.Num())
+	if (bLavaRiseMode || !ShouldUseTowerBloodLook() || TileCenters.Num() <= 0 || TileCenters.Num() != TileFloorNumbers.Num())
 	{
 		return;
 	}
@@ -335,6 +674,11 @@ void AT66MiasmaManager::BuildGrid()
 {
 	if (ShouldUseTowerBloodLook())
 	{
+		if (TryBuildTowerLavaSheets())
+		{
+			return;
+		}
+
 		BuildTowerFloorGrid();
 		if (TileCenters.Num() > 0)
 		{
@@ -403,6 +747,13 @@ void AT66MiasmaManager::UpdateFromRunState()
 		return;
 	}
 
+	if (bLavaRiseMode)
+	{
+		// Lava sheets spawn in full when the mode builds; coverage pressure comes from
+		// the per-floor rise clock in UpdateLavaRise, not from spread expansion.
+		return;
+	}
+
 	float ElapsedSeconds = 0.0f;
 	if (!TryGetExpansionElapsedSeconds(ElapsedSeconds))
 	{
@@ -438,11 +789,23 @@ void AT66MiasmaManager::RebuildForCurrentStage()
 	TowerDefaultSourceAnchors.Reset();
 	bExplicitExpansionActive = false;
 	ExplicitExpansionStartTimeSeconds = 0.0f;
+	ResetLavaRiseState();
 	ClearLegacyLavaPatches();
+
+	// Build first so the hazard mode is known, then restore the authored lava palette
+	// before regenerating frames when the rise mode is active (the tower blood look
+	// recolors the palette members the frame generator samples).
+	BuildGrid();
+	if (bLavaRiseMode && bDefaultPaletteCaptured)
+	{
+		CoreColor = DefaultCoreColor;
+		MidColor = DefaultMidColor;
+		GlowColor = DefaultGlowColor;
+		Brightness = DefaultBrightness;
+	}
 
 	GenerateAnimationFrames();
 	EnsureVisualMaterial();
-	BuildGrid();
 	UpdateFromRunState();
 }
 
@@ -778,6 +1141,12 @@ void AT66MiasmaManager::RebuildSpawnedInstances()
 		return;
 	}
 
+	if (bLavaRiseMode)
+	{
+		RespawnLavaSheetInstances();
+		return;
+	}
+
 	const int32 DesiredCount = SpawnedTileCount;
 	TileInstances->ClearInstances();
 	SpawnedTileCount = 0;
@@ -797,6 +1166,12 @@ void AT66MiasmaManager::TickDamageOverActiveTiles(float DeltaTime)
 		return;
 	}
 	DamageTickAccumulator = 0.f;
+
+	if (bLavaRiseMode)
+	{
+		TickLavaDamage();
+		return;
+	}
 
 	UWorld* World = GetWorld();
 	UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
@@ -858,7 +1233,7 @@ void AT66MiasmaManager::EnsureVisualMaterial()
 
 	ApplyMaterialLookIfNeeded(FLinearColor::White, Brightness);
 
-	if (ShouldUseTowerBloodLook())
+	if (ShouldUseTowerBloodLook() && !bLavaRiseMode)
 	{
 		CoreColor = FLinearColor(0.06f, 0.00f, 0.00f, 1.0f);
 		MidColor = FLinearColor(0.48f, 0.00f, 0.02f, 1.0f);
@@ -1061,6 +1436,14 @@ void AT66MiasmaManager::ClearAllMiasma()
 	}
 	SpawnedTileCount = 0;
 	DamageTickAccumulator = 0.f;
+	if (bLavaRiseMode)
+	{
+		// Lava sheets mirror into the tile arrays; drop them so the next update
+		// rebuilds the mode from scratch instead of re-expanding stale centers.
+		TileCenters.Reset();
+		TileFloorNumbers.Reset();
+		ResetLavaRiseState();
+	}
 	ClearLegacyLavaPatches();
 }
 

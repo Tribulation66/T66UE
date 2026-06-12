@@ -735,7 +735,6 @@ void UT66RunStateSubsystem::NotifyEnemyKilledByHero()
 		ChaosTheoryTimerEndWorldTime = Now + 5.0;
 	}
 
-	AddUltimateCharge(UltimateChargePerKill);
 }
 
 
@@ -765,7 +764,6 @@ void UT66RunStateSubsystem::NotifyAttackFired()
 	LastAttackFireWorldTime = World->GetTimeSeconds();
 	if (PassiveType == ET66PassiveType::Overclock)
 		OverclockAttackCounter++;
-	AddUltimateCharge(UltimateChargePerAttack);
 }
 
 
@@ -893,31 +891,12 @@ void UT66RunStateSubsystem::ApplyStatusCurse(float /*DurationSeconds*/) {}
 
 bool UT66RunStateSubsystem::TryActivateUltimate()
 {
-	if (UltimateCharge < UltimateChargeRequired)
-	{
-		return false;
-	}
-
-	UltimateCharge = 0.f;
-	UltimateCooldownRemainingSeconds = 0.f;
-	LastBroadcastUltimateSecond = 0;
-	UltimateChanged.Broadcast();
-	return true;
+	return false;
 }
 
 void UT66RunStateSubsystem::AddUltimateCharge(const float Amount)
 {
-	if (Amount <= 0.f)
-	{
-		return;
-	}
-
-	const float PreviousCharge = UltimateCharge;
-	UltimateCharge = FMath::Clamp(UltimateCharge + Amount, 0.f, UltimateChargeRequired);
-	if (!FMath::IsNearlyEqual(PreviousCharge, UltimateCharge))
-	{
-		UltimateChanged.Broadcast();
-	}
+	static_cast<void>(Amount);
 }
 
 void UT66RunStateSubsystem::TickHeroTimers(float DeltaTime)

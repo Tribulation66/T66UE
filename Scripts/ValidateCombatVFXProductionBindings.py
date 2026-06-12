@@ -36,8 +36,6 @@ BP_GAME_INSTANCE_CLASS_PATH = "/Game/Blueprints/Core/BP_T66GameInstance.BP_T66Ga
 
 DT_ASSET = "/Game/Data/DT_CombatVFXBindings.DT_CombatVFXBindings"
 PRODUCTION_NIAGARA = "/Game/VFX/Hero1/Axe/AOE/NS_Hero1AxeAOE_MeshSlash.NS_Hero1AxeAOE_MeshSlash"
-PRODUCTION_PIERCE_NIAGARA = "/Game/VFX/Hero1/Axe/Pierce/NS_Hero1AxePierce_MeshSlash.NS_Hero1AxePierce_MeshSlash"
-PRODUCTION_PIERCE_BLADE_MESH = "/Game/VFX/Hero1/Axe/Pierce/SM_Hero1AxePierce_BladePlane.SM_Hero1AxePierce_BladePlane"
 PRODUCTION_BOUNCE_NIAGARA = "/Game/VFX/Hero1/Axe/Bounce/NS_Hero1AxeBounce_MeshSlash.NS_Hero1AxeBounce_MeshSlash"
 PRODUCTION_BOUNCE_SLASH_MESH = "/Game/VFX/Hero1/Axe/Bounce/SM_Hero1AxeBounce_HorizontalSlash.SM_Hero1AxeBounce_HorizontalSlash"
 PRODUCTION_DOT_NIAGARA = "/Game/VFX/Hero1/Axe/DOT/NS_Hero1AxeDOT_MeshSlash.NS_Hero1AxeDOT_MeshSlash"
@@ -67,8 +65,6 @@ REQUIRED_ASSETS = [
     "/Game/VFX/Hero1/Axe/Shared/T_Hero1AxeAOE_StreakMask.T_Hero1AxeAOE_StreakMask",
     "/Game/VFX/Hero1/Axe/Shared/T_Hero1AxeAOE_DissolveNoise.T_Hero1AxeAOE_DissolveNoise",
     "/Game/VFX/Hero1/Axe/Shared/T_Hero1AxeAOE_ImpactMask.T_Hero1AxeAOE_ImpactMask",
-    PRODUCTION_PIERCE_NIAGARA,
-    PRODUCTION_PIERCE_BLADE_MESH,
     PRODUCTION_BOUNCE_NIAGARA,
     PRODUCTION_BOUNCE_SLASH_MESH,
     PRODUCTION_DOT_NIAGARA,
@@ -220,28 +216,6 @@ def validate_hero3_aoe_placeholder_csv_binding():
         fail("Hero3_AOE_Black_Placeholder Notes must flag the temporary Hero 1 AOE reuse")
 
     log("Hero 3 AOE placeholder row reuses the Hero 1 AOE Niagara path and is explicitly flagged")
-
-
-def validate_pierce_csv_binding():
-    rows = read_binding_rows(CSV_PATH)
-
-    row = next((candidate for candidate in rows if candidate.get("---") == "Hero2_Pierce_Black_Base"), None)
-    if row is None:
-        fail("CombatVFXBindings.csv is missing Hero2_Pierce_Black_Base row")
-
-    expected = {
-        "BindingID": "Hero2_Pierce_Black_Base",
-        "SourceType": "WeaponBase",
-        "SourceID": "Hero_2_black_pierce",
-        "AttackCategory": "Pierce",
-        "NiagaraSystem": PRODUCTION_PIERCE_NIAGARA,
-        "bSuppressTemporaryProjectile": "True",
-    }
-    for key, value in expected.items():
-        if row.get(key) != value:
-            fail(f"Hero2_Pierce_Black_Base {key}={row.get(key)!r}, expected {value!r}")
-
-    log("Hero 2 Pierce CSV binding row is production-bound to the PathAnchored Niagara system and suppresses the temporary projectile")
 
 
 def validate_bounce_csv_binding():
@@ -489,7 +463,6 @@ def run_unreal_validation() -> None:
     log(DISCLAIMER)
     validate_csv_binding()
     validate_hero3_aoe_placeholder_csv_binding()
-    validate_pierce_csv_binding()
     validate_bounce_csv_binding()
     validate_dot_csv_binding()
     validate_weapon_geometry_contract()

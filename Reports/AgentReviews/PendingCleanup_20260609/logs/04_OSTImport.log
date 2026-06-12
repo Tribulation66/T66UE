@@ -1,0 +1,230 @@
+[2026.06.10-00.18.34:147][  0]LogInit: Display: Running engine for game: T66
+[2026.06.10-00.18.34:147][  0]LogCore: Display: Requested channels: 'cpu,gpu,frame,log,bookmark,screenshot,region'
+[2026.06.10-00.18.34:147][  0]LogTrace: Display: Control listening on port 1985
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : platform="Windows"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : config="Development"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : buildversion="++UE5+Release-5.7-CL-48512491"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : engineversion="5.7.1-48512491+++UE5+Release-5.7"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : enginereleaseversion="5.7.1"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : os="Windows 11 (25H2) [10.0.26200.8524] "
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : cpu="GenuineIntel|Intel(R) Core(TM) i9-14900HX"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : pgoenabled="0"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : pgoprofilingenabled="0"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : ltoenabled="0"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : asan="0"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : mergedmodules="0"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : commandline="" C:\UE\T66\T66.uproject -run=pythonscript -script=C:/UE/T66/Scripts/ImportGeneratedOSTs.py -unattended -nopause""
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : loginid="6e1893814737cdf6e2edcbb02b9a616f"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : llm="0"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resx="1280"
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : systemresolution.resy="720"
+[2026.06.10-00.18.34:147][  0]LogAudio: Display: Audio Device Manager not initializing due to all audio being disabled. If this is not intentional, please check command line arguments for "-nosound".
+[2026.06.10-00.18.34:147][  0]LogConfig: Display: Loading Mac ini files took 0.09 seconds
+[2026.06.10-00.18.34:147][  0]LogConfig: Display: Loading Android ini files took 0.09 seconds
+[2026.06.10-00.18.34:147][  0]LogConfig: Display: Loading IOS ini files took 0.09 seconds
+[2026.06.10-00.18.34:147][  0]LogConfig: Display: Loading VulkanPC ini files took 0.10 seconds
+[2026.06.10-00.18.34:147][  0]LogConfig: Display: Loading TVOS ini files took 0.11 seconds
+[2026.06.10-00.18.34:147][  0]LogConfig: Display: Loading Unix ini files took 0.12 seconds
+[2026.06.10-00.18.34:147][  0]LogConfig: Display: Loading VisionOS ini files took 0.12 seconds
+[2026.06.10-00.18.34:147][  0]LogConfig: Display: Loading Windows ini files took 0.12 seconds
+[2026.06.10-00.18.34:147][  0]LogConfig: Display: Loading Linux ini files took 0.12 seconds
+[2026.06.10-00.18.34:147][  0]LogSteamShared: Display: Loading Steam SDK 1.61
+[2026.06.10-00.18.34:147][  0]LogOnline: Display: STEAM: OnlineSubsystemSteam::Shutdown()
+[2026.06.10-00.18.34:147][  0]RenderDocPlugin: Display: RenderDoc plugin will not be loaded. Use '-AttachRenderDoc' on the cmd line or enable 'renderdoc.AutoAttach' in the plugin settings.
+[2026.06.10-00.18.34:147][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.06.10-00.18.34:147][  0]LogHAL: Display: Platform has ~ 64 GB [68413153280 / 68719476736 / 64], which maps to Largest [LargestMinGB=32, LargerMinGB=12, DefaultMinGB=8, SmallerMinGB=6, SmallestMinGB=0)
+[2026.06.10-00.18.34:147][  0]LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.06.10-00.18.34:147][  0]LogCsvProfiler: Display: Metadata set : extradevelopmentmemorymb="0"
+[2026.06.10-00.18.34:512][  0]LogObj: Display: Attempting to load config data for Default__SlateThemeManager before the Class has been constructed/registered/linked (likely during module loading or early startup). This will result in the load silently failing and should be fixed.
+[2026.06.10-00.18.34:621][  0]LogCsvProfiler: Display: Metadata set : verbatimrhiname="Null"
+[2026.06.10-00.18.34:621][  0]LogCsvProfiler: Display: Metadata set : rhiname="Null"
+[2026.06.10-00.18.34:621][  0]LogCsvProfiler: Display: Metadata set : rhifeaturelevel="SM6"
+[2026.06.10-00.18.34:621][  0]LogCsvProfiler: Display: Metadata set : shaderplatform="PCD3D_SM6"
+[2026.06.10-00.18.34:629][  0]LogTextureFormatASTC: Display: ASTCEnc version 5.0.1 library loaded
+[2026.06.10-00.18.34:629][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatASTC
+[2026.06.10-00.18.34:629][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatDXT
+[2026.06.10-00.18.34:629][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatETC2
+[2026.06.10-00.18.34:629][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatIntelISPCTexComp
+[2026.06.10-00.18.34:629][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatUncompressed
+[2026.06.10-00.18.34:629][  0]LogTextureFormatOodle: Display: Oodle Texture TFO init; latest sdk version = 2.9.14
+[2026.06.10-00.18.34:629][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.14.dll
+[2026.06.10-00.18.34:629][  0]LogTextureFormatOodle: Display: Oodle Texture loading DLL: oo2tex_win64_2.9.5.dll
+[2026.06.10-00.18.34:630][  0]LogTextureFormatManager: Display: Loaded Base TextureFormat: TextureFormatOodle
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ASTC'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_DXT'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ETC2'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_OpenXR'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'AndroidClient'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ASTCClient'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_DXTClient'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_ETC2Client'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_OpenXRClient'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_Multi'
+[2026.06.10-00.18.34:661][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Android_MultiClient'
+[2026.06.10-00.18.34:675][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'IOS'
+[2026.06.10-00.18.34:675][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'IOSClient'
+[2026.06.10-00.18.34:689][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Linux'
+[2026.06.10-00.18.34:689][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'LinuxEditor'
+[2026.06.10-00.18.34:689][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'LinuxServer'
+[2026.06.10-00.18.34:689][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'LinuxClient'
+[2026.06.10-00.18.34:703][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Mac'
+[2026.06.10-00.18.34:703][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'MacEditor'
+[2026.06.10-00.18.34:703][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'MacServer'
+[2026.06.10-00.18.34:703][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'MacClient'
+[2026.06.10-00.18.34:716][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'TVOS'
+[2026.06.10-00.18.34:716][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'TVOSClient'
+[2026.06.10-00.18.34:729][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'Windows'
+[2026.06.10-00.18.34:730][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsEditor'
+[2026.06.10-00.18.34:730][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsServer'
+[2026.06.10-00.18.34:730][  0]LogTargetPlatformManager: Display: Loaded TargetPlatform 'WindowsClient'
+[2026.06.10-00.18.34:730][  0]LogTargetPlatformManager: Display: Building Assets For WindowsEditor
+[2026.06.10-00.18.34:733][  0]LogAudioDebug: Display: Lib vorbis DLL was dynamically loaded.
+[2026.06.10-00.18.34:783][  0]LogDerivedDataCache: Display: Memory: Max Cache Size: -1 MB
+[2026.06.10-00.18.35:083][  0]LogDerivedDataCache: Display: ../../../Engine/DerivedDataCache/Compressed.ddp: Opened pak cache for reading. (1732 MiB)
+[2026.06.10-00.18.35:084][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zen.exe service status'.
+[2026.06.10-00.18.35:496][  0]LogZenServiceInstance: Display: Launching zen utility 'C:/Program Files/Epic Games/UE_5.7/Engine/Binaries/Win64/zen.exe service status'.
+[2026.06.10-00.18.35:806][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/DoPra/AppData/Local/UnrealEngine/5.7/Saved/Zen/zen.version', version: '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.06.10-00.18.35:807][  0]LogZenServiceInstance: Display: Read zen version cache file from 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zen.version', version: '5.7.6-202510061608-windows-x64-release-9a1ebb9'
+[2026.06.10-00.18.35:807][  0]LogZenServiceInstance: Display: Installed service at 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe' is up to date
+[2026.06.10-00.18.35:808][  0]LogZenServiceInstance: Display: Launching executable 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install/zenserver.exe', working dir 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Install', data dir 'C:/Users/DoPra/AppData/Local/UnrealEngine/Common/Zen/Data', args '--port 8558 --data-dir C:\Users\DoPra\AppData\Local\UnrealEngine\Common\Zen\Data --http asio --gc-cache-duration-seconds 1209600 --gc-interval-seconds 21600 --gc-low-diskspace-threshold 2147483648 --cache-bucket-limit-overwrites --quiet --http-forceloopback --owner-pid 162652  --child-id Zen_162652_Startup'
+[2026.06.10-00.18.36:226][  0]LogZenServiceInstance: Display: Unreal Zen Storage Server HTTP service at http://[::1]:8558 status: OK!.
+[2026.06.10-00.18.36:235][  0]LogDerivedDataCache: Display: ZenLocal: Using ZenServer HTTP service at [::1] with namespace ue.ddc status: OK!.
+[2026.06.10-00.18.36:259][  0]LogDerivedDataCache: Display: C:/Users/DoPra/AppData/Local/UnrealEngine/Common/DerivedDataCache: Performance: Latency=0.10ms. RandomReadSpeed=217.28MBs, RandomWriteSpeed=50.14MBs. Assigned SpeedClass 'Local'
+[2026.06.10-00.18.36:267][  0]LogUbaHorde: Display: UBA/Horde Configuration [Uba.Provider.Horde]: Not Enabled
+[2026.06.10-00.18.36:267][  0]LogShaderCompilers: Display: No distributed shader compiler controller found
+[2026.06.10-00.18.36:267][  0]LogShaderCompilers: Display: Using 29 local workers for shader compilation
+[2026.06.10-00.18.36:271][  0]LogShaderCompilers: Display: Compiling shader autogen file: ../../../../../../UE/T66/Intermediate/ShaderAutogen/PCD3D_SM6/AutogenShaderHeaders.ush
+[2026.06.10-00.18.36:271][  0]LogShaderCompilers: Display: Autogen file is unchanged, skipping write.
+[2026.06.10-00.18.36:985][  0]LogEditorDomain: Display: EditorDomain is Disabled
+[2026.06.10-00.18.37:519][  0]LogCsvProfiler: Display: Metadata set : deviceprofile="WindowsEditor"
+[2026.06.10-00.18.37:527][  0]LogStreaming: Display: FlushAsyncLoading(1): 1 QueuedPackages, 0 AsyncPackages
+[2026.06.10-00.18.37:543][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:543][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness because of a recursive sync load
+[2026.06.10-00.18.37:543][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/PowerToRoughness (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:543][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:543][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec because of a recursive sync load
+[2026.06.10-00.18.37:543][  0]LogStreaming: Display: Flushing package /Engine/Functions/Engine_MaterialFunctions01/Shading/ConvertFromDiffSpec (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:543][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/WorldGridMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/WorldGridMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultPostProcessMaterial (state: WaitingForIo) recursively from another package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultLightFunctionMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultPostProcessMaterial because of a recursive sync load
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultPostProcessMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultDeferredDecalMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultLightFunctionMaterial because of a recursive sync load
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultLightFunctionMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Package /Engine/EngineMaterials/WorldGridMaterial is adding a dynamic import to package /Engine/EngineMaterials/DefaultDeferredDecalMaterial because of a recursive sync load
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/DefaultDeferredDecalMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/WorldGridMaterial (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Package /Engine/EngineMaterials/DefaultTextMaterialOpaque is adding a dynamic import to package /Engine/EngineMaterials/WorldGridMaterial because of a recursive sync load
+[2026.06.10-00.18.37:549][  0]LogStreaming: Display: Flushing package /Engine/EngineMaterials/WorldGridMaterial (state: DeferredPostLoad) recursively from another package /Engine/EngineMaterials/DefaultTextMaterialOpaque (state: CreateLinkerLoadExports) will result in a partially loaded package to avoid a deadlock.
+[2026.06.10-00.18.37:549][  0]LogTextureEncodingSettings: Display: Texture Encode Speed: Final (cook).
+[2026.06.10-00.18.37:549][  0]LogTextureEncodingSettings: Display: Oodle Texture Encode Speed settings: Fast: RDO Off Lambda=0, Effort=Normal Final: RDO Off Lambda=0, Effort=Normal
+[2026.06.10-00.18.37:549][  0]LogTextureEncodingSettings: Display: Shared linear texture encoding: Disabled
+[2026.06.10-00.18.37:592][  0]LogMeshReduction: Display: Using QuadricMeshReduction for automatic static mesh reduction
+[2026.06.10-00.18.37:592][  0]LogMeshReduction: Display: Using SkeletalMeshReduction for automatic skeletal mesh reduction
+[2026.06.10-00.18.37:592][  0]LogMeshReduction: Display: Using ProxyLODMeshReduction for automatic mesh merging
+[2026.06.10-00.18.37:592][  0]LogMeshReduction: Display: No distributed automatic mesh merging module available
+[2026.06.10-00.18.37:898][  0]LogShaderCompilers: Display: Compiling shader autogen file: ../../../../../../UE/T66/Intermediate/ShaderAutogen/PCD3D_SM5/AutogenShaderHeaders.ush
+[2026.06.10-00.18.37:898][  0]LogShaderCompilers: Display: Autogen file is unchanged, skipping write.
+[2026.06.10-00.18.37:898][  0]LogVirtualization: Display: VirtualizationSystem name found in ini file: None
+[2026.06.10-00.18.37:898][  0]LogVirtualization: Display: FNullVirtualizationSystem mounted, virtualization will be disabled
+[2026.06.10-00.18.38:056][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize started...
+[2026.06.10-00.18.38:061][  0]LogWorldPartition: Display: FWorldPartitionClassDescRegistry::Initialize took 4.882 ms
+[2026.06.10-00.18.39:498][  0]LogMetaSound: Display: MetaSound Page Target Initialized to 'Default'
+[2026.06.10-00.18.39:498][  0]LogAudio: Display: Registering Engine Module Parameter Interfaces...
+[2026.06.10-00.18.40:657][  0]LogFabLauncher: Display: FabLauncher (version 0.5.0) active
+[2026.06.10-00.18.40:959][  0]LogAssetRegistry: Display: Asset registry cache read as 77.6 MiB from ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_0.bin.
+[2026.06.10-00.18.40:959][  0]LogAssetRegistry: Display: AssetDataGatherer spent 0.080s loading caches ../../../../../../UE/T66/Intermediate/CachedAssetRegistry_*.bin.
+[2026.06.10-00.18.41:102][  0]LogCsvProfiler: Display: Metadata set : largeworldcoordinates="1"
+[2026.06.10-00.18.41:150][  0]LogPython: Display: No pip-enabled plugins with python dependencies found, skipping
+[2026.06.10-00.18.41:751][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... started...
+[2026.06.10-00.18.41:768][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/IKRig/Content/Python/init_unreal.py... took 27.395 ms
+[2026.06.10-00.18.41:768][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... started...
+[2026.06.10-00.18.41:799][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Animation/ControlRig/Content/Python/init_unreal.py... took 19.871 ms (total: 47.267 ms)
+[2026.06.10-00.18.41:799][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/MovieScene/MovieRenderPipeline/Content/Python/init_unreal.py... started...
+[2026.06.10-00.18.41:799][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/MovieScene/MovieRenderPipeline/Content/Python/init_unreal.py... took 2.792 ms (total: 50.059 ms)
+[2026.06.10-00.18.41:799][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Importers/USDImporter/Content/Python/init_unreal.py... started...
+[2026.06.10-00.18.41:799][  0]LogPython: Display: Running start-up script C:/Program Files/Epic Games/UE_5.7/Engine/Plugins/Importers/USDImporter/Content/Python/init_unreal.py... took 198 us (total: 50.258 ms)
+[2026.06.10-00.18.41:799][  0]LogPythonScriptCommandlet: Display: Running Python script: C:/UE/T66/Scripts/ImportGeneratedOSTs.py
+[2026.06.10-00.18.41:847][  0]LogAudio: Display: AudioInfo: 'BINKA' Registered
+[2026.06.10-00.18.41:847][  0]LogAudio: Display: AudioInfo: 'ADPCM' Registered
+[2026.06.10-00.18.41:847][  0]LogAudio: Display: AudioInfo: 'PCM' Registered
+[2026.06.10-00.18.41:864][  0]LogAudio: Display: AudioInfo: 'OGG' Registered
+[2026.06.10-00.18.41:864][  0]LogAudio: Display: AudioInfo: 'OPUS' Registered
+[2026.06.10-00.18.41:864][  0]LogAudio: Display: AudioInfo: 'RADA' Registered
+[2026.06.10-00.18.42:422][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Area_Casino...
+[2026.06.10-00.18.42:549][  0]LogAudioDerivedData: Display: MUS_Area_Casino compressed to 19.32% (from 3,103KB to 599KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.42:556][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Areas/CasinoNPC/MUS_Area_Casino.MUS_Area_Casino: Duration=16.55 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=4, Chunk0=28 bytes, Chunk1=261617 bytes, ChunkN=260853)
+[2026.06.10-00.18.42:691][  0]LogSourceControl: Display: Uncontrolled Changelist persistency file loaded ../../../../../../UE/T66/Saved/SourceControl/UncontrolledChangelists.json
+[2026.06.10-00.18.42:754][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Area_LoanShark...
+[2026.06.10-00.18.42:881][  0]LogAudioDerivedData: Display: MUS_Area_LoanShark compressed to 16.28% (from 3,913KB to 637KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.42:897][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Areas/LoanShark/MUS_Area_LoanShark.MUS_Area_LoanShark: Duration=20.87 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=4, Chunk0=28 bytes, Chunk1=261467 bytes, ChunkN=261143)
+[2026.06.10-00.18.42:993][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Area_Ouroboros...
+[2026.06.10-00.18.43:184][  0]LogAudioDerivedData: Display: MUS_Area_Ouroboros compressed to 15.26% (from 5,454KB to 832KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.43:184][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Areas/Ouroboros/MUS_Area_Ouroboros.MUS_Area_Ouroboros: Duration=29.09 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=5, Chunk0=28 bytes, Chunk1=261191 bytes, ChunkN=261405)
+[2026.06.10-00.18.43:280][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Area_Saint...
+[2026.06.10-00.18.43:470][  0]LogAudioDerivedData: Display: MUS_Area_Saint compressed to 15.81% (from 5,000KB to 790KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.43:470][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Areas/Saint/MUS_Area_Saint.MUS_Area_Saint: Duration=26.67 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=5, Chunk0=28 bytes, Chunk1=261521 bytes, ChunkN=260921)
+[2026.06.10-00.18.43:550][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Area_Vendor...
+[2026.06.10-00.18.43:693][  0]LogAudioDerivedData: Display: MUS_Area_Vendor compressed to 18.36% (from 3,529KB to 648KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.43:693][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Areas/VendorNPC/MUS_Area_Vendor.MUS_Area_Vendor: Duration=18.82 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=4, Chunk0=28 bytes, Chunk1=261663 bytes, ChunkN=261593)
+[2026.06.10-00.18.43:820][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Boss_BaelFallenChad...
+[2026.06.10-00.18.44:026][  0]LogAudioDerivedData: Display: MUS_Boss_BaelFallenChad compressed to 20.66% (from 5,142KB to 1,062KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.44:042][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Bosses/Dungeon_BaelFallenChad/MUS_Boss_BaelFallenChad.MUS_Boss_BaelFallenChad: Duration=27.43 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=6, Chunk0=28 bytes, Chunk1=261301 bytes, ChunkN=260729)
+[2026.06.10-00.18.44:121][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Boss_BoneJailer...
+[2026.06.10-00.18.44:248][  0]LogAudioDerivedData: Display: MUS_Boss_BoneJailer compressed to 19.92% (from 3,000KB to 597KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.44:252][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Bosses/Dungeon_BoneJailer/MUS_Boss_BoneJailer.MUS_Boss_BoneJailer: Duration=16.00 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=4, Chunk0=28 bytes, Chunk1=261629 bytes, ChunkN=261107)
+[2026.06.10-00.18.44:333][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Boss_SewerSlimeKing...
+[2026.06.10-00.18.44:486][  0]LogAudioDerivedData: Display: MUS_Boss_SewerSlimeKing compressed to 18.84% (from 3,750KB to 706KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.44:486][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Bosses/Dungeon_SewerSlimeKing/MUS_Boss_SewerSlimeKing.MUS_Boss_SewerSlimeKing: Duration=20.00 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=4, Chunk0=28 bytes, Chunk1=260829 bytes, ChunkN=261661)
+[2026.06.10-00.18.44:565][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Boss_WebMatriarch...
+[2026.06.10-00.18.44:661][  0]LogAudioDerivedData: Display: MUS_Boss_WebMatriarch compressed to 21.10% (from 2,727KB to 575KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.44:661][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Bosses/Dungeon_WebMatriarch/MUS_Boss_WebMatriarch.MUS_Boss_WebMatriarch: Duration=14.55 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=4, Chunk0=28 bytes, Chunk1=261955 bytes, ChunkN=261319)
+[2026.06.10-00.18.44:724][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Boss_Vendor...
+[2026.06.10-00.18.44:820][  0]LogAudioDerivedData: Display: MUS_Boss_Vendor compressed to 20.51% (from 2,400KB to 492KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.44:820][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Bosses/VendorBoss/MUS_Boss_Vendor.MUS_Boss_Vendor: Duration=12.80 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=3, Chunk0=28 bytes, Chunk1=261107 bytes, ChunkN=242851)
+[2026.06.10-00.18.44:947][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Hero_1_FoundingChad...
+[2026.06.10-00.18.45:171][  0]LogAudioDerivedData: Display: MUS_Hero_1_FoundingChad compressed to 19.57% (from 6,101KB to 1,193KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.45:182][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Heroes/Hero_4/MUS_Hero_1_FoundingChad.MUS_Hero_1_FoundingChad: Duration=32.54 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=6, Chunk0=28 bytes, Chunk1=261157 bytes, ChunkN=261891)
+[2026.06.10-00.18.45:647][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Hero_7_RabbitChad...
+[2026.06.10-00.18.46:512][  0]LogAudioDerivedData: Display: MUS_Hero_7_RabbitChad compressed to 18.55% (from 24,445KB to 4,533KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.46:528][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Heroes/Hero_7/MUS_Hero_7_RabbitChad.MUS_Hero_7_RabbitChad: Duration=130.37 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=19, Chunk0=28 bytes, Chunk1=261319 bytes, ChunkN=261599)
+[2026.06.10-00.18.47:020][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MainTheme...
+[2026.06.10-00.18.47:784][  0]LogAudioDerivedData: Display: MainTheme compressed to 10.98% (from 26,717KB to 2,934KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.47:784][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/MainTheme.MainTheme: Duration=142.49 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=13, Chunk0=28 bytes, Chunk1=260929 bytes, ChunkN=261143)
+[2026.06.10-00.18.47:958][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Stage_01...
+[2026.06.10-00.18.48:196][  0]LogAudioDerivedData: Display: MUS_Stage_01 compressed to 18.69% (from 6,923KB to 1,293KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.48:196][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Stages/Stage_01/MUS_Stage_01.MUS_Stage_01: Duration=36.92 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=7, Chunk0=28 bytes, Chunk1=261231 bytes, ChunkN=261219)
+[2026.06.10-00.18.48:324][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Stage_02...
+[2026.06.10-00.18.48:547][  0]LogAudioDerivedData: Display: MUS_Stage_02 compressed to 19.15% (from 6,428KB to 1,230KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.48:547][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Stages/Stage_02/MUS_Stage_02.MUS_Stage_02: Duration=34.29 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=6, Chunk0=28 bytes, Chunk1=261933 bytes, ChunkN=262123)
+[2026.06.10-00.18.48:674][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Stage_03...
+[2026.06.10-00.18.48:896][  0]LogAudioDerivedData: Display: MUS_Stage_03 compressed to 20.31% (from 6,000KB to 1,218KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.48:896][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Stages/Stage_03/MUS_Stage_03.MUS_Stage_03: Duration=32.00 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=6, Chunk0=28 bytes, Chunk1=261635 bytes, ChunkN=262023)
+[2026.06.10-00.18.49:007][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Stage_04...
+[2026.06.10-00.18.49:197][  0]LogAudioDerivedData: Display: MUS_Stage_04 compressed to 20.16% (from 5,625KB to 1,134KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.49:213][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Stages/Stage_04/MUS_Stage_04.MUS_Stage_04: Duration=30.00 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=6, Chunk0=28 bytes, Chunk1=261699 bytes, ChunkN=261997)
+[2026.06.10-00.18.49:244][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Stinger_Defeat...
+[2026.06.10-00.18.49:270][  0]LogAudioDerivedData: Display: MUS_Stinger_Defeat compressed to 10.09% (from 787KB to 79KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.49:270][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Stingers/Defeat/MUS_Stinger_Defeat.MUS_Stinger_Defeat: Duration=4.20 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=2, Chunk0=28 bytes, Chunk1=81369 bytes, ChunkN=0)
+[2026.06.10-00.18.49:292][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave MUS_Stinger_Victory...
+[2026.06.10-00.18.49:324][  0]LogAudioDerivedData: Display: MUS_Stinger_Victory compressed to 21.21% (from 937KB to 198KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.49:324][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Stingers/Victory/MUS_Stinger_Victory.MUS_Stinger_Victory: Duration=5.00 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=2, Chunk0=28 bytes, Chunk1=203645 bytes, ChunkN=0)
+[2026.06.10-00.18.49:595][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave Survival...
+[2026.06.10-00.18.50:055][  0]LogAudioDerivedData: Display: Survival compressed to 16.67% (from 14,260KB to 2,376KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.50:070][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Survival.Survival: Duration=76.05 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=11, Chunk0=28 bytes, Chunk1=261879 bytes, ChunkN=261059)
+[2026.06.10-00.18.50:827][  0]LogAudioDerivedData: Display: Building compressed audio format BINKA hash BINKA_SCVER_5028_R4DV_false_SR0_48000.000000_SR1_32000.000000_SR2_24000.000000_SR3_12000.000000_SR4_8000.000000_QMOD_1.000000_CQLT_-1_ASTH_0.000000_INLC_false_LCK1_0.000000_CSZE_65536_LCF_false_ZCS_256_MCSO_0_END wave Theme...
+[2026.06.10-00.18.52:215][  0]LogAudioDerivedData: Display: Theme compressed to 19.78% (from 39,647KB to 7,843KB) with BINKA at Quality 80 with Quality Modifier 1.00
+[2026.06.10-00.18.52:298][  0]LogAudio: Display: Chunk stats for (SoundWave /Game/Audio/OSTS/Theme.Theme: Duration=211.45 secs, Channels=2), Settings(FirstChunkSize=4294967295 frames, InlineFirst=false, MaxChunkSize=262144), Chunks=32, Chunk0=28 bytes, Chunk1=260013 bytes, ChunkN=259675)
+[2026.06.10-00.18.52:326][  0]LogPythonScriptCommandlet: Display: Python script executed successfully
+[2026.06.10-00.18.52:326][  0]LogInit: Display:
+[2026.06.10-00.18.52:326][  0]LogInit: Display: Warning/Error Summary (Unique only)
+[2026.06.10-00.18.52:326][  0]LogInit: Display: -----------------------------------
+[2026.06.10-00.18.52:326][  0]LogInit: Display: LogConsoleManager: Warning: Setting the console variable 'r.Upscale.Quality' with 'SetByScalability' was ignored as it is lower priority than the previous 'SetByProjectSetting'. Value remains '1'
+[2026.06.10-00.18.52:326][  0]LogInit: Display:
+[2026.06.10-00.18.52:326][  0]LogInit: Display: Success - 0 error(s), 2 warning(s)
+[2026.06.10-00.18.52:326][  0]LogInit: Display:
+
+Execution of commandlet took:  10.58 seconds
+[2026.06.10-00.18.54:113][  0]LogShaderCompilers: Display: Shaders left to compile 0
+[2026.06.10-00.18.54:193][  0]LogSourceControl: Display: Uncontrolled Changelist persistency file saved ../../../../../../UE/T66/Saved/SourceControl/UncontrolledChangelists.json

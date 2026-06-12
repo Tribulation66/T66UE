@@ -11,32 +11,29 @@
 class UT66BuffSaveGame;
 
 USTRUCT(BlueprintType)
-struct T66_API FT66RelicDefinition
+struct T66_API FT66SurgeryDefinition
 {
 	GENERATED_BODY()
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
-	FName RelicID = NAME_None;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Surgery")
+	FName SurgeryID = NAME_None;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Surgery")
 	FText DisplayName;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Surgery")
 	ET66HeroStatType BaseStatType = ET66HeroStatType::Damage;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Surgery")
 	ET66StatType StatType = ET66StatType::None;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Surgery")
 	bool bUsesStat = false;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
-	bool bIsSolomonsRing = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Surgery")
 	int32 BonusStatPoints = 1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Relic")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Surgery")
 	int32 CostCC = 10;
 };
 
@@ -61,12 +58,12 @@ public:
 	static const FString BuffSaveSlotName;
 	static constexpr int32 BuffSaveUserIndex = 0;
 
-	/** Permanent Relic progression has four visible rarity tiers. Legacy wedge arrays still deserialize older saves. */
+	/** Permanent Surgery progression has four visible rarity tiers. Legacy wedge arrays still deserialize older saves. */
 	static constexpr int32 MaxFillStepsPerStat = 4;
-	static constexpr int32 MaxRelicRarityTier = 4;
+	static constexpr int32 MaxSurgeryRarityTier = 4;
 	static constexpr int32 PermanentBuffUnlockCostCC = 10;
-	static constexpr int32 RelicUnlockCostCC = 10;
-	static constexpr int32 RelicPermanentBonusStatPoints = 1;
+	static constexpr int32 SurgeryUnlockCostCC = 10;
+	static constexpr int32 SurgeryPermanentBonusStatPoints = 1;
 	static constexpr int32 SingleUseBuffCostCC = 1;
 	static constexpr int32 MaxSelectedSingleUseBuffs = 4;
 	static constexpr float SingleUseStatBuffMultiplier = 1.10f;
@@ -119,7 +116,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool UnlockRandomStat();
 
-	/** True if the primary-stat Relic for this stat is owned. */
+	/** True if the primary-stat Surgery for this stat is owned. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
 	bool IsStatMaxed(ET66HeroStatType StatType) const;
 
@@ -129,34 +126,34 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Buffs")
 	FT66HeroStatBonuses GetPermanentBuffStatBonuses() const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
-	bool IsRelicOwned(FName RelicID) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Surgeries")
+	bool IsSurgeryOwned(FName SurgeryID) const;
 
-	UFUNCTION(BlueprintCallable, Category = "PowerUp|Relics")
-	bool PurchaseRelic(FName RelicID);
+	UFUNCTION(BlueprintCallable, Category = "PowerUp|Surgeries")
+	bool PurchaseSurgery(FName SurgeryID);
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
-	int32 GetRelicCost(FName RelicID) const;
+	UFUNCTION(BlueprintCallable, Category = "PowerUp|Surgeries")
+	bool RefundSurgery(FName SurgeryID);
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
-	int32 GetRelicTierValue(FName RelicID) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Surgeries")
+	int32 GetSurgeryCost(FName SurgeryID) const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
-	ET66ItemRarity GetRelicRarity(FName RelicID) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Surgeries")
+	int32 GetSurgeryTierValue(FName SurgeryID) const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
-	bool IsRelicMaxTier(FName RelicID) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Surgeries")
+	ET66ItemRarity GetSurgeryRarity(FName SurgeryID) const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
-	bool HasSolomonsRing() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Surgeries")
+	bool IsSurgeryMaxTier(FName SurgeryID) const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
-	int32 GetRelicBaseStatBonus(ET66HeroStatType StatType) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Surgeries")
+	int32 GetSurgeryBaseStatBonus(ET66HeroStatType StatType) const;
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Relics")
-	int32 GetRelicStatBonus(ET66StatType StatType) const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp|Surgeries")
+	int32 GetSurgeryStatBonus(ET66StatType StatType) const;
 
-	static const TArray<FT66RelicDefinition>& GetAllRelicDefinitions();
+	static const TArray<FT66SurgeryDefinition>& GetAllSurgeryDefinitions();
 
 	/** Compatibility alias for permanent diploma primary-stat bonuses. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "PowerUp")
@@ -238,6 +235,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "PowerUp")
 	bool PurchaseSingleUseBuff(ET66StatType StatType);
 
+	UFUNCTION(BlueprintCallable, Category = "PowerUp")
+	bool RefundSingleUseBuff(ET66StatType StatType);
+
 	TMap<ET66StatType, float> GetPendingSingleUseBuffMultipliers() const;
 
 	TMap<ET66StatType, float> ConsumePendingSingleUseBuffMultipliers();
@@ -271,8 +271,8 @@ private:
 	void MigrateV8ToV9PrimaryAccuracy();
 	void MigrateV9ToV10SingleLoadoutSlots();
 	void MigrateV10ToV11PrimarySpeed();
-	void MigrateV11ToV12Relics();
-	void MigrateV12ToV13RelicTiers();
+	void MigrateV11ToV12Surgeries();
+	void MigrateV12ToV13SurgeryTiers();
 	void Save();
 	bool HandleShutdown(const FT66ShutdownContext& Context);
 	bool FlushPendingDurableState(const TCHAR* Reason);
@@ -292,9 +292,9 @@ private:
 	bool RebuildSelectedSingleUseStatesFromLoadout();
 	int32 GetRandomBonusForStat(ET66HeroStatType StatType) const;
 	int32 GetStatIndex(ET66HeroStatType StatType) const;
-	FName GetRelicIDForBaseStat(ET66HeroStatType StatType) const;
-	const FT66RelicDefinition* FindRelicDefinition(FName RelicID) const;
-	bool EnsureRelicOwnershipValid();
+	FName GetSurgeryIDForBaseStat(ET66HeroStatType StatType) const;
+	const FT66SurgeryDefinition* FindSurgeryDefinition(FName SurgeryID) const;
+	bool EnsureSurgeryOwnershipValid();
 	int32 GetSingleUseBuffIndex(ET66StatType StatType) const;
 	void AddBonusForStat(FT66HeroStatBonuses& Bonuses, ET66HeroStatType StatType, int32 Amount) const;
 

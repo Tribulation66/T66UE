@@ -62,7 +62,8 @@ enum class ET66ScreenType : uint8
 	RemovedScreenSlot48 = 48 UMETA(Hidden),
 	RemovedScreenSlot49 = 49 UMETA(Hidden),
 	GameOver = 50 UMETA(DisplayName = "Game Over Modal"),
-	PetSelection = 51 UMETA(DisplayName = "Pet Selection")
+	PetSelection = 51 UMETA(DisplayName = "Pet Selection"),
+	CustomHeroBuilder = 52 UMETA(DisplayName = "Custom Hero Builder")
 };
 
 UENUM(BlueprintType)

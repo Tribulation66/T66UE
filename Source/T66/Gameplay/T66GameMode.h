@@ -162,6 +162,8 @@ public:
 	bool GetTowerFloorLayout(int32 FloorNumber, T66TowerMapTerrain::FFloor& OutFloor) const;
 	int32 GetTowerFloorIndexForLocation(const FVector& Location) const;
 	int32 GetCurrentTowerFloorIndex() const;
+	/** Explicit hero floor transition (spawn / descent hole / rescue). Altitude never changes the floor. */
+	void SetHeroTowerFloorNumber(int32 FloorNumber, const TCHAR* Reason);
 	int32 ResolveTowerFloorNumberForActor(const AActor* Actor) const;
 	bool ShouldApplyTowerFloorDamage(const AActor* SourceActor, const FVector& DamageOrigin, const AActor* TargetActor) const;
 	bool TryGetTowerEnemySpawnLocation(const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation) const;
@@ -497,6 +499,12 @@ private:
 	int32 TowerIdolSelectionsAtStageStart = 0;
 	int32 ActiveTowerTrapFloorNumber = INDEX_NONE;
 	int32 ActiveTowerTerrainVisualFloorNumber = INDEX_NONE;
+	/**
+	 * Stateful hero floor membership: changes ONLY through explicit transitions
+	 * (layout build/spawn, descent holes, fall rescue) — never from altitude, so
+	 * jumps can never flip the active floor (2026-06-10 black-map root cause).
+	 */
+	int32 StatefulHeroTowerFloorNumber = INDEX_NONE;
 
 	bool bFinalDifficultySurvivalActive = false;
 	float FinalDifficultySurvivalElapsedSeconds = 0.f;

@@ -2,8 +2,6 @@
 
 #include "Core/T66PlayerExperienceSubSystem.h"
 
-#include "Engine/AssetManager.h"
-#include "Engine/StreamableManager.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66PlayerExperience, Log, All);
 
@@ -56,58 +54,32 @@ const FT66PlayerExperienceDifficultyTuning& FT66PlayerExperienceTuningTable::Get
 void UT66PlayerExperienceSubSystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
-	QueueTuningDataTableLoad();
+	LoadTuningDataTable();
 }
 
-void UT66PlayerExperienceSubSystem::QueueTuningDataTableLoad()
+void UT66PlayerExperienceSubSystem::LoadTuningDataTable()
 {
+	// Loaded synchronously: the table is five rows, and the previous async preload raced
+	// gameplay difficulty queries (GetDifficultyStartStage warned and returned empty
+	// tuning during staged smokes).
 	const FSoftObjectPath TuningTablePath(T66PlayerExperienceDataTablePath);
-	if (UDataTable* ResidentTable = Cast<UDataTable>(TuningTablePath.ResolveObject()))
+	UDataTable* TuningTable = Cast<UDataTable>(TuningTablePath.TryLoad());
+	if (!TuningTable)
 	{
-		if (ResidentTable->GetRowStruct() != FT66PlayerExperienceDifficultyTuning::StaticStruct())
-		{
-			UE_LOG(LogT66PlayerExperience, Error, TEXT("PlayerExperience DataTable '%s' has row struct '%s', expected '%s'."),
-				*ResidentTable->GetPathName(),
-				ResidentTable->GetRowStruct() ? *ResidentTable->GetRowStruct()->GetName() : TEXT("<null>"),
-				*FT66PlayerExperienceDifficultyTuning::StaticStruct()->GetName());
-			return;
-		}
-
-		bTuningLoaded = CachedTuning.LoadFromDataTable(ResidentTable);
+		UE_LOG(LogT66PlayerExperience, Error, TEXT("Failed to load player experience DataTable at '%s'."), T66PlayerExperienceDataTablePath);
 		return;
 	}
 
-	TuningDataTableLoadHandle = UAssetManager::GetStreamableManager().RequestAsyncLoad(
-		TArray<FSoftObjectPath>{ TuningTablePath },
-		FStreamableDelegate::CreateUObject(this, &UT66PlayerExperienceSubSystem::HandleTuningDataTableLoaded));
-	if (!TuningDataTableLoadHandle.IsValid())
-	{
-		UE_LOG(LogT66PlayerExperience, Error, TEXT("Failed to queue async load for player experience DataTable at '%s'."), T66PlayerExperienceDataTablePath);
-	}
-}
-
-void UT66PlayerExperienceSubSystem::HandleTuningDataTableLoaded()
-{
-	TuningDataTableLoadHandle.Reset();
-
-	const FSoftObjectPath TuningTablePath(T66PlayerExperienceDataTablePath);
-	UDataTable* PlayerExperienceDataTable = Cast<UDataTable>(TuningTablePath.ResolveObject());
-	if (!PlayerExperienceDataTable)
-	{
-		UE_LOG(LogT66PlayerExperience, Error, TEXT("Failed to resolve player experience DataTable after async load at '%s'."), T66PlayerExperienceDataTablePath);
-		return;
-	}
-
-	if (PlayerExperienceDataTable->GetRowStruct() != FT66PlayerExperienceDifficultyTuning::StaticStruct())
+	if (TuningTable->GetRowStruct() != FT66PlayerExperienceDifficultyTuning::StaticStruct())
 	{
 		UE_LOG(LogT66PlayerExperience, Error, TEXT("PlayerExperience DataTable '%s' has row struct '%s', expected '%s'."),
-			*PlayerExperienceDataTable->GetPathName(),
-			PlayerExperienceDataTable->GetRowStruct() ? *PlayerExperienceDataTable->GetRowStruct()->GetName() : TEXT("<null>"),
+			*TuningTable->GetPathName(),
+			TuningTable->GetRowStruct() ? *TuningTable->GetRowStruct()->GetName() : TEXT("<null>"),
 			*FT66PlayerExperienceDifficultyTuning::StaticStruct()->GetName());
 		return;
 	}
 
-	bTuningLoaded = CachedTuning.LoadFromDataTable(PlayerExperienceDataTable);
+	bTuningLoaded = CachedTuning.LoadFromDataTable(TuningTable);
 }
 
 bool UT66PlayerExperienceSubSystem::IsTuningReady(const TCHAR* Caller) const

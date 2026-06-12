@@ -1,6 +1,7 @@
 // Copyright Tribulation 66. All Rights Reserved.
 
 #include "Core/T66GameInstance.h"
+#include "Core/T66CodeReferencedAssets.h"
 #include "Core/T66DirectEntry.h"
 #include "Core/T66ReleaseVariantSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
@@ -160,10 +161,10 @@ namespace
 			OutCategory = ET66AttackCategory::Bounce;
 			return true;
 
-		case ET66StatType::PierceDamage:
-		case ET66StatType::PierceSpeed:
-		case ET66StatType::PierceScale:
-			OutCategory = ET66AttackCategory::Pierce;
+		case ET66StatType::SummonDamage:
+		case ET66StatType::SummonSpeed:
+		case ET66StatType::SummonScale:
+			OutCategory = ET66AttackCategory::Summon;
 			return true;
 
 		case ET66StatType::DotDamage:
@@ -297,6 +298,22 @@ namespace
 	static const TCHAR* FrontendLevelName = TEXT("/Game/Maps/FrontendLevel");
 	static const TCHAR* GameplayLevelName = TEXT("/Game/Maps/GameplayLevel");
 
+	static const FName CustomHeroID(TEXT("Hero_Custom"));
+
+	static bool T66FindRawHeroData(UDataTable* HeroTable, const FName HeroID, FHeroData& OutHeroData)
+	{
+		if (!HeroTable || HeroID.IsNone())
+		{
+			return false;
+		}
+		if (const FHeroData* Row = HeroTable->FindRow<FHeroData>(HeroID, TEXT("GetRawHeroData")))
+		{
+			OutHeroData = *Row;
+			return true;
+		}
+		return false;
+	}
+
 	// Goal: remove "soft/blurry" presentation caused by resolution scaling / dynamic res.
 	// Do this once on boot (no per-frame work).
 	void ApplyCrispRenderingDefaults()
@@ -370,6 +387,10 @@ void UT66GameInstance::Init()
 {
 	Super::Init();
 
+	// Cook guard: loud startup error for any C++ string-referenced asset missing from
+	// this build (forgotten DirectoriesToAlwaysCook entry) instead of silent placeholders.
+	T66CodeReferencedAssets::VerifyAllResolvable();
+
 	ApplyCrispRenderingDefaults();
 	ApplyConfiguredMainMapLayoutVariant();
 	RestoreRememberedSelectionDefaults();
@@ -435,17 +456,17 @@ void UT66GameInstance::Init()
 		const TCHAR* const PowerUpBuffSlugs[] = {
 			TEXT("aoe-damage"),
 			TEXT("bounce-damage"),
-			TEXT("pierce-damage"),
+			TEXT("summon-damage"),
 			TEXT("dot-damage"),
 			TEXT("headshot"),
 			TEXT("aoe-speed"),
 			TEXT("bounce-speed"),
-			TEXT("pierce-speed"),
+			TEXT("summon-speed"),
 			TEXT("dot-speed"),
 			TEXT("crit-chance"),
 			TEXT("aoe-scale"),
 			TEXT("bounce-scale"),
-			TEXT("pierce-scale"),
+			TEXT("summon-scale"),
 			TEXT("dot-scale"),
 			TEXT("range"),
 			TEXT("execute"),
@@ -887,9 +908,199 @@ UDataTable* UT66GameInstance::GetIdolsDataTable() { return ResolveCachedDataTabl
 UDataTable* UT66GameInstance::GetWeaponsDataTable() { return ResolveCachedDataTable(CachedWeaponsDataTable, WeaponsDataTable); }
 UDataTable* UT66GameInstance::GetCombatVFXBindingsDataTable() { return ResolveCachedDataTable(CachedCombatVFXBindingsDataTable, CombatVFXBindingsDataTable); }
 
+FName UT66GameInstance::GetCustomHeroID()
+{
+	return CustomHeroID;
+}
+
+bool UT66GameInstance::IsCustomHeroID(const FName HeroID)
+{
+	return HeroID == CustomHeroID;
+}
+
+void UT66GameInstance::ConfigureCustomHero(
+	const FName WeaponSourceHeroID,
+	const FName VisualSourceHeroID,
+	const ET66BodyType BodyType,
+	const FT66HeroStatBlock& Stats)
+{
+	CustomHeroBuild.bConfigured = true;
+	CustomHeroBuild.WeaponSourceHeroID = ResolveCustomHeroWeaponSourceHeroID(WeaponSourceHeroID);
+	CustomHeroBuild.VisualSourceHeroID = ResolveCustomHeroVisualSourceHeroID(VisualSourceHeroID);
+	CustomHeroBuild.BodyType = BodyType;
+	CustomHeroBuild.Stats = Stats;
+	SelectedHeroID = CustomHeroID;
+	SelectedHeroBodyType = BodyType;
+	SelectedHeroSkinID = FName(TEXT("Default"));
+	bRunIneligibleForLeaderboard = true;
+
+	if (UT66AchievementsSubsystem* Achievements = GetSubsystem<UT66AchievementsSubsystem>())
+	{
+		FT66SavedCustomHeroBuild SavedBuild;
+		SavedBuild.bConfigured = true;
+		SavedBuild.WeaponSourceHeroID = CustomHeroBuild.WeaponSourceHeroID;
+		SavedBuild.VisualSourceHeroID = CustomHeroBuild.VisualSourceHeroID;
+		SavedBuild.BodyType = CustomHeroBuild.BodyType;
+		SavedBuild.Stats = CustomHeroBuild.Stats;
+		Achievements->SaveCustomHeroBuild(SavedBuild);
+		Achievements->RememberLastSelectedLoadout(CustomHeroID, SelectedCompanionID);
+	}
+}
+
+FName UT66GameInstance::ResolveCustomHeroWeaponSourceHeroID(const FName HeroID) const
+{
+	if (!IsCustomHeroID(HeroID))
+	{
+		return HeroID;
+	}
+
+	if (!CustomHeroBuild.WeaponSourceHeroID.IsNone())
+	{
+		return CustomHeroBuild.WeaponSourceHeroID;
+	}
+
+	if (UDataTable* DataTable = const_cast<UT66GameInstance*>(this)->GetHeroDataTable())
+	{
+		const TArray<FName> RowNames = DataTable->GetRowNames();
+		for (const FName RowName : RowNames)
+		{
+			if (!IsCustomHeroID(RowName))
+			{
+				return RowName;
+			}
+		}
+	}
+
+	return FName(TEXT("Hero_1"));
+}
+
+FName UT66GameInstance::ResolveCustomHeroVisualSourceHeroID(const FName HeroID) const
+{
+	if (!IsCustomHeroID(HeroID))
+	{
+		return HeroID;
+	}
+
+	if (!CustomHeroBuild.VisualSourceHeroID.IsNone())
+	{
+		return CustomHeroBuild.VisualSourceHeroID;
+	}
+
+	return ResolveCustomHeroWeaponSourceHeroID(HeroID);
+}
+
+ET66BodyType UT66GameInstance::ResolveCustomHeroBodyType(const FName HeroID, const ET66BodyType FallbackBodyType) const
+{
+	return IsCustomHeroID(HeroID) && CustomHeroBuild.bConfigured
+		? CustomHeroBuild.BodyType
+		: FallbackBodyType;
+}
+
 bool UT66GameInstance::GetHeroData(FName HeroID, FHeroData& OutHeroData)
 {
-	return FindDataRow(GetHeroDataTable(), HeroID, OutHeroData, TEXT("GetHeroData"));
+	UDataTable* HeroTable = GetHeroDataTable();
+	if (!IsCustomHeroID(HeroID))
+	{
+		return FindDataRow(HeroTable, HeroID, OutHeroData, TEXT("GetHeroData"));
+	}
+
+	FHeroData VisualData;
+	FHeroData WeaponData;
+	const FName VisualSourceHeroID = ResolveCustomHeroVisualSourceHeroID(HeroID);
+	const FName WeaponSourceHeroID = ResolveCustomHeroWeaponSourceHeroID(HeroID);
+	const bool bHasVisualData = T66FindRawHeroData(HeroTable, VisualSourceHeroID, VisualData);
+	const bool bHasWeaponData = T66FindRawHeroData(HeroTable, WeaponSourceHeroID, WeaponData);
+	if (!bHasVisualData && !bHasWeaponData)
+	{
+		return false;
+	}
+
+	OutHeroData = bHasVisualData ? VisualData : WeaponData;
+	const FHeroData& CombatSource = bHasWeaponData ? WeaponData : OutHeroData;
+	OutHeroData.HeroID = CustomHeroID;
+	OutHeroData.DisplayName = NSLOCTEXT("T66.CustomHero", "DisplayName", "Custom Hero");
+	OutHeroData.Description = NSLOCTEXT("T66.CustomHero", "Description", "A custom hero build using selected stats, weapon set, and model.");
+	OutHeroData.PlaceholderColor = FLinearColor(0.78f, 0.66f, 0.95f, 1.f);
+	OutHeroData.AutoAttackProjectileMesh = CombatSource.AutoAttackProjectileMesh;
+	OutHeroData.MapTheme = bHasVisualData ? VisualData.MapTheme : CombatSource.MapTheme;
+	OutHeroData.PrimaryCategory = CombatSource.PrimaryCategory;
+	OutHeroData.UltimateType = ET66UltimateType::None;
+	OutHeroData.PassiveType = ET66PassiveType::None;
+	OutHeroData.BestStat1 = ET66StatType::None;
+	OutHeroData.BestStat2 = ET66StatType::None;
+	OutHeroData.BestStat3 = ET66StatType::None;
+
+	FT66HeroStatBlock Stats = CustomHeroBuild.Stats;
+	if (!CustomHeroBuild.bConfigured)
+	{
+		Stats.Damage = 3;
+		Stats.AttackSpeed = 3;
+		Stats.AttackScale = 3;
+		Stats.Accuracy = 3;
+		Stats.Armor = 3;
+		Stats.Evasion = 3;
+		Stats.Luck = 3;
+		Stats.Speed = 3;
+	}
+	OutHeroData.BaseDamage = FMath::Max(1, Stats.Damage);
+	OutHeroData.BaseAttackSpeed = FMath::Max(1, Stats.AttackSpeed);
+	OutHeroData.BaseAttackScale = FMath::Max(1, Stats.AttackScale);
+	OutHeroData.BaseAccuracyStat = FMath::Max(1, Stats.Accuracy);
+	OutHeroData.BaseArmor = FMath::Max(1, Stats.Armor);
+	OutHeroData.BaseEvasion = FMath::Max(1, Stats.Evasion);
+	OutHeroData.BaseLuck = FMath::Max(1, Stats.Luck);
+	OutHeroData.BaseSpeed = FMath::Max(1, Stats.Speed);
+
+	OutHeroData.LvlDmgMin = OutHeroData.LvlDmgMax = 2.f;
+	OutHeroData.LvlAtkSpdMin = OutHeroData.LvlAtkSpdMax = 2.f;
+	OutHeroData.LvlAtkScaleMin = OutHeroData.LvlAtkScaleMax = 2.f;
+	OutHeroData.LvlAccuracyMin = OutHeroData.LvlAccuracyMax = 2.f;
+	OutHeroData.LvlArmorMin = OutHeroData.LvlArmorMax = 2.f;
+	OutHeroData.LvlEvasionMin = OutHeroData.LvlEvasionMax = 2.f;
+	OutHeroData.LvlLuckMin = OutHeroData.LvlLuckMax = 2.f;
+	OutHeroData.LvlSpeedMin = OutHeroData.LvlSpeedMax = 2.f;
+
+	OutHeroData.BaseSummonDmg = CombatSource.BaseSummonDmg;
+	OutHeroData.BaseSummonAtkSpd = CombatSource.BaseSummonAtkSpd;
+	OutHeroData.BaseSummonAtkScale = CombatSource.BaseSummonAtkScale;
+	OutHeroData.BaseBounceDmg = CombatSource.BaseBounceDmg;
+	OutHeroData.BaseBounceAtkSpd = CombatSource.BaseBounceAtkSpd;
+	OutHeroData.BaseBounceAtkScale = CombatSource.BaseBounceAtkScale;
+	OutHeroData.BaseAoeDmg = CombatSource.BaseAoeDmg;
+	OutHeroData.BaseAoeAtkSpd = CombatSource.BaseAoeAtkSpd;
+	OutHeroData.BaseAoeAtkScale = CombatSource.BaseAoeAtkScale;
+	OutHeroData.BaseDotDmg = CombatSource.BaseDotDmg;
+	OutHeroData.BaseDotAtkSpd = CombatSource.BaseDotAtkSpd;
+	OutHeroData.BaseDotAtkScale = CombatSource.BaseDotAtkScale;
+	OutHeroData.BaseFireInterval = CombatSource.BaseFireInterval;
+	OutHeroData.BaseAttackRange = CombatSource.BaseAttackRange;
+	OutHeroData.BaseHitDamage = CombatSource.BaseHitDamage;
+	OutHeroData.BaseLineTargetCount = CombatSource.BaseLineTargetCount;
+	OutHeroData.BaseBounceCount = CombatSource.BaseBounceCount;
+	OutHeroData.BaseAoeCount = CombatSource.BaseAoeCount;
+	OutHeroData.BaseDotSources = CombatSource.BaseDotSources;
+	OutHeroData.ProjectileSpeed = CombatSource.ProjectileSpeed;
+	OutHeroData.FalloffPerHit = CombatSource.FalloffPerHit;
+	OutHeroData.AoeDelay = CombatSource.AoeDelay;
+	OutHeroData.AoeRadius = CombatSource.AoeRadius;
+	OutHeroData.DotTickInterval = CombatSource.DotTickInterval;
+	OutHeroData.DotDuration = CombatSource.DotDuration;
+	OutHeroData.BaseHeadshotChance = CombatSource.BaseHeadshotChance;
+	OutHeroData.BaseCritChance = CombatSource.BaseCritChance;
+	OutHeroData.BaseCloseRangeDmg = CombatSource.BaseCloseRangeDmg;
+	OutHeroData.BaseLongRangeDmg = CombatSource.BaseLongRangeDmg;
+	OutHeroData.BaseTaunt = CombatSource.BaseTaunt;
+	OutHeroData.BaseReflectDmg = CombatSource.BaseReflectDmg;
+	OutHeroData.BaseHpRegen = CombatSource.BaseHpRegen;
+	OutHeroData.BaseCrushChance = CombatSource.BaseCrushChance;
+	OutHeroData.BaseInvisChance = CombatSource.BaseInvisChance;
+	OutHeroData.BaseCounterAttack = CombatSource.BaseCounterAttack;
+	OutHeroData.BaseLifeSteal = CombatSource.BaseLifeSteal;
+	OutHeroData.BaseAssassinateChance = CombatSource.BaseAssassinateChance;
+	OutHeroData.BaseCheatChance = CombatSource.BaseCheatChance;
+	OutHeroData.BaseStealChance = CombatSource.BaseStealChance;
+	OutHeroData.BaseAccuracy = CombatSource.BaseAccuracy;
+	return true;
 }
 
 bool UT66GameInstance::GetCompanionData(FName CompanionID, FCompanionData& OutCompanionData)
@@ -1244,7 +1455,7 @@ bool UT66GameInstance::GetCombatVFXBindingData(
 
 	bool bFoundSourceTypeAndID = false;
 	FName MismatchedBindingID = NAME_None;
-	ET66AttackCategory MismatchedCategory = ET66AttackCategory::Pierce;
+	ET66AttackCategory MismatchedCategory = ET66AttackCategory::AOE;
 	for (const FName& RowName : DataTable->GetRowNames())
 	{
 		const FT66CombatVFXBindingData* Row = DataTable->FindRow<FT66CombatVFXBindingData>(RowName, TEXT("GetCombatVFXBindingData"), false);
@@ -1490,21 +1701,30 @@ bool UT66GameInstance::GetUniqueEnemyData(FName UniqueEnemyID, FUniqueEnemyData&
 TArray<FName> UT66GameInstance::GetAllHeroIDs()
 {
 	UDataTable* DataTable = GetHeroDataTable();
-	return DataTable ? DataTable->GetRowNames() : TArray<FName>();
+	TArray<FName> RowNames = DataTable ? DataTable->GetRowNames() : TArray<FName>();
+	RowNames.AddUnique(CustomHeroID);
+	return RowNames;
 }
 
 TArray<FName> UT66GameInstance::GetPlayableHeroIDs()
 {
-	const TArray<FName> AllHeroIDs = GetAllHeroIDs();
+	TArray<FName> AllHeroIDs = GetAllHeroIDs();
 	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
 	{
-		return ReleaseVariant->FilterHeroIDs(AllHeroIDs);
+		TArray<FName> Filtered = ReleaseVariant->FilterHeroIDs(AllHeroIDs);
+		Filtered.AddUnique(CustomHeroID);
+		return Filtered;
 	}
 	return AllHeroIDs;
 }
 
 bool UT66GameInstance::IsHeroPlayable(FName HeroID) const
 {
+	if (IsCustomHeroID(HeroID))
+	{
+		return true;
+	}
+
 	if (const UT66ReleaseVariantSubsystem* ReleaseVariant = GetSubsystem<UT66ReleaseVariantSubsystem>())
 	{
 		return ReleaseVariant->IsHeroAllowed(HeroID);
@@ -1814,6 +2034,27 @@ void UT66GameInstance::RestoreRememberedSelectionDefaults()
 {
 	if (UT66AchievementsSubsystem* Achievements = GetSubsystem<UT66AchievementsSubsystem>())
 	{
+		if (Achievements->HasCustomHeroBuild())
+		{
+			const FT66SavedCustomHeroBuild SavedBuild = Achievements->GetCustomHeroBuild();
+			FHeroData WeaponSourceData;
+			FHeroData VisualSourceData;
+			const bool bValidWeaponSource = !IsCustomHeroID(SavedBuild.WeaponSourceHeroID)
+				&& IsHeroPlayable(SavedBuild.WeaponSourceHeroID)
+				&& GetHeroData(SavedBuild.WeaponSourceHeroID, WeaponSourceData);
+			const bool bValidVisualSource = !IsCustomHeroID(SavedBuild.VisualSourceHeroID)
+				&& IsHeroPlayable(SavedBuild.VisualSourceHeroID)
+				&& GetHeroData(SavedBuild.VisualSourceHeroID, VisualSourceData);
+			if (SavedBuild.bConfigured && bValidWeaponSource && bValidVisualSource)
+			{
+				CustomHeroBuild.bConfigured = true;
+				CustomHeroBuild.WeaponSourceHeroID = SavedBuild.WeaponSourceHeroID;
+				CustomHeroBuild.VisualSourceHeroID = SavedBuild.VisualSourceHeroID;
+				CustomHeroBuild.BodyType = SavedBuild.BodyType;
+				CustomHeroBuild.Stats = SavedBuild.Stats;
+			}
+		}
+
 		const FName RememberedHeroID = Achievements->GetLastSelectedHeroID();
 		if (!RememberedHeroID.IsNone())
 		{
@@ -2103,8 +2344,8 @@ void UT66GameInstance::PreloadGameplayAssets(TFunction<void()> OnComplete)
 	AddAllCombatEffectAssets();
 
 	AddVisualAssets(UT66CharacterVisualSubsystem::GetHeroVisualID(
-		SelectedHeroID,
-		SelectedHeroBodyType,
+		ResolveCustomHeroVisualSourceHeroID(SelectedHeroID),
+		ResolveCustomHeroBodyType(SelectedHeroID, SelectedHeroBodyType),
 		SelectedHeroSkinID.IsNone() ? FName(TEXT("Default")) : SelectedHeroSkinID));
 
 	AddVisualAssets(UT66CharacterVisualSubsystem::GetCompanionVisualID(SelectedCompanionID, FName(TEXT("Default"))));
@@ -2442,4 +2683,3 @@ void UT66GameInstance::HidePersistentGameplayTransitionCurtain()
 
 	PersistentGameplayTransitionCurtain.Reset();
 }
-

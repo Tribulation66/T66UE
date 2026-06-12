@@ -89,7 +89,17 @@ Behavior:
 
 Visual/runtime rules:
 
-- current visuals use cooked engine/basic shape meshes through `FT66VisualUtil`
+- obstacle trap visuals now prefer the InflatableTraps01 balloon kit
+  (`/Game/World/Traps/Inflatable/SM_Inflatable_*` + pattern `MI_Inflatable_*`
+  instances of `M_FriendSlop_FallGuys`): striped balloon sweeper arm on a scalloped
+  hub, banded donut floor bumper, quilted chevron punch cushion for the wall bumper,
+  and a starred two-lobe balloon mallet on a segmented tube cable; engine/basic shape
+  meshes with flat colors remain the fallback when kit assets are missing
+- kit meshes keep the basic-shape 100uu native envelope so the dimension-driven
+  component scale knobs in `DefaultT66TrapTuning.ini` keep working unchanged; asset
+  authoring lives in `Model Generation/Runs/Environment/InflatableTraps01/`
+  (Blender lathe shapes + Codex imagegen pattern textures), and every loaded path is
+  registered in `T66CodeReferencedAssets.cpp`
 - every concrete obstacle trap now has authored motion: sweeper rotates, floor bumper rises/falls, wall bumper extends/retracts, and ceiling hammer swings
 - the primary gameplay effect is the ragdoll/disabled state, not direct trap HP damage
 - floors `2` and `3` are the only normal tower floors that spawn these traps in the current parity tuning

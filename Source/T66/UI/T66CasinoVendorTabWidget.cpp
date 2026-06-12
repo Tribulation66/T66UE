@@ -288,7 +288,7 @@ namespace
 		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorDamage", "Damage"), MakeVendorStatValue(RunState ? RunState->GetDamageStat() : 0)), BodyFontSize);
 		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorAoeDamage", "AOE Damage"), MakeVendorStatValue(RunState, ET66StatType::AoeDamage)), BodyFontSize);
 		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorBounceDamage", "Bounce Damage"), MakeVendorStatValue(RunState, ET66StatType::BounceDamage)), BodyFontSize);
-		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorPierceDamage", "Pierce Damage"), MakeVendorStatValue(RunState, ET66StatType::PierceDamage)), BodyFontSize);
+		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorSummonDamage", "Summon Damage"), MakeVendorStatValue(RunState, ET66StatType::SummonDamage)), BodyFontSize);
 
 		AddVendorStatsSection(Content, NSLOCTEXT("T66.StatsPanel", "VendorAttackSpeedHeader", "ATTACK SPEED:"), HeaderFontSize);
 		AddVendorStatsTextLine(Content, FText::Format(StatLineFormat, NSLOCTEXT("T66.StatsPanel", "VendorAttackSpeed", "Attack Speed"), MakeVendorStatValue(RunState ? RunState->GetAttackSpeedStat() : 0)), BodyFontSize);
@@ -382,6 +382,7 @@ void UT66CasinoVendorTabWidget::ReleaseCachedSlateResources()
 	ItemIconBrushes.Reset();
 	BuyButtons.Reset();
 	StealButtons.Reset();
+	LockButtons.Reset();
 	BuyButtonTexts.Reset();
 
 	BuybackNameTexts.Reset();
@@ -527,6 +528,7 @@ TSharedRef<SWidget> UT66CasinoVendorTabWidget::RebuildWidget()
 	ItemIconBrushes.SetNum(ShopSlotCount);
 	BuyButtons.SetNum(ShopSlotCount);
 	StealButtons.SetNum(ShopSlotCount);
+	LockButtons.SetNum(ShopSlotCount);
 	BuyButtonTexts.SetNum(ShopSlotCount);
 
 	InventorySlotBorders.SetNum(InventorySlotCount);
@@ -582,6 +584,29 @@ TSharedRef<SWidget> UT66CasinoVendorTabWidget::RebuildWidget()
 			CardButtonFontSize,
 			FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.StealButton"), i + 1)));
 		StealButtons[i] = StealBtnWidget;
+
+		TSharedRef<SWidget> LockBtnWidget = FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Default,
+			TAttribute<FText>::CreateLambda([this, i]()
+			{
+				if (const UT66RunStateSubsystem* RunState = GetRunStateFromWorld(GetWorld()))
+				{
+					return RunState->IsShopStockSlotLocked(i)
+						? NSLOCTEXT("T66.Shop", "Unlock", "UNLOCK")
+						: FText::Format(NSLOCTEXT("T66.Shop", "LockPriceFormat", "LOCK ({0}g)"), FText::AsNumber(RunState->GetShopStockLockGoldCost()));
+				}
+				return NSLOCTEXT("T66.Shop", "Lock", "LOCK");
+			}),
+			FOnClicked::CreateUObject(this, &UT66CasinoVendorTabWidget::OnLockSlot, i),
+			nullptr,
+			nullptr,
+			ShopButtonPadding,
+			CardButtonMinWidth,
+			CompactPx(36.f),
+			true,
+			CardButtonFontSize,
+			FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.LockButton"), i + 1)));
+		LockButtons[i] = LockBtnWidget;
 
 		ShopRow->AddSlot()
 			.AutoWidth()
@@ -648,14 +673,22 @@ TSharedRef<SWidget> UT66CasinoVendorTabWidget::RebuildWidget()
 					// 4. Buy and Steal side by side
 					+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space3, 0.f, 0.f)
 					[
-						SNew(SHorizontalBox)
-						+ SHorizontalBox::Slot()
-							.FillWidth(1.f)
-							.Padding(0.f, 0.f, FT66FlatStyle::Tokens::Space2, 0.f)
-						[ BuyBtnWidget ]
-						+ SHorizontalBox::Slot()
-							.FillWidth(1.f)
-						[ StealBtnWidget ]
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot()
+								.FillWidth(1.f)
+								.Padding(0.f, 0.f, FT66FlatStyle::Tokens::Space2, 0.f)
+							[ BuyBtnWidget ]
+							+ SHorizontalBox::Slot()
+								.FillWidth(1.f)
+							[ StealBtnWidget ]
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, FT66FlatStyle::Tokens::Space2, 0.f, 0.f)
+						[
+							LockBtnWidget
+						]
 					]
 					,
 					&ItemTileBorders[i],
@@ -1718,6 +1751,7 @@ void UT66CasinoVendorTabWidget::RefreshStock()
 	{
 		const bool bHasItem = Stock.IsValidIndex(i) && !Stock[i].IsNone();
 		const bool bSold = bHasItem ? RunState->IsShopStockSlotSold(i) : true;
+		const bool bLocked = bHasItem && RunState->IsShopStockSlotLocked(i);
 		FItemData D;
 		const bool bHasData = bHasItem && GI && GI->GetItemData(Stock[i], D);
 		const ET66ItemRarity SlotRarity = StockSlots.IsValidIndex(i) ? StockSlots[i].Rarity : ET66ItemRarity::Black;
@@ -1831,6 +1865,24 @@ void UT66CasinoVendorTabWidget::RefreshStock()
 					!bStealEnabled,
 					FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.Steal"), i + 1))),
 				bShopAllowsSteal);
+		}
+		if (LockButtons.IsValidIndex(i) && LockButtons[i].IsValid())
+		{
+			const int32 LockCost = RunState->GetShopStockLockGoldCost();
+			const bool bLockEnabled = bHasItem && !IsBossActive() && (bLocked || (!bSold && RunState->GetCurrentGold() >= LockCost));
+			LockButtons[i]->SetEnabled(bLockEnabled);
+			T66TooltipSlate::SetTooltip(
+				LockButtons[i],
+				T66TooltipResolvers::MakeVendorActionTooltip(
+					FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.Lock.Tooltip"), i + 1)),
+					bLocked ? NSLOCTEXT("T66.Shop", "Unlock", "UNLOCK") : NSLOCTEXT("T66.Shop", "Lock", "LOCK"),
+					bLocked
+						? NSLOCTEXT("T66.Shop", "UnlockActionTooltip", "Unlock this item so future vendor stock can replace it.")
+						: NSLOCTEXT("T66.Shop", "LockActionTooltip", "Pay one gold to keep this item in future vendor stock until unlocked."),
+					bLocked ? 0 : LockCost,
+					!bLockEnabled,
+					FName(*FString::Printf(TEXT("Vendor.ShopCard.%02d.Lock"), i + 1))),
+				bHasItem);
 		}
 	}
 }
@@ -2383,6 +2435,33 @@ FReply UT66CasinoVendorTabWidget::OnBuySlot(int32 SlotIndex)
 	{
 		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Shop", "CouldNotPurchase", "Could not purchase."));
 	}
+	RefreshAll();
+	return FReply::Handled();
+}
+
+FReply UT66CasinoVendorTabWidget::OnLockSlot(int32 SlotIndex)
+{
+	UWorld* World = GetWorld();
+	UT66RunStateSubsystem* RunState = GetRunStateFromWorld(World);
+	if (!RunState) return FReply::Handled();
+
+	if (IsBossActive())
+	{
+		if (StatusText.IsValid()) StatusText->SetText(NSLOCTEXT("T66.Shop", "BossIsActive", "Boss is active."));
+		return FReply::Handled();
+	}
+
+	const bool bWasLocked = RunState->IsShopStockSlotLocked(SlotIndex);
+	const bool bToggled = RunState->ToggleShopStockSlotLock(SlotIndex);
+	if (StatusText.IsValid())
+	{
+		StatusText->SetText(bToggled
+			? (bWasLocked
+				? NSLOCTEXT("T66.Shop", "Unlocked", "Unlocked.")
+				: NSLOCTEXT("T66.Shop", "Locked", "Locked."))
+			: NSLOCTEXT("T66.Shop", "CouldNotLock", "Could not lock."));
+	}
+
 	RefreshAll();
 	return FReply::Handled();
 }

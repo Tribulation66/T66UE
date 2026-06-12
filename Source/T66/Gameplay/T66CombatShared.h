@@ -26,7 +26,7 @@ namespace T66CombatShared
 	bool TryApplyNonBossOHKO(AActor* TargetActor, const FT66CombatTargetHandle* TargetHandle, FName DamageSourceID, FName EventType);
 
 	// Single source of truth for the current idol impact-presentation proof phase:
-	//   Idol_Ice_AOE=AOE, Idol_Electricity_Pierce=Pierce,
+	//   Idol_Ice_AOE=AOE, Idol_Electricity_Summon=LineTarget,
 	//   Idol_Electricity_Bounce=Bounce, Idol_Nature_DOT=DOT.
 	// These idols enter the category-native idol impact-presentation lane (driven from the
 	// official weapon impact point). Idol_Nature_AOE is deliberately excluded: it is the neutral

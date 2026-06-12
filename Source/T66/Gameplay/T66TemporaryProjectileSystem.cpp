@@ -26,8 +26,7 @@ namespace
 
 	FLinearColor T66ResolveTemporaryProjectileColor(const FName ProfileID, const FLinearColor& RequestedColor)
 	{
-		if (ProfileID == FT66TemporaryProjectileSystem::ProfileHeroPierce()
-			|| ProfileID == FT66TemporaryProjectileSystem::ProfileHeroAOE()
+		if (ProfileID == FT66TemporaryProjectileSystem::ProfileHeroAOE()
 			|| ProfileID == FT66TemporaryProjectileSystem::ProfileHeroBounce()
 			|| ProfileID == FT66TemporaryProjectileSystem::ProfileHeroDOT()
 			|| ProfileID == FT66TemporaryProjectileSystem::ProfileIdolOverlay())
@@ -49,12 +48,6 @@ namespace
 
 		return RequestedColor;
 	}
-}
-
-FName FT66TemporaryProjectileSystem::ProfileHeroPierce()
-{
-	static const FName Profile(TEXT("HeroPierce"));
-	return Profile;
 }
 
 FName FT66TemporaryProjectileSystem::ProfileHeroAOE()
@@ -124,15 +117,14 @@ FName FT66TemporaryProjectileSystem::GetHeroAttackProfile(const ET66AttackCatego
 {
 	switch (AttackCategory)
 	{
-	case ET66AttackCategory::Pierce:
-		return ProfileHeroPierce();
 	case ET66AttackCategory::Bounce:
 		return ProfileHeroBounce();
 	case ET66AttackCategory::DOT:
 		return ProfileHeroDOT();
 	case ET66AttackCategory::SingleTarget:
 		return ProfileHeroSingleTarget();
-	case ET66AttackCategory::AOE:
+	case ET66AttackCategory::Summon:
+		return ProfileHeroBounce();
 	default:
 		return ProfileHeroAOE();
 	}
@@ -147,13 +139,7 @@ FT66TemporaryProjectileVisualSpec FT66TemporaryProjectileSystem::MakeSpec(
 	Spec.Color = T66ResolveTemporaryProjectileColor(ProfileID, Color);
 
 	const float S = FMath::Clamp(ScaleMultiplier, 0.25f, 6.f);
-	if (ProfileID == ProfileHeroPierce())
-	{
-		Spec.Shape = ET66TemporaryProjectileShape::Cone;
-		Spec.RelativeRotation = FRotator(-90.f, 0.f, 0.f);
-		Spec.RelativeScale = FVector(0.56f, 0.56f, 1.08f) * S;
-	}
-	else if (ProfileID == ProfileHeroBounce())
+	if (ProfileID == ProfileHeroBounce())
 	{
 		Spec.Shape = ET66TemporaryProjectileShape::Cube;
 		Spec.RelativeRotation = FRotator(0.f, 0.f, 45.f);

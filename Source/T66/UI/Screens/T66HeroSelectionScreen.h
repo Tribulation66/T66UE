@@ -83,6 +83,9 @@ public:
 	void PreviewPreviousCompanion();
 
 	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
+	void PreviewRandomHero();
+
+	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
 	void SelectDifficulty(ET66Difficulty Difficulty);
 
 	UFUNCTION(BlueprintCallable, Category = "Hero Selection")
@@ -273,6 +276,8 @@ private:
 	// Click handlers
 	FReply HandlePrevClicked();
 	FReply HandleNextClicked();
+	FReply HandleRandomHeroClicked();
+	FReply HandleBuildCustomHeroClicked();
 	FReply HandleCompanionPrevClicked();
 	FReply HandleCompanionNextClicked();
 	FReply HandleHeroCarouselPortraitClicked(int32 VisibleSlotIndex);

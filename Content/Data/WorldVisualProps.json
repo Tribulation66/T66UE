@@ -64,38 +64,6 @@
     }
   },
   {
-    "Name": "BrokenVase_Easy",
-    "PropData": {
-      "PropID": "BrokenVase",
-      "DifficultyID": "Easy",
-      "DisplayName": "Broken Vase",
-      "DisplayMesh": "/Game/World/VisualProps/Easy/SM_BrokenVase_Easy_Pixal3D.SM_BrokenVase_Easy_Pixal3D",
-      "DisplayMeshScale": {
-        "X": 0.8,
-        "Y": 0.8,
-        "Z": 0.45
-      },
-      "DisplayMeshOffset": {
-        "X": 0,
-        "Y": 0,
-        "Z": 0
-      },
-      "DisplayMeshRotation": {
-        "Pitch": 0,
-        "Yaw": 0,
-        "Roll": 0
-      },
-      "Tint": {
-        "R": 0.48,
-        "G": 0.54,
-        "B": 0.6,
-        "A": 1
-      },
-      "bAutoGroundToActorOrigin": true,
-      "bSnapToGround": true
-    }
-  },
-  {
     "Name": "SkullRemains_Easy",
     "PropData": {
       "PropID": "SkullRemains",

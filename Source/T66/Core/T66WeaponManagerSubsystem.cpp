@@ -60,9 +60,10 @@ void UT66WeaponManagerSubsystem::BuildWeaponOffers(FName HeroID, ET66WeaponRarit
 		return;
 	}
 
-	ET66AttackCategory HeroLockedBranch = ET66AttackCategory::Pierce;
+	ET66AttackCategory HeroLockedBranch = ET66AttackCategory::AOE;
 	if (UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()))
 	{
+		HeroID = T66GI->ResolveCustomHeroWeaponSourceHeroID(HeroID);
 		FHeroData HeroData;
 		if (T66GI->GetHeroData(HeroID, HeroData))
 		{
@@ -140,14 +141,14 @@ FString UT66WeaponManagerSubsystem::AttackBranchToString(ET66AttackCategory Bran
 {
 	switch (Branch)
 	{
-	case ET66AttackCategory::Pierce:
-		return TEXT("pierce");
 	case ET66AttackCategory::Bounce:
 		return TEXT("bounce");
 	case ET66AttackCategory::AOE:
 		return TEXT("aoe");
 	case ET66AttackCategory::SingleTarget:
 		return TEXT("single_target");
+	case ET66AttackCategory::Summon:
+		return TEXT("summon");
 	case ET66AttackCategory::DOT:
 	default:
 		return TEXT("dot");

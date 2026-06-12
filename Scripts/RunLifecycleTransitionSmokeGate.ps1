@@ -160,9 +160,15 @@ function Test-LifecycleManifest {
         Assert-Condition ($null -ne $Manifest.stress_population) "Missing stress_population object."
         Assert-Condition ($Manifest.stress_population.status -eq "complete") "stress_population status was '$($Manifest.stress_population.status)', expected 'complete'."
 
+        # Mob loot is shelve-gated (FT66ShelvedFeatureGate / T66.MobLoot.Enabled); the
+        # manifest reports the effective state so the expectation tracks it.
+        $mobLootEnabled = $false
+        if ($null -ne $Manifest.stress_population.PSObject.Properties['mob_loot_enabled']) {
+            $mobLootEnabled = [bool]$Manifest.stress_population.mob_loot_enabled
+        }
         $stressChecks = @{
             mobs_spawned = $StressCount
-            mob_loot_spawned = $StressCount
+            mob_loot_spawned = $(if ($mobLootEnabled) { $StressCount } else { 0 })
             projectiles_fired = $StressCount
             hazards_spawned = [Math]::Min($StressCount, 8)
             travelers_fired = $StressCount

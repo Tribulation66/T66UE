@@ -63,21 +63,21 @@ static const int32 CatDamage[] =
 {
 	static_cast<int32>(ET66StatType::AoeDamage),
 	static_cast<int32>(ET66StatType::BounceDamage),
-	static_cast<int32>(ET66StatType::PierceDamage),
+	static_cast<int32>(ET66StatType::SummonDamage),
 	static_cast<int32>(ET66StatType::DotDamage),
 };
 static const int32 CatAttackSpeed[] =
 {
 	static_cast<int32>(ET66StatType::AoeSpeed),
 	static_cast<int32>(ET66StatType::BounceSpeed),
-	static_cast<int32>(ET66StatType::PierceSpeed),
+	static_cast<int32>(ET66StatType::SummonSpeed),
 	static_cast<int32>(ET66StatType::DotSpeed),
 };
 static const int32 CatAttackScale[] =
 {
 	static_cast<int32>(ET66StatType::AoeScale),
 	static_cast<int32>(ET66StatType::BounceScale),
-	static_cast<int32>(ET66StatType::PierceScale),
+	static_cast<int32>(ET66StatType::SummonScale),
 	static_cast<int32>(ET66StatType::DotScale),
 };
 static const int32 CatAccuracy[] =

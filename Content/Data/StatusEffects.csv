@@ -1,13 +1,13 @@
 ---,StatusEffectID,DisplayName,IconID,EffectSummary,HeroImpact,DefaultDurationSeconds,DefaultMagnitude,bIsMovementImpairing,bIsDamageOverTime
 None,None,None,None,No negative status effect,No hero impact,0.0,0.0,false,false
-Webbed,Webbed,Status_Web,Spider web slow applied by web attacks,Hero movement speed reduced while web icon is shown near the portrait,3.0,0.45,true,false
-Poisoned,Poisoned,Status_Poison,Poison damage over time applied by venom attacks,Hero takes poison damage over time while venom icon is shown near the portrait,4.0,1.0,false,true
-Rooted,Rooted,Status_Root,Roots lock hero movement briefly,Hero cannot move for a short duration while root icon is shown near the portrait,1.25,1.0,true,false
-Thorned,Thorned,Status_Thorn,Thorn curse punishes movement and contact,Hero takes small thorn damage ticks while thorn icon is shown near the portrait,3.0,0.5,false,true
-Bleeding,Bleeding,Status_Bleed,Physical bleed damage over time from bites or blades,Hero takes bleed damage over time while blood icon is shown near the portrait,4.0,0.75,false,true
-ArmorCracked,ArmorCracked,Status_CrackedShield,Armor weakened by crushing hits,Hero takes increased incoming damage while cracked shield icon is shown near the portrait,4.0,0.15,false,false
-Cursed,Cursed,Status_Curse,Dark curse weakens the hero,Hero damage and recovery are reduced while curse icon is shown near the portrait,5.0,0.10,false,false
-Shocked,Shocked,Status_Lightning,Electrical shock disrupts attacks,Hero auto attack cadence is delayed while lightning icon is shown near the portrait,2.5,0.20,false,false
-Chilled,Chilled,Status_Chill,Cold slow applied by frost or ghost attacks,Hero movement speed is reduced while snowflake icon is shown near the portrait,3.0,0.30,true,false
-Burning,Burning,Status_Fire,Fire damage over time applied by flame attacks,Hero takes fire damage over time while flame icon is shown near the portrait,3.5,1.0,false,true
-Dazed,Dazed,Status_Daze,Impact daze interrupts the hero briefly,Hero is briefly stunned while daze icon is shown near the portrait,0.75,1.0,true,false
+Webbed,Webbed,Webbed,Status_Web,Spider web slow applied by web attacks,Hero movement speed reduced while web icon is shown near the portrait,3.0,0.45,true,false
+Poisoned,Poisoned,Poisoned,Status_Poison,Poison damage over time applied by venom attacks,Hero takes poison damage over time while venom icon is shown near the portrait,4.0,1.0,false,true
+Rooted,Rooted,Rooted,Status_Root,Roots lock hero movement briefly,Hero cannot move for a short duration while root icon is shown near the portrait,1.25,1.0,true,false
+Thorned,Thorned,Thorned,Status_Thorn,Thorn curse punishes movement and contact,Hero takes small thorn damage ticks while thorn icon is shown near the portrait,3.0,0.5,false,true
+Bleeding,Bleeding,Bleeding,Status_Bleed,Physical bleed damage over time from bites or blades,Hero takes bleed damage over time while blood icon is shown near the portrait,4.0,0.75,false,true
+ArmorCracked,ArmorCracked,Armor Cracked,Status_CrackedShield,Armor weakened by crushing hits,Hero takes increased incoming damage while cracked shield icon is shown near the portrait,4.0,0.15,false,false
+Cursed,Cursed,Cursed,Status_Curse,Dark curse weakens the hero,Hero damage and recovery are reduced while curse icon is shown near the portrait,5.0,0.10,false,false
+Shocked,Shocked,Shocked,Status_Lightning,Electrical shock disrupts attacks,Hero auto attack cadence is delayed while lightning icon is shown near the portrait,2.5,0.20,false,false
+Chilled,Chilled,Chilled,Status_Chill,Cold slow applied by frost or ghost attacks,Hero movement speed is reduced while snowflake icon is shown near the portrait,3.0,0.30,true,false
+Burning,Burning,Burning,Status_Fire,Fire damage over time applied by flame attacks,Hero takes fire damage over time while flame icon is shown near the portrait,3.5,1.0,false,true
+Dazed,Dazed,Dazed,Status_Daze,Impact daze interrupts the hero briefly,Hero is briefly stunned while daze icon is shown near the portrait,0.75,1.0,true,false

@@ -20,11 +20,11 @@ class UNiagaraSystem;
 UENUM(BlueprintType)
 enum class ET66AttackCategory : uint8
 {
-	Pierce UMETA(DisplayName = "Pierce"),
 	Bounce UMETA(DisplayName = "Bounce"),
 	AOE UMETA(DisplayName = "AOE"),
 	DOT UMETA(DisplayName = "DOT"),
 	SingleTarget UMETA(DisplayName = "Single Target"),
+	Summon UMETA(DisplayName = "Summon"),
 };
 
 /** Source row family for combat VFX bindings. */
@@ -60,6 +60,22 @@ struct T66_API FT66CombatVFXBindingData : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX")
 	TSoftObjectPtr<UNiagaraSystem> NiagaraSystem;
+
+	/** Optional authored static mesh body for weapon/idol projectile presentation. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Projectile Mesh")
+	TSoftObjectPtr<UStaticMesh> ProjectileMesh;
+
+	/** Per-row extra mesh instances. Weapon rows usually leave this at 1 because weapon ProjectileCount already expands rarity shots. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Projectile Mesh")
+	int32 ProjectileMeshCount = 1;
+
+	/** Visual scale for this row's projectile mesh body. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Projectile Mesh")
+	float ProjectileMeshScale = 1.f;
+
+	/** Optional speed override used by line-travel mesh bodies. Zero uses the caller's default. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Projectile Mesh")
+	float ProjectileMeshTravelSpeed = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat VFX|Metadata")
 	FName EffectPacketID = NAME_None;
@@ -170,17 +186,14 @@ enum class ET66StatType : uint8
 	// Category Damage (4)
 	AoeDamage UMETA(DisplayName = "AOE Damage"),
 	BounceDamage UMETA(DisplayName = "Bounce Damage"),
-	PierceDamage UMETA(DisplayName = "Pierce Damage"),
 	DotDamage UMETA(DisplayName = "DOT Damage"),
 	// Category Speed (4)
 	AoeSpeed UMETA(DisplayName = "AOE Speed"),
 	BounceSpeed UMETA(DisplayName = "Bounce Speed"),
-	PierceSpeed UMETA(DisplayName = "Pierce Speed"),
 	DotSpeed UMETA(DisplayName = "DOT Speed"),
 	// Category Scale (4)
 	AoeScale UMETA(DisplayName = "AOE Scale"),
 	BounceScale UMETA(DisplayName = "Bounce Scale"),
-	PierceScale UMETA(DisplayName = "Pierce Scale"),
 	DotScale UMETA(DisplayName = "DOT Scale"),
 	// Crit / headshot (2)
 	CritDamage UMETA(DisplayName = "Crit Damage"),
@@ -236,6 +249,9 @@ enum class ET66StatType : uint8
 	AllAttackSpeed UMETA(DisplayName = "All Attack Speed"),
 	AllScale UMETA(DisplayName = "All Scale"),
 	Luck UMETA(DisplayName = "Luck"),
+	SummonDamage UMETA(DisplayName = "Summon Damage"),
+	SummonSpeed UMETA(DisplayName = "Summon Speed"),
+	SummonScale UMETA(DisplayName = "Summon Scale"),
 };
 /**
  * Hero data row for the Hero DataTable
@@ -323,9 +339,9 @@ struct T66_API FHeroData : public FTableRowBase
 	// Attack Category
 	// ============================================
 
-	/** Primary attack category (Pierce/Bounce/AOE/DOT) */
+	/** Primary attack category (AOE/Bounce/DOT/Summon). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	ET66AttackCategory PrimaryCategory = ET66AttackCategory::Pierce;
+	ET66AttackCategory PrimaryCategory = ET66AttackCategory::AOE;
 
 	/** Ultimate ability type (None = legacy flat damage to all). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
@@ -406,15 +422,15 @@ struct T66_API FHeroData : public FTableRowBase
 	float LvlSpeedMax = 2.0f;
 
 	// ============================================
-	// Category-Specific Base Stats (all 4 categories; boosted by items)
+	// Category-Specific Base Stats (boosted by items)
 	// ============================================
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Pierce")
-	int32 BasePierceDmg = 1;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Pierce")
-	int32 BasePierceAtkSpd = 1;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Pierce")
-	int32 BasePierceAtkScale = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Summon")
+	int32 BaseSummonDmg = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Summon")
+	int32 BaseSummonAtkSpd = 1;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Summon")
+	int32 BaseSummonAtkScale = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats|Bounce")
 	int32 BaseBounceDmg = 1;
@@ -453,9 +469,9 @@ struct T66_API FHeroData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
 	int32 BaseHitDamage = 20;
 
-	/** Innate count for the hero's primary category effect (e.g., pierce-through count). */
+	/** Innate count for internal line-target fallback attacks. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
-	int32 BasePierceCount = 0;
+	int32 BaseLineTargetCount = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
 	int32 BaseBounceCount = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Attack")
@@ -467,11 +483,11 @@ struct T66_API FHeroData : public FTableRowBase
 	// Behavior Tuning (primary attack)
 	// ============================================
 
-	/** Projectile travel speed (UU/s) for Pierce/Bounce. */
+	/** Projectile travel speed (UU/s) for traveling category attacks. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Tuning")
 	float ProjectileSpeed = 2000.f;
 
-	/** Damage reduction per pierce/bounce (0.15 = 15% loss per hit). */
+	/** Damage reduction per repeated or chained hit (0.15 = 15% loss per hit). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Tuning")
 	float FalloffPerHit = 0.f;
 
@@ -590,7 +606,7 @@ struct T66_API FWeaponData : public FTableRowBase
 	ET66WeaponRarity Rarity = ET66WeaponRarity::Black;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon")
-	ET66AttackCategory Branch = ET66AttackCategory::Pierce;
+	ET66AttackCategory Branch = ET66AttackCategory::AOE;
 
 	/** Optional structural pattern selector for category-specific runtime dispatch. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Pattern")
@@ -620,7 +636,7 @@ struct T66_API FWeaponData : public FTableRowBase
 	int32 BonusHitDamage = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
-	int32 BonusPierceCount = 0;
+	int32 BonusLineTargetCount = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapon|Branch")
 	int32 BonusBounceCount = 0;
@@ -800,12 +816,12 @@ struct T66_API FT66HeroStatBonuses
 	int32 Speed = 0;
 
 	// Category-specific stat bonuses (from items)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Pierce")
-	int32 PierceDmg = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Pierce")
-	int32 PierceAtkSpd = 0;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Pierce")
-	int32 PierceAtkScale = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Summon")
+	int32 SummonDmg = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Summon")
+	int32 SummonAtkSpd = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Summon")
+	int32 SummonAtkScale = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hero|Stats|Bounce")
 	int32 BounceDmg = 0;
@@ -1409,9 +1425,21 @@ struct T66_API FT66BossAttackDefinitionData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
 	int32 MaxPhase = 99;
 
+	/** Shared combat category for this projectile body. Defaults preserve current moving boss projectile behavior until per-boss choices are authored. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
+	ET66AttackCategory ProjectileCategory = ET66AttackCategory::AOE;
+
 	/** Optional managed projectile visual profile. None preserves the boss legacy profile bucket. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition")
 	FName ProjectileVisualProfileID = NAME_None;
+
+	/** Optional authored static mesh body. Empty preserves the temporary/legacy projectile profile. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition|Projectile Mesh")
+	TSoftObjectPtr<UStaticMesh> ProjectileMesh;
+
+	/** Visual scale for the authored projectile mesh body. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition|Projectile Mesh")
+	float ProjectileMeshScale = 1.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Boss Attack Definition", meta = (ClampMin = "0"))
 	int32 ShotCount = 1;
@@ -1715,6 +1743,22 @@ struct T66_API FT66EnemyData : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	FName StatusEffectOnHit;
 
+	/** Shared combat category for projectile-capable mobs. Non-ranged mobs can leave the default until they gain projectile attacks. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Projectile")
+	ET66AttackCategory ProjectileCategory = ET66AttackCategory::DOT;
+
+	/** Optional managed projectile visual profile for ranged mobs. None uses the default enemy spit profile. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Projectile")
+	FName ProjectileVisualProfileID = NAME_None;
+
+	/** Optional authored static mesh body for mob projectiles. Empty uses the temporary profile mesh. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Projectile Mesh")
+	TSoftObjectPtr<UStaticMesh> ProjectileMesh;
+
+	/** Visual scale for the authored mob projectile mesh body. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Projectile Mesh")
+	float ProjectileMeshScale = 1.f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Visuals")
 	FText VisualConcept;
 
@@ -1752,6 +1796,7 @@ struct T66_API FT66EnemyData : public FTableRowBase
 		, FamilyID(TEXT("Melee"))
 		, RoleID(TEXT("MeleeA"))
 		, StatusEffectOnHit(NAME_None)
+		, ProjectileCategory(ET66AttackCategory::DOT)
 		, ModelStatus(TEXT("PendingImage"))
 		, Archetype(TEXT("Melee"))
 		, Feeling(TEXT("MowDown"))
@@ -1974,7 +2019,7 @@ struct T66_API FStageData : public FTableRowBase
  * Idol data row for the Idols DataTable.
  *
  * Each idol is an independent attack source (fires alongside the hero's basic attack).
- * Category determines the type of effect (Pierce/Bounce/AOE/DOT).
+	 * Category determines the type of effect (AOE/Bounce/DOT/Summon).
  * Idol rarity controls offer strength and icon presentation.
  */
 USTRUCT(BlueprintType)
@@ -1991,7 +2036,7 @@ struct T66_API FIdolData : public FTableRowBase
 
 	/** Attack category this idol source belongs to. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
-	ET66AttackCategory Category = ET66AttackCategory::Pierce;
+	ET66AttackCategory Category = ET66AttackCategory::AOE;
 
 	/** Runtime delivery lane. Traveler delivery is inert until the Foundation API adapter lands. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Identity")
@@ -2032,8 +2077,9 @@ struct T66_API FIdolData : public FTableRowBase
 
 	// ============================================
 	// Category property scaling (meaning varies by category)
-	//   Pierce: enemies pierced   |  Bounce: bounce count
+	//   AOE: splash radius        |  Bounce: bounce count
 	//   AOE: explosion radius (UU)|  DOT: tick count
+	//   Summon: active body count / max hits
 	// ============================================
 
 	/** Base property value at black rarity. */
@@ -2048,11 +2094,11 @@ struct T66_API FIdolData : public FTableRowBase
 	// Behavior tuning (per-idol source; mirrors hero attack tuning)
 	// ============================================
 
-	/** Projectile speed (UU/s) for Pierce/Bounce idol sources. */
+	/** Projectile speed (UU/s) for traveling idol sources. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning")
 	float ProjectileSpeed = 2000.f;
 
-	/** Damage falloff per pierce/bounce (0.15 = 15% loss). */
+	/** Damage falloff per repeated or chained hit (0.15 = 15% loss). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning")
 	float FalloffPerHit = 0.f;
 
@@ -2071,6 +2117,34 @@ struct T66_API FIdolData : public FTableRowBase
 	/** DOT base duration (seconds). Only used by DOT category. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning")
 	float DotDuration = 3.f;
+
+	/** Chance for this idol hit to apply its element's movement-control status effect. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+	float StatusProcChance = 0.15f;
+
+	/** Duration for the applied element status effect. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Status")
+	float StatusDuration = 1.5f;
+
+	/** Independent idol attack interval. Zero uses the category default. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning|Independent")
+	float FireInterval = 2.f;
+
+	/** Summoned body lifetime in seconds. Only used by Summon category. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning|Summon")
+	float SummonLifetime = 6.f;
+
+	/** Summoned body movement speed. Only used by Summon category. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning|Summon")
+	float SummonMoveSpeed = 950.f;
+
+	/** Summoned body contact radius. Only used by Summon category. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning|Summon")
+	float SummonContactRadius = 70.f;
+
+	/** Summoned body bounce speed after an enemy hit. Only used by Summon category. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tuning|Summon")
+	float SummonBounceSpeed = 620.f;
 
 	static int32 GetRarityStepIndex(ET66ItemRarity Rarity)
 	{
@@ -2881,4 +2955,3 @@ struct T66_API FSkinData : public FTableRowBase
 		, bIsDefault(false)
 	{}
 };
-

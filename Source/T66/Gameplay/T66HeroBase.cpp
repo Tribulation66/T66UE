@@ -83,8 +83,13 @@ AT66HeroBase::AT66HeroBase()
 	CameraBoom->TargetArmLength = T66HeroDefaultCameraArmLengthUU;
 	CameraBoom->SetRelativeLocation(FVector(0.f, 0.f, 60.f)); // Offset up from center
 	CameraBoom->bUsePawnControlRotation = true; // Rotate arm based on controller (mouse look)
-	CameraBoom->bDoCollisionTest = false; // Keep distance stable in dense procedural dungeons.
-	CameraBoom->ProbeSize = 12.f;
+	// Collision test ON (2026-06-10): a camera inside/level with a ceiling slab
+	// blacks out the scene via occlusion/backfaces, so the boom must physically
+	// stay below ceilings. Corridor distance remains stable because walls and
+	// course geometry IGNORE ECC_Camera (the occluder-fade handles see-through);
+	// only ceiling/floor camera-blockers shorten the boom.
+	CameraBoom->bDoCollisionTest = true;
+	CameraBoom->ProbeSize = 16.f;
 	CameraBoom->ProbeChannel = ECC_Camera;
 	
 	// Create follow camera
@@ -114,16 +119,8 @@ AT66HeroBase::AT66HeroBase()
 	StaticVisualMesh->SetVisibility(false, true);
 	StaticVisualMesh->SetHiddenInGame(true, true);
 
-	CarryLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("CarryLight"));
-	CarryLight->SetupAttachment(RootComponent);
-	CarryLight->SetRelativeLocation(FVector(0.0f, 0.0f, 60.0f));
-	CarryLight->SetMobility(EComponentMobility::Movable);
-	CarryLight->SetIntensity(2000.0f);
-	CarryLight->SetAttenuationRadius(650.0f);
-	CarryLight->SetLightColor(FLinearColor(1.0f, 0.85f, 0.65f));
-	CarryLight->SetCastShadows(false);
-	CarryLight->bUseInverseSquaredFalloff = false;
-	CarryLight->LightFalloffExponent = 2.0f;
+	// (CarryLight removed — the TRUE single rig is one directional key + one skylight; the warm
+	// per-hero point light was a leftover from the torch-era look and tinted heroes warm.)
 
 	// Cache mesh assets in constructor
 	CacheMeshAssets();
@@ -989,8 +986,9 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 	// Set the body-style mesh (Chad cylinder or Stacy cube).
 	SetBodyType(InBodyType);
 
-	// Apply the placeholder color from hero data
-	SetPlaceholderColor(InHeroData.PlaceholderColor);
+	// ONE shared neutral-gray placeholder look for every placeholder visual (per-hero
+	// PlaceholderColor retired with the one-master final state).
+	SetPlaceholderColor(FLinearColor(0.5f, 0.5f, 0.5f, 1.0f));
 
 	FName SkinID = InSkinID.IsNone() ? FName(TEXT("Default")) : InSkinID;
 	HeroSkinID = SkinID;
@@ -1009,7 +1007,12 @@ void AT66HeroBase::InitializeHero(const FHeroData& InHeroData, ET66BodyType InBo
 	{
 		if (UT66CharacterVisualSubsystem* Visuals = GI->GetSubsystem<UT66CharacterVisualSubsystem>())
 		{
-			FName VisualID = UT66CharacterVisualSubsystem::GetHeroVisualID(HeroID, InBodyType, SkinID);
+			FName VisualHeroID = HeroID;
+			if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GI))
+			{
+				VisualHeroID = T66GI->ResolveCustomHeroVisualSourceHeroID(HeroID);
+			}
+			FName VisualID = UT66CharacterVisualSubsystem::GetHeroVisualID(VisualHeroID, InBodyType, SkinID);
 			if (!bPreviewMode)
 			{
 				const FName OverrideVisualID = T66GetHeroVisualOverrideFromCommandLine();

@@ -8,7 +8,7 @@
 
 ## 1. Goal
 
-Define the shared base aura-slash material language for Hero 1 axe base attacks before polishing AOE, DOT, Pierce, or Bounce independently.
+Define the shared base aura-slash material language for Hero 1 axe base attacks before polishing AOE, DOT, RetiredLine, or Bounce independently.
 
 The material language should make the base attacks feel like one weapon family even when the carrier shape, colors, timing, hitbox, and support particles differ per attack.
 

@@ -701,6 +701,9 @@ void AT66Hero1AxeAOEVFXLabActor::LogSlashRuntimeDiagnostics(const TCHAR* Phase, 
 			{
 				++EnabledRendererCount;
 			});
+		// FNiagaraEmitterInstance::IsReadyToRun is deprecated (5.4); report the versioned
+		// emitter data's readiness like the asset-side diagnostics above.
+		const FVersionedNiagaraEmitterData* RuntimeEmitterData = EmitterInstance.GetEmitterHandle().GetEmitterData();
 		UE_LOG(
 			LogTemp,
 			Display,
@@ -713,7 +716,7 @@ void AT66Hero1AxeAOEVFXLabActor::LogSlashRuntimeDiagnostics(const TCHAR* Phase, 
 			EmitterInstance.GetNumParticles(),
 			*T66DiagBool(bParticleCountReliable),
 			*T66DiagEnumToString(EmitterInstance.GetExecutionState()),
-			*T66DiagBool(EmitterInstance.IsReadyToRun()),
+			*T66DiagBool(RuntimeEmitterData && RuntimeEmitterData->IsReadyToRun()),
 			*T66DiagBool(EmitterInstance.IsActive()),
 			*EmitterInstance.GetBounds().ToString(),
 			EnabledRendererCount);

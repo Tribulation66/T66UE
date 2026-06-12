@@ -196,7 +196,7 @@ FText UT66LocalizationSubsystem::GetText_HeroName(FName HeroID) const
 
 FText UT66LocalizationSubsystem::GetText_HeroDescription(FName HeroID) const
 {
-	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_1", "A founding marksman who pierces monster lines with disciplined precision.");
+	if (HeroID == FName(TEXT("Hero_1"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_1", "A founding marksman who line targets monster lines with disciplined precision.");
 	if (HeroID == FName(TEXT("Hero_2"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_2", "A warlord who breaks enemy lines through sheer force.");
 	if (HeroID == FName(TEXT("Hero_3"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_3", "A streetwise bruiser who thrives when the fight turns messy.");
 	if (HeroID == FName(TEXT("Hero_4"))) return NSLOCTEXT("T66.HeroDescriptions", "Hero_4", "A quick-draw outlaw who turns panic into momentum.");
@@ -276,16 +276,16 @@ FText UT66LocalizationSubsystem::GetText_StatName(ET66StatType StatType) const
 	{
 	case ET66StatType::AoeDamage:        return NSLOCTEXT("T66.Stats", "AoeDamage", "AOE Damage");
 	case ET66StatType::BounceDamage:      return NSLOCTEXT("T66.Stats", "BounceDamage", "Bounce Damage");
-	case ET66StatType::PierceDamage:      return NSLOCTEXT("T66.Stats", "PierceDamage", "Pierce Damage");
 	case ET66StatType::DotDamage:         return NSLOCTEXT("T66.Stats", "DotDamage", "DOT Damage");
+	case ET66StatType::SummonDamage:      return NSLOCTEXT("T66.Stats", "SummonDamage", "Summon Damage");
 	case ET66StatType::AoeSpeed:          return NSLOCTEXT("T66.Stats", "AoeSpeed", "AOE Speed");
 	case ET66StatType::BounceSpeed:       return NSLOCTEXT("T66.Stats", "BounceSpeed", "Bounce Speed");
-	case ET66StatType::PierceSpeed:       return NSLOCTEXT("T66.Stats", "PierceSpeed", "Pierce Speed");
 	case ET66StatType::DotSpeed:          return NSLOCTEXT("T66.Stats", "DotSpeed", "DOT Speed");
+	case ET66StatType::SummonSpeed:       return NSLOCTEXT("T66.Stats", "SummonSpeed", "Summon Speed");
 	case ET66StatType::AoeScale:          return NSLOCTEXT("T66.Stats", "AoeScale", "AOE Scale");
 	case ET66StatType::BounceScale:       return NSLOCTEXT("T66.Stats", "BounceScale", "Bounce Scale");
-	case ET66StatType::PierceScale:       return NSLOCTEXT("T66.Stats", "PierceScale", "Pierce Scale");
 	case ET66StatType::DotScale:          return NSLOCTEXT("T66.Stats", "DotScale", "DOT Scale");
+	case ET66StatType::SummonScale:       return NSLOCTEXT("T66.Stats", "SummonScale", "Summon Scale");
 	case ET66StatType::CritDamage:        return NSLOCTEXT("T66.Stats", "CritDamage", "Headshot Chance");
 	case ET66StatType::CritChance:        return NSLOCTEXT("T66.Stats", "CritChance", "Crit Chance");
 	case ET66StatType::HeadshotChance:    return NSLOCTEXT("T66.Stats", "HeadshotChance", "Headshot Chance");
@@ -358,16 +358,16 @@ FText UT66LocalizationSubsystem::GetText_StatDescription(ET66StatType StatType) 
 	{
 	case ET66StatType::AoeDamage:        return NSLOCTEXT("T66.StatTooltips", "AoeDamage", "Bonus damage for area-of-effect attacks.");
 	case ET66StatType::BounceDamage:     return NSLOCTEXT("T66.StatTooltips", "BounceDamage", "Bonus damage for bouncing projectile attacks.");
-	case ET66StatType::PierceDamage:     return NSLOCTEXT("T66.StatTooltips", "PierceDamage", "Bonus damage for piercing attacks that pass through enemies.");
 	case ET66StatType::DotDamage:        return NSLOCTEXT("T66.StatTooltips", "DotDamage", "Bonus damage for damage-over-time effects.");
+	case ET66StatType::SummonDamage:     return NSLOCTEXT("T66.StatTooltips", "SummonDamage", "Bonus damage for summoned combat bodies.");
 	case ET66StatType::AoeSpeed:         return NSLOCTEXT("T66.StatTooltips", "AoeSpeed", "Attack speed bonus for area-of-effect attacks.");
 	case ET66StatType::BounceSpeed:     return NSLOCTEXT("T66.StatTooltips", "BounceSpeed", "Attack speed bonus for bouncing projectile attacks.");
-	case ET66StatType::PierceSpeed:     return NSLOCTEXT("T66.StatTooltips", "PierceSpeed", "Attack speed bonus for piercing attacks.");
 	case ET66StatType::DotSpeed:         return NSLOCTEXT("T66.StatTooltips", "DotSpeed", "Attack speed bonus for damage-over-time effects.");
+	case ET66StatType::SummonSpeed:      return NSLOCTEXT("T66.StatTooltips", "SummonSpeed", "Summon spawn-rate bonus.");
 	case ET66StatType::AoeScale:         return NSLOCTEXT("T66.StatTooltips", "AoeScale", "Hitbox size bonus for area-of-effect attacks.");
 	case ET66StatType::BounceScale:     return NSLOCTEXT("T66.StatTooltips", "BounceScale", "Hitbox size bonus for bouncing projectile attacks.");
-	case ET66StatType::PierceScale:     return NSLOCTEXT("T66.StatTooltips", "PierceScale", "Hitbox size bonus for piercing attacks.");
 	case ET66StatType::DotScale:         return NSLOCTEXT("T66.StatTooltips", "DotScale", "Hitbox size bonus for damage-over-time effects.");
+	case ET66StatType::SummonScale:      return NSLOCTEXT("T66.StatTooltips", "SummonScale", "Summon body count and contact-size bonus.");
 	case ET66StatType::CritDamage:      return NSLOCTEXT("T66.StatTooltips", "CritDamage", "Chance for each attack to stun the hit enemy with a headshot proc.");
 	case ET66StatType::CritChance:       return NSLOCTEXT("T66.StatTooltips", "CritChance", "Chance for each attack to land a critical hit.");
 	case ET66StatType::HeadshotChance:   return NSLOCTEXT("T66.StatTooltips", "HeadshotChance", "Chance for each attack to stun the hit enemy with a headshot proc.");
@@ -485,19 +485,19 @@ FText T66GetReimaginedItemVariantName(ET66StatType StatType, ET66ItemRarity Rari
 	switch (StatType)
 	{
 		T66_ITEM_VARIANTS(AoeDamage, "Halo of Ruin", "Thunder Moon", "Cathedral Boomer", "Sainted Shockring");
-		T66_ITEM_VARIANTS(BounceDamage, "Ricochet Crown", "Moon-Hop Pearl", "Imp Orbit", "Rebound Relic");
-		T66_ITEM_VARIANTS(PierceDamage, "Needle of Judgment", "Storm Thorn", "Scholar's Fang", "Silver Whisper");
+		T66_ITEM_VARIANTS(BounceDamage, "Ricochet Crown", "Moon-Hop Pearl", "Imp Orbit", "Rebound Surgery");
 		T66_ITEM_VARIANTS(DotDamage, "Ashen Scripture", "Leaking Sun", "Witch's Flag", "Slow Curse Seal");
+		T66_ITEM_VARIANTS(SummonDamage, "Calling Bell", "Little Soldier", "Charm Regiment", "Pocket Army");
 		T66_ITEM_VARIANTS(HeadshotChance, "Daze Lens", "Skull Tapper", "Bell Ringer", "Headshot Halo");
-		T66_ITEM_VARIANTS(AoeSpeed, "Cyclone Halo", "Wind Saint's Nail", "Zephyr Relic", "Storm Handle");
+		T66_ITEM_VARIANTS(AoeSpeed, "Cyclone Halo", "Wind Saint's Nail", "Zephyr Surgery", "Storm Handle");
 		T66_ITEM_VARIANTS(BounceSpeed, "Serpent Loop", "Orbit Spinner", "Jester Coil", "Runaway Moon");
-		T66_ITEM_VARIANTS(PierceSpeed, "Lightning Hook", "Serpent Teeth", "Haste Needle", "Swift Verdict");
 		T66_ITEM_VARIANTS(DotSpeed, "Blackwick Psalm", "Creeping Thread", "Rot Clock", "Patient Doom");
+		T66_ITEM_VARIANTS(SummonSpeed, "Rally Whistle", "Fast Recruit", "Quick Muster", "War Drum");
 		T66_ITEM_VARIANTS(CritChance, "Oracle Coin", "Truth Shard", "Fate Apostate", "Prophet's Receipt");
 		T66_ITEM_VARIANTS(AoeScale, "Expanding Moon", "Giant's Seal", "Mirror Disc of Heaven", "World-Eater Grate");
 		T66_ITEM_VARIANTS(BounceScale, "Titan Loop", "Monarch Ringlet", "Rolling Shrine", "Orbit Gate");
-		T66_ITEM_VARIANTS(PierceScale, "Lance of the Table God", "Ivory Spine", "Festival Spear", "Lawblade");
 		T66_ITEM_VARIANTS(DotScale, "Brown Eclipse Veil", "Grease Prophet", "Dust Familiar", "Charred Covenant");
+		T66_ITEM_VARIANTS(SummonScale, "Tiny Barracks", "Marching Badge", "Packed Banner", "Legion Sigil");
 		T66_ITEM_VARIANTS(AttackRange, "Far-Calling Wand", "Plastic Stargazer", "Distant Omen", "Horizon Tongue");
 		T66_ITEM_VARIANTS(Accuracy, "Red Dot Oracle", "Tiny Seer", "Moment Judge", "Perfect Mark");
 		T66_ITEM_VARIANTS(Execute, "Headsman's Mark", "Mercy Lens", "Final Dot", "Verdict Sight");
@@ -511,7 +511,7 @@ FText T66GetReimaginedItemVariantName(ET66StatType StatType, ET66ItemRarity Rari
 		T66_ITEM_VARIANTS(LifeSteal, "Siphon Reed", "Hungry Mouth", "Thief's Valve", "Sweet Theft");
 		T66_ITEM_VARIANTS(Assassinate, "Silent Edge", "Night Eye", "Whisper Guillotine", "Midnight Warrant");
 		T66_ITEM_VARIANTS(EvasionChance, "Alibi Scroll", "Escape Token", "Trickster's Leave", "Slip Charm");
-		T66_ITEM_VARIANTS(LootCrate, "Box Saint's Relic", "Promise Sticker", "Treasure Blister", "Parcel Tooth");
+		T66_ITEM_VARIANTS(LootCrate, "Box Saint's Surgery", "Promise Sticker", "Treasure Blister", "Parcel Tooth");
 		T66_ITEM_VARIANTS(TreasureChest, "Almost-Key of Kings", "False Latch", "Pocket Vault", "Pilgrim's Hoardmark");
 		T66_ITEM_VARIANTS(LootBag, "Lucky Stitch", "Prize Knot", "Reward Pouch", "Fortune Satchel");
 		T66_ITEM_VARIANTS(LootWheel, "Bright Spoke", "Prize Axle", "Lucky Rim", "Fate Spinner");
@@ -583,17 +583,17 @@ FText UT66LocalizationSubsystem::GetText_ItemBaseName(FName ItemID) const
 			{
 			case ET66StatType::AoeDamage:       return NSLOCTEXT("T66.Items", "BaseName_AoeDamage", "Hammer");
 			case ET66StatType::BounceDamage:    return NSLOCTEXT("T66.Items", "BaseName_BounceDamage", "Shuriken");
-			case ET66StatType::PierceDamage:    return NSLOCTEXT("T66.Items", "BaseName_PierceDamage", "Falchion");
 			case ET66StatType::DotDamage:       return NSLOCTEXT("T66.Items", "BaseName_DotDamage", "Wand");
+			case ET66StatType::SummonDamage:    return NSLOCTEXT("T66.Items", "BaseName_SummonDamage", "Bell");
 			case ET66StatType::HeadshotChance:  return NSLOCTEXT("T66.Items", "BaseName_HeadshotChance", "Daze Scope");
 			case ET66StatType::AoeSpeed:        return NSLOCTEXT("T66.Items", "BaseName_AoeSpeed", "Drum");
 			case ET66StatType::BounceSpeed:     return NSLOCTEXT("T66.Items", "BaseName_BounceSpeed", "Bracer");
-			case ET66StatType::PierceSpeed:     return NSLOCTEXT("T66.Items", "BaseName_PierceSpeed", "Crossbow");
 			case ET66StatType::DotSpeed:        return NSLOCTEXT("T66.Items", "BaseName_DotSpeed", "Censer");
+			case ET66StatType::SummonSpeed:     return NSLOCTEXT("T66.Items", "BaseName_SummonSpeed", "Whistle");
 			case ET66StatType::AoeScale:        return NSLOCTEXT("T66.Items", "BaseName_AoeScale", "Totem");
 			case ET66StatType::BounceScale:     return NSLOCTEXT("T66.Items", "BaseName_BounceScale", "Ring");
-			case ET66StatType::PierceScale:     return NSLOCTEXT("T66.Items", "BaseName_PierceScale", "Lance");
 			case ET66StatType::DotScale:        return NSLOCTEXT("T66.Items", "BaseName_DotScale", "Orb");
+			case ET66StatType::SummonScale:     return NSLOCTEXT("T66.Items", "BaseName_SummonScale", "Banner");
 			case ET66StatType::CritChance:      return NSLOCTEXT("T66.Items", "BaseName_CritChance", "Duelist Gloves");
 			case ET66StatType::CloseRangeDamage:return NSLOCTEXT("T66.Items", "BaseName_CloseRangeDamage", "Boxing Gloves");
 			case ET66StatType::LongRangeDamage: return NSLOCTEXT("T66.Items", "BaseName_LongRangeDamage", "Sniper");
@@ -1714,7 +1714,6 @@ FText UT66LocalizationSubsystem::GetText_IdolTooltip(FName IdolID) const
 	{
 		if (IdolString.EndsWith(TEXT("_DOT")))    return NSLOCTEXT("T66.IdolAltar", "ElementalDotIdol_Tooltip", "Deals elemental damage over time.");
 		if (IdolString.EndsWith(TEXT("_AOE")))    return NSLOCTEXT("T66.IdolAltar", "ElementalAoeIdol_Tooltip", "Triggers an elemental AOE burst.");
-		if (IdolString.EndsWith(TEXT("_Pierce"))) return NSLOCTEXT("T66.IdolAltar", "ElementalPierceIdol_Tooltip", "Fires an elemental shot that pierces through enemies.");
 		if (IdolString.EndsWith(TEXT("_Bounce"))) return NSLOCTEXT("T66.IdolAltar", "ElementalBounceIdol_Tooltip", "Sends an elemental shot that bounces between enemies.");
 	}
 
@@ -1764,11 +1763,11 @@ FText UT66LocalizationSubsystem::GetText_IdolCategoryName(ET66AttackCategory Cat
 {
 	switch (Category)
 	{
-		case ET66AttackCategory::Pierce: return NSLOCTEXT("T66.IdolAltar", "Category_Pierce", "Pierce");
 		case ET66AttackCategory::Bounce: return NSLOCTEXT("T66.IdolAltar", "Category_Bounce", "Bounce");
 		case ET66AttackCategory::AOE:    return NSLOCTEXT("T66.IdolAltar", "Category_AOE", "AOE");
 		case ET66AttackCategory::DOT:    return NSLOCTEXT("T66.IdolAltar", "Category_DOT", "DOT");
 		case ET66AttackCategory::SingleTarget: return NSLOCTEXT("T66.IdolAltar", "Category_SingleTarget", "Single Target");
+		case ET66AttackCategory::Summon: return NSLOCTEXT("T66.IdolAltar", "Category_Summon", "Summon");
 		default: return FText::GetEmpty();
 	}
 }

@@ -1,11 +1,12 @@
 # Pending Issues - Scripts
 
-## Durable Save Integrity Gate Reloads A Stale Protected Slot [Major]
+## Resolved: Durable Save Integrity Gate Reloads A Stale Protected Slot [Major]
 
 - Severity tag: [Major]
 - What's wrong: After adding a local SHA-256 fallback for hosts where `Get-FileHash` is unavailable, `Scripts/RunDurableSaveIntegritySmokeGate.ps1` reaches the staged executable and passes the queue/shutdown phase, but the reload verification phase can load preexisting protected-slot metadata instead of the just-seeded integrity marker. The failing rerun reported `LoadedOk=0` and a loaded map from an older `T66_SessionLoadedTravel_*` marker while expecting the new `T66_SaveIntegrity_*` marker.
 - Why it is out of scope now: The current pass is the Game Over ranking-pyramid/backend-mode wiring. Fixing the durable save harness or packaged save-root selection would be a separate save automation task, and the gate restored the protected save hashes after the failed run.
 - What fixing it would entail: Trace the packaged Development save roots used by `T66.Save.QueueIntegrityShutdown` and `T66.Save.VerifyIntegrityReload`, isolate or clear only the intended harness slot for the current run, preserve protected-slot restore behavior, then rerun the full staged readiness gate without skipping durable validation.
+- Resolution: Resolved 2026-06-09: root cause was slot collision — `RunSessionLoadedTravelSmoke.ps1` seeds slot 8 and the durable gate also defaulted to slot 8, so reload verification read the loaded-travel marker. Durable gate and `RunPreReleaseSmokeSuite.ps1` now default to slot 7 (slots 0-2 SaveSlots fixture, slot 8 loaded-travel fixture). Gate rerun pending the next staged readiness pass.
 
 ## Resolved: SaveSlots Load-Click Smoke Has A Protected Solo Slot Fixture [Major]
 
@@ -52,12 +53,13 @@
 - Why it's out of scope now: The immediate fix only needed the six Lu Bu matrix variants visible for Pablo's settings comparison. Replacing the direct-GLB/import fallback path is broader ToonStyle pipeline work.
 - What fixing it would entail: Teach the ToonStyle import path to extract embedded Pixal3D texture payloads deterministically, preserve file extensions/content types, import textures before mesh/material binding, and verify each static mesh slot references an expected texture-backed material.
 
-## Gameplay HUD Capture Script Uses Invalid Widget Dump Target
+## Resolved: Gameplay HUD Capture Script Uses Invalid Widget Dump Target
 
 - Severity tag: [Minor]
 - What's wrong: `Scripts/CaptureT66UIWidget.ps1` builds a gameplay widget dump argument as `-T66AutoDumpWidget="GameplayHUD:<path>"`, but the runtime dump parser rejects `GameplayHUD` with `Invalid target 'GameplayHUD'. Expected Class=, Tag=, ViewportIndex=, or Actor=.` Screenshots are still produced, but the script exits nonzero when the dump file is missing.
 - Why it's out of scope now: The current fix is limited to restoring gameplay input/HUD after the atmosphere pass; changing the automation selector contract could affect other UI capture workflows.
 - What fixing it would entail: Update the script to use a valid selector for the gameplay HUD, likely `Class=<UT66GameplayHUDWidget class path>` or a dedicated runtime tag, then add a smoke check that confirms both screenshot and JSON dump are created.
+- Resolution: Resolved by current state (verified 2026-06-09): `Scripts/CaptureT66UIWidget.ps1` no longer hardcodes a `GameplayHUD` target — callers pass `-Target` and the runtime accepts `Class=`/`Tag=`/`ViewportIndex=`/`Actor=` selectors (`T66WidgetDumpTargets.cpp`). Used tonight with `Class=UT66CasinoOverlayWidget` for the casino diagnosis captures.
 
 ## Resolved: Frontend Capture Has Tag-Click Step [Minor]
 

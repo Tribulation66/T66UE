@@ -1,0 +1,64 @@
+{
+  "characters": {
+    "Hero1Male": {
+      "skeletal_mesh": [
+        "/Game/Characters/MotionRig/Hero_1_Male/SK_MotionRig_Hero1Male.SK_MotionRig_Hero1Male"
+      ],
+      "skeleton": "/Game/Characters/MotionRig/Hero_1_Male/SK_MotionRig_Hero1Male_Skeleton.SK_MotionRig_Hero1Male_Skeleton",
+      "texture": [
+        "/Game/Characters/MotionRig/Hero_1_Male/T_MotionRig_Hero1Male_BaseColor.T_MotionRig_Hero1Male_BaseColor"
+      ],
+      "clips": {
+        "Idle": [
+          "/Game/Characters/MotionRig/Hero_1_Male/AM_MotionRig_Hero1Male_Idle.AM_MotionRig_Hero1Male_Idle"
+        ],
+        "Walk": [
+          "/Game/Characters/MotionRig/Hero_1_Male/AM_MotionRig_Hero1Male_Walk.AM_MotionRig_Hero1Male_Walk"
+        ],
+        "Jump": [
+          "/Game/Characters/MotionRig/Hero_1_Male/AM_MotionRig_Hero1Male_Jump.AM_MotionRig_Hero1Male_Jump"
+        ],
+        "Dive": [
+          "/Game/Characters/MotionRig/Hero_1_Male/AM_MotionRig_Hero1Male_Dive.AM_MotionRig_Hero1Male_Dive"
+        ],
+        "GetUp_Front": [
+          "/Game/Characters/MotionRig/Hero_1_Male/AM_MotionRig_Hero1Male_GetUp_Front.AM_MotionRig_Hero1Male_GetUp_Front"
+        ],
+        "GetUp_Back": [
+          "/Game/Characters/MotionRig/Hero_1_Male/AM_MotionRig_Hero1Male_GetUp_Back.AM_MotionRig_Hero1Male_GetUp_Back"
+        ]
+      }
+    },
+    "Hero1Female": {
+      "skeletal_mesh": [
+        "/Game/Characters/MotionRig/Hero_1_Female/SK_MotionRig_Hero1Female.SK_MotionRig_Hero1Female"
+      ],
+      "skeleton": "/Game/Characters/MotionRig/Hero_1_Female/SK_MotionRig_Hero1Female_Skeleton.SK_MotionRig_Hero1Female_Skeleton",
+      "texture": [
+        "/Game/Characters/MotionRig/Hero_1_Female/T_MotionRig_Hero1Female_BaseColor_0.T_MotionRig_Hero1Female_BaseColor_0",
+        "/Game/Characters/MotionRig/Hero_1_Female/T_MotionRig_Hero1Female_BaseColor_1.T_MotionRig_Hero1Female_BaseColor_1"
+      ],
+      "clips": {
+        "Idle": [
+          "/Game/Characters/MotionRig/Hero_1_Female/AM_MotionRig_Hero1Female_Idle.AM_MotionRig_Hero1Female_Idle"
+        ],
+        "Walk": [
+          "/Game/Characters/MotionRig/Hero_1_Female/AM_MotionRig_Hero1Female_Walk.AM_MotionRig_Hero1Female_Walk"
+        ],
+        "Jump": [
+          "/Game/Characters/MotionRig/Hero_1_Female/AM_MotionRig_Hero1Female_Jump.AM_MotionRig_Hero1Female_Jump"
+        ],
+        "Dive": [
+          "/Game/Characters/MotionRig/Hero_1_Female/AM_MotionRig_Hero1Female_Dive.AM_MotionRig_Hero1Female_Dive"
+        ],
+        "GetUp_Front": [
+          "/Game/Characters/MotionRig/Hero_1_Female/AM_MotionRig_Hero1Female_GetUp_Front.AM_MotionRig_Hero1Female_GetUp_Front"
+        ],
+        "GetUp_Back": [
+          "/Game/Characters/MotionRig/Hero_1_Female/AM_MotionRig_Hero1Female_GetUp_Back.AM_MotionRig_Hero1Female_GetUp_Back"
+        ]
+      }
+    }
+  },
+  "errors": []
+}

@@ -126,27 +126,6 @@
     ]
   },
   {
-    "Name": "Hero.Attack.Pierce",
-    "Description": "Fallback piercing hero attack.",
-    "VolumeBus": "SFX",
-    "bEnabled": true,
-    "bPlay2D": false,
-    "bIsUISound": false,
-    "bPrimeOnLoad": true,
-    "VolumeMultiplier": 0.88,
-    "PitchMultiplier": 1.0,
-    "PitchRandomRange": 0.04,
-    "StartTime": 0.0,
-    "MinReplayIntervalSeconds": 0.03,
-    "AttenuationAssetPath": "",
-    "ConcurrencyAssetPath": "",
-    "SoundAssetPaths": [
-      "/Game/Audio/HeltonPixelCombat/HYPC_MAGSpel_CAST_Pew_Laser_HY_PC_001.HYPC_MAGSpel_CAST_Pew_Laser_HY_PC_001",
-      "/Game/Audio/HeltonPixelCombat/HYPC_MAGSpel_CAST_Pew_Laser_HY_PC_002.HYPC_MAGSpel_CAST_Pew_Laser_HY_PC_002",
-      "/Game/Audio/HeltonPixelCombat/HYPC_MAGSpel_CAST_Pew_Laser_HY_PC_003.HYPC_MAGSpel_CAST_Pew_Laser_HY_PC_003"
-    ]
-  },
-  {
     "Name": "Hero.Attack.AOE",
     "Description": "Fallback area hero attack.",
     "VolumeBus": "SFX",
@@ -582,7 +561,7 @@
     "AttenuationAssetPath": "",
     "ConcurrencyAssetPath": "",
     "SoundAssetPaths": [
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_HIT_Gore_Pierce_HY_PC_001.HYPC_DSGNMisc_HIT_Gore_Pierce_HY_PC_001"
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_HIT_Hit_Noise_HY_PC_001.HYPC_DSGNMisc_HIT_Hit_Noise_HY_PC_001"
     ]
   },
   {
@@ -1066,7 +1045,7 @@
     "ConcurrencyAssetPath": "",
     "SoundAssetPaths": [
       "/Game/Audio/HeltonPixelCombat/HYPC_DSGNImpt_EXPLOSION_Pyro_Burst_HY_PC_001.HYPC_DSGNImpt_EXPLOSION_Pyro_Burst_HY_PC_001",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_HIT_Gore_Pierce_HY_PC_001.HYPC_DSGNMisc_HIT_Gore_Pierce_HY_PC_001"
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_HIT_Hit_Noise_HY_PC_001.HYPC_DSGNMisc_HIT_Hit_Noise_HY_PC_001"
     ]
   },
   {
@@ -1477,9 +1456,9 @@
     "AttenuationAssetPath": "",
     "ConcurrencyAssetPath": "",
     "SoundAssetPaths": [
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_HIT_Gore_Pierce_HY_PC_001.HYPC_DSGNMisc_HIT_Gore_Pierce_HY_PC_001",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_HIT_Gore_Pierce_HY_PC_002.HYPC_DSGNMisc_HIT_Gore_Pierce_HY_PC_002",
-      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_HIT_Gore_Pierce_HY_PC_003.HYPC_DSGNMisc_HIT_Gore_Pierce_HY_PC_003"
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_HIT_Hit_Noise_HY_PC_001.HYPC_DSGNMisc_HIT_Hit_Noise_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_HIT_Hit_Noise_HY_PC_002.HYPC_DSGNMisc_HIT_Hit_Noise_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_HIT_Hit_Noise_HY_PC_003.HYPC_DSGNMisc_HIT_Hit_Noise_HY_PC_003"
     ]
   },
   {
@@ -2007,6 +1986,132 @@
       "/Game/Audio/HeltonPixelCombat/HYPC_DSGNSynth_BUFF_Failed_Buff_HY_PC_001.HYPC_DSGNSynth_BUFF_Failed_Buff_HY_PC_001",
       "/Game/Audio/HeltonPixelCombat/HYPC_DSGNSynth_BUFF_Failed_Buff_HY_PC_002.HYPC_DSGNSynth_BUFF_Failed_Buff_HY_PC_002",
       "/Game/Audio/HeltonPixelCombat/HYPC_DSGNSynth_BUFF_Failed_Buff_HY_PC_003.HYPC_DSGNSynth_BUFF_Failed_Buff_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Casino.CoinToss",
+    "Description": "Gambler coin flip launch.",
+    "VolumeBus": "SFX",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": true,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.9,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.03,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.05,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_001.HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_002.HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_003.HYPC_DSGNTonl_USABLE_Coin_Toss_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Casino.CoinLand",
+    "Description": "Gambler coin flip landing clink.",
+    "VolumeBus": "SFX",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": true,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.85,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.03,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.05,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Coin_Spend_HY_PC_001.HYPC_DSGNTonl_USABLE_Coin_Spend_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Coin_Spend_HY_PC_002.HYPC_DSGNTonl_USABLE_Coin_Spend_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNTonl_USABLE_Coin_Spend_HY_PC_003.HYPC_DSGNTonl_USABLE_Coin_Spend_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Casino.CupShuffle",
+    "Description": "Gambler cup shuffle swap tick.",
+    "VolumeBus": "SFX",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": true,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.7,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.05,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.03,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_001.HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_002.HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_003.HYPC_UIClick_INTERFACE_Rattling_Click_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Casino.CardDeal",
+    "Description": "Gambler joker cards dealt onto the table.",
+    "VolumeBus": "SFX",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": true,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.75,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.03,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.05,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_001.HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_002.HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_003.HYPC_WHSH_MOVEMENT_Simple_Whoosh_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Casino.CardFlip",
+    "Description": "Gambler card or cup reveal flip.",
+    "VolumeBus": "SFX",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": true,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.8,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.04,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.05,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_INTERFACE_Phasey_Swipe_HY_PC_001.HYPC_DSGNMisc_INTERFACE_Phasey_Swipe_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_INTERFACE_Phasey_Swipe_HY_PC_002.HYPC_DSGNMisc_INTERFACE_Phasey_Swipe_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_DSGNMisc_INTERFACE_Phasey_Swipe_HY_PC_003.HYPC_DSGNMisc_INTERFACE_Phasey_Swipe_HY_PC_003"
+    ]
+  },
+  {
+    "Name": "Casino.StickDraw",
+    "Description": "Gambler stick drawn from the cauldron.",
+    "VolumeBus": "SFX",
+    "bEnabled": true,
+    "bPlay2D": true,
+    "bIsUISound": true,
+    "bPrimeOnLoad": true,
+    "VolumeMultiplier": 0.85,
+    "PitchMultiplier": 1.0,
+    "PitchRandomRange": 0.04,
+    "StartTime": 0.0,
+    "MinReplayIntervalSeconds": 0.05,
+    "AttenuationAssetPath": "",
+    "ConcurrencyAssetPath": "",
+    "SoundAssetPaths": [
+      "/Game/Audio/HeltonPixelCombat/HYPC_SWSH_MOVEMENT_Bamboo_Whip_HY_PC_001.HYPC_SWSH_MOVEMENT_Bamboo_Whip_HY_PC_001",
+      "/Game/Audio/HeltonPixelCombat/HYPC_SWSH_MOVEMENT_Bamboo_Whip_HY_PC_002.HYPC_SWSH_MOVEMENT_Bamboo_Whip_HY_PC_002",
+      "/Game/Audio/HeltonPixelCombat/HYPC_SWSH_MOVEMENT_Bamboo_Whip_HY_PC_003.HYPC_SWSH_MOVEMENT_Bamboo_Whip_HY_PC_003"
     ]
   },
   {

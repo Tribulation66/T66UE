@@ -758,7 +758,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
 	FText GetText_IdolAltarSelected() const;
 
-	/** Idol category display name (e.g. "DOT", "Pierce"). */
+	/** Idol category display name (e.g. "DOT", "Summon"). */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Localization|Gameplay|Overlays")
 	FText GetText_IdolCategoryName(ET66AttackCategory Category) const;
 	

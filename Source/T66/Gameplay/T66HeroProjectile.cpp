@@ -239,6 +239,31 @@ void AT66HeroProjectile::SetProjectileMesh(UStaticMesh* InMesh)
 	}
 }
 
+void AT66HeroProjectile::ApplyCustomVisualMeshOverride(UStaticMesh* InMesh)
+{
+	if (!VisualMesh || !InMesh)
+	{
+		return;
+	}
+
+	VisualMesh->SetStaticMesh(InMesh);
+	// ApplyProfileToMesh-applied primitives (and the BeginPlay tint MID) set override
+	// materials plus a profile-relative transform. Clear all of it so the imported mesh
+	// shows its slot-default material instance, authored +X = travel forward, at
+	// authored size on the planar-rotated projectile root.
+	VisualMesh->EmptyOverrideMaterials();
+	VisualMesh->SetRelativeLocation(FVector::ZeroVector);
+	VisualMesh->SetRelativeRotation(FRotator::ZeroRotator);
+	VisualMesh->SetRelativeScale3D(FVector(1.f));
+	VisualMesh->SetVisibility(true, true);
+	VisualMesh->SetHiddenInGame(false, true);
+	VisualMesh->SetRenderInMainPass(true);
+	if (AccentMesh)
+	{
+		AccentMesh->SetVisibility(false);
+	}
+}
+
 void AT66HeroProjectile::SetProjectileSpeed(float InSpeed)
 {
 	if (!ProjectileMovement)

@@ -1,0 +1,114 @@
+{
+  "asset_name": "Idol_Fire_Bounce",
+  "bounds": {
+    "dimensions": [
+      144.9835968017578,
+      58.987770080566406,
+      120.0
+    ],
+    "max": [
+      72.4917984008789,
+      29.493885040283203,
+      120.0
+    ],
+    "min": [
+      -72.4917984008789,
+      -29.493885040283203,
+      0.0
+    ]
+  },
+  "fbx_bytes": 8908876,
+  "fbx_export_options": {
+    "add_leaf_bones": false,
+    "apply_scale_options": "FBX_SCALE_ALL",
+    "apply_unit_scale": true,
+    "bake_space_transform": false,
+    "embed_textures": true,
+    "global_scale": 0.01,
+    "mesh_smooth_type": "FACE",
+    "object_types": [
+      "MESH"
+    ],
+    "path_mode": "COPY",
+    "use_mesh_modifiers": true,
+    "use_selection": true
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_Bounce\\Idol_Fire_Bounce_Textured.fbx",
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\Outputs\\Idol_Fire_Bounce.glb",
+  "material_count": 1,
+  "mtl_bytes": 268,
+  "mtl_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_Bounce\\Idol_Fire_Bounce_Textured.mtl",
+  "normalization": {
+    "bounds_max": [
+      72.4917984008789,
+      29.493885040283203,
+      120.0
+    ],
+    "bounds_min": [
+      -72.4917984008789,
+      -29.493885040283203,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      144.9835968017578,
+      58.987770080566406,
+      120.0
+    ],
+    "height": 120.0,
+    "scale_factor": 154.82999789126785
+  },
+  "obj_bytes": 20490131,
+  "obj_export_options": {
+    "apply_modifiers": true,
+    "apply_transform": false,
+    "export_materials": true,
+    "export_normals": true,
+    "export_pbr_extensions": false,
+    "export_selected_objects": true,
+    "export_uv": true,
+    "global_scale": 1.0,
+    "path_mode": "RELATIVE"
+  },
+  "obj_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_Bounce\\Idol_Fire_Bounce_Textured.obj",
+  "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_Bounce",
+  "texture_usage": [
+    {
+      "image": "Image_0",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture"
+    },
+    {
+      "image": "Image_1",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture.001"
+    }
+  ],
+  "textures": [
+    {
+      "image": "Image_0",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_Bounce\\Textures\\Idol_Fire_Bounce_00_Image_0.png",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "image": "Image_1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_Bounce\\Textures\\Idol_Fire_Bounce_01_Image_1.png",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "vertex_count": 120372
+}

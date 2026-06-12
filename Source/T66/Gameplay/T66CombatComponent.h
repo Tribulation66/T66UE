@@ -13,6 +13,7 @@ class AT66EnemyBase;
 class AT66MobBase;
 class AT66BossBase;
 class AT66HeroProjectile;
+class AT66SummonActor;
 class UT66RunStateSubsystem;
 class UT66FloatingCombatTextSubsystem;
 class UT66IdolManagerSubsystem;
@@ -41,6 +42,7 @@ public:
 	void PerformScopedPiercingShot(const FVector& Start, const FVector& End);
 #if !UE_BUILD_SHIPPING
 	void PerformAutomationAutoAttackNow();
+	void RecomputeFromRunStateForAutomation();
 	bool DebugApplyHeadshotStunForAutomation(AActor* Target, bool bForce = false);
 #endif
 
@@ -83,9 +85,17 @@ public:
 	void PerformUltimateRabidFrenzy();
 	void PerformUltimateBlizzard(int32 UltimateDamage);
 
+	AActor* ResolveSummonTargetFromLocation(const FVector& FromLocation, float MaxRange) const;
+	bool IsActorValidSummonTarget(AActor* Target) const;
+	FVector GetSummonTargetAimPoint(AActor* Target) const;
+	bool HandleSummonContact(AT66SummonActor* SummonActor, AActor* Target, FName IdolID, ET66IdolElement Element, int32 DamageAmount, float StatusChance, float StatusDuration);
+	void NotifySummonDestroyed(AT66SummonActor* SummonActor);
+	static FLinearColor GetIdolElementColor(ET66IdolElement Element);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION()
 	void HandleInventoryChanged();
@@ -138,7 +148,7 @@ protected:
 	TObjectPtr<UT66RunStateSubsystem> CachedRunState;
 
 	/**
-	 * Per-attack gate set by PerformSlash (Hero_1 AOE) and the Idol_Fire_Pierce dispatch
+	 * Per-attack gate set by PerformSlash (Hero_1 AOE) and the Idol_Fire_Summon dispatch
 	 * when the physical-knockback test path is applying its own ApplyPhysicalKnockback at
 	 * the per-target callsite. ApplyDamageToTargetHandle checks this flag and SKIPS the
 	 * legacy ApplyAutoAttackKnockback for enemies/mobs so the two paths never double-knock.
@@ -169,6 +179,23 @@ protected:
 	};
 
 	TArray<FCachedIdolSlot> CachedIdolSlots;
+
+	struct FActiveSummonRecord
+	{
+		FName IdolID = NAME_None;
+		TWeakObjectPtr<AT66SummonActor> Actor;
+	};
+
+	TArray<float> LastIndependentIdolFireTimes;
+	TArray<FActiveSummonRecord> ActiveSummons;
+
+	void TickIndependentIdols(float DeltaSeconds);
+	bool TryFireIndependentIdol(int32 SlotIndex, const FCachedIdolSlot& Slot, float Now);
+	bool SpawnIndependentSummon(int32 SlotIndex, const FCachedIdolSlot& Slot, int32 DamageAmount, float SpeedScale, float ScaleMultiplier, AActor* InitialTarget);
+	int32 CountActiveSummonsForIdol(FName IdolID) const;
+	void PruneActiveSummons();
+	void TryApplyIdolStatusEffectToTarget(const FT66CombatTargetHandle& TargetHandle, ET66IdolElement Element, float Chance, float DurationSeconds);
+	void SpawnIdolStatusMarker(AActor* Target, ET66IdolElement Element, float DurationSeconds);
 
 	TSharedPtr<FStreamableHandle> CombatPresentationAssetsLoadHandle;
 
@@ -201,8 +228,7 @@ protected:
 	void ApplyDamageToActor(AActor* Target, int32 DamageAmount, FName EventType = NAME_None, FName SourceID = NAME_None, FName RangeEventForHero = NAME_None);
 
 	void SpawnSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color);
-	void SpawnPierceVFX(const FVector& Start, const FVector& End, const FLinearColor& Color);
-	void SpawnHeroOnePierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation, const FLinearColor& Color);
+	void SpawnLineTargetVFX(const FVector& Start, const FVector& End, const FLinearColor& Color);
 	void SpawnArthurUltimateSwordVFX(const FVector& Start, const FVector& End);
 	void SpawnBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color);
 	// Bounce projectile-travel presentation: stage one visible moving link at a time along the
@@ -225,14 +251,12 @@ protected:
 	// persist for the DOT duration. Visual-only — the single authoritative DOT payload stays in
 	// UT66RunStateSubsystem::ApplyDOT; markers never multiply or own DOT damage.
 	void SpawnDOTApplicatorMarkers(AActor* FollowTarget, const FLinearColor& Color, float Duration, float MarkerScale);
-	void SpawnIdolPierceVFX(const FName& IdolID, ET66ItemRarity Rarity, const FVector& Start, const FVector& End, const FVector& ImpactLocation, float StartDelaySeconds);
 	void SpawnIdolAOEVFX(const FName& IdolID, ET66ItemRarity Rarity, const FVector& Location, float Radius, float StartDelaySeconds);
 	void SpawnIdolBounceVFX(const FName& IdolID, ET66ItemRarity Rarity, const TArray<FVector>& ChainPositions, float StartDelaySeconds);
 	void SpawnIdolDOTVFX(const FName& IdolID, ET66ItemRarity Rarity, AActor* FollowTarget, const FVector& Location, float Duration, float Radius, float StartDelaySeconds);
 
 	/** Hero-specific VFX variants: spawn unique pixel patterns based on HeroID. */
 	void SpawnHeroSlashVFX(const FVector& Location, float Radius, const FLinearColor& Color, const FName& HeroID);
-	void SpawnHeroPierceVFX(const FVector& Start, const FVector& End, const FVector& ImpactLocation, const FLinearColor& Color, const FName& HeroID);
 	void SpawnHeroBounceVFX(const TArray<FVector>& ChainPositions, const FLinearColor& Color, const FName& HeroID);
 	void SpawnHeroDOTVFX(AActor* FollowTarget, const FVector& Location, float Duration, float Radius, const FLinearColor& Color, const FName& HeroID);
 

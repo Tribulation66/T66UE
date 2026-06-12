@@ -15,7 +15,7 @@ import unreal
 
 DEST_DIR = "/Game/Weapons/Projectiles"
 HEROES_CSV_RELATIVE = ("Content", "Data", "Heroes.csv")
-EXPECTED_PARENT = "/Game/Materials/M_GLB_Unlit.M_GLB_Unlit"
+EXPECTED_PARENT = "/Game/Materials/Generated/M_Unlit_DiffuseColorMap.M_Unlit_DiffuseColorMap"
 OUTPUT_REPORT = os.path.join(
     unreal.SystemLibrary.get_project_directory(),
     "Saved",

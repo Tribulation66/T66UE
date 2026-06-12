@@ -68,6 +68,8 @@ For FriendslopStyle work, the Friendslop authority file owns the stricter
 imagegen route: generation must run through separate local Codex CLI workers
 using account-backed built-in imagegen, not through the main Codex app chat and
 not through `OPENAI_API_KEY` API scripts.
+After each CLI worker result is collected, close/archive that worker thread so
+it does not remain as open background work in Codex.
 
 This means: a "missing skin portrait" never becomes a Slate-rendered colored box with initials. It becomes a generated PNG that visually matches the reference closely enough that both structural verification ("portrait slot exists, right size, right position") and visual sanity check pass.
 
@@ -531,6 +533,8 @@ iteration uses a separate ordered process:
    mark each element visual `PASS` or visual `FAIL`.
 3. Launch one approved imagegen worker per visual `FAIL` family. That worker
    generates the sheet/assets for all visual `FAIL` elements in that family.
+   After collecting the worker result and artifacts, close/archive the worker
+   thread before launching additional unrelated work.
 4. Implement every regenerated family element onto the screen.
 5. Run a layout `PASS`/`FAIL` pass for the same families and correct layout
    failures until fixed or blocked.

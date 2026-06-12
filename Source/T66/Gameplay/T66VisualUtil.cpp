@@ -123,44 +123,47 @@ void FT66VisualUtil::ApplyT66Color(UStaticMeshComponent* Mesh, UObject* Outer, c
 	}
 }
 
+namespace
+{
+	// Function-local static caches are invisible to the GC; root the asset on first
+	// load or the pointer dangles after a world teardown GC (same crash class as the
+	// 2026-06-10 SM_BaffleTube tribulation-entry crash).
+	static UStaticMesh* T66LoadRootedBasicShape(const TCHAR* AssetPath, TObjectPtr<UStaticMesh>& Cached)
+	{
+		if (!Cached)
+		{
+			Cached = LoadObject<UStaticMesh>(nullptr, AssetPath);
+			if (Cached)
+			{
+				Cached->AddToRoot();
+			}
+		}
+		return Cached.Get();
+	}
+}
+
 UStaticMesh* FT66VisualUtil::GetBasicShapeCube()
 {
 	static TObjectPtr<UStaticMesh> Cached = nullptr;
-	if (!Cached)
-	{
-		Cached = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
-	}
-	return Cached.Get();
+	return T66LoadRootedBasicShape(TEXT("/Engine/BasicShapes/Cube.Cube"), Cached);
 }
 
 UStaticMesh* FT66VisualUtil::GetBasicShapeSphere()
 {
 	static TObjectPtr<UStaticMesh> Cached = nullptr;
-	if (!Cached)
-	{
-		Cached = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
-	}
-	return Cached.Get();
+	return T66LoadRootedBasicShape(TEXT("/Engine/BasicShapes/Sphere.Sphere"), Cached);
 }
 
 UStaticMesh* FT66VisualUtil::GetBasicShapeCylinder()
 {
 	static TObjectPtr<UStaticMesh> Cached = nullptr;
-	if (!Cached)
-	{
-		Cached = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
-	}
-	return Cached.Get();
+	return T66LoadRootedBasicShape(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"), Cached);
 }
 
 UStaticMesh* FT66VisualUtil::GetBasicShapeCone()
 {
 	static TObjectPtr<UStaticMesh> Cached = nullptr;
-	if (!Cached)
-	{
-		Cached = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cone.Cone"));
-	}
-	return Cached.Get();
+	return T66LoadRootedBasicShape(TEXT("/Engine/BasicShapes/Cone.Cone"), Cached);
 }
 
 void FT66VisualUtil::GroundMeshToActorOrigin(UStaticMeshComponent* MeshComponent, UStaticMesh* Mesh)

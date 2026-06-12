@@ -479,6 +479,10 @@ void AT66EnemyBase::ConfigureAsMob(FName InMobID)
 			if (T66GI->GetEnemyData(MobID, EnemyData))
 			{
 				XPValue = FMath::Max(0, EnemyData.XPValue);
+				ProjectileCategory = EnemyData.ProjectileCategory;
+				ProjectileVisualProfileID = EnemyData.ProjectileVisualProfileID;
+				ProjectileMesh = EnemyData.ProjectileMesh;
+				ProjectileMeshScale = FMath::Max(0.05f, EnemyData.ProjectileMeshScale);
 			}
 		}
 	}
@@ -1989,4 +1993,3 @@ void AT66EnemyBase::OnDeath()
 		SetLifeSpan(0.1f);
 	}
 }
-

@@ -1322,6 +1322,63 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 				return nullptr;
 			}
 
+			auto TrySpawnAtLocation = [&](const FVector& SpawnLoc) -> AActor*
+			{
+				AActor* SpawnedActor = World->SpawnActor<AActor>(Cls, SpawnLoc, FRotator::ZeroRotator, OccupantSpawnParams);
+				if (!SpawnedActor)
+				{
+					return nullptr;
+				}
+
+				if (!ResnapTowerActorToFloor(SpawnedActor, Floor.FloorNumber))
+				{
+					SpawnedActor->Destroy();
+					return nullptr;
+				}
+
+				const int32 StrictLocationFloorNumber = GetTowerFloorIndexForLocation(SpawnedActor->GetActorLocation());
+				if (StrictLocationFloorNumber != Floor.FloorNumber)
+				{
+					SpawnedActor->Destroy();
+					return nullptr;
+				}
+
+				const int32 ResolvedFloorNumber = T66ResolveTowerFloorForActorPhysical(this, CachedTowerMainMapLayout, SpawnedActor);
+				if (ResolvedFloorNumber != Floor.FloorNumber)
+				{
+					SpawnedActor->Destroy();
+					return nullptr;
+				}
+
+				UsedLocs.Add(SpawnedActor->GetActorLocation());
+				return SpawnedActor;
+			};
+
+			// Reward slots first (design ref section 1.7): the room course designed
+			// its payoff points (deck tops, ring pits, bridge ends) — content lands
+			// there, marked by the reward beacons, instead of random open ground.
+			for (const FVector& RewardSlot : Room.RewardSlots)
+			{
+				bool bSlotTaken = false;
+				for (const FVector& Used : UsedLocs)
+				{
+					if (FVector::DistSquared2D(Used, RewardSlot) < FMath::Square(250.0f))
+					{
+						bSlotTaken = true;
+						break;
+					}
+				}
+				if (bSlotTaken)
+				{
+					continue;
+				}
+
+				if (AActor* SpawnedActor = TrySpawnAtLocation(RewardSlot + FVector(0.0f, 0.0f, 80.0f)))
+				{
+					return SpawnedActor;
+				}
+			}
+
 			for (int32 SpawnAttempt = 0; SpawnAttempt < 5; ++SpawnAttempt)
 			{
 				FVector SpawnLoc = FVector::ZeroVector;
@@ -1330,34 +1387,10 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 					continue;
 				}
 
-				AActor* SpawnedActor = World->SpawnActor<AActor>(Cls, SpawnLoc, FRotator::ZeroRotator, OccupantSpawnParams);
-				if (!SpawnedActor)
+				if (AActor* SpawnedActor = TrySpawnAtLocation(SpawnLoc))
 				{
-					continue;
+					return SpawnedActor;
 				}
-
-				if (!ResnapTowerActorToFloor(SpawnedActor, Floor.FloorNumber))
-				{
-					SpawnedActor->Destroy();
-					continue;
-				}
-
-				const int32 StrictLocationFloorNumber = GetTowerFloorIndexForLocation(SpawnedActor->GetActorLocation());
-				if (StrictLocationFloorNumber != Floor.FloorNumber)
-				{
-					SpawnedActor->Destroy();
-					continue;
-				}
-
-				const int32 ResolvedFloorNumber = T66ResolveTowerFloorForActorPhysical(this, CachedTowerMainMapLayout, SpawnedActor);
-				if (ResolvedFloorNumber != Floor.FloorNumber)
-				{
-					SpawnedActor->Destroy();
-					continue;
-				}
-
-				UsedLocs.Add(SpawnedActor->GetActorLocation());
-				return SpawnedActor;
 			}
 
 			return nullptr;
@@ -1377,7 +1410,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 			for (const T66TowerMapTerrain::FRoom& Room : Floor->Rooms)
 			{
 				const FT66TowerRoomRuleTuning* RoomRule = TowerRoomTuning.FindRoomRule(Room.RoomRuleID);
-				if (RoomRule && RoomRule->NonTrapContentSlots.Max > 0)
+				if (RoomRule && RoomRule->RewardContentSlots.Max > 0)
 				{
 					bTowerRoomContentMode = true;
 					++TowerRoomContentExpectedRooms;
@@ -1417,7 +1450,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 				for (const T66TowerMapTerrain::FRoom& Room : Floor->Rooms)
 				{
 					const FT66TowerRoomRuleTuning* RoomRule = TowerRoomTuning.FindRoomRule(Room.RoomRuleID);
-					if (RoomRule && RoomRule->NonTrapContentSlots.Max > 0)
+					if (RoomRule && RoomRule->RewardContentSlots.Max > 0)
 					{
 						ContentRooms.Add(&Room);
 					}
@@ -1580,6 +1613,29 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 					if (SpawnedContent)
 					{
 						++TowerRoomContentPlaced;
+
+						// Second reward (section 1.7 "one or two rewards"): rooms with
+						// two designed payoff points may fill both — the bonus chest
+						// lands on the remaining beacon slot.
+						const FT66TowerRoomRuleTuning* BonusRule = TowerRoomTuning.FindRoomRule(Room->RoomRuleID);
+						if (BonusRule
+							&& BonusRule->RewardContentSlots.Max >= 2
+							&& Room->RewardSlots.Num() >= 2
+							&& ((FloorNumber + RoomIndex) % 2) == 0)
+						{
+							if (AT66ChestInteractable* BonusChest = Cast<AT66ChestInteractable>(SpawnTowerActorInRoom(
+								AT66ChestInteractable::StaticClass(),
+								*Floor,
+								*Room,
+								9900 + RoomIndex * 53,
+								900.f,
+								1200.f)))
+							{
+								ConfigureChest(BonusChest);
+								RememberRoomContent(BonusChest, ContentTag);
+								++TowerSpawnedChests;
+							}
+						}
 					}
 				}
 			}
@@ -1602,7 +1658,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 				UE_LOG(
 					LogT66GameMode,
 					Log,
-					TEXT("[T66Proof][TowerRoomContentSummary] Stage=%d Result=PASS Floors=%d Rooms=%d ContentRooms=%d Vendors=%d ExpectedVendors=%d Rule=RoomNonTrapContentSlots"),
+					TEXT("[T66Proof][TowerRoomContentSummary] Stage=%d Result=PASS Floors=%d Rooms=%d ContentRooms=%d Vendors=%d ExpectedVendors=%d Rule=RoomRewardContentSlots"),
 					StageNum,
 					TowerMobFloorNumbers.Num(),
 					TowerRoomContentExpectedRooms,
@@ -1615,7 +1671,7 @@ void AT66GameMode::SpawnWorldInteractablesForStage()
 				UE_LOG(
 					LogT66GameMode,
 					Warning,
-					TEXT("[T66Proof][TowerRoomContentSummary] Stage=%d Result=FAIL Floors=%d Rooms=%d ContentRooms=%d Vendors=%d ExpectedVendors=%d Rule=RoomNonTrapContentSlots"),
+					TEXT("[T66Proof][TowerRoomContentSummary] Stage=%d Result=FAIL Floors=%d Rooms=%d ContentRooms=%d Vendors=%d ExpectedVendors=%d Rule=RoomRewardContentSlots"),
 					StageNum,
 					TowerMobFloorNumbers.Num(),
 					TowerRoomContentExpectedRooms,

@@ -13,7 +13,7 @@
  * The DOT moving-shot silhouette lives in the Niagara renderer/material/mesh
  * assets, not in actor-side geometry. It is a forward-travelling aura ring that
  * the single hero->target DOT shot transports, deliberately distinct from the AOE
- * radial crescent, the Pierce forward vertical lane, and the Bounce horizontal
+ * radial crescent, the former lane carrier, and the Bounce horizontal
  * slash. The persistent target-attached sphere markers remain a separate runtime
  * placeholder and are unchanged by this carrier.
  */

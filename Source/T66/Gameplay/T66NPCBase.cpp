@@ -329,7 +329,7 @@ void AT66NPCBase::Tick(float DeltaSeconds)
 			{
 			FLagScopedScope LagScope(GetWorld(), TEXT("NPCBase::Tick (LineTrace gravity settle)"), 2.0f);
 			FHitResult Hit;
-			FCollisionQueryParams Params(SCENE_QUERY_STAT(T66HouseNPCGravitySettle), false, this);
+			FCollisionQueryParams Params(SCENE_QUERY_STAT(T66NPCGravitySettle), false, this);
 			const FVector Here = GetActorLocation();
 			const FVector Start = Here + FVector(0.f, 0.f, 100.f);
 			const FVector End = Here - FVector(0.f, 0.f, 5000.f);

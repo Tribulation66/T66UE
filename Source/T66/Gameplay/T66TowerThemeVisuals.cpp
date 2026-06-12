@@ -4,6 +4,7 @@
 
 #include "Engine/StaticMesh.h"
 #include "Engine/Texture.h"
+#include "HAL/IConsoleManager.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/UObjectGlobals.h"
@@ -12,6 +13,47 @@ namespace
 {
 	static const TCHAR* T66EnvironmentLitMaterialPath = TEXT("/Game/Materials/M_FriendSlop_FallGuys.M_FriendSlop_FallGuys");
 	static const TCHAR* T66CoherentThemeKitRoot = TEXT("/Game/World/Terrain/TowerDungeon/GeneratedKit/CoherentThemeKit01");
+
+	// 2026-06-10 user direction: full Fall Guys look — clean slabs in bright solid
+	// candy colors — until the map design is nailed. 0 restores themed stone.
+	static TAutoConsoleVariable<int32> CVarT66TowerFallGuysLook(
+		TEXT("t66.Tower.FallGuysLook"),
+		1,
+		TEXT("1 renders tower floor/wall/ceiling surfaces as solid-color Fall Guys slabs (FriendSlop master instances); 0 restores the themed materials."),
+		ECVF_Default);
+
+	// Function-local static caches must be rooted or they dangle after a world
+	// teardown GC (the 2026-06-10 SM_BaffleTube crash class).
+	static UMaterialInterface* T66LoadRootedSurfaceMaterial(const TCHAR* ObjectPath, TObjectPtr<UMaterialInterface>& Cached)
+	{
+		if (!Cached)
+		{
+			Cached = LoadObject<UMaterialInterface>(nullptr, ObjectPath);
+			if (Cached)
+			{
+				Cached->AddToRoot();
+			}
+		}
+		return Cached.Get();
+	}
+
+	static UMaterialInterface* T66GetFallGuysFloorMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		return T66LoadRootedSurfaceMaterial(TEXT("/Game/World/Terrain/FallGuysKit/MI_FallGuys_Floor.MI_FallGuys_Floor"), Cached);
+	}
+
+	static UMaterialInterface* T66GetFallGuysWallMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		return T66LoadRootedSurfaceMaterial(TEXT("/Game/World/Terrain/FallGuysKit/MI_FallGuys_Wall.MI_FallGuys_Wall"), Cached);
+	}
+
+	static UMaterialInterface* T66GetFallGuysCeilingMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		return T66LoadRootedSurfaceMaterial(TEXT("/Game/World/Terrain/FallGuysKit/MI_FallGuys_Ceiling.MI_FallGuys_Ceiling"), Cached);
+	}
 
 	struct FT66TowerThemeSurfacePaths
 	{
@@ -250,6 +292,26 @@ bool T66TowerThemeVisuals::ResolveTheme(
 	if (!OutTheme.RoofMaterial)
 	{
 		OutTheme.RoofMaterial = OutTheme.WallMaterial ? OutTheme.WallMaterial : OutTheme.FloorMaterial;
+	}
+
+	// Fall Guys look: override every surface with the solid-color candy slabs.
+	// Themed resolution above stays intact as the fallback when the kit MIs are
+	// missing or the look is toggled off.
+	if (CVarT66TowerFallGuysLook.GetValueOnAnyThread() != 0)
+	{
+		UMaterialInterface* CandyFloor = T66GetFallGuysFloorMaterial();
+		UMaterialInterface* CandyWall = T66GetFallGuysWallMaterial();
+		UMaterialInterface* CandyCeiling = T66GetFallGuysCeilingMaterial();
+		if (CandyFloor && CandyWall && CandyCeiling)
+		{
+			OutTheme.FloorMaterial = CandyFloor;
+			OutTheme.WallXZMaterial = CandyWall;
+			OutTheme.WallYZMaterial = CandyWall;
+			OutTheme.WallMaterial = CandyWall;
+			OutTheme.CeilingMaterial = CandyCeiling;
+			OutTheme.RoofMaterial = CandyCeiling;
+			OutTheme.DecorationMaterialOverride = CandyWall;
+		}
 	}
 
 	return OutTheme.FloorMaterial || OutTheme.WallMaterial || OutTheme.RoofMaterial;

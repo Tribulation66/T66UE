@@ -24,6 +24,10 @@ CSV_FIELDNAMES = [
     "SourceID",
     "AttackCategory",
     "NiagaraSystem",
+    "ProjectileMesh",
+    "ProjectileMeshCount",
+    "ProjectileMeshScale",
+    "ProjectileMeshTravelSpeed",
     "EffectPacketID",
     "VFXProfile",
     "bSuppressTemporaryProjectile",
@@ -40,6 +44,10 @@ HERO1_AXE_AOE_BINDING_ROW = {
     "SourceID": "Hero_1_black_aoe",
     "AttackCategory": "AOE",
     "NiagaraSystem": "/Game/VFX/Hero1/Axe/AOE/NS_Hero1AxeAOE_MeshSlash.NS_Hero1AxeAOE_MeshSlash",
+    "ProjectileMesh": "/Game/Weapons/Projectiles/FriendSlop/SM_WeaponProjectile_Black.SM_WeaponProjectile_Black",
+    "ProjectileMeshCount": "1",
+    "ProjectileMeshScale": "1.0",
+    "ProjectileMeshTravelSpeed": "0.0",
     "EffectPacketID": "Hero1AxeAOESlashMechanismPacket",
     "VFXProfile": "MeshSlashAOE",
     "bSuppressTemporaryProjectile": "True",
@@ -64,22 +72,6 @@ HERO3_AOE_PLACEHOLDER_BINDING_ROW = {
     "BasePlaybackSeconds": "0.46",
     "VisualScaleMultiplier": "1.0",
     "Notes": "FLAGGED placeholder reuse: Hero 3 AOE temporarily reuses the accepted Hero 1 AOE slash binding until hero-specific VFX is authored.",
-}
-HERO2_PIERCE_BINDING_ROW = {
-    "---": "Hero2_Pierce_Black_Base",
-    "BindingID": "Hero2_Pierce_Black_Base",
-    "SourceType": "WeaponBase",
-    "SourceID": "Hero_2_black_pierce",
-    "AttackCategory": "Pierce",
-    "NiagaraSystem": "/Game/VFX/Hero1/Axe/Pierce/NS_Hero1AxePierce_MeshSlash.NS_Hero1AxePierce_MeshSlash",
-    "EffectPacketID": "Hero1AxePierceMechanismPacket",
-    "VFXProfile": "MeshSlashPierce",
-    "bSuppressTemporaryProjectile": "True",
-    "bDevelopmentFallbackAllowed": "True",
-    "BaseVisualRadius": "80.0",
-    "BasePlaybackSeconds": "0.3",
-    "VisualScaleMultiplier": "1.0",
-    "Notes": "Reclassified Pierce exemplar: Hero 2 black Pierce uses the accepted Hero 1 Pierce lane VFX until hero-specific VFX is authored.",
 }
 HERO4_BOUNCE_BINDING_ROW = {
     "---": "Hero4_Bounce_Black_Base",
@@ -115,6 +107,8 @@ HERO5_DOT_BINDING_ROW = {
 }
 
 RARITY_SUFFIXES = ("black", "red", "yellow", "white")
+IDOL_PROJECTILE_ELEMENTS = ("Fire", "Ice", "Electricity", "Nature", "Wind")
+IDOL_PROJECTILE_CATEGORIES = ("AOE", "Bounce", "DOT", "Summon")
 
 
 def _expand_weapon_base_binding_for_rarities(base_row, row_id_prefix, source_id_prefix, category_suffix, notes_template):
@@ -127,7 +121,51 @@ def _expand_weapon_base_binding_for_rarities(base_row, row_id_prefix, source_id_
         row["BindingID"] = row_id
         row["SourceID"] = f"{source_id_prefix}_{rarity_suffix}_{category_suffix}"
         row["Notes"] = notes_template.format(rarity=title_suffix)
+        if source_id_prefix == "Hero_1" and category_suffix == "aoe":
+            # Hero 1 rarity multiplicity is already authored in Weapons.csv ProjectileCount:
+            # black=1, red=3, yellow=5, white=1. Use the same mesh per projectile; white
+            # is the single oversized body.
+            row["ProjectileMesh"] = "/Game/Weapons/Projectiles/FriendSlop/SM_WeaponProjectile_Black.SM_WeaponProjectile_Black"
+            row["ProjectileMeshCount"] = "1"
+            row["ProjectileMeshScale"] = "2.25" if rarity_suffix == "white" else "1.0"
+            row["ProjectileMeshTravelSpeed"] = "0.0"
         rows.append(row)
+    return rows
+
+
+def _build_idol_projectile_mesh_binding_rows():
+    rows = []
+    for element in IDOL_PROJECTILE_ELEMENTS:
+        for category in IDOL_PROJECTILE_CATEGORIES:
+            idol_id = f"Idol_{element}_{category}"
+            mesh_path = (
+                f"/Game/Weapons/Projectiles/FriendSlop/Inflatable/"
+                f"SM_{idol_id}.SM_{idol_id}"
+            )
+            row_id = f"{idol_id}_ProjectileMesh"
+            rows.append({
+                "---": row_id,
+                "BindingID": row_id,
+                "SourceType": "IdolModifier",
+                "SourceID": idol_id,
+                "AttackCategory": category,
+                "NiagaraSystem": "",
+                "ProjectileMesh": mesh_path,
+                "ProjectileMeshCount": "1",
+                "ProjectileMeshScale": "1.0",
+                "ProjectileMeshTravelSpeed": "2200.0" if category == "Bounce" else "0.0",
+                "EffectPacketID": "InflatableProjectiles_20260611",
+                "VFXProfile": f"InflatableIdol{category}",
+                "bSuppressTemporaryProjectile": "True",
+                "bDevelopmentFallbackAllowed": "True",
+                "BaseVisualRadius": "80.0",
+                "BasePlaybackSeconds": "0.0",
+                "VisualScaleMultiplier": "1.0",
+                "Notes": (
+                    f"Inflatable projectile body mesh for {idol_id}. "
+                    "Line is intentionally excluded from the new idol mesh set."
+                ),
+            })
     return rows
 
 
@@ -147,13 +185,6 @@ ENFORCED_BINDING_ROWS = (
         "FLAGGED placeholder reuse: Hero 3 {rarity} AOE temporarily reuses the accepted Hero 1 AOE slash binding until hero-specific VFX is authored.",
     )
     + _expand_weapon_base_binding_for_rarities(
-        HERO2_PIERCE_BINDING_ROW,
-        "Hero2_Pierce_Black_Base",
-        "Hero_2",
-        "pierce",
-        "Reclassified Pierce exemplar: Hero 2 {rarity} Pierce uses the accepted Hero 1 Pierce lane VFX until hero-specific VFX is authored.",
-    )
-    + _expand_weapon_base_binding_for_rarities(
         HERO4_BOUNCE_BINDING_ROW,
         "Hero4_Bounce_Black_Base",
         "Hero_4",
@@ -167,6 +198,7 @@ ENFORCED_BINDING_ROWS = (
         "dot",
         "Reclassified DOT exemplar: Hero 5 {rarity} DOT uses the accepted Hero 1 DOT lane VFX until hero-specific VFX is authored.",
     )
+    + _build_idol_projectile_mesh_binding_rows()
 )
 
 

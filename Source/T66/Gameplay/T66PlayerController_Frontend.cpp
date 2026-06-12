@@ -13,6 +13,7 @@
 #include "UI/T66ScreenBase.h"
 #include "UI/Screens/T66MainMenuScreen.h"
 #include "UI/Screens/T66HeroSelectionScreen.h"
+#include "UI/Screens/T66CustomHeroBuilderScreen.h"
 #include "UI/Screens/T66HeroGridScreen.h"
 #include "UI/Screens/T66CompanionSelectionScreen.h"
 #include "UI/Screens/T66PetSelectionScreen.h"
@@ -48,7 +49,6 @@
 DEFINE_LOG_CATEGORY_STATIC(LogT66Frontend, Log, All);
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/T66BackendSubsystem.h"
@@ -384,8 +384,8 @@ namespace
 			"Settings, SettingsScreen, LanguageSelect, Language, Achievements, PauseMenu, Pause, "
 			"GameOver, RunSummary, PowerUp, HeroGrid, CompanionGrid, GirlfriendGrid, QuitConfirmation, Quit, PartyInvite, "
 			"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, "
-			"Challenges, DailyDescent, Overview, History, Relics, Steroids, Diplomas, "
-			"Drugs, SteamAchievements, Steam, SecretAchievements, Secret, SettingsGameplay, SettingsGraphics, "
+			"Challenges, DailyDescent, Overview, History, Surgeries, Drugs, Diplomas, "
+			"SteamAchievements, Steam, SecretAchievements, Secret, SettingsGameplay, SettingsGraphics, "
 			"SettingsControls, SettingsMediaViewer, SettingsMedia, SettingsAudio, LoadGame");
 	}
 
@@ -474,10 +474,9 @@ namespace
 			return true;
 		}
 		if (Normalized.Equals(TEXT("PowerUp"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("Relics"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("Steroids"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("Diplomas"), ESearchCase::IgnoreCase)
-			|| Normalized.Equals(TEXT("Drugs"), ESearchCase::IgnoreCase))
+			|| Normalized.Equals(TEXT("Surgeries"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Drugs"), ESearchCase::IgnoreCase)
+			|| Normalized.Equals(TEXT("Diplomas"), ESearchCase::IgnoreCase))
 		{
 			OutScreenType = ET66ScreenType::PowerUp;
 			return true;
@@ -631,6 +630,8 @@ TSubclassOf<UT66ScreenBase> AT66PlayerController::ResolveScreenClass(ET66ScreenT
 		return UT66MainMenuScreen::StaticClass();
 	case ET66ScreenType::CompanionSelection:
 		return UT66CompanionSelectionScreen::StaticClass();
+	case ET66ScreenType::CustomHeroBuilder:
+		return UT66CustomHeroBuilderScreen::StaticClass();
 	case ET66ScreenType::PetSelection:
 		return UT66PetSelectionScreen::StaticClass();
 	case ET66ScreenType::HeroGrid:
@@ -813,6 +814,7 @@ void AT66PlayerController::AutoLoadScreenClasses()
 	static const FNativeScreenMapping NativeScreens[] = {
 		{ ET66ScreenType::MainMenu, UT66MainMenuScreen::StaticClass() },
 		{ ET66ScreenType::HeroSelection, UT66HeroSelectionScreen::StaticClass() },
+		{ ET66ScreenType::CustomHeroBuilder, UT66CustomHeroBuilderScreen::StaticClass() },
 		{ ET66ScreenType::CompanionSelection, UT66CompanionSelectionScreen::StaticClass() },
 		{ ET66ScreenType::PetSelection, UT66PetSelectionScreen::StaticClass() },
 		{ ET66ScreenType::SaveSlots, UT66SaveSlotsScreen::StaticClass() },
@@ -1589,4 +1591,3 @@ void AT66PlayerController::ShowScreen(ET66ScreenType ScreenType)
 		UIManager->ShowScreen(ScreenType);
 	}
 }
-

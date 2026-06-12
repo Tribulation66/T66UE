@@ -28,9 +28,10 @@ namespace
 			return NSLOCTEXT("T66.HeroSelection", "AttackCategoryDot", "DOT");
 		case ET66AttackCategory::SingleTarget:
 			return NSLOCTEXT("T66.HeroSelection", "AttackCategorySingleTarget", "Single Target");
-		case ET66AttackCategory::Pierce:
+		case ET66AttackCategory::Summon:
+			return NSLOCTEXT("T66.HeroSelection", "AttackCategorySummon", "Summon");
 		default:
-			return NSLOCTEXT("T66.HeroSelection", "AttackCategoryPierce", "Pierce");
+			return NSLOCTEXT("T66.HeroSelection", "AttackCategoryAoeDefault", "AOE");
 		}
 	}
 
@@ -44,8 +45,11 @@ namespace
 		Display.FallbackColor = HeroData.PlaceholderColor;
 		if (KitSlot == ET66HeroKitPreviewSlot::Weapon)
 		{
+			const FName WeaponHeroID = T66GI
+				? T66GI->ResolveCustomHeroWeaponSourceHeroID(HeroData.HeroID)
+				: HeroData.HeroID;
 			Display.KitID = UT66WeaponManagerSubsystem::MakeWeaponID(
-				HeroData.HeroID,
+				WeaponHeroID,
 				ET66WeaponRarity::Black,
 				HeroData.PrimaryCategory);
 
@@ -125,7 +129,7 @@ FReply UT66HeroSelectionScreen::HandleWeaponPreviewClicked()
 
 FReply UT66HeroSelectionScreen::HandleUltimatePreviewClicked()
 {
-	ApplyKitPreviewVideo(ET66HeroKitPreviewSlot::Ultimate);
+	ApplyKitPreviewVideo(ET66HeroKitPreviewSlot::Weapon);
 	return FReply::Handled();
 }
 
@@ -178,9 +182,12 @@ void UT66HeroSelectionScreen::ApplyKitPreviewVideo(const ET66HeroKitPreviewSlot 
 	}
 
 	FT66FrontendVideoAsset VideoAsset;
+	const FName KitPreviewHeroID = T66GI
+		? T66GI->ResolveCustomHeroWeaponSourceHeroID(HeroData.HeroID)
+		: HeroData.HeroID;
 	const bool bResolved = T66FrontendVideoCatalog::ResolveHeroKitPreview(
-		HeroData.HeroID,
-		KitSlot,
+		KitPreviewHeroID,
+		ET66HeroKitPreviewSlot::Weapon,
 		Display.KitID,
 		EffectiveSkinID,
 		SelectedBodyType,
@@ -672,7 +679,9 @@ void UT66HeroSelectionScreen::RefreshHeroCarouselPortraits()
 				if (GI->GetHeroData(HeroID, D))
 				{
 					SlotColor = D.PlaceholderColor;
-					PortraitSoft = GI->ResolveHeroPortrait(D, SelectedBodyType, ET66HeroPortraitVariant::Half);
+					PortraitSoft = UT66GameInstance::IsCustomHeroID(HeroID)
+						? TSoftObjectPtr<UTexture2D>()
+						: GI->ResolveHeroPortrait(D, SelectedBodyType, ET66HeroPortraitVariant::Half);
 				}
 			}
 

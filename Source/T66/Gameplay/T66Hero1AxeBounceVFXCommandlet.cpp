@@ -53,7 +53,7 @@ namespace
 	// carrier: length along Y, thin vertical lens in Z, shallow forward crescent bow
 	// in X. Sized to contain the cm-authored slash mesh below (half-length 80 along Y,
 	// matching the Hero1Axe_Bounce_Base BaseVisualRadius=80 binding convention shared
-	// with the AOE radius=132 and Pierce half-length=150 carriers).
+	// with the AOE radius=132 and former lane half-length=150 carriers).
 	const FBox T66Hero1AxeBounceLocalBounds(FVector(-38.0f, -100.0f, -50.0f), FVector(38.0f, 100.0f, 50.0f));
 
 	bool T66UseHero1AxeBounceProductionPaths()
@@ -74,7 +74,7 @@ namespace
 
 	// Bounce reuses the shared Hero 1 AOE slash-layer materials. The carrier geometry
 	// (compact horizontal slash) and ImpactAnchored per-link placement make Bounce
-	// distinct from the AOE radial crescent and the Pierce forward vertical lane; the
+	// distinct from the AOE radial crescent and the former lane carrier; the
 	// red/blue/white material vocabulary is intentionally shared.
 	struct FT66BounceLayerConfig
 	{
@@ -422,7 +422,7 @@ namespace
 				TEXT("Param0WriteEnabled"),
 				FNiagaraTypeDefinition::GetBoolDef(),
 				FNiagaraBool(true));
-			// Bounce is a moving projectile carrier, unlike the stationary AOE/Pierce
+			// Bounce is a moving projectile carrier, unlike the stationary AOE/lane
 			// impact reveals. Hold the shared slash material in its active mid-life band
 			// while the actor travels; forcing it to age 1.0 starts the carrier in its
 			// dissipated/end-mask state and leaves only tiny late fragments in capture.
@@ -525,7 +525,7 @@ namespace
 	// +X is a shallow forward crescent bow plus the thin lens depth, so the carrier
 	// reads as a small horizontal slash from gameplay angles instead of a flat
 	// billboard. The slash tapers to points at both ends and is deliberately NOT the
-	// AOE radial crescent nor the Pierce forward vertical lane.
+	// AOE radial crescent nor the former lane carrier.
 	UStaticMesh* T66BuildBounceSlashMesh(UMaterialInterface* SlashMaterial)
 	{
 		const FString BounceMeshPackagePath = T66ResolveHero1AxeBouncePath(T66Hero1AxeBounceMeshPackagePath);
@@ -577,9 +577,9 @@ namespace
 		// the carrier at world scale 1.0) sits it on each Bounce impact point at gameplay
 		// size. Half-length 80 cm maps directly to the Hero1Axe_Bounce_Base
 		// BaseVisualRadius=80 binding, the same authored-footprint contract the AOE
-		// (radius 132) and Pierce (half-length 150) carriers use. This keeps Bounce the
+		// (radius 132) and LineTarget (half-length 150) carriers use. This keeps Bounce the
 		// most compact of the three: a small horizontal slash, not the AOE radial
-		// crescent nor the Pierce forward lane.
+		// crescent nor the LineTarget forward lane.
 		constexpr float MaxHalfLength = 80.0f;
 		constexpr float MaxHalfHeight = 13.5f;
 		constexpr float MaxLensHalfDepth = 6.0f;

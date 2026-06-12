@@ -351,17 +351,17 @@ namespace T66HeroSelectionPrivate
 		{
 		case ET66StatType::AoeDamage: return NSLOCTEXT("T66.HeroSelection", "DrugAoeDamage", "OXYMETHOLONE");
 		case ET66StatType::BounceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugBounceDamage", "METHANDROSTENOLONE");
-		case ET66StatType::PierceDamage: return NSLOCTEXT("T66.HeroSelection", "DrugPierceDamage", "FLUOXYMESTERONE");
+		case ET66StatType::SummonDamage: return NSLOCTEXT("T66.HeroSelection", "DrugSummonDamage", "FLUOXYMESTERONE");
 		case ET66StatType::DotDamage: return NSLOCTEXT("T66.HeroSelection", "DrugDotDamage", "NANDROLONE DECANOATE");
 		case ET66StatType::HeadshotChance: return NSLOCTEXT("T66.HeroSelection", "DrugHeadshotChance", "TRENBOLONE ACETATE");
 		case ET66StatType::AoeSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugAoeSpeed", "CAFFEINE CITRATE");
 		case ET66StatType::BounceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugBounceSpeed", "MODAFINIL");
-		case ET66StatType::PierceSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugPierceSpeed", "EPHEDRINE HCL");
+		case ET66StatType::SummonSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugSummonSpeed", "EPHEDRINE HCL");
 		case ET66StatType::DotSpeed: return NSLOCTEXT("T66.HeroSelection", "DrugDotSpeed", "SALBUTAMOL SULFATE");
 		case ET66StatType::CritChance: return NSLOCTEXT("T66.HeroSelection", "DrugCritChance", "STANOZOLOL");
 		case ET66StatType::AoeScale: return NSLOCTEXT("T66.HeroSelection", "DrugAoeScale", "TESTOSTERONE ENANTHATE");
 		case ET66StatType::BounceScale: return NSLOCTEXT("T66.HeroSelection", "DrugBounceScale", "BOLDENONE UNDECYLENATE");
-		case ET66StatType::PierceScale: return NSLOCTEXT("T66.HeroSelection", "DrugPierceScale", "DROSTANOLONE PROPIONATE");
+		case ET66StatType::SummonScale: return NSLOCTEXT("T66.HeroSelection", "DrugSummonScale", "DROSTANOLONE PROPIONATE");
 		case ET66StatType::DotScale: return NSLOCTEXT("T66.HeroSelection", "DrugDotScale", "METHENOLONE ENANTHATE");
 		case ET66StatType::AttackRange: return NSLOCTEXT("T66.HeroSelection", "DrugAttackRange", "CLENBUTEROL HCL");
 		case ET66StatType::Execute: return NSLOCTEXT("T66.HeroSelection", "DrugExecute", "ATOMOXETINE HCL");

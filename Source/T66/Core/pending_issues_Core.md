@@ -1,11 +1,12 @@
 # Pending Issues - Core
 
-## Staged Readiness Durable Save Integrity Uses Stale Loaded Map
+## Resolved 2026-06-09 - Staged Readiness Durable Save Integrity Uses Stale Loaded Map
 
-- Severity tag: [Major]
-- What's wrong: The 2026-06-08 staged readiness run at `Saved/StagedBuildReadiness/20260608_140504` passed staging, shortcut verification, and frontend smoke, then failed in `RunDurableSaveIntegritySmokeGate.ps1` before lifecycle ran. The queue phase logged `[SaveIntegrity] FAIL` for slot 8 because `MetaMap=T66_SaveIntegrity_DurableGate_20260608_140901` matched the new marker but `LoadedMap=T66_SessionLoadedTravel_SessionLoadedTravel_20260608_031616` remained stale.
+- Former severity tag: [Major]
+- What was wrong: The 2026-06-08 staged readiness run at `Saved/StagedBuildReadiness/20260608_140504` passed staging, shortcut verification, and frontend smoke, then failed in `RunDurableSaveIntegritySmokeGate.ps1` before lifecycle ran. The queue phase logged `[SaveIntegrity] FAIL` for slot 8 because `MetaMap=T66_SaveIntegrity_DurableGate_20260608_140901` matched the new marker but `LoadedMap=T66_SessionLoadedTravel_SessionLoadedTravel_20260608_031616` remained stale.
 - Why it's out of scope now: The active pass changed tower room-size tuning and did not alter durable save queue/load semantics. The gate restored the backed-up slot 8 files after failure.
 - What fixing it would entail: Reproduce the durable gate on a clean save slot/root, determine whether the queue shutdown path is failing to persist the loaded map or the verification path is reading a stale root, then update the save integrity harness/runtime path and rerun staged readiness.
+- Resolution: Root cause was slot collision — `RunSessionLoadedTravelSmoke.ps1` seeds slot 8 and the durable gate also defaulted to slot 8, so reload verification read the loaded-travel marker. Durable gate and `RunPreReleaseSmokeSuite.ps1` now default to slot 7 (slots 0-2 SaveSlots fixture, slot 8 loaded-travel fixture). Gate rerun pending the next staged readiness pass.
 
 ## Resolved 2026-05-29 - RetroFX Default-On Recurrence And Low-Resolution Pixelation
 
@@ -20,12 +21,13 @@
 - What was wrong: `Scripts\StageStandaloneBuild.ps1` failed during the Win64 `T66` target build on 2026-05-28 because `Source/T66/Core/T66GameInstance.cpp` referenced `AccuracyItemID` around lines 774, 775, 777, and 779, but that identifier was undeclared in the compile unit.
 - Resolution: The item taxonomy pass retired the old secondary `Accuracy` item, replaced the random-pool fallback with `Execute`, and rebuilt `T66Editor` successfully. The remaining proof gate is the staged standalone refresh for this pass.
 
-## Legacy Lab Unlock IDs In Existing Save Games
+## Resolved 2026-06-09 - Legacy Lab Unlock IDs In Existing Save Games
 
-- Severity tag: [Minor]
-- What's wrong: `UT66ProfileSaveGame::LabUnlockedEnemyIDs` stores raw enemy row names, and existing player saves may still contain legacy IDs such as `Dungeon_Slime` after the roster migration. Runtime source references were moved to the new production IDs, but no save migration remaps old lab unlock IDs to the 50-mob roster.
+- Former severity tag: [Minor]
+- What was wrong: `UT66ProfileSaveGame::LabUnlockedEnemyIDs` stores raw enemy row names, and existing player saves may still contain legacy IDs such as `Dungeon_Slime` after the roster migration. Runtime source references were moved to the new production IDs, but no save migration remaps old lab unlock IDs to the 50-mob roster.
 - Why it's out of scope now: This pass replaces the authored roster/data/assets and verifies the new gallery/spawn path; it does not change persistent player profile migration policy.
 - What fixing it would entail: Add a profile migration table from the 25 legacy IDs to appropriate production IDs, run it during profile load, and verify old staged saves still expose expected lab unlocks.
+- Resolution: Profile SaveVersion 18 migration remaps the 25 legacy theme-prefixed enemy IDs to production successors via `T66MigrateLegacyLabEnemyID` (`T66SaveMigration.h`; successor pairs verified against the `Enemies.csv` roster diff `8d3549e81`→`cdd3f896b`; Hellhound unchanged). Applied in `LoadOrCreateProfile` with dedupe + count log. Compile verified.
 
 ## Skeletal Hero Rows Ignore MeshRelativeScale
 

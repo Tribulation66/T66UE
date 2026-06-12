@@ -4,7 +4,8 @@ param(
     [int]$FrontendTimeoutSeconds = 70,
     [int]$DurableTimeoutSeconds = 120,
     [int]$LifecycleTimeoutSeconds = 180,
-    [int]$DurableSlotIndex = 8,
+    # Slot 7: keep the durable gate off slot 8 (session loaded-travel fixture) and 0-2 (SaveSlots fixture).
+    [int]$DurableSlotIndex = 7,
     [int]$LifecycleTravels = 6,
     [int]$LifecycleStressCount = 6,
     [switch]$SkipFrontend,

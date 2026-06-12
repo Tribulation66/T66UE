@@ -509,7 +509,7 @@ Source geometry: `C:\UE\T66\UI\Geometry\hero_selection_reference_geometry.md`
 - [ ] HeroSelection.TopRow.BackButton | text=BACK
 - [ ] HeroSelection.RightColumn.HeaderRow.HeroName | text=GEORGE
 - [ ] HeroSelection.RightColumn.HeaderRow.LabButton | text=LAB
-- [ ] HeroSelection.RightColumn.Subtitle | text=A TOWERING FOUNDING MARKSMAN WHO PIERCES MONSTER LINES WITH DISCIPLINED PRECISION.
+- [ ] HeroSelection.RightColumn.Subtitle | text=A TOWERING FOUNDING MARKSMAN WHO BREAKS MONSTER LINES WITH DISCIPLINED PRECISION.
 - [ ] HeroSelection.RightColumn.HeaderRow.HeroName | is_label=true
 - [ ] HeroSelection.RightColumn.HeaderRow.HeroName | border_color=none
 - [ ] HeroSelection.RightColumn.Subtitle | is_label=true

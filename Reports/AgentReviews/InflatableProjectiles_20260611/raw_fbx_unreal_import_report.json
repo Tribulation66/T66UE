@@ -1,0 +1,854 @@
+{
+  "asset_count": 21,
+  "errors": [],
+  "fbx_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX",
+  "manifest": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\InflatableProjectiles_20260611_manifest.json",
+  "notes": [
+    "FBX fallback used because Unreal GLB Interchange returned zero StaticMesh assets.",
+    "FBX bundles are derived from raw Pixal3D GLBs and preserve raw material image payloads.",
+    "No ToonStyle, QuadRetro, outline, Tint, inner-line, or processed GLB stage was run."
+  ],
+  "ok": true,
+  "rows": [
+    {
+      "asset_id": "Hero1_Weapon_AOE_Crescent",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          78.12092590332031,
+          37.88400459289551,
+          60.000008958299645
+        ],
+        "origin_cm": [
+          0.0,
+          -9.5367431640625e-06,
+          60.00000630048942
+        ],
+        "size_cm": [
+          156.24185180664062,
+          75.76800918579102,
+          120.00001791659929
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Hero1_Weapon_AOE_Crescent.SM_Hero1_Weapon_AOE_Crescent",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Hero1_Weapon_AOE_Crescent\\Hero1_Weapon_AOE_Crescent_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Hero1_Weapon_AOE_Crescent.SM_Hero1_Weapon_AOE_Crescent"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Hero1_Weapon_AOE_Crescent.MI_SM_Hero1_Weapon_AOE_Crescent",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Hero1_Weapon_AOE_Crescent_BaseColor.T_Hero1_Weapon_AOE_Crescent_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Hero1_Weapon_AOE_Crescent_BaseColor.T_Hero1_Weapon_AOE_Crescent_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Hero1_Weapon_AOE_Crescent.MI_SM_Hero1_Weapon_AOE_Crescent",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Hero1_Weapon_AOE_Crescent_BaseColor.T_Hero1_Weapon_AOE_Crescent_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Hero1_Weapon_AOE_Crescent\\Textures\\Hero1_Weapon_AOE_Crescent_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Electricity_AOE",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          61.89849090576172,
+          58.61003875732422,
+          60.000002894980526
+        ],
+        "origin_cm": [
+          0.0,
+          -7.62939453125e-06,
+          59.999997105019474
+        ],
+        "size_cm": [
+          123.79698181152344,
+          117.22007751464844,
+          120.00000578996105
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Electricity_AOE.SM_Idol_Electricity_AOE",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_AOE\\Idol_Electricity_AOE_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Electricity_AOE.SM_Idol_Electricity_AOE"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Electricity_AOE.MI_SM_Idol_Electricity_AOE",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_AOE_BaseColor.T_Idol_Electricity_AOE_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_AOE_BaseColor.T_Idol_Electricity_AOE_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Electricity_AOE.MI_SM_Idol_Electricity_AOE",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_AOE_BaseColor.T_Idol_Electricity_AOE_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_AOE\\Textures\\Idol_Electricity_AOE_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Electricity_Bounce",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          72.78456115722656,
+          40.10105514526367,
+          59.99999694986474
+        ],
+        "origin_cm": [
+          0.0,
+          -1.1444091796875e-05,
+          59.99999542074073
+        ],
+        "size_cm": [
+          145.56912231445312,
+          80.20211029052734,
+          119.99999389972947
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Electricity_Bounce.SM_Idol_Electricity_Bounce",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_Bounce\\Idol_Electricity_Bounce_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Electricity_Bounce.SM_Idol_Electricity_Bounce"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Electricity_Bounce.MI_SM_Idol_Electricity_Bounce",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_Bounce_BaseColor.T_Idol_Electricity_Bounce_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_Bounce_BaseColor.T_Idol_Electricity_Bounce_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Electricity_Bounce.MI_SM_Idol_Electricity_Bounce",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_Bounce_BaseColor.T_Idol_Electricity_Bounce_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_Bounce\\Textures\\Idol_Electricity_Bounce_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Electricity_DOT",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          47.508880615234375,
+          49.24905586242676,
+          60.00000032580439
+        ],
+        "origin_cm": [
+          0.0,
+          -9.5367431640625e-06,
+          59.99999967419561
+        ],
+        "size_cm": [
+          95.01776123046875,
+          98.49811172485352,
+          120.00000065160879
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Electricity_DOT.SM_Idol_Electricity_DOT",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_DOT\\Idol_Electricity_DOT_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Electricity_DOT.SM_Idol_Electricity_DOT"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Electricity_DOT.MI_SM_Idol_Electricity_DOT",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_DOT_BaseColor.T_Idol_Electricity_DOT_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_DOT_BaseColor.T_Idol_Electricity_DOT_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Electricity_DOT.MI_SM_Idol_Electricity_DOT",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_DOT_BaseColor.T_Idol_Electricity_DOT_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_DOT\\Textures\\Idol_Electricity_DOT_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Electricity_Summon",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          44.37299728393555,
+          26.26456356048584,
+          59.999999495482825
+        ],
+        "origin_cm": [
+          0.0,
+          -8.58306884765625e-06,
+          60.000000504517175
+        ],
+        "size_cm": [
+          88.7459945678711,
+          52.52912712097168,
+          119.99999899096565
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Electricity_Summon.SM_Idol_Electricity_Summon",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_Summon\\Idol_Electricity_Summon_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Electricity_Summon.SM_Idol_Electricity_Summon"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Electricity_Summon.MI_SM_Idol_Electricity_Summon",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_Summon_BaseColor.T_Idol_Electricity_Summon_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_Summon_BaseColor.T_Idol_Electricity_Summon_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Electricity_Summon.MI_SM_Idol_Electricity_Summon",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Electricity_Summon_BaseColor.T_Idol_Electricity_Summon_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_Summon\\Textures\\Idol_Electricity_Summon_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Fire_AOE",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          60.70696258544922,
+          60.89485549926758,
+          60.000000841368944
+        ],
+        "origin_cm": [
+          0.0,
+          -7.62939453125e-06,
+          59.999999158631056
+        ],
+        "size_cm": [
+          121.41392517089844,
+          121.78971099853516,
+          120.00000168273789
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Fire_AOE.SM_Idol_Fire_AOE",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_AOE\\Idol_Fire_AOE_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Fire_AOE.SM_Idol_Fire_AOE"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Fire_AOE.MI_SM_Idol_Fire_AOE",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_AOE_BaseColor.T_Idol_Fire_AOE_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_AOE_BaseColor.T_Idol_Fire_AOE_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Fire_AOE.MI_SM_Idol_Fire_AOE",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_AOE_BaseColor.T_Idol_Fire_AOE_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_AOE\\Textures\\Idol_Fire_AOE_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Fire_Bounce",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          72.4917984008789,
+          29.49387836456299,
+          60.00000119166543
+        ],
+        "origin_cm": [
+          0.0,
+          -1.049041748046875e-05,
+          59.99999880833457
+        ],
+        "size_cm": [
+          144.9835968017578,
+          58.98775672912598,
+          120.00000238333087
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Fire_Bounce.SM_Idol_Fire_Bounce",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_Bounce\\Idol_Fire_Bounce_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Fire_Bounce.SM_Idol_Fire_Bounce"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Fire_Bounce.MI_SM_Idol_Fire_Bounce",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_Bounce_BaseColor.T_Idol_Fire_Bounce_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_Bounce_BaseColor.T_Idol_Fire_Bounce_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Fire_Bounce.MI_SM_Idol_Fire_Bounce",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_Bounce_BaseColor.T_Idol_Fire_Bounce_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_Bounce\\Textures\\Idol_Fire_Bounce_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Fire_DOT",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          54.09735107421875,
+          54.581947326660156,
+          59.99999767258066
+        ],
+        "origin_cm": [
+          0.0,
+          -7.62939453125e-06,
+          59.99999469802481
+        ],
+        "size_cm": [
+          108.1947021484375,
+          109.16389465332031,
+          119.99999534516132
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Fire_DOT.SM_Idol_Fire_DOT",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_DOT\\Idol_Fire_DOT_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Fire_DOT.SM_Idol_Fire_DOT"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Fire_DOT.MI_SM_Idol_Fire_DOT",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_DOT_BaseColor.T_Idol_Fire_DOT_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_DOT_BaseColor.T_Idol_Fire_DOT_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Fire_DOT.MI_SM_Idol_Fire_DOT",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_DOT_BaseColor.T_Idol_Fire_DOT_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_DOT\\Textures\\Idol_Fire_DOT_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Fire_Summon",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          46.408851623535156,
+          25.90609359741211,
+          59.999999054719524
+        ],
+        "origin_cm": [
+          0.0,
+          -7.62939453125e-06,
+          60.000000945280476
+        ],
+        "size_cm": [
+          92.81770324707031,
+          51.81218719482422,
+          119.99999810943905
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Fire_Summon.SM_Idol_Fire_Summon",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_Summon\\Idol_Fire_Summon_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Fire_Summon.SM_Idol_Fire_Summon"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Fire_Summon.MI_SM_Idol_Fire_Summon",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_Summon_BaseColor.T_Idol_Fire_Summon_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_Summon_BaseColor.T_Idol_Fire_Summon_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Fire_Summon.MI_SM_Idol_Fire_Summon",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Fire_Summon_BaseColor.T_Idol_Fire_Summon_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Fire_Summon\\Textures\\Idol_Fire_Summon_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Ice_AOE",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          59.415306091308594,
+          38.19753646850586,
+          60.00000059030941
+        ],
+        "origin_cm": [
+          0.0,
+          -1.1444091796875e-05,
+          59.99999940969059
+        ],
+        "size_cm": [
+          118.83061218261719,
+          76.39507293701172,
+          120.00000118061882
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Ice_AOE.SM_Idol_Ice_AOE",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Ice_AOE\\Idol_Ice_AOE_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Ice_AOE.SM_Idol_Ice_AOE"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Ice_AOE.MI_SM_Idol_Ice_AOE",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_AOE_BaseColor.T_Idol_Ice_AOE_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_AOE_BaseColor.T_Idol_Ice_AOE_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Ice_AOE.MI_SM_Idol_Ice_AOE",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_AOE_BaseColor.T_Idol_Ice_AOE_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Ice_AOE\\Textures\\Idol_Ice_AOE_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Ice_Bounce",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          66.4178695678711,
+          37.73423957824707,
+          60.00000583399628
+        ],
+        "origin_cm": [
+          0.0,
+          -9.5367431640625e-06,
+          60.00000179539825
+        ],
+        "size_cm": [
+          132.8357391357422,
+          75.46847915649414,
+          120.00001166799257
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Ice_Bounce.SM_Idol_Ice_Bounce",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Ice_Bounce\\Idol_Ice_Bounce_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Ice_Bounce.SM_Idol_Ice_Bounce"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Ice_Bounce.MI_SM_Idol_Ice_Bounce",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_Bounce_BaseColor.T_Idol_Ice_Bounce_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_Bounce_BaseColor.T_Idol_Ice_Bounce_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Ice_Bounce.MI_SM_Idol_Ice_Bounce",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_Bounce_BaseColor.T_Idol_Ice_Bounce_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Ice_Bounce\\Textures\\Idol_Ice_Bounce_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Ice_DOT",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          72.48025512695312,
+          56.657737731933594,
+          60.00000419940653
+        ],
+        "origin_cm": [
+          0.0,
+          -7.62939453125e-06,
+          60.000003429988
+        ],
+        "size_cm": [
+          144.96051025390625,
+          113.31547546386719,
+          120.00000839881307
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Ice_DOT.SM_Idol_Ice_DOT",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Ice_DOT\\Idol_Ice_DOT_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Ice_DOT.SM_Idol_Ice_DOT"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Ice_DOT.MI_SM_Idol_Ice_DOT",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_DOT_BaseColor.T_Idol_Ice_DOT_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_DOT_BaseColor.T_Idol_Ice_DOT_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Ice_DOT.MI_SM_Idol_Ice_DOT",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_DOT_BaseColor.T_Idol_Ice_DOT_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Ice_DOT\\Textures\\Idol_Ice_DOT_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Ice_Summon",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          44.993682861328125,
+          30.157146453857422,
+          60.00000509606025
+        ],
+        "origin_cm": [
+          0.0,
+          -5.7220458984375e-06,
+          60.00000253333428
+        ],
+        "size_cm": [
+          89.98736572265625,
+          60.314292907714844,
+          120.0000101921205
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Ice_Summon.SM_Idol_Ice_Summon",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Ice_Summon\\Idol_Ice_Summon_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Ice_Summon.SM_Idol_Ice_Summon"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Ice_Summon.MI_SM_Idol_Ice_Summon",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_Summon_BaseColor.T_Idol_Ice_Summon_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_Summon_BaseColor.T_Idol_Ice_Summon_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Ice_Summon.MI_SM_Idol_Ice_Summon",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Ice_Summon_BaseColor.T_Idol_Ice_Summon_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Ice_Summon\\Textures\\Idol_Ice_Summon_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Nature_AOE",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          70.11396789550781,
+          60.281959533691406,
+          59.999998985267666
+        ],
+        "origin_cm": [
+          0.0,
+          -7.62939453125e-06,
+          59.9999933853378
+        ],
+        "size_cm": [
+          140.22793579101562,
+          120.56391906738281,
+          119.99999797053533
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Nature_AOE.SM_Idol_Nature_AOE",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Nature_AOE\\Idol_Nature_AOE_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Nature_AOE.SM_Idol_Nature_AOE"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Nature_AOE.MI_SM_Idol_Nature_AOE",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_AOE_BaseColor.T_Idol_Nature_AOE_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_AOE_BaseColor.T_Idol_Nature_AOE_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Nature_AOE.MI_SM_Idol_Nature_AOE",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_AOE_BaseColor.T_Idol_Nature_AOE_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Nature_AOE\\Textures\\Idol_Nature_AOE_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Nature_Bounce",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          75.13346862792969,
+          29.049976348876953,
+          60.00000118711341
+        ],
+        "origin_cm": [
+          0.0,
+          -9.5367431640625e-06,
+          59.99999881288659
+        ],
+        "size_cm": [
+          150.26693725585938,
+          58.099952697753906,
+          120.00000237422682
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Nature_Bounce.SM_Idol_Nature_Bounce",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Nature_Bounce\\Idol_Nature_Bounce_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Nature_Bounce.SM_Idol_Nature_Bounce"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Nature_Bounce.MI_SM_Idol_Nature_Bounce",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_Bounce_BaseColor.T_Idol_Nature_Bounce_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_Bounce_BaseColor.T_Idol_Nature_Bounce_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Nature_Bounce.MI_SM_Idol_Nature_Bounce",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_Bounce_BaseColor.T_Idol_Nature_Bounce_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Nature_Bounce\\Textures\\Idol_Nature_Bounce_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Nature_DOT",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          51.9587287902832,
+          51.78978157043457,
+          59.999996309279595
+        ],
+        "origin_cm": [
+          0.0,
+          -9.5367431640625e-06,
+          59.999996061325874
+        ],
+        "size_cm": [
+          103.9174575805664,
+          103.57956314086914,
+          119.99999261855919
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Nature_DOT.SM_Idol_Nature_DOT",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Nature_DOT\\Idol_Nature_DOT_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Nature_DOT.SM_Idol_Nature_DOT"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Nature_DOT.MI_SM_Idol_Nature_DOT",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_DOT_BaseColor.T_Idol_Nature_DOT_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_DOT_BaseColor.T_Idol_Nature_DOT_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Nature_DOT.MI_SM_Idol_Nature_DOT",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_DOT_BaseColor.T_Idol_Nature_DOT_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Nature_DOT\\Textures\\Idol_Nature_DOT_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Nature_Summon",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          53.75218200683594,
+          54.01767921447754,
+          60.00000313555347
+        ],
+        "origin_cm": [
+          0.0,
+          -5.7220458984375e-06,
+          59.99999686444653
+        ],
+        "size_cm": [
+          107.50436401367188,
+          108.03535842895508,
+          120.00000627110694
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Nature_Summon.SM_Idol_Nature_Summon",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Nature_Summon\\Idol_Nature_Summon_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Nature_Summon.SM_Idol_Nature_Summon"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Nature_Summon.MI_SM_Idol_Nature_Summon",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_Summon_BaseColor.T_Idol_Nature_Summon_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_Summon_BaseColor.T_Idol_Nature_Summon_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Nature_Summon.MI_SM_Idol_Nature_Summon",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Nature_Summon_BaseColor.T_Idol_Nature_Summon_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Nature_Summon\\Textures\\Idol_Nature_Summon_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Wind_AOE",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          58.73583221435547,
+          34.49175262451172,
+          60.000001172196335
+        ],
+        "origin_cm": [
+          0.0,
+          -7.62939453125e-06,
+          59.999998827803665
+        ],
+        "size_cm": [
+          117.47166442871094,
+          68.98350524902344,
+          120.00000234439267
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Wind_AOE.SM_Idol_Wind_AOE",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Wind_AOE\\Idol_Wind_AOE_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Wind_AOE.SM_Idol_Wind_AOE"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Wind_AOE.MI_SM_Idol_Wind_AOE",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_AOE_BaseColor.T_Idol_Wind_AOE_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_AOE_BaseColor.T_Idol_Wind_AOE_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Wind_AOE.MI_SM_Idol_Wind_AOE",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_AOE_BaseColor.T_Idol_Wind_AOE_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Wind_AOE\\Textures\\Idol_Wind_AOE_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Wind_Bounce",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          71.93799591064453,
+          34.56669998168945,
+          60.00000575893341
+        ],
+        "origin_cm": [
+          0.0,
+          -1.1444091796875e-05,
+          60.00000187046112
+        ],
+        "size_cm": [
+          143.87599182128906,
+          69.1333999633789,
+          120.00001151786682
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Wind_Bounce.SM_Idol_Wind_Bounce",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Wind_Bounce\\Idol_Wind_Bounce_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Wind_Bounce.SM_Idol_Wind_Bounce"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Wind_Bounce.MI_SM_Idol_Wind_Bounce",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_Bounce_BaseColor.T_Idol_Wind_Bounce_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_Bounce_BaseColor.T_Idol_Wind_Bounce_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Wind_Bounce.MI_SM_Idol_Wind_Bounce",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_Bounce_BaseColor.T_Idol_Wind_Bounce_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Wind_Bounce\\Textures\\Idol_Wind_Bounce_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Wind_DOT",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          57.244384765625,
+          55.670156478881836,
+          60.00000159539263
+        ],
+        "origin_cm": [
+          0.0,
+          -9.5367431640625e-06,
+          59.99999840460737
+        ],
+        "size_cm": [
+          114.48876953125,
+          111.34031295776367,
+          120.00000319078526
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Wind_DOT.SM_Idol_Wind_DOT",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Wind_DOT\\Idol_Wind_DOT_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Wind_DOT.SM_Idol_Wind_DOT"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Wind_DOT.MI_SM_Idol_Wind_DOT",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_DOT_BaseColor.T_Idol_Wind_DOT_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_DOT_BaseColor.T_Idol_Wind_DOT_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Wind_DOT.MI_SM_Idol_Wind_DOT",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_DOT_BaseColor.T_Idol_Wind_DOT_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Wind_DOT\\Textures\\Idol_Wind_DOT_00_Image_0.png"
+    },
+    {
+      "asset_id": "Idol_Wind_Summon",
+      "assigned_material_slots": 1,
+      "bounds": {
+        "extent_cm": [
+          60.690032958984375,
+          50.76705360412598,
+          59.99999917637297
+        ],
+        "origin_cm": [
+          0.0,
+          -5.7220458984375e-06,
+          59.9999931942325
+        ],
+        "size_cm": [
+          121.38006591796875,
+          101.53410720825195,
+          119.99999835274593
+        ]
+      },
+      "class": "StaticMesh",
+      "expected": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Wind_Summon.SM_Idol_Wind_Summon",
+      "fbx": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Wind_Summon\\Idol_Wind_Summon_Textured.fbx",
+      "imported_paths": [
+        "/Game/Weapons/Projectiles/FriendSlop/Inflatable/SM_Idol_Wind_Summon.SM_Idol_Wind_Summon"
+      ],
+      "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Wind_Summon.MI_SM_Idol_Wind_Summon",
+      "material_base_color_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_Summon_BaseColor.T_Idol_Wind_Summon_BaseColor",
+      "material_diffuse_texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_Summon_BaseColor.T_Idol_Wind_Summon_BaseColor",
+      "materials": [
+        {
+          "index": "0",
+          "material": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Materials/MI_SM_Idol_Wind_Summon.MI_SM_Idol_Wind_Summon",
+          "slot": "Material_0"
+        }
+      ],
+      "ok": true,
+      "texture": "/Game/Weapons/Projectiles/FriendSlop/Inflatable/Textures/T_Idol_Wind_Summon_BaseColor.T_Idol_Wind_Summon_BaseColor",
+      "texture_source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Wind_Summon\\Textures\\Idol_Wind_Summon_00_Image_0.png"
+    }
+  ]
+}

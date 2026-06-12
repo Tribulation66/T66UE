@@ -113,6 +113,13 @@ public:
 	void RebuildForCurrentStage();
 	int32 SpawnLegacyStageLavaPatchesForCurrentStage();
 
+	/**
+	 * True when the tower hazard runs as rising lava sheets per gameplay floor instead
+	 * of the legacy spreading coverage. Requires tower layout, the lava-rise tuning
+	 * switch, and a validated dry platform chain on every gameplay floor.
+	 */
+	bool IsLavaRiseModeActive() const { return bLavaRiseMode; }
+
 	/** Allows game flow code to drive the flood timer separately from the stage timer. */
 	void SetExpansionActive(bool bActive, float ElapsedSeconds = 0.f);
 
@@ -157,13 +164,35 @@ private:
 	bool bMaterialLookApplied = false;
 	FLinearColor LastAppliedTint = FLinearColor::Transparent;
 	float LastAppliedBrightness = -1.0f;
+
+	// Authored palette snapshot so lava-rise rebuilds can undo the tower blood recolor.
+	bool bDefaultPaletteCaptured = false;
+	FLinearColor DefaultCoreColor = FLinearColor::Black;
+	FLinearColor DefaultMidColor = FLinearColor::Black;
+	FLinearColor DefaultGlowColor = FLinearColor::Black;
+	float DefaultBrightness = 2.2f;
 	bool bExplicitExpansionActive = false;
 	float ExplicitExpansionStartTimeSeconds = 0.f;
+
+	// Lava-rise mode state: one instance per walkable floor box, rising in Z per floor.
+	bool bLavaRiseMode = false;
+	TArray<FBox2D> LavaSheetBoxes;
+	TArray<int32> LavaSheetFloorNumbers;
+	TMap<int32, float> LavaFloorSurfaceZ;
+	/** Active rise seconds per floor; advances only while the hero stands on that floor with the flood armed. */
+	TMap<int32, float> LavaFloorActiveSeconds;
+	TMap<int32, float> LavaFloorCurrentZ;
 
 	void BuildGrid();
 	void EnsureSpawnedCount(int32 DesiredCount);
 	void BuildMainMapCellGrid();
 	void BuildTowerFloorGrid();
+	bool TryBuildTowerLavaSheets();
+	void ResetLavaRiseState();
+	void RespawnLavaSheetInstances();
+	int32 ResolveLavaFloorForZ(float WorldZ) const;
+	void UpdateLavaRise(float DeltaTime);
+	void TickLavaDamage();
 	void ApplyTowerCoverageOrdering();
 	void RebuildSpawnedInstances();
 	void TickDamageOverActiveTiles(float DeltaTime);

@@ -34,9 +34,10 @@ namespace
 				AddUnique(ET66StatType::BounceDamage); AddUnique(ET66StatType::BounceScale); AddUnique(ET66StatType::BounceSpeed); break;
 			case ET66AttackCategory::DOT:
 				AddUnique(ET66StatType::DotDamage); AddUnique(ET66StatType::DotScale); AddUnique(ET66StatType::DotSpeed); break;
-			case ET66AttackCategory::Pierce:
+			case ET66AttackCategory::Summon:
+				AddUnique(ET66StatType::SummonDamage); AddUnique(ET66StatType::SummonScale); AddUnique(ET66StatType::SummonSpeed); break;
 			default:
-				AddUnique(ET66StatType::PierceDamage); AddUnique(ET66StatType::PierceScale); AddUnique(ET66StatType::PierceSpeed); break;
+				AddUnique(ET66StatType::AoeDamage); AddUnique(ET66StatType::AoeScale); AddUnique(ET66StatType::AoeSpeed); break;
 			}
 		}
 

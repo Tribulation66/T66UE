@@ -629,6 +629,27 @@ TSharedRef<SWidget> FT66FriendslopStyle::MakeButton(
 		Chrome);
 }
 
+namespace
+{
+	// Canonical juice (user-tested 2026-06-10): scale pop only — buttons inflate 3% on
+	// hover, squash 3% on press. Color tints/films were tried and REJECTED (read poorly
+	// on the vinyl art). Applied to every interactive button at the style layer.
+	void ApplyJuicePop(const TSharedRef<SButton>& Button)
+	{
+		TWeakPtr<SButton> WeakButton = Button.ToWeakPtr();
+		Button->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+		Button->SetRenderTransform(TAttribute<TOptional<FSlateRenderTransform>>::CreateLambda(
+			[WeakButton]() -> TOptional<FSlateRenderTransform>
+			{
+				const TSharedPtr<SButton> Pinned = WeakButton.Pin();
+				const float Scale = (Pinned.IsValid() && Pinned->IsPressed())
+					? 0.97f
+					: (Pinned.IsValid() && Pinned->IsHovered()) ? 1.03f : 1.f;
+				return FSlateRenderTransform(FScale2D(Scale));
+			}));
+	}
+}
+
 TSharedRef<SWidget> FT66FriendslopStyle::MakeToggleGroupButton(
 	const ET66FlatState State,
 	const TSharedRef<SWidget>& Content,
@@ -667,6 +688,11 @@ TSharedRef<SWidget> FT66FriendslopStyle::MakeToggleGroupButton(
 			]
 		];
 
+	if (bInteractive)
+	{
+		ApplyJuicePop(Button);
+	}
+
 	return FT66FlatStyle::AttachMetadata(
 		Button,
 		Tag,
@@ -696,7 +722,9 @@ TSharedRef<SWidget> FT66FriendslopStyle::MakeCustomToggleGroupButton(
 	const ESlateBrushDrawType::Type DrawAs)
 {
 	const bool bInteractive = OnClicked.IsBound();
-	TSharedRef<SButton> Button = SNew(SButton)
+	TSharedPtr<SBorder> SurfaceBorder;
+	TSharedPtr<SButton> ButtonPtr;
+	TSharedRef<SButton> Button = SAssignNew(ButtonPtr, SButton)
 		.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder")))
 		.ContentPadding(FMargin(0.f))
 		.ClickMethod(EButtonClickMethod::MouseDown)
@@ -715,7 +743,7 @@ TSharedRef<SWidget> FT66FriendslopStyle::MakeCustomToggleGroupButton(
 					State,
 					Padding,
 					Content,
-					nullptr,
+					&SurfaceBorder,
 					NAME_None,
 					TEXT("ButtonSurface"),
 					false,
@@ -724,6 +752,12 @@ TSharedRef<SWidget> FT66FriendslopStyle::MakeCustomToggleGroupButton(
 					FallbackTint)
 			]
 		];
+
+	if (bInteractive)
+	{
+		ApplyJuicePop(Button);
+	}
+	(void)SurfaceBorder;
 
 	return FT66FlatStyle::AttachMetadata(
 		Button,

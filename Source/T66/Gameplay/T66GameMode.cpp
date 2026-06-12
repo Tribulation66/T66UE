@@ -1382,12 +1382,7 @@ void AT66GameMode::ApplyStageProgressionVisuals()
 		FT66StageProgressionVisuals::ApplyToWorld(World, StageProgression->GetCurrentSnapshot());
 	}
 
-	const ET66Difficulty Difficulty = GetT66GameInstance()
-		? GetT66GameInstance()->SelectedDifficulty
-		: ET66Difficulty::Easy;
-	FT66WorldVisualSetup::EnsureAtmosphereForWorld(
-		World,
-		T66TowerMapTerrain::ResolveGameplayLevelThemeForDifficulty(Difficulty));
+	FT66WorldVisualSetup::EnsureAtmosphereForWorld(World);
 }
 
 void AT66GameMode::TrySpawnLoanSharkIfNeeded()
@@ -1702,6 +1697,18 @@ void AT66GameMode::MaintainPlayerTerrainSafety()
 		{
 			Movement->StopMovementImmediately();
 			Movement->SetMovementMode(bRecovered ? MOVE_Walking : MOVE_None);
+		}
+
+		// A rescue teleport is an explicit floor transition: re-derive the hero's
+		// stateful floor from the recovered position (Z derivation is valid here
+		// because the pawn was just snapped onto a floor surface).
+		if (bRecovered && bTowerLayout)
+		{
+			const int32 RecoveredFloorNumber = GetTowerFloorIndexForLocation(Pawn->GetActorLocation());
+			if (RecoveredFloorNumber != INDEX_NONE)
+			{
+				SetHeroTowerFloorNumber(RecoveredFloorNumber, TEXT("FallRescue"));
+			}
 		}
 	}
 }

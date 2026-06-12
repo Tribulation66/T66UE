@@ -83,17 +83,17 @@ FString T66TemporaryBuffUI::GetSecondaryBuffIconSlug(ET66StatType StatType)
 	{
 	case ET66StatType::AoeDamage:       return TEXT("aoe-damage");
 	case ET66StatType::BounceDamage:    return TEXT("bounce-damage");
-	case ET66StatType::PierceDamage:    return TEXT("pierce-damage");
+	case ET66StatType::SummonDamage:    return TEXT("summon-damage");
 	case ET66StatType::DotDamage:       return TEXT("dot-damage");
 	case ET66StatType::HeadshotChance:  return TEXT("headshot");
 	case ET66StatType::AoeSpeed:        return TEXT("aoe-speed");
 	case ET66StatType::BounceSpeed:     return TEXT("bounce-speed");
-	case ET66StatType::PierceSpeed:     return TEXT("pierce-speed");
+	case ET66StatType::SummonSpeed:     return TEXT("summon-speed");
 	case ET66StatType::DotSpeed:        return TEXT("dot-speed");
 	case ET66StatType::CritChance:      return TEXT("crit-chance");
 	case ET66StatType::AoeScale:        return TEXT("aoe-scale");
 	case ET66StatType::BounceScale:     return TEXT("bounce-scale");
-	case ET66StatType::PierceScale:     return TEXT("pierce-scale");
+	case ET66StatType::SummonScale:     return TEXT("summon-scale");
 	case ET66StatType::DotScale:        return TEXT("dot-scale");
 	case ET66StatType::AttackRange:     return TEXT("range");
 	case ET66StatType::Execute:         return TEXT("execute");

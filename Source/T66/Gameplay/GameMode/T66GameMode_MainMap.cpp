@@ -813,6 +813,7 @@ void AT66GameMode::SpawnMainMapTerrain()
 	TowerTrapActivationAccumulator = 0.f;
 	ActiveTowerTrapFloorNumber = INDEX_NONE;
 	ActiveTowerTerrainVisualFloorNumber = INDEX_NONE;
+	StatefulHeroTowerFloorNumber = INDEX_NONE;
 	MainMapSpawnSurfaceLocation = FVector::ZeroVector;
 	MainMapStartAnchorSurfaceLocation = FVector::ZeroVector;
 	MainMapStartPathSurfaceLocation = FVector::ZeroVector;
@@ -858,6 +859,9 @@ void AT66GameMode::SpawnMainMapTerrain()
 		}
 
 		bUsingTowerMainMapLayout = true;
+		// Fresh tower = the hero spawns on the start floor; the stateful floor only
+		// advances through descent holes (or rescue) from here.
+		StatefulHeroTowerFloorNumber = CachedTowerMainMapLayout.StartFloorNumber;
 		MainMapSpawnSurfaceLocation = CachedTowerMainMapLayout.SpawnSurfaceLocation;
 		bHasMainMapSpawnSurfaceLocation = !MainMapSpawnSurfaceLocation.IsNearlyZero();
 		MainMapStartAnchorSurfaceLocation = CachedTowerMainMapLayout.StartAnchorSurfaceLocation;

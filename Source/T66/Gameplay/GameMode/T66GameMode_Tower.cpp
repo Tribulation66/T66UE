@@ -947,7 +947,8 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 
 	int32 MobLootSpawned = 0;
 	int32 MobLootVisibleInstances = 0;
-	if (ProofWorld)
+	const bool bMobLootEnabled = UT66MobLootSubsystem::IsEnabled();
+	if (ProofWorld && bMobLootEnabled)
 	{
 		if (UT66MobLootSubsystem* MobLoot = ProofWorld->GetSubsystem<UT66MobLootSubsystem>())
 		{
@@ -966,11 +967,14 @@ bool AT66GameMode::RunContentCorrectionsSmoke(UWorld* ProofWorld)
 			MobLoot->ClearAllMobLootForAutomation();
 		}
 	}
+	// While Mob Loot is shelved (FT66ShelvedFeatureGate / T66.MobLoot.Enabled) the marker
+	// cannot spawn; the check passes-with-note instead of failing the whole smoke.
 	RecordCheck(
 		TEXT("MobLootHasVisibleGroundMarker"),
-		MobLootSpawned != 0 && MobLootVisibleInstances > 0,
+		!bMobLootEnabled || (MobLootSpawned != 0 && MobLootVisibleInstances > 0),
 		FString::Printf(
-			TEXT("Spawned=%d VisibleInstances=%d"),
+			TEXT("Enabled=%d Spawned=%d VisibleInstances=%d"),
+			bMobLootEnabled ? 1 : 0,
 			MobLootSpawned,
 			MobLootVisibleInstances));
 
@@ -2579,6 +2583,27 @@ int32 AT66GameMode::GetTowerFloorIndexForLocation(const FVector& Location) const
 	return T66TowerMapTerrain::FindFloorIndexForLocation(CachedTowerMainMapLayout, Location);
 }
 
+void AT66GameMode::SetHeroTowerFloorNumber(const int32 FloorNumber, const TCHAR* Reason)
+{
+	if (!IsUsingTowerMainMapLayout() || !T66FindTowerFloorByNumber(CachedTowerMainMapLayout, FloorNumber))
+	{
+		return;
+	}
+
+	if (StatefulHeroTowerFloorNumber == FloorNumber)
+	{
+		return;
+	}
+
+	StatefulHeroTowerFloorNumber = FloorNumber;
+	UE_LOG(
+		LogT66GameMode,
+		Log,
+		TEXT("[MAP] Hero tower floor -> %d (reason=%s)."),
+		FloorNumber,
+		Reason ? Reason : TEXT("Unspecified"));
+}
+
 int32 AT66GameMode::GetCurrentTowerFloorIndex() const
 {
 	if (!IsUsingTowerMainMapLayout())
@@ -2586,6 +2611,17 @@ int32 AT66GameMode::GetCurrentTowerFloorIndex() const
 		return INDEX_NONE;
 	}
 
+	// Floor membership is STATEFUL: the hero is on the floor they last entered via
+	// an explicit transition (spawn, descent hole, rescue). Altitude never changes
+	// it, so a jump can never flip the active floor — the old Z-band derivation
+	// blacked out the current floor's terrain mid-jump (2026-06-10 root cause).
+	if (StatefulHeroTowerFloorNumber != INDEX_NONE
+		&& T66FindTowerFloorByNumber(CachedTowerMainMapLayout, StatefulHeroTowerFloorNumber))
+	{
+		return StatefulHeroTowerFloorNumber;
+	}
+
+	// Bootstrap fallback only (pre-spawn / save-load before the first transition).
 	if (const UWorld* World = GetWorld())
 	{
 		for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
@@ -2832,6 +2868,13 @@ void AT66GameMode::HandleTowerDescentHoleTriggered(APawn* Pawn, const int32 From
 		*Pawn->GetName(),
 		FromFloorNumber,
 		ToFloorNumber);
+
+	if (ToFloorNumber != INDEX_NONE)
+	{
+		// The descent hole is an explicit floor transition: the ONLY normal way the
+		// hero's stateful floor membership advances.
+		SetHeroTowerFloorNumber(ToFloorNumber, TEXT("DescentHole"));
+	}
 
 	if (ToFloorNumber != INDEX_NONE && ToFloorNumber != CachedTowerMainMapLayout.BossFloorNumber)
 	{

@@ -2,7 +2,7 @@
   "skeletal_mesh": [
     "/Game/Characters/MotionRig/Hero_1/SK_MotionRig_Hero1.SK_MotionRig_Hero1"
   ],
-  "physics_asset": "/Game/Characters/MotionRig/Hero_1/PA_MotionRig_Hero1.PA_MotionRig_Hero1",
+  "physics_asset": null,
   "skeleton": "/Game/Characters/MotionRig/Hero_1/SK_MotionRig_Hero1_Skeleton.SK_MotionRig_Hero1_Skeleton",
   "clips": {
     "Idle": [
@@ -24,5 +24,7 @@
       "/Game/Characters/MotionRig/Hero_1/AM_MotionRig_Hero1_GetUp_Back.AM_MotionRig_Hero1_GetUp_Back"
     ]
   },
-  "errors": []
+  "errors": [
+    "no physics asset was created on import"
+  ]
 }

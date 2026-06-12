@@ -1,0 +1,114 @@
+{
+  "asset_name": "Idol_Electricity_Summon",
+  "bounds": {
+    "dimensions": [
+      88.7459945678711,
+      52.52912902832031,
+      120.0
+    ],
+    "max": [
+      44.37299728393555,
+      26.264564514160156,
+      120.0
+    ],
+    "min": [
+      -44.37299728393555,
+      -26.264564514160156,
+      0.0
+    ]
+  },
+  "fbx_bytes": 8983036,
+  "fbx_export_options": {
+    "add_leaf_bones": false,
+    "apply_scale_options": "FBX_SCALE_ALL",
+    "apply_unit_scale": true,
+    "bake_space_transform": false,
+    "embed_textures": true,
+    "global_scale": 0.01,
+    "mesh_smooth_type": "FACE",
+    "object_types": [
+      "MESH"
+    ],
+    "path_mode": "COPY",
+    "use_mesh_modifiers": true,
+    "use_selection": true
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_Summon\\Idol_Electricity_Summon_Textured.fbx",
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\Outputs\\Idol_Electricity_Summon.glb",
+  "material_count": 1,
+  "mtl_bytes": 275,
+  "mtl_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_Summon\\Idol_Electricity_Summon_Textured.mtl",
+  "normalization": {
+    "bounds_max": [
+      44.37299728393555,
+      26.264564514160156,
+      120.0
+    ],
+    "bounds_min": [
+      -44.37299728393555,
+      -26.264564514160156,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      88.7459945678711,
+      52.52912902832031,
+      120.0
+    ],
+    "height": 120.0,
+    "scale_factor": 136.86732428179468
+  },
+  "obj_bytes": 20294068,
+  "obj_export_options": {
+    "apply_modifiers": true,
+    "apply_transform": false,
+    "export_materials": true,
+    "export_normals": true,
+    "export_pbr_extensions": false,
+    "export_selected_objects": true,
+    "export_uv": true,
+    "global_scale": 1.0,
+    "path_mode": "RELATIVE"
+  },
+  "obj_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_Summon\\Idol_Electricity_Summon_Textured.obj",
+  "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_Summon",
+  "texture_usage": [
+    {
+      "image": "Image_0",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture"
+    },
+    {
+      "image": "Image_1",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture.001"
+    }
+  ],
+  "textures": [
+    {
+      "image": "Image_0",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_Summon\\Textures\\Idol_Electricity_Summon_00_Image_0.png",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "image": "Image_1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Idol_Electricity_Summon\\Textures\\Idol_Electricity_Summon_01_Image_1.png",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "vertex_count": 123100
+}

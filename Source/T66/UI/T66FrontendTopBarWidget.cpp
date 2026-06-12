@@ -83,9 +83,13 @@ namespace
 		IncludeRect(T66MainMenuReferenceLayout::TopBar::CurrencySlot);
 		IncludeRect(T66MainMenuReferenceLayout::TopBar::ButtonPower);
 
+		// Transplant bar: the one-piece reference bar art is 160px tall (strip, elements,
+		// bottom rim tube, badge chin). The old constants reserve less and CLIP it.
 		return FMath::Max(
-			T66MainMenuReferenceLayout::TopBarReservedHeight,
-			FMath::CeilToFloat(MaxBottom));
+			160.f,
+			FMath::Max(
+				T66MainMenuReferenceLayout::TopBarReservedHeight,
+				FMath::CeilToFloat(MaxBottom)));
 	}
 
 	float GetTopBarReferenceSurfaceHeight()
@@ -1002,17 +1006,24 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 
 		// Transplant pass: TRUE layout read off gridded reference strips
 		// (transplant/MainMenu/code_edits.md). Prior instrument windows were circular.
-		const FNormalizedTopBarRect OuterRect{ 0.000f, 0.007f, 1.000f, 0.091f };
-		const float TopBarControlY = 0.028f;
-		const float TopBarControlH = 0.070f;
-		const FNormalizedTopBarRect SettingsRect{ 0.009f, TopBarControlY, 0.041f, TopBarControlH };
-		const FNormalizedTopBarRect LanguageRect{ 0.053f, TopBarControlY, 0.043f, TopBarControlH };
-		const FNormalizedTopBarRect AccountRect{ 0.154f, 0.000f, 0.099f, 0.117f };
-		const FNormalizedTopBarRect ProfileRect{ 0.259f, TopBarControlY, 0.231f, TopBarControlH };
-		const FNormalizedTopBarRect PowerUpRect{ 0.492f, TopBarControlY, 0.129f, TopBarControlH };
-		const FNormalizedTopBarRect AchievementsRect{ 0.623f, TopBarControlY, 0.126f, TopBarControlH };
-		const FNormalizedTopBarRect TicketRect{ 0.749f, 0.024f, 0.100f, 0.072f };
-		const FNormalizedTopBarRect QuitRect{ 0.898f, 0.022f, 0.079f, 0.074f };
+		// DEFINITIVE layout from annotated-scale strips (code_edits.md addendum).
+		// Outer = the 160px one-piece bar art at its native aspect (no squash).
+		// (The reference bar's bottom rim tube sits at y136-154; total bar ~155px.)
+		const FNormalizedTopBarRect OuterRect{ 0.000f, 0.000f, 1.000f, 0.1481f };
+		// Hitbox fix 2026-06-11: rects re-measured from bar_onepiece.png painted pills
+		// (landmark-anchored not-red expansion + gridded strips; art renders 1:1 — power
+		// glyph at identical px in art and capture). Old rects were offset from the art
+		// (ACHIEVEMENTS 109px left, logo missed entirely).
+		const float TopBarControlY = 0.0333f;
+		const float TopBarControlH = 0.0815f;
+		const FNormalizedTopBarRect SettingsRect{ 0.0198f, TopBarControlY, 0.0594f, TopBarControlH };
+		const FNormalizedTopBarRect LanguageRect{ 0.0875f, TopBarControlY, 0.0594f, TopBarControlH };
+		const FNormalizedTopBarRect AccountRect{ 0.1552f, 0.0130f, 0.1078f, 0.1222f };
+		const FNormalizedTopBarRect ProfileRect{ 0.2656f, TopBarControlY, 0.2016f, TopBarControlH };
+		const FNormalizedTopBarRect PowerUpRect{ 0.4745f, TopBarControlY, 0.1620f, TopBarControlH };
+		const FNormalizedTopBarRect AchievementsRect{ 0.6427f, TopBarControlY, 0.1484f, TopBarControlH };
+		const FNormalizedTopBarRect TicketRect{ 0.802f, 0.028f, 0.086f, 0.066f };
+		const FNormalizedTopBarRect QuitRect{ 0.9063f, 0.0333f, 0.0677f, 0.0833f };
 
 		const float IconSize = 42.f;
 		auto MakeTaggedIconWidget = [](const TSharedRef<SWidget>& IconContent, const FVector2D& Size, const FName Tag) -> TSharedRef<SWidget>
@@ -1193,11 +1204,11 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		CategoryGroup.GroupName = TEXT("FrontendCategorySelection");
 		CategoryGroup.bMutuallyExclusive = true;
 
-		// Transplant pass: fonts from strip-measured label sizes.
+		// Transplant pass: fonts from strip-measured label sizes (ref text has side air).
 		const FVector2D TopBarViewportSize = GetEffectiveFrontendViewportSize();
 		const int32 CategoryTabFontSize = TopBarViewportSize.X <= 1366.f
-			? 42
-			: (TopBarViewportSize.X <= 1600.f ? 46 : 50);
+			? 32
+			: (TopBarViewportSize.X <= 1600.f ? 35 : 38);
 		const int32 ProfileTabFontSize = TopBarViewportSize.X <= 1366.f
 			? 19
 			: (TopBarViewportSize.X <= 1600.f ? 21 : 23);
@@ -1213,9 +1224,63 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			Item.MinWidth = Rect.ReferenceWidth();
 			Item.Height = Rect.ReferenceHeight();
 			Item.IsEnabled = bEnabled;
-			Item.FontSize = FitTopBarLabelFontSize(Label, CategoryTabFontSize, 30, Rect.ReferenceWidth() - 40.f);
+			Item.FontSize = FitTopBarLabelFontSize(Label, CategoryTabFontSize, 28, Rect.ReferenceWidth() - 70.f);
 			Item.Tag = Tag;
 			return Item;
+		};
+
+		// Juiced chromeless click region over the one-piece bar art: scale pop ONLY
+		// (canonical juice — color films user-tested and rejected).
+		auto MakeJuicyBarRegion = [](FOnClicked InOnClicked, const float W, const float H, const FName RegionTag, const ET66FlatState RegionState, const TSharedRef<SWidget>& Inner = SNullWidget::NullWidget) -> TSharedRef<SWidget>
+		{
+			TSharedPtr<SButton> ButtonPtr;
+			TSharedRef<SButton> Button = SAssignNew(ButtonPtr, SButton)
+				.ButtonStyle(&FCoreStyle::Get().GetWidgetStyle<FButtonStyle>(TEXT("NoBorder")))
+				.ContentPadding(FMargin(0.f))
+				.ClickMethod(EButtonClickMethod::MouseDown)
+				.OnClicked(MoveTemp(InOnClicked))
+				[
+					SNew(SBox)
+					.WidthOverride(W)
+					.HeightOverride(H)
+					[
+						Inner
+					]
+				];
+			TWeakPtr<SButton> WeakButton = ButtonPtr;
+			Button->SetRenderTransformPivot(FVector2D(0.5f, 0.5f));
+			Button->SetRenderTransform(TAttribute<TOptional<FSlateRenderTransform>>::CreateLambda(
+				[WeakButton]() -> TOptional<FSlateRenderTransform>
+				{
+					const TSharedPtr<SButton> Pinned = WeakButton.Pin();
+					const float Scale = (Pinned.IsValid() && Pinned->IsPressed())
+						? 0.97f
+						: (Pinned.IsValid() && Pinned->IsHovered()) ? 1.03f : 1.f;
+					return FSlateRenderTransform(FScale2D(Scale));
+				}));
+			return FT66FlatStyle::AttachMetadata(
+				Button,
+				RegionTag,
+				TEXT("Button"),
+				RegionState,
+				TOptional<FLinearColor>(),
+				true,
+				NAME_None,
+				false,
+				true);
+		};
+
+		// Each button renders its own sprite (cut 1:1 from bar_onepiece.png at its rect)
+		// inside the juiced region — the scale pop is visible and hitbox == sprite.
+		auto MakeBarSprite = [](const TCHAR* File, const float W, const float H) -> TSharedRef<SWidget>
+		{
+			return SNew(SImage)
+				.Image(FT66FriendslopStyle::GetCustomBrush(
+					FString(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/")) + File,
+					FMargin(0.f),
+					ESlateBrushDrawType::Image,
+					FVector2D(W, H)))
+				.ColorAndOpacity(FLinearColor::White);
 		};
 
 		// UI Reimagine 2026-06-10 (approved v7): ACCOUNT tab removed (account opens via the
@@ -1246,137 +1311,62 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 		// Per-tab plates extracted 1:1 from the reference (transplant process); aspect
 		// matches each slot by construction. Selected-state variants deferred (the
 		// MainMenu reference shows none).
-		static const TCHAR* TabPlateFiles[] = { TEXT("tab_ach"), TEXT("tab_pwr"), TEXT("tab_mini") };
+		static const TCHAR* TabPlateFiles[] = { TEXT("bar_btn_ach.png"), TEXT("bar_btn_pwr.png"), TEXT("bar_btn_mini.png") };
 		for (int32 ItemIndex = 0; ItemIndex < CategoryGroup.Items.Num(); ++ItemIndex)
 		{
 			const FT66FlatToggleGroupItem& Item = CategoryGroup.Items[ItemIndex];
 			const TCHAR* PlateFile = TabPlateFiles[FMath::Min<int32>(ItemIndex, 2)];
 			const bool bSelected = Item.bIsSelected.Get(false);
 			const ET66FlatState RenderState = bSelected ? ET66FlatState::Selected : Item.State;
-			CategoryButtons.Add(FT66FriendslopStyle::MakeCustomToggleGroupButton(
-				FString::Printf(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/%s.png"), PlateFile),
-				FMargin(0.f),
-				FVector2D(444.f, 76.f),
-				RenderState,
-				// Sized box forces the plate border to fill the slot (a bare text block
-				// makes the border hug the label).
-				SNew(SBox)
-				.WidthOverride(Item.MinWidth - 20.f)
-				.HeightOverride(Item.Height - 14.f)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					SNew(STextBlock)
-					.Text(Item.Label)
-					.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(Item.FontSize, true))
-					.ColorAndOpacity(Item.Tag == FName(TEXT("FrontendTopBar.MiniGamesButton"))
-						? FSlateColor(FLinearColor(0.72f, 0.66f, 0.56f, 1.f))
-						: FSlateColor(FT66FriendslopStyle::TextColorForState(RenderState)))
-					.Justification(ETextJustify::Center)
-					.OverflowPolicy(ETextOverflowPolicy::Ellipsis)
-				],
+			// The button carries its own bar-art sprite so the juice pop is visible
+			// (an empty region scales invisibly); labels stay baked in the sprite.
+			CategoryButtons.Add(MakeJuicyBarRegion(
 				Item.OnClicked,
-				Item.Padding,
 				Item.MinWidth,
 				Item.Height,
-				Item.IsEnabled,
 				Item.Tag,
-				CategoryGroup.GroupName));
+				RenderState,
+				MakeBarSprite(PlateFile, Item.MinWidth, Item.Height)));
 		}
 
 		auto MakeHellfireWellButton = [&](const ET66FlatState WellState, const TSharedRef<SWidget>& IconContent, FReply (UT66FrontendTopBarWidget::*ClickFunc)(), const FName WellTag, const FNormalizedTopBarRect& Rect) -> TSharedRef<SWidget>
 		{
-			return FT66FriendslopStyle::MakeCustomToggleGroupButton(
-				TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/well_icon_round.png"),
-				FMargin(0.f),
-				FVector2D(120.f, 115.f),
-				WellState,
-				SNew(SBox)
-				.WidthOverride(Rect.ReferenceWidth() - 12.f)
-				.HeightOverride(Rect.ReferenceHeight() - 10.f)
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
-				[
-					IconContent
-				],
+			return MakeJuicyBarRegion(
 				FOnClicked::CreateUObject(this, ClickFunc),
-				FMargin(6.f),
 				Rect.ReferenceWidth(),
 				Rect.ReferenceHeight(),
-				true,
 				WellTag,
-				NAME_None,
-				FLinearColor(0.10f, 0.085f, 0.12f, 1.f),
-				ESlateBrushDrawType::Image);
-		};
-		// The old chrome plates baked the glyphs in; hellfire wells take real icon images.
-		auto MakeHellfireIconImage = [&MakeTaggedIconWidget](const TCHAR* IconFile, const float Size, const FName IconTag) -> TSharedRef<SWidget>
-		{
-			return MakeTaggedIconWidget(
-				SNew(SImage)
-				.Image(FT66FriendslopStyle::GetCustomBrush(
-					FString(TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/")) + IconFile,
-					FMargin(0.f),
-					ESlateBrushDrawType::Image,
-					FVector2D(Size, Size)))
-				.ColorAndOpacity(FLinearColor::White),
-				FVector2D(Size, Size),
-				IconTag);
+				WellState,
+				IconContent);
 		};
 		const TSharedRef<SWidget> SettingsButtonWidget = MakeHellfireWellButton(
 			ActiveSection == ETopBarSection::Settings ? ET66FlatState::Selected : ET66FlatState::Default,
-			MakeHellfireIconImage(TEXT("ic_gear.png"), 44.f, TEXT("FrontendTopBar.SettingsButton.Icon")),
+			MakeBarSprite(TEXT("bar_btn_settings.png"), SettingsRect.ReferenceWidth(), SettingsRect.ReferenceHeight()),
 			&UT66FrontendTopBarWidget::HandleSettingsClicked,
 			TEXT("FrontendTopBar.SettingsButton"),
 			SettingsRect);
 		const TSharedRef<SWidget> LanguageButtonWidget = MakeHellfireWellButton(
 			ActiveSection == ETopBarSection::Language ? ET66FlatState::Selected : ET66FlatState::Default,
-			MakeTaggedIconWidget(SNew(ST66TopBarGlobeGlyph).DesiredSize(FVector2D(IconSize, IconSize)), FVector2D(IconSize, IconSize), TEXT("FrontendTopBar.GlobeButton.Icon")),
+			MakeBarSprite(TEXT("bar_btn_language.png"), LanguageRect.ReferenceWidth(), LanguageRect.ReferenceHeight()),
 			&UT66FrontendTopBarWidget::HandleLanguageClicked,
 			TEXT("FrontendTopBar.GlobeButton"),
 			LanguageRect);
 		const ET66FlatState ProfileState = ActiveSection == ETopBarSection::Home ? ET66FlatState::Selected : ET66FlatState::Default;
-		// Logo-as-home badge (overflows the strip like the reference).
-		const float LogoBadgeSize = AccountRect.ReferenceHeight();
-		const TSharedRef<SWidget> ProfileButtonWidget = FT66FriendslopStyle::MakeCustomToggleGroupButton(
-			TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/badge_logo_home.png"),
-			FMargin(0.f),
-			FVector2D(166.f, 144.f),
-			ProfileState,
-			SNew(SBox)
-			.WidthOverride(AccountRect.ReferenceWidth() - 14.f)
-			.HeightOverride(AccountRect.ReferenceHeight() - 10.f),
+		// Logo-as-home: juiced click region (badge art is baked in the one-piece bar).
+		const TSharedRef<SWidget> ProfileButtonWidget = MakeJuicyBarRegion(
 			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleHomeClicked),
-			FMargin(0.f),
-			LogoBadgeSize,
-			LogoBadgeSize,
-			true,
+			AccountRect.ReferenceWidth(),
+			AccountRect.ReferenceHeight(),
 			TEXT("FrontendTopBar.ProfileButton"),
-			NAME_None,
-			FLinearColor(0.62f, 0.04f, 0.075f, 1.f),
-			ESlateBrushDrawType::Image);
-		const TSharedRef<SWidget> PowerButtonWidget = FT66FriendslopStyle::MakeCustomToggleGroupButton(
-			TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/power_well.png"),
-			FMargin(0.f),
-			FVector2D(340.f, 140.f),
-			ET66FlatState::Selected,
-			SNew(SBox)
-			.WidthOverride(QuitRect.ReferenceWidth() - 16.f)
-			.HeightOverride(QuitRect.ReferenceHeight() - 12.f)
-			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Center)
-			[
-				MakeHellfireIconImage(TEXT("ic_power.png"), 46.f, TEXT("FrontendTopBar.PowerButton.Icon"))
-			],
+			ProfileState,
+			MakeBarSprite(TEXT("bar_btn_logo.png"), AccountRect.ReferenceWidth(), AccountRect.ReferenceHeight()));
+		const TSharedRef<SWidget> PowerButtonWidget = MakeJuicyBarRegion(
 			FOnClicked::CreateUObject(this, &UT66FrontendTopBarWidget::HandleQuitClicked),
-			FMargin(8.f, 6.f),
 			QuitRect.ReferenceWidth(),
 			QuitRect.ReferenceHeight(),
-			true,
 			TEXT("FrontendTopBar.PowerButton"),
-			NAME_None,
-			FLinearColor(0.62f, 0.04f, 0.075f, 1.f),
-			ESlateBrushDrawType::Image);
+			ET66FlatState::Selected,
+			MakeBarSprite(TEXT("bar_btn_quit.png"), QuitRect.ReferenceWidth(), QuitRect.ReferenceHeight()));
 		PowerButtonWidget->SetToolTipText(QuitTooltipText);
 
 		const TSharedRef<SWidget> TicketValue = FT66FlatStyle::AttachMetadata(
@@ -1402,27 +1392,14 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			[
 				TicketValue
 			];
-		// Naked coupon indicator (approved v7): gold ticket icon + value on the bar's black,
-		// no plate, not a button.
+		// Coupon: the gold ticket is baked into the one-piece bar; only the live value
+		// is overlaid, seated where the reference's number sits.
 		const TSharedRef<SWidget> TicketBadgeWidget = FT66FlatStyle::AttachMetadata(
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
-			.VAlign(VAlign_Center)
-			.Padding(0.f, 0.f, 10.f, 0.f)
 			[
-				SNew(SBox)
-				.WidthOverride(60.f)
-				.HeightOverride(60.f)
-				[
-					SNew(SImage)
-					.Image(FT66FriendslopStyle::GetCustomBrush(
-						TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/ic_ticket.png"),
-						FMargin(0.f),
-						ESlateBrushDrawType::Image,
-						FVector2D(40.f, 40.f)))
-					.ColorAndOpacity(FLinearColor::White)
-				]
+				SNew(SSpacer).Size(FVector2D(95.f, 1.f))
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
@@ -1439,11 +1416,14 @@ TSharedRef<SWidget> UT66FrontendTopBarWidget::BuildSlateUI()
 			.Alignment(FVector2D(0.f, 0.f))
 			.Offset(OuterRect.ToReferenceOffset())
 			[
+				// Holistic one-piece bar: the entire reference bar (minus dynamic text)
+				// as a single image — uniform scale/rims by construction. Buttons below
+				// are chromeless click regions + text overlays.
 				FT66FriendslopStyle::MakeCustomSurface(
-					TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/bar_strip.png"),
+					TEXT("RuntimeDependencies/T66/UI/FriendslopStyle/Hellfire/MainMenu/bar_onepiece.png"),
 					FMargin(0.f),
 					ESlateBrushDrawType::Image,
-					FVector2D(1920.f, 76.f),
+					FVector2D(1920.f, 130.f),
 					ET66FlatState::Default,
 					FMargin(0.f),
 					SNew(SBox),

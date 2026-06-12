@@ -19,7 +19,7 @@ SOURCE_IMPORT_DIR = os.path.join("Weapons", "Projectiles", "UnrealReady")
 SOURCE_TEXTURE_DIR = os.path.join("Weapons", "Projectiles", "Textures")
 HEROES_CSV_RELATIVE = os.path.join("Content", "Data", "Heroes.csv")
 HERO_DATA_TABLE = "/Game/Data/DT_Heroes.DT_Heroes"
-PARENT_MATERIAL = "/Game/Materials/M_GLB_Unlit"
+PARENT_MATERIAL = "/Game/Materials/Generated/M_Unlit_DiffuseColorMap"
 
 PROJECTILES = (
     ("Hero_1", "FoundingChad_Rapier"),

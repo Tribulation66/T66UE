@@ -193,7 +193,7 @@ if ($normalizedCaptureMode -eq "heroactiveragdollproof") {
         $ExtraArgs += "-T66AutoCaptureHeroHPOverride=20000"
     }
 }
-if ($normalizedCaptureMode -eq "hero1axeaoehitbox" -or $normalizedCaptureMode -eq "hero1axeaoevfxbinding" -or $normalizedCaptureMode -eq "hero1axepiercevfxbinding" -or $normalizedCaptureMode -eq "hero1axebouncevfxbinding" -or $normalizedCaptureMode -eq "hero1axedotvfxbinding" -or $normalizedCaptureMode -eq "hero1axeaoewateridolimpact") {
+if ($normalizedCaptureMode -eq "hero1axeaoehitbox" -or $normalizedCaptureMode -eq "hero1axeaoevfxbinding" -or $normalizedCaptureMode -eq "hero1axebouncevfxbinding" -or $normalizedCaptureMode -eq "hero1axedotvfxbinding" -or $normalizedCaptureMode -eq "hero1axeaoewateridolimpact") {
     $ExtraArgs += @(
         "-T66Hero1AxeAOEHitboxFireDelay=$Hero1AxeHitboxFireDelay",
         "-T66Hero1AxeAOEHitboxVFXLeadSeconds=$Hero1AxeHitboxVFXLeadSeconds"
@@ -222,7 +222,7 @@ if ($normalizedCaptureMode -eq "hero1axeaoehitbox" -or $normalizedCaptureMode -e
     if ($ExecCmds -notmatch "T66\.Camera\.WallOcclusionEnabled") {
         $ExecCmds = "$ExecCmds,T66.Camera.WallOcclusionEnabled 0"
     }
-    if (($normalizedCaptureMode -eq "hero1axeaoewateridolimpact" -or $normalizedCaptureMode -eq "hero1axepiercevfxbinding" -or $normalizedCaptureMode -eq "hero1axebouncevfxbinding" -or $normalizedCaptureMode -eq "hero1axedotvfxbinding") -and $ExecCmds -notmatch "T66\.Combat\.ImpactSourceVerbose") {
+    if (($normalizedCaptureMode -eq "hero1axeaoewateridolimpact" -or $normalizedCaptureMode -eq "hero1axebouncevfxbinding" -or $normalizedCaptureMode -eq "hero1axedotvfxbinding") -and $ExecCmds -notmatch "T66\.Combat\.ImpactSourceVerbose") {
         $ExecCmds = "$ExecCmds,T66.Combat.ImpactSourceVerbose 1"
     }
 }

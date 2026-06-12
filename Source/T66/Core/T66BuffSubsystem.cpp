@@ -15,16 +15,16 @@ namespace
 	static const ET66StatType GSingleUseBuffStats[28] = {
 		ET66StatType::AoeDamage,
 		ET66StatType::BounceDamage,
-		ET66StatType::PierceDamage,
 		ET66StatType::DotDamage,
+		ET66StatType::SummonDamage,
 		ET66StatType::AoeSpeed,
 		ET66StatType::BounceSpeed,
-		ET66StatType::PierceSpeed,
 		ET66StatType::DotSpeed,
+		ET66StatType::SummonSpeed,
 		ET66StatType::AoeScale,
 		ET66StatType::BounceScale,
-		ET66StatType::PierceScale,
 		ET66StatType::DotScale,
+		ET66StatType::SummonScale,
 		ET66StatType::CritChance,
 		ET66StatType::HeadshotChance,
 		ET66StatType::AttackRange,
@@ -43,43 +43,32 @@ namespace
 		ET66StatType::ProcLuck
 	};
 
-	static FT66RelicDefinition T66MakeBaseStatRelic(const TCHAR* RelicID, const FText& DisplayName, const ET66HeroStatType StatType)
+	static FT66SurgeryDefinition T66MakeBaseStatSurgery(const TCHAR* SurgeryID, const FText& DisplayName, const ET66HeroStatType StatType)
 	{
-		FT66RelicDefinition Def;
-		Def.RelicID = FName(RelicID);
+		FT66SurgeryDefinition Def;
+		Def.SurgeryID = FName(SurgeryID);
 		Def.DisplayName = DisplayName;
 		Def.BaseStatType = StatType;
-		Def.BonusStatPoints = UT66BuffSubsystem::RelicPermanentBonusStatPoints;
-		Def.CostCC = UT66BuffSubsystem::RelicUnlockCostCC;
+		Def.BonusStatPoints = UT66BuffSubsystem::SurgeryPermanentBonusStatPoints;
+		Def.CostCC = UT66BuffSubsystem::SurgeryUnlockCostCC;
 		return Def;
 	}
 
-	static FT66RelicDefinition T66MakeStatRelic(const TCHAR* RelicID, const FText& DisplayName, const ET66StatType StatType)
+	static FT66SurgeryDefinition T66MakeStatSurgery(const TCHAR* SurgeryID, const FText& DisplayName, const ET66StatType StatType)
 	{
-		FT66RelicDefinition Def;
-		Def.RelicID = FName(RelicID);
+		FT66SurgeryDefinition Def;
+		Def.SurgeryID = FName(SurgeryID);
 		Def.DisplayName = DisplayName;
 		Def.StatType = StatType;
 		Def.bUsesStat = true;
-		Def.BonusStatPoints = UT66BuffSubsystem::RelicPermanentBonusStatPoints;
-		Def.CostCC = UT66BuffSubsystem::RelicUnlockCostCC;
+		Def.BonusStatPoints = UT66BuffSubsystem::SurgeryPermanentBonusStatPoints;
+		Def.CostCC = UT66BuffSubsystem::SurgeryUnlockCostCC;
 		return Def;
 	}
 
-	static FT66RelicDefinition T66MakeSolomonsRingRelic()
+	static ET66ItemRarity T66SurgeryTierValueToRarity(const int32 TierValue)
 	{
-		FT66RelicDefinition Def;
-		Def.RelicID = FName(TEXT("Relic_SolomonsRing"));
-		Def.DisplayName = NSLOCTEXT("T66.Relics", "SolomonsRing", "Solomon's Ring");
-		Def.bIsSolomonsRing = true;
-		Def.BonusStatPoints = 0;
-		Def.CostCC = UT66BuffSubsystem::RelicUnlockCostCC;
-		return Def;
-	}
-
-	static ET66ItemRarity T66RelicTierValueToRarity(const int32 TierValue)
-	{
-		switch (FMath::Clamp(TierValue, 1, UT66BuffSubsystem::MaxRelicRarityTier))
+		switch (FMath::Clamp(TierValue, 1, UT66BuffSubsystem::MaxSurgeryRarityTier))
 		{
 		case 2:
 			return ET66ItemRarity::Red;
@@ -93,25 +82,24 @@ namespace
 	}
 }
 
-const TArray<FT66RelicDefinition>& UT66BuffSubsystem::GetAllRelicDefinitions()
+const TArray<FT66SurgeryDefinition>& UT66BuffSubsystem::GetAllSurgeryDefinitions()
 {
-	static const TArray<FT66RelicDefinition> Relics = {
-		T66MakeBaseStatRelic(TEXT("Relic_BloodCrown"), NSLOCTEXT("T66.Relics", "BloodCrown", "Blood Crown"), ET66HeroStatType::Damage),
-		T66MakeBaseStatRelic(TEXT("Relic_ClockworkFang"), NSLOCTEXT("T66.Relics", "ClockworkFang", "Clockwork Fang"), ET66HeroStatType::AttackSpeed),
-		T66MakeBaseStatRelic(TEXT("Relic_GiantsThumb"), NSLOCTEXT("T66.Relics", "GiantsThumb", "Giant's Thumb"), ET66HeroStatType::AttackScale),
-		T66MakeBaseStatRelic(TEXT("Relic_HawkEyeLens"), NSLOCTEXT("T66.Relics", "HawkEyeLens", "Hawk Eye Lens"), ET66HeroStatType::Accuracy),
-		T66MakeBaseStatRelic(TEXT("Relic_IronHalo"), NSLOCTEXT("T66.Relics", "IronHalo", "Iron Halo"), ET66HeroStatType::Armor),
-		T66MakeBaseStatRelic(TEXT("Relic_MirageCloak"), NSLOCTEXT("T66.Relics", "MirageCloak", "Mirage Cloak"), ET66HeroStatType::Evasion),
-		T66MakeBaseStatRelic(TEXT("Relic_CloverIdol"), NSLOCTEXT("T66.Relics", "CloverIdol", "Clover Idol"), ET66HeroStatType::Luck),
-		T66MakeBaseStatRelic(TEXT("Relic_WindAnklet"), NSLOCTEXT("T66.Relics", "WindAnklet", "Wind Anklet"), ET66HeroStatType::Speed),
-		T66MakeStatRelic(TEXT("Relic_EmberBrand"), NSLOCTEXT("T66.Relics", "EmberBrand", "Ember Brand"), ET66StatType::FirePower),
-		T66MakeStatRelic(TEXT("Relic_FrostShard"), NSLOCTEXT("T66.Relics", "FrostShard", "Frost Shard"), ET66StatType::IcePower),
-		T66MakeStatRelic(TEXT("Relic_StormCoil"), NSLOCTEXT("T66.Relics", "StormCoil", "Storm Coil"), ET66StatType::ElectricityPower),
-		T66MakeStatRelic(TEXT("Relic_RootseedCharm"), NSLOCTEXT("T66.Relics", "RootseedCharm", "Rootseed Charm"), ET66StatType::NaturePower),
-		T66MakeStatRelic(TEXT("Relic_GalePinion"), NSLOCTEXT("T66.Relics", "GalePinion", "Gale Pinion"), ET66StatType::WindPower),
-		T66MakeSolomonsRingRelic()
+	static const TArray<FT66SurgeryDefinition> Surgeries = {
+		T66MakeBaseStatSurgery(TEXT("Surgery_MuscleImplant"), NSLOCTEXT("T66.Surgeries", "MuscleImplant", "Muscle Implant Surgery"), ET66HeroStatType::Damage),
+		T66MakeBaseStatSurgery(TEXT("Surgery_NerveReflex"), NSLOCTEXT("T66.Surgeries", "NerveReflex", "Nerve Reflex Surgery"), ET66HeroStatType::AttackSpeed),
+		T66MakeBaseStatSurgery(TEXT("Surgery_Jawline"), NSLOCTEXT("T66.Surgeries", "Jawline", "Jawline Surgery"), ET66HeroStatType::AttackScale),
+		T66MakeBaseStatSurgery(TEXT("Surgery_Lasik"), NSLOCTEXT("T66.Surgeries", "Lasik", "Lasik Surgery"), ET66HeroStatType::Accuracy),
+		T66MakeBaseStatSurgery(TEXT("Surgery_DermalArmor"), NSLOCTEXT("T66.Surgeries", "DermalArmor", "Dermal Armor Surgery"), ET66HeroStatType::Armor),
+		T66MakeBaseStatSurgery(TEXT("Surgery_TendonEvasion"), NSLOCTEXT("T66.Surgeries", "TendonEvasion", "Tendon Evasion Surgery"), ET66HeroStatType::Evasion),
+		T66MakeBaseStatSurgery(TEXT("Surgery_LuckyGene"), NSLOCTEXT("T66.Surgeries", "LuckyGene", "Lucky Gene Surgery"), ET66HeroStatType::Luck),
+		T66MakeBaseStatSurgery(TEXT("Surgery_NasalAirway"), NSLOCTEXT("T66.Surgeries", "NasalAirway", "Nasal Airway Surgery"), ET66HeroStatType::Speed),
+		T66MakeStatSurgery(TEXT("Surgery_HeatGland"), NSLOCTEXT("T66.Surgeries", "HeatGland", "Heat Gland Surgery"), ET66StatType::FirePower),
+		T66MakeStatSurgery(TEXT("Surgery_CryoLung"), NSLOCTEXT("T66.Surgeries", "CryoLung", "Cryo Lung Surgery"), ET66StatType::IcePower),
+		T66MakeStatSurgery(TEXT("Surgery_ElectroNeural"), NSLOCTEXT("T66.Surgeries", "ElectroNeural", "Electro-Neural Surgery"), ET66StatType::ElectricityPower),
+		T66MakeStatSurgery(TEXT("Surgery_ChlorophyllSkinGraft"), NSLOCTEXT("T66.Surgeries", "ChlorophyllSkinGraft", "Chlorophyll Skin Graft"), ET66StatType::NaturePower),
+		T66MakeStatSurgery(TEXT("Surgery_Windpipe"), NSLOCTEXT("T66.Surgeries", "Windpipe", "Windpipe Surgery"), ET66StatType::WindPower),
 	};
-	return Relics;
+	return Surgeries;
 }
 
 const TArray<ET66StatType>& UT66BuffSubsystem::GetAllSingleUseBuffTypes()
@@ -255,14 +243,14 @@ void UT66BuffSubsystem::LoadOrCreateSave()
 
 	if (SaveData->SaveVersion < 12)
 	{
-		MigrateV11ToV12Relics();
+		MigrateV11ToV12Surgeries();
 		SaveData->SaveVersion = 12;
 		bNeedsSave = true;
 	}
 
 	if (SaveData->SaveVersion < 13)
 	{
-		MigrateV12ToV13RelicTiers();
+		MigrateV12ToV13SurgeryTiers();
 		SaveData->SaveVersion = 13;
 		bNeedsSave = true;
 	}
@@ -272,7 +260,7 @@ void UT66BuffSubsystem::LoadOrCreateSave()
 	SanitizeSelectedSingleUseStates(SaveData->SelectedSingleUseBuffStates, SaveData->PendingSingleUseBuffStates);
 	bNeedsSave |= EnsureSelectedSingleUseBuffLoadoutValid();
 	bNeedsSave |= RebuildSelectedSingleUseStatesFromLoadout();
-	bNeedsSave |= EnsureRelicOwnershipValid();
+	bNeedsSave |= EnsureSurgeryOwnershipValid();
 
 	if (bNeedsSave)
 	{
@@ -564,7 +552,7 @@ void UT66BuffSubsystem::MigrateV10ToV11PrimarySpeed()
 	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v10 saves to v11 primary Speed progression."));
 }
 
-void UT66BuffSubsystem::MigrateV11ToV12Relics()
+void UT66BuffSubsystem::MigrateV11ToV12Surgeries()
 {
 	if (!SaveData)
 	{
@@ -594,10 +582,10 @@ void UT66BuffSubsystem::MigrateV11ToV12Relics()
 	{
 		if (GetLegacyUnlockedFillStepCount(StatType) > 0 || GetRandomBonusForStat(StatType) > 0)
 		{
-			const FName RelicID = GetRelicIDForBaseStat(StatType);
-			if (!RelicID.IsNone())
+			const FName SurgeryID = GetSurgeryIDForBaseStat(StatType);
+			if (!SurgeryID.IsNone())
 			{
-				SaveData->OwnedRelicIDs.AddUnique(RelicID);
+				SaveData->OwnedSurgeryIDs.AddUnique(SurgeryID);
 			}
 		}
 	};
@@ -610,28 +598,28 @@ void UT66BuffSubsystem::MigrateV11ToV12Relics()
 	PromoteLegacyBaseStat(ET66HeroStatType::Evasion);
 	PromoteLegacyBaseStat(ET66HeroStatType::Luck);
 	PromoteLegacyBaseStat(ET66HeroStatType::Speed);
-	EnsureRelicOwnershipValid();
-	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v11 permanent fill steps to v12 flat Relics."));
+	EnsureSurgeryOwnershipValid();
+	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v11 permanent fill steps to v12 flat Surgeries."));
 }
 
-void UT66BuffSubsystem::MigrateV12ToV13RelicTiers()
+void UT66BuffSubsystem::MigrateV12ToV13SurgeryTiers()
 {
 	if (!SaveData)
 	{
 		return;
 	}
 
-	for (const FName RelicID : SaveData->OwnedRelicIDs)
+	for (const FName SurgeryID : SaveData->OwnedSurgeryIDs)
 	{
-		const FT66RelicDefinition* Def = FindRelicDefinition(RelicID);
-		if (Def && !Def->bIsSolomonsRing)
+		const FT66SurgeryDefinition* Def = FindSurgeryDefinition(SurgeryID);
+		if (Def)
 		{
-			SaveData->RelicTierValues.FindOrAdd(RelicID) = 1;
+			SaveData->SurgeryTierValues.FindOrAdd(SurgeryID) = 1;
 		}
 	}
 
-	EnsureRelicOwnershipValid();
-	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v12 flat Relics to v13 per-rarity Relic tiers."));
+	EnsureSurgeryOwnershipValid();
+	UE_LOG(LogT66Buff, Log, TEXT("[Buffs] Migrated v12 flat Surgeries to v13 per-rarity Surgery tiers."));
 }
 
 void UT66BuffSubsystem::Save()
@@ -958,28 +946,28 @@ int32 UT66BuffSubsystem::GetStatIndex(ET66HeroStatType StatType) const
 	}
 }
 
-FName UT66BuffSubsystem::GetRelicIDForBaseStat(const ET66HeroStatType StatType) const
+FName UT66BuffSubsystem::GetSurgeryIDForBaseStat(const ET66HeroStatType StatType) const
 {
-	for (const FT66RelicDefinition& Def : GetAllRelicDefinitions())
+	for (const FT66SurgeryDefinition& Def : GetAllSurgeryDefinitions())
 	{
-		if (!Def.bUsesStat && !Def.bIsSolomonsRing && Def.BaseStatType == StatType)
+		if (!Def.bUsesStat && Def.BaseStatType == StatType)
 		{
-			return Def.RelicID;
+			return Def.SurgeryID;
 		}
 	}
 	return NAME_None;
 }
 
-const FT66RelicDefinition* UT66BuffSubsystem::FindRelicDefinition(const FName RelicID) const
+const FT66SurgeryDefinition* UT66BuffSubsystem::FindSurgeryDefinition(const FName SurgeryID) const
 {
-	if (RelicID.IsNone())
+	if (SurgeryID.IsNone())
 	{
 		return nullptr;
 	}
 
-	for (const FT66RelicDefinition& Def : GetAllRelicDefinitions())
+	for (const FT66SurgeryDefinition& Def : GetAllSurgeryDefinitions())
 	{
-		if (Def.RelicID == RelicID)
+		if (Def.SurgeryID == SurgeryID)
 		{
 			return &Def;
 		}
@@ -987,61 +975,61 @@ const FT66RelicDefinition* UT66BuffSubsystem::FindRelicDefinition(const FName Re
 	return nullptr;
 }
 
-bool UT66BuffSubsystem::EnsureRelicOwnershipValid()
+bool UT66BuffSubsystem::EnsureSurgeryOwnershipValid()
 {
 	if (!SaveData)
 	{
 		return false;
 	}
 
-	const TArray<FName> Original = SaveData->OwnedRelicIDs;
-	const TMap<FName, uint8> OriginalTiers = SaveData->RelicTierValues;
+	const TArray<FName> Original = SaveData->OwnedSurgeryIDs;
+	const TMap<FName, uint8> OriginalTiers = SaveData->SurgeryTierValues;
 	TArray<FName> Sanitized;
-	for (const FName RelicID : Original)
+	for (const FName SurgeryID : Original)
 	{
-		if (!RelicID.IsNone() && FindRelicDefinition(RelicID))
+		if (!SurgeryID.IsNone() && FindSurgeryDefinition(SurgeryID))
 		{
-			Sanitized.AddUnique(RelicID);
+			Sanitized.AddUnique(SurgeryID);
 		}
 	}
 
 	TMap<FName, uint8> SanitizedTiers;
 	for (const TPair<FName, uint8>& Pair : OriginalTiers)
 	{
-		const FT66RelicDefinition* Def = FindRelicDefinition(Pair.Key);
-		if (Def && !Def->bIsSolomonsRing && Pair.Value > 0)
+		const FT66SurgeryDefinition* Def = FindSurgeryDefinition(Pair.Key);
+		if (Def && Pair.Value > 0)
 		{
-			SanitizedTiers.Add(Pair.Key, static_cast<uint8>(FMath::Clamp(static_cast<int32>(Pair.Value), 1, MaxRelicRarityTier)));
+			SanitizedTiers.Add(Pair.Key, static_cast<uint8>(FMath::Clamp(static_cast<int32>(Pair.Value), 1, MaxSurgeryRarityTier)));
 			Sanitized.AddUnique(Pair.Key);
 		}
 	}
 
-	for (const FName RelicID : Sanitized)
+	for (const FName SurgeryID : Sanitized)
 	{
-		const FT66RelicDefinition* Def = FindRelicDefinition(RelicID);
-		if (Def && !Def->bIsSolomonsRing && !SanitizedTiers.Contains(RelicID))
+		const FT66SurgeryDefinition* Def = FindSurgeryDefinition(SurgeryID);
+		if (Def && !SanitizedTiers.Contains(SurgeryID))
 		{
-			SanitizedTiers.Add(RelicID, 1);
+			SanitizedTiers.Add(SurgeryID, 1);
 		}
 	}
 
-	bool bRelicTierValuesChanged = OriginalTiers.Num() != SanitizedTiers.Num();
-	if (!bRelicTierValuesChanged)
+	bool bSurgeryTierValuesChanged = OriginalTiers.Num() != SanitizedTiers.Num();
+	if (!bSurgeryTierValuesChanged)
 	{
 		for (const TPair<FName, uint8>& Pair : OriginalTiers)
 		{
 			const uint8* NewValue = SanitizedTiers.Find(Pair.Key);
 			if (!NewValue || *NewValue != Pair.Value)
 			{
-				bRelicTierValuesChanged = true;
+				bSurgeryTierValuesChanged = true;
 				break;
 			}
 		}
 	}
 
-	SaveData->OwnedRelicIDs = MoveTemp(Sanitized);
-	SaveData->RelicTierValues = MoveTemp(SanitizedTiers);
-	return SaveData->OwnedRelicIDs != Original || bRelicTierValuesChanged;
+	SaveData->OwnedSurgeryIDs = MoveTemp(Sanitized);
+	SaveData->SurgeryTierValues = MoveTemp(SanitizedTiers);
+	return SaveData->OwnedSurgeryIDs != Original || bSurgeryTierValuesChanged;
 }
 
 int32 UT66BuffSubsystem::GetSingleUseBuffIndex(ET66StatType StatType) const
@@ -1102,30 +1090,30 @@ int32 UT66BuffSubsystem::GetFillStepState(ET66HeroStatType StatType, int32 StepI
 		return 0;
 	}
 
-	const FName RelicID = GetRelicIDForBaseStat(StatType);
-	return (!RelicID.IsNone() && StepIndex < GetRelicTierValue(RelicID)) ? 1 : 0;
+	const FName SurgeryID = GetSurgeryIDForBaseStat(StatType);
+	return (!SurgeryID.IsNone() && StepIndex < GetSurgeryTierValue(SurgeryID)) ? 1 : 0;
 }
 
 int32 UT66BuffSubsystem::GetUnlockedFillStepCount(ET66HeroStatType StatType) const
 {
-	const FName RelicID = GetRelicIDForBaseStat(StatType);
-	return RelicID.IsNone() ? 0 : GetRelicTierValue(RelicID);
+	const FName SurgeryID = GetSurgeryIDForBaseStat(StatType);
+	return SurgeryID.IsNone() ? 0 : GetSurgeryTierValue(SurgeryID);
 }
 
 int32 UT66BuffSubsystem::GetTotalStatBonus(ET66HeroStatType StatType) const
 {
-	return GetRelicBaseStatBonus(StatType);
+	return GetSurgeryBaseStatBonus(StatType);
 }
 
 int32 UT66BuffSubsystem::GetCostForNextFillStepUnlock(ET66HeroStatType StatType) const
 {
-	return IsStatMaxed(StatType) ? 0 : RelicUnlockCostCC;
+	return IsStatMaxed(StatType) ? 0 : SurgeryUnlockCostCC;
 }
 
 bool UT66BuffSubsystem::UnlockNextFillStep(ET66HeroStatType StatType)
 {
-	const FName RelicID = GetRelicIDForBaseStat(StatType);
-	return !RelicID.IsNone() && PurchaseRelic(RelicID);
+	const FName SurgeryID = GetSurgeryIDForBaseStat(StatType);
+	return !SurgeryID.IsNone() && PurchaseSurgery(SurgeryID);
 }
 
 bool UT66BuffSubsystem::UnlockRandomStat()
@@ -1136,11 +1124,11 @@ bool UT66BuffSubsystem::UnlockRandomStat()
 	}
 
 	TArray<FName> Candidates;
-	for (const FT66RelicDefinition& Def : GetAllRelicDefinitions())
+	for (const FT66SurgeryDefinition& Def : GetAllSurgeryDefinitions())
 	{
-		if (!Def.bUsesStat && !Def.bIsSolomonsRing && !IsRelicMaxTier(Def.RelicID))
+		if (!Def.bUsesStat && !IsSurgeryMaxTier(Def.SurgeryID))
 		{
-			Candidates.Add(Def.RelicID);
+			Candidates.Add(Def.SurgeryID);
 		}
 	}
 
@@ -1149,13 +1137,13 @@ bool UT66BuffSubsystem::UnlockRandomStat()
 		return false;
 	}
 
-	return PurchaseRelic(Candidates[FMath::RandRange(0, Candidates.Num() - 1)]);
+	return PurchaseSurgery(Candidates[FMath::RandRange(0, Candidates.Num() - 1)]);
 }
 
 bool UT66BuffSubsystem::IsStatMaxed(ET66HeroStatType StatType) const
 {
-	const FName RelicID = GetRelicIDForBaseStat(StatType);
-	return RelicID.IsNone() || IsRelicMaxTier(RelicID);
+	const FName SurgeryID = GetSurgeryIDForBaseStat(StatType);
+	return SurgeryID.IsNone() || IsSurgeryMaxTier(SurgeryID);
 }
 
 bool UT66BuffSubsystem::IsDemoDiplomaUpgradeLimitReached(ET66HeroStatType StatType) const
@@ -1183,33 +1171,26 @@ FT66HeroStatBonuses UT66BuffSubsystem::GetPowerupStatBonuses() const
 	return GetPermanentBuffStatBonuses();
 }
 
-bool UT66BuffSubsystem::IsRelicOwned(const FName RelicID) const
+bool UT66BuffSubsystem::IsSurgeryOwned(const FName SurgeryID) const
 {
-	return SaveData && !RelicID.IsNone() && (SaveData->OwnedRelicIDs.Contains(RelicID) || GetRelicTierValue(RelicID) > 0);
+	return SaveData && !SurgeryID.IsNone() && (SaveData->OwnedSurgeryIDs.Contains(SurgeryID) || GetSurgeryTierValue(SurgeryID) > 0);
 }
 
-bool UT66BuffSubsystem::PurchaseRelic(const FName RelicID)
+bool UT66BuffSubsystem::PurchaseSurgery(const FName SurgeryID)
 {
-	if (!SaveData || RelicID.IsNone())
+	if (!SaveData || SurgeryID.IsNone())
 	{
 		return false;
 	}
 
-	const FT66RelicDefinition* Def = FindRelicDefinition(RelicID);
+	const FT66SurgeryDefinition* Def = FindSurgeryDefinition(SurgeryID);
 	if (!Def)
 	{
 		return false;
 	}
 
-	const int32 CurrentTier = GetRelicTierValue(RelicID);
-	if (Def->bIsSolomonsRing)
-	{
-		if (IsRelicOwned(RelicID))
-		{
-			return false;
-		}
-	}
-	else if (CurrentTier >= MaxRelicRarityTier)
+	const int32 CurrentTier = GetSurgeryTierValue(SurgeryID);
+	if (CurrentTier >= MaxSurgeryRarityTier)
 	{
 		return false;
 	}
@@ -1219,99 +1200,109 @@ bool UT66BuffSubsystem::PurchaseRelic(const FName RelicID)
 		return false;
 	}
 
-	SaveData->OwnedRelicIDs.AddUnique(RelicID);
-	if (!Def->bIsSolomonsRing)
-	{
-		SaveData->RelicTierValues.FindOrAdd(RelicID) = static_cast<uint8>(FMath::Clamp(CurrentTier + 1, 1, MaxRelicRarityTier));
-	}
-	EnsureRelicOwnershipValid();
+	SaveData->OwnedSurgeryIDs.AddUnique(SurgeryID);
+	SaveData->SurgeryTierValues.FindOrAdd(SurgeryID) = static_cast<uint8>(FMath::Clamp(CurrentTier + 1, 1, MaxSurgeryRarityTier));
+	EnsureSurgeryOwnershipValid();
 	Save();
 	return true;
 }
 
-int32 UT66BuffSubsystem::GetRelicCost(const FName RelicID) const
+bool UT66BuffSubsystem::RefundSurgery(const FName SurgeryID)
 {
-	const FT66RelicDefinition* Def = FindRelicDefinition(RelicID);
-	if (!Def || IsRelicMaxTier(RelicID))
+	if (!SaveData || SurgeryID.IsNone())
+	{
+		return false;
+	}
+
+	const FT66SurgeryDefinition* Def = FindSurgeryDefinition(SurgeryID);
+	if (!Def)
+	{
+		return false;
+	}
+
+	const int32 CurrentTier = GetSurgeryTierValue(SurgeryID);
+	if (CurrentTier <= 0)
+	{
+		return false;
+	}
+
+	const int32 RefundAmount = FMath::Max(0, Def->CostCC) * CurrentTier;
+	SaveData->OwnedSurgeryIDs.Remove(SurgeryID);
+	SaveData->SurgeryTierValues.Remove(SurgeryID);
+	EnsureSurgeryOwnershipValid();
+	AddChadCoupons(RefundAmount);
+	Save();
+	return RefundAmount > 0;
+}
+
+int32 UT66BuffSubsystem::GetSurgeryCost(const FName SurgeryID) const
+{
+	const FT66SurgeryDefinition* Def = FindSurgeryDefinition(SurgeryID);
+	if (!Def || IsSurgeryMaxTier(SurgeryID))
 	{
 		return 0;
 	}
 	return Def ? FMath::Max(0, Def->CostCC) : 0;
 }
 
-int32 UT66BuffSubsystem::GetRelicTierValue(const FName RelicID) const
+int32 UT66BuffSubsystem::GetSurgeryTierValue(const FName SurgeryID) const
 {
-	if (!SaveData || RelicID.IsNone())
+	if (!SaveData || SurgeryID.IsNone())
 	{
 		return 0;
 	}
 
-	const FT66RelicDefinition* Def = FindRelicDefinition(RelicID);
+	const FT66SurgeryDefinition* Def = FindSurgeryDefinition(SurgeryID);
 	if (!Def)
 	{
 		return 0;
 	}
 
-	if (Def->bIsSolomonsRing)
+	if (const uint8* Tier = SaveData->SurgeryTierValues.Find(SurgeryID))
 	{
-		return SaveData->OwnedRelicIDs.Contains(RelicID) ? 1 : 0;
+		return FMath::Clamp(static_cast<int32>(*Tier), 0, MaxSurgeryRarityTier);
 	}
 
-	if (const uint8* Tier = SaveData->RelicTierValues.Find(RelicID))
-	{
-		return FMath::Clamp(static_cast<int32>(*Tier), 0, MaxRelicRarityTier);
-	}
-
-	return SaveData->OwnedRelicIDs.Contains(RelicID) ? 1 : 0;
+	return SaveData->OwnedSurgeryIDs.Contains(SurgeryID) ? 1 : 0;
 }
 
-ET66ItemRarity UT66BuffSubsystem::GetRelicRarity(const FName RelicID) const
+ET66ItemRarity UT66BuffSubsystem::GetSurgeryRarity(const FName SurgeryID) const
 {
-	return T66RelicTierValueToRarity(FMath::Max(1, GetRelicTierValue(RelicID)));
+	return T66SurgeryTierValueToRarity(FMath::Max(1, GetSurgeryTierValue(SurgeryID)));
 }
 
-bool UT66BuffSubsystem::IsRelicMaxTier(const FName RelicID) const
+bool UT66BuffSubsystem::IsSurgeryMaxTier(const FName SurgeryID) const
 {
-	const FT66RelicDefinition* Def = FindRelicDefinition(RelicID);
+	const FT66SurgeryDefinition* Def = FindSurgeryDefinition(SurgeryID);
 	if (!Def)
 	{
 		return true;
 	}
 
-	if (Def->bIsSolomonsRing)
-	{
-		return IsRelicOwned(RelicID);
-	}
-
-	return GetRelicTierValue(RelicID) >= MaxRelicRarityTier;
+	return GetSurgeryTierValue(SurgeryID) >= MaxSurgeryRarityTier;
 }
 
-bool UT66BuffSubsystem::HasSolomonsRing() const
-{
-	return IsRelicOwned(FName(TEXT("Relic_SolomonsRing")));
-}
-
-int32 UT66BuffSubsystem::GetRelicBaseStatBonus(const ET66HeroStatType StatType) const
+int32 UT66BuffSubsystem::GetSurgeryBaseStatBonus(const ET66HeroStatType StatType) const
 {
 	int32 Total = 0;
-	for (const FT66RelicDefinition& Def : GetAllRelicDefinitions())
+	for (const FT66SurgeryDefinition& Def : GetAllSurgeryDefinitions())
 	{
-		if (!Def.bUsesStat && !Def.bIsSolomonsRing && Def.BaseStatType == StatType && IsRelicOwned(Def.RelicID))
+		if (!Def.bUsesStat && Def.BaseStatType == StatType && IsSurgeryOwned(Def.SurgeryID))
 		{
-			Total += FMath::Max(0, Def.BonusStatPoints) * GetRelicTierValue(Def.RelicID);
+			Total += FMath::Max(0, Def.BonusStatPoints) * GetSurgeryTierValue(Def.SurgeryID);
 		}
 	}
 	return Total;
 }
 
-int32 UT66BuffSubsystem::GetRelicStatBonus(const ET66StatType StatType) const
+int32 UT66BuffSubsystem::GetSurgeryStatBonus(const ET66StatType StatType) const
 {
 	int32 Total = 0;
-	for (const FT66RelicDefinition& Def : GetAllRelicDefinitions())
+	for (const FT66SurgeryDefinition& Def : GetAllSurgeryDefinitions())
 	{
-		if (Def.bUsesStat && Def.StatType == StatType && IsRelicOwned(Def.RelicID))
+		if (Def.bUsesStat && Def.StatType == StatType && IsSurgeryOwned(Def.SurgeryID))
 		{
-			Total += FMath::Max(0, Def.BonusStatPoints) * GetRelicTierValue(Def.RelicID);
+			Total += FMath::Max(0, Def.BonusStatPoints) * GetSurgeryTierValue(Def.SurgeryID);
 		}
 	}
 	return Total;
@@ -1654,6 +1645,48 @@ bool UT66BuffSubsystem::PurchaseSingleUseBuff(ET66StatType StatType)
 	return true;
 }
 
+bool UT66BuffSubsystem::RefundSingleUseBuff(const ET66StatType StatType)
+{
+	if (!SaveData || !T66IsLiveStatType(StatType))
+	{
+		return false;
+	}
+
+	TArray<uint8>* PendingStates = GetPendingSingleUseStates();
+	if (!PendingStates)
+	{
+		return false;
+	}
+
+	EnsurePendingSingleUseStatesSize(*PendingStates);
+	const int32 StatIndex = GetSingleUseBuffIndex(StatType);
+	if (StatIndex == INDEX_NONE || !PendingStates->IsValidIndex(StatIndex))
+	{
+		return false;
+	}
+
+	const int32 OwnedCount = FMath::Max(0, static_cast<int32>((*PendingStates)[StatIndex]));
+	if (OwnedCount <= 0)
+	{
+		return false;
+	}
+
+	(*PendingStates)[StatIndex] = 0;
+	EnsureSelectedSingleUseBuffLoadoutValid();
+	for (ET66StatType& SlotStat : SaveData->SelectedSingleUseBuffSlots)
+	{
+		if (SlotStat == StatType)
+		{
+			SlotStat = ET66StatType::None;
+		}
+	}
+
+	RebuildSelectedSingleUseStatesFromLoadout();
+	AddChadCoupons(OwnedCount * FMath::Max(0, SingleUseBuffCostCC));
+	Save();
+	return true;
+}
+
 TMap<ET66StatType, float> UT66BuffSubsystem::GetPendingSingleUseBuffMultipliers() const
 {
 	TMap<ET66StatType, float> Bonuses;
@@ -1723,23 +1756,23 @@ void UT66BuffSubsystem::DebugSetDiplomaUnlockedSteps(const ET66HeroStatType Stat
 		return;
 	}
 
-	const FName RelicID = GetRelicIDForBaseStat(StatType);
-	if (RelicID.IsNone())
+	const FName SurgeryID = GetSurgeryIDForBaseStat(StatType);
+	if (SurgeryID.IsNone())
 	{
 		return;
 	}
 
 	if (Count > 0)
 	{
-		SaveData->OwnedRelicIDs.AddUnique(RelicID);
-		SaveData->RelicTierValues.FindOrAdd(RelicID) = static_cast<uint8>(FMath::Clamp(Count, 1, MaxRelicRarityTier));
+		SaveData->OwnedSurgeryIDs.AddUnique(SurgeryID);
+		SaveData->SurgeryTierValues.FindOrAdd(SurgeryID) = static_cast<uint8>(FMath::Clamp(Count, 1, MaxSurgeryRarityTier));
 	}
 	else
 	{
-		SaveData->OwnedRelicIDs.Remove(RelicID);
-		SaveData->RelicTierValues.Remove(RelicID);
+		SaveData->OwnedSurgeryIDs.Remove(SurgeryID);
+		SaveData->SurgeryTierValues.Remove(SurgeryID);
 	}
-	EnsureRelicOwnershipValid();
+	EnsureSurgeryOwnershipValid();
 	Save();
 }
 

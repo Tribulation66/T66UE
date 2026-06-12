@@ -22,8 +22,8 @@ namespace
 		{
 		case ET66AttackCategory::AOE:    return ET66StatType::AoeDamage;
 		case ET66AttackCategory::Bounce: return ET66StatType::BounceDamage;
-		case ET66AttackCategory::Pierce: return ET66StatType::PierceDamage;
 		case ET66AttackCategory::DOT:    return ET66StatType::DotDamage;
+		case ET66AttackCategory::Summon: return ET66StatType::SummonDamage;
 		case ET66AttackCategory::SingleTarget:
 		default:                         return ET66StatType::None;
 		}
@@ -35,8 +35,8 @@ namespace
 		{
 		case ET66AttackCategory::AOE:    return ET66StatType::AoeSpeed;
 		case ET66AttackCategory::Bounce: return ET66StatType::BounceSpeed;
-		case ET66AttackCategory::Pierce: return ET66StatType::PierceSpeed;
 		case ET66AttackCategory::DOT:    return ET66StatType::DotSpeed;
+		case ET66AttackCategory::Summon: return ET66StatType::SummonSpeed;
 		case ET66AttackCategory::SingleTarget:
 		default:                         return ET66StatType::None;
 		}
@@ -48,8 +48,8 @@ namespace
 		{
 		case ET66AttackCategory::AOE:    return ET66StatType::AoeScale;
 		case ET66AttackCategory::Bounce: return ET66StatType::BounceScale;
-		case ET66AttackCategory::Pierce: return ET66StatType::PierceScale;
 		case ET66AttackCategory::DOT:    return ET66StatType::DotScale;
+		case ET66AttackCategory::Summon: return ET66StatType::SummonScale;
 		case ET66AttackCategory::SingleTarget:
 		default:                         return ET66StatType::None;
 		}
@@ -98,13 +98,18 @@ namespace T66CombatShared
 
 	const TSet<FName>& GetImpactPresentationProofIdols()
 	{
-		// 4x4 grid proof idols: Ice AOE, Electricity Pierce/Bounce, Nature DOT.
+		// 4x4 grid proof idols: Ice AOE, Electricity LineTarget/Bounce, Nature DOT.
 		// Idol_Nature_AOE is intentionally absent (neutral control: it must not enter the lane).
+		// Idol_Fire_Summon is the first PRODUCTION migration into the lane (2026-06-10):
+		// weapon hit procs a fire streak from the impact point toward the nearest other
+		// enemy, one proc per attack lobe. Its Idols.csv Delivery is LocalImpact so the
+		// legacy hero-anchored traveler branch never runs for it (no double-fire).
 		static const TSet<FName> ImpactPresentationProofIdols = {
 			FName(TEXT("Idol_Ice_AOE")),
-			FName(TEXT("Idol_Electricity_Pierce")),
+			FName(TEXT("Idol_Electricity_Summon")),
 			FName(TEXT("Idol_Electricity_Bounce")),
 			FName(TEXT("Idol_Nature_DOT")),
+			FName(TEXT("Idol_Fire_Summon")),
 		};
 		return ImpactPresentationProofIdols;
 	}
@@ -116,23 +121,23 @@ namespace T66CombatShared
 		{
 			TSet<FName> Set = GetImpactPresentationProofIdols();
 			Set.Add(FName(TEXT("Idol_Fire_AOE")));
-			Set.Add(FName(TEXT("Idol_Fire_Pierce")));
+			Set.Add(FName(TEXT("Idol_Fire_Summon")));
 			Set.Add(FName(TEXT("Idol_Fire_Bounce")));
 			Set.Add(FName(TEXT("Idol_Fire_DOT")));
 			Set.Add(FName(TEXT("Idol_Ice_AOE")));
-			Set.Add(FName(TEXT("Idol_Ice_Pierce")));
+			Set.Add(FName(TEXT("Idol_Ice_Summon")));
 			Set.Add(FName(TEXT("Idol_Ice_Bounce")));
 			Set.Add(FName(TEXT("Idol_Ice_DOT")));
 			Set.Add(FName(TEXT("Idol_Electricity_AOE")));
-			Set.Add(FName(TEXT("Idol_Electricity_Pierce")));
+			Set.Add(FName(TEXT("Idol_Electricity_Summon")));
 			Set.Add(FName(TEXT("Idol_Electricity_Bounce")));
 			Set.Add(FName(TEXT("Idol_Electricity_DOT")));
 			Set.Add(FName(TEXT("Idol_Nature_AOE")));
-			Set.Add(FName(TEXT("Idol_Nature_Pierce")));
+			Set.Add(FName(TEXT("Idol_Nature_Summon")));
 			Set.Add(FName(TEXT("Idol_Nature_Bounce")));
 			Set.Add(FName(TEXT("Idol_Nature_DOT")));
 			Set.Add(FName(TEXT("Idol_Wind_AOE")));
-			Set.Add(FName(TEXT("Idol_Wind_Pierce")));
+			Set.Add(FName(TEXT("Idol_Wind_Summon")));
 			Set.Add(FName(TEXT("Idol_Wind_Bounce")));
 			Set.Add(FName(TEXT("Idol_Wind_DOT")));
 			return Set;

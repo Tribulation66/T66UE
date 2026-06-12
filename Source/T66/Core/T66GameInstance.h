@@ -35,6 +35,27 @@ enum class ET66RunModifierKind : uint8
 	Mod UMETA(DisplayName = "Mod")
 };
 
+USTRUCT(BlueprintType)
+struct T66_API FT66CustomHeroBuildConfig
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Hero")
+	bool bConfigured = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Hero")
+	FName WeaponSourceHeroID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Hero")
+	FName VisualSourceHeroID = NAME_None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Hero")
+	ET66BodyType BodyType = ET66BodyType::Chad;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Custom Hero")
+	FT66HeroStatBlock Stats;
+};
+
 /**
  * Game Instance for Tribulation 66
  * Persists across level loads and holds:
@@ -215,6 +236,10 @@ public:
 	/** Selected hero skin ID (e.g. Default, Beachgoer). Synced from profile when entering hero selection. */
 	UPROPERTY(BlueprintReadWrite, Category = "Selection")
 	FName SelectedHeroSkinID = FName(TEXT("Default"));
+
+	/** Runtime custom hero build. Kept in GameInstance for the first implementation pass. */
+	UPROPERTY(BlueprintReadWrite, Category = "Selection|Custom Hero")
+	FT66CustomHeroBuildConfig CustomHeroBuild;
 
 	// ============================================
 	// Save / Load flow
@@ -478,6 +503,27 @@ public:
 	/** Get hero data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")
 	bool GetHeroData(FName HeroID, FHeroData& OutHeroData);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Selection|Custom Hero")
+	static FName GetCustomHeroID();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Selection|Custom Hero")
+	static bool IsCustomHeroID(FName HeroID);
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Selection|Custom Hero")
+	bool IsCustomHeroConfigured() const { return CustomHeroBuild.bConfigured; }
+
+	UFUNCTION(BlueprintCallable, Category = "Selection|Custom Hero")
+	void ConfigureCustomHero(FName WeaponSourceHeroID, FName VisualSourceHeroID, ET66BodyType BodyType, const FT66HeroStatBlock& Stats);
+
+	UFUNCTION(BlueprintCallable, Category = "Selection|Custom Hero")
+	FName ResolveCustomHeroWeaponSourceHeroID(FName HeroID) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Selection|Custom Hero")
+	FName ResolveCustomHeroVisualSourceHeroID(FName HeroID) const;
+
+	UFUNCTION(BlueprintCallable, Category = "Selection|Custom Hero")
+	ET66BodyType ResolveCustomHeroBodyType(FName HeroID, ET66BodyType FallbackBodyType) const;
 
 	/** Get companion data by ID. Returns false if not found. */
 	UFUNCTION(BlueprintCallable, Category = "Data")

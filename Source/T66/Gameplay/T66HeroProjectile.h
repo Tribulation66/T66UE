@@ -44,6 +44,15 @@ public:
 	void SetScaleMultiplier(float InScaleMultiplier);
 	void SetTintColor(const FLinearColor& InColor);
 	void SetProjectileMesh(UStaticMesh* InMesh);
+	/**
+	 * BLACK-tier imported-mesh pass (t66.Combat.ProjectileMeshes): replace the temporary
+	 * profile visual with an authored projectile mesh. Clears every profile-applied
+	 * override (override materials, relative transform) so the mesh renders with its
+	 * slot-default material instance and authored +X-forward orientation at authored
+	 * size, and hides the AccentMesh overlay if one was active. Visual-only — collision
+	 * and ProjectileMovement are untouched.
+	 */
+	void ApplyCustomVisualMeshOverride(UStaticMesh* InMesh);
 	void SetProjectileSpeed(float InSpeed);
 	void SetTrailVFX(UNiagaraSystem* InTrailSystem, const FLinearColor& InTrailColor);
 	void SetVisualOnly(bool bInVisualOnly);

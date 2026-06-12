@@ -1,7 +1,10 @@
 param(
     [string]$Exe = "C:\UE\T66\Saved\StagedBuilds\Windows\T66\Binaries\Win64\T66.exe",
     [string]$OutputRoot,
-    [int]$SlotIndex = 8,
+    # Slot 7 by default: slot 8 is seeded by RunSessionLoadedTravelSmoke.ps1 and slots 0-2
+    # by RunSaveSlotsLoadClickSmoke.ps1; sharing slot 8 made reload verification read the
+    # session loaded-travel marker instead of this gate's integrity marker.
+    [int]$SlotIndex = 7,
     [string]$Marker,
     [int]$TimeoutSeconds = 90,
     [switch]$PrintOnly

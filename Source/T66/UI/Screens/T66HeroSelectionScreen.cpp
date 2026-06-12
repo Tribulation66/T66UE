@@ -125,6 +125,25 @@ FReply UT66HeroSelectionScreen::HandleNextClicked()
 	return FReply::Handled();
 }
 
+FReply UT66HeroSelectionScreen::HandleRandomHeroClicked()
+{
+	PreviewRandomHero();
+	return FReply::Handled();
+}
+
+FReply UT66HeroSelectionScreen::HandleBuildCustomHeroClicked()
+{
+	if (UIManager)
+	{
+		UIManager->ShowScreen(ET66ScreenType::CustomHeroBuilder);
+	}
+	else
+	{
+		NavigateTo(ET66ScreenType::CustomHeroBuilder);
+	}
+	return FReply::Handled();
+}
+
 FReply UT66HeroSelectionScreen::HandleCompanionPrevClicked()
 {
 	PreviewPreviousCompanion();
@@ -284,7 +303,7 @@ FReply UT66HeroSelectionScreen::HandleLabClicked()
 		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
-		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->SelectedHeroBodyType = GI->ResolveCustomHeroBodyType(PreviewedHeroID, SelectedBodyType);
 		GI->ApplyConfiguredMainMapLayoutVariant();
 		GI->ClearActiveDailyClimbRun();
 		GI->SelectedRunMode = T66ResolveHeroSelectionRunMode(GI);
@@ -313,7 +332,7 @@ FReply UT66HeroSelectionScreen::HandleTutorialClicked()
 		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
-		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->SelectedHeroBodyType = GI->ResolveCustomHeroBodyType(PreviewedHeroID, SelectedBodyType);
 		GI->ApplyConfiguredMainMapLayoutVariant();
 		GI->ClearActiveDailyClimbRun();
 		GI->SelectedRunMode = T66ResolveHeroSelectionRunMode(GI);
@@ -342,7 +361,7 @@ FReply UT66HeroSelectionScreen::HandleTestClicked()
 		SelectedDifficulty = GI->ResolvePlayableDifficulty(SelectedDifficulty);
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedDifficulty = SelectedDifficulty;
-		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->SelectedHeroBodyType = GI->ResolveCustomHeroBodyType(PreviewedHeroID, SelectedBodyType);
 		GI->ApplyConfiguredMainMapLayoutVariant();
 		GI->ClearActiveDailyClimbRun();
 		GI->SelectedRunMode = T66ResolveHeroSelectionRunMode(GI);
@@ -755,6 +774,32 @@ void UT66HeroSelectionScreen::PreviewPreviousCompanion()
 	}
 }
 
+void UT66HeroSelectionScreen::PreviewRandomHero()
+{
+	TArray<FName> CandidateHeroIDs;
+	UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this));
+	for (const FName& HeroID : AllHeroIDs)
+	{
+		if (!HeroID.IsNone() && (!GI || GI->IsHeroPlayable(HeroID)))
+		{
+			CandidateHeroIDs.Add(HeroID);
+		}
+	}
+
+	if (CandidateHeroIDs.Num() <= 0)
+	{
+		return;
+	}
+
+	if (CandidateHeroIDs.Num() > 1)
+	{
+		CandidateHeroIDs.Remove(PreviewedHeroID);
+	}
+
+	PreviewHero(CandidateHeroIDs[FMath::RandRange(0, CandidateHeroIDs.Num() - 1)]);
+	RequestDeferredSlateRebuild();
+}
+
 void UT66HeroSelectionScreen::SelectDifficulty(ET66Difficulty Difficulty)
 {
 	if (UT66GameInstance* GI = Cast<UT66GameInstance>(UGameplayStatics::GetGameInstance(this)))
@@ -869,12 +914,12 @@ void UT66HeroSelectionScreen::OnEnterTribulationClicked()
 		GI->SelectedHeroID = PreviewedHeroID;
 		GI->SelectedCompanionID = PreviewedCompanionID;
 		GI->SelectedDifficulty = SelectedDifficulty;
-		GI->SelectedHeroBodyType = SelectedBodyType;
+		GI->SelectedHeroBodyType = GI->ResolveCustomHeroBodyType(PreviewedHeroID, SelectedBodyType);
 		GI->ApplyConfiguredMainMapLayoutVariant();
 		GI->ClearActiveDailyClimbRun();
 		GI->SelectedRunMode = T66ResolveHeroSelectionRunMode(GI);
 		GI->SelectedRunCategory = ET66RunCategory::Tower;
-		GI->bRunIneligibleForLeaderboard = GI->IsOfflineRun();
+		GI->bRunIneligibleForLeaderboard = GI->IsOfflineRun() || UT66GameInstance::IsCustomHeroID(PreviewedHeroID);
 		GI->PendingLoadedTransform = FTransform();
 		GI->bApplyLoadedTransform = false;
 		// New seed each time so procedural terrain layout differs per run
@@ -1023,4 +1068,3 @@ FReply UT66HeroSelectionScreen::NativeOnKeyDown(const FGeometry& MyGeometry, con
 	}
 	return Super::NativeOnKeyDown(MyGeometry, InKeyEvent);
 }
-

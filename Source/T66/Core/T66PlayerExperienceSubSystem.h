@@ -11,7 +11,6 @@
 #include "Data/T66DataTypes.h"
 #include "T66PlayerExperienceSubSystem.generated.h"
 
-struct FStreamableHandle;
 
 USTRUCT(BlueprintType)
 struct T66_API FT66RarityIntRanges
@@ -205,12 +204,10 @@ public:
 	float GetDifficultyHeadshotStunDurationSeconds(ET66Difficulty Difficulty) const;
 
 private:
-	void QueueTuningDataTableLoad();
-	void HandleTuningDataTableLoaded();
+	void LoadTuningDataTable();
 	bool IsTuningReady(const TCHAR* Caller) const;
 
 	FT66PlayerExperienceTuningTable CachedTuning;
 	bool bTuningLoaded = false;
 	mutable bool bWarnedTuningUnavailable = false;
-	TSharedPtr<FStreamableHandle> TuningDataTableLoadHandle;
 };

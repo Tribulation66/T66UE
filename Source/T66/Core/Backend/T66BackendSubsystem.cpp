@@ -174,7 +174,7 @@ namespace
 		Summary->SkillRating0To100 = 80 - (Entry.Rank * 2);
 		Summary->EquippedIdols = {
 			FName(TEXT("Idol_Fire_AOE")),
-			FName(TEXT("Idol_Ice_Pierce")),
+			FName(TEXT("Idol_Ice_Summon")),
 			FName(TEXT("Idol_Wind_Bounce"))
 		};
 		Summary->EquippedIdolTiers = { 1, 2, 3 };
@@ -186,7 +186,7 @@ namespace
 		};
 		Summary->EquippedIdolCategories = {
 			ET66AttackCategory::AOE,
-			ET66AttackCategory::Pierce,
+			ET66AttackCategory::AOE,
 			ET66AttackCategory::Bounce
 		};
 		Summary->Inventory = { FName(TEXT("Item_GoldTooth")), FName(TEXT("Item_TravelerBoots")), FName(TEXT("Item_LuckyCoin")) };

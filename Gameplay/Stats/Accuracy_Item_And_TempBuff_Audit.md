@@ -12,17 +12,17 @@ Live primary-to-secondary map:
 - `Damage`
   - `AoeDamage`
   - `BounceDamage`
-  - `PierceDamage`
+  - `SummonDamage`
   - `DotDamage`
 - `AttackSpeed`
   - `AoeSpeed`
   - `BounceSpeed`
-  - `PierceSpeed`
+  - `SummonSpeed`
   - `DotSpeed`
 - `AttackScale`
   - `AoeScale`
   - `BounceScale`
-  - `PierceScale`
+  - `SummonScale`
   - `DotScale`
 - `Accuracy`
   - `CritDamage`

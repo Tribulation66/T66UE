@@ -1,28 +1,16 @@
-﻿// Copyright Tribulation 66. All Rights Reserved.
+// Copyright Tribulation 66. All Rights Reserved.
 
 #include "Gameplay/T66WorldVisualSetup.h"
 
-#include "Core/T66PlayerSettingsSubsystem.h"
-#include "Gameplay/T66HeroBase.h"
-#include "Gameplay/T66PerActorLightDirection.h"
-#include "Gameplay/T66ThemeAtmosphereData.h"
-#include "Camera/PlayerCameraManager.h"
-#include "Components/ExponentialHeightFogComponent.h"
-#include "Components/MeshComponent.h"
-#include "Components/PointLightComponent.h"
-#include "Components/SkyLightComponent.h"
 #include "Engine/DirectionalLight.h"
 #include "Components/DirectionalLightComponent.h"
-#include "Gameplay/T66ThemeAtmosphereData.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "Engine/PostProcessVolume.h"
 #include "Engine/SkyLight.h"
-#include "Engine/TextureCube.h"
+#include "Components/SkyLightComponent.h"
 #include "Engine/World.h"
 #include "Components/SkyAtmosphereComponent.h"
 #include "EngineUtils.h"
-#include "GameFramework/PlayerController.h"
-#include "Materials/MaterialInstanceDynamic.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogT66WorldVisualSetup, Log, All);
 
@@ -32,77 +20,6 @@ namespace
 	static const FName T66AtmosphereSparedTag(TEXT("T66_AtmosphereSpared"));
 	static const FName T66NeutralPostProcessTag(TEXT("T66_NeutralPostProcess"));
 	static const FName T66ThemePostProcessTag(TEXT("T66_ThemeAtmospherePostProcess"));
-	struct FRegisteredToonMaterial
-	{
-		TWeakObjectPtr<UMeshComponent> Component;
-		TWeakObjectPtr<UMaterialInstanceDynamic> MID;
-		ET66ToonMaterialKind Kind = ET66ToonMaterialKind::Character;
-		int32 MaterialIndex = 0;
-	};
-
-	static TArray<FRegisteredToonMaterial> GRegisteredToonMaterials;
-
-	static FLinearColor T66LightDirectionToColor(const FVector& Direction)
-	{
-		const FVector Normalized = Direction.GetSafeNormal(UE_SMALL_NUMBER, FVector(-0.4f, 0.6f, -0.7f));
-		return FLinearColor(Normalized.X, Normalized.Y, Normalized.Z, 0.0f);
-	}
-
-	static FVector T66ResolveCharacterLightDirection(UMeshComponent* Component, const FT66ThemeCelAtmosphere& Cel)
-	{
-		FVector LightDirection = Cel.LightDirection;
-		// Per-actor light-direction override is disabled under the single shared rig (reversible).
-		if (Component && !T66ThemeAtmosphereData::IsSingleLightingRigEnabled())
-		{
-			if (const AActor* Owner = Component->GetOwner())
-			{
-				if (const UT66PerActorLightDirection* OverrideComponent = Owner->FindComponentByClass<UT66PerActorLightDirection>())
-				{
-					OverrideComponent->GetEffectiveLightDirection(LightDirection);
-				}
-			}
-		}
-		return LightDirection;
-	}
-
-	static void T66ApplyCelParametersToMID(UMeshComponent* Component, UMaterialInstanceDynamic* MID, const ET66ToonMaterialKind Kind, const FT66ThemeAtmosphereSpec& Spec)
-	{
-		if (!MID)
-		{
-			return;
-		}
-
-		const FT66ThemeCelAtmosphere& Cel = Spec.CelAtmosphere;
-		if (Kind == ET66ToonMaterialKind::Outline)
-		{
-			MID->SetVectorParameterValue(TEXT("OutlineColor"), Cel.OutlineColor);
-			MID->SetScalarParameterValue(TEXT("OutlineWidth"), Cel.OutlineWidth);
-			MID->SetScalarParameterValue(TEXT("OutlineBaseWidth"), Cel.OutlineWidth);
-			MID->SetScalarParameterValue(TEXT("OutlineReferenceDistance"), Cel.OutlineReferenceDistance);
-			MID->SetScalarParameterValue(TEXT("OutlineReferenceFOVTanHalf"), Cel.OutlineReferenceFOVTanHalf);
-			MID->SetScalarParameterValue(TEXT("OutlineDepthOffsetScalar"), Cel.OutlineDepthOffsetScalar);
-			return;
-		}
-
-		MID->SetVectorParameterValue(TEXT("LightDirection"), T66LightDirectionToColor(T66ResolveCharacterLightDirection(Component, Cel)));
-		MID->SetScalarParameterValue(TEXT("RampStep1"), Cel.RampStep1);
-		MID->SetScalarParameterValue(TEXT("RampStep2"), Cel.RampStep2);
-
-		if (Kind == ET66ToonMaterialKind::Environment)
-		{
-			MID->SetVectorParameterValue(TEXT("EnvShadeColor"), Cel.EnvShadeColor);
-			MID->SetVectorParameterValue(TEXT("EnvMidtoneColor"), Cel.EnvMidtoneColor);
-			MID->SetVectorParameterValue(TEXT("EnvLitColor"), Cel.EnvLitColor);
-			return;
-		}
-
-		MID->SetVectorParameterValue(TEXT("ShadeColor"), Cel.ShadeColor);
-		MID->SetVectorParameterValue(TEXT("MidtoneColor"), Cel.MidtoneColor);
-		MID->SetVectorParameterValue(TEXT("LitColor"), Cel.LitColor);
-		MID->SetVectorParameterValue(TEXT("RimColor"), Cel.RimColor);
-		MID->SetScalarParameterValue(TEXT("RimPower"), Cel.RimPower);
-		MID->SetScalarParameterValue(TEXT("RimStrength"), Cel.RimStrength);
-	}
 
 	template <typename TActor>
 	static int32 T66DestroyActorsOfType(UWorld* World)
@@ -321,133 +238,8 @@ namespace
 		PPS.ColorSaturation = FVector4(0.95f, 0.95f, 0.95f, 1.0f);
 	}
 
-	static ASkyLight* T66FindOrCreateAtmosphereSkyLight(UWorld* World)
-	{
-		if (!World)
-		{
-			return nullptr;
-		}
-
-		if (ASkyLight* Existing = T66FindActorWithTag<ASkyLight>(World, T66AtmosphereSparedTag))
-		{
-			return Existing;
-		}
-
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		ASkyLight* SkyLight = World->SpawnActor<ASkyLight>(
-			ASkyLight::StaticClass(),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			SpawnParams);
-		if (SkyLight)
-		{
-			SkyLight->Tags.AddUnique(T66AtmosphereSparedTag);
-		}
-		return SkyLight;
-	}
-
-	static void T66ApplyAtmosphereSkyLight(ASkyLight* SkyLight, const FT66ThemeAtmosphereSpec& Spec)
-	{
-		if (!SkyLight)
-		{
-			return;
-		}
-
-		SkyLight->Tags.AddUnique(T66AtmosphereSparedTag);
-		if (USkyLightComponent* SkyComponent = SkyLight->GetLightComponent())
-		{
-			SkyComponent->SetMobility(EComponentMobility::Movable);
-			SkyComponent->SourceType = SLS_SpecifiedCubemap;
-			SkyComponent->Cubemap = nullptr;
-			SkyComponent->SetIntensity(Spec.SkyLightIntensity);
-			SkyComponent->SetLightColor(Spec.SkyLightColor);
-			SkyComponent->SetLowerHemisphereColor(Spec.SkyLightColor);
-			SkyComponent->SetCastShadows(false);
-			SkyComponent->bRealTimeCapture = false;
-		}
-
-		UE_LOG(
-			LogT66WorldVisualSetup,
-			Display,
-			TEXT("[ATMOSPHERE] SkyLight setup: intensity=%.3f color=(%.3f, %.3f, %.3f) %s"),
-			Spec.SkyLightIntensity,
-			Spec.SkyLightColor.R,
-			Spec.SkyLightColor.G,
-			Spec.SkyLightColor.B,
-			Spec.SkyLightIntensity <= KINDA_SMALL_NUMBER ? TEXT("(decommissioned as ambient source)") : TEXT(""));
-	}
-
-	static float T66ResolveFogDensity(UWorld* World, const FT66ThemeAtmosphereSpec& Spec)
-	{
-		if (!World)
-		{
-			return Spec.FogDensity;
-		}
-
-		const UGameInstance* GameInstance = World->GetGameInstance();
-		const UT66PlayerSettingsSubsystem* PlayerSettings = GameInstance
-			? GameInstance->GetSubsystem<UT66PlayerSettingsSubsystem>()
-			: nullptr;
-		if (!PlayerSettings)
-		{
-			return Spec.FogDensity;
-		}
-
-		if (!PlayerSettings->GetFogEnabled())
-		{
-			return 0.0f;
-		}
-
-		return Spec.FogDensity * (PlayerSettings->GetFogIntensityPercent() * 0.01f);
-	}
-
-	static AExponentialHeightFog* T66FindOrCreateAtmosphereFog(UWorld* World)
-	{
-		if (!World)
-		{
-			return nullptr;
-		}
-
-		if (AExponentialHeightFog* Existing = T66FindActorWithTag<AExponentialHeightFog>(World, T66AtmosphereSparedTag))
-		{
-			return Existing;
-		}
-
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		AExponentialHeightFog* Fog = World->SpawnActor<AExponentialHeightFog>(
-			AExponentialHeightFog::StaticClass(),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			SpawnParams);
-		if (Fog)
-		{
-			Fog->Tags.AddUnique(T66AtmosphereSparedTag);
-		}
-		return Fog;
-	}
-
-	static void T66ApplyAtmosphereFog(UWorld* World, AExponentialHeightFog* Fog, const FT66ThemeAtmosphereSpec& Spec)
-	{
-		if (!Fog)
-		{
-			return;
-		}
-
-		Fog->Tags.AddUnique(T66AtmosphereSparedTag);
-		if (UExponentialHeightFogComponent* FogComponent = Fog->GetComponent())
-		{
-			FogComponent->SetMobility(EComponentMobility::Movable);
-			FogComponent->SetFogDensity(T66ResolveFogDensity(World, Spec));
-			FogComponent->SetFogHeightFalloff(Spec.FogHeightFalloff);
-			FogComponent->SetFogInscatteringColor(Spec.FogInscatteringColor);
-			FogComponent->SetStartDistance(Spec.FogStartDistance);
-			FogComponent->SetFogCutoffDistance(Spec.FogCutoffDistance);
-			FogComponent->SetVolumetricFog(false);
-		}
-	}
-
+	// Hosts the single-rig WINNING post-process volume (the tag predates the per-theme purge;
+	// kept so existing tagged volumes in live worlds are reused rather than duplicated).
 	static APostProcessVolume* T66FindOrCreateThemePostProcessVolume(UWorld* World)
 	{
 		if (!World)
@@ -478,108 +270,100 @@ namespace
 		return Volume;
 	}
 
-	static void T66ApplyThemePostProcess(APostProcessVolume* Volume, const FT66ThemeAtmosphereSpec& Spec)
-	{
-		if (!Volume)
-		{
-			return;
-		}
-
-		Volume->Tags.AddUnique(T66AtmosphereSparedTag);
-		Volume->Tags.AddUnique(T66ThemePostProcessTag);
-		Volume->bUnbound = true;
-		Volume->Priority = 1000.0f;
-		Volume->BlendWeight = 1.0f;
-
-		FPostProcessSettings& PPS = Volume->Settings;
-		PPS.bOverride_ColorGainShadows = true;
-		PPS.ColorGainShadows = Spec.ColorGradeShadowsTint;
-		PPS.bOverride_ColorGainMidtones = true;
-		PPS.ColorGainMidtones = Spec.ColorGradeMidtonesTint;
-		PPS.bOverride_ColorGainHighlights = true;
-		PPS.ColorGainHighlights = Spec.ColorGradeHighlightsTint;
-		PPS.bOverride_ColorSaturation = true;
-		PPS.ColorSaturation = Spec.ColorGradeSaturation;
-		PPS.bOverride_ColorContrast = true;
-		PPS.ColorContrast = Spec.ColorGradeContrast;
-		PPS.bOverride_ColorGain = true;
-		PPS.ColorGain = Spec.ColorGradeGain;
-
-		// Ambient cubemap: primary ambient source for stylized indoor scenes.
-		UTextureCube* LoadedCubemap = Spec.AmbientCubemap.LoadSynchronous();
-		PPS.AmbientCubemap = LoadedCubemap;
-		PPS.AmbientCubemapIntensity = Spec.AmbientCubemapIntensity;
-		PPS.bOverride_AmbientCubemapIntensity = true;
-		PPS.AmbientCubemapTint = Spec.AmbientCubemapTint;
-		PPS.bOverride_AmbientCubemapTint = true;
-
-		const FString AppliedCubemapPath = PPS.AmbientCubemap
-			? PPS.AmbientCubemap->GetPathName()
-			: FString(TEXT("None"));
-		UE_LOG(
-			LogT66WorldVisualSetup,
-			Display,
-			TEXT("[ATMOSPHERE] Ambient cubemap setup: path=%s loaded=%s intensity=%.2f tint=(%.3f, %.3f, %.3f) volume=%s applied=%s"),
-			*Spec.AmbientCubemap.ToSoftObjectPath().ToString(),
-			LoadedCubemap ? TEXT("yes") : TEXT("no"),
-			Spec.AmbientCubemapIntensity,
-			Spec.AmbientCubemapTint.R,
-			Spec.AmbientCubemapTint.G,
-			Spec.AmbientCubemapTint.B,
-			*Volume->GetName(),
-			*AppliedCubemapPath);
-	}
-
-	// Soft directional rig for the single shared lighting: one soft KEY + two neutral FILL directionals
-	// (the exact rig that proved out on Hero 1). The per-theme atmospheres carried directional shading
-	// via the cel system (now disabled), so the single rig provides real directionals. The fills replace
-	// the ambient's role so the world stays clearly lit without a strong ambient cubemap (which would
-	// over-brighten the subsurface character material). All tagged spared so neutral re-setup keeps them.
+	// TRUE single rig: ONE soft directional KEY + ONE neutral SkyLight fill. The skylight replaces
+	// the two former fill directionals (one directional also kills the engine's "multiple directional
+	// lights are competing for forward shading" banner). Real-time capture keeps the fill tracking the
+	// key-lit scene under the fixed manual exposure. Both tagged spared so neutral re-setup keeps them.
+	static constexpr float T66_SingleRigKeyIntensity = 10.0f;     // soft key (was 9.0 with 2 fills)
+	static constexpr float T66_SingleRigSkyLightIntensity = 1.6f; // the fill knob
 	static void T66EnsureSingleRigDirectionalLight(UWorld* World)
 	{
 		if (!World)
 		{
 			return;
 		}
-		struct FT66RigLight { const TCHAR* Tag; FRotator Rot; float Intensity; bool bShadows; float SourceAngle; };
-		static const FT66RigLight RigLights[] = {
-			{ TEXT("T66_SingleRigKey"),   FRotator(-50.f, -40.f, 0.f), 9.0f, true,  3.0f }, // soft key
-			{ TEXT("T66_SingleRigFillA"), FRotator(-22.f, 150.f, 0.f), 3.5f, false, 0.f },  // opposite fill
-			{ TEXT("T66_SingleRigFillB"), FRotator(-8.f,  25.f,  0.f), 2.0f, false, 0.f },  // gentle front fill
-		};
-		for (const FT66RigLight& L : RigLights)
+		static const FName KeyTag(TEXT("T66_SingleRigKey"));
+		const FRotator KeyRot(-50.f, -40.f, 0.f);
+		ADirectionalLight* Key = T66FindActorWithTag<ADirectionalLight>(World, KeyTag);
+		if (!Key)
 		{
-			const FName Tag(L.Tag);
-			ADirectionalLight* D = T66FindActorWithTag<ADirectionalLight>(World, Tag);
-			if (!D)
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			Key = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FVector(0.f, 0.f, 2000.f), KeyRot, SpawnParams);
+		}
+		if (Key)
+		{
+			Key->Tags.AddUnique(T66AtmosphereSparedTag);
+			Key->Tags.AddUnique(KeyTag);
+			Key->SetMobility(EComponentMobility::Movable);
+			Key->SetActorRotation(KeyRot);
+			if (UDirectionalLightComponent* DLC = Cast<UDirectionalLightComponent>(Key->GetLightComponent()))
 			{
-				FActorSpawnParameters SpawnParams;
-				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-				D = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FVector(0.f, 0.f, 2000.f), L.Rot, SpawnParams);
-			}
-			if (!D)
-			{
-				continue;
-			}
-			D->Tags.AddUnique(T66AtmosphereSparedTag);
-			D->Tags.AddUnique(Tag);
-			D->SetMobility(EComponentMobility::Movable);
-			D->SetActorRotation(L.Rot);
-			if (UDirectionalLightComponent* DLC = Cast<UDirectionalLightComponent>(D->GetLightComponent()))
-			{
-				DLC->SetIntensity(L.Intensity);
+				DLC->SetIntensity(T66_SingleRigKeyIntensity);
 				DLC->SetLightColor(FLinearColor::White);
-				DLC->LightSourceAngle = L.SourceAngle;
-				DLC->SetCastShadows(L.bShadows);
+				DLC->LightSourceAngle = 3.0f; // soft shadows
+				DLC->SetCastShadows(true);
 				DLC->MarkRenderStateDirty();
 			}
 		}
+
+		// Retire any old fill directionals left in reused worlds from the 3-directional era.
+		for (const TCHAR* OldFill : { TEXT("T66_SingleRigFillA"), TEXT("T66_SingleRigFillB") })
+		{
+			if (ADirectionalLight* Fill = T66FindActorWithTag<ADirectionalLight>(World, FName(OldFill)))
+			{
+				Fill->Destroy();
+			}
+		}
+
+		static const FName SkyTag(TEXT("T66_SingleRigSkyLight"));
+		ASkyLight* Sky = T66FindActorWithTag<ASkyLight>(World, SkyTag);
+		if (!Sky)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			Sky = World->SpawnActor<ASkyLight>(ASkyLight::StaticClass(), FVector(0.f, 0.f, 2000.f), FRotator::ZeroRotator, SpawnParams);
+		}
+		if (Sky)
+		{
+			Sky->Tags.AddUnique(T66AtmosphereSparedTag);
+			Sky->Tags.AddUnique(SkyTag);
+			if (USkyLightComponent* SkyComp = Sky->GetLightComponent())
+			{
+				SkyComp->SetMobility(EComponentMobility::Movable);
+				SkyComp->SetIntensity(T66_SingleRigSkyLightIntensity);
+				SkyComp->SetLightColor(FLinearColor::White);
+				SkyComp->SetLowerHemisphereColor(FLinearColor::White); // even fill from below too — no harsh CG dark
+				// One-shot scene captures (real-time capture wants a SkyAtmosphere and banners without
+				// one): capture now, then once more after procedural geometry has built so the fill
+				// matches the key-lit level rather than the half-loaded world.
+				SkyComp->bRealTimeCapture = false;
+				SkyComp->MarkRenderStateDirty();
+				SkyComp->RecaptureSky();
+				FTimerHandle RecaptureHandle;
+				TWeakObjectPtr<USkyLightComponent> WeakSky(SkyComp);
+				World->GetTimerManager().SetTimer(RecaptureHandle, FTimerDelegate::CreateLambda([WeakSky]()
+				{
+					if (USkyLightComponent* Comp = WeakSky.Get())
+					{
+						Comp->RecaptureSky();
+					}
+				}), 1.0f, false);
+			}
+		}
+
 		int32 DirectionalCount = 0;
 		for (TActorIterator<ADirectionalLight> It(World); It; ++It)
 		{
 			++DirectionalCount;
 		}
-		UE_LOG(LogT66WorldVisualSetup, Display, TEXT("[SingleRig] Directional light count in world = %d (expected 3)"), DirectionalCount);
+		int32 SkyCount = 0;
+		for (TActorIterator<ASkyLight> It(World); It; ++It)
+		{
+			++SkyCount;
+		}
+		UE_LOG(LogT66WorldVisualSetup, Display, TEXT("[SingleRig] Lights: directional=%d (expected 1) skylight=%d (expected 1) key=%.1f sky=%.1f"),
+			DirectionalCount, SkyCount, T66_SingleRigKeyIntensity, T66_SingleRigSkyLightIntensity);
 	}
 
 	// THE lighting + post state, applied to every world (gameplay, hub, menus, boss floors):
@@ -633,12 +417,8 @@ void FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(UWorld* World)
 		T66ApplyNeutralPostProcess(PPVolume);
 	}
 
-	// The single rig is THE lighting path everywhere — hub, menus, and bootstrap worlds included
-	// (these only run the neutral setup, never the themed atmosphere path).
-	if (T66ThemeAtmosphereData::IsSingleLightingRigEnabled())
-	{
-		T66ApplySingleRigToWorld(World, T66FindOrCreateThemePostProcessVolume(World));
-	}
+	// The single rig is THE lighting path everywhere — hub, menus, and bootstrap worlds included.
+	T66ApplySingleRigToWorld(World, T66FindOrCreateThemePostProcessVolume(World));
 
 	const int32 RemovedActorCount = RemovedAtmospheres
 		+ RemovedDirectionalLights
@@ -664,214 +444,18 @@ void FT66WorldVisualSetup::EnsureNeutralVisualSetupForWorld(UWorld* World)
 	}
 }
 
-void FT66WorldVisualSetup::EnsureAtmosphereSkyLightForWorld(UWorld* World)
+void FT66WorldVisualSetup::EnsureAtmosphereForWorld(UWorld* World)
 {
 	if (!World)
 	{
 		return;
 	}
 
-	const FT66ThemeAtmosphereSpec& Spec = T66ThemeAtmosphereData::GetSpecForTheme(T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon);
-	T66ApplyAtmosphereSkyLight(T66FindOrCreateAtmosphereSkyLight(World), Spec);
+	// One shared bright soft rig everywhere: real soft directional key + fills, one winning PPV.
+	// The per-theme atmosphere/fog/skylight/cel/torch/carry systems are deleted.
+	T66ApplySingleRigToWorld(World, T66FindOrCreateThemePostProcessVolume(World));
 }
 
-void FT66WorldVisualSetup::EnsureAtmosphereForWorld(UWorld* World, const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme)
-{
-	if (!World)
-	{
-		return;
-	}
-
-	const FT66ThemeAtmosphereSpec& Spec = T66ThemeAtmosphereData::GetSpecForTheme(Theme);
-	T66ApplyAtmosphereSkyLight(T66FindOrCreateAtmosphereSkyLight(World), Spec);
-	T66ApplyAtmosphereFog(World, T66FindOrCreateAtmosphereFog(World), Spec);
-	APostProcessVolume* ThemePostProcess = T66FindOrCreateThemePostProcessVolume(World);
-	T66ApplyThemePostProcess(ThemePostProcess, Spec);
-	if (T66ThemeAtmosphereData::IsSingleLightingRigEnabled())
-	{
-		// One shared bright soft rig everywhere: real soft directional key + fills, one winning PPV.
-		// Torches + carry are already zeroed by the single-rig spec; carry-light + cel-atmosphere
-		// applies are skipped so the per-theme look stays fully bypassed.
-		T66ApplySingleRigToWorld(World, ThemePostProcess);
-	}
-	else
-	{
-		ApplyAtmosphereToHeroCarryLights(World, Spec);
-		ApplyToonCelAtmosphereToRegisteredMaterials(Theme);
-	}
-}
-
-void FT66WorldVisualSetup::ApplyAtmosphereToHeroCarryLights(UWorld* World, const FT66ThemeAtmosphereSpec& Spec)
-{
-	if (!World)
-	{
-		return;
-	}
-
-	int32 HeroCount = 0;
-	int32 AppliedCount = 0;
-	for (TActorIterator<AT66HeroBase> It(World); It; ++It)
-	{
-		AT66HeroBase* Hero = *It;
-		if (!Hero)
-		{
-			continue;
-		}
-
-		++HeroCount;
-		if (UPointLightComponent* Carry = Hero->CarryLight)
-		{
-			Carry->SetIntensity(Spec.CarryLightIntensity);
-			Carry->SetAttenuationRadius(Spec.CarryLightAttenuationRadius);
-			Carry->SetLightColor(Spec.CarryLightColor);
-			Carry->SetLightFalloffExponent(Spec.CarryLightFalloffExponent);
-			Carry->SetUseInverseSquaredFalloff(false);
-			Carry->SetCastShadows(false);
-			Carry->SetRelativeLocation(FVector(0.0f, 0.0f, Spec.CarryLightVerticalOffset));
-			++AppliedCount;
-		}
-	}
-
-	UE_LOG(
-		LogT66WorldVisualSetup,
-		Log,
-		TEXT("[ATMOSPHERE] Applied carry-light spec to %d/%d hero(es) (intensity=%.1f radius=%.1f color=%s falloff=%.2f z=%.1f)."),
-		AppliedCount,
-		HeroCount,
-		Spec.CarryLightIntensity,
-		Spec.CarryLightAttenuationRadius,
-		*Spec.CarryLightColor.ToString(),
-		Spec.CarryLightFalloffExponent,
-		Spec.CarryLightVerticalOffset);
-}
-
-UMaterialInstanceDynamic* FT66WorldVisualSetup::RegisterToonMaterial(UMeshComponent* Component, const ET66ToonMaterialKind Kind, const int32 MaterialIndex)
-{
-	if (!Component || MaterialIndex < 0)
-	{
-		return nullptr;
-	}
-
-	UMaterialInstanceDynamic* MID = Component->CreateAndSetMaterialInstanceDynamic(MaterialIndex);
-	if (!MID)
-	{
-		return nullptr;
-	}
-
-	GRegisteredToonMaterials.RemoveAll([](const FRegisteredToonMaterial& Entry)
-	{
-		return !Entry.Component.IsValid() || Entry.Component.Get() == nullptr;
-	});
-
-	for (FRegisteredToonMaterial& Entry : GRegisteredToonMaterials)
-	{
-		if (Entry.Component.Get() == Component && Entry.MaterialIndex == MaterialIndex)
-		{
-			Entry.MID = MID;
-			Entry.Kind = Kind;
-			T66ApplyCelParametersToMID(Component, MID, Kind, T66ThemeAtmosphereData::GetSpecForTheme(T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon));
-			return MID;
-		}
-	}
-
-	FRegisteredToonMaterial Entry;
-	Entry.Component = Component;
-	Entry.MID = MID;
-	Entry.Kind = Kind;
-	Entry.MaterialIndex = MaterialIndex;
-	GRegisteredToonMaterials.Add(Entry);
-	T66ApplyCelParametersToMID(Component, MID, Kind, T66ThemeAtmosphereData::GetSpecForTheme(T66TowerMapTerrain::ET66TowerGameplayLevelTheme::Dungeon));
-	return MID;
-}
-
-void FT66WorldVisualSetup::UnregisterToonMaterial(UMeshComponent* Component)
-{
-	if (!Component)
-	{
-		return;
-	}
-
-	GRegisteredToonMaterials.RemoveAll([Component](const FRegisteredToonMaterial& Entry)
-	{
-		return !Entry.Component.IsValid() || Entry.Component.Get() == Component;
-	});
-}
-
-int32 FT66WorldVisualSetup::ApplyToonCelAtmosphereToRegisteredMaterials(const T66TowerMapTerrain::ET66TowerGameplayLevelTheme Theme)
-{
-	const FT66ThemeAtmosphereSpec& Spec = T66ThemeAtmosphereData::GetSpecForTheme(Theme);
-	GRegisteredToonMaterials.RemoveAll([](const FRegisteredToonMaterial& Entry)
-	{
-		return !Entry.Component.IsValid() || !Entry.MID.IsValid();
-	});
-
-	int32 AppliedCount = 0;
-	for (const FRegisteredToonMaterial& Entry : GRegisteredToonMaterials)
-	{
-		if (UMaterialInstanceDynamic* MID = Entry.MID.Get())
-		{
-			T66ApplyCelParametersToMID(Entry.Component.Get(), MID, Entry.Kind, Spec);
-			++AppliedCount;
-		}
-	}
-
-	UE_LOG(
-		LogT66WorldVisualSetup,
-		Log,
-		TEXT("[TOON] Applied cel atmosphere theme=%d to %d registered toon material(s)."),
-		static_cast<int32>(Theme),
-		AppliedCount);
-	return AppliedCount;
-}
-
-int32 FT66WorldVisualSetup::UpdateToonOutlineViewParameters(UWorld* World)
-{
-	GRegisteredToonMaterials.RemoveAll([](const FRegisteredToonMaterial& Entry)
-	{
-		return !Entry.Component.IsValid() || !Entry.MID.IsValid();
-	});
-
-	float FOVDegrees = 90.0f;
-	bool bResolvedCameraFOV = false;
-	if (World)
-	{
-		if (const APlayerController* PlayerController = World->GetFirstPlayerController())
-		{
-			if (const APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager)
-			{
-				FOVDegrees = CameraManager->GetFOVAngle();
-				bResolvedCameraFOV = true;
-			}
-		}
-	}
-
-	static bool bLoggedFallbackFOV = false;
-	if (!bResolvedCameraFOV && !bLoggedFallbackFOV)
-	{
-		bLoggedFallbackFOV = true;
-		UE_LOG(LogT66WorldVisualSetup, Warning, TEXT("[TOON] Could not resolve active camera FOV for outline material parameters; using 90 degree fallback."));
-	}
-
-	const float ClampedFOV = FMath::Clamp(FOVDegrees, 5.0f, 170.0f);
-	const float OutlineFOVTanHalf = FMath::Tan(FMath::DegreesToRadians(ClampedFOV) * 0.5f);
-
-	int32 AppliedCount = 0;
-	for (const FRegisteredToonMaterial& Entry : GRegisteredToonMaterials)
-	{
-		if (Entry.Kind != ET66ToonMaterialKind::Outline)
-		{
-			continue;
-		}
-
-		if (UMaterialInstanceDynamic* MID = Entry.MID.Get())
-		{
-			MID->SetScalarParameterValue(TEXT("OutlineFOVTanHalf"), OutlineFOVTanHalf);
-			++AppliedCount;
-		}
-	}
-
-	return AppliedCount;
-}
 APostProcessVolume* FT66WorldVisualSetup::FindOrCreateRuntimePostProcessVolume(UWorld* World)
 {
 	return T66FindOrCreateUnboundPostProcessVolume(World);

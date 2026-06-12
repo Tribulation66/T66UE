@@ -259,7 +259,6 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildFlatControlsSettingsUI()
 		{ TEXT("ToggleGamerMode"), Loc ? Loc->GetText_ControlToggleGamerMode() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Gamer Mode Flat", "Toggle Gamer Mode (Hitboxes)"), false, FName(TEXT("ToggleGamerMode")), 1.f, true, false },
 		{ TEXT("RestartRun"), Loc ? Loc->GetText_ControlRestartRun() : NSLOCTEXT("T66.Settings.Fallback", "Restart Run Flat", "Restart Run"), false, FName(TEXT("RestartRun")), 1.f, true, false },
 		{ TEXT("Leap"), Loc ? Loc->GetText_ControlLeap() : NSLOCTEXT("T66.Settings.Fallback", "Leap Flat", "Leap"), false, FName(TEXT("Leap")), 1.f, true, true },
-		{ TEXT("Ultimate"), Loc ? Loc->GetText_ControlUltimate() : NSLOCTEXT("T66.Settings.Fallback", "Ultimate Flat", "Ultimate"), false, FName(TEXT("Ultimate")), 1.f, true, true },
 		{ TEXT("AttackLock"), Loc ? Loc->GetText_ControlAttackLock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Lock Flat", "Attack Lock"), false, FName(TEXT("AttackLock")), 1.f, true, true },
 		{ TEXT("AttackUnlock"), Loc ? Loc->GetText_ControlAttackUnlock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Unlock Flat", "Attack Unlock"), false, FName(TEXT("AttackUnlock")), 1.f, true, true },
 		{ TEXT("ToggleMouseLock"), Loc ? Loc->GetText_ControlToggleMouseLock() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Mouse Lock Flat", "Toggle Mouse Lock"), false, FName(TEXT("ToggleMouseLock")), 1.f, true, true }
@@ -574,7 +573,6 @@ TSharedRef<SWidget> UT66SettingsScreen::BuildControlsTab()
 		{ Loc ? Loc->GetText_ControlToggleGamerMode() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Gamer Mode (Hitboxes)", "Toggle Gamer Mode (Hitboxes)"), false, FName(TEXT("ToggleGamerMode")), 1.f, true, false },
 		{ Loc ? Loc->GetText_ControlRestartRun() : NSLOCTEXT("T66.Settings.Fallback", "Restart Run", "Restart Run"), false, FName(TEXT("RestartRun")), 1.f, true, false },
 		{ Loc ? Loc->GetText_ControlLeap() : NSLOCTEXT("T66.Settings.Fallback", "Leap", "Leap"), false, FName(TEXT("Leap")), 1.f, true, true },
-		{ Loc ? Loc->GetText_ControlUltimate() : NSLOCTEXT("T66.Settings.Fallback", "Ultimate", "Ultimate"), false, FName(TEXT("Ultimate")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlAttackLock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Lock", "Attack Lock"), false, FName(TEXT("AttackLock")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlAttackUnlock() : NSLOCTEXT("T66.Settings.Fallback", "Attack Unlock", "Attack Unlock"), false, FName(TEXT("AttackUnlock")), 1.f, true, true },
 		{ Loc ? Loc->GetText_ControlToggleMouseLock() : NSLOCTEXT("T66.Settings.Fallback", "Toggle Mouse Lock", "Toggle Mouse Lock"), false, FName(TEXT("ToggleMouseLock")), 1.f, true, true }

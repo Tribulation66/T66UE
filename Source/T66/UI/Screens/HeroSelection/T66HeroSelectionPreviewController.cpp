@@ -178,6 +178,12 @@ void UT66HeroSelectionPreviewController::ApplyHeroPreviewVideo(
 	}
 	else if (!PreviewedHeroID.IsNone())
 	{
+		const FName PreviewVisualHeroID = GameInstance
+			? GameInstance->ResolveCustomHeroVisualSourceHeroID(PreviewedHeroID)
+			: PreviewedHeroID;
+		const ET66BodyType PreviewBodyType = GameInstance
+			? GameInstance->ResolveCustomHeroBodyType(PreviewedHeroID, SelectedBodyType)
+			: SelectedBodyType;
 		FName EffectiveSkinID = ResolveEffectiveHeroSkinID(GameInstance);
 		if (EffectiveSkinID.IsNone())
 		{
@@ -185,7 +191,7 @@ void UT66HeroSelectionPreviewController::ApplyHeroPreviewVideo(
 		}
 
 		FT66FrontendVideoAsset VideoAsset;
-		if (T66FrontendVideoCatalog::ResolveHeroSelection(PreviewedHeroID, EffectiveSkinID, SelectedBodyType, VideoAsset))
+		if (T66FrontendVideoCatalog::ResolveHeroSelection(PreviewVisualHeroID, EffectiveSkinID, PreviewBodyType, VideoAsset))
 		{
 			if (!HeroPreviewVideoPlayer)
 			{

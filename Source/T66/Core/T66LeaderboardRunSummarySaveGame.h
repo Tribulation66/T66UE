@@ -377,7 +377,7 @@ public:
 	FName EquippedWeaponID = NAME_None;
 
 	UPROPERTY(SaveGame)
-	ET66AttackCategory EquippedWeaponBranch = ET66AttackCategory::Pierce;
+	ET66AttackCategory EquippedWeaponBranch = ET66AttackCategory::AOE;
 
 	UPROPERTY(SaveGame)
 	ET66WeaponRarity EquippedWeaponRarity = ET66WeaponRarity::Black;

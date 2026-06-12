@@ -519,6 +519,8 @@ void UT66RunStateSubsystem::BeginNewRun()
 	DifficultyTier = 0;
 	DifficultySkulls = 0;
 	TotemsActivatedCount = 0;
+	ShopStockSlots.Reset();
+	ShopStockLocked.Reset();
 	ResetShopForStage();
 	OwedBossIDs.Empty();
 	CowardiceGatesTakenCount = 0;

@@ -48,7 +48,7 @@ CombatImpactContext
   SourceType=<WeaponBase/Projectile/...>
   SourceID=<weapon binding ID>
   ParentSourceID=<None or upstream source>
-  AttackCategory=<AOE/DOT/Pierce/Bounce/...>
+  AttackCategory=<AOE/DOT/Summon/Bounce/...>
   ImpactPoint=<world xyz>
   ImpactPointValid=<0/1>
   DamageCenter=<world xyz>

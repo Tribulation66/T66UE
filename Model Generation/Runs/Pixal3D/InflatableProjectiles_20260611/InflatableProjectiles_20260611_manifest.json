@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "generated_utc": "2026-06-11T18:07:01.8327509Z",
+  "notes": [
+    "Inflatable projectile bodies for Hero1 weapon and current idol categories: AOE, Bounce, DOT, and Summon."
+  ],
+  "assets": [
+    {
+      "asset_id": "Hero1_Weapon_AOE_Crescent",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Electricity_AOE",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Electricity_Bounce",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Electricity_DOT",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Electricity_Summon",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Fire_AOE",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Fire_Bounce",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Fire_DOT",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Fire_Summon",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Ice_AOE",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Ice_Bounce",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Ice_DOT",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Ice_Summon",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Nature_AOE",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Nature_Bounce",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Nature_DOT",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Nature_Summon",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Wind_AOE",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Wind_Bounce",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Wind_DOT",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    },
+    {
+      "asset_id": "Idol_Wind_Summon",
+      "target_dir": "/Game/Weapons/Projectiles/FriendSlop/Inflatable",
+      "target_height": 120.0
+    }
+  ]
+}

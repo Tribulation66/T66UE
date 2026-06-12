@@ -118,7 +118,9 @@ Where this document contradicts the archived backend/reference docs, prefer this
 
 - No captured local log in this repo currently proves a successful full two-player join under the real AppID.
 - No captured local log currently proves the exact join failure point after invite acceptance in the newest setup.
-- No local evidence yet shows a run launched under `4464300`.
+- A 2026-06-11 staged smoke validated Steam initialization under `4464300`
+  and the computed Stage 1 `?listen` travel plan. This is still narrower than
+  a true two-player Steam invite/join/world-entry proof.
 
 ## 5. Current Observed Backend State
 
@@ -134,48 +136,50 @@ Where this document contradicts the archived backend/reference docs, prefer this
 
 ### 5.2 Live health check
 
-Live check performed on 2026-04-20:
+Live check performed on 2026-06-12:
 
 ```json
 {
   "status": "ok",
-  "timestamp": "2026-04-20T07:22:23.361Z",
+  "timestamp": "2026-06-12T00:16:41.545Z",
   "postgres": "ok",
   "postgres_counts": {
-    "player_profiles": 1,
-    "leaderboard_entries": 1,
-    "run_summaries": 4,
+    "player_profiles": 2844,
+    "leaderboard_entries": 608,
+    "run_summaries": 1514,
     "run_reports": 0,
-    "bug_reports": 405,
-    "account_restrictions": 0
+    "bug_reports": 200,
+    "account_restrictions": 1
   },
   "kv": "ok"
 }
 ```
 
-This means the earlier checklist note about production KV being unhealthy is stale, and the production alias was confirmed healthy again after the later 2026-04-19 leaderboard hotfix redeploy.
+Public `/api/health` no longer exposes table counts by default. Send
+`x-admin-password` to inspect detailed production counts.
 
 ### 5.3 Backend auth behavior
 
 - `src/lib/steam.ts` validates tickets against `env.STEAM_APP_ID` by default.
 - It can also allow additional AppIDs on a per-route basis through `allowedAppIds`.
-- This matters because the invite routes currently still allow `480`.
+- This matters because diagnostics intentionally still allows `480` during the
+  migration window.
 
 ### 5.4 Current route reality
 
-These backend routes still explicitly authenticate against `allowedAppIds: ["480"]`:
+These backend routes now use default `env.STEAM_APP_ID` auth and should track
+production `4464300` when the environment is configured correctly:
 
 - `C:\UE\Backend\src\app\api\party-invite\send\route.ts`
 - `C:\UE\Backend\src\app\api\party-invite\pending\route.ts`
 - `C:\UE\Backend\src\app\api\party-invite\respond\route.ts`
+
+This backend route explicitly accepts both real and legacy AppIDs:
+
 - `C:\UE\Backend\src\app\api\client-diagnostics\route.ts`
 
-Because `authenticateRequest()` also appends `env.STEAM_APP_ID`, these routes currently accept both:
-
-- legacy `480`
-- real app `4464300` (assuming the environment stays set to `4464300`)
-
-So the backend is currently in deliberate dual-AppID transition mode.
+So the production invite path is no longer hard-coded to legacy `480`; only
+diagnostics remains in deliberate dual-AppID transition mode.
 
 ### 5.5 Leaderboard moderation / proof retention reality
 
@@ -237,7 +241,11 @@ So the backend is currently in deliberate dual-AppID transition mode.
   - `/admin/appeals`
   - `/admin/reports`
   - `/admin/accounts`
-- There is still no separate email / Discord / webhook notification layer in this repo. Moderation intake is currently the admin portal plus the database-backed queues above.
+- `MODERATION_WEBHOOK_URL` now enables Discord-compatible notifications for
+  reports, quarantines, appeals, bug reports, multiplayer warning/error
+  diagnostics, streamer requests, and community submissions. Without that
+  Vercel env var, moderation intake remains the admin portal plus the
+  database-backed queues above.
 
 ## 6. Current Contradictions To Resolve
 
@@ -397,8 +405,12 @@ The migration to the real AppID is only complete when all of these are true:
 
 ## 12. Immediate Next Recommended Order
 
-1. Finish migrating client and invite backend auth from `480` to `4464300`.
-2. Verify a local staged build logs as `4464300`.
+1. Set/verify Vercel production env vars for `CRON_SECRET`,
+   `MODERATION_WEBHOOK_URL`, and Sentry (`SENTRY_DSN`, `SENTRY_ORG`,
+   `SENTRY_PROJECT`).
+2. Run `npm run leaderboard:cleanup-fixtures:dry-run` in `C:\UE\Backend`;
+   inspect the targeted rows, then run `npm run leaderboard:cleanup-fixtures`
+   only when ready to delete deterministic fixture data.
 3. Confirm Steamworks branch/package/key setup for `4464300`.
 4. Upload the first real private build through SteamPipe.
 5. Redeem the Release Override key on the tester account.

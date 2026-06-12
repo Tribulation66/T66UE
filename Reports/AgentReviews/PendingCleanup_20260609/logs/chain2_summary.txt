@@ -1,0 +1,4 @@
+compile: exit=0
+bpfix: exit=1
+worldprops: exit=1
+bp still has DT_HouseNPCs: False

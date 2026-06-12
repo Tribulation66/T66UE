@@ -878,7 +878,7 @@ void UT66GameplayHUDWidget::RefreshHUD()
 	FHeroData SelectedHeroData;
 	const bool bHasSelectedHeroData = GIAsT66 && GIAsT66->GetSelectedHeroData(SelectedHeroData);
 	const FName DesiredAbilityHeroID = bHasSelectedHeroData ? SelectedHeroData.HeroID : NAME_None;
-	ET66UltimateType DesiredUltimateType = bHasSelectedHeroData ? SelectedHeroData.UltimateType : ET66UltimateType::None;
+	ET66UltimateType DesiredUltimateType = ET66UltimateType::None;
 	ET66PassiveType DesiredPassiveType = RunState->GetPassiveType();
 	FWeaponData DesiredWeaponData;
 	bool bHasDesiredWeaponData = false;

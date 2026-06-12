@@ -93,12 +93,12 @@ namespace
 	{
 		switch (Category)
 		{
-		case ET66AttackCategory::Pierce: return TEXT("pierce");
 		case ET66AttackCategory::Bounce: return TEXT("bounce");
 		case ET66AttackCategory::AOE: return TEXT("aoe");
 		case ET66AttackCategory::DOT: return TEXT("dot");
 		case ET66AttackCategory::SingleTarget: return TEXT("single_target");
-		default: return TEXT("pierce");
+		case ET66AttackCategory::Summon: return TEXT("summon");
+		default: return TEXT("aoe");
 		}
 	}
 
@@ -225,16 +225,16 @@ TSharedPtr<FJsonObject> T66BackendRunSerializer::BuildRunJsonObject(
 		{
 		case ET66StatType::AoeDamage: KeyName = TEXT("AoeDamage"); break;
 		case ET66StatType::BounceDamage: KeyName = TEXT("BounceDamage"); break;
-		case ET66StatType::PierceDamage: KeyName = TEXT("PierceDamage"); break;
 		case ET66StatType::DotDamage: KeyName = TEXT("DotDamage"); break;
+		case ET66StatType::SummonDamage: KeyName = TEXT("SummonDamage"); break;
 		case ET66StatType::AoeSpeed: KeyName = TEXT("AoeSpeed"); break;
 		case ET66StatType::BounceSpeed: KeyName = TEXT("BounceSpeed"); break;
-		case ET66StatType::PierceSpeed: KeyName = TEXT("PierceSpeed"); break;
 		case ET66StatType::DotSpeed: KeyName = TEXT("DotSpeed"); break;
+		case ET66StatType::SummonSpeed: KeyName = TEXT("SummonSpeed"); break;
 		case ET66StatType::AoeScale: KeyName = TEXT("AoeScale"); break;
 		case ET66StatType::BounceScale: KeyName = TEXT("BounceScale"); break;
-		case ET66StatType::PierceScale: KeyName = TEXT("PierceScale"); break;
 		case ET66StatType::DotScale: KeyName = TEXT("DotScale"); break;
+		case ET66StatType::SummonScale: KeyName = TEXT("SummonScale"); break;
 		case ET66StatType::CritDamage: continue;
 		case ET66StatType::CritChance: KeyName = TEXT("CritChance"); break;
 		case ET66StatType::HeadshotChance: KeyName = TEXT("HeadshotChance"); break;

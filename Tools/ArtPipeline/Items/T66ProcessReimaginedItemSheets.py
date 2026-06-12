@@ -56,7 +56,7 @@ SERIES: tuple[Series, ...] = (
         Variant("yellow", "loose drawer knob", "Imp Orbit"),
         Variant("white", "rubber stopper", "Rebound Relic"),
     )),
-    Series("Damage", "PierceDamage", "Damage_PierceDamage_sheet.png", (
+    Series("Damage", "SummonDamage", "Damage_SummonDamage_sheet.png", (
         Variant("black", "rusty nail", "Needle of Judgment"),
         Variant("red", "snapped umbrella rib", "Storm Thorn"),
         Variant("yellow", "broken pen nib", "Scholar's Fang"),
@@ -86,7 +86,7 @@ SERIES: tuple[Series, ...] = (
         Variant("yellow", "spring from a pen", "Jester Coil"),
         Variant("white", "plastic wheel", "Runaway Moon"),
     )),
-    Series("AttackSpeed", "PierceSpeed", "AttackSpeed_PierceSpeed_sheet.png", (
+    Series("AttackSpeed", "SummonSpeed", "AttackSpeed_SummonSpeed_sheet.png", (
         Variant("black", "bent paperclip", "Lightning Hook"),
         Variant("red", "zipper tooth strip", "Serpent Teeth"),
         Variant("yellow", "snapped drill bit", "Haste Needle"),
@@ -116,7 +116,7 @@ SERIES: tuple[Series, ...] = (
         Variant("yellow", "toy tire", "Rolling Shrine"),
         Variant("white", "curtain grommet", "Orbit Gate"),
     )),
-    Series("AttackScale", "PierceScale", "AttackScale_PierceScale_sheet.png", (
+    Series("AttackScale", "SummonScale", "AttackScale_SummonScale_sheet.png", (
         Variant("black", "wooden skewer", "Lance of the Table God"),
         Variant("red", "broken comb tooth", "Ivory Spine"),
         Variant("yellow", "cocktail umbrella stick", "Festival Spear"),

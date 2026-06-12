@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Data/T66DataTypes.h"
 #include "GameFramework/SaveGame.h"
 #include "Core/T66SaveMigration.h"
 #include "T66ProfileSaveGame.generated.h"
@@ -34,6 +35,28 @@ struct T66_API FT66OwnedSkinsList
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skins")
 	TArray<FName> SkinIDs;
+};
+
+/** Permanent local custom hero build stored in the player profile, independent of run saves. */
+USTRUCT(BlueprintType)
+struct T66_API FT66SavedCustomHeroBuild
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Custom Hero")
+	bool bConfigured = false;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Custom Hero")
+	FName WeaponSourceHeroID = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Custom Hero")
+	FName VisualSourceHeroID = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Custom Hero")
+	ET66BodyType BodyType = ET66BodyType::Chad;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Custom Hero")
+	FT66HeroStatBlock Stats;
 };
 
 UENUM(BlueprintType)
@@ -189,6 +212,10 @@ public:
 	/** Last companion selected/used in the main Tribulation frontend. NAME_None means no companion. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Selection")
 	FName LastSelectedCompanionID = NAME_None;
+
+	/** Permanent locally saved custom hero build. This is profile data, not run/load-state data. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Custom Hero")
+	FT66SavedCustomHeroBuild CustomHeroBuild;
 
 	/** Captured permanent pet IDs. IDs are keyed to the source stage boss. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pets")

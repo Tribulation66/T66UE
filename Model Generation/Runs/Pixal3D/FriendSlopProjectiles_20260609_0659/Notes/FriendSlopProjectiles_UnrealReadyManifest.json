@@ -1,0 +1,29 @@
+{
+  "run_root": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProjectiles_20260609_0659",
+  "assets": [
+    {
+      "asset_name": "SM_WeaponProjectile_Black",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProjectiles_20260609_0659\\Outputs\\WeaponProjectile.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\Weapons\\Projectiles\\FriendSlop\\UnrealReady\\SM_WeaponProjectile_Black_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\Weapons\\Projectiles\\FriendSlop\\Textures\\SM_WeaponProjectile_Black_BaseColor_00.png",
+      "triangles": 193477,
+      "uv_layers": 1,
+      "source_long_axis": "X",
+      "target_long_axis_m": 2.0,
+      "scale": 2.113779984190006,
+      "runtime_axes": "X=projectile forward, Y/Z=cross-section"
+    },
+    {
+      "asset_name": "SM_IdolProjectile_FireBlack",
+      "source": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\FriendSlopProjectiles_20260609_0659\\Outputs\\IdolProjectile.glb",
+      "fbx_export": "C:\\UE\\T66\\SourceAssets\\Import\\Weapons\\Projectiles\\FriendSlop\\UnrealReady\\SM_IdolProjectile_FireBlack_UnrealReady.fbx",
+      "base_color_texture": "C:\\UE\\T66\\SourceAssets\\Import\\Weapons\\Projectiles\\FriendSlop\\Textures\\SM_IdolProjectile_FireBlack_BaseColor_00.png",
+      "triangles": 187504,
+      "uv_layers": 1,
+      "source_long_axis": "X",
+      "target_long_axis_m": 2.0,
+      "scale": 2.1940917741580592,
+      "runtime_axes": "X=projectile forward, Y/Z=cross-section"
+    }
+  ]
+}

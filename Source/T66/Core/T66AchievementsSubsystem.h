@@ -137,6 +137,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Profile|Selection")
 	void RememberLastSelectedLoadout(FName HeroID, FName CompanionID);
 
+	/** True when the local profile has a configured permanent custom hero build. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Custom Hero")
+	bool HasCustomHeroBuild() const;
+
+	/** Return the permanent custom hero build saved in the local player profile. */
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Custom Hero")
+	FT66SavedCustomHeroBuild GetCustomHeroBuild() const;
+
+	/** Persist the custom hero build to the local profile save, independent of run/load-state saves. */
+	UFUNCTION(BlueprintCallable, Category = "Profile|Custom Hero")
+	void SaveCustomHeroBuild(const FT66SavedCustomHeroBuild& Build);
+
 	/** Most recently selected active pet from the main frontend profile. NAME_None means no pet. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "Profile|Pets")
 	FName GetActivePetID() const;

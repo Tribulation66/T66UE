@@ -184,6 +184,10 @@ namespace
 	const FName T66PlayerControllerTraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
 	const FName T66PlayerControllerCameraWallVisualTag(TEXT("T66_CameraOccludingWallVisual"));
 	const FName T66PlayerControllerTowerCeilingTag(TEXT("T66_Tower_Ceiling"));
+	// Elevated walkable deck slabs (mesa tops / Tier 2 platforms): thin horizontal
+	// occluders the wall shape filter would reject; faded so the hero stays visible
+	// while playing underneath a bridge.
+	const FName T66PlayerControllerDeckVisualTag(TEXT("T66_Tower_DeckVisual"));
 
 	static void T66CollectMainMapTerrainVisualActors(UWorld* World, TArray<AActor*>& OutActors)
 	{
@@ -220,13 +224,27 @@ namespace
 			return false;
 		}
 
+		const bool bCeiling = Owner->ActorHasTag(T66PlayerControllerTowerCeilingTag)
+			|| Component->ComponentHasTag(T66PlayerControllerTowerCeilingTag);
+		if (bCeiling || Component->IsA<UInstancedStaticMeshComponent>())
+		{
+			return false;
+		}
+
+		// Elevated deck slabs: thin horizontal occluders (the wall shape filter
+		// below would reject them) — fade so the hero stays visible under bridges.
+		const bool bDeckVisual = Owner->ActorHasTag(T66PlayerControllerDeckVisualTag)
+			|| Component->ComponentHasTag(T66PlayerControllerDeckVisualTag);
+		if (bDeckVisual)
+		{
+			return Component->Bounds.BoxExtent.Z <= 80.0f;
+		}
+
 		const bool bWall = Owner->ActorHasTag(T66PlayerControllerTraversalBarrierTag)
 			|| Component->ComponentHasTag(T66PlayerControllerTraversalBarrierTag);
 		const bool bCameraWallVisual = Owner->ActorHasTag(T66PlayerControllerCameraWallVisualTag)
 			|| Component->ComponentHasTag(T66PlayerControllerCameraWallVisualTag);
-		const bool bCeiling = Owner->ActorHasTag(T66PlayerControllerTowerCeilingTag)
-			|| Component->ComponentHasTag(T66PlayerControllerTowerCeilingTag);
-		if (!bWall || !bCameraWallVisual || bCeiling || Component->IsA<UInstancedStaticMeshComponent>())
+		if (!bWall || !bCameraWallVisual)
 		{
 			return false;
 		}

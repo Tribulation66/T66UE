@@ -69,7 +69,7 @@ Discrepancy type values: `ADHERENCE DRIFT`, `TOOLING BLOCKER`, `MISSING SOURCE D
 
 ### 3.2 Visual Target Brief - American Flag AOE Crescent
 
-This visual target is active for the AOE lab only. It does not redefine DOT, Pierce, or Bounce, which continue to use the shared ethereal axe language in the parent plan.
+This visual target is active for the AOE lab only. It does not redefine DOT, RetiredLine, or Bounce, which continue to use the shared ethereal axe language in the parent plan.
 
 Mockup authority:
 
@@ -276,7 +276,7 @@ For this AOE target, the shared material gate specifically rejects:
 - checkerboard or visible tiled-grid texture readings,
 - a uniform mathematical half-ring,
 - flat color bands without soft edge, internal streak, or erosion behavior,
-- one-off material choices that cannot plausibly be reused by DOT, Pierce, and Bounce.
+- one-off material choices that cannot plausibly be reused by DOT, Summon, and Bounce.
 
 The first accepted AOE material should establish reusable Hero 1 axe base-attack material behavior for:
 
@@ -338,7 +338,7 @@ Use the mesh-rendered arc first.
 Reason:
 
 - The strongest slash-specific tutorial uses a custom flat arc mesh with a Niagara mesh renderer.
-- The AOE attack is a standalone frontal cleave, not a weapon-attached trail. A ribbon path is useful later for Pierce, Bounce trails, weapon sockets, and support ribbons, but the AOE base shape needs the deliberate control of a mesh arc.
+- The AOE attack is a standalone frontal cleave, not a weapon-attached trail. A ribbon path is useful later for RetiredLine, Bounce trails, weapon sockets, and support ribbons, but the AOE base shape needs the deliberate control of a mesh arc.
 - A mesh arc is easier to inspect for artifact parity than a generated ribbon if the first checkpoint is only carrier plus sweep.
 - Trade-off: unlike a ribbon, a mesh arc has no inherent travel. The "slash vs. overlay" read therefore depends on progressive reveal and leading-edge motion. That reveal/sweep animation is load-bearing and must be proven at Checkpoint 1.
 

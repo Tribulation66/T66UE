@@ -1129,7 +1129,8 @@ bool UT66CharacterVisualSubsystem::ApplyMobVertexAnimationVisual(
 		{
 			DynamicMaterial->SetTextureParameterValue(TEXT("NormalTexture"), NormalTexture);
 		}
-		DynamicMaterial->SetScalarParameterValue(TEXT("Brightness"), T66_CharacterVisualBrightness);
+		// 1.0 under the lit one-master (the 0.8 dim was tuned for the old unlit VAT shader).
+		DynamicMaterial->SetScalarParameterValue(TEXT("Brightness"), 1.0f);
 		DynamicMaterial->SetScalarParameterValue(TEXT("Frame"), static_cast<float>(OutRow.IdleStartFrame));
 		DynamicMaterial->SetScalarParameterValue(TEXT("SampleRate"), OutRow.SampleRate);
 		DynamicMaterial->SetScalarParameterValue(TEXT("NumFrames"), static_cast<float>(OutRow.NumFrames));

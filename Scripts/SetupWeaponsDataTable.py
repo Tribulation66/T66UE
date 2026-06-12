@@ -23,7 +23,7 @@ RARITY_TUNING = {
         "scale": 1.05,
         "range": 1.03,
         "hit": 3,
-        "pierce": 2,
+        "line_target": 2,
         "bounce": 2,
         "aoe_radius": 120.0,
         "dot_duration": 1.0,
@@ -36,7 +36,7 @@ RARITY_TUNING = {
         "scale": 1.10,
         "range": 1.06,
         "hit": 6,
-        "pierce": 3,
+        "line_target": 3,
         "bounce": 3,
         "aoe_radius": 180.0,
         "dot_duration": 1.5,
@@ -49,7 +49,7 @@ RARITY_TUNING = {
         "scale": 1.15,
         "range": 1.10,
         "hit": 10,
-        "pierce": 4,
+        "line_target": 4,
         "bounce": 4,
         "aoe_radius": 260.0,
         "dot_duration": 2.25,
@@ -62,7 +62,7 @@ RARITY_TUNING = {
         "scale": 1.25,
         "range": 1.15,
         "hit": 16,
-        "pierce": 6,
+        "line_target": 6,
         "bounce": 6,
         "aoe_radius": 360.0,
         "dot_duration": 3.0,
@@ -71,7 +71,7 @@ RARITY_TUNING = {
     },
 }
 
-BRANCHES = ("Pierce", "Bounce", "AOE", "DOT")
+BRANCHES = ("AOE", "Bounce", "DOT")
 
 RARITY_ID_SLUGS = {
     "Black": "black",
@@ -81,7 +81,7 @@ RARITY_ID_SLUGS = {
 }
 
 BRANCH_ID_SLUGS = {
-    "Pierce": "pierce",
+    "AOE": "aoe",
     "Bounce": "bounce",
     "AOE": "aoe",
     "DOT": "dot",
@@ -161,7 +161,7 @@ CSV_FIELDS = (
     "AttackScaleMultiplier",
     "RangeMultiplier",
     "BonusHitDamage",
-    "BonusPierceCount",
+    "BonusLineTargetCount",
     "BonusBounceCount",
     "BonusAoeCount",
     "BonusDotSources",
@@ -189,25 +189,25 @@ def _int(value, default=0):
 
 WEAPON_NAMES = {
     "Black": {
-        "Pierce": "Iron Edge",
+        "AOE": "Iron Edge",
         "Bounce": "Rebound Star",
         "AOE": "Ash Burst",
         "DOT": "Grave Venom",
     },
     "Red": {
-        "Pierce": "Demon Edge",
+        "AOE": "Demon Edge",
         "Bounce": "Blood Comet",
         "AOE": "Hell Nova",
         "DOT": "Demon Rot",
     },
     "Yellow": {
-        "Pierce": "Sunpiercer",
+        "AOE": "Sunburst",
         "Bounce": "Solar Ricochet",
         "AOE": "Radiant Blast",
         "DOT": "Solar Blight",
     },
     "White": {
-        "Pierce": "Void Edge",
+        "AOE": "Void Edge",
         "Bounce": "Astral Echo",
         "AOE": "Void Singularity",
         "DOT": "Void Plague",
@@ -219,25 +219,25 @@ DEMO_HERO_WEAPON_FAMILIES = {
         "family": "axe",
         "names": {
             "Black": {
-                "Pierce": "Iron Hewing Axe",
+                "AOE": "Iron Hewing Axe",
                 "Bounce": "Rebound Hatchet",
                 "AOE": "Ashfall Cleaver",
                 "DOT": "Gravebite Axe",
             },
             "Red": {
-                "Pierce": "Demon Splitter",
+                "AOE": "Demon Splitter",
                 "Bounce": "Blood Orbit Axe",
                 "AOE": "Hellburst Labrys",
                 "DOT": "Rotfang Cleaver",
             },
             "Yellow": {
-                "Pierce": "Sunforged Reaver",
+                "AOE": "Sunforged Reaver",
                 "Bounce": "Solar Tomahawk",
                 "AOE": "Radiant War Axe",
                 "DOT": "Blightgold Hatchet",
             },
             "White": {
-                "Pierce": "Void Hewing Axe",
+                "AOE": "Void Hewing Axe",
                 "Bounce": "Astral Throwing Axe",
                 "AOE": "Singularity Cleaver",
                 "DOT": "Pale Plague Axe",
@@ -248,25 +248,25 @@ DEMO_HERO_WEAPON_FAMILIES = {
         "family": "lance",
         "names": {
             "Black": {
-                "Pierce": "Iron Lance",
+                "AOE": "Iron Lance",
                 "Bounce": "Returning Javelin",
                 "AOE": "Ashburst Pike",
                 "DOT": "Venom Lance",
             },
             "Red": {
-                "Pierce": "Blood Pike",
+                "AOE": "Blood Pike",
                 "Bounce": "Crimson Throwing Lance",
                 "AOE": "Hellfire Halberd",
                 "DOT": "Rot Spear",
             },
             "Yellow": {
-                "Pierce": "Sunpiercer Lance",
+                "AOE": "Sunburst Lance",
                 "Bounce": "Solar Glaive",
                 "AOE": "Radiant Halberd",
                 "DOT": "Blightgold Javelin",
             },
             "White": {
-                "Pierce": "Void Lance",
+                "AOE": "Void Lance",
                 "Bounce": "Astral Pike",
                 "AOE": "Singularity Spear",
                 "DOT": "Pale Plague Lance",
@@ -277,25 +277,25 @@ DEMO_HERO_WEAPON_FAMILIES = {
         "family": "boxing glove",
         "names": {
             "Black": {
-                "Pierce": "Iron Knuckle Glove",
+                "AOE": "Iron Knuckle Glove",
                 "Bounce": "Rebound Mitt",
                 "AOE": "Ashburst Glove",
                 "DOT": "Venom Wraps",
             },
             "Red": {
-                "Pierce": "Demon Knuckles",
+                "AOE": "Demon Knuckles",
                 "Bounce": "Bloodwork Gloves",
                 "AOE": "Hellfire Mitts",
                 "DOT": "Rotwrap Gloves",
             },
             "Yellow": {
-                "Pierce": "Sunstrike Gloves",
+                "AOE": "Sunstrike Gloves",
                 "Bounce": "Solar Rebound Mitts",
                 "AOE": "Radiant Knuckles",
                 "DOT": "Blightgold Wraps",
             },
             "White": {
-                "Pierce": "Void Knuckles",
+                "AOE": "Void Knuckles",
                 "Bounce": "Astral Gloves",
                 "AOE": "Singularity Mitts",
                 "DOT": "Pale Plague Wraps",
@@ -306,25 +306,25 @@ DEMO_HERO_WEAPON_FAMILIES = {
         "family": "pistol",
         "names": {
             "Black": {
-                "Pierce": "Iron Peacemaker",
+                "AOE": "Iron Peacemaker",
                 "Bounce": "Ricochet Revolver",
                 "AOE": "Ashburst Sidearm",
                 "DOT": "Venom Derringer",
             },
             "Red": {
-                "Pierce": "Bloodline Revolver",
+                "AOE": "Bloodline Revolver",
                 "Bounce": "Demon Repeater",
                 "AOE": "Hellfire Handgun",
                 "DOT": "Rotshot Pistol",
             },
             "Yellow": {
-                "Pierce": "Sunpiercer Pistol",
+                "AOE": "Sunburst Pistol",
                 "Bounce": "Solar Ricochet",
                 "AOE": "Radiant Hand Cannon",
                 "DOT": "Blightgold Revolver",
             },
             "White": {
-                "Pierce": "Void Peacemaker",
+                "AOE": "Void Peacemaker",
                 "Bounce": "Astral Repeater",
                 "AOE": "Singularity Sidearm",
                 "DOT": "Pale Plague Pistol",
@@ -335,25 +335,25 @@ DEMO_HERO_WEAPON_FAMILIES = {
         "family": "flask",
         "names": {
             "Black": {
-                "Pierce": "Iron Tonic Flask",
+                "AOE": "Iron Tonic Flask",
                 "Bounce": "Rebound Ampoule",
                 "AOE": "Ashburst Beaker",
                 "DOT": "Venom Vial",
             },
             "Red": {
-                "Pierce": "Blood Flask",
+                "AOE": "Blood Flask",
                 "Bounce": "Demon Phial",
                 "AOE": "Hellfire Beaker",
                 "DOT": "Rot Vial",
             },
             "Yellow": {
-                "Pierce": "Solar Flask",
+                "AOE": "Solar Flask",
                 "Bounce": "Sunlit Ampoule",
                 "AOE": "Radiant Alembic",
                 "DOT": "Blightgold Vial",
             },
             "White": {
-                "Pierce": "Void Flask",
+                "AOE": "Void Flask",
                 "Bounce": "Astral Phial",
                 "AOE": "Singularity Beaker",
                 "DOT": "Pale Plague Vial",
@@ -363,7 +363,7 @@ DEMO_HERO_WEAPON_FAMILIES = {
 }
 
 BRANCH_DESCRIPTIONS = {
-    "Pierce": "piercing",
+    "AOE": "splash",
     "Bounce": "chaining",
     "AOE": "splash",
     "DOT": "damage-over-time",
@@ -388,7 +388,7 @@ def _no_weapon_row():
         "AttackScaleMultiplier": "1.00",
         "RangeMultiplier": "1.00",
         "BonusHitDamage": "0",
-        "BonusPierceCount": "0",
+        "BonusLineTargetCount": "0",
         "BonusBounceCount": "0",
         "BonusAoeCount": "0",
         "BonusDotSources": "0",
@@ -421,7 +421,7 @@ def _weapon_display_name(hero_id, rarity, branch):
 def _branch_description(branch, rarity, hero_id=None):
     family = _weapon_family(hero_id) if hero_id else "weapon"
     branch_kind = BRANCH_DESCRIPTIONS.get(branch, branch.lower())
-    if branch == "Pierce":
+    if branch == "AOE":
         return f"{rarity} tier. A {branch_kind} {family} auto-attack that cuts through lined-up targets."
     if branch == "Bounce":
         return f"{rarity} tier. A {branch_kind} {family} auto-attack that jumps between nearby targets."
@@ -465,7 +465,7 @@ def _upgrade_row(hero, rarity, branch, tuning):
         "AttackScaleMultiplier": f"{row_tuning['scale']:.2f}",
         "RangeMultiplier": f"{row_tuning['range']:.2f}",
         "BonusHitDamage": str(row_tuning["hit"]),
-        "BonusPierceCount": str(row_tuning["pierce"] if branch == "Pierce" else 0),
+        "BonusLineTargetCount": "0",
         "BonusBounceCount": str(row_tuning["bounce"] if branch == "Bounce" else 0),
         "BonusAoeCount": str(projectile_count if branch == "AOE" and projectile_count > 0 else (1 if branch == "AOE" else 0)),
         "BonusDotSources": "1" if branch == "DOT" else "0",
@@ -473,7 +473,7 @@ def _upgrade_row(hero, rarity, branch, tuning):
         "AoeInnerRadiusRatio": f"{HERO1_AXE_AOE_CRESCENT_INNER_RADIUS_RATIO if hero_id == 'Hero_1' and branch == 'AOE' else 0.0:.2f}",
         "BonusDotDuration": f"{row_tuning['dot_duration'] if branch == 'DOT' else 0.0:.2f}",
         "BonusDotTickDamageMultiplier": f"{row_tuning['dot_tick'] if branch == 'DOT' else 1.0:.2f}",
-        "FalloffPerHitMultiplier": f"{row_tuning['falloff'] if branch in ('Pierce', 'Bounce') else 1.0:.2f}",
+        "FalloffPerHitMultiplier": f"{row_tuning['falloff'] if branch == 'Bounce' else 1.0:.2f}",
     }
 
 
@@ -489,9 +489,9 @@ def generate_weapons_csv(project_dir):
 
     rows = [_no_weapon_row()]
     for hero in heroes:
-        primary_branch = hero.get("PrimaryCategory") or "Pierce"
+        primary_branch = hero.get("PrimaryCategory") or "AOE"
         if primary_branch not in BRANCHES:
-            primary_branch = "Pierce"
+            primary_branch = "AOE"
         for rarity, tuning in RARITY_TUNING.items():
             rows.append(_upgrade_row(hero, rarity, primary_branch, tuning))
 

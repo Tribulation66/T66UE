@@ -14,7 +14,7 @@
  * The Bounce silhouette lives in the Niagara renderer/material/mesh assets, not in
  * actor-side geometry. It is a compact, centered horizontal slash placed at each
  * Bounce chain impact point, deliberately distinct from the AOE radial crescent and
- * the Pierce forward vertical lane.
+ * the former lane carrier.
  */
 UCLASS()
 class T66_API UT66Hero1AxeBounceVFXCommandlet : public UCommandlet

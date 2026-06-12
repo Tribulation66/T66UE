@@ -497,6 +497,10 @@ void AT66MobBase::ConfigureAsMob(
 				EnemyFamily = T66ResolveEnemyFamilyFromName(EnemyData.FamilyID, EnemyFamily);
 				Archetype = EnemyData.Archetype.IsNone() ? Archetype : EnemyData.Archetype;
 				XPValue = FMath::Max(0, EnemyData.XPValue);
+				ProjectileCategory = EnemyData.ProjectileCategory;
+				ProjectileVisualProfileID = EnemyData.ProjectileVisualProfileID;
+				ProjectileMesh = EnemyData.ProjectileMesh;
+				ProjectileMeshScale = FMath::Max(0.05f, EnemyData.ProjectileMeshScale);
 			}
 			else
 			{
@@ -827,6 +831,19 @@ void AT66MobBase::ApplyMoveSlow(float SpeedMultiplier, float DurationSeconds)
 	ApplySlow(1.f - ClampedMultiplier, DurationSeconds);
 }
 
+void AT66MobBase::SetLockedIndicator(const bool bLocked)
+{
+	if (LockIndicatorWidget)
+	{
+		if (bLocked && !LockIndicatorWidget->GetUserWidgetObject())
+		{
+			LockIndicatorWidget->InitWidget();
+		}
+		LockIndicatorWidget->SetHiddenInGame(!bLocked, true);
+		LockIndicatorWidget->SetVisibility(bLocked, true);
+	}
+}
+
 void AT66MobBase::ApplyAutoAttackKnockback(const FVector& HitOrigin, float StrengthScale)
 {
 	UE_LOG(LogT66MobBase, VeryVerbose, TEXT("ApplyAutoAttackKnockback mob=%s origin=%s strength=%.3f"), *GetName(), *HitOrigin.ToCompactString(), StrengthScale);
@@ -992,23 +1009,46 @@ bool AT66MobBase::TryFireProjectileAtHero(const AT66HeroBase* Hero)
 		MobManager->RecordRangedDispatchReached(true, MobID, Dist2D);
 	}
 	UT66ProjectileManagerSubsystem* ProjectileManager = World->GetSubsystem<UT66ProjectileManagerSubsystem>();
-	if (ProjectileManager && ProjectileManager->FireProjectile(this, MobID, Start, ShotDirection, 2400.f, 20.f, 18.f, 4.f, UT66ProjectileManagerSubsystem::EnemySpitProjectileTypeIndex))
+	if (ProjectileManager)
 	{
-		if (MobManager)
+		FT66ManagedProjectileFireParams FireParams;
+		FireParams.SourceActor = this;
+		FireParams.SourceID = MobID;
+		FireParams.Origin = Start;
+		FireParams.Direction = ShotDirection;
+		FireParams.Speed = 2400.f;
+		FireParams.Damage = 20.f;
+		FireParams.Radius = 18.f;
+		FireParams.Lifetime = 4.f;
+		FireParams.ProjectileTypeIndex = UT66ProjectileManagerSubsystem::EnemySpitProjectileTypeIndex;
+		FireParams.Delivery = ET66ManagedProjectileDelivery::EnemyProjectile;
+		FireParams.AttackCategory = ProjectileCategory;
+		FireParams.VisualProfileID = ProjectileVisualProfileID.IsNone()
+			? UT66ProjectileManagerSubsystem::DefaultEnemySpitVisualProfileID()
+			: ProjectileVisualProfileID;
+		FireParams.ProjectileMesh = ProjectileMesh;
+		FireParams.ProjectileMeshScale = ProjectileMeshScale;
+		if (ProjectileManager->FireManagedProjectile(FireParams))
 		{
-			MobManager->RecordRangedProjectileSpawned(true, MobID);
+			if (MobManager)
+			{
+				MobManager->RecordRangedProjectileSpawned(true, MobID);
+			}
+			UE_LOG(
+				LogT66MobBase,
+				VeryVerbose,
+				TEXT("[MobRange] FiredShot mob=%s MobID=%s projectile=ManagedEnemySpit category=%d profile=%s mesh=%s hero=%s dist2D=%.1f start=%s target=%s"),
+				*GetName(),
+				*MobID.ToString(),
+				static_cast<int32>(ProjectileCategory),
+				*FireParams.VisualProfileID.ToString(),
+				*ProjectileMesh.ToSoftObjectPath().ToString(),
+				*Hero->GetName(),
+				Dist2D,
+				*Start.ToCompactString(),
+				*Target.ToCompactString());
+			return true;
 		}
-		UE_LOG(
-			LogT66MobBase,
-			VeryVerbose,
-			TEXT("[MobRange] FiredShot mob=%s MobID=%s projectile=ManagedEnemySpit hero=%s dist2D=%.1f start=%s target=%s"),
-			*GetName(),
-			*MobID.ToString(),
-			*Hero->GetName(),
-			Dist2D,
-			*Start.ToCompactString(),
-			*Target.ToCompactString());
-		return true;
 	}
 
 	if (MobManager)
@@ -1071,6 +1111,10 @@ void AT66MobBase::ResetForReuse()
 	FireCooldownDuration = 1.6f;
 	FireCooldownRemaining = EnemyFamily == ET66EnemyFamily::Ranged ? 0.6f : 0.f;
 	ProjectileClass = EnemyFamily == ET66EnemyFamily::Ranged ? AT66SpitProjectile::StaticClass() : nullptr;
+	ProjectileCategory = ET66AttackCategory::DOT;
+	ProjectileVisualProfileID = NAME_None;
+	ProjectileMesh.Reset();
+	ProjectileMeshScale = 1.f;
 	StunSecondsRemaining = 0.f;
 	RootSecondsRemaining = 0.f;
 	FreezeSecondsRemaining = 0.f;

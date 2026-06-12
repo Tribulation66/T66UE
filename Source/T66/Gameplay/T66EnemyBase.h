@@ -86,6 +86,18 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Progression")
 	int32 XPValue = 20;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Projectile")
+	ET66AttackCategory ProjectileCategory = ET66AttackCategory::DOT;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Projectile")
+	FName ProjectileVisualProfileID = NAME_None;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Projectile Mesh")
+	TSoftObjectPtr<UStaticMesh> ProjectileMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Projectile Mesh")
+	float ProjectileMeshScale = 1.f;
+
 	/** If false, this enemy will not spawn a loot bag on death (used by mimics/special cases). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Loot")
 	bool bDropsLoot = true;
@@ -144,7 +156,7 @@ public:
 	 * they leave the ground, travel, and land. After landing the existing brief stagger
 	 * timer keeps AI passive for a moment; chase resumes normally.
 	 * Gated by t66.Combat.PhysicalKnockbackTest at the callsites (currently Hero_1 Slash
-	 * and Idol_Fire_Pierce only). Behavior-only — no visuals/inflation here.
+	 * and Idol_Fire_Summon only). Behavior-only — no visuals/inflation here.
 	 */
 	void ApplyPhysicalKnockback(const FVector& LaunchVelocity);
 

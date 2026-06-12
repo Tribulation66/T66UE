@@ -1,0 +1,114 @@
+{
+  "asset_name": "Hero1_Weapon_AOE_Crescent",
+  "bounds": {
+    "dimensions": [
+      156.24185180664062,
+      75.76802062988281,
+      120.00000762939453
+    ],
+    "max": [
+      78.12092590332031,
+      37.884010314941406,
+      120.00000762939453
+    ],
+    "min": [
+      -78.12092590332031,
+      -37.884010314941406,
+      0.0
+    ]
+  },
+  "fbx_bytes": 10267628,
+  "fbx_export_options": {
+    "add_leaf_bones": false,
+    "apply_scale_options": "FBX_SCALE_ALL",
+    "apply_unit_scale": true,
+    "bake_space_transform": false,
+    "embed_textures": true,
+    "global_scale": 0.01,
+    "mesh_smooth_type": "FACE",
+    "object_types": [
+      "MESH"
+    ],
+    "path_mode": "COPY",
+    "use_mesh_modifiers": true,
+    "use_selection": true
+  },
+  "fbx_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Hero1_Weapon_AOE_Crescent\\Hero1_Weapon_AOE_Crescent_Textured.fbx",
+  "input_glb": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\Outputs\\Hero1_Weapon_AOE_Crescent.glb",
+  "material_count": 1,
+  "mtl_bytes": 277,
+  "mtl_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Hero1_Weapon_AOE_Crescent\\Hero1_Weapon_AOE_Crescent_Textured.mtl",
+  "normalization": {
+    "bounds_max": [
+      78.12092590332031,
+      37.884010314941406,
+      120.00000762939453
+    ],
+    "bounds_min": [
+      -78.12092590332031,
+      -37.884010314941406,
+      0.0
+    ],
+    "corrected_y_up": false,
+    "dimensions": [
+      156.24185180664062,
+      75.76802062988281,
+      120.00000762939453
+    ],
+    "height": 120.00000762939453,
+    "scale_factor": 160.19260676286342
+  },
+  "obj_bytes": 21509495,
+  "obj_export_options": {
+    "apply_modifiers": true,
+    "apply_transform": false,
+    "export_materials": true,
+    "export_normals": true,
+    "export_pbr_extensions": false,
+    "export_selected_objects": true,
+    "export_uv": true,
+    "global_scale": 1.0,
+    "path_mode": "RELATIVE"
+  },
+  "obj_path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Hero1_Weapon_AOE_Crescent\\Hero1_Weapon_AOE_Crescent_Textured.obj",
+  "output_dir": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Hero1_Weapon_AOE_Crescent",
+  "texture_usage": [
+    {
+      "image": "Image_0",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture"
+    },
+    {
+      "image": "Image_1",
+      "image_size": [
+        4096,
+        4096
+      ],
+      "material": "Material_0",
+      "node": "Image Texture.001"
+    }
+  ],
+  "textures": [
+    {
+      "image": "Image_0",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Hero1_Weapon_AOE_Crescent\\Textures\\Hero1_Weapon_AOE_Crescent_00_Image_0.png",
+      "size": [
+        4096,
+        4096
+      ]
+    },
+    {
+      "image": "Image_1",
+      "path": "C:\\UE\\T66\\Model Generation\\Runs\\Pixal3D\\InflatableProjectiles_20260611\\RawTexturedFBX\\Hero1_Weapon_AOE_Crescent\\Textures\\Hero1_Weapon_AOE_Crescent_01_Image_1.png",
+      "size": [
+        4096,
+        4096
+      ]
+    }
+  ],
+  "vertex_count": 140118
+}

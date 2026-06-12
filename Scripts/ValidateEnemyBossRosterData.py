@@ -35,6 +35,7 @@ ALLOWED_ARCHETYPES = {
 }
 ALLOWED_FEELINGS = {"MowDown", "Pressure", "DodgeThreat", "Disruptor", "Specialist"}
 ALLOWED_RARITIES = {"Core", "Rare", "Late"}
+ALLOWED_ATTACK_CATEGORIES = {"AOE", "Bounce", "DOT", "Summon"}
 FAMILY_FALLBACK_BY_ARCHETYPE = {
     "Melee": "Melee",
     "Ranged": "Ranged",
@@ -44,8 +45,6 @@ FAMILY_FALLBACK_BY_ARCHETYPE = {
 EXPECTED_ENEMY_COUNT = 60
 EXPECTED_ENEMIES_PER_THEME = 12
 EXPECTED_PLACEHOLDER_ENEMY_IDS = {
-    "CursedCrow",
-    "FamishedGhoul",
     "WillOWisp",
     "GoreStag",
     "GullDiver",
@@ -138,6 +137,7 @@ def validate_enemies(enemies: list[dict[str, str]]) -> dict[str, list[str]]:
         archetype = row.get("Archetype", "")
         feeling = row.get("Feeling", "")
         rarity = row.get("Rarity", "")
+        projectile_category = row.get("ProjectileCategory", "")
 
         assert_true(stage_tag in THEME_TO_DIFFICULTY, f"{enemy_id} has invalid StageTag {stage_tag}")
         assert_true(difficulty == THEME_TO_DIFFICULTY[stage_tag], f"{enemy_id} difficulty does not match StageTag")
@@ -145,6 +145,7 @@ def validate_enemies(enemies: list[dict[str, str]]) -> dict[str, list[str]]:
         assert_true(archetype in ALLOWED_ARCHETYPES, f"{enemy_id} has invalid Archetype {archetype}")
         assert_true(feeling in ALLOWED_FEELINGS, f"{enemy_id} has invalid Feeling {feeling}")
         assert_true(rarity in ALLOWED_RARITIES, f"{enemy_id} has invalid Rarity {rarity}")
+        assert_true(projectile_category in ALLOWED_ATTACK_CATEGORIES, f"{enemy_id} has invalid ProjectileCategory {projectile_category}")
         assert_true(row.get("FamilyID") == FAMILY_FALLBACK_BY_ARCHETYPE[archetype], f"{enemy_id} FamilyID fallback mismatch")
         assert_true(row.get("RoleID") == row.get("FamilyID"), f"{enemy_id} RoleID must match fallback FamilyID")
         assert_true(row.get("ModelStatus") in {"MeshReady", "Placeholder"}, f"{enemy_id} ModelStatus must be MeshReady or Placeholder")
@@ -201,7 +202,7 @@ def validate_bosses(bosses: list[dict[str, str]], encounters: list[dict[str, str
     boss_ids = {row["BossID"] for row in bosses}
     encounter_ids = {row["BossEncounterID"] for row in encounters}
     assert_true(len(encounters) == 20, f"expected 20 boss encounters got {len(encounters)}")
-    assert_true(len(bosses) == 23, f"expected 23 boss rows including four horsemen got {len(bosses)}")
+    assert_true(len(bosses) == 25, f"expected 25 boss rows including four horsemen and transformed/final-phase rows got {len(bosses)}")
 
     stage_encounters = {row["BossEncounterID"] for row in stages}
     assert_true(stage_encounters == encounter_ids, "stage encounter IDs must match BossEncounters rows")
@@ -216,6 +217,15 @@ def validate_bosses(bosses: list[dict[str, str]], encounters: list[dict[str, str
         rows = members_by_encounter[encounter_id]
         expected = 4 if encounter_id == "Encounter_Stage_17" else 1
         assert_true(len(rows) == expected, f"{encounter_id} expected {expected} member rows got {len(rows)}")
+
+
+def validate_boss_attack_definitions() -> None:
+    rows = read_csv("BossAttackDefinitions.csv")
+    assert_true(rows, "BossAttackDefinitions.csv must not be empty")
+    for row in rows:
+        row_id = row.get("DefinitionRowID", "") or row.get("---", "")
+        category = row.get("ProjectileCategory", "")
+        assert_true(category in ALLOWED_ATTACK_CATEGORIES, f"{row_id} has invalid ProjectileCategory {category}")
 
 
 def validate_no_live_placeholder_tokens() -> None:
@@ -249,9 +259,10 @@ def main() -> None:
     validate_statuses(enemies, statuses)
     validate_stages(stages, enemies)
     validate_bosses(bosses, encounters, members, stages)
+    validate_boss_attack_definitions()
     validate_no_live_placeholder_tokens()
 
-    print("Enemy/boss roster validation passed: 20 stages, 60 enemies, 20 encounters, 23 boss rows.")
+    print("Enemy/boss roster validation passed: 20 stages, 60 enemies, 20 encounters, 25 boss rows.")
 
 
 if __name__ == "__main__":

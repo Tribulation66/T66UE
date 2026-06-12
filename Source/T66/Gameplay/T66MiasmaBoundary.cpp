@@ -79,7 +79,9 @@ namespace
 		const FLinearColor LavaTint(1.00f, 0.34f, 0.05f, 1.f);
 		Material->SetVectorParameterValue(TEXT("Tint"), LavaTint);
 		Material->SetVectorParameterValue(TEXT("BaseColor"), LavaTint);
-		Material->SetScalarParameterValue(TEXT("Brightness"), 2.6f);
+		// 1.0 under the lit master — the legacy 2.6 over-brightened the boundary into a glowing
+		// white streak wall in the dungeon.
+		Material->SetScalarParameterValue(TEXT("Brightness"), 1.0f);
 		return Material;
 	}
 

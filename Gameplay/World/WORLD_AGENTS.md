@@ -11,6 +11,7 @@ World, tower, map, stage layout, lighting, HY-World, WorldMirror, modular dungeo
 ## Read First
 
 - `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md` for tower map/runtime design.
+- `Gameplay/World/FALLGUYS_MAP_ANALYSIS.md` for the sourced Fall Guys design principles, gap audit, and Tier A-D improvement program.
 - `Gameplay/World/T66_TUNING_SURFACE.md` for the human-facing tower/gameplay tuning index.
 - `Gameplay/World/T66_LIGHTING_REFERENCE.md` for lighting.
 - `ART_DIRECTION.md` for FriendSlop 3D/world art direction and rubber-material migration boundaries.

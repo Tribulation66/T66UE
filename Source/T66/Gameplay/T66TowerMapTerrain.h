@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Gameplay/MapGeneration/Types/T66RoomCompositionTypes.h"
 #include "Gameplay/T66ProceduralLandscapeParams.h"
 
 class UWorld;
@@ -101,6 +102,113 @@ namespace T66TowerMapTerrain
 		int32 HeightTiles = 0;
 		bool bContainsArrival = false;
 		bool bContainsExit = false;
+		/** Composition profile chosen by the procedural room composer. */
+		FName CompositionProfileID = NAME_None;
+		/** Reusable room structures selected by the composer: platforms, ramps, mesas, bridges, lifts, and bounce toys. */
+		TArray<FName> StructureIDs;
+		/**
+		 * Designed payoff points (deck tops, pit floors, bridge ends). The
+		 * interactable/NPC population fills these FIRST; each gets a beacon visual.
+		 */
+		TArray<FVector> RewardSlots;
+	};
+
+	/**
+	 * Raised bouncy obstacle-course platform on a gameplay floor.
+	 * Collision is a hidden box proxy from floor surface to TopZ; visuals are baffle tubes.
+	 * Tier 1 tops sit one jump above the base floor; Tier 2 tops stay above the lava-rise cap.
+	 */
+	/**
+	 * Course platform shape (design ref section 1.6). Every kit shape has an EXACT
+	 * square AABB (corners/flats land on the AABB faces), so Bounds stays the truth
+	 * for the box-gap traversal proof and content exclusion. Non-square shapes carry
+	 * their mesh's own exact simple collision (cylinder primitive / 1-hull convex prism).
+	 */
+	enum class ET66BouncePlatformShape : uint8
+	{
+		Square,
+		Round,
+		Hex,
+		/** Scatter-only: pointy sides never carry the chain. */
+		Triangle,
+	};
+
+	struct FBouncePlatform
+	{
+		FBox2D Bounds;
+		float TopZ = 0.0f;
+		int32 Tier = 1;
+		FIntPoint Cell = FIntPoint(INDEX_NONE, INDEX_NONE);
+		/** True when the platform belongs to the guaranteed arrival->exit dry chain. */
+		bool bSafeChain = false;
+		ET66BouncePlatformShape Shape = ET66BouncePlatformShape::Square;
+		/** Seeded 90-degree yaw steps (hex/triangle variety; square AABB keeps Bounds yaw-invariant). */
+		uint8 YawSteps = 0;
+	};
+
+	/** Walkable wedge connecting the base floor to a Tier 1 platform top. */
+	struct FBounceRamp
+	{
+		/** Axis-aligned footprint; ascent runs along the long axis toward AscentSign. */
+		FBox2D Bounds;
+		float BaseZ = 0.0f;
+		float TopZ = 0.0f;
+		/** Unit grid direction of ascent (+X, -X, +Y, or -Y). */
+		FIntPoint AscentSign = FIntPoint(1, 0);
+	};
+
+	/**
+	 * Raised terrain-tier mesa inside a room (Tail Tag central-platform pattern).
+	 * The mesa is a solid block TierHeight above the floor surface, always inset so a
+	 * walkable ground ring remains, and always connected through 2+ ramp cells.
+	 */
+	struct FTierMesa
+	{
+		int32 RoomId = INDEX_NONE;
+		FIntPoint MinCell = FIntPoint(INDEX_NONE, INDEX_NONE);
+		FIntPoint MaxCellExclusive = FIntPoint(INDEX_NONE, INDEX_NONE);
+		FBox2D Bounds;
+		/**
+		 * Ring-mesa center hole (design ref section 1.6): hole cells revert to tier 0,
+		 * the deck spawns as 4 frame slabs, and falling through is a legal drop into
+		 * the open under-deck ground. INDEX_NONE min cell = solid deck (no hole).
+		 */
+		FIntPoint HoleMinCell = FIntPoint(INDEX_NONE, INDEX_NONE);
+		FIntPoint HoleMaxCellExclusive = FIntPoint(INDEX_NONE, INDEX_NONE);
+		FBox2D HoleBounds;
+
+		bool HasHole() const { return HoleMinCell.X != INDEX_NONE; }
+	};
+
+	/** Ground-cell ramp rising one tier step into an adjacent mesa edge (direction-locked). */
+	struct FTierRamp
+	{
+		FIntPoint Cell = FIntPoint(INDEX_NONE, INDEX_NONE);
+		/** Unit grid direction of ascent (into the mesa). */
+		FIntPoint AscentSign = FIntPoint(1, 0);
+		FBox2D Bounds;
+	};
+
+	/**
+	 * Moving lift platform cycling between the ground tier and an adjacent mesa top
+	 * (Fall Guys elevator, non-trap). Generated as an alternative to one of a mesa's
+	 * constructive ramps; counts as an up-edge in the no-softlock BFS but is NEVER a
+	 * dry safe-chain anchor (the parked slab is submerged at full lava flood).
+	 * Collision at runtime is a moving hidden box proxy owned by AT66TowerLiftPlatform.
+	 */
+	struct FTierLift
+	{
+		FIntPoint Cell = FIntPoint(INDEX_NONE, INDEX_NONE);
+		/** Unit grid direction of ascent (into the mesa). */
+		FIntPoint AscentSign = FIntPoint(1, 0);
+		/** Slab footprint, pushed toward the mesa face (20uu clearance). */
+		FBox2D Bounds;
+		/** Floor surface height (deck rests 30uu above this at the bottom of the cycle). */
+		float BaseZ = 0.0f;
+		/** Mesa surface height (deck top lands flush here at the top of the cycle). */
+		float TopZ = 0.0f;
+		/** Seeded cycle phase fraction [0..1) so co-located lifts desynchronize. */
+		float PhaseFraction = 0.0f;
 	};
 
 	struct FFloor
@@ -135,6 +243,24 @@ namespace T66TowerMapTerrain
 		TArray<FVector> CachedOptionalSpawnSlots;
 		TArray<FVector> CachedContentSpawnSlots;
 		TArray<FRoom> Rooms;
+		TArray<FBouncePlatform> BouncePlatforms;
+		TArray<FBounceRamp> BounceRamps;
+		/** Ordered BFS cell path from arrival to exit used by the guaranteed dry platform chain. */
+		TArray<FIntPoint> SafeChainCells;
+		/** Per grid cell terrain tier (0 = ground, 1 = mesa). Empty when tiers are disabled. */
+		TArray<uint8> CellTiers;
+		TArray<FTierMesa> TierMesas;
+		TArray<FTierRamp> TierRamps;
+		TArray<FTierLift> TierLifts;
+		/**
+		 * Composer-owned hazard anchors: signature hazards spawn here instead of at
+		 * random floor locations. Parallel arrays: anchor world position (Z may sit
+		 * on a deck top) and the preferred hazard type (NAME_None = any obstacle).
+		 */
+		TArray<FVector> HazardAnchors;
+		TArray<FName> HazardAnchorTypes;
+		/** Bounce pad spots (analysis C3): deliberate trampolines up to decks/rims. */
+		TArray<FVector> BouncePadSpots;
 		FName FloorTag = NAME_None;
 	};
 
@@ -176,6 +302,8 @@ namespace T66TowerMapTerrain
 		int32 DungeonMaxRooms = 20;
 		int32 DungeonMinRoomTiles = 2;
 		int32 DungeonMaxRoomTiles = 5;
+		/** Max edge gap (cells) a new room may have to the cluster; bounds hall length. */
+		int32 RoomMaxGapCells = 6;
 		int32 StartRoomMinTiles = 3;
 		int32 StartRoomMaxTiles = 4;
 		float GridBranchChance = 0.35f;
@@ -183,6 +311,38 @@ namespace T66TowerMapTerrain
 		float RoofSkinThickness = 12.0f;
 		float StartFloorHeadroom = 2000.0f;
 		int32 GeneratedDungeonKitCullDistance = 30000;
+		bool bBounceCoursePlatforms = true;
+		float PlatformTier1Height = 200.0f;
+		float PlatformTier2Height = 400.0f;
+		float ChainPlatformFootprint = 700.0f;
+		float RoomPlatformFootprintMin = 550.0f;
+		float RoomPlatformFootprintMax = 750.0f;
+		int32 RoomPlatformDensityTiles = 8;
+		float PlatformChainMaxGap = 350.0f;
+		/** Seeded share of non-chain platforms spawned as cylinders instead of cubes. */
+		float RoundPlatformChance = 0.45f;
+		float RampWidth = 600.0f;
+		float RampLength = 520.0f;
+		float LavaMaxHeight = 320.0f;
+		bool bTierTerrain = true;
+		float TierHeight = 500.0f;
+		int32 MesaInsetCells = 2;
+		int32 MesaMinSpanCells = 3;
+		int32 MesaRampsMin = 2;
+		int32 MesaRampsMax = 4;
+		float MesaTopBafflePitch = 200.0f;
+		float MesaTopBaffleDiameter = 180.0f;
+		float RampRollerDiameter = 90.0f;
+		/** Chance a >=5x5 mesa becomes a RING deck with a center drop hole. */
+		float RingMesaChance = 0.5f;
+		bool bTierLifts = true;
+		float LiftChance = 0.5f;
+		float LiftFootprint = 600.0f;
+		float LiftTravelSeconds = 3.0f;
+		float LiftDwellSeconds = 2.0f;
+		bool bDoorwayArches = true;
+		int32 ArchSegments = 10;
+		float ArchTubeDiameter = 110.0f;
 		FName DefaultRoomRuleID = FName(TEXT("DefaultCombat"));
 		FName StartRoomRuleID = FName(TEXT("Start"));
 		FName BossRoomRuleID = FName(TEXT("Boss"));
@@ -217,6 +377,9 @@ namespace T66TowerMapTerrain
 	bool TryGetRoomSurfaceLocation(UWorld* World, const FLayout& Layout, const FFloor& Floor, const FRoom& Room, FRandomStream& Rng, FVector& OutLocation, float EdgePadding = 700.0f, float HolePadding = 900.0f, float WallPadding = 500.0f);
 	bool TryGetObstacleTrapSpawnLocation(UWorld* World, const FLayout& Layout, int32 FloorNumber, FRandomStream& Rng, FVector& OutLocation, float FootprintRadius = 650.0f, float EdgePadding = 1400.0f, float HolePadding = 1600.0f);
 	bool TryGetMazeWallSpawnLocation(UWorld* World, const FLayout& Layout, int32 FloorNumber, FRandomStream& Rng, FVector& OutLocation, FVector& OutWallNormal, float EndPadding = 500.0f);
+
+	/** True when the 2D point sits inside (or within Padding of) any bounce platform or ramp footprint on the floor. */
+	bool IsPointInsideBounceObstacle(const FFloor& Floor, const FVector& Location, float Padding = 0.0f);
 	bool TryGetWallSpawnLocation(UWorld* World, const FLayout& Layout, const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation);
 	bool TryGetWallSpawnLocation(UWorld* World, const FLayout& Layout, const FVector& PlayerLocation, float MinDistance, float MaxDistance, FRandomStream& Rng, FVector& OutLocation, FVector& OutWallNormal);
 	bool Spawn(UWorld* World, const FLayout& Layout, ET66Difficulty Difficulty, const FActorSpawnParameters& SpawnParams, bool& bOutCollisionReady);

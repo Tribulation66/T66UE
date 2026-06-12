@@ -33,7 +33,7 @@ Evidence labels used below:
 | Gameplay index | `Gameplay/README.md` | Confirmed by file inspection | Routes combat docs to `Gameplay/Combat/`. |
 | Generic VFX procedure | `Gameplay/Combat/CombatVFXAuthoringProcedure.md` | Confirmed by file inspection | Already owns source intake, mockup gate, carrier archetypes, staged authoring, mask/material manifest, parameter evidence, editor pitfalls, and close templates. |
 | Visual/damage alignment contract | `Gameplay/Combat/CombatVFXVisualDamageAlignmentContract.md` | Confirmed by file inspection | Owns the generic anchor, footprint, offset, tolerance, and marker-vs-area-read contract for keeping VFX presentation aligned with authoritative damage geometry. |
-| Hero 1 axe plan | `Gameplay/Combat/Hero1AxeVFXPlan.md` | Confirmed by file inspection | Owns isolated Hero 1 axe VFX goals, current canonical source selection, lab boundaries, and future AOE/DOT/Pierce/Bounce direction. |
+| Hero 1 axe plan | `Gameplay/Combat/Hero1AxeVFXPlan.md` | Confirmed by file inspection | Owns isolated Hero 1 axe VFX goals, current canonical source selection, lab boundaries, and future AOE/DOT/Summon/Bounce direction. |
 | Hero 1 AOE packet | `Gameplay/Combat/Hero1AxeAOESlashMechanismPacket.md` | Confirmed by file inspection | Owns the current AOE American-flag visual target, AOE mechanism gates, hitbox alignment rule, and current verification expectations. |
 | Hero 1 shared aura material plan | `Gameplay/Combat/Hero1AxeSharedAuraMaterialResearchPlan.md` | Confirmed by file inspection | Owns the source-fidelity plan, shared material roles, parameter contract, and editor-isolation material gate for Hero 1 axe base attacks. |
 | Combat runtime reference | `Gameplay/Combat/MASTER_COMBAT.md` | Confirmed by targeted search | Documents current temporary projectile presentation, Hero 1 AOE sector query, and `hero1axeaoehitbox` proof mode. |
@@ -179,7 +179,7 @@ Confirmed by file inspection:
 
 Gaps confirmed by file inspection:
 
-- It is Hero 1 AOE specific, not a generic validator for future DOT/Pierce/Bounce effects.
+- It is Hero 1 AOE specific, not a generic validator for future DOT/Summon/Bounce effects.
 - It validates structure and source guards, not visual mechanism success. It cannot prove point A to point B sweep, erosion, color readability, impact placement, or visual fidelity.
 - It does not emit a standalone JSON/Markdown validation report.
 - It does not validate contact sheet/frame-selection evidence. Baseline evidence-bundle tooling now exists, but the Hero 1 AOE structural validator is not wired to require or parse those artifacts.
@@ -267,7 +267,7 @@ Implemented and runtime-verified on 2026-05-28:
 | Seam | Current file/path | Status | Notes |
 |---|---|---|---|
 | Binding data type | `Source/T66/Data/T66DataTypes.h` | Implemented | `FT66CombatVFXBindingData` stores binding ID, source type, source ID, attack category, Niagara system path, effect packet ID, VFX profile, visual radius/playback values, and production/fallback flags. |
-| Binding table source | `Content/Data/CombatVFXBindings.csv` | Implemented | Contains active Hero 1 weapon-base rows `Hero1Axe_AOE_Base` (`Hero_1_black_aoe`), `Hero1Axe_Pierce_Base` (`Hero_1_black_pierce`), `Hero1Axe_Bounce_Base` (`Hero_1_black_bounce`), and `Hero1Axe_DOT_Base` (`Hero_1_black_dot`). Idol category proofs are placeholder/proof paths, not production idol rows. |
+| Binding table source | `Content/Data/CombatVFXBindings.csv` | Implemented | Contains active Hero 1 weapon-base rows `Hero1Axe_AOE_Base` (`Hero_1_black_aoe`), `Hero1Axe_RetiredLine_Base` (`Hero_1_black_retired-line`), `Hero1Axe_Bounce_Base` (`Hero_1_black_bounce`), and `Hero1Axe_DOT_Base` (`Hero_1_black_dot`). Idol category proofs are placeholder/proof paths, not production idol rows. |
 | Runtime DataTable asset | `Content/Data/DT_CombatVFXBindings.uasset` | Implemented | Created/refreshed by `Scripts/SetupCombatVFXBindingsDataTable.py`. |
 | GameInstance access | `Source/T66/Core/T66GameInstance.h/.cpp` | Implemented | Loads/caches `DT_CombatVFXBindings` and exposes binding lookup. `BP_T66GameInstance` is assigned by the setup script. |
 | Production slash assets | `Content/VFX/Hero1/Axe/AOE/` and `Content/VFX/Hero1/Axe/Shared/` | Implemented | Promoted from the isolated Hero 1 axe AOE lab asset path. Normal combat must not reference `/Game/VFXLab`. |
@@ -309,7 +309,7 @@ Important limitation:
 
 3. Capture tooling now supports an optional evidence bundle for MP4-from-frame-sequence captures: contact sheet, ffprobe metadata artifact, selected-frame notes, copied selected frames, manifest, and visibility/readability checklist. The bundle is a packaging layer, not visual acceptance.
 
-4. Validation is stronger than a simple asset-presence check, but it is Hero 1 AOE specific. It does not yet provide a generic carrier-archetype validator or reusable report format for DOT/Pierce/Bounce.
+4. Validation is stronger than a simple asset-presence check, but it is Hero 1 AOE specific. It does not yet provide a generic carrier-archetype validator or reusable report format for DOT/Summon/Bounce.
 
 5. `/Game/VFXLab` cook exclusion exists in config and is checked by the validator, but Workstream 0 did not run Unreal to prove current AssetRegistry isolation.
 
@@ -387,7 +387,7 @@ Key acceptance:
 
 - Generic checks reference carrier archetype definitions from `CombatVFXAuthoringProcedure.md`.
 - Structural validation does not claim visual acceptance.
-- Output is reportable and reusable across future DOT/Pierce/Bounce packets.
+- Output is reportable and reusable across future DOT/Summon/Bounce packets.
 
 ### Workstream 4: Runtime Binding Contract
 

@@ -33,12 +33,13 @@ namespace
 		return Json.IsValid() && Json->TryGetBoolField(FieldName, bValue) ? bValue : bDefaultValue;
 	}
 
-	ET66AttackCategory T66RunSummaryParseAttackCategory(const FString& Value, ET66AttackCategory DefaultValue = ET66AttackCategory::Pierce)
+	ET66AttackCategory T66RunSummaryParseAttackCategory(const FString& Value, ET66AttackCategory DefaultValue = ET66AttackCategory::AOE)
 	{
 		if (Value.Equals(TEXT("aoe"), ESearchCase::IgnoreCase)) return ET66AttackCategory::AOE;
 		if (Value.Equals(TEXT("bounce"), ESearchCase::IgnoreCase)) return ET66AttackCategory::Bounce;
 		if (Value.Equals(TEXT("dot"), ESearchCase::IgnoreCase)) return ET66AttackCategory::DOT;
-		if (Value.Equals(TEXT("pierce"), ESearchCase::IgnoreCase)) return ET66AttackCategory::Pierce;
+		if (Value.Equals(TEXT("aoe"), ESearchCase::IgnoreCase)) return ET66AttackCategory::AOE;
+		if (Value.Equals(TEXT("summon"), ESearchCase::IgnoreCase)) return ET66AttackCategory::Summon;
 		if (Value.Equals(TEXT("single_target"), ESearchCase::IgnoreCase)
 			|| Value.Equals(TEXT("singletarget"), ESearchCase::IgnoreCase)) return ET66AttackCategory::SingleTarget;
 		return DefaultValue;
@@ -204,17 +205,17 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 				else if (Key == TEXT("Stealing")) StatType = ET66StatType::Stealing;
 				else if (Key == TEXT("AoeDamage")) StatType = ET66StatType::AoeDamage;
 				else if (Key == TEXT("BounceDamage")) StatType = ET66StatType::BounceDamage;
-				else if (Key == TEXT("PierceDamage")) StatType = ET66StatType::PierceDamage;
+				else if (Key == TEXT("SummonDamage")) StatType = ET66StatType::SummonDamage;
 				else if (Key == TEXT("DotDamage")) StatType = ET66StatType::DotDamage;
 				else if (Key == TEXT("CloseRangeDamage")) StatType = ET66StatType::CloseRangeDamage;
 				else if (Key == TEXT("LongRangeDamage")) StatType = ET66StatType::LongRangeDamage;
 				else if (Key == TEXT("AoeSpeed")) StatType = ET66StatType::AoeSpeed;
 				else if (Key == TEXT("BounceSpeed")) StatType = ET66StatType::BounceSpeed;
-				else if (Key == TEXT("PierceSpeed")) StatType = ET66StatType::PierceSpeed;
+				else if (Key == TEXT("SummonSpeed")) StatType = ET66StatType::SummonSpeed;
 				else if (Key == TEXT("DotSpeed")) StatType = ET66StatType::DotSpeed;
 				else if (Key == TEXT("AoeScale")) StatType = ET66StatType::AoeScale;
 				else if (Key == TEXT("BounceScale")) StatType = ET66StatType::BounceScale;
-				else if (Key == TEXT("PierceScale")) StatType = ET66StatType::PierceScale;
+				else if (Key == TEXT("SummonScale")) StatType = ET66StatType::SummonScale;
 				else if (Key == TEXT("DotScale")) StatType = ET66StatType::DotScale;
 				else if (Key == TEXT("AttackRange")) StatType = ET66StatType::AttackRange;
 				else if (Key == TEXT("Taunt")) StatType = ET66StatType::Taunt;
@@ -382,7 +383,7 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 			FString TypeStr;
 			S->EquippedIdolCategories.Add(V.IsValid() && V->TryGetString(TypeStr)
 				? T66RunSummaryParseAttackCategory(TypeStr)
-				: ET66AttackCategory::Pierce);
+				: ET66AttackCategory::AOE);
 		}
 	}
 	while (S->EquippedIdolElements.Num() < S->EquippedIdols.Num())
@@ -395,7 +396,7 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 	}
 	while (S->EquippedIdolCategories.Num() < S->EquippedIdols.Num())
 	{
-		S->EquippedIdolCategories.Add(ET66AttackCategory::Pierce);
+		S->EquippedIdolCategories.Add(ET66AttackCategory::AOE);
 	}
 	if (S->EquippedIdolCategories.Num() > S->EquippedIdols.Num())
 	{
@@ -524,7 +525,7 @@ UT66LeaderboardRunSummarySaveGame* T66BackendRunSummaryParser::Parse(const TShar
 	{
 		const FString WeaponIdStr = T66RunSummaryGetJsonStringOrDefault(*WeaponObj, TEXT("weapon_id"));
 		S->EquippedWeaponID = WeaponIdStr.IsEmpty() ? NAME_None : FName(*WeaponIdStr);
-		S->EquippedWeaponBranch = T66RunSummaryParseAttackCategory(T66RunSummaryGetJsonStringOrDefault(*WeaponObj, TEXT("branch"), TEXT("pierce")));
+		S->EquippedWeaponBranch = T66RunSummaryParseAttackCategory(T66RunSummaryGetJsonStringOrDefault(*WeaponObj, TEXT("branch"), TEXT("aoe")));
 		S->EquippedWeaponRarity = T66RunSummaryParseWeaponRarity(T66RunSummaryGetJsonStringOrDefault(*WeaponObj, TEXT("rarity"), TEXT("black")));
 		const FString PatternStr = T66RunSummaryGetJsonStringOrDefault(*WeaponObj, TEXT("attack_pattern_id"));
 		S->EquippedWeaponAttackPatternID = PatternStr.IsEmpty() ? NAME_None : FName(*PatternStr);

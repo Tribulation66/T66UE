@@ -189,7 +189,7 @@ FString T66DirectEntry::GetAcceptedFrontendScreenNamesForLog()
 		"Settings, SettingsScreen, LanguageSelect, Language, Achievements, PauseMenu, Pause, "
 		"RunSummary, PowerUp, HeroGrid, CompanionGrid, GirlfriendGrid, QuitConfirmation, Quit, PartyInvite, "
 		"AccountStatus, Account, PlayerSummaryPicker, SummaryPicker, SavePreview, "
-		"Challenges, DailyDescent, Overview, History, Relics, Steroids, Diplomas, "
+		"Challenges, DailyDescent, Overview, History, Surgeries, Drugs, Diplomas, "
 		"Drugs, SteamAchievements, Steam, SecretAchievements, Secret, SettingsGameplay, SettingsGraphics, "
 		"SettingsControls, SettingsMediaViewer, SettingsMedia, SettingsAudio, LoadGame");
 }
@@ -262,7 +262,7 @@ bool T66DirectEntry::TryResolveFrontendScreenName(const FString& ScreenName, ET6
 		OutScreenType = ET66ScreenType::RunSummary;
 		return true;
 	}
-	if (Key == TEXT("powerup") || Key == TEXT("relics") || Key == TEXT("steroids")
+	if (Key == TEXT("powerup") || Key == TEXT("surgeries") || Key == TEXT("drugs")
 		|| Key == TEXT("diplomas") || Key == TEXT("drugs"))
 	{
 		OutScreenType = ET66ScreenType::PowerUp;

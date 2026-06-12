@@ -58,23 +58,23 @@ namespace
 	const FT66TravelerVisualProfileSlot T66TravelerVisualProfileSlots[] =
 	{
 		{ TEXT("TravelerVisual.Fire.AOE"), 0 },
-		{ TEXT("TravelerVisual.Fire.Pierce"), 1 },
+		{ TEXT("TravelerVisual.Fire.Summon"), 1 },
 		{ TEXT("TravelerVisual.Fire.Bounce"), 0 },
 		{ TEXT("TravelerVisual.Fire.DOT"), 1 },
 		{ TEXT("TravelerVisual.Ice.AOE"), 2 },
-		{ TEXT("TravelerVisual.Ice.Pierce"), 2 },
+		{ TEXT("TravelerVisual.Ice.Summon"), 2 },
 		{ TEXT("TravelerVisual.Ice.Bounce"), 1 },
 		{ TEXT("TravelerVisual.Ice.DOT"), 0 },
 		{ TEXT("TravelerVisual.Electricity.AOE"), 0 },
-		{ TEXT("TravelerVisual.Electricity.Pierce"), 2 },
+		{ TEXT("TravelerVisual.Electricity.Summon"), 2 },
 		{ TEXT("TravelerVisual.Electricity.Bounce"), 3 },
 		{ TEXT("TravelerVisual.Electricity.DOT"), 0 },
 		{ TEXT("TravelerVisual.Nature.AOE"), 0 },
-		{ TEXT("TravelerVisual.Nature.Pierce"), 2 },
+		{ TEXT("TravelerVisual.Nature.Summon"), 2 },
 		{ TEXT("TravelerVisual.Nature.Bounce"), 0 },
 		{ TEXT("TravelerVisual.Nature.DOT"), 0 },
 		{ TEXT("TravelerVisual.Wind.AOE"), 1 },
-		{ TEXT("TravelerVisual.Wind.Pierce"), 1 },
+		{ TEXT("TravelerVisual.Wind.Summon"), 1 },
 		{ TEXT("TravelerVisual.Wind.Bounce"), 1 },
 		{ TEXT("TravelerVisual.Wind.DOT"), 1 }
 	};
@@ -119,7 +119,7 @@ namespace
 			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, 0.f, 32.f), FRotator::ZeroRotator, FVector(0.42f, 0.42f, 0.66f), FLinearColor(1.15f, 0.82f, 0.62f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-42.f, 30.f, -6.f), FRotator::ZeroRotator, FVector(0.26f), FLinearColor(1.0f, 0.62f, 0.42f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-42.f, -30.f, -6.f), FRotator::ZeroRotator, FVector(0.26f), FLinearColor(1.0f, 0.62f, 0.42f, 1.f)) } },
-		{ TEXT("TravelerVisual.Fire.Pierce"), TEXT("FirePierce.FireLance.ConeShaftEmbers"), 4, {
+		{ TEXT("TravelerVisual.Fire.Summon"), TEXT("FireSummon.FireLance.ConeShaftEmbers"), 4, {
 			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(34.f, 0.f, 0.f), FRotator(-90.f, 0.f, 0.f), FVector(0.36f, 0.36f, 1.18f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-24.f, 0.f, 0.f), FRotator(0.f, 90.f, 0.f), FVector(0.22f, 0.22f, 0.86f), FLinearColor(0.82f, 0.58f, 0.48f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-6.f, 26.f, 0.f), FRotator::ZeroRotator, FVector(0.18f), FLinearColor(1.0f, 0.7f, 0.5f, 1.f)),
@@ -139,7 +139,7 @@ namespace
 			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, 38.f, 0.f), FRotator(0.f, 0.f, 90.f), FVector(0.20f, 0.20f, 0.48f), FLinearColor(0.82f, 1.12f, 1.18f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, -38.f, 0.f), FRotator(0.f, 0.f, -90.f), FVector(0.20f, 0.20f, 0.48f), FLinearColor(0.82f, 1.12f, 1.18f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(38.f, 0.f, 0.f), FRotator(-90.f, 0.f, 0.f), FVector(0.20f, 0.20f, 0.48f), FLinearColor(0.82f, 1.12f, 1.18f, 1.f)) } },
-		{ TEXT("TravelerVisual.Ice.Pierce"), TEXT("IcePierce.IcicleSpear.ThinShaftPoint"), 3, {
+		{ TEXT("TravelerVisual.Ice.Summon"), TEXT("IceSummon.IcicleSpear.ThinShaftPoint"), 3, {
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-20.f, 0.f, 0.f), FRotator(0.f, 90.f, 0.f), FVector(0.16f, 0.16f, 1.08f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(46.f, 0.f, 0.f), FRotator(-90.f, 0.f, 0.f), FVector(0.24f, 0.24f, 0.64f), FLinearColor(0.88f, 1.15f, 1.2f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cube, FVector(-54.f, 0.f, 0.f), FRotator(0.f, 45.f, 45.f), FVector(0.22f), FLinearColor(0.8f, 1.08f, 1.15f, 1.f)) } },
@@ -157,7 +157,7 @@ namespace
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(0.f, 0.f, 34.f), FRotator::ZeroRotator, FVector(0.10f, 0.10f, 0.72f), FLinearColor(1.12f, 1.0f, 1.18f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-18.f, 24.f, 0.f), FRotator(42.f, 0.f, 35.f), FVector(0.08f, 0.08f, 0.62f), FLinearColor(1.12f, 1.0f, 1.18f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-18.f, -24.f, 0.f), FRotator(-42.f, 0.f, -35.f), FVector(0.08f, 0.08f, 0.62f), FLinearColor(1.12f, 1.0f, 1.18f, 1.f)) } },
-		{ TEXT("TravelerVisual.Electricity.Pierce"), TEXT("ElectricityPierce.LightningBolt.SegmentedZig"), 4, {
+		{ TEXT("TravelerVisual.Electricity.Summon"), TEXT("ElectricitySummon.LightningBolt.SegmentedZig"), 4, {
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-34.f, -18.f, 0.f), FRotator(0.f, 62.f, 0.f), FVector(0.10f, 0.10f, 0.56f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(0.f, 18.f, 0.f), FRotator(0.f, -62.f, 0.f), FVector(0.10f, 0.10f, 0.56f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(34.f, -18.f, 0.f), FRotator(0.f, 62.f, 0.f), FVector(0.10f, 0.10f, 0.56f)),
@@ -178,7 +178,7 @@ namespace
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(32.f, 0.f, 0.f), FRotator(0.f, 90.f, 0.f), FVector(0.10f, 0.10f, 0.48f), FLinearColor(0.72f, 1.0f, 0.72f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-18.f, 26.f, 0.f), FRotator(0.f, -35.f, 0.f), FVector(0.08f, 0.08f, 0.42f), FLinearColor(0.72f, 1.0f, 0.72f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-18.f, -26.f, 0.f), FRotator(0.f, 35.f, 0.f), FVector(0.08f, 0.08f, 0.42f), FLinearColor(0.72f, 1.0f, 0.72f, 1.f)) } },
-		{ TEXT("TravelerVisual.Nature.Pierce"), TEXT("NaturePierce.GroundRoot.LowChainBulbs"), 4, {
+		{ TEXT("TravelerVisual.Nature.Summon"), TEXT("NatureSummon.GroundRoot.LowChainBulbs"), 4, {
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-34.f, 0.f, -18.f), FRotator(0.f, 90.f, 0.f), FVector(0.16f, 0.16f, 0.82f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(4.f, 0.f, -16.f), FRotator::ZeroRotator, FVector(0.20f), FLinearColor(0.82f, 1.0f, 0.74f, 1.f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(42.f, 0.f, -14.f), FRotator::ZeroRotator, FVector(0.17f), FLinearColor(0.82f, 1.0f, 0.74f, 1.f)),
@@ -198,7 +198,7 @@ namespace
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(0.f, 0.f, 0.f), FRotator::ZeroRotator, FVector(0.32f, 0.32f, 0.28f), FLinearColor(1.12f, 1.12f, 1.12f, 0.9f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(0.f, 0.f, 28.f), FRotator(180.f, 0.f, 0.f), FVector(0.24f, 0.24f, 0.34f), FLinearColor(1.16f, 1.16f, 1.16f, 0.9f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Sphere, FVector(-34.f, 18.f, 0.f), FRotator::ZeroRotator, FVector(0.13f), FLinearColor(1.14f, 1.14f, 1.14f, 0.78f)) } },
-		{ TEXT("TravelerVisual.Wind.Pierce"), TEXT("WindPierce.SkinnyTornadoSpear.StackedForward"), 4, {
+		{ TEXT("TravelerVisual.Wind.Summon"), TEXT("WindSummon.SkinnyTornadoSpear.StackedForward"), 4, {
 			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(-34.f, 0.f, -20.f), FRotator::ZeroRotator, FVector(0.26f, 0.26f, 0.38f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cylinder, FVector(-2.f, 0.f, 0.f), FRotator::ZeroRotator, FVector(0.20f, 0.20f, 0.46f), FLinearColor(1.12f, 1.12f, 1.12f, 0.9f)),
 			T66CarrierPart(ET66TemporaryProjectileShape::Cone, FVector(34.f, 0.f, 22.f), FRotator(180.f, 0.f, 0.f), FVector(0.16f, 0.16f, 0.34f), FLinearColor(1.16f, 1.16f, 1.16f, 0.9f)),

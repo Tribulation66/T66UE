@@ -1,7 +1,13 @@
 # Pending Cleanup Program — Decision Block + Task Contract
 
 Created 2026-06-09 (evening session). Owner: Claude Code session "pending issues full clean".
-Status: LOCKED — awaiting user's full commit of the working tree, then user "go".
+Status: RUNNING since 2026-06-09 night — user said GO (going to bed; overnight autonomous).
+GO amendments (user, 2026-06-09 night): **Phase 1 is SKIPPED for this session — a different
+agent owns the deferred-cleanup pass.** This session runs Phases 2 → 3 → 4 and updates the
+pending-issue ledgers as fixes land. Multiple agents share the tree: on any unrelated
+blocker (locked files, mid-flight edits by the cleanup agent, busy build system), WAIT and
+retry — do not stop the run. Precondition met: full commit landed as version 1.2
+(c8da91343, tagged `1.2`, pushed).
 
 ## Task contract
 

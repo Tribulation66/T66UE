@@ -78,6 +78,7 @@ private:
 	TArray<TSharedPtr<FSlateBrush>> ItemIconBrushes;
 	TArray<TSharedPtr<SWidget>> BuyButtons;
 	TArray<TSharedPtr<SWidget>> StealButtons;
+	TArray<TSharedPtr<SWidget>> LockButtons;
 	TArray<TSharedPtr<STextBlock>> BuyButtonTexts;
 
 	// Shop tab: 0 = Buy, 1 = Sell, 2 = Buyback
@@ -150,6 +151,7 @@ private:
 	FReply OnSellSlotClicked(int32 DisplaySlotIndex);
 
 	FReply OnBuySlot(int32 SlotIndex);
+	FReply OnLockSlot(int32 SlotIndex);
 	FReply OnBuybackSlot(int32 SlotIndex);
 	FReply OnStealSlot(int32 SlotIndex);
 

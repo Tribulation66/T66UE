@@ -3,14 +3,14 @@ Split an approved imagegen weapon sheet into source weapon sprites.
 
 The source sheet layout is:
   rows: Black, Red, Yellow, White
-  cols: Pierce, Bounce, AOE, DOT
+  cols: AOE, Bounce, DOT, Summon
 
 This script intentionally does not draw, recolor, pixelate, or repair the art.
 It only removes a flat chroma background if present, crops each generated cell,
 and writes the exact centered source icons expected by ImportWeaponSpritesAndSetup.
 
 Preferred batch mode consumes one 2x2 icon sheet per hero/rarity:
-  Hero_1_black_weapons.png -> Pierce, Bounce, AOE, DOT
+  Hero_1_black_weapons.png -> AOE, Bounce, DOT, Summon
 """
 
 import argparse
@@ -22,12 +22,12 @@ from PIL import Image, ImageChops
 
 
 RARITY_ORDER = ["Black", "Red", "Yellow", "White"]
-BRANCH_ORDER = ["Pierce", "Bounce", "AOE", "DOT"]
+BRANCH_ORDER = ["AOE", "Bounce", "DOT", "Summon"]
 BRANCH_GRID_POSITIONS = {
-    "Pierce": (0, 0),
+    "AOE": (0, 0),
     "Bounce": (0, 1),
-    "AOE": (1, 0),
-    "DOT": (1, 1),
+    "DOT": (1, 0),
+    "Summon": (1, 1),
 }
 OUTPUT_SIZE = 512
 TARGET_MAX_EDGE = 460
@@ -123,8 +123,8 @@ def split_master_sheet(sheet_path, weapons):
     outputs = {}
     for weapon in weapons:
         rarity = weapon.get("Rarity") or "Black"
-        branch = weapon.get("Branch") or "Pierce"
-        base = bases.get((None, rarity, branch)) or bases[(None, "Black", "Pierce")]
+        branch = weapon.get("Branch") or "AOE"
+        base = bases.get((None, rarity, branch)) or bases[(None, "Black", "AOE")]
         outputs[weapon["WeaponID"]] = base
     return outputs
 

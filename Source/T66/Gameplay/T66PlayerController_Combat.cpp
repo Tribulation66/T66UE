@@ -33,7 +33,6 @@
 #include "Gameplay/T66CrateInteractable.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AudioSubsystem.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
@@ -55,7 +54,9 @@
 #include "Gameplay/T66PetCaptureInteractable.h"
 #include "Gameplay/T66RecruitableCompanion.h"
 #include "Gameplay/T66EnemyBase.h"
+#include "Gameplay/T66MobBase.h"
 #include "Gameplay/T66BossBase.h"
+#include "Gameplay/T66LootPinata.h"
 #include "Gameplay/T66VendorBoss.h"
 #include "Components/BoxComponent.h"
 #include "Components/PrimitiveComponent.h"
@@ -336,6 +337,28 @@ namespace
 			}
 		}
 
+		for (const TWeakObjectPtr<AT66MobBase>& WeakMob : Registry->GetActiveMobs())
+		{
+			AT66MobBase* Mob = WeakMob.Get();
+			if (!Mob || !Mob->IsAliveAndActive())
+			{
+				continue;
+			}
+
+			for (const ET66HitZoneType CandidateZone : EnemyZonePreferences)
+			{
+				T66TryUpdateBestFallbackTarget(
+					PlayerController,
+					Mob->ResolveCombatTargetHandle(nullptr, CandidateZone),
+					AimScreenPosition,
+					MaxScreenDistanceSq,
+					OutActor,
+					OutZoneComponent,
+					OutZoneType,
+					BestScoreSq);
+			}
+		}
+
 		static const ET66HitZoneType BossZonePreferences[] =
 		{
 			ET66HitZoneType::Head,
@@ -368,6 +391,25 @@ namespace
 					OutZoneType,
 					BestScoreSq);
 			}
+		}
+
+		for (const TWeakObjectPtr<AT66WorldInteractableBase>& WeakInteractable : Registry->GetWorldInteractables())
+		{
+			AT66LootPinata* Pinata = Cast<AT66LootPinata>(WeakInteractable.Get());
+			if (!Pinata || !Pinata->IsAliveAndTargetable())
+			{
+				continue;
+			}
+
+			T66TryUpdateBestFallbackTarget(
+				PlayerController,
+				Pinata->ResolveCombatTargetHandle(),
+				AimScreenPosition,
+				MaxScreenDistanceSq,
+				OutActor,
+				OutZoneComponent,
+				OutZoneType,
+				BestScoreSq);
 		}
 
 		return OutActor != nullptr;
@@ -483,9 +525,17 @@ bool AT66PlayerController::HasAttackLockedEnemy() const
 	{
 		return CombatLockedEnemy->CurrentHP > 0;
 	}
+	if (const AT66MobBase* CombatLockedMob = Cast<AT66MobBase>(LockedTargetActor))
+	{
+		return CombatLockedMob->IsAliveAndActive();
+	}
 	if (const AT66BossBase* CombatLockedBoss = Cast<AT66BossBase>(LockedTargetActor))
 	{
 		return CombatLockedBoss->IsAwakened() && CombatLockedBoss->IsAlive();
+	}
+	if (const AT66LootPinata* CombatLockedPinata = Cast<AT66LootPinata>(LockedTargetActor))
+	{
+		return CombatLockedPinata->IsAliveAndTargetable();
 	}
 	return false;
 }
@@ -529,9 +579,23 @@ void AT66PlayerController::SetLockedCombatTarget(AActor* NewLockedActor, const b
 			NewLockedActor = nullptr;
 		}
 	}
+	else if (AT66MobBase* NewLockedMob = Cast<AT66MobBase>(NewLockedActor))
+	{
+		if (!NewLockedMob->IsAliveAndActive())
+		{
+			NewLockedActor = nullptr;
+		}
+	}
 	else if (AT66BossBase* NewLockedBoss = Cast<AT66BossBase>(NewLockedActor))
 	{
 		if (!NewLockedBoss->IsAwakened() || !NewLockedBoss->IsAlive())
+		{
+			NewLockedActor = nullptr;
+		}
+	}
+	else if (AT66LootPinata* NewLockedPinata = Cast<AT66LootPinata>(NewLockedActor))
+	{
+		if (!NewLockedPinata->IsAliveAndTargetable())
 		{
 			NewLockedActor = nullptr;
 		}
@@ -547,9 +611,17 @@ void AT66PlayerController::SetLockedCombatTarget(AActor* NewLockedActor, const b
 		{
 			return Enemy->ResolveCombatTargetHandle(LockedZoneComponent, SanitizedHitZoneType);
 		}
+		if (AT66MobBase* Mob = Cast<AT66MobBase>(TargetActor))
+		{
+			return Mob->ResolveCombatTargetHandle(LockedZoneComponent, SanitizedHitZoneType);
+		}
 		if (AT66BossBase* Boss = Cast<AT66BossBase>(TargetActor))
 		{
 			return Boss->ResolveCombatTargetHandle(LockedZoneComponent, SanitizedHitZoneType);
+		}
+		if (AT66LootPinata* Pinata = Cast<AT66LootPinata>(TargetActor))
+		{
+			return Pinata->ResolveCombatTargetHandle(LockedZoneComponent, SanitizedHitZoneType);
 		}
 
 		FT66CombatTargetHandle Handle;
@@ -583,6 +655,14 @@ void AT66PlayerController::SetLockedCombatTarget(AActor* NewLockedActor, const b
 	{
 		PreviousLockedEnemy->SetLockedIndicator(false);
 	}
+	else if (AT66MobBase* PreviousLockedMob = Cast<AT66MobBase>(LockedCombatActor.Get()))
+	{
+		PreviousLockedMob->SetLockedIndicator(false);
+	}
+	else if (AT66LootPinata* PreviousLockedPinata = Cast<AT66LootPinata>(LockedCombatActor.Get()))
+	{
+		PreviousLockedPinata->SetLockedIndicator(false);
+	}
 
 	LockedCombatActor = NewLockedActor;
 	LockedCombatHitZoneType = SanitizedHitZoneType;
@@ -591,6 +671,14 @@ void AT66PlayerController::SetLockedCombatTarget(AActor* NewLockedActor, const b
 	if (AT66EnemyBase* NextLockedEnemy = Cast<AT66EnemyBase>(LockedCombatActor.Get()))
 	{
 		NextLockedEnemy->SetLockedIndicator(true);
+	}
+	else if (AT66MobBase* NextLockedMob = Cast<AT66MobBase>(LockedCombatActor.Get()))
+	{
+		NextLockedMob->SetLockedIndicator(true);
+	}
+	else if (AT66LootPinata* NextLockedPinata = Cast<AT66LootPinata>(LockedCombatActor.Get()))
+	{
+		NextLockedPinata->SetLockedIndicator(true);
 	}
 
 	if (bPropagateToCombatTarget && Combat)
@@ -619,9 +707,23 @@ void AT66PlayerController::SyncLockedCombatTargetFromCombat()
 			CombatLockedActor = nullptr;
 		}
 	}
+	else if (AT66MobBase* CombatLockedMob = Cast<AT66MobBase>(CombatLockedActor))
+	{
+		if (!CombatLockedMob->IsAliveAndActive())
+		{
+			CombatLockedActor = nullptr;
+		}
+	}
 	else if (AT66BossBase* CombatLockedBoss = Cast<AT66BossBase>(CombatLockedActor))
 	{
 		if (!CombatLockedBoss->IsAwakened() || !CombatLockedBoss->IsAlive())
+		{
+			CombatLockedActor = nullptr;
+		}
+	}
+	else if (AT66LootPinata* CombatLockedPinata = Cast<AT66LootPinata>(CombatLockedActor))
+	{
+		if (!CombatLockedPinata->IsAliveAndTargetable())
 		{
 			CombatLockedActor = nullptr;
 		}
@@ -691,6 +793,8 @@ void AT66PlayerController::RefreshGameplayMouseMappings()
 
 bool AT66PlayerController::TryHandleMouseTriggeredUltimate()
 {
+	return false;
+
 	static bool bT66UltimateAttacksEnabled = true;
 	if (!bT66UltimateAttacksEnabled)
 	{
@@ -731,6 +835,8 @@ bool AT66PlayerController::TryHandleMouseTriggeredUltimate()
 
 void AT66PlayerController::HandleUltimatePressed()
 {
+	return;
+
 	static bool bT66UltimateAttacksEnabled = true;
 	if (!bT66UltimateAttacksEnabled)
 	{
@@ -956,9 +1062,17 @@ void AT66PlayerController::HandleAttackLockPressed()
 		{
 			return CandidateEnemy->CurrentHP > 0;
 		}
+		if (const AT66MobBase* CandidateMob = Cast<AT66MobBase>(CandidateActor))
+		{
+			return CandidateMob->IsAliveAndActive();
+		}
 		if (const AT66BossBase* CandidateBoss = Cast<AT66BossBase>(CandidateActor))
 		{
 			return CandidateBoss->IsAwakened() && CandidateBoss->IsAlive();
+		}
+		if (const AT66LootPinata* CandidatePinata = Cast<AT66LootPinata>(CandidateActor))
+		{
+			return CandidatePinata->IsAliveAndTargetable();
 		}
 		return false;
 	};
@@ -1209,7 +1323,6 @@ void AT66PlayerController::HandleInteractPressed()
 	AT66NPCBase* ClosestNPC = nullptr;
 	AT66RecruitableCompanion* ClosestRecruitableCompanion = nullptr;
 	AT66LootBagPickup* ClosestLootBag = nullptr;
-	AT66TutorialGate* ClosestTutorialGate = nullptr;
 	AT66IdolAltar* ClosestIdolAltar = nullptr;
 	AT66WeaponAltar* ClosestWeaponAltar = nullptr;
 	AT66TowerDescentHole* ClosestTowerDescentHole = nullptr;
@@ -1226,7 +1339,6 @@ void AT66PlayerController::HandleInteractPressed()
 	float ClosestNPCDistSq = InteractRadius * InteractRadius;
 	float ClosestRecruitableCompanionDistSq = InteractRadius * InteractRadius;
 	float ClosestLootBagDistSq = InteractRadius * InteractRadius;
-	float ClosestTutorialGateDistSq = InteractRadius * InteractRadius;
 	float ClosestIdolAltarDistSq = InteractRadius * InteractRadius;
 	float ClosestWeaponAltarDistSq = InteractRadius * InteractRadius;
 	float ClosestTowerDescentHoleDistSq = InteractRadius * InteractRadius;
@@ -1266,10 +1378,6 @@ void AT66PlayerController::HandleInteractPressed()
 		else if (AT66LootBagPickup* Bag = Cast<AT66LootBagPickup>(A))
 		{
 			if (DistSq < ClosestLootBagDistSq) { ClosestLootBagDistSq = DistSq; ClosestLootBag = Bag; }
-		}
-		else if (AT66TutorialGate* Gate = Cast<AT66TutorialGate>(A))
-		{
-			if (DistSq < ClosestTutorialGateDistSq) { ClosestTutorialGateDistSq = DistSq; ClosestTutorialGate = Gate; }
 		}
 		else if (AT66IdolAltar* Altar = Cast<AT66IdolAltar>(A))
 		{
@@ -1348,13 +1456,6 @@ void AT66PlayerController::HandleInteractPressed()
 	if (ClosestStageGate && ClosestStageGate->AdvanceToNextStage())
 	{
 		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestStageGate);
-		return;
-	}
-
-	// Tutorial portal (teleport within the same map; no load)
-	if (ClosestTutorialGate && ClosestTutorialGate->Interact(this))
-	{
-		PlayInteractAudio(FName(TEXT("Interact.Generic")), ClosestTutorialGate);
 		return;
 	}
 
@@ -1572,4 +1673,3 @@ void AT66PlayerController::HandleInteractPressed()
 		}
 	}
 }
-

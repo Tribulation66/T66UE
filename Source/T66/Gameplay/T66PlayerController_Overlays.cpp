@@ -9,16 +9,6 @@
 #include "Gameplay/Movement/T66HeroMovementComponent.h"
 #include "Gameplay/Physics/T66HeroPhysicsComponent.h"
 #include "Animation/AnimSequence.h"
-// FallGuys look-dev capture rig (herolookdev mode)
-#include "Engine/DirectionalLight.h"
-#include "Components/DirectionalLightComponent.h"
-#include "Engine/SkyLight.h"
-#include "Components/SkyLightComponent.h"
-#include "Engine/ExponentialHeightFog.h"
-#include "Components/ExponentialHeightFogComponent.h"
-#include "Engine/PostProcessVolume.h"
-#include "Engine/Scene.h"
-#include "Gameplay/T66ThemeAtmosphereData.h"
 #include "Camera/CameraActor.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Character.h"
@@ -51,6 +41,7 @@
 #include "UI/T66GameplayHUDWidget.h"
 #include "UI/Style/T66Style.h"
 #include "UI/T66LabOverlayWidget.h"
+#include "UI/T66CasinoGamblerTabWidget.h"
 #include "UI/T66CasinoOverlayWidget.h"
 #include "UI/T66CowardicePromptWidget.h"
 #include "UI/T66IdolAltarOverlayWidget.h"
@@ -67,7 +58,6 @@
 #include "Gameplay/T66VendorNPC.h"
 #include "Gameplay/T66PilotableTractor.h"
 #include "Gameplay/T66WorldInteractableBase.h"
-#include "Gameplay/T66TutorialGate.h"
 #include "Core/T66AchievementsSubsystem.h"
 #include "Core/T66ActorRegistrySubsystem.h"
 #include "Core/Backend/T66BackendRunSerializer.h"
@@ -186,7 +176,11 @@ namespace
 			|| NormalizedMode == TEXT("floorbaffleslow")
 			|| NormalizedMode == TEXT("herosurfacebounceqa")
 			|| NormalizedMode == TEXT("herolookdev")
-			|| NormalizedMode == TEXT("runsummaryroundtrip");
+			|| NormalizedMode == TEXT("runsummaryroundtrip")
+			|| NormalizedMode == TEXT("lab")
+			|| NormalizedMode == TEXT("laboverlay")
+			|| NormalizedMode == TEXT("crate")
+			|| NormalizedMode == TEXT("crateoverlay");
 	}
 
 	// Bounds-based framing for the FallGuys herolookdev capture: auto-fits the hero from its
@@ -282,7 +276,7 @@ namespace
 		case ET66TooltipKind::Item:              return NSLOCTEXT("T66.TooltipCapture", "ItemTitle", "Cursed Crown");
 		case ET66TooltipKind::Weapon:            return NSLOCTEXT("T66.TooltipCapture", "WeaponTitle", "Bone Saw");
 		case ET66TooltipKind::Idol:              return NSLOCTEXT("T66.TooltipCapture", "IdolTitle", "Blue Idol");
-		case ET66TooltipKind::PowerUp:           return NSLOCTEXT("T66.TooltipCapture", "PowerUpTitle", "Rent-Back Relic");
+		case ET66TooltipKind::PowerUp:           return NSLOCTEXT("T66.TooltipCapture", "PowerUpTitle", "Rent-Back Surgery");
 		case ET66TooltipKind::TemporaryBuff:     return NSLOCTEXT("T66.TooltipCapture", "TemporaryBuffTitle", "Temporary Buff");
 		case ET66TooltipKind::VendorOffer:       return NSLOCTEXT("T66.TooltipCapture", "VendorOfferTitle", "Vendor Offer");
 		case ET66TooltipKind::Economy:           return NSLOCTEXT("T66.TooltipCapture", "EconomyTitle", "Debt Pressure");
@@ -707,7 +701,7 @@ namespace
 		auto SumDamageSecondaries = [RunState]() -> int32
 		{
 			return RunState
-				? RunState->GetAoeDmgStat() + RunState->GetBounceDmgStat() + RunState->GetPierceDmgStat() + RunState->GetDotDmgStat()
+				? RunState->GetAoeDmgStat() + RunState->GetBounceDmgStat() + RunState->GetSummonDmgStat() + RunState->GetDotDmgStat()
 				: 0;
 		};
 
@@ -722,9 +716,9 @@ namespace
 		auto SumTrackedStats = [RunState]() -> int32
 		{
 			return RunState
-				? RunState->GetAoeDmgStat() + RunState->GetBounceDmgStat() + RunState->GetPierceDmgStat() + RunState->GetDotDmgStat()
-					+ RunState->GetAoeAtkSpdStat() + RunState->GetBounceAtkSpdStat() + RunState->GetPierceAtkSpdStat() + RunState->GetDotAtkSpdStat()
-					+ RunState->GetAoeAtkScaleStat() + RunState->GetBounceAtkScaleStat() + RunState->GetPierceAtkScaleStat() + RunState->GetDotAtkScaleStat()
+				? RunState->GetAoeDmgStat() + RunState->GetBounceDmgStat() + RunState->GetSummonDmgStat() + RunState->GetDotDmgStat()
+					+ RunState->GetAoeAtkSpdStat() + RunState->GetBounceAtkSpdStat() + RunState->GetSummonAtkSpdStat() + RunState->GetDotAtkSpdStat()
+					+ RunState->GetAoeAtkScaleStat() + RunState->GetBounceAtkScaleStat() + RunState->GetSummonAtkScaleStat() + RunState->GetDotAtkScaleStat()
 				: 0;
 		};
 
@@ -988,38 +982,38 @@ namespace
 		{
 			Buffs->DebugSetDiplomaUnlockedSteps(ET66HeroStatType::Damage, 0);
 			RunState->BeginNewRun();
-			const int32 DamageBeforeRelic = RunState->GetDamageStat();
-			const int32 DamageSecondaryBeforeRelic = SumDamageSecondaries();
+			const int32 DamageBeforeSurgery = RunState->GetDamageStat();
+			const int32 DamageSecondaryBeforeSurgery = SumDamageSecondaries();
 
 			Buffs->DebugSetDiplomaUnlockedSteps(ET66HeroStatType::Damage, 2);
 			RunState->BeginNewRun();
 			T66AppendSmokeCheck(
 				Checks,
 				bAllPassed,
-				TEXT("Relics raise primary stats"),
-				RunState->GetDamageStat() > DamageBeforeRelic,
-				FString::Printf(TEXT("Damage %d -> %d."), DamageBeforeRelic, RunState->GetDamageStat()));
+				TEXT("Surgeries raise primary stats"),
+				RunState->GetDamageStat() > DamageBeforeSurgery,
+				FString::Printf(TEXT("Damage %d -> %d."), DamageBeforeSurgery, RunState->GetDamageStat()));
 			T66AppendSmokeCheck(
 				Checks,
 				bAllPassed,
-				TEXT("Relics propagate to secondary stats"),
-				SumDamageSecondaries() > DamageSecondaryBeforeRelic,
-				FString::Printf(TEXT("Damage-secondary sum %d -> %d."), DamageSecondaryBeforeRelic, SumDamageSecondaries()));
+				TEXT("Surgeries propagate to secondary stats"),
+				SumDamageSecondaries() > DamageSecondaryBeforeSurgery,
+				FString::Printf(TEXT("Damage-secondary sum %d -> %d."), DamageSecondaryBeforeSurgery, SumDamageSecondaries()));
 		}
 
 		if (RunState && Buffs)
 		{
 			RunState->BeginNewRun();
-			const float AoeValueBeforeSteroid = RunState->GetStatValue(ET66StatType::AoeDamage);
+			const float AoeValueBeforeDrug = RunState->GetStatValue(ET66StatType::AoeDamage);
 			Buffs->DebugGrantSingleUseBuff(ET66StatType::AoeDamage, 1, true);
 			RunState->DebugActivatePendingSingleUseBuffsForRunStartWithoutConsuming();
-			const float AoeValueAfterSteroid = RunState->GetStatValue(ET66StatType::AoeDamage);
+			const float AoeValueAfterDrug = RunState->GetStatValue(ET66StatType::AoeDamage);
 			T66AppendSmokeCheck(
 				Checks,
 				bAllPassed,
-				TEXT("Selected steroids multiply secondary stats"),
-				AoeValueAfterSteroid > AoeValueBeforeSteroid,
-				FString::Printf(TEXT("AOE value %.3f -> %.3f."), AoeValueBeforeSteroid, AoeValueAfterSteroid));
+				TEXT("Selected drugs multiply secondary stats"),
+				AoeValueAfterDrug > AoeValueBeforeDrug,
+				FString::Printf(TEXT("AOE value %.3f -> %.3f."), AoeValueBeforeDrug, AoeValueAfterDrug));
 		}
 
 		if (RunState)
@@ -1135,7 +1129,7 @@ namespace
 
 		TWeakObjectPtr<AT66MobBase> LiveAutoAttackHeadshotTarget;
 		float LiveAutoAttackHeadshotChance = 0.f;
-		ET66AttackCategory AutoAttackProofCategory = ET66AttackCategory::Pierce;
+		ET66AttackCategory AutoAttackProofCategory = ET66AttackCategory::AOE;
 		float LiveAutoAttackProofDelaySeconds = 0.f;
 
 		if (RunState && World && HeroPawn && HeroPawn->CombatComponent && WeaponManager && GI)
@@ -1168,7 +1162,7 @@ namespace
 				bAllPassed,
 				TEXT("Headshot Chance clamps to proc cap"),
 				FMath::IsNearlyEqual(LiveAutoAttackHeadshotChance, 0.95f),
-				FString::Printf(TEXT("HeadshotChance=%.3f after capped inventory, persistent secondary bonus, and selected steroid multiplier."), LiveAutoAttackHeadshotChance));
+				FString::Printf(TEXT("HeadshotChance=%.3f after capped inventory, persistent secondary bonus, and selected drug multiplier."), LiveAutoAttackHeadshotChance));
 			const FName AutoAttackProofHeroID = !HeroPawn->HeroID.IsNone() ? HeroPawn->HeroID : FName(TEXT("Hero_1"));
 			FHeroData AutoAttackProofHeroData;
 			if (GI->GetHeroData(AutoAttackProofHeroID, AutoAttackProofHeroData))
@@ -1688,6 +1682,70 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 {
 	const FString Mode = GameplayAutomationCaptureMode.TrimStartAndEnd().ToLower();
 
+#if !UE_BUILD_SHIPPING
+	if (Mode == TEXT("casinocoinflip")
+		|| Mode == TEXT("casinoguesscup")
+		|| Mode == TEXT("casinostickpick")
+		|| Mode == TEXT("casinofindjoker"))
+	{
+		FName CaptureGameID(TEXT("Casino_CoinFlip"));
+		float PickDelaySeconds = 2.8f;
+		if (Mode == TEXT("casinoguesscup"))
+		{
+			CaptureGameID = FName(TEXT("Casino_GuessTheCup"));
+			PickDelaySeconds = 5.2f;
+		}
+		else if (Mode == TEXT("casinostickpick"))
+		{
+			CaptureGameID = FName(TEXT("Casino_PickLongestShortestStick"));
+			PickDelaySeconds = 3.0f;
+		}
+		else if (Mode == TEXT("casinofindjoker"))
+		{
+			CaptureGameID = FName(TEXT("Casino_FindJoker"));
+			PickDelaySeconds = 3.6f;
+		}
+
+		if (!CasinoOverlayWidget)
+		{
+			CasinoOverlayWidget = CreateWidget<UT66CasinoOverlayWidget>(this, ResolveCasinoOverlayClass());
+		}
+		if (!CasinoOverlayWidget)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[CasinoCapture] failed: could not create casino overlay widget."));
+			return;
+		}
+
+		CasinoOverlayWidget->SetOverlayMode(UT66CasinoOverlayWidget::ECasinoOverlayMode::GamblerOnly);
+		if (!CasinoOverlayWidget->IsInViewport())
+		{
+			CasinoOverlayWidget->AddToViewport(100);
+		}
+		CasinoOverlayWidget->OpenGamblerTab();
+		ApplyCasinoOverlayInputMode();
+
+		// OpenGamblerTab schedules a deferred overlay rebuild that destroys and recreates
+		// the gambler tab widget; arm the automation on the post-rebuild tab instance.
+		TWeakObjectPtr<AT66PlayerController> WeakPC(this);
+		FTimerHandle CasinoCaptureArmTimerHandle;
+		GetWorldTimerManager().SetTimer(
+			CasinoCaptureArmTimerHandle,
+			FTimerDelegate::CreateLambda([WeakPC, CaptureGameID, PickDelaySeconds]()
+			{
+				AT66PlayerController* PC = WeakPC.Get();
+				UT66CasinoGamblerTabWidget* GamblerTab = (PC && PC->CasinoOverlayWidget)
+					? PC->CasinoOverlayWidget->GetGamblerTabWidgetForAutomation()
+					: nullptr;
+				const bool bArmed = GamblerTab && GamblerTab->RunCasinoCaptureAutomation(CaptureGameID, 50, PickDelaySeconds);
+				UE_LOG(LogTemp, Display, TEXT("[CasinoCapture] late-arm game=%s armed=%d"), *CaptureGameID.ToString(), bArmed ? 1 : 0);
+			}),
+			0.6f,
+			false);
+		UE_LOG(LogTemp, Display, TEXT("[CasinoCapture] mode=%s scheduled"), *Mode);
+		return;
+	}
+#endif
+
 	if (Mode == TEXT("tooltip") || Mode == TEXT("tooltipcapture") || Mode == TEXT("tooltipreview"))
 	{
 		if (bInventoryInspectOpen)
@@ -1745,61 +1803,50 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 			return;
 		}
 
-		// When the GLOBAL single rig (t66.Light.SingleRig) is active it already lights the whole world,
-		// so this capture must NOT add its own local rig (that would confound what we're reviewing).
-		// Only spawn the local capture rig when the global rig is OFF (e.g. the earlier Hero-1 material test).
-		const bool bSpawnLocalCaptureRig = !T66ThemeAtmosphereData::IsSingleLightingRigEnabled();
-		if (bSpawnLocalCaptureRig)
+		// The GLOBAL single rig already lights the whole world, so this capture never adds a
+		// local rig — captures show the real shared lighting state.
+
+		// Optional VAT-mob proof: -T66HeroLookDevMobs spawns a small EASY mob pack beside the hero
+		// so the wide/close shots show the VAT mobs animating under the one master.
+		if (FParse::Param(FCommandLine::Get(), TEXT("T66HeroLookDevMobs")))
 		{
-		// --- One bright soft NEUTRAL rig: key + 2 white fills (no scene-capturing SkyLight, which
-		// previously tinted everything blue), fog suppressed, exposure pinned + white balance neutral
-		// via an unbound PostProcess volume so the bright TestRoom walls can't auto-darken the hero.
-		// Capture-only (transient spawns / fog hidden, not deleted) = reversible.
-		auto MakeKeyOrFill = [World](FRotator Rot, float Intensity, bool bShadows, float SourceAngle)
-		{
-			if (ADirectionalLight* L = World->SpawnActor<ADirectionalLight>(ADirectionalLight::StaticClass(), FVector(0, 0, 1500), Rot))
+			TWeakObjectPtr<APawn> WeakHeroForMobs(HeroPawn);
+			auto SpawnLookDevMob = [World, WeakHeroForMobs](const TCHAR* MobIdText, const FVector& LocalOffset)
 			{
-				L->SetMobility(EComponentMobility::Movable);
-				if (UDirectionalLightComponent* C = Cast<UDirectionalLightComponent>(L->GetLightComponent()))
+				APawn* Hero = WeakHeroForMobs.Get();
+				if (!World || !Hero)
 				{
-					C->SetIntensity(Intensity);
-					C->SetLightColor(FLinearColor::White);
-					C->LightSourceAngle = SourceAngle;
-					C->SetCastShadows(bShadows);
-					C->MarkRenderStateDirty();
+					return;
 				}
-			}
-		};
-		MakeKeyOrFill(FRotator(-50.f, -40.f, 0.f), 9.0f, true, 3.0f);   // soft key
-		MakeKeyOrFill(FRotator(-22.f, 150.f, 0.f), 3.5f, false, 0.f);   // opposite fill
-		MakeKeyOrFill(FRotator(-8.f, 25.f, 0.f), 2.0f, false, 0.f);     // gentle front fill (lifts crevices)
-
-		for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
-		{
-			if (UExponentialHeightFogComponent* FogC = It->GetComponent())
-			{
-				FogC->SetFogDensity(0.f);
-			}
-			It->SetActorHiddenInGame(true);
+				const FVector Forward = Hero->GetActorForwardVector().GetSafeNormal2D();
+				const FVector Right = Hero->GetActorRightVector().GetSafeNormal2D();
+				FVector SpawnLocation = Hero->GetActorLocation() + Forward * LocalOffset.X + Right * LocalOffset.Y;
+				SpawnLocation.Z += LocalOffset.Z;
+				const FTransform SpawnTransform(Hero->GetActorRotation(), SpawnLocation);
+				if (AT66MobBase* Mob = World->SpawnActorDeferred<AT66MobBase>(AT66MobBase::StaticClass(), SpawnTransform))
+				{
+					Mob->MobID = FName(MobIdText);
+					Mob->CharacterVisualID = FName(MobIdText); // drives the VAT visual resolve
+					Mob->EnemyFamily = ET66EnemyFamily::Melee;
+					Mob->MaxHP = 9999.f;
+					Mob->CurrentHP = 9999.f;
+					Mob->TouchDamageCooldownSeconds = 3600.f; // showcase only — don't hurt the hero
+					Mob->LifecycleState = ET66MobLifecycleState::Active;
+					Mob->FinishSpawning(SpawnTransform);
+					// Same post-spawn init as T66.Mob.SpawnTest — this is what resolves/applies the
+					// VAT visual (BeginPlay alone leaves the placeholder sphere).
+					Mob->ConfigureAsMob(FName(MobIdText), ET66EnemyFamily::Melee, NAME_None, 1, 1.f, 1.f, 1.f, false);
+					UMaterialInterface* Slot0 = (Mob->VisualMesh && Mob->VisualMesh->GetNumMaterials() > 0) ? Mob->VisualMesh->GetMaterial(0) : nullptr;
+					UE_LOG(LogTemp, Display, TEXT("[HeroLookDevMobs] Spawned %s at %s Mat0=%s Mesh=%s"),
+						MobIdText, *SpawnLocation.ToCompactString(),
+						Slot0 ? *Slot0->GetPathName() : TEXT("none"),
+						(Mob->VisualMesh && Mob->VisualMesh->GetStaticMesh()) ? *Mob->VisualMesh->GetStaticMesh()->GetName() : TEXT("none"));
+				}
+			};
+			SpawnLookDevMob(TEXT("Slime"), FVector(170.f, -130.f, 0.f));
+			SpawnLookDevMob(TEXT("BoneWalker"), FVector(220.f, 0.f, 0.f));
+			SpawnLookDevMob(TEXT("CaveBat"), FVector(170.f, 130.f, 120.f));
 		}
-
-		if (APostProcessVolume* PPV = World->SpawnActor<APostProcessVolume>(APostProcessVolume::StaticClass()))
-		{
-			PPV->bUnbound = true;
-			PPV->Priority = 1000.f;
-			FPostProcessSettings& S = PPV->Settings;
-			// Pin exposure (kill auto-darkening from bright walls)
-			S.bOverride_AutoExposureMinBrightness = true; S.AutoExposureMinBrightness = 1.0f;
-			S.bOverride_AutoExposureMaxBrightness = true; S.AutoExposureMaxBrightness = 1.0f;
-			S.bOverride_AutoExposureBias = true; S.AutoExposureBias = 1.0f;
-			// Neutral white balance (kill blue cast)
-			S.bOverride_WhiteTemp = true; S.WhiteTemp = 6500.f;
-			S.bOverride_ColorSaturation = true; S.ColorSaturation = FVector4(1.f, 1.f, 1.f, 1.f);
-			// Calmer extras
-			S.bOverride_BloomIntensity = true; S.BloomIntensity = 0.10f;
-			S.bOverride_VignetteIntensity = true; S.VignetteIntensity = 0.0f;
-		}
-		} // end if (bSpawnLocalCaptureRig)
 
 		ACameraActor* Cam = World->SpawnActor<ACameraActor>(ACameraActor::StaticClass());
 		TWeakObjectPtr<APawn> WeakHero(HeroPawn);
@@ -1817,7 +1864,80 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const FString ClosePath = Dir / (TEXT("herolookdev_") + Tag + TEXT("_close.png"));
 		IFileManager::Get().MakeDirectory(*Dir, true);
 
-		// Sequence: wide shot -> reframe close -> close shot -> quit.
+		// Optional combat capture: -T66HeroLookDevIdol=<IdolID> equips the idol (base/Black tier)
+		// so auto-fire shows in the shots; combined with -T66HeroLookDevMobs the basic slash
+		// also fires at the spawned pack. Adds two late action shots + a later quit.
+		FString LookDevIdol;
+		const bool bLookDevCombat = FParse::Value(FCommandLine::Get(), TEXT("T66HeroLookDevIdol="), LookDevIdol) && !LookDevIdol.IsEmpty();
+		if (bLookDevCombat)
+		{
+			if (UGameInstance* GI = GetGameInstance())
+			{
+				if (UT66IdolManagerSubsystem* Idols = GI->GetSubsystem<UT66IdolManagerSubsystem>())
+				{
+					Idols->EquipIdolFirstEmpty(FName(*LookDevIdol));
+					UE_LOG(LogTemp, Display, TEXT("[HeroLookDev] equipped idol %s"), *LookDevIdol);
+				}
+				// Automation runs start on Weapon_NoWeapon (single-target placeholder) — equip the
+				// hero's BLACK-tier weapon so the basic slash actually runs for the action shots.
+				if (UT66WeaponManagerSubsystem* Weapons = GI->GetSubsystem<UT66WeaponManagerSubsystem>())
+				{
+					const bool bWeaponOK = Weapons->SelectWeapon(FName(TEXT("Hero_1_black_aoe")));
+					UE_LOG(LogTemp, Display, TEXT("[HeroLookDev] equip black weapon -> %d (now=%s)"),
+						bWeaponOK ? 1 : 0, *Weapons->GetEquippedWeaponID().ToString());
+				}
+			}
+			// Auto-attack is suppressed in automation contexts — drive it directly like the
+			// combat smoke modes do, so the slash + idol actually fire for the action shots.
+			// The hero is resolved fresh INSIDE the repeating timer: depending on the entry
+			// flags the pawn may not be possessed yet when this mode-setup code runs, and a
+			// captured-null pawn silently killed the whole driver in earlier iterations.
+			{
+				FTimerHandle TFire;
+				World->GetTimerManager().SetTimer(TFire, FTimerDelegate::CreateWeakLambda(this, [this]()
+				{
+					AT66HeroBase* H = Cast<AT66HeroBase>(GetPawn());
+					if (!H)
+					{
+						for (TActorIterator<AT66HeroBase> It(GetWorld()); It; ++It)
+						{
+							H = *It;
+							break;
+						}
+					}
+					if (!H || !H->CombatComponent)
+					{
+						UE_LOG(LogTemp, Display, TEXT("[HeroLookDev] automation attack skipped — no hero/combat yet"));
+						return;
+					}
+					// Idempotent per tick: unsuppress + refresh the loadout caches (the
+					// harness equips bypass the normal pickup flow), lock the nearest mob
+					// (the reference automation locks before firing), then fire.
+					H->CombatComponent->SetAutoAttackSuppressed(false);
+					H->CombatComponent->RecomputeFromRunStateForAutomation();
+					AT66MobBase* Nearest = nullptr;
+					float BestDistSq = TNumericLimits<float>::Max();
+					for (TActorIterator<AT66MobBase> It(H->GetWorld()); It; ++It)
+					{
+						const float DistSq = FVector::DistSquared(It->GetActorLocation(), H->GetActorLocation());
+						if (DistSq < BestDistSq)
+						{
+							BestDistSq = DistSq;
+							Nearest = *It;
+						}
+					}
+					if (Nearest)
+					{
+						H->CombatComponent->SetLockedTarget(Nearest);
+					}
+					H->CombatComponent->PerformAutomationAutoAttackNow();
+					UE_LOG(LogTemp, Display, TEXT("[HeroLookDev] automation attack fired (hero=%s locked=%s)"),
+						*H->GetName(), Nearest ? *Nearest->GetName() : TEXT("none"));
+				}), 1.2f, true, 1.0f);
+			}
+		}
+
+		// Sequence: wide shot -> reframe close -> close shot -> (combat: two wide action shots) -> quit.
 		FTimerHandle TWide, TClose, TQuit;
 		World->GetTimerManager().SetTimer(TWide, FTimerDelegate::CreateWeakLambda(this, [WidePath]()
 		{
@@ -1830,10 +1950,53 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 			FScreenshotRequest::RequestScreenshot(ClosePath, true, false, false);
 			UE_LOG(LogTemp, Display, TEXT("[HeroLookDev] close screenshot -> %s"), *ClosePath);
 		}), 2.4f, false);
+		if (bLookDevCombat)
+		{
+			// Side-on view of the firing lane: attacks fire toward the spawned mobs (+X of
+			// the hero), straight away from the default front camera, so the projectiles fly
+			// hidden behind the hero. Park the camera beside the lane instead. Shots trail
+			// each attack-timer tick (1.0 + N*1.2s) by ~0.15s so the slash horn (0.25s flight)
+			// and line target streak (0.86s) are mid-flight; the late shots give the idol's second
+			// fire a chance to be in frame before quit.
+			auto SetLaneCamera = [this, WeakCam, WeakHero]()
+			{
+				if (!WeakCam.IsValid() || !WeakHero.IsValid())
+				{
+					return;
+				}
+				// Frame any live projectile mesh directly (deterministic — no lane guessing);
+				// fall back to an elevated 3/4 view of the firing lane when none is in flight.
+				const FVector HeroLoc = WeakHero->GetActorLocation();
+				FVector LookAt = HeroLoc + FVector(550.f, 0.f, 60.f);
+				FVector CamLoc = HeroLoc + FVector(-150.f, -850.f, 620.f);
+				for (TActorIterator<AT66HeroProjectile> It(GetWorld()); It; ++It)
+				{
+					LookAt = It->GetActorLocation();
+					CamLoc = LookAt + FVector(-220.f, -420.f, 240.f);
+					break;
+				}
+				WeakCam->SetActorLocation(CamLoc);
+				WeakCam->SetActorRotation((LookAt - CamLoc).Rotation());
+				SetViewTargetWithBlend(WeakCam.Get(), 0.f);
+				UE_LOG(LogTemp, Display, TEXT("[HeroLookDev] action cam look-at %s"), *LookAt.ToCompactString());
+			};
+			const float ActionTimes[4] = { 1.1f, 2.35f, 3.55f, 5.95f };
+			for (int32 ShotIndex = 0; ShotIndex < 4; ++ShotIndex)
+			{
+				const FString ActionPath = Dir / (TEXT("herolookdev_") + Tag + FString::Printf(TEXT("_action%d.png"), ShotIndex + 1));
+				FTimerHandle TAct;
+				World->GetTimerManager().SetTimer(TAct, FTimerDelegate::CreateWeakLambda(this, [SetLaneCamera, ActionPath]()
+				{
+					SetLaneCamera();
+					FScreenshotRequest::RequestScreenshot(ActionPath, true, false, false);
+					UE_LOG(LogTemp, Display, TEXT("[HeroLookDev] action screenshot -> %s"), *ActionPath);
+				}), ActionTimes[ShotIndex], false);
+			}
+		}
 		World->GetTimerManager().SetTimer(TQuit, FTimerDelegate::CreateWeakLambda(this, [this]()
 		{
 			HandleGameplayAutomationQuit();
-		}), 3.8f, false);
+		}), bLookDevCombat ? 8.2f : 3.8f, false);
 		return;
 	}
 
@@ -4420,7 +4583,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		return;
 	}
 
-	if (Mode == TEXT("hero1axeaoe") || Mode == TEXT("vfxlabhero1axeaoe") || Mode == TEXT("hero1axeaoehitbox") || Mode == TEXT("hero1axeaoevfxbinding") || Mode == TEXT("hero1axepiercevfxbinding") || Mode == TEXT("hero1axebouncevfxbinding") || Mode == TEXT("hero1axedotvfxbinding") || Mode == TEXT("hero1axeaoewateridolimpact"))
+	if (Mode == TEXT("hero1axeaoe") || Mode == TEXT("vfxlabhero1axeaoe") || Mode == TEXT("hero1axeaoehitbox") || Mode == TEXT("hero1axeaoevfxbinding") || Mode == TEXT("hero1axebouncevfxbinding") || Mode == TEXT("hero1axedotvfxbinding") || Mode == TEXT("hero1axeaoewateridolimpact"))
 	{
 		if (bInventoryInspectOpen)
 		{
@@ -4435,14 +4598,13 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		if (UWorld* World = GetWorld())
 		{
 			const bool bAoeVFXBindingProofMode = Mode == TEXT("hero1axeaoevfxbinding");
-			const bool bPierceVFXBindingProofMode = Mode == TEXT("hero1axepiercevfxbinding");
 			const bool bBounceVFXBindingProofMode = Mode == TEXT("hero1axebouncevfxbinding");
 			// DOT is a temporary placeholder structure proof: it equips the DOT proof weapon and
 			// fires through the normal auto-attack path, but is intentionally NOT a
 			// bProductionVFXBindingProofMode member because it has no production Niagara binding or
 			// item/stat gate yet. It reuses the hitbox-proof target/equip scaffolding only.
 			const bool bDotVFXBindingProofMode = Mode == TEXT("hero1axedotvfxbinding");
-			const bool bProductionVFXBindingProofMode = bAoeVFXBindingProofMode || bPierceVFXBindingProofMode || bBounceVFXBindingProofMode;
+			const bool bProductionVFXBindingProofMode = bAoeVFXBindingProofMode || bBounceVFXBindingProofMode;
 			const bool bWaterIdolImpactProofMode = Mode == TEXT("hero1axeaoewateridolimpact");
 			const bool bHitboxProofMode = Mode == TEXT("hero1axeaoehitbox") || bProductionVFXBindingProofMode || bDotVFXBindingProofMode || bWaterIdolImpactProofMode;
 			static const FName Hero1AxeTargetTag(TEXT("T66Automation_Hero1AxeAOETarget"));
@@ -4546,12 +4708,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 
 				FName HeroID = HeroPawn->HeroID.IsNone() ? FName(TEXT("Hero_1")) : HeroPawn->HeroID;
 				ET66AttackCategory ProofWeaponCategory = ET66AttackCategory::AOE;
-				if (bPierceVFXBindingProofMode)
-				{
-					HeroID = FName(TEXT("Hero_2"));
-					ProofWeaponCategory = ET66AttackCategory::Pierce;
-				}
-				else if (bBounceVFXBindingProofMode)
+				if (bBounceVFXBindingProofMode)
 				{
 					HeroID = FName(TEXT("Hero_4"));
 					ProofWeaponCategory = ET66AttackCategory::Bounce;
@@ -4625,7 +4782,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 					ImpactProofIdolID = FName(*ProofIdolString.TrimStartAndEnd());
 					// Centralized in T66CombatShared so the proof-idol allowlist cannot drift
 					// from the runtime impact-presentation lane. Members: Idol_Ice_AOE (AOE,
-					// preserved reference), Idol_Electricity_Pierce (Pierce), Idol_Electricity_Bounce (Bounce),
+					// preserved reference), Idol_Electricity_Summon (LineTarget), Idol_Electricity_Bounce (Bounce),
 					// Idol_Nature_DOT (DOT), plus Idol_Nature_AOE (neutral/alternate control).
 					if (!T66CombatShared::GetSupportedProofIdols().Contains(ImpactProofIdolID))
 					{
@@ -4766,7 +4923,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				const FVector PrimaryLocation = HeroLocation + Forward * 360.0f;
 				// Category-native idol proof selectors. The AOE weapon is always the upstream
 				// driver; only the equipped proof idol changes the downstream category behaviour.
-				const bool bIdolPierceProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Electricity_Pierce"));
 				const bool bIdolBounceProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Electricity_Bounce"));
 				const bool bIdolDotProof = bWaterIdolImpactProofMode && ImpactProofIdolID == FName(TEXT("Idol_Nature_DOT"));
 				const bool bWeaponPatternProofMode = FParse::Param(FCommandLine::Get(), TEXT("T66Hero1WeaponPatternProof"));
@@ -4863,18 +5019,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 						ProofLobeSpacing,
 						TargetSpecs.Num());
 				}
-				else if (bPierceVFXBindingProofMode)
-				{
-					TargetSpecs = {
-						{ TEXT("Primary"), FVector::ZeroVector, true },
-						{ TEXT("InLineNear"), Forward * 120.0f, true },
-						{ TEXT("InLineFar"), Forward * 520.0f, true },
-						{ TEXT("InsideTubeSide"), Forward * 420.0f + Right * 60.0f, true },
-						{ TEXT("OutsideTubeSide"), Forward * 420.0f + Right * 180.0f, false },
-						{ TEXT("OutsideBehind"), -Forward * 520.0f, false },
-						{ TEXT("OutsideFarSide"), Forward * 900.0f + Right * 260.0f, false },
-					};
-				}
 				else if (bBounceVFXBindingProofMode)
 				{
 					// Bounce projectile-travel proof intentionally stages the user's requested
@@ -4970,22 +5114,6 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 						{ TEXT("OutsideAngleEdge"), -Forward * 30.0f + Right * 360.0f, false },
 						{ TEXT("OutsideBehind"), -Forward * 760.0f, false },
 						{ TEXT("OutsideRadius"), Forward * 520.0f, false },
-					};
-				}
-				else if (bIdolPierceProof)
-				{
-					// Pierce idol (Idol_Electricity_Pierce, property=1 => 2 line targets) read off the AOE
-					// impact point along forward: primary + one in-line second target are pierced.
-					// PierceInLineSecond sits beyond the parent AOE outer radius so only the pierce
-					// line can reach it (isolates pierce reach from the parent weapon AOE). All
-					// ExpectedHit=0 controls sit far outside both the parent AOE radius and the pierce
-					// tube/length so neither the parent AOE nor the pierce capsule can touch them.
-					TargetSpecs = {
-						{ TEXT("Primary"), FVector::ZeroVector, true },
-						{ TEXT("PierceInLineSecond"), Forward * 600.0f, true },
-						{ TEXT("PierceOffLineFar"), Forward * 220.0f + Right * 4200.0f, false },
-						{ TEXT("PierceBeyondReach"), Forward * 4200.0f, false },
-						{ TEXT("OutsideBehind"), -Forward * 4200.0f, false },
 					};
 				}
 				else if (bIdolBounceProof)
@@ -5720,7 +5848,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 				HeroProjectile->SetVisualOnly(true);
 				HeroProjectile->Damage = 0;
 				HeroProjectile->ConfigureTemporaryProjectileVisual(
-					FT66TemporaryProjectileSystem::ProfileHeroPierce(),
+					FT66TemporaryProjectileSystem::ProfileHeroSingleTarget(),
 					FT66TemporaryProjectileSystem::HeroProjectileColor(),
 					1.0f,
 					FT66TemporaryProjectileSystem::ProfileIdolOverlay(),
@@ -5797,10 +5925,10 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 			SourceSummary->StatValues.Add(ET66StatType::ElectricityPower, 2.75f);
 			SourceSummary->StatValues.Add(ET66StatType::NaturePower, 1.5f);
 			SourceSummary->StatValues.Add(ET66StatType::WindPower, 2.0f);
-			SourceSummary->EquippedIdols = { FName(TEXT("Idol_Fire_AOE")), FName(TEXT("Idol_Ice_Pierce")), FName(TEXT("Idol_Wind_Bounce")) };
+			SourceSummary->EquippedIdols = { FName(TEXT("Idol_Fire_AOE")), FName(TEXT("Idol_Ice_Summon")), FName(TEXT("Idol_Wind_Bounce")) };
 			SourceSummary->EquippedIdolTiers = { 1, 2, 3 };
 			SourceSummary->EquippedIdolElements = { ET66IdolElement::Fire, ET66IdolElement::Ice, ET66IdolElement::Wind };
-			SourceSummary->EquippedIdolCategories = { ET66AttackCategory::AOE, ET66AttackCategory::Pierce, ET66AttackCategory::Bounce };
+			SourceSummary->EquippedIdolCategories = { ET66AttackCategory::AOE, ET66AttackCategory::AOE, ET66AttackCategory::Bounce };
 			SourceSummary->InventorySlots = {
 				FT66InventorySlot(FName(TEXT("Item_FirePower_Black")), ET66ItemRarity::Black, 1, 0.f, 0, 2101),
 				FT66InventorySlot(FName(TEXT("Item_IcePower_Red")), ET66ItemRarity::Red, 3, 0.f, 0, 2102),
@@ -5901,7 +6029,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const bool bLegacyIdolSaveMigrationChanged = T66NormalizeEquippedIdolSaveArrays(LegacyIdolSaveIDs, LegacyIdolSaveTiers);
 		const bool bLegacyIdolSaveMigrated =
 			LegacyIdolSaveIDs.Num() == 3
-			&& LegacyIdolSaveIDs[0] == FName(TEXT("Idol_Electricity_Pierce"))
+			&& LegacyIdolSaveIDs[0] == FName(TEXT("Idol_Electricity_Summon"))
 			&& LegacyIdolSaveIDs[1] == FName(TEXT("Idol_Ice_AOE"))
 			&& LegacyIdolSaveIDs[2] == FName(TEXT("Idol_Electricity_AOE"))
 			&& LegacyIdolSaveTiers.Num() == 3
@@ -5931,7 +6059,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 		const bool bLegacyIdolBackendParsed =
 			LegacyIdolParsedSummary
 			&& LegacyIdolParsedSummary->EquippedIdols.Num() == 3
-			&& LegacyIdolParsedSummary->EquippedIdols[0] == FName(TEXT("Idol_Electricity_Pierce"))
+			&& LegacyIdolParsedSummary->EquippedIdols[0] == FName(TEXT("Idol_Electricity_Summon"))
 			&& LegacyIdolParsedSummary->EquippedIdols[1] == FName(TEXT("Idol_Ice_AOE"))
 			&& LegacyIdolParsedSummary->EquippedIdols[2] == FName(TEXT("Idol_Electricity_AOE"));
 		UT66LocalizationSubsystem* Localization = GetGameInstance()
@@ -8700,6 +8828,7 @@ void AT66PlayerController::ApplyGameplayAutomationCaptureMode()
 	{
 		if (const UT66GameInstance* T66GI = Cast<UT66GameInstance>(GetGameInstance()); T66GI && !T66GI->IsRunCategoryPlayable(ET66RunCategory::Lab))
 		{
+			UE_LOG(LogTemp, Warning, TEXT("[GameplayAutoCapture] Mode '%s' skipped: Lab run category is not playable in this build/release variant."), *Mode);
 			return;
 		}
 

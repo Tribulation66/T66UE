@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Core/T66WorldRuntimeProofTypes.h"
+#include "Data/T66DataTypes.h"
 #include "Gameplay/T66BossAttackTypes.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "Tickable.h"
@@ -41,6 +42,9 @@ struct FT66ManagedProjectileFireParams
 	float Radius = 18.f;
 	float Lifetime = 4.f;
 	int32 ProjectileTypeIndex = 0;
+	ET66AttackCategory AttackCategory = ET66AttackCategory::AOE;
+	TSoftObjectPtr<UStaticMesh> ProjectileMesh;
+	float ProjectileMeshScale = 1.f;
 	ET66ManagedProjectileDelivery Delivery = ET66ManagedProjectileDelivery::EnemyProjectile;
 	ET66BossAttackProfile BossAttackProfile = ET66BossAttackProfile::Balanced;
 	FLinearColor BossPrimaryColor = FLinearColor(0.95f, 0.16f, 0.12f, 1.f);
@@ -65,6 +69,7 @@ struct FT66ManagedProjectile
 	ET66BossAttackProfile BossAttackProfile = ET66BossAttackProfile::Balanced;
 	bool bUseBossSecondaryTint = false;
 	float BossVisualScaleMultiplier = 1.f;
+	ET66AttackCategory AttackCategory = ET66AttackCategory::AOE;
 	FVector VisualScale = FVector(1.f);
 	FQuat VisualRotationOffset = FQuat::Identity;
 	FName VisualProfileID = NAME_None;
@@ -144,6 +149,7 @@ struct FT66ProjectileVisualBucket
 	TWeakObjectPtr<UNiagaraSystem> BodySystem;
 	TWeakObjectPtr<UNiagaraSystem> TrailSystem;
 	TWeakObjectPtr<UNiagaraSystem> ImpactSystem;
+	bool bUseFlatColorMaterial = true;
 	bool bOverflowBucket = false;
 };
 
@@ -211,6 +217,7 @@ private:
 	TMap<FName, int32> ManagedVisualBucketByProfileID;
 	TMap<FT66BossProjectileVisualKey, int32> BossVisualBucketByKey;
 	TMap<ET66BossAttackProfile, int32> BossOverflowBucketByProfile;
+	TMap<FString, int32> AuthoredMeshBucketByKey;
 	TSet<FString> VisualBucketWarningsEmitted;
 	int32 ActiveProjectileCount = 0;
 	bool bInitialized = false;
@@ -223,6 +230,7 @@ private:
 	UHierarchicalInstancedStaticMeshComponent* GetProjectileComponent(int32 ProjectileTypeIndex);
 	int32 ResolveManagedProjectileVisualTypeIndex(const FT66ManagedProjectileFireParams& Params);
 	int32 ResolveBossProjectileTypeIndex(const FT66ManagedProjectileFireParams& Params);
+	int32 ResolveAuthoredProjectileMeshTypeIndex(const FT66ManagedProjectileFireParams& Params);
 	UHierarchicalInstancedStaticMeshComponent* CreateProjectileComponent(int32 ProjectileTypeIndex, const FT66ProjectileVisualBucket& Bucket);
 	void PreallocateInstances(UHierarchicalInstancedStaticMeshComponent* Component);
 	int32 FindFreeProjectileSlot() const;

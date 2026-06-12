@@ -29,4 +29,4 @@ This policy covers Combat VFX generated or paired assets such as:
 
 ## Current Hero 1 AOE Pair
 
-`Hero1Axe_AOE_Base` is the only active Combat VFX production binding in this baseline. Future DOT/Pierce/Bounce rows are deferred until their effect packets approve an active production asset.
+`Hero1Axe_AOE_Base` is the only active Combat VFX production binding in this baseline. Future DOT/Summon/Bounce rows are deferred until their effect packets approve an active production asset.

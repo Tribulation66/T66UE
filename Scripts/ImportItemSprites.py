@@ -20,9 +20,10 @@ import unreal
 RARITIES = ("black", "red", "yellow", "white")
 DEST_DIR = "/Game/Items/Sprites"
 DEPRECATED_SECONDARY_STATS = {"Alchemy"}
+# Item_HpRegen / Item_LifeSteal dropped 2026-06-09 after the Mini-inclusive ownership
+# audit found zero remaining references (retired-ID compat code keeps only FName
+# checks, which need no sprites).
 PRESERVED_OBSOLETE_ASSET_PREFIXES = {
-    "Item_HpRegen",
-    "Item_LifeSteal",
     "Item_TreasureChest",
     "Item_LootCrate",
 }

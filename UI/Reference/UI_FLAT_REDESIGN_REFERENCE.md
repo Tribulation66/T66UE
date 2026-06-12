@@ -618,7 +618,7 @@ Per-screen specs were authored during the V3 iteration sessions and are reproduc
 - Sub-tab row: DIPLOMAS Default + DRUGS Selected.
 - No description band.
 - Main content outer default-border container with two stacked category rows. Each row: left vertical category label panel (icon + multi-line category name in accent gray) + 4 drug cards horizontally.
-- Category 1 Damage Drugs (target icon): OXYMETHOLONE, METHANDROSTENOLONE, FLUOXYMESTERONE, NANDROLONE DECANOATE with respective drug artwork preserved + "+10% AOE/Bounce/Pierce/DOT Damage" stat text + BUY button (Selected red, 1-ticket cost).
+- Category 1 Damage Drugs (target icon): OXYMETHOLONE, METHANDROSTENOLONE, FLUOXYMESTERONE, NANDROLONE DECANOATE with respective drug artwork preserved + "+10% AOE/Bounce/Summon/DOT Damage" stat text + BUY button (Selected red, 1-ticket cost).
 - Category 2 Attack Speed Drugs (speedometer icon): CAFFEINE CITRATE, MODAFINIL, EPHEDRINE HCL, SALBUTAMOL SULFATE + analogous stat text + BUY buttons.
 - No scrollbar; additional categories exist in implementation but mockup shows only these two.
 - Interactivity:

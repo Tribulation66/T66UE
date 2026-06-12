@@ -153,6 +153,18 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement|Ranged")
 	TSubclassOf<AT66EnemyProjectileBase> ProjectileClass;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Projectile")
+	ET66AttackCategory ProjectileCategory = ET66AttackCategory::DOT;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Projectile")
+	FName ProjectileVisualProfileID = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Projectile Mesh")
+	TSoftObjectPtr<UStaticMesh> ProjectileMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|Projectile Mesh")
+	float ProjectileMeshScale = 1.f;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	float StunSecondsRemaining = 0.f;
 
@@ -195,7 +207,7 @@ public:
 	// --- Physical knockback (ballistic 3D launch) ---
 	// Mobs are AActor (not ACharacter) and the existing ApplyMobKnockback in
 	// T66MobManagerSubsystem strips Z, so the legacy knockback can't lift them off the
-	// ground. The physical-launch test (Hero_1 Slash, Idol_Fire_Pierce) writes a full
+	// ground. The physical-launch test (Hero_1 Slash, Idol_Fire_Summon) writes a full
 	// 3D velocity here; the mob manager ticks it as a simple ballistic (constant
 	// gravity) until the mob lands back at PhysicalLaunchRestZ. While bPhysicalLaunchActive
 	// is true the legacy KnockbackVelocity path is skipped so the two never fight.
@@ -263,10 +275,11 @@ public:
 	void ApplySlow(float SpeedMultiplier, float DurationSeconds);
 	void ApplyMoveSlow(float SpeedMultiplier, float DurationSeconds);
 	void ApplyAutoAttackKnockback(const FVector& HitOrigin, float StrengthScale = 1.f);
+	void SetLockedIndicator(bool bLocked);
 
 	/**
 	 * Physical launch knockback (3D vector with Z, ballistic). Used by the physical-knockback
-	 * test (Hero_1 Slash, Idol_Fire_Pierce). The mob manager integrates the velocity with
+	 * test (Hero_1 Slash, Idol_Fire_Summon). The mob manager integrates the velocity with
 	 * constant gravity and lands the mob back at its current Z. While the launch is active,
 	 * the legacy planar KnockbackVelocity path is skipped. Magnitude is clamped to
 	 * PhysicalKnockbackMaxLaunchSpeed.

@@ -388,14 +388,14 @@ namespace
 		}
 	}
 
-	const TArray<FName>& GetTrapPoolForTowerFloor(const T66TowerMapTerrain::FFloor& Floor)
+	const TArray<FName>& GetHazardPoolForTowerFloor(const T66TowerMapTerrain::FFloor& Floor)
 	{
 		static const TArray<FName> Empty;
 
 		const UT66TowerTuningConfig& TowerTuning = UT66TowerTuningConfig::GetRuntimeConfig();
-		if (const FT66TowerFloorTrapPoolTuning* TrapPool = TowerTuning.FindTrapPoolForFloor(Floor.FloorNumber, GetTowerFloorRoleName(Floor.FloorRole)))
+		if (const FT66TowerFloorHazardPoolTuning* HazardPool = TowerTuning.FindHazardPoolForFloor(Floor.FloorNumber, GetTowerFloorRoleName(Floor.FloorRole)))
 		{
-			return TrapPool->TrapPool;
+			return HazardPool->HazardPool;
 		}
 
 		return Empty;
@@ -408,7 +408,7 @@ namespace
 			return false;
 		}
 
-		return GetTrapPoolForTowerFloor(Floor).Num() > 0;
+		return GetHazardPoolForTowerFloor(Floor).Num() > 0;
 	}
 
 	int32 RollSpawnCount(const FT66IntRange& Range, FRandomStream& Rng)
@@ -607,6 +607,12 @@ void UT66TrapSubsystem::SetActiveTowerFloor(const int32 InActiveFloorNumber)
 		const bool bShouldEnable = TrapFloorNumber == INDEX_NONE
 			|| (ActiveTowerFloorNumber != INDEX_NONE && TrapFloorNumber == ActiveTowerFloorNumber);
 		Trap->SetTrapEnabled(bShouldEnable);
+		// Off-floor tower traps also HIDE: a tall trap piece near the 1224uu floor
+		// spacing (ceiling-hammer mount) must never be visible from another floor.
+		if (TrapFloorNumber != INDEX_NONE)
+		{
+			Trap->SetActorHiddenInGame(!bShouldEnable);
+		}
 	}
 }
 
@@ -790,14 +796,14 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 	};
 
 	auto BuildSpawnRequestsForFloor =
-		[&](const int32 TowerFloorNumber, const TArray<FName>& TrapPool, FRandomStream& FloorCountRng, TArray<FT66ResolvedTrapSpawnRequest, TInlineAllocator<8>>& OutRequests)
+		[&](const int32 TowerFloorNumber, const TArray<FName>& HazardPool, FRandomStream& FloorCountRng, TArray<FT66ResolvedTrapSpawnRequest, TInlineAllocator<8>>& OutRequests)
 	{
 		OutRequests.Reset();
 
 		int32 MinimumTotal = 0;
 		int32 MaximumTotal = 0;
 
-		for (const FName TrapKey : TrapPool)
+		for (const FName TrapKey : HazardPool)
 		{
 			const FT66TrapRegistryEntry* Entry = FindTrapRegistryEntry(TrapKey);
 			if (!Entry || !Entry->TrapClass)
@@ -987,21 +993,21 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 		}
 
 		const int32 TowerFloorNumber = Floor.FloorNumber;
-		const TArray<FName>& TrapPool = GetTrapPoolForTowerFloor(Floor);
+		const TArray<FName>& HazardPool = GetHazardPoolForTowerFloor(Floor);
 		UE_LOG(
 			LogT66TrapSubsystem,
 			Verbose,
 			TEXT("[Traps][FloorScan] Floor=%d bMob=%d Pool=%d"),
 			TowerFloorNumber,
 			Floor.bMobFloor ? 1 : 0,
-			TrapPool.Num());
-		if (TrapPool.Num() <= 0)
+			HazardPool.Num());
+		if (HazardPool.Num() <= 0)
 		{
 			continue;
 		}
 
 		TArray<const FT66TrapRegistryEntry*, TInlineAllocator<8>> RoomPlaceableObstacleEntries;
-		for (const FName TrapKey : TrapPool)
+		for (const FName TrapKey : HazardPool)
 		{
 			const FT66TrapRegistryEntry* Entry = FindTrapRegistryEntry(TrapKey);
 			if (Entry
@@ -1027,15 +1033,15 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 		for (const T66TowerMapTerrain::FRoom& Room : Floor.Rooms)
 		{
 			const FT66TowerRoomRuleTuning* RoomRule = TowerTuning.FindRoomRule(Room.RoomRuleID);
-			if (!RoomRule || RoomRule->TrapSlots.Max <= 0)
+			if (!RoomRule || RoomRule->HazardSlots.Max <= 0)
 			{
 				continue;
 			}
 
 			FRoomTrapPlan& Plan = RoomTrapPlans.AddDefaulted_GetRef();
 			Plan.Room = &Room;
-			Plan.MinCount = FMath::Max(0, RoomRule->TrapSlots.Min);
-			Plan.MaxCount = FMath::Max(Plan.MinCount, RoomRule->TrapSlots.Max);
+			Plan.MinCount = FMath::Max(0, RoomRule->HazardSlots.Min);
+			Plan.MaxCount = FMath::Max(Plan.MinCount, RoomRule->HazardSlots.Max);
 			Plan.DesiredCount = RoomCountRng.RandRange(Plan.MinCount, Plan.MaxCount);
 		}
 
@@ -1149,7 +1155,7 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 				UE_LOG(
 					LogT66TrapSubsystem,
 					Log,
-					TEXT("[T66Proof][TowerRoomTrapSummary] Stage=%d Floor=%d Result=PASS Rooms=%d RoomsWithTrap=%d Desired=%d Spawned=%d ExpectedRange=%d-%d Rule=RoomTrapSlots"),
+					TEXT("[T66Proof][TowerRoomTrapSummary] Stage=%d Floor=%d Result=PASS Rooms=%d RoomsWithTrap=%d Desired=%d Spawned=%d ExpectedRange=%d-%d Rule=RoomHazardSlots"),
 					StageNum,
 					Floor.FloorNumber,
 					RoomTrapPlans.Num(),
@@ -1164,7 +1170,7 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 				UE_LOG(
 					LogT66TrapSubsystem,
 					Warning,
-					TEXT("[T66Proof][TowerRoomTrapSummary] Stage=%d Floor=%d Result=FAIL Rooms=%d RoomsWithTrap=%d Desired=%d Spawned=%d ExpectedRange=%d-%d Rule=RoomTrapSlots"),
+					TEXT("[T66Proof][TowerRoomTrapSummary] Stage=%d Floor=%d Result=FAIL Rooms=%d RoomsWithTrap=%d Desired=%d Spawned=%d ExpectedRange=%d-%d Rule=RoomHazardSlots"),
 					StageNum,
 					Floor.FloorNumber,
 					RoomTrapPlans.Num(),
@@ -1179,7 +1185,7 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 
 		FRandomStream FloorCountRng(RunSeed + StageNum * 2903 + Floor.FloorNumber * 311 + 97);
 		TArray<FT66ResolvedTrapSpawnRequest, TInlineAllocator<8>> SpawnRequests;
-		BuildSpawnRequestsForFloor(TowerFloorNumber, TrapPool, FloorCountRng, SpawnRequests);
+		BuildSpawnRequestsForFloor(TowerFloorNumber, HazardPool, FloorCountRng, SpawnRequests);
 		UE_LOG(
 			LogT66TrapSubsystem,
 			Verbose,
@@ -1187,7 +1193,11 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 			TowerFloorNumber,
 			SpawnRequests.Num());
 
-		for (const FT66ResolvedTrapSpawnRequest& SpawnRequest : SpawnRequests)
+		// Composer hazard anchors: room structures place their signature hazard
+		// deliberately. Anchors are consumed before random placement, once each.
+		TSet<int32> UsedHazardAnchorIndices;
+
+	for (const FT66ResolvedTrapSpawnRequest& SpawnRequest : SpawnRequests)
 		{
 			const FT66TrapRegistryEntry* Entry = SpawnRequest.Entry;
 			if (!Entry || !Entry->TrapClass || SpawnRequest.DesiredCount <= 0)
@@ -1409,6 +1419,34 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 				for (int32 SpawnIndex = 0; SpawnIndex < DesiredCount; ++SpawnIndex)
 				{
 					FRandomStream SpawnRng(RunSeed + StageNum * 3301 + Floor.FloorNumber * 197 + KeySeed + SpawnIndex * 31);
+
+					// Composer anchor for this hazard type: the room structure
+					// already chose the spot (possibly on a deck top — keep the
+					// anchor Z); skip the random search and the spacing check.
+					FVector HazardAnchorLocation = FVector::ZeroVector;
+					bool bUsingHazardAnchor = false;
+					if (Entry->SpawnSurface != ET66TrapSpawnSurface::MazeWall)
+					{
+						for (int32 AnchorIndex = 0; AnchorIndex < Floor.HazardAnchors.Num(); ++AnchorIndex)
+						{
+							if (UsedHazardAnchorIndices.Contains(AnchorIndex))
+							{
+								continue;
+							}
+							const FName AnchorType = Floor.HazardAnchorTypes.IsValidIndex(AnchorIndex)
+								? Floor.HazardAnchorTypes[AnchorIndex]
+								: NAME_None;
+							if (!AnchorType.IsNone() && AnchorType != TrapKey)
+							{
+								continue;
+							}
+							UsedHazardAnchorIndices.Add(AnchorIndex);
+							HazardAnchorLocation = Floor.HazardAnchors[AnchorIndex];
+							bUsingHazardAnchor = true;
+							break;
+						}
+					}
+
 					for (int32 Attempt = 0; Attempt < Tuning->Spawn.SpawnAttempts; ++Attempt)
 					{
 						FVector SpawnLocation = FVector::ZeroVector;
@@ -1430,6 +1468,11 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 							}
 							SpawnRotation = WallNormal.Rotation();
 						}
+						else if (bUsingHazardAnchor)
+						{
+							SpawnLocation = HazardAnchorLocation;
+							SpawnRotation = FRotator(0.f, SpawnRng.FRandRange(0.f, 360.f), 0.f);
+						}
 						else
 						{
 							if (!T66TowerMapTerrain::TryGetObstacleTrapSpawnLocation(
@@ -1448,8 +1491,15 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 							SpawnRotation = FRotator(0.f, SpawnRng.FRandRange(0.f, 360.f), 0.f);
 						}
 
-						SpawnLocation.Z = Floor.SurfaceZ + 6.f;
-						if (!IsLocationClear(SpawnLocation, Floor.FloorNumber, Tuning->Spawn.MinTrapSpacing))
+						if (bUsingHazardAnchor)
+						{
+							SpawnLocation.Z = HazardAnchorLocation.Z + 6.f;
+						}
+						else
+						{
+							SpawnLocation.Z = Floor.SurfaceZ + 6.f;
+						}
+						if (!bUsingHazardAnchor && !IsLocationClear(SpawnLocation, Floor.FloorNumber, Tuning->Spawn.MinTrapSpacing))
 						{
 							++ClearFailureCount;
 							continue;
@@ -1548,4 +1598,3 @@ void UT66TrapSubsystem::SpawnTowerStageTraps(const T66TowerMapTerrain::FLayout& 
 		StageNum,
 		*TrapFloorSummary);
 }
-

@@ -34,7 +34,7 @@ DEFAULT_REPORT_PATH = (
     / "FriendSlopEasyPixal3D"
     / "raw_fbx_unreal_import_report.json"
 )
-PARENT_MATERIAL = "/Game/Materials/M_GLB_Unlit"
+PARENT_MATERIAL = "/Game/Materials/Generated/M_Unlit_DiffuseColorMap"
 
 
 def load_json(path: Path) -> dict:

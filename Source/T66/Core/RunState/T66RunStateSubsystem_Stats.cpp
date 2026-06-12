@@ -26,7 +26,7 @@ namespace
 	constexpr float T66ProcLuckChanceCap = 0.95f;
 
 	// Stats Rework: maps a legacy primary stat onto its unified replacement so all upgrade
-	// sources (level-up, relics) bump the named stat directly. All eight are migrated; the old
+	// sources (level-up, surgeries) bump the named stat directly. All eight are migrated; the old
 	// primary fields now serve only as each stat's hidden innate base.
 	ET66StatType T66MapBaseStatToUnifiedStat(const ET66HeroStatType BaseStatType)
 	{
@@ -237,15 +237,15 @@ int32 UT66RunStateSubsystem::GetCategoryBaseStatTenths(const ET66StatType StatTy
 	{
 	case ET66StatType::AoeDamage:   return WholeStatToTenths(BaseAoeDmg);
 	case ET66StatType::BounceDamage:return WholeStatToTenths(BaseBounceDmg);
-	case ET66StatType::PierceDamage:return WholeStatToTenths(BasePierceDmg);
+	case ET66StatType::SummonDamage:return WholeStatToTenths(BaseSummonDmg);
 	case ET66StatType::DotDamage:   return WholeStatToTenths(BaseDotDmg);
 	case ET66StatType::AoeSpeed:    return WholeStatToTenths(BaseAoeAtkSpd);
 	case ET66StatType::BounceSpeed: return WholeStatToTenths(BaseBounceAtkSpd);
-	case ET66StatType::PierceSpeed: return WholeStatToTenths(BasePierceAtkSpd);
+	case ET66StatType::SummonSpeed: return WholeStatToTenths(BaseSummonAtkSpd);
 	case ET66StatType::DotSpeed:    return WholeStatToTenths(BaseDotAtkSpd);
 	case ET66StatType::AoeScale:    return WholeStatToTenths(BaseAoeAtkScale);
 	case ET66StatType::BounceScale: return WholeStatToTenths(BaseBounceAtkScale);
-	case ET66StatType::PierceScale: return WholeStatToTenths(BasePierceAtkScale);
+	case ET66StatType::SummonScale: return WholeStatToTenths(BaseSummonAtkScale);
 	case ET66StatType::DotScale:    return WholeStatToTenths(BaseDotAtkScale);
 	default:                                 return 0;
 	}
@@ -354,7 +354,7 @@ int32 UT66RunStateSubsystem::RollHeroBaseGainTenthsBiased(const FT66HeroStatGain
 
 
 // Stats Rework: ApplyPrimaryGainToSecondaryBonuses removed. The primary->secondary fan-out is gone;
-// relics and level-ups now bump unified stats directly (see ApplyPermanentBaseStat / ApplyOneHeroLevelUp).
+// surgeries and level-ups now bump unified stats directly (see ApplyPermanentBaseStat / ApplyOneHeroLevelUp).
 
 
 void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
@@ -387,9 +387,9 @@ void UT66RunStateSubsystem::InitializeHeroStatTuningForSelectedHero()
 		FHeroData HD;
 		if (T66GI->GetHeroData(T66GI->SelectedHeroID, HD))
 		{
-			BasePierceDmg = FMath::Max(1, HD.BasePierceDmg);
-			BasePierceAtkSpd = FMath::Max(1, HD.BasePierceAtkSpd);
-			BasePierceAtkScale = FMath::Max(1, HD.BasePierceAtkScale);
+			BaseSummonDmg = FMath::Max(1, HD.BaseSummonDmg);
+			BaseSummonAtkSpd = FMath::Max(1, HD.BaseSummonAtkSpd);
+			BaseSummonAtkScale = FMath::Max(1, HD.BaseSummonAtkScale);
 			BaseBounceDmg = FMath::Max(1, HD.BaseBounceDmg);
 			BaseBounceAtkSpd = FMath::Max(1, HD.BaseBounceAtkSpd);
 			BaseBounceAtkScale = FMath::Max(1, HD.BaseBounceAtkScale);
@@ -452,19 +452,19 @@ void UT66RunStateSubsystem::RefreshPermanentBuffBonusesFromProfile()
 		if (const UT66BuffSubsystem* Buffs = GI->GetSubsystem<UT66BuffSubsystem>())
 		{
 			PermanentBuffStatBonuses = Buffs->GetPermanentBuffStatBonuses();
-			const auto ApplyElementRelic = [this, Buffs](const ET66StatType StatType)
+			const auto ApplyElementSurgery = [this, Buffs](const ET66StatType StatType)
 			{
-				const int32 Bonus = Buffs->GetRelicStatBonus(StatType);
+				const int32 Bonus = Buffs->GetSurgeryStatBonus(StatType);
 				if (Bonus > 0)
 				{
 					PermanentStatBonusTenths.FindOrAdd(StatType) += WholeStatToTenths(Bonus);
 				}
 			};
-			ApplyElementRelic(ET66StatType::FirePower);
-			ApplyElementRelic(ET66StatType::IcePower);
-			ApplyElementRelic(ET66StatType::ElectricityPower);
-			ApplyElementRelic(ET66StatType::NaturePower);
-			ApplyElementRelic(ET66StatType::WindPower);
+			ApplyElementSurgery(ET66StatType::FirePower);
+			ApplyElementSurgery(ET66StatType::IcePower);
+			ApplyElementSurgery(ET66StatType::ElectricityPower);
+			ApplyElementSurgery(ET66StatType::NaturePower);
+			ApplyElementSurgery(ET66StatType::WindPower);
 		}
 	}
 
@@ -476,7 +476,7 @@ void UT66RunStateSubsystem::RefreshPermanentBuffBonusesFromProfile()
 			return;
 		}
 
-		// Stats Rework: a relic/permanent buff bumps its named unified stat directly as additive
+		// Stats Rework: a surgery/permanent buff bumps its named unified stat directly as additive
 		// percent instead of fanning a primary out across categories.
 		const ET66StatType UnifiedType = T66MapBaseStatToUnifiedStat(StatType);
 		if (UnifiedType != ET66StatType::None)
@@ -729,7 +729,7 @@ int32 UT66RunStateSubsystem::ApplyLevelUpWave(const float RadiusUU)
 
 int32 UT66RunStateSubsystem::GetSpeedStat() const
 {
-	// Stats Rework: Move Speed = innate Speed base (excl. relic) + Movement Speed stat upgrades.
+	// Stats Rework: Move Speed = innate Speed base (excl. surgery) + Movement Speed stat upgrades.
 	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Speed) - GetPermanentBaseBuffTenths(ET66HeroStatType::Speed));
 	const int32 InnateDisplay = TenthsToDisplayStat(BaseTenths);
 	const int32 UpgradePoints = FMath::RoundToInt(GetStatBonusValue(ET66StatType::MovementSpeed));
@@ -787,7 +787,7 @@ float UT66RunStateSubsystem::GetSingleUseLuckModifierPercent() const
 
 float UT66RunStateSubsystem::GetTotalLuckModifierPercent() const
 {
-	// Stats Rework: relic power flows through the unified Luck stat, so the innate luck base
+	// Stats Rework: surgery power flows through the unified Luck stat, so the innate luck base
 	// excludes permanent-buff contribution; upgrades add as percent points.
 	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Luck) - GetPermanentBaseBuffTenths(ET66HeroStatType::Luck));
 	const int32 InnateLuckDisplay = TenthsToDisplayStat(BaseTenths);
@@ -821,13 +821,13 @@ FText UT66RunStateSubsystem::GetSeedLuckAdjectiveText(const int32 InSeedLuck0To1
 }
 
 
-int32 UT66RunStateSubsystem::GetPierceDmgStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::PierceDamage)); }
+int32 UT66RunStateSubsystem::GetSummonDmgStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::SummonDamage)); }
 
 
-int32 UT66RunStateSubsystem::GetPierceAtkSpdStat() const   { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::PierceSpeed)); }
+int32 UT66RunStateSubsystem::GetSummonAtkSpdStat() const   { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::SummonSpeed)); }
 
 
-int32 UT66RunStateSubsystem::GetPierceAtkScaleStat() const { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::PierceScale)); }
+int32 UT66RunStateSubsystem::GetSummonAtkScaleStat() const { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::SummonScale)); }
 
 
 int32 UT66RunStateSubsystem::GetBounceDmgStat() const      { return TenthsToDisplayStat(GetCategoryTotalStatTenths(ET66StatType::BounceDamage)); }
@@ -887,19 +887,19 @@ float UT66RunStateSubsystem::GetStatValue(ET66StatType StatType) const
 	{
 	case ET66StatType::AoeDamage:        return MagnitudeValue(ET66StatType::AoeDamage, DamageMult);
 	case ET66StatType::BounceDamage:     return MagnitudeValue(ET66StatType::BounceDamage, DamageMult);
-	case ET66StatType::PierceDamage:     return MagnitudeValue(ET66StatType::PierceDamage, DamageMult);
+	case ET66StatType::SummonDamage:     return MagnitudeValue(ET66StatType::SummonDamage, DamageMult);
 	case ET66StatType::DotDamage:        return MagnitudeValue(ET66StatType::DotDamage, DamageMult);
 	case ET66StatType::CritDamage:       return 2.0f;
 	case ET66StatType::CloseRangeDamage: return 1.f;
 	case ET66StatType::LongRangeDamage:  return 1.f;
 	case ET66StatType::AoeSpeed:         return MagnitudeValue(ET66StatType::AoeSpeed, AttackSpeedMult);
 	case ET66StatType::BounceSpeed:      return MagnitudeValue(ET66StatType::BounceSpeed, AttackSpeedMult);
-	case ET66StatType::PierceSpeed:      return MagnitudeValue(ET66StatType::PierceSpeed, AttackSpeedMult);
+	case ET66StatType::SummonSpeed:      return MagnitudeValue(ET66StatType::SummonSpeed, AttackSpeedMult);
 	case ET66StatType::DotSpeed:         return MagnitudeValue(ET66StatType::DotSpeed, AttackSpeedMult);
 	case ET66StatType::CritChance:       return ApplyProcLuckToChance01(FMath::Clamp((HeroBaseCritChance + (BonusPoints * T66StatChancePerBonusPoint)) * M * AccuracyMult, 0.f, 1.f));
 	case ET66StatType::AoeScale:         return MagnitudeValue(ET66StatType::AoeScale, ScaleMult);
 	case ET66StatType::BounceScale:      return MagnitudeValue(ET66StatType::BounceScale, ScaleMult);
-	case ET66StatType::PierceScale:      return MagnitudeValue(ET66StatType::PierceScale, ScaleMult);
+	case ET66StatType::SummonScale:      return MagnitudeValue(ET66StatType::SummonScale, ScaleMult);
 	case ET66StatType::DotScale:         return MagnitudeValue(ET66StatType::DotScale, ScaleMult);
 	case ET66StatType::AttackRange:      return FMath::Max(100.f, (HeroBaseAttackRange + (BonusPoints * T66StatRangePerBonusPoint)) * M * AccuracyMult);
 	case ET66StatType::Accuracy:         return FMath::Clamp((HeroBaseAccuracy + (BonusPoints * T66StatChancePerBonusPoint)) * M * AccuracyMult, 0.f, 1.f);
@@ -948,19 +948,19 @@ float UT66RunStateSubsystem::GetStatBaselineValue(ET66StatType StatType) const
 	{
 	case ET66StatType::AoeDamage:       return static_cast<float>(BaseAoeDmg);
 	case ET66StatType::BounceDamage:    return static_cast<float>(BaseBounceDmg);
-	case ET66StatType::PierceDamage:    return static_cast<float>(BasePierceDmg);
+	case ET66StatType::SummonDamage:    return static_cast<float>(BaseSummonDmg);
 	case ET66StatType::DotDamage:       return static_cast<float>(BaseDotDmg);
 	case ET66StatType::CritDamage:      return 2.0f;
 	case ET66StatType::CloseRangeDamage:return 1.f;
 	case ET66StatType::LongRangeDamage: return 1.f;
 	case ET66StatType::AoeSpeed:        return static_cast<float>(BaseAoeAtkSpd);
 	case ET66StatType::BounceSpeed:     return static_cast<float>(BaseBounceAtkSpd);
-	case ET66StatType::PierceSpeed:     return static_cast<float>(BasePierceAtkSpd);
+	case ET66StatType::SummonSpeed:     return static_cast<float>(BaseSummonAtkSpd);
 	case ET66StatType::DotSpeed:        return static_cast<float>(BaseDotAtkSpd);
 	case ET66StatType::CritChance:      return FMath::Clamp(HeroBaseCritChance, 0.f, 1.f);
 	case ET66StatType::AoeScale:        return static_cast<float>(BaseAoeAtkScale);
 	case ET66StatType::BounceScale:     return static_cast<float>(BaseBounceAtkScale);
-	case ET66StatType::PierceScale:     return static_cast<float>(BasePierceAtkScale);
+	case ET66StatType::SummonScale:     return static_cast<float>(BaseSummonAtkScale);
 	case ET66StatType::DotScale:        return static_cast<float>(BaseDotAtkScale);
 	case ET66StatType::AttackRange:     return HeroBaseAttackRange;
 	case ET66StatType::Accuracy:        return FMath::Clamp(HeroBaseAccuracy, 0.f, 1.f);
@@ -1179,7 +1179,7 @@ float UT66RunStateSubsystem::GetLongRangeDamageMultiplier() const
 
 float UT66RunStateSubsystem::GetHeroDamageMultiplier() const
 {
-	// Stats Rework: relic power now flows through the unified "All Damage" stat, so the innate
+	// Stats Rework: surgery power now flows through the unified "All Damage" stat, so the innate
 	// base excludes permanent-buff contribution; upgrades apply as additive percent (point = 1%).
 	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Damage) - GetPermanentBaseBuffTenths(ET66HeroStatType::Damage));
 	const float D = TenthsToFloatStat(BaseTenths);
@@ -1212,7 +1212,7 @@ float UT66RunStateSubsystem::GetHeroScaleMultiplier() const
 
 float UT66RunStateSubsystem::GetHeroAccuracyMultiplier() const
 {
-	// Stats Rework: relic Accuracy now flows through the unified Accuracy (to-hit) stat, so the
+	// Stats Rework: surgery Accuracy now flows through the unified Accuracy (to-hit) stat, so the
 	// innate accuracy multiplier excludes permanent-buff contribution to avoid double counting.
 	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Accuracy) - GetPermanentBaseBuffTenths(ET66HeroStatType::Accuracy));
 	const float AccuracyStat = TenthsToFloatStat(BaseTenths);
@@ -1222,7 +1222,7 @@ float UT66RunStateSubsystem::GetHeroAccuracyMultiplier() const
 
 float UT66RunStateSubsystem::GetArmorReduction01() const
 {
-	// Stats Rework: relic power flows through the unified Damage Reduction stat, so the innate
+	// Stats Rework: surgery power flows through the unified Damage Reduction stat, so the innate
 	// armor base excludes permanent-buff contribution; upgrades add as percent points.
 	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Armor) - GetPermanentBaseBuffTenths(ET66HeroStatType::Armor));
 	const float ArmorStat = TenthsToFloatStat(BaseTenths);
@@ -1234,7 +1234,7 @@ float UT66RunStateSubsystem::GetArmorReduction01() const
 
 float UT66RunStateSubsystem::GetEvasionChance01() const
 {
-	// Stats Rework: relic power flows through the unified Dodge (EvasionChance) stat, so the
+	// Stats Rework: surgery power flows through the unified Dodge (EvasionChance) stat, so the
 	// innate evasion base excludes permanent-buff contribution; upgrades add as percent points.
 	const int32 BaseTenths = FMath::Max(0, GetPreciseBaseStatTenths(ET66HeroStatType::Evasion) - GetPermanentBaseBuffTenths(ET66HeroStatType::Evasion));
 	const float EvasionStat = TenthsToFloatStat(BaseTenths);

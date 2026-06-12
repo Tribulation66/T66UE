@@ -26,7 +26,7 @@ This validator proves Combat VFX binding structure, required assets, source guar
 | Area | Current status |
 |---|---|
 | Hero 1 AOE | Active production binding row (`Hero1Axe_AOE_Base` → `Hero_1_black_aoe`) plus crescent-band hitbox backend proof; final visual-polish approval remains separate. |
-| Hero 1 Pierce | Active production binding row (`Hero1Axe_Pierce_Base` → `Hero_1_black_pierce`, PathAnchored lane); final visual-polish approval remains separate. |
+| Hero 1 RetiredLine | Active production binding row (`Hero1Axe_RetiredLine_Base` → `Hero_1_black_retired-line`, PathAnchored lane); final visual-polish approval remains separate. |
 | Hero 1 Bounce | Active production binding row (`Hero1Axe_Bounce_Base` → `Hero_1_black_bounce`, ImpactAnchored per-link carrier); final visual-polish approval remains separate. |
 | Hero 1 DOT | Active production binding row (`Hero1Axe_DOT_Base` → `Hero_1_black_dot`, moving aura-ring carrier transported by the single hero->target DOT shot); final visual-polish approval remains separate. |
 | Idol overlays | Architecture plus impact-context contract. Idol category proofs are structural/proof placeholder paths only; no production idol Niagara assets or active production idol rows are approved by this baseline. |

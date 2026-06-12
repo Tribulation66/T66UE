@@ -1,0 +1,69 @@
+Using bundled DotNet SDK version: 8.0.412 win-x64
+Running UnrealBuildTool: dotnet "..\..\Engine\Binaries\DotNET\UnrealBuildTool\UnrealBuildTool.dll" T66Editor Win64 Development -project=C:\UE\T66\T66.uproject -WaitMutex
+Log file: C:\Users\DoPra\AppData\Local\UnrealBuildTool\Log.txt
+Invalidating makefile for T66Editor (T66.Build.cs modified)
+UHT compiled-in object format Default
+Parsing headers for T66Editor
+  Running Internal UnrealHeaderTool C:\UE\T66\T66.uproject C:\UE\T66\Intermediate\Build\Win64\T66Editor\Development\T66Editor.uhtmanifest -WarningsAsErrors -installed
+UHT processed T66Editor in 1.3776556 seconds (3 files written)
+Building T66Editor...
+Using Visual Studio 2022 14.44.35222 toolchain (C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207) and Windows 10.0.22621.0 SDK (C:\Program Files (x86)\Windows Kits\10).
+Determining max actions to execute in parallel (24 physical cores, 32 logical cores)
+  Executing up to 24 processes, one per physical core
+Using Unreal Build Accelerator local executor to run 44 action(s)
+  Storage capacity 40Gb
+---- Starting trace: 260609_212452 ----
+UbaServer - Listening on 0.0.0.0:1345
+[1/44] Compile [x64] Module.T66.17.cpp
+[2/44] Compile [x64] Module.T66.18.cpp
+[3/44] Compile [x64] Module.T66.11.cpp
+[4/44] Compile [x64] Module.T66.20.cpp
+[5/44] Compile [x64] Module.T66.21.cpp
+[6/44] Compile [x64] Module.T66.19.cpp
+[7/44] Compile [x64] Module.T66.2.cpp
+[8/44] Compile [x64] Module.T66.22.cpp
+[9/44] Compile [x64] Module.T66.13.cpp
+[10/44] Compile [x64] Module.T66.15.cpp
+[11/44] Compile [x64] Module.T66.12.cpp
+[12/44] Compile [x64] Module.T66.10.cpp
+[13/44] Compile [x64] Module.T66.1.cpp
+[14/44] Compile [x64] Module.T66.14.cpp
+[15/44] Compile [x64] Module.T66.16.cpp
+[16/44] Compile [x64] Module.T66.3.cpp
+[17/44] Compile [x64] Module.T66.4.cpp
+[18/44] Compile [x64] Module.T66.6.cpp
+[19/44] Compile [x64] Module.T66.5.cpp
+[20/44] Compile [x64] Module.T66.7.cpp
+[21/44] Compile [x64] Module.T66.9.cpp
+[22/44] Compile [x64] Module.T66.8.cpp
+[23/44] Compile [x64] Module.T66.23.cpp
+[24/44] Compile [x64] Module.T66.24.cpp
+[25/44] Compile [x64] Module.T66.25.cpp
+[26/44] Compile [x64] Module.T66.39.cpp
+[27/44] Compile [x64] Module.T66.33.cpp
+[28/44] Compile [x64] Module.T66.40.cpp
+[29/44] Compile [x64] Module.T66.27.cpp
+[30/44] Compile [x64] Module.T66.37.cpp
+[31/44] Compile [x64] Module.T66.28.cpp
+[32/44] Compile [x64] Module.T66.34.cpp
+[33/44] Compile [x64] Module.T66.31.cpp
+[34/44] Compile [x64] Module.T66.26.cpp
+[35/44] Compile [x64] Module.T66.30.cpp
+[36/44] Compile [x64] Module.T66.38.cpp
+[37/44] Compile [x64] Module.T66.29.cpp
+C:\UE\T66\Source\T66\Gameplay\T66Hero1AxeAOEVFXLabActor.cpp(704,3): warning C4996: 'FNiagaraEmitterInstance::IsReadyToRun': Please update your code to handle execution path for different emitter types - Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
+		UE_LOG(
+		^
+[38/44] Compile [x64] Module.T66.36.cpp
+[39/44] Compile [x64] Module.T66.32.cpp
+[40/44] Compile [x64] Module.T66.35.cpp
+[41/44] Link [x64] UnrealEditor-T66.lib
+[42/44] Link [x64] UnrealEditor-T66Editor.dll
+[43/44] Link [x64] UnrealEditor-T66.dll
+[44/44] WriteMetadata T66Editor.target [NoUba]
+
+Trace written to file C:/Users/DoPra/AppData/Local/UnrealBuildTool/Log.uba with size 16.4kb
+Total time in Unreal Build Accelerator local executor: 65.20 seconds
+
+Result: Succeeded
+Total execution time: 72.58 seconds

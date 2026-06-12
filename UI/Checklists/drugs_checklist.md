@@ -170,7 +170,7 @@ Top bar dependency: `C:\UE\T66\UI\Checklists\frontend_topbar_checklist.md`
 - [ ] Drugs.Card02.Name | text=METHANDROSTENOLONE
 - [ ] Drugs.Card02.Effect | text=+10% Bounce Damage
 - [ ] Drugs.Card03.Name | text=FLUOXYMESTERONE
-- [ ] Drugs.Card03.Effect | text=+10% Pierce Damage
+- [ ] Drugs.Card03.Effect | text=+10% Summon Damage
 - [ ] Drugs.Card04.Name | text=NANDROLONE DECANOATE
 - [ ] Drugs.Card04.Effect | text=+10% DOT Damage
 - [ ] Drugs.Card05.Name | text=CAFFEINE CITRATE
@@ -178,7 +178,7 @@ Top bar dependency: `C:\UE\T66\UI\Checklists\frontend_topbar_checklist.md`
 - [ ] Drugs.Card06.Name | text=MODAFINIL
 - [ ] Drugs.Card06.Effect | text=+10% Bounce Speed
 - [ ] Drugs.Card07.Name | text=EPHEDRINE HCL
-- [ ] Drugs.Card07.Effect | text=+10% Pierce Speed
+- [ ] Drugs.Card07.Effect | text=+10% Summon Speed
 - [ ] Drugs.Card08.Name | text=SALBUTAMOL SULFATE
 - [ ] Drugs.Card08.Effect | text=+10% DOT Speed
 - [ ] Drugs.Card01.BuyButton | text=BUY

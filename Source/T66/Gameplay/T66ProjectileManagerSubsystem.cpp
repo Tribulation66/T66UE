@@ -234,6 +234,35 @@ UStaticMesh* ResolveManagedProjectileShapeMesh(const ET66TemporaryProjectileShap
 	}
 }
 
+ET66TemporaryProjectileShape ResolveTemporaryProjectileShapeForCategory(const ET66AttackCategory AttackCategory)
+{
+	switch (AttackCategory)
+	{
+	case ET66AttackCategory::Bounce:
+		return ET66TemporaryProjectileShape::Cube;
+	case ET66AttackCategory::DOT:
+		return ET66TemporaryProjectileShape::Cylinder;
+	case ET66AttackCategory::Summon:
+	case ET66AttackCategory::SingleTarget:
+	case ET66AttackCategory::AOE:
+	default:
+		return ET66TemporaryProjectileShape::Sphere;
+	}
+}
+
+FQuat ResolveTemporaryProjectileRotationForCategory(const ET66AttackCategory AttackCategory)
+{
+	switch (AttackCategory)
+	{
+	case ET66AttackCategory::DOT:
+		return FRotator(90.f, 0.f, 0.f).Quaternion();
+	case ET66AttackCategory::Bounce:
+		return FRotator(0.f, 0.f, 45.f).Quaternion();
+	default:
+		return FQuat::Identity;
+	}
+}
+
 UStaticMesh* GetManagedBossProjectileMesh(ET66BossAttackProfile AttackProfile);
 FVector GetManagedBossProjectileScale(ET66BossAttackProfile AttackProfile);
 FQuat GetManagedBossProjectileMeshRotationOffset(ET66BossAttackProfile AttackProfile);
@@ -319,6 +348,32 @@ FT66ProjectileVisualBucket MakeManagedProjectileBucketFromProfile(const FT66Mana
 	Bucket.BodySystem = ResolveManagedBossProjectileSystem(Profile.BodySystemPath);
 	Bucket.TrailSystem = ResolveManagedBossProjectileSystem(Profile.TrailSystemPath);
 	Bucket.ImpactSystem = ResolveManagedBossProjectileSystem(Profile.ImpactSystemPath);
+	return Bucket;
+}
+
+FT66ProjectileVisualBucket MakeAuthoredProjectileMeshBucket(const FT66ManagedProjectileFireParams& Params, const bool bOverflowBucket)
+{
+	FT66ProjectileVisualBucket Bucket;
+	const FString MeshPath = Params.ProjectileMesh.ToSoftObjectPath().ToString();
+	Bucket.VisualProfileID = Params.VisualProfileID.IsNone()
+		? FName(*FString::Printf(TEXT("ManagedProjectile.Authored.%s.%d"), *Params.SourceID.ToString(), static_cast<int32>(Params.AttackCategory)))
+		: Params.VisualProfileID;
+	Bucket.AttackProfile = Params.BossAttackProfile;
+	Bucket.Color = FT66TemporaryProjectileSystem::HostileProjectileColor().ToFColor(true);
+	Bucket.VisualScale = FVector(FMath::Clamp(Params.ProjectileMeshScale, 0.05f, 12.f));
+	Bucket.RotationOffset = ResolveTemporaryProjectileRotationForCategory(Params.AttackCategory);
+	Bucket.BodyMode = ET66ManagedProjectileVisualBodyMode::HISM;
+	Bucket.BodyMesh = Params.ProjectileMesh.LoadSynchronous();
+	if (!Bucket.BodyMesh.IsValid())
+	{
+		Bucket.BodyMesh = ResolveManagedProjectileShapeMesh(ResolveTemporaryProjectileShapeForCategory(Params.AttackCategory));
+		Bucket.bUseFlatColorMaterial = true;
+	}
+	else
+	{
+		Bucket.bUseFlatColorMaterial = false;
+	}
+	Bucket.bOverflowBucket = bOverflowBucket;
 	return Bucket;
 }
 
@@ -619,6 +674,7 @@ void UT66ProjectileManagerSubsystem::Deinitialize()
 	ManagedVisualBucketByProfileID.Reset();
 	BossVisualBucketByKey.Reset();
 	BossOverflowBucketByProfile.Reset();
+	AuthoredMeshBucketByKey.Reset();
 	VisualBucketWarningsEmitted.Reset();
 	if (RenderHost)
 	{
@@ -695,6 +751,7 @@ FT66WorldRuntimeDebugSnapshot UT66ProjectileManagerSubsystem::GetWorldRuntimeDeb
 	Snapshot.AddCounter(TEXT("managed_visual_bucket_key_count"), ManagedVisualBucketByProfileID.Num());
 	Snapshot.AddCounter(TEXT("boss_visual_bucket_key_count"), BossVisualBucketByKey.Num());
 	Snapshot.AddCounter(TEXT("boss_overflow_bucket_key_count"), BossOverflowBucketByProfile.Num());
+	Snapshot.AddCounter(TEXT("authored_mesh_bucket_key_count"), AuthoredMeshBucketByKey.Num());
 	Snapshot.AddCounter(TEXT("async_cache_entries"), CacheEntries);
 	Snapshot.AddCounter(TEXT("async_cached_systems_valid"), ValidCachedSystems);
 	Snapshot.AddCounter(TEXT("async_load_entries"), ActiveLoadEntries);
@@ -736,6 +793,7 @@ bool UT66ProjectileManagerSubsystem::FireProjectile(
 	Params.Lifetime = Lifetime;
 	Params.ProjectileTypeIndex = ProjectileTypeIndex;
 	Params.Delivery = ET66ManagedProjectileDelivery::EnemyProjectile;
+	Params.AttackCategory = ET66AttackCategory::DOT;
 	Params.VisualProfileID = DefaultEnemySpitVisualProfileID();
 	return AllocateProjectile(Params);
 }
@@ -776,7 +834,11 @@ bool UT66ProjectileManagerSubsystem::AllocateProjectile(FT66ManagedProjectileFir
 		++Diagnostics.DroppedFires;
 		return false;
 	}
-	if (Params.Delivery == ET66ManagedProjectileDelivery::BossProjectile)
+	if (!Params.ProjectileMesh.IsNull())
+	{
+		Params.ProjectileTypeIndex = ResolveAuthoredProjectileMeshTypeIndex(Params);
+	}
+	else if (Params.Delivery == ET66ManagedProjectileDelivery::BossProjectile)
 	{
 		Params.ProjectileTypeIndex = Params.VisualProfileID.IsNone()
 			? ResolveBossProjectileTypeIndex(Params)
@@ -814,6 +876,7 @@ bool UT66ProjectileManagerSubsystem::AllocateProjectile(FT66ManagedProjectileFir
 	Projectile.SourceMobID = Params.SourceID;
 	Projectile.bSourceWasLightweight = IsLightweightRangedSource(Params.SourceActor);
 	Projectile.Delivery = Params.Delivery;
+	Projectile.AttackCategory = Params.AttackCategory;
 	Projectile.BossAttackProfile = Params.BossAttackProfile;
 	Projectile.BossPrimaryColor = Params.BossPrimaryColor;
 	Projectile.BossSecondaryColor = Params.BossSecondaryColor;
@@ -1463,6 +1526,31 @@ int32 UT66ProjectileManagerSubsystem::ResolveBossProjectileTypeIndex(const FT66M
 	return NewOverflowIndex;
 }
 
+int32 UT66ProjectileManagerSubsystem::ResolveAuthoredProjectileMeshTypeIndex(const FT66ManagedProjectileFireParams& Params)
+{
+	const FString MeshPath = Params.ProjectileMesh.ToSoftObjectPath().ToString();
+	const FString ProfilePart = Params.VisualProfileID.IsNone() ? FString(TEXT("None")) : Params.VisualProfileID.ToString();
+	const FString Key = FString::Printf(
+		TEXT("%s|%s|%d|%.3f|%d"),
+		*MeshPath,
+		*ProfilePart,
+		static_cast<int32>(Params.AttackCategory),
+		FMath::Clamp(Params.ProjectileMeshScale, 0.05f, 12.f),
+		static_cast<int32>(Params.Delivery));
+	if (const int32* Existing = AuthoredMeshBucketByKey.Find(Key))
+	{
+		return *Existing;
+	}
+
+	const int32 NewIndex = FMath::Max(ProjectileComponents.Num(), ProjectileVisualBuckets.Num());
+	ProjectileComponents.SetNum(NewIndex + 1);
+	ProjectileVisualBuckets.SetNum(NewIndex + 1);
+	ProjectileVisualBuckets[NewIndex] = MakeAuthoredProjectileMeshBucket(Params, false);
+	AuthoredMeshBucketByKey.Add(Key, NewIndex);
+	++Diagnostics.VisualProfilesResolved;
+	return NewIndex;
+}
+
 UHierarchicalInstancedStaticMeshComponent* UT66ProjectileManagerSubsystem::CreateProjectileComponent(
 	const int32 ProjectileTypeIndex,
 	const FT66ProjectileVisualBucket& Bucket)
@@ -1502,11 +1590,14 @@ UHierarchicalInstancedStaticMeshComponent* UT66ProjectileManagerSubsystem::Creat
 	Component->SetCullDistances(0, 0);
 	Component->bAutoRebuildTreeOnInstanceChanges = false;
 	Component->SetStaticMesh(Bucket.BodyMesh.IsValid() ? Bucket.BodyMesh.Get() : FT66VisualUtil::GetBasicShapeSphere());
-	if (UMaterialInterface* BaseMaterial = FT66VisualUtil::GetFlatColorMaterial())
+	if (Bucket.bUseFlatColorMaterial)
 	{
-		UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(BaseMaterial, Component);
-		FT66VisualUtil::ConfigureFlatColorMaterial(Material, FLinearColor::FromSRGBColor(Bucket.Color));
-		Component->SetMaterial(0, Material);
+		if (UMaterialInterface* BaseMaterial = FT66VisualUtil::GetFlatColorMaterial())
+		{
+			UMaterialInstanceDynamic* Material = UMaterialInstanceDynamic::Create(BaseMaterial, Component);
+			FT66VisualUtil::ConfigureFlatColorMaterial(Material, FLinearColor::FromSRGBColor(Bucket.Color));
+			Component->SetMaterial(0, Material);
+		}
 	}
 	Component->RegisterComponentWithWorld(World);
 	PreallocateInstances(Component);

@@ -132,9 +132,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
 	TObjectPtr<UStaticMeshComponent> StaticVisualMesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visuals")
-	TObjectPtr<UPointLightComponent> CarryLight = nullptr;
-
 	/** Visual ring showing the hero's current auto-attack range (toggle with HUD panels). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat|UI")
 	TObjectPtr<UInstancedStaticMeshComponent> AttackRangeRingISM;

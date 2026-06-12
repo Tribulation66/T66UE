@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-05-25
 **Scope:** Step 0 planning document for isolated Hero 1 axe-themed combat VFX research and lab authoring.
-**Status:** Hero 1 AOE now has production binding, item-stat backend proof, and crescent-band hitbox proof for `Hero_1_black_aoe`. Final visual-polish approval remains separate. DOT, Pierce, and Bounce are infrastructure-only scaffolds until their own packets approve real effects.
+**Status:** Hero 1 AOE now has production binding, item-stat backend proof, and crescent-band hitbox proof for `Hero_1_black_aoe`. Final visual-polish approval remains separate. DOT, Summon, and Bounce are infrastructure-only scaffolds until their own packets approve real effects.
 
 ## Current Status Snapshot - 2026-05-28
 
@@ -12,7 +12,7 @@ Current status by attack category:
 
 - `AOE`: production binding and hitbox backend proof exist; final visual-polish approval remains separate.
 - `DOT`: active production binding row (`Hero1Axe_DOT_Base` → `Hero_1_black_dot`) bound to the moving aura-ring carrier Niagara system; final visual-polish approval remains separate.
-- `Pierce`: infrastructure-only packet exists; no active production binding row or VFX asset.
+- `RetiredLine`: infrastructure-only packet exists; no active production binding row or VFX asset.
 - `Bounce`: infrastructure-only packet exists; no active production binding row or VFX asset.
 - Idol overlays: architecture-only seam; no active idol overlay rows or assets.
 
@@ -24,7 +24,7 @@ The first targets are the four weapon altar attack categories:
 
 - `AOE`: frontal 180-degree half-moon axe slash.
 - `DOT`: aura axe that hits a target and remains spinning/orbiting while damage ticks.
-- `Pierce`: straight horizontal slash or fissure along a line.
+- `RetiredLine`: straight horizontal slash or fissure along a line.
 - `Bounce`: spirit/aura axe silhouettes that chain from one enemy to another.
 
 The visual style target is ethereal axe aura: readable axe silhouettes, bright edge energy, clear slash arcs, and a shared supernatural material language across all four attacks.
@@ -80,7 +80,7 @@ This section is the authoritative Hero 1 axe source-selection record. Effect pac
 Current canonical implementation source:
 
 - `Unreal Engine 5 - Sword Slash VFX - Niagara Tutorial` by Gabriel Aguiar: `https://www.youtube.com/watch?v=djlnnPvFR0Q`
-- Role: primary method/mechanism reference for the AOE half-moon slash and a strong implementation seed for Pierce-style slash behavior.
+- Role: primary method/mechanism reference for the AOE half-moon slash and a strong implementation seed for lane-style slash behavior.
 - Why selected: existing research marks it P0 for AOE because it demonstrates the closest solved process class: an empty Niagara system, custom flattened arc model, mesh renderer, short slash lifetime, mesh orientation/rotation force, dynamic material parameters, panning/tiling, power/erosion, additive bright layer, warm body layer, dark translucent backing layer, and impact stack.
 - Replication boundary: copy the method and mechanisms, not tutorial-owned assets. Values from the tutorial remain `observed` starting points unless the effect packet marks them `inferred` or `tuned`.
 
@@ -111,7 +111,7 @@ Future Unreal lab assets, only after cook exclusion is verified:
 
 - `/Game/VFXLab/Hero1Axe/AOE`
 - `/Game/VFXLab/Hero1Axe/DOT`
-- `/Game/VFXLab/Hero1Axe/Pierce`
+- `/Game/VFXLab/Hero1Axe/RetiredLine`
 - `/Game/VFXLab/Hero1Axe/Bounce`
 - `/Game/VFXLab/Hero1Axe/Shared`
 
@@ -254,7 +254,7 @@ Evidence packet contents:
 - timestamps for every referenced frame,
 - Codex first-pass notes,
 - the `observed`, `inferred`, and `tuned` uncertainty labels defined in Section 5.1,
-- targeted questions for whichever effect the source informs: `AOE`, `DOT`, `Pierce`, or `Bounce`.
+- targeted questions for whichever effect the source informs: `AOE`, `DOT`, `RetiredLine`, or `Bounce`.
 
 Default review cadence:
 
@@ -279,7 +279,7 @@ Goal:
 - Reads as a broad axe slash, not a sword slash or generic fire arc.
 - Covers a half-circle in front of the hero.
 - Current visual target is an AOE-specific American-flag-inspired crescent: red and blue energy bands on a broad half-moon axe slash, with a white impact position at enemy contact.
-- This color identity is specific to the AOE target and does not redefine the shared ethereal axe language for DOT, Pierce, or Bounce.
+- This color identity is specific to the AOE target and does not redefine the shared ethereal axe language for DOT, RetiredLine, or Bounce.
 - The target still requires non-uniform multi-shape slash carrier behavior, multi-color body/core/edge variation, and a visible impact spot.
 - Before the target can receive a `FULL` visual-acceptance claim, the generated mockup or contact sheet must be saved to a repo path and Pablo must explicitly approve that exact saved variant.
 
@@ -326,7 +326,7 @@ Validation:
 - target remains visible,
 - attachment fidelity is not final until real combat integration.
 
-### 7.3 Pierce Horizontal Slash/Fissure
+### 7.3 RetiredLine Horizontal Slash/Fissure
 
 Goal:
 
@@ -374,7 +374,7 @@ Validation:
    - Easiest to judge from still captures.
 2. `DOT`
    - Reuses the axe aura style and de-risks spinning/attached presentation early.
-3. `Pierce`
+3. `RetiredLine`
    - Reuses the slash language in a straight-line lane shape.
 4. `Bounce`
    - Most combat-pathing-specific, so it should come after the visual language is accepted.
@@ -420,14 +420,14 @@ Initial concurrency assumptions, pending real combat spawn caps:
 
 - `AOE`: 1-2 active.
 - `DOT`: up to 8 active target attachments.
-- `Pierce`: 1-3 active.
+- `RetiredLine`: 1-3 active.
 - `Bounce`: up to 3 chains with 5 hops each.
 
 These numbers must be checked against real T66 combat spawn caps before production integration.
 
 ## 11. Step 0.5 Instrumentation Plan
 
-Step 0.5 is approved only for the first AOE lab prototype. It remains unapproved for DOT, Pierce, Bounce, live combat, and production promotion.
+Step 0.5 is approved only for the first AOE lab prototype. It remains unapproved for DOT, Summon, Bounce, live combat, and production promotion.
 
 Potential Step 0.5 work:
 

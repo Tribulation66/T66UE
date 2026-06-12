@@ -221,23 +221,46 @@ bool AT66RangedEnemy::FireProjectileAtPlayer(APawn* PlayerPawn)
 		MobManager->RecordRangedDispatchReached(false, MobID, Dist2D);
 	}
 	UT66ProjectileManagerSubsystem* ProjectileManager = World->GetSubsystem<UT66ProjectileManagerSubsystem>();
-	if (ProjectileManager && ProjectileManager->FireProjectile(this, MobID, Start, ShotDirection, 2400.f, 20.f, 18.f, 4.f, UT66ProjectileManagerSubsystem::EnemySpitProjectileTypeIndex))
+	if (ProjectileManager)
 	{
-		if (MobManager)
+		FT66ManagedProjectileFireParams FireParams;
+		FireParams.SourceActor = this;
+		FireParams.SourceID = MobID;
+		FireParams.Origin = Start;
+		FireParams.Direction = ShotDirection;
+		FireParams.Speed = 2400.f;
+		FireParams.Damage = 20.f;
+		FireParams.Radius = 18.f;
+		FireParams.Lifetime = 4.f;
+		FireParams.ProjectileTypeIndex = UT66ProjectileManagerSubsystem::EnemySpitProjectileTypeIndex;
+		FireParams.Delivery = ET66ManagedProjectileDelivery::EnemyProjectile;
+		FireParams.AttackCategory = ProjectileCategory;
+		FireParams.VisualProfileID = ProjectileVisualProfileID.IsNone()
+			? UT66ProjectileManagerSubsystem::DefaultEnemySpitVisualProfileID()
+			: ProjectileVisualProfileID;
+		FireParams.ProjectileMesh = ProjectileMesh;
+		FireParams.ProjectileMeshScale = ProjectileMeshScale;
+		if (ProjectileManager->FireManagedProjectile(FireParams))
 		{
-			MobManager->RecordRangedProjectileSpawned(false, MobID);
+			if (MobManager)
+			{
+				MobManager->RecordRangedProjectileSpawned(false, MobID);
+			}
+			UE_LOG(
+				LogT66RangedEnemy,
+				VeryVerbose,
+				TEXT("[EnemyRange] FiredShot Enemy=%s MobID=%s Projectile=ManagedEnemySpit Category=%d Profile=%s Mesh=%s Player=%s Dist2D=%.1f Start=%s Target=%s"),
+				*GetName(),
+				*MobID.ToString(),
+				static_cast<int32>(ProjectileCategory),
+				*FireParams.VisualProfileID.ToString(),
+				*ProjectileMesh.ToSoftObjectPath().ToString(),
+				*PlayerPawn->GetName(),
+				Dist2D,
+				*Start.ToCompactString(),
+				*Target.ToCompactString());
+			return true;
 		}
-		UE_LOG(
-			LogT66RangedEnemy,
-			VeryVerbose,
-			TEXT("[EnemyRange] FiredShot Enemy=%s MobID=%s Projectile=ManagedEnemySpit Player=%s Dist2D=%.1f Start=%s Target=%s"),
-			*GetName(),
-			*MobID.ToString(),
-			*PlayerPawn->GetName(),
-			Dist2D,
-			*Start.ToCompactString(),
-			*Target.ToCompactString());
-		return true;
 	}
 
 	if (MobManager)

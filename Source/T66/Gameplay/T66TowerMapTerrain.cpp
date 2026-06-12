@@ -5,6 +5,11 @@
 #include "Core/T66GameplayLayout.h"
 #include "Core/T66TowerTuningConfig.h"
 #include "Data/T66DataTypes.h"
+#include "Gameplay/MapGeneration/Composition/T66RoomComposer.h"
+#include "Gameplay/MapGeneration/Composition/T66RoomFeaturePlacer.h"
+#include "Gameplay/MapGeneration/Validation/T66RoomValidation.h"
+#include "Gameplay/T66BouncePadObstacle.h"
+#include "Gameplay/T66TowerLiftPlatform.h"
 #include "Gameplay/T66TowerThemeVisuals.h"
 #include "Gameplay/T66VisualUtil.h"
 #include "Engine/CollisionProfile.h"
@@ -20,6 +25,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "GameFramework/Actor.h"
 #include "Materials/MaterialInterface.h"
+#include "PhysicsEngine/BodySetup.h"
 
 namespace
 {
@@ -29,6 +35,13 @@ namespace
 	static const FName T66TowerMapTerrainMaterialsReadyTag(TEXT("T66_MainMapTerrain_MaterialsReady"));
 	static const FName T66TowerMapTerrainCollisionProxyTag(TEXT("T66_MainMapTerrain_CollisionProxy"));
 	static const FName T66TowerMapTraversalBarrierTag(TEXT("T66_Map_TraversalBarrier"));
+	// Elevated walkable deck slabs (mesa tops, Tier 2 platforms): the camera fade
+	// pass accepts this tag with a thin-slab shape exemption so the hero never
+	// plays blind under a bridge (T66PlayerController occluder filter).
+	static const FName T66TowerMapDeckVisualTag(TEXT("T66_Tower_DeckVisual"));
+
+	static const FName T66HazardTypeSweeperArm = T66MapGeneration::HazardSweeperArm;
+	static const FName T66HazardTypeCeilingHammer = T66MapGeneration::HazardCeilingHammer;
 	static const FName T66TowerMapCameraOccludingWallVisualTag(TEXT("T66_CameraOccludingWallVisual"));
 	static const FName T66TowerMapCeilingTag(TEXT("T66_Tower_Ceiling"));
 	static const FName T66TowerTerrainNoSurfaceBounceTag(TEXT("T66_NoSurfaceBounce"));
@@ -57,8 +70,11 @@ namespace
 
 	static TAutoConsoleVariable<int32> CVarT66TowerFloorBaffles(
 		TEXT("t66.Tower.FloorBaffles"),
-		1,
-		TEXT("0 uses generated dungeon slab/box visuals, 1 replaces generated floor, wall, and ceiling visuals with HISM baffle tube instances. Collision proxies stay unchanged."),
+		// 2026-06-10 user direction: tubes are parked until the map design is nailed —
+		// the tower renders clean Fall Guys slabs by default. Flip to 1 to bring the
+		// inflated baffle look back.
+		0,
+		TEXT("0 uses clean slab/box visuals (Fall Guys look), 1 replaces generated floor, wall, and ceiling visuals with HISM baffle tube instances. Collision proxies stay unchanged."),
 		ECVF_Default);
 
 	static TAutoConsoleVariable<float> CVarT66TowerFloorBafflePitch(
@@ -354,6 +370,29 @@ namespace
 			++GT66TowerTerrainActiveSpawnStats->CollisionProxyActors;
 		}
 		return Actor;
+	}
+
+	/** Reconfigures a hidden proxy to block ONLY the camera channel (no gameplay impact). */
+	static void T66MakeCollisionProxyCameraOnly(AActor* ProxyActor)
+	{
+		if (!ProxyActor)
+		{
+			return;
+		}
+
+		TInlineComponentArray<UBoxComponent*> BoxComponents;
+		ProxyActor->GetComponents(BoxComponents);
+		for (UBoxComponent* BoxComponent : BoxComponents)
+		{
+			if (!BoxComponent)
+			{
+				continue;
+			}
+
+			BoxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+			BoxComponent->SetCollisionResponseToAllChannels(ECR_Ignore);
+			BoxComponent->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
+		}
 	}
 
 	static AStaticMeshActor* T66SpawnEnvironmentRectangle(
@@ -684,19 +723,251 @@ namespace
 		return Actor;
 	}
 
+	// Elevated-deck architecture (design ref section 1.5): walkable slabs held up
+	// by round pillars, ground underneath stays playable. Deck thickness pairs
+	// with the visual slab exactly (exact-collision contract).
+	static constexpr float T66TowerDeckThicknessUU = 60.0f;
+	static constexpr float T66TowerMesaPillarRadiusUU = 110.0f;
+	static constexpr float T66TowerMesaPillarGridPitchUU = 950.0f;
+	static constexpr float T66TowerMesaPillarCornerInsetUU = 170.0f;
+
+	/** Exact-collision contract: round elements may only ship when the basic shape carries its own simple collision. */
+	static bool T66MeshHasSimpleCollision(const UStaticMesh* Mesh)
+	{
+		const UBodySetup* BodySetup = Mesh ? Mesh->GetBodySetup() : nullptr;
+		return BodySetup && BodySetup->AggGeom.GetElementCount() > 0;
+	}
+
+	/**
+	 * One batched HISM actor whose instances CARRY their mesh's simple collision
+	 * (deck pillars, round stepping stones). Carries both terrain sync tags so the
+	 * stateful floor pass hides it AND disables its collision off-floor. Camera
+	 * channel is ignored (pillars/stones never gate the boom or the fade).
+	 */
+	static AActor* T66SpawnCollidingInstancedMeshActor(
+		UWorld* World,
+		UStaticMesh* Mesh,
+		UMaterialInterface* Material,
+		const TArray<FTransform>& InstanceTransforms,
+		const FActorSpawnParameters& SpawnParams,
+		const TArray<FName>& ExtraTags,
+		const TCHAR* ComponentName)
+	{
+		if (!World || !Mesh || InstanceTransforms.Num() <= 0 || !T66MeshHasSimpleCollision(Mesh))
+		{
+			return nullptr;
+		}
+
+		AActor* Actor = World->SpawnActor<AActor>(AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		if (!Actor)
+		{
+			return nullptr;
+		}
+
+		UHierarchicalInstancedStaticMeshComponent* MeshComponent = NewObject<UHierarchicalInstancedStaticMeshComponent>(
+			Actor,
+			MakeUniqueObjectName(Actor, UHierarchicalInstancedStaticMeshComponent::StaticClass(), FName(ComponentName)));
+		if (!MeshComponent)
+		{
+			Actor->Destroy();
+			return nullptr;
+		}
+
+		Actor->SetRootComponent(MeshComponent);
+		Actor->AddInstanceComponent(MeshComponent);
+		MeshComponent->SetMobility(EComponentMobility::Movable);
+		MeshComponent->SetStaticMesh(Mesh);
+		MeshComponent->SetGenerateOverlapEvents(false);
+		MeshComponent->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+		T66ConfigureTowerCollisionResponses(MeshComponent, true);
+		MeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		MeshComponent->SetCanEverAffectNavigation(false);
+		MeshComponent->SetCullDistances(0, T66GetTowerTuning().GeneratedDungeonKitCullDistance);
+		for (const FName& Tag : ExtraTags)
+		{
+			if (!Tag.IsNone())
+			{
+				MeshComponent->ComponentTags.AddUnique(Tag);
+			}
+		}
+		T66OptimizeTowerMeshComponent(MeshComponent);
+		if (Material)
+		{
+			const int32 MaterialCount = MeshComponent->GetNumMaterials();
+			for (int32 MaterialIndex = 0; MaterialIndex < MaterialCount; ++MaterialIndex)
+			{
+				MeshComponent->SetMaterial(MaterialIndex, Material);
+			}
+		}
+		else
+		{
+			FT66VisualUtil::EnsureUnlitMaterials(MeshComponent, World);
+		}
+		MeshComponent->PreAllocateInstancesMemory(InstanceTransforms.Num());
+		MeshComponent->AddInstances(InstanceTransforms, false, false, false);
+		MeshComponent->RegisterComponent();
+		MeshComponent->SetMobility(EComponentMobility::Static);
+
+		Actor->Tags.AddUnique(T66TowerMapTerrainVisualTag);
+		Actor->Tags.AddUnique(T66TowerMapTerrainMaterialsReadyTag);
+		Actor->Tags.AddUnique(T66TowerMapTerrainCollisionProxyTag);
+		for (const FName& Tag : ExtraTags)
+		{
+			if (!Tag.IsNone())
+			{
+				Actor->Tags.AddUnique(Tag);
+			}
+		}
+		if (GT66TowerTerrainActiveSpawnStats)
+		{
+			++GT66TowerTerrainActiveSpawnStats->HISMComponents;
+			GT66TowerTerrainActiveSpawnStats->HISMInstances += InstanceTransforms.Num();
+		}
+		return Actor;
+	}
+
+	/** Scale transform that maps a basic shape's native bounds onto the desired half extents. */
+	static FTransform T66MakeBasicShapeInstanceTransform(
+		const UStaticMesh* Mesh,
+		const FVector& Center,
+		const FVector& DesiredHalfExtents,
+		const float YawDegrees = 0.0f)
+	{
+		const FVector NativeExtents = Mesh ? Mesh->GetBounds().BoxExtent : FVector(50.0f);
+		const FVector Scale(
+			DesiredHalfExtents.X / FMath::Max(NativeExtents.X, 1.0f),
+			DesiredHalfExtents.Y / FMath::Max(NativeExtents.Y, 1.0f),
+			DesiredHalfExtents.Z / FMath::Max(NativeExtents.Z, 1.0f));
+		// 90-degree yaw steps only (kit AABBs are square, so scale-then-rotate
+		// keeps the footprint inside the recorded Bounds).
+		return FTransform(FRotator(0.0f, YawDegrees, 0.0f), Center, Scale);
+	}
+
 	static constexpr float T66TowerFloorBaffleTubeNativeLength = 100.0f;
 	static constexpr float T66TowerFloorBaffleTubeNativeDiameter = 60.0f;
 
 	static UStaticMesh* T66GetFloorBaffleTubeMesh()
 	{
+		// Function-local statics are invisible to the GC: without rooting, the mesh is
+		// collected after the first gameplay world tears down and the cached pointer
+		// dangles, crashing the next tower spawn inside SetStaticMesh (2026-06-10
+		// EXCEPTION_ACCESS_VIOLATION on re-entering the Tribulation).
 		static TObjectPtr<UStaticMesh> Cached = nullptr;
 		if (!Cached)
 		{
 			Cached = LoadObject<UStaticMesh>(
 				nullptr,
 				TEXT("/Game/World/Terrain/TowerDungeon/Baffles/SM_BaffleTube.SM_BaffleTube"));
+			if (Cached)
+			{
+				Cached->AddToRoot();
+			}
 		}
 		return Cached.Get();
+	}
+
+	// Fall Guys candy accents for course geometry (rooted caches; null-safe callers
+	// fall back to the theme floor material).
+	static UMaterialInterface* T66LoadRootedAccentMaterial(const TCHAR* ObjectPath, TObjectPtr<UMaterialInterface>& Cached)
+	{
+		if (!Cached)
+		{
+			Cached = LoadObject<UMaterialInterface>(nullptr, ObjectPath);
+			if (Cached)
+			{
+				Cached->AddToRoot();
+			}
+		}
+		return Cached.Get();
+	}
+
+	static UMaterialInterface* T66GetFallGuysPlatformMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		return T66LoadRootedAccentMaterial(TEXT("/Game/World/Terrain/FallGuysKit/MI_FallGuys_Platform.MI_FallGuys_Platform"), Cached);
+	}
+
+	static UMaterialInterface* T66GetFallGuysRampMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		return T66LoadRootedAccentMaterial(TEXT("/Game/World/Terrain/FallGuysKit/MI_FallGuys_Ramp.MI_FallGuys_Ramp"), Cached);
+	}
+
+	static UMaterialInterface* T66GetFallGuysMesaMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		return T66LoadRootedAccentMaterial(TEXT("/Game/World/Terrain/FallGuysKit/MI_FallGuys_Mesa.MI_FallGuys_Mesa"), Cached);
+	}
+
+	static UMaterialInterface* T66GetFallGuysLiftMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		return T66LoadRootedAccentMaterial(TEXT("/Game/World/Terrain/FallGuysKit/MI_FallGuys_Lift.MI_FallGuys_Lift"), Cached);
+	}
+
+	// FallGuysShapeKit01 platform prisms (exact 100^3 AABBs, 1-hull convex
+	// collision baked at import — design ref section 1.6). Rooted like every
+	// function-local asset cache (world-teardown GC crash class).
+	static UStaticMesh* T66LoadRootedShapeMesh(const TCHAR* ObjectPath, TObjectPtr<UStaticMesh>& Cached)
+	{
+		if (!Cached)
+		{
+			Cached = LoadObject<UStaticMesh>(nullptr, ObjectPath);
+			if (Cached)
+			{
+				Cached->AddToRoot();
+			}
+		}
+		return Cached.Get();
+	}
+
+	static UStaticMesh* T66GetFGShapeHexMesh()
+	{
+		static TObjectPtr<UStaticMesh> Cached = nullptr;
+		return T66LoadRootedShapeMesh(TEXT("/Game/World/Terrain/FallGuysKit/SM_FGShape_Hex.SM_FGShape_Hex"), Cached);
+	}
+
+	static UStaticMesh* T66GetFGShapeTriMesh()
+	{
+		static TObjectPtr<UStaticMesh> Cached = nullptr;
+		return T66LoadRootedShapeMesh(TEXT("/Game/World/Terrain/FallGuysKit/SM_FGShape_Tri.SM_FGShape_Tri"), Cached);
+	}
+
+	// Beveled kit (Tier A, FALLGUYS_MAP_ANALYSIS.md P8): rounded chunky geometry.
+	// BevelCube replaces the sharp basic cube for COURSE elements (stones, decks,
+	// ramps, lift slabs); BevelPuck replaces the engine cylinder for round stones
+	// and decks. Bevels only cut INWARD from the 100^3 AABB, so all scale and
+	// box-gap math is unchanged.
+	static UStaticMesh* T66GetFGShapeBevelCubeMesh()
+	{
+		static TObjectPtr<UStaticMesh> Cached = nullptr;
+		return T66LoadRootedShapeMesh(TEXT("/Game/World/Terrain/FallGuysKit/SM_FGShape_BevelCube.SM_FGShape_BevelCube"), Cached);
+	}
+
+	static UStaticMesh* T66GetFGShapeBevelPuckMesh()
+	{
+		static TObjectPtr<UStaticMesh> Cached = nullptr;
+		return T66LoadRootedShapeMesh(TEXT("/Game/World/Terrain/FallGuysKit/SM_FGShape_BevelPuck.SM_FGShape_BevelPuck"), Cached);
+	}
+
+	static UMaterialInterface* T66GetFallGuysDeckMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		return T66LoadRootedAccentMaterial(TEXT("/Game/World/Terrain/FallGuysKit/MI_FallGuys_Deck.MI_FallGuys_Deck"), Cached);
+	}
+
+	static UMaterialInterface* T66GetFallGuysTrimMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		return T66LoadRootedAccentMaterial(TEXT("/Game/World/Terrain/FallGuysKit/MI_FallGuys_Trim.MI_FallGuys_Trim"), Cached);
+	}
+
+	// Hazard signature stripes (analysis P9): bounce pads launch the hero, so they
+	// wear the same diagonal stripes as every other punting surface.
+	static UMaterialInterface* T66GetHazardStripesMaterial()
+	{
+		static TObjectPtr<UMaterialInterface> Cached = nullptr;
+		return T66LoadRootedAccentMaterial(TEXT("/Game/World/Traps/Inflatable/MI_Inflatable_StripesDiag.MI_Inflatable_StripesDiag"), Cached);
 	}
 
 	static float T66GetBafflePitch()
@@ -738,7 +1009,9 @@ namespace
 		const float SurfaceZ,
 		const float GridOriginY,
 		const bool bBodyExtendsDown,
-		TArray<FTransform>& OutTransforms)
+		TArray<FTransform>& OutTransforms,
+		const float PitchOverride = 0.0f,
+		const float DiameterOverride = 0.0f)
 	{
 		const FVector2D BoxSize = SourceBox.Max - SourceBox.Min;
 		if (BoxSize.X <= 10.0f || BoxSize.Y <= 10.0f)
@@ -746,8 +1019,10 @@ namespace
 			return false;
 		}
 
-		const float Pitch = T66GetBafflePitch();
-		const float TubeDiameter = T66GetBaffleDiameter(Pitch);
+		const float Pitch = PitchOverride > 0.0f ? PitchOverride : T66GetBafflePitch();
+		const float TubeDiameter = DiameterOverride > 0.0f
+			? FMath::Min(DiameterOverride, Pitch * 1.25f)
+			: T66GetBaffleDiameter(Pitch);
 		const float TubeRadius = TubeDiameter * 0.5f;
 		const float SeamOverlap = T66GetBaffleSeamOverlap(TubeRadius);
 		const FVector2D VisualMin = SourceBox.Min - FVector2D(SeamOverlap, SeamOverlap);
@@ -784,10 +1059,11 @@ namespace
 		return OutTransforms.Num() > 0;
 	}
 
-	static bool T66SpawnFloorBaffleTubeVisualsForBox(
+	static bool T66SpawnFloorBaffleTubeVisualsForBoxAtZ(
 		UWorld* World,
 		const FBox2D& SourceBox,
 		const T66TowerMapTerrain::FFloor& Floor,
+		const float SurfaceZ,
 		UMaterialInterface* FloorMaterial,
 		const FActorSpawnParameters& SpawnParams,
 		const TArray<FName>& Tags)
@@ -816,7 +1092,7 @@ namespace
 		}
 
 		TArray<FTransform> TubeTransforms;
-		if (!T66BuildHorizontalBaffleTransforms(SourceBox, Floor.SurfaceZ, Floor.Center.Y, true, TubeTransforms))
+		if (!T66BuildHorizontalBaffleTransforms(SourceBox, SurfaceZ, Floor.Center.Y, true, TubeTransforms))
 		{
 			return false;
 		}
@@ -844,6 +1120,17 @@ namespace
 
 		T66ApplyBaffleMaterial(BaffleActor, FloorMaterial);
 		return true;
+	}
+
+	static bool T66SpawnFloorBaffleTubeVisualsForBox(
+		UWorld* World,
+		const FBox2D& SourceBox,
+		const T66TowerMapTerrain::FFloor& Floor,
+		UMaterialInterface* FloorMaterial,
+		const FActorSpawnParameters& SpawnParams,
+		const TArray<FName>& Tags)
+	{
+		return T66SpawnFloorBaffleTubeVisualsForBoxAtZ(World, SourceBox, Floor, Floor.SurfaceZ, FloorMaterial, SpawnParams, Tags);
 	}
 
 	static bool T66SpawnCeilingBaffleTubeVisualsForBox(
@@ -994,6 +1281,1074 @@ namespace
 
 		T66ApplyBaffleMaterial(BaffleActor, WallMaterial);
 		return true;
+	}
+
+	// -----------------------------------------------------------------------
+	// Tier terrain spawning: solid hidden box proxies for mesas, rotated wedge
+	// proxies for tier ramps, with three distinct visual tube scales — thinner
+	// mesa-top baffles, stacked skirt tubes on exposed mesa edges, and small
+	// roller tubes packed across ramp slopes ("smaller cylinders composing a
+	// ramp"). All tube visuals batch into one instanced actor per floor.
+	// -----------------------------------------------------------------------
+
+	static void T66SpawnTierTerrainForFloor(
+		UWorld* World,
+		UStaticMesh* CubeMesh,
+		const T66TowerThemeVisuals::FResolvedTheme& Theme,
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FActorSpawnParameters& SpawnParams)
+	{
+		if (!World || (Floor.TierMesas.Num() <= 0 && Floor.TierRamps.Num() <= 0 && Floor.TierLifts.Num() <= 0))
+		{
+			return;
+		}
+
+		const TArray<FName> TierTags = {
+			FName(*FString::Printf(TEXT("T66_Floor_Tower_%02d"), Floor.FloorNumber)),
+			FName(*FString::Printf(TEXT("T66_Floor_Tower_Tier_%02d"), Floor.FloorNumber))
+		};
+		UMaterialInterface* SurfaceMaterial = Theme.FloorMaterial ? Theme.FloorMaterial : Theme.WallMaterial;
+		UStaticMesh* TubeMesh = T66GetFloorBaffleTubeMesh();
+		const bool bUseBaffles = T66ShouldUseFloorBaffles() && TubeMesh && SurfaceMaterial;
+		const float TierTopZ = Floor.SurfaceZ + Layout.TierHeight;
+
+		TArray<FTransform> BatchedTubeTransforms;
+
+		// Mesas: elevated walkable DECKS, not solid blocks (design ref section 1.5).
+		// A 60uu slab proxy owns the walkable top; round pillars hold it up; the
+		// ground underneath stays open, playable, and connected to the room ring.
+		UStaticMesh* PillarMesh = FT66VisualUtil::GetBasicShapeCylinder();
+		TArray<FTransform> MesaPillarTransforms;
+		// Beveled deck visual + white edge bands (analysis P8/A2); sharp cube and
+		// no-trim remain the fallbacks.
+		UStaticMesh* MesaDeckMesh = T66GetFGShapeBevelCubeMesh();
+		if (!MesaDeckMesh)
+		{
+			MesaDeckMesh = CubeMesh;
+		}
+		UMaterialInterface* MesaTrimMaterial = T66GetFallGuysTrimMaterial();
+		TArray<FTransform> MesaTrimTransforms;
+		auto AppendMesaTrims = [&](const FVector2D& RectCenter, const FVector2D& RectHalf, const float DeckTopZ)
+		{
+			if (!CubeMesh || !MesaTrimMaterial)
+			{
+				return;
+			}
+			const float BandHalfHeight = 12.0f;
+			const float BandHalfThickness = 3.0f;
+			const float BandCenterZ = DeckTopZ - BandHalfHeight;
+			MesaTrimTransforms.Add(T66MakeBasicShapeInstanceTransform(CubeMesh,
+				FVector(RectCenter.X, RectCenter.Y - RectHalf.Y - BandHalfThickness, BandCenterZ),
+				FVector(RectHalf.X + (BandHalfThickness * 2.0f), BandHalfThickness, BandHalfHeight)));
+			MesaTrimTransforms.Add(T66MakeBasicShapeInstanceTransform(CubeMesh,
+				FVector(RectCenter.X, RectCenter.Y + RectHalf.Y + BandHalfThickness, BandCenterZ),
+				FVector(RectHalf.X + (BandHalfThickness * 2.0f), BandHalfThickness, BandHalfHeight)));
+			MesaTrimTransforms.Add(T66MakeBasicShapeInstanceTransform(CubeMesh,
+				FVector(RectCenter.X - RectHalf.X - BandHalfThickness, RectCenter.Y, BandCenterZ),
+				FVector(BandHalfThickness, RectHalf.Y, BandHalfHeight)));
+			MesaTrimTransforms.Add(T66MakeBasicShapeInstanceTransform(CubeMesh,
+				FVector(RectCenter.X + RectHalf.X + BandHalfThickness, RectCenter.Y, BandCenterZ),
+				FVector(BandHalfThickness, RectHalf.Y, BandHalfHeight)));
+		};
+		for (const T66TowerMapTerrain::FTierMesa& Mesa : Floor.TierMesas)
+		{
+			const float DeckBottomZ = TierTopZ - T66TowerDeckThicknessUU;
+			UMaterialInterface* MesaMaterial = T66GetFallGuysMesaMaterial();
+			TArray<FName> DeckTags = TierTags;
+			DeckTags.AddUnique(T66TowerMapCameraOccludingWallVisualTag);
+			DeckTags.AddUnique(T66TowerMapDeckVisualTag);
+
+			// Proxy + matching visual for one deck rectangle. Visual matches the
+			// collision slab EXACTLY (floating — no floor seam, no sink needed);
+			// camera-occluding + deck tags let the boom and the occluder fade
+			// handle the hero walking beneath.
+			auto SpawnDeckPiece = [&](const FBox2D& Rect)
+			{
+				const FVector2D PieceCenter = (Rect.Min + Rect.Max) * 0.5f;
+				const FVector2D PieceHalf = (Rect.Max - Rect.Min) * 0.5f;
+				if (PieceHalf.X <= 10.0f || PieceHalf.Y <= 10.0f)
+				{
+					return;
+				}
+
+				T66SpawnHiddenCollisionProxyActor(
+					World,
+					FVector(PieceCenter.X, PieceCenter.Y, TierTopZ - (T66TowerDeckThicknessUU * 0.5f)),
+					FRotator::ZeroRotator,
+					FVector(PieceHalf.X, PieceHalf.Y, T66TowerDeckThicknessUU * 0.5f),
+					SpawnParams,
+					TierTags,
+					true);
+
+				bool bSpawnedTop = false;
+				if (bUseBaffles)
+				{
+					// Parked baffle mode keeps the top tube read; side skirts are
+					// gone — the sides are open air under a deck.
+					const int32 CountBefore = BatchedTubeTransforms.Num();
+					T66BuildHorizontalBaffleTransforms(
+						Rect,
+						TierTopZ,
+						Floor.Center.Y,
+						true,
+						BatchedTubeTransforms,
+						Layout.MesaTopBafflePitch,
+						Layout.MesaTopBaffleDiameter);
+					bSpawnedTop = BatchedTubeTransforms.Num() > CountBefore;
+				}
+
+				if (!bSpawnedTop && MesaDeckMesh && SurfaceMaterial)
+				{
+					T66SpawnEnvironmentRectangle(
+						World,
+						MesaDeckMesh,
+						MesaMaterial ? MesaMaterial : SurfaceMaterial,
+						FVector(PieceCenter.X, PieceCenter.Y, TierTopZ - (T66TowerDeckThicknessUU * 0.5f)),
+						FVector(PieceHalf.X, PieceHalf.Y, T66TowerDeckThicknessUU * 0.5f),
+						SpawnParams,
+						DeckTags);
+					AppendMesaTrims(PieceCenter, PieceHalf, TierTopZ);
+				}
+			};
+
+			if (Mesa.HasHole())
+			{
+				// Ring deck: four frame slabs around the center drop hole.
+				SpawnDeckPiece(FBox2D(
+					FVector2D(Mesa.Bounds.Min.X, Mesa.HoleBounds.Max.Y),
+					FVector2D(Mesa.Bounds.Max.X, Mesa.Bounds.Max.Y)));
+				SpawnDeckPiece(FBox2D(
+					FVector2D(Mesa.Bounds.Min.X, Mesa.Bounds.Min.Y),
+					FVector2D(Mesa.Bounds.Max.X, Mesa.HoleBounds.Min.Y)));
+				SpawnDeckPiece(FBox2D(
+					FVector2D(Mesa.Bounds.Min.X, Mesa.HoleBounds.Min.Y),
+					FVector2D(Mesa.HoleBounds.Min.X, Mesa.HoleBounds.Max.Y)));
+				SpawnDeckPiece(FBox2D(
+					FVector2D(Mesa.HoleBounds.Max.X, Mesa.HoleBounds.Min.Y),
+					FVector2D(Mesa.Bounds.Max.X, Mesa.HoleBounds.Max.Y)));
+			}
+			else
+			{
+				SpawnDeckPiece(Mesa.Bounds);
+			}
+
+			// Pillar grid: corner-inset perimeter + interior pitch so spans read
+			// supported. Pillars sink 2uu into floor and deck to avoid seam gaps.
+			// Ring mesas skip stops in the hole (no deck above them) and rim the
+			// hole corners instead so the inner frame edges read held up.
+			if (PillarMesh)
+			{
+				const float PillarBottomZ = Floor.SurfaceZ - 2.0f;
+				const float PillarTopZ = DeckBottomZ + 2.0f;
+				const float PillarHalfZ = (PillarTopZ - PillarBottomZ) * 0.5f;
+				const float PillarCenterZ = (PillarTopZ + PillarBottomZ) * 0.5f;
+				auto AddPillar = [&](const float X, const float Y)
+				{
+					MesaPillarTransforms.Add(T66MakeBasicShapeInstanceTransform(
+						PillarMesh,
+						FVector(X, Y, PillarCenterZ),
+						FVector(T66TowerMesaPillarRadiusUU, T66TowerMesaPillarRadiusUU, PillarHalfZ)));
+				};
+				auto BuildAxisStops = [](const float Min, const float Max, TArray<float>& OutStops)
+				{
+					OutStops.Reset();
+					const float Lo = Min + T66TowerMesaPillarCornerInsetUU;
+					const float Hi = Max - T66TowerMesaPillarCornerInsetUU;
+					const int32 SpanCount = FMath::Max(1, FMath::CeilToInt((Hi - Lo) / T66TowerMesaPillarGridPitchUU));
+					for (int32 Stop = 0; Stop <= SpanCount; ++Stop)
+					{
+						OutStops.Add(FMath::Lerp(Lo, Hi, static_cast<float>(Stop) / static_cast<float>(SpanCount)));
+					}
+				};
+				TArray<float> StopsX;
+				TArray<float> StopsY;
+				BuildAxisStops(Mesa.Bounds.Min.X, Mesa.Bounds.Max.X, StopsX);
+				BuildAxisStops(Mesa.Bounds.Min.Y, Mesa.Bounds.Max.Y, StopsY);
+				for (const float X : StopsX)
+				{
+					for (const float Y : StopsY)
+					{
+						const bool bInsideHole = Mesa.HasHole()
+							&& X > Mesa.HoleBounds.Min.X - T66TowerMesaPillarRadiusUU
+							&& X < Mesa.HoleBounds.Max.X + T66TowerMesaPillarRadiusUU
+							&& Y > Mesa.HoleBounds.Min.Y - T66TowerMesaPillarRadiusUU
+							&& Y < Mesa.HoleBounds.Max.Y + T66TowerMesaPillarRadiusUU;
+						if (!bInsideHole)
+						{
+							AddPillar(X, Y);
+						}
+					}
+				}
+				if (Mesa.HasHole())
+				{
+					const float RimInset = T66TowerMesaPillarRadiusUU + 30.0f;
+					AddPillar(Mesa.HoleBounds.Min.X - RimInset, Mesa.HoleBounds.Min.Y - RimInset);
+					AddPillar(Mesa.HoleBounds.Max.X + RimInset, Mesa.HoleBounds.Min.Y - RimInset);
+					AddPillar(Mesa.HoleBounds.Min.X - RimInset, Mesa.HoleBounds.Max.Y + RimInset);
+					AddPillar(Mesa.HoleBounds.Max.X + RimInset, Mesa.HoleBounds.Max.Y + RimInset);
+				}
+			}
+		}
+
+		if (MesaPillarTransforms.Num() > 0)
+		{
+			UMaterialInterface* MesaMaterial = T66GetFallGuysMesaMaterial();
+			T66SpawnCollidingInstancedMeshActor(
+				World,
+				PillarMesh,
+				MesaMaterial ? MesaMaterial : SurfaceMaterial,
+				MesaPillarTransforms,
+				SpawnParams,
+				TierTags,
+				TEXT("MesaDeckPillar"));
+		}
+		if (MesaTrimTransforms.Num() > 0 && CubeMesh && MesaTrimMaterial)
+		{
+			TArray<UStaticMesh*> TrimMeshes;
+			TrimMeshes.Add(CubeMesh);
+			TArray<TArray<FTransform>> TrimTransformsByMesh;
+			TrimTransformsByMesh.Add(MoveTemp(MesaTrimTransforms));
+			AActor* TrimActor = T66SpawnGeneratedDungeonInstancedMeshActor(
+				World,
+				TrimMeshes,
+				TrimTransformsByMesh,
+				SpawnParams,
+				TierTags,
+				TEXT("MesaEdgeTrim"),
+				true);
+			if (TrimActor)
+			{
+				T66ApplyBaffleMaterial(TrimActor, MesaTrimMaterial);
+			}
+		}
+
+		// Tier ramps: rotated wedge proxy + roller tubes laid across the slope.
+		for (const T66TowerMapTerrain::FTierRamp& Ramp : Floor.TierRamps)
+		{
+			const FVector2D Center = (Ramp.Bounds.Min + Ramp.Bounds.Max) * 0.5f;
+			const FVector2D HalfExtents = (Ramp.Bounds.Max - Ramp.Bounds.Min) * 0.5f;
+			const bool bAlongX = Ramp.AscentSign.X != 0;
+			const float RunLength = 2.0f * (bAlongX ? HalfExtents.X : HalfExtents.Y);
+			const float AcrossHalf = bAlongX ? HalfExtents.Y : HalfExtents.X;
+			const float Rise = Layout.TierHeight;
+			if (RunLength <= 10.0f || AcrossHalf <= 10.0f)
+			{
+				continue;
+			}
+
+			const float SlopeRadians = FMath::Atan2(Rise, RunLength);
+			const float HypotenuseHalf = 0.5f * FMath::Sqrt((RunLength * RunLength) + (Rise * Rise));
+			const float Yaw = bAlongX
+				? ((Ramp.AscentSign.X > 0) ? 0.0f : 180.0f)
+				: ((Ramp.AscentSign.Y > 0) ? 90.0f : -90.0f);
+			const FRotator RampRotation(FMath::RadiansToDegrees(SlopeRadians), Yaw, 0.0f);
+			const FVector RampCenter(Center.X, Center.Y, Floor.SurfaceZ + (Rise * 0.5f));
+
+			T66SpawnHiddenCollisionProxyActor(
+				World,
+				RampCenter,
+				RampRotation,
+				FVector(HypotenuseHalf, AcrossHalf, 12.0f),
+				SpawnParams,
+				TierTags,
+				true);
+
+			if (bUseBaffles)
+			{
+				// Roller tubes: small cylinders side by side climbing the slope.
+				const float RollerDiameter = Layout.RampRollerDiameter;
+				const float RollerSpacing = RollerDiameter * 1.05f;
+				const float SlopeLength = HypotenuseHalf * 2.0f;
+				const int32 RollerCount = FMath::Max(2, FMath::FloorToInt(SlopeLength / RollerSpacing));
+				const FVector2D AscentDir(static_cast<float>(Ramp.AscentSign.X), static_cast<float>(Ramp.AscentSign.Y));
+				const FVector2D StartXY = Center - (AscentDir * (RunLength * 0.5f));
+				const float AcrossScale = (AcrossHalf * 2.0f) / T66TowerFloorBaffleTubeNativeLength;
+				const float CrossScale = RollerDiameter / T66TowerFloorBaffleTubeNativeDiameter;
+				const FRotator RollerRotation = bAlongX ? FRotator(0.0f, 90.0f, 0.0f) : FRotator::ZeroRotator;
+				for (int32 RollerIndex = 0; RollerIndex < RollerCount; ++RollerIndex)
+				{
+					const float T = (static_cast<float>(RollerIndex) + 0.5f) / static_cast<float>(RollerCount);
+					const FVector2D XY = StartXY + (AscentDir * (T * RunLength));
+					const float Z = Floor.SurfaceZ + (T * Rise) + (RollerDiameter * 0.15f);
+					BatchedTubeTransforms.Add(FTransform(
+						RollerRotation,
+						FVector(XY.X, XY.Y, Z),
+						FVector(AcrossScale, CrossScale, CrossScale)));
+				}
+			}
+			else if (CubeMesh && SurfaceMaterial)
+			{
+				UMaterialInterface* RampMaterial = T66GetFallGuysRampMaterial();
+				T66SpawnStaticMeshActor(
+					World,
+					MesaDeckMesh ? MesaDeckMesh : CubeMesh,
+					RampMaterial ? RampMaterial : SurfaceMaterial,
+					RampCenter,
+					RampRotation,
+					FVector(HypotenuseHalf, AcrossHalf, 12.0f),
+					SpawnParams,
+					false,
+					TierTags,
+					true);
+			}
+		}
+
+		if (BatchedTubeTransforms.Num() > 0)
+		{
+			TArray<FName> BaffleTags = TierTags;
+			BaffleTags.AddUnique(FName(TEXT("T66_Floor_Tower_Baffles")));
+			BaffleTags.AddUnique(FName(*FString::Printf(TEXT("T66_Tier_Tower_Baffles_%02d"), Floor.FloorNumber)));
+			TArray<UStaticMesh*> Meshes;
+			Meshes.Add(TubeMesh);
+			TArray<TArray<FTransform>> InstanceTransformsByMesh;
+			InstanceTransformsByMesh.Add(MoveTemp(BatchedTubeTransforms));
+			AActor* BaffleActor = T66SpawnGeneratedDungeonInstancedMeshActor(
+				World,
+				Meshes,
+				InstanceTransformsByMesh,
+				SpawnParams,
+				BaffleTags,
+				TEXT("TierTerrainTube"),
+				true);
+			if (BaffleActor)
+			{
+				T66ApplyBaffleMaterial(BaffleActor, SurfaceMaterial);
+			}
+		}
+
+		// Moving lift platforms: one self-ticking actor per lift owns BOTH the
+		// moving hidden box proxy and the candy slab visual, so it carries both
+		// terrain sync tags — the stateful floor visibility pass hides it AND
+		// disables its collision when the hero is on another floor. The deck
+		// parks 30uu above the floor (below step height: boarding is a walk-on)
+		// and tops out flush with the mesa surface.
+		int32 SpawnedLiftCount = 0;
+		for (const T66TowerMapTerrain::FTierLift& Lift : Floor.TierLifts)
+		{
+			const FVector2D LiftCenter = (Lift.Bounds.Min + Lift.Bounds.Max) * 0.5f;
+			const FVector2D LiftHalfExtents = (Lift.Bounds.Max - Lift.Bounds.Min) * 0.5f;
+			if (LiftHalfExtents.X <= 10.0f || LiftHalfExtents.Y <= 10.0f || Lift.TopZ - Lift.BaseZ <= 10.0f)
+			{
+				continue;
+			}
+
+			AT66TowerLiftPlatform* LiftActor = World->SpawnActor<AT66TowerLiftPlatform>(
+				AT66TowerLiftPlatform::StaticClass(),
+				FVector(LiftCenter.X, LiftCenter.Y, Lift.BaseZ),
+				FRotator::ZeroRotator,
+				SpawnParams);
+			if (!LiftActor)
+			{
+				continue;
+			}
+
+			UMaterialInterface* LiftMaterial = T66GetFallGuysLiftMaterial();
+			if (!LiftMaterial)
+			{
+				LiftMaterial = T66GetFallGuysPlatformMaterial();
+			}
+			LiftActor->InitLift(
+				MesaDeckMesh ? MesaDeckMesh : CubeMesh,
+				LiftMaterial ? LiftMaterial : SurfaceMaterial,
+				LiftCenter,
+				LiftHalfExtents,
+				Lift.BaseZ + 30.0f,
+				Lift.TopZ,
+				Layout.LiftTravelSeconds,
+				Layout.LiftDwellSeconds,
+				Lift.PhaseFraction);
+
+			LiftActor->Tags.AddUnique(T66TowerMapTerrainVisualTag);
+			LiftActor->Tags.AddUnique(T66TowerMapTerrainCollisionProxyTag);
+			LiftActor->Tags.AddUnique(FName(TEXT("T66_Tower_LiftPlatform")));
+			for (const FName& Tag : TierTags)
+			{
+				LiftActor->Tags.AddUnique(Tag);
+			}
+			++SpawnedLiftCount;
+		}
+
+		// Bounce pads (analysis C3): striped trampolines the room composer placed —
+		// pit escapes, deck shortcuts. Walk-on disc, capsule launch only.
+		int32 SpawnedPadCount = 0;
+		UStaticMesh* PadMesh = T66GetFGShapeBevelPuckMesh();
+		if (!PadMesh || !T66MeshHasSimpleCollision(PadMesh))
+		{
+			PadMesh = FT66VisualUtil::GetBasicShapeCylinder();
+		}
+		for (const FVector& PadSpot : Floor.BouncePadSpots)
+		{
+			AT66BouncePadObstacle* Pad = World->SpawnActor<AT66BouncePadObstacle>(
+				AT66BouncePadObstacle::StaticClass(),
+				FVector(PadSpot.X, PadSpot.Y, PadSpot.Z + (AT66BouncePadObstacle::PadThickness * 0.5f) - 1.0f),
+				FRotator::ZeroRotator,
+				SpawnParams);
+			if (!Pad)
+			{
+				continue;
+			}
+
+			UMaterialInterface* PadMaterial = T66GetHazardStripesMaterial();
+			Pad->InitPad(PadMesh, PadMaterial ? PadMaterial : SurfaceMaterial, 240.0f);
+			Pad->Tags.AddUnique(T66TowerMapTerrainVisualTag);
+			Pad->Tags.AddUnique(T66TowerMapTerrainCollisionProxyTag);
+			Pad->Tags.AddUnique(FName(TEXT("T66_Tower_BouncePad")));
+			for (const FName& Tag : TierTags)
+			{
+				Pad->Tags.AddUnique(Tag);
+			}
+			++SpawnedPadCount;
+		}
+
+		UE_LOG(
+			LogT66TowerMapTerrain,
+			Log,
+			TEXT("[MAP] Tier terrain spawned floor=%d mesas=%d ramps=%d lifts=%d pads=%d baffles=%d."),
+			Floor.FloorNumber,
+			Floor.TierMesas.Num(),
+			Floor.TierRamps.Num(),
+			SpawnedLiftCount,
+			SpawnedPadCount,
+			bUseBaffles ? 1 : 0);
+	}
+
+	// -----------------------------------------------------------------------
+	// Bounce platform / ramp spawning: hidden box proxies own all collision,
+	// baffle tubes (tops + inflated sides) own the visuals, with themed cube
+	// prisms as the no-baffle fallback. Platform surfaces intentionally carry
+	// no T66_NoSurfaceBounce tag so the hero's surface-bounce impulses apply.
+	// -----------------------------------------------------------------------
+
+	static void T66SpawnBounceCourseForFloor(
+		UWorld* World,
+		UStaticMesh* CubeMesh,
+		const T66TowerThemeVisuals::FResolvedTheme& Theme,
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FActorSpawnParameters& SpawnParams)
+	{
+		if (!World || (Floor.BouncePlatforms.Num() <= 0 && Floor.BounceRamps.Num() <= 0))
+		{
+			return;
+		}
+
+		const TArray<FName> PlatformTags = {
+			FName(*FString::Printf(TEXT("T66_Floor_Tower_%02d"), Floor.FloorNumber)),
+			FName(*FString::Printf(TEXT("T66_Floor_Tower_Platform_%02d"), Floor.FloorNumber))
+		};
+		UMaterialInterface* SurfaceMaterial = Theme.FloorMaterial ? Theme.FloorMaterial : Theme.WallMaterial;
+		UStaticMesh* TubeMesh = T66GetFloorBaffleTubeMesh();
+		const bool bUseBaffles = T66ShouldUseFloorBaffles() && TubeMesh && SurfaceMaterial;
+
+		// A floor carries ~100+ platforms, so all platform tubes batch into ONE
+		// instanced actor per floor (the 2026-05-05 lag fix budget is instance
+		// counts on few actors, not many small actors). Collision proxies stay
+		// per-platform like maze wall proxies.
+		TArray<FTransform> BatchedTubeTransforms;
+		const float Pitch = T66GetBafflePitch();
+		const float TubeDiameter = T66GetBaffleDiameter(Pitch);
+		const float TubeRadius = TubeDiameter * 0.5f;
+		const float SeamOverlap = T66GetBaffleSeamOverlap(TubeRadius);
+		const float CrossAxisScale = TubeDiameter / T66TowerFloorBaffleTubeNativeDiameter;
+		auto AppendSkirtTransforms = [&](const FBox2D& SideBox, const float BaseZ, const float Height)
+		{
+			const FVector2D BoxSize = SideBox.Max - SideBox.Min;
+			if (BoxSize.X <= 10.0f || BoxSize.Y <= 10.0f || Height <= 10.0f)
+			{
+				return;
+			}
+
+			const bool bRunAlongX = BoxSize.X >= BoxSize.Y;
+			const float SpanLength = (bRunAlongX ? BoxSize.X : BoxSize.Y) + (SeamOverlap * 2.0f);
+			const float AxisScale = SpanLength / T66TowerFloorBaffleTubeNativeLength;
+			const float CenterX = (SideBox.Min.X + SideBox.Max.X) * 0.5f;
+			const float CenterY = (SideBox.Min.Y + SideBox.Max.Y) * 0.5f;
+			const float StartZ = BaseZ + TubeRadius - SeamOverlap;
+			const float EndZ = BaseZ + Height - TubeRadius + SeamOverlap;
+			const int32 TubeCount = FMath::Max(1, FMath::CeilToInt(FMath::Max(0.0f, EndZ - StartZ) / Pitch) + 1);
+			const FRotator TubeRotation = bRunAlongX ? FRotator::ZeroRotator : FRotator(0.0f, 90.0f, 0.0f);
+			for (int32 TubeIndex = 0; TubeIndex < TubeCount; ++TubeIndex)
+			{
+				float CenterZ = StartZ + (static_cast<float>(TubeIndex) * Pitch);
+				if (TubeIndex == TubeCount - 1)
+				{
+					CenterZ = FMath::Min(CenterZ, EndZ);
+				}
+				BatchedTubeTransforms.Add(FTransform(
+					TubeRotation,
+					FVector(CenterX, CenterY, CenterZ),
+					FVector(AxisScale, CrossAxisScale, CrossAxisScale)));
+			}
+		};
+
+		// Elevated-deck architecture + shape language (design ref sections 1.5/1.6):
+		// Tier 1 platforms are grounded stepping stones (the 200uu hero cannot fit
+		// under +200 anyway); Tier 2 platforms are floating 60uu deck slabs on one
+		// round center pillar with the ground underneath playable. Shaped variants
+		// (round/hex/triangle) carry their mesh's own EXACT simple collision.
+		UMaterialInterface* PlatformMaterial = T66GetFallGuysPlatformMaterial();
+		// Tier color-coding (analysis P9): grounded stones stay sunny yellow, Tier 2
+		// floating decks read coral so height-as-progress is legible at a glance.
+		UMaterialInterface* DeckMaterial = T66GetFallGuysDeckMaterial();
+		if (!DeckMaterial)
+		{
+			DeckMaterial = PlatformMaterial;
+		}
+		UMaterialInterface* TrimMaterial = T66GetFallGuysTrimMaterial();
+		// Beveled kit (analysis P8): rounded edges everywhere course geometry lives.
+		// Engine primitives remain the defensive fallback.
+		UStaticMesh* RoundMesh = T66GetFGShapeBevelPuckMesh();
+		if (!RoundMesh || !T66MeshHasSimpleCollision(RoundMesh))
+		{
+			RoundMesh = FT66VisualUtil::GetBasicShapeCylinder();
+		}
+		UStaticMesh* SquareMesh = T66GetFGShapeBevelCubeMesh();
+		UStaticMesh* HexMesh = T66GetFGShapeHexMesh();
+		UStaticMesh* TriMesh = T66GetFGShapeTriMesh();
+		const bool bRoundShapesAvailable = RoundMesh && T66MeshHasSimpleCollision(RoundMesh);
+		auto ResolveShapeMesh = [&](const T66TowerMapTerrain::ET66BouncePlatformShape Shape) -> UStaticMesh*
+		{
+			// Defensive fallback: a shape only ships when its mesh carries exact
+			// simple collision (exact-collision contract); squares fall back to
+			// the box-proxy + sharp-cube path below.
+			UStaticMesh* Mesh = nullptr;
+			switch (Shape)
+			{
+			case T66TowerMapTerrain::ET66BouncePlatformShape::Square: Mesh = SquareMesh; break;
+			case T66TowerMapTerrain::ET66BouncePlatformShape::Round: Mesh = RoundMesh; break;
+			case T66TowerMapTerrain::ET66BouncePlatformShape::Hex: Mesh = HexMesh; break;
+			case T66TowerMapTerrain::ET66BouncePlatformShape::Triangle: Mesh = TriMesh; break;
+			default: break;
+			}
+			return (Mesh && T66MeshHasSimpleCollision(Mesh)) ? Mesh : nullptr;
+		};
+		TArray<FTransform> SquareStoneTransforms;
+		TArray<FTransform> RoundStoneTransforms;
+		TArray<FTransform> HexStoneTransforms;
+		TArray<FTransform> TriStoneTransforms;
+		TArray<FTransform> DeckPillarTransforms;
+		// White edge bands on rectangular decks (analysis A2): thin visual strips at
+		// the deck top edge — the Fall Guys platform side-band read. Visual-only
+		// (6uu decorative protrusion past the side face, same accepted class as the
+		// 2uu floor sink).
+		TArray<FTransform> TrimTransforms;
+		UStaticMesh* TrimMesh = FT66VisualUtil::GetBasicShapeCube();
+		auto AppendDeckTrims = [&](const FVector2D& RectCenter, const FVector2D& RectHalf, const float DeckTopZ)
+		{
+			if (!TrimMesh || !TrimMaterial)
+			{
+				return;
+			}
+			const float BandHalfHeight = 12.0f;
+			const float BandHalfThickness = 3.0f;
+			const float BandCenterZ = DeckTopZ - BandHalfHeight;
+			TrimTransforms.Add(T66MakeBasicShapeInstanceTransform(TrimMesh,
+				FVector(RectCenter.X, RectCenter.Y - RectHalf.Y - BandHalfThickness, BandCenterZ),
+				FVector(RectHalf.X + (BandHalfThickness * 2.0f), BandHalfThickness, BandHalfHeight)));
+			TrimTransforms.Add(T66MakeBasicShapeInstanceTransform(TrimMesh,
+				FVector(RectCenter.X, RectCenter.Y + RectHalf.Y + BandHalfThickness, BandCenterZ),
+				FVector(RectHalf.X + (BandHalfThickness * 2.0f), BandHalfThickness, BandHalfHeight)));
+			TrimTransforms.Add(T66MakeBasicShapeInstanceTransform(TrimMesh,
+				FVector(RectCenter.X - RectHalf.X - BandHalfThickness, RectCenter.Y, BandCenterZ),
+				FVector(BandHalfThickness, RectHalf.Y, BandHalfHeight)));
+			TrimTransforms.Add(T66MakeBasicShapeInstanceTransform(TrimMesh,
+				FVector(RectCenter.X + RectHalf.X + BandHalfThickness, RectCenter.Y, BandCenterZ),
+				FVector(BandHalfThickness, RectHalf.Y, BandHalfHeight)));
+		};
+		int32 SpawnedPlatformCount = 0;
+		for (const T66TowerMapTerrain::FBouncePlatform& Platform : Floor.BouncePlatforms)
+		{
+			const FVector2D Center = (Platform.Bounds.Min + Platform.Bounds.Max) * 0.5f;
+			const FVector2D HalfExtents = (Platform.Bounds.Max - Platform.Bounds.Min) * 0.5f;
+			const float Height = Platform.TopZ - Floor.SurfaceZ;
+			if (HalfExtents.X <= 10.0f || HalfExtents.Y <= 10.0f || Height <= 10.0f)
+			{
+				continue;
+			}
+
+			const bool bElevatedDeck = Platform.Tier >= 2 && Height > T66TowerDeckThicknessUU + 20.0f;
+			UStaticMesh* ShapeMesh = ResolveShapeMesh(Platform.Shape);
+			const float ShapeYaw = static_cast<float>(Platform.YawSteps) * 90.0f;
+
+			if (!bElevatedDeck)
+			{
+				if (ShapeMesh)
+				{
+					// Grounded shaped stone: one batched instance owns BOTH the
+					// visual and its exact collision (2uu floor sink, no proxy).
+					TArray<FTransform>& StoneBatch = ShapeMesh == SquareMesh
+						? SquareStoneTransforms
+						: (ShapeMesh == RoundMesh
+							? RoundStoneTransforms
+							: (ShapeMesh == HexMesh ? HexStoneTransforms : TriStoneTransforms));
+					StoneBatch.Add(T66MakeBasicShapeInstanceTransform(
+						ShapeMesh,
+						FVector(Center.X, Center.Y, Floor.SurfaceZ + (Height * 0.5f) - 1.0f),
+						FVector(HalfExtents.X, HalfExtents.Y, (Height * 0.5f) + 1.0f),
+						ShapeYaw));
+					++SpawnedPlatformCount;
+					continue;
+				}
+
+				T66SpawnHiddenCollisionProxyActor(
+					World,
+					FVector(Center.X, Center.Y, Floor.SurfaceZ + (Height * 0.5f)),
+					FRotator::ZeroRotator,
+					FVector(HalfExtents.X, HalfExtents.Y, Height * 0.5f),
+					SpawnParams,
+					PlatformTags,
+					true);
+
+				bool bSpawnedVisual = false;
+				if (bUseBaffles)
+				{
+					// Tube deck flush with the collision top; side skirts only make
+					// sense on grounded prisms (solid sides).
+					const int32 TransformCountBefore = BatchedTubeTransforms.Num();
+					T66BuildHorizontalBaffleTransforms(Platform.Bounds, Platform.TopZ, Floor.Center.Y, true, BatchedTubeTransforms);
+
+					const float SkirtThickness = 40.0f;
+					const float SkirtInset = 20.0f;
+					AppendSkirtTransforms(
+						FBox2D(
+							FVector2D(Platform.Bounds.Min.X - SkirtInset, Platform.Bounds.Min.Y - SkirtInset),
+							FVector2D(Platform.Bounds.Max.X + SkirtInset, Platform.Bounds.Min.Y + SkirtThickness)),
+						Floor.SurfaceZ,
+						Height);
+					AppendSkirtTransforms(
+						FBox2D(
+							FVector2D(Platform.Bounds.Min.X - SkirtInset, Platform.Bounds.Max.Y - SkirtThickness),
+							FVector2D(Platform.Bounds.Max.X + SkirtInset, Platform.Bounds.Max.Y + SkirtInset)),
+						Floor.SurfaceZ,
+						Height);
+					AppendSkirtTransforms(
+						FBox2D(
+							FVector2D(Platform.Bounds.Min.X - SkirtInset, Platform.Bounds.Min.Y - SkirtInset),
+							FVector2D(Platform.Bounds.Min.X + SkirtThickness, Platform.Bounds.Max.Y + SkirtInset)),
+						Floor.SurfaceZ,
+						Height);
+					AppendSkirtTransforms(
+						FBox2D(
+							FVector2D(Platform.Bounds.Max.X - SkirtThickness, Platform.Bounds.Min.Y - SkirtInset),
+							FVector2D(Platform.Bounds.Max.X + SkirtInset, Platform.Bounds.Max.Y + SkirtInset)),
+						Floor.SurfaceZ,
+						Height);
+
+					bSpawnedVisual = BatchedTubeTransforms.Num() > TransformCountBefore;
+				}
+
+				if (!bSpawnedVisual && CubeMesh && SurfaceMaterial)
+				{
+					// Sink the prism 2uu into the floor so the coplanar bottom face
+					// cannot z-fight the floor slab at the seam.
+					T66SpawnEnvironmentRectangle(
+						World,
+						CubeMesh,
+						PlatformMaterial ? PlatformMaterial : SurfaceMaterial,
+						FVector(Center.X, Center.Y, Floor.SurfaceZ + (Height * 0.5f) - 1.0f),
+						FVector(HalfExtents.X, HalfExtents.Y, (Height * 0.5f) + 1.0f),
+						SpawnParams,
+						PlatformTags,
+						true);
+				}
+
+				++SpawnedPlatformCount;
+				continue;
+			}
+
+			// Floating deck (Tier 2): 60uu slab at the top, one round center pillar,
+			// open playable ground underneath (Tail Tag bridge read). Coral deck
+			// color = height-as-progress (analysis P9).
+			const float DeckBottomZ = Platform.TopZ - T66TowerDeckThicknessUU;
+			if (ShapeMesh)
+			{
+				// Shaped deck: the prism/cylinder visual carries its exact collision,
+				// blocks the camera channel (boom + fade), and both sync tags keep
+				// the stateful floor pass toggling visibility AND collision.
+				TArray<FName> ShapedDeckTags = PlatformTags;
+				ShapedDeckTags.AddUnique(T66TowerMapCameraOccludingWallVisualTag);
+				ShapedDeckTags.AddUnique(T66TowerMapDeckVisualTag);
+				ShapedDeckTags.AddUnique(T66TowerMapTerrainCollisionProxyTag);
+				T66SpawnStaticMeshActor(
+					World,
+					ShapeMesh,
+					DeckMaterial ? DeckMaterial : SurfaceMaterial,
+					FVector(Center.X, Center.Y, Platform.TopZ - (T66TowerDeckThicknessUU * 0.5f)),
+					FRotator(0.0f, ShapeYaw, 0.0f),
+					FVector(HalfExtents.X, HalfExtents.Y, T66TowerDeckThicknessUU * 0.5f),
+					SpawnParams,
+					true,
+					ShapedDeckTags);
+				if (Platform.Shape == T66TowerMapTerrain::ET66BouncePlatformShape::Square)
+				{
+					AppendDeckTrims(Center, HalfExtents, Platform.TopZ);
+				}
+			}
+			else
+			{
+				T66SpawnHiddenCollisionProxyActor(
+					World,
+					FVector(Center.X, Center.Y, Platform.TopZ - (T66TowerDeckThicknessUU * 0.5f)),
+					FRotator::ZeroRotator,
+					FVector(HalfExtents.X, HalfExtents.Y, T66TowerDeckThicknessUU * 0.5f),
+					SpawnParams,
+					PlatformTags,
+					true);
+
+				bool bSpawnedVisual = false;
+				if (bUseBaffles)
+				{
+					const int32 TransformCountBefore = BatchedTubeTransforms.Num();
+					T66BuildHorizontalBaffleTransforms(Platform.Bounds, Platform.TopZ, Floor.Center.Y, true, BatchedTubeTransforms);
+					bSpawnedVisual = BatchedTubeTransforms.Num() > TransformCountBefore;
+				}
+
+				if (!bSpawnedVisual && CubeMesh && SurfaceMaterial)
+				{
+					TArray<FName> DeckTags = PlatformTags;
+					DeckTags.AddUnique(T66TowerMapCameraOccludingWallVisualTag);
+					DeckTags.AddUnique(T66TowerMapDeckVisualTag);
+					T66SpawnEnvironmentRectangle(
+						World,
+						CubeMesh,
+						DeckMaterial ? DeckMaterial : SurfaceMaterial,
+						FVector(Center.X, Center.Y, Platform.TopZ - (T66TowerDeckThicknessUU * 0.5f)),
+						FVector(HalfExtents.X, HalfExtents.Y, T66TowerDeckThicknessUU * 0.5f),
+						SpawnParams,
+						DeckTags);
+					AppendDeckTrims(Center, HalfExtents, Platform.TopZ);
+				}
+			}
+
+			if (bRoundShapesAvailable)
+			{
+				const float PillarRadius = FMath::Clamp(FMath::Min(HalfExtents.X, HalfExtents.Y) * 0.32f, 60.0f, 110.0f);
+				const float PillarBottomZ = Floor.SurfaceZ - 2.0f;
+				const float PillarTopZ = DeckBottomZ + 2.0f;
+				DeckPillarTransforms.Add(T66MakeBasicShapeInstanceTransform(
+					RoundMesh,
+					FVector(Center.X, Center.Y, (PillarTopZ + PillarBottomZ) * 0.5f),
+					FVector(PillarRadius, PillarRadius, (PillarTopZ - PillarBottomZ) * 0.5f)));
+			}
+
+			++SpawnedPlatformCount;
+		}
+
+		if (SquareStoneTransforms.Num() > 0)
+		{
+			T66SpawnCollidingInstancedMeshActor(
+				World,
+				SquareMesh,
+				PlatformMaterial ? PlatformMaterial : SurfaceMaterial,
+				SquareStoneTransforms,
+				SpawnParams,
+				PlatformTags,
+				TEXT("SquareBounceStone"));
+		}
+		if (RoundStoneTransforms.Num() > 0)
+		{
+			T66SpawnCollidingInstancedMeshActor(
+				World,
+				RoundMesh,
+				PlatformMaterial ? PlatformMaterial : SurfaceMaterial,
+				RoundStoneTransforms,
+				SpawnParams,
+				PlatformTags,
+				TEXT("RoundBounceStone"));
+		}
+		if (TrimTransforms.Num() > 0 && TrimMesh && TrimMaterial)
+		{
+			TArray<UStaticMesh*> TrimMeshes;
+			TrimMeshes.Add(TrimMesh);
+			TArray<TArray<FTransform>> TrimTransformsByMesh;
+			TrimTransformsByMesh.Add(MoveTemp(TrimTransforms));
+			AActor* TrimActor = T66SpawnGeneratedDungeonInstancedMeshActor(
+				World,
+				TrimMeshes,
+				TrimTransformsByMesh,
+				SpawnParams,
+				PlatformTags,
+				TEXT("DeckEdgeTrim"),
+				true);
+			if (TrimActor)
+			{
+				T66ApplyBaffleMaterial(TrimActor, TrimMaterial);
+			}
+		}
+		if (HexStoneTransforms.Num() > 0)
+		{
+			T66SpawnCollidingInstancedMeshActor(
+				World,
+				HexMesh,
+				PlatformMaterial ? PlatformMaterial : SurfaceMaterial,
+				HexStoneTransforms,
+				SpawnParams,
+				PlatformTags,
+				TEXT("HexBounceStone"));
+		}
+		if (TriStoneTransforms.Num() > 0)
+		{
+			T66SpawnCollidingInstancedMeshActor(
+				World,
+				TriMesh,
+				PlatformMaterial ? PlatformMaterial : SurfaceMaterial,
+				TriStoneTransforms,
+				SpawnParams,
+				PlatformTags,
+				TEXT("TriBounceStone"));
+		}
+		if (DeckPillarTransforms.Num() > 0)
+		{
+			T66SpawnCollidingInstancedMeshActor(
+				World,
+				RoundMesh,
+				PlatformMaterial ? PlatformMaterial : SurfaceMaterial,
+				DeckPillarTransforms,
+				SpawnParams,
+				PlatformTags,
+				TEXT("DeckPillar"));
+		}
+
+		if (BatchedTubeTransforms.Num() > 0)
+		{
+			TArray<FName> BaffleTags = PlatformTags;
+			BaffleTags.AddUnique(FName(TEXT("T66_Floor_Tower_Baffles")));
+			BaffleTags.AddUnique(FName(*FString::Printf(TEXT("T66_Platform_Tower_Baffles_%02d"), Floor.FloorNumber)));
+			TArray<UStaticMesh*> Meshes;
+			Meshes.Add(TubeMesh);
+			TArray<TArray<FTransform>> InstanceTransformsByMesh;
+			InstanceTransformsByMesh.Add(MoveTemp(BatchedTubeTransforms));
+			AActor* BaffleActor = T66SpawnGeneratedDungeonInstancedMeshActor(
+				World,
+				Meshes,
+				InstanceTransformsByMesh,
+				SpawnParams,
+				BaffleTags,
+				TEXT("PlatformBaffleTube"),
+				true);
+			if (BaffleActor)
+			{
+				T66ApplyBaffleMaterial(BaffleActor, SurfaceMaterial);
+			}
+		}
+
+		int32 SpawnedRampCount = 0;
+		for (const T66TowerMapTerrain::FBounceRamp& Ramp : Floor.BounceRamps)
+		{
+			const FVector2D Center = (Ramp.Bounds.Min + Ramp.Bounds.Max) * 0.5f;
+			const FVector2D HalfExtents = (Ramp.Bounds.Max - Ramp.Bounds.Min) * 0.5f;
+			const float Rise = Ramp.TopZ - Ramp.BaseZ;
+			if (HalfExtents.X <= 10.0f || HalfExtents.Y <= 10.0f || Rise <= 10.0f)
+			{
+				continue;
+			}
+
+			const bool bAlongX = Ramp.AscentSign.X != 0;
+			const float RunLength = 2.0f * (bAlongX ? HalfExtents.X : HalfExtents.Y);
+			const float AcrossHalf = bAlongX ? HalfExtents.Y : HalfExtents.X;
+			const float SlopeRadians = FMath::Atan2(Rise, RunLength);
+			const float HypotenuseHalf = 0.5f * FMath::Sqrt((RunLength * RunLength) + (Rise * Rise));
+			const float Yaw = bAlongX
+				? ((Ramp.AscentSign.X > 0) ? 0.0f : 180.0f)
+				: ((Ramp.AscentSign.Y > 0) ? 90.0f : -90.0f);
+			// Local +X points along the ascent after yaw; positive pitch raises the high end.
+			const FRotator RampRotation(FMath::RadiansToDegrees(SlopeRadians), Yaw, 0.0f);
+			const FVector RampCenter(Center.X, Center.Y, Ramp.BaseZ + (Rise * 0.5f));
+			const FVector RampHalfExtents(HypotenuseHalf, AcrossHalf, 12.0f);
+
+			T66SpawnHiddenCollisionProxyActor(
+				World,
+				RampCenter,
+				RampRotation,
+				RampHalfExtents,
+				SpawnParams,
+				PlatformTags,
+				true);
+
+			if (CubeMesh && SurfaceMaterial)
+			{
+				UMaterialInterface* RampMaterial = T66GetFallGuysRampMaterial();
+				T66SpawnStaticMeshActor(
+					World,
+					SquareMesh ? SquareMesh : CubeMesh,
+					RampMaterial ? RampMaterial : SurfaceMaterial,
+					RampCenter,
+					RampRotation,
+					RampHalfExtents,
+					SpawnParams,
+					false,
+					PlatformTags,
+					true);
+			}
+
+			++SpawnedRampCount;
+		}
+
+		// Reward beacons (analysis P6): a slim white column marks every payoff
+		// point so objectives read from across the room — "what do I want, and
+		// what's between me and it" answers at a glance.
+		int32 BeaconCount = 0;
+		UStaticMesh* BeaconMesh = FT66VisualUtil::GetBasicShapeCylinder();
+		if (BeaconMesh && TrimMaterial)
+		{
+			TArray<FTransform> BeaconTransforms;
+			for (const T66TowerMapTerrain::FRoom& Room : Floor.Rooms)
+			{
+				for (const FVector& Slot : Room.RewardSlots)
+				{
+					BeaconTransforms.Add(T66MakeBasicShapeInstanceTransform(
+						BeaconMesh,
+						FVector(Slot.X, Slot.Y, Slot.Z + 520.0f),
+						FVector(14.0f, 14.0f, 520.0f)));
+				}
+			}
+			BeaconCount = BeaconTransforms.Num();
+			if (BeaconCount > 0)
+			{
+				TArray<UStaticMesh*> BeaconMeshes;
+				BeaconMeshes.Add(BeaconMesh);
+				TArray<TArray<FTransform>> BeaconTransformsByMesh;
+				BeaconTransformsByMesh.Add(MoveTemp(BeaconTransforms));
+				AActor* BeaconActor = T66SpawnGeneratedDungeonInstancedMeshActor(
+					World,
+					BeaconMeshes,
+					BeaconTransformsByMesh,
+					SpawnParams,
+					PlatformTags,
+					TEXT("RewardBeacon"),
+					true);
+				if (BeaconActor)
+				{
+					T66ApplyBaffleMaterial(BeaconActor, TrimMaterial);
+				}
+			}
+		}
+
+		UE_LOG(
+			LogT66TowerMapTerrain,
+			Log,
+			TEXT("[MAP] Bounce course spawned floor=%d platforms=%d ramps=%d beacons=%d baffles=%d."),
+			Floor.FloorNumber,
+			SpawnedPlatformCount,
+			SpawnedRampCount,
+			BeaconCount,
+			bUseBaffles ? 1 : 0);
+	}
+
+	// Inflatable doorway arch: baffle-tube segments along a half-ellipse spanning the
+	// doorway opening, replacing the flat lintel cube. Visual-only, matching the old
+	// header's no-collision behavior; jamb-adjacent segments rise from the ground so
+	// the arch reads as a bouncy-castle entrance.
+	static int32 T66SpawnDoorwayArchTubes(
+		UWorld* World,
+		const T66TowerThemeVisuals::FResolvedTheme& Theme,
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor,
+		const float WallHeight,
+		const FActorSpawnParameters& SpawnParams,
+		const TArray<FName>& DoorwayTags)
+	{
+		if (!World || !Layout.bDoorwayArches || Floor.DoorwayHeaderBoxes.Num() <= 0)
+		{
+			return 0;
+		}
+
+		UStaticMesh* TubeMesh = T66GetFloorBaffleTubeMesh();
+		if (!TubeMesh)
+		{
+			return 0;
+		}
+
+		const float TubeDiameter = Layout.ArchTubeDiameter;
+		const float CrossScale = TubeDiameter / T66TowerFloorBaffleTubeNativeDiameter;
+		const int32 SegmentCount = FMath::Clamp(Layout.ArchSegments, 4, 24);
+		const float ApexHeight = FMath::Min(WallHeight - (TubeDiameter * 0.5f) - 60.0f, 1100.0f);
+		if (ApexHeight <= 200.0f)
+		{
+			return 0;
+		}
+
+		TArray<FTransform> TransformsXZ;
+		TArray<FTransform> TransformsYZ;
+		for (const FBox2D& HeaderBox : Floor.DoorwayHeaderBoxes)
+		{
+			const FVector2D HeaderCenter = (HeaderBox.Min + HeaderBox.Max) * 0.5f;
+			const FVector2D HeaderSize = HeaderBox.Max - HeaderBox.Min;
+			const bool bSpanAlongX = HeaderSize.X >= HeaderSize.Y;
+			const float Span = bSpanAlongX ? HeaderSize.X : HeaderSize.Y;
+			const float HalfSpan = (Span * 0.5f) - 40.0f;
+			if (HalfSpan <= 120.0f)
+			{
+				continue;
+			}
+
+			TArray<FTransform>& TargetTransforms = bSpanAlongX ? TransformsXZ : TransformsYZ;
+			FVector PreviousPoint = FVector::ZeroVector;
+			for (int32 PointIndex = 0; PointIndex <= SegmentCount; ++PointIndex)
+			{
+				const float Theta = PI * static_cast<float>(PointIndex) / static_cast<float>(SegmentCount);
+				const float Along = HalfSpan * FMath::Cos(Theta);
+				const float Up = ApexHeight * FMath::Sin(Theta);
+				const FVector Point = bSpanAlongX
+					? FVector(HeaderCenter.X + Along, HeaderCenter.Y, Floor.SurfaceZ + Up)
+					: FVector(HeaderCenter.X, HeaderCenter.Y + Along, Floor.SurfaceZ + Up);
+				if (PointIndex > 0)
+				{
+					const FVector SegmentDelta = Point - PreviousPoint;
+					const float SegmentLength = SegmentDelta.Size();
+					if (SegmentLength > 5.0f)
+					{
+						const FVector Midpoint = (Point + PreviousPoint) * 0.5f;
+						const FRotator SegmentRotation = FRotationMatrix::MakeFromX(SegmentDelta / SegmentLength).Rotator();
+						// 12% length overlap hides the segment seams on the curve.
+						const float LengthScale = (SegmentLength * 1.12f) / T66TowerFloorBaffleTubeNativeLength;
+						TargetTransforms.Add(FTransform(
+							SegmentRotation,
+							Midpoint,
+							FVector(LengthScale, CrossScale, CrossScale)));
+					}
+				}
+
+				PreviousPoint = Point;
+			}
+		}
+
+		int32 SpawnedArchCount = 0;
+		auto SpawnArchGroup = [&](TArray<FTransform>& Transforms, UMaterialInterface* Material, const TCHAR* Label)
+		{
+			if (Transforms.Num() <= 0 || !Material)
+			{
+				return;
+			}
+
+			TArray<FName> ArchTags = DoorwayTags;
+			ArchTags.AddUnique(FName(*FString::Printf(TEXT("T66_Doorway_Tower_Arch_%02d"), Floor.FloorNumber)));
+
+			TArray<UStaticMesh*> Meshes;
+			Meshes.Add(TubeMesh);
+			TArray<TArray<FTransform>> InstanceTransformsByMesh;
+			InstanceTransformsByMesh.Add(MoveTemp(Transforms));
+			AActor* ArchActor = T66SpawnGeneratedDungeonInstancedMeshActor(
+				World,
+				Meshes,
+				InstanceTransformsByMesh,
+				SpawnParams,
+				ArchTags,
+				Label,
+				true);
+			if (ArchActor)
+			{
+				T66ApplyBaffleMaterial(ArchActor, Material);
+				++SpawnedArchCount;
+			}
+		};
+
+		UMaterialInterface* MaterialXZ = Theme.WallXZMaterial ? Theme.WallXZMaterial : Theme.WallMaterial;
+		UMaterialInterface* MaterialYZ = Theme.WallYZMaterial ? Theme.WallYZMaterial : Theme.WallMaterial;
+		SpawnArchGroup(TransformsXZ, MaterialXZ, TEXT("DoorwayArchTubeXZ"));
+		SpawnArchGroup(TransformsYZ, MaterialYZ, TEXT("DoorwayArchTubeYZ"));
+		return SpawnedArchCount;
 	}
 
 	static float T66GetMeshAxisSize(UStaticMesh* Mesh, const int32 AxisIndex)
@@ -1463,6 +2818,74 @@ namespace
 		return false;
 	}
 
+	static bool T66IsLocationInsideBounceObstacle(
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FVector& Location,
+		const float Padding)
+	{
+		const FVector2D Point(Location.X, Location.Y);
+		for (const T66TowerMapTerrain::FBouncePlatform& Platform : Floor.BouncePlatforms)
+		{
+			if (Point.X >= Platform.Bounds.Min.X - Padding && Point.X <= Platform.Bounds.Max.X + Padding
+				&& Point.Y >= Platform.Bounds.Min.Y - Padding && Point.Y <= Platform.Bounds.Max.Y + Padding)
+			{
+				return true;
+			}
+		}
+
+		for (const T66TowerMapTerrain::FBounceRamp& Ramp : Floor.BounceRamps)
+		{
+			if (Point.X >= Ramp.Bounds.Min.X - Padding && Point.X <= Ramp.Bounds.Max.X + Padding
+				&& Point.Y >= Ramp.Bounds.Min.Y - Padding && Point.Y <= Ramp.Bounds.Max.Y + Padding)
+			{
+				return true;
+			}
+		}
+
+		// Tier ramps stay clear of content, and placement avoids the strip around a
+		// mesa's cliff edge (content well inside a mesa top is fine — traces snap Z).
+		for (const T66TowerMapTerrain::FTierRamp& TierRamp : Floor.TierRamps)
+		{
+			if (Point.X >= TierRamp.Bounds.Min.X - Padding && Point.X <= TierRamp.Bounds.Max.X + Padding
+				&& Point.Y >= TierRamp.Bounds.Min.Y - Padding && Point.Y <= TierRamp.Bounds.Max.Y + Padding)
+			{
+				return true;
+			}
+		}
+
+		// Lift travel columns stay clear of content: anything spawned inside one
+		// would intersect the moving slab.
+		for (const T66TowerMapTerrain::FTierLift& TierLift : Floor.TierLifts)
+		{
+			if (Point.X >= TierLift.Bounds.Min.X - Padding && Point.X <= TierLift.Bounds.Max.X + Padding
+				&& Point.Y >= TierLift.Bounds.Min.Y - Padding && Point.Y <= TierLift.Bounds.Max.Y + Padding)
+			{
+				return true;
+			}
+		}
+
+		for (const T66TowerMapTerrain::FTierMesa& Mesa : Floor.TierMesas)
+		{
+			const bool bInsideExpanded =
+				Point.X >= Mesa.Bounds.Min.X - Padding && Point.X <= Mesa.Bounds.Max.X + Padding
+				&& Point.Y >= Mesa.Bounds.Min.Y - Padding && Point.Y <= Mesa.Bounds.Max.Y + Padding;
+			if (!bInsideExpanded)
+			{
+				continue;
+			}
+
+			const bool bWellInside =
+				Point.X >= Mesa.Bounds.Min.X + Padding && Point.X <= Mesa.Bounds.Max.X - Padding
+				&& Point.Y >= Mesa.Bounds.Min.Y + Padding && Point.Y <= Mesa.Bounds.Max.Y - Padding;
+			if (!bWellInside)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	static bool T66IsWalkableTowerLocation(
 		const T66TowerMapTerrain::FFloor& Floor,
 		const FVector& Location,
@@ -1475,8 +2898,11 @@ namespace
 			return false;
 		}
 
+		// Bounce platforms/ramps are solid prisms; placement traces over them would land
+		// content on the obstacle tops, so the base-floor walkability test excludes them.
 		return !T66IsLocationInsideFloorHole(Floor, Location, HolePadding)
-			&& !T66IsLocationInsideFloorMazeWalls(Floor, Location, WallPadding);
+			&& !T66IsLocationInsideFloorMazeWalls(Floor, Location, WallPadding)
+			&& !T66IsLocationInsideBounceObstacle(Floor, Location, FMath::Max(WallPadding * 0.5f, 60.0f));
 	}
 
 	static void T66AddInterval(TArray<FVector2D>& Intervals, const float Center, const float HalfWidth, const float MinLimit, const float MaxLimit)
@@ -1783,6 +3209,12 @@ namespace
 		Floor.CachedOptionalSpawnSlots.Reset();
 		Floor.CachedContentSpawnSlots.Reset();
 		Floor.Rooms.Reset();
+		Floor.BouncePlatforms.Reset();
+		Floor.BounceRamps.Reset();
+		Floor.SafeChainCells.Reset();
+		Floor.CellTiers.Reset();
+		Floor.TierMesas.Reset();
+		Floor.TierRamps.Reset();
 	}
 
 	static int32 T66GetGridCellIndex(const T66TowerMapTerrain::FLayout& Layout, const FIntPoint& Coord)
@@ -3110,24 +4542,18 @@ namespace
 		return true;
 	}
 
-	static float T66DungeonRoomDistanceScore(const FT66DungeonRoom& Candidate, const TArray<FT66DungeonRoom>& ExistingRooms)
+	/** Edge-to-edge gap (in cells) between the candidate and its nearest existing room.
+	 *  GapX + GapY approximates the L-shaped corridor a graph edge would carve. */
+	static int32 T66DungeonRoomNearestGapCells(const FT66DungeonRoom& Candidate, const TArray<FT66DungeonRoom>& ExistingRooms)
 	{
-		if (ExistingRooms.Num() <= 0)
-		{
-			return 10000.0f;
-		}
-
-		const FIntPoint CandidateCenter = Candidate.Center();
-		float BestDistanceSq = TNumericLimits<float>::Max();
+		int32 BestGap = TNumericLimits<int32>::Max();
 		for (const FT66DungeonRoom& ExistingRoom : ExistingRooms)
 		{
-			const FIntPoint ExistingCenter = ExistingRoom.Center();
-			const float DeltaX = static_cast<float>(CandidateCenter.X - ExistingCenter.X);
-			const float DeltaY = static_cast<float>(CandidateCenter.Y - ExistingCenter.Y);
-			BestDistanceSq = FMath::Min(BestDistanceSq, (DeltaX * DeltaX) + (DeltaY * DeltaY));
+			const int32 GapX = FMath::Max(0, FMath::Max(Candidate.MinX - ExistingRoom.MaxX, ExistingRoom.MinX - Candidate.MaxX));
+			const int32 GapY = FMath::Max(0, FMath::Max(Candidate.MinY - ExistingRoom.MaxY, ExistingRoom.MinY - Candidate.MaxY));
+			BestGap = FMath::Min(BestGap, GapX + GapY);
 		}
-
-		return BestDistanceSq;
+		return BestGap;
 	}
 
 	static bool T66TryFindScatteredDungeonRoom(
@@ -3155,11 +4581,35 @@ namespace
 				continue;
 			}
 
-			const float Score = T66DungeonRoomDistanceScore(Candidate, ExistingRooms) + Rng.FRandRange(0.0f, 3.0f);
-			if (!bFound || Score > BestScore)
+			// Short-halls rule (constructive, 2026-06-10 user direction): rooms grow
+			// as a tight cluster — a candidate beyond RoomMaxGapCells of the nearest
+			// existing room is rejected outright, so every corridor is born short
+			// instead of being trimmed later. Inside the band, prefer the gap sweet
+			// spot (a couple of cells) with jitter for variety. The old behavior
+			// scored by distance-to-nearest and picked the MAXIMUM, which actively
+			// maximized hall length.
+			if (ExistingRooms.Num() > 0)
+			{
+				const int32 NearestGap = T66DungeonRoomNearestGapCells(Candidate, ExistingRooms);
+				if (NearestGap > Layout.RoomMaxGapCells)
+				{
+					continue;
+				}
+
+				const float Score = 100.0f - (FMath::Abs(static_cast<float>(NearestGap) - 3.0f) * 10.0f) + Rng.FRandRange(0.0f, 8.0f);
+				if (!bFound || Score > BestScore)
+				{
+					bFound = true;
+					BestScore = Score;
+					OutRoom = Candidate;
+				}
+				continue;
+			}
+
+			if (!bFound)
 			{
 				bFound = true;
-				BestScore = Score;
+				BestScore = 0.0f;
 				OutRoom = Candidate;
 			}
 		}
@@ -3350,7 +4800,10 @@ namespace
 		{
 			const int32 GraphDistance = Distance.IsValidIndex(RoomIndex) && Distance[RoomIndex] != MAX_int32 ? Distance[RoomIndex] : 0;
 			const int32 SpatialDistance = T66GridManhattanDistance(Rooms[0].Center(), Rooms[RoomIndex].Center());
-			const int32 Score = (GraphDistance * 100) + SpatialDistance;
+			// Area bias (section 1.7): the exit-gate room hosts the descent ceremony
+			// (hole, idol altar, guardian) — prefer the BIGGER of the far rooms.
+			const int32 Area = (Rooms[RoomIndex].MaxX - Rooms[RoomIndex].MinX) * (Rooms[RoomIndex].MaxY - Rooms[RoomIndex].MinY);
+			const int32 Score = (GraphDistance * 100) + SpatialDistance + (Area * 2);
 			if (Score > BestScore)
 			{
 				BestScore = Score;
@@ -4030,6 +5483,1229 @@ namespace
 		return true;
 	}
 
+	// -----------------------------------------------------------------------
+	// Tier terrain (accessibility infrastructure).
+	//
+	// Constructive-connectivity rules adapted from the MegabonkTerrainGenerator
+	// reference and Fall Guys Tail Tag: rooms get a central raised mesa with a
+	// guaranteed walkable ground ring and 2+ direction-locked ramps placed at
+	// creation time; corridors stay ground; downhill drops are always free.
+	// Accessibility is therefore constructed, then additionally verified by a
+	// full directed BFS over the (cell, tier) walk graph.
+	// -----------------------------------------------------------------------
+
+	static uint8 T66GetCellTier(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FIntPoint& Coord)
+	{
+		if (!T66IsValidGridCoord(Layout, Coord))
+		{
+			return 0;
+		}
+
+		const int32 CellIndex = T66GetGridCellIndex(Layout, Coord);
+		return Floor.CellTiers.IsValidIndex(CellIndex) ? Floor.CellTiers[CellIndex] : 0;
+	}
+
+	static const T66TowerMapTerrain::FTierRamp* T66FindTierRampAt(
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FIntPoint& Coord)
+	{
+		for (const T66TowerMapTerrain::FTierRamp& Ramp : Floor.TierRamps)
+		{
+			if (Ramp.Cell == Coord)
+			{
+				return &Ramp;
+			}
+		}
+		return nullptr;
+	}
+
+	static const T66TowerMapTerrain::FTierLift* T66FindTierLiftAt(
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FIntPoint& Coord)
+	{
+		for (const T66TowerMapTerrain::FTierLift& Lift : Floor.TierLifts)
+		{
+			if (Lift.Cell == Coord)
+			{
+				return &Lift;
+			}
+		}
+		return nullptr;
+	}
+
+	/** True when the cell lies inside any mesa's cell rect (deck cells AND ring-hole cells). */
+	static bool T66IsCellInsideAnyMesa(
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FIntPoint& Coord)
+	{
+		for (const T66TowerMapTerrain::FTierMesa& Mesa : Floor.TierMesas)
+		{
+			if (Coord.X >= Mesa.MinCell.X && Coord.X < Mesa.MaxCellExclusive.X
+				&& Coord.Y >= Mesa.MinCell.Y && Coord.Y < Mesa.MaxCellExclusive.Y)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Directed walk edge: same tier, any downhill drop, or uphill through a ramp or lift cell. */
+	static bool T66CanWalkDirectedTier(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FIntPoint& FromCoord,
+		const FIntPoint& ToCoord)
+	{
+		const uint8 FromTier = T66GetCellTier(Layout, Floor, FromCoord);
+		const uint8 ToTier = T66GetCellTier(Layout, Floor, ToCoord);
+		if (ToTier <= FromTier)
+		{
+			return true;
+		}
+
+		const T66TowerMapTerrain::FTierRamp* Ramp = T66FindTierRampAt(Floor, FromCoord);
+		if (Ramp && Ramp->AscentSign == (ToCoord - FromCoord))
+		{
+			return true;
+		}
+
+		// Lift edges count as up-edges: riding the cycling slab reaches the mesa.
+		const T66TowerMapTerrain::FTierLift* Lift = T66FindTierLiftAt(Floor, FromCoord);
+		return Lift && Lift->AscentSign == (ToCoord - FromCoord);
+	}
+
+	static void T66BuildFloorTierTerrain(
+		const T66TowerMapTerrain::FLayout& Layout,
+		T66TowerMapTerrain::FFloor& Floor,
+		FRandomStream& Rng)
+	{
+		Floor.CellTiers.Reset();
+		Floor.TierMesas.Reset();
+		Floor.TierRamps.Reset();
+		Floor.TierLifts.Reset();
+		T66MapGeneration::ResetFloorPlacementOutputs(Floor);
+
+		if (!Layout.bTierTerrain || !Floor.bMobFloor || Floor.GridCells.Num() <= 0)
+		{
+			return;
+		}
+
+		Floor.CellTiers.Init(0, Layout.GridColumns * Layout.GridRows);
+
+		// Room composition: assign reusable structures through the composer. The
+		// output still feeds existing platform/mesa/lift arrays, but room identity
+		// now comes from profiles, structures, and hazards.
+		for (T66TowerMapTerrain::FRoom& Room : Floor.Rooms)
+		{
+			T66MapGeneration::ComposeRoomStructures(Layout, Room, Rng);
+		}
+
+		auto IsWalkableGroundCell = [&](const FIntPoint& Coord)
+		{
+			if (!T66IsValidGridCoord(Layout, Coord))
+			{
+				return false;
+			}
+			const int32 CellIndex = T66GetGridCellIndex(Layout, Coord);
+			return Floor.GridCells.IsValidIndex(CellIndex)
+				&& Floor.GridCells[CellIndex].Semantic != T66TowerMapTerrain::ET66TowerGridCellSemantic::Unused
+				&& Floor.CellTiers[CellIndex] == 0;
+		};
+
+		static const FIntPoint SideOutward[4] = { FIntPoint(0, -1), FIntPoint(1, 0), FIntPoint(0, 1), FIntPoint(-1, 0) };
+
+		for (T66TowerMapTerrain::FRoom& Room : Floor.Rooms)
+		{
+			// Arrival and exit rooms stay flat so floor entry and the descent hole
+			// keep their established clear space. Mesa structures build here;
+			// stepping stones, bridges, and scatter compose in the bounce pass.
+			const bool bMesaStructure = T66MapGeneration::IsMesaStructure(Room);
+			if (Room.bContainsArrival || Room.bContainsExit || !bMesaStructure)
+			{
+				continue;
+			}
+
+			const int32 AvailX = (Room.MaxCellExclusive.X - Room.MinCell.X) - (Layout.MesaInsetCells * 2);
+			const int32 AvailY = (Room.MaxCellExclusive.Y - Room.MinCell.Y) - (Layout.MesaInsetCells * 2);
+			if (AvailX < Layout.MesaMinSpanCells || AvailY < Layout.MesaMinSpanCells)
+			{
+				T66MapGeneration::DowngradeRoomToFlatCombat(Room);
+				continue;
+			}
+
+			// Cap the mesa so it reads as a central platform, not a second floor.
+			const int32 SpanX = FMath::Min(AvailX, FMath::Max(Layout.MesaMinSpanCells, 8));
+			const int32 SpanY = FMath::Min(AvailY, FMath::Max(Layout.MesaMinSpanCells, 8));
+			const int32 SlackX = AvailX - SpanX;
+			const int32 SlackY = AvailY - SpanY;
+			const FIntPoint MesaMin(
+				Room.MinCell.X + Layout.MesaInsetCells + (SlackX > 0 ? Rng.RandRange(0, SlackX) : 0),
+				Room.MinCell.Y + Layout.MesaInsetCells + (SlackY > 0 ? Rng.RandRange(0, SlackY) : 0));
+			const FIntPoint MesaMaxExclusive(MesaMin.X + SpanX, MesaMin.Y + SpanY);
+
+			bool bAllWalkable = true;
+			for (int32 Y = MesaMin.Y; Y < MesaMaxExclusive.Y && bAllWalkable; ++Y)
+			{
+				for (int32 X = MesaMin.X; X < MesaMaxExclusive.X && bAllWalkable; ++X)
+				{
+					bAllWalkable = IsWalkableGroundCell(FIntPoint(X, Y));
+				}
+			}
+			if (!bAllWalkable)
+			{
+				T66MapGeneration::DowngradeRoomToFlatCombat(Room);
+				continue;
+			}
+
+			// Constructive ramps BEFORE committing the mesa: 2-4 ramps on distinct
+			// sides, never on corners, each occupying a walkable ground-ring cell.
+			struct FT66PendingRamp
+			{
+				FIntPoint Cell;
+				FIntPoint AscentSign;
+			};
+			TArray<FT66PendingRamp> PendingRamps;
+			int32 SideOrder[4] = { 0, 1, 2, 3 };
+			for (int32 Index = 3; Index > 0; --Index)
+			{
+				const int32 Swap = Rng.RandRange(0, Index);
+				const int32 Temp = SideOrder[Index];
+				SideOrder[Index] = SideOrder[Swap];
+				SideOrder[Swap] = Temp;
+			}
+			const int32 WantedRamps = Rng.RandRange(Layout.MesaRampsMin, Layout.MesaRampsMax);
+			for (int32 SideSlot = 0; SideSlot < 4 && PendingRamps.Num() < WantedRamps; ++SideSlot)
+			{
+				const FIntPoint Outward = SideOutward[SideOrder[SideSlot]];
+				const bool bHorizontalSide = Outward.Y != 0;
+				const int32 EdgeMin = bHorizontalSide ? MesaMin.X : MesaMin.Y;
+				const int32 EdgeMaxExclusive = bHorizontalSide ? MesaMaxExclusive.X : MesaMaxExclusive.Y;
+				if (EdgeMaxExclusive - EdgeMin < 3)
+				{
+					continue;
+				}
+
+				// avoid mesa corners so the ramp always meets a flat mesa edge
+				const int32 Along = Rng.RandRange(EdgeMin + 1, EdgeMaxExclusive - 2);
+				const FIntPoint EdgeCell = bHorizontalSide
+					? FIntPoint(Along, Outward.Y > 0 ? MesaMaxExclusive.Y - 1 : MesaMin.Y)
+					: FIntPoint(Outward.X > 0 ? MesaMaxExclusive.X - 1 : MesaMin.X, Along);
+				const FIntPoint RampCell = EdgeCell + Outward;
+				const bool bRampCellInsideRoom =
+					RampCell.X >= Room.MinCell.X && RampCell.X < Room.MaxCellExclusive.X
+					&& RampCell.Y >= Room.MinCell.Y && RampCell.Y < Room.MaxCellExclusive.Y;
+				if (!bRampCellInsideRoom || !IsWalkableGroundCell(RampCell)
+					|| T66FindTierRampAt(Floor, RampCell) || T66FindTierLiftAt(Floor, RampCell))
+				{
+					continue;
+				}
+
+				bool bAlreadyPending = false;
+				for (const FT66PendingRamp& Pending : PendingRamps)
+				{
+					bAlreadyPending |= Pending.Cell == RampCell;
+				}
+				if (bAlreadyPending)
+				{
+					continue;
+				}
+
+				PendingRamps.Add({ RampCell, FIntPoint(-Outward.X, -Outward.Y) });
+			}
+
+			if (PendingRamps.Num() < FMath::Max(2, Layout.MesaRampsMin))
+			{
+				// No mesa without guaranteed multi-side access (Tail Tag rule).
+				T66MapGeneration::DowngradeRoomToFlatCombat(Room);
+				continue;
+			}
+
+			// Moving lift alternative: when the mesa gathered a SURPLUS ramp beyond
+			// the access minimum, a seeded roll converts the last candidate into a
+			// cycling lift platform. Total routes per mesa never drop below the Tail
+			// Tag minimum AND at least MesaRampsMin always-walkable ramps remain (a
+			// lift has cycle downtime; static ramps stay the any-time guarantee).
+			// Ring mesa structures force the lift whenever a surplus exists.
+			const bool bRingMesaRoom = T66MapGeneration::RoomHasStructure(Room, T66MapGeneration::StructureRingMesa);
+			bool bConvertLastRampToLift = false;
+			if (Layout.bTierLifts
+				&& PendingRamps.Num() >= FMath::Max(2, Layout.MesaRampsMin) + 1
+				&& (bRingMesaRoom || Rng.FRand() < Layout.LiftChance))
+			{
+				bConvertLastRampToLift = true;
+			}
+
+			for (int32 Y = MesaMin.Y; Y < MesaMaxExclusive.Y; ++Y)
+			{
+				for (int32 X = MesaMin.X; X < MesaMaxExclusive.X; ++X)
+				{
+					Floor.CellTiers[T66GetGridCellIndex(Layout, FIntPoint(X, Y))] = 1;
+				}
+			}
+
+			T66TowerMapTerrain::FTierMesa& Mesa = Floor.TierMesas.AddDefaulted_GetRef();
+			Mesa.RoomId = Room.RoomId;
+			Mesa.MinCell = MesaMin;
+			Mesa.MaxCellExclusive = MesaMaxExclusive;
+			const FBox2D& MinCellBounds = Floor.GridCells[T66GetGridCellIndex(Layout, MesaMin)].Bounds;
+			const FBox2D& MaxCellBounds = Floor.GridCells[T66GetGridCellIndex(Layout, FIntPoint(MesaMaxExclusive.X - 1, MesaMaxExclusive.Y - 1))].Bounds;
+			Mesa.Bounds = FBox2D(MinCellBounds.Min, MaxCellBounds.Max);
+
+			// Ring mesa structures always get a center pit; central mesa structures
+			// stay solid. The pit remains a legal drop into open under-deck ground,
+			// and walking out between pillars is the built-in escape.
+			// Hole cells revert to tier 0 — falling through is a legal drop into
+			// the open under-deck ground, and walking out between the pillars is
+			// the built-in escape (no softlock by construction). The ring stays
+			// >= 2 cells wide, so deck circulation survives.
+			if (bRingMesaRoom && SpanX >= 5 && SpanY >= 5)
+			{
+				const int32 HoleSpanX = FMath::Clamp(SpanX - 4, 1, 2);
+				const int32 HoleSpanY = FMath::Clamp(SpanY - 4, 1, 2);
+				Mesa.HoleMinCell = FIntPoint(
+					MesaMin.X + ((SpanX - HoleSpanX) / 2),
+					MesaMin.Y + ((SpanY - HoleSpanY) / 2));
+				Mesa.HoleMaxCellExclusive = FIntPoint(
+					Mesa.HoleMinCell.X + HoleSpanX,
+					Mesa.HoleMinCell.Y + HoleSpanY);
+				for (int32 Y = Mesa.HoleMinCell.Y; Y < Mesa.HoleMaxCellExclusive.Y; ++Y)
+				{
+					for (int32 X = Mesa.HoleMinCell.X; X < Mesa.HoleMaxCellExclusive.X; ++X)
+					{
+						Floor.CellTiers[T66GetGridCellIndex(Layout, FIntPoint(X, Y))] = 0;
+					}
+				}
+				const FBox2D& HoleMinCellBounds = Floor.GridCells[T66GetGridCellIndex(Layout, Mesa.HoleMinCell)].Bounds;
+				const FBox2D& HoleMaxCellBounds = Floor.GridCells[T66GetGridCellIndex(Layout, FIntPoint(Mesa.HoleMaxCellExclusive.X - 1, Mesa.HoleMaxCellExclusive.Y - 1))].Bounds;
+				Mesa.HoleBounds = FBox2D(HoleMinCellBounds.Min, HoleMaxCellBounds.Max);
+			}
+
+			for (int32 PendingIndex = 0; PendingIndex < PendingRamps.Num(); ++PendingIndex)
+			{
+				const FT66PendingRamp& Pending = PendingRamps[PendingIndex];
+				const FBox2D& CellBounds = Floor.GridCells[T66GetGridCellIndex(Layout, Pending.Cell)].Bounds;
+				if (bConvertLastRampToLift && PendingIndex == PendingRamps.Num() - 1)
+				{
+					T66TowerMapTerrain::FTierLift& Lift = Floor.TierLifts.AddDefaulted_GetRef();
+					Lift.Cell = Pending.Cell;
+					Lift.AscentSign = Pending.AscentSign;
+					// Slab footprint pushed toward the mesa face, 20uu clearance so the
+					// moving slab never scrapes the mesa collision proxy.
+					const FVector2D CellCenter = (CellBounds.Min + CellBounds.Max) * 0.5f;
+					const FVector2D CellHalf = (CellBounds.Max - CellBounds.Min) * 0.5f;
+					const float HalfFootprint = Layout.LiftFootprint * 0.5f;
+					const FVector2D AscentDir(
+						static_cast<float>(Pending.AscentSign.X),
+						static_cast<float>(Pending.AscentSign.Y));
+					const float AlongHalf = Pending.AscentSign.X != 0 ? CellHalf.X : CellHalf.Y;
+					const float TowardMesa = FMath::Max(AlongHalf - HalfFootprint - 20.0f, 0.0f);
+					const FVector2D LiftCenter = CellCenter + (AscentDir * TowardMesa);
+					Lift.Bounds = FBox2D(
+						LiftCenter - FVector2D(HalfFootprint, HalfFootprint),
+						LiftCenter + FVector2D(HalfFootprint, HalfFootprint));
+					Lift.BaseZ = Floor.SurfaceZ;
+					Lift.TopZ = Floor.SurfaceZ + Layout.TierHeight;
+					Lift.PhaseFraction = Rng.FRand();
+					continue;
+				}
+
+				T66TowerMapTerrain::FTierRamp& Ramp = Floor.TierRamps.AddDefaulted_GetRef();
+				Ramp.Cell = Pending.Cell;
+				Ramp.AscentSign = Pending.AscentSign;
+				Ramp.Bounds = FBox2D(CellBounds.Min + FVector2D(100.0f, 100.0f), CellBounds.Max - FVector2D(100.0f, 100.0f));
+			}
+
+			// Structure payoff + signature hazard placement: rewards sit at the
+			// structure's designed payoff point, and one hazard may guard it.
+			const FVector2D MesaCenter2D = (Mesa.Bounds.Min + Mesa.Bounds.Max) * 0.5f;
+			const float MesaDeckTopZ = Floor.SurfaceZ + Layout.TierHeight;
+			if (bRingMesaRoom && Mesa.HasHole())
+			{
+				// Ring mesa: prize down in the pit + one on the rim; a bounce pad
+				// in the pit is the slapstick route back up to the rim.
+				const FVector2D HoleCenter2D = (Mesa.HoleBounds.Min + Mesa.HoleBounds.Max) * 0.5f;
+				T66MapGeneration::AddRewardSlot(Room, FVector(HoleCenter2D.X, HoleCenter2D.Y, Floor.SurfaceZ));
+				T66MapGeneration::AddRewardSlot(Room, FVector(Mesa.Bounds.Min.X + 320.0f, Mesa.Bounds.Min.Y + 320.0f, MesaDeckTopZ));
+				Floor.BouncePadSpots.Add(FVector(HoleCenter2D.X + 300.0f, HoleCenter2D.Y, Floor.SurfaceZ));
+			}
+			else
+			{
+				// Central mesa: prize on the deck corner, the rotating sweeper arm
+				// guards the deck center.
+				T66MapGeneration::AddRewardSlot(Room, FVector(Mesa.Bounds.Max.X - 360.0f, Mesa.Bounds.Max.Y - 360.0f, MesaDeckTopZ));
+				T66MapGeneration::AddHazardAnchor(Floor, FVector(MesaCenter2D.X, MesaCenter2D.Y, MesaDeckTopZ), T66HazardTypeSweeperArm);
+			}
+		}
+	}
+
+	/**
+	 * No-softlock proof: directed BFS over the (cell, tier) walk graph from arrival.
+	 * Returns reached/total walkable cells and whether the exit is reachable. The
+	 * return path is guaranteed by construction (drops always reach the connected
+	 * tier-0 network), so full forward coverage proves free movement everywhere.
+	 */
+	static void T66ValidateTierAccess(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor,
+		int32& OutReached,
+		int32& OutTotalWalkable,
+		bool& bOutExitReached)
+	{
+		OutReached = 0;
+		OutTotalWalkable = 0;
+		bOutExitReached = false;
+
+		const int32 CellCount = Layout.GridColumns * Layout.GridRows;
+		for (int32 CellIndex = 0; CellIndex < CellCount; ++CellIndex)
+		{
+			if (Floor.GridCells.IsValidIndex(CellIndex)
+				&& Floor.GridCells[CellIndex].Semantic != T66TowerMapTerrain::ET66TowerGridCellSemantic::Unused)
+			{
+				++OutTotalWalkable;
+			}
+		}
+
+		if (!T66IsValidGridCoord(Layout, Floor.ArrivalCell))
+		{
+			return;
+		}
+
+		TArray<bool> Visited;
+		Visited.Init(false, CellCount);
+		TArray<FIntPoint> Queue;
+		Queue.Add(Floor.ArrivalCell);
+		Visited[T66GetGridCellIndex(Layout, Floor.ArrivalCell)] = true;
+
+		static const FIntPoint Deltas[] = { FIntPoint(0, -1), FIntPoint(1, 0), FIntPoint(0, 1), FIntPoint(-1, 0) };
+		for (int32 QueueIndex = 0; QueueIndex < Queue.Num(); ++QueueIndex)
+		{
+			const FIntPoint Coord = Queue[QueueIndex];
+			++OutReached;
+			if (Coord == Floor.ExitCell)
+			{
+				bOutExitReached = true;
+			}
+
+			for (const FIntPoint& Delta : Deltas)
+			{
+				const FIntPoint Next = Coord + Delta;
+				if (!T66IsValidGridCoord(Layout, Next))
+				{
+					continue;
+				}
+				const int32 NextIndex = T66GetGridCellIndex(Layout, Next);
+				if (Visited[NextIndex]
+					|| !Floor.GridCells.IsValidIndex(NextIndex)
+					|| Floor.GridCells[NextIndex].Semantic == T66TowerMapTerrain::ET66TowerGridCellSemantic::Unused)
+				{
+					continue;
+				}
+				if (!T66CanWalkDirectedTier(Layout, Floor, Coord, Next))
+				{
+					continue;
+				}
+				Visited[NextIndex] = true;
+				Queue.Add(Next);
+			}
+		}
+	}
+
+	// -----------------------------------------------------------------------
+	// Bouncy obstacle-course platforms.
+	//
+	// Tier 1 tops sit one jump above the base floor; Tier 2 tops sit one jump
+	// above Tier 1 and stay above the lava-rise cap. Every cell of a BFS
+	// arrival->exit path carries a Tier 2 "safe chain" platform, so even at
+	// full lava flood the descent hole stays reachable by platform hopping
+	// without taking damage. Room interiors get scattered Tier 1/2 platforms
+	// plus ramps for the Fall Guys obstacle-course read; collision stays on
+	// hidden box proxies per the world collision contract.
+	// -----------------------------------------------------------------------
+
+	static bool T66IsWalkableBounceCell(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor,
+		const FIntPoint& Coord)
+	{
+		if (!T66IsValidGridCoord(Layout, Coord))
+		{
+			return false;
+		}
+
+		const int32 CellIndex = T66GetGridCellIndex(Layout, Coord);
+		return Floor.GridCells.IsValidIndex(CellIndex)
+			&& Floor.GridCells[CellIndex].Semantic != T66TowerMapTerrain::ET66TowerGridCellSemantic::Unused;
+	}
+
+	static bool T66BuildBounceSafeChainPath(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor,
+		TArray<FIntPoint>& OutPathCells)
+	{
+		OutPathCells.Reset();
+		if (!T66IsWalkableBounceCell(Layout, Floor, Floor.ArrivalCell)
+			|| !T66IsWalkableBounceCell(Layout, Floor, Floor.ExitCell))
+		{
+			return false;
+		}
+
+		const int32 CellCount = Layout.GridColumns * Layout.GridRows;
+		const int32 StartIndex = T66GetGridCellIndex(Layout, Floor.ArrivalCell);
+		const int32 GoalIndex = T66GetGridCellIndex(Layout, Floor.ExitCell);
+		if (StartIndex == GoalIndex)
+		{
+			OutPathCells.Add(Floor.ArrivalCell);
+			return true;
+		}
+
+		TArray<int32> Parent;
+		Parent.Init(INDEX_NONE, CellCount);
+		TArray<bool> Visited;
+		Visited.Init(false, CellCount);
+		TArray<int32> Queue;
+		Queue.Reserve(CellCount / 4);
+		Queue.Add(StartIndex);
+		Visited[StartIndex] = true;
+
+		static const FIntPoint Deltas[] = { FIntPoint(0, -1), FIntPoint(1, 0), FIntPoint(0, 1), FIntPoint(-1, 0) };
+		bool bReachedGoal = false;
+		for (int32 QueueIndex = 0; QueueIndex < Queue.Num() && !bReachedGoal; ++QueueIndex)
+		{
+			const int32 CurrentIndex = Queue[QueueIndex];
+			const FIntPoint CurrentCoord = T66GetGridCoordFromIndex(Layout, CurrentIndex);
+
+			// The dry chain stays on the ground tier: the tier-0 network is connected
+			// by construction (rooms always keep a ground ring around mesas), and
+			// ramp cells are deprioritized so the chain detours around their wedges
+			// whenever the ring allows it.
+			for (int32 Pass = 0; Pass < 2 && !bReachedGoal; ++Pass)
+			{
+				for (const FIntPoint& Delta : Deltas)
+				{
+					const FIntPoint NeighborCoord = CurrentCoord + Delta;
+					if (!T66IsWalkableBounceCell(Layout, Floor, NeighborCoord))
+					{
+						continue;
+					}
+
+					if (T66GetCellTier(Layout, Floor, NeighborCoord) != 0)
+					{
+						continue;
+					}
+
+					// Ring-mesa hole cells are tier 0 but sit UNDER the deck slab —
+					// a chain platform there would be unusable. Mesa-rect tier-0
+					// cells are exactly the hole cells; route around the mesa.
+					if (T66IsCellInsideAnyMesa(Floor, NeighborCoord))
+					{
+						continue;
+					}
+
+					// Lift cells never join the dry chain: the slab parks submerged
+					// at the bottom of its cycle, so it cannot be a dry anchor. Room
+					// ground rings are >= 2 cells wide, so one excluded cell cannot
+					// disconnect the chain.
+					if (T66FindTierLiftAt(Floor, NeighborCoord))
+					{
+						continue;
+					}
+
+					const bool bNeighborIsRamp = T66FindTierRampAt(Floor, NeighborCoord) != nullptr;
+					if ((Pass == 0) == bNeighborIsRamp)
+					{
+						continue;
+					}
+
+					const int32 NeighborIndex = T66GetGridCellIndex(Layout, NeighborCoord);
+					if (Visited[NeighborIndex])
+					{
+						continue;
+					}
+
+					Visited[NeighborIndex] = true;
+					Parent[NeighborIndex] = CurrentIndex;
+					if (NeighborIndex == GoalIndex)
+					{
+						bReachedGoal = true;
+						break;
+					}
+
+					Queue.Add(NeighborIndex);
+				}
+			}
+		}
+
+		if (!bReachedGoal)
+		{
+			return false;
+		}
+
+		for (int32 WalkIndex = GoalIndex; WalkIndex != INDEX_NONE; WalkIndex = Parent[WalkIndex])
+		{
+			OutPathCells.Add(T66GetGridCoordFromIndex(Layout, WalkIndex));
+		}
+
+		for (int32 SwapIndex = 0; SwapIndex < OutPathCells.Num() / 2; ++SwapIndex)
+		{
+			OutPathCells.Swap(SwapIndex, OutPathCells.Num() - 1 - SwapIndex);
+		}
+
+		return OutPathCells.Num() > 0;
+	}
+
+	/**
+	 * Per-room shape theme (design ref section 1.6): each room commits to a shape
+	 * signature so its course reads designed, not sprinkled. The signature shape
+	 * replaces a square at RoundPlatformChance; chains use Round/Hex only (axis
+	 * hops contact the AABB faces exactly), triangles are scatter-only.
+	 */
+	enum class ET66RoomShapeTheme : uint8
+	{
+		Mixed,
+		Rounds,
+		HexField,
+		SquareTri,
+	};
+
+	static T66TowerMapTerrain::ET66BouncePlatformShape T66PickThemeShape(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const ET66RoomShapeTheme Theme,
+		FRandomStream& Rng,
+		const bool bChainSafeOnly)
+	{
+		using ET66Shape = T66TowerMapTerrain::ET66BouncePlatformShape;
+		if (Rng.FRand() >= Layout.RoundPlatformChance)
+		{
+			return ET66Shape::Square;
+		}
+
+		switch (Theme)
+		{
+		case ET66RoomShapeTheme::Rounds:
+			return ET66Shape::Round;
+		case ET66RoomShapeTheme::HexField:
+			return ET66Shape::Hex;
+		case ET66RoomShapeTheme::SquareTri:
+			return bChainSafeOnly ? ET66Shape::Hex : ET66Shape::Triangle;
+		case ET66RoomShapeTheme::Mixed:
+		default:
+		{
+			const int32 Pick = Rng.RandRange(0, bChainSafeOnly ? 1 : 2);
+			return Pick == 0 ? ET66Shape::Round : (Pick == 1 ? ET66Shape::Hex : ET66Shape::Triangle);
+		}
+		}
+	}
+
+	static void T66AddBouncePlatform(
+		T66TowerMapTerrain::FFloor& Floor,
+		const FIntPoint& Cell,
+		const FVector2D& Center,
+		const float Footprint,
+		const int32 Tier,
+		const float TopZ,
+		const bool bSafeChain,
+		const T66TowerMapTerrain::ET66BouncePlatformShape Shape = T66TowerMapTerrain::ET66BouncePlatformShape::Square,
+		const uint8 YawSteps = 0)
+	{
+		T66TowerMapTerrain::FBouncePlatform& Platform = Floor.BouncePlatforms.AddDefaulted_GetRef();
+		const FVector2D HalfFootprint(Footprint * 0.5f, Footprint * 0.5f);
+		Platform.Bounds = FBox2D(Center - HalfFootprint, Center + HalfFootprint);
+		Platform.TopZ = TopZ;
+		Platform.Tier = Tier;
+		Platform.Cell = Cell;
+		Platform.bSafeChain = bSafeChain;
+		// Triangles never carry the chain (pointy sides); every other kit shape's
+		// centerline contact equals its AABB face, so the box-gap proof stays true.
+		Platform.Shape = (bSafeChain && Shape == T66TowerMapTerrain::ET66BouncePlatformShape::Triangle)
+			? T66TowerMapTerrain::ET66BouncePlatformShape::Square
+			: Shape;
+		Platform.YawSteps = YawSteps % 4;
+	}
+
+	/** Edge-to-edge gap between two axis-aligned 2D boxes (0 when touching or overlapping). */
+	static float T66BoxEdgeGap2D(const FBox2D& A, const FBox2D& B)
+	{
+		const float GapX = FMath::Max(FMath::Max(A.Min.X - B.Max.X, B.Min.X - A.Max.X), 0.0f);
+		const float GapY = FMath::Max(FMath::Max(A.Min.Y - B.Max.Y, B.Min.Y - A.Max.Y), 0.0f);
+		return FMath::Max(GapX, GapY);
+	}
+
+	static void T66BuildFloorBouncePlatforms(
+		const T66TowerMapTerrain::FLayout& Layout,
+		T66TowerMapTerrain::FFloor& Floor,
+		FRandomStream& Rng)
+	{
+		Floor.BouncePlatforms.Reset();
+		Floor.BounceRamps.Reset();
+		Floor.SafeChainCells.Reset();
+
+		if (!Layout.bBounceCoursePlatforms || !Floor.bMobFloor || Floor.GridCells.Num() <= 0)
+		{
+			return;
+		}
+
+		const float Tier1TopZ = Floor.SurfaceZ + Layout.PlatformTier1Height;
+		const float Tier2TopZ = Floor.SurfaceZ + Layout.PlatformTier2Height;
+		const float CellSize = Layout.GridCellSize;
+		const int32 ArrivalIndex = T66GetGridCellIndex(Layout, Floor.ArrivalCell);
+		const int32 ExitIndex = T66GetGridCellIndex(Layout, Floor.ExitCell);
+
+		TArray<FIntPoint> PathCells;
+		const bool bHasChainPath = T66BuildBounceSafeChainPath(Layout, Floor, PathCells);
+
+		TSet<int32> OccupiedCells;
+		OccupiedCells.Add(ArrivalIndex);
+		OccupiedCells.Add(ExitIndex);
+
+		// Tier-terrain integration: ramp and lift cells never host platforms or
+		// stones, and rooms that received a mesa keep their ground ring clear of
+		// scatter (the mesa is that room's obstacle feature). A static platform in
+		// a lift cell would sit inside the moving slab's travel column.
+		for (const T66TowerMapTerrain::FTierRamp& TierRamp : Floor.TierRamps)
+		{
+			OccupiedCells.Add(T66GetGridCellIndex(Layout, TierRamp.Cell));
+		}
+		for (const T66TowerMapTerrain::FTierLift& TierLift : Floor.TierLifts)
+		{
+			OccupiedCells.Add(T66GetGridCellIndex(Layout, TierLift.Cell));
+		}
+		TSet<int32> MesaRoomIds;
+		for (const T66TowerMapTerrain::FTierMesa& Mesa : Floor.TierMesas)
+		{
+			MesaRoomIds.Add(Mesa.RoomId);
+		}
+
+		auto GetCellCenter = [&](const FIntPoint& Coord) -> FVector2D
+		{
+			const T66TowerMapTerrain::FGridCell& Cell = Floor.GridCells[T66GetGridCellIndex(Layout, Coord)];
+			return FVector2D(Cell.WorldCenter.X, Cell.WorldCenter.Y);
+		};
+
+		// Dry-anchor map for the full-flood validation walk: chain platforms and
+		// ramp wedges both count as dry surfaces along the path.
+		TMap<int32, FBox2D> DryAnchorByCell;
+		for (const T66TowerMapTerrain::FTierRamp& TierRamp : Floor.TierRamps)
+		{
+			DryAnchorByCell.Add(T66GetGridCellIndex(Layout, TierRamp.Cell), TierRamp.Bounds);
+		}
+
+		static const FIntPoint NeighborDeltas[] = { FIntPoint(0, -1), FIntPoint(1, 0), FIntPoint(0, 1), FIntPoint(-1, 0) };
+
+		// Tier 2 safe chain along the arrival->exit path. Chain rhythm + shape mix
+		// (design ref section 1.6): a seeded big/small footprint alternation and a
+		// cross-axis meander kill the conveyor read; squares, rounds, and hexes mix
+		// freely because chain hops are axis-aligned and every kit shape's
+		// centerline contact equals its AABB face. Pair-sum invariant: every two
+		// adjacent footprints sum to >= 2*(pitch - PlatformChainMaxGap), so no hop
+		// exceeds the validated cap (anchors and their neighbors are pinned big).
+		const float ChainPitch = Layout.GridCellSize;
+		const float ChainBigMax = ChainPitch - 140.0f;
+		const float ChainBigMin = FMath::Clamp(ChainPitch - Layout.PlatformChainMaxGap + 80.0f, Layout.ChainPlatformFootprint, ChainBigMax);
+		const float ChainSmallMin = FMath::Clamp(2.0f * (ChainPitch - Layout.PlatformChainMaxGap) - ChainBigMin + 20.0f, 400.0f, ChainBigMax);
+		const float ChainSmallMax = FMath::Clamp(ChainSmallMin + 100.0f, ChainSmallMin, ChainBigMax);
+		const ET66RoomShapeTheme ChainTheme = static_cast<ET66RoomShapeTheme>(Rng.RandRange(0, 2));
+		int32 ChainPlatformCount = 0;
+		for (int32 PathIndex = 0; PathIndex < PathCells.Num(); ++PathIndex)
+		{
+			const FIntPoint& PathCell = PathCells[PathIndex];
+			const int32 PathCellIndex = T66GetGridCellIndex(Layout, PathCell);
+			Floor.SafeChainCells.Add(PathCell);
+			if (PathCellIndex == ArrivalIndex || PathCellIndex == ExitIndex)
+			{
+				continue;
+			}
+
+			// Ramp wedges are already dry anchors; never stack a platform on one.
+			if (T66FindTierRampAt(Floor, PathCell))
+			{
+				continue;
+			}
+
+			// First/last two platforms anchor the ramp wedges and the descent-hole
+			// reach measurement: square, full-size, centered. Platforms adjacent to
+			// an anchor pin to the big range so the pair-sum invariant holds.
+			const bool bAnchorPlatform = PathIndex <= 1 || PathIndex >= PathCells.Num() - 2;
+			const bool bNextToAnchor = PathIndex == 2 || PathIndex == PathCells.Num() - 3;
+			float Footprint = Layout.ChainPlatformFootprint + ((PathIndex % 2 == 0) ? 0.0f : 40.0f);
+			FVector2D Center = GetCellCenter(PathCell);
+			T66TowerMapTerrain::ET66BouncePlatformShape Shape = T66TowerMapTerrain::ET66BouncePlatformShape::Square;
+			uint8 YawSteps = 0;
+			if (!bAnchorPlatform)
+			{
+				Footprint = (bNextToAnchor || PathIndex % 2 == 0)
+					? Rng.FRandRange(ChainBigMin, ChainBigMax)
+					: Rng.FRandRange(ChainSmallMin, ChainSmallMax);
+				Shape = T66PickThemeShape(Layout, ChainTheme, Rng, true);
+				YawSteps = static_cast<uint8>(Rng.RandRange(0, 3));
+
+				// Cross-axis meander, STRAIGHT segments only: perpendicular offsets
+				// never widen the hop gap (boxes keep overlapping in the cross
+				// axis), but at corners any offset bleeds into a hop axis — skip.
+				const FIntPoint Dir = PathCells[PathIndex + 1] - PathCells[PathIndex - 1];
+				if (Dir.X == 0 || Dir.Y == 0)
+				{
+					FVector2D Perp(static_cast<float>(-Dir.Y), static_cast<float>(Dir.X));
+					if (!Perp.IsNearlyZero())
+					{
+						Perp.Normalize();
+						Center += Perp * Rng.FRandRange(-170.0f, 170.0f);
+					}
+				}
+			}
+
+			T66AddBouncePlatform(Floor, PathCell, Center, Footprint, 2, Tier2TopZ, true, Shape, YawSteps);
+			DryAnchorByCell.Add(PathCellIndex, Floor.BouncePlatforms.Last().Bounds);
+			OccupiedCells.Add(PathCellIndex);
+			++ChainPlatformCount;
+
+			// Tier 1 hop-on stones beside every third chain platform keep the chain
+			// mountable from the base floor mid-route (ground -> T1 -> T2).
+			if ((ChainPlatformCount % 3) == 1)
+			{
+				for (const FIntPoint& Delta : NeighborDeltas)
+				{
+					const FIntPoint StoneCell = PathCell + Delta;
+					if (!T66IsWalkableBounceCell(Layout, Floor, StoneCell))
+					{
+						continue;
+					}
+
+					if (T66GetCellTier(Layout, Floor, StoneCell) != 0)
+					{
+						continue;
+					}
+
+					const int32 StoneCellIndex = T66GetGridCellIndex(Layout, StoneCell);
+					if (OccupiedCells.Contains(StoneCellIndex))
+					{
+						continue;
+					}
+
+					// Gate clearance: keep the drop landing zone open (arrival +-1).
+					if (FMath::Abs(StoneCell.X - Floor.ArrivalCell.X) <= 1
+						&& FMath::Abs(StoneCell.Y - Floor.ArrivalCell.Y) <= 1)
+					{
+						continue;
+					}
+
+					const FVector2D TowardChain(static_cast<float>(-Delta.X), static_cast<float>(-Delta.Y));
+					const FVector2D StoneCenter = GetCellCenter(StoneCell) + (TowardChain * 150.0f);
+					T66AddBouncePlatform(
+						Floor, StoneCell, StoneCenter, 600.0f, 1, Tier1TopZ, false,
+						T66PickThemeShape(Layout, ChainTheme, Rng, true),
+						static_cast<uint8>(Rng.RandRange(0, 3)));
+					OccupiedCells.Add(StoneCellIndex);
+					break;
+				}
+			}
+		}
+
+		// Route choice (analysis D1): where the dry chain crosses a room, a FAST
+		// risky lane of small Tier 1 stones cuts straight across the corner the
+		// safe Tier 2 chain walks around — the triangular choice, visible at a
+		// glance. The risk is built in: at full lava flood the low fork drowns
+		// while the chain stays dry.
+		if (PathCells.Num() > 0)
+		{
+			auto IsForkCellFree = [&](const FIntPoint& Cell) -> bool
+			{
+				if (!T66IsWalkableBounceCell(Layout, Floor, Cell)
+					|| T66GetCellTier(Layout, Floor, Cell) != 0
+					|| T66IsCellInsideAnyMesa(Floor, Cell)
+					|| T66FindTierRampAt(Floor, Cell)
+					|| T66FindTierLiftAt(Floor, Cell)
+					|| OccupiedCells.Contains(T66GetGridCellIndex(Layout, Cell)))
+				{
+					return false;
+				}
+				const bool bNearHole = FMath::Abs(Cell.X - Floor.ExitCell.X) <= 1
+					&& FMath::Abs(Cell.Y - Floor.ExitCell.Y) <= 1;
+				const bool bNearArrival = FMath::Abs(Cell.X - Floor.ArrivalCell.X) <= 1
+					&& FMath::Abs(Cell.Y - Floor.ArrivalCell.Y) <= 1;
+				return !bNearHole && !bNearArrival;
+			};
+
+			for (const T66TowerMapTerrain::FRoom& Room : Floor.Rooms)
+			{
+				int32 FirstInRoom = INDEX_NONE;
+				int32 LastInRoom = INDEX_NONE;
+				for (int32 PathIndex = 0; PathIndex < PathCells.Num(); ++PathIndex)
+				{
+					const FIntPoint& PathCell = PathCells[PathIndex];
+					const bool bInside = PathCell.X >= Room.MinCell.X && PathCell.X < Room.MaxCellExclusive.X
+						&& PathCell.Y >= Room.MinCell.Y && PathCell.Y < Room.MaxCellExclusive.Y;
+					if (!bInside)
+					{
+						continue;
+					}
+					if (FirstInRoom == INDEX_NONE)
+					{
+						FirstInRoom = PathIndex;
+					}
+					LastInRoom = PathIndex;
+				}
+
+				// Only fork when the chain takes a real detour through the room.
+				if (FirstInRoom == INDEX_NONE || LastInRoom - FirstInRoom < 5)
+				{
+					continue;
+				}
+
+				FIntPoint Cursor = PathCells[FirstInRoom];
+				const FIntPoint ForkTarget = PathCells[LastInRoom];
+				bool bStepX = true;
+				int32 Guard = 48;
+				int32 ForkPlaced = 0;
+				while (Cursor != ForkTarget && Guard-- > 0 && ForkPlaced < 6)
+				{
+					if (bStepX && Cursor.X != ForkTarget.X)
+					{
+						Cursor.X += (ForkTarget.X > Cursor.X) ? 1 : -1;
+					}
+					else if (Cursor.Y != ForkTarget.Y)
+					{
+						Cursor.Y += (ForkTarget.Y > Cursor.Y) ? 1 : -1;
+					}
+					else if (Cursor.X != ForkTarget.X)
+					{
+						Cursor.X += (ForkTarget.X > Cursor.X) ? 1 : -1;
+					}
+					bStepX = !bStepX;
+					if (Cursor == ForkTarget || !IsForkCellFree(Cursor))
+					{
+						continue;
+					}
+
+					T66AddBouncePlatform(
+						Floor, Cursor, GetCellCenter(Cursor), 620.0f, 1, Tier1TopZ, false,
+						T66TowerMapTerrain::ET66BouncePlatformShape::Round, 0);
+					OccupiedCells.Add(T66GetGridCellIndex(Layout, Cursor));
+					++ForkPlaced;
+				}
+			}
+		}
+
+		// Room structures: the reusable structure placer owns room-level bounce
+		// features while this pass still supplies terrain-local grid callbacks.
+		TArray<T66MapGeneration::FScatterRampCandidate> RampCandidates;
+		for (T66TowerMapTerrain::FRoom& Room : Floor.Rooms)
+		{
+			// Mesa rooms keep their ground ring open: the mesa + its ramps are the
+			// room's primary structure, scatter stays out, and the mesa pass already
+			// registered reward slots.
+			if (Room.bContainsArrival || Room.bContainsExit || MesaRoomIds.Contains(Room.RoomId))
+			{
+				continue;
+			}
+
+			if (Room.WidthTiles < 3 || Room.HeightTiles < 3)
+			{
+				if (Room.StructureIDs.Num() > 0 && Room.RewardSlots.Num() <= 0)
+				{
+					T66MapGeneration::AddRewardSlot(Room, FVector(Room.WorldCenter.X, Room.WorldCenter.Y, Floor.SurfaceZ));
+				}
+				continue;
+			}
+
+			const int32 RoomArea = Room.WidthTiles * Room.HeightTiles;
+			const int32 TargetCount = FMath::Clamp(RoomArea / FMath::Max(2, Layout.RoomPlatformDensityTiles), 1, 4);
+			// Per-room shape theme: each room commits to one shape signature so its
+			// course reads designed, not sprinkled (design ref section 1.6).
+			const ET66RoomShapeTheme RoomTheme = static_cast<ET66RoomShapeTheme>(Rng.RandRange(0, 3));
+
+			T66MapGeneration::FRoomPlacementContext PlacementContext;
+			PlacementContext.Layout = &Layout;
+			PlacementContext.Floor = &Floor;
+			PlacementContext.Rng = &Rng;
+			PlacementContext.OccupiedCells = &OccupiedCells;
+			PlacementContext.RampCandidates = &RampCandidates;
+			PlacementContext.NeighborDeltas.Append(NeighborDeltas, UE_ARRAY_COUNT(NeighborDeltas));
+			PlacementContext.CellSize = CellSize;
+			PlacementContext.Tier1TopZ = Tier1TopZ;
+			PlacementContext.Tier2TopZ = Tier2TopZ;
+			PlacementContext.SurfaceZ = Floor.SurfaceZ;
+			PlacementContext.IsWalkableBounceCell = [&](const FIntPoint& Cell)
+			{
+				return T66IsWalkableBounceCell(Layout, Floor, Cell);
+			};
+			PlacementContext.GetCellTier = [&](const FIntPoint& Cell)
+			{
+				return T66GetCellTier(Layout, Floor, Cell);
+			};
+			PlacementContext.IsCellInsideAnyMesa = [&](const FIntPoint& Cell)
+			{
+				return T66IsCellInsideAnyMesa(Floor, Cell);
+			};
+			PlacementContext.GetGridCellIndex = [&](const FIntPoint& Cell)
+			{
+				return T66GetGridCellIndex(Layout, Cell);
+			};
+			PlacementContext.GetCellCenter = [&](const FIntPoint& Cell)
+			{
+				return GetCellCenter(Cell);
+			};
+			PlacementContext.AddBouncePlatform = [&](
+				const FIntPoint& Cell,
+				const FVector2D& Center,
+				const float Footprint,
+				const int32 Tier,
+				const float TopZ,
+				const bool bSafeChain,
+				const T66TowerMapTerrain::ET66BouncePlatformShape Shape,
+				const uint8 YawSteps)
+			{
+				T66AddBouncePlatform(Floor, Cell, Center, Footprint, Tier, TopZ, bSafeChain, Shape, YawSteps);
+			};
+			PlacementContext.PickShape = [&](const bool bForceSquareCompatible)
+			{
+				return T66PickThemeShape(Layout, RoomTheme, Rng, bForceSquareCompatible);
+			};
+
+			bool bComposed = T66MapGeneration::PlaceSteppingStoneStructure(PlacementContext, Room);
+			if (!bComposed)
+			{
+				bComposed = T66MapGeneration::PlaceBridgeDeckStructure(PlacementContext, Room, T66HazardTypeCeilingHammer);
+			}
+
+			if (bComposed)
+			{
+				if (T66MapGeneration::RoomHasStructure(Room, T66MapGeneration::StructureScatterStones))
+				{
+					T66MapGeneration::PlaceScatterStoneStructure(PlacementContext, Room, FMath::Min(2, TargetCount));
+				}
+				continue;
+			}
+
+			// Scatter structure / degraded composition: sparse breather scatter +
+			// a ground reward in the open.
+			T66MapGeneration::PlaceScatterStoneStructure(PlacementContext, Room, TargetCount);
+
+			// Every structured room ends with at least one payoff point; the
+			// interactable population fills these first.
+			if (Room.StructureIDs.Num() > 0 && Room.RewardSlots.Num() <= 0)
+			{
+				T66MapGeneration::AddRewardSlot(Room, FVector(Room.WorldCenter.X, Room.WorldCenter.Y, Floor.SurfaceZ));
+			}
+		}
+
+		// Ramps: walkable wedges from the base floor onto scattered Tier 1 platforms.
+		int32 RampsPlaced = 0;
+		for (const T66MapGeneration::FScatterRampCandidate& RampTarget : RampCandidates)
+		{
+			if (RampsPlaced >= 2)
+			{
+				break;
+			}
+
+			for (const FIntPoint& Delta : NeighborDeltas)
+			{
+				const FIntPoint RampCell = RampTarget.Cell + Delta;
+				if (!T66IsWalkableBounceCell(Layout, Floor, RampCell))
+				{
+					continue;
+				}
+
+				const int32 RampCellIndex = T66GetGridCellIndex(Layout, RampCell);
+				const bool bRampNearHole = FMath::Abs(RampCell.X - Floor.ExitCell.X) <= 1
+					&& FMath::Abs(RampCell.Y - Floor.ExitCell.Y) <= 1;
+				if (OccupiedCells.Contains(RampCellIndex) || bRampNearHole)
+				{
+					continue;
+				}
+
+				// Ascent runs from the ramp cell toward the platform; the high end
+				// touches the platform's near edge.
+				const FIntPoint AscentSign(-Delta.X, -Delta.Y);
+				const FVector2D AscentDir(static_cast<float>(AscentSign.X), static_cast<float>(AscentSign.Y));
+				int32 TargetPlatformIndex = INDEX_NONE;
+				for (int32 PlatformIndex = 0; PlatformIndex < Floor.BouncePlatforms.Num(); ++PlatformIndex)
+				{
+					if (Floor.BouncePlatforms[PlatformIndex].Cell == RampTarget.Cell)
+					{
+						TargetPlatformIndex = PlatformIndex;
+						break;
+					}
+				}
+
+				if (TargetPlatformIndex == INDEX_NONE)
+				{
+					break;
+				}
+
+				const T66TowerMapTerrain::FBouncePlatform& Target = Floor.BouncePlatforms[TargetPlatformIndex];
+				const FVector2D TargetCenter = (Target.Bounds.Min + Target.Bounds.Max) * 0.5f;
+				const float TargetHalf = (Target.Bounds.Max.X - Target.Bounds.Min.X) * 0.5f;
+				const FVector2D HighEnd = TargetCenter - (AscentDir * TargetHalf);
+				const FVector2D RampCenter = HighEnd - (AscentDir * (Layout.RampLength * 0.5f));
+				const FVector2D AlongHalf = AscentDir * (Layout.RampLength * 0.5f);
+				const FVector2D AcrossHalf = FVector2D(FMath::Abs(AscentDir.Y), FMath::Abs(AscentDir.X)) * (Layout.RampWidth * 0.5f);
+				const FVector2D HalfExtents(
+					FMath::Abs(AlongHalf.X) + FMath::Abs(AcrossHalf.X),
+					FMath::Abs(AlongHalf.Y) + FMath::Abs(AcrossHalf.Y));
+
+				T66TowerMapTerrain::FBounceRamp& Ramp = Floor.BounceRamps.AddDefaulted_GetRef();
+				Ramp.Bounds = FBox2D(RampCenter - HalfExtents, RampCenter + HalfExtents);
+				Ramp.BaseZ = Floor.SurfaceZ;
+				Ramp.TopZ = Target.TopZ;
+				Ramp.AscentSign = AscentSign;
+				OccupiedCells.Add(RampCellIndex);
+				++RampsPlaced;
+				break;
+			}
+		}
+
+		// Validate the dry-chain guarantee so regressions surface in logs, not playtests:
+		// consecutive dry anchors along the path (chain platforms and ramp wedges)
+		// within jump range, chain tops above the lava cap, and the descent hole
+		// reachable from the final dry anchor.
+		float MaxChainGap = 0.0f;
+		const FBox2D* PreviousAnchor = nullptr;
+		const FBox2D* LastAnchor = nullptr;
+		for (const FIntPoint& PathCell : PathCells)
+		{
+			const int32 PathCellIndex = T66GetGridCellIndex(Layout, PathCell);
+			const FBox2D* Anchor = DryAnchorByCell.Find(PathCellIndex);
+			if (!Anchor)
+			{
+				continue;
+			}
+
+			if (PreviousAnchor)
+			{
+				MaxChainGap = FMath::Max(MaxChainGap, T66BoxEdgeGap2D(*PreviousAnchor, *Anchor));
+			}
+			PreviousAnchor = Anchor;
+			LastAnchor = Anchor;
+		}
+
+		const float LavaClearance = Tier2TopZ - (Floor.SurfaceZ + Layout.LavaMaxHeight);
+		float HoleReach = 0.0f;
+		if (LastAnchor && Floor.bHasDropHole)
+		{
+			const FBox2D HoleBox(
+				FVector2D(Floor.HoleCenter.X - Floor.HoleHalfExtent.X, Floor.HoleCenter.Y - Floor.HoleHalfExtent.Y),
+				FVector2D(Floor.HoleCenter.X + Floor.HoleHalfExtent.X, Floor.HoleCenter.Y + Floor.HoleHalfExtent.Y));
+			HoleReach = T66BoxEdgeGap2D(*LastAnchor, HoleBox);
+		}
+
+		const bool bChainPass = bHasChainPath
+			&& (ChainPlatformCount > 0 || PathCells.Num() <= 2)
+			&& MaxChainGap <= Layout.PlatformChainMaxGap + 1.0f
+			&& HoleReach <= Layout.PlatformChainMaxGap + 1.0f
+			&& LavaClearance >= 50.0f;
+		if (bChainPass)
+		{
+			UE_LOG(
+				LogT66TowerMapTerrain,
+				Log,
+				TEXT("[T66Proof][BounceCourseSummary] Floor=%d Result=PASS Platforms=%d Chain=%d Ramps=%d PathCells=%d MaxChainGap=%.0f HoleReach=%.0f LavaClearance=%.0f"),
+				Floor.FloorNumber,
+				Floor.BouncePlatforms.Num(),
+				ChainPlatformCount,
+				Floor.BounceRamps.Num(),
+				PathCells.Num(),
+				MaxChainGap,
+				HoleReach,
+				LavaClearance);
+		}
+		else
+		{
+			UE_LOG(
+				LogT66TowerMapTerrain,
+				Warning,
+				TEXT("[T66Proof][BounceCourseSummary] Floor=%d Result=FAIL Platforms=%d Chain=%d Ramps=%d PathCells=%d MaxChainGap=%.0f HoleReach=%.0f LavaClearance=%.0f"),
+				Floor.FloorNumber,
+				Floor.BouncePlatforms.Num(),
+				ChainPlatformCount,
+				Floor.BounceRamps.Num(),
+				PathCells.Num(),
+				MaxChainGap,
+				HoleReach,
+				LavaClearance);
+		}
+
+		if (!bChainPass)
+		{
+			// Without a proven dry chain the lava hazard would be unfair; drop the
+			// course markers so the hazard manager falls back to legacy coverage.
+			Floor.SafeChainCells.Reset();
+		}
+	}
+
+	static void T66ValidateRoomCompositions(
+		const T66TowerMapTerrain::FLayout& Layout,
+		const T66TowerMapTerrain::FFloor& Floor)
+	{
+		int32 ComposedRooms = 0;
+		int32 ValidRooms = 0;
+		int32 InvalidRooms = 0;
+		FString FirstFailure;
+		for (const T66TowerMapTerrain::FRoom& Room : Floor.Rooms)
+		{
+			if (Room.CompositionProfileID.IsNone())
+			{
+				continue;
+			}
+
+			++ComposedRooms;
+			const T66MapGeneration::FRoomValidationResult Result =
+				T66MapGeneration::ValidateRoomComposition(Layout, Floor, Room);
+			if (Result.bValid)
+			{
+				++ValidRooms;
+			}
+			else
+			{
+				++InvalidRooms;
+				if (FirstFailure.IsEmpty())
+				{
+					FirstFailure = FString::Printf(
+						TEXT("Room=%d Profile=%s Reason=%s Structures=%d Rewards=%d Hazards=%d Open=%.2f Density=%.2f"),
+						Room.RoomId,
+						*Room.CompositionProfileID.ToString(),
+						*Result.FailureReason,
+						Result.StructureCount,
+						Result.RewardSlotCount,
+						Result.HazardAnchorCount,
+						Result.EstimatedCombatOpenAreaRatio,
+						Result.StructureDensity);
+				}
+			}
+		}
+
+		if (ComposedRooms <= 0)
+		{
+			return;
+		}
+
+		if (InvalidRooms <= 0)
+		{
+			UE_LOG(
+				LogT66TowerMapTerrain,
+				Log,
+				TEXT("[T66Proof][RoomCompositionSummary] Floor=%d Result=PASS Rooms=%d Valid=%d Invalid=%d"),
+				Floor.FloorNumber,
+				ComposedRooms,
+				ValidRooms,
+				InvalidRooms);
+		}
+		else
+		{
+			UE_LOG(
+				LogT66TowerMapTerrain,
+				Warning,
+				TEXT("[T66Proof][RoomCompositionSummary] Floor=%d Result=FAIL Rooms=%d Valid=%d Invalid=%d FirstFailure=\"%s\""),
+				Floor.FloorNumber,
+				ComposedRooms,
+				ValidRooms,
+				InvalidRooms,
+				*FirstFailure);
+		}
+	}
+
 	static void T66BuildFloorMazeWalls(
 		const T66TowerMapTerrain::FLayout& Layout,
 		T66TowerMapTerrain::FFloor& Floor,
@@ -4043,9 +6719,11 @@ namespace
 			return;
 		}
 
+		bool bBuiltDungeonRooms = false;
 		bool bBuiltGridGraph = false;
 		FRandomStream GridRng = Rng;
 		bBuiltGridGraph = T66BuildFloorDungeonLoop(Layout, Floor, GridRng);
+		bBuiltDungeonRooms = bBuiltGridGraph;
 		if (bBuiltGridGraph)
 		{
 			Rng = GridRng;
@@ -4066,6 +6744,61 @@ namespace
 		{
 			T66ResetFloorMazeMetadata(Floor);
 			T66BuildFloorMazeWalls_Legacy(Layout, Floor, Rng);
+		}
+
+		// Tier terrain + bounce platforms only build over the dungeon-room layout:
+		// the grid-graph fallback emits interior template walls inside cells that
+		// raised terrain could intersect, and legacy lanes have no cell semantics.
+		if (bBuiltDungeonRooms)
+		{
+			T66BuildFloorTierTerrain(Layout, Floor, Rng);
+			T66BuildFloorBouncePlatforms(Layout, Floor, Rng);
+			T66ValidateRoomCompositions(Layout, Floor);
+
+			// No-softlock proof: every walkable cell must be reachable from arrival
+			// over the directed (cell, tier) walk graph; the return path exists by
+			// construction (drops reach the connected ground network).
+			int32 ReachedCells = 0;
+			int32 TotalWalkableCells = 0;
+			bool bExitReached = false;
+			T66ValidateTierAccess(Layout, Floor, ReachedCells, TotalWalkableCells, bExitReached);
+			const bool bTierPass = ReachedCells == TotalWalkableCells && (bExitReached || !Floor.bHasDropHole);
+			if (bTierPass)
+			{
+				UE_LOG(
+					LogT66TowerMapTerrain,
+					Log,
+					TEXT("[T66Proof][TierAccessSummary] Floor=%d Result=PASS Reached=%d/%d ExitReached=%d Mesas=%d TierRamps=%d Lifts=%d"),
+					Floor.FloorNumber,
+					ReachedCells,
+					TotalWalkableCells,
+					bExitReached ? 1 : 0,
+					Floor.TierMesas.Num(),
+					Floor.TierRamps.Num(),
+					Floor.TierLifts.Num());
+			}
+			else
+			{
+				UE_LOG(
+					LogT66TowerMapTerrain,
+					Warning,
+					TEXT("[T66Proof][TierAccessSummary] Floor=%d Result=FAIL Reached=%d/%d ExitReached=%d Mesas=%d TierRamps=%d Lifts=%d"),
+					Floor.FloorNumber,
+					ReachedCells,
+					TotalWalkableCells,
+					bExitReached ? 1 : 0,
+					Floor.TierMesas.Num(),
+					Floor.TierRamps.Num(),
+					Floor.TierLifts.Num());
+
+				// Unverified terrain must not gate the lava hazard or ship raised
+				// blocks the player could be boxed in by: flatten the floor.
+				Floor.CellTiers.Reset();
+				Floor.TierMesas.Reset();
+				Floor.TierRamps.Reset();
+				Floor.TierLifts.Reset();
+				Floor.SafeChainCells.Reset();
+			}
 		}
 
 		T66FinalizeFloorMazeMetadata(Layout, Floor);
@@ -4641,10 +7374,45 @@ namespace
 				false);
 		};
 
+		// Camera blocker (2026-06-10): the hero boom now collision-tests against
+		// ECC_Camera, and a camera inside/level with a ceiling slab blacks out the
+		// scene. Ceilings get an invisible camera-only proxy so the boom physically
+		// stays below them; gameplay channels are untouched.
+		auto SpawnCeilingCameraBlockerForBox = [&](const FBox2D& SourceBox)
+		{
+			if (bSpawnCeilingCollision)
+			{
+				return; // the full collision proxy already blocks the camera
+			}
+
+			const FVector2D BoxSize = SourceBox.Max - SourceBox.Min;
+			if (BoxSize.X <= 10.0f || BoxSize.Y <= 10.0f)
+			{
+				return;
+			}
+
+			TArray<FName> BlockerTags = Tags;
+			BlockerTags.AddUnique(T66TowerMapCeilingTag);
+			BlockerTags.AddUnique(T66TowerTerrainNoSurfaceBounceTag);
+			BlockerTags.AddUnique(FName(TEXT("T66_Floor_Tower_CeilingCameraBlocker")));
+
+			const FVector2D Center = (SourceBox.Min + SourceBox.Max) * 0.5f;
+			AActor* Proxy = T66SpawnHiddenCollisionProxyActor(
+				World,
+				FVector(Center.X, Center.Y, CeilingBottomZ + (CeilingThickness * 0.5f)),
+				FRotator::ZeroRotator,
+				FVector(BoxSize.X * 0.5f, BoxSize.Y * 0.5f, CeilingThickness * 0.5f),
+				SpawnParams,
+				BlockerTags,
+				false);
+			T66MakeCollisionProxyCameraOnly(Proxy);
+		};
+
 		auto SpawnSurfaceBox = [&](const FBox2D& SourceBox)
 		{
 			SpawnVisualRectangleForBox(SourceBox);
 			SpawnCeilingCollisionForBox(SourceBox);
+			SpawnCeilingCameraBlockerForBox(SourceBox);
 		};
 
 		auto SpawnBoxWithHole = [&](const FBox2D& SourceBox)
@@ -5215,6 +7983,15 @@ namespace
 			FName(*FString::Printf(TEXT("T66_Floor_Tower_%02d"), Floor.FloorNumber)),
 			FName(*FString::Printf(TEXT("T66_Floor_Tower_Doorway_%02d"), Floor.FloorNumber))
 		};
+
+		// Inflatable arch tubes replace the flat lintel cube when baffle visuals are
+		// active; the legacy lintel remains the fallback when arches cannot spawn.
+		if (T66ShouldUseFloorBaffles()
+			&& T66SpawnDoorwayArchTubes(World, Theme, Layout, Floor, WallHeight, SpawnParams, DoorwayTags) > 0)
+		{
+			return;
+		}
+
 		const float HeaderHeight = FMath::Clamp(WallHeight * 0.24f, 260.0f, 520.0f);
 		if (!CubeMesh)
 		{
@@ -5366,10 +8143,41 @@ namespace T66TowerMapTerrain
 		OutLayout.DungeonMaxRooms = TowerTuning.DungeonMaxRooms;
 		OutLayout.DungeonMinRoomTiles = TowerTuning.DungeonMinRoomTiles;
 		OutLayout.DungeonMaxRoomTiles = TowerTuning.DungeonMaxRoomTiles;
+		OutLayout.RoomMaxGapCells = TowerTuning.RoomMaxGapCells;
 		OutLayout.StartRoomMinTiles = TowerTuning.StartRoomMinTiles;
 		OutLayout.StartRoomMaxTiles = TowerTuning.StartRoomMaxTiles;
 		OutLayout.GridBranchChance = TowerTuning.GridBranchChance;
 		OutLayout.GridMaxBranchCells = TowerTuning.GridMaxBranchCells;
+		OutLayout.bBounceCoursePlatforms = TowerTuning.BounceCoursePlatforms != 0;
+		OutLayout.PlatformTier1Height = TowerTuning.PlatformTier1Height;
+		OutLayout.PlatformTier2Height = TowerTuning.PlatformTier2Height;
+		OutLayout.ChainPlatformFootprint = TowerTuning.ChainPlatformFootprint;
+		OutLayout.RoomPlatformFootprintMin = TowerTuning.RoomPlatformFootprintMin;
+		OutLayout.RoomPlatformFootprintMax = TowerTuning.RoomPlatformFootprintMax;
+		OutLayout.RoomPlatformDensityTiles = TowerTuning.RoomPlatformDensityTiles;
+		OutLayout.PlatformChainMaxGap = TowerTuning.PlatformChainMaxGap;
+		OutLayout.RoundPlatformChance = TowerTuning.RoundPlatformChance;
+		OutLayout.RampWidth = TowerTuning.RampWidth;
+		OutLayout.RampLength = TowerTuning.RampLength;
+		OutLayout.LavaMaxHeight = TowerTuning.LavaMaxHeight;
+		OutLayout.bTierTerrain = TowerTuning.TierTerrain != 0;
+		OutLayout.TierHeight = TowerTuning.TierHeight;
+		OutLayout.MesaInsetCells = TowerTuning.MesaInsetCells;
+		OutLayout.MesaMinSpanCells = TowerTuning.MesaMinSpanCells;
+		OutLayout.MesaRampsMin = TowerTuning.MesaRampsMin;
+		OutLayout.MesaRampsMax = TowerTuning.MesaRampsMax;
+		OutLayout.MesaTopBafflePitch = TowerTuning.MesaTopBafflePitch;
+		OutLayout.MesaTopBaffleDiameter = TowerTuning.MesaTopBaffleDiameter;
+		OutLayout.RampRollerDiameter = TowerTuning.RampRollerDiameter;
+		OutLayout.RingMesaChance = TowerTuning.RingMesaChance;
+		OutLayout.bTierLifts = TowerTuning.TierLifts != 0;
+		OutLayout.LiftChance = TowerTuning.LiftChance;
+		OutLayout.LiftFootprint = TowerTuning.LiftFootprint;
+		OutLayout.LiftTravelSeconds = TowerTuning.LiftTravelSeconds;
+		OutLayout.LiftDwellSeconds = TowerTuning.LiftDwellSeconds;
+		OutLayout.bDoorwayArches = TowerTuning.DoorwayArches != 0;
+		OutLayout.ArchSegments = TowerTuning.ArchSegments;
+		OutLayout.ArchTubeDiameter = TowerTuning.ArchTubeDiameter;
 		OutLayout.DefaultRoomRuleID = TowerTuning.DefaultRoomRuleID;
 		OutLayout.StartRoomRuleID = TowerTuning.StartRoomRuleID;
 		OutLayout.BossRoomRuleID = TowerTuning.BossRoomRuleID;
@@ -5505,8 +8313,10 @@ namespace T66TowerMapTerrain
 			T66BuildFloorMazeWalls(OutLayout, Floor, FloorMazeRng);
 			if (Floor.bMobFloor)
 			{
-				const bool bRoomLayoutPass = Floor.Rooms.Num() == OutLayout.DungeonMinRooms
-					&& OutLayout.DungeonMinRooms == OutLayout.DungeonMaxRooms;
+				// Range contract (section 1.7): the room-course config asks for a COUNT
+				// RANGE (more, smaller rooms with seeded variety), not an exact count.
+				const bool bRoomLayoutPass = Floor.Rooms.Num() >= OutLayout.DungeonMinRooms
+					&& Floor.Rooms.Num() <= OutLayout.DungeonMaxRooms;
 				if (bRoomLayoutPass)
 				{
 					UE_LOG(
@@ -5967,27 +8777,58 @@ namespace T66TowerMapTerrain
 		const float EffectiveEdgePadding = FMath::Max(EdgePadding, EffectiveFootprint * 1.10f);
 		const float EffectiveHolePadding = FMath::Max(HolePadding, EffectiveFootprint * 1.20f);
 		const float EffectiveWallPadding = FMath::Max(Layout.PlacementCellSize * 0.35f, EffectiveFootprint * 0.80f);
-		if (TryGetFloorTileCenterSpawnLocation(
-			World,
-			Layout,
-			FloorNumber,
-			Rng,
-			OutLocation,
-			EffectiveEdgePadding,
-			EffectiveHolePadding,
-			EffectiveWallPadding))
+
+		// Gate clearance (2026-06-11): the hero LANDS at the arrival point after
+		// dropping through the previous floor's gate — obstacles must not affect
+		// that area (the hole side is already covered by HolePadding).
+		const FFloor* Floor = nullptr;
+		const bool bHasFloor = T66TryGetFloor(Layout, FloorNumber, Floor) && Floor;
+		const float ArrivalClearance = FMath::Max(2000.0f, EffectiveFootprint + 900.0f);
+		auto IsClearOfArrival = [&](const FVector& Candidate)
 		{
-			return true;
+			return !bHasFloor
+				|| FVector::DistSquared2D(Candidate, Floor->ArrivalPoint) >= FMath::Square(ArrivalClearance);
+		};
+
+		for (int32 Attempt = 0; Attempt < 10; ++Attempt)
+		{
+			if (TryGetFloorTileCenterSpawnLocation(
+				World,
+				Layout,
+				FloorNumber,
+				Rng,
+				OutLocation,
+				EffectiveEdgePadding,
+				EffectiveHolePadding,
+				EffectiveWallPadding)
+				&& IsClearOfArrival(OutLocation))
+			{
+				return true;
+			}
 		}
 
-		return TryGetRandomSurfaceLocationOnFloor(
-			World,
-			Layout,
-			FloorNumber,
-			Rng,
-			OutLocation,
-			FMath::Min(EffectiveEdgePadding, 700.0f),
-			FMath::Min(EffectiveHolePadding, 900.0f));
+		for (int32 Attempt = 0; Attempt < 10; ++Attempt)
+		{
+			if (TryGetRandomSurfaceLocationOnFloor(
+				World,
+				Layout,
+				FloorNumber,
+				Rng,
+				OutLocation,
+				FMath::Min(EffectiveEdgePadding, 700.0f),
+				FMath::Min(EffectiveHolePadding, 900.0f))
+				&& IsClearOfArrival(OutLocation))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool IsPointInsideBounceObstacle(const FFloor& Floor, const FVector& Location, const float Padding)
+	{
+		return T66IsLocationInsideBounceObstacle(Floor, Location, Padding);
 	}
 
 	bool TryGetMazeWallSpawnLocation(
@@ -6274,6 +9115,8 @@ namespace T66TowerMapTerrain
 				T66SpawnPolygonFloor(World, CubeMesh, Theme.FloorMaterial, Layout, Floor, SpawnParams, FloorTags);
 			}
 			T66SpawnMazeWalls(World, CubeMesh, Theme, Layout, Floor, ModuleWallHeight, SpawnParams);
+			T66SpawnTierTerrainForFloor(World, CubeMesh, Theme, Layout, Floor, SpawnParams);
+			T66SpawnBounceCourseForFloor(World, CubeMesh, Theme, Layout, Floor, SpawnParams);
 
 			if (bUsingGeneratedDungeonKitForTheme)
 			{

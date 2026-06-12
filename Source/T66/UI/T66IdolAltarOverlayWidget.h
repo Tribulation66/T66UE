@@ -7,6 +7,8 @@
 #include "Core/T66Rarity.h"
 #include "Core/Animation/T66AnimationGroup.h"
 #include "Core/Animation/T66AnimationSequence.h"
+#include "Data/T66DataTypes.h"
+#include "Gameplay/T66IdolAltar.h"
 #include "Input/Reply.h"
 #include "UI/Animation/T66AnimationMarkerDispatch.h"
 #include "T66IdolAltarOverlayWidget.generated.h"

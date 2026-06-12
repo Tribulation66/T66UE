@@ -865,6 +865,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 	Snapshot->StageReached = FMath::Clamp(RunState->GetCurrentStage(), 1, 20);
 	Snapshot->Score = FMath::Max(0, Score);
 
+	// Stats Rework: StatValues stores accumulated bonus points (the unified "+X%" language), not effective values.
 	Snapshot->StatValues.Reset();
 	for (int32 i = 1; i <= static_cast<int32>(ET66StatType::WindPower); ++i)
 	{
@@ -873,7 +874,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 		{
 			continue;
 		}
-		Snapshot->StatValues.Add(SecType, RunState->GetStatValue(SecType));
+		Snapshot->StatValues.Add(SecType, RunState->GetStatBonusValue(SecType));
 	}
 
 	Snapshot->HeroID = T66GI->SelectedHeroID;
@@ -962,7 +963,7 @@ UT66LeaderboardRunSummarySaveGame* UT66LeaderboardSubsystem::CreateCurrentRunSum
 		else
 		{
 			Snapshot->EquippedIdolElements.Add(ET66IdolElement::Fire);
-			Snapshot->EquippedIdolCategories.Add(ET66AttackCategory::Pierce);
+			Snapshot->EquippedIdolCategories.Add(ET66AttackCategory::AOE);
 		}
 	}
 	Snapshot->Inventory = RunState->GetInventory();

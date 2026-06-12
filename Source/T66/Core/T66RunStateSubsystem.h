@@ -155,6 +155,7 @@ public:
 	static constexpr float UltimateCooldownSeconds = 30.f;
 	static constexpr int32 UltimateDamage = 200;
 	static constexpr int32 ShopDisplaySlotCount = 4;
+	static constexpr int32 ShopStockLockGoldCost = 1;
 	static constexpr int32 BuybackDisplaySlotCount = 4;
 	static constexpr float ShopRarityWeightBlack = 70.0f;
 	static constexpr float ShopRarityWeightRed = 25.0f;
@@ -957,12 +958,12 @@ public:
 	// Category-Specific Stats (base from hero DataTable + item bonuses)
 	// ============================================
 
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Pierce")
-	int32 GetPierceDmgStat() const;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Pierce")
-	int32 GetPierceAtkSpdStat() const;
-	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Pierce")
-	int32 GetPierceAtkScaleStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Summon")
+	int32 GetSummonDmgStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Summon")
+	int32 GetSummonAtkSpdStat() const;
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Summon")
+	int32 GetSummonAtkScaleStat() const;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Stats|Bounce")
 	int32 GetBounceDmgStat() const;
@@ -995,6 +996,9 @@ public:
 
 	/** Get the raw hero-base value of a secondary stat before primary-stat scaling and Line 2 multipliers. */
 	float GetStatBaselineValue(ET66StatType StatType) const;
+
+	/** Accumulated +% bonus points for a stat (items + surgeries + level-ups + Saint + temporary). 1 point == 1%. Display-facing. */
+	float GetStatBonusValue(ET66StatType StatType) const;
 
 	/** Aggro multiplier (base * taunt items). Higher = enemies target this hero more. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Secondary")
@@ -1331,6 +1335,16 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
 	bool IsShopStockSlotSold(int32 Index) const;
 
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
+	bool IsShopStockSlotLocked(int32 Index) const;
+
+	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
+	int32 GetShopStockLockGoldCost() const { return ShopStockLockGoldCost; }
+
+	/** Toggle a shop slot lock. Locking costs gold; unlocking is free. */
+	UFUNCTION(BlueprintCallable, Category = "RunState|Shop")
+	bool ToggleShopStockSlotLock(int32 Index);
+
 	/** Buy price for a shop slot after active Vendor Token stack discount. */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Shop")
 	int32 GetBuyGoldForShopStockSlot(int32 Index) const;
@@ -1385,19 +1399,19 @@ public:
 	static constexpr float UltimateChargePerKill = 10.f;
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
-	bool IsUltimateReady() const { return UltimateCharge >= UltimateChargeRequired; }
+	bool IsUltimateReady() const { return false; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
 	float GetUltimateCooldownRemainingSeconds() const { return 0.f; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
-	float GetUltimateCharge() const { return UltimateCharge; }
+	float GetUltimateCharge() const { return 0.f; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
 	float GetUltimateChargeRequired() const { return UltimateChargeRequired; }
 
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "RunState|Hero|Ultimate")
-	float GetUltimateChargeFraction() const { return FMath::Clamp(UltimateCharge / UltimateChargeRequired, 0.f, 1.f); }
+	float GetUltimateChargeFraction() const { return 0.f; }
 
 	void AddUltimateCharge(float Amount);
 
@@ -1687,7 +1701,6 @@ private:
 	int32 GetTemporaryBaseStatAmplifierTenths(ET66HeroStatType StatType) const;
 	int32 GetTemporaryStatAmplifierTenths(ET66StatType StatType) const;
 	int32 GetStatBonusTenths(ET66StatType StatType) const;
-	float GetStatBonusValue(ET66StatType StatType) const;
 	int32 GetCategoryBaseStatTenths(ET66StatType StatType) const;
 	int32 GetCategoryTotalStatTenths(ET66StatType StatType) const;
 	void SyncLegacyHeroStatsFromPrecise();
@@ -2004,7 +2017,7 @@ private:
 	FT66HeroPerLevelStatGains HeroPerLevelGains = FT66HeroPerLevelStatGains{};
 
 	/** Category-specific base stats loaded from Heroes DataTable before item and level-up secondary bonuses. */
-	int32 BasePierceDmg = 1; int32 BasePierceAtkSpd = 1; int32 BasePierceAtkScale = 1;
+	int32 BaseSummonDmg = 1; int32 BaseSummonAtkSpd = 1; int32 BaseSummonAtkScale = 1;
 	int32 BaseBounceDmg = 1; int32 BaseBounceAtkSpd = 1; int32 BaseBounceAtkScale = 1;
 	int32 BaseAoeDmg = 1;    int32 BaseAoeAtkSpd = 1;    int32 BaseAoeAtkScale = 1;
 	int32 BaseDotDmg = 1;    int32 BaseDotAtkSpd = 1;    int32 BaseDotAtkScale = 1;
@@ -2028,7 +2041,7 @@ private:
 	float HeroBaseStealChance = 0.05f;
 	float HeroBaseAttackRange = 1000.f;
 	float HeroBaseAccuracy = 0.15f;
-	ET66AttackCategory HeroPrimaryAttackCategory = ET66AttackCategory::Pierce;
+	ET66AttackCategory HeroPrimaryAttackCategory = ET66AttackCategory::AOE;
 
 	// ============================================
 	// Accumulated secondary stat multipliers from items (product of Line 2 multipliers)
@@ -2083,6 +2096,7 @@ private:
 	TArray<FName> ShopStockItemIDs;
 	TArray<FT66InventorySlot> ShopStockSlots;
 	TArray<bool> ShopStockSold;
+	TArray<bool> ShopStockLocked;
 
 	TArray<FT66InventorySlot> BuybackPool;
 	TArray<FT66InventorySlot> BuybackDisplaySlots;

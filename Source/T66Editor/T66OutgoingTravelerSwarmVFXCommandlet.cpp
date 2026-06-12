@@ -149,19 +149,19 @@ namespace
 	const FT66TravelerVisualProfileAuthoringSpec T66TravelerVisualProfiles[] =
 	{
 		{ TEXT("TravelerVisual.Fire.AOE"),         TEXT("Fire_AOE"),         4,  1, 0, 0, FLinearColor(1.00f, 0.18f, 0.03f, 1.0f), 130.0f,  86.0f, 0.32f },
-		{ TEXT("TravelerVisual.Fire.Pierce"),      TEXT("Fire_Pierce"),      5,  1, 0, 1, FLinearColor(1.00f, 0.34f, 0.05f, 1.0f), 176.0f,  34.0f, 0.18f },
+		{ TEXT("TravelerVisual.Fire.Summon"),      TEXT("Fire_Summon"),      5,  1, 0, 1, FLinearColor(1.00f, 0.34f, 0.05f, 1.0f), 176.0f,  34.0f, 0.18f },
 		{ TEXT("TravelerVisual.Fire.Bounce"),      TEXT("Fire_Bounce"),      6,  1, 0, 2, FLinearColor(1.00f, 0.24f, 0.02f, 1.0f), 112.0f,  66.0f, 0.40f },
 		{ TEXT("TravelerVisual.Fire.DOT"),         TEXT("Fire_DOT"),         7,  1, 0, 3, FLinearColor(1.00f, 0.42f, 0.08f, 1.0f), 104.0f,  72.0f, 0.55f },
 		{ TEXT("TravelerVisual.Ice.AOE"),          TEXT("Ice_AOE"),          8,  2, 1, 0, FLinearColor(0.36f, 0.88f, 1.00f, 0.82f), 126.0f,  78.0f, 0.26f },
-		{ TEXT("TravelerVisual.Ice.Pierce"),       TEXT("Ice_Pierce"),       9,  2, 1, 1, FLinearColor(0.58f, 0.96f, 1.00f, 0.84f), 170.0f,  28.0f, 0.12f },
+		{ TEXT("TravelerVisual.Ice.Summon"),       TEXT("Ice_Summon"),       9,  2, 1, 1, FLinearColor(0.58f, 0.96f, 1.00f, 0.84f), 170.0f,  28.0f, 0.12f },
 		{ TEXT("TravelerVisual.Ice.Bounce"),       TEXT("Ice_Bounce"),       10, 2, 1, 2, FLinearColor(0.48f, 0.90f, 1.00f, 0.78f), 104.0f,  62.0f, 0.22f },
 		{ TEXT("TravelerVisual.Ice.DOT"),          TEXT("Ice_DOT"),          11, 2, 1, 3, FLinearColor(0.50f, 0.86f, 1.00f, 0.74f), 112.0f,  70.0f, 0.34f },
 		{ TEXT("TravelerVisual.Electricity.AOE"),  TEXT("Electricity_AOE"),  12, 1, 2, 0, FLinearColor(0.78f, 0.95f, 1.00f, 1.0f), 142.0f,  58.0f, 0.62f },
-		{ TEXT("TravelerVisual.Electricity.Pierce"), TEXT("Electricity_Pierce"), 13, 1, 2, 1, FLinearColor(0.58f, 0.86f, 1.00f, 1.0f), 190.0f,  24.0f, 0.46f },
+		{ TEXT("TravelerVisual.Electricity.Summon"), TEXT("Electricity_Summon"), 13, 1, 2, 1, FLinearColor(0.58f, 0.86f, 1.00f, 1.0f), 190.0f,  24.0f, 0.46f },
 		{ TEXT("TravelerVisual.Electricity.Bounce"), TEXT("Electricity_Bounce"), 14, 1, 2, 2, FLinearColor(0.68f, 0.92f, 1.00f, 1.0f), 120.0f,  46.0f, 0.72f },
 		{ TEXT("TravelerVisual.Electricity.DOT"),  TEXT("Electricity_DOT"),  15, 1, 2, 3, FLinearColor(0.70f, 0.90f, 1.00f, 1.0f), 116.0f,  54.0f, 0.70f },
 		{ TEXT("TravelerVisual.Nature.AOE"),       TEXT("Nature_AOE"),       16, 2, 3, 0, FLinearColor(0.42f, 0.95f, 0.34f, 0.78f), 132.0f,  82.0f, 0.30f },
-		{ TEXT("TravelerVisual.Nature.Pierce"),    TEXT("Nature_Pierce"),    17, 2, 3, 1, FLinearColor(0.58f, 1.00f, 0.42f, 0.78f), 164.0f,  32.0f, 0.22f },
+		{ TEXT("TravelerVisual.Nature.Summon"),    TEXT("Nature_Summon"),    17, 2, 3, 1, FLinearColor(0.58f, 1.00f, 0.42f, 0.78f), 164.0f,  32.0f, 0.22f },
 		{ TEXT("TravelerVisual.Nature.Bounce"),    TEXT("Nature_Bounce"),    18, 2, 3, 2, FLinearColor(0.32f, 0.86f, 0.26f, 0.76f), 110.0f,  70.0f, 0.48f },
 		{ TEXT("TravelerVisual.Nature.DOT"),       TEXT("Nature_DOT"),       19, 2, 3, 3, FLinearColor(0.44f, 0.92f, 0.30f, 0.72f), 112.0f,  76.0f, 0.64f }
 	};
@@ -392,7 +392,7 @@ namespace
 				float Mask = 0.0f;
 				switch (Profile.DeliveryIndex)
 				{
-				case 1: // Pierce: long, needle-like internal line.
+				case 1: // Summon: focused internal line for the helper body.
 					Mask = FMath::Clamp(1.0f - FMath::Abs(Py) * 3.2f, 0.0f, 1.0f)
 						* FMath::Clamp(1.15f - FMath::Abs(Px) * 0.82f, 0.0f, 1.0f);
 					break;
@@ -558,7 +558,7 @@ namespace
 
 		switch (Profile.DeliveryIndex)
 		{
-		case 1: // Pierce spear.
+		case 1: // Summon helper dash body.
 			OutPoints = {
 				FVector2f(-HalfLength, -HalfWidth * 0.45f),
 				FVector2f(HalfLength * 0.30f, -HalfWidth * (0.50f + Ripple * 0.12f)),

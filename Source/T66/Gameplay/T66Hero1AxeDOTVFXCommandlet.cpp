@@ -53,7 +53,7 @@ namespace
 	// the ring lies in the Y-Z plane and the moving DOT shot transports it head-on
 	// along +X. Major radius 66 + tube radius 12 -> ring extents ~78 along Y/Z; the
 	// thin tube depth along X is ~12. This matches the Hero1Axe_DOT_Base
-	// BaseVisualRadius=80 binding convention shared with the AOE radius=132, Pierce
+	// BaseVisualRadius=80 binding convention shared with the AOE radius=132, LineTarget
 	// half-length=150, and Bounce half-length=80 carriers.
 	const FBox T66Hero1AxeDOTLocalBounds(FVector(-16.0f, -84.0f, -84.0f), FVector(16.0f, 84.0f, 84.0f));
 
@@ -75,7 +75,7 @@ namespace
 
 	// DOT reuses the shared Hero 1 AOE slash-layer materials. The carrier geometry
 	// (compact aura ring) and the single hero->target moving-shot transport make DOT
-	// distinct from the AOE radial crescent, the Pierce forward vertical lane, and the
+	// distinct from the AOE radial crescent, the former lane carrier, and the
 	// Bounce horizontal slash; the red/blue/white material vocabulary is intentionally
 	// shared. Runtime overrides User.Color/Tint with the hero DOT shot color.
 	struct FT66DOTLayerConfig
@@ -359,7 +359,7 @@ namespace
 				FNiagaraTypeDefinition::GetBoolDef(),
 				FNiagaraBool(true));
 			// DOT is a moving projectile carrier, like Bounce and unlike the stationary
-			// AOE/Pierce impact reveals. Hold the shared slash material in its active
+			// AOE/lane impact reveals. Hold the shared slash material in its active
 			// mid-life band while the actor travels; forcing it to age 1.0 starts the
 			// carrier in its dissipated/end-mask state and leaves only tiny late fragments
 			// in capture.
@@ -460,7 +460,7 @@ namespace
 	// Builds a centered aura-ring (torus) mesh. The ring lies in the local Y-Z plane so
 	// the moving DOT shot transports it head-on along +X. Major angle sweeps the ring
 	// (UV U); minor angle sweeps the tube cross-section (UV V). The silhouette is a
-	// readable circular aura, deliberately NOT the AOE radial crescent, the Pierce
+	// readable circular aura, deliberately NOT the AOE radial crescent, the LineTarget
 	// forward vertical lane, nor the Bounce horizontal slash.
 	UStaticMesh* T66BuildDOTRingMesh(UMaterialInterface* RingMaterial)
 	{

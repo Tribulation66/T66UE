@@ -100,8 +100,8 @@ namespace
 	{
 		switch (Category)
 		{
-		case ET66AttackCategory::Pierce:
-			return { TEXT("pierces"), TEXT("pierce") };
+		case ET66AttackCategory::Summon:
+			return { TEXT("summons"), TEXT("summon"), TEXT("little guy") };
 		case ET66AttackCategory::Bounce:
 			return { TEXT("bounces"), TEXT("bounce") };
 		case ET66AttackCategory::AOE:

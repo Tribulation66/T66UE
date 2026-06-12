@@ -422,6 +422,9 @@ namespace
 					{
 						++EnabledRendererCount;
 					});
+				// FNiagaraEmitterInstance::IsReadyToRun is deprecated (5.4); report the
+				// versioned emitter data's readiness, matching the lab actor diagnostics.
+				const FVersionedNiagaraEmitterData* EmitterData = EmitterInstance.GetEmitterHandle().GetEmitterData();
 				Diagnostics.RuntimeTotalParticles += EmitterInstance.GetNumParticles();
 				Diagnostics.RuntimeEmitterSummaries.Add(FString::Printf(
 					TEXT("index=%d name=%s simTarget=%s particles=%d execState=%s ready=%s active=%s rendererCount=%d bounds=%s"),
@@ -430,7 +433,7 @@ namespace
 					*T66EnumToString(EmitterInstance.GetSimTarget()),
 					EmitterInstance.GetNumParticles(),
 					*T66EnumToString(EmitterInstance.GetExecutionState()),
-					EmitterInstance.IsReadyToRun() ? TEXT("true") : TEXT("false"),
+					(EmitterData && EmitterData->IsReadyToRun()) ? TEXT("true") : TEXT("false"),
 					EmitterInstance.IsActive() ? TEXT("true") : TEXT("false"),
 					EnabledRendererCount,
 					*EmitterInstance.GetBounds().ToString()));

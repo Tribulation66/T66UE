@@ -44,7 +44,7 @@ Each effect packet must choose exactly one primary anchor model for each primary
 | `CenterAnchored` | Visual is built around the authoritative damage center. | Filled AOE sphere, pulse, aura, ground field. |
 | `ImpactAnchored` | Visual is built around the impact point or contact point. | Impact burst, explosion, hit flare, idol impact trigger. |
 | `BandAnchored` | Visual is built around a point on or near a band/ring/annulus instead of the geometric center. | Crescent-band slash, hollow AOE, ring-edge burst. |
-| `PathAnchored` | Visual is built along a start/end path, beam, ribbon, hop, or chain. | Pierce beam, bounce hop, projectile trail, slash sweep path. |
+| `PathAnchored` | Visual is built along a start/end path, beam, ribbon, hop, or chain. | retired lane beam, bounce hop, projectile trail, slash sweep path. |
 
 If a secondary carrier uses a different anchor model, record it separately in the packet. Do not silently mix anchor models inside one effect.
 

@@ -99,7 +99,7 @@
 - `Heroes.csv` also authors:
   - the other foundational primaries
   - fixed per-level gains for all 8 primaries; the `Lvl*Min` / `Lvl*Max` schema is retained but live rows set Min and Max equal
-  - category-specific base stats for `Pierce`, `Bounce`, `AOE`, and `DOT`
+  - category-specific base stats for `Summon`, `Bounce`, `AOE`, and `DOT`
   - secondary baselines such as `BaseHeadshotChance`, `BaseCritChance`, `BaseAttackRange`, `BaseTaunt`, `BaseReflectDmg`, `BaseCrushChance`, `BaseInvisChance`, `BaseCounterAttack`, `BaseAssassinateChance`, `BaseCheatChance`, and `BaseStealChance`
 - The selected hero row is loaded through `UT66GameInstance::GetHeroStatTuning()` and `UT66GameInstance::GetHeroData()`.
 
@@ -236,21 +236,21 @@
 
 - `AoeDamage = BaseAoeDmg * M * HeroDamageMultiplier`
 - `BounceDamage = BaseBounceDmg * M * HeroDamageMultiplier`
-- `PierceDamage = BasePierceDmg * M * HeroDamageMultiplier`
+- `SummonDamage = BaseSummonDmg * M * HeroDamageMultiplier`
 - `DotDamage = BaseDotDmg * M * HeroDamageMultiplier`
 
 ### 7.3 Attack Speed family
 
 - `AoeSpeed = BaseAoeAtkSpd * M * HeroAttackSpeedMultiplier`
 - `BounceSpeed = BaseBounceAtkSpd * M * HeroAttackSpeedMultiplier`
-- `PierceSpeed = BasePierceAtkSpd * M * HeroAttackSpeedMultiplier`
+- `SummonSpeed = BaseSummonAtkSpd * M * HeroAttackSpeedMultiplier`
 - `DotSpeed = BaseDotAtkSpd * M * HeroAttackSpeedMultiplier`
 
 ### 7.4 Attack Scale family
 
 - `AoeScale = BaseAoeAtkScale * M * HeroScaleMultiplier`
 - `BounceScale = BaseBounceAtkScale * M * HeroScaleMultiplier`
-- `PierceScale = BasePierceAtkScale * M * HeroScaleMultiplier`
+- `SummonScale = BaseSummonAtkScale * M * HeroScaleMultiplier`
 - `DotScale = BaseDotAtkScale * M * HeroScaleMultiplier`
 
 ### 7.5 Accuracy family
@@ -355,9 +355,9 @@
 
 ### 10.1 Live item-facing secondaries
 
-- Damage: `AoeDamage`, `BounceDamage`, `PierceDamage`, `DotDamage`
-- Attack Speed: `AoeSpeed`, `BounceSpeed`, `PierceSpeed`, `DotSpeed`
-- Attack Scale: `AoeScale`, `BounceScale`, `PierceScale`, `DotScale`
+- Damage: `AoeDamage`, `BounceDamage`, `SummonDamage`, `DotDamage`
+- Attack Speed: `AoeSpeed`, `BounceSpeed`, `SummonSpeed`, `DotSpeed`
+- Attack Scale: `AoeScale`, `BounceScale`, `SummonScale`, `DotScale`
 - Accuracy: `CritChance`, `HeadshotChance`, `AttackRange`, `Execute`
 - Armor: `Taunt`, `DamageReduction`, `ReflectDamage`, `Crush`
 - Evasion: `EvasionChance`, `CounterAttack`, `Invisibility`, `Assassinate`

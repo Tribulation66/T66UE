@@ -1,6 +1,6 @@
 # Hero 1 Axe DOT Mechanism Packet
 
-**Status:** Active production binding (runtime wired). The Hero 1 DOT attack spawns a single visible hero->target shot — now carried by the active `Hero1Axe_DOT_Base` production aura-ring Niagara silhouette transported by the moving visual projectile — plus three target-following sphere applicator markers, and applies the existing single authoritative DOT payload on impact. The DOT weapon production row is active like AOE/Pierce/Bounce. This packet does NOT approve final visual fidelity, an imagegen visual target, or Pablo visual sign-off; the sphere markers remain intentional placeholders and the aura-ring carrier's final visual polish is still deferred to a later phase.
+**Status:** Active production binding (runtime wired). The Hero 1 DOT attack spawns a single visible hero->target shot — now carried by the active `Hero1Axe_DOT_Base` production aura-ring Niagara silhouette transported by the moving visual projectile — plus three target-following sphere applicator markers, and applies the existing single authoritative DOT payload on impact. The DOT weapon production row is active like AOE/retired-lane/Bounce. This packet does NOT approve final visual fidelity, an imagegen visual target, or Pablo visual sign-off; the sphere markers remain intentional placeholders and the aura-ring carrier's final visual polish is still deferred to a later phase.
 
 This validator proves Combat VFX binding structure, required assets, source guards, and declared data contracts. It does not prove visual fidelity, temporal mechanism quality, final player-facing readability, or Pablo visual approval.
 
@@ -27,7 +27,7 @@ Future Hero 1 DOT should read as an axe aura that strikes a target and remains a
 
 - Primary archetype: moving aura-ring carrier (`SM_Hero1AxeDOT_AuraRing` + shared Hero 1 slash materials, authored in the `NS_Hero1AxeDOT_MeshSlash` Niagara mesh renderer), transported by the single hero->target DOT shot.
 - Secondary archetypes (final art, deferred): `PersistentAura`, `SupportImpact`, optional `RibbonTrail`.
-- Binding status: active production row `Hero1Axe_DOT_Base` → `Hero_1_black_dot`; `bSuppressTemporaryProjectile=True` like AOE/Pierce/Bounce. The sphere applicator markers remain placeholders, and the aura-ring carrier's final visual polish / Pablo sign-off is still deferred to a later phase.
+- Binding status: active production row `Hero1Axe_DOT_Base` → `Hero_1_black_dot`; `bSuppressTemporaryProjectile=True` like AOE/retired-lane/Bounce. The sphere applicator markers remain placeholders, and the aura-ring carrier's final visual polish / Pablo sign-off is still deferred to a later phase.
 - Active production row: yes (`Hero1Axe_DOT_Base`)
 
 ## Proof Route

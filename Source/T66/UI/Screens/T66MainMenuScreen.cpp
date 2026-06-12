@@ -1055,7 +1055,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			.Padding(7.f, 0.f, 0.f, 0.f)
 			.VAlign(VAlign_Center)
 			[
-				FT66FlatStyle::MakeFlatLabel(LabelText, ET66FlatLabelRole::SubHeader, ETextJustify::Left, LabelTag)
+				FT66FlatStyle::AttachMetadata(
+					SNew(STextBlock)
+					.Text(LabelText)
+					.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(20, true))
+					.ColorAndOpacity(bOnlineGroup ? FLinearColor(0.97f, 0.80f, 0.30f, 1.f) : FLinearColor(0.78f, 0.74f, 0.68f, 1.f)),
+					LabelTag,
+					TEXT("Label.SubHeader"),
+					ET66FlatState::Default)
 			]
 			+ SHorizontalBox::Slot()
 			.AutoWidth()
@@ -1369,13 +1376,10 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 		for (int32 SlotIndex = 0; SlotIndex < 4; ++SlotIndex)
 		{
 			const FString TagName = FString::Printf(TEXT("MainMenu.Left.PartySlot%02d"), SlotIndex + 1);
+			// Reference shows empty wells (no "+" affordance) — Law 6 element parity.
 			const TSharedRef<SWidget> SlotContent = SlotIndex == 0 && LocalProfileAvatarBrush.IsValid()
 				? StaticCastSharedRef<SWidget>(SNew(SImage).Image(LocalProfileAvatarBrush.Get()).ColorAndOpacity(FLinearColor::White))
-				: StaticCastSharedRef<SWidget>(SNew(STextBlock)
-					.Text(FText::FromString(TEXT("+")))
-					.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(24, true))
-					.ColorAndOpacity(FT66FriendslopStyle::TextColorForState(ET66FlatState::Default))
-					.Justification(ETextJustify::Center));
+				: StaticCastSharedRef<SWidget>(SNew(SBox));
 			Row->AddSlot()
 				.AutoWidth()
 				.Padding(SlotIndex == 0 ? FMargin(0.f) : FMargin(PartySlotGap, 0.f, 0.f, 0.f))
@@ -1745,14 +1749,14 @@ TSharedRef<SWidget> UT66MainMenuScreen::BuildFlatMainMenuUI()
 			Tag(TEXT("MainMenu.BackgroundRegion")),
 			TEXT("BackgroundRegion"),
 			ET66FlatState::Default));
-	AddCanvasSlot(12.f, 130.f, LeftPanelWidth, 915.f, MakeLeftPanel());
-	AddCanvasSlot(610.f, 115.f, 700.f, 260.f, MakeTitleRegion());
+	AddCanvasSlot(12.f, 172.f, LeftPanelWidth, 890.f, MakeLeftPanel());
+	AddCanvasSlot(610.f, 166.f, 700.f, 260.f, MakeTitleRegion());
 	AddCanvasSlot(620.f, 620.f, 680.f, 372.f, MakeCtaStack());
 	constexpr float RightLeaderboardPanelWidth = ST66FlatLeaderboardPanel::GetPanelWidth();
 	constexpr float RightLeaderboardPanelHeight = ST66FlatLeaderboardPanel::GetPanelHeight();
 	AddCanvasSlot(
 		1920.f - RightLeaderboardPanelWidth - 12.f,
-		130.f,
+		172.f,
 		RightLeaderboardPanelWidth,
 		RightLeaderboardPanelHeight,
 		SAssignNew(FlatLeaderboardPanel, ST66FlatLeaderboardPanel)

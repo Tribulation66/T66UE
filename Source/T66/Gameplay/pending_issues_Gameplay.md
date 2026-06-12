@@ -1,11 +1,19 @@
 # Pending Issues - Gameplay
 
-## Staged Readiness Lifecycle Stress Expects Mob Loot While Mob Loot Is Shelved
+## Moving Lift Platforms V1 Edge Behaviors
 
-- Severity tag: [Major]
+- Severity tag: [Minor]
+- What's wrong: The 2026-06-10 Phase 2 lift pass (`AT66TowerLiftPlatform`, design contract `Gameplay/World/T66_MAP_DESIGN_REFERENCE.md` section 1.4) ships three deliberate v1 edge behaviors: (1) a descending slab over a hero resolves by depenetration shove (the 30uu bottom rest height prevents pinning, but the shove is unpolished); (2) lift cycle phase restarts on save/load floor re-entry (same transient class as the per-floor lava clocks); (3) enemies neither ride nor avoid lifts (no nav impact, hero-only feature, same scope class as enemies ignoring lava).
+- Why it's out of scope now: The pass scoped to the moving-collision/riding contract, seeded placement, and the no-softlock audit extension; crush polish, persistence, and enemy interaction are separate behavior passes.
+- What fixing it would entail: (1) add a pre-descent hero-overlap check that pauses the descent or applies a gentle outward launch; (2) persist per-lift cycle time in floor state alongside a future lava-clock persistence fix; (3) decide the enemy rule (avoidance vs riding) together with the enemy lava rule.
+
+## Resolved: Staged Readiness Lifecycle Stress Expects Mob Loot While Mob Loot Is Shelved
+
+- Severity tag: [Resolved - Major]
 - What's wrong: The 2026-06-08 staged readiness run at `Saved/StagedBuildReadiness/20260608_122548` passed staging, frontend smoke, durable-save smoke, and repeated tower room proof markers, but the lifecycle gate reported `BUILD_CONFIG_UNSUPPORTED`/FAIL because `stress_population.mob_loot_spawned` was `0` instead of `6`. The child manifest shows `T66.WorldRuntime.ProofTravel` completed all 6 travels and spawned mobs/projectiles/hazards/travelers/pixel VFX, while the current dirty `UT66MobLootSubsystem` has `T66.MobLoot.Enabled` defaulted to `0` and is additionally gated by `FT66ShelvedFeatureGate::IsMobLootEnabled()`, so the lifecycle stress harness cannot satisfy its mob-loot expectation.
 - Why it's out of scope now: The current pass is scoped to tower floor 2/3 room count, tile size, room sizes, room traps, room content, and per-floor vendor rules. Unshelving or changing the mob-loot lifecycle stress contract would touch separate loot-system/product-readiness policy.
 - What fixing it would entail: Decide whether mob loot should be unshelved for Development readiness, whether `RunLifecycleTransitionSmokeGate.ps1` should skip `mob_loot_spawned` while the feature is shelved, or whether `T66PopulateWorldRuntimeStress` should use a non-shelved resource for that assertion; then rerun `Scripts/RunStagedBuildReadinessGate.ps1` until the full suite passes.
+- Resolution: Resolved 2026-06-09: `T66PopulateWorldRuntimeStress` now reports `mob_loot_enabled` (`UT66MobLootSubsystem::IsEnabled`) in the manifest and `RunLifecycleTransitionSmokeGate.ps1` expects `StressCount` only when enabled, `0` while shelved. Gate rerun pending the next staged readiness pass.
 
 ## TestRoom Default Hero 2 Active-Ragdoll Init Lacks Physics Asset
 
@@ -42,33 +50,37 @@
 - Resolution: The `testragdoll`/`testragdollproof` automation mode now spawns an inside-the-room proof camera below the TestRoom ceiling, hides the gameplay HUD, and frames the wipeout-arm lane from the live pawn location. The 2026-06-06 proof capture at `Saved/AgentReviews/FriendSlopUnrealRagdollImport/testragdoll_friendslop_passive_final.mp4` visibly shows the FriendSlop skeletal Chad before impact, the yellow wipeout arm contact, the ragdoll pose on the floor, and later recovery/control restoration.
 - Follow-up: None for capture framing. Future PAC proof still needs its own accepted capture after PAC tuning is stable.
 
-## Content Corrections Smoke Safe Zone Bubble Visual Check Fails
+## Resolved: Content Corrections Smoke Safe Zone Bubble Visual Check Fails
 
-- Severity tag: [Major]
+- Severity tag: [Resolved - Major]
 - What's wrong: A staged standalone `-T66GameplayAutoCapture=contentcorrectionssmoke` run on 2026-06-05 exited after logging `[ContentCorrectionsSmokeSummary] Terminal=1 Pass=0 Failures=1 FailedChecks=SafeZoneVisualBubblePresent`. The specific failing check was `SafeZoneVisualBubblePresent` with `Components=0 Visuals=0`; the rest of the content-corrections smoke checks logged PASS. The run also emitted the existing deliberate missing-visual fallback errors for `Smoke_MissingVisualBoss` / `Boss`, but the summary failure was only the Safe Zone bubble check.
 - Why it's out of scope now: The current pass is scoped to FriendSlop raw Pixal3D model imports, texture preservation, and runtime visual references. Fixing Safe Zone bubble authoring or smoke expectations would touch unrelated gameplay visual code.
 - What fixing it would entail: Inspect the Safe Zone actor/component setup used by `RunContentCorrectionsSmoke`, decide whether the bubble component should be spawned or the smoke expectation updated, then rerun the staged content-corrections smoke until `SafeZoneVisualBubblePresent` passes.
+- Resolution: Resolved 2026-06-09: root cause was `/Engine/BasicShapes` never being cooked (`FT66VisualUtil::GetBasicShapeSphere` loads it by string at runtime), so `SafeZoneVisualComponent` had a null mesh in staged builds. Added `+DirectoriesToAlwaysCook=(Path="/Engine/BasicShapes")` to `DefaultGame.ini`; also made the `MobLootHasVisibleGroundMarker` check shelve-aware (passes-with-note while mob loot is shelved). Staged content-corrections smoke rerun pending.
 
-## Vendor Boss Has No CharacterVisuals Row
+## Resolved: Vendor Boss Has No CharacterVisuals Row
 
-- Severity tag: [Minor]
+- Severity tag: [Resolved - Minor]
 - What's wrong: The staged vendor/shop corrections proof spawned and defeated `AT66VendorBoss`, but the runtime log emitted `LogT66CharacterVisuals: Error: [MESH] ResolveVisual: NO ROW for VisualID='VendorBoss' in DT_CharacterVisuals`. The proof still passed because boss identity, defeat, token drop, and vendor-token stack math were valid, but the boss visual lookup is unresolved.
 - Why it's out of scope now: The approved pass explicitly leaves CharacterVisuals consolidation/data alone and only changes vendor-token, steal-trigger, Daily Descent naming, and retired side-mode teardown surfaces.
 - What fixing it would entail: Decide whether `VendorBoss` should receive a dedicated `CharacterVisuals.csv` row or move into a future per-entity visual table, author/import the visual row through the owning data-table pipeline, then rerun a staged vendor-boss smoke to confirm the visual error is gone.
+- Resolution: Resolved 2026-06-09: the `VendorBoss` row already existed in `CharacterVisuals.csv` (line ~40, Patriot skeletal mesh) — the `DT_CharacterVisuals` uasset was stale. Reimported via `SetupCharacterVisualsDataTable.py` (editor-closed commandlet, log: script executed successfully, DT re-saved 21:18). Staged vendor-boss smoke re-check pending the next staged build.
 
-## Hero 1 Axe AOE VFX Lab Uses Deprecated Niagara Emitter Readiness API
+## Resolved: Hero 1 Axe AOE VFX Lab Uses Deprecated Niagara Emitter Readiness API
 
-- Severity tag: [Minor]
+- Severity tag: [Resolved - Minor]
 - What's wrong: Focused UI build and standalone stage for the LootWheel cleanup emitted `C4996` from `Source/T66/Gameplay/T66Hero1AxeAOEVFXLabActor.cpp` because `FNiagaraEmitterInstance::IsReadyToRun` is deprecated.
 - Why it's out of scope now: The current pass only removes LootWheel UI marks and verifies the staged LootWheel capture. Updating Niagara lab readiness handling would touch unrelated Gameplay/VFX code.
 - What fixing it would entail: Audit the lab actor's emitter readiness check against the UE 5.7 Niagara execution-path API, replace the deprecated call, then run a focused Gameplay/VFX compile and any existing Hero 1 axe lab capture checks.
+- Resolution: Resolved 2026-06-09 (pending-cleanup program): replaced the deprecated `FNiagaraEmitterInstance::IsReadyToRun` call at `T66Hero1AxeAOEVFXLabActor.cpp:716` (and the same call in `T66Editor/T66NiagaraIsolationCaptureCommandlet.cpp:433`) with the versioned emitter data's `IsReadyToRun`. Verified: `T66Editor` Development compile clean with zero `C4996`.
 
-## TrySpawnBoundWeaponBaseSlashVFX ImpactAnchored Bounce Branch Is Now Unreached
+## Resolved: TrySpawnBoundWeaponBaseSlashVFX ImpactAnchored Bounce Branch Is Now Unreached
 
-- Severity tag: [Minor]
-- What's wrong: `Source/T66/Gameplay/T66CombatComponent.cpp` `TrySpawnBoundWeaponBaseSlashVFX` still contains the `bImpactAnchoredCarrier` (`AttackCategory == ET66AttackCategory::Bounce`) branch that placed a static slash at each chain impact point. The Hero 1 Bounce projectile-travel fix replaced Bounce presentation with `StageBounceProjectileChain`/`SpawnBounceLinkProjectile`, so `PerformBounce` no longer calls `TrySpawnBoundWeaponBaseSlashVFX`. Pierce and Slash are the only remaining callers, so the ImpactAnchored Bounce branch is currently dead.
-- Why it's out of scope now: The approved task is the Bounce moving-projectile behavior/proof; removing the branch would touch interdependent locals shared with the Pierce PathAnchored and radial AOE/Slash carriers in the same function and broaden the diff beyond the corrective fix.
+- Severity tag: [Resolved - Minor]
+- What's wrong: `Source/T66/Gameplay/T66CombatComponent.cpp` `TrySpawnBoundWeaponBaseSlashVFX` still contains the `bImpactAnchoredCarrier` (`AttackCategory == ET66AttackCategory::Bounce`) branch that placed a static slash at each chain impact point. The Hero 1 Bounce projectile-travel fix replaced Bounce presentation with `StageBounceProjectileChain`/`SpawnBounceLinkProjectile`, so `PerformBounce` no longer calls `TrySpawnBoundWeaponBaseSlashVFX`. LineTarget and Slash are the only remaining callers, so the ImpactAnchored Bounce branch is currently dead.
+- Why it's out of scope now: The approved task is the Bounce moving-projectile behavior/proof; removing the branch would touch interdependent locals shared with the former lane PathAnchored and radial AOE/Slash carriers in the same function and broaden the diff beyond the corrective fix.
 - What fixing it would entail: Decide whether Bounce will ever reuse a bound Niagara impact slash as a static accent. The Hero1BounceProjectileTravelFix revision now renders the authored `NS_Hero1AxeBounce_MeshSlash` as the *moving* carrier silhouette (resolved via `ResolveCombatVFXBinding` in `PerformBounce`, attached through `AT66HeroProjectile::SetPrimaryCarrierNiagara`), so the `bImpactAnchoredCarrier` static-slash branch is still unreached on the Bounce path. If a static impact accent is never wanted, remove the `bImpactAnchoredCarrier` branch and its references (`SpawnLocation`, `VisualScaleVec`, `VisualAnchorModel`), then run a focused compile and the combat VFX binding validator. The `Hero1Axe_Bounce_Base` binding row remains authored.
+- Resolution: Resolved 2026-06-09: removed the unreached `bImpactAnchoredCarrier` branch and simplified the `SpawnLocation` select (only the LineTarget flow ~line 2947 and Slash flow ~line 3234 call this function; `PerformBounce` drives link visuals through `SpawnBounceLinkProjectile`). Verified by focused compile.
 
 ## Legacy MainMapTerrain Dirt Grass And Rock Names Are Dormant But Confusing
 
@@ -183,12 +195,13 @@
 - Why it's out of scope now: The roster explicitly marks this as intentional and says not to force a ranged substitution.
 - What fixing it would entail: Verify Hell-stage spawn variety after the archetype-aware director refactor and add explicit no-ranged handling if design needs it.
 
-## Player Experience Tuning Can Be Requested Before DataTable Is Available
+## Resolved: Player Experience Tuning Can Be Requested Before DataTable Is Available
 
-- Severity tag: [Minor]
+- Severity tag: [Resolved - Minor]
 - What's wrong: The Easy mob VAT staged gameplay smoke logged `PlayerExperience tuning requested by GetDifficultyStartStage before DataTable '/Game/Data/DT_PlayerExperience.DT_PlayerExperience' was available; returning empty tuning.`
 - Why it's out of scope now: The VAT pass only changed enemy visual animation data and did not change the player-experience subsystem initialization order.
 - What fixing it would entail: Audit the player-experience subsystem load sequence, make the tuning table available before gameplay difficulty startup queries, and add a staged smoke assertion that this warning no longer appears.
+- Resolution: Resolved 2026-06-09: replaced the async preload with a synchronous `TryLoad` in `UT66PlayerExperienceSubSystem::Initialize` (five-row table; the async load raced gameplay difficulty queries). Removed the now-dead async handler/member. Staged smoke assertion that the warning no longer appears rides the next staged run.
 
 ## Inter-Walkable-Box Floor Seams Remain Possible
 
@@ -224,10 +237,25 @@
 - Why it's out of scope now: The current pass is scoped to data/schema/loader cleanup and avoids broad class/file renames that would touch generated headers, includes, actor references, and Blueprint bindings.
 - What fixing it would entail: Rename the C++ class/files to a neutral vehicle name, update includes and player-controller interaction variables, add Unreal redirects if required, compile, and verify existing spawned/interactable vehicle references still resolve.
 
-## TutorialGate Class Remains After Tutorial Exit Uses StageGate
+## Enemies Ignore The Rising Lava Hazard
+
+- Severity tag: [Major]
+- What's wrong: The 2026-06-10 bounce-course pass added the rising-lava mode to `Source/T66/Gameplay/T66MiasmaManager.cpp`, but lava damage is hero-only (matching the legacy miasma contract). Grounded enemies path through fully flooded floors unharmed and visually wade through the lava sheet, which undercuts the hazard fantasy and lets melee pressure continue from inside lava.
+- Why it's out of scope now: The bounce-course pass scoped hazard damage to the existing hero-only miasma damage contract; enemy-vs-hazard rules touch enemy balance, the lightweight mob manager, and AI routing ownership.
+- What fixing it would entail: Decide the enemy rule (damage, slow, despawn, or platform-aware routing), implement it for both rich enemies and `UT66MobManagerSubsystem` lightweight mobs, and rerun staged tower gameplay smoke to confirm enemy pressure on flooded floors stays fair.
+
+## Bounce Ramp Visuals Are Plain Rotated Cubes
 
 - Severity tag: [Minor]
+- What's wrong: `T66SpawnBounceCourseForFloor` in `Source/T66/Gameplay/T66TowerMapTerrain.cpp` renders bounce platforms with baffle-tube decks and inflated side skirts, but ramps use a rotated themed cube slab because the baffle tube placement helpers are axis-aligned.
+- Why it's out of scope now: The bounce-course pass prioritized the traversal guarantee and platform/arch visuals; sloped baffle layout needs its own transform math and seam handling.
+- What fixing it would entail: Add a sloped baffle-tube layout (tubes running across the ramp, stepped along the slope), apply it in the ramp branch with the cube slab as fallback, and verify the read in a staged capture.
+
+## Resolved: TutorialGate Class Remains After Tutorial Exit Uses StageGate
+
+- Severity tag: [Resolved - Minor]
 - What's wrong: `Source/T66/Gameplay/T66TutorialGate.*` and the `AT66TutorialGate` interaction path in `Source/T66/Gameplay/T66PlayerController_Combat.cpp` still exist, but `Source/T66/Gameplay/T66TutorialManager.cpp` now spawns `AT66StageGate` for the tutorial exit.
 - Why it's out of scope now: This pass was intentionally constrained to swapping the tutorial end to the regular Stage Gate without broad class/file deletion or reference cleanup.
 - What fixing it would entail: Prove there are no Blueprint, asset, map, or automation references to `AT66TutorialGate`, then remove the class, includes, player-controller branch, and any stale generated/API references with a focused compile and content reference check.
+- Resolution: Resolved 2026-06-09: proven zero Blueprint/map/asset references (full Content binary scan) and zero spawn sites; removed `T66TutorialGate.h`/`.cpp`, the 7 player-controller includes, and the dead closest-gate interact branch in `T66PlayerController_Combat.cpp`. Verified by full `T66Editor` compile. (TestRoom's `TutorialGate_Pixal3D` display-mesh row and TutorialManager's tag-name strings are unrelated to the class and remain.)
 

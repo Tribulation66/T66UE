@@ -3,7 +3,6 @@
 #include "Gameplay/T66PetCaptureInteractable.h"
 
 #include "Core/T66AchievementsSubsystem.h"
-#include "Core/T66BuffSubsystem.h"
 #include "Core/T66GameInstance.h"
 #include "Core/T66ShelvedFeatureGate.h"
 #include "Gameplay/T66VisualUtil.h"
@@ -66,15 +65,6 @@ bool AT66PetCaptureInteractable::Interact(APlayerController* PC)
 	}
 
 	UGameInstance* GIBase = GetGameInstance();
-	UT66BuffSubsystem* Buffs = GIBase ? GIBase->GetSubsystem<UT66BuffSubsystem>() : nullptr;
-	if (!Buffs || !Buffs->HasSolomonsRing())
-	{
-		UE_LOG(LogTemp, Log, TEXT("[Pets] Capture blocked for %s from boss %s because Solomon's Ring is not owned."),
-			*PetID.ToString(),
-			*SourceBossID.ToString());
-		return false;
-	}
-
 	UT66AchievementsSubsystem* Achievements = GIBase ? GIBase->GetSubsystem<UT66AchievementsSubsystem>() : nullptr;
 	if (!Achievements)
 	{
@@ -107,15 +97,6 @@ FText AT66PetCaptureInteractable::BuildInteractionPromptTargetName() const
 	}
 
 	const FText PetName = PetData.DisplayName.IsEmpty() ? FText::FromName(PetID) : PetData.DisplayName;
-	UGameInstance* GIBase = GetGameInstance();
-	const UT66BuffSubsystem* Buffs = GIBase ? GIBase->GetSubsystem<UT66BuffSubsystem>() : nullptr;
-	if (!Buffs || !Buffs->HasSolomonsRing())
-	{
-		return FText::Format(
-			NSLOCTEXT("T66.Pets", "CapturePetLockedPromptTarget", "Solomon's Ring required: {0}"),
-			PetName);
-	}
-
 	return FText::Format(
 		NSLOCTEXT("T66.Pets", "CapturePetPromptTarget", "Capture {0}"),
 		PetName);

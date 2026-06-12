@@ -61,7 +61,7 @@ def find_source_zip():
     for candidate in candidates:
         if candidate.exists():
             return candidate
-    log_error("Could not find Helton Yan's Pixel Combat - Single Files.zip in Downloads or project SourceAssets/Audio.")
+    log("Source zip not found; falling back to previously extracted WAVs in SourceAssets/Audio/HeltonPixelCombat/Selected.")
     return None
 
 
@@ -159,18 +159,25 @@ def write_normalized_wav(wav_bytes, target_file):
 
 class AudioAssetSelector:
     def __init__(self, zip_path, source_dir):
-        self.zip_path = Path(zip_path)
+        # zip_path may be None: then patterns select from the WAVs that an earlier run
+        # already extracted/normalized into source_dir (zipless reload mode).
+        self.zip_path = Path(zip_path) if zip_path else None
         self.source_dir = Path(source_dir)
         self.source_dir.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(self.zip_path) as archive:
-            self.wav_names = sorted(info.filename for info in archive.infolist() if info.filename.lower().endswith(".wav"))
+        if self.zip_path:
+            with zipfile.ZipFile(self.zip_path) as archive:
+                self.wav_names = sorted(info.filename for info in archive.infolist() if info.filename.lower().endswith(".wav"))
+        else:
+            self.wav_names = sorted(path.name for path in self.source_dir.glob("*.wav"))
+            if not self.wav_names:
+                log_error("No source zip and no extracted WAVs in SourceAssets/Audio/HeltonPixelCombat/Selected.")
         self.selected = {}
 
     def find(self, pattern, count):
         tokens = [token.lower() for token in pattern]
         matches = [
             name for name in self.wav_names
-            if all(token in Path(name).name.lower() for token in tokens)
+            if all(token in Path(name).name.lower().replace("_", " ") for token in tokens)
         ]
         if len(matches) < count:
             log_error(f"Audio pattern {pattern} only matched {len(matches)} files, needed {count}.")
@@ -188,6 +195,18 @@ class AudioAssetSelector:
     def extract(self, entry_name):
         if entry_name in self.selected:
             return self.selected[entry_name]["asset_path"]
+
+        if self.zip_path is None:
+            # Zipless mode: entry_name is an already-normalized WAV in source_dir.
+            asset_name = Path(entry_name).stem
+            target_file = self.source_dir / entry_name
+            asset_path = f"{DESTINATION_PATH}/{asset_name}.{asset_name}"
+            self.selected[entry_name] = {
+                "source_file": str(target_file),
+                "asset_name": asset_name,
+                "asset_path": asset_path,
+            }
+            return asset_path
 
         asset_name = sanitize_asset_name(entry_name)
         target_file = self.source_dir / f"{asset_name}.wav"
@@ -239,7 +258,6 @@ def build_event_specs():
         event("UI.Toggle", "Toggle or tab selection.", ["zap select"], **ui),
 
         event("Hero.Attack.Generic", "Fallback hero attack.", ["laser shot"], VolumeMultiplier=0.86, PitchRandomRange=0.04),
-        event("Hero.Attack.Pierce", "Fallback piercing hero attack.", ["pew laser"], VolumeMultiplier=0.88, PitchRandomRange=0.04),
         event("Hero.Attack.AOE", "Fallback area hero attack.", ["mana bomb"], VolumeMultiplier=0.92, PitchRandomRange=0.04),
         event("Hero.Attack.Bounce", "Fallback bounce hero attack.", ["ricochet 1"], VolumeMultiplier=0.88, PitchRandomRange=0.04),
         event("Hero.Attack.DOT", "Fallback damage-over-time hero attack.", ["enemy debuff"], VolumeMultiplier=0.82, PitchRandomRange=0.04),
@@ -263,7 +281,7 @@ def build_event_specs():
         event("Combat.Boss.Death", "Boss death burst.", ["mecha core damage"], VolumeMultiplier=1.05, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.25),
         event("Combat.Ultimate.Cast", "Hero ultimate/large skill cast.", ["strong energy", "high powering up", "skill ready"], per_pattern=1, VolumeMultiplier=0.92, PitchRandomRange=0.035, MinReplayIntervalSeconds=0.08),
 
-        event("Combat.Hit.Enemy.Melee", "Melee enemy takes non-lethal damage.", ["gore pierce"], per_pattern=1, VolumeMultiplier=0.78, PitchRandomRange=0.045, MinReplayIntervalSeconds=0.045),
+        event("Combat.Hit.Enemy.Melee", "Melee enemy takes non-lethal damage.", ["hit noise"], per_pattern=1, VolumeMultiplier=0.78, PitchRandomRange=0.045, MinReplayIntervalSeconds=0.045),
         event("Combat.Hit.Enemy.Flying", "Flying enemy takes non-lethal damage.", ["fleeting hit"], per_pattern=1, VolumeMultiplier=0.72, PitchRandomRange=0.05, MinReplayIntervalSeconds=0.045),
         event("Combat.Hit.Enemy.Ranged", "Ranged enemy takes non-lethal damage.", ["laser impact"], per_pattern=1, VolumeMultiplier=0.76, PitchRandomRange=0.045, MinReplayIntervalSeconds=0.045),
         event("Combat.Hit.Enemy.Rush", "Rush enemy takes non-lethal damage.", ["hit noise"], per_pattern=1, VolumeMultiplier=0.78, PitchRandomRange=0.05, MinReplayIntervalSeconds=0.045),
@@ -288,7 +306,7 @@ def build_event_specs():
         event("Hero.Ultimate.TidalWave", "Tidal Wave ultimate cast.", ["water bolt"], VolumeMultiplier=0.96, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.10),
         event("Hero.Ultimate.GoldRush", "Gold Rush ultimate cast.", ["coin toss", "critical strike"], per_pattern=1, VolumeMultiplier=0.95, PitchRandomRange=0.035, MinReplayIntervalSeconds=0.10),
         event("Hero.Ultimate.MiasmaBomb", "Miasma Bomb ultimate cast.", ["enemy debuff", "mana bomb"], per_pattern=1, VolumeMultiplier=0.96, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.10),
-        event("Hero.Ultimate.RabidFrenzy", "Rabid Frenzy ultimate cast.", ["pyro burst", "gore pierce"], per_pattern=1, VolumeMultiplier=0.98, PitchRandomRange=0.035, MinReplayIntervalSeconds=0.10),
+        event("Hero.Ultimate.RabidFrenzy", "Rabid Frenzy ultimate cast.", ["pyro burst", "hit noise"], per_pattern=1, VolumeMultiplier=0.98, PitchRandomRange=0.035, MinReplayIntervalSeconds=0.10),
         event("Hero.Ultimate.Blizzard", "Blizzard ultimate cast.", ["water bolt", "noise decay"], per_pattern=1, VolumeMultiplier=0.94, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.10),
         event("Hero.Ultimate.ScopedSniper", "Scoped Sniper ultimate ready.", ["skill ready", "pew laser"], per_pattern=1, VolumeMultiplier=0.92, PitchRandomRange=0.025, MinReplayIntervalSeconds=0.10),
         event("Hero.Ultimate.ScopedSniper.Fire", "Scoped Sniper shot fire.", ["pew laser", "critical strike"], per_pattern=1, VolumeMultiplier=0.94, PitchRandomRange=0.025, MinReplayIntervalSeconds=0.08),
@@ -310,7 +328,7 @@ def build_event_specs():
 
         event("Trap.Arrow.Windup", "Wall arrow trap windup.", ["wind sweep swish"], **trap),
         event("Trap.Arrow.Fire", "Wall arrow trap projectile release.", ["simple whoosh"], **trap),
-        event("Trap.Arrow.Impact", "Trap arrow projectile hit.", ["gore pierce"], **trap),
+        event("Trap.Arrow.Impact", "Trap arrow projectile hit.", ["hit noise"], **trap),
         event("Trap.Flame.Warning", "Floor flame warning.", ["flare ignite"], **trap),
         event("Trap.Flame.Activate", "Floor flame burst.", ["fire hit"], **trap),
         event("Trap.Spike.Warning", "Spike patch warning.", ["noise decay"], **trap),
@@ -344,6 +362,12 @@ def build_event_specs():
         event("Casino.Bet", "Casino wager locked in.", ["coin whoosh"], **two_d),
         event("Casino.Win", "Casino round won.", ["effect success", "star sparkle"], per_pattern=2, bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.95, PitchRandomRange=0.02, MinReplayIntervalSeconds=0.10),
         event("Casino.Lose", "Casino round lost.", ["failed buff"], bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.9, PitchRandomRange=0.02, MinReplayIntervalSeconds=0.10),
+        event("Casino.CoinToss", "Gambler coin flip launch.", ["coin toss"], bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.9, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.05),
+        event("Casino.CoinLand", "Gambler coin flip landing clink.", ["coin spend"], bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.85, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.05),
+        event("Casino.CupShuffle", "Gambler cup shuffle swap tick.", ["rattling click"], bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.7, PitchRandomRange=0.05, MinReplayIntervalSeconds=0.03),
+        event("Casino.CardDeal", "Gambler joker cards dealt onto the table.", ["simple whoosh"], bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.75, PitchRandomRange=0.03, MinReplayIntervalSeconds=0.05),
+        event("Casino.CardFlip", "Gambler card or cup reveal flip.", ["phasey swipe"], bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.8, PitchRandomRange=0.04, MinReplayIntervalSeconds=0.05),
+        event("Casino.StickDraw", "Gambler stick drawn from the cauldron.", ["bamboo whip"], bPlay2D=True, bIsUISound=True, VolumeMultiplier=0.85, PitchRandomRange=0.04, MinReplayIntervalSeconds=0.05),
 
         # Run flow. These fire around pause transitions, so they must be UI sounds to keep playing.
         event("Hero.Death", "Local hero dies.", ["dramatic finish", "toon fall"], per_pattern=2, bPlay2D=True, bIsUISound=True, VolumeMultiplier=1.0, PitchRandomRange=0.02, MinReplayIntervalSeconds=0.5),

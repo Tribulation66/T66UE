@@ -1306,6 +1306,7 @@ void AT66BossBase::SpawnProjectileInDirection(const FVector& Direction, const fl
 		FireParams.BossSecondaryColor = AttackSecondaryColor;
 		FireParams.bUseBossSecondaryTint = bUseSecondaryTint;
 		FireParams.BossVisualScaleMultiplier = 1.f;
+		FireParams.AttackCategory = ET66AttackCategory::AOE;
 		if (ProjectileManager->FireBossProjectile(FireParams))
 		{
 			T66PlayBossProfileAudioEvent(this, TEXT("Boss.Projectile.Fire"), FName(TEXT("Boss.Projectile.Fire")), SpawnLoc);
@@ -1320,7 +1321,10 @@ void AT66BossBase::SpawnProjectileInDirectionForAttackRow(
 	const FVector& SpawnOffset,
 	const bool bUseSecondaryTint,
 	const FName VisualProfileID,
-	const float VisualScaleMultiplier)
+	const float VisualScaleMultiplier,
+	const ET66AttackCategory ProjectileCategory,
+	const TSoftObjectPtr<UStaticMesh> ProjectileMesh,
+	const float ProjectileMeshScale)
 {
 	if (!bAwakened || CurrentHP <= 0 || StunSecondsRemaining > 0.f || FreezeSecondsRemaining > 0.f)
 	{
@@ -1362,6 +1366,9 @@ void AT66BossBase::SpawnProjectileInDirectionForAttackRow(
 		FireParams.bUseBossSecondaryTint = bUseSecondaryTint;
 		FireParams.VisualProfileID = VisualProfileID;
 		FireParams.BossVisualScaleMultiplier = VisualScaleMultiplier;
+		FireParams.AttackCategory = ProjectileCategory;
+		FireParams.ProjectileMesh = ProjectileMesh;
+		FireParams.ProjectileMeshScale = ProjectileMeshScale;
 		if (ProjectileManager->FireBossProjectile(FireParams))
 		{
 			RecordBossAttackOwnershipEvent(T66BossAttackEvent_Fired, &AttackRow, AttackRow.OwningPartID, TEXT("LegacyProjectileDelayedShot"));
@@ -1409,6 +1416,7 @@ void AT66BossBase::SpawnScaledProjectileInDirection(
 		FireParams.BossSecondaryColor = AttackSecondaryColor;
 		FireParams.bUseBossSecondaryTint = bUseSecondaryTint;
 		FireParams.BossVisualScaleMultiplier = VisualScaleMultiplier;
+		FireParams.AttackCategory = ET66AttackCategory::AOE;
 		if (ProjectileManager->FireBossProjectile(FireParams))
 		{
 			T66PlayBossProfileAudioEvent(this, TEXT("Boss.Projectile.Fire"), FName(TEXT("Boss.Projectile.Fire")), SpawnLoc);
@@ -1446,7 +1454,10 @@ void AT66BossBase::QueueProjectileShotDirectionForAttackRow(
 	const FVector& SpawnOffset,
 	const bool bUseSecondaryTint,
 	const FName VisualProfileID,
-	const float VisualScaleMultiplier)
+	const float VisualScaleMultiplier,
+	const ET66AttackCategory ProjectileCategory,
+	const TSoftObjectPtr<UStaticMesh> ProjectileMesh,
+	const float ProjectileMeshScale)
 {
 	const FVector ShotDirection = Direction.GetSafeNormal();
 	if (ShotDirection.IsNearlyZero())
@@ -1456,14 +1467,14 @@ void AT66BossBase::QueueProjectileShotDirectionForAttackRow(
 
 	TWeakObjectPtr<AT66BossBase> WeakThis(this);
 	QueueTimedAttackLambda(
-		FTimerDelegate::CreateLambda([WeakThis, AttackRow, ShotDirection, SpeedScale, SpawnOffset, bUseSecondaryTint, VisualProfileID, VisualScaleMultiplier]()
+		FTimerDelegate::CreateLambda([WeakThis, AttackRow, ShotDirection, SpeedScale, SpawnOffset, bUseSecondaryTint, VisualProfileID, VisualScaleMultiplier, ProjectileCategory, ProjectileMesh, ProjectileMeshScale]()
 		{
 			if (!WeakThis.IsValid())
 			{
 				return;
 			}
 
-			WeakThis->SpawnProjectileInDirectionForAttackRow(AttackRow, ShotDirection, SpeedScale, SpawnOffset, bUseSecondaryTint, VisualProfileID, VisualScaleMultiplier);
+			WeakThis->SpawnProjectileInDirectionForAttackRow(AttackRow, ShotDirection, SpeedScale, SpawnOffset, bUseSecondaryTint, VisualProfileID, VisualScaleMultiplier, ProjectileCategory, ProjectileMesh, ProjectileMeshScale);
 		}),
 		DelaySeconds);
 }
@@ -1490,7 +1501,10 @@ void AT66BossBase::QueueProjectileShotTowardsForAttackRow(
 	const FVector& SpawnOffset,
 	const bool bUseSecondaryTint,
 	const FName VisualProfileID,
-	const float VisualScaleMultiplier)
+	const float VisualScaleMultiplier,
+	const ET66AttackCategory ProjectileCategory,
+	const TSoftObjectPtr<UStaticMesh> ProjectileMesh,
+	const float ProjectileMeshScale)
 {
 	FVector Direction = TargetLocation - (GetActorLocation() + FVector(0.f, 0.f, 84.f));
 	Direction.Z = 0.f;
@@ -1500,7 +1514,7 @@ void AT66BossBase::QueueProjectileShotTowardsForAttackRow(
 		Direction = GetActorForwardVector();
 	}
 
-	QueueProjectileShotDirectionForAttackRow(AttackRow, T66RotatePlanarVector(Direction, YawOffsetDegrees), DelaySeconds, SpeedScale, SpawnOffset, bUseSecondaryTint, VisualProfileID, VisualScaleMultiplier);
+	QueueProjectileShotDirectionForAttackRow(AttackRow, T66RotatePlanarVector(Direction, YawOffsetDegrees), DelaySeconds, SpeedScale, SpawnOffset, bUseSecondaryTint, VisualProfileID, VisualScaleMultiplier, ProjectileCategory, ProjectileMesh, ProjectileMeshScale);
 }
 
 void AT66BossBase::QueueProjectileFanBurst(
@@ -1550,7 +1564,10 @@ void AT66BossBase::QueueProjectileFanBurstForAttackRow(
 	const float SideOffsetDistance,
 	const bool bUseSecondaryTint,
 	const FName VisualProfileID,
-	const float VisualScaleMultiplier)
+	const float VisualScaleMultiplier,
+	const ET66AttackCategory ProjectileCategory,
+	const TSoftObjectPtr<UStaticMesh> ProjectileMesh,
+	const float ProjectileMeshScale)
 {
 	if (ShotCount <= 0)
 	{
@@ -1577,7 +1594,10 @@ void AT66BossBase::QueueProjectileFanBurstForAttackRow(
 			SpawnOffset,
 			bUseSecondaryTint && ((Index % 2) == 1),
 			VisualProfileID,
-			VisualScaleMultiplier);
+			VisualScaleMultiplier,
+			ProjectileCategory,
+			ProjectileMesh,
+			ProjectileMeshScale);
 	}
 }
 
@@ -1617,7 +1637,10 @@ void AT66BossBase::QueueRadialBurstForAttackRow(
 	const float InitialDelaySeconds,
 	const bool bUseSecondaryTint,
 	const FName VisualProfileID,
-	const float VisualScaleMultiplier)
+	const float VisualScaleMultiplier,
+	const ET66AttackCategory ProjectileCategory,
+	const TSoftObjectPtr<UStaticMesh> ProjectileMesh,
+	const float ProjectileMeshScale)
 {
 	if (ShotCount <= 0)
 	{
@@ -1637,7 +1660,10 @@ void AT66BossBase::QueueRadialBurstForAttackRow(
 			FVector::ZeroVector,
 			bUseSecondaryTint && ((Index % 2) == 1),
 			VisualProfileID,
-			VisualScaleMultiplier);
+			VisualScaleMultiplier,
+			ProjectileCategory,
+			ProjectileMesh,
+			ProjectileMeshScale);
 	}
 }
 
@@ -3005,6 +3031,9 @@ bool AT66BossBase::FireBossProjectileAttackDefinitionRows(
 		const FName VisualProfileID = DefinitionRow.ProjectileVisualProfileID;
 		const float SpeedScale = FMath::Max(0.1f, DefinitionRow.SpeedScale);
 		const float VisualScaleMultiplier = FMath::Max(0.01f, DefinitionRow.VisualScaleMultiplier);
+		const ET66AttackCategory ProjectileCategory = DefinitionRow.ProjectileCategory;
+		const TSoftObjectPtr<UStaticMesh> ProjectileMesh = DefinitionRow.ProjectileMesh;
+		const float ProjectileMeshScale = FMath::Max(0.05f, DefinitionRow.ProjectileMeshScale);
 		const FVector AuthoredOffset(DefinitionRow.SpawnOffsetX, DefinitionRow.SpawnOffsetY, DefinitionRow.SpawnOffsetZ);
 
 		if (DefinitionRow.PatternType == T66BossAttackPattern_SingleShot)
@@ -3018,7 +3047,10 @@ bool AT66BossBase::FireBossProjectileAttackDefinitionRows(
 				Side * DefinitionRow.SideOffsetDistance + AuthoredOffset,
 				DefinitionRow.bUseSecondaryTint,
 				VisualProfileID,
-				VisualScaleMultiplier);
+				VisualScaleMultiplier,
+				ProjectileCategory,
+				ProjectileMesh,
+				ProjectileMeshScale);
 			++ScheduledRows;
 			continue;
 		}
@@ -3036,7 +3068,10 @@ bool AT66BossBase::FireBossProjectileAttackDefinitionRows(
 				DefinitionRow.SideOffsetDistance,
 				DefinitionRow.bUseSecondaryTint,
 				VisualProfileID,
-				VisualScaleMultiplier);
+				VisualScaleMultiplier,
+				ProjectileCategory,
+				ProjectileMesh,
+				ProjectileMeshScale);
 			++ScheduledRows;
 			continue;
 		}
@@ -3060,7 +3095,10 @@ bool AT66BossBase::FireBossProjectileAttackDefinitionRows(
 				FMath::Max(0.f, DefinitionRow.InitialDelaySeconds),
 				DefinitionRow.bUseSecondaryTint,
 				VisualProfileID,
-				VisualScaleMultiplier);
+				VisualScaleMultiplier,
+				ProjectileCategory,
+				ProjectileMesh,
+				ProjectileMeshScale);
 			++ScheduledRows;
 			continue;
 		}

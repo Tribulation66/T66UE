@@ -19,7 +19,7 @@ Build the Hero 1 Bounce weapon VFX as a **moving two-link projectile/slash carri
 2. After that link reaches the primary enemy, exactly one visible Bounce link travels from the primary enemy to the next chained enemy (and so on per chain link).
 3. Only one link is visibly in flight per segment — never a burst of three simultaneous projectiles, and never a static impact-only slash.
 
-Bounce is distinct from AOE and Pierce: AOE is a band-anchored frontal crescent; Pierce is a `PathAnchored` forward lane. Bounce is a **chained, moving link sequence** — a carrier visibly travels hero->primary, then primary->next, one link at a time.
+Bounce is distinct from AOE and RetiredLine: AOE is a band-anchored frontal crescent; RetiredLine is a `PathAnchored` forward lane. Bounce is a **chained, moving link sequence** — a carrier visibly travels hero->primary, then primary->next, one link at a time.
 
 ## 2. User Constraints
 
@@ -30,7 +30,7 @@ Bounce is distinct from AOE and Pierce: AOE is a band-anchored frontal crescent;
 - Damage authority remains combat logic in `PerformBounce`. Niagara collision, render mesh geometry, projectile collision, and material opacity are never the damage authority; the moving carrier is visual-only.
 - Use Unreal-owned capture paths for visual proof; the proof must show motion over time (frame range), not a single still.
 - Bounce proof video must be captured from the declared standard angle without the camera wall-occlusion fade rectangle, visible off-path negative controls, unrelated post-proof mobs, or other foreground occluders hiding the projectile path.
-- Out of scope this pass: DOT, Pierce, AOE redesign, idols, balance/stat retuning, Mini/minigame systems, unrelated weapons, Git mutation, broad Git/LFS scans.
+- Out of scope this pass: DOT, RetiredLine, AOE redesign, idols, balance/stat retuning, Mini/minigame systems, unrelated weapons, Git mutation, broad Git/LFS scans.
 
 ## 3. Process Sources
 
@@ -42,7 +42,7 @@ Bounce is distinct from AOE and Pierce: AOE is a band-anchored frontal crescent;
 - `Gameplay/Combat/CombatVFXImpactContextContract.md`: weapon impact-context publication/chaining; video alone cannot prove context wiring.
 - `Gameplay/Combat/CombatVFXGeneratedAssetPolicy.md`: CSV and DataTable move together; production `.uasset` paths require packet/validator review.
 - `Gameplay/Combat/MASTER_COMBAT.md`: combat runtime spine; Bounce chain behavior; VFX is presentation.
-- Worked reference: `Gameplay/Combat/Hero1AxePierceMechanismPacket.md` (and its parent AOE packet) for the accepted production-binding/proof pattern and material family.
+- Worked reference: `Gameplay/Combat/Hero1AxeRetiredLineMechanismPacket.md` (and its parent AOE packet) for the accepted production-binding/proof pattern and material family.
 
 The accepted Hero 1 slash material family is the source vocabulary: shared red/blue/white slash-layer materials (bright additive, body additive, dark translucent), UV-driven reveal/erosion/edge-band, and Niagara-driven dynamic material parameters. Bounce reuses this vocabulary by tinting the moving carrier in the Hero 1 red/blue/white slash colors.
 
@@ -91,7 +91,7 @@ Verification evidence: focused C++ compile; runtime CombatVFXBounceLinkProjectil
 | Shared Hero 1 projectile/slash colors | Primary | Yes (reuse) | Hero 1 projectile color (`FT66TemporaryProjectileSystem::HeroProjectileColor`) + shared red/blue/white vocabulary | Reused | Same red/blue/white vocabulary tinting the Bounce carrier. |
 | Sequential staging runtime | Primary | Yes | `StageBounceProjectileChain` / `SpawnBounceChainLinkSequential` / `SpawnBounceLinkProjectile` in `T66CombatComponent.cpp`, called from `PerformBounce`; later links launch from `AT66HeroProjectile::SetVisualArrivalCallback`, deferred one tick, with collision-safe 36uu chained-start clearance | Present | Logs showing `LinkIndex=0` launched immediately and `LinkIndex=1` launched after the prior visual projectile arrives. |
 | Presentation-only minimum link travel | Primary | Yes | `StageBounceProjectileChain` clamps each link's visual travel to the binding `BasePlaybackSeconds` (0.32s); damage timing unchanged | Present | `CombatVFXBounceLinkProjectile ... TravelSeconds>=0.32` for short links. |
-| Production binding row | Primary | Yes (preserved) | `Content/Data/CombatVFXBindings.csv` row `Hero1Axe_Bounce_Base` + `DT_CombatVFXBindings.uasset` | Preserved | Existing row/DataTable kept intact (no edit needed); AOE/Pierce rows preserved. |
+| Production binding row | Primary | Yes (preserved) | `Content/Data/CombatVFXBindings.csv` row `Hero1Axe_Bounce_Base` + `DT_CombatVFXBindings.uasset` | Preserved | Existing row/DataTable kept intact (no edit needed); AOE/retired-lane rows preserved. |
 | PerChainLink impact contexts | Primary | Yes (preserved) | `PerformBounce` per-link `PerChainLink` impact contexts | Preserved | Per-link `CombatImpactContext` logs with distinct impact points and chain indices. |
 | Connecting BeamHop/RibbonTrail support | Secondary | No | Deferred | Deferred | Add only after the moving carrier reads correctly. |
 
@@ -159,8 +159,8 @@ Cheap wrong result:
 Required discriminator:
 
 - Bounce is a moving carrier that visibly travels hero->primary, then (only after that link arrives) primary->second, with exactly one link in flight per segment, publishes a `PerChainLink` weapon impact context per link, and shows link 0 and link 1 as distinct, time-separated travel events.
-- Bounce is visually distinguishable from the AOE radial/band crescent and the Pierce forward lane in same-view and gameplay captures.
-- If the result shows all links at once, shows a static non-moving slash, or is indistinguishable from the AOE crescent or Pierce lane, or relies on the legacy temporary-projectile line, the gate is `PARTIAL`.
+- Bounce is visually distinguishable from the AOE radial/band crescent and the RetiredLine forward lane in same-view and gameplay captures.
+- If the result shows all links at once, shows a static non-moving slash, or is indistinguishable from the AOE crescent or retired lane, or relies on the legacy temporary-projectile line, the gate is `PARTIAL`.
 
 Proof rule:
 

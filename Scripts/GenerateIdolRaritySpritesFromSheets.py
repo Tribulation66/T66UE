@@ -2,10 +2,10 @@
 Split approved imagegen idol rarity sheets into source idol sprites.
 
 The preferred input is one 2x2 sheet per rarity/group:
-  Idols_black_gods_a.png -> Fire DOT, AOE, Pierce, Bounce
-  Idols_black_gods_b.png -> Ice DOT, AOE, Pierce, Bounce
-  Idols_black_gods_c.png -> Electricity DOT, AOE, Pierce, Bounce
-  Idols_black_gods_d.png -> Nature DOT, AOE, Pierce, Bounce
+  Idols_black_gods_a.png -> Fire DOT, AOE, Summon, Bounce
+  Idols_black_gods_b.png -> Ice DOT, AOE, Summon, Bounce
+  Idols_black_gods_c.png -> Electricity DOT, AOE, Summon, Bounce
+  Idols_black_gods_d.png -> Nature DOT, AOE, Summon, Bounce
 
 This script only crops and resizes generated art. It does not draw, recolor,
 pixelate, or synthesize replacement imagery.
@@ -25,10 +25,10 @@ RARITIES = [
 ]
 
 GROUPS = [
-    ("gods_a", ["Idol_Fire_DOT", "Idol_Fire_AOE", "Idol_Fire_Pierce", "Idol_Fire_Bounce"]),
-    ("gods_b", ["Idol_Ice_DOT", "Idol_Ice_AOE", "Idol_Ice_Pierce", "Idol_Ice_Bounce"]),
-    ("gods_c", ["Idol_Electricity_DOT", "Idol_Electricity_AOE", "Idol_Electricity_Pierce", "Idol_Electricity_Bounce"]),
-    ("gods_d", ["Idol_Nature_DOT", "Idol_Nature_AOE", "Idol_Nature_Pierce", "Idol_Nature_Bounce"]),
+    ("gods_a", ["Idol_Fire_DOT", "Idol_Fire_AOE", "Idol_Fire_Summon", "Idol_Fire_Bounce"]),
+    ("gods_b", ["Idol_Ice_DOT", "Idol_Ice_AOE", "Idol_Ice_Summon", "Idol_Ice_Bounce"]),
+    ("gods_c", ["Idol_Electricity_DOT", "Idol_Electricity_AOE", "Idol_Electricity_Summon", "Idol_Electricity_Bounce"]),
+    ("gods_d", ["Idol_Nature_DOT", "Idol_Nature_AOE", "Idol_Nature_Summon", "Idol_Nature_Bounce"]),
 ]
 
 GRID_POSITIONS = [(0, 0), (0, 1), (1, 0), (1, 1)]

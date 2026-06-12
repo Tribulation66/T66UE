@@ -241,6 +241,48 @@ namespace
 		const int32 Value = FMath::Clamp(static_cast<int32>(Tier), static_cast<int32>(ET66AccountMedalTier::None), static_cast<int32>(ET66AccountMedalTier::Diamond));
 		return static_cast<ET66AccountMedalTier>(Value);
 	}
+
+	void ClampCustomHeroStats(FT66HeroStatBlock& Stats)
+	{
+		Stats.Damage = FMath::Clamp(Stats.Damage, 1, 8);
+		Stats.AttackSpeed = FMath::Clamp(Stats.AttackSpeed, 1, 8);
+		Stats.AttackScale = FMath::Clamp(Stats.AttackScale, 1, 8);
+		Stats.Accuracy = FMath::Clamp(Stats.Accuracy, 1, 8);
+		Stats.Armor = FMath::Clamp(Stats.Armor, 1, 8);
+		Stats.Evasion = FMath::Clamp(Stats.Evasion, 1, 8);
+		Stats.Luck = FMath::Clamp(Stats.Luck, 1, 8);
+		Stats.Speed = FMath::Clamp(Stats.Speed, 1, 8);
+	}
+
+	FT66SavedCustomHeroBuild MakeDefaultCustomHeroBuild()
+	{
+		FT66SavedCustomHeroBuild Build;
+		Build.Stats.Damage = 3;
+		Build.Stats.AttackSpeed = 3;
+		Build.Stats.AttackScale = 3;
+		Build.Stats.Accuracy = 3;
+		Build.Stats.Armor = 3;
+		Build.Stats.Evasion = 3;
+		Build.Stats.Luck = 3;
+		Build.Stats.Speed = 3;
+		return Build;
+	}
+
+	bool AreCustomHeroBuildsEqual(const FT66SavedCustomHeroBuild& A, const FT66SavedCustomHeroBuild& B)
+	{
+		return A.bConfigured == B.bConfigured
+			&& A.WeaponSourceHeroID == B.WeaponSourceHeroID
+			&& A.VisualSourceHeroID == B.VisualSourceHeroID
+			&& A.BodyType == B.BodyType
+			&& A.Stats.Damage == B.Stats.Damage
+			&& A.Stats.AttackSpeed == B.Stats.AttackSpeed
+			&& A.Stats.AttackScale == B.Stats.AttackScale
+			&& A.Stats.Accuracy == B.Stats.Accuracy
+			&& A.Stats.Armor == B.Stats.Armor
+			&& A.Stats.Evasion == B.Stats.Evasion
+			&& A.Stats.Luck == B.Stats.Luck
+			&& A.Stats.Speed == B.Stats.Speed;
+	}
 }
 
 UT66LocalizationSubsystem* UT66AchievementsSubsystem::GetLocSubsystem() const
@@ -378,6 +420,49 @@ void UT66AchievementsSubsystem::LoadOrCreateProfile()
 		Profile->SaveVersion = T66PetProfileSaveVersion;
 		bProfileDirty = true;
 		UE_LOG(LogT66Achievements, Log, TEXT("[Pets] LoadOrCreateProfile: Added pet collection defaults (SaveVersion %d)."), T66PetProfileSaveVersion);
+	}
+
+	if (LoadedSaveVersion < T66LabUnlockEnemyIdProfileSaveVersion)
+	{
+		int32 RemappedLabIds = 0;
+		TArray<FName> MigratedLabIds;
+		MigratedLabIds.Reserve(Profile->LabUnlockedEnemyIDs.Num());
+		for (const FName& StoredID : Profile->LabUnlockedEnemyIDs)
+		{
+			const FName MigratedID = T66MigrateLegacyLabEnemyID(StoredID);
+			if (MigratedID != StoredID)
+			{
+				++RemappedLabIds;
+			}
+			MigratedLabIds.AddUnique(MigratedID);
+		}
+		Profile->LabUnlockedEnemyIDs = MoveTemp(MigratedLabIds);
+		Profile->SaveVersion = T66LabUnlockEnemyIdProfileSaveVersion;
+		bProfileDirty = true;
+		UE_LOG(LogT66Achievements, Log, TEXT("[Lab] LoadOrCreateProfile: Remapped %d legacy lab unlock enemy IDs to the production roster (SaveVersion %d)."), RemappedLabIds, T66LabUnlockEnemyIdProfileSaveVersion);
+	}
+
+	if (LoadedSaveVersion < T66CustomHeroBuildProfileSaveVersion)
+	{
+		Profile->CustomHeroBuild = MakeDefaultCustomHeroBuild();
+		Profile->SaveVersion = T66CustomHeroBuildProfileSaveVersion;
+		bProfileDirty = true;
+		UE_LOG(LogT66Achievements, Log, TEXT("[CustomHero] LoadOrCreateProfile: Added permanent custom hero build defaults (SaveVersion %d)."), T66CustomHeroBuildProfileSaveVersion);
+	}
+
+	if (!Profile->CustomHeroBuild.bConfigured)
+	{
+		Profile->CustomHeroBuild = MakeDefaultCustomHeroBuild();
+	}
+	else
+	{
+		ClampCustomHeroStats(Profile->CustomHeroBuild.Stats);
+		if (Profile->CustomHeroBuild.WeaponSourceHeroID.IsNone() || Profile->CustomHeroBuild.VisualSourceHeroID.IsNone())
+		{
+			Profile->CustomHeroBuild.bConfigured = false;
+			bProfileDirty = true;
+			UE_LOG(LogT66Achievements, Warning, TEXT("[CustomHero] LoadOrCreateProfile: Cleared incomplete custom hero build with missing source hero IDs."));
+		}
 	}
 
 	// Hero skins: log current state (no more auto-reset; purchases persist).
@@ -608,6 +693,66 @@ void UT66AchievementsSubsystem::RememberLastSelectedLoadout(FName HeroID, FName 
 	{
 		MarkProfileDirtyAndSave(false);
 	}
+}
+
+bool UT66AchievementsSubsystem::HasCustomHeroBuild() const
+{
+	return Profile && Profile->CustomHeroBuild.bConfigured;
+}
+
+FT66SavedCustomHeroBuild UT66AchievementsSubsystem::GetCustomHeroBuild() const
+{
+	if (!Profile)
+	{
+		return MakeDefaultCustomHeroBuild();
+	}
+
+	FT66SavedCustomHeroBuild Build = Profile->CustomHeroBuild;
+	if (!Build.bConfigured)
+	{
+		Build = MakeDefaultCustomHeroBuild();
+	}
+	else
+	{
+		ClampCustomHeroStats(Build.Stats);
+	}
+	return Build;
+}
+
+void UT66AchievementsSubsystem::SaveCustomHeroBuild(const FT66SavedCustomHeroBuild& Build)
+{
+	if (!Profile)
+	{
+		LoadOrCreateProfile();
+	}
+	if (!Profile)
+	{
+		return;
+	}
+
+	FT66SavedCustomHeroBuild Normalized = Build;
+	if (!Normalized.bConfigured)
+	{
+		Normalized = MakeDefaultCustomHeroBuild();
+	}
+	else
+	{
+		ClampCustomHeroStats(Normalized.Stats);
+		if (Normalized.WeaponSourceHeroID.IsNone() || Normalized.VisualSourceHeroID.IsNone())
+		{
+			return;
+		}
+	}
+
+	if (AreCustomHeroBuildsEqual(Profile->CustomHeroBuild, Normalized))
+	{
+		return;
+	}
+
+	Profile->CustomHeroBuild = Normalized;
+	Profile->SaveVersion = FMath::Max(Profile->SaveVersion, T66CurrentProfileSaveVersion);
+	MarkProfileDirtyAndSave(false);
+	AchievementsStateChanged.Broadcast();
 }
 
 FName UT66AchievementsSubsystem::GetActivePetID() const

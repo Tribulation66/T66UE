@@ -663,6 +663,31 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 			CompanionSelectionTag(TEXT("CompanionSelection.SkinsList"))));
 
 	TSharedRef<SHorizontalBox> CarouselRow = SNew(SHorizontalBox);
+	CarouselRow->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 8.f, 0.f)
+	[
+		FT66FlatStyle::MakeFlatButton(
+			ET66FlatState::Default,
+			FText::FromString(TEXT("?")),
+			FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandleRandomCompanionClicked),
+			nullptr,
+			nullptr,
+			FMargin(6.f),
+			54.f,
+			54.f,
+			TAttribute<bool>::CreateLambda([this]()
+			{
+				for (const FName& CompanionID : AllCompanionIDs)
+				{
+					if (!CompanionID.IsNone() && IsCompanionUnlocked(CompanionID) && IsCompanionPlayable(CompanionID))
+					{
+						return true;
+					}
+				}
+				return false;
+			}),
+			24,
+			CompanionSelectionTag(TEXT("CompanionSelection.Carousel.RandomButton")))
+	];
 	CarouselRow->AddSlot().AutoWidth().VAlign(VAlign_Center).Padding(0.f, 0.f, 12.f, 0.f)
 	[
 		FT66FlatStyle::MakeFlatButton(ET66FlatState::Default, FText::FromString(TEXT("<")), FOnClicked::CreateUObject(this, &UT66CompanionSelectionScreen::HandlePrevClicked), nullptr, nullptr, FMargin(6.f), 54.f, 54.f, AllCompanionIDs.Num() > 1, 24, CompanionSelectionTag(TEXT("CompanionSelection.Carousel.PrevButton")))
@@ -971,6 +996,7 @@ TSharedRef<SWidget> UT66CompanionSelectionScreen::BuildSlateUI()
 	UpdateCompanionDisplay();
 	return Root;
 }
+FReply UT66CompanionSelectionScreen::HandleRandomCompanionClicked() { PreviewRandomCompanion(); return FReply::Handled(); }
 FReply UT66CompanionSelectionScreen::HandlePrevClicked() { PreviewPreviousCompanion(); return FReply::Handled(); }
 FReply UT66CompanionSelectionScreen::HandleNextClicked() { PreviewNextCompanion(); return FReply::Handled(); }
 FReply UT66CompanionSelectionScreen::HandleCompanionGridClicked() { OnCompanionGridClicked(); return FReply::Handled(); }
@@ -1532,6 +1558,31 @@ void UT66CompanionSelectionScreen::PreviewPreviousCompanion()
 			return;
 		}
 	}
+}
+
+void UT66CompanionSelectionScreen::PreviewRandomCompanion()
+{
+	TArray<FName> CandidateCompanionIDs;
+	for (const FName& CompanionID : AllCompanionIDs)
+	{
+		if (!CompanionID.IsNone() && IsCompanionUnlocked(CompanionID) && IsCompanionPlayable(CompanionID))
+		{
+			CandidateCompanionIDs.Add(CompanionID);
+		}
+	}
+
+	if (CandidateCompanionIDs.Num() <= 0)
+	{
+		return;
+	}
+
+	if (CandidateCompanionIDs.Num() > 1)
+	{
+		CandidateCompanionIDs.Remove(PreviewedCompanionID);
+	}
+
+	PreviewCompanion(CandidateCompanionIDs[FMath::RandRange(0, CandidateCompanionIDs.Num() - 1)]);
+	RequestDeferredSlateRebuild();
 }
 
 void UT66CompanionSelectionScreen::OnCompanionGridClicked() { ShowModal(ET66ScreenType::CompanionGrid); }

@@ -222,7 +222,7 @@ Changing the primary carrier archetype later requires a written reason and re-re
 
 Supported archetypes:
 
-- `ArcSlash`: mesh arc, slash strip, or path/ribbon carrier for AOE and slash-like Pierce effects.
+- `ArcSlash`: mesh arc, slash strip, or path/ribbon carrier for AOE and slash-like RetiredLine effects.
 - `RibbonTrail`: weapon trail, trailing ribbon, or motion-history strip.
 - `PersistentAura`: target-attached or world-attached ring/aura with pulse or orbit behavior.
 - `BeamHop`: Start/End beam, hop, chain, or path segment.
@@ -307,7 +307,7 @@ Rules:
 
 ### 7.1 ArcSlash
 
-Use for AOE half-moon slash, slash strips, and slash-like Pierce effects.
+Use for AOE half-moon slash, slash strips, and slash-like RetiredLine effects.
 
 Required for full acceptance:
 
@@ -328,7 +328,7 @@ Discriminators:
 
 ### 7.2 RibbonTrail
 
-Use for weapon trails, motion-history strips, Bounce trails, and some Pierce ribbons.
+Use for weapon trails, motion-history strips, Bounce trails, and some retired lane ribbons.
 
 Required for full acceptance:
 
@@ -370,7 +370,7 @@ Discriminators:
 
 ### 7.4 BeamHop
 
-Use for Bounce chains, spirit-axe hops, lightning-like Start/End systems, and some straight Pierce beams.
+Use for Bounce chains, spirit-axe hops, lightning-like Start/End systems, and some straight retired lane beams.
 
 Required for full acceptance:
 
@@ -524,7 +524,7 @@ Each layer must have a reason to exist and a discriminator. Duplicate layers wit
 This procedure does not own final numbers for Hero 1 axe VFX. Use these source files for effect-specific values and staged decisions:
 
 - `Saved/VFXResearch/Hero1Axe/notegpt_analysis_2026-05-24.md`
-- `Saved/AgentReviews/Hero1AxeVFX_AOE_Pierce_20260524T014849/claude_review_full.md`
+- `Saved/AgentReviews/Hero1AxeVFX_AOE_RetiredLine_20260524T014849/claude_review_full.md`
 - `Saved/AgentReviews/Hero1AxeVFX_DOT_Bounce_20260524T015135/claude_review.md`
 - `Gameplay/Combat/Hero1AxeVFXPlan.md`
 - `Gameplay/Combat/Hero1AxeAOESlashMechanismPacket.md`
@@ -532,7 +532,7 @@ This procedure does not own final numbers for Hero 1 axe VFX. Use these source f
 Generic mapping:
 
 - `AOE`: usually `ArcSlash`.
-- `Pierce`: usually `ArcSlash`, `RibbonTrail`, or `BeamHop` depending on whether the visual is a force slash, ribbon strip, or lane beam.
+- `RetiredLine`: usually `ArcSlash`, `RibbonTrail`, or `BeamHop` depending on whether the visual is a force slash, ribbon strip, or lane beam.
 - `DOT`: usually `PersistentAura`.
 - `Bounce`: usually `BeamHop` for the hop plus `RibbonTrail` and `SupportImpact` as secondary carriers.
 

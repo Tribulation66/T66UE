@@ -59,6 +59,9 @@ public:
 	void PreviewPreviousCompanion();
 
 	UFUNCTION(BlueprintCallable, Category = "Companion Selection")
+	void PreviewRandomCompanion();
+
+	UFUNCTION(BlueprintCallable, Category = "Companion Selection")
 	void OnCompanionGridClicked();
 
 	UFUNCTION(BlueprintCallable, Category = "Companion Selection")
@@ -150,6 +153,7 @@ private:
 	void OnLanguageChanged(ET66Language NewLanguage);
 
 	// Click handlers
+	FReply HandleRandomCompanionClicked();
 	FReply HandlePrevClicked();
 	FReply HandleNextClicked();
 	FReply HandleCompanionGridClicked();

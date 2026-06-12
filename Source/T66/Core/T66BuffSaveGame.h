@@ -36,7 +36,7 @@ class T66_API UT66BuffSaveGame : public USaveGame
 	GENERATED_BODY()
 
 public:
-	/** SaveVersion 13 = per-rarity Relic tiers; 12 = flat Relic ownership; 11 = added primary Speed progression; 10 = collapsed named temp-buff presets into one temp-buff loadout; 9 = added primary Accuracy progression; 8 = named temp-buff presets; 7 = selected secondary single-use buffs; 6 = secondary-stat single-use buffs; 5 = unified Chad Coupons buffs; 4 = 10 fill steps; 3 = 6 body-part unlocks; 2 = 10-slot wedge tiers; 1 = legacy slice counts. */
+	/** SaveVersion 13 = per-rarity Surgery tiers; 12 = flat Surgery ownership; 11 = added primary Speed progression; 10 = collapsed named temp-buff presets into one temp-buff loadout; 9 = added primary Accuracy progression; 8 = named temp-buff presets; 7 = selected secondary single-use buffs; 6 = secondary-stat single-use buffs; 5 = unified Chad Coupons buffs; 4 = 10 fill steps; 3 = 6 body-part unlocks; 2 = 10-slot wedge tiers; 1 = legacy slice counts. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	int32 SaveVersion = 13;
 
@@ -115,13 +115,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
 	TArray<ET66StatType> SelectedSingleUseBuffSlots;
 
-	/** Permanent Relics owned by ID. Non-unique Relics also carry tier values below. */
+	/** Permanent Surgeries owned by ID. Non-unique Surgeries also carry tier values below. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
-	TArray<FName> OwnedRelicIDs;
+	TArray<FName> OwnedSurgeryIDs;
 
-	/** Non-unique Relic tier by ID: 1=black, 2=red, 3=yellow, 4=white. Solomon's Ring remains unique single-art ownership. */
+	/** Surgery tier by ID: 1=black, 2=red, 3=yellow, 4=white. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp")
-	TMap<FName, uint8> RelicTierValues;
+	TMap<FName, uint8> SurgeryTierValues;
 
 	/** Legacy preset loadouts retained only so v8-v9 saves still deserialize before migration. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PowerUp", meta = (DeprecatedProperty))

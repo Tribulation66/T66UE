@@ -571,6 +571,7 @@ TSharedPtr<FJsonObject> T66PopulateWorldRuntimeStress(UWorld* World, const int32
 			}
 		}
 	}
+	Result->SetBoolField(TEXT("mob_loot_enabled"), UT66MobLootSubsystem::IsEnabled());
 	Result->SetNumberField(TEXT("mob_loot_spawned"), LootSpawned);
 
 	AActor* StressSourceActor = nullptr;
@@ -648,7 +649,7 @@ TSharedPtr<FJsonObject> T66PopulateWorldRuntimeStress(UWorld* World, const int32
 		static const FName VisualProfiles[] =
 		{
 			FName(TEXT("TravelerVisual.Fire.AOE")),
-			FName(TEXT("TravelerVisual.Ice.Pierce")),
+			FName(TEXT("TravelerVisual.Ice.Summon")),
 			FName(TEXT("TravelerVisual.Electricity.Bounce")),
 			FName(TEXT("TravelerVisual.Nature.DOT"))
 		};

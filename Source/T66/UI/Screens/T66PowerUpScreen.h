@@ -43,7 +43,9 @@ private:
 	FReply HandleShowPermanentClicked();
 	FReply HandleShowSingleUseClicked();
 	FReply HandleUnlockClicked(ET66HeroStatType StatType);
-	FReply HandlePurchaseRelicClicked(FName RelicID);
+	FReply HandlePurchaseSurgeryClicked(FName SurgeryID);
+	FReply HandleRefundSurgeryClicked(FName SurgeryID);
 	FReply HandlePurchaseSingleUseClicked(ET66StatType StatType);
+	FReply HandleRefundSingleUseClicked(ET66StatType StatType);
 	FReply HandleHeroSelectionSingleUseClicked(ET66StatType StatType);
 };

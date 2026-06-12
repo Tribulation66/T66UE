@@ -33,7 +33,6 @@ struct FT66TemporaryProjectileVisualSpec
  */
 struct FT66TemporaryProjectileSystem
 {
-	static FName ProfileHeroPierce();
 	static FName ProfileHeroAOE();
 	static FName ProfileHeroBounce();
 	static FName ProfileHeroDOT();

@@ -6,7 +6,9 @@
 
 constexpr int32 T66SparseActiveHeroIdProfileSaveVersion = 16;
 constexpr int32 T66PetProfileSaveVersion = 17;
-constexpr int32 T66CurrentProfileSaveVersion = T66PetProfileSaveVersion;
+constexpr int32 T66LabUnlockEnemyIdProfileSaveVersion = 18;
+constexpr int32 T66CustomHeroBuildProfileSaveVersion = 19;
+constexpr int32 T66CurrentProfileSaveVersion = T66CustomHeroBuildProfileSaveVersion;
 constexpr int32 T66SparseActiveHeroIdRunSaveVersion = 11;
 constexpr int32 T66RunModeCategoryRunSaveVersion = 12;
 constexpr int32 T66CollectedMobLootRunSaveVersion = 13;
@@ -52,6 +54,42 @@ inline FName T66MigratePreSaveVersion9HeroID(FName HeroID)
 	return HeroID;
 }
 
+/**
+ * One-time migration for the 2026-05 enemy roster restructure that dropped the
+ * theme-prefixed mob IDs (25 legacy rows) for the 50-mob production roster.
+ * Successors verified against the Enemies.csv diff (8d3549e81 -> cdd3f896b);
+ * Hellhound kept its ID across the restructure. Call only from version-gated
+ * migration code.
+ */
+inline FName T66MigrateLegacyLabEnemyID(FName EnemyID)
+{
+	if (EnemyID == FName(TEXT("Dungeon_Slime")))          return FName(TEXT("Slime"));
+	if (EnemyID == FName(TEXT("Dungeon_Skeleton")))       return FName(TEXT("BoneWalker"));
+	if (EnemyID == FName(TEXT("Dungeon_WebSpider")))      return FName(TEXT("TombSpider"));
+	if (EnemyID == FName(TEXT("Dungeon_RabidRat")))       return FName(TEXT("RatPack"));
+	if (EnemyID == FName(TEXT("Dungeon_Bat")))            return FName(TEXT("CaveBat"));
+	if (EnemyID == FName(TEXT("Forest_MushroomBrute")))   return FName(TEXT("MushroomBrute"));
+	if (EnemyID == FName(TEXT("Forest_TreantSapling")))   return FName(TEXT("TreantSapling"));
+	if (EnemyID == FName(TEXT("Forest_ThornImp")))        return FName(TEXT("ThornImp"));
+	if (EnemyID == FName(TEXT("Forest_Boar")))            return FName(TEXT("TuskerBoar"));
+	if (EnemyID == FName(TEXT("Forest_Wasp")))            return FName(TEXT("HiveWasp"));
+	if (EnemyID == FName(TEXT("Ocean_CrabGuard")))        return FName(TEXT("CrabGuard"));
+	if (EnemyID == FName(TEXT("Ocean_DrownedSailor")))    return FName(TEXT("DrownedSailor"));
+	if (EnemyID == FName(TEXT("Ocean_Jellyfish")))        return FName(TEXT("JellyHover"));
+	if (EnemyID == FName(TEXT("Ocean_SharkPup")))         return FName(TEXT("ReefShark"));
+	if (EnemyID == FName(TEXT("Ocean_GhostRay")))         return FName(TEXT("GhostRay"));
+	if (EnemyID == FName(TEXT("Martian_DroneGrunt")))     return FName(TEXT("DroneGrunt"));
+	if (EnemyID == FName(TEXT("Martian_CrystalCrawler"))) return FName(TEXT("CrystalCrawler"));
+	if (EnemyID == FName(TEXT("Martian_PlasmaSpitter")))  return FName(TEXT("PlasmaSpitter"));
+	if (EnemyID == FName(TEXT("Martian_RocketLeaper")))   return FName(TEXT("RocketLeaper"));
+	if (EnemyID == FName(TEXT("Martian_SaucerDrone")))    return FName(TEXT("SaucerDrone"));
+	if (EnemyID == FName(TEXT("Hell_Imp")))               return FName(TEXT("PitImp"));
+	if (EnemyID == FName(TEXT("Hell_BoneKnight")))        return FName(TEXT("BoneKnight"));
+	if (EnemyID == FName(TEXT("Hell_FireSkull")))         return FName(TEXT("FireSkull"));
+	if (EnemyID == FName(TEXT("Hell_Gargoyle")))          return FName(TEXT("Gargoyle"));
+	return EnemyID;
+}
+
 inline FName T66MigrateLegacyIdolID(FName IdolID)
 {
 	if (IdolID.IsNone())
@@ -60,32 +98,31 @@ inline FName T66MigrateLegacyIdolID(FName IdolID)
 	}
 
 	if (IdolID == FName(TEXT("Idol_Water")))     return FName(TEXT("Idol_Ice_AOE"));
-	if (IdolID == FName(TEXT("Idol_Light")))     return FName(TEXT("Idol_Electricity_Pierce"));
+	if (IdolID == FName(TEXT("Idol_Light")))     return FName(TEXT("Idol_Electricity_Summon"));
 	if (IdolID == FName(TEXT("Idol_Electric")))  return FName(TEXT("Idol_Electricity_Bounce"));
 	if (IdolID == FName(TEXT("Idol_Poison")))    return FName(TEXT("Idol_Nature_DOT"));
 	if (IdolID == FName(TEXT("Idol_Lava")))      return FName(TEXT("Idol_Fire_DOT"));
 	if (IdolID == FName(TEXT("Idol_Ice")))       return FName(TEXT("Idol_Ice_Bounce"));
 	if (IdolID == FName(TEXT("Idol_Storm")))     return FName(TEXT("Idol_Electricity_AOE"));
 	if (IdolID == FName(TEXT("Idol_Earth")))     return FName(TEXT("Idol_Nature_AOE"));
-	if (IdolID == FName(TEXT("Idol_Wood")))      return FName(TEXT("Idol_Nature_Pierce"));
+	if (IdolID == FName(TEXT("Idol_Wood")))      return FName(TEXT("Idol_Nature_Summon"));
 	if (IdolID == FName(TEXT("Idol_Curse")))     return FName(TEXT("Idol_Fire_Bounce"));
 	if (IdolID == FName(TEXT("Idol_Shadow")))    return FName(TEXT("Idol_Nature_Bounce"));
-	if (IdolID == FName(TEXT("Idol_Steel")))     return FName(TEXT("Idol_Fire_Pierce"));
+	if (IdolID == FName(TEXT("Idol_Steel")))     return FName(TEXT("Idol_Fire_Summon"));
 	if (IdolID == FName(TEXT("Idol_Bleed")))     return FName(TEXT("Idol_Fire_DOT"));
 	if (IdolID == FName(TEXT("Idol_Star")))      return FName(TEXT("Idol_Electricity_DOT"));
 	if (IdolID == FName(TEXT("Idol_BlackHole"))) return FName(TEXT("Idol_Ice_DOT"));
-	if (IdolID == FName(TEXT("Idol_Bone")))      return FName(TEXT("Idol_Ice_Pierce"));
+	if (IdolID == FName(TEXT("Idol_Bone")))      return FName(TEXT("Idol_Ice_Summon"));
 
 	if (IdolID == FName(TEXT("Idol_Shock")))     return FName(TEXT("Idol_Electricity_Bounce"));
 	if (IdolID == FName(TEXT("Idol_Silence")))   return FName(TEXT("Idol_Nature_Bounce"));
-	if (IdolID == FName(TEXT("Idol_Mark")))      return FName(TEXT("Idol_Electricity_Pierce"));
-	if (IdolID == FName(TEXT("Idol_Pierce")))    return FName(TEXT("Idol_Fire_Pierce"));
-	if (IdolID == FName(TEXT("Idol_Knockback"))) return FName(TEXT("Idol_Nature_Pierce"));
+	if (IdolID == FName(TEXT("Idol_Mark")))      return FName(TEXT("Idol_Electricity_Summon"));
+	if (IdolID == FName(TEXT("Idol_Knockback"))) return FName(TEXT("Idol_Nature_Summon"));
 	if (IdolID == FName(TEXT("Idol_Hex")))       return FName(TEXT("Idol_Fire_Bounce"));
 	if (IdolID == FName(TEXT("Idol_Lifesteal"))) return FName(TEXT("Idol_Fire_DOT"));
 	if (IdolID == FName(TEXT("Idol_Lightning"))) return FName(TEXT("Idol_Electricity_Bounce"));
 	if (IdolID == FName(TEXT("Idol_Darkness")))  return FName(TEXT("Idol_Nature_Bounce"));
-	if (IdolID == FName(TEXT("Idol_Metal")))     return FName(TEXT("Idol_Fire_Pierce"));
+	if (IdolID == FName(TEXT("Idol_Metal")))     return FName(TEXT("Idol_Fire_Summon"));
 	if (IdolID == FName(TEXT("Idol_Spectral")))  return FName(TEXT("Idol_Fire_Bounce"));
 	if (IdolID == FName(TEXT("Idol_Frost")))     return FName(TEXT("Idol_Ice_Bounce"));
 

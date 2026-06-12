@@ -260,13 +260,13 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 		]
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
-		.Padding(48.f, 0.f, 0.f, 0.f)
+		.Padding(42.f, 0.f, 0.f, 0.f)
 		[
 			BuildFilterButton(ET66LeaderboardFilter::Friends, NSLOCTEXT("T66.FlatLeaderboard", "Friends", "FRIENDS"), TEXT("FilterFriendsButton"))
 		]
 		+ SHorizontalBox::Slot()
 		.AutoWidth()
-		.Padding(48.f, 0.f, 0.f, 0.f)
+		.Padding(42.f, 0.f, 0.f, 0.f)
 		[
 			BuildFilterButton(ET66LeaderboardFilter::Streamers, NSLOCTEXT("T66.FlatLeaderboard", "Stream", "STREAM"), TEXT("FilterStreamersButton"))
 		]
@@ -282,11 +282,15 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
 		[
-			FT66FlatStyle::MakeFlatLabel(
-				TAttribute<FText>::CreateSP(this, &ST66FlatLeaderboardPanel::GetHeaderText),
-				ET66FlatLabelRole::Header,
-				ETextJustify::Center,
-				Tag(TEXT("LeaderboardHeader")))
+			FT66FlatStyle::AttachMetadata(
+				SNew(STextBlock)
+				.Text(TAttribute<FText>::CreateSP(this, &ST66FlatLeaderboardPanel::GetHeaderText))
+				.Font(T66RuntimeUIFontAccess::MakeFriendslopFont(26, true))
+				.ColorAndOpacity(FLinearColor(0.97f, 0.93f, 0.86f, 1.f))
+				.Justification(ETextJustify::Center),
+				Tag(TEXT("LeaderboardHeader")),
+				TEXT("Label.Header"),
+				ET66FlatState::Default)
 		];
 
 	if (CurrentFilter == ET66LeaderboardFilter::Streamers)
@@ -360,7 +364,7 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildContentPanel()
 	TSharedRef<SVerticalBox> Column = SNew(SVerticalBox)
 		+ SVerticalBox::Slot()
 		.AutoHeight()
-		.Padding(0.f, 0.f, 0.f, 14.f)
+		.Padding(0.f, 32.f, 0.f, 14.f)
 		[
 			SNew(SBox)
 			.HeightOverride(70.f)
@@ -510,17 +514,17 @@ TSharedRef<SWidget> ST66FlatLeaderboardPanel::BuildFilterButton(const ET66Leader
 	TSharedRef<SWidget> Button = FT66FriendslopStyle::MakeCustomToggleGroupButton(
 		HellfireDir + PlateFile,
 		FMargin(0.f),
-		FVector2D(110.f, 68.f),
+		FVector2D(114.f, 70.f),
 		State,
 		FT66FlatStyle::AttachMetadata(
-			SNew(SBox).WidthOverride(88.f).HeightOverride(50.f),
+			SNew(SBox).WidthOverride(98.f).HeightOverride(54.f),
 			Tag(Name + TEXT(".Icon")),
 			TEXT("Icon"),
 			State),
 		FOnClicked::CreateSP(this, &ST66FlatLeaderboardPanel::SetFilter, Filter),
 		FMargin(8.f),
-		104.f,
-		66.f,
+		114.f,
+		70.f,
 		true,
 		Tag(Name),
 		FName(TEXT("MainMenuLeaderboardFilter")),

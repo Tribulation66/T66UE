@@ -92,8 +92,10 @@ namespace
 
 	static TAutoConsoleVariable<float> CVarT66HeroSurfaceBounceWallTraceDistance(
 		TEXT("t66.HeroMovement.SurfaceBounceWallTraceDistance"),
-		220.0f,
-		TEXT("Forward sweep distance used to detect bouncy wall contact."),
+		50.0f,
+		TEXT("Forward sweep distance used to detect bouncy wall contact. Exact-collision contract: ")
+		TEXT("the sweep sphere (capsule radius * 0.85) must reach barely past the 34uu capsule skin — ")
+		TEXT("the old 220 default bounced the hero ~2 body widths before visual contact."),
 		ECVF_Default);
 
 	static TAutoConsoleVariable<float> CVarT66HeroSurfaceBounceMinSpeed(
@@ -130,6 +132,19 @@ namespace
 
 	bool T66ShouldIgnoreSurfaceBounceWallHit(const FHitResult& Hit)
 	{
+		// Query-only volumes (interactable TriggerBoxes, NPC safe-zone/interaction bubbles)
+		// are WorldDynamic and show up in the object-type sweep, but they cannot physically
+		// stop the hero — bouncing off them reads as bouncing off air far outside the mesh.
+		// Only surfaces that actually block pawn movement may bounce.
+		const UPrimitiveComponent* HitComponent = Hit.GetComponent();
+		const ECollisionEnabled::Type CollisionEnabled = HitComponent ? HitComponent->GetCollisionEnabled() : ECollisionEnabled::NoCollision;
+		const bool bPhysicallyBlocksPawn =
+			(CollisionEnabled == ECollisionEnabled::QueryAndPhysics || CollisionEnabled == ECollisionEnabled::PhysicsOnly)
+			&& HitComponent->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Block;
+		if (!bPhysicallyBlocksPawn)
+		{
+			return true;
+		}
 		return T66HitHasTag(Hit, T66HeroMovementNoSurfaceBounceTag)
 			|| T66HitHasTag(Hit, T66TowerCeilingTag)
 			|| T66HitHasTag(Hit, T66TowerDescentHoleTag);
@@ -509,27 +524,39 @@ bool UT66HeroMovementComponent::TryApplyWallSurfaceBounce(AT66HeroBase* Hero, UC
 	ObjectParams.AddObjectTypesToQuery(ECC_WorldStatic);
 	ObjectParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 
-	FHitResult Hit;
+	// Multi-sweep: trigger bubbles overlap the sweep before the real body does — skip the
+	// ignored ones and bounce off the first surface that can physically stop the hero.
+	TArray<FHitResult> Hits;
 	UWorld* World = GetWorld();
-	if (!World || !World->SweepSingleByObjectType(Hit, Start, End, FQuat::Identity, ObjectParams, FCollisionShape::MakeSphere(Radius), Params))
+	if (!World || !World->SweepMultiByObjectType(Hits, Start, End, FQuat::Identity, ObjectParams, FCollisionShape::MakeSphere(Radius), Params))
 	{
 		return false;
 	}
 
-	if (T66ShouldIgnoreSurfaceBounceWallHit(Hit))
+	const FHitResult* FirstValidHit = nullptr;
+	for (const FHitResult& Candidate : Hits)
 	{
+		if (!T66ShouldIgnoreSurfaceBounceWallHit(Candidate))
+		{
+			FirstValidHit = &Candidate;
+			break;
+		}
 		if (CVarT66HeroSurfaceBounceDebugLog.GetValueOnGameThread() != 0 || T66IsHeroMovementQACapture())
 		{
 			UE_LOG(LogTemp, Display, TEXT("[HeroSurfaceBounce] Type=WallIgnored Hero=%s Time=%.3f HitNormal=%s HitActor=%s HitComponent=%s Loc=%s Reason=NoSurfaceBounce"),
 				*Hero->GetName(),
 				Now,
-				*Hit.ImpactNormal.ToCompactString(),
-				*GetNameSafe(Hit.GetActor()),
-				*GetNameSafe(Hit.GetComponent()),
+				*Candidate.ImpactNormal.ToCompactString(),
+				*GetNameSafe(Candidate.GetActor()),
+				*GetNameSafe(Candidate.GetComponent()),
 				*Hero->GetActorLocation().ToCompactString());
 		}
+	}
+	if (!FirstValidHit)
+	{
 		return false;
 	}
+	const FHitResult& Hit = *FirstValidHit;
 
 	FVector WallNormal = Hit.ImpactNormal.GetSafeNormal();
 	WallNormal.Z = 0.0f;
